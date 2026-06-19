@@ -8,11 +8,16 @@
 </head>
 <body>
   <header>
-    <h1>⚡ Kalshi Crypto Betting Helper</h1>
-    <p class="sub">Live model odds &amp; buy/sell signals for crypto price markets. Estimates, not guarantees — bet responsibly.</p>
+    <h1>⚡ Kalshi Betting Helper</h1>
+    <p class="sub">Live model odds &amp; signals for crypto and baseball markets. Estimates, not guarantees — bet responsibly.</p>
+    <nav class="tabs">
+      <button class="tab active" data-tab="crypto">⚡ Crypto</button>
+      <button class="tab" data-tab="baseball">⚾ Baseball</button>
+    </nav>
   </header>
 
   <main>
+   <div id="tab-crypto">
     <section class="card setup">
       <h2>New market</h2>
       <div class="grid">
@@ -77,6 +82,27 @@
       </div>
       <div id="markets" class="markets"></div>
     </section>
+   </div><!-- /tab-crypto -->
+
+   <div id="tab-baseball" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>⚾ Today's MLB insights</h2>
+        <div class="scan-controls">
+          <input id="bbDate" type="date" />
+          <button id="bbBtn" class="primary">Load slate</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Win probabilities from a Pythagorean + log5 model (runs + records), matched to live Kalshi prices for edge. Picks ranked most-confident first.</p>
+      <div id="bbGames" class="markets"><div class="empty">Pick a date and load the slate.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>🎲 Suggested combos (parlays)</h2>
+      <p class="sub" style="margin:4px 0 12px">Combine picks for a bigger payout — all legs must win. Combined odds = each pick's probability multiplied together.</p>
+      <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
+    </section>
+   </div><!-- /tab-baseball -->
   </main>
 
   <footer>

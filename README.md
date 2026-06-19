@@ -1,10 +1,13 @@
-# ⚡ Kalshi Crypto Betting Helper
+# ⚡ Kalshi Betting Helper
 
-A live web app that helps you trade Kalshi's short-term crypto price markets
-(e.g. "Will BTC be above $63,000 at 3:00pm?"). You enter the threshold and
-window; it runs an **internal odds generator** off live price data and tells you
-when to **buy YES**, **buy NO**, or **hold** — including when to *buy the dip*.
-It also tracks every call and shows you how accurate the model has been.
+A live web app with two tabs:
+
+- **⚡ Crypto** — trade Kalshi's short-term crypto price markets (e.g. "Will BTC
+  be above $63,000 at 3:00pm?"). An **internal odds generator** off live price
+  data tells you when to **buy YES**, **buy NO**, or **hold** — including when to
+  *buy the dip* — and tracks how accurate it's been.
+- **⚾ Baseball** — model win probabilities for today's MLB slate, matched to
+  live Kalshi prices to find edges, plus **parlay combo suggestions**.
 
 > ⚠️ This is a decision-support tool, not a crystal ball. The odds are model
 > estimates. Markets can and will move against the model. Never bet more than
@@ -38,7 +41,32 @@ It also tracks every call and shows you how accurate the model has been.
   whether the model's call was right and shows a running **accuracy %** and
   **Brier score** (lower = sharper probabilities).
 
-## How the odds work (plain English)
+## Baseball (⚾ tab)
+
+Pick a date and **Load slate**. For every MLB game that day it shows:
+
+- **Win probability** from a model that combines each team's **Pythagorean
+  expectation** (from runs scored/allowed — a truer talent signal than raw
+  record), their actual win%, and **home-field advantage**, run through the
+  **log5** matchup formula.
+- The model's **pick** and confidence, ranked most-confident first.
+- The **live Kalshi price** for that pick and the **edge** (model % − market ¢),
+  when the game can be matched to a Kalshi `KXMLBGAME` market.
+
+### Combos (parlays)
+
+Below the games, **🎲 Suggested combos** builds parlays from the most confident
+picks (all legs must win). For each combo it shows the **combined chance**
+(probabilities multiplied), the **fair payout** (1 ÷ chance), and — when every
+leg has a live Kalshi price — the **actual parlay payout and EV%**, so you can
+spot +EV combos. It highlights a **🛡️ Safest** combo (highest chance) and a
+**💰 Best value** combo (highest EV).
+
+> Parlays are higher-risk: a 3-leg combo of 60% picks only hits ~22% of the
+> time. Bigger payout, longer odds. The "safest" combo is the more conservative
+> play.
+
+## How the crypto odds work (plain English)
 
 1. Pull the last few hours of 1-minute candles.
 2. Measure how *jumpy* the price is (volatility) and any recent *lean* (drift,
@@ -87,7 +115,8 @@ threshold:
 | `app.py` | Flask server + JSON API |
 | `prices.py` | Live spot + candle feed (Coinbase, stdlib only) |
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
-| `odds.py` | The odds generator + signal logic |
+| `baseball.py` | MLB win model (Pythagorean + log5) + parlay combos |
+| `odds.py` | The crypto odds generator + signal logic |
 | `store.py` | SQLite storage, auto-resolution, accuracy/Brier stats |
 | `templates/index.html`, `static/` | The live web UI |
 

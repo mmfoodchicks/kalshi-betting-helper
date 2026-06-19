@@ -20,6 +20,7 @@ import prices
 import odds
 import store
 import kalshi
+import baseball
 
 app = Flask(__name__)
 store.init_db()
@@ -172,6 +173,20 @@ def api_kalshi_scan():
     enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
     return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
                     "markets": enriched})
+
+
+@app.route("/api/baseball/today")
+def api_baseball_today():
+    """Model predictions for a day's MLB slate plus parlay combo suggestions."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    combos = baseball.build_combos(games)
+    return jsonify({"date": date, "games": games, "combos": combos})
 
 
 @app.route("/api/stats")

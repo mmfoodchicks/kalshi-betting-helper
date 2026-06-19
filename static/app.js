@@ -283,6 +283,100 @@ async function trackMarket() {
   refreshMarkets();
 }
 
+// ---- Baseball insights ----------------------------------------------------
+function renderGame(g) {
+  const pct = Math.round(g.pick_prob * 100);
+  const edge = g.edge_cents;
+  const cls = edge != null && edge >= 5 ? "bbgame edge" : "bbgame";
+  const hs = g.home_strength, as = g.away_strength;
+  const market = g.pick_price_cents != null
+    ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>`
+    : `<span class="small">no Kalshi price matched</span>`;
+  return `<div class="${cls}">
+    <div class="top">
+      <div>
+        <div class="matchup">${g.matchup}</div>
+        <div class="pick">Pick: ${g.pick} &nbsp;(${g.pick_pct}%)</div>
+      </div>
+      <div class="small" style="text-align:right">conf ${g.confidence}%<br>${g.status}</div>
+    </div>
+    <div class="winbar"><div class="fill" style="width:${pct}%"></div>
+      <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
+    </div>
+    <div class="small">
+      ${g.away_abbr} ${as.wins}-${as.losses} (${as.run_diff >= 0 ? "+" : ""}${as.run_diff} run diff) ·
+      ${g.home_abbr} ${hs.wins}-${hs.losses} (${hs.run_diff >= 0 ? "+" : ""}${hs.run_diff}) — home
+    </div>
+    <div class="small">${market}</div>
+  </div>`;
+}
+
+function renderCombo(c, tag, extraCls) {
+  const legs = c.legs.map((l) =>
+    `<li>${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`
+  ).join("");
+  let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
+              <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
+  if (c.ev_pct != null) {
+    nums += `<span>Parlay payout <b>${c.parlay_payout_x}×</b></span>
+             <span>EV <b class="${c.ev_pct >= 0 ? "ev pos" : "ev neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b></span>`;
+  }
+  return `<div class="combo ${extraCls || ""}">
+    <div class="chead">
+      <span class="ctag">${tag || c.n_legs + "-team parlay"}</span>
+      <span class="small">${c.n_legs} legs</span>
+    </div>
+    <ul class="legs">${legs}</ul>
+    <div class="cnums">${nums}</div>
+  </div>`;
+}
+
+async function loadBaseball() {
+  const gamesBox = $("bbGames");
+  const combosBox = $("bbCombos");
+  const date = $("bbDate").value;
+  gamesBox.innerHTML = `<div class="empty">Loading slate…</div>`;
+  combosBox.innerHTML = `<div class="empty">Crunching combos…</div>`;
+  try {
+    const d = await (await fetch("/api/baseball/today?date=" + date)).json();
+    if (d.error) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; return; }
+    if (!d.games.length) {
+      gamesBox.innerHTML = `<div class="empty">No MLB games scheduled for ${date}.</div>`;
+      combosBox.innerHTML = `<div class="empty">No games, no combos.</div>`;
+      return;
+    }
+    gamesBox.innerHTML = d.games.map(renderGame).join("");
+
+    const c = d.combos;
+    let html = "";
+    if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
+    if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
+      html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
+    html += `<div class="small" style="margin:6px 0">More combos by combined chance:</div>`;
+    html += c.all.map((x) => renderCombo(x)).join("");
+    combosBox.innerHTML = html;
+  } catch (e) {
+    gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
+    combosBox.innerHTML = "";
+  }
+}
+
+function setupTabs() {
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab;
+      $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
+      $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      if (tab === "baseball" && !$("bbGames").dataset.loaded) {
+        $("bbGames").dataset.loaded = "1";
+        loadBaseball();
+      }
+    });
+  });
+}
+
 // ---- Wire up --------------------------------------------------------------
 async function init() {
   const coins = await (await fetch("/api/coins")).json();
@@ -306,6 +400,11 @@ async function init() {
   $("scanBtn").addEventListener("click", runScan);
   $("scanCoin").addEventListener("change", runScan);
   $("scanTimeframe").addEventListener("change", runScan);
+
+  // Baseball setup
+  setupTabs();
+  $("bbDate").value = new Date().toISOString().slice(0, 10);
+  $("bbBtn").addEventListener("click", loadBaseball);
 
   refreshMarkets();
   setInterval(refreshMarkets, 5000);   // live updates for tracked markets
