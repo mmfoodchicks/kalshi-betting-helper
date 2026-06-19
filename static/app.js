@@ -182,6 +182,76 @@ window.delMarket = async (id) => {
   refreshMarkets();
 };
 
+// ---- Kalshi live scanner --------------------------------------------------
+function strikeToTracker(m) {
+  // Map a Kalshi market's geometry onto our (direction, threshold) tracker.
+  const st = (m.strike_type || "").toLowerCase();
+  if (st === "greater" || st === "greater_or_equal") return { direction: "above", threshold: m.floor };
+  if (st === "less" || st === "less_or_equal") return { direction: "below", threshold: m.cap };
+  return null; // 'between' isn't representable in the simple tracker
+}
+
+let lastScan = { coin: null, timeframe: null };
+function renderScanRow(m) {
+  const sig = m.signal;
+  const secs = m.close_time ? m.close_time - Math.floor(Date.now() / 1000) : 0;
+  const bestEdge = m.best_edge;
+  const edgeCls = bestEdge != null && bestEdge >= 5 ? "pos" : "neg";
+  const rowCls = sig.recommendation !== "HOLD" ? "scanrow edge" : "scanrow";
+  const tracker = strikeToTracker(m);
+  const trackBtn = tracker
+    ? `<button class="track-mini" onclick='trackFromScan(${JSON.stringify({
+        coin: lastScan.coin, threshold: tracker.threshold, direction: tracker.direction,
+        close_time: m.close_time, yes_price_cents: m.yes_ask,
+      })})'>Track</button>`
+    : "";
+  return `<div class="${rowCls}">
+    <div class="left">
+      <div class="strike">${m.subtitle || m.ticker}</div>
+      <div class="nums">
+        Kalshi YES <b>${m.yes_ask ?? "–"}¢</b> / NO <b>${m.no_ask ?? "–"}¢</b> ·
+        model fair YES <b>${sig.fair_yes_cents}¢</b> ·
+        closes <b>${fmtCountdown(secs)}</b>
+        ${sig.dip_note ? `<br>💡 ${sig.dip_note}` : ""}
+      </div>
+    </div>
+    <div class="right">
+      <span class="edgeval ${edgeCls}">${bestEdge != null ? (bestEdge > 0 ? "+" : "") + bestEdge + "¢ edge" : ""}</span>
+      ${badge(sig.recommendation, sig.strength)}
+      ${trackBtn}
+    </div>
+  </div>`;
+}
+
+window.trackFromScan = async (body) => {
+  await fetch("/api/markets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  refreshMarkets();
+};
+
+async function runScan() {
+  const coin = $("scanCoin").value;
+  const timeframe = $("scanTimeframe").value;
+  lastScan = { coin, timeframe };
+  const box = $("scanResults");
+  box.innerHTML = `<div class="empty">Scanning ${coin} ${timeframe}…</div>`;
+  try {
+    const r = await fetch(`/api/kalshi/scan?coin=${coin}&timeframe=${timeframe}`);
+    const d = await r.json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (!d.markets || !d.markets.length) {
+      box.innerHTML = `<div class="empty">No open ${coin} ${timeframe} contracts on Kalshi right now.</div>`;
+      return;
+    }
+    box.innerHTML = d.markets.map(renderScanRow).join("");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Scan failed — retrying on next refresh.</div>`;
+  }
+}
+
 // ---- Create market --------------------------------------------------------
 async function trackMarket() {
   const threshold = parseFloat($("threshold").value);
@@ -230,9 +300,17 @@ async function init() {
   );
   $("trackBtn").addEventListener("click", trackMarket);
 
+  // Scanner setup
+  const meta = await (await fetch("/api/kalshi/meta")).json();
+  $("scanCoin").innerHTML = meta.coins.map((c) => `<option>${c}</option>`).join("");
+  $("scanBtn").addEventListener("click", runScan);
+  $("scanCoin").addEventListener("change", runScan);
+  $("scanTimeframe").addEventListener("change", runScan);
+
   refreshMarkets();
   setInterval(refreshMarkets, 5000);   // live updates for tracked markets
   setInterval(refreshPreview, 5000);   // keep the preview fresh too
+  setInterval(() => { if (lastScan.coin) runScan(); }, 8000); // refresh scanner
 }
 
 init();

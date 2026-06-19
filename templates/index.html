@@ -55,6 +55,23 @@
 
     <section class="card">
       <div class="row-between">
+        <h2>📡 Kalshi live scanner</h2>
+        <div class="scan-controls">
+          <select id="scanCoin"></select>
+          <select id="scanTimeframe">
+            <option value="15M">15-min</option>
+            <option value="hourly" selected>Hourly</option>
+            <option value="daily">Daily</option>
+          </select>
+          <button id="scanBtn">Scan</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Pulls the real open Kalshi contracts and live prices, ranks them by the model's edge. Auto-refreshes.</p>
+      <div id="scanResults" class="markets"><div class="empty">Pick a coin &amp; timeframe, then Scan.</div></div>
+    </section>
+
+    <section class="card">
+      <div class="row-between">
         <h2>Tracked markets</h2>
         <div id="statsBar" class="stats"></div>
       </div>

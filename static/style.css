@@ -98,6 +98,25 @@ button.danger { color: var(--no); }
 .markets { display: flex; flex-direction: column; gap: 14px; }
 .empty { color: var(--muted); font-size: 0.9rem; }
 
+.scan-controls { display: flex; gap: 8px; }
+.scan-controls select, .scan-controls button { padding: 7px 10px; font-size: 0.9rem; }
+
+.scanrow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; flex-wrap: wrap;
+}
+.scanrow.edge { border-color: var(--accent); }
+.scanrow .left { flex: 1; min-width: 200px; }
+.scanrow .strike { font-weight: 600; }
+.scanrow .nums { color: var(--muted); font-size: 0.82rem; margin-top: 3px; }
+.scanrow .nums b { color: var(--text); }
+.scanrow .right { display: flex; align-items: center; gap: 10px; }
+.edgeval { font-weight: 700; font-size: 0.85rem; }
+.edgeval.pos { color: var(--yes); }
+.edgeval.neg { color: var(--muted); }
+.track-mini { padding: 6px 12px; font-size: 0.8rem; }
+
 .market {
   background: var(--card2);
   border: 1px solid var(--border);

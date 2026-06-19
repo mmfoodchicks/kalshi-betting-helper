@@ -85,6 +85,38 @@ def probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma):
     return p_above if direction == "above" else (1.0 - p_above)
 
 
+def _prob_above(spot, strike, minutes_to_close, mu, sigma):
+    """P(price >= strike at close) under GBM. Robust to degenerate inputs."""
+    if minutes_to_close <= 0 or sigma <= 0 or spot <= 0 or strike <= 0:
+        return 1.0 if spot >= strike else 0.0
+    drift = DRIFT_DAMPING * mu * minutes_to_close
+    vol = sigma * math.sqrt(minutes_to_close)
+    d = (math.log(spot / strike) + drift) / vol
+    return _norm_cdf(d)
+
+
+def probability_yes_for_strike(spot, strike_type, floor, cap,
+                               minutes_to_close, mu, sigma):
+    """Probability a Kalshi market resolves YES, given its strike geometry.
+
+    strike_type:
+      'greater' / 'greater_or_equal' -> YES if price >= floor
+      'less' / 'less_or_equal'       -> YES if price <= cap
+      'between'                      -> YES if floor <= price <= cap
+    """
+    st = (strike_type or "").lower()
+    if st in ("greater", "greater_or_equal"):
+        return _prob_above(spot, floor, minutes_to_close, mu, sigma)
+    if st in ("less", "less_or_equal"):
+        return 1.0 - _prob_above(spot, cap, minutes_to_close, mu, sigma)
+    if st == "between" and floor is not None and cap is not None:
+        p_hi = _prob_above(spot, cap, minutes_to_close, mu, sigma)
+        p_lo = _prob_above(spot, floor, minutes_to_close, mu, sigma)
+        return max(0.0, p_lo - p_hi)
+    # Unknown geometry: fall back to a coin flip rather than crashing.
+    return 0.5
+
+
 def momentum(candles, window=10):
     """Short-term momentum as a fractional change over the last `window` candles.
 
@@ -199,5 +231,63 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
         "expected_move_pct": round(expected_move_pct, 3),
         "drift_per_min_pct": round(mu * 100, 5),
         "confidence": confidence,
+        "samples": n,
+    }
+
+
+def kalshi_signal(spot, candles, market, minutes_to_close):
+    """Edge signal for a live Kalshi market (from kalshi.get_open_markets).
+
+    Compares the model's fair value to the market's live YES/NO ask prices and
+    recommends whichever side (if any) is underpriced by at least MIN_EDGE_CENTS.
+    """
+    mu, sigma, n = estimate_params(candles)
+    prob_yes = max(0.0, min(1.0, probability_yes_for_strike(
+        spot, market["strike_type"], market["floor"], market["cap"],
+        minutes_to_close, mu, sigma)))
+    fair_yes = round(prob_yes * 100, 1)
+    fair_no = round((1 - prob_yes) * 100, 1)
+
+    yes_ask = market.get("yes_ask")
+    no_ask = market.get("no_ask")
+    # Edge = our fair value minus what we'd pay to enter. Positive => underpriced.
+    edge_yes = round(fair_yes - yes_ask, 1) if yes_ask is not None else None
+    edge_no = round(fair_no - no_ask, 1) if no_ask is not None else None
+
+    best_side, best_edge = None, None
+    if edge_yes is not None and edge_yes >= MIN_EDGE_CENTS:
+        best_side, best_edge = "YES", edge_yes
+    if edge_no is not None and edge_no >= MIN_EDGE_CENTS and (best_edge is None or edge_no > best_edge):
+        best_side, best_edge = "NO", edge_no
+
+    mom = momentum(candles, window=10)
+    if best_side == "YES":
+        rec = "BUY YES"
+        strength = "strong" if best_edge >= 2 * MIN_EDGE_CENTS else "lean"
+        rationale = f"Fair YES ≈ {fair_yes}¢ vs ask {yes_ask}¢ → +{best_edge}¢ edge."
+        dip_note = ("Price just dipped — YES looks extra cheap here."
+                    if prob_yes >= LEAN_PROB and mom < -0.0008 else None)
+    elif best_side == "NO":
+        rec = "BUY NO"
+        strength = "strong" if best_edge >= 2 * MIN_EDGE_CENTS else "lean"
+        rationale = f"Fair NO ≈ {fair_no}¢ vs ask {no_ask}¢ → +{best_edge}¢ edge."
+        dip_note = ("Price just popped — NO looks extra cheap here."
+                    if prob_yes <= (1 - LEAN_PROB) and mom > 0.0008 else None)
+    else:
+        rec, strength = "HOLD", "flat"
+        rationale = "No side offers a clear edge over the live market price."
+        dip_note = None
+
+    return {
+        "prob_yes": round(prob_yes, 4),
+        "fair_yes_cents": fair_yes,
+        "fair_no_cents": fair_no,
+        "edge_yes_cents": edge_yes,
+        "edge_no_cents": edge_no,
+        "recommendation": rec,
+        "strength": strength,
+        "rationale": rationale,
+        "dip_note": dip_note,
+        "momentum_pct": round(mom * 100, 3),
         "samples": n,
     }

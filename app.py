@@ -19,6 +19,7 @@ from flask import Flask, jsonify, request, render_template
 import prices
 import odds
 import store
+import kalshi
 
 app = Flask(__name__)
 store.init_db()
@@ -130,6 +131,47 @@ def api_list_markets():
 def api_delete_market(market_id):
     store.delete_market(market_id)
     return jsonify({"ok": True})
+
+
+@app.route("/api/kalshi/meta")
+def api_kalshi_meta():
+    return jsonify({"coins": kalshi.SCANNABLE_COINS, "timeframes": kalshi.TIMEFRAMES})
+
+
+@app.route("/api/kalshi/scan")
+def api_kalshi_scan():
+    """Pull live open Kalshi contracts for a coin+timeframe and run the model
+    on each, returning them ranked by edge (best opportunities first)."""
+    coin = request.args.get("coin", "BTC").upper()
+    timeframe = request.args.get("timeframe", "hourly")
+    try:
+        markets = kalshi.get_open_markets(coin, timeframe)
+    except Exception as e:
+        return jsonify({"error": f"kalshi fetch failed: {e}"}), 502
+    if not markets:
+        return jsonify({"coin": coin, "timeframe": timeframe, "markets": []})
+
+    try:
+        spot = prices.get_spot(coin)
+        candles = prices.get_candles(coin, granularity=60)
+    except Exception as e:
+        return jsonify({"error": f"price feed failed: {e}"}), 502
+
+    enriched = []
+    for m in markets:
+        mins = _minutes_to_close(m["close_time"]) if m["close_time"] else 0.0
+        sig = odds.kalshi_signal(spot, candles, m, mins)
+        item = dict(m)
+        item["minutes_to_close"] = round(mins, 2)
+        item["signal"] = sig
+        # Best available edge on either side, for ranking.
+        edges = [e for e in (sig["edge_yes_cents"], sig["edge_no_cents"]) if e is not None]
+        item["best_edge"] = max(edges) if edges else None
+        enriched.append(item)
+
+    enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
+    return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
+                    "markets": enriched})
 
 
 @app.route("/api/stats")

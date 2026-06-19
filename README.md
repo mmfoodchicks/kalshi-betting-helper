@@ -29,6 +29,10 @@ It also tracks every call and shows you how accurate the model has been.
     is cheap right now, good dip-buy" (and the mirror for fading a pump).
   - **Take-profit hints:** since Kalshi lets you sell anytime, it suggests a
     target to lock in profit.
+- **Kalshi live scanner.** Pulls the *real* open Kalshi crypto contracts
+  (15-minute, hourly, and daily) with their live YES/NO prices — no API key
+  needed — runs the model on every strike, and **ranks them by edge** so the
+  best opportunities float to the top. One click tracks any contract.
 - **Outcome tracking.** Each market you track is **auto-resolved** when its
   window closes (was the price more or less than your amount?). The app records
   whether the model's call was right and shows a running **accuracy %** and
@@ -56,7 +60,16 @@ python app.py
 
 Then open <http://localhost:5000>. (Set `PORT` to change the port.)
 
-### Using it
+### Two ways to use it
+
+**A) Kalshi live scanner (easiest).** In the scanner card, pick a coin and
+timeframe (15-min / hourly / daily) and hit **Scan**. It pulls the real open
+Kalshi contracts and their live prices, shows the model's fair value and edge
+for each, and ranks them best-first. Hit **Track** on any contract to monitor it
+and score the call.
+
+**B) Manual market.** Define your own market if you want to model a specific
+threshold:
 
 1. Pick a **coin** and whether YES means price **ABOVE** or **BELOW** your number.
 2. Enter the **threshold** (the dollar amount the Kalshi market is set at).
@@ -73,6 +86,7 @@ Then open <http://localhost:5000>. (Set `PORT` to change the port.)
 |------|---------|
 | `app.py` | Flask server + JSON API |
 | `prices.py` | Live spot + candle feed (Coinbase, stdlib only) |
+| `kalshi.py` | Live Kalshi market data (public, read-only) |
 | `odds.py` | The odds generator + signal logic |
 | `store.py` | SQLite storage, auto-resolution, accuracy/Brier stats |
 | `templates/index.html`, `static/` | The live web UI |
@@ -89,5 +103,7 @@ In `odds.py`:
 - Resolution uses Coinbase's price, which may differ slightly from Kalshi's
   settlement source; treat outcomes as approximate.
 - The model assumes "random walk" behavior — it has no knowledge of news events.
-- A natural next step is connecting Kalshi's own API to auto-pull live contract
-  prices (instead of pasting them) and to place/sell orders.
+- The live scanner reads Kalshi's public market data (no key). **Placing or
+  selling orders** would require authenticated Kalshi API access (an API key +
+  RSA request signing) — that's the natural next step if you want it to trade,
+  not just advise.
