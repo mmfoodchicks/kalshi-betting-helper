@@ -284,14 +284,20 @@ async function trackMarket() {
 }
 
 // ---- Baseball insights ----------------------------------------------------
+function spLine(sp) {
+  if (!sp || sp.era == null) return `${sp && sp.name ? sp.name : "TBD"} <span style="color:var(--border)">(no stats)</span>`;
+  return `${sp.name} — <b>${sp.era}</b> ERA, <b>${sp.whip}</b> WHIP, ${sp.ip} IP`;
+}
+
 function renderGame(g) {
   const pct = Math.round(g.pick_prob * 100);
   const edge = g.edge_cents;
   const cls = edge != null && edge >= 5 ? "bbgame edge" : "bbgame";
-  const hs = g.home_strength, as = g.away_strength;
+  const ht = g.home_team, at = g.away_team;
   const market = g.pick_price_cents != null
     ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>`
-    : `<span class="small">no Kalshi price matched</span>`;
+    : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
+  const rec = (t) => (t.wins != null ? `${t.wins}-${t.losses} (${t.run_diff >= 0 ? "+" : ""}${t.run_diff})` : "");
   return `<div class="${cls}">
     <div class="top">
       <div>
@@ -303,11 +309,20 @@ function renderGame(g) {
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
-    <div class="small">
-      ${g.away_abbr} ${as.wins}-${as.losses} (${as.run_diff >= 0 ? "+" : ""}${as.run_diff} run diff) ·
-      ${g.home_abbr} ${hs.wins}-${hs.losses} (${hs.run_diff >= 0 ? "+" : ""}${hs.run_diff}) — home
+    <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} (home)</div>
+    <div class="matchgrid">
+      <div>
+        <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>
+        <div class="small">SP: ${spLine(g.away_sp)}</div>
+        <div class="small">Team OPS <b>${at.ops}</b> · ${at.rpg} R/G · bullpen/staff <b>${at.team_era}</b> ERA, ${at.team_whip} WHIP</div>
+      </div>
+      <div>
+        <div class="teamhdr">${g.home_abbr} ${rec(ht)} · home</div>
+        <div class="small">SP: ${spLine(g.home_sp)}</div>
+        <div class="small">Team OPS <b>${ht.ops}</b> · ${ht.rpg} R/G · bullpen/staff <b>${ht.team_era}</b> ERA, ${ht.team_whip} WHIP</div>
+      </div>
     </div>
-    <div class="small">${market}</div>
+    <div class="small" style="margin-top:8px">${market}</div>
   </div>`;
 }
 

@@ -45,10 +45,18 @@ A live web app with two tabs:
 
 Pick a date and **Load slate**. For every MLB game that day it shows:
 
-- **Win probability** from a model that combines each team's **Pythagorean
-  expectation** (from runs scored/allowed — a truer talent signal than raw
-  record), their actual win%, and **home-field advantage**, run through the
-  **log5** matchup formula.
+- **Win probability** from an **expected-runs model** that folds in:
+  - **Starting pitchers** — each probable starter's **ERA + WHIP**, regressed
+    toward league average by innings pitched (so small-sample ERAs don't fool
+    it), responsible for ~60% of the game.
+  - **Bullpen / staff** — the team's overall **ERA + WHIP** for the rest of the
+    game.
+  - **Offense** — each team's **runs/game and OPS** relative to the league.
+  - **Home-field advantage.**
+
+  These produce each side's **expected runs** (via the odds-ratio method), which
+  convert to a win probability with the **Pythagorean** formula. The card shows
+  the starters' lines, team OPS, bullpen ERA/WHIP, records, and expected runs.
 - The model's **pick** and confidence, ranked most-confident first.
 - The **live Kalshi price** for that pick and the **edge** (model % − market ¢),
   when the game can be matched to a Kalshi `KXMLBGAME` market.
@@ -115,7 +123,7 @@ threshold:
 | `app.py` | Flask server + JSON API |
 | `prices.py` | Live spot + candle feed (Coinbase, stdlib only) |
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
-| `baseball.py` | MLB win model (Pythagorean + log5) + parlay combos |
+| `baseball.py` | MLB expected-runs win model (SP ERA/WHIP, bullpen, OPS) + parlay combos |
 | `odds.py` | The crypto odds generator + signal logic |
 | `store.py` | SQLite storage, auto-resolution, accuracy/Brier stats |
 | `templates/index.html`, `static/` | The live web UI |
