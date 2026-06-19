@@ -53,14 +53,22 @@ Pick a date and **Load slate**. For every MLB game that day it shows:
     not the whole staff) for the rest of the game.
   - **Offense** — each team's **runs/game and OPS**, with OPS taken vs the
     opposing starter's **handedness** (platoon split: OPS vs LHP / vs RHP).
-  - **Home-field advantage** and **park factors** (the venue's run environment
-    drives the **expected total**; park has little moneyline effect since it
-    helps both offenses, so it's shown for totals rather than moving the pick).
+  - **Confirmed lineups** — once today's lineup is posted, each hitter's OPS
+    (regressed by at-bats) sets a lineup-strength adjustment, so rested
+    regulars / call-ups / injuries that are out of the lineup are reflected.
+  - **Home-field advantage** and **park factors**.
+  - **Game-time weather** — geocoded to the stadium and pulled from **NOAA**
+    (with an **Open-Meteo** fallback): temperature, plus **wind blowing out/in
+    to center** (using each park's orientation) and rain chance. Warm air and
+    wind blowing out raise scoring. Domes are neutral; retractable roofs get
+    half weight.
 
   These produce each side's **expected runs** (via the odds-ratio method), which
-  convert to a win probability with the **Pythagorean** formula. The card shows
-  the starters' lines (incl. handedness + recent form), platoon-split OPS,
-  bullpen ERA/WHIP, records, expected runs, and the expected total.
+  convert to a win probability with the **Pythagorean** formula. Lineups affect
+  the pick; park + weather mainly drive the **expected total** (over/under),
+  since they help both offenses. The card shows starters' lines (handedness +
+  recent form), platoon-split OPS, bullpen ERA/WHIP, lineup OPS, records,
+  expected runs, the expected total, and the live weather.
 - The model's **pick** and confidence, ranked most-confident first.
 - The **live Kalshi price** for that pick and the **edge** (model % − market ¢),
   when the game can be matched to a Kalshi `KXMLBGAME` market.
@@ -127,7 +135,9 @@ threshold:
 | `app.py` | Flask server + JSON API |
 | `prices.py` | Live spot + candle feed (Coinbase, stdlib only) |
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
-| `baseball.py` | MLB expected-runs model (SP ERA/WHIP + recent form, isolated bullpen, platoon OPS, park) + parlay combos |
+| `baseball.py` | MLB expected-runs model (pitching, bullpen, platoon, lineups, park, weather) + parlay combos |
+| `weather.py` | Game-time weather (NOAA + Open-Meteo) and run-environment factor |
+| `stadiums.py` | Stadium coordinates, roof type, and center-field orientation |
 | `odds.py` | The crypto odds generator + signal logic |
 | `store.py` | SQLite storage, auto-resolution, accuracy/Brier stats |
 | `templates/index.html`, `static/` | The live web UI |

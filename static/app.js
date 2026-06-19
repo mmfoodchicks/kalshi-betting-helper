@@ -303,6 +303,18 @@ function renderGame(g) {
   // platoon: away offense faces the home starter's hand, and vice-versa
   const plat = (off, oppSp) => off.ops_vs_opp_hand
     ? ` (vs ${oppSp.hand}HP <b>${off.ops_vs_opp_hand}</b>)` : "";
+  const lf = (t) => {
+    if (t.lineup_factor == null) return "";
+    const arrow = t.lineup_factor > 1.02 ? " ▲" : t.lineup_factor < 0.98 ? " ▼" : "";
+    return ` · lineup OPS <b>${t.lineup_ops}</b>${arrow}`;
+  };
+  const w = g.weather;
+  let wxLine = "";
+  if (w && w.available) {
+    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} (${w.wind_effect})${w.precip_pct ? `, ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""} <span style="color:var(--border)">[${w.source}]</span></div>`;
+  } else if (w && w.roof === "fixed") {
+    wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: dome — weather neutral</div>`;
+  }
   return `<div class="${cls}">
     <div class="top">
       <div>
@@ -315,16 +327,17 @@ function renderGame(g) {
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
     <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
+    ${wxLine}
     <div class="matchgrid">
       <div>
         <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>
         <div class="small">SP: ${spLine(g.away_sp)}</div>
-        <div class="small">Team OPS <b>${at.ops}</b>${plat(at, g.home_sp)} · ${at.rpg} R/G · bullpen <b>${at.bullpen_era}</b> ERA, ${at.bullpen_whip} WHIP</div>
+        <div class="small">Team OPS <b>${at.ops}</b>${plat(at, g.home_sp)} · ${at.rpg} R/G · bullpen <b>${at.bullpen_era}</b> ERA, ${at.bullpen_whip} WHIP${lf(at)}</div>
       </div>
       <div>
         <div class="teamhdr">${g.home_abbr} ${rec(ht)} · home</div>
         <div class="small">SP: ${spLine(g.home_sp)}</div>
-        <div class="small">Team OPS <b>${ht.ops}</b>${plat(ht, g.away_sp)} · ${ht.rpg} R/G · bullpen <b>${ht.bullpen_era}</b> ERA, ${ht.bullpen_whip} WHIP</div>
+        <div class="small">Team OPS <b>${ht.ops}</b>${plat(ht, g.away_sp)} · ${ht.rpg} R/G · bullpen <b>${ht.bullpen_era}</b> ERA, ${ht.bullpen_whip} WHIP${lf(ht)}</div>
       </div>
     </div>
     <div class="small" style="margin-top:8px">${market}</div>

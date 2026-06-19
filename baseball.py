@@ -30,6 +30,8 @@ import time as _time
 from concurrent.futures import ThreadPoolExecutor
 
 import kalshi  # reuse BASE + _get_json + _parse_time + _cents helpers
+import weather as weather_mod
+import stadiums as stadiums_mod
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
@@ -298,6 +300,70 @@ def _match_price(kalshi_index, abbr_map, home_id, away_id, start_epoch):
     return best, home, away
 
 
+def _boxscore_lineup(game_pk):
+    """Posted lineup OPS per side -> {'home': [(ops, ab), ...], 'away': [...]}."""
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/game/{game_pk}/boxscore")
+            out = {}
+            for side in ("home", "away"):
+                t = d["teams"][side]
+                players = []
+                for pid in t.get("battingOrder", []):
+                    bs = t["players"].get(f"ID{pid}", {}).get("seasonStats", {}).get("batting", {})
+                    ops = _f(bs.get("ops")); ab = _f(bs.get("atBats"))
+                    if ops > 0:
+                        players.append((ops, ab))
+                out[side] = players
+            return out
+        except Exception:
+            return None
+    return _cached(("box", game_pk), 300, fetch)
+
+
+def _lineup_factor(players, team_ops, lg):
+    """Offense multiplier from the actual posted lineup vs the team's norm.
+
+    Each hitter's OPS is regressed toward the team OPS by at-bats so a hot/cold
+    bench bat doesn't swing it; result is capped to a sane range. Captures
+    rested regulars / call-ups / injuries that are already out of the lineup.
+    """
+    if not players:
+        return None, None
+    base = team_ops or lg["ops"]
+    regressed = []
+    for ops, ab in players:
+        rel = ab / (ab + 50) if ab > 0 else 0.0
+        regressed.append(rel * ops + (1 - rel) * base)
+    lineup_ops = sum(regressed) / len(regressed)
+    factor = lineup_ops / base if base else 1.0
+    return max(0.85, min(1.12, factor)), round(lineup_ops, 3)
+
+
+def _weather_block(winfo):
+    if not winfo or not winfo.get("wx"):
+        s = winfo.get("stadium") if winfo else None
+        return {"available": False, "roof": s.get("roof") if s else None,
+                "stadium": s.get("name") if s else None}
+    wx = winfo["wx"]; s = winfo["stadium"]
+    out_mph = winfo.get("wind_out_mph", 0)
+    wind_desc = "calm"
+    if wx.get("wind_mph"):
+        if out_mph > 3:
+            wind_desc = f"blowing out {out_mph} mph"
+        elif out_mph < -3:
+            wind_desc = f"blowing in {abs(out_mph)} mph"
+        else:
+            wind_desc = "crosswind"
+    return {
+        "available": True, "stadium": s["name"], "roof": s["roof"],
+        "temp_f": wx.get("temp_f"), "wind_mph": wx.get("wind_mph"),
+        "wind_dir": wx.get("wind_dir"), "wind_effect": wind_desc,
+        "precip_pct": wx.get("precip_pct"), "summary": wx.get("summary"),
+        "run_factor": round(winfo.get("factor", 1.0), 3), "source": wx.get("source"),
+    }
+
+
 def _schedule(date, season):
     data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=probablePitcher")
     dates = data.get("dates", [])
@@ -338,6 +404,26 @@ def analyze_slate(date, season):
             for pid, st in zip(sp_ids, ex.map(lambda i: _pitcher_stats(i, season), sp_ids)):
                 sp_stats[pid] = st
 
+    # Posted lineups (rest/injuries) and game-time weather, fetched in parallel.
+    pks = [g["game_pk"] for g in schedule if g["game_pk"]]
+    lineups = {}
+    if pks:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for pk, lu in zip(pks, ex.map(_boxscore_lineup, pks)):
+                lineups[pk] = lu
+
+    def fetch_weather(g):
+        s = stadiums_mod.STADIUMS.get(g["home_id"])
+        if not s:
+            return None
+        wx = weather_mod.get_weather(s["lat"], s["lon"], g["start_epoch"] or _time.time())
+        factor, wind_comp = weather_mod.run_factor(wx, s["cf_bearing_deg"], s["roof"])
+        return {"stadium": s, "wx": wx, "factor": factor, "wind_out_mph": wind_comp}
+    weather_by_pk = {}
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for g, w in zip(schedule, ex.map(fetch_weather, schedule)):
+            weather_by_pk[g["game_pk"]] = w
+
     def th(tid): return hit.get(tid, {"ops": lg["ops"], "rpg": lg["rpg"]})
     def tbp(tid): return bp.get(tid, {"era": lg["bp_era"], "whip": lg["bp_whip"]})
     def tpit(tid): return pit.get(tid, {"era": lg["era"], "whip": lg["whip"]})
@@ -355,14 +441,26 @@ def analyze_slate(date, season):
         pit_a_factor, a_sp_ra9, a_bp_ra9 = _pitching_factor(a_sp, tbp(g["away_id"]), lg)
         pit_h_factor, h_sp_ra9, h_bp_ra9 = _pitching_factor(h_sp, tbp(g["home_id"]), lg)
 
+        # Posted-lineup adjustment to each offense (rest days, call-ups, injuries).
+        lu = lineups.get(g["game_pk"]) or {}
+        lf_home, lops_home = _lineup_factor(lu.get("home"), th(g["home_id"]).get("ops"), lg)
+        lf_away, lops_away = _lineup_factor(lu.get("away"), th(g["away_id"]).get("ops"), lg)
+        if lf_home:
+            off_h *= lf_home
+        if lf_away:
+            off_a *= lf_away
+
         er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT
         er_away = lg["rpg"] * off_a * pit_h_factor
         p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
         p_home = max(0.04, min(0.96, p_home))
         p_away = 1 - p_home
 
+        # Park + weather drive the expected total (over/under), not the moneyline.
         park = PARK_FACTORS.get(g["home_id"], 1.0)
-        exp_total = round((er_home + er_away) * park, 1)
+        winfo = weather_by_pk.get(g["game_pk"]) or {}
+        wx_factor = winfo.get("factor", 1.0)
+        exp_total = round((er_home + er_away) * park * wx_factor, 1)
 
         pick_home = p_home >= p_away
         pick_name = g["home_name"] if pick_home else g["away_name"]
@@ -400,17 +498,20 @@ def analyze_slate(date, season):
             "p_home": round(p_home, 4), "p_away": round(p_away, 4),
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
             "exp_total": exp_total, "park_factor": park,
+            "weather": _weather_block(winfo),
             "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),
             "away_sp": sp_block(g["away_sp_name"], a_sp, a_hand),
             "home_team": {"ops": round(th(g['home_id']).get("ops", 0), 3),
                           "ops_vs_opp_hand": round(ops_hand(g['home_id'], a_hand) or 0, 3),
                           "rpg": round(th(g['home_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bph.get("era", 0), 2), "bullpen_whip": round(bph.get("whip", 0), 2),
+                          "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
             "away_team": {"ops": round(th(g['away_id']).get("ops", 0), 3),
                           "ops_vs_opp_hand": round(ops_hand(g['away_id'], h_hand) or 0, 3),
                           "rpg": round(th(g['away_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bpa.get("era", 0), 2), "bullpen_whip": round(bpa.get("whip", 0), 2),
+                          "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},
             "pick": pick_name, "pick_is_home": pick_home,
             "pick_prob": round(pick_prob, 4), "pick_pct": round(pick_prob * 100, 1),
