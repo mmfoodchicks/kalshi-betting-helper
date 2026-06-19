@@ -286,7 +286,9 @@ async function trackMarket() {
 // ---- Baseball insights ----------------------------------------------------
 function spLine(sp) {
   if (!sp || sp.era == null) return `${sp && sp.name ? sp.name : "TBD"} <span style="color:var(--border)">(no stats)</span>`;
-  return `${sp.name} — <b>${sp.era}</b> ERA, <b>${sp.whip}</b> WHIP, ${sp.ip} IP`;
+  const hand = sp.hand ? `${sp.hand}HP` : "";
+  const recent = sp.recent_era != null ? ` · last5 <b>${sp.recent_era}</b> ERA` : "";
+  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}`;
 }
 
 function renderGame(g) {
@@ -298,6 +300,9 @@ function renderGame(g) {
     ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>`
     : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
   const rec = (t) => (t.wins != null ? `${t.wins}-${t.losses} (${t.run_diff >= 0 ? "+" : ""}${t.run_diff})` : "");
+  // platoon: away offense faces the home starter's hand, and vice-versa
+  const plat = (off, oppSp) => off.ops_vs_opp_hand
+    ? ` (vs ${oppSp.hand}HP <b>${off.ops_vs_opp_hand}</b>)` : "";
   return `<div class="${cls}">
     <div class="top">
       <div>
@@ -309,17 +314,17 @@ function renderGame(g) {
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
-    <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} (home)</div>
+    <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
     <div class="matchgrid">
       <div>
         <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>
         <div class="small">SP: ${spLine(g.away_sp)}</div>
-        <div class="small">Team OPS <b>${at.ops}</b> · ${at.rpg} R/G · bullpen/staff <b>${at.team_era}</b> ERA, ${at.team_whip} WHIP</div>
+        <div class="small">Team OPS <b>${at.ops}</b>${plat(at, g.home_sp)} · ${at.rpg} R/G · bullpen <b>${at.bullpen_era}</b> ERA, ${at.bullpen_whip} WHIP</div>
       </div>
       <div>
         <div class="teamhdr">${g.home_abbr} ${rec(ht)} · home</div>
         <div class="small">SP: ${spLine(g.home_sp)}</div>
-        <div class="small">Team OPS <b>${ht.ops}</b> · ${ht.rpg} R/G · bullpen/staff <b>${ht.team_era}</b> ERA, ${ht.team_whip} WHIP</div>
+        <div class="small">Team OPS <b>${ht.ops}</b>${plat(ht, g.away_sp)} · ${ht.rpg} R/G · bullpen <b>${ht.bullpen_era}</b> ERA, ${ht.bullpen_whip} WHIP</div>
       </div>
     </div>
     <div class="small" style="margin-top:8px">${market}</div>

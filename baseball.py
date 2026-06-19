@@ -1,43 +1,70 @@
 """Baseball (MLB) betting insights + parlay combo generator.
 
 Data sources (all public, no key):
-  - MLB Stats API (statsapi.mlb.com): schedule + probable pitchers, team
-    hitting (AVG/OBP/SLG/OPS, runs), team pitching (ERA/WHIP), per-pitcher
-    season stats (ERA/WHIP/IP), and standings (W-L).
+  - MLB Stats API: schedule + probable pitchers, league-wide team hitting
+    (overall + vs LHP/RHP splits), team pitching (overall + bullpen split),
+    per-starter season & recent (lastX) stats, pitcher handedness, standings.
   - Kalshi KXMLBGAME markets: live moneyline-style prices per team.
 
-Model (expected runs -> win probability)
-----------------------------------------
-For each game we estimate how many runs each side should score, then convert to
-a win probability.
+Model (expected runs -> win probability), deepest version
+---------------------------------------------------------
+For each game we estimate each side's expected runs, then convert to a win
+probability. Inputs folded in:
 
-  OFFENSE (relative to league):   blend of the team's runs/game and OPS.
-  PITCHING the offense faces:      a weighted mix of
-       - the opposing STARTER (ERA + WHIP, regressed toward league by innings,
-         since small-sample ERAs are noisy), throwing ~60% of the game, and
-       - the opposing BULLPEN/STAFF (team ERA + WHIP) for the rest.
-  EXPECTED RUNS (odds-ratio):  ExpRuns = lgRPG * Offense * OppPitching
-  HOME FIELD:  home expected runs nudged up a touch.
-  WIN PROB (Pythagorean on this game's expected runs):
-       p_home = ExpRuns_home^1.83 / (ExpRuns_home^1.83 + ExpRuns_away^1.83)
+  STARTERS   each probable starter's ERA + WHIP, regressed toward league by
+             innings, then blended with their recent (lastX) form. ~60% of game.
+  BULLPEN    each team's isolated reliever ERA + WHIP (not the whole staff) for
+             the remaining ~40% of the game.
+  OFFENSE    team runs/game and OPS, with OPS taken vs the opposing starter's
+             handedness (platoon split) for the innings he pitches.
+  HOME FIELD home expected runs nudged up.
+  PARK       venue run factor -> expected TOTAL runs (park has little effect on
+             the moneyline since it helps both offenses, but matters for totals).
 
-Picks feed the parlay/combo generator (probabilities multiplied per leg).
+  ExpRuns = lgRPG * Offense * OppPitching
+  p_home  = ExpRuns_home^1.83 / (ExpRuns_home^1.83 + ExpRuns_away^1.83)
 """
 
 import itertools
+import time as _time
 from concurrent.futures import ThreadPoolExecutor
 
 import kalshi  # reuse BASE + _get_json + _parse_time + _cents helpers
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
-PYTH_EXP = 1.83          # Pythagorean exponent for run -> win conversion
-SP_INNINGS_WEIGHT = 0.60  # share of the game the starter is responsible for
-HOME_RUNS_MULT = 1.08     # home-field edge applied to home expected runs (~54%)
-SP_IP_REGRESS = 50.0      # innings constant for regressing a starter's ERA
+PYTH_EXP = 1.83
+SP_INNINGS_WEIGHT = 0.60   # share of game the starter is responsible for
+HOME_RUNS_MULT = 1.08      # home-field edge on home expected runs (~54%)
+SP_IP_REGRESS = 50.0       # innings constant for regressing a starter's season ERA
+RECENT_IP_REGRESS = 25.0   # innings constant for the recent-form blend
+RECENT_WEIGHT = 0.25       # how much recent form pulls the season number
+
+# Multiplicative run park factors by home team id (~1.0 = neutral). Approximate,
+# directionally-standard values; affects expected TOTAL runs, not the moneyline.
+PARK_FACTORS = {
+    115: 1.15,  # COL Coors Field
+    113: 1.06,  # CIN Great American
+    111: 1.04,  # BOS Fenway
+    109: 1.03,  # ARI Chase
+    140: 1.02,  # TEX Globe Life
+    147: 1.02,  # NYY Yankee Stadium
+    110: 1.02,  # BAL Camden Yards
+    112: 1.01,  # CHC Wrigley
+    144: 1.01,  # ATL Truist
+    145: 1.01,  # CWS Rate Field
+    158: 1.00,  # MIL American Family
+    118: 1.00,  # KC Kauffman
+    116: 0.98,  # DET Comerica
+    146: 0.98,  # MIA loanDepot
+    121: 0.97,  # NYM Citi Field
+    119: 0.97,  # LAD Dodger Stadium
+    135: 0.96,  # SD Petco
+    137: 0.94,  # SF Oracle
+    136: 0.93,  # SEA T-Mobile
+}
 
 # ---- tiny TTL cache -------------------------------------------------------
-import time as _time
 _cache = {}
 def _cached(key, ttl, producer):
     now = _time.time()
@@ -60,22 +87,36 @@ def _f(v, default=0.0):
         return default
 
 
-# ---- team-level season stats (one call each, cached) ----------------------
+# ---- league-wide team stats (one call each, cached) -----------------------
+def _team_split_map(season, group, sit_code, fields):
+    """Generic league-wide statSplits fetch -> {team_id: {field: value}}."""
+    url = (f"{STATS_BASE}/teams/stats?sportId=1&season={season}"
+           f"&stats=statSplits&group={group}&sitCodes={sit_code}")
+    data = _get(url)
+    out = {}
+    for s in data.get("stats", [{}])[0].get("splits", []):
+        st = s["stat"]
+        out[s["team"]["id"]] = {k: _f(st.get(k)) for k in fields}
+    return out
+
+
 def _hitting_map(season):
     def fetch():
         data = _get(f"{STATS_BASE}/teams/stats?sportId=1&season={season}&group=hitting&stats=season")
         out = {}
         for s in data["stats"][0]["splits"]:
-            st = s["stat"]
-            g = _f(st.get("gamesPlayed"), 1) or 1
-            out[s["team"]["id"]] = {
-                "ops": _f(st.get("ops")), "avg": _f(st.get("avg")),
-                "obp": _f(st.get("obp")), "slg": _f(st.get("slg")),
-                "runs": int(_f(st.get("runs"))), "g": int(g),
-                "rpg": _f(st.get("runs")) / g,
-            }
+            st = s["stat"]; g = _f(st.get("gamesPlayed"), 1) or 1
+            out[s["team"]["id"]] = {"ops": _f(st.get("ops")), "rpg": _f(st.get("runs")) / g,
+                                    "runs": int(_f(st.get("runs"))), "g": int(g)}
         return out
     return _cached(("hit", season), 600, fetch)
+
+
+def _hitting_platoon(season):
+    def fetch():
+        return {"vl": _team_split_map(season, "hitting", "vl", ["ops"]),
+                "vr": _team_split_map(season, "hitting", "vr", ["ops"])}
+    return _cached(("hitplat", season), 600, fetch)
 
 
 def _pitching_map(season):
@@ -84,12 +125,15 @@ def _pitching_map(season):
         out = {}
         for s in data["stats"][0]["splits"]:
             st = s["stat"]
-            out[s["team"]["id"]] = {
-                "era": _f(st.get("era")), "whip": _f(st.get("whip")),
-                "runs_allowed": int(_f(st.get("runs"))),
-            }
+            out[s["team"]["id"]] = {"era": _f(st.get("era")), "whip": _f(st.get("whip"))}
         return out
     return _cached(("pit", season), 600, fetch)
+
+
+def _bullpen_map(season):
+    def fetch():
+        return _team_split_map(season, "pitching", "rp", ["era", "whip"])
+    return _cached(("bp", season), 600, fetch)
 
 
 def _records_map(season):
@@ -98,10 +142,8 @@ def _records_map(season):
         out = {}
         for rec in data.get("records", []):
             for t in rec.get("teamRecords", []):
-                out[t["team"]["id"]] = {
-                    "wins": int(t.get("wins", 0)), "losses": int(t.get("losses", 0)),
-                    "run_diff": int(t.get("runDifferential", 0)),
-                }
+                out[t["team"]["id"]] = {"wins": int(t.get("wins", 0)), "losses": int(t.get("losses", 0)),
+                                        "run_diff": int(t.get("runDifferential", 0))}
         return out
     return _cached(("rec", season), 600, fetch)
 
@@ -113,79 +155,115 @@ def _abbr_map(season):
     return _cached(("abbr", season), 86400, fetch)
 
 
+def _handedness(pids):
+    """Batch pitcher handedness -> {id: 'R'|'L'}."""
+    pids = [p for p in pids if p]
+    if not pids:
+        return {}
+    def fetch():
+        ids = ",".join(str(p) for p in sorted(pids))
+        d = _get(f"{STATS_BASE}/people?personIds={ids}")
+        return {p["id"]: p.get("pitchHand", {}).get("code", "R") for p in d.get("people", [])}
+    return _cached(("hand", tuple(sorted(pids))), 3600, fetch)
+
+
 def _pitcher_stats(pid, season):
+    """Season + recent (lastX) line for a starter."""
     if not pid:
         return None
     def fetch():
         try:
-            d = _get(f"{STATS_BASE}/people/{pid}/stats?stats=season&group=pitching&season={season}")
-            st = d["stats"][0]["splits"][0]["stat"]
-            return {
-                "era": _f(st.get("era")), "whip": _f(st.get("whip")),
-                "ip": _f(st.get("inningsPitched")), "k9": _f(st.get("strikeoutsPer9Inn")),
-            }
+            d = _get(f"{STATS_BASE}/people/{pid}/stats?stats=season,lastXGames"
+                     f"&group=pitching&season={season}&limit=5")
+            res = {}
+            for s in d.get("stats", []):
+                disp = s.get("type", {}).get("displayName")
+                sp = s.get("splits", [])
+                if not sp:
+                    continue
+                st = sp[0]["stat"]
+                rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")), "ip": _f(st.get("inningsPitched"))}
+                if disp == "season":
+                    res["season"] = rec
+                elif disp == "lastXGames":
+                    res["recent"] = rec
+            return res or None
         except Exception:
             return None
     return _cached(("sp", pid, season), 600, fetch)
 
 
-def _league_avgs(hit, pit):
-    n_h = len(hit) or 1
-    n_p = len(pit) or 1
+def _league_avgs(hit, pit, bp, hitplat):
+    n_h = len(hit) or 1; n_p = len(pit) or 1; n_b = len(bp) or 1
+    def mean(d, k):
+        vals = [t[k] for t in d.values() if t.get(k)]
+        return sum(vals) / len(vals) if vals else 0
     lg = {
-        "rpg": sum(t["rpg"] for t in hit.values()) / n_h,
-        "ops": sum(t["ops"] for t in hit.values()) / n_h,
-        "era": sum(t["era"] for t in pit.values()) / n_p,
-        "whip": sum(t["whip"] for t in pit.values()) / n_p,
+        "rpg": mean(hit, "rpg"), "ops": mean(hit, "ops"),
+        "era": mean(pit, "era"), "whip": mean(pit, "whip"),
+        "bp_era": mean(bp, "era"), "bp_whip": mean(bp, "whip"),
+        "ops_vl": mean(hitplat["vl"], "ops"), "ops_vr": mean(hitplat["vr"], "ops"),
     }
-    # guard against zeros
+    defaults = {"rpg": 4.5, "ops": 0.72, "era": 4.2, "whip": 1.30,
+                "bp_era": 4.0, "bp_whip": 1.28, "ops_vl": 0.72, "ops_vr": 0.72}
     for k, v in lg.items():
-        if v <= 0:
-            lg[k] = {"rpg": 4.5, "ops": 0.72, "era": 4.2, "whip": 1.30}[k]
+        if not v or v <= 0:
+            lg[k] = defaults[k]
     return lg
 
 
-# ---- per-team run-prevention estimate for one game ------------------------
+# ---- per-game component estimates -----------------------------------------
 def _starter_ra9(sp, lg):
-    """Run-prevention (RA/9) from a starter, using ERA + WHIP, regressed by IP."""
-    if not sp or sp["era"] <= 0:
+    """RA/9 from a starter: ERA+WHIP, regressed by IP, blended with recent form."""
+    if not sp or "season" not in sp or sp["season"]["era"] <= 0:
         return None
-    ip = sp["ip"]
-    rel = ip / (ip + SP_IP_REGRESS) if ip > 0 else 0.0
-    era_eff = rel * sp["era"] + (1 - rel) * lg["era"]
-    whip_ra9 = lg["era"] * (sp["whip"] / lg["whip"]) if sp["whip"] > 0 else era_eff
+    s = sp["season"]
+    rel_s = s["ip"] / (s["ip"] + SP_IP_REGRESS) if s["ip"] > 0 else 0.0
+    era_eff = rel_s * s["era"] + (1 - rel_s) * lg["era"]
+    whip_eff = rel_s * s["whip"] + (1 - rel_s) * lg["whip"]
+    r = sp.get("recent")
+    if r and r["ip"] > 0:
+        rel_r = r["ip"] / (r["ip"] + RECENT_IP_REGRESS)
+        recent_era = rel_r * r["era"] + (1 - rel_r) * era_eff
+        recent_whip = rel_r * r["whip"] + (1 - rel_r) * whip_eff
+        era_eff = (1 - RECENT_WEIGHT) * era_eff + RECENT_WEIGHT * recent_era
+        whip_eff = (1 - RECENT_WEIGHT) * whip_eff + RECENT_WEIGHT * recent_whip
+    whip_ra9 = lg["era"] * (whip_eff / lg["whip"]) if whip_eff > 0 else era_eff
     return 0.65 * era_eff + 0.35 * whip_ra9
 
 
-def _staff_ra9(team_pit, lg):
-    """Bullpen/overall staff run-prevention from team ERA + WHIP."""
-    era = team_pit["era"] or lg["era"]
-    whip_ra9 = lg["era"] * (team_pit["whip"] / lg["whip"]) if team_pit["whip"] > 0 else era
+def _bullpen_ra9(team_bp, lg):
+    era = team_bp.get("era") or lg["bp_era"]
+    whip = team_bp.get("whip") or lg["bp_whip"]
+    whip_ra9 = lg["era"] * (whip / lg["whip"]) if whip > 0 else era
     return 0.70 * era + 0.30 * whip_ra9
 
 
-def _offense_factor(team_hit, lg):
-    """Offense relative to league (>1 = better), blending runs/game and OPS."""
+def _pitching_factor(sp, team_bp, lg):
+    sp_ra9 = _starter_ra9(sp, lg)
+    bp_ra9 = _bullpen_ra9(team_bp, lg)
+    if sp_ra9 is None:
+        game_ra9 = bp_ra9
+    else:
+        game_ra9 = SP_INNINGS_WEIGHT * sp_ra9 + (1 - SP_INNINGS_WEIGHT) * bp_ra9
+    return game_ra9 / lg["era"] if lg["era"] else 1.0, sp_ra9, bp_ra9
+
+
+def _offense_factor(team_hit, ops_vs_hand, opp_hand, lg):
+    """Offense relative to league, platoon-adjusted for the starter's hand."""
     off_runs = team_hit["rpg"] / lg["rpg"] if lg["rpg"] else 1.0
-    off_ops = team_hit["ops"] / lg["ops"] if lg["ops"] else 1.0
+    lg_ops_hand = lg["ops_vl"] if opp_hand == "L" else lg["ops_vr"]
+    ops_overall = team_hit["ops"]
+    # OPS the offense actually faces: starter's hand for his innings, overall for the bullpen.
+    ops_eff = SP_INNINGS_WEIGHT * (ops_vs_hand or ops_overall) + (1 - SP_INNINGS_WEIGHT) * ops_overall
+    lg_ops_eff = SP_INNINGS_WEIGHT * lg_ops_hand + (1 - SP_INNINGS_WEIGHT) * lg["ops"]
+    off_ops = ops_eff / lg_ops_eff if lg_ops_eff else 1.0
     return 0.6 * off_runs + 0.4 * off_ops
 
 
-def _pitching_factor(sp, team_pit, lg):
-    """Opponent run-prevention for this game relative to league (>1 = worse D)."""
-    sp_ra9 = _starter_ra9(sp, lg)
-    staff_ra9 = _staff_ra9(team_pit, lg)
-    if sp_ra9 is None:
-        game_ra9 = staff_ra9                       # no probable starter listed
-    else:
-        game_ra9 = SP_INNINGS_WEIGHT * sp_ra9 + (1 - SP_INNINGS_WEIGHT) * staff_ra9
-    return game_ra9 / lg["era"] if lg["era"] else 1.0, sp_ra9, staff_ra9
-
-
-# ---- Kalshi price matching (unchanged shape) ------------------------------
+# ---- Kalshi price matching ------------------------------------------------
 def get_kalshi_prices():
-    markets = []
-    cursor = None
+    markets = []; cursor = None
     for _ in range(4):
         url = f"{kalshi.BASE}/markets?series_ticker=KXMLBGAME&status=open&limit=200"
         if cursor:
@@ -212,8 +290,7 @@ def get_kalshi_prices():
 
 
 def _match_price(kalshi_index, abbr_map, home_id, away_id, start_epoch):
-    home = abbr_map.get(home_id, "")
-    away = abbr_map.get(away_id, "")
+    home = abbr_map.get(home_id, ""); away = abbr_map.get(away_id, "")
     candidates = kalshi_index.get(frozenset({home, away}))
     if not candidates:
         return None, home, away
@@ -233,6 +310,7 @@ def _schedule(date, season):
             "game_pk": g.get("gamePk"),
             "home_id": home["team"]["id"], "home_name": home["team"]["name"],
             "away_id": away["team"]["id"], "away_name": away["team"]["name"],
+            "venue_id": g.get("venue", {}).get("id"),
             "home_sp_id": hp.get("id") if hp else None, "home_sp_name": hp.get("fullName") if hp else None,
             "away_sp_id": ap.get("id") if ap else None, "away_sp_name": ap.get("fullName") if ap else None,
             "start": g.get("gameDate"), "start_epoch": kalshi._parse_time(g.get("gameDate")),
@@ -243,43 +321,48 @@ def _schedule(date, season):
 
 def analyze_slate(date, season):
     schedule = _schedule(date, season)
-    hit = _hitting_map(season)
-    pit = _pitching_map(season)
-    rec = _records_map(season)
-    abbr_map = _abbr_map(season)
-    lg = _league_avgs(hit, pit)
+    hit = _hitting_map(season); pit = _pitching_map(season)
+    bp = _bullpen_map(season); hitplat = _hitting_platoon(season)
+    rec = _records_map(season); abbr_map = _abbr_map(season)
+    lg = _league_avgs(hit, pit, bp, hitplat)
     try:
         kalshi_index = get_kalshi_prices()
     except Exception:
         kalshi_index = {}
 
-    # Fetch all probable-starter stats in parallel (cached across reloads).
     sp_ids = {g[k] for g in schedule for k in ("home_sp_id", "away_sp_id") if g[k]}
+    hand = _handedness(sp_ids)
     sp_stats = {}
     if sp_ids:
         with ThreadPoolExecutor(max_workers=8) as ex:
             for pid, st in zip(sp_ids, ex.map(lambda i: _pitcher_stats(i, season), sp_ids)):
                 sp_stats[pid] = st
 
-    def team_hit(tid): return hit.get(tid, {"ops": lg["ops"], "rpg": lg["rpg"]})
-    def team_pit(tid): return pit.get(tid, {"era": lg["era"], "whip": lg["whip"]})
+    def th(tid): return hit.get(tid, {"ops": lg["ops"], "rpg": lg["rpg"]})
+    def tbp(tid): return bp.get(tid, {"era": lg["bp_era"], "whip": lg["bp_whip"]})
+    def tpit(tid): return pit.get(tid, {"era": lg["era"], "whip": lg["whip"]})
+    def ops_hand(tid, h):
+        m = hitplat["vl"] if h == "L" else hitplat["vr"]
+        return m.get(tid, {}).get("ops")
 
     games = []
     for g in schedule:
-        h_sp = sp_stats.get(g["home_sp_id"])
-        a_sp = sp_stats.get(g["away_sp_id"])
+        h_sp = sp_stats.get(g["home_sp_id"]); a_sp = sp_stats.get(g["away_sp_id"])
+        h_hand = hand.get(g["home_sp_id"], "R"); a_hand = hand.get(g["away_sp_id"], "R")
 
-        off_h = _offense_factor(team_hit(g["home_id"]), lg)
-        off_a = _offense_factor(team_hit(g["away_id"]), lg)
-        pit_a_factor, a_sp_ra9, a_staff = _pitching_factor(a_sp, team_pit(g["away_id"]), lg)
-        pit_h_factor, h_sp_ra9, h_staff = _pitching_factor(h_sp, team_pit(g["home_id"]), lg)
+        off_h = _offense_factor(th(g["home_id"]), ops_hand(g["home_id"], a_hand), a_hand, lg)
+        off_a = _offense_factor(th(g["away_id"]), ops_hand(g["away_id"], h_hand), h_hand, lg)
+        pit_a_factor, a_sp_ra9, a_bp_ra9 = _pitching_factor(a_sp, tbp(g["away_id"]), lg)
+        pit_h_factor, h_sp_ra9, h_bp_ra9 = _pitching_factor(h_sp, tbp(g["home_id"]), lg)
 
-        # Home offense faces away pitching, and vice-versa.
         er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT
         er_away = lg["rpg"] * off_a * pit_h_factor
         p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
         p_home = max(0.04, min(0.96, p_home))
         p_away = 1 - p_home
+
+        park = PARK_FACTORS.get(g["home_id"], 1.0)
+        exp_total = round((er_home + er_away) * park, 1)
 
         pick_home = p_home >= p_away
         pick_name = g["home_name"] if pick_home else g["away_name"]
@@ -295,16 +378,19 @@ def analyze_slate(date, season):
                 market_prob = round(pick_price, 1)
                 edge = round(pick_prob * 100 - pick_price, 1)
 
-        def sp_block(name, st):
-            if not st:
-                return {"name": name, "era": None, "whip": None, "ip": None}
-            return {"name": name, "era": round(st["era"], 2), "whip": round(st["whip"], 2),
-                    "ip": st["ip"], "k9": round(st.get("k9", 0), 1)}
+        def sp_block(name, st, h):
+            if not st or "season" not in st:
+                return {"name": name, "hand": h, "era": None, "whip": None, "ip": None,
+                        "recent_era": None, "recent_whip": None}
+            s = st["season"]; r = st.get("recent") or {}
+            return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
+                    "ip": s["ip"],
+                    "recent_era": round(r["era"], 2) if r.get("ip") else None,
+                    "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
+                    "recent_ip": r.get("ip")}
 
         rh = rec.get(g["home_id"], {}); ra = rec.get(g["away_id"], {})
-        th = team_hit(g["home_id"]); ta = team_hit(g["away_id"])
-        tph = team_pit(g["home_id"]); tpa = team_pit(g["away_id"])
-
+        bph = tbp(g["home_id"]); bpa = tbp(g["away_id"])
         games.append({
             "game_pk": g["game_pk"],
             "matchup": f"{g['away_name']} @ {g['home_name']}",
@@ -313,13 +399,18 @@ def analyze_slate(date, season):
             "start": g["start"], "status": g["status"],
             "p_home": round(p_home, 4), "p_away": round(p_away, 4),
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
-            "home_sp": sp_block(g["home_sp_name"], h_sp),
-            "away_sp": sp_block(g["away_sp_name"], a_sp),
-            "home_team": {"ops": round(th.get("ops", 0), 3), "rpg": round(th.get("rpg", 0), 2),
-                          "team_era": round(tph.get("era", 0), 2), "team_whip": round(tph.get("whip", 0), 2),
+            "exp_total": exp_total, "park_factor": park,
+            "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),
+            "away_sp": sp_block(g["away_sp_name"], a_sp, a_hand),
+            "home_team": {"ops": round(th(g['home_id']).get("ops", 0), 3),
+                          "ops_vs_opp_hand": round(ops_hand(g['home_id'], a_hand) or 0, 3),
+                          "rpg": round(th(g['home_id']).get("rpg", 0), 2),
+                          "bullpen_era": round(bph.get("era", 0), 2), "bullpen_whip": round(bph.get("whip", 0), 2),
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
-            "away_team": {"ops": round(ta.get("ops", 0), 3), "rpg": round(ta.get("rpg", 0), 2),
-                          "team_era": round(tpa.get("era", 0), 2), "team_whip": round(tpa.get("whip", 0), 2),
+            "away_team": {"ops": round(th(g['away_id']).get("ops", 0), 3),
+                          "ops_vs_opp_hand": round(ops_hand(g['away_id'], h_hand) or 0, 3),
+                          "rpg": round(th(g['away_id']).get("rpg", 0), 2),
+                          "bullpen_era": round(bpa.get("era", 0), 2), "bullpen_whip": round(bpa.get("whip", 0), 2),
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},
             "pick": pick_name, "pick_is_home": pick_home,
             "pick_prob": round(pick_prob, 4), "pick_pct": round(pick_prob * 100, 1),
