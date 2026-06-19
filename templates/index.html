@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kalshi Crypto Betting Helper</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>⚡ Kalshi Crypto Betting Helper</h1>
+    <p class="sub">Live model odds &amp; buy/sell signals for crypto price markets. Estimates, not guarantees — bet responsibly.</p>
+  </header>
+
+  <main>
+    <section class="card setup">
+      <h2>New market</h2>
+      <div class="grid">
+        <label>Coin
+          <select id="coin"></select>
+        </label>
+        <label>Condition
+          <select id="direction">
+            <option value="above">Price ABOVE</option>
+            <option value="below">Price BELOW</option>
+          </select>
+        </label>
+        <label>Threshold ($)
+          <input id="threshold" type="number" step="any" placeholder="e.g. 63000" />
+        </label>
+        <label>Window
+          <select id="window">
+            <option value="next15">Next 15-min mark</option>
+            <option value="nexthour">Top of next hour</option>
+            <option value="min15">In 15 minutes</option>
+            <option value="min60">In 60 minutes</option>
+            <option value="custom">Custom time…</option>
+          </select>
+        </label>
+        <label id="customWrap" class="hidden">Close time
+          <input id="customTime" type="datetime-local" />
+        </label>
+        <label>Kalshi YES price ¢ <span class="opt">(optional)</span>
+          <input id="yesPrice" type="number" step="any" min="0" max="100" placeholder="e.g. 47" />
+        </label>
+      </div>
+
+      <div id="preview" class="preview hidden"></div>
+
+      <div class="actions">
+        <button id="trackBtn" class="primary">Track this market</button>
+        <span id="setupMsg" class="msg"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row-between">
+        <h2>Tracked markets</h2>
+        <div id="statsBar" class="stats"></div>
+      </div>
+      <div id="markets" class="markets"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Model: geometric Brownian motion (drift + volatility from recent 1-min candles). Prices via Coinbase public API. Not financial advice.</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
