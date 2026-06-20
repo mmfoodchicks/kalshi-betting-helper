@@ -248,6 +248,58 @@ def api_backtest():
     return jsonify(result)
 
 
+@app.route("/api/recorder/status")
+def api_recorder_status():
+    import recorder
+    return jsonify(recorder.status())
+
+
+@app.route("/api/recorder/backtest")
+def api_recorder_backtest():
+    """Realized P&L of the edge strategy at real recorded Kalshi prices."""
+    import recorder
+    coin = request.args.get("coin") or None
+    timeframe = request.args.get("timeframe") or None
+    try:
+        return jsonify(recorder.backtest(coin=coin, timeframe=timeframe))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/bets", methods=["GET"])
+def api_list_bets():
+    return jsonify(store.list_bets())
+
+
+@app.route("/api/bets", methods=["POST"])
+def api_add_bet():
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        stake = float(d["stake"])
+        price = float(d["price_cents"]) if d.get("price_cents") not in (None, "", "null") else None
+    except (KeyError, ValueError, TypeError) as e:
+        return jsonify({"error": f"bad params: {e}"}), 400
+    kind = d.get("kind", "other")
+    bid = store.add_bet(kind, d.get("description", ""), d.get("side"),
+                        stake, price, d.get("notes"))
+    return jsonify({"id": bid}), 201
+
+
+@app.route("/api/bets/<int:bet_id>/settle", methods=["POST"])
+def api_settle_bet(bet_id):
+    d = request.get_json(force=True, silent=True) or {}
+    m = store.settle_bet(bet_id, d.get("status", ""))
+    if m is None:
+        return jsonify({"error": "bad status or bet not found"}), 400
+    return jsonify(m)
+
+
+@app.route("/api/bets/<int:bet_id>", methods=["DELETE"])
+def api_delete_bet(bet_id):
+    store.delete_bet(bet_id)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/stats")
 def api_stats():
     return jsonify(store.stats())
@@ -255,5 +307,7 @@ def api_stats():
 
 if __name__ == "__main__":
     import os
+    import recorder
+    recorder.start_background()  # passively record Kalshi quotes for the real backtest
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

@@ -13,6 +13,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="crypto">⚡ Crypto</button>
       <button class="tab" data-tab="baseball">⚾ Baseball</button>
+      <button class="tab" data-tab="ledger">📒 Ledger</button>
     </nav>
     <div class="settingsbar">
       💰 Bankroll $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:90px"/>
@@ -118,6 +119,15 @@
       <p class="sub" style="margin:4px 0 12px">Replays real price history: at each minute it predicts using only past data, then checks what actually happened. Honest proof of whether the model beats a coin flip — or doesn't.</p>
       <div id="btResults" class="markets"><div class="empty">Pick a coin &amp; horizon, then Run backtest.</div></div>
     </section>
+
+    <section class="card">
+      <div class="row-between">
+        <h2>📈 Live strategy tracker</h2>
+        <button id="stratBtn">Refresh</button>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">While the app runs it quietly records <b>real Kalshi prices</b>, then (once contracts settle) backtests betting the model's edge at those real prices — the true test of whether catching Kalshi mispricings makes money. Needs a few hours of running to gather resolved markets.</p>
+      <div id="stratResults" class="markets"><div class="empty">Loading…</div></div>
+    </section>
    </div><!-- /tab-crypto -->
 
    <div id="tab-baseball" class="hidden">
@@ -139,6 +149,51 @@
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
    </div><!-- /tab-baseball -->
+
+   <div id="tab-ledger" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>📒 Bet ledger</h2>
+        <div id="ledgerSummary" class="stats"></div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Log every real bet you place. Settle it Won/Lost and it tracks your actual profit, win rate, and ROI — the only scoreboard that matters.</p>
+      <div class="grid">
+        <label>Type
+          <select id="betKind">
+            <option value="crypto">Crypto</option>
+            <option value="baseball">Baseball</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>Description
+          <input id="betDesc" type="text" placeholder="e.g. BTC NO &gt; $63k 3pm" />
+        </label>
+        <label>Side
+          <input id="betSide" type="text" placeholder="YES / NO / team" style="width:90px" />
+        </label>
+        <label>Stake $
+          <input id="betStake" type="number" step="any" min="0" placeholder="100" />
+        </label>
+        <label>Price ¢ <span class="opt">(entry)</span>
+          <input id="betPrice" type="number" step="any" min="0" max="100" placeholder="40" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="betAddBtn" class="primary">Log bet</button>
+        <span id="betMsg" class="msg"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Open bets</h2>
+      <div id="openBets" class="markets"></div>
+    </section>
+
+    <section class="card">
+      <h2>Settled history</h2>
+      <div id="settledBets" class="markets"></div>
+    </section>
+   </div><!-- /tab-ledger -->
   </main>
 
   <footer>

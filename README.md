@@ -8,6 +8,12 @@ A live web app with two tabs:
   *buy the dip* — and tracks how accurate it's been.
 - **⚾ Baseball** — model win probabilities for today's MLB slate, matched to
   live Kalshi prices to find edges, plus **parlay combo suggestions**.
+- **📒 Ledger** — log every real bet you place and track actual profit, win
+  rate, and ROI across everything.
+
+While it runs, the app also **records real Kalshi prices** in the background and
+backtests the edge strategy against real settled outcomes (Crypto tab → *Live
+strategy tracker*) — the honest test of whether catching mispricings makes money.
 
 > ⚠️ This is a decision-support tool, not a crystal ball. The odds are model
 > estimates. Markets can and will move against the model. Never bet more than
@@ -172,6 +178,8 @@ threshold:
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
 | `baseball.py` | MLB expected-runs model (pitching, bullpen, platoon, lineups, park, weather) + parlay combos |
 | `props.py` | Derived props: run line, totals, and player/team hit odds |
+| `recorder.py` | Background Kalshi-quote recorder + real-outcome strategy backtest |
+| `backtest.py` | Model-only crypto backtest over historical prices |
 | `weather.py` | Game-time weather (NOAA + Open-Meteo) and run-environment factor |
 | `stadiums.py` | Stadium coordinates, roof type, and center-field orientation |
 | `odds.py` | The crypto odds generator + signal logic |

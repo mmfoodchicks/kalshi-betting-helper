@@ -61,6 +61,95 @@ def init_db():
             if col not in cols:
                 c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
 
+        # Unified bet ledger (real bets you place, crypto or baseball or other).
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS bets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at INTEGER NOT NULL,
+                kind TEXT,                -- 'crypto' | 'baseball' | 'other'
+                description TEXT,
+                side TEXT,
+                stake REAL,               -- dollars risked
+                price_cents REAL,         -- entry price (0..100) for payout math
+                status TEXT DEFAULT 'open',  -- 'open' | 'won' | 'lost' | 'void'
+                pnl REAL,                 -- realized profit/loss (dollars)
+                settled_at INTEGER,
+                notes TEXT
+            )""")
+
+
+# ---- Bet ledger -----------------------------------------------------------
+def add_bet(kind, description, side, stake, price_cents, notes=None):
+    with _lock, _conn() as c:
+        cur = c.execute(
+            """INSERT INTO bets (created_at, kind, description, side, stake, price_cents, notes)
+               VALUES (?,?,?,?,?,?,?)""",
+            (int(time.time()), kind, description, side, stake, price_cents, notes),
+        )
+        return cur.lastrowid
+
+
+def _bet_pnl(status, stake, price_cents):
+    if status == "won":
+        # A contract bought at price_cents returns 100; profit scales accordingly.
+        if price_cents and price_cents > 0:
+            return round(stake * (100.0 / price_cents - 1.0), 2)
+        return round(stake, 2)
+    if status == "lost":
+        return round(-stake, 2)
+    return 0.0  # void
+
+
+def settle_bet(bet_id, status):
+    if status not in ("won", "lost", "void", "open"):
+        return None
+    with _lock, _conn() as c:
+        row = c.execute("SELECT * FROM bets WHERE id=?", (bet_id,)).fetchone()
+        if not row:
+            return None
+        m = dict(row)
+        if status == "open":
+            pnl, settled = None, None
+        else:
+            pnl = _bet_pnl(status, m["stake"] or 0, m["price_cents"])
+            settled = int(time.time())
+        c.execute("UPDATE bets SET status=?, pnl=?, settled_at=? WHERE id=?",
+                  (status, pnl, settled, bet_id))
+        m.update(status=status, pnl=pnl, settled_at=settled)
+        return m
+
+
+def delete_bet(bet_id):
+    with _lock, _conn() as c:
+        c.execute("DELETE FROM bets WHERE id=?", (bet_id,))
+
+
+def list_bets():
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute("SELECT * FROM bets ORDER BY created_at DESC").fetchall()]
+    settled = [b for b in rows if b["status"] in ("won", "lost", "void")]
+    graded = [b for b in settled if b["status"] in ("won", "lost")]
+    staked = sum(b["stake"] or 0 for b in graded)
+    pnl = sum(b["pnl"] or 0 for b in settled)
+    wins = sum(1 for b in graded if b["status"] == "won")
+    by_kind = {}
+    for b in settled:
+        k = b["kind"] or "other"
+        d = by_kind.setdefault(k, {"pnl": 0.0, "n": 0})
+        d["pnl"] = round(d["pnl"] + (b["pnl"] or 0), 2)
+        d["n"] += 1
+    summary = {
+        "open": sum(1 for b in rows if b["status"] == "open"),
+        "settled": len(graded),
+        "wins": wins, "losses": len(graded) - wins,
+        "win_pct": round(100 * wins / len(graded), 1) if graded else None,
+        "total_staked": round(staked, 2),
+        "total_pnl": round(pnl, 2),
+        "roi_pct": round(100 * pnl / staked, 1) if staked else None,
+        "by_kind": by_kind,
+    }
+    return {"bets": rows, "summary": summary}
+
 
 def add_market(coin, threshold, direction, close_time, yes_price_cents,
                snap_prob_yes, snap_recommendation, snap_spot,

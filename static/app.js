@@ -611,10 +611,12 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "baseball" && !$("bbGames").dataset.loaded) {
         $("bbGames").dataset.loaded = "1";
         loadBaseball();
       }
+      if (tab === "ledger") loadLedger();
     });
   });
 }
@@ -667,6 +669,117 @@ async function runBacktest() {
   }
 }
 
+// ---- Live strategy tracker (real recorded Kalshi prices) ------------------
+async function loadStrategy() {
+  const box = $("stratResults");
+  try {
+    const [st, bt] = await Promise.all([
+      fetch("/api/recorder/status").then((r) => r.json()),
+      fetch("/api/recorder/backtest").then((r) => r.json()),
+    ]);
+    if (bt.error) { box.innerHTML = `<div class="empty">${bt.error}</div>`; return; }
+    let html = `<div class="kv">
+      <span>Quotes recorded <b>${(st.samples || 0).toLocaleString()}</b></span>
+      <span>Contracts seen <b>${st.tickers || 0}</b></span>
+      <span>Settled markets <b>${bt.resolved_markets || 0}</b></span>
+      ${bt.calibration_brier != null ? `<span>Model Brier <b>${bt.calibration_brier}</b> (coin-flip 0.25)</span>` : ""}
+    </div>`;
+    if (!bt.resolved_markets) {
+      html += `<div class="empty" style="margin-top:10px">No contracts have settled yet. Leave the app running — the recorder samples every 90s and this fills in as markets close.</div>`;
+    } else {
+      html += `<div class="teamhdr" style="margin-top:12px">Betting the model's edge at real Kalshi prices:</div>
+        <div class="calbox">
+          <div class="calrow" style="color:var(--muted)"><span>Min edge filter</span><span>Bets · Win% · ROI · ¢/contract</span></div>`;
+      for (const s of bt.sweep) {
+        if (!s.bets) { html += `<div class="calrow"><span>≥ ${s.min_edge}¢</span><span style="color:var(--muted)">no bets</span></div>`; continue; }
+        const roiCls = s.roi_pct >= 0 ? "ev pos" : "ev neg";
+        html += `<div class="calrow"><span>≥ ${s.min_edge}¢ edge</span>
+          <span>${s.bets} · ${s.win_pct}% · <b class="${roiCls}">${s.roi_pct >= 0 ? "+" : ""}${s.roi_pct}%</b> · ${s.pnl_per_contract_c >= 0 ? "+" : ""}${s.pnl_per_contract_c}¢</span></div>`;
+      }
+      html += `</div><div class="small" style="margin-top:8px">Positive ROI at higher edge filters = the mispricing strategy genuinely beats the house. Small samples are noisy; let it accumulate.</div>`;
+    }
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load the tracker.</div>`;
+  }
+}
+
+// ---- Bet ledger -----------------------------------------------------------
+function renderBet(b) {
+  const x = `<button class="x" title="Delete" onclick="delBet(${b.id})">✕</button>`;
+  if (b.status === "open") {
+    return `<div class="market">
+      <div class="top">
+        <div>
+          <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
+          <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "—"}</div>
+        </div>${x}
+      </div>
+      <div class="scanbtns">
+        <button class="track-mini primary-mini" onclick="settleBet(${b.id},'won')">Won</button>
+        <button class="track-mini" onclick="settleBet(${b.id},'lost')">Lost</button>
+        <button class="track-mini" onclick="settleBet(${b.id},'void')">Void</button>
+      </div>
+    </div>`;
+  }
+  const cls = b.status === "won" ? "ev pos" : b.status === "lost" ? "ev neg" : "";
+  const pnl = b.pnl != null ? `${b.pnl >= 0 ? "+" : ""}$${b.pnl.toFixed(2)}` : "";
+  return `<div class="market resolved">
+    <div class="top">
+      <div>
+        <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
+        <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "—"}</div>
+      </div>${x}
+    </div>
+    <div class="kv"><span>Result <b class="${cls}">${b.status.toUpperCase()}</b></span><span>P/L <b class="${cls}">${pnl}</b></span></div>
+  </div>`;
+}
+
+async function loadLedger() {
+  try {
+    const d = await (await fetch("/api/bets")).json();
+    const s = d.summary;
+    $("ledgerSummary").innerHTML = s.settled
+      ? `P/L <b class="${s.total_pnl >= 0 ? "ev pos" : "ev neg"}">${s.total_pnl >= 0 ? "+" : ""}$${s.total_pnl.toFixed(2)}</b> · ROI <b>${s.roi_pct}%</b> · ${s.wins}-${s.losses} (${s.win_pct}%)`
+      : `<span>No settled bets yet</span>`;
+    const open = d.bets.filter((b) => b.status === "open");
+    const settled = d.bets.filter((b) => b.status !== "open");
+    $("openBets").innerHTML = open.length ? open.map(renderBet).join("") : `<div class="empty">No open bets. Log one above.</div>`;
+    $("settledBets").innerHTML = settled.length ? settled.map(renderBet).join("") : `<div class="empty">Nothing settled yet.</div>`;
+  } catch (e) { /* retry next time */ }
+}
+
+window.settleBet = async (id, status) => {
+  await fetch(`/api/bets/${id}/settle`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  loadLedger();
+};
+window.delBet = async (id) => {
+  await fetch(`/api/bets/${id}`, { method: "DELETE" });
+  loadLedger();
+};
+async function addBet() {
+  const stake = parseFloat($("betStake").value);
+  const msg = $("betMsg");
+  if (!stake) { msg.textContent = "Enter a stake."; return; }
+  const body = {
+    kind: $("betKind").value,
+    description: $("betDesc").value,
+    side: $("betSide").value,
+    stake,
+    price_cents: $("betPrice").value || null,
+  };
+  await fetch("/api/bets", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  $("betDesc").value = ""; $("betSide").value = ""; $("betStake").value = ""; $("betPrice").value = "";
+  msg.textContent = "Logged ✓"; setTimeout(() => (msg.textContent = ""), 1200);
+  loadLedger();
+}
+
 // ---- Wire up --------------------------------------------------------------
 async function init() {
   const coins = await (await fetch("/api/coins")).json();
@@ -706,6 +819,12 @@ async function init() {
   // Backtest setup
   $("btCoin").innerHTML = meta.coins.map((c) => `<option>${c}</option>`).join("");
   $("btBtn").addEventListener("click", runBacktest);
+
+  // Live strategy tracker + ledger
+  $("stratBtn").addEventListener("click", loadStrategy);
+  $("betAddBtn").addEventListener("click", addBet);
+  loadStrategy();
+  setInterval(() => { if (!$("tab-crypto").classList.contains("hidden")) loadStrategy(); }, 60000);
 
   // Baseball setup
   setupTabs();
