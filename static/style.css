@@ -48,7 +48,15 @@ main {
 .calrow { display: flex; justify-content: space-between; gap: 10px; font-size: 0.83rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .calrow b { color: var(--text); }
 
-.tabs { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.tabs {
+  display: flex; justify-content: center; gap: 8px; margin-top: 14px;
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg); padding: 10px 0; flex-wrap: wrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+.catrow { display: flex; flex-wrap: wrap; gap: 10px; }
+.catrow label { flex-direction: row; align-items: center; gap: 5px; color: var(--text); font-size: 0.88rem; cursor: pointer; }
+.catrow input { width: auto; }
 .tab {
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
   padding: 9px 20px; border-radius: 999px; cursor: pointer; font-size: 0.95rem;

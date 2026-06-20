@@ -19,6 +19,7 @@ SPORTS = {
     "tennis": {"label": "🎾 Tennis (ATP)", "series": ["KXATPMATCH"]},
     "golf":   {"label": "⛳ Golf (PGA H2H)", "series": ["KXPGAH2H"]},
     "ufc":    {"label": "🥊 UFC", "series": ["KXUFCFIGHT"]},
+    "wnba":   {"label": "🏀 WNBA", "series": ["KXWNBAGAME"]},
 }
 
 

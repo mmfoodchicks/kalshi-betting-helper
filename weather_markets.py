@@ -20,6 +20,7 @@ your own read on top.
 import math
 import datetime
 import json
+import statistics
 import urllib.request
 import time as _time
 
@@ -95,16 +96,48 @@ def _om_data(lat, lon):
     return out
 
 
-def _model_high(om, target_date):
+def _ensemble_spread(lat, lon):
+    """{date: stdev of several models' forecast highs} — data-driven uncertainty."""
+    key = ("ens", round(lat, 2), round(lon, 2))
+    hit = _cache.get(key)
+    if hit and _time.time() - hit[0] < 1800:
+        return hit[1]
+    spreads = {}
+    url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitude={lon:.4f}"
+           "&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=7"
+           "&models=gfs_seamless,ecmwf_ifs04,icon_seamless,gem_seamless")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "kalshi-betting-helper/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            d = json.loads(r.read())
+        dl = d.get("daily", {})
+        dates = dl.get("time", [])
+        cols = [dl[k] for k in dl if k.startswith("temperature_2m_max")]
+        for i, date in enumerate(dates):
+            vals = [c[i] for c in cols if i < len(c) and c[i] is not None]
+            if len(vals) >= 2:
+                spreads[date] = statistics.pstdev(vals)
+    except Exception:
+        spreads = {}
+    _cache[key] = (_time.time(), spreads)
+    return spreads
+
+
+def _model_high(om, target_date, spread=None):
     """Return {mean, sigma, forecast_high, high_so_far, running_delta} or None."""
     fc = om["daily_highs"].get(target_date)
     if fc is None:
         return None
     days_out = (datetime.date.fromisoformat(target_date)
                 - datetime.date.fromisoformat(om["today"])).days
+    # Model disagreement (ensemble spread) is a real, data-driven uncertainty.
+    ens = (spread or {}).get(target_date)
     if days_out > 0:                       # future day: forecast only
-        return {"mean": round(fc, 1), "sigma": min(6.0, 2.0 + 1.2 * days_out),
-                "forecast_high": fc, "high_so_far": None, "running_delta": None}
+        base_sigma = min(6.0, 2.0 + 1.2 * days_out)
+        sigma = max(base_sigma, ens) if ens else base_sigma
+        return {"mean": round(fc, 1), "sigma": round(sigma, 2),
+                "forecast_high": fc, "high_so_far": None, "running_delta": None,
+                "ensemble_spread": round(ens, 1) if ens else None}
     if days_out < 0:
         return None
 
@@ -118,10 +151,13 @@ def _model_high(om, target_date):
         mean = max(mean, hsf)             # high can't end below what's happened
     hours_to_peak = max(0, 15 - om["cur_hour"])
     sigma = max(1.0, min(4.0, 1.0 + 0.45 * hours_to_peak))
+    if ens:
+        sigma = max(sigma, ens)
     if hsf is not None and hsf >= fc:     # already at/over forecast -> nearly locked
         sigma = max(0.8, sigma * 0.6)
     return {"mean": round(mean, 1), "sigma": round(sigma, 2), "forecast_high": fc,
-            "high_so_far": hsf, "running_delta": round(running, 1)}
+            "high_so_far": hsf, "running_delta": round(running, 1),
+            "ensemble_spread": round(ens, 1) if ens else None}
 
 
 def _fair(strike_type, floor, cap, mean, sigma):
@@ -143,6 +179,7 @@ def get_city(city_key):
         f"{kalshi.BASE}/markets?series_ticker={cfg['series']}&status=open&limit=100")
     markets = data.get("markets", [])
     om = _om_data(cfg["lat"], cfg["lon"])
+    spread = _ensemble_spread(cfg["lat"], cfg["lon"]) if om else {}
     cur = (om or {}).get("current", {})
     current = {
         "temp_f": cur.get("temperature_2m"), "dew_point_f": cur.get("dew_point_2m"),
@@ -156,7 +193,7 @@ def get_city(city_key):
         d = _parse_date(m.get("ticker", ""))
         if not d:
             continue
-        model = _model_high(om, d.isoformat()) if om else None
+        model = _model_high(om, d.isoformat(), spread) if om else None
         ev = events.setdefault(d.isoformat(), {"date": d.isoformat(), "model": model,
                                                "outcomes": []})
         yes_ask = kalshi._cents(m.get("yes_ask_dollars"))

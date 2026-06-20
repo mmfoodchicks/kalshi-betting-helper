@@ -373,6 +373,34 @@ def api_weather_city(city):
         return jsonify({"error": f"fetch failed: {e}"}), 502
 
 
+@app.route("/api/combine/meta")
+def api_combine_meta():
+    import combine
+    return jsonify(combine.CATEGORIES)
+
+
+@app.route("/api/combine")
+def api_combine():
+    """Cross-category parlay (MLB + daily crypto + UFC/tennis/golf/soccer/WNBA),
+    tuned to a target per-leg confidence."""
+    import datetime as _dt
+    import combine
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = date[:4]
+    cats = [c for c in (request.args.get("cats", "") or "").split(",") if c]
+    if not cats:
+        cats = list(combine.CATEGORIES.keys())
+    try:
+        legs = int(request.args.get("legs", 3))
+        target = float(request.args.get("target", 65))
+    except ValueError:
+        return jsonify({"error": "bad legs/target"}), 400
+    try:
+        return jsonify(combine.build(cats, legs, target, date, season))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/baseball/parlay")
 def api_baseball_parlay():
     """Build an N-leg parlay tuned to a target per-leg confidence, picking the

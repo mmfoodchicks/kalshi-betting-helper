@@ -607,7 +607,11 @@ window.buildParlay = async () => {
 };
 
 function renderCombo(c, tag, extraCls) {
-  const abbr = (mu) => mu ? mu.split(" @ ").map((t) => t.split(" ").pop()).join("@") : "";
+  const abbr = (mu) => {
+    if (!mu) return "";
+    if (mu.includes(" @ ")) return mu.split(" @ ").map((t) => t.split(" ").pop()).join("@");
+    return mu.length <= 5 ? mu : "";  // short tags (e.g. coin) ok; long titles skip
+  };
   const legs = c.legs.map((l) => {
     const typeTag = l.type ? `<span class="legtag">${l.type}</span> ` : "";
     const liveDot = l.live ? `🔴 ` : "";
@@ -706,7 +710,9 @@ function setupTabs() {
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
+      $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
+      if (tab === "combine") loadCombineCats();
       if (tab === "baseball" && !$("bbGames").dataset.loaded) {
         $("bbGames").dataset.loaded = "1";
         loadBaseball();
@@ -1003,6 +1009,43 @@ async function loadWeather() {
   }
 }
 
+// ---- Mega combo maker (cross-category) ------------------------------------
+let combineCatsLoaded = false;
+async function loadCombineCats() {
+  if (combineCatsLoaded) return;
+  const meta = await (await fetch("/api/combine/meta")).json();
+  $("combineCats").innerHTML = Object.entries(meta).map(([k, v]) =>
+    `<label><input type="checkbox" value="${k}" ${["mlb", "crypto"].includes(k) ? "checked" : ""}/> ${v}</label>`
+  ).join("");
+  combineCatsLoaded = true;
+}
+async function buildCombine() {
+  const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
+  const out = $("combineOut");
+  if (!cats.length) { out.innerHTML = `<div class="empty">Pick at least one category.</div>`; return; }
+  const n = parseInt($("cmbN").value, 10) || 4;
+  const t = parseInt($("cmbTarget").value, 10) || 65;
+  const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
+  out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
+  try {
+    const d = await (await fetch(`/api/combine?cats=${cats.join(",")}&legs=${n}&target=${t}&date=${date}`)).json();
+    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    let html = "";
+    if (d.counts && Object.keys(d.counts).length)
+      html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
+    if (d.combo) {
+      const note = d.combo.legs_meeting_target != null
+        ? `<div class="small">${d.combo.legs_meeting_target}/${d.combo.n_legs} legs meet the ${t}% target.</div>` : "";
+      html += renderCombo(d.combo, `🎰 ${d.combo.n_legs}-leg mega parlay (≥${t}%)`, "hl prop") + note;
+    } else {
+      html += `<div class="empty">No legs available for those categories right now.</div>`;
+    }
+    out.innerHTML = html;
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Build failed — try again.</div>`;
+  }
+}
+
 // ---- Baseball model track record ------------------------------------------
 async function loadBaseballRecord() {
   try {
@@ -1079,6 +1122,9 @@ async function init() {
   // Weather setup
   $("wxBtn").addEventListener("click", loadWeather);
   $("wxCity").addEventListener("change", loadWeather);
+
+  // Mega combo maker
+  $("cmbBtn").addEventListener("click", buildCombine);
 
   refreshMarkets();
   // Auto-refresh ticks skip while the user is typing / has a form open.
