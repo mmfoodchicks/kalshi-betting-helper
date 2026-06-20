@@ -579,7 +579,8 @@ function renderGame(g) {
 // Combo maker state + builder.
 let bbCombosData = null;
 let parlayLegs = 3;
-window.buildParlay = () => {
+let parlayTarget = 65;
+window.buildParlay = async () => {
   const inp = $("parlayN");
   const out = $("parlayOut");
   if (!inp || !out || !bbCombosData) return;
@@ -588,17 +589,30 @@ window.buildParlay = () => {
   if (isNaN(n) || n < 2) n = 2;
   if (n > maxN) n = maxN;
   parlayLegs = n;
-  const combo = (bbCombosData.by_size || {})[String(n)];
-  out.innerHTML = combo
-    ? renderCombo(combo, `🎯 Highest-confidence ${n}-leg parlay`, "hl prop")
-    : `<div class="small">Not enough games for a ${n}-leg parlay.</div>`;
+  const tEl = $("parlayTarget");
+  let t = tEl ? parseInt(tEl.value, 10) : 65;
+  if (isNaN(t)) t = 65;
+  parlayTarget = t;
+  const date = $("bbDate").value;
+  out.innerHTML = `<div class="small">Tuning lines…</div>`;
+  try {
+    const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}`)).json();
+    if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a ${n}-leg parlay at ${t}%.</div>`; return; }
+    const note = d.combo.legs_meeting_target != null
+      ? `<div class="small">${d.combo.legs_meeting_target}/${d.combo.n_legs} legs meet the ${t}% target; lines auto-tuned for the rest.</div>` : "";
+    out.innerHTML = renderCombo(d.combo, `🎯 ${n}-leg parlay tuned to ${t}%+`, "hl prop") + note;
+  } catch (e) {
+    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+  }
 };
 
 function renderCombo(c, tag, extraCls) {
+  const abbr = (mu) => mu ? mu.split(" @ ").map((t) => t.split(" ").pop()).join("@") : "";
   const legs = c.legs.map((l) => {
     const typeTag = l.type ? `<span class="legtag">${l.type}</span> ` : "";
     const liveDot = l.live ? `🔴 ` : "";
-    return `<li>${liveDot}${typeTag}${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`;
+    const game = l.matchup ? ` <span class="leggame">${abbr(l.matchup)}</span>` : "";
+    return `<li>${liveDot}${typeTag}${l.pick}${game} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`;
   }).join("");
   let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
               <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
@@ -652,8 +666,10 @@ async function loadBaseball(silent) {
       const def = Math.min(parlayLegs, maxN);
       html += `<div class="combomaker">
         🎯 <b>Combo maker:</b> build a
-        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:54px" onchange="buildParlay()"/>-leg parlay (max ${maxN})
+        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:50px"/>-leg parlay,
+        each leg ≥ <input id="parlayTarget" type="number" min="50" max="97" value="${parlayTarget}" style="width:54px"/>% likely
         <button class="track-mini primary-mini" onclick="buildParlay()">Build</button>
+        <div class="small" style="margin-top:4px">It auto-tunes each line (1+/2+ hits, runs total, ML vs ±1.5) to hit your target — lower the % for a bigger payout, raise it to play safe.</div>
         <div id="parlayOut"></div>
       </div>`;
     }
@@ -950,7 +966,13 @@ async function loadWeather() {
     const d = await (await fetch("/api/weather/" + city)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${d.city} temperature markets right now.</div>`; return; }
-    box.innerHTML = d.events.map((ev) => {
+    const cur = d.current;
+    const curBox = cur ? `<div class="volbox">
+      <div class="sellhead"><span class="sellaction">🌡️ ${d.city} — live now</span>
+        <span class="small">${cur.temp_f != null ? `<b>${cur.temp_f}°F</b>` : ""}${cur.high_so_far_f != null ? ` · high so far <b>${cur.high_so_far_f}°</b>` : ""}</span></div>
+      <div class="small">dew point <b>${cur.dew_point_f ?? "—"}°</b> · humidity <b>${cur.humidity_pct ?? "—"}%</b> · wind <b>${cur.wind_mph ?? "—"} mph</b> · pressure <b>${cur.pressure_hpa ?? "—"} hPa</b></div>
+    </div>` : "";
+    box.innerHTML = curBox + d.events.map((ev) => {
       const rows = ev.outcomes.map((o) => {
         const ec = o.edge_cents;
         const cls = ec == null ? "" : ec >= 7 ? "ev pos" : ec <= -7 ? "ev neg" : "";
@@ -961,11 +983,18 @@ async function loadWeather() {
           </div>
         </div>`;
       }).join("");
+      const m = ev.model || {};
+      const adj = (m.mean != null && m.forecast_high != null && Math.abs(m.mean - m.forecast_high) >= 0.5)
+        ? ` <span style="color:var(--accent)">(adj ${m.mean}°)</span>` : "";
+      const detail = m.mean != null
+        ? `<div class="small">Model high <b>${m.mean}°</b> (forecast ${m.forecast_high}°${m.running_delta != null && Math.abs(m.running_delta) >= 0.5 ? `, running ${m.running_delta > 0 ? "+" : ""}${m.running_delta}° vs schedule` : ""}${m.high_so_far != null ? `, high so far ${m.high_so_far}°` : ""}, ±${m.sigma}° uncertainty)</div>`
+        : "";
       return `<div class="bbgame">
         <div class="top">
           <div class="matchup">${d.city} — high temp ${ev.date}</div>
-          <div class="small" style="text-align:right">NOAA forecast high<br><b style="color:var(--text);font-size:1.1rem">${ev.forecast_high != null ? ev.forecast_high + "°F" : "n/a"}</b></div>
+          <div class="small" style="text-align:right">forecast high<br><b style="color:var(--text);font-size:1.1rem">${m.forecast_high != null ? m.forecast_high + "°F" : "n/a"}</b>${adj}</div>
         </div>
+        ${detail}
         <div class="sportouts">${rows}</div>
       </div>`;
     }).join("");

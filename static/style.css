@@ -123,6 +123,7 @@ main {
   border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.9rem;
 }
 .combomaker input { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 6px; }
+.leggame { font-size: 0.72rem; color: var(--accent); background: var(--card); border-radius: 4px; padding: 0 4px; }
 
 .combo .legs li { margin: 4px 0; }
 .legtag {

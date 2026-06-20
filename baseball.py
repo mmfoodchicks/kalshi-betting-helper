@@ -615,6 +615,7 @@ def analyze_slate(date, season):
             ohf = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
             hit_away = props_mod.hit_props(lu["away"], ohf)
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
+                      "totals_ladder": gp["totals_ladder"],
                       "model_total": gp["model_total"],
                       "hits_home": hit_home, "hits_away": hit_away}
 
@@ -783,6 +784,73 @@ def _final_winners(date):
             away = g["teams"]["away"]["team"]["name"]
             out[g.get("gamePk")] = home if hr > ar else away
     return out
+
+
+def _game_variants(g):
+    """Every line variant for a game, so the combo maker can tune for confidence.
+
+    Includes moneyline, run line (±1.5), the full totals ladder (over/under at
+    each line), and the top hitters' 1+/2+ hit props. Returns leg dicts with a
+    probability so the builder can pick the line nearest a target confidence.
+    """
+    out = []
+    state = _game_state(g)
+    if state == "Final":
+        return out
+    live = state == "Live"
+    pk, mu = g["game_pk"], g["matchup"]
+
+    def add(typ, label, prob, price=None):
+        if 0.02 <= prob <= 0.995:
+            out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
+                        "prob": prob, "price_cents": price, "live": live})
+
+    if g.get("pick_prob") is not None:
+        add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"))
+    p = g.get("props") or {}
+    rl = p.get("run_line")
+    if rl:
+        add("Run line", f"{rl['favorite']} −1.5 (win by 2+)", rl["fav_by2_pct"] / 100.0)
+        add("Run line", f"{rl['underdog']} +1.5 (lose by ≤1 or win)", rl["dog_plus15_pct"] / 100.0)
+    for t in p.get("totals_ladder", []):
+        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
+        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
+    for key in ("hits_away", "hits_home"):
+        h = p.get(key)
+        if h and h.get("batters"):
+            for b in h["batters"][:2]:
+                add("Hit", f"{b['name']} 1+ hit", b["hit1_pct"] / 100.0)
+                add("Hit", f"{b['name']} 2+ hits", b["hit2_pct"] / 100.0)
+    return out
+
+
+def build_target_parlay(games, n_legs, target_pct):
+    """Build an n-leg parlay where each leg is tuned to ~the target confidence.
+
+    For each game we pick the variant that meets the target with the best payout
+    (the lowest probability that's still >= target); if none meet it, the highest
+    available. Then we take the n games whose chosen legs are most reliable.
+    """
+    target = max(0.05, min(0.97, target_pct / 100.0))
+    chosen = []  # one best variant per game
+    for g in games:
+        variants = _game_variants(g)
+        if not variants:
+            continue
+        meeting = [v for v in variants if v["prob"] >= target]
+        pick = (min(meeting, key=lambda v: v["prob"]) if meeting
+                else max(variants, key=lambda v: v["prob"]))
+        pick["meets_target"] = bool(meeting)
+        chosen.append(pick)
+    if len(chosen) < 2:
+        return None
+    # Prefer legs that meet the target, then the most reliable, for the N slots.
+    chosen.sort(key=lambda v: (v["meets_target"], v["prob"]), reverse=True)
+    n = max(2, min(n_legs, len(chosen)))
+    item = _combo_item(chosen[:n])
+    item["target_pct"] = round(target * 100, 1)
+    item["legs_meeting_target"] = sum(1 for v in chosen[:n] if v["meets_target"])
+    return item
 
 
 def grade_picks():

@@ -64,6 +64,15 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         totals.append({"line": ln, "over_pct": over, "under_pct": under})
 
+    # Fuller ladder so the combo maker can tune the line up/down for confidence.
+    base = round(model_total)
+    ladder = []
+    for ln in [base - 4.5 + i for i in range(9)]:
+        if ln < 0.5:
+            continue
+        over, under = over_under(ln)
+        ladder.append({"line": ln, "over_pct": over, "under_pct": under})
+
     fav_is_home = er_home >= er_away
     return {
         "run_line": {
@@ -74,6 +83,7 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         },
         "model_total": round(model_total, 1),
         "totals": totals,
+        "totals_ladder": ladder,
         "win_pct": {"home": round(p_home_win * 100, 1), "away": round(p_away_win * 100, 1)},
     }
 

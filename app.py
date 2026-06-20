@@ -373,6 +373,26 @@ def api_weather_city(city):
         return jsonify({"error": f"fetch failed: {e}"}), 502
 
 
+@app.route("/api/baseball/parlay")
+def api_baseball_parlay():
+    """Build an N-leg parlay tuned to a target per-leg confidence, picking the
+    optimal line (hits 1+/2+, run total, moneyline/spread) for each leg."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        legs = int(request.args.get("legs", 3))
+        target = float(request.args.get("target", 65))
+    except ValueError:
+        return jsonify({"error": "bad legs/target"}), 400
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    combo = baseball.build_target_parlay(games, legs, target)
+    return jsonify({"combo": combo})
+
+
 @app.route("/api/baseball/record")
 def api_baseball_record():
     try:
