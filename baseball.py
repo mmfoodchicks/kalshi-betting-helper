@@ -369,6 +369,47 @@ def _opp_hit_factor(opp_sp, opp_bp, lg):
     return max(0.85, min(1.15, whip / lg["whip"] if lg["whip"] else 1.0))
 
 
+def _live_linescore(game_pk):
+    """Current outs + baserunners for a live game (cached briefly)."""
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/game/{game_pk}/linescore")
+            off = d.get("offense", {})
+            lt = d.get("teams", {})
+            return {
+                "inning": d.get("currentInning"), "state": d.get("inningState"),
+                "outs": d.get("outs") or 0,
+                "on1": bool(off.get("first")), "on2": bool(off.get("second")),
+                "on3": bool(off.get("third")),
+                "home_runs": lt.get("home", {}).get("runs"),
+                "away_runs": lt.get("away", {}).get("runs"),
+            }
+        except Exception:
+            return None
+    return _cached(("ls", game_pk), 20, fetch)
+
+
+def _outs_remaining(inning, state, outs, home_runs, away_runs):
+    """Outs each team has left to bat in regulation (home bats bottom)."""
+    N = inning or 9
+    s = (state or "").capitalize()
+    full_rem = max(0, 9 - N)            # complete future innings before the 9th
+    if s == "Top":                      # away batting now; home bats this inning after
+        away_cur, home_cur = 3 - outs, 3
+    elif s == "Middle":                 # away done; home upcoming this inning
+        away_cur, home_cur = 0, 3
+    elif s == "Bottom":                 # home batting now
+        away_cur, home_cur = 0, 3 - outs
+    else:                               # End of inning
+        away_cur, home_cur = 0, 0
+    # Home doesn't bat in the bottom of the 9th+ if already ahead.
+    if N >= 9 and s in ("Middle", "End") and (home_runs or 0) > (away_runs or 0):
+        home_cur = 0
+    away_rem = full_rem * 3 + max(0, away_cur)
+    home_rem = full_rem * 3 + max(0, home_cur)
+    return home_rem, away_rem
+
+
 def _weather_block(winfo):
     if not winfo or not winfo.get("wx"):
         s = winfo.get("stadium") if winfo else None
@@ -469,6 +510,14 @@ def analyze_slate(date, season):
         for g, w in zip(schedule, ex.map(fetch_weather, schedule)):
             weather_by_pk[g["game_pk"]] = w
 
+    # Live game state (outs, baserunners, score) for the in-game win model.
+    live_pks = [g["game_pk"] for g in schedule if (g.get("live") or {}).get("state") == "Live"]
+    linescores = {}
+    if live_pks:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for pk, ls in zip(live_pks, ex.map(_live_linescore, live_pks)):
+                linescores[pk] = ls
+
     def th(tid): return hit.get(tid, {"ops": lg["ops"], "rpg": lg["rpg"]})
     def tbp(tid): return bp.get(tid, {"era": lg["bp_era"], "whip": lg["bp_whip"]})
     def tpit(tid): return pit.get(tid, {"era": lg["era"], "whip": lg["whip"]})
@@ -506,6 +555,26 @@ def analyze_slate(date, season):
         winfo = weather_by_pk.get(g["game_pk"]) or {}
         wx_factor = winfo.get("factor", 1.0)
         exp_total = round((er_home + er_away) * park * wx_factor, 1)
+
+        # In-game win probability for games in progress: blend the current score
+        # and game state with each team's expected remaining runs.
+        in_game = None
+        ls = linescores.get(g["game_pk"])
+        if ls and ls.get("home_runs") is not None and ls.get("away_runs") is not None:
+            home_rem, away_rem = _outs_remaining(ls["inning"], ls["state"], ls["outs"],
+                                                 ls["home_runs"], ls["away_runs"])
+            rate_h, rate_a = er_home / 27.0, er_away / 27.0
+            half = (ls["state"] or "").lower()
+            base_bonus = 0.35 * ls["on1"] + 0.55 * ls["on2"] + 0.8 * ls["on3"]
+            exp_rem_h = home_rem * rate_h + (base_bonus if half == "bottom" else 0)
+            exp_rem_a = away_rem * rate_a + (base_bonus if half == "top" else 0)
+            p_home = props_mod.in_game_win_prob(ls["home_runs"], ls["away_runs"], exp_rem_h, exp_rem_a)
+            p_home = max(0.01, min(0.99, p_home))
+            p_away = 1 - p_home
+            in_game = {"home_score": ls["home_runs"], "away_score": ls["away_runs"],
+                       "inning": ls["inning"], "state": ls["state"], "outs": ls["outs"],
+                       "on_base": [b for b, on in (("1B", ls["on1"]), ("2B", ls["on2"]),
+                                                   ("3B", ls["on3"])) if on]}
 
         pick_home = p_home >= p_away
         pick_name = g["home_name"] if pick_home else g["away_name"]
@@ -551,6 +620,7 @@ def analyze_slate(date, season):
 
         games.append({
             "live": g["live"],
+            "in_game": in_game,
             "props": game_props,
             "game_pk": g["game_pk"],
             "matchup": f"{g['away_name']} @ {g['home_name']}",
@@ -611,6 +681,8 @@ def _candidate_legs(games, live_only=False):
 
         if g["pick_prob"] >= 0.5:
             add("ML", f"{g['pick']} to win", g["pick_prob"], g["pick_price_cents"])
+        if live:
+            continue  # mid-game: props (totals/hits) are stale, so ML only
         p = g.get("props") or {}
         rl = p.get("run_line")
         if rl:

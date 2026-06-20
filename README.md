@@ -115,6 +115,11 @@ Pick a date and **Load slate**. For every MLB game that day it shows:
 - **Live score + status** for every game (scheduled / 🔴 live with inning /
   final), which **auto-refreshes every 20s** while the tab is open — like the
   crypto tab.
+- **In-game win probability** for games in progress — instead of the pre-game
+  number, live games are re-rated from the **current score, inning, outs, and
+  baserunners**: each team's expected remaining runs (outs left × scoring rate +
+  base/out state) feeds a Poisson win-probability model. The live combos use
+  these updated numbers.
 - A **📊 Props & odds** panel (expandable) per game, derived from the run model:
   - **Run line / win-by-margin** — chance the favorite wins by 2+ (−1.5) and the
     underdog stays within 1 (+1.5).

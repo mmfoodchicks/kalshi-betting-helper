@@ -78,6 +78,26 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
     }
 
 
+def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
+    """P(home wins) given the current score and each side's expected remaining
+    runs, modeling remaining runs as independent Poisson. Ties go to extra
+    innings with a small home edge."""
+    ph = _poisson_pmf(max(0.0001, rem_home_mean))
+    pa = _poisson_pmf(max(0.0001, rem_away_mean))
+    p_home = p_away = p_tie = 0.0
+    for i, phi in enumerate(ph):
+        for j, paj in enumerate(pa):
+            pr = phi * paj
+            h, a = home_cur + i, away_cur + j
+            if h > a:
+                p_home += pr
+            elif a > h:
+                p_away += pr
+            else:
+                p_tie += pr
+    return p_home + p_tie * 0.52
+
+
 def _binom_hit_probs(pa, p):
     n = max(1, int(round(pa)))
     p = min(0.45, max(0.05, p))
