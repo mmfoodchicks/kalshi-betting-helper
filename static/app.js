@@ -576,6 +576,24 @@ function renderGame(g) {
   </div>`;
 }
 
+// Combo maker state + builder.
+let bbCombosData = null;
+let parlayLegs = 3;
+window.buildParlay = () => {
+  const inp = $("parlayN");
+  const out = $("parlayOut");
+  if (!inp || !out || !bbCombosData) return;
+  let n = parseInt(inp.value, 10);
+  const maxN = bbCombosData.max_legs_available || 2;
+  if (isNaN(n) || n < 2) n = 2;
+  if (n > maxN) n = maxN;
+  parlayLegs = n;
+  const combo = (bbCombosData.by_size || {})[String(n)];
+  out.innerHTML = combo
+    ? renderCombo(combo, `🎯 Highest-confidence ${n}-leg parlay`, "hl prop")
+    : `<div class="small">Not enough games for a ${n}-leg parlay.</div>`;
+};
+
 function renderCombo(c, tag, extraCls) {
   const legs = c.legs.map((l) => {
     const typeTag = l.type ? `<span class="legtag">${l.type}</span> ` : "";
@@ -626,7 +644,19 @@ async function loadBaseball(silent) {
     loadBaseballRecord();
 
     const c = d.combos;
+    bbCombosData = c;
     let html = "";
+    // Combo maker: pick how many legs; it builds the highest-confidence parlay.
+    const maxN = c.max_legs_available || 0;
+    if (maxN >= 2) {
+      const def = Math.min(parlayLegs, maxN);
+      html += `<div class="combomaker">
+        🎯 <b>Combo maker:</b> build a
+        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:54px" onchange="buildParlay()"/>-leg parlay (max ${maxN})
+        <button class="track-mini primary-mini" onclick="buildParlay()">Build</button>
+        <div id="parlayOut"></div>
+      </div>`;
+    }
     if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
     if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
       html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
@@ -643,6 +673,7 @@ async function loadBaseball(silent) {
       html += c.mixed.map((x) => renderCombo(x)).join("");
     }
     combosBox.innerHTML = html;
+    buildParlay();
   } catch (e) {
     gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
     combosBox.innerHTML = "";

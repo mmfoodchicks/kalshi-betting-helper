@@ -712,63 +712,97 @@ def _candidate_legs(games, live_only=False):
     return legs
 
 
+def _combo_item(combo):
+    """Build the payload for one combo (list of legs)."""
+    prob = 1.0; cost = 1.0; priced = True
+    for l in combo:
+        prob *= l["prob"]
+        if l.get("price_cents"):
+            cost *= l["price_cents"] / 100.0
+        else:
+            priced = False
+    item = {
+        "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l.get("type"),
+                  "prob_pct": round(l["prob"] * 100, 1), "price_cents": l.get("price_cents"),
+                  "live": l.get("live", False)}
+                 for l in combo],
+        "n_legs": len(combo),
+        "any_live": any(l.get("live") for l in combo),
+        "combined_prob_pct": round(prob * 100, 1),
+        "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
+    }
+    if priced and cost > 0:
+        payout = 1 / cost
+        item["parlay_payout_x"] = round(payout, 2)
+        item["parlay_cost_cents"] = round(cost * 100, 1)
+        item["ev_pct"] = round((prob * payout - 1) * 100, 1)
+    return item
+
+
 def _assemble(pool, max_legs):
     """Build combos from a leg pool, allowing at most one leg per game."""
     combos = []
     for n in range(2, max_legs + 1):
         for combo in itertools.combinations(pool, n):
-            if len({l["game_pk"] for l in combo}) < n:
-                continue  # no two legs from the same game (keeps them independent)
-            prob = 1.0; cost = 1.0; priced = True
-            for l in combo:
-                prob *= l["prob"]
-                if l.get("price_cents"):
-                    cost *= l["price_cents"] / 100.0
-                else:
-                    priced = False
-            item = {
-                "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l.get("type"),
-                          "prob_pct": round(l["prob"] * 100, 1), "price_cents": l.get("price_cents"),
-                          "live": l.get("live", False)}
-                         for l in combo],
-                "n_legs": n,
-                "any_live": any(l.get("live") for l in combo),
-                "combined_prob_pct": round(prob * 100, 1),
-                "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
-            }
-            if priced and cost > 0:
-                payout = 1 / cost
-                item["parlay_payout_x"] = round(payout, 2)
-                item["parlay_cost_cents"] = round(cost * 100, 1)
-                item["ev_pct"] = round((prob * payout - 1) * 100, 1)
-            combos.append(item)
+            if len({l["game_pk"] for l in combo}) == n:  # one leg per game
+                combos.append(_combo_item(combo))
     return combos
+
+
+def _max_confidence_combo(legs, n):
+    """The highest-combined-probability n-leg combo: greedily take the n
+    highest-probability legs from distinct games (optimal since all probs < 1)."""
+    used = set()
+    chosen = []
+    for l in sorted(legs, key=lambda x: x["prob"], reverse=True):
+        if l["game_pk"] in used:
+            continue
+        chosen.append(l)
+        used.add(l["game_pk"])
+        if len(chosen) >= n:
+            break
+    return _combo_item(chosen) if len(chosen) >= 2 else None
+
+
+def _final_winners(date):
+    """{gamePk: winning_team_name} for Final games on a date."""
+    out = {}
+    try:
+        data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=linescore")
+    except Exception:
+        return out
+    for d in data.get("dates", []):
+        for g in d.get("games", []):
+            if g.get("status", {}).get("abstractGameState") != "Final":
+                continue
+            lt = g.get("linescore", {}).get("teams", {})
+            hr = lt.get("home", {}).get("runs"); ar = lt.get("away", {}).get("runs")
+            if hr is None or ar is None:
+                continue
+            home = g["teams"]["home"]["team"]["name"]
+            away = g["teams"]["away"]["team"]["name"]
+            out[g.get("gamePk")] = home if hr > ar else away
+    return out
 
 
 def grade_picks():
     """Grade any recorded MLB picks whose games are now final."""
     import store
+    import datetime as _dt
     picks = store.ungraded_mlb_picks()
     by_date = {}
     for p in picks:
         by_date.setdefault(p["date"], []).append(p)
     for date, ps in by_date.items():
+        results = dict(_final_winners(date))
+        # A game can land on the neighbouring calendar date (timezones, late
+        # finishes, doubleheaders) — check ±1 day so finished games always grade.
         try:
-            data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=linescore")
+            d0 = _dt.date.fromisoformat(date)
+            for off in (1, -1):
+                results.update(_final_winners((d0 + _dt.timedelta(days=off)).isoformat()))
         except Exception:
-            continue
-        results = {}
-        for d in data.get("dates", []):
-            for g in d.get("games", []):
-                if g.get("status", {}).get("abstractGameState") != "Final":
-                    continue
-                lt = g.get("linescore", {}).get("teams", {})
-                hr = lt.get("home", {}).get("runs"); ar = lt.get("away", {}).get("runs")
-                if hr is None or ar is None:
-                    continue
-                home = g["teams"]["home"]["team"]["name"]
-                away = g["teams"]["away"]["team"]["name"]
-                results[g.get("gamePk")] = home if hr > ar else away
+            pass
         for p in ps:
             winner = results.get(p["game_pk"])
             if winner:
@@ -791,9 +825,18 @@ def build_combos(games, max_legs=3, top_n=6):
     best_value = max(priced, key=lambda c: c["ev_pct"], default=None)
 
     # Mixed combos draw from every bet type (moneyline + props).
-    legs = sorted(_candidate_legs(live_games), key=lambda l: l["prob"], reverse=True)[:10]
+    all_legs = _candidate_legs(live_games)
+    legs = sorted(all_legs, key=lambda l: l["prob"], reverse=True)[:10]
     mixed = _assemble(legs, max_legs)
     mixed.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
+
+    # Combo maker: the single highest-confidence parlay for each leg count.
+    max_games = len({l["game_pk"] for l in all_legs})
+    by_size = {}
+    for n in range(2, min(8, max_games) + 1):
+        item = _max_confidence_combo(all_legs, n)
+        if item:
+            by_size[str(n)] = item
 
     # Live-only combos: parlays built purely from games currently in progress.
     live_legs = sorted(_candidate_legs(games, live_only=True),
@@ -803,4 +846,5 @@ def build_combos(games, max_legs=3, top_n=6):
 
     return {"safest": safest, "best_value": best_value,
             "all": sorted(ml_combos, key=lambda c: c["combined_prob_pct"], reverse=True)[:12],
-            "mixed": mixed[:12], "live": live_combos[:8]}
+            "mixed": mixed[:12], "live": live_combos[:8],
+            "by_size": by_size, "max_legs_available": max_games}
