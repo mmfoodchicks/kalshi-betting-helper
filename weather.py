@@ -51,6 +51,7 @@ def _noaa(lat, lon, when_epoch):
         "wind_from_deg": wdir,
         "wind_dir": best.get("windDirection"),
         "precip_pct": (best.get("probabilityOfPrecipitation") or {}).get("value") or 0,
+        "humidity": (best.get("relativeHumidity") or {}).get("value"),
         "summary": best.get("shortForecast", ""),
         "source": "NOAA",
     }
@@ -58,7 +59,7 @@ def _noaa(lat, lon, when_epoch):
 
 def _open_meteo(lat, lon, when_epoch):
     url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitude={lon:.4f}"
-           "&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,precipitation_probability"
+           "&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,precipitation_probability,relative_humidity_2m"
            "&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=3")
     data = _get_json(url)
     h = data["hourly"]
@@ -72,6 +73,7 @@ def _open_meteo(lat, lon, when_epoch):
         "wind_from_deg": deg,
         "wind_dir": min(inv, key=lambda d: abs(d - deg)) and inv[min(inv, key=lambda d: abs(d - deg))],
         "precip_pct": h["precipitation_probability"][i] or 0,
+        "humidity": (h.get("relative_humidity_2m") or [None])[i] if h.get("relative_humidity_2m") else None,
         "summary": "",
         "source": "Open-Meteo",
     }
@@ -114,6 +116,12 @@ def run_factor(wx, cf_bearing_deg, roof):
     precip = wx.get("precip_pct") or 0
     precip_factor = 1.0 - (precip / 100.0) * 0.04
 
-    raw = temp_factor * wind_factor * precip_factor
+    # Humid air is less dense, so the ball carries slightly farther. Small, real
+    # effect; centered at ~50% RH. (Altitude/air pressure is already captured by
+    # the park factor, so we don't double-count it here.)
+    hum = wx.get("humidity")
+    humidity_factor = 1.0 + (hum - 50) * 0.0004 if hum is not None else 1.0
+
+    raw = temp_factor * wind_factor * precip_factor * humidity_factor
     factor = 1.0 + (raw - 1.0) * weight
     return max(0.90, min(1.12, factor)), round(out_component, 1)

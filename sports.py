@@ -17,9 +17,16 @@ import kalshi
 SPORTS = {
     "soccer": {"label": "⚽ World Cup", "series": ["KXWCGAME"]},
     "tennis": {"label": "🎾 Tennis (ATP)", "series": ["KXATPMATCH"]},
+    "wta":    {"label": "🎾 Tennis (WTA)", "series": ["KXWTAMATCH"]},
+    "itf":    {"label": "🎾 Tennis (ITF)", "series": ["KXITFMATCH", "KXITFWMATCH"]},
     "golf":   {"label": "⛳ Golf (PGA H2H)", "series": ["KXPGAH2H"]},
     "ufc":    {"label": "🥊 UFC", "series": ["KXUFCFIGHT"]},
+    "boxing": {"label": "🥊 Boxing", "series": ["KXBOXINGFIGHT"]},
     "wnba":   {"label": "🏀 WNBA", "series": ["KXWNBAGAME"]},
+    "cricket": {"label": "🏏 Cricket (T20)", "series": ["KXT20MATCH"]},
+    "cfl":    {"label": "🏈 CFL", "series": ["KXCFLGAME"]},
+    "nfl":    {"label": "🏈 NFL", "series": ["KXNFLGAME"]},
+    "mls":    {"label": "⚽ MLS", "series": ["KXMLSGAME"]},
 }
 
 

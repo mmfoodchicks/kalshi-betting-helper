@@ -21,16 +21,24 @@ import prices
 import sports
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
-SPORT_KEYS = {"ufc", "tennis", "golf", "soccer", "wnba"}
+SPORT_KEYS = {"ufc", "tennis", "wta", "itf", "golf", "soccer", "wnba",
+              "boxing", "cricket", "cfl", "nfl", "mls"}
 
 CATEGORIES = {
     "mlb": "⚾ MLB",
     "crypto": "⚡ Crypto (daily)",
     "ufc": "🥊 UFC",
-    "tennis": "🎾 Tennis",
+    "boxing": "🥊 Boxing",
+    "tennis": "🎾 Tennis ATP",
+    "wta": "🎾 Tennis WTA",
+    "itf": "🎾 Tennis ITF",
     "golf": "⛳ Golf",
     "soccer": "⚽ World Cup",
+    "mls": "⚽ MLS",
     "wnba": "🏀 WNBA",
+    "cricket": "🏏 Cricket",
+    "cfl": "🏈 CFL",
+    "nfl": "🏈 NFL",
 }
 
 
