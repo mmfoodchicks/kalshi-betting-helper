@@ -580,27 +580,30 @@ function renderGame(g) {
 let bbCombosData = null;
 let parlayLegs = 3;
 let parlayTarget = 65;
+let parlayPayout = 0;
 window.buildParlay = async () => {
-  const inp = $("parlayN");
   const out = $("parlayOut");
-  if (!inp || !out || !bbCombosData) return;
-  let n = parseInt(inp.value, 10);
+  if (!out || !bbCombosData) return;
+  let n = parseInt(($("parlayN") || {}).value, 10);
   const maxN = bbCombosData.max_legs_available || 2;
   if (isNaN(n) || n < 2) n = 2;
   if (n > maxN) n = maxN;
   parlayLegs = n;
-  const tEl = $("parlayTarget");
-  let t = tEl ? parseInt(tEl.value, 10) : 65;
-  if (isNaN(t)) t = 65;
+  let t = parseInt(($("parlayTarget") || {}).value, 10); if (isNaN(t)) t = 65;
   parlayTarget = t;
+  let p = parseFloat(($("parlayPayout") || {}).value) || 0; parlayPayout = p;
   const date = $("bbDate").value;
   out.innerHTML = `<div class="small">Tuning lines…</div>`;
   try {
-    const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}`)).json();
-    if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a ${n}-leg parlay at ${t}%.</div>`; return; }
-    const note = d.combo.legs_meeting_target != null
-      ? `<div class="small">${d.combo.legs_meeting_target}/${d.combo.n_legs} legs meet the ${t}% target; lines auto-tuned for the rest.</div>` : "";
-    out.innerHTML = renderCombo(d.combo, `🎯 ${n}-leg parlay tuned to ${t}%+`, "hl prop") + note;
+    const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+    if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a parlay at ${t}%.</div>`; return; }
+    const c = d.combo;
+    const title = p > 1
+      ? `🎯 ${c.n_legs}-leg parlay (≥${t}% legs, ${c.payout_reached ? "reached" : "max"} ${c.fair_payout_x}×)`
+      : `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
+    const note = (p > 1 && !c.payout_reached)
+      ? `<div class="small">Couldn't reach ${p}× with the available games — this is the max (${c.fair_payout_x}×).</div>` : "";
+    out.innerHTML = renderCombo(c, title, "hl prop") + note;
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
   }
@@ -669,11 +672,12 @@ async function loadBaseball(silent) {
     if (maxN >= 2) {
       const def = Math.min(parlayLegs, maxN);
       html += `<div class="combomaker">
-        🎯 <b>Combo maker:</b> build a
-        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:50px"/>-leg parlay,
-        each leg ≥ <input id="parlayTarget" type="number" min="50" max="97" value="${parlayTarget}" style="width:54px"/>% likely
+        🎯 <b>Combo maker:</b> each leg ≥
+        <input id="parlayTarget" type="number" min="50" max="97" value="${parlayTarget}" style="width:54px"/>% likely;
+        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:50px"/> legs
+        <b>or</b> reach <input id="parlayPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
         <button class="track-mini primary-mini" onclick="buildParlay()">Build</button>
-        <div class="small" style="margin-top:4px">It auto-tunes each line (1+/2+ hits, runs total, ML vs ±1.5) to hit your target — lower the % for a bigger payout, raise it to play safe.</div>
+        <div class="small" style="margin-top:4px">It auto-tunes each line (1+/2+ hits, runs total, ML vs ±1.5). Set a payout (e.g. 20×) and it adds legs until the parlay reaches it; leave 0 for a fixed leg count.</div>
         <div id="parlayOut"></div>
       </div>`;
     }
@@ -1048,12 +1052,16 @@ async function loadWeather() {
       const detail = m.mean != null
         ? `<div class="small">Model high <b>${m.mean}°</b> (forecast ${m.forecast_high}°${m.running_delta != null && Math.abs(m.running_delta) >= 0.5 ? `, running ${m.running_delta > 0 ? "+" : ""}${m.running_delta}° vs schedule` : ""}${m.high_so_far != null ? `, high so far ${m.high_so_far}°` : ""}, ±${m.sigma}° uncertainty)</div>`
         : "";
+      const pick = ev.pick
+        ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">✅ Buy this one: <b>${ev.pick.name}</b> @ ${ev.pick.yes_ask}¢ → fair <b>${ev.pick.fair_pct}%</b> · <b>+${ev.pick.edge_cents}¢ edge</b></div>`
+        : "";
       return `<div class="bbgame">
         <div class="top">
           <div class="matchup">${d.city} — high temp ${ev.date}</div>
           <div class="small" style="text-align:right">forecast high<br><b style="color:var(--text);font-size:1.1rem">${m.forecast_high != null ? m.forecast_high + "°F" : "n/a"}</b>${adj}</div>
         </div>
         ${detail}
+        ${pick}
         <div class="sportouts">${rows}</div>
       </div>`;
     }).join("");
@@ -1078,10 +1086,11 @@ async function buildCombine() {
   if (!cats.length) { out.innerHTML = `<div class="empty">Pick at least one category.</div>`; return; }
   const n = parseInt($("cmbN").value, 10) || 4;
   const t = parseInt($("cmbTarget").value, 10) || 65;
+  const p = parseFloat($("cmbPayout").value) || 0;
   const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
   out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
   try {
-    const d = await (await fetch(`/api/combine?cats=${cats.join(",")}&legs=${n}&target=${t}&date=${date}`)).json();
+    const d = await (await fetch(`/api/combine?cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`)).json();
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
     if (d.counts && Object.keys(d.counts).length)

@@ -204,9 +204,11 @@
       <p class="sub" style="margin:4px 0 10px">Build one parlay across <b>everything at once</b> — MLB, daily crypto, UFC, tennis, golf, World Cup &amp; WNBA. It auto-tunes each leg's line to your target confidence. <b>%</b> is our model for MLB &amp; crypto, and the de-vig'd market probability for the other sports. One leg per event keeps the odds honest.</p>
       <div id="combineCats" class="catrow"></div>
       <div class="combomaker" style="margin-top:10px">
-        Build a <input id="cmbN" type="number" min="2" max="12" value="4" style="width:50px"/>-leg parlay,
-        each leg ≥ <input id="cmbTarget" type="number" min="50" max="97" value="65" style="width:54px"/>% likely
+        each leg ≥ <input id="cmbTarget" type="number" min="50" max="97" value="65" style="width:54px"/>% likely;
+        <input id="cmbN" type="number" min="2" max="12" value="4" style="width:50px"/> legs
+        <b>or</b> reach <input id="cmbPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
         <button id="cmbBtn" class="track-mini primary-mini">Build</button>
+        <div class="small" style="margin-top:4px">Set a payout (e.g. 20×) and it auto-adds ~65%-confidence legs until the parlay reaches that payout. Leave payout 0 to use a fixed leg count.</div>
       </div>
       <div id="combineOut" class="markets"><div class="empty">Pick categories and build.</div></div>
     </section>

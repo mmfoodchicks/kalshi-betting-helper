@@ -436,10 +436,12 @@ def api_combine():
     try:
         legs = int(request.args.get("legs", 3))
         target = float(request.args.get("target", 65))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else None
     except ValueError:
         return jsonify({"error": "bad legs/target"}), 400
     try:
-        return jsonify(combine.build(cats, legs, target, date, season))
+        return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -454,13 +456,15 @@ def api_baseball_parlay():
     try:
         legs = int(request.args.get("legs", 3))
         target = float(request.args.get("target", 65))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else None
     except ValueError:
         return jsonify({"error": "bad legs/target"}), 400
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    combo = baseball.build_target_parlay(games, legs, target)
+    combo = baseball.build_target_parlay(games, legs, target, target_payout=payout)
     return jsonify({"combo": combo})
 
 

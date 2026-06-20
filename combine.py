@@ -21,29 +21,18 @@ import prices
 import sports
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
-SPORT_KEYS = {"ufc", "tennis", "wta", "itf", "golf", "soccer", "wnba",
-              "boxing", "cricket", "cfl", "nfl", "ncaaf", "mls",
-              "f1", "nascar", "motogp"}
+# Only the categories Kalshi actually allows in multi-leg parlays.
+SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "soccer", "wnba"}
 
 CATEGORIES = {
-    "mlb": "⚾ MLB",
+    "mlb": "⚾ Baseball",
     "crypto": "⚡ Crypto (daily)",
-    "ufc": "🥊 UFC",
-    "boxing": "🥊 Boxing",
-    "tennis": "🎾 Tennis ATP",
-    "wta": "🎾 Tennis WTA",
-    "itf": "🎾 Tennis ITF",
-    "golf": "⛳ Golf",
     "soccer": "⚽ World Cup",
-    "mls": "⚽ MLS",
     "wnba": "🏀 WNBA",
-    "cricket": "🏏 Cricket",
-    "cfl": "🏈 CFL",
-    "nfl": "🏈 NFL",
-    "ncaaf": "🏈 College FB",
-    "f1": "🏎️ F1",
-    "nascar": "🏁 NASCAR",
-    "motogp": "🏍️ MotoGP",
+    "golf": "⛳ PGA",
+    "tennis": "🎾 Tennis (ATP)",
+    "wta": "🎾 Tennis (WTA)",
+    "ufc": "🥊 UFC",
 }
 
 
@@ -144,18 +133,10 @@ def _item(combo):
     return item
 
 
-def build(cats, n_legs, target_pct, date, season):
-    legs = gather(cats, date, season)
-    counts = {}
-    for l in legs:
-        counts[l["category"]] = counts.get(l["category"], 0) + 1
-    if not legs:
-        return {"combo": None, "counts": counts}
-
+def select_legs(by_event, target_pct, n_legs, target_payout=None, max_legs=12):
+    """Pick the best leg per event at the confidence target, then take enough of
+    them (safest first) to either fill n_legs or reach the target payout."""
     target = max(0.05, min(0.97, target_pct / 100.0))
-    by_event = {}
-    for l in legs:
-        by_event.setdefault(l["event_id"], []).append(l)
     chosen = []
     for vs in by_event.values():
         meeting = [v for v in vs if v["prob"] >= target]
@@ -164,9 +145,36 @@ def build(cats, n_legs, target_pct, date, season):
         pick = dict(pick)
         pick["meets"] = bool(meeting)
         chosen.append(pick)
+    if target_payout and target_payout > 1:
+        # Prefer legs nearest the confidence target (most payout per leg) so we
+        # reach the payout with fewer ~target-confidence legs.
+        chosen.sort(key=lambda v: (not v["meets"], v["prob"]))
+        sel, prob = [], 1.0
+        for v in chosen:
+            sel.append(v); prob *= v["prob"]
+            if (prob > 0 and 1 / prob >= target_payout) or len(sel) >= max_legs:
+                break
+        return (sel if len(sel) >= 2 else chosen[:2]), target
     chosen.sort(key=lambda v: (v["meets"], v["prob"]), reverse=True)
     n = max(2, min(n_legs, len(chosen)))
-    item = _item(chosen[:n])
+    return chosen[:n], target
+
+
+def build(cats, n_legs, target_pct, date, season, target_payout=None):
+    legs = gather(cats, date, season)
+    counts = {}
+    for l in legs:
+        counts[l["category"]] = counts.get(l["category"], 0) + 1
+    if not legs:
+        return {"combo": None, "counts": counts}
+    by_event = {}
+    for l in legs:
+        by_event.setdefault(l["event_id"], []).append(l)
+    chosen, target = select_legs(by_event, target_pct, n_legs, target_payout)
+    item = _item(chosen)
     item["target_pct"] = round(target * 100, 1)
-    item["legs_meeting_target"] = sum(1 for v in chosen[:n] if v["meets"])
+    item["legs_meeting_target"] = sum(1 for v in chosen if v.get("meets"))
+    if target_payout:
+        item["target_payout_x"] = target_payout
+        item["payout_reached"] = (item.get("fair_payout_x") or 0) >= target_payout
     return {"combo": item, "counts": counts}

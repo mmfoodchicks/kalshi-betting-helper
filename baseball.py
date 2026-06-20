@@ -824,12 +824,12 @@ def _game_variants(g):
     return out
 
 
-def build_target_parlay(games, n_legs, target_pct):
-    """Build an n-leg parlay where each leg is tuned to ~the target confidence.
+def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12):
+    """Build a parlay where each leg is tuned to ~the target confidence.
 
     For each game we pick the variant that meets the target with the best payout
-    (the lowest probability that's still >= target); if none meet it, the highest
-    available. Then we take the n games whose chosen legs are most reliable.
+    (lowest probability still >= target). Then either take n_legs (safest first)
+    or, if target_payout is given, add legs until the parlay reaches that payout.
     """
     target = max(0.05, min(0.97, target_pct / 100.0))
     chosen = []  # one best variant per game
@@ -844,12 +844,25 @@ def build_target_parlay(games, n_legs, target_pct):
         chosen.append(pick)
     if len(chosen) < 2:
         return None
-    # Prefer legs that meet the target, then the most reliable, for the N slots.
-    chosen.sort(key=lambda v: (v["meets_target"], v["prob"]), reverse=True)
-    n = max(2, min(n_legs, len(chosen)))
-    item = _combo_item(chosen[:n])
+    if target_payout and target_payout > 1:
+        # Prefer legs nearest the target (most payout per leg) to reach the
+        # payout with fewer ~target-confidence legs.
+        chosen.sort(key=lambda v: (not v["meets_target"], v["prob"]))
+        sel, prob = [], 1.0
+        for v in chosen:
+            sel.append(v); prob *= v["prob"]
+            if (prob > 0 and 1 / prob >= target_payout) or len(sel) >= max_legs:
+                break
+        legs = sel if len(sel) >= 2 else chosen[:2]
+    else:
+        chosen.sort(key=lambda v: (v["meets_target"], v["prob"]), reverse=True)
+        legs = chosen[:max(2, min(n_legs, len(chosen)))]
+    item = _combo_item(legs)
     item["target_pct"] = round(target * 100, 1)
-    item["legs_meeting_target"] = sum(1 for v in chosen[:n] if v["meets_target"])
+    item["legs_meeting_target"] = sum(1 for v in legs if v.get("meets_target"))
+    if target_payout:
+        item["target_payout_x"] = target_payout
+        item["payout_reached"] = (item.get("fair_payout_x") or 0) >= target_payout
     return item
 
 

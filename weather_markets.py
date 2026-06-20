@@ -216,6 +216,9 @@ def get_city(city_key):
         ev["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
         edges = [o["edge_cents"] for o in ev["outcomes"] if o["edge_cents"] is not None]
         ev["best_edge"] = max(edges) if edges else None
+        # "Buy this one": the strike with the best positive edge (model vs Kalshi).
+        buyable = [o for o in ev["outcomes"] if o.get("edge_cents") is not None and o["edge_cents"] >= 5]
+        ev["pick"] = max(buyable, key=lambda o: o["edge_cents"]) if buyable else None
         out.append(ev)
     out.sort(key=lambda e: e["date"])
     return {"city": cfg["label"], "series": cfg["series"], "current": current, "events": out}
