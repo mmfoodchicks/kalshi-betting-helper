@@ -349,7 +349,13 @@ def api_stats():
 
 if __name__ == "__main__":
     import os
-    import recorder
-    recorder.start_background()  # passively record Kalshi quotes for the real backtest
+    # DEBUG=1 turns on auto-reload: the server watches its own files and restarts
+    # itself when they change (e.g. after a git pull) — no manual restart needed.
+    debug = os.environ.get("DEBUG") == "1"
+    # Start the background recorder once. Under the reloader, only the worker
+    # process (WERKZEUG_RUN_MAIN) should start it, not the watcher parent.
+    if not debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        import recorder
+        recorder.start_background()  # passively record Kalshi quotes for the backtest
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=debug)

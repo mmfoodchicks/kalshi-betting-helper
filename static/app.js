@@ -2,6 +2,15 @@
 
 const $ = (id) => document.getElementById(id);
 
+// True while the user is typing in a field or has an inline form open, so
+// auto-refresh can skip a beat instead of wiping what they're entering.
+function uiBusy() {
+  const a = document.activeElement;
+  if (a && ["INPUT", "SELECT", "TEXTAREA"].includes(a.tagName)) return true;
+  if (document.querySelector(".buyform:not(.hidden)")) return true;
+  return false;
+}
+
 // ---- Kelly bet sizing -----------------------------------------------------
 function getBankroll() { return parseFloat(localStorage.getItem("bankroll")) || 0; }
 function getKellyMult() { const v = localStorage.getItem("kellyMult"); return v == null ? 0.5 : parseFloat(v); }
@@ -941,19 +950,20 @@ async function init() {
   // Baseball setup
   setupTabs();
   $("bbDate").value = new Date().toISOString().slice(0, 10);
-  $("bbBtn").addEventListener("click", loadBaseball);
+  $("bbBtn").addEventListener("click", () => loadBaseball());
+  $("bbRefresh").addEventListener("click", () => loadBaseball(true));
 
   // Sports setup
   $("sportBtn").addEventListener("click", loadSports);
   $("sportSel").addEventListener("change", loadSports);
 
   refreshMarkets();
-  setInterval(refreshMarkets, 5000);   // live updates for tracked markets
-  setInterval(refreshPreview, 5000);   // keep the preview fresh too
-  setInterval(() => { if (lastScan.coin) runScan(); }, 8000); // refresh scanner
-  // Auto-update baseball (live scores) when that tab is open.
+  // Auto-refresh ticks skip while the user is typing / has a form open.
+  setInterval(() => { if (!uiBusy()) refreshMarkets(); }, 5000);
+  setInterval(() => { if (!uiBusy()) refreshPreview(); }, 5000);
+  setInterval(() => { if (lastScan.coin && !uiBusy()) runScan(); }, 8000);
   setInterval(() => {
-    if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
+    if (!uiBusy() && !$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
       loadBaseball(true);
     }
   }, 20000);
