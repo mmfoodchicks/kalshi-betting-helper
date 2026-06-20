@@ -57,6 +57,9 @@ def get_events(sport_key, limit=200):
         for o in e["outcomes"]:
             o["fair_pct"] = round(100 * o["yes_ask"] / total, 1) if (total and o["yes_ask"]) else None
         e["overround_pct"] = round(total - 100, 1) if total else None
+        # Arbitrage: if the outcome prices sum to < 100¢, buying them all is a
+        # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
+        e["arbitrage_pct"] = round(100 - total, 1) if (total and total < 100) else None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
         out.append(e)
 

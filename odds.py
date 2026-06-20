@@ -235,6 +235,141 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
     }
 
 
+def _norm_ppf(p):
+    """Inverse normal CDF (probit) via Acklam's rational approximation."""
+    if p <= 0:
+        return -1e9
+    if p >= 1:
+        return 1e9
+    a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+         1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+    b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+         6.680131188771972e+01, -1.328068155288572e+01]
+    c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+         -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
+    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+         3.754408661907416e+00]
+    plow, phigh = 0.02425, 1 - 0.02425
+    if p < plow:
+        q = math.sqrt(-2 * math.log(p))
+        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+    if p <= phigh:
+        q = p - 0.5; r = q*q
+        return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+    q = math.sqrt(-2 * math.log(1 - p))
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+
+
+def _mid(m):
+    ya, yb = m.get("yes_ask"), m.get("yes_bid")
+    if ya is None or yb is None:
+        return None
+    return (ya + yb) / 200.0  # YES probability, 0..1
+
+
+def implied_vol(spot, markets, minutes_to_close):
+    """Back out the per-minute volatility the market is pricing across the ladder.
+
+    Two ways depending on the ladder shape:
+      - 'between' buckets form an implied probability distribution over the
+        closing price; we take its standard deviation directly.
+      - otherwise we invert the lognormal at each 'greater'/'less' strike (works
+        for single-strike 15-min markets too).
+    """
+    if minutes_to_close <= 0 or spot <= 0:
+        return None
+    T = minutes_to_close
+    rt = math.sqrt(T)
+
+    # Preferred: quantile-based, from the implied distribution of 'between'
+    # buckets that have a real two-sided market (yes_bid > 0). Far-OTM strikes
+    # sit at a 1c minimum quote that is noise, not probability, so we require a
+    # genuine bid and measure the 16th-84th percentile spread (robust to tails).
+    buckets = []
+    for m in markets:
+        st = (m.get("strike_type") or "").lower()
+        p = _mid(m)
+        if st == "between" and m.get("floor") and m.get("cap") and m.get("yes_bid") and p and p > 0:
+            buckets.append((m["floor"], m["cap"], p))
+    buckets.sort(key=lambda b: b[0])
+    tot = sum(p for _, _, p in buckets)
+    if len(buckets) >= 4 and tot > 0:
+        pts = []  # (upper_edge, cumulative_fraction)
+        cum = 0.0
+        for lo, hi, p in buckets:
+            cum += p / tot
+            pts.append((hi, cum))
+
+        def quantile(q):
+            prev_x, prev_c = buckets[0][0], 0.0
+            for x, cc in pts:
+                if cc >= q:
+                    if cc == prev_c:
+                        return x
+                    return prev_x + (x - prev_x) * (q - prev_c) / (cc - prev_c)
+                prev_x, prev_c = x, cc
+            return pts[-1][0]
+
+        x16, x84 = quantile(0.16), quantile(0.84)
+        sig_frac = ((x84 - x16) / 2.0) / spot
+        if sig_frac > 0:
+            return sig_frac / rt
+
+    # Fallback: invert each directional strike.
+    sigs = []
+    for m in markets:
+        st = (m.get("strike_type") or "").lower()
+        p = _mid(m)
+        if p is None:
+            continue
+        if st in ("greater", "greater_or_equal"):
+            K, p_above = m.get("floor"), p
+        elif st in ("less", "less_or_equal"):
+            K, p_above = m.get("cap"), 1 - p
+        else:
+            continue
+        if not K or K <= 0 or p_above <= 0.03 or p_above >= 0.97:
+            continue
+        moneyness = math.log(spot / K)
+        if abs(moneyness) < 1e-4:
+            continue
+        z = _norm_ppf(p_above)
+        if abs(z) > 1e-6:
+            st_total = moneyness / z
+            if st_total > 0:
+                sigs.append(st_total / rt)
+    return statistics.median(sigs) if sigs else None
+
+
+def vol_edge(spot, candles, markets, minutes_to_close):
+    """Compare the market's implied volatility to realized volatility."""
+    mu, sigma, n = estimate_params(candles)
+    iv = implied_vol(spot, markets, minutes_to_close)
+    if not iv or sigma <= 0 or minutes_to_close <= 0:
+        return None
+    rt = math.sqrt(minutes_to_close)
+    ratio = iv / sigma
+    if ratio > 1.15:
+        verdict = "Market is OVERpricing movement"
+        suggestion = ("Real moves are smaller than the market implies — near-the-money "
+                      "favorites (and NO on far strikes) look underpriced; fade big-move longshots.")
+    elif ratio < 0.87:
+        verdict = "Market is UNDERpricing movement"
+        suggestion = ("Real volatility is higher than priced — the far/longshot strikes "
+                      "(big moves) look underpriced; buy the wings.")
+    else:
+        verdict = "Volatility fairly priced"
+        suggestion = "Implied and realized movement roughly agree — no clear vol edge here."
+    return {
+        "realized_move_pct": round(sigma * rt * 100, 3),
+        "implied_move_pct": round(iv * rt * 100, 3),
+        "ratio": round(ratio, 2),
+        "verdict": verdict,
+        "suggestion": suggestion,
+        "samples": n,
+    }
+
+
 def kelly_fraction(prob, cost_cents):
     """Optimal fraction of bankroll to stake on a binary contract.
 
@@ -366,6 +501,17 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
         rationale = "No side offers a clear edge over the live market price."
         dip_note = None
 
+    # Near-settlement convergence: in the final minutes the outcome is nearly
+    # decided, but thin books often leave the near-certain side cheap.
+    near_settlement = None
+    if minutes_to_close is not None and minutes_to_close <= 3:
+        if prob_yes >= 0.85 and yes_ask is not None and yes_ask <= 95:
+            near_settlement = {"side": "YES", "fair": fair_yes, "ask": yes_ask,
+                               "mins": round(minutes_to_close, 1)}
+        elif prob_yes <= 0.15 and no_ask is not None and no_ask <= 95:
+            near_settlement = {"side": "NO", "fair": fair_no, "ask": no_ask,
+                               "mins": round(minutes_to_close, 1)}
+
     return {
         "prob_yes": round(prob_yes, 4),
         "fair_yes_cents": fair_yes,
@@ -376,6 +522,7 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
         "strength": strength,
         "rationale": rationale,
         "dip_note": dip_note,
+        "near_settlement": near_settlement,
         "momentum_pct": round(mom * 100, 3),
         "samples": n,
     }

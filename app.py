@@ -213,8 +213,16 @@ def api_kalshi_scan():
         enriched.append(item)
 
     enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
+
+    # Volatility edge: what move is the strike ladder pricing vs realized?
+    vol = None
+    if markets:
+        close = max((m["close_time"] for m in markets if m["close_time"]), default=None)
+        mins = _minutes_to_close(close) if close else 0.0
+        vol = odds.vol_edge(spot, candles, markets, mins)
+
     return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
-                    "markets": enriched})
+                    "markets": enriched, "vol": vol})
 
 
 @app.route("/api/baseball/today")

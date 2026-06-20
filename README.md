@@ -11,7 +11,9 @@ A live web app with two tabs:
 - **🏆 Sports** — live Kalshi markets for the **World Cup, tennis (ATP), golf
   (PGA H2H), and UFC**, with **no-vig fair probabilities** (prices normalized to
   strip out the house margin) and the **vig %** so you can see which markets are
-  fair and which the house is gouging. Log any outcome to your ledger.
+  fair and which the house is gouging. **Arbitrage detector:** if an event's
+  outcome prices ever sum to under 100¢, it flags the guaranteed profit. Log any
+  outcome to your ledger.
 - **📒 Ledger** — log every real bet you place and track actual profit, win
   rate, and ROI across everything.
 
@@ -45,6 +47,14 @@ strategy tracker*) — the honest test of whether catching mispricings makes mon
     is cheap right now, good dip-buy" (and the mirror for fading a pump).
   - **Take-profit hints:** since Kalshi lets you sell anytime, it suggests a
     target to lock in profit.
+  - **Implied vs realized volatility (vol edge):** the scanner backs out the
+    volatility the strike ladder is *pricing in* (quantile method over the liquid
+    buckets) and compares it to **realized** volatility from price action. When
+    the market over/under-prices movement, the whole ladder is skewed one way —
+    a classic vol edge (fade big moves, or buy the wings).
+  - **Near-settlement convergence:** in a contract's final minutes, when the
+    outcome is nearly decided but a thin book leaves the near-certain side cheap,
+    the scanner flags the lag as a convergence edge.
   - **Kelly bet-sizing:** set your **bankroll** and a Kelly fraction (¼ / ½ /
     full) in the top bar, and every edge turns into a suggested dollar stake and
     number of contracts — `f = edge ÷ (100 − cost)`, scaled by your fraction.

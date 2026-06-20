@@ -263,6 +263,16 @@ function strikeToTracker(m) {
 let lastScan = { coin: null, timeframe: null };
 const scanCtx = {}; // ticker -> context for the "I bought this" form
 
+function renderVol(v) {
+  if (!v) return "";
+  const cls = v.ratio >= 1.15 ? "ev neg" : v.ratio <= 0.87 ? "ev pos" : "";
+  return `<div class="volbox">
+    <div class="sellhead"><span class="sellaction">📊 ${v.verdict}</span>
+      <span class="small">implied <b>${v.implied_move_pct}%</b> vs realized <b>${v.realized_move_pct}%</b> move · ratio <b class="${cls}">${v.ratio}×</b></span></div>
+    <div class="small">${v.suggestion}</div>
+  </div>`;
+}
+
 function recSide(sig) {
   if (sig.recommendation === "BUY YES") return "YES";
   if (sig.recommendation === "BUY NO") return "NO";
@@ -322,12 +332,17 @@ function renderScanRow(m) {
       <button class="track-mini" onclick="hideBuyForm('${m.ticker}')">cancel</button>
     </div>` : "";
 
+  const ns = sig.near_settlement;
+  const nsHtml = ns
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">⏱ Near settlement (${ns.mins}m left): outcome looks ${ns.side === "YES" ? "YES" : "NO"} (model ${ns.fair}¢) but you can still buy <b>${ns.side}</b> at <b>${ns.ask}¢</b> — convergence edge.</div>`
+    : "";
   return `<div class="${rowCls}">
     <div class="scanhead">
       <div class="strike">${m.subtitle || m.ticker}</div>
       <div class="small">closes ${fmtCountdown(secs)} · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢</div>
     </div>
     ${action}
+    ${nsHtml}
     ${buttons}
   </div>`;
 }
@@ -381,7 +396,7 @@ async function runScan() {
       box.innerHTML = `<div class="empty">No open ${coin} ${timeframe} contracts on Kalshi right now.</div>`;
       return;
     }
-    box.innerHTML = d.markets.map(renderScanRow).join("");
+    box.innerHTML = renderVol(d.vol) + d.markets.map(renderScanRow).join("");
   } catch (e) {
     box.innerHTML = `<div class="empty">Scan failed — retrying on next refresh.</div>`;
   }
@@ -820,11 +835,15 @@ function renderSportEvent(e, sportKey) {
       </div>
     </div>`;
   }).join("");
+  const arb = e.arbitrage_pct
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
+    : "";
   return `<div class="bbgame">
     <div class="top">
       <div class="matchup">${e.title}</div>
       <div class="small" style="text-align:right">closes ${fmtCountdown(secs)}<br>${vig != null ? `vig <b class="${vigCls}">${vig}%</b>` : ""}</div>
     </div>
+    ${arb}
     <div class="sportouts">${outs}</div>
   </div>`;
 }

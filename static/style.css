@@ -82,6 +82,13 @@ main {
 .hitrow b { color: var(--text); }
 @media (max-width: 560px) { .propgrid, .hitgrid { grid-template-columns: 1fr; } }
 
+.volbox {
+  background: var(--card2); border: 1px solid var(--accent);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+}
+.volbox .small { color: var(--muted); font-size: 0.82rem; }
+.volbox .small b { color: var(--text); }
+
 .sportouts { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .sportout {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
