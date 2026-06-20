@@ -342,32 +342,49 @@ def implied_vol(spot, markets, minutes_to_close):
 
 
 def vol_edge(spot, candles, markets, minutes_to_close):
-    """Compare the market's implied volatility to realized volatility."""
+    """Compare the market's implied volatility to realized volatility.
+
+    Realized vol always computes; the ladder-implied read may be unavailable when
+    the strikes are thin, in which case we still return realized (so the Deribit
+    cross-check can attach).
+    """
     mu, sigma, n = estimate_params(candles)
-    iv = implied_vol(spot, markets, minutes_to_close)
-    if not iv or sigma <= 0 or minutes_to_close <= 0:
+    if sigma <= 0 or minutes_to_close <= 0:
         return None
     rt = math.sqrt(minutes_to_close)
-    ratio = iv / sigma
-    if ratio > 1.15:
-        verdict = "Market is OVERpricing movement"
-        suggestion = ("Real moves are smaller than the market implies — near-the-money "
-                      "favorites (and NO on far strikes) look underpriced; fade big-move longshots.")
-    elif ratio < 0.87:
-        verdict = "Market is UNDERpricing movement"
-        suggestion = ("Real volatility is higher than priced — the far/longshot strikes "
-                      "(big moves) look underpriced; buy the wings.")
-    else:
-        verdict = "Volatility fairly priced"
-        suggestion = "Implied and realized movement roughly agree — no clear vol edge here."
-    return {
+    ann = math.sqrt(525600)  # minutes per year, for annualizing
+    out = {
         "realized_move_pct": round(sigma * rt * 100, 3),
-        "implied_move_pct": round(iv * rt * 100, 3),
-        "ratio": round(ratio, 2),
-        "verdict": verdict,
-        "suggestion": suggestion,
+        "realized_annual_pct": round(sigma * ann * 100, 1),
         "samples": n,
     }
+    iv = implied_vol(spot, markets, minutes_to_close)
+    if iv:
+        ratio = iv / sigma
+        if ratio > 1.15:
+            verdict = "Market is OVERpricing movement"
+            suggestion = ("Real moves are smaller than the market implies — near-the-money "
+                          "favorites (and NO on far strikes) look underpriced; fade big-move longshots.")
+        elif ratio < 0.87:
+            verdict = "Market is UNDERpricing movement"
+            suggestion = ("Real volatility is higher than priced — the far/longshot strikes "
+                          "(big moves) look underpriced; buy the wings.")
+        else:
+            verdict = "Volatility fairly priced"
+            suggestion = "Implied and realized movement roughly agree — no clear vol edge here."
+        out.update({
+            "implied_move_pct": round(iv * rt * 100, 3),
+            "implied_annual_pct": round(iv * ann * 100, 1),
+            "ratio": round(ratio, 2),
+            "verdict": verdict, "suggestion": suggestion,
+        })
+    else:
+        out.update({
+            "implied_move_pct": None, "implied_annual_pct": None, "ratio": None,
+            "verdict": "Implied vol unavailable",
+            "suggestion": "Not enough two-sided strikes right now to read the market's implied volatility.",
+        })
+    return out
 
 
 def kelly_fraction(prob, cost_cents):
@@ -388,7 +405,8 @@ def kelly_fraction(prob, cost_cents):
 
 
 def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
-                  yes_bid=None, no_bid=None, minutes_to_close=None):
+                  yes_bid=None, no_bid=None, yes_ask=None, no_ask=None,
+                  minutes_to_close=None):
     """When to sell a held position.
 
     side: 'YES' or 'NO' you bought. entry_cost: what you paid (cents).
@@ -435,6 +453,11 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
                   f"now ({upside}¢ of upside left). Hold, or sell only if you want to "
                   f"de-risk.")
 
+    # Always show the hold-to-settlement expectation: a contract pays 100¢ if it
+    # wins and 0¢ if it loses, so its average hold value is its fair value.
+    hold_note = (f"Hold to the close → worth ~{fair}¢ on average "
+                 f"(it becomes 100¢ if {side} wins, 0¢ if it loses).")
+
     # Settlement context when the close is near.
     settle_note = None
     if minutes_to_close is not None and minutes_to_close <= 10:
@@ -442,6 +465,24 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
             settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely winning (≈{fair}¢) — holding to settlement should pay ~100¢."
         elif fair <= 25:
             settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely losing (≈{fair}¢) — it may settle at 0¢. Selling now salvages value."
+
+    # Flip signal: the model now favors the *other* side as a fresh +edge buy.
+    # That means your position turned the wrong way -- consider selling out and
+    # taking the opposite side.
+    flip = None
+    other_side = "NO" if side == "YES" else "YES"
+    other_fair = fair_no_cents if side == "YES" else fair_yes_cents
+    other_ask = (no_ask if side == "YES" else yes_ask)
+    if other_ask is not None:
+        other_edge = round(other_fair - other_ask, 1)
+        if other_edge >= MIN_EDGE_CENTS:
+            flip = {
+                "to_side": other_side, "buy_at": other_ask,
+                "fair": other_fair, "edge": other_edge,
+                "note": (f"The model now favors {other_side} (fair {other_fair}¢ vs "
+                         f"{other_ask}¢ ask, +{other_edge}¢ edge). Consider selling your "
+                         f"{side} and flipping to {other_side}."),
+            }
 
     return {
         "side": side,
@@ -454,7 +495,9 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
         "action": action,
         "headline": headline,
         "detail": detail,
+        "hold_note": hold_note,
         "settle_note": settle_note,
+        "flip": flip,
     }
 
 

@@ -164,6 +164,8 @@ def api_list_markets():
                     sig["fair_yes_cents"], sig["fair_no_cents"],
                     yes_bid=(live or {}).get("yes_bid"),
                     no_bid=(live or {}).get("no_bid"),
+                    yes_ask=(live or {}).get("yes_ask"),
+                    no_ask=(live or {}).get("no_ask"),
                     minutes_to_close=sig.get("minutes_to_close"),
                 )
         out.append(item)
@@ -220,6 +222,27 @@ def api_kalshi_scan():
         close = max((m["close_time"] for m in markets if m["close_time"]), default=None)
         mins = _minutes_to_close(close) if close else 0.0
         vol = odds.vol_edge(spot, candles, markets, mins)
+        # Cross-check against Deribit's DVOL (the sharp options market, BTC/ETH).
+        if vol:
+            import deribit
+            dvol = deribit.get_dvol(coin)
+            if dvol:
+                vol["deribit_dvol_pct"] = dvol
+                ki = vol.get("implied_annual_pct")
+                src = "Kalshi-implied" if ki else "recent realized"
+                if not ki:
+                    ki = vol.get("realized_annual_pct")
+                if ki:
+                    r = ki / dvol
+                    vol["deribit_ratio"] = round(r, 2)
+                    if r >= 1.15:
+                        vol["deribit_note"] = (f"{src} vol ({ki}%) is RICHER than Deribit ({dvol}%) "
+                                               f"— favorites/near-money look cheap on Kalshi.")
+                    elif r <= 0.87:
+                        vol["deribit_note"] = (f"{src} vol ({ki}%) is CHEAPER than Deribit ({dvol}%) "
+                                               f"— the wings/longshots look cheap on Kalshi.")
+                    else:
+                        vol["deribit_note"] = f"{src} vol ({ki}%) is in line with Deribit ({dvol}%)."
 
     return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
                     "markets": enriched, "vol": vol})
@@ -366,13 +389,18 @@ def api_stats():
 
 if __name__ == "__main__":
     import os
-    # DEBUG=1 turns on auto-reload: the server watches its own files and restarts
-    # itself when they change (e.g. after a git pull) — no manual restart needed.
-    debug = os.environ.get("DEBUG") == "1"
+    import argparse
+    # Works the same in any shell:  python app.py --debug --port 8080
+    parser = argparse.ArgumentParser(description="Kalshi betting helper server")
+    parser.add_argument("--debug", action="store_true",
+                        help="auto-reload on file changes (no manual restart needed)")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 5000)))
+    args = parser.parse_args()
+    # --debug flag OR DEBUG=1 env var both enable auto-reload.
+    debug = args.debug or os.environ.get("DEBUG") == "1"
     # Start the background recorder once. Under the reloader, only the worker
     # process (WERKZEUG_RUN_MAIN) should start it, not the watcher parent.
     if not debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         import recorder
         recorder.start_background()  # passively record Kalshi quotes for the backtest
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=debug)
+    app.run(host="0.0.0.0", port=args.port, debug=debug, use_reloader=debug)

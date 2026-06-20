@@ -177,7 +177,12 @@ function renderMarket(m) {
     posHtml = `<div class="${cls}">
       <div class="sellhead"><span class="sellaction">${p.action === "SELL" ? "🔔 " : "⏳ "}${p.headline}</span>${pnlTxt}</div>
       <div class="small">You hold <b>${p.side}</b>, bought at <b>${p.entry_cost_cents}¢</b> · sell now ~<b>${p.sell_price_cents}¢</b>${p.sell_price_estimated ? " (est.)" : ""} · fair value <b>${p.fair_value_cents}¢</b></div>
+      <div class="choices">
+        <div class="choice"><b>💵 Sell now</b><br>get ~${p.sell_price_cents}¢ ${pnl != null ? `(${pnl >= 0 ? "+" : ""}${pnl}¢)` : ""} locked in</div>
+        <div class="choice"><b>⏳ Hold to close</b><br>worth ~${p.fair_value_cents}¢ avg (100¢ or 0¢)</div>
+      </div>
       <div class="small">${p.detail}</div>
+      ${p.flip ? `<div class="note dip" style="border-color:var(--no);color:var(--no)">🔄 ${p.flip.note}</div>` : ""}
       ${p.settle_note ? `<div class="small" style="margin-top:4px">⏰ ${p.settle_note}</div>` : ""}
       <button class="track-mini" style="margin-top:8px" onclick="clearPosition(${m.id})">clear position</button>
     </div>`;
@@ -274,11 +279,21 @@ const scanCtx = {}; // ticker -> context for the "I bought this" form
 
 function renderVol(v) {
   if (!v) return "";
-  const cls = v.ratio >= 1.15 ? "ev neg" : v.ratio <= 0.87 ? "ev pos" : "";
+  const hasImplied = v.ratio != null;
+  const cls = !hasImplied ? "" : v.ratio >= 1.15 ? "ev neg" : v.ratio <= 0.87 ? "ev pos" : "";
+  const moveLine = hasImplied
+    ? `implied <b>${v.implied_move_pct}%</b> vs realized <b>${v.realized_move_pct}%</b> move · ratio <b class="${cls}">${v.ratio}×</b>`
+    : `realized move <b>${v.realized_move_pct}%</b>`;
+  let deribit = "";
+  if (v.deribit_dvol_pct) {
+    const dcls = v.deribit_ratio >= 1.15 ? "ev neg" : v.deribit_ratio <= 0.87 ? "ev pos" : "";
+    deribit = `<div class="small" style="margin-top:6px">🛰️ vs Deribit (sharp options): DVOL <b>${v.deribit_dvol_pct}%</b>${v.deribit_ratio != null ? ` (<b class="${dcls}">${v.deribit_ratio}×</b>)` : ""} — ${v.deribit_note}</div>`;
+  }
   return `<div class="volbox">
     <div class="sellhead"><span class="sellaction">📊 ${v.verdict}</span>
-      <span class="small">implied <b>${v.implied_move_pct}%</b> vs realized <b>${v.realized_move_pct}%</b> move · ratio <b class="${cls}">${v.ratio}×</b></span></div>
+      <span class="small">${moveLine}</span></div>
     <div class="small">${v.suggestion}</div>
+    ${deribit}
   </div>`;
 }
 

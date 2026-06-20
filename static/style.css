@@ -230,6 +230,9 @@ button.danger { color: var(--no); }
 .sellaction { font-weight: 700; font-size: 0.95rem; }
 .sellbox .small { color: var(--muted); font-size: 0.82rem; margin-top: 3px; }
 .sellbox .small b { color: var(--text); }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.choice { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; color: var(--muted); }
+.choice b { color: var(--text); }
 
 .market {
   background: var(--card2);
