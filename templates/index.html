@@ -14,6 +14,7 @@
       <button class="tab active" data-tab="crypto">⚡ Crypto</button>
       <button class="tab" data-tab="baseball">⚾ Baseball</button>
       <button class="tab" data-tab="sports">🏆 Sports</button>
+      <button class="tab" data-tab="weather">🌡️ Weather</button>
       <button class="tab" data-tab="ledger">📒 Ledger</button>
     </nav>
     <div class="settingsbar">
@@ -166,6 +167,20 @@
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->
+
+   <div id="tab-weather" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🌡️ Weather edge</h2>
+        <div class="scan-controls">
+          <select id="wxCity"></select>
+          <button id="wxBtn">Load</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Kalshi daily high-temp markets vs the <b>NOAA forecast</b>. The model puts a normal distribution around the forecast high and prices each strike, then flags where Kalshi disagrees. <b>Trust moderate edges; a huge edge usually means our weather station differs from Kalshi's</b> — not free money.</p>
+      <div id="wxResults" class="markets"><div class="empty">Pick a city, then Load.</div></div>
+    </section>
+   </div><!-- /tab-weather -->
 
    <div id="tab-ledger" class="hidden">
     <section class="card">

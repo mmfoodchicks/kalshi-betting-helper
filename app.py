@@ -333,6 +333,23 @@ def api_sports(sport_key):
     return jsonify({"sport": sport_key, "events": events})
 
 
+@app.route("/api/weather/meta")
+def api_weather_meta():
+    import weather_markets
+    return jsonify({k: v["label"] for k, v in weather_markets.CITIES.items()})
+
+
+@app.route("/api/weather/<city>")
+def api_weather_city(city):
+    import weather_markets
+    try:
+        return jsonify(weather_markets.get_city(city))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"fetch failed: {e}"}), 502
+
+
 @app.route("/api/baseball/record")
 def api_baseball_record():
     try:

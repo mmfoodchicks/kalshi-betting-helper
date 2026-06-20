@@ -643,6 +643,7 @@ function setupTabs() {
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
+      $("tab-weather").classList.toggle("hidden", tab !== "weather");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "baseball" && !$("bbGames").dataset.loaded) {
         $("bbGames").dataset.loaded = "1";
@@ -651,6 +652,10 @@ function setupTabs() {
       if (tab === "sports" && !$("sportResults").dataset.loaded) {
         $("sportResults").dataset.loaded = "1";
         loadSports();
+      }
+      if (tab === "weather" && !$("wxResults").dataset.loaded) {
+        $("wxResults").dataset.loaded = "1";
+        loadWeather();
       }
       if (tab === "ledger") loadLedger();
     });
@@ -884,6 +889,45 @@ async function loadSports() {
   }
 }
 
+// ---- Weather edge ---------------------------------------------------------
+let wxLoaded = false;
+async function loadWeather() {
+  if (!wxLoaded) {
+    const meta = await (await fetch("/api/weather/meta")).json();
+    $("wxCity").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    wxLoaded = true;
+  }
+  const box = $("wxResults");
+  const city = $("wxCity").value;
+  box.innerHTML = `<div class="empty">Loading ${city}…</div>`;
+  try {
+    const d = await (await fetch("/api/weather/" + city)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${d.city} temperature markets right now.</div>`; return; }
+    box.innerHTML = d.events.map((ev) => {
+      const rows = ev.outcomes.map((o) => {
+        const ec = o.edge_cents;
+        const cls = ec == null ? "" : ec >= 7 ? "ev pos" : ec <= -7 ? "ev neg" : "";
+        return `<div class="sportout">
+          <div class="left">
+            <span class="oname">${o.name}</span>
+            <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · model fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${ec != null ? ` · edge <b class="${cls}">${ec >= 0 ? "+" : ""}${ec}¢</b>` : ""}</span>
+          </div>
+        </div>`;
+      }).join("");
+      return `<div class="bbgame">
+        <div class="top">
+          <div class="matchup">${d.city} — high temp ${ev.date}</div>
+          <div class="small" style="text-align:right">NOAA forecast high<br><b style="color:var(--text);font-size:1.1rem">${ev.forecast_high != null ? ev.forecast_high + "°F" : "n/a"}</b></div>
+        </div>
+        <div class="sportouts">${rows}</div>
+      </div>`;
+    }).join("");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Failed to load.</div>`;
+  }
+}
+
 // ---- Baseball model track record ------------------------------------------
 async function loadBaseballRecord() {
   try {
@@ -956,6 +1000,10 @@ async function init() {
   // Sports setup
   $("sportBtn").addEventListener("click", loadSports);
   $("sportSel").addEventListener("change", loadSports);
+
+  // Weather setup
+  $("wxBtn").addEventListener("click", loadWeather);
+  $("wxCity").addEventListener("change", loadWeather);
 
   refreshMarkets();
   // Auto-refresh ticks skip while the user is typing / has a form open.

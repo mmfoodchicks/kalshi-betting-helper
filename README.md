@@ -14,6 +14,10 @@ A live web app with two tabs:
   fair and which the house is gouging. **Arbitrage detector:** if an event's
   outcome prices ever sum to under 100¢, it flags the guaranteed profit. Log any
   outcome to your ledger.
+- **🌡️ Weather** — Kalshi daily high-temperature markets vs the **NOAA
+  forecast**: the model puts a distribution around the forecast high, prices each
+  strike, and flags where Kalshi disagrees. (Big edges usually mean a
+  station mismatch, not free money — trust the moderate ones.)
 - **📒 Ledger** — log every real bet you place and track actual profit, win
   rate, and ROI across everything.
 
