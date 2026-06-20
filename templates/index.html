@@ -13,6 +13,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="crypto">⚡ Crypto</button>
       <button class="tab" data-tab="baseball">⚾ Baseball</button>
+      <button class="tab" data-tab="sports">🏆 Sports</button>
       <button class="tab" data-tab="ledger">📒 Ledger</button>
     </nav>
     <div class="settingsbar">
@@ -139,7 +140,8 @@
           <button id="bbBtn" class="primary">Load slate</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Win probabilities from a Pythagorean + log5 model (runs + records), matched to live Kalshi prices for edge. Picks ranked most-confident first.</p>
+      <p class="sub" style="margin:4px 0 8px">Win probabilities from a deep expected-runs model, matched to live Kalshi prices for edge. Picks ranked most-confident first.</p>
+      <div id="bbRecord" class="stats" style="margin-bottom:10px"></div>
       <div id="bbGames" class="markets"><div class="empty">Pick a date and load the slate.</div></div>
     </section>
 
@@ -149,6 +151,20 @@
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
    </div><!-- /tab-baseball -->
+
+   <div id="tab-sports" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏆 Sports markets</h2>
+        <div class="scan-controls">
+          <select id="sportSel"></select>
+          <button id="sportBtn">Load</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Live Kalshi markets for the World Cup, tennis, golf &amp; UFC with <b>no-vig fair probabilities</b> — prices normalized to strip out the house margin. The <b>vig %</b> shown is how much edge the house is taking; lower is better value. Tap an outcome to log it to your ledger.</p>
+      <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
+    </section>
+   </div><!-- /tab-sports -->
 
    <div id="tab-ledger" class="hidden">
     <section class="card">

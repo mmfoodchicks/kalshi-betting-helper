@@ -8,8 +8,15 @@ A live web app with two tabs:
   *buy the dip* — and tracks how accurate it's been.
 - **⚾ Baseball** — model win probabilities for today's MLB slate, matched to
   live Kalshi prices to find edges, plus **parlay combo suggestions**.
+- **🏆 Sports** — live Kalshi markets for the **World Cup, tennis (ATP), golf
+  (PGA H2H), and UFC**, with **no-vig fair probabilities** (prices normalized to
+  strip out the house margin) and the **vig %** so you can see which markets are
+  fair and which the house is gouging. Log any outcome to your ledger.
 - **📒 Ledger** — log every real bet you place and track actual profit, win
   rate, and ROI across everything.
+
+The baseball tab also tracks the **model's real record** — picks are recorded
+pre-game and graded after finals into a running accuracy / ROI / Brier line.
 
 While it runs, the app also **records real Kalshi prices** in the background and
 backtests the edge strategy against real settled outcomes (Crypto tab → *Live
@@ -178,6 +185,7 @@ threshold:
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
 | `baseball.py` | MLB expected-runs model (pitching, bullpen, platoon, lineups, park, weather) + parlay combos |
 | `props.py` | Derived props: run line, totals, and player/team hit odds |
+| `sports.py` | Multi-sport Kalshi browser (soccer/tennis/golf/UFC) with no-vig odds |
 | `recorder.py` | Background Kalshi-quote recorder + real-outcome strategy backtest |
 | `backtest.py` | Model-only crypto backtest over historical prices |
 | `weather.py` | Game-time weather (NOAA + Open-Meteo) and run-environment factor |

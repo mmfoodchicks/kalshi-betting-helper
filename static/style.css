@@ -82,6 +82,17 @@ main {
 .hitrow b { color: var(--text); }
 @media (max-width: 560px) { .propgrid, .hitgrid { grid-template-columns: 1fr; } }
 
+.sportouts { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.sportout {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+}
+.sportout .left { flex: 1; min-width: 180px; display: flex; flex-direction: column; }
+.sportout .oname { font-weight: 600; font-size: 0.9rem; }
+.sportout .small { color: var(--muted); font-size: 0.8rem; }
+.sportout .small b { color: var(--text); }
+
 .matchgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
 .matchgrid > div { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
 .teamhdr { font-weight: 600; font-size: 0.85rem; }

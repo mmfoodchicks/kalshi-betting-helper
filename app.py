@@ -227,6 +227,13 @@ def api_baseball_today():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
+    # Record the model's pre-game picks (only for games not yet final) so we can
+    # grade the model's real track record later.
+    for g in games:
+        if (g.get("live") or {}).get("state") != "Final":
+            store.record_mlb_pick(g["game_pk"], date,
+                                  "home" if g["pick_is_home"] else "away",
+                                  g["pick"], g["pick_prob"], g.get("pick_price_cents"))
     combos = baseball.build_combos(games)
     return jsonify({"date": date, "games": games, "combos": combos})
 
@@ -298,6 +305,33 @@ def api_settle_bet(bet_id):
 def api_delete_bet(bet_id):
     store.delete_bet(bet_id)
     return jsonify({"ok": True})
+
+
+@app.route("/api/sports/meta")
+def api_sports_meta():
+    import sports
+    return jsonify({k: v["label"] for k, v in sports.SPORTS.items()})
+
+
+@app.route("/api/sports/<sport_key>")
+def api_sports(sport_key):
+    import sports
+    try:
+        events = sports.get_events(sport_key)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"kalshi fetch failed: {e}"}), 502
+    return jsonify({"sport": sport_key, "events": events})
+
+
+@app.route("/api/baseball/record")
+def api_baseball_record():
+    try:
+        baseball.grade_picks()
+    except Exception:
+        pass
+    return jsonify(store.mlb_record())
 
 
 @app.route("/api/stats")

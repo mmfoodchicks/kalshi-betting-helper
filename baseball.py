@@ -663,6 +663,36 @@ def _assemble(pool, max_legs):
     return combos
 
 
+def grade_picks():
+    """Grade any recorded MLB picks whose games are now final."""
+    import store
+    picks = store.ungraded_mlb_picks()
+    by_date = {}
+    for p in picks:
+        by_date.setdefault(p["date"], []).append(p)
+    for date, ps in by_date.items():
+        try:
+            data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=linescore")
+        except Exception:
+            continue
+        results = {}
+        for d in data.get("dates", []):
+            for g in d.get("games", []):
+                if g.get("status", {}).get("abstractGameState") != "Final":
+                    continue
+                lt = g.get("linescore", {}).get("teams", {})
+                hr = lt.get("home", {}).get("runs"); ar = lt.get("away", {}).get("runs")
+                if hr is None or ar is None:
+                    continue
+                home = g["teams"]["home"]["team"]["name"]
+                away = g["teams"]["away"]["team"]["name"]
+                results[g.get("gamePk")] = home if hr > ar else away
+        for p in ps:
+            winner = results.get(p["game_pk"])
+            if winner:
+                store.set_mlb_grade(p["game_pk"], 1 if winner == p["pick_name"] else 0, winner)
+
+
 def build_combos(games, max_legs=3, top_n=6):
     # Moneyline-only combos drive the EV-based highlights (those legs are priced).
     ml_legs = [{"game_pk": g["game_pk"], "type": "ML", "label": f"{g['pick']} to win",

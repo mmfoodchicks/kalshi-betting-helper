@@ -61,6 +61,15 @@ def init_db():
             if col not in cols:
                 c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
 
+        # Model's MLB picks, recorded pre-game and graded after finals.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS mlb_picks (
+                game_pk INTEGER PRIMARY KEY,
+                date TEXT, pick_side TEXT, pick_name TEXT,
+                prob REAL, price_cents REAL,
+                graded INTEGER DEFAULT 0, won INTEGER, winner_name TEXT
+            )""")
+
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
             CREATE TABLE IF NOT EXISTS bets (
@@ -76,6 +85,52 @@ def init_db():
                 settled_at INTEGER,
                 notes TEXT
             )""")
+
+
+# ---- MLB model track record -----------------------------------------------
+def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents):
+    """Store the model's pre-game pick (first time we see the game)."""
+    with _lock, _conn() as c:
+        c.execute(
+            """INSERT OR IGNORE INTO mlb_picks
+               (game_pk, date, pick_side, pick_name, prob, price_cents)
+               VALUES (?,?,?,?,?,?)""",
+            (game_pk, date, pick_side, pick_name, prob, price_cents),
+        )
+
+
+def ungraded_mlb_picks():
+    with _lock, _conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM mlb_picks WHERE graded=0").fetchall()]
+
+
+def set_mlb_grade(game_pk, won, winner_name):
+    with _lock, _conn() as c:
+        c.execute("UPDATE mlb_picks SET graded=1, won=?, winner_name=? WHERE game_pk=?",
+                  (won, winner_name, game_pk))
+
+
+def mlb_record():
+    with _lock, _conn() as c:
+        graded = [dict(r) for r in c.execute(
+            "SELECT * FROM mlb_picks WHERE graded=1").fetchall()]
+        pending = c.execute("SELECT COUNT(*) n FROM mlb_picks WHERE graded=0").fetchone()["n"]
+    n = len(graded)
+    wins = sum(1 for p in graded if p["won"] == 1)
+    # ROI as if 1 contract bet per pick at the recorded Kalshi price.
+    priced = [p for p in graded if p["price_cents"]]
+    staked = sum(p["price_cents"] for p in priced)
+    pnl = sum((100 if p["won"] else 0) - p["price_cents"] for p in priced)
+    # Brier over picks that had a probability.
+    bp = [p for p in graded if p["prob"] is not None]
+    brier = round(sum((p["prob"] - (1 if p["won"] else 0)) ** 2 for p in bp) / len(bp), 4) if bp else None
+    return {
+        "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
+        "accuracy_pct": round(100 * wins / n, 1) if n else None,
+        "roi_pct": round(100 * pnl / staked, 1) if staked else None,
+        "roi_bets": len(priced), "brier": brier,
+    }
 
 
 # ---- Bet ledger -----------------------------------------------------------

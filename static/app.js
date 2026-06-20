@@ -582,6 +582,7 @@ async function loadBaseball(silent) {
       const el = gamesBox.querySelector(`.bbgame[data-pk="${pk}"] details.props`);
       if (el) el.open = true;
     });
+    loadBaseballRecord();
 
     const c = d.combos;
     let html = "";
@@ -611,10 +612,15 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "baseball" && !$("bbGames").dataset.loaded) {
         $("bbGames").dataset.loaded = "1";
         loadBaseball();
+      }
+      if (tab === "sports" && !$("sportResults").dataset.loaded) {
+        $("sportResults").dataset.loaded = "1";
+        loadSports();
       }
       if (tab === "ledger") loadLedger();
     });
@@ -780,6 +786,86 @@ async function addBet() {
   loadLedger();
 }
 
+// ---- Sports browser -------------------------------------------------------
+function sfid(t) { return "sport_" + (t || "").replace(/[^a-z0-9]/gi, "_"); }
+window.showSportLog = (t) => { const e = document.getElementById(sfid(t)); if (e) e.classList.toggle("hidden"); };
+window.logSportBet = async (ticker, kind, desc, name, price) => {
+  const f = sfid(ticker);
+  const stake = parseFloat(document.getElementById(f + "_stake").value);
+  if (isNaN(stake)) return;
+  await fetch("/api/bets", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, description: desc, side: name, stake, price_cents: price }),
+  });
+  document.getElementById(f).classList.add("hidden");
+  const btn = document.getElementById(f + "_btn");
+  if (btn) btn.textContent = "logged ✓";
+};
+
+function renderSportEvent(e, sportKey) {
+  const secs = e.close_time ? e.close_time - Math.floor(Date.now() / 1000) : 0;
+  const vig = e.overround_pct;
+  const vigCls = vig == null ? "" : vig <= 4 ? "ev pos" : vig >= 10 ? "ev neg" : "";
+  const outs = e.outcomes.map((o) => {
+    const f = sfid(o.ticker);
+    return `<div class="sportout">
+      <div class="left">
+        <span class="oname">${o.name}</span>
+        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b></span>
+      </div>
+      <button class="track-mini" id="${f}_btn" onclick="showSportLog('${o.ticker}')">Log</button>
+      <div class="buyform hidden" id="${f}">
+        $<input id="${f}_stake" type="number" step="any" min="0" placeholder="stake" style="width:70px"/>
+        <button class="track-mini primary-mini" onclick='logSportBet(${JSON.stringify(o.ticker)},${JSON.stringify(sportKey)},${JSON.stringify(e.title)},${JSON.stringify(o.name)},${o.yes_ask})'>Save</button>
+      </div>
+    </div>`;
+  }).join("");
+  return `<div class="bbgame">
+    <div class="top">
+      <div class="matchup">${e.title}</div>
+      <div class="small" style="text-align:right">closes ${fmtCountdown(secs)}<br>${vig != null ? `vig <b class="${vigCls}">${vig}%</b>` : ""}</div>
+    </div>
+    <div class="sportouts">${outs}</div>
+  </div>`;
+}
+
+let sportsLoaded = false;
+async function loadSports() {
+  if (!sportsLoaded) {
+    const meta = await (await fetch("/api/sports/meta")).json();
+    $("sportSel").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    sportsLoaded = true;
+  }
+  const box = $("sportResults");
+  const key = $("sportSel").value;
+  box.innerHTML = `<div class="empty">Loading ${key}…</div>`;
+  try {
+    const d = await (await fetch("/api/sports/" + key)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${key} markets right now.</div>`; return; }
+    box.innerHTML = d.events.map((e) => renderSportEvent(e, key)).join("");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Failed to load.</div>`;
+  }
+}
+
+// ---- Baseball model track record ------------------------------------------
+async function loadBaseballRecord() {
+  try {
+    const r = await (await fetch("/api/baseball/record")).json();
+    const el = $("bbRecord");
+    if (!el) return;
+    if (!r.graded) {
+      el.innerHTML = r.pending ? `<span>Model track record: ${r.pending} picks awaiting results…</span>` : "";
+      return;
+    }
+    el.innerHTML = `Model record: <b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)` +
+      (r.roi_pct != null ? ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${r.roi_pct >= 0 ? "+" : ""}${r.roi_pct}%</b>` : "") +
+      (r.brier != null ? ` · Brier <b>${r.brier}</b>` : "") +
+      (r.pending ? ` · ${r.pending} pending` : "");
+  } catch (e) { /* ignore */ }
+}
+
 // ---- Wire up --------------------------------------------------------------
 async function init() {
   const coins = await (await fetch("/api/coins")).json();
@@ -830,6 +916,10 @@ async function init() {
   setupTabs();
   $("bbDate").value = new Date().toISOString().slice(0, 10);
   $("bbBtn").addEventListener("click", loadBaseball);
+
+  // Sports setup
+  $("sportBtn").addEventListener("click", loadSports);
+  $("sportSel").addEventListener("change", loadSports);
 
   refreshMarkets();
   setInterval(refreshMarkets, 5000);   // live updates for tracked markets
