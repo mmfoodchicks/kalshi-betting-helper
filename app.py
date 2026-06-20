@@ -12,10 +12,11 @@ Endpoints
 This is a decision-support tool. The odds are model estimates, not guarantees.
 """
 
+import os
 import time
 import threading
 
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, Response
 
 import prices
 import odds
@@ -25,6 +26,21 @@ import baseball
 
 app = Flask(__name__)
 store.init_db()
+
+# Optional password protection (recommended when exposing it over a tunnel).
+# Set APP_PASSWORD (and optionally APP_USER) in the environment to turn it on.
+APP_USER = os.environ.get("APP_USER", "kalshi")
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
+
+
+@app.before_request
+def _auth():
+    if not APP_PASSWORD:
+        return
+    a = request.authorization
+    if not a or a.username != APP_USER or a.password != APP_PASSWORD:
+        return Response("Login required", 401,
+                        {"WWW-Authenticate": 'Basic realm="Kalshi Helper"'})
 
 # Start the background Kalshi recorder exactly once, on the first request. This
 # works the same under the dev server, gunicorn, or any host (the __main__ block
