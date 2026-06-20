@@ -68,6 +68,43 @@ def get_spot(coin, max_age=2.0):
     return price
 
 
+def get_history(coin, granularity=60, count=1500):
+    """Page back through Coinbase candles to assemble a longer history.
+
+    Coinbase returns at most ~300 candles per request, so we walk backwards in
+    time windows until we have `count` candles. Returns oldest-first, deduped.
+    Used by the backtester, so it is not cached.
+    """
+    product = _product(coin)
+    by_time = {}
+    end = int(time.time())
+    window = 300 * granularity
+    # A little headroom on the number of pages so gaps don't starve us.
+    for _ in range(count // 250 + 3):
+        start = end - window
+        url = (
+            f"https://api.exchange.coinbase.com/products/{product}/candles"
+            f"?granularity={granularity}&start={start}&end={end}"
+        )
+        try:
+            raw = _get_json(url)
+        except Exception:
+            break
+        if not raw:
+            break
+        for c in raw:
+            by_time[int(c[0])] = {
+                "time": int(c[0]), "low": float(c[1]), "high": float(c[2]),
+                "open": float(c[3]), "close": float(c[4]), "volume": float(c[5]),
+            }
+        end = start
+        if len(by_time) >= count:
+            break
+        time.sleep(0.15)  # be gentle with the public API
+    candles = sorted(by_time.values(), key=lambda c: c["time"])
+    return candles[-count:]
+
+
 def get_candles(coin, granularity=60, max_age=10.0):
     """Return recent OHLCV candles, oldest first.
 

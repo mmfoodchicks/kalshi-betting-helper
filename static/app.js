@@ -2,6 +2,26 @@
 
 const $ = (id) => document.getElementById(id);
 
+// ---- Kelly bet sizing -----------------------------------------------------
+function getBankroll() { return parseFloat(localStorage.getItem("bankroll")) || 0; }
+function getKellyMult() { const v = localStorage.getItem("kellyMult"); return v == null ? 0.5 : parseFloat(v); }
+function kellyFraction(prob, costCents) {
+  if (prob == null || costCents == null || costCents <= 0 || costCents >= 100) return 0;
+  return Math.max(0, (100 * prob - costCents) / (100 - costCents));
+}
+// Returns a sizing string for a bet, or "" if there's no edge / no bankroll set.
+function stakeText(prob, costCents) {
+  const bank = getBankroll(), mult = getKellyMult();
+  if (!bank || !mult) return "";
+  const f = kellyFraction(prob, costCents) * mult;
+  if (f <= 0) return "";
+  const dollars = bank * f;
+  const contracts = Math.floor(dollars / (costCents / 100));
+  if (contracts < 1) return "";
+  const label = mult === 1 ? "full" : mult === 0.25 ? "¼" : "½";
+  return `💰 Stake <b>$${dollars.toFixed(2)}</b> (~${contracts} @ ${costCents}¢, ${label}-Kelly)`;
+}
+
 // ---- Close-time helpers ---------------------------------------------------
 function nextMark(minutes) {
   // Next clock boundary (e.g. next :00/:15/:30/:45 for 15).
@@ -263,11 +283,13 @@ function renderScanRow(m) {
   if (side) {
     const cost = side === "YES" ? m.yes_ask : m.no_ask;
     const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
+    const stake = stakeText(fair / 100, cost);
     action = `<div class="actionline">
         ${badge(sig.recommendation, sig.strength)}
         <span class="edgeval pos">+${bestEdge}¢ edge</span>
       </div>
-      <div class="plain">Buy <b>${side}</b> at <b>${cost}¢</b> → model fair value <b>${fair}¢</b>${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>`;
+      <div class="plain">Buy <b>${side}</b> at <b>${cost}¢</b> → model fair value <b>${fair}¢</b>${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>
+      ${stake ? `<div class="small" style="margin-top:4px">${stake}</div>` : ""}`;
   } else {
     action = `<div class="actionline">${badge("HOLD", "flat")}
         <span class="edgeval neg">no clear edge</span></div>
@@ -461,9 +483,13 @@ function renderGame(g) {
   const edge = g.edge_cents;
   const cls = edge != null && edge >= 5 ? "bbgame edge" : "bbgame";
   const ht = g.home_team, at = g.away_team;
-  const market = g.pick_price_cents != null
+  let market = g.pick_price_cents != null
     ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>`
     : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
+  if (g.pick_price_cents != null) {
+    const st = stakeText(g.pick_prob, g.pick_price_cents);
+    if (st) market += ` · ${st}`;
+  }
   const rec = (t) => (t.wins != null ? `${t.wins}-${t.losses} (${t.run_diff >= 0 ? "+" : ""}${t.run_diff})` : "");
   // platoon: away offense faces the home starter's hand, and vice-versa
   const plat = (off, oppSp) => off.ops_vs_opp_hand
@@ -593,6 +619,54 @@ function setupTabs() {
   });
 }
 
+// ---- Backtest -------------------------------------------------------------
+function renderBacktest(r) {
+  if (r.error) return `<div class="empty">${r.error}</div>`;
+  const roi = r.roi_vs_50_pct;
+  let verdict, vcls;
+  if (roi != null && roi > 2) { verdict = "✅ Beats a coin-flip market"; vcls = "ev pos"; }
+  else if (roi != null && roi < -2) { verdict = "❌ Loses to a coin-flip market — don't trust directional calls at this horizon"; vcls = "ev neg"; }
+  else { verdict = "➖ Roughly break-even — no real edge here"; vcls = ""; }
+
+  const cal = r.calibration.map((b) => {
+    const off = Math.abs(b.predicted - b.actual);
+    const c = off <= 6 ? "var(--yes)" : off <= 14 ? "var(--hold)" : "var(--no)";
+    return `<div class="calrow">
+      <span>${b.range} <span style="color:var(--muted)">(${b.n})</span></span>
+      <span>predicted <b>${b.predicted}%</b> → actual <b style="color:${c}">${b.actual}%</b></span>
+    </div>`;
+  }).join("");
+
+  return `<div class="bbgame">
+    <div class="sellhead"><span class="sellaction ${vcls}">${verdict}</span></div>
+    <div class="kv" style="margin-top:6px">
+      <span>Decisions tested <b>${r.n.toLocaleString()}</b></span>
+      <span>Accuracy <b>${r.accuracy_pct}%</b></span>
+      <span>Confident-pick accuracy <b>${r.accuracy_confident_pct}%</b> <span style="color:var(--muted)">(${r.confident_n})</span></span>
+    </div>
+    <div class="kv">
+      <span>Brier <b>${r.brier}</b> <span style="color:var(--muted)">(coin-flip ${r.brier_baseline})</span></span>
+      <span>Illustrative ROI vs 50¢ <b class="${roi >= 0 ? "ev pos" : "ev neg"}">${roi >= 0 ? "+" : ""}${roi}%</b></span>
+      <span>Bet win rate <b>${r.roi_win_pct}%</b> <span style="color:var(--muted)">(${r.roi_bets} bets)</span></span>
+    </div>
+    <div class="teamhdr" style="margin-top:10px">Calibration — does the predicted % match what happened?</div>
+    <div class="calbox">${cal}</div>
+    <div class="small" style="margin-top:8px">Brier below 0.25 and ROI above 0 mean the model is adding real signal. If not, treat this coin/horizon as a coin flip.</div>
+  </div>`;
+}
+
+async function runBacktest() {
+  const box = $("btResults");
+  const coin = $("btCoin").value, horizon = $("btHorizon").value;
+  box.innerHTML = `<div class="empty">Replaying ${coin} history… (a few seconds)</div>`;
+  try {
+    const r = await (await fetch(`/api/backtest?coin=${coin}&horizon=${horizon}`)).json();
+    box.innerHTML = renderBacktest(r);
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Backtest failed — try again.</div>`;
+  }
+}
+
 // ---- Wire up --------------------------------------------------------------
 async function init() {
   const coins = await (await fetch("/api/coins")).json();
@@ -616,6 +690,22 @@ async function init() {
   $("scanBtn").addEventListener("click", runScan);
   $("scanCoin").addEventListener("change", runScan);
   $("scanTimeframe").addEventListener("change", runScan);
+
+  // Bankroll / Kelly settings (persisted locally).
+  $("bankroll").value = localStorage.getItem("bankroll") || "";
+  $("kellyMult").value = localStorage.getItem("kellyMult") || "0.5";
+  $("bankroll").addEventListener("input", () => {
+    localStorage.setItem("bankroll", $("bankroll").value);
+    if (lastScan.coin) runScan();
+  });
+  $("kellyMult").addEventListener("change", () => {
+    localStorage.setItem("kellyMult", $("kellyMult").value);
+    if (lastScan.coin) runScan();
+  });
+
+  // Backtest setup
+  $("btCoin").innerHTML = meta.coins.map((c) => `<option>${c}</option>`).join("");
+  $("btBtn").addEventListener("click", runBacktest);
 
   // Baseball setup
   setupTabs();

@@ -34,6 +34,20 @@ main {
   padding: 16px 16px 40px;
 }
 
+.settingsbar {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex-wrap: wrap; margin-top: 12px; font-size: 0.85rem; color: var(--muted);
+}
+.settingsbar input, .settingsbar select {
+  background: var(--card2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 7px; padding: 5px 8px; font-size: 0.85rem;
+}
+.settingsbar .hint { font-size: 0.75rem; color: var(--border); }
+
+.calbox { margin-top: 6px; }
+.calrow { display: flex; justify-content: space-between; gap: 10px; font-size: 0.83rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.calrow b { color: var(--text); }
+
 .tabs { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
 .tab {
   background: var(--card); border: 1px solid var(--border); color: var(--muted);

@@ -235,6 +235,23 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
     }
 
 
+def kelly_fraction(prob, cost_cents):
+    """Optimal fraction of bankroll to stake on a binary contract.
+
+    A contract costs `cost_cents` and pays 100 if it wins. With model win
+    probability `prob`, the Kelly fraction simplifies to:
+        f = (100*prob - cost) / (100 - cost)
+    i.e. edge-in-cents divided by the profit-if-win. Returns 0 when there's no
+    edge (don't bet). Use a fraction of this (e.g. half-Kelly) to cut variance.
+    """
+    if prob is None or cost_cents is None:
+        return 0.0
+    if cost_cents <= 0 or cost_cents >= 100:
+        return 0.0
+    f = (100.0 * prob - cost_cents) / (100.0 - cost_cents)
+    return max(0.0, f)
+
+
 def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
                   yes_bid=None, no_bid=None, minutes_to_close=None):
     """When to sell a held position.

@@ -32,6 +32,17 @@ A live web app with two tabs:
     is cheap right now, good dip-buy" (and the mirror for fading a pump).
   - **Take-profit hints:** since Kalshi lets you sell anytime, it suggests a
     target to lock in profit.
+  - **Kelly bet-sizing:** set your **bankroll** and a Kelly fraction (¼ / ½ /
+    full) in the top bar, and every edge turns into a suggested dollar stake and
+    number of contracts — `f = edge ÷ (100 − cost)`, scaled by your fraction.
+  - **Backtesting:** the **🔬 Backtest the model** card replays real price
+    history (predicting from past data only, then checking what happened) and
+    reports accuracy, **Brier score** vs the 0.25 coin-flip baseline,
+    **calibration** (predicted % vs actual), and an illustrative ROI. Use it to
+    see whether a coin/horizon actually has signal before betting it. *(Reality
+    check: at very short horizons crypto tends to mean-revert, so the directional
+    model is near a coin flip — the scanner's value is in catching Kalshi
+    mispricings, not in predicting direction.)*
   - **When to sell what you hold:** tap **“I bought this”** on a scanned
     contract (or any tracked market) and enter the side + what you paid. The app
     then shows live **SELL / HOLD** guidance with your profit/loss, updating every

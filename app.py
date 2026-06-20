@@ -231,6 +231,23 @@ def api_baseball_today():
     return jsonify({"date": date, "games": games, "combos": combos})
 
 
+@app.route("/api/backtest")
+def api_backtest():
+    """Replay history to measure how well the crypto model predicts reality."""
+    import backtest
+    coin = request.args.get("coin", "BTC").upper()
+    try:
+        horizon = int(request.args.get("horizon", 15))
+    except ValueError:
+        horizon = 15
+    horizon = max(1, min(120, horizon))
+    try:
+        result = backtest.run(coin, horizon_min=horizon)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+    return jsonify(result)
+
+
 @app.route("/api/stats")
 def api_stats():
     return jsonify(store.stats())

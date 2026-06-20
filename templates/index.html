@@ -14,6 +14,17 @@
       <button class="tab active" data-tab="crypto">⚡ Crypto</button>
       <button class="tab" data-tab="baseball">⚾ Baseball</button>
     </nav>
+    <div class="settingsbar">
+      💰 Bankroll $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:90px"/>
+      · Kelly
+      <select id="kellyMult">
+        <option value="0.25">¼ (safe)</option>
+        <option value="0.5" selected>½ (balanced)</option>
+        <option value="1">full (aggressive)</option>
+        <option value="0">off</option>
+      </select>
+      <span class="hint">sizes each bet from its edge</span>
+    </div>
   </header>
 
   <main>
@@ -89,6 +100,23 @@
         <div id="statsBar" class="stats"></div>
       </div>
       <div id="markets" class="markets"></div>
+    </section>
+
+    <section class="card">
+      <div class="row-between">
+        <h2>🔬 Backtest the model</h2>
+        <div class="scan-controls">
+          <select id="btCoin"></select>
+          <select id="btHorizon">
+            <option value="15">15 min ahead</option>
+            <option value="30">30 min ahead</option>
+            <option value="60">60 min ahead</option>
+          </select>
+          <button id="btBtn">Run backtest</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Replays real price history: at each minute it predicts using only past data, then checks what actually happened. Honest proof of whether the model beats a coin flip — or doesn't.</p>
+      <div id="btResults" class="markets"><div class="empty">Pick a coin &amp; horizon, then Run backtest.</div></div>
     </section>
    </div><!-- /tab-crypto -->
 
