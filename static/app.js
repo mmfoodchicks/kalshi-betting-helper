@@ -562,6 +562,8 @@ async function loadBaseball(silent) {
     if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
     if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
       html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
+    if (c.mixed && c.mixed.length)
+      html += renderCombo(c.mixed[0], "🎲 Best prop combo", "hl prop");
     html += `<div class="small" style="margin:10px 0 4px"><b>Game-winner parlays</b> — by combined chance:</div>`;
     html += c.all.map((x) => renderCombo(x)).join("");
     if (c.mixed && c.mixed.length) {

@@ -82,6 +82,7 @@ main {
 }
 .combo.hl { border-color: var(--hold); }
 .combo.hl.value { border-color: var(--yes); }
+.combo.hl.prop { border-color: var(--accent); }
 .combo .chead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .combo .ctag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .combo .legs { margin: 8px 0 0; padding-left: 18px; font-size: 0.88rem; }
