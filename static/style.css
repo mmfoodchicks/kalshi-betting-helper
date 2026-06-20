@@ -85,7 +85,12 @@ main {
 .combo .chead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .combo .ctag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .combo .legs { margin: 8px 0 0; padding-left: 18px; font-size: 0.88rem; }
-.combo .legs li { margin: 2px 0; }
+.combo .legs li { margin: 4px 0; }
+.legtag {
+  display: inline-block; font-size: 0.66rem; text-transform: uppercase;
+  letter-spacing: 0.03em; background: var(--card); border: 1px solid var(--border);
+  color: var(--accent); border-radius: 5px; padding: 1px 5px; margin-right: 4px;
+}
 .combo .cnums { color: var(--muted); font-size: 0.82rem; margin-top: 8px; display: flex; gap: 16px; flex-wrap: wrap; }
 .combo .cnums b { color: var(--text); }
 .ev.pos { color: var(--yes); font-weight: 700; }

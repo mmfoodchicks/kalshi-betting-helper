@@ -98,6 +98,14 @@ leg has a live Kalshi price — the **actual parlay payout and EV%**, so you can
 spot +EV combos. It highlights a **🛡️ Safest** combo (highest chance) and a
 **💰 Best value** combo (highest EV).
 
+There are two groups:
+- **Game-winner parlays** — moneyline picks (these carry live Kalshi prices, so
+  they get EV).
+- **🎲 Mixed combos (incl. props)** — legs drawn from *every* bet type
+  (moneyline, run line, totals, hit props), each tagged by type. To keep the
+  math honest, a combo never uses two legs from the same game, so the legs stay
+  (roughly) independent and the combined chance is a straight multiply.
+
 > Parlays are higher-risk: a 3-leg combo of 60% picks only hits ~22% of the
 > time. Bigger payout, longer odds. The "safest" combo is the more conservative
 > play.

@@ -584,22 +584,73 @@ def analyze_slate(date, season):
     return games
 
 
-def build_combos(games, max_legs=3, top_n=6):
-    pool = [g for g in games if g["pick_prob"] >= 0.5][:top_n]
+def _candidate_legs(games):
+    """All bettable legs across the slate: moneyline + run line + totals + hits.
+
+    Each leg: {game_pk, type, label, matchup, prob, price_cents}. Combos enforce
+    one leg per game, so legs from different games stay (roughly) independent.
+    """
+    legs = []
+    for g in games:
+        pk = g["game_pk"]; mu = g["matchup"]
+        if g["pick_prob"] >= 0.5:
+            legs.append({"game_pk": pk, "type": "ML", "label": f"{g['pick']} to win",
+                         "matchup": mu, "prob": g["pick_prob"],
+                         "price_cents": g["pick_price_cents"]})
+        p = g.get("props") or {}
+        rl = p.get("run_line")
+        if rl:
+            fb = rl["fav_by2_pct"] / 100.0
+            dp = rl["dog_plus15_pct"] / 100.0
+            if fb >= 0.55:
+                legs.append({"game_pk": pk, "type": "Run line", "matchup": mu,
+                             "label": f"{rl['favorite']} −1.5 (win by 2+)", "prob": fb, "price_cents": None})
+            elif dp >= 0.62:
+                legs.append({"game_pk": pk, "type": "Run line", "matchup": mu,
+                             "label": f"{rl['underdog']} +1.5 (lose by ≤1 or win)", "prob": dp, "price_cents": None})
+        # Single best total line (closest to a coin flip avoided): highest-prob side.
+        best_tot = None
+        for t in p.get("totals", []):
+            over = t["over_pct"] / 100.0; under = t["under_pct"] / 100.0
+            side, pr = ("Over", over) if over >= under else ("Under", under)
+            if pr >= 0.58 and (best_tot is None or pr > best_tot["prob"]):
+                best_tot = {"game_pk": pk, "type": "Total", "matchup": mu,
+                            "label": f"{side} {t['line']} runs", "prob": pr, "price_cents": None}
+        if best_tot:
+            legs.append(best_tot)
+        # Best single hitter (1+ hit) from either lineup.
+        best_hit = None
+        for key in ("hits_away", "hits_home"):
+            h = p.get(key)
+            if h and h.get("batters"):
+                b = h["batters"][0]; pr = b["hit1_pct"] / 100.0
+                if pr >= 0.62 and (best_hit is None or pr > best_hit["prob"]):
+                    best_hit = {"game_pk": pk, "type": "Hit", "matchup": mu,
+                                "label": f"{b['name']} 1+ hit", "prob": pr, "price_cents": None}
+        if best_hit:
+            legs.append(best_hit)
+    return legs
+
+
+def _assemble(pool, max_legs):
+    """Build combos from a leg pool, allowing at most one leg per game."""
     combos = []
-    for legs in range(2, max_legs + 1):
-        for combo in itertools.combinations(pool, legs):
+    for n in range(2, max_legs + 1):
+        for combo in itertools.combinations(pool, n):
+            if len({l["game_pk"] for l in combo}) < n:
+                continue  # no two legs from the same game (keeps them independent)
             prob = 1.0; cost = 1.0; priced = True
-            for g in combo:
-                prob *= g["pick_prob"]
-                if g["pick_price_cents"]:
-                    cost *= g["pick_price_cents"] / 100.0
+            for l in combo:
+                prob *= l["prob"]
+                if l.get("price_cents"):
+                    cost *= l["price_cents"] / 100.0
                 else:
                     priced = False
             item = {
-                "legs": [{"pick": g["pick"], "matchup": g["matchup"],
-                          "prob_pct": g["pick_pct"], "price_cents": g["pick_price_cents"]} for g in combo],
-                "n_legs": legs,
+                "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l.get("type"),
+                          "prob_pct": round(l["prob"] * 100, 1), "price_cents": l.get("price_cents")}
+                         for l in combo],
+                "n_legs": n,
                 "combined_prob_pct": round(prob * 100, 1),
                 "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
             }
@@ -609,8 +660,25 @@ def build_combos(games, max_legs=3, top_n=6):
                 item["parlay_cost_cents"] = round(cost * 100, 1)
                 item["ev_pct"] = round((prob * payout - 1) * 100, 1)
             combos.append(item)
-    safest = max(combos, key=lambda c: c["combined_prob_pct"], default=None)
-    priced = [c for c in combos if c.get("ev_pct") is not None]
+    return combos
+
+
+def build_combos(games, max_legs=3, top_n=6):
+    # Moneyline-only combos drive the EV-based highlights (those legs are priced).
+    ml_legs = [{"game_pk": g["game_pk"], "type": "ML", "label": f"{g['pick']} to win",
+                "matchup": g["matchup"], "prob": g["pick_prob"],
+                "price_cents": g["pick_price_cents"]}
+               for g in games if g["pick_prob"] >= 0.5][:top_n]
+    ml_combos = _assemble(ml_legs, max_legs)
+    safest = max(ml_combos, key=lambda c: c["combined_prob_pct"], default=None)
+    priced = [c for c in ml_combos if c.get("ev_pct") is not None]
     best_value = max(priced, key=lambda c: c["ev_pct"], default=None)
+
+    # Mixed combos draw from every bet type (moneyline + props).
+    legs = sorted(_candidate_legs(games), key=lambda l: l["prob"], reverse=True)[:10]
+    mixed = _assemble(legs, max_legs)
+    mixed.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
+
     return {"safest": safest, "best_value": best_value,
-            "all": sorted(combos, key=lambda c: c["combined_prob_pct"], reverse=True)[:12]}
+            "all": sorted(ml_combos, key=lambda c: c["combined_prob_pct"], reverse=True)[:12],
+            "mixed": mixed[:12]}
