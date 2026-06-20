@@ -322,7 +322,7 @@ function renderScanRow(m) {
         ${badge(sig.recommendation, sig.strength)}
         <span class="edgeval pos">+${bestEdge}¢ edge</span>
       </div>
-      <div class="plain">Buy <b>${side}</b> at <b>${cost}¢</b> → model fair value <b>${fair}¢</b>${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>
+      <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>
       ${stake ? `<div class="small" style="margin-top:4px">${stake}</div>` : ""}`;
   } else {
     action = `<div class="actionline">${badge("HOLD", "flat")}
@@ -709,10 +709,15 @@ function setupTabs() {
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
+      $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "combine") loadCombineCats();
+      if (tab === "commodities" && !$("comResults").dataset.loaded) {
+        $("comResults").dataset.loaded = "1";
+        loadCommodities();
+      }
       if (tab === "baseball" && !$("bbGames").dataset.loaded) {
         $("bbGames").dataset.loaded = "1";
         loadBaseball();
@@ -927,11 +932,15 @@ function renderSportEvent(e, sportKey) {
   const arb = e.arbitrage_pct
     ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
+  const pick = e.pick
+    ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">✅ Buy this one: <b>${e.pick.name}</b> @ ${e.pick.yes_ask}¢ · <b>${e.pick.fair_pct}%</b> confidence (market favorite)</div>`
+    : "";
   return `<div class="bbgame">
     <div class="top">
       <div class="matchup">${e.title}</div>
       <div class="small" style="text-align:right">closes ${fmtCountdown(secs)}<br>${vig != null ? `vig <b class="${vigCls}">${vig}%</b>` : ""}</div>
     </div>
+    ${pick}
     ${arb}
     <div class="sportouts">${outs}</div>
   </div>`;
@@ -954,6 +963,50 @@ async function loadSports() {
     box.innerHTML = d.events.map((e) => renderSportEvent(e, key)).join("");
   } catch (e) {
     box.innerHTML = `<div class="empty">Failed to load.</div>`;
+  }
+}
+
+// ---- Commodities scanner --------------------------------------------------
+let comLoaded = false;
+function renderComRow(m) {
+  const sig = m.signal;
+  const side = sig.recommendation === "BUY YES" ? "YES" : sig.recommendation === "BUY NO" ? "NO" : null;
+  const cls = sig.recommendation !== "HOLD" ? "scanrow edge" : "scanrow";
+  let action;
+  if (side) {
+    const cost = side === "YES" ? m.yes_ask : m.no_ask;
+    const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
+    action = `<div class="actionline">${badge(sig.recommendation, sig.strength)}<span class="edgeval pos">+${m.best_edge}¢ edge</span></div>
+      <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}</div>`;
+  } else {
+    action = `<div class="actionline">${badge("HOLD", "flat")}<span class="edgeval neg">no clear edge</span></div>
+      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market.</div>`;
+  }
+  return `<div class="${cls}">
+    <div class="scanhead">
+      <div class="strike">${m.subtitle || m.ticker}</div>
+      <div class="small">closes in ${m.days_to_close}d · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢</div>
+    </div>
+    ${action}
+  </div>`;
+}
+async function loadCommodities() {
+  if (!comLoaded) {
+    const meta = await (await fetch("/api/commodities/meta")).json();
+    $("comSel").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    comLoaded = true;
+  }
+  const box = $("comResults");
+  const key = $("comSel").value;
+  box.innerHTML = `<div class="empty">Scanning ${key}…</div>`;
+  try {
+    const d = await (await fetch("/api/commodities/scan?key=" + key)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const spot = `<div class="volbox"><div class="sellhead"><span class="sellaction">${d.label}</span><span class="small">our spot <b>$${d.spot}</b> — verify this matches Kalshi's level</span></div></div>`;
+    if (!d.markets.length) { box.innerHTML = spot + `<div class="empty">No open ${key} contracts right now.</div>`; return; }
+    box.innerHTML = spot + d.markets.map(renderComRow).join("");
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Scan failed.</div>`;
   }
 }
 
@@ -1122,6 +1175,10 @@ async function init() {
   // Weather setup
   $("wxBtn").addEventListener("click", loadWeather);
   $("wxCity").addEventListener("change", loadWeather);
+
+  // Commodities
+  $("comBtn").addEventListener("click", loadCommodities);
+  $("comSel").addEventListener("change", loadCommodities);
 
   // Mega combo maker
   $("cmbBtn").addEventListener("click", buildCombine);

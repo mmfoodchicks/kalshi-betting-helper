@@ -22,7 +22,8 @@ import sports
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
 SPORT_KEYS = {"ufc", "tennis", "wta", "itf", "golf", "soccer", "wnba",
-              "boxing", "cricket", "cfl", "nfl", "mls"}
+              "boxing", "cricket", "cfl", "nfl", "ncaaf", "mls",
+              "f1", "nascar", "motogp"}
 
 CATEGORIES = {
     "mlb": "⚾ MLB",
@@ -39,6 +40,10 @@ CATEGORIES = {
     "cricket": "🏏 Cricket",
     "cfl": "🏈 CFL",
     "nfl": "🏈 NFL",
+    "ncaaf": "🏈 College FB",
+    "f1": "🏎️ F1",
+    "nascar": "🏁 NASCAR",
+    "motogp": "🏍️ MotoGP",
 }
 
 

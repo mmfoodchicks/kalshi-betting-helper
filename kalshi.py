@@ -64,18 +64,14 @@ def _f(v):
         return None
 
 
-def get_open_markets(coin, timeframe, limit=100):
-    """Return normalized open Kalshi markets for a coin + timeframe.
+def markets_for_series(series_ticker_, limit=100):
+    """Normalized open markets for any series ticker (crypto, commodities, ...).
 
-    Each item:
-      ticker, title, subtitle, strike_type, floor, cap, close_time (epoch),
-      yes_bid, yes_ask, no_bid, no_ask, last (all in CENTS), volume
+    Each item: ticker, title, subtitle, strike_type, floor, cap, close_time
+    (epoch), yes_bid, yes_ask, no_bid, no_ask, last (CENTS), volume.
     """
-    st = series_ticker(coin, timeframe)
     params = urllib.parse.urlencode({
-        "series_ticker": st,
-        "status": "open",
-        "limit": limit,
+        "series_ticker": series_ticker_, "status": "open", "limit": limit,
     })
     data = _get_json(f"{BASE}/markets?{params}")
     out = []
@@ -96,9 +92,13 @@ def get_open_markets(coin, timeframe, limit=100):
             "last": _cents(m.get("last_price_dollars")),
             "volume": _f(m.get("volume_fp")) or 0,
         })
-    # Soonest-closing first.
     out.sort(key=lambda x: (x["close_time"] is None, x["close_time"] or 0))
     return out
+
+
+def get_open_markets(coin, timeframe, limit=100):
+    """Normalized open Kalshi markets for a coin + timeframe."""
+    return markets_for_series(series_ticker(coin, timeframe), limit)
 
 
 def get_market(ticker):

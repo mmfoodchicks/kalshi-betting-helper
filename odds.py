@@ -555,6 +555,15 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
             near_settlement = {"side": "NO", "fair": fair_no, "ask": no_ask,
                                "mins": round(minutes_to_close, 1)}
 
+    # Confidence = the model's probability that the recommended bet WINS
+    # (i.e. the fair value of the side we're buying). Honest and interpretable.
+    if rec == "BUY YES":
+        confidence = fair_yes
+    elif rec == "BUY NO":
+        confidence = fair_no
+    else:
+        confidence = None
+
     return {
         "prob_yes": round(prob_yes, 4),
         "fair_yes_cents": fair_yes,
@@ -563,6 +572,7 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
         "edge_no_cents": edge_no,
         "recommendation": rec,
         "strength": strength,
+        "confidence": confidence,
         "rationale": rationale,
         "dip_note": dip_note,
         "near_settlement": near_settlement,

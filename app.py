@@ -248,6 +248,49 @@ def api_kalshi_scan():
                     "markets": enriched, "vol": vol})
 
 
+@app.route("/api/commodities/meta")
+def api_commodities_meta():
+    import commodities
+    return jsonify({k: v["label"] for k, v in commodities.COMMODITIES.items()})
+
+
+@app.route("/api/commodities/scan")
+def api_commodities_scan():
+    """Model Kalshi commodity price markets like crypto (GBM on daily prices)."""
+    import commodities
+    key = request.args.get("key", "gold")
+    cfg = commodities.COMMODITIES.get(key)
+    if not cfg:
+        return jsonify({"error": "unknown commodity"}), 400
+    try:
+        spot = commodities.get_spot(key)
+        candles = commodities.get_candles(key)
+    except Exception as e:
+        return jsonify({"error": f"price feed failed: {e}"}), 502
+    markets = []
+    for st in cfg["series"]:
+        try:
+            markets += kalshi.markets_for_series(st)
+        except Exception:
+            pass
+    enriched = []
+    now = time.time()
+    for m in markets:
+        if not m.get("yes_ask"):
+            continue
+        days = max(0.0, (m["close_time"] - now) / 86400.0) if m["close_time"] else 0.0
+        sig = odds.kalshi_signal(spot, candles, m, days)  # day-based units
+        item = dict(m)
+        item["days_to_close"] = round(days, 1)
+        item["signal"] = sig
+        edges = [e for e in (sig["edge_yes_cents"], sig["edge_no_cents"]) if e is not None]
+        item["best_edge"] = max(edges) if edges else None
+        enriched.append(item)
+    enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
+    return jsonify({"key": key, "label": cfg["label"], "spot": round(spot, 4) if spot else None,
+                    "markets": enriched})
+
+
 @app.route("/api/baseball/today")
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""

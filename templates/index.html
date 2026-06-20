@@ -14,6 +14,7 @@
       <button class="tab active" data-tab="crypto">⚡ Crypto</button>
       <button class="tab" data-tab="baseball">⚾ Baseball</button>
       <button class="tab" data-tab="sports">🏆 Sports</button>
+      <button class="tab" data-tab="commodities">🛢️ Commodities</button>
       <button class="tab" data-tab="weather">🌡️ Weather</button>
       <button class="tab" data-tab="combine">🎰 Combos</button>
       <button class="tab" data-tab="ledger">📒 Ledger</button>
@@ -168,6 +169,20 @@
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->
+
+   <div id="tab-commodities" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🛢️ Commodities scanner</h2>
+        <div class="scan-controls">
+          <select id="comSel"></select>
+          <button id="comBtn">Scan</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 10px">Kalshi commodity price markets modeled like crypto (volatility from recent daily prices). Each contract gets a <b>buy recommendation + confidence + edge</b>. <b>Check the spot</b> below matches where Kalshi's ladder is centered — our feed is the Yahoo front-month future and may differ from Kalshi's settlement source (basis risk).</p>
+      <div id="comResults" class="markets"><div class="empty">Pick a commodity, then Scan.</div></div>
+    </section>
+   </div><!-- /tab-commodities -->
 
    <div id="tab-weather" class="hidden">
     <section class="card">

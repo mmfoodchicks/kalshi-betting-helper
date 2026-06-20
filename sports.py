@@ -26,7 +26,11 @@ SPORTS = {
     "cricket": {"label": "🏏 Cricket (T20)", "series": ["KXT20MATCH"]},
     "cfl":    {"label": "🏈 CFL", "series": ["KXCFLGAME"]},
     "nfl":    {"label": "🏈 NFL", "series": ["KXNFLGAME"]},
+    "ncaaf":  {"label": "🏈 College FB", "series": ["KXNCAAFGAME"]},
     "mls":    {"label": "⚽ MLS", "series": ["KXMLSGAME"]},
+    "f1":     {"label": "🏎️ F1", "series": ["KXF1"]},
+    "nascar": {"label": "🏁 NASCAR", "series": ["KXNASCARRACE"]},
+    "motogp": {"label": "🏍️ MotoGP", "series": ["KXMOTOGP"]},
 }
 
 
@@ -69,6 +73,10 @@ def get_events(sport_key, limit=200):
         # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
         e["arbitrage_pct"] = round(100 - total, 1) if (total and total < 100) else None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
+        # "Buy this one": the de-vig favorite (market lean, not an independent edge).
+        top = e["outcomes"][0] if e["outcomes"] else None
+        e["pick"] = {"name": top["name"], "fair_pct": top["fair_pct"], "yes_ask": top["yes_ask"]} \
+            if (top and top.get("fair_pct") is not None) else None
         out.append(e)
 
     out.sort(key=lambda e: (e["close_time"] is None, e["close_time"] or 0))
