@@ -1205,3 +1205,11 @@ async function init() {
 }
 
 init();
+
+// Register the service worker (PWA / installable). Only works on a secure
+// context (https or localhost); silently skips otherwise.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

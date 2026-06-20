@@ -56,6 +56,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/sw.js")
+def service_worker():
+    # Served from root so the service worker's scope covers the whole app.
+    return app.send_static_file("sw.js"), 200, {"Content-Type": "application/javascript"}
+
+
 @app.route("/api/coins")
 def api_coins():
     return jsonify(sorted(prices.SUPPORTED_COINS.keys()))

@@ -164,6 +164,37 @@ There are two groups:
    probability. Closer threshold + more time + more volatility = closer to a
    coin flip; far-away threshold + little time = near-certain.
 
+## 📱 Put it on your phone
+
+The app is an installable **PWA** — add it to your home screen and it runs
+fullscreen with its own icon. It still talks to the server you run, so the
+server has to be reachable from your phone. Two ways:
+
+**A) Same Wi-Fi (simplest).** Run the server, find your computer's local IP
+(e.g. `192.168.1.50`), then on your phone's browser open
+`http://192.168.1.50:5000`. In your browser menu tap **Add to Home Screen**.
+(Note: over plain `http` it works as a shortcut; full install/offline needs
+HTTPS — see B.)
+
+**B) Anywhere + real install/APK (HTTPS via a free tunnel).** With the server
+running, in another terminal start a Cloudflare tunnel:
+
+```bash
+cloudflared tunnel --url http://localhost:5000
+```
+
+It prints an `https://…trycloudflare.com` URL. Open that on your phone →
+**Add to Home Screen** for a true installed PWA.
+
+**Want an actual APK?** Take that `https` URL to **https://www.pwabuilder.com**,
+paste it, and it generates a real Android **APK** (and a Play Store package) from
+the PWA — no Android Studio needed.
+
+> Why not a standalone offline APK? All the modeling and live Kalshi/price/stat
+> calls happen in the Python backend, so the app needs the server running — it
+> can't all be bundled into the phone. The PWA is the clean way to get an
+> app-like icon + fullscreen experience pointed at your server.
+
 ## Run it
 
 Requires Python 3.9+.
