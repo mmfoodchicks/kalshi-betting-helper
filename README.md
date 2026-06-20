@@ -78,6 +78,16 @@ Pick a date and **Load slate**. For every MLB game that day it shows:
 - The model's **pick** and confidence, ranked most-confident first.
 - The **live Kalshi price** for that pick and the **edge** (model % − market ¢),
   when the game can be matched to a Kalshi `KXMLBGAME` market.
+- **Live score + status** for every game (scheduled / 🔴 live with inning /
+  final), which **auto-refreshes every 20s** while the tab is open — like the
+  crypto tab.
+- A **📊 Props & odds** panel (expandable) per game, derived from the run model:
+  - **Run line / win-by-margin** — chance the favorite wins by 2+ (−1.5) and the
+    underdog stays within 1 (+1.5).
+  - **Total runs over/under** for a few lines around the model total.
+  - **Hit props** — each posted hitter's **1+ and 2+ hit odds** (binomial over
+    expected plate appearances and a per-PA hit rate adjusted for the opposing
+    pitching), plus a **team total-hits over/under**.
 
 ### Combos (parlays)
 
@@ -142,6 +152,7 @@ threshold:
 | `prices.py` | Live spot + candle feed (Coinbase, stdlib only) |
 | `kalshi.py` | Live Kalshi market data (public, read-only) |
 | `baseball.py` | MLB expected-runs model (pitching, bullpen, platoon, lineups, park, weather) + parlay combos |
+| `props.py` | Derived props: run line, totals, and player/team hit odds |
 | `weather.py` | Game-time weather (NOAA + Open-Meteo) and run-environment factor |
 | `stadiums.py` | Stadium coordinates, roof type, and center-field orientation |
 | `odds.py` | The crypto odds generator + signal logic |

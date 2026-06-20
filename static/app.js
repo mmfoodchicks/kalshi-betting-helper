@@ -397,6 +397,58 @@ async function trackMarket() {
 }
 
 // ---- Baseball insights ----------------------------------------------------
+function liveHeader(g) {
+  const lv = g.live || {};
+  const aR = lv.away_runs, hR = lv.home_runs;
+  if (lv.is_live) {
+    const half = lv.inning_state ? `${lv.inning_state} ${lv.inning}` : "";
+    return `<div class="livebox live">🔴 LIVE · ${half}<span class="score">${g.away_abbr} ${aR ?? 0} – ${hR ?? 0} ${g.home_abbr}</span></div>`;
+  }
+  if (lv.is_final) {
+    return `<div class="livebox final">FINAL<span class="score">${g.away_abbr} ${aR ?? 0} – ${hR ?? 0} ${g.home_abbr}</span></div>`;
+  }
+  return `<div class="livebox sched">${g.status || "Scheduled"}</div>`;
+}
+
+function renderProps(g) {
+  const p = g.props;
+  if (!p) return "";
+  const rl = p.run_line;
+  const totals = p.totals.map((t) =>
+    `${t.line} <b>O ${t.over_pct}%</b> / U ${t.under_pct}%`).join(" &nbsp;·&nbsp; ");
+  const hitCols = (side, label) => {
+    const h = side;
+    if (!h) return `<div><div class="teamhdr">${label}</div><div class="small">lineup not posted yet</div></div>`;
+    const tt = h.team_total_hits;
+    const rows = h.batters.map((b) =>
+      `<div class="hitrow"><span>${b.name}</span><span>1+ <b>${b.hit1_pct}%</b> · 2+ ${b.hit2_pct}%</span></div>`).join("");
+    return `<div>
+      <div class="teamhdr">${label}</div>
+      <div class="small">Team hits o/u <b>${tt.line}</b>: over <b>${tt.over_pct}%</b></div>
+      ${rows}
+    </div>`;
+  };
+  return `<details class="props">
+    <summary>📊 Props &amp; odds — run line, totals, hit props</summary>
+    <div class="propgrid">
+      <div class="propcard">
+        <div class="teamhdr">Run line (margin)</div>
+        <div class="small"><b>${rl.favorite} −1.5</b> (win by 2+): <b>${rl.fav_by2_pct}%</b></div>
+        <div class="small">${rl.underdog} +1.5 (stays within 1): <b>${rl.dog_plus15_pct}%</b></div>
+        <div class="teamhdr" style="margin-top:8px">Total runs (model ${p.model_total})</div>
+        <div class="small">${totals}</div>
+      </div>
+      <div class="propcard">
+        <div class="teamhdr">Hit props (1+ / 2+ hits)</div>
+        <div class="hitgrid">
+          ${hitCols(p.hits_away, g.away_abbr)}
+          ${hitCols(p.hits_home, g.home_abbr)}
+        </div>
+      </div>
+    </div>
+  </details>`;
+}
+
 function spLine(sp) {
   if (!sp || sp.era == null) return `${sp && sp.name ? sp.name : "TBD"} <span style="color:var(--border)">(no stats)</span>`;
   const hand = sp.hand ? `${sp.hand}HP` : "";
@@ -428,13 +480,13 @@ function renderGame(g) {
   } else if (w && w.roof === "fixed") {
     wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: dome — weather neutral</div>`;
   }
-  return `<div class="${cls}">
+  return `<div class="${cls}" data-pk="${g.game_pk}">
     <div class="top">
       <div>
         <div class="matchup">${g.matchup}</div>
-        <div class="pick">Pick: ${g.pick} &nbsp;(${g.pick_pct}%)</div>
+        <div class="pick">Pick: ${g.pick} &nbsp;(${g.pick_pct}%) · conf ${g.confidence}%</div>
       </div>
-      <div class="small" style="text-align:right">conf ${g.confidence}%<br>${g.status}</div>
+      ${liveHeader(g)}
     </div>
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
@@ -454,6 +506,7 @@ function renderGame(g) {
       </div>
     </div>
     <div class="small" style="margin-top:8px">${market}</div>
+    ${renderProps(g)}
   </div>`;
 }
 
@@ -477,21 +530,31 @@ function renderCombo(c, tag, extraCls) {
   </div>`;
 }
 
-async function loadBaseball() {
+async function loadBaseball(silent) {
   const gamesBox = $("bbGames");
   const combosBox = $("bbCombos");
   const date = $("bbDate").value;
-  gamesBox.innerHTML = `<div class="empty">Loading slate…</div>`;
-  combosBox.innerHTML = `<div class="empty">Crunching combos…</div>`;
+  if (!silent) {
+    gamesBox.innerHTML = `<div class="empty">Loading slate…</div>`;
+    combosBox.innerHTML = `<div class="empty">Crunching combos…</div>`;
+  }
   try {
     const d = await (await fetch("/api/baseball/today?date=" + date)).json();
-    if (d.error) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; return; }
+    if (d.error) { if (!silent) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; } return; }
     if (!d.games.length) {
       gamesBox.innerHTML = `<div class="empty">No MLB games scheduled for ${date}.</div>`;
       combosBox.innerHTML = `<div class="empty">No games, no combos.</div>`;
       return;
     }
+    // Preserve which games have their props panel expanded across refreshes.
+    const open = new Set();
+    gamesBox.querySelectorAll(".bbgame[data-pk] details.props[open]").forEach((el) =>
+      open.add(el.closest(".bbgame").dataset.pk));
     gamesBox.innerHTML = d.games.map(renderGame).join("");
+    open.forEach((pk) => {
+      const el = gamesBox.querySelector(`.bbgame[data-pk="${pk}"] details.props`);
+      if (el) el.open = true;
+    });
 
     const c = d.combos;
     let html = "";
@@ -556,6 +619,12 @@ async function init() {
   setInterval(refreshMarkets, 5000);   // live updates for tracked markets
   setInterval(refreshPreview, 5000);   // keep the preview fresh too
   setInterval(() => { if (lastScan.coin) runScan(); }, 8000); // refresh scanner
+  // Auto-update baseball (live scores) when that tab is open.
+  setInterval(() => {
+    if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
+      loadBaseball(true);
+    }
+  }, 20000);
 }
 
 init();

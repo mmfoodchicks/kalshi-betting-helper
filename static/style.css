@@ -52,6 +52,22 @@ main {
 .bbgame .pick { color: var(--accent); font-weight: 700; margin-top: 3px; }
 .bbgame .small { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
 .bbgame .small b { color: var(--text); }
+.livebox { text-align: right; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.livebox .score { display: block; font-size: 1.05rem; font-weight: 700; margin-top: 2px; color: var(--text); }
+.livebox.live { color: var(--no); }
+.livebox.final { color: var(--muted); }
+.livebox.sched { color: var(--muted); font-weight: 400; }
+
+.props { margin-top: 10px; }
+.props > summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; }
+.propgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.propcard { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.propcard .small { margin-top: 4px; }
+.hitgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+.hitrow { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+.hitrow b { color: var(--text); }
+@media (max-width: 560px) { .propgrid, .hitgrid { grid-template-columns: 1fr; } }
+
 .matchgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
 .matchgrid > div { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
 .teamhdr { font-weight: 600; font-size: 0.85rem; }

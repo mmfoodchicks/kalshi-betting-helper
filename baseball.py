@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 import kalshi  # reuse BASE + _get_json + _parse_time + _cents helpers
 import weather as weather_mod
 import stadiums as stadiums_mod
+import props as props_mod
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
@@ -301,43 +302,71 @@ def _match_price(kalshi_index, abbr_map, home_id, away_id, start_epoch):
 
 
 def _boxscore_lineup(game_pk):
-    """Posted lineup OPS per side -> {'home': [(ops, ab), ...], 'away': [...]}."""
+    """Posted lineup per side -> {'home': [batter, ...], 'away': [...]}.
+
+    batter = {name, ops, ab, hits, pa} from season stats (ordered by lineup spot).
+    """
     def fetch():
         try:
             d = _get(f"{STATS_BASE}/game/{game_pk}/boxscore")
             out = {}
             for side in ("home", "away"):
                 t = d["teams"][side]
-                players = []
+                batters = []
                 for pid in t.get("battingOrder", []):
-                    bs = t["players"].get(f"ID{pid}", {}).get("seasonStats", {}).get("batting", {})
-                    ops = _f(bs.get("ops")); ab = _f(bs.get("atBats"))
-                    if ops > 0:
-                        players.append((ops, ab))
-                out[side] = players
+                    pl = t["players"].get(f"ID{pid}", {})
+                    bs = pl.get("seasonStats", {}).get("batting", {})
+                    batters.append({
+                        "name": pl.get("person", {}).get("fullName", ""),
+                        "ops": _f(bs.get("ops")), "ab": _f(bs.get("atBats")),
+                        "hits": _f(bs.get("hits")), "pa": _f(bs.get("plateAppearances")),
+                    })
+                out[side] = batters
             return out
         except Exception:
             return None
     return _cached(("box", game_pk), 300, fetch)
 
 
-def _lineup_factor(players, team_ops, lg):
+def _lineup_factor(batters, team_ops, lg):
     """Offense multiplier from the actual posted lineup vs the team's norm.
 
     Each hitter's OPS is regressed toward the team OPS by at-bats so a hot/cold
     bench bat doesn't swing it; result is capped to a sane range. Captures
     rested regulars / call-ups / injuries that are already out of the lineup.
     """
-    if not players:
+    if not batters:
         return None, None
     base = team_ops or lg["ops"]
     regressed = []
-    for ops, ab in players:
+    for b in batters:
+        ops = b.get("ops") or 0
+        if ops <= 0:
+            continue
+        ab = b.get("ab") or 0
         rel = ab / (ab + 50) if ab > 0 else 0.0
         regressed.append(rel * ops + (1 - rel) * base)
+    if not regressed:
+        return None, None
     lineup_ops = sum(regressed) / len(regressed)
     factor = lineup_ops / base if base else 1.0
     return max(0.85, min(1.12, factor)), round(lineup_ops, 3)
+
+
+def _opp_hit_factor(opp_sp, opp_bp, lg):
+    """How many hits the opposing pitching tends to allow vs league (1.0 = avg).
+
+    WHIP-based (baserunners), starter weighted for his innings + bullpen for the
+    rest, regressed and capped.
+    """
+    sp_whip = lg["whip"]
+    if opp_sp and "season" in opp_sp and opp_sp["season"]["whip"] > 0:
+        s = opp_sp["season"]
+        rel = s["ip"] / (s["ip"] + SP_IP_REGRESS) if s["ip"] > 0 else 0.0
+        sp_whip = rel * s["whip"] + (1 - rel) * lg["whip"]
+    bp_whip = opp_bp.get("whip") or lg["whip"]
+    whip = SP_INNINGS_WEIGHT * sp_whip + (1 - SP_INNINGS_WEIGHT) * bp_whip
+    return max(0.85, min(1.15, whip / lg["whip"] if lg["whip"] else 1.0))
 
 
 def _weather_block(winfo):
@@ -365,13 +394,29 @@ def _weather_block(winfo):
 
 
 def _schedule(date, season):
-    data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=probablePitcher")
+    data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=probablePitcher,linescore")
     dates = data.get("dates", [])
     games = dates[0]["games"] if dates else []
     out = []
     for g in games:
         home = g["teams"]["home"]; away = g["teams"]["away"]
         hp = home.get("probablePitcher"); ap = away.get("probablePitcher")
+        st = g.get("status", {})
+        ls = g.get("linescore", {})
+        state = st.get("abstractGameState", "")  # Preview | Live | Final
+        lt = ls.get("teams", {})
+        live = {
+            "state": state,
+            "detailed": st.get("detailedState", ""),
+            "is_live": state == "Live",
+            "is_final": state == "Final",
+            "inning": ls.get("currentInning"),
+            "inning_state": ls.get("inningState"),
+            "away_runs": lt.get("away", {}).get("runs"),
+            "home_runs": lt.get("home", {}).get("runs"),
+            "away_hits": lt.get("away", {}).get("hits"),
+            "home_hits": lt.get("home", {}).get("hits"),
+        }
         out.append({
             "game_pk": g.get("gamePk"),
             "home_id": home["team"]["id"], "home_name": home["team"]["name"],
@@ -380,7 +425,7 @@ def _schedule(date, season):
             "home_sp_id": hp.get("id") if hp else None, "home_sp_name": hp.get("fullName") if hp else None,
             "away_sp_id": ap.get("id") if ap else None, "away_sp_name": ap.get("fullName") if ap else None,
             "start": g.get("gameDate"), "start_epoch": kalshi._parse_time(g.get("gameDate")),
-            "status": g.get("status", {}).get("detailedState", ""),
+            "status": st.get("detailedState", ""), "live": live,
         })
     return out
 
@@ -489,7 +534,24 @@ def analyze_slate(date, season):
 
         rh = rec.get(g["home_id"], {}); ra = rec.get(g["away_id"], {})
         bph = tbp(g["home_id"]); bpa = tbp(g["away_id"])
+
+        # Derived props: run line + game totals from the run distribution, and
+        # per-batter hit odds from the posted lineups (when available).
+        gp = props_mod.game_props(er_home, er_away, home_abbr or g["home_id"], away_abbr or g["away_id"])
+        hit_home = hit_away = None
+        if lu.get("home"):
+            ohf = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg)  # home bats vs away pitching
+            hit_home = props_mod.hit_props(lu["home"], ohf)
+        if lu.get("away"):
+            ohf = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
+            hit_away = props_mod.hit_props(lu["away"], ohf)
+        game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
+                      "model_total": gp["model_total"],
+                      "hits_home": hit_home, "hits_away": hit_away}
+
         games.append({
+            "live": g["live"],
+            "props": game_props,
             "game_pk": g["game_pk"],
             "matchup": f"{g['away_name']} @ {g['home_name']}",
             "away_name": g["away_name"], "home_name": g["home_name"],
