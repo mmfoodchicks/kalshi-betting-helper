@@ -191,14 +191,21 @@ def backtest(coin=None, timeframe=None):
         if n:
             staked = sum(c for c, _ in bets)
             pnl = sum((100 if w else 0) - c for c, w in bets)
+            # Kalshi trading fee ≈ 7 × price × (1−price) cents per contract (paid
+            # on entry). Net P&L is what actually lands in your account.
+            fees = sum(7.0 * (c / 100.0) * (1 - c / 100.0) for c, _ in bets)
+            net = pnl - fees
             wins = sum(1 for _, w in bets if w)
             sweep.append({"min_edge": thr, "bets": n,
                           "win_pct": round(100 * wins / n, 1),
                           "roi_pct": round(100 * pnl / staked, 1) if staked else None,
-                          "pnl_per_contract_c": round(pnl / n, 1)})
+                          "roi_net_pct": round(100 * net / staked, 1) if staked else None,
+                          "pnl_per_contract_c": round(pnl / n, 1),
+                          "net_per_contract_c": round(net / n, 1)})
         else:
             sweep.append({"min_edge": thr, "bets": 0, "win_pct": None,
-                          "roi_pct": None, "pnl_per_contract_c": None})
+                          "roi_pct": None, "roi_net_pct": None,
+                          "pnl_per_contract_c": None, "net_per_contract_c": None})
 
     return {"resolved_markets": len(resolved), "calibration_brier": brier,
             "brier_n": brier_n, "sweep": sweep,

@@ -714,16 +714,17 @@ async function loadStrategy() {
     if (!bt.resolved_markets) {
       html += `<div class="empty" style="margin-top:10px">No contracts have settled yet. Leave the app running — the recorder samples every 90s and this fills in as markets close.</div>`;
     } else {
-      html += `<div class="teamhdr" style="margin-top:12px">Betting the model's edge at real Kalshi prices:</div>
+      html += `<div class="teamhdr" style="margin-top:12px">Betting the model's edge at real Kalshi prices (net of fees):</div>
         <div class="calbox">
-          <div class="calrow" style="color:var(--muted)"><span>Min edge filter</span><span>Bets · Win% · ROI · ¢/contract</span></div>`;
+          <div class="calrow" style="color:var(--muted)"><span>Min edge filter</span><span>Bets · Win% · ROI (net) · gross</span></div>`;
       for (const s of bt.sweep) {
         if (!s.bets) { html += `<div class="calrow"><span>≥ ${s.min_edge}¢</span><span style="color:var(--muted)">no bets</span></div>`; continue; }
-        const roiCls = s.roi_pct >= 0 ? "ev pos" : "ev neg";
+        const net = s.roi_net_pct;
+        const roiCls = net >= 0 ? "ev pos" : "ev neg";
         html += `<div class="calrow"><span>≥ ${s.min_edge}¢ edge</span>
-          <span>${s.bets} · ${s.win_pct}% · <b class="${roiCls}">${s.roi_pct >= 0 ? "+" : ""}${s.roi_pct}%</b> · ${s.pnl_per_contract_c >= 0 ? "+" : ""}${s.pnl_per_contract_c}¢</span></div>`;
+          <span>${s.bets} · ${s.win_pct}% · <b class="${roiCls}">${net >= 0 ? "+" : ""}${net}%</b> · <span style="color:var(--muted)">${s.roi_pct >= 0 ? "+" : ""}${s.roi_pct}% gross</span></span></div>`;
       }
-      html += `</div><div class="small" style="margin-top:8px">Positive ROI at higher edge filters = the mispricing strategy genuinely beats the house. Small samples are noisy; let it accumulate.</div>`;
+      html += `</div><div class="small" style="margin-top:8px">ROI is <b>net of Kalshi's ~1.7¢/contract trading fee</b>. Positive net ROI that grows with the edge filter = a real, fee-proof edge. The biggest edges (≥15¢) often mean the model is missing info — the 6–10¢ band is the sweet spot. Small samples are noisy; let it accumulate.</div>`;
     }
     box.innerHTML = html;
   } catch (e) {
