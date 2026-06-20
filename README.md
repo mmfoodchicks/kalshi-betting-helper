@@ -164,6 +164,28 @@ There are two groups:
    probability. Closer threshold + more time + more volatility = closer to a
    coin flip; far-away threshold + little time = near-certain.
 
+## ☁️ Host it 24/7 (so your PC doesn't have to run)
+
+The repo ships with deploy config. Easiest path — **Render** (free):
+
+1. Push this repo to your GitHub.
+2. On [render.com](https://render.com): **New → Blueprint**, pick the repo.
+   It reads `render.yaml` and deploys automatically (gunicorn web service).
+3. You get a permanent `https://…onrender.com` URL — open it on your phone and
+   **Add to Home Screen** (it's already a PWA), or feed that URL to PWABuilder
+   for an APK.
+
+That URL is HTTPS, so the full installable app + APK work with zero tunneling.
+
+Also included for other hosts: a **`Procfile`** (Railway/Heroku-style) and a
+**`Dockerfile`** (Fly.io, or any container host). Run command is always
+`gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app:app`.
+
+> Notes: keep it to **one worker** (`-w 1`) so the background recorder runs as a
+> single instance. On a **free** tier the service sleeps after inactivity, which
+> pauses the recorder and resets the local `markets.db` — fine for casual use; a
+> cheap paid tier (or a persistent disk) keeps it always-on and keeps history.
+
 ## 📱 Put it on your phone
 
 The app is an installable **PWA** — add it to your home screen and it runs

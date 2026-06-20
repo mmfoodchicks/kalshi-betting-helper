@@ -13,6 +13,7 @@ This is a decision-support tool. The odds are model estimates, not guarantees.
 """
 
 import time
+import threading
 
 from flask import Flask, jsonify, request, render_template
 
@@ -24,6 +25,32 @@ import baseball
 
 app = Flask(__name__)
 store.init_db()
+
+# Start the background Kalshi recorder exactly once, on the first request. This
+# works the same under the dev server, gunicorn, or any host (the __main__ block
+# is not run by gunicorn, so we can't rely on it).
+_rec_lock = threading.Lock()
+_rec_started = False
+
+
+def _ensure_recorder():
+    global _rec_started
+    if _rec_started:
+        return
+    with _rec_lock:
+        if _rec_started:
+            return
+        _rec_started = True
+        try:
+            import recorder
+            recorder.start_background()
+        except Exception:
+            pass
+
+
+@app.before_request
+def _bootstrap_recorder():
+    _ensure_recorder()
 
 
 def _minutes_to_close(close_time):
@@ -499,9 +526,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # --debug flag OR DEBUG=1 env var both enable auto-reload.
     debug = args.debug or os.environ.get("DEBUG") == "1"
-    # Start the background recorder once. Under the reloader, only the worker
-    # process (WERKZEUG_RUN_MAIN) should start it, not the watcher parent.
+    # Start the recorder now (skip in the reloader's watcher parent to avoid two).
     if not debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        import recorder
-        recorder.start_background()  # passively record Kalshi quotes for the backtest
+        _ensure_recorder()
     app.run(host="0.0.0.0", port=args.port, debug=debug, use_reloader=debug)
