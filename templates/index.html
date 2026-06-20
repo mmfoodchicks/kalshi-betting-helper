@@ -71,7 +71,15 @@
           <button id="scanBtn">Scan</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Pulls the real open Kalshi contracts and live prices, ranks them by the model's edge. Auto-refreshes.</p>
+      <p class="sub" style="margin:4px 0 8px">Pulls the real open Kalshi contracts and live prices, ranks them by the model's edge. Auto-refreshes.</p>
+      <details class="legend">
+        <summary>How to read this ⓘ</summary>
+        <ul>
+          <li><b>Buy YES</b> = you bet the price <i>will</i> hit the target; <b>Buy NO</b> = you bet it <i>won't</i>. Each costs some cents (0–100¢) and pays <b>100¢</b> if it wins.</li>
+          <li><b>Fair value</b> = the model's estimate of what the contract is truly worth. <b>Edge</b> = fair value − the price you'd pay. A bigger positive edge = a better deal.</li>
+          <li>You can <b>sell anytime</b> before close. Tap <b>“I bought this”</b> and enter what you paid — the app will then tell you <b>when to sell</b> in “Tracked markets” below.</li>
+        </ul>
+      </details>
       <div id="scanResults" class="markets"><div class="empty">Pick a coin &amp; timeframe, then Scan.</div></div>
     </section>
 

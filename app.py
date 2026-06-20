@@ -97,6 +97,12 @@ def api_create_market():
     if direction not in ("above", "below"):
         return jsonify({"error": "direction must be 'above' or 'below'"}), 400
 
+    ticker = data.get("kalshi_ticker") or None
+    side = data.get("position_side")
+    side = side.upper() if side in ("yes", "no", "YES", "NO") else None
+    ec = data.get("entry_cost_cents")
+    entry_cost = float(ec) if ec not in (None, "", "null") else None
+
     try:
         sig = _signal_for(coin, threshold, direction, close_time, yes_price)
     except Exception as e:
@@ -107,8 +113,24 @@ def api_create_market():
         snap_prob_yes=sig["prob_yes"],
         snap_recommendation=sig["recommendation"],
         snap_spot=sig["spot"],
+        kalshi_ticker=ticker, position_side=side, entry_cost_cents=entry_cost,
     )
     return jsonify({"id": market_id}), 201
+
+
+@app.route("/api/markets/<int:market_id>/position", methods=["POST"])
+def api_set_position(market_id):
+    """Record (or clear) a held position so the app can advise when to sell."""
+    data = request.get_json(force=True, silent=True) or {}
+    side = data.get("position_side")
+    side = side if side in ("YES", "NO", "yes", "no") else None
+    ec = data.get("entry_cost_cents")
+    try:
+        entry_cost = float(ec) if ec not in (None, "", "null") else None
+    except (ValueError, TypeError):
+        return jsonify({"error": "bad entry_cost_cents"}), 400
+    store.set_position(market_id, side, entry_cost)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/markets")
@@ -124,6 +146,26 @@ def api_list_markets():
                 item["signal"] = sig
             except Exception as e:
                 item["signal_error"] = str(e)
+                sig = None
+
+            # Live Kalshi bid/ask if this market came from the scanner.
+            live = None
+            if m.get("kalshi_ticker"):
+                try:
+                    live = kalshi.get_market(m["kalshi_ticker"])
+                    item["kalshi_live"] = live
+                except Exception:
+                    pass
+
+            # Sell guidance for a held position.
+            if sig and m.get("position_side") and m.get("entry_cost_cents") is not None:
+                item["position"] = odds.sell_guidance(
+                    m["position_side"], m["entry_cost_cents"],
+                    sig["fair_yes_cents"], sig["fair_no_cents"],
+                    yes_bid=(live or {}).get("yes_bid"),
+                    no_bid=(live or {}).get("no_bid"),
+                    minutes_to_close=sig.get("minutes_to_close"),
+                )
         out.append(item)
     return jsonify(out)
 

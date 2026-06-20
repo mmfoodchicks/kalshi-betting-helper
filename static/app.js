@@ -136,16 +136,65 @@ function renderMarket(m) {
   const body = sig
     ? renderSignalBody(sig, m.close_time, m.id)
     : `<div class="note rationale">${m.signal_error || "loading…"}</div>`;
+
+  // Sell guidance if a position is held; otherwise an "I bought this" form.
+  let posHtml;
+  if (m.position) {
+    const p = m.position;
+    const cls = p.action === "SELL" ? "sellbox sell" : "sellbox hold";
+    const pnl = p.pnl_cents;
+    const pnlTxt = pnl == null ? "" :
+      `<span class="${pnl >= 0 ? "ev pos" : "ev neg"}">${pnl >= 0 ? "+" : ""}${pnl}¢${p.pnl_pct != null ? ` (${p.pnl_pct >= 0 ? "+" : ""}${p.pnl_pct}%)` : ""}</span>`;
+    posHtml = `<div class="${cls}">
+      <div class="sellhead"><span class="sellaction">${p.action === "SELL" ? "🔔 " : "⏳ "}${p.headline}</span>${pnlTxt}</div>
+      <div class="small">You hold <b>${p.side}</b>, bought at <b>${p.entry_cost_cents}¢</b> · sell now ~<b>${p.sell_price_cents}¢</b>${p.sell_price_estimated ? " (est.)" : ""} · fair value <b>${p.fair_value_cents}¢</b></div>
+      <div class="small">${p.detail}</div>
+      ${p.settle_note ? `<div class="small" style="margin-top:4px">⏰ ${p.settle_note}</div>` : ""}
+      <button class="track-mini" style="margin-top:8px" onclick="clearPosition(${m.id})">clear position</button>
+    </div>`;
+  } else {
+    const f = "pos_" + m.id;
+    posHtml = `<div class="addpos">
+      <button class="track-mini" onclick="document.getElementById('${f}').classList.toggle('hidden')">＋ I bought this</button>
+      <div class="buyform hidden" id="${f}">
+        I bought
+        <select id="${f}_side"><option value="YES">YES</option><option value="NO">NO</option></select>
+        at <input id="${f}_cost" type="number" step="any" min="0" max="100" placeholder="cost" style="width:64px"/> ¢
+        <button class="track-mini primary-mini" onclick="savePosition(${m.id})">Save</button>
+      </div>
+    </div>`;
+  }
+
   return `<div class="market">
     <div class="top">
       <div>
         <div class="title">${title}</div>
-        <div class="meta">Closes ${fmtClock(m.close_time)}${m.yes_price_cents != null ? ` · entered YES ${m.yes_price_cents}¢` : ""}</div>
+        <div class="meta">Closes ${fmtClock(m.close_time)}</div>
       </div>${x}
     </div>
+    ${posHtml}
     ${body}
   </div>`;
 }
+
+window.savePosition = async (id) => {
+  const f = "pos_" + id;
+  const side = document.getElementById(f + "_side").value;
+  const cost = parseFloat(document.getElementById(f + "_cost").value);
+  if (isNaN(cost)) return;
+  await fetch(`/api/markets/${id}/position`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ position_side: side, entry_cost_cents: cost }),
+  });
+  refreshMarkets();
+};
+window.clearPosition = async (id) => {
+  await fetch(`/api/markets/${id}/position`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ position_side: null, entry_cost_cents: null }),
+  });
+  refreshMarkets();
+};
 
 async function refreshMarkets() {
   try {
@@ -192,36 +241,100 @@ function strikeToTracker(m) {
 }
 
 let lastScan = { coin: null, timeframe: null };
+const scanCtx = {}; // ticker -> context for the "I bought this" form
+
+function recSide(sig) {
+  if (sig.recommendation === "BUY YES") return "YES";
+  if (sig.recommendation === "BUY NO") return "NO";
+  return null;
+}
+
 function renderScanRow(m) {
   const sig = m.signal;
   const secs = m.close_time ? m.close_time - Math.floor(Date.now() / 1000) : 0;
   const bestEdge = m.best_edge;
-  const edgeCls = bestEdge != null && bestEdge >= 5 ? "pos" : "neg";
+  const side = recSide(sig);
   const rowCls = sig.recommendation !== "HOLD" ? "scanrow edge" : "scanrow";
   const tracker = strikeToTracker(m);
-  const trackBtn = tracker
-    ? `<button class="track-mini" onclick='trackFromScan(${JSON.stringify({
-        coin: lastScan.coin, threshold: tracker.threshold, direction: tracker.direction,
-        close_time: m.close_time, yes_price_cents: m.yes_ask,
-      })})'>Track</button>`
-    : "";
-  return `<div class="${rowCls}">
-    <div class="left">
-      <div class="strike">${m.subtitle || m.ticker}</div>
-      <div class="nums">
-        Kalshi YES <b>${m.yes_ask ?? "–"}¢</b> / NO <b>${m.no_ask ?? "–"}¢</b> ·
-        model fair YES <b>${sig.fair_yes_cents}¢</b> ·
-        closes <b>${fmtCountdown(secs)}</b>
-        ${sig.dip_note ? `<br>💡 ${sig.dip_note}` : ""}
+  const fid = "buy_" + (m.ticker || "").replace(/[^a-z0-9]/gi, "_");
+
+  // One clear action line: what to buy, at what price, vs fair value.
+  let action;
+  if (side) {
+    const cost = side === "YES" ? m.yes_ask : m.no_ask;
+    const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
+    action = `<div class="actionline">
+        ${badge(sig.recommendation, sig.strength)}
+        <span class="edgeval pos">+${bestEdge}¢ edge</span>
       </div>
+      <div class="plain">Buy <b>${side}</b> at <b>${cost}¢</b> → model fair value <b>${fair}¢</b>${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>`;
+  } else {
+    action = `<div class="actionline">${badge("HOLD", "flat")}
+        <span class="edgeval neg">no clear edge</span></div>
+      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market — wait for a better price.</div>`;
+  }
+
+  scanCtx[m.ticker] = {
+    coin: lastScan.coin, threshold: tracker ? tracker.threshold : null,
+    direction: tracker ? tracker.direction : null, close_time: m.close_time,
+    ticker: m.ticker, yes_ask: m.yes_ask, no_ask: m.no_ask, side,
+  };
+
+  const buttons = tracker ? `
+    <div class="scanbtns">
+      <button class="track-mini primary-mini" onclick="showBuyForm('${m.ticker}')">I bought this</button>
+      <button class="track-mini" onclick='trackFromScan(${JSON.stringify({
+        coin: lastScan.coin, threshold: tracker.threshold, direction: tracker.direction,
+        close_time: m.close_time, kalshi_ticker: m.ticker, yes_price_cents: m.yes_ask,
+      })})'>Just watch</button>
     </div>
-    <div class="right">
-      <span class="edgeval ${edgeCls}">${bestEdge != null ? (bestEdge > 0 ? "+" : "") + bestEdge + "¢ edge" : ""}</span>
-      ${badge(sig.recommendation, sig.strength)}
-      ${trackBtn}
+    <div class="buyform hidden" id="${fid}">
+      I bought
+      <select id="${fid}_side">
+        <option value="YES"${side === "YES" ? " selected" : ""}>YES</option>
+        <option value="NO"${side === "NO" ? " selected" : ""}>NO</option>
+      </select>
+      at <input id="${fid}_cost" type="number" step="any" min="0" max="100"
+                placeholder="${side === "NO" ? m.no_ask : m.yes_ask}" style="width:64px"/> ¢
+      <button class="track-mini primary-mini" onclick="saveBuy('${m.ticker}')">Save</button>
+      <button class="track-mini" onclick="hideBuyForm('${m.ticker}')">cancel</button>
+    </div>` : "";
+
+  return `<div class="${rowCls}">
+    <div class="scanhead">
+      <div class="strike">${m.subtitle || m.ticker}</div>
+      <div class="small">closes ${fmtCountdown(secs)} · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢</div>
     </div>
+    ${action}
+    ${buttons}
   </div>`;
 }
+
+function fid(ticker) { return "buy_" + ticker.replace(/[^a-z0-9]/gi, "_"); }
+window.showBuyForm = (t) => { const el = document.getElementById(fid(t)); if (el) el.classList.remove("hidden"); };
+window.hideBuyForm = (t) => { const el = document.getElementById(fid(t)); if (el) el.classList.add("hidden"); };
+
+window.saveBuy = async (ticker) => {
+  const ctx = scanCtx[ticker];
+  if (!ctx || !ctx.direction) return;
+  const f = fid(ticker);
+  const sideEl = document.getElementById(f + "_side");
+  const costEl = document.getElementById(f + "_cost");
+  const sideVal = sideEl.value;
+  let cost = parseFloat(costEl.value);
+  if (isNaN(cost)) cost = sideVal === "YES" ? ctx.yes_ask : ctx.no_ask; // default to the ask
+  await fetch("/api/markets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      coin: ctx.coin, threshold: ctx.threshold, direction: ctx.direction,
+      close_time: ctx.close_time, kalshi_ticker: ticker,
+      position_side: sideVal, entry_cost_cents: cost,
+    }),
+  });
+  hideBuyForm(ticker);
+  refreshMarkets();
+};
 
 window.trackFromScan = async (body) => {
   await fetch("/api/markets", {

@@ -42,6 +42,10 @@ def init_db():
                 snap_prob_yes REAL,
                 snap_recommendation TEXT,
                 snap_spot REAL,
+                -- optional held position (so we can advise when to sell)
+                kalshi_ticker TEXT,                -- live Kalshi market id, if from the scanner
+                position_side TEXT,                -- 'YES' | 'NO' you bought, or NULL
+                entry_cost_cents REAL,             -- what you paid for it, in cents
                 -- resolution
                 resolved INTEGER NOT NULL DEFAULT 0,
                 outcome TEXT,                      -- 'YES' | 'NO'
@@ -50,22 +54,41 @@ def init_db():
             )
             """
         )
+        # Lightweight migration for databases created before positions existed.
+        cols = {r[1] for r in c.execute("PRAGMA table_info(markets)").fetchall()}
+        for col, decl in (("kalshi_ticker", "TEXT"), ("position_side", "TEXT"),
+                          ("entry_cost_cents", "REAL")):
+            if col not in cols:
+                c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
 
 
 def add_market(coin, threshold, direction, close_time, yes_price_cents,
-               snap_prob_yes, snap_recommendation, snap_spot):
+               snap_prob_yes, snap_recommendation, snap_spot,
+               kalshi_ticker=None, position_side=None, entry_cost_cents=None):
     with _lock, _conn() as c:
         cur = c.execute(
             """
             INSERT INTO markets
               (coin, threshold, direction, close_time, created_at, yes_price_cents,
-               snap_prob_yes, snap_recommendation, snap_spot)
-            VALUES (?,?,?,?,?,?,?,?,?)
+               snap_prob_yes, snap_recommendation, snap_spot,
+               kalshi_ticker, position_side, entry_cost_cents)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (coin, threshold, direction, int(close_time), int(time.time()),
-             yes_price_cents, snap_prob_yes, snap_recommendation, snap_spot),
+             yes_price_cents, snap_prob_yes, snap_recommendation, snap_spot,
+             kalshi_ticker, position_side, entry_cost_cents),
         )
         return cur.lastrowid
+
+
+def set_position(market_id, side, entry_cost_cents):
+    """Record (or clear) a held position so we can give sell guidance."""
+    side = side.upper() if side else None
+    with _lock, _conn() as c:
+        c.execute(
+            "UPDATE markets SET position_side=?, entry_cost_cents=? WHERE id=?",
+            (side, entry_cost_cents, market_id),
+        )
 
 
 def get_market(market_id):

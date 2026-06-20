@@ -101,6 +101,22 @@ def get_open_markets(coin, timeframe, limit=100):
     return out
 
 
+def get_market(ticker):
+    """Live bid/ask for a single Kalshi market by ticker (cents)."""
+    data = _get_json(f"{BASE}/markets/{ticker}")
+    m = data.get("market", {})
+    return {
+        "ticker": m.get("ticker"),
+        "status": m.get("status"),
+        "close_time": _parse_time(m.get("close_time")),
+        "yes_bid": _cents(m.get("yes_bid_dollars")),
+        "yes_ask": _cents(m.get("yes_ask_dollars")),
+        "no_bid": _cents(m.get("no_bid_dollars")),
+        "no_ask": _cents(m.get("no_ask_dollars")),
+        "last": _cents(m.get("last_price_dollars")),
+    }
+
+
 def _cents(dollars):
     v = _f(dollars)
     return round(v * 100, 1) if v is not None else None

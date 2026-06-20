@@ -235,6 +235,77 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
     }
 
 
+def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
+                  yes_bid=None, no_bid=None, minutes_to_close=None):
+    """When to sell a held position.
+
+    side: 'YES' or 'NO' you bought. entry_cost: what you paid (cents).
+    fair_*_cents: the model's fair value of each side now (= its win probability
+    in cents, i.e. the expected payout if you hold to the close).
+    yes_bid/no_bid: what you'd actually receive selling right now (cents).
+
+    Rule of thumb: your side settles at 100¢ if it wins, 0¢ if it loses, so its
+    "hold value" is its fair value. If you can sell for >= fair value, the market
+    is paying you more than it's worth -> take it. If the sale price is below
+    fair value, holding is worth more -> keep it.
+    """
+    side = (side or "").upper()
+    fair = fair_yes_cents if side == "YES" else fair_no_cents
+    sell_price = (yes_bid if side == "YES" else no_bid)
+    estimated = sell_price is None
+    if estimated:
+        sell_price = fair  # no live bid (e.g. manual market): use fair as a proxy
+
+    pnl = round(sell_price - entry_cost, 1) if entry_cost is not None else None
+    pnl_pct = round(100 * pnl / entry_cost, 1) if (pnl is not None and entry_cost) else None
+
+    # Core decision: compare what you can sell for now vs. its hold value (fair).
+    if sell_price >= fair - 1:
+        action = "SELL"
+        if pnl is None:
+            headline = "Sell — the edge is gone"
+        elif pnl >= 0:
+            headline = f"Sell now — lock in +{pnl}¢ profit"
+        else:
+            headline = f"Sell / cut — edge gone, trim the {abs(pnl)}¢ loss"
+        detail = (f"You can sell your {side} for ~{sell_price}¢, and the model's fair "
+                  f"value is only {fair}¢ — little left to gain by holding.")
+    else:
+        action = "HOLD"
+        upside = round(fair - sell_price, 1)
+        if pnl is None:
+            headline = "Hold — still underpriced"
+        elif pnl >= 0:
+            headline = f"Hold — up {pnl}¢, still has edge"
+        else:
+            headline = f"Hold — down {abs(pnl)}¢, model still likes it"
+        detail = (f"Model fair value is {fair}¢ but you'd only get ~{sell_price}¢ selling "
+                  f"now ({upside}¢ of upside left). Hold, or sell only if you want to "
+                  f"de-risk.")
+
+    # Settlement context when the close is near.
+    settle_note = None
+    if minutes_to_close is not None and minutes_to_close <= 10:
+        if fair >= 75:
+            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely winning (≈{fair}¢) — holding to settlement should pay ~100¢."
+        elif fair <= 25:
+            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely losing (≈{fair}¢) — it may settle at 0¢. Selling now salvages value."
+
+    return {
+        "side": side,
+        "entry_cost_cents": entry_cost,
+        "fair_value_cents": fair,
+        "sell_price_cents": round(sell_price, 1),
+        "sell_price_estimated": estimated,
+        "pnl_cents": pnl,
+        "pnl_pct": pnl_pct,
+        "action": action,
+        "headline": headline,
+        "detail": detail,
+        "settle_note": settle_note,
+    }
+
+
 def kalshi_signal(spot, candles, market, minutes_to_close):
     """Edge signal for a live Kalshi market (from kalshi.get_open_markets).
 

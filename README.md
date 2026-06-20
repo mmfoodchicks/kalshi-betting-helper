@@ -32,6 +32,12 @@ A live web app with two tabs:
     is cheap right now, good dip-buy" (and the mirror for fading a pump).
   - **Take-profit hints:** since Kalshi lets you sell anytime, it suggests a
     target to lock in profit.
+  - **When to sell what you hold:** tap **“I bought this”** on a scanned
+    contract (or any tracked market) and enter the side + what you paid. The app
+    then shows live **SELL / HOLD** guidance with your profit/loss, updating every
+    few seconds. The rule: your contract is worth its **fair value** if you hold
+    to the close, so if you can **sell for more than fair value, take it**;
+    if the sale price is still below fair value, hold for the remaining upside.
 - **Kalshi live scanner.** Pulls the *real* open Kalshi crypto contracts
   (15-minute, hourly, and daily) with their live YES/NO prices — no API key
   needed — runs the model on every strike, and **ranks them by edge** so the
