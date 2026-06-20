@@ -554,7 +554,8 @@ function renderGame(g) {
 function renderCombo(c, tag, extraCls) {
   const legs = c.legs.map((l) => {
     const typeTag = l.type ? `<span class="legtag">${l.type}</span> ` : "";
-    return `<li>${typeTag}${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`;
+    const liveDot = l.live ? `🔴 ` : "";
+    return `<li>${liveDot}${typeTag}${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`;
   }).join("");
   let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
               <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
@@ -606,7 +607,11 @@ async function loadBaseball(silent) {
       html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
     if (c.mixed && c.mixed.length)
       html += renderCombo(c.mixed[0], "🎲 Best prop combo", "hl prop");
-    html += `<div class="small" style="margin:10px 0 4px"><b>Game-winner parlays</b> — by combined chance:</div>`;
+    if (c.live && c.live.length) {
+      html += `<div class="small" style="margin:12px 0 4px"><b>🔴 Live combos</b> — games in progress right now:</div>`;
+      html += c.live.map((x) => renderCombo(x)).join("");
+    }
+    html += `<div class="small" style="margin:14px 0 4px"><b>Game-winner parlays</b> — by combined chance:</div>`;
     html += c.all.map((x) => renderCombo(x)).join("");
     if (c.mixed && c.mixed.length) {
       html += `<div class="small" style="margin:14px 0 4px"><b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:</div>`;
