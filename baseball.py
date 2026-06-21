@@ -185,7 +185,8 @@ def _pitcher_stats(pid, season):
                 if not sp:
                     continue
                 st = sp[0]["stat"]
-                rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")), "ip": _f(st.get("inningsPitched"))}
+                rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")),
+                       "ip": _f(st.get("inningsPitched")), "k9": _f(st.get("strikeoutsPer9Inn"))}
                 if disp == "season":
                     res["season"] = rec
                 elif disp == "lastXGames":
@@ -320,6 +321,8 @@ def _boxscore_lineup(game_pk):
                         "name": pl.get("person", {}).get("fullName", ""),
                         "ops": _f(bs.get("ops")), "ab": _f(bs.get("atBats")),
                         "hits": _f(bs.get("hits")), "pa": _f(bs.get("plateAppearances")),
+                        "doubles": _f(bs.get("doubles")), "triples": _f(bs.get("triples")),
+                        "hr": _f(bs.get("homeRuns")), "bb": _f(bs.get("baseOnBalls")),
                     })
                 out[side] = batters
             return out
@@ -593,10 +596,10 @@ def analyze_slate(date, season):
         def sp_block(name, st, h):
             if not st or "season" not in st:
                 return {"name": name, "hand": h, "era": None, "whip": None, "ip": None,
-                        "recent_era": None, "recent_whip": None}
+                        "recent_era": None, "recent_whip": None, "k9": None}
             s = st["season"]; r = st.get("recent") or {}
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
-                    "ip": s["ip"],
+                    "ip": s["ip"], "k9": round(s.get("k9", 0), 1),
                     "recent_era": round(r["era"], 2) if r.get("ip") else None,
                     "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
                     "recent_ip": r.get("ip")}
@@ -608,16 +611,27 @@ def analyze_slate(date, season):
         # per-batter hit odds from the posted lineups (when available).
         gp = props_mod.game_props(er_home, er_away, home_abbr or g["home_id"], away_abbr or g["away_id"])
         hit_home = hit_away = None
+        bat_home = bat_away = None
+        ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg)  # home bats vs away pitching
+        ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
         if lu.get("home"):
-            ohf = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg)  # home bats vs away pitching
-            hit_home = props_mod.hit_props(lu["home"], ohf)
+            hit_home = props_mod.hit_props(lu["home"], ohf_home)
+            bat_home = [props_mod.batter_props(b, i, ohf_home) for i, b in enumerate(lu["home"])]
+            bat_home = [x for x in bat_home if x]
         if lu.get("away"):
-            ohf = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
-            hit_away = props_mod.hit_props(lu["away"], ohf)
+            hit_away = props_mod.hit_props(lu["away"], ohf_away)
+            bat_away = [props_mod.batter_props(b, i, ohf_away) for i, b in enumerate(lu["away"])]
+            bat_away = [x for x in bat_away if x]
+        # Starter strikeout props.
+        ks_home = props_mod.pitcher_k_props((h_sp or {}).get("season", {}).get("k9")) if h_sp else None
+        ks_away = props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9")) if a_sp else None
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
                       "model_total": gp["model_total"],
-                      "hits_home": hit_home, "hits_away": hit_away}
+                      "hits_home": hit_home, "hits_away": hit_away,
+                      "batters_home": bat_home, "batters_away": bat_away,
+                      "ks_home": ks_home, "ks_away": ks_away,
+                      "home_sp_name": g.get("home_sp_name"), "away_sp_name": g.get("away_sp_name")}
 
         games.append({
             "live": g["live"],
@@ -710,6 +724,18 @@ def _candidate_legs(games, live_only=False):
                     best_hit = (f"{b['name']} 1+ hit", pr)
         if best_hit:
             add("Hit", best_hit[0], best_hit[1])
+        # Expanded props: home runs, total bases (from the exact prop math).
+        for key in ("batters_away", "batters_home"):
+            for b in (p.get(key) or [])[:6]:
+                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0)
+                add("Bases", f"{b['name']} 2+ total bases", b["tb2"] / 100.0)
+        # Starter strikeout props.
+        for key, nm in (("ks_home", p.get("home_sp_name")), ("ks_away", p.get("away_sp_name"))):
+            ks = p.get(key)
+            if ks and nm:
+                for line in (4, 5, 6, 7):
+                    if ks.get(line):
+                        add("Ks", f"{nm} {line}+ Ks", ks[line] / 100.0)
     return legs
 
 

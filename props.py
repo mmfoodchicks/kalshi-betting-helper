@@ -108,6 +108,58 @@ def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
     return p_home + p_tie * 0.52
 
 
+def batter_props(b, slot, opp_hit_factor=1.0):
+    """Exact per-game prop probabilities for a hitter (the limit a simulation
+    converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases."""
+    spa = b.get("pa") or 0
+    if spa <= 0:
+        return None
+    pa = PA_BY_SLOT[slot] if slot < 9 else 3.8
+    k = max(1, int(round(pa)))
+    f = max(0.7, min(1.3, opp_hit_factor))
+    r_2b = (b.get("doubles") or 0) / spa * f
+    r_3b = (b.get("triples") or 0) / spa * f
+    r_hr = (b.get("hr") or 0) / spa * f
+    r_hit = (b.get("hits") or 0) / spa * f
+    r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
+    r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
+
+    p0 = (1 - r_hit) ** k
+    p1 = k * r_hit * (1 - r_hit) ** (k - 1) if r_hit < 1 else 0
+    hit1 = 1 - p0
+    hit2 = max(0.0, 1 - p0 - p1)
+    hr1 = 1 - (1 - min(0.6, r_hr)) ** k
+
+    # Exact total-bases distribution by convolving the per-PA TB pmf k times.
+    pmf = {0: 1 - (r_1b + r_2b + r_3b + r_hr), 1: r_1b, 2: r_2b, 3: r_3b, 4: r_hr}
+    dist = {0: 1.0}
+    for _ in range(k):
+        nd = {}
+        for tb, pr in dist.items():
+            for add, q in pmf.items():
+                if q > 0:
+                    nd[tb + add] = nd.get(tb + add, 0.0) + pr * q
+        dist = nd
+    tb2 = sum(p for tb, p in dist.items() if tb >= 2)
+    tb3 = sum(p for tb, p in dist.items() if tb >= 3)
+    return {"name": b.get("name"),
+            "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1),
+            "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1)}
+
+
+def pitcher_k_props(k9, exp_ip=5.6):
+    """Strikeout props for a starter: P(K >= line) via Poisson(expected Ks)."""
+    if not k9 or k9 <= 0:
+        return None
+    lam = k9 / 9.0 * exp_ip
+    pmf = _poisson_pmf(lam, kmax=20)
+    out = {}
+    for line in (4, 5, 6, 7):
+        out[line] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
+    out["expected"] = round(lam, 1)
+    return out
+
+
 def _binom_hit_probs(pa, p):
     n = max(1, int(round(pa)))
     p = min(0.45, max(0.05, p))
