@@ -740,12 +740,12 @@ def _candidate_legs(games, live_only=False):
         p = g.get("props") or {}
         rl = p.get("run_line")
         if rl:
-            fb = rl["fav_by2_pct"] / 100.0
-            dp = rl["dog_plus15_pct"] / 100.0
-            if fb >= 0.55:
-                add("Run line", f"{rl['favorite']} −1.5 (win by 2+)", fb)
-            elif dp >= 0.62:
-                add("Run line", f"{rl['underdog']} +1.5 (lose by ≤1 or win)", dp)
+            hb = rl["home_by2_pct"] / 100.0
+            ab = rl["away_by2_pct"] / 100.0
+            if hb >= 0.55:
+                add("Run line", f"{rl['home']} win by 2+", hb)
+            elif ab >= 0.55:
+                add("Run line", f"{rl['away']} win by 2+", ab)
         best_tot = None
         for t in p.get("totals", []):
             over = t["over_pct"] / 100.0; under = t["under_pct"] / 100.0
@@ -885,8 +885,8 @@ def _game_variants(g):
                 ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
                 g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
             rl = lp["run_line"]
-            add("Run line", f"{rl['favorite']} −1.5 (win by 2+)", rl["fav_by2_pct"] / 100.0)
-            add("Run line", f"{rl['underdog']} +1.5 (lose by ≤1 or win)", rl["dog_plus15_pct"] / 100.0)
+            add("Run line", f"{rl['home']} win by 2+", rl["home_by2_pct"] / 100.0)
+            add("Run line", f"{rl['away']} win by 2+", rl["away_by2_pct"] / 100.0)
             for t in lp["totals_ladder"]:
                 add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
                 add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
@@ -895,8 +895,8 @@ def _game_variants(g):
     p = g.get("props") or {}
     rl = p.get("run_line")
     if rl:
-        add("Run line", f"{rl['favorite']} −1.5 (win by 2+)", rl["fav_by2_pct"] / 100.0)
-        add("Run line", f"{rl['underdog']} +1.5 (lose by ≤1 or win)", rl["dog_plus15_pct"] / 100.0)
+        add("Run line", f"{rl['home']} win by 2+", rl["home_by2_pct"] / 100.0)
+        add("Run line", f"{rl['away']} win by 2+", rl["away_by2_pct"] / 100.0)
     for t in p.get("totals_ladder", []):
         add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
         add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)

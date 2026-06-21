@@ -73,13 +73,12 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
-    fav_is_home = er_home >= er_away
     return {
+        # Kalshi run line = separate "wins by 2+" market per side (not a
+        # complementary ±1.5 spread; a 1-run game means neither side hits).
         "run_line": {
-            "favorite": home_abbr if fav_is_home else away_abbr,
-            "fav_by2_pct": round((p_home_by2 if fav_is_home else p_away_by2) * 100, 1),
-            "underdog": away_abbr if fav_is_home else home_abbr,
-            "dog_plus15_pct": round((1 - (p_home_by2 if fav_is_home else p_away_by2)) * 100, 1),
+            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1),
+            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1),
         },
         "model_total": round(model_total, 1),
         "totals": totals,
@@ -123,13 +122,12 @@ def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
-    fav_is_home = (cur_home + rem_home_mean) >= (cur_away + rem_away_mean)
     return {
+        # Kalshi run line = separate "wins by 2+" market per side (a 1-run game
+        # means NEITHER hits -- it is not a complementary ±1.5 sportsbook spread).
         "run_line": {
-            "favorite": home_abbr if fav_is_home else away_abbr,
-            "fav_by2_pct": round((p_home_by2 if fav_is_home else p_away_by2) * 100, 1),
-            "underdog": away_abbr if fav_is_home else home_abbr,
-            "dog_plus15_pct": round((1 - (p_home_by2 if fav_is_home else p_away_by2)) * 100, 1),
+            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1),
+            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1),
         },
         "model_total": round(exp_final, 1),
         "totals_ladder": ladder,
