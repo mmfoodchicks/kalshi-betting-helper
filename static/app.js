@@ -1080,6 +1080,89 @@ async function initSim() {
   await fillSimKey();
   $("simKind").addEventListener("change", fillSimKey);
   $("simBtn").addEventListener("click", runSim);
+  $("simMode").addEventListener("change", simModeChange);
+  // populate weather cities + baseball game list lazily
+  try {
+    const wx = await (await fetch("/api/weather/meta")).json();
+    $("simWxCity").innerHTML = Object.entries(wx).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  } catch (e) {}
+  $("simGameDate").value = new Date().toISOString().slice(0, 10);
+  $("simGameDate").addEventListener("change", fillSimGames);
+}
+function simModeChange() {
+  const m = $("simMode").value;
+  for (const g of ["price", "game", "weather"]) $("g_" + g).classList.toggle("hidden", m !== g);
+  $("g_dfs").classList.toggle("hidden", m !== "dfs");
+  if (m === "game") fillSimGames();
+}
+async function fillSimGames() {
+  try {
+    const d = await (await fetch("/api/baseball/today?date=" + $("simGameDate").value)).json();
+    $("simGameSel").innerHTML = (d.games || []).map((g) =>
+      `<option value="${g.game_pk}">${g.matchup}</option>`).join("") || `<option value="">no games</option>`;
+  } catch (e) {}
+}
+async function runGameSim() {
+  const box = $("simResults");
+  const pk = $("simGameSel").value;
+  if (!pk) { box.innerHTML = `<div class="empty">No game selected.</div>`; return; }
+  box.innerHTML = `<div class="empty">Simulating game…</div>`;
+  try {
+    const d = await (await fetch(`/api/simulate/game?date=${$("simGameDate").value}&game_pk=${pk}`)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const scores = d.top_scores.map((s) => `${s.away}-${s.home} (${s.pct}%)`).join(" · ");
+    box.innerHTML = `<div class="bbgame">
+      <div class="matchup">${d.matchup}</div>
+      <div class="kv" style="margin-top:6px">
+        <span>${d.away} win <b>${d.away_win_pct}%</b></span>
+        <span>${d.home} win <b>${d.home_win_pct}%</b></span>
+      </div>
+      <div class="kv"><span>Median total <b>${d.median_total}</b> runs (10–90%: ${d.p10_total}–${d.p90_total})</span>
+        <span>Blowout (5+) <b>${d.blowout_pct}%</b></span><span>Shutout <b>${d.shutout_pct}%</b></span></div>
+      <div class="small" style="margin-top:6px">Most likely scores (away-home): ${scores}</div>
+    </div>`;
+  } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
+}
+async function runWxSim() {
+  const box = $("simResults");
+  const th = $("simWxTh").value, dir = $("simWxDir").value;
+  box.innerHTML = `<div class="empty">Simulating high temp…</div>`;
+  try {
+    let url = `/api/simulate/weather?city=${$("simWxCity").value}`;
+    if (th) url += `&threshold=${th}&direction=${dir}`;
+    const d = await (await fetch(url)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const thLine = d.prob_threshold != null
+      ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🎯 Chance the high is ${dir} ${th}°: <b>${d.prob_threshold}%</b></div>` : "";
+    box.innerHTML = `<div class="bbgame">
+      <div class="matchup">${d.city} — high ${d.date}</div>
+      <div class="kv" style="margin-top:6px"><span>Forecast <b>${d.forecast_high}°</b></span>
+        <span>Median <b>${d.median}°</b></span><span>Likely <b>${d.p10}°–${d.p90}°</b></span><span>Range ${d.low}°–${d.high}°</span></div>
+      ${thLine}</div>`;
+  } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
+}
+async function runDfsSim() {
+  const box = $("simResults");
+  const csv = $("dfsCsv").value;
+  if (!csv.trim()) { box.innerHTML = `<div class="empty">Paste your DraftKings salaries CSV first.</div>`; return; }
+  box.innerHTML = `<div class="empty">Optimizing + simulating lineup…</div>`;
+  try {
+    const d = await (await fetch("/api/simulate/dfs", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csv, sport: $("dfsSport").value, roster: parseInt($("dfsRoster").value, 10), cap: parseInt($("dfsCap").value, 10) }),
+    })).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const rows = d.lineup.map((p) => `<div class="sportout"><div class="left"><span class="oname">${p.name}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}</span></div></div>`).join("");
+    box.innerHTML = `<div class="bbgame">
+      <div class="matchup">Optimal ${d.roster}-player lineup (${d.pool} in pool)</div>
+      <div class="kv" style="margin-top:6px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>
+        <span>Projected <b>${d.total_proj}</b> pts</span></div>
+      <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span>
+        <span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>
+      <div class="sportouts" style="margin-top:8px">${rows}</div>
+      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-percentile simulated totals — the ceiling is what matters for GPP tournaments.</div>
+    </div>`;
+  } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
 async function fillSimKey() {
   const kind = $("simKind").value;
@@ -1102,6 +1185,10 @@ function histBars(h) {
     <div class="histlabels"><span>$${h.lo.toLocaleString()}</span><span>$${h.hi.toLocaleString()}</span></div>`;
 }
 async function runSim() {
+  const mode = $("simMode").value;
+  if (mode === "game") return runGameSim();
+  if (mode === "weather") return runWxSim();
+  if (mode === "dfs") return runDfsSim();
   const box = $("simResults");
   const kind = $("simKind").value, key = $("simKey").value, horizon = $("simHorizon").value;
   const th = $("simThreshold").value, dir = $("simDir").value;

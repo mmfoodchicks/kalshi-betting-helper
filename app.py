@@ -369,6 +369,63 @@ def api_simulate_price():
     return jsonify(res)
 
 
+@app.route("/api/simulate/game")
+def api_simulate_game():
+    """Simulate a baseball game many times -> win %, totals, blowout/shutout."""
+    import simulate, datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    try:
+        game_pk = int(request.args["game_pk"])
+    except (KeyError, ValueError):
+        return jsonify({"error": "game_pk required"}), 400
+    try:
+        games = baseball.analyze_slate(date, date[:4])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+    g = next((x for x in games if x["game_pk"] == game_pk), None)
+    if not g:
+        return jsonify({"error": "game not found"}), 404
+    res = simulate.game_sim(g["exp_runs_home"], g["exp_runs_away"])
+    res.update(matchup=g["matchup"], home=g["home_name"], away=g["away_name"])
+    return jsonify(res)
+
+
+@app.route("/api/simulate/weather")
+def api_simulate_weather():
+    import simulate, weather_markets
+    city = request.args.get("city", "nyc")
+    try:
+        data = weather_markets.get_city(city)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+    ev = (data.get("events") or [None])[0]
+    if not ev or not ev.get("model"):
+        return jsonify({"error": "no forecast available"}), 404
+    m = ev["model"]
+    th = request.args.get("threshold")
+    threshold = float(th) if th not in (None, "", "null") else None
+    res = simulate.temp_sim(m["mean"], m["sigma"], threshold=threshold,
+                            direction=request.args.get("direction", "above"))
+    res.update(city=data["city"], date=ev["date"], forecast_high=m["forecast_high"])
+    return jsonify(res)
+
+
+@app.route("/api/simulate/dfs", methods=["POST"])
+def api_simulate_dfs():
+    """Optimize + simulate a DraftKings DFS lineup from a pasted DKSalaries.csv."""
+    import simulate
+    d = request.get_json(force=True, silent=True) or {}
+    text = d.get("csv", "")
+    if not text.strip():
+        return jsonify({"error": "paste your DraftKings salaries CSV"}), 400
+    try:
+        roster = int(d.get("roster", 6))
+        cap = int(d.get("cap", 50000))
+    except (ValueError, TypeError):
+        return jsonify({"error": "bad roster/cap"}), 400
+    return jsonify(simulate.dfs_build(text, roster=roster, cap=cap, sport=d.get("sport", "ufc")))
+
+
 @app.route("/api/baseball/today")
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""

@@ -210,16 +210,42 @@
    <div id="tab-sim" class="hidden">
     <section class="card">
       <h2>🎲 Simulator</h2>
-      <p class="sub" style="margin:4px 0 12px">Monte Carlo — runs <b>20,000 random paths</b> and shows the full range of outcomes: median, best/worst case, and the chance of crossing your target. Pure read-only math; it changes no data.</p>
+      <p class="sub" style="margin:4px 0 12px">Monte Carlo — thousands of random runs to see the full range of outcomes. Pure read-only math; it changes no data.</p>
       <div class="scan-controls" style="flex-wrap:wrap;gap:8px">
-        <select id="simKind"><option value="crypto">Crypto</option><option value="commodity">Commodity</option></select>
-        <select id="simKey"></select>
-        <select id="simHorizon"></select>
-        <input id="simThreshold" type="number" step="any" placeholder="target $ (optional)" style="width:130px"/>
-        <select id="simDir"><option value="above">above</option><option value="below">below</option></select>
-        <button id="simBtn" class="primary">Run simulation</button>
+        <select id="simMode">
+          <option value="price">Coin / Commodity</option>
+          <option value="game">⚾ Baseball game</option>
+          <option value="weather">🌡️ Weather high</option>
+          <option value="dfs">🏁 DFS lineup (DraftKings)</option>
+        </select>
+        <span id="g_price" class="simg">
+          <select id="simKind"><option value="crypto">Crypto</option><option value="commodity">Commodity</option></select>
+          <select id="simKey"></select>
+          <select id="simHorizon"></select>
+          <input id="simThreshold" type="number" step="any" placeholder="target $ (opt)" style="width:120px"/>
+          <select id="simDir"><option value="above">above</option><option value="below">below</option></select>
+        </span>
+        <span id="g_game" class="simg hidden">
+          <input id="simGameDate" type="date"/>
+          <select id="simGameSel"></select>
+        </span>
+        <span id="g_weather" class="simg hidden">
+          <select id="simWxCity"></select>
+          <input id="simWxTh" type="number" step="any" placeholder="target °F (opt)" style="width:120px"/>
+          <select id="simWxDir"><option value="above">above</option><option value="below">below</option></select>
+        </span>
+        <button id="simBtn" class="primary">Run</button>
       </div>
-      <div id="simResults" class="markets" style="margin-top:12px"><div class="empty">Pick a market and run.</div></div>
+      <div id="g_dfs" class="hidden" style="margin-top:10px">
+        <div class="scan-controls" style="gap:8px">
+          <select id="dfsSport"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option></select>
+          <label class="small">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
+          <label class="small">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
+        </div>
+        <p class="sub" style="margin:6px 0 4px">Paste your DraftKings <b>DKSalaries.csv</b> (downloaded from the contest). It optimizes the best lineup under the cap and simulates its floor/ceiling.</p>
+        <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
+      </div>
+      <div id="simResults" class="markets" style="margin-top:12px"><div class="empty">Pick a mode and run.</div></div>
     </section>
    </div><!-- /tab-sim -->
 
