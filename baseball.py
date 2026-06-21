@@ -922,6 +922,41 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
             "n_sims": n_sims}
 
 
+def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
+                       n_sims=5000, max_legs_per_game=3, max_total_legs=8):
+    """One parlay across MULTIPLE games that may stack correlated legs within a
+    game and add single legs from others.
+
+    Honest math: within a game legs are correlated, so each game contributes a
+    simulated joint probability; across games they're independent, so the parlay
+    probability is the product of the per-game joint odds. The independent
+    product of every leg's marginal is also returned so the correlation effect
+    of any stacked game is visible.
+    """
+    import mlb_sim
+    mode = "payout" if (target_payout and target_payout > 1) else "legs"
+    games_bundles = []
+    for g in games:
+        if _game_state(g) in ("Final", "Live"):
+            continue
+        sim = mlb_sim.simulate(g, n_sims)
+        cands = mlb_sim.build_candidates(g, sim)
+        if not cands:
+            continue
+        bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
+        if bundles:
+            games_bundles.append((g["matchup"], bundles))
+    if not games_bundles:
+        return None
+    item = mlb_sim.assemble_mixed(games_bundles, mode, n_legs,
+                                  target_payout if mode == "payout" else 0,
+                                  max_total_legs)
+    if item:
+        item["n_sims"] = n_sims
+        item["mode"] = mode
+    return item
+
+
 def grade_picks():
     """Grade any recorded MLB picks whose games are now final."""
     import store

@@ -630,6 +630,30 @@ def api_baseball_sgp():
     return jsonify(res)
 
 
+@app.route("/api/baseball/mixed")
+def api_baseball_mixed():
+    """One parlay across multiple games that may stack correlated legs in a game
+    and add single legs from others. Within a game -> simulated joint odds;
+    across games -> independent product."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        legs = int(request.args.get("legs", 4))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else 0
+        sims = min(20000, max(1000, int(request.args.get("sims", 5000))))
+    except ValueError:
+        return jsonify({"error": "bad legs/payout"}), 400
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    item = baseball.build_mixed_parlay(games, n_legs=legs, target_payout=payout,
+                                       n_sims=sims)
+    return jsonify({"parlay": item})
+
+
 @app.route("/api/baseball/record")
 def api_baseball_record():
     try:

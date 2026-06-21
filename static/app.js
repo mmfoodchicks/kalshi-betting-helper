@@ -650,6 +650,54 @@ function renderSGP(s) {
   </div>`;
 }
 
+window.buildMixed = async () => {
+  const out = $("mixOut");
+  if (!out) return;
+  let n = parseInt(($("mixN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
+  let p = parseFloat(($("mixPayout") || {}).value) || 0;
+  const date = $("bbDate").value;
+  out.innerHTML = `<div class="small">Simulating the slate…</div>`;
+  try {
+    const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&payout=${p}`)).json();
+    if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
+    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build a mixed parlay — need upcoming games.</div>`; return; }
+    out.innerHTML = renderMixed(d.parlay);
+  } catch (e) {
+    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+  }
+};
+
+function renderMixed(m) {
+  const groups = m.groups.map((g) => {
+    const legs = g.legs.map((l) =>
+      `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+    const head = g.same_game
+      ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
+      : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
+    return head + `<ul class="legs">${legs}</ul>`;
+  }).join("");
+  const corr = m.corr_delta_pct;
+  const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">stacking helps (+${corr}% vs independent)</b>`
+    : corr < -0.4 ? `<b style="color:#e0566a">stacking costs ${corr}% vs independent</b>`
+    : `<span style="color:var(--muted)">~independent</span>`;
+  const payNote = m.target_payout_x
+    ? `<span>Target ${m.target_payout_x}× <b>${m.payout_reached ? "✓ reached" : "✗ max"}</b></span>` : "";
+  return `<div class="combo hl prop">
+    <div class="chead">
+      <span class="ctag">🔀 Mixed parlay</span>
+      <span class="small">${m.n_legs} legs · ${m.n_games} games · ${(m.n_sims || 0).toLocaleString()} sims</span>
+    </div>
+    ${groups}
+    <div class="cnums">
+      <span>Combined chance <b>${m.combined_prob_pct}%</b></span>
+      <span>Fair payout <b>${m.fair_payout_x}×</b></span>
+      ${payNote}
+      <span>Correlation: ${corrTxt}</span>
+    </div>
+    <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply.</div>
+  </div>`;
+}
+
 function renderCombo(c, tag, extraCls) {
   const abbr = (mu) => {
     if (!mu) return "";
@@ -731,6 +779,15 @@ async function loadBaseball(silent) {
       <button class="track-mini primary-mini" onclick="buildSGP()">Simulate</button>
       <div class="small" style="margin-top:4px">Legs from the <b>same game</b> are correlated — a homer lifts the team total <i>and</i> the moneyline together, strikeouts suppress the opposing total. This simulates each game and reads the <b>true joint odds</b> (not the naive independent product, which it also shows you).</div>
       <div id="sgpOut"></div>
+    </div>`;
+    // Mixed multi-game parlay: stack correlated legs in one game + singles from others.
+    html += `<div class="combomaker">
+      🔀 <b>Mixed parlay</b> (stack a game + add others):
+      <input id="mixN" type="number" min="2" max="8" value="4" style="width:50px"/> total legs
+      <b>or</b> reach <input id="mixPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
+      <button class="track-mini primary-mini" onclick="buildMixed()">Simulate</button>
+      <div class="small" style="margin-top:4px">Builds <b>one</b> parlay that may take 2–3 correlated legs from a single game <i>and</i> single legs from other games. Within a game it uses simulated joint odds; across games it multiplies (independent). It picks where to stack to hit your target most safely.</div>
+      <div id="mixOut"></div>
     </div>`;
     if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
     if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))

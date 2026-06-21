@@ -253,6 +253,16 @@ def _redundant(masks):
     return False
 
 
+def _market_conflict(combo):
+    """True if a parlay stacks two legs from the same single-outcome market
+    (two game totals, two moneylines, two run lines) -- e.g. 'Over 8.5' AND
+    'Under 9.5' is really one exactly-9 middle, not two independent picks."""
+    for typ in ("Total", "ML", "Run line"):
+        if sum(1 for c in combo if c["type"] == typ) > 1:
+            return True
+    return False
+
+
 def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
     """Search same-game parlays and return the best item, or None.
 
@@ -271,7 +281,7 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
             break
         for combo in itertools.combinations(cands, sz):
             masks = [c["mask"] for c in combo]
-            if _redundant(masks):
+            if _redundant(masks) or _market_conflict(combo):
                 continue
             jm = masks[0]
             for m in masks[1:]:
@@ -307,3 +317,131 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
         "indep_payout_x": round(1.0 / indep, 2) if indep > 0 else None,
         "n_sims": n,
     }
+
+
+# --- Mixed multi-game parlays ------------------------------------------------
+# A parlay can take several legs from one game (correlated -> simulated joint)
+# AND single legs from other games (independent -> multiply across games). Each
+# game contributes at most one "bundle" of 1..k legs with its simulated joint
+# probability; the overall parlay probability is the product of the bundles.
+
+def game_bundles(cands, n, max_legs=3, per_size=6):
+    """Non-redundant leg bundles (size 1..max_legs) for one game, each with its
+    simulated joint probability. Trimmed to the most useful per size: the safest
+    few (high prob) and the longest-shot few (high payout, to reach a target)."""
+    cs = sorted(cands, key=lambda c: c["marg"], reverse=True)[:14]
+    bundles = []
+    for sz in range(1, max_legs + 1):
+        if sz > len(cs):
+            break
+        sized = []
+        for combo in itertools.combinations(cs, sz):
+            masks = [c["mask"] for c in combo]
+            if sz > 1 and (_redundant(masks) or _market_conflict(combo)):
+                continue
+            jm = masks[0]
+            for m in masks[1:]:
+                jm &= m
+            joint = _popcount(jm) / n
+            if joint <= 0.005:
+                continue
+            sized.append((joint, combo))
+        sized.sort(key=lambda x: x[0], reverse=True)
+        keep = sized[:per_size] + sized[-per_size:]
+        seen = set()
+        for joint, combo in keep:
+            key = tuple(sorted(c["label"] for c in combo))
+            if key in seen:
+                continue
+            seen.add(key)
+            bundles.append({"size": sz, "prob": joint, "legs": combo})
+    return bundles
+
+
+def _mixed_item(sel, games_bundles, target_payout=None):
+    groups = []
+    combined = indep = 1.0
+    nlegs = 0
+    for gi, b in sel:
+        mu = games_bundles[gi][0]
+        combined *= b["prob"]
+        legs = []
+        for c in b["legs"]:
+            indep *= c["marg"]
+            nlegs += 1
+            legs.append({"pick": c["label"], "type": c["type"],
+                         "prob_pct": round(c["marg"] * 100, 1)})
+        groups.append({"matchup": mu, "size": b["size"],
+                       "joint_pct": round(b["prob"] * 100, 1),
+                       "same_game": b["size"] > 1, "legs": legs})
+    groups.sort(key=lambda g: g["size"], reverse=True)
+    return {
+        "n_legs": nlegs, "n_games": len(groups), "groups": groups,
+        "combined_prob_pct": round(combined * 100, 1),
+        "indep_prob_pct": round(indep * 100, 1),
+        "corr_delta_pct": round((combined - indep) * 100, 1),
+        "fair_payout_x": round(1.0 / combined, 2) if combined > 0 else None,
+        "indep_payout_x": round(1.0 / indep, 2) if indep > 0 else None,
+        "target_payout_x": target_payout,
+        "payout_reached": (target_payout is None) or
+                          (combined > 0 and 1.0 / combined >= target_payout),
+    }
+
+
+def assemble_mixed(games_bundles, mode, n_legs, target_payout, max_total_legs=8):
+    """Assemble one parlay across games, picking at most one bundle per game.
+
+    'legs' mode: the most likely parlay with ~n_legs total legs.
+    'payout' mode: the most likely parlay whose fair payout reaches the target
+    (a covering knapsack on -log(prob) >= log(payout))."""
+    if not games_bundles:
+        return None
+
+    if mode == "payout" and target_payout and target_payout > 1:
+        threshold = math.log(target_payout)
+        res = 0.04
+        dp = {0: (0.0, [])}  # weight-bucket -> (actual -log(prob), selection)
+        for gi, (_mu, bundles) in enumerate(games_bundles):
+            nd = dict(dp)  # skip-this-game option
+            for w, sel in dp.values():
+                for b in bundles:
+                    nw = w - math.log(b["prob"])
+                    if nw > threshold + 2.0:           # don't overshoot wildly
+                        continue
+                    if sum(x.get("size", 1) for _g, x in sel) + b["size"] > max_total_legs:
+                        continue
+                    bk = int(nw / res)
+                    if bk not in nd or nw < nd[bk][0]:
+                        nd[bk] = (nw, sel + [(gi, b)])
+            dp = nd
+        best = None
+        for w, sel in dp.values():
+            if sum(b["size"] for _g, b in sel) < 2:
+                continue
+            reached = w >= threshold - 1e-9
+            # Prefer parlays that reach the payout (then safest = min weight);
+            # if none reach, take the highest payout (max weight) we can build.
+            key = (1, -w) if reached else (0, w)
+            if best is None or key > best[0]:
+                best = (key, sel)
+        return _mixed_item(best[1], games_bundles, target_payout) if best else None
+
+    # legs mode: DP over total leg count, maximise probability (min -log).
+    target = max(2, min(n_legs, max_total_legs))
+    dp = {0: (0.0, [])}  # total legs -> (actual -log(prob), selection)
+    for gi, (_mu, bundles) in enumerate(games_bundles):
+        nd = dict(dp)
+        for legs, (w, sel) in dp.items():
+            for b in bundles:
+                nl = legs + b["size"]
+                if nl > max_total_legs:
+                    continue
+                nw = w - math.log(b["prob"])
+                if nl not in nd or nw < nd[nl][0]:
+                    nd[nl] = (nw, sel + [(gi, b)])
+        dp = nd
+    pick = [k for k in dp if k >= 2 and dp[k][1]]
+    if not pick:
+        return None
+    k = min(pick, key=lambda x: (abs(x - target), x))
+    return _mixed_item(dp[k][1], games_bundles)
