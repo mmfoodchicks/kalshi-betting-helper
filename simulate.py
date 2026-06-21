@@ -68,20 +68,70 @@ def temp_sim(mean, sigma, n=20000, threshold=None, direction=None):
 
 # ---- DFS (DraftKings) lineup optimizer + simulator ------------------------
 def parse_dk_csv(text):
-    """Parse a DraftKings DKSalaries.csv -> [{name, salary, proj, pos}]."""
-    rows = list(csv.DictReader(io.StringIO(text)))
+    """Parse a DraftKings DKSalaries.csv -> [{name, salary, proj, pos}].
+
+    Works with OR without the header row. DraftKings' standard export layout is:
+        Position, Name+ID, Name, ID, Roster Position, Salary, Game Info,
+        TeamAbbrev, AvgPointsPerGame
+    so if no header is present we read those columns positionally.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    first = lines[0].lower()
     out = []
-    for r in rows:
-        name = (r.get("Name") or r.get("name") or "").strip()
-        try:
-            salary = float(r.get("Salary") or r.get("salary") or 0)
-            proj = float(r.get("AvgPointsPerGame") or r.get("Projection")
-                         or r.get("proj") or r.get("AvgPoints") or 0)
-        except ValueError:
+    if "salary" in first and "name" in first:        # header present
+        for r in csv.DictReader(io.StringIO("\n".join(lines))):
+            name = (r.get("Name") or r.get("name") or "").strip()
+            try:
+                salary = float((r.get("Salary") or r.get("salary") or 0))
+                proj = float(r.get("AvgPointsPerGame") or r.get("Projection")
+                             or r.get("proj") or r.get("AvgPoints") or 0)
+            except ValueError:
+                continue
+            if name and salary > 0:
+                out.append({"name": name, "salary": salary, "proj": proj,
+                            "pos": (r.get("Position") or r.get("Roster Position") or "").strip()})
+        if out:
+            return out
+
+    # No usable header -> parse positionally with the standard DK layout.
+    for parts in csv.reader(io.StringIO("\n".join(lines))):
+        if len(parts) < 6:
             continue
-        if name and salary > 0:
-            out.append({"name": name, "salary": salary, "proj": proj,
-                        "pos": (r.get("Position") or r.get("Roster Position") or "").strip()})
+        name = (parts[2] if len(parts) > 2 and parts[2].strip() else parts[1]).strip()
+        pos = parts[0].strip()
+        # Salary: column 5 in the standard layout, else the first big integer.
+        salary = None
+        try:
+            salary = float(parts[5].replace(",", ""))
+        except (ValueError, IndexError):
+            pass
+        if not salary or salary <= 0:
+            for p in parts:
+                try:
+                    v = float(p.replace(",", ""))
+                except ValueError:
+                    continue
+                if v >= 1000:
+                    salary = v
+                    break
+        # Projection: column 8 (AvgPointsPerGame), else the last small numeric.
+        proj = None
+        try:
+            proj = float(parts[8])
+        except (ValueError, IndexError):
+            for p in reversed(parts):
+                try:
+                    v = float(p)
+                except ValueError:
+                    continue
+                if v != salary:          # skip the salary field
+                    proj = v
+                    break
+        if name and salary and salary > 0:
+            out.append({"name": name, "salary": salary, "proj": proj or 0.0, "pos": pos})
     return out
 
 
