@@ -340,6 +340,35 @@ def api_commodities_scan():
                     "markets": enriched})
 
 
+@app.route("/api/simulate/price")
+def api_simulate_price():
+    """Monte Carlo a coin or commodity forward; return the outcome distribution."""
+    import simulate
+    kind = request.args.get("kind", "crypto")
+    key = request.args.get("key", "BTC")
+    try:
+        horizon = float(request.args.get("horizon", 60))
+        th = request.args.get("threshold")
+        threshold = float(th) if th not in (None, "", "null") else None
+        direction = request.args.get("direction", "above")
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        if kind == "commodity":
+            import commodities
+            spot = commodities.get_spot(key)
+            candles = commodities.get_candles(key)  # daily -> horizon in days
+        else:
+            spot = prices.get_spot(key.upper())
+            candles = prices.get_candles(key.upper(), granularity=60)  # horizon in minutes
+    except Exception as e:
+        return jsonify({"error": f"feed failed: {e}"}), 502
+    res = simulate.price_sim(spot, candles, horizon, threshold=threshold, direction=direction)
+    res["kind"] = kind
+    res["key"] = key
+    return jsonify(res)
+
+
 @app.route("/api/baseball/today")
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""

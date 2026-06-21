@@ -132,6 +132,9 @@ main {
 }
 .combomaker input { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 6px; }
 .leggame { font-size: 0.72rem; color: var(--accent); background: var(--card); border-radius: 4px; padding: 0 4px; }
+.hist { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin-top: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px; }
+.hbar { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 1px; opacity: 0.85; }
+.histlabels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
 
 .combo .legs li { margin: 4px 0; }
 .legtag {

@@ -715,9 +715,11 @@ function setupTabs() {
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
+      $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "combine") loadCombineCats();
+      if (tab === "sim") initSim();
       if (tab === "commodities" && !$("comResults").dataset.loaded) {
         $("comResults").dataset.loaded = "1";
         loadCommodities();
@@ -1070,6 +1072,98 @@ async function loadWeather() {
   }
 }
 
+// ---- Simulator ------------------------------------------------------------
+let simInited = false;
+async function initSim() {
+  if (simInited) return;
+  simInited = true;
+  await fillSimKey();
+  $("simKind").addEventListener("change", fillSimKey);
+  $("simBtn").addEventListener("click", runSim);
+}
+async function fillSimKey() {
+  const kind = $("simKind").value;
+  if (kind === "commodity") {
+    const meta = await (await fetch("/api/commodities/meta")).json();
+    $("simKey").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    $("simHorizon").innerHTML = [["1", "1 day"], ["3", "3 days"], ["7", "1 week"], ["30", "1 month"]]
+      .map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  } else {
+    const coins = await (await fetch("/api/coins")).json();
+    $("simKey").innerHTML = coins.map((c) => `<option>${c}</option>`).join("");
+    $("simHorizon").innerHTML = [["15", "15 min"], ["60", "1 hour"], ["240", "4 hours"], ["1440", "1 day"]]
+      .map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  }
+}
+function histBars(h) {
+  const max = Math.max(...h.counts, 1);
+  return `<div class="hist">${h.counts.map((c) =>
+    `<div class="hbar" style="height:${Math.round(100 * c / max)}%"></div>`).join("")}</div>
+    <div class="histlabels"><span>$${h.lo.toLocaleString()}</span><span>$${h.hi.toLocaleString()}</span></div>`;
+}
+async function runSim() {
+  const box = $("simResults");
+  const kind = $("simKind").value, key = $("simKey").value, horizon = $("simHorizon").value;
+  const th = $("simThreshold").value, dir = $("simDir").value;
+  box.innerHTML = `<div class="empty">Running 20,000 paths…</div>`;
+  try {
+    let url = `/api/simulate/price?kind=${kind}&key=${key}&horizon=${horizon}`;
+    if (th) url += `&threshold=${th}&direction=${dir}`;
+    const d = await (await fetch(url)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const thLine = d.prob_threshold != null
+      ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🎯 Chance of finishing ${d.direction} $${d.threshold.toLocaleString()}: <b>${d.prob_threshold}%</b></div>` : "";
+    box.innerHTML = `<div class="bbgame">
+      <div class="kv">
+        <span>Spot <b>$${d.spot.toLocaleString()}</b></span>
+        <span>Median <b>$${d.median.toLocaleString()}</b> (${d.median_move_pct >= 0 ? "+" : ""}${d.median_move_pct}%)</span>
+        <span>Prob up <b>${d.prob_up}%</b></span>
+      </div>
+      <div class="kv">
+        <span>🟢 Best case (95th) <b class="ev pos">$${d.p95.toLocaleString()} (${d.best_case_move_pct >= 0 ? "+" : ""}${d.best_case_move_pct}%)</b></span>
+        <span>🔴 Worst case (5th) <b class="ev neg">$${d.p5.toLocaleString()} (${d.worst_case_move_pct}%)</b></span>
+      </div>
+      <div class="kv"><span>Extreme high $${d.best.toLocaleString()}</span><span>Extreme low $${d.worst.toLocaleString()}</span><span>50% likely between $${d.p25.toLocaleString()}–$${d.p75.toLocaleString()}</span></div>
+      ${thLine}
+      <div class="teamhdr" style="margin-top:10px">Outcome distribution</div>
+      ${histBars(d.hist)}
+    </div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Simulation failed.</div>`;
+  }
+}
+
+// ---- Combo session simulator (client-side; changes nothing) ---------------
+let _simCombo = null;
+function comboSimControl(combo) {
+  _simCombo = { prob: combo.combined_prob_pct / 100, payout: combo.parlay_payout_x || combo.fair_payout_x };
+  return `<div class="combomaker" style="margin-top:8px">
+    🎲 <b>Simulate</b> <input id="csPlays" type="number" min="1" value="100" style="width:54px"/> plays at $<input id="csStake" type="number" min="1" value="10" style="width:54px"/>
+    <button class="track-mini primary-mini" onclick="runComboSim()">Go</button>
+    <div id="csOut" class="small" style="margin-top:6px"></div>
+  </div>`;
+}
+window.runComboSim = () => {
+  if (!_simCombo) return;
+  const plays = Math.max(1, parseInt($("csPlays").value, 10) || 100);
+  const stake = Math.max(1, parseFloat($("csStake").value) || 10);
+  const p = _simCombo.prob, payout = _simCombo.payout || 1;
+  const winAmt = stake * (payout - 1), sessions = 3000, res = [];
+  for (let s = 0; s < sessions; s++) {
+    let net = 0;
+    for (let i = 0; i < plays; i++) net += Math.random() < p ? winAmt : -stake;
+    res.push(net);
+  }
+  res.sort((a, b) => a - b);
+  const q = (x) => res[Math.min(res.length - 1, Math.floor(x * res.length))];
+  const mean = res.reduce((a, b) => a + b, 0) / res.length;
+  const up = res.filter((r) => r > 0).length / res.length * 100;
+  const f = (v) => (v >= 0 ? "+$" : "-$") + Math.abs(v).toFixed(0);
+  $("csOut").innerHTML =
+    `Over ${plays} plays ($${(plays * stake).toLocaleString()} risked): avg <b class="${mean >= 0 ? "ev pos" : "ev neg"}">${f(mean)}</b> · ` +
+    `chance of profit <b>${up.toFixed(0)}%</b> · typical range ${f(q(0.05))} to ${f(q(0.95))} · best ${f(res[res.length - 1])} / worst ${f(res[0])}`;
+};
+
 // ---- Mega combo maker (cross-category) ------------------------------------
 let combineCatsLoaded = false;
 async function loadCombineCats() {
@@ -1099,6 +1193,7 @@ async function buildCombine() {
       const note = d.combo.legs_meeting_target != null
         ? `<div class="small">${d.combo.legs_meeting_target}/${d.combo.n_legs} legs meet the ${t}% target.</div>` : "";
       html += renderCombo(d.combo, `🎰 ${d.combo.n_legs}-leg mega parlay (≥${t}%)`, "hl prop") + note;
+      html += comboSimControl(d.combo);
     } else {
       html += `<div class="empty">No legs available for those categories right now.</div>`;
     }

@@ -24,6 +24,7 @@
       <button class="tab" data-tab="sports">🏆 Sports</button>
       <button class="tab" data-tab="commodities">🛢️ Commodities</button>
       <button class="tab" data-tab="weather">🌡️ Weather</button>
+      <button class="tab" data-tab="sim">🎲 Simulator</button>
       <button class="tab" data-tab="combine">🎰 Combos</button>
       <button class="tab" data-tab="ledger">📒 Ledger</button>
     </nav>
@@ -205,6 +206,22 @@
       <div id="wxResults" class="markets"><div class="empty">Pick a city, then Load.</div></div>
     </section>
    </div><!-- /tab-weather -->
+
+   <div id="tab-sim" class="hidden">
+    <section class="card">
+      <h2>🎲 Simulator</h2>
+      <p class="sub" style="margin:4px 0 12px">Monte Carlo — runs <b>20,000 random paths</b> and shows the full range of outcomes: median, best/worst case, and the chance of crossing your target. Pure read-only math; it changes no data.</p>
+      <div class="scan-controls" style="flex-wrap:wrap;gap:8px">
+        <select id="simKind"><option value="crypto">Crypto</option><option value="commodity">Commodity</option></select>
+        <select id="simKey"></select>
+        <select id="simHorizon"></select>
+        <input id="simThreshold" type="number" step="any" placeholder="target $ (optional)" style="width:130px"/>
+        <select id="simDir"><option value="above">above</option><option value="below">below</option></select>
+        <button id="simBtn" class="primary">Run simulation</button>
+      </div>
+      <div id="simResults" class="markets" style="margin-top:12px"><div class="empty">Pick a market and run.</div></div>
+    </section>
+   </div><!-- /tab-sim -->
 
    <div id="tab-combine" class="hidden">
     <section class="card">
