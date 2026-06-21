@@ -609,6 +609,47 @@ window.buildParlay = async () => {
   }
 };
 
+window.buildSGP = async () => {
+  const out = $("sgpOut");
+  if (!out) return;
+  let n = parseInt(($("sgpN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
+  let t = parseInt(($("sgpTarget") || {}).value, 10); if (isNaN(t)) t = 55;
+  let p = parseFloat(($("sgpPayout") || {}).value) || 0;
+  const date = $("bbDate").value;
+  out.innerHTML = `<div class="small">Simulating every game…</div>`;
+  try {
+    const d = await (await fetch(`/api/baseball/sgp?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+    if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
+    if (!d.games || !d.games.length) { out.innerHTML = `<div class="small">No same-game parlays available — need upcoming (non-final) games.</div>`; return; }
+    out.innerHTML = `<div class="small" style="margin:6px 0">Best same-game parlay per game (${(d.n_sims || 0).toLocaleString()} sims each):</div>`
+      + d.games.map(renderSGP).join("");
+  } catch (e) {
+    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+  }
+};
+
+function renderSGP(s) {
+  const legs = s.legs.map((l) =>
+    `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+  const corr = s.corr_delta_pct;
+  const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
+    : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
+    : `<span style="color:var(--muted)">~independent (${corr >= 0 ? "+" : ""}${corr}%)</span>`;
+  return `<div class="combo hl prop">
+    <div class="chead">
+      <span class="ctag">🎰 ${s.matchup}</span>
+      <span class="small">${s.n_legs} legs · ${(s.n_sims || 0).toLocaleString()} sims</span>
+    </div>
+    <ul class="legs">${legs}</ul>
+    <div class="cnums">
+      <span>Joint chance <b>${s.combined_prob_pct}%</b></span>
+      <span>Fair payout <b>${s.fair_payout_x}×</b></span>
+      <span>Correlation: ${corrTxt}</span>
+    </div>
+    <div class="small" style="margin-top:4px">Naive independent guess: <b>${s.indep_prob_pct}%</b> (${s.indep_payout_x}×). The simulation gives the real correlated number.${s.has_props ? "" : " <i>Run-based legs only — hitter &amp; strikeout props appear once lineups post (a few hours pre-game).</i>"}</div>
+  </div>`;
+}
+
 function renderCombo(c, tag, extraCls) {
   const abbr = (mu) => {
     if (!mu) return "";
@@ -681,6 +722,16 @@ async function loadBaseball(silent) {
         <div id="parlayOut"></div>
       </div>`;
     }
+    // Same-game parlay maker: correlation-aware (simulated) joint odds.
+    html += `<div class="combomaker">
+      🎰 <b>Same-game parlay</b> (correlation-aware, simulated):
+      each leg ≥ <input id="sgpTarget" type="number" min="20" max="95" value="55" style="width:54px"/>% likely;
+      <input id="sgpN" type="number" min="2" max="5" value="3" style="width:50px"/> legs
+      <b>or</b> reach <input id="sgpPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
+      <button class="track-mini primary-mini" onclick="buildSGP()">Simulate</button>
+      <div class="small" style="margin-top:4px">Legs from the <b>same game</b> are correlated — a homer lifts the team total <i>and</i> the moneyline together, strikeouts suppress the opposing total. This simulates each game and reads the <b>true joint odds</b> (not the naive independent product, which it also shows you).</div>
+      <div id="sgpOut"></div>
+    </div>`;
     if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
     if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
       html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");

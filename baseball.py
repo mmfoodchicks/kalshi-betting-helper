@@ -892,6 +892,36 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
     return item
 
 
+def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
+                            n_sims=5000, max_legs=4, top_n=8):
+    """Same-game parlays with honest, correlation-aware joint odds.
+
+    Unlike the cross-game combos (independent games -> exact product), legs from
+    one game are correlated, so we simulate each game and read the joint hit-rate
+    directly. Each item also reports the naive independent product so you can see
+    whether the correlation helps (legs reinforce) or hurts.
+    """
+    import mlb_sim
+    target = max(0.05, min(0.97, target_pct / 100.0))
+    out = []
+    for g in games:
+        if _game_state(g) in ("Final", "Live"):
+            continue  # settled games are decided; live in-game props are stale
+        sim = mlb_sim.simulate(g, n_sims)
+        cands = mlb_sim.build_candidates(g, sim)
+        item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
+                                      target_payout, max_legs)
+        if not item:
+            continue
+        item["matchup"] = g["matchup"]
+        item["has_props"] = bool((g.get("props") or {}).get("batters_home")
+                                 or (g.get("props") or {}).get("batters_away"))
+        out.append(item)
+    out.sort(key=lambda x: x["combined_prob_pct"], reverse=True)
+    return {"games": out[:top_n], "best": out[0] if out else None,
+            "n_sims": n_sims}
+
+
 def grade_picks():
     """Grade any recorded MLB picks whose games are now final."""
     import store

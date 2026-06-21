@@ -605,6 +605,31 @@ def api_baseball_parlay():
     return jsonify({"combo": combo})
 
 
+@app.route("/api/baseball/sgp")
+def api_baseball_sgp():
+    """Same-game parlays with correlation-aware (simulated) joint odds. Legs from
+    one game are correlated, so these are read off a full game simulation rather
+    than multiplying independent marginals."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        legs = int(request.args.get("legs", 3))
+        target = float(request.args.get("target", 55))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else 0
+        sims = min(20000, max(1000, int(request.args.get("sims", 5000))))
+    except ValueError:
+        return jsonify({"error": "bad legs/target"}), 400
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    res = baseball.build_same_game_parlays(games, n_legs=legs, target_pct=target,
+                                           target_payout=payout, n_sims=sims)
+    return jsonify(res)
+
+
 @app.route("/api/baseball/record")
 def api_baseball_record():
     try:

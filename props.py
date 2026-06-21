@@ -110,7 +110,13 @@ def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
 
 def batter_props(b, slot, opp_hit_factor=1.0):
     """Exact per-game prop probabilities for a hitter (the limit a simulation
-    converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases."""
+    converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases.
+
+    Also returns the per-plate-appearance outcome rates (r1/r2/r3/rhr/rbb) and
+    expected PA so the same-game simulator can draw this hitter from the exact
+    same marginal distribution -- the closed-form props and the simulation stay
+    consistent by construction.
+    """
     spa = b.get("pa") or 0
     if spa <= 0:
         return None
@@ -122,6 +128,7 @@ def batter_props(b, slot, opp_hit_factor=1.0):
     r_hr = (b.get("hr") or 0) / spa * f
     r_hit = (b.get("hits") or 0) / spa * f
     r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
+    r_bb = (b.get("bb") or 0) / spa
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
     p0 = (1 - r_hit) ** k
@@ -142,9 +149,11 @@ def batter_props(b, slot, opp_hit_factor=1.0):
         dist = nd
     tb2 = sum(p for tb, p in dist.items() if tb >= 2)
     tb3 = sum(p for tb, p in dist.items() if tb >= 3)
-    return {"name": b.get("name"),
+    return {"name": b.get("name"), "slot": slot,
             "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1),
-            "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1)}
+            "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1),
+            "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
+            "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4)}
 
 
 def pitcher_k_props(k9, exp_ip=5.6):
