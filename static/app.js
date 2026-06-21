@@ -655,11 +655,19 @@ window.buildParlay = async () => {
     const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a parlay at ${t}%.</div>`; return; }
     const c = d.combo;
-    const title = p > 1
-      ? `🎯 ${c.n_legs}-leg parlay (≥${t}% legs, ${c.payout_reached ? "reached" : "max"} ${c.fair_payout_x}×)`
-      : `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
-    const note = (p > 1 && !c.payout_reached)
-      ? `<div class="small">Couldn't reach ${p}× with the available games — this is the max (${c.fair_payout_x}×).</div>` : "";
+    let title, note = "";
+    if (p > 1) {
+      title = `🎯 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (target ${p}×)`;
+      if (c.expanded) {
+        note += `<div class="small">Your ${c.requested_legs} legs couldn't reach ${p}× without a near-zero punt pick, so it used <b>${c.legs_used}</b> legs (higher confidence each, same target).</div>`;
+      }
+      if (!c.payout_reached) {
+        note += `<div class="small">⚠️ Couldn't reach ${p}× even with ${c.legs_used} legs — this is the max (${c.fair_payout_x}×). Lower the target or include more games.</div>`;
+      }
+      note += `<div class="small">At ${c.fair_payout_x}× the chance of hitting is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds props that chance is the same however the legs are split — extra legs just land you closer to the exact target.</div>`;
+    } else {
+      title = `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
+    }
     out.innerHTML = renderCombo(c, title, "hl prop") + note;
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
@@ -1499,10 +1507,19 @@ async function buildCombine() {
     if (d.counts && Object.keys(d.counts).length)
       html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
     if (d.combo) {
-      const note = d.combo.legs_meeting_target != null
-        ? `<div class="small">${d.combo.legs_meeting_target}/${d.combo.n_legs} legs meet the ${t}% target.</div>` : "";
-      html += renderCombo(d.combo, `🎰 ${d.combo.n_legs}-leg mega parlay (≥${t}%)`, "hl prop") + note;
-      html += comboSimControl(d.combo);
+      const c = d.combo;
+      let title, note = "";
+      if (p > 1) {
+        title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (target ${p}×)`;
+        if (c.expanded) note += `<div class="small">Your ${c.requested_legs} legs couldn't reach ${p}× without a punt pick, so it used <b>${c.legs_used}</b> (higher confidence each).</div>`;
+        if (c.payout_reached === false) note += `<div class="small">⚠️ Couldn't reach ${p}× even with ${c.legs_used || c.n_legs} legs — max is ${c.fair_payout_x}×. Lower the target or add categories.</div>`;
+        note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds legs that's the same however you split them — extra legs just land closer to the target.</div>`;
+      } else {
+        title = `🎰 ${c.n_legs}-leg mega parlay (≥${t}%)`;
+        if (c.legs_meeting_target != null) note = `<div class="small">${c.legs_meeting_target}/${c.n_legs} legs meet the ${t}% target.</div>`;
+      }
+      html += renderCombo(c, title, "hl prop") + note;
+      html += comboSimControl(c);
     } else {
       html += `<div class="empty">No legs available for those categories right now.</div>`;
     }

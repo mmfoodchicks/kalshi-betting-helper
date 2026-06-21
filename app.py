@@ -637,7 +637,8 @@ def api_combine():
     except ValueError:
         return jsonify({"error": "bad legs/target"}), 400
     try:
-        return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout))
+        return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout,
+                                     max_legs=tiers.cap_legs(_tier(), 30)))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -660,7 +661,8 @@ def api_baseball_parlay():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    combo = baseball.build_target_parlay(games, legs, target, target_payout=payout)
+    combo = baseball.build_target_parlay(games, legs, target, target_payout=payout,
+                                         max_legs=tiers.cap_legs(_tier(), 30))
     return jsonify({"combo": combo})
 
 

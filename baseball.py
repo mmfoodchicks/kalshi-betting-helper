@@ -851,14 +851,34 @@ def _game_variants(g):
 
 
 def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12):
-    """Build a parlay where each leg is tuned to ~the target confidence.
+    """Build a parlay.
 
-    For each game we pick the variant that meets the target with the best payout
-    (lowest probability still >= target). Then either take n_legs (safest first)
-    or, if target_payout is given, add legs until the parlay reaches that payout.
+    Payout mode (target_payout given): the target multiplier governs. We pick the
+    legs that reach it with the highest combined probability, preferring your leg
+    count and only adding legs when that count physically can't reach the target
+    (never forcing in a near-zero "punt" leg). See parlay.payout_combo.
+
+    Confidence mode: each leg tuned to ~the target confidence; take n_legs safest.
     """
     target = max(0.05, min(0.97, target_pct / 100.0))
-    chosen = []  # one best variant per game
+
+    if target_payout and target_payout > 1:
+        import parlay
+        groups = [v for v in (_game_variants(g) for g in games) if v]
+        res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
+        if not res:
+            return None
+        item = _combo_item(res["legs"])
+        item["target_pct"] = round(target * 100, 1)
+        item["target_payout_x"] = target_payout
+        item["payout_reached"] = res["reached"]
+        item["legs_used"] = res["n_used"]
+        item["requested_legs"] = res["requested_legs"]
+        item["expanded"] = res["expanded"]
+        item["all_priced"] = res["all_priced"]
+        return item
+
+    chosen = []  # one best variant per game, tuned near the target confidence
     for g in games:
         variants = _game_variants(g)
         if not variants:
@@ -870,25 +890,11 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
         chosen.append(pick)
     if len(chosen) < 2:
         return None
-    if target_payout and target_payout > 1:
-        # Prefer legs nearest the target (most payout per leg) to reach the
-        # payout with fewer ~target-confidence legs.
-        chosen.sort(key=lambda v: (not v["meets_target"], v["prob"]))
-        sel, prob = [], 1.0
-        for v in chosen:
-            sel.append(v); prob *= v["prob"]
-            if (prob > 0 and 1 / prob >= target_payout) or len(sel) >= max_legs:
-                break
-        legs = sel if len(sel) >= 2 else chosen[:2]
-    else:
-        chosen.sort(key=lambda v: (v["meets_target"], v["prob"]), reverse=True)
-        legs = chosen[:max(2, min(n_legs, len(chosen)))]
+    chosen.sort(key=lambda v: (v["meets_target"], v["prob"]), reverse=True)
+    legs = chosen[:max(2, min(n_legs, len(chosen)))]
     item = _combo_item(legs)
     item["target_pct"] = round(target * 100, 1)
     item["legs_meeting_target"] = sum(1 for v in legs if v.get("meets_target"))
-    if target_payout:
-        item["target_payout_x"] = target_payout
-        item["payout_reached"] = (item.get("fair_payout_x") or 0) >= target_payout
     return item
 
 
