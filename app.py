@@ -707,18 +707,20 @@ def api_baseball_mixed():
     season = request.args.get("season") or date[:4]
     try:
         legs = tiers.cap_legs(_tier(), request.args.get("legs", 4))
+        target = float(request.args.get("target", 55))
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else 0
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 5000))
-        max_total = tiers.cap_legs(_tier(), 8)
+        max_total = tiers.cap_legs(_tier(), 12)
     except ValueError:
         return jsonify({"error": "bad legs/payout"}), 400
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    item = baseball.build_mixed_parlay(games, n_legs=legs, target_payout=payout,
-                                       n_sims=sims, max_total_legs=max_total)
+    item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
+                                       target_payout=payout, n_sims=sims,
+                                       max_total_legs=max_total)
     return jsonify({"parlay": item})
 
 

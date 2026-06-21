@@ -143,8 +143,14 @@ def select_legs(by_event, target_pct, n_legs, target_payout=None, max_legs=12):
     target = max(0.05, min(0.97, target_pct / 100.0))
     if target_payout and target_payout > 1:
         import parlay
-        res = parlay.payout_combo(list(by_event.values()), n_legs, target_payout,
-                                  max_legs=max_legs)
+        # Confidence floor required: only legs >= target are eligible; the
+        # selector adds as many qualifying legs as needed to reach the payout.
+        groups = []
+        for vs in by_event.values():
+            ok = [v for v in vs if v["prob"] >= target]
+            if ok:
+                groups.append(ok)
+        res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
         if not res:
             return [], target, None
         return res["legs"], target, res

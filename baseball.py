@@ -864,12 +864,20 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
     if target_payout and target_payout > 1:
         import parlay
-        groups = [v for v in (_game_variants(g) for g in games) if v]
+        # Confidence floor is REQUIRED: only legs >= the target confidence are
+        # eligible. The selector then adds as many qualifying legs as needed to
+        # reach the payout (expanding the count), never dropping below the floor.
+        groups = []
+        for g in games:
+            vs = [v for v in _game_variants(g) if v["prob"] >= target]
+            if vs:
+                groups.append(vs)
         res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
         if not res:
             return None
         item = _combo_item(res["legs"])
         item["target_pct"] = round(target * 100, 1)
+        item["min_confidence_pct"] = round(target * 100, 1)
         item["target_payout_x"] = target_payout
         item["payout_reached"] = res["reached"]
         item["legs_used"] = res["n_used"]
@@ -914,7 +922,7 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         if _game_state(g) in ("Final", "Live"):
             continue  # settled games are decided; live in-game props are stale
         sim = mlb_sim.simulate(g, n_sims)
-        cands = mlb_sim.build_candidates(g, sim)
+        cands = [c for c in mlb_sim.build_candidates(g, sim) if c["marg"] >= target]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
                                       target_payout, max_legs)
         if not item:
@@ -941,12 +949,13 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     """
     import mlb_sim
     mode = "payout" if (target_payout and target_payout > 1) else "legs"
+    floor = max(0.05, min(0.97, target_pct / 100.0))
     games_bundles = []
     for g in games:
         if _game_state(g) in ("Final", "Live"):
             continue
         sim = mlb_sim.simulate(g, n_sims)
-        cands = mlb_sim.build_candidates(g, sim)
+        cands = [c for c in mlb_sim.build_candidates(g, sim) if c["marg"] >= floor]
         if not cands:
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)

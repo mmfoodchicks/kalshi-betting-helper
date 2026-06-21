@@ -657,12 +657,12 @@ window.buildParlay = async () => {
     const c = d.combo;
     let title, note = "";
     if (p > 1) {
-      title = `🎯 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (target ${p}×)`;
+      title = `🎯 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
       if (c.expanded) {
-        note += `<div class="small">Your ${c.requested_legs} legs couldn't reach ${p}× without a near-zero punt pick, so it used <b>${c.legs_used}</b> legs (higher confidence each, same target).</div>`;
+        note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
       }
       if (!c.payout_reached) {
-        note += `<div class="small">⚠️ Couldn't reach ${p}× even with ${c.legs_used} legs — this is the max (${c.fair_payout_x}×). Lower the target or include more games.</div>`;
+        note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the max at that floor is <b>${c.fair_payout_x}×</b> (used ${c.legs_used} legs). Lower the confidence floor or the target to go higher.</div>`;
       }
       note += `<div class="small">At ${c.fair_payout_x}× the chance of hitting is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds props that chance is the same however the legs are split — extra legs just land you closer to the exact target.</div>`;
     } else {
@@ -720,11 +720,12 @@ window.buildMixed = async () => {
   const out = $("mixOut");
   if (!out) return;
   let n = parseInt(($("mixN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
+  let t = parseInt(($("mixTarget") || {}).value, 10); if (isNaN(t)) t = 55;
   let p = parseFloat(($("mixPayout") || {}).value) || 0;
   const date = $("bbDate").value;
   out.innerHTML = `<div class="small">Simulating the slate…</div>`;
   try {
-    const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&payout=${p}`)).json();
+    const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build a mixed parlay — need upcoming games.</div>`; return; }
@@ -850,6 +851,7 @@ async function loadBaseball(silent) {
     // Mixed multi-game parlay: stack correlated legs in one game + singles from others.
     html += `<div class="combomaker">
       🔀 <b>Mixed parlay</b> (stack a game + add others): ${lockTag("mixed_parlay")}<br>
+      each leg ≥ <input id="mixTarget" type="number" min="20" max="95" value="55" style="width:54px"/>% likely;
       <input id="mixN" type="number" min="2" max="8" value="4" style="width:50px"/> total legs
       <b>or</b> reach <input id="mixPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
       <button class="track-mini primary-mini" onclick="buildMixed()">Simulate</button>
@@ -1510,9 +1512,9 @@ async function buildCombine() {
       const c = d.combo;
       let title, note = "";
       if (p > 1) {
-        title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (target ${p}×)`;
-        if (c.expanded) note += `<div class="small">Your ${c.requested_legs} legs couldn't reach ${p}× without a punt pick, so it used <b>${c.legs_used}</b> (higher confidence each).</div>`;
-        if (c.payout_reached === false) note += `<div class="small">⚠️ Couldn't reach ${p}× even with ${c.legs_used || c.n_legs} legs — max is ${c.fair_payout_x}×. Lower the target or add categories.</div>`;
+        title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
+        if (c.expanded) note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
+        if (c.payout_reached === false) note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the max at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor or target, or add categories.</div>`;
         note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds legs that's the same however you split them — extra legs just land closer to the target.</div>`;
       } else {
         title = `🎰 ${c.n_legs}-leg mega parlay (≥${t}%)`;
