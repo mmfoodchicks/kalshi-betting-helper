@@ -88,6 +88,54 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
     }
 
 
+def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
+                    home_abbr, away_abbr):
+    """Run line + totals for a game IN PROGRESS: the final score is the current
+    score plus remaining runs (independent Poisson). This keeps totals honest
+    once a game is underway -- a 13-run 2nd inning makes 'Over 8.5' ~100%, not
+    the stale pre-game number."""
+    ph = _poisson_pmf(max(0.0001, rem_home_mean))
+    pa = _poisson_pmf(max(0.0001, rem_away_mean))
+    cur_total = cur_home + cur_away
+    total_pmf = [0.0] * (2 * _MAXR + 1)   # over REMAINING runs
+    p_home_by2 = p_away_by2 = 0.0          # final margin (current + remaining)
+    for i, phi in enumerate(ph):
+        for j, paj in enumerate(pa):
+            pr = phi * paj
+            total_pmf[i + j] += pr
+            fh, fa = cur_home + i, cur_away + j
+            if fh - fa >= 2:
+                p_home_by2 += pr
+            elif fa - fh >= 2:
+                p_away_by2 += pr
+
+    def over_under(line):                  # line is on the FINAL total
+        rem_line = line - cur_total
+        under = sum(total_pmf[k] for k in range(len(total_pmf)) if k < rem_line)
+        return round((1 - under) * 100, 1), round(under * 100, 1)
+
+    exp_final = cur_total + rem_home_mean + rem_away_mean
+    base = round(exp_final)
+    ladder = []
+    for ln in [base - 4.5 + i for i in range(9)]:
+        if ln < 0.5:
+            continue
+        over, under = over_under(ln)
+        ladder.append({"line": ln, "over_pct": over, "under_pct": under})
+
+    fav_is_home = (cur_home + rem_home_mean) >= (cur_away + rem_away_mean)
+    return {
+        "run_line": {
+            "favorite": home_abbr if fav_is_home else away_abbr,
+            "fav_by2_pct": round((p_home_by2 if fav_is_home else p_away_by2) * 100, 1),
+            "underdog": away_abbr if fav_is_home else home_abbr,
+            "dog_plus15_pct": round((1 - (p_home_by2 if fav_is_home else p_away_by2)) * 100, 1),
+        },
+        "model_total": round(exp_final, 1),
+        "totals_ladder": ladder,
+    }
+
+
 def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
     """P(home wins) given the current score and each side's expected remaining
     runs, modeling remaining runs as independent Poisson. Ties go to extra

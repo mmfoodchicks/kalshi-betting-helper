@@ -612,6 +612,7 @@ def analyze_slate(date, season):
             p_away = 1 - p_home
             in_game = {"home_score": ls["home_runs"], "away_score": ls["away_runs"],
                        "inning": ls["inning"], "state": ls["state"], "outs": ls["outs"],
+                       "exp_rem_home": round(exp_rem_h, 2), "exp_rem_away": round(exp_rem_a, 2),
                        "on_base": [b for b, on in (("1B", ls["on1"]), ("2B", ls["on2"]),
                                                    ("3B", ls["on3"])) if on]}
 
@@ -871,6 +872,26 @@ def _game_variants(g):
 
     if g.get("pick_prob") is not None:
         add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"))
+
+    # Live games: the pre-game totals/hit props are stale (they ignore runs
+    # already scored). Recompute the run line + totals LIVE from the current
+    # score + expected remaining runs; skip per-batter hit props (we don't track
+    # how many at-bats a hitter already has). The moneyline above is already
+    # the live in-game win probability.
+    ig = g.get("in_game") if live else None
+    if live:
+        if ig and ig.get("exp_rem_home") is not None:
+            lp = props_mod.live_game_props(
+                ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
+                g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
+            rl = lp["run_line"]
+            add("Run line", f"{rl['favorite']} −1.5 (win by 2+)", rl["fav_by2_pct"] / 100.0)
+            add("Run line", f"{rl['underdog']} +1.5 (lose by ≤1 or win)", rl["dog_plus15_pct"] / 100.0)
+            for t in lp["totals_ladder"]:
+                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
+                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
+        return out
+
     p = g.get("props") or {}
     rl = p.get("run_line")
     if rl:
