@@ -267,7 +267,7 @@ def dfs_sim(lineup, n=20000, cv=0.55):
 
 
 def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
-              objective="projection", date=None):
+              objective="projection", date=None, sims=20000):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
@@ -287,7 +287,7 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         lineup = dfs_optimize(players, roster, cap)
     if not lineup:
         return {"error": "no valid lineup fits the salary cap"}
-    sim = dfs_sim(lineup, cv=cv)
+    sim = dfs_sim(lineup, n=sims, cv=cv)
     return {
         "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
                     "captain": p.get("captain", False), "start": p.get("start"),

@@ -23,6 +23,7 @@ import odds
 import store
 import kalshi
 import baseball
+import tiers
 
 app = Flask(__name__)
 # Don't sort JSON keys: it's wasted work and crashes on any dict with mixed
@@ -44,6 +45,30 @@ def _auth():
     if not a or a.username != APP_USER or a.password != APP_PASSWORD:
         return Response("Login required", 401,
                         {"WWW-Authenticate": 'Basic realm="Kalshi Helper"'})
+
+
+def _tier():
+    """The subscription tier for this request (cookie today; wire to real
+    accounts/billing later). Defaults to free."""
+    return tiers.normalize(request.cookies.get("tier", "free"))
+
+
+def _locked(feature):
+    """If the current tier can't use `feature`, return a 402 JSON response to
+    return from the endpoint; otherwise None."""
+    tier = _tier()
+    if tiers.has_feature(tier, feature):
+        return None
+    need = tiers.feature_tier(feature)
+    return jsonify({"error": "upgrade_required", "feature": feature,
+                    "required_tier": need, "current_tier": tier,
+                    "message": f"{feature.replace('_', ' ').title()} needs the "
+                               f"{tiers.TIERS[need]['label']} tier."}), 402
+
+
+@app.route("/api/tiers")
+def api_tiers():
+    return jsonify(tiers.public(_tier()))
 
 # Start the background Kalshi recorder exactly once, on the first request. This
 # works the same under the dev server, gunicorn, or any host (the __main__ block
@@ -268,14 +293,15 @@ def api_kalshi_scan():
 
     enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
 
-    # Volatility edge: what move is the strike ladder pricing vs realized?
+    # Volatility edge: what move is the strike ladder pricing vs realized? (Pro+)
     vol = None
-    if markets:
+    tier = _tier()
+    if markets and tiers.has_feature(tier, "vol_edge"):
         close = max((m["close_time"] for m in markets if m["close_time"]), default=None)
         mins = _minutes_to_close(close) if close else 0.0
         vol = odds.vol_edge(spot, candles, markets, mins)
         # Cross-check against Deribit's DVOL (the sharp options market, BTC/ETH).
-        if vol:
+        if vol and tiers.has_feature(tier, "deribit"):
             import deribit
             dvol = deribit.get_dvol(coin)
             if dvol:
@@ -366,7 +392,9 @@ def api_simulate_price():
             candles = prices.get_candles(key.upper(), granularity=60)  # horizon in minutes
     except Exception as e:
         return jsonify({"error": f"feed failed: {e}"}), 502
-    res = simulate.price_sim(spot, candles, horizon, threshold=threshold, direction=direction)
+    n = tiers.cap_sims(_tier(), request.args.get("sims", 20000))
+    res = simulate.price_sim(spot, candles, horizon, n=n,
+                             threshold=threshold, direction=direction)
     res["kind"] = kind
     res["key"] = key
     return jsonify(res)
@@ -388,7 +416,8 @@ def api_simulate_game():
     g = next((x for x in games if x["game_pk"] == game_pk), None)
     if not g:
         return jsonify({"error": "game not found"}), 404
-    res = simulate.game_sim(g["exp_runs_home"], g["exp_runs_away"])
+    n = tiers.cap_sims(_tier(), request.args.get("sims", 20000))
+    res = simulate.game_sim(g["exp_runs_home"], g["exp_runs_away"], n=n)
     res.update(matchup=g["matchup"], home=g["home_name"], away=g["away_name"])
     return jsonify(res)
 
@@ -407,7 +436,8 @@ def api_simulate_weather():
     m = ev["model"]
     th = request.args.get("threshold")
     threshold = float(th) if th not in (None, "", "null") else None
-    res = simulate.temp_sim(m["mean"], m["sigma"], threshold=threshold,
+    n = tiers.cap_sims(_tier(), request.args.get("sims", 20000))
+    res = simulate.temp_sim(m["mean"], m["sigma"], n=n, threshold=threshold,
                             direction=request.args.get("direction", "above"))
     res.update(city=data["city"], date=ev["date"], forecast_high=m["forecast_high"])
     return jsonify(res)
@@ -417,6 +447,9 @@ def api_simulate_weather():
 def api_simulate_dfs():
     """Optimize + simulate a DraftKings DFS lineup from a pasted DKSalaries.csv."""
     import simulate
+    locked = _locked("dfs")
+    if locked:
+        return locked
     d = request.get_json(force=True, silent=True) or {}
     text = d.get("csv", "")
     if not text.strip():
@@ -427,10 +460,11 @@ def api_simulate_dfs():
     except (ValueError, TypeError):
         return jsonify({"error": "bad roster/cap"}), 400
     import datetime as _dt
+    n = tiers.cap_sims(_tier(), d.get("sims", 20000))
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
-        date=d.get("date") or _dt.date.today().isoformat()))
+        date=d.get("date") or _dt.date.today().isoformat(), sims=n))
 
 
 @app.route("/api/baseball/today")
@@ -457,6 +491,9 @@ def api_baseball_today():
 @app.route("/api/backtest")
 def api_backtest():
     """Replay history to measure how well the crypto model predicts reality."""
+    locked = _locked("backtest")
+    if locked:
+        return locked
     import backtest
     coin = request.args.get("coin", "BTC").upper()
     try:
@@ -538,7 +575,20 @@ def api_sports(sport_key):
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": f"kalshi fetch failed: {e}"}), 502
-    return jsonify({"sport": sport_key, "events": events})
+    grid = None
+    # Racing: overlay an independent grid-based win model to surface real edge
+    # (Pro+). Falls back silently to the de-vig favorite for free users.
+    if sport_key in ("nascar", "f1") and tiers.has_feature(_tier(), "racing_picks"):
+        try:
+            import racing
+            import datetime as _dt
+            events, grid = racing.race_board(sport_key, events,
+                                             date=_dt.date.today().isoformat())
+        except Exception:
+            grid = None
+    return jsonify({"sport": sport_key, "events": events, "grid": grid,
+                    "racing_locked": (sport_key in ("nascar", "f1")
+                                      and not tiers.has_feature(_tier(), "racing_picks"))})
 
 
 @app.route("/api/weather/meta")
@@ -576,7 +626,7 @@ def api_combine():
     if not cats:
         cats = list(combine.CATEGORIES.keys())
     try:
-        legs = int(request.args.get("legs", 3))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
         target = float(request.args.get("target", 65))
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else None
@@ -596,7 +646,7 @@ def api_baseball_parlay():
     date = request.args.get("date") or _dt.date.today().isoformat()
     season = request.args.get("season") or date[:4]
     try:
-        legs = int(request.args.get("legs", 3))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
         target = float(request.args.get("target", 65))
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else None
@@ -616,14 +666,17 @@ def api_baseball_sgp():
     one game are correlated, so these are read off a full game simulation rather
     than multiplying independent marginals."""
     import datetime as _dt
+    locked = _locked("same_game_parlay")
+    if locked:
+        return locked
     date = request.args.get("date") or _dt.date.today().isoformat()
     season = request.args.get("season") or date[:4]
     try:
-        legs = int(request.args.get("legs", 3))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
         target = float(request.args.get("target", 55))
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else 0
-        sims = min(20000, max(1000, int(request.args.get("sims", 5000))))
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 5000))
     except ValueError:
         return jsonify({"error": "bad legs/target"}), 400
     try:
@@ -641,13 +694,17 @@ def api_baseball_mixed():
     and add single legs from others. Within a game -> simulated joint odds;
     across games -> independent product."""
     import datetime as _dt
+    locked = _locked("mixed_parlay")
+    if locked:
+        return locked
     date = request.args.get("date") or _dt.date.today().isoformat()
     season = request.args.get("season") or date[:4]
     try:
-        legs = int(request.args.get("legs", 4))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 4))
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else 0
-        sims = min(20000, max(1000, int(request.args.get("sims", 5000))))
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 5000))
+        max_total = tiers.cap_legs(_tier(), 8)
     except ValueError:
         return jsonify({"error": "bad legs/payout"}), 400
     try:
@@ -655,7 +712,7 @@ def api_baseball_mixed():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     item = baseball.build_mixed_parlay(games, n_legs=legs, target_payout=payout,
-                                       n_sims=sims)
+                                       n_sims=sims, max_total_legs=max_total)
     return jsonify({"parlay": item})
 
 

@@ -38,6 +38,13 @@
         <option value="0">off</option>
       </select>
       <span class="hint">sizes each bet from its edge</span>
+      · 💳 Plan
+      <select id="tierSel">
+        <option value="free">Free</option>
+        <option value="pro">Pro</option>
+        <option value="edge">Edge</option>
+      </select>
+      <span class="hint" id="tierHint"></span>
     </div>
   </header>
 
@@ -234,6 +241,16 @@
           <input id="simWxTh" type="number" step="any" placeholder="target °F (opt)" style="width:120px"/>
           <select id="simWxDir"><option value="above">above</option><option value="below">below</option></select>
         </span>
+        <label class="small">runs
+          <select id="simRuns">
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000" selected>1,000</option>
+            <option value="5000">5,000</option>
+            <option value="10000">10,000</option>
+            <option value="15000">15,000</option>
+          </select>
+        </label>
         <button id="simBtn" class="primary">Run</button>
       </div>
       <div id="g_dfs" class="hidden" style="margin-top:10px">
@@ -244,7 +261,7 @@
           <label class="small">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
           <label class="small">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>
-        <p class="sub" style="margin:6px 0 4px">Paste your DraftKings <b>DKSalaries.csv</b> (downloaded from the contest). It optimizes the best lineup under the cap and simulates its floor/ceiling.</p>
+        <p class="sub" style="margin:6px 0 4px">Paste your DraftKings <b>DKSalaries.csv</b> (downloaded from the contest). It optimizes the best lineup under the cap and simulates its floor/ceiling. <span id="dfsLock"></span></p>
         <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
       </div>
       <div id="simResults" class="markets" style="margin-top:12px"><div class="empty">Pick a mode and run.</div></div>

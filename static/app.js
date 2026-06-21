@@ -11,6 +11,59 @@ function uiBusy() {
   return false;
 }
 
+// ---- Subscription tiers ---------------------------------------------------
+let TIERMATRIX = null;
+const TIER_RANK = { free: 0, pro: 1, edge: 2 };
+function getTier() { return localStorage.getItem("tier") || "free"; }
+function setTier(t) {
+  localStorage.setItem("tier", t);
+  document.cookie = "tier=" + t + ";path=/;max-age=31536000;samesite=lax";
+}
+function tierHasFeature(feature) {
+  const min = TIERMATRIX && TIERMATRIX.feature_min ? TIERMATRIX.feature_min[feature] : null;
+  if (!min) return true;
+  return TIER_RANK[getTier()] >= TIER_RANK[min];
+}
+function tierMaxSims() {
+  const t = TIERMATRIX && TIERMATRIX.tiers[getTier()];
+  return t ? t.max_sims : 1000;
+}
+function tierLabel(t) {
+  return (TIERMATRIX && TIERMATRIX.tiers[t] && TIERMATRIX.tiers[t].label) || t;
+}
+// A small 🔒 badge for a feature the current tier can't use.
+function lockTag(feature) {
+  if (tierHasFeature(feature)) return "";
+  const min = TIERMATRIX.feature_min[feature];
+  return `<span class="locktag" style="color:var(--accent);font-size:.78rem" title="Requires ${tierLabel(min)}">🔒 ${tierLabel(min)}</span>`;
+}
+// Inline upgrade prompt from a 402 response body.
+function upgradeNote(d) {
+  const t = d.required_tier;
+  return `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🔒 ${d.message || "Upgrade required."}
+    <button class="track-mini primary-mini" onclick="window.bumpTier('${t}')">Switch to ${tierLabel(t)}</button></div>`;
+}
+window.bumpTier = (t) => { setTier(t); const s = $("tierSel"); if (s) s.value = t; location.reload(); };
+function simRunsValue() { const s = $("simRuns"); return s ? parseInt(s.value, 10) || 1000 : 1000; }
+function gateSimRuns() {
+  const sel = $("simRuns"); if (!sel) return;
+  const max = tierMaxSims();
+  [...sel.options].forEach((o) => {
+    const v = parseInt(o.value, 10);
+    o.disabled = v > max;
+    o.textContent = o.value.replace(/(\d)(?=(\d{3})+$)/g, "$1,") + (v > max ? " 🔒" : "");
+  });
+  if (parseInt(sel.value, 10) > max) sel.value = String(Math.min(max, 1000));
+}
+function applyTierUI() {
+  const info = TIERMATRIX && TIERMATRIX.tiers[getTier()];
+  if ($("tierHint") && info) {
+    $("tierHint").textContent = `${info.price} · up to ${info.max_sims.toLocaleString()} sim runs`;
+  }
+  if ($("dfsLock")) $("dfsLock").innerHTML = lockTag("dfs");
+  gateSimRuns();
+}
+
 // ---- Kelly bet sizing -----------------------------------------------------
 function getBankroll() { return parseFloat(localStorage.getItem("bankroll")) || 0; }
 function getKellyMult() { const v = localStorage.getItem("kellyMult"); return v == null ? 0.5 : parseFloat(v); }
@@ -619,6 +672,7 @@ window.buildSGP = async () => {
   out.innerHTML = `<div class="small">Simulating every game…</div>`;
   try {
     const d = await (await fetch(`/api/baseball/sgp?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+    if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.games || !d.games.length) { out.innerHTML = `<div class="small">No same-game parlays available — need upcoming (non-final) games.</div>`; return; }
     out.innerHTML = `<div class="small" style="margin:6px 0">Best same-game parlay per game (${(d.n_sims || 0).toLocaleString()} sims each):</div>`
@@ -659,6 +713,7 @@ window.buildMixed = async () => {
   out.innerHTML = `<div class="small">Simulating the slate…</div>`;
   try {
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&payout=${p}`)).json();
+    if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build a mixed parlay — need upcoming games.</div>`; return; }
     out.innerHTML = renderMixed(d.parlay);
@@ -772,7 +827,7 @@ async function loadBaseball(silent) {
     }
     // Same-game parlay maker: correlation-aware (simulated) joint odds.
     html += `<div class="combomaker">
-      🎰 <b>Same-game parlay</b> (correlation-aware, simulated):
+      🎰 <b>Same-game parlay</b> (correlation-aware, simulated): ${lockTag("same_game_parlay")}<br>
       each leg ≥ <input id="sgpTarget" type="number" min="20" max="95" value="55" style="width:54px"/>% likely;
       <input id="sgpN" type="number" min="2" max="5" value="3" style="width:50px"/> legs
       <b>or</b> reach <input id="sgpPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
@@ -782,7 +837,7 @@ async function loadBaseball(silent) {
     </div>`;
     // Mixed multi-game parlay: stack correlated legs in one game + singles from others.
     html += `<div class="combomaker">
-      🔀 <b>Mixed parlay</b> (stack a game + add others):
+      🔀 <b>Mixed parlay</b> (stack a game + add others): ${lockTag("mixed_parlay")}<br>
       <input id="mixN" type="number" min="2" max="8" value="4" style="width:50px"/> total legs
       <b>or</b> reach <input id="mixPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
       <button class="track-mini primary-mini" onclick="buildMixed()">Simulate</button>
@@ -1031,10 +1086,16 @@ function renderSportEvent(e, sportKey) {
   const vigCls = vig == null ? "" : vig <= 4 ? "ev pos" : vig >= 10 ? "ev neg" : "";
   const outs = e.outcomes.map((o) => {
     const f = sfid(o.ticker);
+    let modelStr = "";
+    if (o.model_pct != null) {
+      const ec = o.edge_cents;
+      const ecls = ec > 0 ? "ev pos" : ec < 0 ? "ev neg" : "";
+      modelStr = ` · model <b>${o.model_pct}%</b>${ec != null ? ` · edge <b class="${ecls}">${ec > 0 ? "+" : ""}${ec}¢</b>` : ""}`;
+    }
     return `<div class="sportout">
       <div class="left">
         <span class="oname">${o.name}</span>
-        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b></span>
+        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${modelStr}</span>
       </div>
       <button class="track-mini" id="${f}_btn" onclick="showSportLog('${o.ticker}')">Log</button>
       <div class="buyform hidden" id="${f}">
@@ -1046,6 +1107,10 @@ function renderSportEvent(e, sportKey) {
   const arb = e.arbitrage_pct
     ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
+  // Racing: the model edge pick beats the market-favorite lean when present.
+  const mp = e.model_pick
+    ? `<div class="note" style="border:1px solid var(--yes);color:var(--yes)">🏁 Model edge pick: <b>${e.model_pick.name}</b> @ ${e.model_pick.yes_ask}¢ — model <b>${e.model_pick.model_pct}%</b> vs market, <b>+${e.model_pick.edge_cents}¢ edge</b></div>`
+    : "";
   const pick = e.pick
     ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">✅ Buy this one: <b>${e.pick.name}</b> @ ${e.pick.yes_ask}¢ · <b>${e.pick.fair_pct}%</b> confidence (market favorite)</div>`
     : "";
@@ -1054,6 +1119,7 @@ function renderSportEvent(e, sportKey) {
       <div class="matchup">${e.title}</div>
       <div class="small" style="text-align:right">closes ${fmtCountdown(secs)}<br>${vig != null ? `vig <b class="${vigCls}">${vig}%</b>` : ""}</div>
     </div>
+    ${mp}
     ${pick}
     ${arb}
     <div class="sportouts">${outs}</div>
@@ -1074,7 +1140,15 @@ async function loadSports() {
     const d = await (await fetch("/api/sports/" + key)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${key} markets right now.</div>`; return; }
-    box.innerHTML = d.events.map((e) => renderSportEvent(e, key)).join("");
+    let banner = "";
+    if (d.racing_locked) {
+      banner = `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🔒 Grid-based win model & edge picks for racing need the ${tierLabel("pro")} tier. <button class="track-mini primary-mini" onclick="window.bumpTier('pro')">Unlock</button></div>`;
+    } else if (d.grid && d.grid.available) {
+      banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> grid (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
+    } else if (d.grid && !d.grid.available) {
+      banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} — showing market-favorite picks until qualifying posts.</div>`;
+    }
+    box.innerHTML = banner + d.events.map((e) => renderSportEvent(e, key)).join("");
   } catch (e) {
     box.innerHTML = `<div class="empty">Failed to load.</div>`;
   }
@@ -1216,7 +1290,7 @@ async function runGameSim() {
   if (!pk) { box.innerHTML = `<div class="empty">No game selected.</div>`; return; }
   box.innerHTML = `<div class="empty">Simulating game…</div>`;
   try {
-    const d = await (await fetch(`/api/simulate/game?date=${$("simGameDate").value}&game_pk=${pk}`)).json();
+    const d = await (await fetch(`/api/simulate/game?date=${$("simGameDate").value}&game_pk=${pk}&sims=${simRunsValue()}`)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     const scores = d.top_scores.map((s) => `${s.away}-${s.home} (${s.pct}%)`).join(" · ");
     box.innerHTML = `<div class="bbgame">
@@ -1236,7 +1310,7 @@ async function runWxSim() {
   const th = $("simWxTh").value, dir = $("simWxDir").value;
   box.innerHTML = `<div class="empty">Simulating high temp…</div>`;
   try {
-    let url = `/api/simulate/weather?city=${$("simWxCity").value}`;
+    let url = `/api/simulate/weather?city=${$("simWxCity").value}&sims=${simRunsValue()}`;
     if (th) url += `&threshold=${th}&direction=${dir}`;
     const d = await (await fetch(url)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -1258,8 +1332,10 @@ async function runDfsSim() {
     const d = await (await fetch("/api/simulate/dfs", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ csv, sport: $("dfsSport").value, roster: parseInt($("dfsRoster").value, 10),
-        cap: parseInt($("dfsCap").value, 10), mode: $("dfsMode").value, objective: $("dfsObjective").value }),
+        cap: parseInt($("dfsCap").value, 10), mode: $("dfsMode").value, objective: $("dfsObjective").value,
+        sims: simRunsValue() }),
     })).json();
+    if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     const rows = d.lineup.map((p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
@@ -1319,9 +1395,9 @@ async function runSim() {
   const box = $("simResults");
   const kind = $("simKind").value, key = $("simKey").value, horizon = $("simHorizon").value;
   const th = $("simThreshold").value, dir = $("simDir").value;
-  box.innerHTML = `<div class="empty">Running 20,000 paths…</div>`;
+  box.innerHTML = `<div class="empty">Running ${simRunsValue().toLocaleString()} paths…</div>`;
   try {
-    let url = `/api/simulate/price?kind=${kind}&key=${key}&horizon=${horizon}`;
+    let url = `/api/simulate/price?kind=${kind}&key=${key}&horizon=${horizon}&sims=${simRunsValue()}`;
     if (th) url += `&threshold=${th}&direction=${dir}`;
     const d = await (await fetch(url)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -1436,6 +1512,16 @@ async function loadBaseballRecord() {
 
 // ---- Wire up --------------------------------------------------------------
 async function init() {
+  // Subscription tier (cookie-backed; the server enforces gating).
+  try { TIERMATRIX = await (await fetch("/api/tiers")).json(); }
+  catch (e) { TIERMATRIX = { feature_min: {}, tiers: { free: { max_sims: 1000, price: "$0" } } }; }
+  setTier(getTier());
+  if ($("tierSel")) {
+    $("tierSel").value = getTier();
+    $("tierSel").addEventListener("change", () => { setTier($("tierSel").value); location.reload(); });
+  }
+  applyTierUI();
+
   const coins = await (await fetch("/api/coins")).json();
   $("coin").innerHTML = coins.map((c) => `<option>${c}</option>`).join("");
 

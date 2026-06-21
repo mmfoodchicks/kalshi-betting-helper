@@ -16,6 +16,7 @@ back to the plain FPPR model.
 
 import datetime
 import json
+import math
 import re
 import unicodedata
 import urllib.request
@@ -154,3 +155,74 @@ def get_grid(sport, race_name=None, date=None):
     if sport == "f1":
         return get_f1_grid(race_name=race_name)
     return None
+
+
+# --- Win model + Kalshi edge -------------------------------------------------
+# Starting position is a strong, independent predictor of who wins a race
+# (especially F1, where the pole sits on ~40% of wins; NASCAR is far flatter).
+# We turn the grid into win probabilities with a sport-calibrated exponential
+# decay -- an independent model we can compare against Kalshi's prices to find
+# an actual edge, rather than just echoing the market favorite.
+
+# Larger tau == flatter field (more random). Calibrated to rough pole win rates.
+_TAU = {"f1": 3.0, "nascar": 11.0, "motogp": 4.0}
+
+
+def win_probs(grid_info, sport):
+    """{normalized name: win probability} from the starting grid."""
+    if not grid_info:
+        return {}
+    tau = _TAU.get((sport or "").lower(), 8.0)
+    strengths = {nm: math.exp(-(pos - 1) / tau) for nm, pos in grid_info["grid"].items()}
+    total = sum(strengths.values())
+    if total <= 0:
+        return {}
+    return {nm: s / total for nm, s in strengths.items()}
+
+
+def _match_prob(probs, grid_info, name):
+    """Find a driver's model win prob by name (full, then last-name)."""
+    nm = norm_name(name)
+    if nm in probs:
+        return probs[nm]
+    parts = nm.split()
+    if parts:
+        last = parts[-1]
+        hits = [p for n2, p in probs.items() if n2.split() and n2.split()[-1] == last]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
+def race_board(sport, events, date=None):
+    """Merge an independent grid win model into Kalshi racing events.
+
+    `events` is the de-vig'd output of sports.get_events. For each event we
+    attach each driver's model win % and the edge vs the Kalshi ask, then pick
+    the driver with the best positive edge (a real model lean, not the favorite).
+    Returns (events, grid_meta). On no grid, events are returned unchanged.
+    """
+    race_name = events[0]["title"] if events else None
+    grid = get_grid(sport, race_name=race_name, date=date)
+    if not grid:
+        return events, {"available": False,
+                        "reason": "no qualifying grid posted yet"}
+    probs = win_probs(grid, sport)
+    for e in events:
+        best = None
+        for o in e.get("outcomes", []):
+            mp = _match_prob(probs, grid, o.get("name", ""))
+            o["model_pct"] = round(mp * 100, 1) if mp is not None else None
+            ask = o.get("yes_ask")
+            if mp is not None and ask is not None:
+                o["edge_cents"] = round(mp * 100 - ask, 1)
+                if o["edge_cents"] > 0 and (best is None or o["edge_cents"] > best["edge_cents"]):
+                    best = {"name": o["name"], "yes_ask": ask,
+                            "model_pct": o["model_pct"], "edge_cents": o["edge_cents"]}
+            else:
+                o["edge_cents"] = None
+        # Model pick: best positive edge, with a small floor to avoid noise.
+        e["model_pick"] = best if (best and best["edge_cents"] >= 2) else None
+    return events, {"available": True, "race": grid["race"],
+                    "series": grid["series"], "field": grid["field"]}
+
