@@ -1149,10 +1149,11 @@ async function runDfsSim() {
   try {
     const d = await (await fetch("/api/simulate/dfs", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ csv, sport: $("dfsSport").value, roster: parseInt($("dfsRoster").value, 10), cap: parseInt($("dfsCap").value, 10) }),
+      body: JSON.stringify({ csv, sport: $("dfsSport").value, roster: parseInt($("dfsRoster").value, 10),
+        cap: parseInt($("dfsCap").value, 10), mode: $("dfsMode").value, objective: $("dfsObjective").value }),
     })).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    const rows = d.lineup.map((p) => `<div class="sportout"><div class="left"><span class="oname">${p.name}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}</span></div></div>`).join("");
+    const rows = d.lineup.map((p) => `<div class="sportout"><div class="left"><span class="oname">${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}</span></div></div>`).join("");
     box.innerHTML = `<div class="bbgame">
       <div class="matchup">Optimal ${d.roster}-player lineup (${d.pool} in pool)</div>
       <div class="kv" style="margin-top:6px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>

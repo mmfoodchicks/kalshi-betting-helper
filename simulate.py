@@ -85,8 +85,8 @@ def parse_dk_csv(text):
     return out
 
 
-def dfs_optimize(players, roster, cap):
-    """Max-projection lineup of exactly `roster` players under the salary cap
+def dfs_optimize(players, roster, cap, key="value"):
+    """Max-`key` lineup of exactly `roster` players under the salary cap
     (0/1 knapsack with a cardinality constraint; salary in $100 units)."""
     U = int(cap // 100)
     dp = [[-1.0] * (U + 1) for _ in range(roster + 1)]
@@ -96,7 +96,7 @@ def dfs_optimize(players, roster, cap):
         su = int(round(pl["salary"] / 100))
         if su > U or su <= 0:
             continue
-        pr = pl["proj"]
+        pr = pl.get(key, pl["proj"])
         for k in range(roster - 1, -1, -1):
             row = dp[k]
             for s in range(U - su, -1, -1):
@@ -116,6 +116,42 @@ def dfs_optimize(players, roster, cap):
     return chosen
 
 
+def _set_values(players, objective, cv):
+    # 'ceiling' rewards upside (for GPP); 'projection' is plain mean (for cash).
+    for p in players:
+        p["value"] = p["proj"] * (1 + cv) if objective == "ceiling" else p["proj"]
+
+
+def dfs_showdown(players, cap, objective, cv, flex_count=5):
+    """Captain (1.5x salary + 1.5x points) + flex lineup. Tries each player as
+    captain and knapsacks the rest."""
+    seen = {}
+    for p in players:  # dedupe by name (showdown CSVs list CPT + FLEX); keep base salary
+        if p["name"] not in seen or p["salary"] < seen[p["name"]]["salary"]:
+            seen[p["name"]] = p
+    pool = list(seen.values())
+    _set_values(pool, objective, cv)
+    best = None
+    for i, capt in enumerate(pool):
+        cap_sal = capt["salary"] * 1.5
+        rem = cap - cap_sal
+        if rem < 0:
+            continue
+        rest = pool[:i] + pool[i + 1:]
+        flex = dfs_optimize(rest, flex_count, int(rem))
+        if not flex:
+            continue
+        score = capt["value"] * 1.5 + sum(p["value"] for p in flex)
+        if best is None or score > best[0]:
+            best = (score, capt, flex)
+    if not best:
+        return None
+    _, capt, flex = best
+    cap_row = {"name": capt["name"], "salary": capt["salary"] * 1.5,
+               "proj": capt["proj"] * 1.5, "captain": True}
+    return [cap_row] + [{**p, "captain": False} for p in flex]
+
+
 def dfs_sim(lineup, n=20000, cv=0.55):
     """Monte Carlo a lineup's total DK points (per-player variance ~ cv)."""
     totals = []
@@ -130,20 +166,26 @@ def dfs_sim(lineup, n=20000, cv=0.55):
             "max": round(totals[-1], 1), "n": n}
 
 
-def dfs_build(text, roster=6, cap=50000, sport="ufc"):
+def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic", objective="projection"):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
-    lineup = dfs_optimize(players, roster, cap)
+    cv = {"nascar": 0.5, "f1": 0.5, "ufc": 0.6}.get(sport, 0.55)
+    if mode == "showdown":
+        lineup = dfs_showdown(players, cap, objective, cv, flex_count=max(1, roster - 1))
+    else:
+        _set_values(players, objective, cv)
+        lineup = dfs_optimize(players, roster, cap)
     if not lineup:
         return {"error": "no valid lineup fits the salary cap"}
-    cv = {"nascar": 0.5, "f1": 0.5, "ufc": 0.6}.get(sport, 0.55)
     sim = dfs_sim(lineup, cv=cv)
     return {
-        "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1)} for p in lineup],
+        "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
+                    "captain": p.get("captain", False)} for p in lineup],
         "total_salary": int(sum(p["salary"] for p in lineup)),
         "total_proj": round(sum(p["proj"] for p in lineup), 1),
         "cap": cap, "roster": roster, "sim": sim, "pool": len(players),
+        "mode": mode, "objective": objective,
     }
 
 

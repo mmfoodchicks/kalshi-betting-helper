@@ -423,7 +423,9 @@ def api_simulate_dfs():
         cap = int(d.get("cap", 50000))
     except (ValueError, TypeError):
         return jsonify({"error": "bad roster/cap"}), 400
-    return jsonify(simulate.dfs_build(text, roster=roster, cap=cap, sport=d.get("sport", "ufc")))
+    return jsonify(simulate.dfs_build(
+        text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
+        mode=d.get("mode", "classic"), objective=d.get("objective", "projection")))
 
 
 @app.route("/api/baseball/today")

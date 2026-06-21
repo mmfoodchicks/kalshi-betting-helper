@@ -237,8 +237,10 @@
         <button id="simBtn" class="primary">Run</button>
       </div>
       <div id="g_dfs" class="hidden" style="margin-top:10px">
-        <div class="scan-controls" style="gap:8px">
+        <div class="scan-controls" style="gap:8px;flex-wrap:wrap">
           <select id="dfsSport"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option></select>
+          <select id="dfsMode"><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
+          <select id="dfsObjective"><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option></select>
           <label class="small">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
           <label class="small">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>
