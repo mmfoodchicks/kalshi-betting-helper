@@ -426,11 +426,15 @@ def api_simulate_game():
 def api_simulate_weather():
     import simulate, weather_markets
     city = request.args.get("city", "nyc")
+    want_date = request.args.get("date")
     try:
         data = weather_markets.get_city(city)
     except Exception as e:
         return jsonify({"error": str(e)}), 502
-    ev = (data.get("events") or [None])[0]
+    evs = data.get("events") or []
+    ev = next((e for e in evs if e.get("date") == want_date), None) if want_date else None
+    if ev is None:
+        ev = evs[0] if evs else None
     if not ev or not ev.get("model"):
         return jsonify({"error": "no forecast available"}), 404
     m = ev["model"]

@@ -1268,6 +1268,7 @@ async function initSim() {
   try {
     const wx = await (await fetch("/api/weather/meta")).json();
     $("simWxCity").innerHTML = Object.entries(wx).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    $("simWxCity").addEventListener("change", fillSimWxDates);
   } catch (e) {}
   $("simGameDate").value = new Date().toISOString().slice(0, 10);
   $("simGameDate").addEventListener("change", fillSimGames);
@@ -1277,6 +1278,16 @@ function simModeChange() {
   for (const g of ["price", "game", "weather"]) $("g_" + g).classList.toggle("hidden", m !== g);
   $("g_dfs").classList.toggle("hidden", m !== "dfs");
   if (m === "game") fillSimGames();
+  if (m === "weather") fillSimWxDates();
+}
+async function fillSimWxDates() {
+  const sel = $("simWxDate"); if (!sel) return;
+  try {
+    const d = await (await fetch("/api/weather/" + $("simWxCity").value)).json();
+    const evs = (d.events || []).filter((e) => e.model);
+    sel.innerHTML = evs.map((e) => `<option value="${e.date}">${e.date}</option>`).join("")
+      || `<option value="">soonest</option>`;
+  } catch (e) { sel.innerHTML = `<option value="">soonest</option>`; }
 }
 async function fillSimGames() {
   try {
@@ -1312,6 +1323,8 @@ async function runWxSim() {
   box.innerHTML = `<div class="empty">Simulating high temp…</div>`;
   try {
     let url = `/api/simulate/weather?city=${$("simWxCity").value}&sims=${simRunsValue()}`;
+    const wd = ($("simWxDate") || {}).value;
+    if (wd) url += `&date=${wd}`;
     if (th) url += `&threshold=${th}&direction=${dir}`;
     const d = await (await fetch(url)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
