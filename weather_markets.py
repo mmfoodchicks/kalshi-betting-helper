@@ -161,12 +161,19 @@ def _model_high(om, target_date, spread=None):
 
 
 def _fair(strike_type, floor, cap, mean, sigma):
+    """P(YES) for a high-temp strike. The observed high is an integer, so we
+    apply a 0.5° continuity correction and respect inclusive (>=, <=) vs strict
+    (>, <) semantics rather than lumping them together."""
     st = (strike_type or "").lower()
-    if st in ("greater", "greater_or_equal"):
+    if st == "greater_or_equal" and floor is not None:   # high >= floor
+        return 1 - _ncdf((floor - 0.5 - mean) / sigma)
+    if st == "greater" and floor is not None:            # high > floor (>= floor+1)
         return 1 - _ncdf((floor + 0.5 - mean) / sigma)
-    if st in ("less", "less_or_equal"):
+    if st == "less_or_equal" and cap is not None:        # high <= cap
+        return _ncdf((cap + 0.5 - mean) / sigma)
+    if st == "less" and cap is not None:                 # high < cap (<= cap-1)
         return _ncdf((cap - 0.5 - mean) / sigma)
-    if st == "between" and floor is not None and cap is not None:
+    if st == "between" and floor is not None and cap is not None:  # inclusive [floor, cap]
         return max(0.0, _ncdf((cap + 0.5 - mean) / sigma) - _ncdf((floor - 0.5 - mean) / sigma))
     return None
 

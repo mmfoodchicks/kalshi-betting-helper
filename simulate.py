@@ -157,19 +157,33 @@ def apply_grid(players, sport, date=None):
                 "reason": "no qualifying grid posted yet (check back after qualifying)"}
     n = len(players)
     field = grid["field"]
-    # Deserved finishing spot ~ salary rank (DK prices by car quality).
+    # Deserved finishing spot ~ salary rank (DK prices by car quality), sharpened
+    # with recent form so a cheap car running well isn't unfairly buried.
     order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
     deserved = [0.0] * n
     for rank, i in enumerate(order):
         deserved[i] = min(field, max(1.0, (rank + 0.5) / n * field))
+    form = {}
+    try:
+        if sport == "nascar":
+            form = racing.get_nascar_form((date or "")[:4] or None,
+                                          date or "", series=grid.get("series_id") or 1) or {}
+        elif sport == "f1":
+            form = racing.get_f1_form() or {}
+    except Exception:
+        form = {}
     lam = 0.55                                  # partial mean-reversion of the grid
-    matched, unmatched = 0, []
+    matched, unmatched, form_hits = 0, [], 0
     for i, p in enumerate(players):
         start = racing.lookup(grid, p["name"])
         if start is None:
             unmatched.append(p["name"])
             continue
         matched += 1
+        fv = racing._match_prob(form, None, p["name"]) if form else None
+        if fv is not None:                      # blend salary-deserved with form
+            deserved[i] = min(field, max(1.0, 0.5 * deserved[i] + 0.5 * fv))
+            form_hits += 1
         # delta < 0: starting better than deserved -> expected to lose spots.
         delta = start - deserved[i]
         adj = max(-15.0, min(15.0, lam * delta))
@@ -178,7 +192,8 @@ def apply_grid(players, sport, date=None):
         p["base_proj"] = p["proj"]
         p["proj"] = max(0.0, p["proj"] + adj)
     return {"available": True, "race": grid["race"], "series": grid["series"],
-            "field": field, "matched": matched, "unmatched": unmatched[:25]}
+            "field": field, "matched": matched, "unmatched": unmatched[:25],
+            "form_used": form_hits > 0}
 
 
 def dfs_optimize(players, roster, cap, key="value"):

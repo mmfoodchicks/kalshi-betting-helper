@@ -20,6 +20,7 @@ import math
 import re
 import unicodedata
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 _UA = "kalshi-betting-helper/1.0"
 SERIES = {1: "Cup", 2: "Xfinity", 3: "Trucks"}
@@ -66,11 +67,11 @@ def lookup(grid_info, name):
     return None
 
 
-def _finalize(grid, race, series):
+def _finalize(grid, race, series, series_id=None):
     if not grid:
         return None
     by_full, by_last = _index(grid)
-    return {"grid": grid, "race": race, "series": series,
+    return {"grid": grid, "race": race, "series": series, "series_id": series_id,
             "field": max(grid.values()), "_full": by_full, "_last": by_last}
 
 
@@ -122,7 +123,8 @@ def get_nascar_grid(race_name=None, date=None, year=None):
             continue
         grid = _grid_from_feed(feed)
         if grid:
-            return _finalize(grid, race.get("race_name", "race"), SERIES[series])
+            return _finalize(grid, race.get("race_name", "race"), SERIES[series],
+                             series_id=series)
     return None
 
 
@@ -157,6 +159,81 @@ def get_grid(sport, race_name=None, date=None):
     return None
 
 
+# --- Recent form (driver/car quality, independent of this race) --------------
+# Qualifying order predicts the winner, but it misses car/driver quality: a top
+# team that qualified poorly is still dangerous. We fold in recent results --
+# NASCAR from the last few races' finishing positions, F1 from the championship
+# standings -- so the model knows who's actually fast, not just who qualified up
+# front today.
+
+_form_cache = {}            # key -> (epoch, value)
+
+
+def _cached(key, ttl, fn):
+    hit = _form_cache.get(key)
+    if hit and (datetime.datetime.now().timestamp() - hit[0]) < ttl:
+        return hit[1]
+    try:
+        val = fn()
+    except Exception:
+        val = None
+    _form_cache[key] = (datetime.datetime.now().timestamp(), val)
+    return val
+
+
+def _race_results(year, series, race_id):
+    """{normalized name: finishing position} for a completed race."""
+    feed = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/{race_id}/weekend-feed.json")
+    out = {}
+    for r in (feed.get("weekend_race") or [{}])[0].get("results", []):
+        nm = norm_name(r.get("driver_fullname") or r.get("driver_name") or "")
+        fp = r.get("finishing_position")
+        if nm and fp:
+            out[nm] = int(fp)
+    return out
+
+
+def get_nascar_form(year, today, series=1, n_races=5):
+    """Recency-weighted average finish per driver over recent completed races."""
+    def build():
+        races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
+        done = [r for r in races if (r.get("race_date") or "")[:10] < today and r.get("race_id")]
+        done.sort(key=lambda r: r["race_date"], reverse=True)
+        done = done[:n_races]
+        if not done:
+            return {}
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            results = list(ex.map(lambda r: _race_results(year, series, r["race_id"]), done))
+        # Most recent race weighted highest.
+        acc, wsum = {}, {}
+        for w, res in zip(range(len(results), 0, -1), results):
+            for nm, fp in (res or {}).items():
+                acc[nm] = acc.get(nm, 0.0) + w * fp
+                wsum[nm] = wsum.get(nm, 0.0) + w
+        # Regress lightly toward a mid-pack prior for small samples.
+        prior, k = 20.0, 2.0
+        return {nm: (acc[nm] + k * prior) / (wsum[nm] + k) for nm in acc}
+    return _cached(("nascar_form", year, series), 6 * 3600, build) or {}
+
+
+def get_f1_form():
+    """Championship-standings rank per driver (1 = leader)."""
+    def build():
+        d = _get_json("https://api.jolpi.ca/ergast/f1/current/driverStandings.json")
+        lst = d.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
+        if not lst:
+            return {}
+        out = {}
+        for x in lst[0].get("DriverStandings", []):
+            nm = norm_name(f"{x['Driver'].get('givenName','')} {x['Driver'].get('familyName','')}")
+            try:
+                out[nm] = int(x["position"])
+            except (ValueError, KeyError):
+                continue
+        return out
+    return _cached(("f1_form",), 6 * 3600, build) or {}
+
+
 # --- Win model + Kalshi edge -------------------------------------------------
 # Starting position is a strong, independent predictor of who wins a race
 # (especially F1, where the pole sits on ~40% of wins; NASCAR is far flatter).
@@ -168,12 +245,18 @@ def get_grid(sport, race_name=None, date=None):
 _TAU = {"f1": 3.0, "nascar": 11.0, "motogp": 4.0}
 
 
-def win_probs(grid_info, sport):
-    """{normalized name: win probability} from the starting grid."""
+def win_probs(grid_info, sport, form=None):
+    """{normalized name: win probability} from the starting grid, optionally
+    blended with recent form (a position-scale quality estimate per driver)."""
     if not grid_info:
         return {}
     tau = _TAU.get((sport or "").lower(), 8.0)
-    strengths = {nm: math.exp(-(pos - 1) / tau) for nm, pos in grid_info["grid"].items()}
+    form = form or {}
+    strengths = {}
+    for nm, pos in grid_info["grid"].items():
+        f = _match_prob(form, grid_info, nm) if form else None  # reuse name matcher
+        eff = 0.5 * pos + 0.5 * f if f is not None else pos     # blend grid + form
+        strengths[nm] = math.exp(-(eff - 1) / tau)
     total = sum(strengths.values())
     if total <= 0:
         return {}
@@ -207,7 +290,19 @@ def race_board(sport, events, date=None):
     if not grid:
         return events, {"available": False,
                         "reason": "no qualifying grid posted yet"}
-    probs = win_probs(grid, sport)
+    # Blend in recent form (driver/car quality) when we can fetch it.
+    sp = (sport or "").lower()
+    form = None
+    try:
+        if sp == "nascar":
+            year = (date or datetime.date.today().isoformat())[:4]
+            form = get_nascar_form(year, date or datetime.date.today().isoformat(),
+                                   series=grid.get("series_id") or 1)
+        elif sp == "f1":
+            form = get_f1_form()
+    except Exception:
+        form = None
+    probs = win_probs(grid, sport, form)
     for e in events:
         best = None
         for o in e.get("outcomes", []):
@@ -224,5 +319,6 @@ def race_board(sport, events, date=None):
         # Model pick: best positive edge, with a small floor to avoid noise.
         e["model_pick"] = best if (best and best["edge_cents"] >= 2) else None
     return events, {"available": True, "race": grid["race"],
-                    "series": grid["series"], "field": grid["field"]}
+                    "series": grid["series"], "field": grid["field"],
+                    "form_used": bool(form)}
 
