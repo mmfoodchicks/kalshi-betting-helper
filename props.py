@@ -26,6 +26,16 @@ def _poisson_pmf(lam, kmax=_MAXR):
     return pmf
 
 
+def _spread_ladder(margin):
+    """Each side's P(win by >= m) for m in 2..5 -- Kalshi's adjustable spread
+    ('wins by over 1.5/2.5/3.5/4.5 runs'). String keys for clean JSON."""
+    home = {str(m): round(sum(p for d, p in margin.items() if d >= m) * 100, 1)
+            for m in (2, 3, 4, 5)}
+    away = {str(m): round(sum(p for d, p in margin.items() if d <= -m) * 100, 1)
+            for m in (2, 3, 4, 5)}
+    return home, away
+
+
 def game_props(er_home, er_away, home_abbr, away_abbr):
     """Run line + game total over/unders from independent-Poisson run dists."""
     ph = _poisson_pmf(er_home)
@@ -34,10 +44,12 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
     p_home_win = p_away_win = p_tie = 0.0
     p_home_by2 = p_away_by2 = 0.0
     total_pmf = [0.0] * (2 * _MAXR + 1)
+    margin = {}                                    # home_runs - away_runs -> prob
     for i, phi in enumerate(ph):
         for j, paj in enumerate(pa):
             pr = phi * paj
             total_pmf[i + j] += pr
+            margin[i - j] = margin.get(i - j, 0.0) + pr
             if i > j:
                 p_home_win += pr
                 if i - j >= 2:
@@ -73,12 +85,14 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
+    home_by, away_by = _spread_ladder(margin)
     return {
-        # Kalshi run line = separate "wins by 2+" market per side (not a
-        # complementary ±1.5 spread; a 1-run game means neither side hits).
+        # Kalshi run line = "[team] wins by over X.5 runs" with an adjustable
+        # line. home_by["2"] = P(win by 2+) = the 1.5 line, ["3"] = the 2.5 line,
+        # etc. A 1-run game hits neither side's spread.
         "run_line": {
-            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1),
-            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1),
+            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1), "home_by": home_by,
+            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1), "away_by": away_by,
         },
         "model_total": round(model_total, 1),
         "totals": totals,
@@ -98,11 +112,13 @@ def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
     cur_total = cur_home + cur_away
     total_pmf = [0.0] * (2 * _MAXR + 1)   # over REMAINING runs
     p_home_by2 = p_away_by2 = 0.0          # final margin (current + remaining)
+    margin = {}                            # final home - away margin -> prob
     for i, phi in enumerate(ph):
         for j, paj in enumerate(pa):
             pr = phi * paj
             total_pmf[i + j] += pr
             fh, fa = cur_home + i, cur_away + j
+            margin[fh - fa] = margin.get(fh - fa, 0.0) + pr
             if fh - fa >= 2:
                 p_home_by2 += pr
             elif fa - fh >= 2:
@@ -122,12 +138,13 @@ def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
+    home_by, away_by = _spread_ladder(margin)
     return {
-        # Kalshi run line = separate "wins by 2+" market per side (a 1-run game
-        # means NEITHER hits -- it is not a complementary ±1.5 sportsbook spread).
+        # Kalshi run line ("[team] wins by over X.5 runs", adjustable line),
+        # computed off the FINAL margin (current score + remaining runs).
         "run_line": {
-            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1),
-            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1),
+            "home": home_abbr, "home_by2_pct": round(p_home_by2 * 100, 1), "home_by": home_by,
+            "away": away_abbr, "away_by2_pct": round(p_away_by2 * 100, 1), "away_by": away_by,
         },
         "model_total": round(exp_final, 1),
         "totals_ladder": ladder,

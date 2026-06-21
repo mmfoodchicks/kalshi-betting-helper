@@ -550,9 +550,10 @@ function renderProps(g) {
     <summary>📊 Props &amp; odds — run line, totals, hit props</summary>
     <div class="propgrid">
       <div class="propcard">
-        <div class="teamhdr">Run line — Kalshi "win by 2+" (each side)</div>
-        <div class="small"><b>${rl.home} win by 2+</b>: <b>${rl.home_by2_pct}%</b></div>
-        <div class="small"><b>${rl.away} win by 2+</b>: <b>${rl.away_by2_pct}%</b></div>
+        <div class="teamhdr">Run line — Kalshi "win by X+" (adjustable)</div>
+        ${[[rl.home, rl.home_by], [rl.away, rl.away_by]].map(([tm, by]) => by
+          ? `<div class="small"><b>${tm} by</b> ` + Object.entries(by).map(([m, p]) => `${m}+ <b>${p}%</b>`).join(" · ") + `</div>`
+          : `<div class="small"><b>${tm} win by 2+</b>: <b>${tm === rl.home ? rl.home_by2_pct : rl.away_by2_pct}%</b></div>`).join("")}
         <div class="teamhdr" style="margin-top:8px">Total runs (model ${p.model_total})</div>
         <div class="small">${totals}</div>
       </div>

@@ -851,6 +851,16 @@ def _final_winners(date):
     return out
 
 
+def _add_spread_legs(add, rl):
+    """Offer Kalshi's adjustable spread for both teams: '<team> win by 2+/3+/4+/5+'
+    (the 1.5/2.5/3.5/4.5 lines). `add` filters out near-0/near-1 lines."""
+    if not rl:
+        return
+    for tm, key in ((rl.get("home"), "home_by"), (rl.get("away"), "away_by")):
+        for m, pct in sorted((rl.get(key) or {}).items(), key=lambda x: int(x[0])):
+            add("Run line", f"{tm} win by {m}+", pct / 100.0)
+
+
 def _game_variants(g):
     """Every line variant for a game, so the combo maker can tune for confidence.
 
@@ -884,19 +894,14 @@ def _game_variants(g):
             lp = props_mod.live_game_props(
                 ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
                 g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
-            rl = lp["run_line"]
-            add("Run line", f"{rl['home']} win by 2+", rl["home_by2_pct"] / 100.0)
-            add("Run line", f"{rl['away']} win by 2+", rl["away_by2_pct"] / 100.0)
+            _add_spread_legs(add, lp.get("run_line"))
             for t in lp["totals_ladder"]:
                 add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
                 add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
         return out
 
     p = g.get("props") or {}
-    rl = p.get("run_line")
-    if rl:
-        add("Run line", f"{rl['home']} win by 2+", rl["home_by2_pct"] / 100.0)
-        add("Run line", f"{rl['away']} win by 2+", rl["away_by2_pct"] / 100.0)
+    _add_spread_legs(add, p.get("run_line"))
     for t in p.get("totals_ladder", []):
         add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
         add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
