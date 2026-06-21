@@ -69,6 +69,10 @@ def init_db():
                 prob REAL, price_cents REAL,
                 graded INTEGER DEFAULT 0, won INTEGER, winner_name TEXT
             )""")
+        # close_price: latest pre-game market price of our side, for CLV.
+        mcols = {r["name"] for r in c.execute("PRAGMA table_info(mlb_picks)")}
+        if "close_price" not in mcols:
+            c.execute("ALTER TABLE mlb_picks ADD COLUMN close_price REAL")
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
@@ -93,10 +97,20 @@ def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents):
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
-               (game_pk, date, pick_side, pick_name, prob, price_cents)
-               VALUES (?,?,?,?,?,?)""",
-            (game_pk, date, pick_side, pick_name, prob, price_cents),
+               (game_pk, date, pick_side, pick_name, prob, price_cents, close_price)
+               VALUES (?,?,?,?,?,?,?)""",
+            (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents),
         )
+
+
+def update_mlb_close(game_pk, price_cents):
+    """Refresh the closing (latest pre-game) price of our side so we can measure
+    closing-line value once the game is graded."""
+    if price_cents is None:
+        return
+    with _lock, _conn() as c:
+        c.execute("UPDATE mlb_picks SET close_price=? WHERE game_pk=? AND graded=0",
+                  (price_cents, game_pk))
 
 
 def ungraded_mlb_picks():
@@ -118,18 +132,47 @@ def mlb_record():
         pending = c.execute("SELECT COUNT(*) n FROM mlb_picks WHERE graded=0").fetchone()["n"]
     n = len(graded)
     wins = sum(1 for p in graded if p["won"] == 1)
+
+    def roi(picks):
+        stake = sum(p["price_cents"] for p in picks)
+        pnl = sum((100 if p["won"] else 0) - p["price_cents"] for p in picks)
+        return (round(100 * pnl / stake, 1) if stake else None), len(picks)
+
     # ROI as if 1 contract bet per pick at the recorded Kalshi price.
     priced = [p for p in graded if p["price_cents"]]
-    staked = sum(p["price_cents"] for p in priced)
-    pnl = sum((100 if p["won"] else 0) - p["price_cents"] for p in priced)
-    # Brier over picks that had a probability.
+    roi_pct, _ = roi(priced)
+    # Edge-filtered ROI: only bets where the model had >=3c edge over the price
+    # (the bets you'd actually place). This is the real test of the model.
+    EDGE = 3.0
+    edged = [p for p in priced if p["prob"] is not None
+             and (p["prob"] * 100 - p["price_cents"]) >= EDGE]
+    roi_edge_pct, edge_bets = roi(edged)
+
+    # Closing-line value: did the market move toward our side after we picked?
+    # Positive CLV (we beat the close) is the strongest early sign of real edge.
+    clv = [p["close_price"] - p["price_cents"] for p in graded
+           if p.get("close_price") is not None and p["price_cents"] is not None]
+    clv_avg = round(sum(clv) / len(clv), 2) if clv else None
+    clv_pos_pct = round(100 * sum(1 for x in clv if x > 0) / len(clv), 1) if clv else None
+
+    # Brier (lower=better; 0.25=coin flip) + calibration buckets.
     bp = [p for p in graded if p["prob"] is not None]
     brier = round(sum((p["prob"] - (1 if p["won"] else 0)) ** 2 for p in bp) / len(bp), 4) if bp else None
+    bins = []
+    for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):
+        b = [p for p in bp if lo <= p["prob"] < hi]
+        if b:
+            bins.append({"range": f"{int(lo*100)}-{int(min(hi,1)*100)}%",
+                         "n": len(b),
+                         "predicted": round(100 * sum(p["prob"] for p in b) / len(b), 1),
+                         "actual": round(100 * sum(1 for p in b if p["won"]) / len(b), 1)})
     return {
         "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
         "accuracy_pct": round(100 * wins / n, 1) if n else None,
-        "roi_pct": round(100 * pnl / staked, 1) if staked else None,
-        "roi_bets": len(priced), "brier": brier,
+        "roi_pct": roi_pct, "roi_bets": len(priced),
+        "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets, "edge_threshold": EDGE,
+        "clv_avg": clv_avg, "clv_positive_pct": clv_pos_pct, "clv_n": len(clv),
+        "brier": brier, "brier_baseline": 0.25, "calibration": bins,
     }
 
 

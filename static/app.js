@@ -571,7 +571,8 @@ function spLine(sp) {
   if (!sp || sp.era == null) return `${sp && sp.name ? sp.name : "TBD"} <span style="color:var(--border)">(no stats)</span>`;
   const hand = sp.hand ? `${sp.hand}HP` : "";
   const recent = sp.recent_era != null ? ` · last5 <b>${sp.recent_era}</b> ERA` : "";
-  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}`;
+  const fip = sp.fip != null ? `, <b>${sp.fip}</b> FIP` : "";
+  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}`;
 }
 
 function renderGame(g) {
@@ -1541,10 +1542,27 @@ async function loadBaseballRecord() {
       el.innerHTML = r.pending ? `<span>Model track record: ${r.pending} picks awaiting results…</span>` : "";
       return;
     }
-    el.innerHTML = `Model record: <b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)` +
-      (r.roi_pct != null ? ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${r.roi_pct >= 0 ? "+" : ""}${r.roi_pct}%</b>` : "") +
-      (r.brier != null ? ` · Brier <b>${r.brier}</b>` : "") +
-      (r.pending ? ` · ${r.pending} pending` : "");
+    const pct = (v) => (v >= 0 ? "+" : "") + v + "%";
+    const briefBrier = r.brier != null
+      ? ` · Brier <b style="color:${r.brier < 0.25 ? "#3ad17a" : "#e0566a"}">${r.brier}</b><span style="color:var(--muted)">/${r.brier_baseline}</span>` : "";
+    // Headline: W-L is noisy at small n; the lines below are what actually matter.
+    let html = `Model record: <b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)` +
+      (r.roi_pct != null ? ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_pct)}</b>` : "") +
+      briefBrier + (r.pending ? ` · ${r.pending} pending` : "");
+    // The real tests: edge-filtered ROI (bets you'd actually place) + CLV.
+    const extra = [];
+    if (r.roi_edge_pct != null)
+      extra.push(`Edge bets (≥${r.edge_threshold}¢): <b class="${r.roi_edge_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_edge_pct)}</b> ROI <span style="color:var(--muted)">(${r.edge_bets})</span>`);
+    if (r.clv_avg != null)
+      extra.push(`CLV <b class="${r.clv_avg >= 0 ? "ev pos" : "ev neg"}">${r.clv_avg >= 0 ? "+" : ""}${r.clv_avg}¢</b> <span style="color:var(--muted)">(${r.clv_positive_pct}% beat close, ${r.clv_n})</span>`);
+    if (r.calibration && r.calibration.length)
+      extra.push("Calibration " + r.calibration.map((b) =>
+        `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · "));
+    if (extra.length)
+      html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
+    if (r.graded < 50)
+      html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ Only ${r.graded} graded — too few to judge; W-L is mostly noise until ~100+. Watch Brier (&lt;0.25 = real signal) and CLV.</div>`;
+    el.innerHTML = html;
   } catch (e) { /* ignore */ }
 }
 

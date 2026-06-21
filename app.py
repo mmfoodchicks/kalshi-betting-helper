@@ -488,6 +488,8 @@ def api_baseball_today():
             store.record_mlb_pick(g["game_pk"], date,
                                   "home" if g["pick_is_home"] else "away",
                                   g["pick"], g["pick_prob"], g.get("pick_price_cents"))
+            # Track the latest pre-game price of our side for closing-line value.
+            store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
     combos = baseball.build_combos(games)
     return jsonify({"date": date, "games": games, "combos": combos})
 

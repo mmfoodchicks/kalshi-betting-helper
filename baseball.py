@@ -186,7 +186,9 @@ def _pitcher_stats(pid, season):
                     continue
                 st = sp[0]["stat"]
                 rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")),
-                       "ip": _f(st.get("inningsPitched")), "k9": _f(st.get("strikeoutsPer9Inn"))}
+                       "ip": _f(st.get("inningsPitched")), "k9": _f(st.get("strikeoutsPer9Inn")),
+                       "hr": _f(st.get("homeRuns")), "bb": _f(st.get("baseOnBalls")),
+                       "k": _f(st.get("strikeOuts")), "hbp": _f(st.get("hitByPitch"))}
                 if disp == "season":
                     res["season"] = rec
                 elif disp == "lastXGames":
@@ -217,8 +219,31 @@ def _league_avgs(hit, pit, bp, hitplat):
 
 
 # ---- per-game component estimates -----------------------------------------
+FIP_CONSTANT = 3.15  # puts FIP on the ERA scale (league FIP ~ league ERA)
+
+
+def _fip(rec):
+    """Fielding-Independent Pitching: what a pitcher's ERA "should" be from just
+    the outcomes he controls (K, BB, HR). More predictive of FUTURE runs than
+    ERA, which is noisy and defense/sequencing dependent."""
+    if not rec:
+        return None
+    ip = rec.get("ip") or 0
+    hr, bb, k = rec.get("hr"), rec.get("bb"), rec.get("k")
+    if ip <= 0 or hr is None or bb is None or k is None:
+        return None
+    hbp = rec.get("hbp") or 0
+    fip = (13 * hr + 3 * (bb + hbp) - 2 * k) / ip + FIP_CONSTANT
+    return max(1.5, min(9.0, fip))
+
+
 def _starter_ra9(sp, lg):
-    """RA/9 from a starter: ERA+WHIP, regressed by IP, blended with recent form."""
+    """RA/9 from a starter, blending three complementary reads, each regressed by
+    IP and toward recent form:
+      - ERA   (actual runs allowed; captures sequencing/defense)
+      - FIP   (K/BB/HR only; the most predictive of future runs)
+      - WHIP  (baserunners allowed)
+    Keeping all three is more robust than any one alone."""
     if not sp or "season" not in sp or sp["season"]["era"] <= 0:
         return None
     s = sp["season"]
@@ -233,7 +258,18 @@ def _starter_ra9(sp, lg):
         era_eff = (1 - RECENT_WEIGHT) * era_eff + RECENT_WEIGHT * recent_era
         whip_eff = (1 - RECENT_WEIGHT) * whip_eff + RECENT_WEIGHT * recent_whip
     whip_ra9 = lg["era"] * (whip_eff / lg["whip"]) if whip_eff > 0 else era_eff
-    return 0.65 * era_eff + 0.35 * whip_ra9
+
+    # FIP, regressed by IP toward league and blended with recent FIP when present.
+    fip_s = _fip(s)
+    if fip_s is not None:
+        fip_eff = rel_s * fip_s + (1 - rel_s) * lg["era"]
+        fip_r = _fip(r) if r and (r.get("ip") or 0) > 0 else None
+        if fip_r is not None:
+            rel_r = r["ip"] / (r["ip"] + RECENT_IP_REGRESS)
+            recent_fip = rel_r * fip_r + (1 - rel_r) * fip_eff
+            fip_eff = (1 - RECENT_WEIGHT) * fip_eff + RECENT_WEIGHT * recent_fip
+        return 0.35 * era_eff + 0.40 * fip_eff + 0.25 * whip_ra9
+    return 0.65 * era_eff + 0.35 * whip_ra9   # no FIP inputs -> ERA+WHIP only
 
 
 def _bullpen_ra9(team_bp, lg):
@@ -598,8 +634,10 @@ def analyze_slate(date, season):
                 return {"name": name, "hand": h, "era": None, "whip": None, "ip": None,
                         "recent_era": None, "recent_whip": None, "k9": None}
             s = st["season"]; r = st.get("recent") or {}
+            fip = _fip(s)
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
                     "ip": s["ip"], "k9": round(s.get("k9", 0), 1),
+                    "fip": round(fip, 2) if fip is not None else None,
                     "recent_era": round(r["era"], 2) if r.get("ip") else None,
                     "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
                     "recent_ip": r.get("ip")}
