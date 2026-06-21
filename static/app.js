@@ -1261,15 +1261,33 @@ async function runDfsSim() {
         cap: parseInt($("dfsCap").value, 10), mode: $("dfsMode").value, objective: $("dfsObjective").value }),
     })).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    const rows = d.lineup.map((p) => `<div class="sportout"><div class="left"><span class="oname">${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}</span></div></div>`).join("");
+    const rows = d.lineup.map((p) => {
+      const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
+      let pd = "";
+      if (p.pd_adj != null && Math.abs(p.pd_adj) >= 0.1) {
+        const cls = p.pd_adj > 0 ? "#3ad17a" : "#e0566a";
+        pd = ` <span style="color:${cls}">(${p.pd_adj > 0 ? "+" : ""}${p.pd_adj} PD, was ${p.base_proj})</span>`;
+      }
+      return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${pd}</span></div></div>`;
+    }).join("");
+    let gridBanner = "";
+    const g = d.grid;
+    if (g && g.available) {
+      const un = g.unmatched && g.unmatched.length
+        ? ` · <span style="color:var(--muted)">${g.unmatched.length} unmatched (no grid adj)</span>` : "";
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: <b>${g.race}</b> (${g.series}, ${g.field}-car field) — ${g.matched} drivers matched${un}. Projections adjusted for place differential off the actual qualifying order.</div>`;
+    } else if (g && !g.available) {
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} — using season points only (no place-differential adjustment yet).</div>`;
+    }
     box.innerHTML = `<div class="bbgame">
       <div class="matchup">Optimal ${d.roster}-player lineup (${d.pool} in pool)</div>
+      ${gridBanner}
       <div class="kv" style="margin-top:6px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>
         <span>Projected <b>${d.total_proj}</b> pts</span></div>
       <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span>
         <span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>
       <div class="sportouts" style="margin-top:8px">${rows}</div>
-      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-percentile simulated totals — the ceiling is what matters for GPP tournaments.</div>
+      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-percentile simulated totals — the ceiling is what matters for GPP tournaments.${g && g.available ? " <b>PD</b> = place-differential adjustment: a driver starting better than his car deserves loses expected points; one buried deep gains." : ""}</div>
     </div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }

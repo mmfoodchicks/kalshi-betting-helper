@@ -92,7 +92,8 @@ def parse_dk_csv(text):
                 continue
             if name and salary > 0:
                 out.append({"name": name, "salary": salary, "proj": proj,
-                            "pos": (r.get("Position") or r.get("Roster Position") or "").strip()})
+                            "pos": (r.get("Position") or r.get("Roster Position") or "").strip(),
+                            "game": (r.get("Game Info") or r.get("GameInfo") or "").strip()})
         if out:
             return out
 
@@ -130,40 +131,89 @@ def parse_dk_csv(text):
                 if v != salary:          # skip the salary field
                     proj = v
                     break
+        game = parts[6].strip() if len(parts) > 6 else ""
         if name and salary and salary > 0:
-            out.append({"name": name, "salary": salary, "proj": proj or 0.0, "pos": pos})
+            out.append({"name": name, "salary": salary, "proj": proj or 0.0,
+                        "pos": pos, "game": game})
     return out
+
+
+def apply_grid(players, sport, date=None):
+    """For racing DFS, fetch the qualifying grid and adjust each driver's
+    projection for an atypically good/bad starting spot via place differential.
+
+    DK racing scoring is +1 per position gained, -1 per position lost. A driver's
+    season FPPR already bakes in their *typical* place differential, so we only
+    correct for THIS race's start being better/worse than the car deserves
+    (deserved spot proxied by salary rank). A pole-sitter in a mid car has almost
+    no upside and big downside -> his projection drops; a fast car buried deep
+    gets a boost. Returns a status dict; leaves projections untouched on failure.
+    """
+    import racing
+    race_name = next((p.get("game") for p in players if p.get("game")), None)
+    grid = racing.get_grid(sport, race_name=race_name, date=date)
+    if not grid:
+        return {"available": False,
+                "reason": "no qualifying grid posted yet (check back after qualifying)"}
+    n = len(players)
+    field = grid["field"]
+    # Deserved finishing spot ~ salary rank (DK prices by car quality).
+    order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
+    deserved = [0.0] * n
+    for rank, i in enumerate(order):
+        deserved[i] = min(field, max(1.0, (rank + 0.5) / n * field))
+    lam = 0.55                                  # partial mean-reversion of the grid
+    matched, unmatched = 0, []
+    for i, p in enumerate(players):
+        start = racing.lookup(grid, p["name"])
+        if start is None:
+            unmatched.append(p["name"])
+            continue
+        matched += 1
+        # delta < 0: starting better than deserved -> expected to lose spots.
+        delta = start - deserved[i]
+        adj = max(-15.0, min(15.0, lam * delta))
+        p["start"] = start
+        p["pd_adj"] = round(adj, 1)
+        p["base_proj"] = p["proj"]
+        p["proj"] = max(0.0, p["proj"] + adj)
+    return {"available": True, "race": grid["race"], "series": grid["series"],
+            "field": field, "matched": matched, "unmatched": unmatched[:25]}
 
 
 def dfs_optimize(players, roster, cap, key="value"):
     """Max-`key` lineup of exactly `roster` players under the salary cap
-    (0/1 knapsack with a cardinality constraint; salary in $100 units)."""
+    (0/1 knapsack with a cardinality constraint; salary in $100 units).
+
+    Each DP cell carries the actual selected indices so reconstruction can never
+    reuse a player (shared back-pointers can otherwise rebuild an invalid path)."""
     U = int(cap // 100)
-    dp = [[-1.0] * (U + 1) for _ in range(roster + 1)]
-    back = [[None] * (U + 1) for _ in range(roster + 1)]
-    dp[0][0] = 0.0
+    NEG = float("-inf")
+    # dp[k][s] = (best value, tuple of chosen indices) using exactly k players.
+    dp = [[(NEG, None)] * (U + 1) for _ in range(roster + 1)]
+    dp[0][0] = (0.0, ())
     for idx, pl in enumerate(players):
         su = int(round(pl["salary"] / 100))
         if su > U or su <= 0:
             continue
         pr = pl.get(key, pl["proj"])
-        for k in range(roster - 1, -1, -1):
+        for k in range(roster - 1, -1, -1):       # descending -> each item used once
             row = dp[k]
+            nxt = dp[k + 1]
             for s in range(U - su, -1, -1):
-                if row[s] >= 0 and row[s] + pr > dp[k + 1][s + su]:
-                    dp[k + 1][s + su] = row[s] + pr
-                    back[k + 1][s + su] = (idx, s)
-    best, bs = -1.0, -1
+                val, sel = row[s]
+                if val == NEG:
+                    continue
+                if val + pr > nxt[s + su][0]:
+                    nxt[s + su] = (val + pr, sel + (idx,))
+    best, bsel = NEG, None
     for s in range(U + 1):
-        if dp[roster][s] > best:
-            best, bs = dp[roster][s], s
-    if bs < 0:
+        val, sel = dp[roster][s]
+        if val > best:
+            best, bsel = val, sel
+    if bsel is None:
         return None
-    chosen, k, s = [], roster, bs
-    while k > 0:
-        idx, ps = back[k][s]
-        chosen.append(players[idx]); k -= 1; s = ps
-    return chosen
+    return [players[i] for i in bsel]
 
 
 def _set_values(players, objective, cv):
@@ -216,10 +266,19 @@ def dfs_sim(lineup, n=20000, cv=0.55):
             "max": round(totals[-1], 1), "n": n}
 
 
-def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic", objective="projection"):
+def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
+              objective="projection", date=None):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
+    # Racing: pull the qualifying grid and adjust for place differential so a
+    # pole-sitter isn't over-rated on raw season points.
+    grid_status = None
+    if sport in ("nascar", "f1"):
+        try:
+            grid_status = apply_grid(players, sport, date)
+        except Exception as e:
+            grid_status = {"available": False, "reason": f"grid fetch failed: {e}"}
     cv = {"nascar": 0.5, "f1": 0.5, "ufc": 0.6}.get(sport, 0.55)
     if mode == "showdown":
         lineup = dfs_showdown(players, cap, objective, cv, flex_count=max(1, roster - 1))
@@ -231,11 +290,14 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic", objective=
     sim = dfs_sim(lineup, cv=cv)
     return {
         "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
-                    "captain": p.get("captain", False)} for p in lineup],
+                    "captain": p.get("captain", False), "start": p.get("start"),
+                    "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
+                    if p.get("base_proj") is not None else None}
+                   for p in lineup],
         "total_salary": int(sum(p["salary"] for p in lineup)),
         "total_proj": round(sum(p["proj"] for p in lineup), 1),
         "cap": cap, "roster": roster, "sim": sim, "pool": len(players),
-        "mode": mode, "objective": objective,
+        "mode": mode, "objective": objective, "grid": grid_status,
     }
 
 

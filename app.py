@@ -426,9 +426,11 @@ def api_simulate_dfs():
         cap = int(d.get("cap", 50000))
     except (ValueError, TypeError):
         return jsonify({"error": "bad roster/cap"}), 400
+    import datetime as _dt
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
-        mode=d.get("mode", "classic"), objective=d.get("objective", "projection")))
+        mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
+        date=d.get("date") or _dt.date.today().isoformat()))
 
 
 @app.route("/api/baseball/today")
