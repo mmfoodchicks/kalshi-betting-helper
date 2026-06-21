@@ -48,9 +48,9 @@ def _auth():
 
 
 def _tier():
-    """The subscription tier for this request (cookie today; wire to real
-    accounts/billing later). Defaults to free."""
-    return tiers.normalize(request.cookies.get("tier", "free"))
+    """The subscription tier for this request. Gating is OFF by default, so this
+    returns the unlimited 'owner' tier until TIERS_ENFORCED is set."""
+    return tiers.resolve(request.cookies.get("tier"), request.cookies.get("owner_key"))
 
 
 def _locked(feature):

@@ -13,8 +13,9 @@ function uiBusy() {
 
 // ---- Subscription tiers ---------------------------------------------------
 let TIERMATRIX = null;
-const TIER_RANK = { free: 0, pro: 1, edge: 2 };
-function getTier() { return localStorage.getItem("tier") || "free"; }
+const TIER_RANK = { free: 0, pro: 1, edge: 2, owner: 3 };
+// The server is the source of truth (it returns 'owner' until gating is enforced).
+function getTier() { return (TIERMATRIX && TIERMATRIX.current) || localStorage.getItem("tier") || "owner"; }
 function setTier(t) {
   localStorage.setItem("tier", t);
   document.cookie = "tier=" + t + ";path=/;max-age=31536000;samesite=lax";
@@ -56,9 +57,12 @@ function gateSimRuns() {
   if (parseInt(sel.value, 10) > max) sel.value = String(Math.min(max, 1000));
 }
 function applyTierUI() {
-  const info = TIERMATRIX && TIERMATRIX.tiers[getTier()];
+  const t = getTier();
+  const info = TIERMATRIX && TIERMATRIX.tiers[t];
   if ($("tierHint") && info) {
-    $("tierHint").textContent = `${info.price} · up to ${info.max_sims.toLocaleString()} sim runs`;
+    $("tierHint").textContent = t === "owner"
+      ? "👑 God mode — full access (tiers not enforced)"
+      : `${info.price} · up to ${info.max_sims.toLocaleString()} sim runs`;
   }
   if ($("dfsLock")) $("dfsLock").innerHTML = lockTag("dfs");
   gateSimRuns();
@@ -1530,7 +1534,6 @@ async function init() {
   // Subscription tier (cookie-backed; the server enforces gating).
   try { TIERMATRIX = await (await fetch("/api/tiers")).json(); }
   catch (e) { TIERMATRIX = { feature_min: {}, tiers: { free: { max_sims: 1000, price: "$0" } } }; }
-  setTier(getTier());
   if ($("tierSel")) {
     $("tierSel").value = getTier();
     $("tierSel").addEventListener("change", () => { setTier($("tierSel").value); location.reload(); });

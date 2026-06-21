@@ -1,15 +1,31 @@
-"""Subscription tiers + feature gating.
+"""Subscription tiers + feature gating (FRAMEWORK ONLY for now).
 
-A single source of truth for what each tier unlocks, plus tiny helpers the
-endpoints use to gate features and cap simulation sizes. Tiers are resolved per
-request (cookie today; wire to real accounts/billing later) and ENFORCED on the
-server, so the gating is real rather than cosmetic -- the UI selector just picks
-which tier the server should apply.
+A single source of truth for what each tier could unlock, plus helpers the
+endpoints use to gate features and cap simulation/leg sizes. This is wired up
+but NOT enforced by default: until you flip TIERS_ENFORCED=1 in the environment,
+every request resolves to the unlimited "owner" tier, so you (the owner) are
+never accidentally gated. When you do start charging, set TIERS_ENFORCED=1 and
+resolve the real tier from the logged-in account; set OWNER_KEY (and a matching
+owner_key cookie) to keep yourself as owner/god even with enforcement on.
 """
 
-TIER_ORDER = ["free", "pro", "edge"]
+import os
+
+# Is paid gating active? Off by default -> everyone is treated as owner (god).
+ENFORCED = os.environ.get("TIERS_ENFORCED", "").strip().lower() in ("1", "true", "yes", "on")
+# Secret that grants owner/god access even when enforcement is on.
+OWNER_KEY = os.environ.get("OWNER_KEY")
+
+TIER_ORDER = ["free", "pro", "edge", "owner"]
 
 TIERS = {
+    "owner": {
+        "label": "Owner (God)",
+        "price": "—",
+        "blurb": "Full unlimited access — that's you.",
+        "max_sims": 200000,
+        "max_combo_legs": 30,
+    },
     "free": {
         "label": "Free",
         "price": "$0",
@@ -51,6 +67,16 @@ SIM_RUN_OPTIONS = [100, 500, 1000, 5000, 10000, 15000]
 
 def normalize(tier):
     return tier if tier in TIERS else "free"
+
+
+def resolve(tier_cookie=None, owner_cookie=None):
+    """The effective tier for a request. Until enforcement is turned on, this is
+    always 'owner' (god mode) so the owner is never accidentally gated."""
+    if not ENFORCED:
+        return "owner"
+    if owner_cookie and OWNER_KEY and owner_cookie == OWNER_KEY:
+        return "owner"
+    return normalize(tier_cookie or "free")
 
 
 def rank(tier):
