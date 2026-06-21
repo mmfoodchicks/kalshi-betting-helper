@@ -164,7 +164,9 @@ def pitcher_k_props(k9, exp_ip=5.6):
     pmf = _poisson_pmf(lam, kmax=20)
     out = {}
     for line in (4, 5, 6, 7):
-        out[line] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
+        # String keys so the dict has a single key type (mixing int + "expected"
+        # breaks Flask's sort-keys JSON serialization).
+        out[str(line)] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
     out["expected"] = round(lam, 1)
     return out
 

@@ -25,6 +25,9 @@ import kalshi
 import baseball
 
 app = Flask(__name__)
+# Don't sort JSON keys: it's wasted work and crashes on any dict with mixed
+# key types (e.g. integer prop lines alongside string keys).
+app.json.sort_keys = False
 store.init_db()
 
 # Optional password protection (recommended when exposing it over a tunnel).

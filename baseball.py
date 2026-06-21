@@ -734,8 +734,8 @@ def _candidate_legs(games, live_only=False):
             ks = p.get(key)
             if ks and nm:
                 for line in (4, 5, 6, 7):
-                    if ks.get(line):
-                        add("Ks", f"{nm} {line}+ Ks", ks[line] / 100.0)
+                    if ks.get(str(line)):
+                        add("Ks", f"{nm} {line}+ Ks", ks[str(line)] / 100.0)
     return legs
 
 
