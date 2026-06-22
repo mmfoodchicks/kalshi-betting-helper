@@ -13,9 +13,12 @@ game are correlated, and multiplying their independent marginals lies:
 
 So for a same-game parlay we simulate the whole game ONCE and read the joint
 hit-rate straight off the shared random outcomes. Runs are built from the
-lineup's simulated events (scaled so mean runs == the model's expected runs),
-and the starters' Ks are tied to the opposing lineup's simulated outs -- the
-correlation is generated, not assumed.
+lineup's simulated events (scaled so mean runs == the model's expected runs).
+Each starter's strikeouts come from a pitch-count-aware staff simulation: he
+throws until a sampled pitch limit (pulled earlier when the offense tags him),
+then a random assortment of relievers (sampled ERA/WHIP/hand/K-rate from the
+team's bullpen) finishes -- so Ks are capped by realistic workload and the
+slip can report avg pitches before relief, IP, and the bullpen's Ks too.
 
 Each candidate leg is stored as a bitmask over the N simulated games (bit i set
 when the leg cashes in sim i). The joint probability of a parlay is then a
@@ -220,9 +223,77 @@ def _play_game(setup, rnd):
     return runs, stats
 
 
+_PA_PER_9 = 38.5   # plate appearances a staff faces over a 9-inning game
+
+
+def _draw_reliever(bp_era, bp_whip, rnd):
+    """A random relief pitcher sampled around the team's bullpen quality: ERA,
+    WHIP, handedness, and a K/9 (relievers miss more bats; better ERA -> more)."""
+    era = max(2.2, min(6.5, random.gauss(bp_era or 4.0, 0.85)))
+    whip = max(0.95, min(1.7, random.gauss(bp_whip or 1.28, 0.13)))
+    k9 = max(6.0, min(13.5, random.gauss(9.2, 1.7) - (era - 4.0) * 0.35))
+    hand = "L" if rnd() < 0.33 else "R"
+    return era, whip, k9, hand
+
+
+def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
+    """One game for a pitching staff against the opposing lineup.
+
+    The starter throws until a sampled pitch limit (pulled earlier when he's
+    being hit -- workload scales with the runs the offense actually scored this
+    sim), then a random assortment of relievers (each a fresh ERA/WHIP/hand/K
+    draw, ~1 inning apiece) finishes. Returns the STARTER's (Ks, pitches, outs)
+    and the bullpen's combined Ks."""
+    sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
+    # More runs allowed => more traffic => more pitches and an earlier hook.
+    hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
+    bb_pa = 0.078
+    limit = max(72, min(118, random.gauss(96, 11)))     # this start's pitch count cap
+    sp_k = sp_outs = 0
+    sp_pitches = 0.0
+    bull_k = 0
+    outs = 0
+    pa = 0
+    starter_in = True
+    rel_kpa = sp_kpa
+    appr_outs = 0                                        # outs by the current reliever
+    while outs < 27 and pa < 70:
+        pa += 1
+        kpa = sp_kpa if starter_in else rel_kpa
+        u = rnd()
+        if u < kpa:                                     # strikeout (an out)
+            outs += 1; p = random.gauss(4.7, 0.9)
+            if starter_in:
+                sp_k += 1; sp_outs += 1
+            else:
+                bull_k += 1; appr_outs += 1
+        elif u < kpa + bb_pa:                           # walk
+            p = random.gauss(5.0, 1.0)
+        elif u < kpa + bb_pa + hit_pa:                  # hit
+            p = random.gauss(3.4, 0.9)
+        else:                                           # out in play
+            outs += 1; p = random.gauss(3.6, 0.9)
+            if starter_in:
+                sp_outs += 1
+            else:
+                appr_outs += 1
+        if starter_in:
+            sp_pitches += max(1.0, p)
+            if sp_pitches >= limit or sp_outs >= 21:    # pull: pitch cap or ~7 IP
+                starter_in = False; appr_outs = 0
+                _e, _w, rk9, _h = _draw_reliever(bp_era, bp_whip, rnd)
+                rel_kpa = max(0.12, min(0.45, rk9 / _PA_PER_9))
+        elif appr_outs >= 3:                            # next reliever (~1 inning each)
+            appr_outs = 0
+            _e, _w, rk9, _h = _draw_reliever(bp_era, bp_whip, rnd)
+            rel_kpa = max(0.12, min(0.45, rk9 / _PA_PER_9))
+    return sp_k, int(round(sp_pitches)), sp_outs, bull_k
+
+
 def simulate(g, n=5000):
     """Simulate game `g` n times via base-running. Returns shared per-sim arrays,
-    including per-batter hits/total-bases/HR/runs/RBI for player props (HRR)."""
+    including per-batter hits/total-bases/HR/runs/RBI for player props (HRR) and
+    a full pitching sim (starter Ks/pitches/IP + bullpen Ks)."""
     props = g.get("props") or {}
     er_h = g.get("exp_runs_home") or 4.3
     er_a = g.get("exp_runs_away") or 4.3
@@ -232,10 +303,24 @@ def simulate(g, n=5000):
     lam_h = (props.get("ks_home") or {}).get("expected")   # home starter, faces away
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 
+    # Pitching inputs: starter K/9 (fall back from expected Ks) + bullpen quality.
+    hsp, asp = g.get("home_sp") or {}, g.get("away_sp") or {}
+    ht, at = g.get("home_team") or {}, g.get("away_team") or {}
+    home_k9 = hsp.get("k9") or (lam_h / 5.6 * 9 if lam_h else None)
+    away_k9 = asp.get("k9") or (lam_a / 5.6 * 9 if lam_a else None)
+    do_home_pitch = home_k9 is not None
+    do_away_pitch = away_k9 is not None
+
     home_runs = [0] * n
     away_runs = [0] * n
     home_k = [0] * n
     away_k = [0] * n
+    home_sp_pitch = [0] * n
+    away_sp_pitch = [0] * n
+    home_sp_outs = [0] * n
+    away_sp_outs = [0] * n
+    home_bull_k = [0] * n
+    away_bull_k = [0] * n
     home_win = [False] * n
     keys = ("hit", "tb", "hr", "r", "rbi", "sb", "dk")
     bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
@@ -264,19 +349,64 @@ def simulate(g, n=5000):
             home_win[i] = True
         elif rh == ra:
             home_win[i] = rnd() < 0.52
-        if lam_h is not None:
-            home_k[i] = _poisson(lam_h)
-        if lam_a is not None:
-            away_k[i] = _poisson(lam_a)
+        # Home staff faces the away offense (so its workload scales with away_runs).
+        if do_home_pitch:
+            sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),
+                                               ht.get("bullpen_whip"), ra, rnd)
+            home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
+            home_bull_k[i] = bk
+        if do_away_pitch:
+            sk, sp_p, sp_o, bk = _sim_pitching(away_k9, at.get("bullpen_era"),
+                                               at.get("bullpen_whip"), rh, rnd)
+            away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
+            away_bull_k[i] = bk
 
     return {"n": n, "home_runs": home_runs, "away_runs": away_runs,
             "home_k": home_k, "away_k": away_k, "home_win": home_win,
+            "home_sp_pitch": home_sp_pitch, "away_sp_pitch": away_sp_pitch,
+            "home_sp_outs": home_sp_outs, "away_sp_outs": away_sp_outs,
+            "home_bull_k": home_bull_k, "away_bull_k": away_bull_k,
             "bat": {"home": bat_h, "away": bat_a}}
 
 
-def summary(sim, top=6):
-    """Win %, total-runs distribution, and per-player expected line (hits, HR,
-    SB, DK points) from a simulated game -- for the game-sim UI."""
+def _ge_pct(arr, n, lines):
+    """{line: % of sims with value >= line} for a per-sim integer array."""
+    return {str(L): round(100 * sum(1 for x in arr if x >= L) / n, 1) for L in lines}
+
+
+def _pitcher_line(name, k_arr, pitch_arr, outs_arr, bull_arr, n):
+    """Simulated starter line: expected Ks, the K-threshold distribution (the
+    '4+ K in X% of sims' the slip cares about), average pitches before relief,
+    average IP, and the bullpen's combined Ks."""
+    if not name:
+        return None
+    return {
+        "name": name,
+        "exp_k": round(sum(k_arr) / n, 1),
+        "k_dist": _ge_pct(k_arr, n, (3, 4, 5, 6, 7, 8, 9, 10)),
+        "avg_pitches": round(sum(pitch_arr) / n),
+        "avg_ip": round(sum(outs_arr) / n / 3, 1),
+        "bullpen_exp_k": round(sum(bull_arr) / n, 1),
+    }
+
+
+def _pitchers(g, sim):
+    """Both starters' simulated lines (home starter faces away, and vice versa)."""
+    n = sim["n"]
+    props = g.get("props") or {}
+    out = []
+    for nm, kk, pp, oo, bb in (
+        (props.get("home_sp_name"), "home_k", "home_sp_pitch", "home_sp_outs", "home_bull_k"),
+        (props.get("away_sp_name"), "away_k", "away_sp_pitch", "away_sp_outs", "away_bull_k")):
+        line = _pitcher_line(nm, sim[kk], sim[pp], sim[oo], sim[bb], n)
+        if line:
+            out.append(line)
+    return out
+
+
+def summary(sim, top=6, g=None):
+    """Win %, total-runs distribution, per-player expected line, and (when the
+    game `g` is given) the simulated starter lines -- for the game-sim UI."""
     n = sim["n"]
     hr_runs, ar_runs, hwin = sim["home_runs"], sim["away_runs"], sim["home_win"]
     totals = sorted(hr_runs[i] + ar_runs[i] for i in range(n))
@@ -297,7 +427,31 @@ def summary(sim, top=6):
     return {"home_win_pct": round(home_w * 100, 1),
             "away_win_pct": round((1 - home_w) * 100, 1),
             "median_total": pct(0.5), "p10_total": pct(0.1), "p90_total": pct(0.9),
-            "players": players, "has_players": bool(players["home"] or players["away"])}
+            "players": players, "has_players": bool(players["home"] or players["away"]),
+            "pitchers": _pitchers(g, sim) if g else []}
+
+
+def deep_breakdown(g, sim, top_hitters=6):
+    """Per-pitcher and per-hitter simulated distributions for one game -- the
+    detail behind a same-game slip (every starter's K spread + avg pitches/IP +
+    bullpen Ks, and each hitter's expected line + threshold odds)."""
+    n = sim["n"]
+    hitters = {}
+    for side in ("home", "away"):
+        rows = []
+        for name, a in sim["bat"][side].items():
+            rows.append({
+                "name": name,
+                "exp_hits": round(sum(a["hit"]) / n, 2),
+                "exp_tb": round(sum(a["tb"]) / n, 2),
+                "exp_hr": round(sum(a["hr"]) / n, 2),
+                "exp_sb": round(sum(a["sb"]) / n, 2),
+                "hits_dist": _ge_pct(a["hit"], n, (1, 2, 3)),
+                "tb_dist": _ge_pct(a["tb"], n, (2, 3, 4)),
+                "p_hr": round(100 * sum(1 for x in a["hr"] if x >= 1) / n, 1)})
+        rows.sort(key=lambda r: -(r["exp_tb"] + r["exp_hr"]))
+        hitters[side] = rows[:top_hitters]
+    return {"n_sims": n, "pitchers": _pitchers(g, sim), "hitters": hitters}
 
 
 def _mask(pred, n):
@@ -476,7 +630,9 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
     return {
         "n_legs": len(combo),
         "legs": [{"pick": c["label"], "type": c["type"],
-                  "prob_pct": round(c["marg"] * 100, 1)} for c in combo],
+                  "prob_pct": round(c["marg"] * 100, 1),
+                  "sims_hit": int(round(c["marg"] * n))} for c in combo],
+        "combined_sims_hit": int(round(joint * n)),
         "combined_prob_pct": round(joint * 100, 1),
         "indep_prob_pct": round(indep * 100, 1),
         "corr_delta_pct": round((joint - indep) * 100, 1),

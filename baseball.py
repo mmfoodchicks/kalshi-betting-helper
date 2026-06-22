@@ -1023,6 +1023,8 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         item["matchup"] = g["matchup"]
         item["has_props"] = bool((g.get("props") or {}).get("batters_home")
                                  or (g.get("props") or {}).get("batters_away"))
+        # Deep per-player / per-pitcher simulated detail behind this slip.
+        item["breakdown"] = mlb_sim.deep_breakdown(g, sim)
         out.append(item)
     out.sort(key=lambda x: x["combined_prob_pct"], reverse=True)
     return {"games": out[:top_n], "best": out[0] if out else None,

@@ -380,6 +380,17 @@ button.danger { color: var(--no); }
   border-radius: 5px; padding: 1px 5px; margin-right: 4px;
 }
 
+/* Same-game-slip simulation detail (per-pitcher / per-hitter) */
+.simdetail { margin-top: 10px; }
+.simdetail > summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; }
+.simwrap { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.simgroup { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--faint); margin-top: 8px; }
+.simrow { background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 8px 11px; }
+.simrow .simname { font-weight: 600; font-size: 0.9rem; }
+.simrow .small { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+.simrow .small b { color: var(--text); }
+
 /* ------------------------------- Coming soon (football, etc.) ------------ */
 .comingsoon { text-align: left; }
 .cs-badge {

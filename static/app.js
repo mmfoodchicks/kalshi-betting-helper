@@ -753,25 +753,58 @@ window.buildSGP = async () => {
   }
 };
 
+// Deep per-pitcher / per-hitter simulated detail behind a same-game slip.
+function renderBreakdown(b, n) {
+  if (!b) return "";
+  const nf = (v) => (v == null ? 0 : v).toLocaleString();
+  const pit = (b.pitchers || []).map((p) => {
+    const kd = p.k_dist || {};
+    const dist = [3, 4, 5, 6, 7, 8, 9, 10].filter((L) => kd[L] != null)
+      .map((L) => `${L}+ <b>${kd[L]}%</b>`).join(" · ");
+    return `<div class="simrow"><div class="simname">⚾ ${p.name} <span class="dfs-team">SP</span></div>
+      <div class="small">~<b>${p.exp_k}</b> K · ${p.avg_ip} IP · <b>${p.avg_pitches}</b> pitches before relief · bullpen ~${p.bullpen_exp_k} K</div>
+      <div class="small">Strikeouts: ${dist}</div></div>`;
+  }).join("");
+  const hitSide = (side, label) => {
+    const rows = (b.hitters && b.hitters[side] || []).map((h) => {
+      const hd = h.hits_dist || {}, td = h.tb_dist || {};
+      return `<div class="simrow"><div class="simname">${h.name}</div>
+        <div class="small">~${h.exp_hits} H · ${h.exp_tb} TB · ${h.exp_hr} HR${h.exp_sb >= 0.05 ? ` · ${h.exp_sb} SB` : ""}</div>
+        <div class="small">1+H <b>${hd["1"]}%</b> · 2+H ${hd["2"]}% · 2+TB ${td["2"]}% · 3+TB ${td["3"]}% · 1+HR <b>${h.p_hr}%</b></div></div>`;
+    }).join("");
+    return rows ? `<div class="simgroup">${label}</div>${rows}` : "";
+  };
+  return `<details class="simdetail"><summary>🔬 Simulation detail — every pitcher &amp; hitter (${nf(b.n_sims)} sims)</summary>
+    <div class="simwrap">
+      <div class="simgroup">Starting pitchers</div>${pit}
+      ${hitSide("away", "Away hitters")}${hitSide("home", "Home hitters")}
+    </div></details>`;
+}
+
 function renderSGP(s) {
-  const legs = s.legs.map((l) =>
-    `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+  const nsim = s.n_sims || 0;
+  const legs = s.legs.map((l) => {
+    const cnt = l.sims_hit != null ? ` · <span style="color:var(--muted)">${l.sims_hit.toLocaleString()}/${nsim.toLocaleString()} sims</span>` : "";
+    return `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span>${cnt}</li>`;
+  }).join("");
   const corr = s.corr_delta_pct;
   const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
     : `<span style="color:var(--muted)">~independent (${corr >= 0 ? "+" : ""}${corr}%)</span>`;
+  const cnt = s.combined_sims_hit != null ? ` <span style="color:var(--muted)">(${s.combined_sims_hit.toLocaleString()}/${nsim.toLocaleString()} sims)</span>` : "";
   return `<div class="combo hl prop">
     <div class="chead">
       <span class="ctag">🎰 ${s.matchup}</span>
-      <span class="small">${s.n_legs} legs · ${(s.n_sims || 0).toLocaleString()} sims</span>
+      <span class="small">${s.n_legs} legs · ${nsim.toLocaleString()} sims</span>
     </div>
     <ul class="legs">${legs}</ul>
     <div class="cnums">
-      <span>Joint chance <b>${s.combined_prob_pct}%</b></span>
+      <span>Joint chance <b>${s.combined_prob_pct}%</b>${cnt}</span>
       <span>Fair payout <b>${s.fair_payout_x}×</b></span>
       <span>Correlation: ${corrTxt}</span>
     </div>
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${s.indep_prob_pct}%</b> (${s.indep_payout_x}×). The simulation gives the real correlated number.${s.has_props ? "" : " <i>Run-based legs only — hitter &amp; strikeout props appear once lineups post (a few hours pre-game).</i>"}</div>
+    ${renderBreakdown(s.breakdown, nsim)}
   </div>`;
 }
 
@@ -1407,7 +1440,18 @@ async function runGameSim() {
       const tbl = (rows) => rows.map((r) =>
         `<div class="sportout"><div class="left"><span class="oname">${r.name}</span>
           <span class="small">hits <b>${r.hits}</b> · HR <b>${r.hr}</b> · TB <b>${r.tb}</b> · SB <b>${r.sb}</b> · DK <b>${r.dk}</b></span></div></div>`).join("");
-      playerBlock = `<div class="small" style="margin:10px 0 4px"><b>🎲 Player-level sim</b> (lineups posted) — expected per game, sorted by DraftKings points:</div>
+      let pitBlock = "";
+      if (ps.pitchers && ps.pitchers.length) {
+        const prows = ps.pitchers.map((p) => {
+          const kd = p.k_dist || {};
+          const dist = [4, 5, 6, 7, 8].filter((L) => kd[L] != null).map((L) => `${L}+ <b>${kd[L]}%</b>`).join(" · ");
+          return `<div class="sportout"><div class="left"><span class="oname">⚾ ${p.name}</span>
+            <span class="small">~<b>${p.exp_k}</b> K · ${p.avg_ip} IP · <b>${p.avg_pitches}</b> pitches before relief · bullpen ~${p.bullpen_exp_k} K</span>
+            <span class="small">Ks: ${dist}</span></div></div>`;
+        }).join("");
+        pitBlock = `<div class="small" style="margin:10px 0 4px"><b>🎲 Starting pitchers</b> — simulated (pitch count, relief, bullpen):</div><div class="sportouts">${prows}</div>`;
+      }
+      playerBlock = pitBlock + `<div class="small" style="margin:10px 0 4px"><b>🎲 Player-level sim</b> (lineups posted) — expected per game, sorted by DraftKings points:</div>
         <div class="teamhdr">${d.away}</div><div class="sportouts">${tbl(ps.players.away)}</div>
         <div class="teamhdr" style="margin-top:8px">${d.home}</div><div class="sportouts">${tbl(ps.players.home)}</div>`;
     } else {

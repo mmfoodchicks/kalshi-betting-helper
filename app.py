@@ -468,7 +468,7 @@ def api_simulate_game():
     if (g.get("props") or {}).get("batters_home") or (g.get("props") or {}).get("batters_away"):
         try:
             import mlb_sim
-            res["player_sim"] = mlb_sim.summary(mlb_sim.simulate(g, min(8000, n)))
+            res["player_sim"] = mlb_sim.summary(mlb_sim.simulate(g, min(8000, n)), g=g)
         except Exception:
             pass
     return jsonify(res)
