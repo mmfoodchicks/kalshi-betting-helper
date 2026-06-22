@@ -200,7 +200,6 @@ def _pitcher_stats(pid, season):
 
 
 def _league_avgs(hit, pit, bp, hitplat):
-    n_h = len(hit) or 1; n_p = len(pit) or 1; n_b = len(bp) or 1
     def mean(d, k):
         vals = [t[k] for t in d.values() if t.get(k)]
         return sum(vals) / len(vals) if vals else 0
@@ -665,7 +664,6 @@ def analyze_slate(date, season):
         def bat_list(lineup, ohf):
             out = []
             for i, b in enumerate(lineup):
-                import savant
                 pid = str(b.get("id"))
                 cm, pm = savant.quality_mults(xstats.get(pid))
                 bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid))

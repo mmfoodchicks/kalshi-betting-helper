@@ -76,9 +76,14 @@ def _pitcher_dk_arr(sp, team_win_prob, n=3000):
     era, whip, k9 = sp.get("era"), sp.get("whip"), sp.get("k9")
     if not era or not whip or not k9:
         return None
-    exp_ip = 5.7
-    if sp.get("ip"):
-        exp_ip = max(4.5, min(6.5, (sp.get("ip") or 0) / max(1, sp.get("starts") or 1) or 5.7))
+    # Per-start innings. We only have season totals (no GS), so estimate starts
+    # from IP at ~5.5 IP/start; falls back to a league-ish 5.7 when IP is absent.
+    ip_total = sp.get("ip") or 0
+    if ip_total > 0:
+        starts = max(1, round(ip_total / 5.5))
+        exp_ip = max(4.5, min(6.7, ip_total / starts))
+    else:
+        exp_ip = 5.7
     out = []
     for _ in range(n):
         ip = max(3.0, min(8.0, random.gauss(exp_ip, 1.0)))

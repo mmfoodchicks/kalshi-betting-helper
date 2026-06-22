@@ -193,7 +193,6 @@ def _speed_inputs(b, sprint):
     spd = 1.0
     if sprint:
         spd = max(0.8, min(1.2, 1.0 + (sprint - 27.0) * 0.06))
-    spa = b.get("pa") or 0
     singles = max(0.0, (b.get("hits") or 0) - (b.get("doubles") or 0)
                   - (b.get("triples") or 0) - (b.get("hr") or 0))
     on1 = singles + (b.get("bb") or 0)

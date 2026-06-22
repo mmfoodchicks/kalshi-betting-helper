@@ -16,15 +16,6 @@ selector maximizes combined probability either way, so it's optimal regardless.
 import math
 
 
-def leg_mult(leg):
-    """Per-leg payout multiplier: from the market price if priced, else fair (1/p)."""
-    pc = leg.get("price_cents")
-    if pc and pc > 0:
-        return 100.0 / pc
-    p = leg.get("prob") or 0.0
-    return (1.0 / p) if 0 < p < 1 else 1.0
-
-
 def payout_combo(groups, n_legs, target_payout, max_legs=12, res=0.04):
     """Pick a parlay reaching `target_payout` with max combined probability.
 
