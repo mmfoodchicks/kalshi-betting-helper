@@ -12,12 +12,21 @@
   <meta name="apple-mobile-web-app-title" content="Kalshi Helper" />
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
   <link rel="icon" href="/static/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" />
   <link rel="stylesheet" href="/static/style.css?v={{ v }}" />
 </head>
 <body>
-  <header>
-    <h1>⚡ Kalshi Betting Helper</h1>
-    <p class="sub">Live model odds &amp; signals for crypto and baseball markets. Estimates, not guarantees — bet responsibly.</p>
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="slide"></div><div class="slide"></div><div class="slide"></div>
+      <div class="slide"></div><div class="slide"></div><div class="slide"></div>
+    </div>
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-content">
+      <div class="brand"><span class="brand-mark">⚡</span><h1>Kalshi <span>Betting Helper</span></h1></div>
+      <p class="sub">Sharp model odds &amp; live edges across crypto, baseball &amp; more. Math doesn't lie — estimates, not guarantees. Bet responsibly.</p>
     <div class="settingsbar">
       💰 Bankroll $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:90px"/>
       · Kelly
@@ -37,6 +46,7 @@
       </select>
       <span class="hint" id="tierHint"></span>
     </div>
+    </div><!-- /hero-content -->
   </header>
 
   <nav class="tabs">
