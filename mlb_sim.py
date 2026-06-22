@@ -58,18 +58,20 @@ def _poisson(lam):
 
 
 def _rates(batters):
-    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb])]."""
+    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb], spd, sbr)]."""
     rows = []
     for b in batters or []:
-        rows.append([b.get("name"), [max(0.0, b.get(k) or 0.0)
-                                     for k in ("r1", "r2", "r3", "rhr", "rbb")]])
+        rows.append([b.get("name"),
+                     [max(0.0, b.get(k) or 0.0) for k in ("r1", "r2", "r3", "rhr", "rbb")],
+                     b.get("spd") or 1.0, b.get("sbr") or 0.0])
     return rows
 
 
 def _build_setup(rows, mult):
-    """Cumulative outcome thresholds with on-base rates scaled by `mult`."""
+    """Cumulative outcome thresholds with on-base rates scaled by `mult`,
+    carrying each batter's speed factor + steal rate for baserunning."""
     setup = []
-    for name, rates in rows:
+    for name, rates, spd, sbr in rows:
         sr = [x * mult for x in rates]
         tot = sum(sr)
         if tot > 0.95:
@@ -79,7 +81,7 @@ def _build_setup(rows, mult):
             if p > 0:
                 acc += p
                 thresh.append((acc, code))
-        setup.append({"name": name, "thresh": thresh})
+        setup.append({"name": name, "thresh": thresh, "spd": spd, "sbr": sbr})
     return setup
 
 
@@ -108,16 +110,27 @@ _N_INNINGS = 9
 
 
 def _play_game(setup, rnd):
-    """One full game for a lineup via base-out simulation. Returns
-    (runs, per-batter [hits, tb, hr, runs_scored, rbi])."""
+    """One full game for a lineup via base-out simulation, with speed-driven
+    baserunning + stolen bases. Returns (runs, per-batter
+    [hits, tb, hr, runs_scored, rbi, sb])."""
     L = len(setup)
-    stats = [[0, 0, 0, 0, 0] for _ in range(L)]   # H, TB, HR, R, RBI
+    stats = [[0, 0, 0, 0, 0, 0] for _ in range(L)]   # H, TB, HR, R, RBI, SB
     runs = 0
     idx = 0
     for _inn in range(_N_INNINGS):
         outs = 0
         bases = [None, None, None]                # batter index on 1st/2nd/3rd
         while outs < 3:
+            # Steal attempt: runner on 1st, 2nd open, < 2 outs.
+            if bases[0] is not None and bases[1] is None and outs < 2:
+                rr = bases[0]
+                if rnd() < setup[rr]["sbr"]:
+                    if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
+                        bases[1] = rr; bases[0] = None; stats[rr][5] += 1   # SB
+                    else:
+                        bases[0] = None; outs += 1                          # caught
+                        if outs >= 3:
+                            break
             bi = idx % L
             idx += 1
             u = rnd()
@@ -163,8 +176,8 @@ def _play_game(setup, rnd):
                         runs += 1; stats[r3][3] += 1; scored += 1
                     if r2 is not None:
                         runs += 1; stats[r2][3] += 1; scored += 1
-                    if r1 is not None:            # from 1st: scores ~45%, else 3rd
-                        if rnd() < 0.45:
+                    if r1 is not None:            # from 1st: scores faster runners more
+                        if rnd() < max(0.25, min(0.7, 0.45 * setup[r1]["spd"])):
                             runs += 1; stats[r1][3] += 1; scored += 1
                         else:
                             nb[2] = r1
@@ -175,13 +188,13 @@ def _play_game(setup, rnd):
                     nb = [bi, None, None]         # batter to 1st
                     if r3 is not None:
                         runs += 1; stats[r3][3] += 1; scored += 1
-                    if r2 is not None:            # from 2nd: scores ~60%, else 3rd
-                        if rnd() < 0.60:
+                    if r2 is not None:            # from 2nd: scores ~60%, speed-scaled
+                        if rnd() < max(0.4, min(0.85, 0.60 * setup[r2]["spd"])):
                             runs += 1; stats[r2][3] += 1; scored += 1
                         else:
                             nb[2] = r2
-                    if r1 is not None:            # from 1st: ->2nd, or ->3rd ~28%
-                        if nb[2] is None and rnd() < 0.28:
+                    if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
+                        if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * setup[r1]["spd"])):
                             nb[2] = r1
                         else:
                             nb[1] = r1
@@ -207,7 +220,7 @@ def simulate(g, n=5000):
     home_k = [0] * n
     away_k = [0] * n
     home_win = [False] * n
-    keys = ("hit", "tb", "hr", "r", "rbi")
+    keys = ("hit", "tb", "hr", "r", "rbi", "sb")
     bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
     bat_a = {b["name"]: {k: [0] * n for k in keys} for b in setup_a}
     idx_h = [(b["name"], bat_h[b["name"]]) for b in setup_h]
@@ -216,7 +229,7 @@ def simulate(g, n=5000):
     def store(stats, idx_map, i):
         for (name, arr), st in zip(idx_map, stats):
             arr["hit"][i] = st[0]; arr["tb"][i] = st[1]; arr["hr"][i] = st[2]
-            arr["r"][i] = st[3]; arr["rbi"][i] = st[4]
+            arr["r"][i] = st[3]; arr["rbi"][i] = st[4]; arr["sb"][i] = st[5]
 
     for i in range(n):
         if setup_a:

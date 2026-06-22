@@ -520,8 +520,9 @@ def analyze_slate(date, season):
     try:
         import savant
         xstats = savant.expected_stats(season)   # Statcast xBA/xSLG by player id
+        speed = savant.sprint_speed(season)      # sprint speed (ft/s) by player id
     except Exception:
-        xstats = {}
+        xstats = {}; speed = {}
     rec = _records_map(season); abbr_map = _abbr_map(season)
     lg = _league_avgs(hit, pit, bp, hitplat)
     try:
@@ -665,8 +666,9 @@ def analyze_slate(date, season):
             out = []
             for i, b in enumerate(lineup):
                 import savant
-                cm, pm = savant.quality_mults(xstats.get(str(b.get("id"))))
-                bp_ = props_mod.batter_props(b, i, ohf, cm, pm)
+                pid = str(b.get("id"))
+                cm, pm = savant.quality_mults(xstats.get(pid))
+                bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid))
                 if bp_:
                     out.append(bp_)
             return out

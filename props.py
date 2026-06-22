@@ -179,7 +179,21 @@ def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
     return p_home + p_tie * 0.52
 
 
-def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0):
+def _speed_inputs(b, sprint):
+    """Speed factor (0.8 slow .. 1.2 fast, 27 ft/s = 1.0) and steal-attempt rate
+    per time on first, from sprint speed + season SB/CS."""
+    spd = 1.0
+    if sprint:
+        spd = max(0.8, min(1.2, 1.0 + (sprint - 27.0) * 0.06))
+    spa = b.get("pa") or 0
+    singles = max(0.0, (b.get("hits") or 0) - (b.get("doubles") or 0)
+                  - (b.get("triples") or 0) - (b.get("hr") or 0))
+    on1 = singles + (b.get("bb") or 0)
+    sbr = min(0.40, (b.get("sb") or 0) / on1) if on1 > 0 else 0.0
+    return round(spd, 3), round(sbr, 4)
+
+
+def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, sprint=None):
     """Exact per-game prop probabilities for a hitter (the limit a simulation
     converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases.
 
@@ -230,12 +244,14 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0):
     tb3 = sum(p for tb, p in dist.items() if tb >= 3)
     tb4 = sum(p for tb, p in dist.items() if tb >= 4)
     tb5 = sum(p for tb, p in dist.items() if tb >= 5)
+    spd, sbr = _speed_inputs(b, sprint)
     return {"name": b.get("name"), "slot": slot,
             "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1), "hit3": round(hit3 * 100, 1),
             "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1),
             "tb4": round(tb4 * 100, 1), "tb5": round(tb5 * 100, 1),
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
-            "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4)}
+            "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4),
+            "spd": spd, "sbr": sbr}
 
 
 def pitcher_k_props(k9, exp_ip=5.6):
