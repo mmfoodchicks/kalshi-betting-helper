@@ -481,3 +481,103 @@ footer { text-align: center; color: var(--faint); font-size: 0.75rem; padding: 8
 
   table { font-size: 0.8rem; }
 }
+
+/* ============================== App shell (desktop sidebar) ============== */
+@media (min-width: 1000px) {
+  body {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-areas: "hero hero" "nav main" "foot foot";
+    column-gap: 0;
+  }
+  .hero { grid-area: hero; }
+  nav.tabs { grid-area: nav; }
+  main { grid-area: main; }
+  footer { grid-area: foot; }
+
+  /* Tabs become a sticky vertical sidebar rail. */
+  nav.tabs {
+    flex-direction: column; justify-content: flex-start; align-items: stretch;
+    gap: 4px; flex-wrap: nowrap; margin: 0;
+    position: sticky; top: 0; align-self: start;
+    height: 100vh; padding: 20px 14px;
+    background: rgba(9, 12, 20, 0.6); backdrop-filter: blur(14px);
+    border-bottom: none; border-right: 1px solid var(--border);
+  }
+  nav.tabs::before {
+    content: "Markets"; display: block;
+    font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint); padding: 0 12px 8px;
+  }
+  nav.tabs .tab {
+    text-align: left; border-radius: 11px; padding: 11px 14px; font-size: 0.95rem;
+    border-color: transparent; background: transparent; color: var(--muted);
+  }
+  nav.tabs .tab:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
+  nav.tabs .tab.active { box-shadow: 0 6px 18px rgba(91, 140, 255, 0.35); }
+
+  main { padding: 26px 32px 60px; max-width: 1120px; }
+}
+
+/* Roomier reading column on large screens. */
+@media (min-width: 1400px) { main { padding-left: 56px; padding-right: 56px; } }
+
+/* Section heading gets a small gradient accent bar. */
+.card h2 { display: flex; align-items: center; gap: 10px; }
+.card h2::before {
+  content: ""; width: 4px; height: 1.05em; border-radius: 3px;
+  background: var(--grad); flex: 0 0 auto;
+}
+.card > .row-between h2::before { height: 1em; }
+
+/* Nicer scrollbars (webkit). */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* ============================== DFS optimizer ========================== */
+.dfs-wrap { display: flex; flex-direction: column; gap: 14px; }
+.dfs-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.dfs-title { font-family: "Space Grotesk", sans-serif; font-size: 1.15rem; font-weight: 600; }
+.dfs-meta { color: var(--muted); font-size: 0.82rem; }
+
+.dfs-board {
+  background: linear-gradient(180deg, rgba(91,140,255,0.10), rgba(154,107,255,0.06));
+  border: 1px solid rgba(91, 140, 255, 0.35); border-radius: 14px; padding: 14px 16px;
+}
+.dfs-btitle { font-weight: 600; margin-bottom: 8px; }
+.dfs-sub { font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+.dfs-brow { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.dfs-brow:last-child { border-bottom: none; }
+.dfs-bmeta { color: var(--muted); font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
+
+.dfs-note { font-size: 0.84rem; color: var(--muted); background: var(--card2);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
+.dfs-note i { color: var(--faint); }
+
+.dfs-lineups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.dfs-lineup { background: var(--card2); border: 1px solid var(--border); border-radius: 14px;
+  padding: 13px 15px; transition: border-color 0.18s ease, transform 0.18s ease; }
+.dfs-lineup:hover { transform: translateY(-2px); border-color: var(--border2); }
+.dfs-lineup.best { border-color: rgba(240, 180, 41, 0.6); box-shadow: 0 0 0 1px rgba(240,180,41,0.25); }
+.dfs-lhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.dfs-ltot { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+.dfs-csrow { display: flex; gap: 14px; font-size: 0.82rem; color: var(--muted);
+  padding: 6px 0 8px; border-bottom: 1px dashed var(--border); margin-bottom: 6px; }
+.dfs-csrow b { color: var(--text); }
+.dfs-players { display: flex; flex-direction: column; }
+.dfs-prow { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; }
+.dfs-prow:last-child { border-bottom: none; }
+.dfs-pmain { display: flex; align-items: center; gap: 6px; }
+.dfs-pmeta { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.dfs-team { font-size: 0.68rem; color: var(--accent); background: rgba(91,140,255,0.12);
+  border-radius: 5px; padding: 1px 6px; }
+.dfs-own { color: var(--text); }
+.dfs-chip { display: inline-block; font-size: 0.74rem; color: var(--muted);
+  background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; }
+.dfs-chip b { color: var(--text); }
+.dfs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dfs-exp { margin-top: 4px; }
+.dfs-exp > summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; }

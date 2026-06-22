@@ -490,8 +490,28 @@ def api_simulate_dfs():
         import mlb_dfs
         date = d.get("date") or _dt.date.today().isoformat()
         objective = "ceiling" if d.get("objective") == "ceiling" else "median"
-        return jsonify(mlb_dfs.build(date, text, cap=cap, objective=objective,
-                                     n_sims=min(6000, n)))
+
+        def _i(key, default, lo, hi):
+            try:
+                return max(lo, min(hi, int(d.get(key, default))))
+            except (ValueError, TypeError):
+                return default
+
+        def _f(key, default, lo, hi):
+            try:
+                return max(lo, min(hi, float(d.get(key, default))))
+            except (ValueError, TypeError):
+                return default
+
+        n_lineups = _i("lineups", 1, 1, 150)
+        contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
+        return jsonify(mlb_dfs.build(
+            date, text, cap=cap, objective=objective, n_sims=min(6000, n),
+            n_lineups=n_lineups, max_exposure=_f("max_exposure", 60, 5, 100),
+            min_uniq=_i("min_uniq", 2, 1, 6), stack_min=_i("stack_min", 4, 0, 5),
+            contest=contest, field_size=_i("field_size", 200, 20, 400),
+            contest_iters=_i("contest_iters", 400, 50, 800),
+            entry_fee=_f("entry_fee", 1.0, 0.01, 100000)))
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),

@@ -1,15 +1,22 @@
-"""DraftKings MLB DFS optimizer driven by the game simulator.
+"""DraftKings MLB DFS engine driven by the game simulator.
 
 Most DFS tools multiply flat projections and assume players are independent.
-This one simulates each game (the same base-running sim used for props) and
-reads every HITTER's DraftKings fantasy-point distribution straight off the
-shared games -- so a team's hitters are correctly correlated and STACKS are
-valued on their real ceiling. Pitchers are projected from their rate stats with
-a simulated line (IP/K/ER/W) for floor/ceiling.
+Vigil simulates each game (the same base-running sim used for props) and reads
+every HITTER's DraftKings fantasy-point distribution straight off the shared
+games -- so a team's hitters are correctly correlated and STACKS are valued on
+their real ceiling. Pitchers are simulated from their rate stats.
 
-Classic roster: P, P, C, 1B, 2B, 3B, SS, OF, OF, OF under a $50,000 cap.
+On top of raw projections it adds the things the big DFS sites charge for:
+  - projected OWNERSHIP + LEVERAGE (production the field is under-rostering)
+  - a MULTI-LINEUP portfolio builder with exposure / uniqueness / stack rules
+  - a CONTEST simulation (your lineups vs a simulated field) -> win% / ROI
+
+...plus an edge they don't have: every player is cross-checked against Kalshi's
+betting-market odds, so "SHARP leverage" = under-owned by the field AND liked by
+the money. Classic roster: P,P,C,1B,2B,3B,SS,OF,OF,OF under a $50,000 cap.
 """
 
+import math
 import random
 import statistics
 import unicodedata
@@ -27,13 +34,21 @@ def _norm(name):
 
 
 def _eligible(pos_str):
-    """Set of roster positions a DK position string maps to (e.g. '1B/3B')."""
     out = set()
     for tok in (pos_str or "").replace("-", "/").split("/"):
         p = _POS_MAP.get(tok.strip().upper())
         if p:
             out.add(p)
     return out
+
+
+def _primary_pos(elig):
+    """Scarcest roster position a player fills (for ownership/field assignment)."""
+    order = ["C", "SS", "2B", "3B", "1B", "P", "OF"]
+    for pos in order:
+        if pos in elig:
+            return pos
+    return next(iter(elig)) if elig else "OF"
 
 
 def _dist(arr):
@@ -46,12 +61,24 @@ def _dist(arr):
             "median": round(q(0.5), 1), "ceil": round(q(0.9), 1)}
 
 
-def _pitcher_dk(sp, team_win_prob, n=3000):
-    """Simulated DraftKings line for a starter -> point distribution."""
+def _pois(lam):
+    if lam <= 0:
+        return 0
+    L = math.exp(-lam); k = 0; p = 1.0
+    while True:
+        k += 1; p *= random.random()
+        if p <= L:
+            return k - 1
+
+
+def _pitcher_dk_arr(sp, team_win_prob, n=3000):
+    """Simulated DraftKings point samples for a starter (list, or None)."""
     era, whip, k9 = sp.get("era"), sp.get("whip"), sp.get("k9")
     if not era or not whip or not k9:
         return None
-    exp_ip = max(4.5, min(6.5, (sp.get("ip") or 0) / max(1, _starts(sp)) or 5.7)) if sp.get("ip") else 5.7
+    exp_ip = 5.7
+    if sp.get("ip"):
+        exp_ip = max(4.5, min(6.5, (sp.get("ip") or 0) / max(1, sp.get("starts") or 1) or 5.7))
     out = []
     for _ in range(n):
         ip = max(3.0, min(8.0, random.gauss(exp_ip, 1.0)))
@@ -62,98 +89,393 @@ def _pitcher_dk(sp, team_win_prob, n=3000):
         h = _pois(br * 0.74)
         bb = _pois(br * 0.26)
         win = 4 if random.random() < (team_win_prob or 0.5) * 0.62 else 0
-        dk = outs * 0.75 + 2 * k - 2 * er - 0.6 * h - 0.6 * bb + win
-        if er == 0 and ip >= 6:                    # rough no-runs/QS-ish bump
-            dk += 0.0
-        out.append(dk)
-    return _dist(out)
-
-
-def _starts(sp):
-    return 1  # IP already season total; exp_ip handled with a sane default
-
-
-def _pois(lam):
-    if lam <= 0:
-        return 0
-    import math
-    L = math.exp(-lam); k = 0; p = 1.0
-    while True:
-        k += 1; p *= random.random()
-        if p <= L:
-            return k - 1
+        out.append(outs * 0.75 + 2 * k - 2 * er - 0.6 * h - 0.6 * bb + win)
+    return out
 
 
 def projections(games, n_sims=4000):
-    """{normalized name: {dist, kind}} DK fantasy projections for every hitter
-    (from the game sim) and starter (simulated line) on the slate."""
+    """{normalized name: {kind, dist..., team, game, arr}} for every hitter (from
+    the correlated game sim) and starter (simulated line) on the slate. `arr` is
+    the raw per-sim DK score sample, kept so the contest sim can draw correlated
+    slate outcomes (same-game hitters share sim indices)."""
     import mlb_sim
     proj = {}
     for g in games:
         if (g.get("live") or {}).get("state") == "Final":
             continue
         sim = mlb_sim.simulate(g, n_sims)
-        for side in ("home", "away"):
+        for side, abbr in (("home", g.get("home_abbr")), ("away", g.get("away_abbr"))):
             for name, arr in (sim["bat"][side] or {}).items():
                 d = _dist(arr["dk"])
                 if d:
-                    proj[_norm(name)] = {"kind": "bat", **d}
-        for sp, wp in ((g.get("home_sp"), g.get("p_home")),
-                       (g.get("away_sp"), g.get("p_away"))):
+                    proj[_norm(name)] = {"kind": "bat", "team": abbr or side,
+                                         "game": g.get("game_pk"), "arr": list(arr["dk"]), **d}
+        for sp, wp, abbr in ((g.get("home_sp"), g.get("p_home"), g.get("home_abbr")),
+                             (g.get("away_sp"), g.get("p_away"), g.get("away_abbr"))):
             if sp and sp.get("name"):
-                d = _pitcher_dk(sp, wp)
-                if d:
-                    proj[_norm(sp["name"])] = {"kind": "pit", **d}
+                a = _pitcher_dk_arr(sp, wp)
+                if a:
+                    d = _dist(a)
+                    proj[_norm(sp["name"])] = {"kind": "pit", "team": abbr or "",
+                                               "game": g.get("game_pk"), "arr": a, **d}
     return proj
 
 
+# ---- Kalshi betting-market signals (the edge the DFS sites don't have) -----
+def market_signals(season):
+    """{normalized name: market-implied boom probability} from Kalshi's batter
+    prop prices (1+/2+ hits, 1+ HR). This is an independent, money-backed read on
+    a hitter's upside that no DFS projection site has."""
+    try:
+        import value
+    except Exception:
+        return {}
+    out = {}
+    for series, stat in (("KXMLBHIT", "hits"), ("KXMLBHR", "hr")):
+        for m in value._markets(series):
+            mt = value._TITLE.match(m.get("title", "") or "")
+            if not mt:
+                continue
+            import kalshi
+            nm = value._norm(mt.group(1).strip())
+            line = int(mt.group(2))
+            yc = kalshi._cents(m.get("yes_ask_dollars"))
+            if yc is None or yc <= 1 or yc >= 99:
+                continue
+            d = out.setdefault(nm, {})
+            d[(stat, line)] = yc / 100.0
+    # Collapse to a single boom probability: P(2+ hits OR 1+ HR), independent-ish.
+    boom = {}
+    for nm, d in out.items():
+        p_hit2 = d.get(("hits", 2))
+        p_hr1 = d.get(("hr", 1))
+        if p_hit2 is None and p_hr1 is None:
+            continue
+        p = 1.0
+        if p_hit2 is not None:
+            p *= (1 - p_hit2)
+        if p_hr1 is not None:
+            p *= (1 - p_hr1)
+        boom[nm] = round((1 - p) * 100, 1)
+    return boom
+
+
+# ---- Ownership + leverage --------------------------------------------------
+def _appeal(p):
+    """Raw roster appeal: points per $1k salary (what drives ownership)."""
+    sal = max(2000, p["salary"])
+    return p["median"] / (sal / 1000.0)
+
+
+def add_ownership_leverage(players, market_boom):
+    """Annotate each player with projected own%, leverage, and sharp leverage.
+
+    Ownership: within each roster position the field's rosters must fill `slots`
+    spots, so ownership across that position sums to slots*100%. We split that by
+    appeal^k (chalk gets the lion's share), capped per player.
+
+    Leverage      = production percentile - ownership percentile (under-rostered
+                    production = good GPP play).
+    Sharp leverage = market-implied boom% - ownership% (the money likes him more
+                    than the field does -- Vigil's edge).
+    """
+    if not players:
+        return
+    # Median percentile across the whole slate (for leverage).
+    meds = sorted(p["median"] for p in players)
+    n = len(meds)
+    def pct_rank(v):
+        lo = sum(1 for m in meds if m < v)
+        return 100.0 * lo / max(1, n - 1)
+
+    # Ownership per position group.
+    groups = {}
+    for p in players:
+        groups.setdefault(_primary_pos(p["elig"]), []).append(p)
+    for pos, grp in groups.items():
+        slots = ROSTER.count(pos) or 1
+        budget = slots * 100.0
+        weights = [max(0.01, _appeal(p)) ** 2.4 for p in grp]
+        tot = sum(weights) or 1.0
+        for p, w in zip(grp, weights):
+            own = budget * w / tot
+            p["own"] = round(min(75.0, own), 1)
+
+    own_vals = sorted(p.get("own", 0.0) for p in players)
+    def own_pct_rank(v):
+        lo = sum(1 for o in own_vals if o < v)
+        return 100.0 * lo / max(1, n - 1)
+
+    for p in players:
+        p.setdefault("own", 0.0)
+        p["lev"] = round(pct_rank(p["median"]) - own_pct_rank(p["own"]), 1)
+        boom = market_boom.get(_norm(p["name"]))
+        p["mkt_boom"] = boom
+        p["sharp"] = round(boom - p["own"], 1) if boom is not None else None
+
+
+# ---- Optimizer (single lineup) ---------------------------------------------
 def _value(p, objective):
     return p["ceil"] if objective == "ceiling" else p["median"]
 
 
+def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random):
+    """One greedy-randomized valid lineup. If a stack is requested, hitter slots
+    are seeded from that team first so the lineup actually stacks."""
+    used, lineup, sal = set(), [], 0
+    slots = ROSTER
+    order = sorted(range(len(slots)), key=lambda i: len(by_pos[slots[i]]))
+    # Seed the stack: take the cheapest-by-value path by trying stack-team hitters
+    # for the earliest hitter slots.
+    stacked = 0
+    for si in order:
+        pos = slots[si]
+        pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
+        if not pool:
+            return None
+        cand = pool
+        if stack_team and pos != "P" and stacked < stack_min:
+            team_pool = [p for p in pool if p.get("team") == stack_team]
+            if team_pool:
+                cand = team_pool
+        top = cand[:12]
+        weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
+        pick = rng.choices(top, weights=weights)[0]
+        if stack_team and pick.get("team") == stack_team and pos != "P":
+            stacked += 1
+        used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
+    if len(lineup) != len(slots) or sal > cap:
+        return None
+    if stack_team and stacked < stack_min:
+        return None
+    return lineup, sal
+
+
 def optimize(players, cap, objective, restarts=6000):
-    """Greedy-randomized position-aware optimizer. Each restart fills the roster
-    slot by slot from value-weighted eligible players, keeping the best valid
-    lineup under the cap. Favors stacking implicitly via the sim's correlated
-    ceilings."""
+    by_pos = _by_pos(players)
+    if by_pos is None:
+        return None
+    best = None
+    for _ in range(restarts):
+        r = _build_one(by_pos, cap, objective)
+        if not r:
+            continue
+        lineup, sal = r
+        score = sum(_value(p, objective) for p in lineup)
+        if best is None or score > best[0]:
+            best = (score, lineup, sal)
+    return best
+
+
+def _by_pos(players):
     by_pos = {pos: [] for pos in set(ROSTER)}
     for p in players:
         for pos in p["elig"]:
             if pos in by_pos:
                 by_pos[pos].append(p)
     for pos in by_pos:
-        by_pos[pos].sort(key=lambda p: -_value(p, objective))
+        by_pos[pos].sort(key=lambda p: -p["median"])
     if any(len(by_pos[pos]) < ROSTER.count(pos) for pos in set(ROSTER)):
         return None
+    return by_pos
 
-    best = None
-    slots = ROSTER
-    for _ in range(restarts):
-        used, lineup, sal = set(), [], 0
+
+# ---- Multi-lineup portfolio ------------------------------------------------
+def _lineup_key(lineup):
+    return frozenset(p["name"] for p in lineup)
+
+
+def optimize_portfolio(players, cap, objective, n_lineups=20,
+                       max_exposure=60.0, min_uniq=2, stack_min=4):
+    """Build a diversified set of lineups with exposure caps, a uniqueness floor,
+    and team stacking -- what GPP mass-multi-entry actually needs."""
+    by_pos = _by_pos(players)
+    if by_pos is None:
+        return None
+    teams = sorted({p.get("team") for p in players if p.get("team")})
+    max_count = max(1, math.ceil(max_exposure / 100.0 * n_lineups))
+
+    # Large candidate pool: a mix of stacked builds (rotating the stack team) and
+    # free builds, so we have variety to select a diversified portfolio from.
+    enforce_stack = stack_min >= 2 and bool(teams)
+    pool, seen = [], set()
+    target = max(400, n_lineups * 40)
+    attempts = 0
+    while len(pool) < target and attempts < target * 5:
+        attempts += 1
+        # When stacking, always seed a (rotating) stack team; otherwise free build.
+        st = random.choice(teams) if enforce_stack else None
+        r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min if st else 0)
+        if not r:
+            continue
+        lineup, sal = r
+        key = _lineup_key(lineup)
+        if key in seen:
+            continue
+        seen.add(key)
+        score = sum(_value(p, objective) for p in lineup)
+        pool.append((score, lineup, sal))
+    pool.sort(key=lambda x: -x[0])
+
+    chosen, exposure = [], {}
+    for score, lineup, sal in pool:
+        if len(chosen) >= n_lineups:
+            break
+        # Stack rule: every lineup must hit the requested stack size.
+        if enforce_stack and (_biggest_stack(lineup) or {}).get("n", 0) < stack_min:
+            continue
+        key = _lineup_key(lineup)
+        # Uniqueness: differ from every chosen lineup by >= min_uniq players.
+        if any(len(key & _lineup_key(c[1])) > len(ROSTER) - min_uniq for c in chosen):
+            continue
+        # Exposure cap: no player may exceed max_count across the set.
+        if any(exposure.get(p["name"], 0) + 1 > max_count for p in lineup):
+            continue
+        chosen.append((score, lineup, sal))
+        for p in lineup:
+            exposure[p["name"]] = exposure.get(p["name"], 0) + 1
+    return chosen
+
+
+# ---- Contest simulation (your lineups vs a simulated field) ----------------
+def _field_lineup(by_pos, cap, own_weights, rng, tries=6):
+    """One ownership-weighted valid field lineup (list of names) or None."""
+    for _ in range(tries):
+        used, names, sal = set(), [], 0
         ok = True
-        # Hardest (scarcest) positions first so cheap fills remain for the rest.
-        order = sorted(range(len(slots)), key=lambda i: len(by_pos[slots[i]]))
-        remaining = list(slots)
-        for si in order:
-            pos = slots[si]
-            pool = [p for p in by_pos[pos] if p["name"] not in used]
-            # keep enough budget for the slots still to fill (min-priced each)
-            pool = [p for p in pool if sal + p["salary"] <= cap]
+        for pos in sorted(ROSTER, key=lambda p: len(by_pos[p])):
+            pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
             if not pool:
                 ok = False
                 break
-            top = pool[:12]
-            weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
-            pick = random.choices(top, weights=weights)[0]
-            used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
-        if ok and len(lineup) == len(slots) and sal <= cap:
-            score = sum(_value(p, objective) for p in lineup)
-            if best is None or score > best[0]:
-                best = (score, lineup, sal)
-    return best
+            w = [own_weights.get(p["name"], 1.0) for p in pool]
+            pick = rng.choices(pool, weights=w)[0]
+            used.add(pick["name"]); names.append(pick["name"]); sal += pick["salary"]
+        if ok and len(names) == len(ROSTER):
+            return names
+    return None
 
 
-def build(date, csv_text, cap=50000, objective="median", n_sims=4000):
+def contest_sim(your_lineups, players, field_size=200, n_iter=400,
+                contest="gpp", entry_fee=1.0):
+    """Estimate win% / ROI for your lineups against a simulated field.
+
+    The field is built by ownership-weighted random rosters; every player's score
+    each iteration is drawn from its sim sample (same-game hitters share the index
+    so stacks stay correlated). Honest: the field model and payout curve are
+    approximations, not a real contest's exact structure."""
+    by_pos = _by_pos(players)
+    if by_pos is None or not your_lineups:
+        return None
+    arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
+    if not arr:
+        return None
+    L = min(len(a) for a in arr.values())
+    own_w = {p["name"]: max(0.1, p.get("own", 1.0)) for p in players}
+
+    rng = random.Random(12345)
+    field = []
+    for _ in range(field_size):
+        fl = _field_lineup(by_pos, 50000, own_w, rng)
+        if fl:
+            field.append(fl)
+    if not field:
+        return None
+
+    def score(names, it):
+        s = 0.0
+        for nm in names:
+            a = arr.get(nm)
+            s += a[it % L] if a else 0.0
+        return s
+
+    your_names = [[p["name"] for p in ln] for ln in your_lineups]
+    n_entries = len(field) + 1                         # you take one of the slots
+    stats = [{"win": 0, "top1pct": 0, "cash": 0, "total": 0.0} for _ in your_names]
+    cash_line = int(0.2 * n_entries) if contest == "gpp" else int(0.5 * n_entries)
+
+    for it in range(n_iter):
+        fscores = sorted((score(f, it) for f in field), reverse=True)
+        for li, names in enumerate(your_names):
+            ys = score(names, it)
+            beat = sum(1 for fs in fscores if fs < ys)
+            rank = len(fscores) - beat + 1            # 1 = first
+            st = stats[li]
+            if rank == 1:
+                st["win"] += 1
+            if rank <= max(1, int(0.01 * n_entries)):
+                st["top1pct"] += 1
+            if rank <= cash_line:
+                st["cash"] += 1
+            st["total"] += _payout(rank, n_entries, contest, entry_fee)
+
+    out = []
+    for li, st in enumerate(stats):
+        roi = 100.0 * (st["total"] / n_iter - entry_fee) / entry_fee
+        out.append({"win_pct": round(100 * st["win"] / n_iter, 2),
+                    "top1_pct": round(100 * st["top1pct"] / n_iter, 1),
+                    "cash_pct": round(100 * st["cash"] / n_iter, 1),
+                    "roi_pct": round(roi, 1),
+                    "avg_return": round(st["total"] / n_iter, 2)})
+    best = max(range(len(out)), key=lambda i: out[i]["roi_pct"]) if out else None
+    return {"field_size": len(field), "entries": n_entries, "iterations": n_iter,
+            "contest": contest, "entry_fee": entry_fee, "lineups": out,
+            "best_lineup_index": best}
+
+
+def _payout(rank, entries, contest, fee):
+    """Return for finishing `rank` of `entries` (rough, standard-shaped curves)."""
+    if contest == "double_up":
+        return 2.0 * fee if rank <= int(0.5 * entries) else 0.0
+    # GPP: top-heavy. ~20% cash; winner ~ 20x, decaying.
+    frac = rank / max(1, entries)
+    if frac > 0.20:
+        return 0.0
+    if rank == 1:
+        return 20.0 * fee
+    if rank <= max(2, int(0.001 * entries)):
+        return 8.0 * fee
+    if rank <= max(3, int(0.01 * entries)):
+        return 3.0 * fee
+    if rank <= max(4, int(0.05 * entries)):
+        return 1.8 * fee
+    return 1.4 * fee
+
+
+# ---- Public build ----------------------------------------------------------
+def _lineup_payload(lineup, sal, cap, objective):
+    ls = sorted(lineup, key=lambda p: ROSTER.index(_primary_pos(p["elig"])))
+    return {
+        "players": [{"name": p["name"], "salary": int(p["salary"]),
+                     "pos": "/".join(sorted(p["elig"])), "team": p.get("team"),
+                     "proj": round(p["proj"], 1), "floor": round(p["floor"], 1),
+                     "ceil": round(p["ceil"], 1), "own": p.get("own"),
+                     "lev": p.get("lev"), "mkt_boom": p.get("mkt_boom"),
+                     "sharp": p.get("sharp"), "sim": p["sim"], "confirmed": p.get("confirmed")}
+                    for p in ls],
+        "salary": int(sal), "cap": cap,
+        "proj": round(sum(p["proj"] for p in lineup), 1),
+        "ceil": round(sum(p["ceil"] for p in lineup), 1),
+        "floor": round(sum(p["floor"] for p in lineup), 1),
+        "own_sum": round(sum(p.get("own", 0) for p in lineup), 1),
+        "stack": _biggest_stack(lineup),
+    }
+
+
+def _biggest_stack(lineup):
+    teams = {}
+    for p in lineup:
+        if p["sim"] and p.get("kind") != "pit" and p.get("team"):
+            teams[p["team"]] = teams.get(p["team"], 0) + 1
+    if not teams:
+        return None
+    tm = max(teams, key=teams.get)
+    return {"team": tm, "n": teams[tm]} if teams[tm] >= 2 else None
+
+
+def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
+          n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
+          contest=None, field_size=200, contest_iters=400, entry_fee=1.0):
     import baseball
     players_raw = _sim.parse_dk_csv(csv_text)
     if len(players_raw) < 10:
@@ -165,6 +487,11 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000):
     proj = projections(games, n_sims)
     if not proj:
         return {"error": "no projections — lineups may not be posted yet"}
+    market_boom = {}
+    try:
+        market_boom = market_signals(date[:4])
+    except Exception:
+        pass
 
     players, unmatched = [], []
     for p in players_raw:
@@ -172,31 +499,71 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000):
         if not elig:
             continue
         pr = proj.get(_norm(p["name"]))
-        if not pr:                                  # fall back to CSV AvgPointsPerGame
+        confirmed = pr is not None
+        if not pr:
             if not p.get("proj"):
                 unmatched.append(p["name"])
                 continue
-            pr = {"proj": p["proj"], "median": p["proj"],
-                  "floor": p["proj"] * 0.5, "ceil": p["proj"] * 1.6, "kind": "?"}
+            pr = {"proj": p["proj"], "median": p["proj"], "floor": p["proj"] * 0.5,
+                  "ceil": p["proj"] * 1.6, "kind": "?", "team": None, "arr": None}
         players.append({"name": p["name"], "salary": p["salary"], "elig": elig,
-                        "median": pr["median"], "ceil": pr["ceil"],
-                        "floor": pr["floor"], "proj": pr["proj"],
+                        "median": pr["median"], "ceil": pr["ceil"], "floor": pr["floor"],
+                        "proj": pr["proj"], "team": pr.get("team"), "kind": pr.get("kind"),
+                        "arr": pr.get("arr"), "confirmed": confirmed,
                         "sim": pr.get("kind") in ("bat", "pit")})
 
-    res = optimize(players, cap, objective)
-    if not res:
-        return {"error": "couldn't fill a valid roster (need P,P,C,1B,2B,3B,SS,OF×3 under cap)"}
-    score, lineup, sal = res
-    lineup_sorted = sorted(lineup, key=lambda p: ROSTER.index(next(iter(p["elig"] & set(ROSTER)))))
-    sim_n = sum(1 for p in lineup if p["sim"])
-    return {
-        "lineup": [{"name": p["name"], "salary": int(p["salary"]),
-                    "pos": "/".join(sorted(p["elig"])), "proj": round(p["proj"], 1),
-                    "floor": round(p["floor"], 1), "ceil": round(p["ceil"], 1),
-                    "sim": p["sim"]} for p in lineup_sorted],
-        "total_salary": int(sal), "cap": cap, "objective": objective,
-        "total_proj": round(sum(p["proj"] for p in lineup), 1),
-        "total_ceil": round(sum(p["ceil"] for p in lineup), 1),
-        "total_floor": round(sum(p["floor"] for p in lineup), 1),
-        "pool": len(players), "sim_players": sim_n, "unmatched": unmatched[:15],
+    add_ownership_leverage(players, market_boom)
+
+    # Slate-wide leverage board (the unique selling point): best sharp + raw plays.
+    sim_players = [p for p in players if p["sim"]]
+    board = sorted(sim_players, key=lambda p: (p.get("sharp") if p.get("sharp") is not None else -999, p.get("lev", -999)), reverse=True)
+    leverage_board = [{"name": p["name"], "team": p.get("team"), "salary": int(p["salary"]),
+                       "proj": round(p["proj"], 1), "own": p.get("own"), "lev": p.get("lev"),
+                       "mkt_boom": p.get("mkt_boom"), "sharp": p.get("sharp")}
+                      for p in board[:12]]
+
+    n_lineups = max(1, min(150, n_lineups))
+    if n_lineups == 1:
+        res = optimize(players, cap, objective)
+        if not res:
+            return {"error": "couldn't fill a valid roster (need P,P,C,1B,2B,3B,SS,OF×3 under cap)"}
+        score, lineup, sal = res
+        lineups = [(score, lineup, sal)]
+    else:
+        port = optimize_portfolio(players, cap, objective, n_lineups,
+                                  max_exposure, min_uniq, stack_min)
+        if not port:
+            return {"error": "couldn't build the lineup portfolio under the constraints"}
+        lineups = port
+
+    payloads = [_lineup_payload(ln, sal, cap, objective) for _, ln, sal in lineups]
+
+    # Exposure report across the portfolio.
+    exp = {}
+    for _, ln, _s in lineups:
+        for p in ln:
+            exp[p["name"]] = exp.get(p["name"], 0) + 1
+    exposure = sorted(({"name": nm, "lineups": c,
+                        "pct": round(100 * c / len(lineups), 1)}
+                       for nm, c in exp.items()), key=lambda x: -x["lineups"])[:25]
+
+    out = {
+        "objective": objective, "n_lineups": len(payloads),
+        "lineups": payloads, "exposure": exposure,
+        "leverage_board": leverage_board,
+        "pool": len(players), "sim_players": len(sim_players),
+        "unmatched": unmatched[:15],
+        # Back-compat single-lineup fields (older UI path reads these).
+        "lineup": payloads[0]["players"], "total_salary": payloads[0]["salary"],
+        "cap": cap, "total_proj": payloads[0]["proj"],
+        "total_ceil": payloads[0]["ceil"], "total_floor": payloads[0]["floor"],
     }
+    if contest:
+        try:
+            out["contest_sim"] = contest_sim(
+                [ln for _, ln, _s in lineups], players,
+                field_size=min(400, field_size), n_iter=min(800, contest_iters),
+                contest=contest, entry_fee=entry_fee)
+        except Exception as e:
+            out["contest_sim"] = {"error": f"contest sim failed: {e}"}
+    return out

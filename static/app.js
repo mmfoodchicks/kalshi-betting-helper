@@ -1357,6 +1357,9 @@ async function initSim() {
   $("simKind").addEventListener("change", fillSimKey);
   $("simBtn").addEventListener("click", runSim);
   $("simMode").addEventListener("change", simModeChange);
+  // MLB DFS options only apply to the sim-driven MLB path.
+  const dfsMlbToggle = () => { if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", $("dfsSport").value !== "mlb"); };
+  if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
   try {
     const wx = await (await fetch("/api/weather/meta")).json();
@@ -1444,23 +1447,76 @@ async function runWxSim() {
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
 function renderMlbDfs(d) {
-  const rows = d.lineup.map((p) => {
-    const tag = `<span class="legtag">${p.pos}</span>`;
-    const star = p.sim ? "🎲 " : "";
-    return `<div class="sportout"><div class="left"><span class="oname">${tag} ${star}${p.name}</span>
-      <span class="small">$${p.salary.toLocaleString()} · proj ${p.proj} · floor ${p.floor} / ceiling ${p.ceil}</span></div></div>`;
-  }).join("");
+  const lev = (v) => v == null ? "" : `<span style="color:${v >= 0 ? "var(--yes)" : "var(--muted)"}">lev ${v >= 0 ? "+" : ""}${v}</span>`;
+  const sharpBadge = (v) => v == null ? "" :
+    `<span class="badge ${v >= 12 ? "yes" : v <= -12 ? "no" : "hold"}" style="font-size:.68rem;padding:2px 7px" title="market boom% − ownership%">⚡${v >= 0 ? "+" : ""}${v}</span>`;
+
+  const playerRow = (p) => {
+    const star = p.sim ? "🎲" : "·";
+    const own = p.own != null ? `<span class="dfs-own">${p.own}%</span>` : "";
+    return `<div class="dfs-prow">
+      <div class="dfs-pmain"><span class="legtag">${p.pos}</span> <b>${p.name}</b>
+        ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}</div>
+      <div class="dfs-pmeta">$${p.salary.toLocaleString()} · <span title="simulated">${star}</span> proj <b>${p.proj}</b> · ceil ${p.ceil} · own ${own} ${lev(p.lev)}</div>
+    </div>`;
+  };
+
+  const lineupCard = (ln, i) => {
+    const cs = d.contest_sim && d.contest_sim.lineups && d.contest_sim.lineups[i];
+    const csLine = cs ? `<div class="dfs-csrow">
+        <span>win <b>${cs.win_pct}%</b></span><span>cash <b>${cs.cash_pct}%</b></span>
+        <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span></div>` : "";
+    const stk = ln.stack ? `<span class="dfs-chip">${ln.stack.team} ${ln.stack.n}-stack</span>` : "";
+    const isBest = d.contest_sim && d.contest_sim.best_lineup_index === i;
+    return `<div class="dfs-lineup${isBest ? " best" : ""}">
+      <div class="dfs-lhead"><b>Lineup ${i + 1}${isBest ? " 👑" : ""}</b> ${stk}
+        <span class="dfs-ltot">$${ln.salary.toLocaleString()} · proj <b>${ln.proj}</b> · ceil <b class="ev pos">${ln.ceil}</b> · own Σ ${ln.own_sum}%</span></div>
+      ${csLine}
+      <div class="dfs-players">${ln.players.map(playerRow).join("")}</div>
+    </div>`;
+  };
+
+  // Leverage board — Vigil's edge: production the field under-rosters + the
+  // betting market's read (sharp).
+  let boardHtml = "";
+  if (d.leverage_board && d.leverage_board.length) {
+    const rows = d.leverage_board.map((p) => `<div class="dfs-brow">
+      <div><b>${p.name}</b> <span class="dfs-team">${p.team || ""}</span></div>
+      <div class="dfs-bmeta">$${p.salary.toLocaleString()} · proj ${p.proj} · own ${p.own ?? "–"}% · ${lev(p.lev)} ${sharpBadge(p.sharp)}</div>
+    </div>`).join("");
+    boardHtml = `<div class="dfs-board">
+      <div class="dfs-btitle">🎯 Leverage board <span class="dfs-sub">under-owned production · ⚡ = betting market likes him more than the field (Vigil edge)</span></div>
+      ${rows}</div>`;
+  }
+
+  let expHtml = "";
+  if (d.n_lineups > 1 && d.exposure && d.exposure.length) {
+    const chips = d.exposure.map((e) => `<span class="dfs-chip">${e.name} <b>${e.pct}%</b></span>`).join("");
+    expHtml = `<details class="dfs-exp"><summary>Exposure across ${d.n_lineups} lineups</summary><div class="dfs-chips">${chips}</div></details>`;
+  }
+
+  let csHead = "";
+  if (d.contest_sim && !d.contest_sim.error) {
+    const c = d.contest_sim;
+    csHead = `<div class="dfs-note">🏆 Simulated vs a ${c.field_size}-lineup ${c.contest === "double_up" ? "double-up" : "GPP"} field over ${c.iterations} runs — win% / cash% / ROI per lineup below. <i>Field &amp; payout are modeled estimates.</i></div>`;
+  } else if (d.contest_sim && d.contest_sim.error) {
+    csHead = `<div class="dfs-note">${d.contest_sim.error}</div>`;
+  }
+
   const un = d.unmatched && d.unmatched.length
-    ? `<div class="small" style="color:var(--muted)">${d.unmatched.length} players had no sim/projection match (skipped).</div>` : "";
-  return `<div class="bbgame">
-    <div class="matchup">⚾ Optimal MLB lineup — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}</div>
-    <div class="small" style="margin:4px 0">🎲 = projected from the game simulation (${d.sim_players}/${d.lineup.length} of your lineup); others from CSV avg.</div>
-    <div class="kv" style="margin-top:4px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>
-      <span>Projected <b>${d.total_proj}</b></span></div>
-    <div class="kv"><span>🔴 Floor <b>${d.total_floor}</b></span><span>🟢 Ceiling <b class="ev pos">${d.total_ceil}</b></span></div>
-    <div class="sportouts" style="margin-top:8px">${rows}</div>
+    ? `<div class="small" style="color:var(--muted);margin-top:8px">${d.unmatched.length} CSV players had no sim/projection match (skipped): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
+
+  return `<div class="dfs-wrap">
+    <div class="dfs-top">
+      <div class="dfs-title">⚾ MLB DFS — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}</div>
+      <div class="dfs-meta">${d.n_lineups} lineup${d.n_lineups > 1 ? "s" : ""} · ${d.sim_players} sim-projected players in pool of ${d.pool}</div>
+    </div>
+    ${boardHtml}
+    ${csHead}
+    <div class="dfs-lineups">${d.lineups.map(lineupCard).join("")}</div>
+    ${expHtml}
     ${un}
-    <div class="small" style="margin-top:6px">Hitters come from the correlated game sim, so the <b>ceiling</b> rewards stacking a team. Pitchers are simulated from their rate stats. Needs posted lineups (a few hours pre-game).</div>
+    <div class="small" style="margin-top:8px;color:var(--muted)">🎲 hitters come from the correlated game sim (stacking rewards the ceiling); pitchers are simulated from rate stats. Ownership/leverage are model estimates. Needs posted lineups (a few hours pre-game).</div>
   </div>`;
 }
 
@@ -1474,7 +1530,13 @@ async function runDfsSim() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ csv, sport: $("dfsSport").value, roster: parseInt($("dfsRoster").value, 10),
         cap: parseInt($("dfsCap").value, 10), mode: $("dfsMode").value, objective: $("dfsObjective").value,
-        sims: simRunsValue() }),
+        sims: simRunsValue(),
+        lineups: parseInt(($("dfsLineups") || {}).value, 10) || 1,
+        max_exposure: parseFloat(($("dfsMaxExp") || {}).value) || 60,
+        stack_min: parseInt(($("dfsStack") || {}).value, 10) || 0,
+        min_uniq: parseInt(($("dfsUniq") || {}).value, 10) || 2,
+        contest: ($("dfsContest") || {}).value || null,
+        field_size: parseInt(($("dfsField") || {}).value, 10) || 200 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
