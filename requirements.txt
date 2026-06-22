@@ -1,2 +1,3 @@
 Flask>=3.0
 gunicorn>=21.0
+qrcode  # optional: scannable QR in start_remote.py

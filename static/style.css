@@ -313,3 +313,44 @@ button.danger { color: var(--no); }
 .market .x:hover { color: var(--no); }
 
 footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 0 20px 30px; }
+
+/* ============================== Mobile ============================== */
+/* iOS zooms inputs < 16px on focus; keep them >= 16px to prevent it. */
+@media (max-width: 640px) {
+  header { padding: 14px 12px 4px; }
+  header h1 { font-size: 1.3rem; }
+  header .sub { font-size: 0.8rem; }
+  main { padding: 10px 10px 60px; }
+
+  /* Swipeable tab bar that stays pinned to the top. */
+  .tabs {
+    flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+    gap: 6px; padding: 8px 8px; margin-top: 0;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 8px 14px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 auto; }
+
+  .settingsbar { font-size: 0.82rem; flex-wrap: wrap; gap: 6px 10px; justify-content: center; }
+
+  .card { padding: 14px 12px; border-radius: 12px; }
+  .card h2 { font-size: 1.05rem; }
+
+  /* Controls go full-width and finger-sized. */
+  select, input, button, textarea { font-size: 16px; }
+  .scan-controls { flex-wrap: wrap; gap: 8px; }
+  .scan-controls select, .scan-controls input, .scan-controls button { flex: 1 1 auto; min-height: 42px; }
+  .row-between { flex-wrap: wrap; gap: 8px; }
+
+  /* Combo / parlay maker inputs wrap cleanly instead of overflowing. */
+  .combomaker { font-size: 0.9rem; line-height: 2.1; }
+  .combomaker input { min-height: 36px; }
+
+  /* Outcome rows stack the action under the name. */
+  .sportout { flex-direction: column; align-items: stretch; gap: 6px; }
+  .sportout .left { min-width: 0; }
+  .grid { grid-template-columns: 1fr !important; }
+  .kv { font-size: 0.8rem; gap: 4px 12px; }
+
+  table { font-size: 0.8rem; }
+}
