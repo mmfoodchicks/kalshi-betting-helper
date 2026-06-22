@@ -17,6 +17,7 @@ import time
 import threading
 
 from flask import Flask, jsonify, request, render_template, Response
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import prices
 import odds
@@ -26,12 +27,42 @@ import baseball
 import tiers
 
 app = Flask(__name__)
+# Respect the X-Forwarded-* headers from the hosting platform's reverse proxy so
+# request.is_secure / scheme are correct (needed for HSTS + secure cookies).
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Used by Flask for signing if we add sessions later; pulled from the env in prod.
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 # Changes every server start so the browser re-fetches CSS/JS after an update.
 _ASSET_VERSION = str(int(time.time()))
 # Don't sort JSON keys: it's wasted work and crashes on any dict with mixed
 # key types (e.g. integer prop lines alongside string keys).
 app.json.sort_keys = False
 store.init_db()
+
+
+@app.after_request
+def _security_headers(resp):
+    """Baseline hardening headers for a public deployment."""
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+    # Only assert HSTS once we're actually being served over HTTPS.
+    if request.is_secure:
+        resp.headers.setdefault("Strict-Transport-Security",
+                                "max-age=31536000; includeSubDomains")
+    return resp
+
+
+@app.route("/healthz")
+def _healthz():
+    return Response("ok", mimetype="text/plain")
+
+
+@app.route("/robots.txt")
+def _robots():
+    # Keep the app out of search indexes while it's pre-launch / private.
+    return Response("User-agent: *\nDisallow: /\n", mimetype="text/plain")
 
 # Optional password protection (recommended when exposing it over a tunnel).
 # Set APP_PASSWORD (and optionally APP_USER) in the environment to turn it on.
@@ -42,6 +73,8 @@ APP_PASSWORD = os.environ.get("APP_PASSWORD")
 @app.before_request
 def _auth():
     if not APP_PASSWORD:
+        return
+    if request.path in ("/healthz", "/robots.txt"):   # platform probes, no creds
         return
     a = request.authorization
     if not a or a.username != APP_USER or a.password != APP_PASSWORD:

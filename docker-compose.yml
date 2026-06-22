@@ -1,0 +1,38 @@
+# Self-hosted "your own server" deploy: the app + Caddy (automatic HTTPS via
+# Let's Encrypt). On any cheap VPS: point your domain's A record at the box,
+# fill in .env, then `docker compose up -d`. See DEPLOY.md.
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+      - KALSHI_DB=/data/markets.db
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in .env}
+      - APP_PASSWORD=${APP_PASSWORD:-}
+      - APP_USER=${APP_USER:-vigil}
+      - TIERS_ENFORCED=${TIERS_ENFORCED:-0}
+    volumes:
+      - vigil-data:/data            # persistent SQLite (recorder data survives restarts)
+    expose:
+      - "8080"                      # internal only; Caddy is the public edge
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  vigil-data:
+  caddy-data:
+  caddy-config:

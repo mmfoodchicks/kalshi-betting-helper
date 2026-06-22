@@ -6,3 +6,7 @@ venv/
 
 # Local data
 markets.db
+*.sqlite3
+
+# Secrets / env
+.env

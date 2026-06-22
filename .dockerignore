@@ -1,0 +1,14 @@
+.git
+.gitignore
+__pycache__/
+**/__pycache__/
+*.pyc
+*.db
+*.sqlite3
+.venv/
+venv/
+.env
+*.log
+node_modules/
+DEPLOY.md
+ROADMAP.md

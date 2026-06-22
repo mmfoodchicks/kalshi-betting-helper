@@ -1,0 +1,6 @@
+# Caddy auto-provisions and renews a Let's Encrypt TLS cert for $DOMAIN and
+# reverse-proxies to the app. HTTP is auto-redirected to HTTPS.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy web:8080
+}

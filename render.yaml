@@ -1,11 +1,25 @@
+# Render blueprint. Deploy: push to GitHub, then New → Blueprint on render.com.
+# Defaults to the FREE plan (zero cost) — note: free services sleep when idle
+# (the background recorders pause) and have no persistent disk (the SQLite data
+# resets on each deploy/restart). For 24/7 recording + persistence, switch to
+# the Starter plan and uncomment the `disk:` block (see DEPLOY.md).
 services:
   - type: web
-    name: kalshi-betting-helper
-    runtime: python
+    name: vigil
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 1 --threads 8 --timeout 120 -b 0.0.0.0:$PORT app:app
+    healthCheckPath: /healthz
     autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.9"
+      - key: SECRET_KEY
+        generateValue: true          # Render generates a strong random value
+      - key: APP_PASSWORD
+        sync: false                  # set your own in the dashboard to require login
+      - key: TIERS_ENFORCED
+        value: "0"
+      # - key: KALSHI_DB             # only with the disk below (Starter plan)
+      #   value: /data/markets.db
+    # disk:                          # persistent SQLite (requires a paid plan)
+    #   name: vigil-data
+    #   mountPath: /data
+    #   sizeGB: 1
