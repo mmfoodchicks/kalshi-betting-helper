@@ -69,10 +69,11 @@ def init_db():
                 prob REAL, price_cents REAL,
                 graded INTEGER DEFAULT 0, won INTEGER, winner_name TEXT
             )""")
-        # close_price: latest pre-game market price of our side, for CLV.
+        # close_price (CLV) + predicted/actual total runs (sim accuracy).
         mcols = {r["name"] for r in c.execute("PRAGMA table_info(mlb_picks)")}
-        if "close_price" not in mcols:
-            c.execute("ALTER TABLE mlb_picks ADD COLUMN close_price REAL")
+        for col in ("close_price", "pred_total", "actual_total"):
+            if col not in mcols:
+                c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
@@ -92,14 +93,14 @@ def init_db():
 
 
 # ---- MLB model track record -----------------------------------------------
-def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents):
+def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None):
     """Store the model's pre-game pick (first time we see the game)."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
-               (game_pk, date, pick_side, pick_name, prob, price_cents, close_price)
-               VALUES (?,?,?,?,?,?,?)""",
-            (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents),
+               (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total),
         )
 
 
@@ -119,10 +120,10 @@ def ungraded_mlb_picks():
             "SELECT * FROM mlb_picks WHERE graded=0").fetchall()]
 
 
-def set_mlb_grade(game_pk, won, winner_name):
+def set_mlb_grade(game_pk, won, winner_name, actual_total=None):
     with _lock, _conn() as c:
-        c.execute("UPDATE mlb_picks SET graded=1, won=?, winner_name=? WHERE game_pk=?",
-                  (won, winner_name, game_pk))
+        c.execute("UPDATE mlb_picks SET graded=1, won=?, winner_name=?, actual_total=? WHERE game_pk=?",
+                  (won, winner_name, actual_total, game_pk))
 
 
 def mlb_record():
@@ -166,12 +167,25 @@ def mlb_record():
                          "n": len(b),
                          "predicted": round(100 * sum(p["prob"] for p in b) / len(b), 1),
                          "actual": round(100 * sum(1 for p in b if p["won"]) / len(b), 1)})
+    # Total-runs accuracy: predicted vs actual, aggregated (a single game is
+    # noise; over many it shows whether the run model is calibrated/biased).
+    tot = [p for p in graded if p.get("pred_total") is not None and p.get("actual_total") is not None]
+    if tot:
+        tot_pred = sum(p["pred_total"] for p in tot) / len(tot)
+        tot_act = sum(p["actual_total"] for p in tot) / len(tot)
+        tot_mae = sum(abs(p["pred_total"] - p["actual_total"]) for p in tot) / len(tot)
+        totals_acc = {"n": len(tot), "predicted_avg": round(tot_pred, 2),
+                      "actual_avg": round(tot_act, 2), "bias": round(tot_pred - tot_act, 2),
+                      "mean_abs_error": round(tot_mae, 2)}
+    else:
+        totals_acc = None
     return {
         "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
         "accuracy_pct": round(100 * wins / n, 1) if n else None,
         "roi_pct": roi_pct, "roi_bets": len(priced),
         "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets, "edge_threshold": EDGE,
         "clv_avg": clv_avg, "clv_positive_pct": clv_pos_pct, "clv_n": len(clv),
+        "totals_accuracy": totals_acc,
         "brier": brier, "brier_baseline": 0.25, "calibration": bins,
     }
 

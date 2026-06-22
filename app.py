@@ -425,6 +425,14 @@ def api_simulate_game():
     n = tiers.cap_sims(_tier(), request.args.get("sims", 20000))
     res = simulate.game_sim(g["exp_runs_home"], g["exp_runs_away"], n=n)
     res.update(matchup=g["matchup"], home=g["home_name"], away=g["away_name"])
+    # When lineups are posted, also run the full player-level base-running sim
+    # (per-batter hits/HR/SB/DK points, speed + steals) and attach it.
+    if (g.get("props") or {}).get("batters_home") or (g.get("props") or {}).get("batters_away"):
+        try:
+            import mlb_sim
+            res["player_sim"] = mlb_sim.summary(mlb_sim.simulate(g, min(8000, n)))
+        except Exception:
+            pass
     return jsonify(res)
 
 
@@ -501,7 +509,8 @@ def api_baseball_today():
         if (g.get("live") or {}).get("state") != "Final":
             store.record_mlb_pick(g["game_pk"], date,
                                   "home" if g["pick_is_home"] else "away",
-                                  g["pick"], g["pick_prob"], g.get("pick_price_cents"))
+                                  g["pick"], g["pick_prob"], g.get("pick_price_cents"),
+                                  pred_total=g.get("exp_total"))
             # Track the latest pre-game price of our side for closing-line value.
             store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
     combos = baseball.build_combos(games)

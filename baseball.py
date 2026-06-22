@@ -848,7 +848,7 @@ def _max_confidence_combo(legs, n):
 
 
 def _final_winners(date):
-    """{gamePk: winning_team_name} for Final games on a date."""
+    """{gamePk: (winning_team_name, total_runs)} for Final games on a date."""
     out = {}
     try:
         data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=linescore")
@@ -864,7 +864,7 @@ def _final_winners(date):
                 continue
             home = g["teams"]["home"]["team"]["name"]
             away = g["teams"]["away"]["team"]["name"]
-            out[g.get("gamePk")] = home if hr > ar else away
+            out[g.get("gamePk")] = (home if hr > ar else away, hr + ar)
     return out
 
 
@@ -1080,9 +1080,11 @@ def grade_picks():
         except Exception:
             pass
         for p in ps:
-            winner = results.get(p["game_pk"])
-            if winner:
-                store.set_mlb_grade(p["game_pk"], 1 if winner == p["pick_name"] else 0, winner)
+            res = results.get(p["game_pk"])
+            if res:
+                winner, total = res
+                store.set_mlb_grade(p["game_pk"], 1 if winner == p["pick_name"] else 0,
+                                    winner, actual_total=total)
 
 
 def build_combos(games, max_legs=3, top_n=6):

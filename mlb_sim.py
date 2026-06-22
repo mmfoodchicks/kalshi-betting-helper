@@ -274,6 +274,32 @@ def simulate(g, n=5000):
             "bat": {"home": bat_h, "away": bat_a}}
 
 
+def summary(sim, top=6):
+    """Win %, total-runs distribution, and per-player expected line (hits, HR,
+    SB, DK points) from a simulated game -- for the game-sim UI."""
+    n = sim["n"]
+    hr_runs, ar_runs, hwin = sim["home_runs"], sim["away_runs"], sim["home_win"]
+    totals = sorted(hr_runs[i] + ar_runs[i] for i in range(n))
+    pct = lambda f: totals[min(n - 1, int(f * n))]
+    home_w = sum(hwin) / n
+    players = {}
+    for side in ("home", "away"):
+        rows = []
+        for name, a in sim["bat"][side].items():
+            rows.append({"name": name,
+                         "hits": round(sum(a["hit"]) / n, 2),
+                         "hr": round(sum(a["hr"]) / n, 2),
+                         "tb": round(sum(a["tb"]) / n, 2),
+                         "sb": round(sum(a["sb"]) / n, 2),
+                         "dk": round(sum(a["dk"]) / n, 1)})
+        rows.sort(key=lambda r: -r["dk"])
+        players[side] = rows[:top]
+    return {"home_win_pct": round(home_w * 100, 1),
+            "away_win_pct": round((1 - home_w) * 100, 1),
+            "median_total": pct(0.5), "p10_total": pct(0.1), "p90_total": pct(0.9),
+            "players": players, "has_players": bool(players["home"] or players["away"])}
+
+
 def _mask(pred, n):
     m = 0
     for i in range(n):

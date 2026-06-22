@@ -1377,15 +1377,28 @@ async function runGameSim() {
     const d = await (await fetch(`/api/simulate/game?date=${$("simGameDate").value}&game_pk=${pk}&sims=${simRunsValue()}`)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     const scores = d.top_scores.map((s) => `${s.away}-${s.home} (${s.pct}%)`).join(" · ");
+    let playerBlock = "";
+    const ps = d.player_sim;
+    if (ps && ps.has_players) {
+      const tbl = (rows) => rows.map((r) =>
+        `<div class="sportout"><div class="left"><span class="oname">${r.name}</span>
+          <span class="small">hits <b>${r.hits}</b> · HR <b>${r.hr}</b> · TB <b>${r.tb}</b> · SB <b>${r.sb}</b> · DK <b>${r.dk}</b></span></div></div>`).join("");
+      playerBlock = `<div class="small" style="margin:10px 0 4px"><b>🎲 Player-level sim</b> (lineups posted) — expected per game, sorted by DraftKings points:</div>
+        <div class="teamhdr">${d.away}</div><div class="sportouts">${tbl(ps.players.away)}</div>
+        <div class="teamhdr" style="margin-top:8px">${d.home}</div><div class="sportouts">${tbl(ps.players.home)}</div>`;
+    } else {
+      playerBlock = `<div class="small" style="margin-top:6px;color:var(--muted)">Team-level sim (per-player detail + speed/steals appears once the lineups are posted).</div>`;
+    }
     box.innerHTML = `<div class="bbgame">
       <div class="matchup">${d.matchup}</div>
       <div class="kv" style="margin-top:6px">
-        <span>${d.away} win <b>${d.away_win_pct}%</b></span>
-        <span>${d.home} win <b>${d.home_win_pct}%</b></span>
+        <span>${d.away} win <b>${ps && ps.has_players ? ps.away_win_pct : d.away_win_pct}%</b></span>
+        <span>${d.home} win <b>${ps && ps.has_players ? ps.home_win_pct : d.home_win_pct}%</b></span>
       </div>
       <div class="kv"><span>Median total <b>${d.median_total}</b> runs (10–90%: ${d.p10_total}–${d.p90_total})</span>
         <span>Blowout (5+) <b>${d.blowout_pct}%</b></span><span>Shutout <b>${d.shutout_pct}%</b></span></div>
       <div class="small" style="margin-top:6px">Most likely scores (away-home): ${scores}</div>
+      ${playerBlock}
     </div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
@@ -1634,6 +1647,10 @@ async function loadBaseballRecord() {
       extra.push(`Edge bets (≥${r.edge_threshold}¢): <b class="${r.roi_edge_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_edge_pct)}</b> ROI <span style="color:var(--muted)">(${r.edge_bets})</span>`);
     if (r.clv_avg != null)
       extra.push(`CLV <b class="${r.clv_avg >= 0 ? "ev pos" : "ev neg"}">${r.clv_avg >= 0 ? "+" : ""}${r.clv_avg}¢</b> <span style="color:var(--muted)">(${r.clv_positive_pct}% beat close, ${r.clv_n})</span>`);
+    if (r.totals_accuracy) {
+      const t = r.totals_accuracy;
+      extra.push(`Sim totals: predicted <b>${t.predicted_avg}</b> vs actual <b>${t.actual_avg}</b> (off by <b>${t.mean_abs_error}</b> runs avg, bias ${t.bias >= 0 ? "+" : ""}${t.bias}, ${t.n} games)`);
+    }
     if (r.calibration && r.calibration.length)
       extra.push("Calibration " + r.calibration.map((b) =>
         `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · "));
