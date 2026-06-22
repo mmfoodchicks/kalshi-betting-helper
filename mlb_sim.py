@@ -95,14 +95,17 @@ def _team(batters, er, rnd):
     if not er:
         return _build_setup(rows, 1.0)
     mult = 1.0
-    for _ in range(5):                       # converge the rate multiplier to er
+    for _ in range(4):                       # converge the rate multiplier to er
         setup = _build_setup(rows, mult)
-        tot = sum(_play_game(setup, rnd)[0] for _ in range(250))
-        mean = tot / 250.0
-        if mean <= 0.2:
-            mult *= 1.6
+        mean = sum(_play_game(setup, rnd)[0] for _ in range(300)) / 300.0
+        if mean <= 0.3:
+            mult *= 1.5
             continue
-        mult = max(0.4, min(2.8, mult * (er / mean) ** 0.8))
+        if abs(mean - er) <= 0.05 * er:      # close enough
+            break
+        # Clamp near 1.0 so matchup calibration nudges team runs to er without
+        # badly distorting each hitter's true rate (runs ~ mult^1.5 -> exp 0.7).
+        mult = max(0.7, min(1.5, mult * (er / mean) ** 0.7))
     return _build_setup(rows, mult)
 
 
@@ -146,7 +149,16 @@ def _play_game(setup, rnd):
                     break
             s = stats[bi]
             if code == 0:                         # out
-                outs += 1
+                # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
+                if bases[0] is not None and outs < 2 and rnd() < 0.13:
+                    outs += 2
+                    bases[0] = None
+                else:
+                    # Sac fly / productive out: runner on 3rd, < 2 outs scores ~16%.
+                    if bases[2] is not None and outs < 2 and rnd() < 0.16:
+                        rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                        s[4] += 1; s[6] += 2; bases[2] = None
+                    outs += 1
             elif code == 5:                       # walk (force advances only)
                 s[6] += 2
                 if bases[0] is None:
