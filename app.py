@@ -46,7 +46,7 @@ def _auth():
     a = request.authorization
     if not a or a.username != APP_USER or a.password != APP_PASSWORD:
         return Response("Login required", 401,
-                        {"WWW-Authenticate": 'Basic realm="Kalshi Helper"'})
+                        {"WWW-Authenticate": 'Basic realm="Vigil"'})
 
 
 def _tier():
@@ -810,7 +810,7 @@ if __name__ == "__main__":
     import os
     import argparse
     # Works the same in any shell:  python app.py --debug --port 8080
-    parser = argparse.ArgumentParser(description="Kalshi betting helper server")
+    parser = argparse.ArgumentParser(description="Vigil server")
     parser.add_argument("--debug", action="store_true",
                         help="auto-reload on file changes (no manual restart needed)")
     parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 5000)))

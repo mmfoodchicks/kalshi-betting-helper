@@ -1,6 +1,6 @@
 // Minimal service worker: cache the app shell for fast/offline loads, but always
 // go to the network for live data (markets, prices, signals) so nothing is stale.
-const SHELL = "kalshi-helper-shell-v2";
+const SHELL = "vigil-shell-v1";
 const SHELL_FILES = ["/", "/static/style.css", "/static/app.js",
                      "/static/icon-192.png", "/static/manifest.json",
                      "/static/img/action-1.jpg", "/static/img/action-2.jpg",

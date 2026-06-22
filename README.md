@@ -1,6 +1,12 @@
-# ⚡ Kalshi Betting Helper
+# ⚡ Vigil
 
-A live web app with two tabs:
+The math behind the line — a multi-market edge engine. It pulls live prices
+(Kalshi's API, DraftKings DFS, crypto, and more), runs its own models and Monte
+Carlo simulators to estimate true odds, surfaces where the market is mispriced,
+and grades itself honestly over time. Kalshi is just one data source, not the
+whole point.
+
+A live web app with tabs:
 
 - **⚡ Crypto** — trade Kalshi's short-term crypto price markets (e.g. "Will BTC
   be above $63,000 at 3:00pm?"). An **internal odds generator** off live price
