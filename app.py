@@ -34,6 +34,19 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 # Changes every server start so the browser re-fetches CSS/JS after an update.
 _ASSET_VERSION = str(int(time.time()))
+_STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
+
+def _asset_version():
+    """Cache-busting token = the newest mtime of the front-end files. Changes the
+    moment app.js/style.css change on disk (e.g. after `git pull`), so a plain
+    page reload fetches the new UI without needing a server restart."""
+    try:
+        latest = max(os.path.getmtime(os.path.join(_STATIC_DIR, f))
+                     for f in ("app.js", "style.css", "sw.js"))
+        return str(int(latest))
+    except OSError:
+        return _ASSET_VERSION
 # Don't sort JSON keys: it's wasted work and crashes on any dict with mixed
 # key types (e.g. integer prop lines alongside string keys).
 app.json.sort_keys = False
@@ -164,17 +177,22 @@ def _auto_resolve(market):
 
 @app.route("/")
 def index():
-    # Cache-bust static assets per server start + tell the browser not to cache
-    # the page itself, so a restart always serves the latest UI.
-    resp = Response(render_template("index.html", v=_ASSET_VERSION))
+    # Cache-bust static assets by their on-disk mtime, so a `git pull` alone
+    # busts the cache (no server restart needed), and tell the browser not to
+    # cache the page itself, so a reload always pulls the latest UI.
+    resp = Response(render_template("index.html", v=_asset_version()))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return resp
 
 
 @app.route("/sw.js")
 def service_worker():
-    # Served from root so the service worker's scope covers the whole app.
-    return app.send_static_file("sw.js"), 200, {"Content-Type": "application/javascript"}
+    # Served from root so the service worker's scope covers the whole app. Never
+    # cache the SW script itself, so a new version is picked up on next load.
+    resp = app.send_static_file("sw.js")
+    resp.headers["Content-Type"] = "application/javascript"
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
 
 
 @app.route("/api/coins")

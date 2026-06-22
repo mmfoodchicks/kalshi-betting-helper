@@ -1,35 +1,40 @@
-// Minimal service worker: cache the app shell for fast/offline loads, but always
-// go to the network for live data (markets, prices, signals) so nothing is stale.
-const SHELL = "vigil-shell-v1";
-const SHELL_FILES = ["/", "/static/style.css", "/static/app.js",
-                     "/static/icon-192.png", "/static/manifest.json",
-                     "/static/img/action-1.jpg", "/static/img/action-2.jpg",
-                     "/static/img/action-3.jpg", "/static/img/action-4.jpg",
-                     "/static/img/action-5.jpg", "/static/img/action-6.jpg"];
+// Service worker: NETWORK-FIRST for the app shell so code/UI updates are always
+// picked up immediately when online (the previous cache-first version could
+// serve a stale app.js after an update). The cache is only an offline fallback.
+// Live /api/ data is always network. Bumping SHELL purges every older cache.
+const SHELL = "vigil-shell-v3";
+const PRECACHE = ["/", "/static/style.css", "/static/app.js",
+                  "/static/icon-192.png", "/static/manifest.json",
+                  "/static/img/action-1.jpg", "/static/img/action-2.jpg",
+                  "/static/img/action-3.jpg", "/static/img/action-4.jpg",
+                  "/static/img/action-5.jpg", "/static/img/action-6.jpg"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)).catch(() => {})
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) =>
-    Promise.all(keys.filter((k) => k !== SHELL).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+    Promise.all(keys.filter((k) => k !== SHELL).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim()));
 });
 
 self.addEventListener("fetch", (e) => {
+  if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  // Live data must never be cached.
+  // Live data: always network, never cached.
   if (url.pathname.startsWith("/api/")) {
-    e.respondWith(fetch(e.request).catch(() => new Response("{}", { headers: { "Content-Type": "application/json" } })));
+    e.respondWith(fetch(e.request).catch(() =>
+      new Response("{}", { headers: { "Content-Type": "application/json" } })));
     return;
   }
-  // App shell: serve from cache, fall back to network and update the cache.
+  // App shell: network-first (fresh code wins), fall back to cache when offline.
   e.respondWith(
-    caches.match(e.request).then((hit) =>
-      hit || fetch(e.request).then((res) => {
-        const copy = res.clone();
-        caches.open(SHELL).then((c) => c.put(e.request, copy)).catch(() => {});
-        return res;
-      }).catch(() => caches.match("/")))
+    fetch(e.request).then((res) => {
+      const copy = res.clone();
+      caches.open(SHELL).then((c) => c.put(e.request, copy)).catch(() => {});
+      return res;
+    }).catch(() => caches.match(e.request).then((hit) => hit || caches.match("/")))
   );
 });
