@@ -581,3 +581,33 @@ footer { text-align: center; color: var(--faint); font-size: 0.75rem; padding: 8
 .dfs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .dfs-exp { margin-top: 4px; }
 .dfs-exp > summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; }
+
+/* ============================== Polish ================================= */
+/* Empty/loading states read as a designed placeholder, not bare text. */
+.empty {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  min-height: 90px; padding: 22px; color: var(--muted); font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border2); border-radius: 14px;
+}
+
+/* Cards get a faint top sheen so they feel lit, not flat. */
+.card { position: relative; }
+.card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  border-radius: 18px 18px 0 0; pointer-events: none;
+}
+
+/* Stat key/value rows look like little chips. */
+.kv span {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 10px;
+}
+
+/* Hero gets a hairline gradient divider at its base. */
+.hero { border-bottom: none; }
+.hero::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(91,140,255,0.6), rgba(154,107,255,0.6), transparent);
+}
