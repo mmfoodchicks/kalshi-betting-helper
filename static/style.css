@@ -380,6 +380,23 @@ button.danger { color: var(--no); }
   border-radius: 5px; padding: 1px 5px; margin-right: 4px;
 }
 
+/* Progress bar for long simulations */
+.simloader { padding: 14px 4px; }
+.simloader-msg { color: var(--text); margin-bottom: 8px; }
+.simloader-track {
+  height: 9px; border-radius: 6px; background: var(--card);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.simloader-fill {
+  height: 100%; width: 0%; border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent), #7aa2ff);
+  background-size: 200% 100%; transition: width 0.2s ease-out;
+  animation: simloader-sheen 1.1s linear infinite;
+}
+@keyframes simloader-sheen { from { background-position: 200% 0; } to { background-position: 0 0; } }
+.simloader-meta { color: var(--muted); margin-top: 6px; }
+.simloader-meta .slpct { color: var(--accent); font-weight: 600; }
+
 /* Same-game-slip simulation detail (per-pitcher / per-hitter) */
 .simdetail { margin-top: 10px; }
 .simdetail > summary { cursor: pointer; color: var(--accent); font-size: 0.85rem; }

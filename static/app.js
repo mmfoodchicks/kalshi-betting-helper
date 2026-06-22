@@ -669,7 +669,7 @@ window.buildCombo = async () => {
   parlayLegs = n; parlayTarget = t; parlayPayout = p;
   const sameGame = $("comboSameGame") && $("comboSameGame").checked;
   const date = $("bbDate").value;
-  out.innerHTML = `<div class="small">${sameGame ? "Simulating games…" : "Tuning lines…"}</div>`;
+  simLoader(out, sameGame ? "Simulating games (correlated same-game odds)…" : "Tuning lines to your target…");
   try {
     if (sameGame) {
       const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
@@ -740,7 +740,7 @@ window.buildSGP = async () => {
   let t = parseInt(($("sgpTarget") || {}).value, 10); if (isNaN(t)) t = 55;
   let p = parseFloat(($("sgpPayout") || {}).value) || 0;
   const date = $("bbDate").value;
-  out.innerHTML = `<div class="small">Simulating every game…</div>`;
+  simLoader(out, "Simulating every game on the slate…");
   try {
     const d = await (await fetch(`/api/baseball/sgp?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
@@ -752,6 +752,31 @@ window.buildSGP = async () => {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
   }
 };
+
+// Animated progress bar for the long simulations. There's no real per-sim
+// progress from the server (it's one request), so the bar eases asymptotically
+// toward ~95% and shows a live elapsed timer — enough to prove it's working and
+// not frozen. It self-clears once the caller replaces the container's contents.
+function simLoader(el, msg) {
+  el.innerHTML = `<div class="simloader">
+    <div class="small simloader-msg">${msg}</div>
+    <div class="simloader-track"><div class="simloader-fill"></div></div>
+    <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span> elapsed — crunching the simulation…</div>
+  </div>`;
+  const fill = el.querySelector(".simloader-fill");
+  const pctEl = el.querySelector(".slpct");
+  const timeEl = el.querySelector(".sltime");
+  const t0 = performance.now();
+  const id = setInterval(() => {
+    if (!document.body.contains(fill)) { clearInterval(id); return; }  // results replaced it
+    const dt = (performance.now() - t0) / 1000;
+    const pct = Math.min(95, 92 * (1 - Math.exp(-dt / 5)));  // asymptotic, never "done" early
+    fill.style.width = pct.toFixed(1) + "%";
+    pctEl.textContent = pct.toFixed(0) + "%";
+    timeEl.textContent = dt.toFixed(1) + "s";
+  }, 100);
+  return () => clearInterval(id);
+}
 
 // A leg's probability display. Player props carry BOTH the model's closed-form
 // % and the simulated %, so we show both (they're computed two different ways);
@@ -824,7 +849,7 @@ window.buildMixed = async () => {
   let t = parseInt(($("mixTarget") || {}).value, 10); if (isNaN(t)) t = 55;
   let p = parseFloat(($("mixPayout") || {}).value) || 0;
   const date = $("bbDate").value;
-  out.innerHTML = `<div class="small">Simulating the slate…</div>`;
+  simLoader(out, "Simulating the slate (this can take a moment)…");
   try {
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
@@ -1438,7 +1463,7 @@ async function runGameSim() {
   const box = $("simResults");
   const pk = $("simGameSel").value;
   if (!pk) { box.innerHTML = `<div class="empty">No game selected.</div>`; return; }
-  box.innerHTML = `<div class="empty">Simulating game…</div>`;
+  simLoader(box, "Simulating this game thousands of times…");
   try {
     const d = await (await fetch(`/api/simulate/game?date=${$("simGameDate").value}&game_pk=${pk}&sims=${simRunsValue()}`)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
