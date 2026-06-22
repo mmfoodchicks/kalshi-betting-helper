@@ -487,22 +487,36 @@ def build_candidates(g, sim):
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
                           "group": group or typ, "model_pct": model})
 
-    # Moneyline (both sides; contradictory pairs are pruned in the search).
-    add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i])
-    add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i])
+    # Moneyline (both sides; contradictory pairs are pruned in the search). The
+    # closed-form win prob (g.p_home/p_away) rides along as the model number.
+    ph, pa = g.get("p_home"), g.get("p_away")
+    add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i],
+        model=round(ph * 100, 1) if ph is not None else None)
+    add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i],
+        model=round(pa * 100, 1) if pa is not None else None)
     # Run line -- Kalshi's adjustable "win by X+" for each side. Full ladder (not
     # just 2/3) so blowout lines are available for longer odds; the marginal
-    # filter below drops any margin too unlikely to be useful.
+    # filter below drops any margin too unlikely to be useful. The closed-form
+    # spread ladder supplies the model number per margin.
+    rl = props.get("run_line") or {}
+    home_by, away_by = rl.get("home_by") or {}, rl.get("away_by") or {}
     for mgn in (2, 3, 4, 5, 6, 7):
-        add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m)
-        add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m)
+        add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m,
+            model=home_by.get(str(mgn)))
+        add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m,
+            model=away_by.get(str(mgn)))
     # Game total -- full half-run ladder around the model total (not just +/-1),
-    # so you can push the line far out for payout.
+    # so you can push the line far out for payout. The closed-form totals ladder
+    # supplies the model over/under % at each line.
     tot_mean = g.get("exp_total") or (er(g))
     base = round(tot_mean)
+    ladder = {round(t["line"], 1): t for t in (props.get("totals_ladder") or [])}
     for ln in [n + 0.5 for n in range(max(0, base - 5), base + 7)]:
-        add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln)
-        add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln)
+        t = ladder.get(round(ln, 1))
+        add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln,
+            model=(t["over_pct"] if t else None))
+        add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln,
+            model=(t["under_pct"] if t else None))
     # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
     # (Hits+Runs+RBIs, Kalshi's combined player market), all from the same
     # base-running sim so they're correctly correlated with each other and runs.
