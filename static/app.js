@@ -896,8 +896,13 @@ async function loadBaseball(silent) {
       html += `<div class="small" style="margin:14px 0 4px"><b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:</div>`;
       html += c.mixed.map((x) => renderCombo(x)).join("");
     }
+    // Preserve a built combo slip (and the same-game toggle) across the
+    // auto-refresh so it isn't wiped while you're reading/screenshotting it.
+    const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
+    const prevSameGame = !!($("comboSameGame") && $("comboSameGame").checked);
     combosBox.innerHTML = html;
-    buildParlay();
+    if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
+    if (prevSameGame) { const cb = $("comboSameGame"); if (cb) cb.checked = true; }
   } catch (e) {
     gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
     combosBox.innerHTML = "";
