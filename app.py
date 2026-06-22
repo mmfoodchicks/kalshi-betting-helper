@@ -26,6 +26,8 @@ import baseball
 import tiers
 
 app = Flask(__name__)
+# Changes every server start so the browser re-fetches CSS/JS after an update.
+_ASSET_VERSION = str(int(time.time()))
 # Don't sort JSON keys: it's wasted work and crashes on any dict with mixed
 # key types (e.g. integer prop lines alongside string keys).
 app.json.sort_keys = False
@@ -124,7 +126,11 @@ def _auto_resolve(market):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # Cache-bust static assets per server start + tell the browser not to cache
+    # the page itself, so a restart always serves the latest UI.
+    resp = Response(render_template("index.html", v=_ASSET_VERSION))
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
 
 
 @app.route("/sw.js")

@@ -12,22 +12,12 @@
   <meta name="apple-mobile-web-app-title" content="Kalshi Helper" />
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
   <link rel="icon" href="/static/icon-192.png" />
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v={{ v }}" />
 </head>
 <body>
   <header>
     <h1>⚡ Kalshi Betting Helper</h1>
     <p class="sub">Live model odds &amp; signals for crypto and baseball markets. Estimates, not guarantees — bet responsibly.</p>
-    <nav class="tabs">
-      <button class="tab active" data-tab="crypto">⚡ Crypto</button>
-      <button class="tab" data-tab="baseball">⚾ Baseball</button>
-      <button class="tab" data-tab="sports">🏆 Sports</button>
-      <button class="tab" data-tab="commodities">🛢️ Commodities</button>
-      <button class="tab" data-tab="weather">🌡️ Weather</button>
-      <button class="tab" data-tab="sim">🎲 Simulator</button>
-      <button class="tab" data-tab="combine">🎰 Combos</button>
-      <button class="tab" data-tab="ledger">📒 Ledger</button>
-    </nav>
     <div class="settingsbar">
       💰 Bankroll $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:90px"/>
       · Kelly
@@ -48,6 +38,17 @@
       <span class="hint" id="tierHint"></span>
     </div>
   </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="crypto">⚡ Crypto</button>
+    <button class="tab" data-tab="baseball">⚾ Baseball</button>
+    <button class="tab" data-tab="sports">🏆 Sports</button>
+    <button class="tab" data-tab="commodities">🛢️ Commodities</button>
+    <button class="tab" data-tab="weather">🌡️ Weather</button>
+    <button class="tab" data-tab="sim">🎲 Simulator</button>
+    <button class="tab" data-tab="combine">🎰 Combos</button>
+    <button class="tab" data-tab="ledger">📒 Ledger</button>
+  </nav>
 
   <main>
    <div id="tab-crypto">
@@ -337,6 +338,6 @@
     <p>Model: geometric Brownian motion (drift + volatility from recent 1-min candles). Prices via Coinbase public API. Not financial advice.</p>
   </footer>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v={{ v }}"></script>
 </body>
 </html>
