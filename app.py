@@ -749,6 +749,26 @@ def api_baseball_mixed():
     return jsonify({"parlay": item})
 
 
+@app.route("/api/baseball/value")
+def api_baseball_value():
+    """Kalshi player-prop prices vs each batter's recent game-log rate -> value plays."""
+    locked = _locked("racing_picks")   # gated with the other edge-finder tools (Pro)
+    if locked:
+        return locked
+    import value
+    import datetime as _dt
+    season = request.args.get("season") or _dt.date.today().isoformat()[:4]
+    try:
+        n = max(5, min(40, int(request.args.get("games", 15))))
+        edge = max(3.0, float(request.args.get("edge", 10)))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        return jsonify(value.find_value(season=season, n_games=n, min_edge=edge))
+    except Exception as e:
+        return jsonify({"error": f"value scan failed: {e}"}), 502
+
+
 @app.route("/api/baseball/record")
 def api_baseball_record():
     try:

@@ -1624,6 +1624,37 @@ async function buildCombine() {
   }
 }
 
+// ---- Prop value finder (Kalshi price vs recent form) ----------------------
+async function loadValue() {
+  const box = $("bbValue");
+  if (!box) return;
+  const g = ($("valGames") || {}).value || 15;
+  const e = ($("valEdge") || {}).value || 10;
+  box.innerHTML = `<div class="empty">Scanning Kalshi props vs recent game logs…</div>`;
+  try {
+    const d = await (await fetch(`/api/baseball/value?games=${g}&edge=${e}`)).json();
+    if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (!d.plays || !d.plays.length) {
+      box.innerHTML = `<div class="empty">No props with a ≥${e}¢ edge right now (${d.markets_scanned} scanned). Lower the edge or check back closer to game time.</div>`;
+      return;
+    }
+    const rows = d.plays.map((p) => {
+      const streak = p.streak ? ` <span style="color:var(--hold)">⚠️ streak</span>` : "";
+      const seas = p.season_pct != null ? ` <span style="color:var(--muted)">(season ${p.season_pct}%)</span>` : "";
+      return `<div class="scanrow edge">
+        <div class="scanhead"><div class="strike">${p.label}</div>
+          <div class="small">Kalshi ${p.side} <b>${p.cost_cents}¢</b> · recent <b>${p.recent_pct}%</b> in ${p.games}g${seas}${streak}</div></div>
+        <div class="actionline"><span class="edgeval pos">+${p.edge_cents}¢ edge</span>
+          <span class="plain">✅ Buy <b>${p.side}</b> @ <b>${p.cost_cents}¢</b> — model from recent form ${p.recent_pct}%</span></div>
+      </div>`;
+    }).join("");
+    box.innerHTML = `<div class="small" style="margin-bottom:6px">${d.plays.length} value plays from ${d.markets_scanned} Kalshi player-prop markets (last ${d.n_games} games):</div>` + rows;
+  } catch (e2) {
+    box.innerHTML = `<div class="empty">Scan failed — try again.</div>`;
+  }
+}
+
 // ---- Baseball model track record ------------------------------------------
 async function loadBaseballRecord() {
   try {
@@ -1722,6 +1753,7 @@ async function init() {
   $("bbDate").value = new Date().toISOString().slice(0, 10);
   $("bbBtn").addEventListener("click", () => loadBaseball());
   $("bbRefresh").addEventListener("click", () => loadBaseball(true));
+  if ($("valBtn")) $("valBtn").addEventListener("click", loadValue);
 
   // Sports setup
   $("sportBtn").addEventListener("click", loadSports);

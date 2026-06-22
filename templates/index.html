@@ -168,6 +168,19 @@
     </section>
 
     <section class="card">
+      <div class="row-between">
+        <h2>💰 Prop value finder</h2>
+        <div class="scan-controls">
+          last <select id="valGames"><option>10</option><option selected>15</option><option>20</option><option>30</option></select> games;
+          edge ≥ <input id="valEdge" type="number" min="3" max="40" value="10" style="width:54px"/>¢
+          <button id="valBtn">Scan</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">Kalshi's player-prop price vs how often the batter has <b>actually</b> done it in his recent games. Big gaps are the plays. <b>Recent form is a small, pitcher-blind sample</b> — the season rate is shown so you can spot a hot/cold streak (⚠️) that's likely to regress.</p>
+      <div id="bbValue" class="markets"><div class="empty">Scan to compare Kalshi prices vs recent form.</div></div>
+    </section>
+
+    <section class="card">
       <h2>🎲 Suggested combos (parlays)</h2>
       <p class="sub" style="margin:4px 0 12px">Combine picks for a bigger payout — all legs must win. Combined odds = each pick's probability multiplied together. <b>The % is OUR model's probability</b> (props like hits/totals/run-line are model estimates Kalshi may not even list); a <b>¢ price</b> shown means it's a live Kalshi game-winner market.</p>
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
