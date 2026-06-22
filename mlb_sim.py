@@ -476,14 +476,16 @@ def build_candidates(g, sim):
     props = g.get("props") or {}
     cands = []
 
-    def add(typ, label, pred, group=None):
+    def add(typ, label, pred, group=None, model=None):
         # `group` = the underlying market (a player, or ML/Total/Run line); a
-        # parlay never stacks two legs from the same group.
+        # parlay never stacks two legs from the same group. `model` is the closed-
+        # form (exact-math) probability for player props, kept alongside the
+        # simulated marginal so the UI can show both.
         m = _mask(pred, n)
         marg = _popcount(m) / n
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
-                          "group": group or typ})
+                          "group": group or typ, "model_pct": model})
 
     # Moneyline (both sides; contradictory pairs are pruned in the search).
     add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i])
@@ -515,27 +517,34 @@ def build_candidates(g, sim):
                 continue
             hit, tb, hr, r, rbi = st["hit"], st["tb"], st["hr"], st["r"], st["rbi"]
             grp = f"bat:{side}:{nm}"
+            # `bp` carries the closed-form model % for each line (hit1.., tb2..,
+            # hr1..); pass it as `model` so legs show model vs simulated.
             for m in (1, 2):
-                add("HR", f"{nm} {m}+ HR", lambda i, a=hr, m=m: a[i] >= m, grp)
+                add("HR", f"{nm} {m}+ HR", lambda i, a=hr, m=m: a[i] >= m, grp,
+                    bp.get(f"hr{m}"))
             for m in (2, 3, 4, 5, 6, 7):
-                add("Bases", f"{nm} {m}+ total bases", lambda i, a=tb, m=m: a[i] >= m, grp)
+                add("Bases", f"{nm} {m}+ total bases", lambda i, a=tb, m=m: a[i] >= m, grp,
+                    bp.get(f"tb{m}"))
             for m in (1, 2, 3, 4):
-                add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp)
-            for m in (2, 3, 4, 5, 6):
+                add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp,
+                    bp.get(f"hit{m}"))
+            for m in (2, 3, 4, 5, 6):   # HRR is a combined market — no closed form
                 add("HRR", f"{nm} {m}+ H+R+RBI",
                     lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp)
     # Starter strikeouts -- full ladder per starter (the high lines are the long
-    # odds); the marginal filter drops any that are too unlikely.
+    # odds); the marginal filter drops any that are too unlikely. The closed-form
+    # Poisson % lives in the ks_* dict (string keys).
     hk, ak = sim["home_k"], sim["away_k"]
+    ks_h, ks_a = props.get("ks_home") or {}, props.get("ks_away") or {}
     K_LINES = (4, 5, 6, 7, 8, 9, 10)
-    if props.get("ks_home") and props.get("home_sp_name"):
+    if ks_h and props.get("home_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['home_sp_name']} {line}+ Ks",
-                lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}")
-    if props.get("ks_away") and props.get("away_sp_name"):
+                lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}", ks_h.get(str(line)))
+    if ks_a and props.get("away_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['away_sp_name']} {line}+ Ks",
-                lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}")
+                lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)))
     return cands
 
 
@@ -631,6 +640,7 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
         "n_legs": len(combo),
         "legs": [{"pick": c["label"], "type": c["type"],
                   "prob_pct": round(c["marg"] * 100, 1),
+                  "model_pct": c.get("model_pct"),
                   "sims_hit": int(round(c["marg"] * n))} for c in combo],
         "combined_sims_hit": int(round(joint * n)),
         "combined_prob_pct": round(joint * 100, 1),
@@ -693,7 +703,8 @@ def _mixed_item(sel, games_bundles, target_payout=None):
             indep *= c["marg"]
             nlegs += 1
             legs.append({"pick": c["label"], "type": c["type"],
-                         "prob_pct": round(c["marg"] * 100, 1)})
+                         "prob_pct": round(c["marg"] * 100, 1),
+                         "model_pct": c.get("model_pct")})
         groups.append({"matchup": mu, "size": b["size"],
                        "joint_pct": round(b["prob"] * 100, 1),
                        "same_game": b["size"] > 1, "legs": legs})

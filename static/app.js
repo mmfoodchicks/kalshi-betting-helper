@@ -753,6 +753,17 @@ window.buildSGP = async () => {
   }
 };
 
+// A leg's probability display. Player props carry BOTH the model's closed-form
+// % and the simulated %, so we show both (they're computed two different ways);
+// other legs (ML/total/run line/HRR) only have the simulated number.
+function legProb(l, nsim) {
+  const core = (l.model_pct != null)
+    ? `model <b>${l.model_pct}%</b> · sim <b>${l.prob_pct}%</b>`
+    : `<b>${l.prob_pct}%</b>`;
+  const cnt = (nsim && l.sims_hit != null) ? ` · ${l.sims_hit.toLocaleString()}/${nsim.toLocaleString()}` : "";
+  return `<span style="color:var(--muted)">(${core}${cnt})</span>`;
+}
+
 // Deep per-pitcher / per-hitter simulated detail behind a same-game slip.
 function renderBreakdown(b, n) {
   if (!b) return "";
@@ -783,10 +794,8 @@ function renderBreakdown(b, n) {
 
 function renderSGP(s) {
   const nsim = s.n_sims || 0;
-  const legs = s.legs.map((l) => {
-    const cnt = l.sims_hit != null ? ` · <span style="color:var(--muted)">${l.sims_hit.toLocaleString()}/${nsim.toLocaleString()} sims</span>` : "";
-    return `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span>${cnt}</li>`;
-  }).join("");
+  const legs = s.legs.map((l) =>
+    `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l, nsim)}</li>`).join("");
   const corr = s.corr_delta_pct;
   const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
@@ -830,7 +839,7 @@ window.buildMixed = async () => {
 function renderMixed(m) {
   const groups = m.groups.map((g) => {
     const legs = g.legs.map((l) =>
-      `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+      `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l)}</li>`).join("");
     const head = g.same_game
       ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
       : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
