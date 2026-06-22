@@ -57,85 +57,148 @@ def _poisson(lam):
             return k - 1
 
 
-def _team(batters):
-    """Per-batter draw setup plus expected run-units and outs for calibration.
-
-    Returns (setup, e_raw, e_outs) where setup is a list of
-    {name, k (PA), thresh (cumulative outcome thresholds)}.
-    """
-    setup = []
-    e_raw = e_outs = 0.0
+def _rates(batters):
+    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb])]."""
+    rows = []
     for b in batters or []:
-        r1 = max(0.0, b.get("r1") or 0.0)
-        r2 = max(0.0, b.get("r2") or 0.0)
-        r3 = max(0.0, b.get("r3") or 0.0)
-        rhr = max(0.0, b.get("rhr") or 0.0)
-        rbb = max(0.0, b.get("rbb") or 0.0)
-        tot = r1 + r2 + r3 + rhr + rbb
-        if tot > 0.95:  # always leave room for an out
-            s = 0.95 / tot
-            r1, r2, r3, rhr, rbb = r1 * s, r2 * s, r3 * s, rhr * s, rbb * s
-            tot = 0.95
-        k = max(1, int(round(b.get("pa") or 4.0)))
-        thresh = []
-        acc = 0.0
-        for code, p in ((1, r1), (2, r2), (3, r3), (4, rhr), (5, rbb)):
+        rows.append([b.get("name"), [max(0.0, b.get(k) or 0.0)
+                                     for k in ("r1", "r2", "r3", "rhr", "rbb")]])
+    return rows
+
+
+def _build_setup(rows, mult):
+    """Cumulative outcome thresholds with on-base rates scaled by `mult`."""
+    setup = []
+    for name, rates in rows:
+        sr = [x * mult for x in rates]
+        tot = sum(sr)
+        if tot > 0.95:
+            sr = [x * 0.95 / tot for x in sr]
+        thresh, acc = [], 0.0
+        for code, p in zip((1, 2, 3, 4, 5), sr):
             if p > 0:
                 acc += p
                 thresh.append((acc, code))
-        setup.append({"name": b.get("name"), "k": k, "thresh": thresh})
-        e_raw += k * (r1 * _LW[1] + r2 * _LW[2] + r3 * _LW[3] + rhr * _LW[4] + rbb * _LW_BB)
-        e_outs += k * (1 - tot)
-    return setup, e_raw, e_outs
+        setup.append({"name": name, "thresh": thresh})
+    return setup
 
 
-def _bat_team(setup, scale, er, store, i, rnd):
-    """Simulate one team's batting for sim i. Records each tracked hitter's
-    hits/total-bases/HR into `store` and returns (runs, outs).
+def _team(batters, er, rnd):
+    """Lineup setup with on-base rates EMPIRICALLY calibrated so the simulated
+    runs land near `er` (the matchup-adjusted model total). Returns [] if no
+    lineup is posted."""
+    rows = _rates(batters)
+    if not rows:
+        return []
+    if not er:
+        return _build_setup(rows, 1.0)
+    mult = 1.0
+    for _ in range(5):                       # converge the rate multiplier to er
+        setup = _build_setup(rows, mult)
+        tot = sum(_play_game(setup, rnd)[0] for _ in range(250))
+        mean = tot / 250.0
+        if mean <= 0.2:
+            mult *= 1.6
+            continue
+        mult = max(0.4, min(2.8, mult * (er / mean) ** 0.8))
+    return _build_setup(rows, mult)
 
-    With no posted lineup we fall back to runs ~ Poisson(er) (outs unknown)."""
-    if not setup:
-        return _poisson(er), None
-    raw = 0.0
-    outs = 0
-    for b in setup:
-        h = tb = hr = 0
-        for _ in range(b["k"]):
+
+_N_INNINGS = 9
+
+
+def _play_game(setup, rnd):
+    """One full game for a lineup via base-out simulation. Returns
+    (runs, per-batter [hits, tb, hr, runs_scored, rbi])."""
+    L = len(setup)
+    stats = [[0, 0, 0, 0, 0] for _ in range(L)]   # H, TB, HR, R, RBI
+    runs = 0
+    idx = 0
+    for _inn in range(_N_INNINGS):
+        outs = 0
+        bases = [None, None, None]                # batter index on 1st/2nd/3rd
+        while outs < 3:
+            bi = idx % L
+            idx += 1
             u = rnd()
             code = 0
-            for acc, c in b["thresh"]:
+            for acc, c in setup[bi]["thresh"]:
                 if u < acc:
                     code = c
                     break
-            if code == 0:
+            s = stats[bi]
+            if code == 0:                         # out
                 outs += 1
-            elif code == 5:        # walk
-                raw += _LW_BB
-            else:                  # 1B/2B/3B/HR
-                raw += _LW[code]
-                h += 1
-                tb += code
-                if code == 4:
-                    hr += 1
-        st = store.get(b["name"])
-        if st is not None:
-            st["hit"][i] = h
-            st["tb"][i] = tb
-            st["hr"][i] = hr
-    # Poisson around the lineup-driven mean: keeps E[runs] == er while letting a
-    # big offensive game (more HRs) push that team's runs up -> real correlation.
-    return _poisson(raw * scale if scale else er), outs
+            elif code == 5:                       # walk (force advances only)
+                if bases[0] is None:
+                    bases[0] = bi
+                elif bases[1] is None:
+                    bases[1] = bases[0]; bases[0] = bi
+                elif bases[2] is None:
+                    bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+                else:                             # bases loaded -> forced run
+                    runs += 1; stats[bases[2]][3] += 1; s[4] += 1
+                    bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+            else:                                 # a hit
+                s[0] += 1; s[1] += code
+                r3, r2, r1 = bases
+                if code == 4:                     # HR: everyone scores
+                    s[2] += 1
+                    on = [r for r in (r1, r2, r3) if r is not None]
+                    for r in on:
+                        runs += 1; stats[r][3] += 1
+                    runs += 1; s[3] += 1
+                    s[4] += 1 + len(on)
+                    bases = [None, None, None]
+                elif code == 3:                   # triple: all runners score
+                    on = [r for r in (r1, r2, r3) if r is not None]
+                    for r in on:
+                        runs += 1; stats[r][3] += 1
+                    s[4] += len(on)
+                    bases = [None, None, bi]
+                elif code == 2:                   # double
+                    scored = 0
+                    nb = [None, bi, None]         # batter to 2nd
+                    if r3 is not None:
+                        runs += 1; stats[r3][3] += 1; scored += 1
+                    if r2 is not None:
+                        runs += 1; stats[r2][3] += 1; scored += 1
+                    if r1 is not None:            # from 1st: scores ~45%, else 3rd
+                        if rnd() < 0.45:
+                            runs += 1; stats[r1][3] += 1; scored += 1
+                        else:
+                            nb[2] = r1
+                    bases = nb
+                    s[4] += scored
+                else:                             # single
+                    scored = 0
+                    nb = [bi, None, None]         # batter to 1st
+                    if r3 is not None:
+                        runs += 1; stats[r3][3] += 1; scored += 1
+                    if r2 is not None:            # from 2nd: scores ~60%, else 3rd
+                        if rnd() < 0.60:
+                            runs += 1; stats[r2][3] += 1; scored += 1
+                        else:
+                            nb[2] = r2
+                    if r1 is not None:            # from 1st: ->2nd, or ->3rd ~28%
+                        if nb[2] is None and rnd() < 0.28:
+                            nb[2] = r1
+                        else:
+                            nb[1] = r1
+                    bases = nb
+                    s[4] += scored
+    return runs, stats
 
 
 def simulate(g, n=5000):
-    """Simulate game `g` n times. Returns shared per-sim outcome arrays."""
+    """Simulate game `g` n times via base-running. Returns shared per-sim arrays,
+    including per-batter hits/total-bases/HR/runs/RBI for player props (HRR)."""
     props = g.get("props") or {}
     er_h = g.get("exp_runs_home") or 4.3
     er_a = g.get("exp_runs_away") or 4.3
-    setup_h, eh_raw, eh_outs = _team(props.get("batters_home"))
-    setup_a, ea_raw, ea_outs = _team(props.get("batters_away"))
-    sh = (er_h / eh_raw) if eh_raw > 0 else None
-    sa = (er_a / ea_raw) if ea_raw > 0 else None
+    rnd = random.random
+    setup_h = _team(props.get("batters_home"), er_h, rnd)
+    setup_a = _team(props.get("batters_away"), er_a, rnd)
     lam_h = (props.get("ks_home") or {}).get("expected")   # home starter, faces away
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 
@@ -144,25 +207,36 @@ def simulate(g, n=5000):
     home_k = [0] * n
     away_k = [0] * n
     home_win = [False] * n
-    bat_h = {b["name"]: {"hit": [0] * n, "tb": [0] * n, "hr": [0] * n} for b in setup_h}
-    bat_a = {b["name"]: {"hit": [0] * n, "tb": [0] * n, "hr": [0] * n} for b in setup_a}
-    rnd = random.random
+    keys = ("hit", "tb", "hr", "r", "rbi")
+    bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
+    bat_a = {b["name"]: {k: [0] * n for k in keys} for b in setup_a}
+    idx_h = [(b["name"], bat_h[b["name"]]) for b in setup_h]
+    idx_a = [(b["name"], bat_a[b["name"]]) for b in setup_a]
+
+    def store(stats, idx_map, i):
+        for (name, arr), st in zip(idx_map, stats):
+            arr["hit"][i] = st[0]; arr["tb"][i] = st[1]; arr["hr"][i] = st[2]
+            arr["r"][i] = st[3]; arr["rbi"][i] = st[4]
 
     for i in range(n):
-        ra, oa = _bat_team(setup_a, sa, er_a, bat_a, i, rnd)
-        rh, oh = _bat_team(setup_h, sh, er_h, bat_h, i, rnd)
+        if setup_a:
+            ra, sa = _play_game(setup_a, rnd); store(sa, idx_a, i)
+        else:
+            ra = _poisson(er_a)
+        if setup_h:
+            rh, sh = _play_game(setup_h, rnd); store(sh, idx_h, i)
+        else:
+            rh = _poisson(er_h)
         home_runs[i] = rh
         away_runs[i] = ra
         if rh > ra:
             home_win[i] = True
-        elif rh == ra:                       # extra innings, slight home edge
+        elif rh == ra:
             home_win[i] = rnd() < 0.52
         if lam_h is not None:
-            adj = lam_h * (oa / ea_outs) if (oa is not None and ea_outs > 0) else lam_h
-            home_k[i] = _poisson(min(15.0, adj))
+            home_k[i] = _poisson(lam_h)
         if lam_a is not None:
-            adj = lam_a * (oh / eh_outs) if (oh is not None and eh_outs > 0) else lam_a
-            away_k[i] = _poisson(min(15.0, adj))
+            away_k[i] = _poisson(lam_a)
 
     return {"n": n, "home_runs": home_runs, "away_runs": away_runs,
             "home_k": home_k, "away_k": away_k, "home_win": home_win,
@@ -191,18 +265,22 @@ def build_candidates(g, sim):
     props = g.get("props") or {}
     cands = []
 
-    def add(typ, label, pred):
+    def add(typ, label, pred, group=None):
+        # `group` = the underlying market (a player, or ML/Total/Run line); a
+        # parlay never stacks two legs from the same group.
         m = _mask(pred, n)
         marg = _popcount(m) / n
         if 0.04 <= marg <= 0.97:
-            cands.append({"type": typ, "label": label, "mask": m, "marg": marg})
+            cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
+                          "group": group or typ})
 
     # Moneyline (both sides; contradictory pairs are pruned in the search).
     add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i])
     add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i])
-    # Run line.
-    add("Run line", f"{ha} −1.5 (win by 2+)", lambda i: hr_runs[i] - ar_runs[i] >= 2)
-    add("Run line", f"{aa} −1.5 (win by 2+)", lambda i: ar_runs[i] - hr_runs[i] >= 2)
+    # Run line -- Kalshi's adjustable "win by X+" for each side.
+    for mgn in (2, 3):
+        add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m)
+        add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m)
     # Game total (a few lines around the model total).
     tot_mean = g.get("exp_total") or (er(g))
     base = round(tot_mean)
@@ -211,29 +289,38 @@ def build_candidates(g, sim):
             continue
         add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln)
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln)
-    # Hitter props -- top 2 hitters per side by HR+TB upside.
+    # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
+    # (Hits+Runs+RBIs, Kalshi's combined player market), all from the same
+    # base-running sim so they're correctly correlated with each other and runs.
     for side, store, bp_list in (("home", sim["bat"]["home"], props.get("batters_home")),
                                  ("away", sim["bat"]["away"], props.get("batters_away"))):
         ranked = sorted((bp_list or []),
-                        key=lambda bp: (bp.get("hr1", 0) + bp.get("tb2", 0)), reverse=True)[:2]
+                        key=lambda bp: (bp.get("hr1", 0) + bp.get("tb2", 0)), reverse=True)[:3]
         for j, bp in enumerate(ranked):
             nm = bp.get("name")
             st = store.get(nm)
             if not st:
                 continue
-            hit, tb, hrr = st["hit"], st["tb"], st["hr"]
-            add("HR", f"{nm} 1+ HR", lambda i, a=hrr: a[i] >= 1)
-            add("Bases", f"{nm} 2+ total bases", lambda i, a=tb: a[i] >= 2)
-            if j == 0:
-                add("Hit", f"{nm} 1+ hit", lambda i, a=hit: a[i] >= 1)
+            hit, tb, hr, r, rbi = st["hit"], st["tb"], st["hr"], st["r"], st["rbi"]
+            grp = f"bat:{side}:{nm}"
+            add("HR", f"{nm} 1+ HR", lambda i, a=hr: a[i] >= 1, grp)
+            for m in (2, 3, 4):
+                add("Bases", f"{nm} {m}+ total bases", lambda i, a=tb, m=m: a[i] >= m, grp)
+            for m in (1, 2, 3):
+                add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp)
+            for m in (2, 3, 4):
+                add("HRR", f"{nm} {m}+ H+R+RBI",
+                    lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp)
     # Starter strikeouts -- best couple of lines per starter.
     hk, ak = sim["home_k"], sim["away_k"]
     if props.get("ks_home") and props.get("home_sp_name"):
         for line in (5, 6, 7):
-            add("Ks", f"{props['home_sp_name']} {line}+ Ks", lambda i, L=line: hk[i] >= L)
+            add("Ks", f"{props['home_sp_name']} {line}+ Ks",
+                lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}")
     if props.get("ks_away") and props.get("away_sp_name"):
         for line in (5, 6, 7):
-            add("Ks", f"{props['away_sp_name']} {line}+ Ks", lambda i, L=line: ak[i] >= L)
+            add("Ks", f"{props['away_sp_name']} {line}+ Ks",
+                lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}")
     return cands
 
 
@@ -254,13 +341,31 @@ def _redundant(masks):
 
 
 def _market_conflict(combo):
-    """True if a parlay stacks two legs from the same single-outcome market
-    (two game totals, two moneylines, two run lines) -- e.g. 'Over 8.5' AND
-    'Under 9.5' is really one exactly-9 middle, not two independent picks."""
-    for typ in ("Total", "ML", "Run line"):
-        if sum(1 for c in combo if c["type"] == typ) > 1:
+    """True if a parlay stacks two legs from the same market group -- two game
+    totals, two run-line margins, two moneylines, or two props on the SAME
+    player/pitcher (those are one correlated market, not independent picks)."""
+    seen = set()
+    for c in combo:
+        g = c.get("group", c["type"])
+        if g in seen:
             return True
+        seen.add(g)
     return False
+
+
+def _pool(cands, k=22):
+    """Trim the candidate set for the combinatorial search: at most two lines per
+    group (a safe one + an aggressive one), capped to k, so the search stays fast
+    while still spanning safe favorites and longer-shot payouts."""
+    by_group = {}
+    for c in sorted(cands, key=lambda x: -x["marg"]):
+        by_group.setdefault(c.get("group", c["type"]), []).append(c)
+    pool = []
+    for cs in by_group.values():
+        pool.append(cs[0])
+        if len(cs) > 1:
+            pool.append(cs[-1])
+    return sorted(pool, key=lambda x: -x["marg"])[:k]
 
 
 def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
@@ -270,6 +375,7 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
     target, take the most likely; otherwise take the highest-payout combo found.
     Otherwise: take the most likely combo of n_legs legs (meeting the target
     confidence when possible)."""
+    cands = _pool(cands)
     if len(cands) < 2:
         return None
     payout_mode = bool(target_payout and target_payout > 1)
@@ -329,7 +435,7 @@ def game_bundles(cands, n, max_legs=3, per_size=6):
     """Non-redundant leg bundles (size 1..max_legs) for one game, each with its
     simulated joint probability. Trimmed to the most useful per size: the safest
     few (high prob) and the longest-shot few (high payout, to reach a target)."""
-    cs = sorted(cands, key=lambda c: c["marg"], reverse=True)[:14]
+    cs = _pool(cands, 14)
     bundles = []
     for sz in range(1, max_legs + 1):
         if sz > len(cs):

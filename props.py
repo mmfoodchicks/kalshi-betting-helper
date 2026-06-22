@@ -85,8 +85,16 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
+    # RFI (a Run scored in the First Inning, either team). The 1st gets the top
+    # of the order, so it runs a touch above an average inning (~1.08x). YES if
+    # at least one team scores: 1 - P(no run top) * P(no run bottom).
+    lam1_a = er_away / 9.0 * 1.08
+    lam1_h = er_home / 9.0 * 1.08
+    rfi_yes = 1 - math.exp(-lam1_a) * math.exp(-lam1_h)
+
     home_by, away_by = _spread_ladder(margin)
     return {
+        "rfi_pct": round(rfi_yes * 100, 1),
         # Kalshi run line = "[team] wins by over X.5 runs" with an adjustable
         # line. home_by["2"] = P(win by 2+) = the 1.5 line, ["3"] = the 2.5 line,
         # etc. A 1-run game hits neither side's spread.
@@ -194,10 +202,14 @@ def batter_props(b, slot, opp_hit_factor=1.0):
     r_bb = (b.get("bb") or 0) / spa
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
-    p0 = (1 - r_hit) ** k
-    p1 = k * r_hit * (1 - r_hit) ** (k - 1) if r_hit < 1 else 0
+    # Exact hit-count distribution (binomial) -> 1+/2+/3+ hits.
+    q = 1 - r_hit
+    p0 = q ** k
+    p1 = k * r_hit * q ** (k - 1) if r_hit < 1 else 0
+    p2 = (k * (k - 1) / 2) * r_hit ** 2 * q ** (k - 2) if (r_hit < 1 and k >= 2) else 0
     hit1 = 1 - p0
     hit2 = max(0.0, 1 - p0 - p1)
+    hit3 = max(0.0, 1 - p0 - p1 - p2)
     hr1 = 1 - (1 - min(0.6, r_hr)) ** k
 
     # Exact total-bases distribution by convolving the per-PA TB pmf k times.
@@ -206,15 +218,18 @@ def batter_props(b, slot, opp_hit_factor=1.0):
     for _ in range(k):
         nd = {}
         for tb, pr in dist.items():
-            for add, q in pmf.items():
-                if q > 0:
-                    nd[tb + add] = nd.get(tb + add, 0.0) + pr * q
+            for add, qq in pmf.items():
+                if qq > 0:
+                    nd[tb + add] = nd.get(tb + add, 0.0) + pr * qq
         dist = nd
     tb2 = sum(p for tb, p in dist.items() if tb >= 2)
     tb3 = sum(p for tb, p in dist.items() if tb >= 3)
+    tb4 = sum(p for tb, p in dist.items() if tb >= 4)
+    tb5 = sum(p for tb, p in dist.items() if tb >= 5)
     return {"name": b.get("name"), "slot": slot,
-            "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1),
+            "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1), "hit3": round(hit3 * 100, 1),
             "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1),
+            "tb4": round(tb4 * 100, 1), "tb5": round(tb5 * 100, 1),
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
             "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4)}
 

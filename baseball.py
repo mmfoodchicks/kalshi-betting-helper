@@ -666,7 +666,7 @@ def analyze_slate(date, season):
         ks_away = props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9")) if a_sp else None
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
-                      "model_total": gp["model_total"],
+                      "model_total": gp["model_total"], "rfi_pct": gp.get("rfi_pct"),
                       "hits_home": hit_home, "hits_away": hit_away,
                       "batters_home": bat_home, "batters_away": bat_away,
                       "ks_home": ks_home, "ks_away": ks_away,
@@ -905,12 +905,20 @@ def _game_variants(g):
     for t in p.get("totals_ladder", []):
         add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
         add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
-    for key in ("hits_away", "hits_home"):
-        h = p.get(key)
-        if h and h.get("batters"):
-            for b in h["batters"][:2]:
-                add("Hit", f"{b['name']} 1+ hit", b["hit1_pct"] / 100.0)
-                add("Hit", f"{b['name']} 2+ hits", b["hit2_pct"] / 100.0)
+    if p.get("rfi_pct") is not None:
+        add("RFI", "Run in the 1st inning", p["rfi_pct"] / 100.0)
+        add("RFI", "No run in the 1st inning", 1 - p["rfi_pct"] / 100.0)
+    # Per-batter ladders (Kalshi adjustable thresholds): hits, total bases, HR.
+    for key in ("batters_away", "batters_home"):
+        for b in (p.get(key) or [])[:5]:
+            for m, hk in ((1, "hit1"), (2, "hit2"), (3, "hit3")):
+                if b.get(hk) is not None:
+                    add("Hit", f"{b['name']} {m}+ hits", b[hk] / 100.0)
+            for m, tk in ((2, "tb2"), (3, "tb3"), (4, "tb4"), (5, "tb5")):
+                if b.get(tk) is not None:
+                    add("Bases", f"{b['name']} {m}+ total bases", b[tk] / 100.0)
+            if b.get("hr1") is not None:
+                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0)
     return out
 
 
