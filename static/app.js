@@ -640,6 +640,46 @@ let bbCombosData = null;
 let parlayLegs = 3;
 let parlayTarget = 65;
 let parlayPayout = 0;
+
+// Unified combo maker: one box, routes to the same-game-aware (mixed) builder
+// when the checkbox is on, else the one-leg-per-game parlay builder.
+window.buildCombo = async () => {
+  const out = $("comboOut");
+  if (!out) return;
+  let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
+  let t = parseInt(($("comboTarget") || {}).value, 10); if (isNaN(t)) t = 65;
+  let p = parseFloat(($("comboPayout") || {}).value) || 0;
+  parlayLegs = n; parlayTarget = t; parlayPayout = p;
+  const sameGame = $("comboSameGame") && $("comboSameGame").checked;
+  const date = $("bbDate").value;
+  out.innerHTML = `<div class="small">${sameGame ? "Simulating games…" : "Tuning lines…"}</div>`;
+  try {
+    if (sameGame) {
+      const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+      if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
+      if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
+      if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — need upcoming games.</div>`; return; }
+      out.innerHTML = renderMixed(d.parlay);
+    } else {
+      const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+      if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a parlay at ${t}%.</div>`; return; }
+      const c = d.combo;
+      let title, note = "";
+      if (p > 1) {
+        title = `🎯 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
+        if (c.expanded) note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
+        if (!c.payout_reached) note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — max at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor or target.</div>`;
+        note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}).</div>`;
+      } else {
+        title = `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
+      }
+      out.innerHTML = renderCombo(c, title, "hl prop") + note;
+    }
+  } catch (e) {
+    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+  }
+};
+
 window.buildParlay = async () => {
   const out = $("parlayOut");
   if (!out || !bbCombosData) return;
@@ -826,40 +866,21 @@ async function loadBaseball(silent) {
     const c = d.combos;
     bbCombosData = c;
     let html = "";
-    // Combo maker: pick how many legs; it builds the highest-confidence parlay.
+    // Unified combo maker: one box, with a checkbox to allow same-game stacking.
     const maxN = c.max_legs_available || 0;
     if (maxN >= 2) {
       const def = Math.min(parlayLegs, maxN);
       html += `<div class="combomaker">
         🎯 <b>Combo maker:</b> each leg ≥
-        <input id="parlayTarget" type="number" min="50" max="97" value="${parlayTarget}" style="width:54px"/>% likely;
-        <input id="parlayN" type="number" min="2" max="${maxN}" value="${def}" style="width:50px"/> legs
-        <b>or</b> reach <input id="parlayPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
-        <button class="track-mini primary-mini" onclick="buildParlay()">Build</button>
-        <div class="small" style="margin-top:4px">It auto-tunes each line (1+/2+ hits, runs total, ML vs ±1.5). Set a payout (e.g. 20×) and it adds legs until the parlay reaches it; leave 0 for a fixed leg count.</div>
-        <div id="parlayOut"></div>
+        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely;
+        <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs
+        <b>or</b> reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
+        <label class="small" style="margin-left:6px"><input type="checkbox" id="comboSameGame" style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+        <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
+        <div class="small" style="margin-top:4px">Auto-tunes each line (hits, total bases, runs total, ML, run line, RFI) to your target, adding legs until it reaches the payout. <b>Same-game on</b> = it may stack correlated legs from one game (true simulated joint odds); off keeps one leg per game.</div>
+        <div id="comboOut"></div>
       </div>`;
     }
-    // Same-game parlay maker: correlation-aware (simulated) joint odds.
-    html += `<div class="combomaker">
-      🎰 <b>Same-game parlay</b> (correlation-aware, simulated): ${lockTag("same_game_parlay")}<br>
-      each leg ≥ <input id="sgpTarget" type="number" min="20" max="95" value="55" style="width:54px"/>% likely;
-      <input id="sgpN" type="number" min="2" max="5" value="3" style="width:50px"/> legs
-      <b>or</b> reach <input id="sgpPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
-      <button class="track-mini primary-mini" onclick="buildSGP()">Simulate</button>
-      <div class="small" style="margin-top:4px">Legs from the <b>same game</b> are correlated — a homer lifts the team total <i>and</i> the moneyline together, strikeouts suppress the opposing total. This simulates each game and reads the <b>true joint odds</b> (not the naive independent product, which it also shows you).</div>
-      <div id="sgpOut"></div>
-    </div>`;
-    // Mixed multi-game parlay: stack correlated legs in one game + singles from others.
-    html += `<div class="combomaker">
-      🔀 <b>Mixed parlay</b> (stack a game + add others): ${lockTag("mixed_parlay")}<br>
-      each leg ≥ <input id="mixTarget" type="number" min="20" max="95" value="55" style="width:54px"/>% likely;
-      <input id="mixN" type="number" min="2" max="8" value="4" style="width:50px"/> total legs
-      <b>or</b> reach <input id="mixPayout" type="number" min="0" step="any" value="0" style="width:60px"/>× payout
-      <button class="track-mini primary-mini" onclick="buildMixed()">Simulate</button>
-      <div class="small" style="margin-top:4px">Builds <b>one</b> parlay that may take 2–3 correlated legs from a single game <i>and</i> single legs from other games. Within a game it uses simulated joint odds; across games it multiplies (independent). It picks where to stack to hit your target most safely.</div>
-      <div id="mixOut"></div>
-    </div>`;
     if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
     if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
       html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
@@ -1096,11 +1117,29 @@ window.logSportBet = async (ticker, kind, desc, name, price) => {
   if (btn) btn.textContent = "logged ✓";
 };
 
+// Collapse an outcome list to the first 3 with a "See N more" toggle, but only
+// when a SINGLE market has more than 3 outcomes (e.g. a 40-driver race winner).
+let _moreSeq = 0;
+function collapseRows(rows, label) {
+  if (rows.length <= 3) return rows.join("");
+  const id = "more" + (_moreSeq++);
+  const extra = rows.length - 3;
+  return rows.slice(0, 3).join("") +
+    `<div id="${id}" class="hidden">${rows.slice(3).join("")}</div>` +
+    `<button class="track-mini seemore" onclick="toggleMore('${id}',this,${extra},'${label || "more"}')">▾ See ${extra} ${label || "more"}</button>`;
+}
+window.toggleMore = (id, btn, n, label) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const hidden = el.classList.toggle("hidden");
+  btn.innerHTML = hidden ? `▾ See ${n} ${label}` : "▴ Show less";
+};
+
 function renderSportEvent(e, sportKey) {
   const secs = e.close_time ? e.close_time - Math.floor(Date.now() / 1000) : 0;
   const vig = e.overround_pct;
   const vigCls = vig == null ? "" : vig <= 4 ? "ev pos" : vig >= 10 ? "ev neg" : "";
-  const outs = e.outcomes.map((o) => {
+  const outRows = e.outcomes.map((o) => {
     const f = sfid(o.ticker);
     let modelStr = "";
     if (o.model_pct != null) {
@@ -1119,7 +1158,8 @@ function renderSportEvent(e, sportKey) {
         <button class="track-mini primary-mini" onclick='logSportBet(${JSON.stringify(o.ticker)},${JSON.stringify(sportKey)},${JSON.stringify(e.title)},${JSON.stringify(o.name)},${o.yes_ask})'>Save</button>
       </div>
     </div>`;
-  }).join("");
+  });
+  const outs = collapseRows(outRows, "more");
   const arb = e.arbitrage_pct
     ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
@@ -1227,9 +1267,20 @@ async function loadWeather() {
   const city = $("wxCity").value;
   box.innerHTML = `<div class="empty">Loading ${city}…</div>`;
   try {
-    const d = await (await fetch("/api/weather/" + city)).json();
+    let d = await (await fetch("/api/weather/" + city)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${d.city} temperature markets right now.</div>`; return; }
+    // Date dropdown: all open market days for this city (+ an "All days" option).
+    const dateSel = $("wxDate");
+    if (dateSel) {
+      const want = dateSel.value;
+      const opts = `<option value="">All days</option>` +
+        d.events.map((ev) => `<option value="${ev.date}">${ev.date}</option>`).join("");
+      dateSel.innerHTML = opts;
+      if (d.events.some((ev) => ev.date === want) || want === "") dateSel.value = want;
+    }
+    const pickDate = dateSel ? dateSel.value : "";
+    d = Object.assign({}, d, { events: pickDate ? d.events.filter((ev) => ev.date === pickDate) : d.events });
     const cur = d.current;
     const curBox = cur ? `<div class="volbox">
       <div class="sellhead"><span class="sellaction">🌡️ ${d.city} — live now</span>
@@ -1237,7 +1288,7 @@ async function loadWeather() {
       <div class="small">dew point <b>${cur.dew_point_f ?? "—"}°</b> · humidity <b>${cur.humidity_pct ?? "—"}%</b> · wind <b>${cur.wind_mph ?? "—"} mph</b> · pressure <b>${cur.pressure_hpa ?? "—"} hPa</b></div>
     </div>` : "";
     box.innerHTML = curBox + d.events.map((ev) => {
-      const rows = ev.outcomes.map((o) => {
+      const rows = collapseRows(ev.outcomes.map((o) => {
         const ec = o.edge_cents;
         const cls = ec == null ? "" : ec >= 7 ? "ev pos" : ec <= -7 ? "ev neg" : "";
         return `<div class="sportout">
@@ -1246,7 +1297,7 @@ async function loadWeather() {
             <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · model fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${ec != null ? ` · edge <b class="${cls}">${ec >= 0 ? "+" : ""}${ec}¢</b>` : ""}</span>
           </div>
         </div>`;
-      }).join("");
+      }), "ranges");
       const m = ev.model || {};
       const adj = (m.mean != null && m.forecast_high != null && Math.abs(m.mean - m.forecast_high) >= 0.5)
         ? ` <span style="color:var(--accent)">(adj ${m.mean}°)</span>` : "";
@@ -1657,6 +1708,7 @@ async function init() {
   // Weather setup
   $("wxBtn").addEventListener("click", loadWeather);
   $("wxCity").addEventListener("change", loadWeather);
+  if ($("wxDate")) $("wxDate").addEventListener("change", loadWeather);
 
   // Commodities
   $("comBtn").addEventListener("click", loadCommodities);
