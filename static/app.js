@@ -1353,6 +1353,27 @@ async function runWxSim() {
       ${thLine}</div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
+function renderMlbDfs(d) {
+  const rows = d.lineup.map((p) => {
+    const tag = `<span class="legtag">${p.pos}</span>`;
+    const star = p.sim ? "🎲 " : "";
+    return `<div class="sportout"><div class="left"><span class="oname">${tag} ${star}${p.name}</span>
+      <span class="small">$${p.salary.toLocaleString()} · proj ${p.proj} · floor ${p.floor} / ceiling ${p.ceil}</span></div></div>`;
+  }).join("");
+  const un = d.unmatched && d.unmatched.length
+    ? `<div class="small" style="color:var(--muted)">${d.unmatched.length} players had no sim/projection match (skipped).</div>` : "";
+  return `<div class="bbgame">
+    <div class="matchup">⚾ Optimal MLB lineup — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}</div>
+    <div class="small" style="margin:4px 0">🎲 = projected from the game simulation (${d.sim_players}/${d.lineup.length} of your lineup); others from CSV avg.</div>
+    <div class="kv" style="margin-top:4px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>
+      <span>Projected <b>${d.total_proj}</b></span></div>
+    <div class="kv"><span>🔴 Floor <b>${d.total_floor}</b></span><span>🟢 Ceiling <b class="ev pos">${d.total_ceil}</b></span></div>
+    <div class="sportouts" style="margin-top:8px">${rows}</div>
+    ${un}
+    <div class="small" style="margin-top:6px">Hitters come from the correlated game sim, so the <b>ceiling</b> rewards stacking a team. Pitchers are simulated from their rate stats. Needs posted lineups (a few hours pre-game).</div>
+  </div>`;
+}
+
 async function runDfsSim() {
   const box = $("simResults");
   const csv = $("dfsCsv").value;
@@ -1367,6 +1388,7 @@ async function runDfsSim() {
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (d.total_ceil != null) { box.innerHTML = renderMlbDfs(d); return; }   // sim-driven MLB
     const rows = d.lineup.map((p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
       let pd = "";

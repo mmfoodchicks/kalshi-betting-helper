@@ -109,12 +109,16 @@ def _team(batters, er, rnd):
 _N_INNINGS = 9
 
 
+_DK_HIT = {1: 3, 2: 5, 3: 8, 4: 10}   # DraftKings hitter points by hit type
+
+
 def _play_game(setup, rnd):
     """One full game for a lineup via base-out simulation, with speed-driven
     baserunning + stolen bases. Returns (runs, per-batter
-    [hits, tb, hr, runs_scored, rbi, sb])."""
+    [hits, tb, hr, runs_scored, rbi, sb, dk_points]). dk_points is the batter's
+    DraftKings fantasy total (1B+3 2B+5 3B+8 HR+10 R+2 RBI+2 BB+2 SB+5)."""
     L = len(setup)
-    stats = [[0, 0, 0, 0, 0, 0] for _ in range(L)]   # H, TB, HR, R, RBI, SB
+    stats = [[0, 0, 0, 0, 0, 0, 0] for _ in range(L)]   # H,TB,HR,R,RBI,SB,DK
     runs = 0
     idx = 0
     for _inn in range(_N_INNINGS):
@@ -126,9 +130,10 @@ def _play_game(setup, rnd):
                 rr = bases[0]
                 if rnd() < setup[rr]["sbr"]:
                     if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
-                        bases[1] = rr; bases[0] = None; stats[rr][5] += 1   # SB
+                        bases[1] = rr; bases[0] = None
+                        stats[rr][5] += 1; stats[rr][6] += 5            # SB +5
                     else:
-                        bases[0] = None; outs += 1                          # caught
+                        bases[0] = None; outs += 1                      # caught stealing
                         if outs >= 3:
                             break
             bi = idx % L
@@ -143,6 +148,7 @@ def _play_game(setup, rnd):
             if code == 0:                         # out
                 outs += 1
             elif code == 5:                       # walk (force advances only)
+                s[6] += 2
                 if bases[0] is None:
                     bases[0] = bi
                 elif bases[1] is None:
@@ -150,47 +156,46 @@ def _play_game(setup, rnd):
                 elif bases[2] is None:
                     bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
                 else:                             # bases loaded -> forced run
-                    runs += 1; stats[bases[2]][3] += 1; s[4] += 1
+                    rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                    s[4] += 1; s[6] += 2
                     bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
             else:                                 # a hit
-                s[0] += 1; s[1] += code
+                s[0] += 1; s[1] += code; s[6] += _DK_HIT[code]
                 r3, r2, r1 = bases
-                if code == 4:                     # HR: everyone scores
+                scored = 0
+                if code == 4:                     # HR: everyone (incl. batter) scores
                     s[2] += 1
-                    on = [r for r in (r1, r2, r3) if r is not None]
-                    for r in on:
-                        runs += 1; stats[r][3] += 1
-                    runs += 1; s[3] += 1
-                    s[4] += 1 + len(on)
+                    for r in (r1, r2, r3):
+                        if r is not None:
+                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    runs += 1; s[3] += 1; s[6] += 2                     # batter run
+                    s[4] += 1 + scored; s[6] += 2 * (1 + scored)       # RBI
                     bases = [None, None, None]
                 elif code == 3:                   # triple: all runners score
-                    on = [r for r in (r1, r2, r3) if r is not None]
-                    for r in on:
-                        runs += 1; stats[r][3] += 1
-                    s[4] += len(on)
+                    for r in (r1, r2, r3):
+                        if r is not None:
+                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    s[4] += scored; s[6] += 2 * scored
                     bases = [None, None, bi]
                 elif code == 2:                   # double
-                    scored = 0
                     nb = [None, bi, None]         # batter to 2nd
-                    if r3 is not None:
-                        runs += 1; stats[r3][3] += 1; scored += 1
-                    if r2 is not None:
-                        runs += 1; stats[r2][3] += 1; scored += 1
-                    if r1 is not None:            # from 1st: scores faster runners more
+                    for r in (r3, r2):
+                        if r is not None:
+                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    if r1 is not None:            # from 1st: faster runners score more
                         if rnd() < max(0.25, min(0.7, 0.45 * setup[r1]["spd"])):
-                            runs += 1; stats[r1][3] += 1; scored += 1
+                            rs = stats[r1]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
                         else:
                             nb[2] = r1
                     bases = nb
-                    s[4] += scored
+                    s[4] += scored; s[6] += 2 * scored
                 else:                             # single
-                    scored = 0
                     nb = [bi, None, None]         # batter to 1st
                     if r3 is not None:
-                        runs += 1; stats[r3][3] += 1; scored += 1
-                    if r2 is not None:            # from 2nd: scores ~60%, speed-scaled
+                        rs = stats[r3]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    if r2 is not None:            # from 2nd: ~60%, speed-scaled
                         if rnd() < max(0.4, min(0.85, 0.60 * setup[r2]["spd"])):
-                            runs += 1; stats[r2][3] += 1; scored += 1
+                            rs = stats[r2]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
                         else:
                             nb[2] = r2
                     if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
@@ -199,7 +204,7 @@ def _play_game(setup, rnd):
                         else:
                             nb[1] = r1
                     bases = nb
-                    s[4] += scored
+                    s[4] += scored; s[6] += 2 * scored
     return runs, stats
 
 
@@ -220,7 +225,7 @@ def simulate(g, n=5000):
     home_k = [0] * n
     away_k = [0] * n
     home_win = [False] * n
-    keys = ("hit", "tb", "hr", "r", "rbi", "sb")
+    keys = ("hit", "tb", "hr", "r", "rbi", "sb", "dk")
     bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
     bat_a = {b["name"]: {k: [0] * n for k in keys} for b in setup_a}
     idx_h = [(b["name"], bat_h[b["name"]]) for b in setup_h]
@@ -230,6 +235,7 @@ def simulate(g, n=5000):
         for (name, arr), st in zip(idx_map, stats):
             arr["hit"][i] = st[0]; arr["tb"][i] = st[1]; arr["hr"][i] = st[2]
             arr["r"][i] = st[3]; arr["rbi"][i] = st[4]; arr["sb"][i] = st[5]
+            arr["dk"][i] = st[6]
 
     for i in range(n):
         if setup_a:

@@ -465,6 +465,14 @@ def api_simulate_dfs():
         return jsonify({"error": "bad roster/cap"}), 400
     import datetime as _dt
     n = tiers.cap_sims(_tier(), d.get("sims", 20000))
+    if d.get("sport") == "mlb":
+        # Baseball DFS is driven by the game simulator (correlated hitter ceilings
+        # for stacking) -- a different path from the projection-based racing/UFC.
+        import mlb_dfs
+        date = d.get("date") or _dt.date.today().isoformat()
+        objective = "ceiling" if d.get("objective") == "ceiling" else "median"
+        return jsonify(mlb_dfs.build(date, text, cap=cap, objective=objective,
+                                     n_sims=min(6000, n)))
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
