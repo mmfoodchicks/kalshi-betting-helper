@@ -785,11 +785,12 @@ def _candidate_legs(games, live_only=False):
             for b in (p.get(key) or [])[:6]:
                 add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0)
                 add("Bases", f"{b['name']} 2+ total bases", b["tb2"] / 100.0)
-        # Starter strikeout props.
+        # Starter strikeout props -- every line the model offers (high lines are
+        # the long odds); skip the "expected" summary key.
         for key, nm in (("ks_home", p.get("home_sp_name")), ("ks_away", p.get("away_sp_name"))):
             ks = p.get(key)
             if ks and nm:
-                for line in (4, 5, 6, 7):
+                for line in sorted(int(k) for k in ks if k.isdigit()):
                     if ks.get(str(line)):
                         add("Ks", f"{nm} {line}+ Ks", ks[str(line)] / 100.0)
     return legs
@@ -926,16 +927,21 @@ def _game_variants(g):
         add("RFI", "Run in the 1st inning", p["rfi_pct"] / 100.0)
         add("RFI", "No run in the 1st inning", 1 - p["rfi_pct"] / 100.0)
     # Per-batter ladders (Kalshi adjustable thresholds): hits, total bases, HR.
+    # Full thresholds, not just a +/-2 window -- the higher lines (4+ hits, 6+/7+
+    # total bases, 2+ HR) are long odds for payout-chasing combos; the variant
+    # filter drops any that are too unlikely to be useful.
     for key in ("batters_away", "batters_home"):
         for b in (p.get(key) or [])[:5]:
-            for m, hk in ((1, "hit1"), (2, "hit2"), (3, "hit3")):
+            for m, hk in ((1, "hit1"), (2, "hit2"), (3, "hit3"), (4, "hit4")):
                 if b.get(hk) is not None:
                     add("Hit", f"{b['name']} {m}+ hits", b[hk] / 100.0)
-            for m, tk in ((2, "tb2"), (3, "tb3"), (4, "tb4"), (5, "tb5")):
+            for m, tk in ((2, "tb2"), (3, "tb3"), (4, "tb4"), (5, "tb5"),
+                          (6, "tb6"), (7, "tb7")):
                 if b.get(tk) is not None:
                     add("Bases", f"{b['name']} {m}+ total bases", b[tk] / 100.0)
-            if b.get("hr1") is not None:
-                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0)
+            for m, hk in ((1, "hr1"), (2, "hr2")):
+                if b.get(hk) is not None:
+                    add("HR", f"{b['name']} {m}+ HR", b[hk] / 100.0)
     return out
 
 

@@ -334,16 +334,17 @@ def build_candidates(g, sim):
     # Moneyline (both sides; contradictory pairs are pruned in the search).
     add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i])
     add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i])
-    # Run line -- Kalshi's adjustable "win by X+" for each side.
-    for mgn in (2, 3):
+    # Run line -- Kalshi's adjustable "win by X+" for each side. Full ladder (not
+    # just 2/3) so blowout lines are available for longer odds; the marginal
+    # filter below drops any margin too unlikely to be useful.
+    for mgn in (2, 3, 4, 5, 6, 7):
         add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m)
         add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m)
-    # Game total (a few lines around the model total).
+    # Game total -- full half-run ladder around the model total (not just +/-1),
+    # so you can push the line far out for payout.
     tot_mean = g.get("exp_total") or (er(g))
     base = round(tot_mean)
-    for ln in (base - 0.5, base + 0.5, 8.5):
-        if ln < 3.5:
-            continue
+    for ln in [n + 0.5 for n in range(max(0, base - 5), base + 7)]:
         add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln)
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln)
     # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
@@ -360,22 +361,25 @@ def build_candidates(g, sim):
                 continue
             hit, tb, hr, r, rbi = st["hit"], st["tb"], st["hr"], st["r"], st["rbi"]
             grp = f"bat:{side}:{nm}"
-            add("HR", f"{nm} 1+ HR", lambda i, a=hr: a[i] >= 1, grp)
-            for m in (2, 3, 4):
+            for m in (1, 2):
+                add("HR", f"{nm} {m}+ HR", lambda i, a=hr, m=m: a[i] >= m, grp)
+            for m in (2, 3, 4, 5, 6, 7):
                 add("Bases", f"{nm} {m}+ total bases", lambda i, a=tb, m=m: a[i] >= m, grp)
-            for m in (1, 2, 3):
+            for m in (1, 2, 3, 4):
                 add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp)
-            for m in (2, 3, 4):
+            for m in (2, 3, 4, 5, 6):
                 add("HRR", f"{nm} {m}+ H+R+RBI",
                     lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp)
-    # Starter strikeouts -- best couple of lines per starter.
+    # Starter strikeouts -- full ladder per starter (the high lines are the long
+    # odds); the marginal filter drops any that are too unlikely.
     hk, ak = sim["home_k"], sim["away_k"]
+    K_LINES = (4, 5, 6, 7, 8, 9, 10)
     if props.get("ks_home") and props.get("home_sp_name"):
-        for line in (5, 6, 7):
+        for line in K_LINES:
             add("Ks", f"{props['home_sp_name']} {line}+ Ks",
                 lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}")
     if props.get("ks_away") and props.get("away_sp_name"):
-        for line in (5, 6, 7):
+        for line in K_LINES:
             add("Ks", f"{props['away_sp_name']} {line}+ Ks",
                 lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}")
     return cands

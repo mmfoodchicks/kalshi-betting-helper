@@ -26,13 +26,18 @@ def _poisson_pmf(lam, kmax=_MAXR):
     return pmf
 
 
+_SPREAD_MARGINS = (2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+
 def _spread_ladder(margin):
-    """Each side's P(win by >= m) for m in 2..5 -- Kalshi's adjustable spread
-    ('wins by over 1.5/2.5/3.5/4.5 runs'). String keys for clean JSON."""
+    """Each side's P(win by >= m) -- Kalshi's adjustable spread ('wins by over
+    1.5/2.5/.../8.5 runs'). The full ladder (not just +/-2) lets the combo maker
+    pick a blowout line for longer odds. String keys for clean JSON; near-zero
+    lines are dropped downstream by the variant filter."""
     home = {str(m): round(sum(p for d, p in margin.items() if d >= m) * 100, 1)
-            for m in (2, 3, 4, 5)}
+            for m in _SPREAD_MARGINS}
     away = {str(m): round(sum(p for d, p in margin.items() if d <= -m) * 100, 1)
-            for m in (2, 3, 4, 5)}
+            for m in _SPREAD_MARGINS}
     return home, away
 
 
@@ -76,12 +81,14 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         totals.append({"line": ln, "over_pct": over, "under_pct": under})
 
-    # Fuller ladder so the combo maker can tune the line up/down for confidence.
+    # Full half-run ladder (every alternate line, not just a +/-2 window) so the
+    # combo maker can push the line well past the model total for longer odds.
+    # Lines run from 0.5 up to comfortably beyond the model total; the combo
+    # builder filters by usable probability, so far-out lines are available when
+    # you want the payout. _MAXR caps the run grid, so cap the ladder to match.
     base = round(model_total)
     ladder = []
-    for ln in [base - 4.5 + i for i in range(9)]:
-        if ln < 0.5:
-            continue
+    for ln in [n + 0.5 for n in range(0, min(base + 10, 2 * _MAXR))]:
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
@@ -140,9 +147,10 @@ def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
     exp_final = cur_total + rem_home_mean + rem_away_mean
     base = round(exp_final)
     ladder = []
-    for ln in [base - 4.5 + i for i in range(9)]:
-        if ln < 0.5:
-            continue
+    # Full half-run ladder from the current total upward (lines below the score
+    # are already decided) so alternate totals can be pushed far out for odds.
+    lo = max(0, int(cur_total))
+    for ln in [n + 0.5 for n in range(lo, min(base + 10, 2 * _MAXR))]:
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
@@ -220,15 +228,20 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     r_bb = (b.get("bb") or 0) / spa
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
-    # Exact hit-count distribution (binomial) -> 1+/2+/3+ hits.
+    # Exact hit-count distribution (binomial) -> 1+/2+/3+/4+ hits.
     q = 1 - r_hit
     p0 = q ** k
     p1 = k * r_hit * q ** (k - 1) if r_hit < 1 else 0
     p2 = (k * (k - 1) / 2) * r_hit ** 2 * q ** (k - 2) if (r_hit < 1 and k >= 2) else 0
+    p3 = (k * (k - 1) * (k - 2) / 6) * r_hit ** 3 * q ** (k - 3) if (r_hit < 1 and k >= 3) else 0
     hit1 = 1 - p0
     hit2 = max(0.0, 1 - p0 - p1)
     hit3 = max(0.0, 1 - p0 - p1 - p2)
-    hr1 = 1 - (1 - min(0.6, r_hr)) ** k
+    hit4 = max(0.0, 1 - p0 - p1 - p2 - p3)
+    # HR count (binomial) -> 1+/2+ HR (the multi-HR line is a real long-odds market).
+    q_hr = 1 - min(0.6, r_hr)
+    hr1 = 1 - q_hr ** k
+    hr2 = max(0.0, 1 - q_hr ** k - k * min(0.6, r_hr) * q_hr ** (k - 1)) if k >= 2 else 0.0
 
     # Exact total-bases distribution by convolving the per-PA TB pmf k times.
     pmf = {0: 1 - (r_1b + r_2b + r_3b + r_hr), 1: r_1b, 2: r_2b, 3: r_3b, 4: r_hr}
@@ -244,11 +257,16 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     tb3 = sum(p for tb, p in dist.items() if tb >= 3)
     tb4 = sum(p for tb, p in dist.items() if tb >= 4)
     tb5 = sum(p for tb, p in dist.items() if tb >= 5)
+    tb6 = sum(p for tb, p in dist.items() if tb >= 6)
+    tb7 = sum(p for tb, p in dist.items() if tb >= 7)
     spd, sbr = _speed_inputs(b, sprint)
     return {"name": b.get("name"), "slot": slot,
-            "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1), "hit3": round(hit3 * 100, 1),
-            "hr1": round(hr1 * 100, 1), "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1),
+            "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1),
+            "hit3": round(hit3 * 100, 1), "hit4": round(hit4 * 100, 1),
+            "hr1": round(hr1 * 100, 1), "hr2": round(hr2 * 100, 1),
+            "tb2": round(tb2 * 100, 1), "tb3": round(tb3 * 100, 1),
             "tb4": round(tb4 * 100, 1), "tb5": round(tb5 * 100, 1),
+            "tb6": round(tb6 * 100, 1), "tb7": round(tb7 * 100, 1),
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
             "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4),
             "spd": spd, "sbr": sbr}
@@ -261,9 +279,10 @@ def pitcher_k_props(k9, exp_ip=5.6):
     lam = k9 / 9.0 * exp_ip
     pmf = _poisson_pmf(lam, kmax=20)
     out = {}
-    for line in (4, 5, 6, 7):
-        # String keys so the dict has a single key type (mixing int + "expected"
-        # breaks Flask's sort-keys JSON serialization).
+    for line in (4, 5, 6, 7, 8, 9, 10, 11, 12):
+        # Full ladder so high K lines (long odds) are available; string keys so
+        # the dict has a single key type (mixing int + "expected" breaks Flask's
+        # sort-keys JSON serialization).
         out[str(line)] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
     out["expected"] = round(lam, 1)
     return out
