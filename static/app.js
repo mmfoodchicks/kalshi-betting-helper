@@ -20,6 +20,19 @@ function setTier(t) {
   localStorage.setItem("tier", t);
   document.cookie = "tier=" + t + ";path=/;max-age=31536000;samesite=lax";
 }
+// The tier the user has SELECTED (lets the owner preview the customer view).
+function selectedTier() {
+  const s = $("tierSel");
+  return (s && s.value) || localStorage.getItem("tier") || "owner";
+}
+// God mode: only the owner sees the data/diagnostics panels (track records,
+// recorder logs, backtests). Everyone else just gets the service — no fluff.
+// True only when the server resolves us to owner AND owner is selected, so a
+// previewed (or, once enforced, a real) lower tier hides the data.
+function isOwner() {
+  const resolved = (TIERMATRIX && TIERMATRIX.current) || "owner";
+  return resolved === "owner" && selectedTier() === "owner";
+}
 function tierHasFeature(feature) {
   const min = TIERMATRIX && TIERMATRIX.feature_min ? TIERMATRIX.feature_min[feature] : null;
   if (!min) return true;
@@ -66,6 +79,8 @@ function applyTierUI() {
   }
   if ($("dfsLock")) $("dfsLock").innerHTML = lockTag("dfs");
   gateSimRuns();
+  // Hide all owner-only data/diagnostics panels for non-owner tiers.
+  document.body.classList.toggle("tier-locked", !isOwner());
 }
 
 // ---- Kelly bet sizing -----------------------------------------------------
@@ -305,7 +320,9 @@ async function refreshMarkets() {
       box.innerHTML = markets.map(renderMarket).join("");
     }
 
-    if (stats.scored_markets) {
+    if (!isOwner()) {
+      $("statsBar").innerHTML = "";   // model accuracy stats are owner-only
+    } else if (stats.scored_markets) {
       $("statsBar").innerHTML =
         `Accuracy <b>${stats.accuracy_pct}%</b> (${stats.wins}/${stats.scored_markets}) · ` +
         `Brier <b>${stats.brier_score}</b>`;
@@ -918,6 +935,7 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      $("tab-football").classList.toggle("hidden", tab !== "football");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -984,6 +1002,7 @@ function renderBacktest(r) {
 }
 
 async function runBacktest() {
+  if (!isOwner()) return;   // backtest is owner-only data
   const box = $("btResults");
   const coin = $("btCoin").value, horizon = $("btHorizon").value;
   box.innerHTML = `<div class="empty">Replaying ${coin} history… (a few seconds)</div>`;
@@ -997,6 +1016,7 @@ async function runBacktest() {
 
 // ---- Live strategy tracker (real recorded Kalshi prices) ------------------
 async function loadStrategy() {
+  if (!isOwner()) return;   // crypto recorder log is owner-only data
   const box = $("stratResults");
   try {
     const [st, bt] = await Promise.all([
@@ -1658,6 +1678,7 @@ async function loadValue() {
 
 // ---- Baseball model track record ------------------------------------------
 async function loadBaseballRecord() {
+  if (!isOwner()) return;   // model track record is owner-only data
   try {
     const r = await (await fetch("/api/baseball/record")).json();
     const el = $("bbRecord");
@@ -1696,6 +1717,7 @@ async function loadBaseballRecord() {
 
 // ---- Prop recorder track record -------------------------------------------
 async function loadPropLog() {
+  if (!isOwner()) return;   // prop recorder log is owner-only data
   const el = $("bbPropLog");
   if (!el) return;
   el.innerHTML = `<div class="empty">Loading the prop track record…</div>`;
@@ -1736,7 +1758,9 @@ async function init() {
   try { TIERMATRIX = await (await fetch("/api/tiers")).json(); }
   catch (e) { TIERMATRIX = { feature_min: {}, tiers: { free: { max_sims: 1000, price: "$0" } } }; }
   if ($("tierSel")) {
-    $("tierSel").value = getTier();
+    // Reflect the SELECTED tier (so the owner can preview the customer view),
+    // not the server-resolved one (which is always 'owner' until enforced).
+    $("tierSel").value = localStorage.getItem("tier") || "owner";
     $("tierSel").addEventListener("change", () => { setTier($("tierSel").value); location.reload(); });
   }
   applyTierUI();

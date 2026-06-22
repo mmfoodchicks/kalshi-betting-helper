@@ -52,6 +52,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="crypto">⚡ Crypto</button>
     <button class="tab" data-tab="baseball">⚾ Baseball</button>
+    <button class="tab" data-tab="football">🏈 Football</button>
     <button class="tab" data-tab="sports">🏆 Sports</button>
     <button class="tab" data-tab="commodities">🛢️ Commodities</button>
     <button class="tab" data-tab="weather">🌡️ Weather</button>
@@ -130,12 +131,12 @@
     <section class="card">
       <div class="row-between">
         <h2>Tracked markets</h2>
-        <div id="statsBar" class="stats"></div>
+        <div id="statsBar" class="stats owner-only"></div>
       </div>
       <div id="markets" class="markets"></div>
     </section>
 
-    <section class="card">
+    <section class="card owner-only">
       <div class="row-between">
         <h2>🔬 Backtest the model</h2>
         <div class="scan-controls">
@@ -152,7 +153,7 @@
       <div id="btResults" class="markets"><div class="empty">Pick a coin &amp; horizon, then Run backtest.</div></div>
     </section>
 
-    <section class="card">
+    <section class="card owner-only">
       <div class="row-between">
         <h2>📈 Live strategy tracker</h2>
         <button id="stratBtn">Refresh</button>
@@ -173,7 +174,7 @@
         </div>
       </div>
       <p class="sub" style="margin:4px 0 8px">Win probabilities from a deep expected-runs model, matched to live Kalshi prices for edge. Picks ranked most-confident first.</p>
-      <div id="bbRecord" class="stats" style="margin-bottom:10px"></div>
+      <div id="bbRecord" class="stats owner-only" style="margin-bottom:10px"></div>
       <div id="bbGames" class="markets"><div class="empty">Pick a date and load the slate.</div></div>
     </section>
 
@@ -190,7 +191,7 @@
       <div id="bbValue" class="markets"><div class="empty">Scan to compare Kalshi prices vs recent form.</div></div>
     </section>
 
-    <section class="card">
+    <section class="card owner-only">
       <div class="row-between">
         <h2>📓 Prop recorder (track record)</h2>
         <button id="propLogBtn">Refresh</button>
@@ -205,6 +206,21 @@
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
    </div><!-- /tab-baseball -->
+
+   <div id="tab-football" class="hidden">
+    <section class="card comingsoon">
+      <div class="cs-badge">🏈 Coming for the NFL season</div>
+      <h2>Football — the full baseball stack, for football</h2>
+      <p class="sub" style="margin:4px 0 16px">When the season kicks off, this tab does <b>everything the Baseball tab does</b> — no difference at all. Same engine, same honesty, just a different sport.</p>
+      <div class="cs-grid">
+        <div class="cs-item"><div class="cs-ico">📊</div><div><b>Game model &amp; edges</b><span>An expected-points / win-probability model for every game, matched to live Kalshi prices to surface the edge — picks ranked most-confident first.</span></div></div>
+        <div class="cs-item"><div class="cs-ico">🎯</div><div><b>Player &amp; game props</b><span>Passing / rushing / receiving yards, receptions, TDs, completions and more — with the full adjustable alternate-line ladders.</span></div></div>
+        <div class="cs-item"><div class="cs-ico">🎲</div><div><b>Simulators &amp; same-game parlays</b><span>A drive/play-level simulator that keeps correlated legs honest (a QB's yards move with his WR1's, the team total, and the game script).</span></div></div>
+        <div class="cs-item"><div class="cs-ico">💰</div><div><b>Value finder &amp; combos</b><span>Kalshi's price vs a sharper reference, plus the payout-governed combo maker with the same confidence floor.</span></div></div>
+      </div>
+      <p class="sub" style="margin:16px 0 0">We won't ship it until there's live data and markets to test it on — untested guesswork helps no one. Same principle as everywhere else: <b>math doesn't lie.</b></p>
+    </section>
+   </div><!-- /tab-football -->
 
    <div id="tab-sports" class="hidden">
     <section class="card">
