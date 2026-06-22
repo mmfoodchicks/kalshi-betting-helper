@@ -75,6 +75,23 @@ def init_db():
             if col not in mcols:
                 c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
 
+        # Player-prop log: every Kalshi-listed batter prop we record while the app
+        # runs, with the model %, Kalshi price, and recent/season form at the time,
+        # graded against the real box score after the game. Builds the aggregate
+        # dataset that validates the prop model + value finder (noise per night).
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS prop_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts INTEGER, game_pk INTEGER, date TEXT,
+                player_id INTEGER, name TEXT,
+                stat TEXT, line INTEGER, market TEXT,
+                model_pct REAL, kalshi_cents REAL,
+                recent_pct REAL, season_pct REAL,
+                graded INTEGER DEFAULT 0, actual INTEGER,
+                UNIQUE(game_pk, player_id, market)
+            )""")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_prop_graded ON prop_log(graded)")
+
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
             CREATE TABLE IF NOT EXISTS bets (
@@ -187,6 +204,115 @@ def mlb_record():
         "clv_avg": clv_avg, "clv_positive_pct": clv_pos_pct, "clv_n": len(clv),
         "totals_accuracy": totals_acc,
         "brier": brier, "brier_baseline": 0.25, "calibration": bins,
+    }
+
+
+# ---- Player-prop log (model vs Kalshi vs recent form, graded) -------------
+def log_prop(game_pk, date, player_id, name, stat, line, market,
+             model_pct, kalshi_cents, recent_pct, season_pct):
+    """Record (or refresh, while still ungraded) one batter prop observation."""
+    with _lock, _conn() as c:
+        c.execute(
+            """INSERT OR IGNORE INTO prop_log
+               (ts, game_pk, date, player_id, name, stat, line, market,
+                model_pct, kalshi_cents, recent_pct, season_pct)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (int(time.time()), game_pk, date, player_id, name, stat, line, market,
+             model_pct, kalshi_cents, recent_pct, season_pct),
+        )
+        # Keep the latest pre-game read (price/model/form drift) until it grades.
+        c.execute(
+            """UPDATE prop_log SET kalshi_cents=?, model_pct=?, recent_pct=?, season_pct=?
+               WHERE game_pk=? AND player_id=? AND market=? AND graded=0""",
+            (kalshi_cents, model_pct, recent_pct, season_pct, game_pk, player_id, market),
+        )
+
+
+def ungraded_props():
+    with _lock, _conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM prop_log WHERE graded=0").fetchall()]
+
+
+def grade_prop(prop_id, actual):
+    with _lock, _conn() as c:
+        c.execute("UPDATE prop_log SET graded=1, actual=? WHERE id=?", (actual, prop_id))
+
+
+def prop_report(min_edge=8.0):
+    """Aggregate accuracy of the prop model, recent-form, and Kalshi's price, plus
+    the realized ROI of betting the edges each flags. One night is noise; this is
+    the honest read once enough props have graded."""
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            "SELECT * FROM prop_log WHERE graded=1").fetchall()]
+        pending = c.execute("SELECT COUNT(*) n FROM prop_log WHERE graded=0").fetchone()["n"]
+    n = len(rows)
+
+    def brier(key):
+        b = [r for r in rows if r.get(key) is not None]
+        if not b:
+            return None, 0
+        return round(sum(((r[key] / 100.0) - r["actual"]) ** 2 for r in b) / len(b), 4), len(b)
+
+    model_brier, model_n = brier("model_pct")
+    recent_brier, recent_n = brier("recent_pct")
+    # Kalshi's own price as a forecast (the line to beat).
+    market_brier, market_n = brier("kalshi_cents")
+
+    # Model calibration: predicted vs actual hit-rate by probability bucket.
+    bp = [r for r in rows if r["model_pct"] is not None]
+    bins = []
+    for lo, hi in ((0, 20), (20, 40), (40, 60), (60, 80), (80, 101)):
+        b = [r for r in bp if lo <= r["model_pct"] < hi]
+        if b:
+            bins.append({"range": f"{lo}-{min(hi, 100)}%", "n": len(b),
+                         "predicted": round(sum(r["model_pct"] for r in b) / len(b), 1),
+                         "actual": round(100 * sum(r["actual"] for r in b) / len(b), 1)})
+
+    # ROI of following an edge signal: one contract per logged market with a price,
+    # filled at the recorded Kalshi price, settled by the real box score. The NO
+    # cost is approximated as 100-yes (we only store the YES ask).
+    def roi_for(signal):
+        bets = []
+        for r in rows:
+            if r["kalshi_cents"] is None:
+                continue
+            side, cost = signal(r)
+            if side is None or not cost or cost <= 0 or cost >= 100:
+                continue
+            won = (r["actual"] == 1) if side == "YES" else (r["actual"] == 0)
+            bets.append((cost, won))
+        if not bets:
+            return None
+        staked = sum(c for c, _ in bets)
+        pnl = sum((100 if w else 0) - c for c, w in bets)
+        wins = sum(1 for _, w in bets if w)
+        return {"bets": len(bets), "win_pct": round(100 * wins / len(bets), 1),
+                "roi_pct": round(100 * pnl / staked, 1) if staked else None,
+                "pnl_per_contract_c": round(pnl / len(bets), 1)}
+
+    def edge_sig(key):
+        def sig(r):
+            if r.get(key) is None:
+                return None, None
+            yc = r["kalshi_cents"]
+            ey = r[key] - yc                 # edge on YES
+            if ey >= min_edge:
+                return "YES", yc
+            if -ey >= min_edge:              # the model/form is well below the price -> fade
+                return "NO", 100 - yc
+            return None, None
+        return sig
+
+    return {
+        "graded": n, "pending": pending, "min_edge": min_edge,
+        "hit_rate_pct": round(100 * sum(r["actual"] for r in rows) / n, 1) if n else None,
+        "model_brier": model_brier, "recent_brier": recent_brier,
+        "market_brier": market_brier, "brier_n": model_n,
+        "calibration": bins,
+        "model_edge_roi": roi_for(edge_sig("model_pct")),
+        "recent_edge_roi": roi_for(edge_sig("recent_pct")),
     }
 
 

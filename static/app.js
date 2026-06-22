@@ -862,6 +862,7 @@ async function loadBaseball(silent) {
       if (el) el.open = true;
     });
     loadBaseballRecord();
+    loadPropLog();
 
     const c = d.combos;
     bbCombosData = c;
@@ -1693,6 +1694,42 @@ async function loadBaseballRecord() {
   } catch (e) { /* ignore */ }
 }
 
+// ---- Prop recorder track record -------------------------------------------
+async function loadPropLog() {
+  const el = $("bbPropLog");
+  if (!el) return;
+  el.innerHTML = `<div class="empty">Loading the prop track record…</div>`;
+  try {
+    const r = await (await fetch("/api/baseball/proplog")).json();
+    if (r.error) { el.innerHTML = `<div class="empty">${r.error}</div>`; return; }
+    const rec = r.recorder || {};
+    if (!r.graded) {
+      el.innerHTML = `<div class="empty">${rec.logged || 0} props logged, ${r.pending || 0} awaiting results. Keep the app open — the recorder logs each game's props and grades them once finals post.</div>`;
+      return;
+    }
+    const briercell = (v, n) => v == null ? "—" :
+      `<b style="color:${v < 0.25 ? "#3ad17a" : "#e0566a"}">${v}</b>`;
+    const roiline = (label, o) => {
+      if (!o) return `${label}: <span style="color:var(--muted)">no qualifying bets yet</span>`;
+      const cls = o.roi_pct >= 0 ? "ev pos" : "ev neg";
+      return `${label}: <b class="${cls}">${o.roi_pct >= 0 ? "+" : ""}${o.roi_pct}%</b> ROI · ${o.win_pct}% W <span style="color:var(--muted)">(${o.bets} bets, ${o.pnl_per_contract_c >= 0 ? "+" : ""}${o.pnl_per_contract_c}¢/contract)</span>`;
+    };
+    let html = `Graded <b>${r.graded}</b> props (${r.hit_rate_pct}% hit the line) · ${r.pending} pending`;
+    html += `<div class="small" style="margin-top:4px">Brier (lower=better, 0.25=coin flip): ` +
+      `model ${briercell(r.model_brier)} · recent-form ${briercell(r.recent_brier)} · Kalshi price ${briercell(r.market_brier)} <span style="color:var(--muted)">(n=${r.brier_n})</span></div>`;
+    html += `<div class="small" style="margin-top:3px">${roiline("Bet model edge ≥" + r.min_edge + "¢", r.model_edge_roi)}</div>`;
+    html += `<div class="small" style="margin-top:2px">${roiline("Bet recent-form edge ≥" + r.min_edge + "¢", r.recent_edge_roi)}</div>`;
+    if (r.calibration && r.calibration.length)
+      html += `<div class="small" style="margin-top:3px">Model calibration: ` + r.calibration.map((b) =>
+        `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b> <span style="color:var(--muted)">(${b.n})</span>`).join(" · ") + `</div>`;
+    if (r.graded < 100)
+      html += `<div class="small" style="color:var(--muted);margin-top:3px">⚠️ Only ${r.graded} graded — too few to trust the ROI; watch the Brier scores converge first (~100+ needed).</div>`;
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Couldn't load the prop record — try again.</div>`;
+  }
+}
+
 // ---- Wire up --------------------------------------------------------------
 async function init() {
   // Subscription tier (cookie-backed; the server enforces gating).
@@ -1754,6 +1791,7 @@ async function init() {
   $("bbBtn").addEventListener("click", () => loadBaseball());
   $("bbRefresh").addEventListener("click", () => loadBaseball(true));
   if ($("valBtn")) $("valBtn").addEventListener("click", loadValue);
+  if ($("propLogBtn")) $("propLogBtn").addEventListener("click", loadPropLog);
 
   // Sports setup
   $("sportBtn").addEventListener("click", loadSports);

@@ -181,6 +181,15 @@
     </section>
 
     <section class="card">
+      <div class="row-between">
+        <h2>📓 Prop recorder (track record)</h2>
+        <button id="propLogBtn">Refresh</button>
+      </div>
+      <p class="sub" style="margin:4px 0 12px">While the app stays open it logs every Kalshi batter prop with the model %, the price, and the batter's recent form, then grades them against the real box score. <b>This is the honest, aggregate scoreboard</b> — one night is noise. Brier (lower is better; 0.25 = a coin flip) and the realized ROI of betting each edge signal.</p>
+      <div id="bbPropLog" class="stats"><div class="empty">Logs build automatically as games are played. Refresh to see the running record.</div></div>
+    </section>
+
+    <section class="card">
       <h2>🎲 Suggested combos (parlays)</h2>
       <p class="sub" style="margin:4px 0 12px">Combine picks for a bigger payout — all legs must win. Combined odds = each pick's probability multiplied together. <b>The % is OUR model's probability</b> (props like hits/totals/run-line are model estimates Kalshi may not even list); a <b>¢ price</b> shown means it's a live Kalshi game-winner market.</p>
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>

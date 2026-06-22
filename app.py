@@ -92,6 +92,11 @@ def _ensure_recorder():
             recorder.start_background()
         except Exception:
             pass
+        try:
+            import mlb_recorder
+            mlb_recorder.start_background()
+        except Exception:
+            pass
 
 
 @app.before_request
@@ -776,6 +781,24 @@ def api_baseball_record():
     except Exception:
         pass
     return jsonify(store.mlb_record())
+
+
+@app.route("/api/baseball/proplog")
+def api_baseball_proplog():
+    """Aggregate accuracy of the prop model, recent form, and Kalshi's own price,
+    from the background recorder's logged + graded batter props."""
+    import mlb_recorder
+    try:
+        edge = max(3.0, float(request.args.get("edge", 8)))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        mlb_recorder.grade_due()   # grade any games that just went final
+    except Exception:
+        pass
+    report = store.prop_report(min_edge=edge)
+    report["recorder"] = mlb_recorder.status()
+    return jsonify(report)
 
 
 @app.route("/api/stats")
