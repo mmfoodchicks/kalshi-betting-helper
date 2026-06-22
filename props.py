@@ -179,7 +179,7 @@ def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
     return p_home + p_tie * 0.52
 
 
-def batter_props(b, slot, opp_hit_factor=1.0):
+def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0):
     """Exact per-game prop probabilities for a hitter (the limit a simulation
     converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases.
 
@@ -194,10 +194,14 @@ def batter_props(b, slot, opp_hit_factor=1.0):
     pa = PA_BY_SLOT[slot] if slot < 9 else 3.8
     k = max(1, int(round(pa)))
     f = max(0.7, min(1.3, opp_hit_factor))
-    r_2b = (b.get("doubles") or 0) / spa * f
-    r_3b = (b.get("triples") or 0) / spa * f
-    r_hr = (b.get("hr") or 0) / spa * f
-    r_hit = (b.get("hits") or 0) / spa * f
+    # Statcast luck adjustment: power_mult scales extra-base rates toward xSLG,
+    # contact_mult scales the overall hit rate toward xBA (true talent).
+    pm = max(0.7, min(1.3, power_mult))
+    cm = max(0.7, min(1.3, contact_mult))
+    r_2b = (b.get("doubles") or 0) / spa * f * pm
+    r_3b = (b.get("triples") or 0) / spa * f * pm
+    r_hr = (b.get("hr") or 0) / spa * f * pm
+    r_hit = (b.get("hits") or 0) / spa * f * cm
     r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
     r_bb = (b.get("bb") or 0) / spa
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)

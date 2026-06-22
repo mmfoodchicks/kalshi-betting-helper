@@ -354,11 +354,14 @@ def _boxscore_lineup(game_pk):
                     pl = t["players"].get(f"ID{pid}", {})
                     bs = pl.get("seasonStats", {}).get("batting", {})
                     batters.append({
+                        "id": pid,
                         "name": pl.get("person", {}).get("fullName", ""),
                         "ops": _f(bs.get("ops")), "ab": _f(bs.get("atBats")),
                         "hits": _f(bs.get("hits")), "pa": _f(bs.get("plateAppearances")),
                         "doubles": _f(bs.get("doubles")), "triples": _f(bs.get("triples")),
                         "hr": _f(bs.get("homeRuns")), "bb": _f(bs.get("baseOnBalls")),
+                        "strikeouts": _f(bs.get("strikeOuts")),
+                        "sb": _f(bs.get("stolenBases")), "cs": _f(bs.get("caughtStealing")),
                     })
                 out[side] = batters
             return out
@@ -514,6 +517,11 @@ def analyze_slate(date, season):
     schedule = _schedule(date, season)
     hit = _hitting_map(season); pit = _pitching_map(season)
     bp = _bullpen_map(season); hitplat = _hitting_platoon(season)
+    try:
+        import savant
+        xstats = savant.expected_stats(season)   # Statcast xBA/xSLG by player id
+    except Exception:
+        xstats = {}
     rec = _records_map(season); abbr_map = _abbr_map(season)
     lg = _league_avgs(hit, pit, bp, hitplat)
     try:
@@ -653,14 +661,21 @@ def analyze_slate(date, season):
         bat_home = bat_away = None
         ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg)  # home bats vs away pitching
         ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
+        def bat_list(lineup, ohf):
+            out = []
+            for i, b in enumerate(lineup):
+                import savant
+                cm, pm = savant.quality_mults(xstats.get(str(b.get("id"))))
+                bp_ = props_mod.batter_props(b, i, ohf, cm, pm)
+                if bp_:
+                    out.append(bp_)
+            return out
         if lu.get("home"):
             hit_home = props_mod.hit_props(lu["home"], ohf_home)
-            bat_home = [props_mod.batter_props(b, i, ohf_home) for i, b in enumerate(lu["home"])]
-            bat_home = [x for x in bat_home if x]
+            bat_home = bat_list(lu["home"], ohf_home)
         if lu.get("away"):
             hit_away = props_mod.hit_props(lu["away"], ohf_away)
-            bat_away = [props_mod.batter_props(b, i, ohf_away) for i, b in enumerate(lu["away"])]
-            bat_away = [x for x in bat_away if x]
+            bat_away = bat_list(lu["away"], ohf_away)
         # Starter strikeout props.
         ks_home = props_mod.pitcher_k_props((h_sp or {}).get("season", {}).get("k9")) if h_sp else None
         ks_away = props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9")) if a_sp else None
