@@ -669,29 +669,15 @@ window.buildCombo = async () => {
   parlayLegs = n; parlayTarget = t; parlayPayout = p;
   const sameGame = $("comboSameGame") && $("comboSameGame").checked;
   const date = $("bbDate").value;
-  simLoader(out, sameGame ? "Simulating games (correlated same-game odds)…" : "Tuning lines to your target…");
+  // Both modes run through the simulator now, so every leg shows model vs sim.
+  // same_game on may stack correlated legs from one game; off = one leg per game.
+  simLoader(out, sameGame ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
   try {
-    if (sameGame) {
-      const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
-      if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
-      if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-      if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — need upcoming games.</div>`; return; }
-      out.innerHTML = renderMixed(d.parlay);
-    } else {
-      const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
-      if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a parlay at ${t}%.</div>`; return; }
-      const c = d.combo;
-      let title, note = "";
-      if (p > 1) {
-        title = `🎯 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
-        if (c.expanded) note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
-        if (!c.payout_reached) note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — max at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor or target.</div>`;
-        note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}).</div>`;
-      } else {
-        title = `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
-      }
-      out.innerHTML = renderCombo(c, title, "hl prop") + note;
-    }
+    const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}&same_game=${sameGame ? 1 : 0}`)).json();
+    if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
+    if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
+    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — need upcoming games.</div>`; return; }
+    out.innerHTML = renderMixed(d.parlay);
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
   }
@@ -876,9 +862,10 @@ function renderMixed(m) {
     : `<span style="color:var(--muted)">~independent</span>`;
   const payNote = m.target_payout_x
     ? `<span>Target ${m.target_payout_x}× <b>${m.payout_reached ? "✓ reached" : "✗ max"}</b></span>` : "";
+  const stacked = m.groups.some((g) => g.same_game);
   return `<div class="combo hl prop">
     <div class="chead">
-      <span class="ctag">🔀 Mixed parlay</span>
+      <span class="ctag">${stacked ? "🔀 Mixed parlay" : "🎯 Cross-game parlay"}</span>
       <span class="small">${m.n_legs} legs · ${m.n_games} games · ${(m.n_sims || 0).toLocaleString()} sims</span>
     </div>
     ${groups}

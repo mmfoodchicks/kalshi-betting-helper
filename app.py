@@ -815,12 +815,16 @@ def api_baseball_mixed():
         max_total = tiers.cap_legs(_tier(), 12)
     except ValueError:
         return jsonify({"error": "bad legs/payout"}), 400
+    # same_game off -> one leg per game (a plain cross-game combo, still simulated
+    # so every leg shows model vs sim); on -> may stack correlated legs in a game.
+    same_game = request.args.get("same_game", "1") != "0"
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
                                        target_payout=payout, n_sims=sims,
+                                       max_legs_per_game=3 if same_game else 1,
                                        max_total_legs=max_total)
     return jsonify({"parlay": item})
 

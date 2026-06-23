@@ -126,6 +126,7 @@ def _play_game(setup, rnd):
     L = len(setup)
     stats = [[0, 0, 0, 0, 0, 0, 0] for _ in range(L)]   # H,TB,HR,R,RBI,SB,DK
     runs = 0
+    first_inning = 0                                     # runs scored in the 1st (for RFI)
     idx = 0
     for _inn in range(_N_INNINGS):
         outs = 0
@@ -220,20 +221,26 @@ def _play_game(setup, rnd):
                             nb[1] = r1
                     bases = nb
                     s[4] += scored; s[6] += 2 * scored
-    return runs, stats
+        if _inn == 0:
+            first_inning = runs
+    return runs, stats, first_inning
 
 
 _PA_PER_9 = 38.5   # plate appearances a staff faces over a 9-inning game
 
 
-def _draw_reliever(bp_era, bp_whip, rnd):
-    """A random relief pitcher sampled around the team's bullpen quality: ERA,
-    WHIP, handedness, and a K/9 (relievers miss more bats; better ERA -> more)."""
-    era = max(2.2, min(6.5, random.gauss(bp_era or 4.0, 0.85)))
-    whip = max(0.95, min(1.7, random.gauss(bp_whip or 1.28, 0.13)))
-    k9 = max(6.0, min(13.5, random.gauss(9.2, 1.7) - (era - 4.0) * 0.35))
-    hand = "L" if rnd() < 0.33 else "R"
-    return era, whip, k9, hand
+def _rel_kpa(bp_era, rnd):
+    """K-per-PA for a fresh relief pitcher sampled around the bullpen's quality
+    (relievers miss more bats; a better ERA implies a few more whiffs). Cheap --
+    one draw, since it's hit several times per simulated game."""
+    k9 = 9.2 + (rnd() + rnd() + rnd() - 1.5) * 2.4 - ((bp_era or 4.0) - 4.0) * 0.35
+    return max(0.12, min(0.45, max(6.0, min(13.5, k9)) / _PA_PER_9))
+
+
+# Average pitches per plate-appearance outcome (K / BB / hit / out-in-play). The
+# per-outing pitch limit carries the variance, so per-PA counts are fixed -- much
+# cheaper than a Gaussian draw on every pitch.
+_PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
 def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
@@ -241,14 +248,15 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
     being hit -- workload scales with the runs the offense actually scored this
-    sim), then a random assortment of relievers (each a fresh ERA/WHIP/hand/K
-    draw, ~1 inning apiece) finishes. Returns the STARTER's (Ks, pitches, outs)
-    and the bullpen's combined Ks."""
+    sim), then a random assortment of relievers (each a fresh K-rate draw from
+    the team's bullpen quality, ~1 inning apiece) finishes. Returns the STARTER's
+    (Ks, pitches, outs) and the bullpen's combined Ks."""
     sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
     bb_pa = 0.078
     limit = max(72, min(118, random.gauss(96, 11)))     # this start's pitch count cap
+    pk, pbb, phit, pout = _PITCH
     sp_k = sp_outs = 0
     sp_pitches = 0.0
     bull_k = 0
@@ -262,31 +270,29 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
         kpa = sp_kpa if starter_in else rel_kpa
         u = rnd()
         if u < kpa:                                     # strikeout (an out)
-            outs += 1; p = random.gauss(4.7, 0.9)
+            outs += 1; p = pk
             if starter_in:
                 sp_k += 1; sp_outs += 1
             else:
                 bull_k += 1; appr_outs += 1
         elif u < kpa + bb_pa:                           # walk
-            p = random.gauss(5.0, 1.0)
+            p = pbb
         elif u < kpa + bb_pa + hit_pa:                  # hit
-            p = random.gauss(3.4, 0.9)
+            p = phit
         else:                                           # out in play
-            outs += 1; p = random.gauss(3.6, 0.9)
+            outs += 1; p = pout
             if starter_in:
                 sp_outs += 1
             else:
                 appr_outs += 1
         if starter_in:
-            sp_pitches += max(1.0, p)
+            sp_pitches += p
             if sp_pitches >= limit or sp_outs >= 21:    # pull: pitch cap or ~7 IP
                 starter_in = False; appr_outs = 0
-                _e, _w, rk9, _h = _draw_reliever(bp_era, bp_whip, rnd)
-                rel_kpa = max(0.12, min(0.45, rk9 / _PA_PER_9))
+                rel_kpa = _rel_kpa(bp_era, rnd)
         elif appr_outs >= 3:                            # next reliever (~1 inning each)
             appr_outs = 0
-            _e, _w, rk9, _h = _draw_reliever(bp_era, bp_whip, rnd)
-            rel_kpa = max(0.12, min(0.45, rk9 / _PA_PER_9))
+            rel_kpa = _rel_kpa(bp_era, rnd)
     return sp_k, int(round(sp_pitches)), sp_outs, bull_k
 
 
@@ -322,6 +328,7 @@ def simulate(g, n=5000):
     home_bull_k = [0] * n
     away_bull_k = [0] * n
     home_win = [False] * n
+    rfi = [False] * n                       # a run scored in the 1st inning (either team)
     keys = ("hit", "tb", "hr", "r", "rbi", "sb", "dk")
     bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
     bat_a = {b["name"]: {k: [0] * n for k in keys} for b in setup_a}
@@ -334,17 +341,21 @@ def simulate(g, n=5000):
             arr["r"][i] = st[3]; arr["rbi"][i] = st[4]; arr["sb"][i] = st[5]
             arr["dk"][i] = st[6]
 
+    # First-inning run rate for lineup-less teams (RFI fallback): ~er/9, the top
+    # of the order runs a touch hot (1.08x), same shape as the closed-form model.
+    fi_a, fi_h = er_a / 9.0 * 1.08, er_h / 9.0 * 1.08
     for i in range(n):
         if setup_a:
-            ra, sa = _play_game(setup_a, rnd); store(sa, idx_a, i)
+            ra, sa, f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
         else:
-            ra = _poisson(er_a)
+            ra = _poisson(er_a); f1a = _poisson(fi_a)
         if setup_h:
-            rh, sh = _play_game(setup_h, rnd); store(sh, idx_h, i)
+            rh, sh, f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
         else:
-            rh = _poisson(er_h)
+            rh = _poisson(er_h); f1h = _poisson(fi_h)
         home_runs[i] = rh
         away_runs[i] = ra
+        rfi[i] = (f1a > 0) or (f1h > 0)
         if rh > ra:
             home_win[i] = True
         elif rh == ra:
@@ -366,7 +377,7 @@ def simulate(g, n=5000):
             "home_sp_pitch": home_sp_pitch, "away_sp_pitch": away_sp_pitch,
             "home_sp_outs": home_sp_outs, "away_sp_outs": away_sp_outs,
             "home_bull_k": home_bull_k, "away_bull_k": away_bull_k,
-            "bat": {"home": bat_h, "away": bat_a}}
+            "rfi": rfi, "bat": {"home": bat_h, "away": bat_a}}
 
 
 def _ge_pct(arr, n, lines):
@@ -517,6 +528,13 @@ def build_candidates(g, sim):
             model=(t["over_pct"] if t else None))
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln,
             model=(t["under_pct"] if t else None))
+    # RFI -- a run in the 1st inning (either team). Closed-form rfi_pct rides along.
+    rfi = sim.get("rfi")
+    rfi_pct = g.get("props", {}).get("rfi_pct") if isinstance(g.get("props"), dict) else None
+    if rfi is not None:
+        add("RFI", "Run in the 1st inning", lambda i: rfi[i], "RFI", rfi_pct)
+        add("RFI", "No run in the 1st inning", lambda i: not rfi[i], "RFI",
+            round(100 - rfi_pct, 1) if rfi_pct is not None else None)
     # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
     # (Hits+Runs+RBIs, Kalshi's combined player market), all from the same
     # base-running sim so they're correctly correlated with each other and runs.
