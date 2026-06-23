@@ -754,60 +754,80 @@ def _mixed_item(sel, games_bundles, target_payout=None):
     }
 
 
-def assemble_mixed(games_bundles, mode, n_legs, target_payout, max_total_legs=8):
-    """Assemble one parlay across games, picking at most one bundle per game.
+def assemble_mixed(games_bundles, legs_target, payout_target,
+                   legs_mode="prefer", payout_mode="off", conn="or",
+                   max_total_legs=8):
+    """Assemble one parlay across games under two optional, combinable targets:
+    a leg count and a fair payout. Each target is "require" (hard), "prefer"
+    (recommendation -- nudges the pick but never blocks), or "off". When both are
+    "require", `conn` ('and'/'or') says whether both must hold or just one.
 
-    'legs' mode: the most likely parlay with ~n_legs total legs.
-    'payout' mode: the most likely parlay whose fair payout reaches the target
-    (a covering knapsack on -log(prob) >= log(payout))."""
+    Method: a DP gives the most-likely parlay at every total leg count (the
+    frontier). We then pick the leg count whose parlay best satisfies the active
+    targets, breaking ties toward the safest (most likely) parlay -- or, when a
+    payout target isn't yet reached, toward the bigger payout."""
     if not games_bundles:
         return None
-
-    if mode == "payout" and target_payout and target_payout > 1:
-        threshold = math.log(target_payout)
-        res = 0.04
-        dp = {0: (0.0, [])}  # weight-bucket -> (actual -log(prob), selection)
-        for gi, (_mu, bundles) in enumerate(games_bundles):
-            nd = dict(dp)  # skip-this-game option
-            for w, sel in dp.values():
-                for b in bundles:
-                    nw = w - math.log(b["prob"])
-                    if nw > threshold + 2.0:           # don't overshoot wildly
-                        continue
-                    if sum(x.get("size", 1) for _g, x in sel) + b["size"] > max_total_legs:
-                        continue
-                    bk = int(nw / res)
-                    if bk not in nd or nw < nd[bk][0]:
-                        nd[bk] = (nw, sel + [(gi, b)])
-            dp = nd
-        best = None
-        for w, sel in dp.values():
-            if sum(b["size"] for _g, b in sel) < 2:
-                continue
-            reached = w >= threshold - 1e-9
-            # Prefer parlays that reach the payout (then safest = min weight);
-            # if none reach, take the highest payout (max weight) we can build.
-            key = (1, -w) if reached else (0, w)
-            if best is None or key > best[0]:
-                best = (key, sel)
-        return _mixed_item(best[1], games_bundles, target_payout) if best else None
-
-    # legs mode: DP over total leg count, maximise probability (min -log).
-    target = max(2, min(n_legs, max_total_legs))
-    dp = {0: (0.0, [])}  # total legs -> (actual -log(prob), selection)
+    # DP over selections keyed by (total legs, -log-prob bucket) so the frontier
+    # spans BOTH leg counts and payout levels -- letting us reach a payout target
+    # with riskier legs, not just by piling on safe ones.
+    RES = 0.05
+    dp = {(0, 0): (0.0, [])}                  # (legs, bucket) -> (-log prob, selection)
     for gi, (_mu, bundles) in enumerate(games_bundles):
         nd = dict(dp)
-        for legs, (w, sel) in dp.items():
+        for (legs, _bk), (w, sel) in dp.items():
             for b in bundles:
                 nl = legs + b["size"]
                 if nl > max_total_legs:
                     continue
                 nw = w - math.log(b["prob"])
-                if nl not in nd or nw < nd[nl][0]:
-                    nd[nl] = (nw, sel + [(gi, b)])
+                key = (nl, int(nw / RES))
+                if key not in nd or nw < nd[key][0]:
+                    nd[key] = (nw, sel + [(gi, b)])
         dp = nd
-    pick = [k for k in dp if k >= 2 and dp[k][1]]
-    if not pick:
+    states = []
+    for (legs, _bk), (w, sel) in dp.items():
+        if legs < 2 or not sel:
+            continue
+        prob = math.exp(-w)
+        states.append({"legs": legs, "prob": prob,
+                       "payout": (1.0 / prob if prob > 0 else None), "sel": sel})
+    if not states:
         return None
-    k = min(pick, key=lambda x: (abs(x - target), x))
-    return _mixed_item(dp[k][1], games_bundles)
+
+    want_legs = legs_mode in ("require", "prefer")
+    want_payout = payout_mode in ("require", "prefer") and bool(payout_target and payout_target > 1)
+    X = max(2, min(legs_target or 2, max_total_legs))
+    Y = payout_target or 0
+    meets_legs = lambda s: s["legs"] == X
+    meets_payout = lambda s: s["payout"] is not None and s["payout"] >= Y
+
+    # Hard filter from "require" targets, combined by conn.
+    reqs = []
+    if legs_mode == "require":
+        reqs.append(meets_legs)
+    if payout_mode == "require" and want_payout:
+        reqs.append(meets_payout)
+    feasible, hard_ok = states, True
+    if reqs:
+        combine = all if conn == "and" else any
+        feas = [s for s in states if combine(r(s) for r in reqs)]
+        if feas:
+            feasible = feas
+        else:
+            hard_ok = False                  # unsatisfiable -> best effort over all
+
+    def rank(s):
+        mp, ml = meets_payout(s), meets_legs(s)
+        primary = (1 if want_payout and mp else 0) + (1 if want_legs and ml else 0)
+        # Safest by default; if chasing an unmet payout, prefer the bigger payout.
+        secondary = s["payout"] if (want_payout and not mp) else s["prob"]
+        return (primary, secondary)
+
+    best = max(feasible, key=rank)
+    item = _mixed_item(best["sel"], games_bundles, Y if want_payout else None)
+    item["legs_target"] = X if want_legs else None
+    item["legs_met"] = meets_legs(best) if want_legs else None
+    item["payout_reached"] = meets_payout(best) if want_payout else None
+    item["hard_ok"] = hard_ok
+    return item

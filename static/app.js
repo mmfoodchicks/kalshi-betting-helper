@@ -668,12 +668,17 @@ window.buildCombo = async () => {
   let p = parseFloat(($("comboPayout") || {}).value) || 0;
   parlayLegs = n; parlayTarget = t; parlayPayout = p;
   const sameGame = $("comboSameGame") && $("comboSameGame").checked;
+  const legsMode = ($("comboLegsMode") || {}).value || "prefer";
+  const payoutMode = ($("comboPayoutMode") || {}).value || "off";
+  const conn = ($("comboConn") || {}).value || "or";
   const date = $("bbDate").value;
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
   simLoader(out, sameGame ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
   try {
-    const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}&same_game=${sameGame ? 1 : 0}`)).json();
+    const q = `legs=${n}&target=${t}&payout=${p}&same_game=${sameGame ? 1 : 0}`
+      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`;
+    const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — need upcoming games.</div>`; return; }
@@ -861,7 +866,11 @@ function renderMixed(m) {
     : corr < -0.4 ? `<b style="color:#e0566a">stacking costs ${corr}% vs independent</b>`
     : `<span style="color:var(--muted)">~independent</span>`;
   const payNote = m.target_payout_x
-    ? `<span>Target ${m.target_payout_x}× <b>${m.payout_reached ? "✓ reached" : "✗ max"}</b></span>` : "";
+    ? `<span>Payout ≥${m.target_payout_x}× <b style="color:${m.payout_reached ? "#3ad17a" : "#e0566a"}">${m.payout_reached ? "✓ reached" : "✗ best is " + m.fair_payout_x + "×"}</b></span>` : "";
+  const legNote = (m.legs_target != null)
+    ? `<span>${m.legs_target} legs <b style="color:${m.legs_met ? "#3ad17a" : "#e0566a"}">${m.legs_met ? "✓" : "✗ got " + m.n_legs}</b></span>` : "";
+  const hardWarn = (m.hard_ok === false)
+    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy your required target(s) on today's slate — showing the closest parlay. Try: loosen a target to "recommend", switch AND→OR, lower the payout, or lower the per-leg % (a higher payout needs longer-shot legs).</div>` : "";
   const stacked = m.groups.some((g) => g.same_game);
   return `<div class="combo hl prop">
     <div class="chead">
@@ -872,9 +881,11 @@ function renderMixed(m) {
     <div class="cnums">
       <span>Combined chance <b>${m.combined_prob_pct}%</b></span>
       <span>Fair payout <b>${m.fair_payout_x}×</b></span>
+      ${legNote}
       ${payNote}
       <span>Correlation: ${corrTxt}</span>
     </div>
+    ${hardWarn}
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply.</div>
   </div>`;
 }
@@ -942,14 +953,21 @@ async function loadBaseball(silent) {
     const maxN = c.max_legs_available || 0;
     if (maxN >= 2) {
       const def = Math.min(parlayLegs, maxN);
+      const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
+        + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
       html += `<div class="combomaker">
-        🎯 <b>Combo maker:</b> each leg ≥
-        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely;
-        <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs
-        <b>or</b> reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
-        <label class="small" style="margin-left:6px"><input type="checkbox" id="comboSameGame" style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+        🎯 <b>Combo maker</b> — each leg ≥
+        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely
+        <div class="small" style="margin-top:6px">
+          ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], "prefer")}
+          <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs
+          &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], "or")}&nbsp;
+          ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], parlayPayout > 1 ? "require" : "off")}
+          reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
+        </div>
+        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame" style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
         <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
-        <div class="small" style="margin-top:4px">Auto-tunes each line (hits, total bases, runs total, ML, run line, RFI) to your target, adding legs until it reaches the payout. <b>Same-game on</b> = it may stack correlated legs from one game (true simulated joint odds); off keeps one leg per game.</div>
+        <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         <div id="comboOut"></div>
       </div>`;
     }

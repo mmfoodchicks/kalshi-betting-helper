@@ -1032,7 +1032,8 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
 
 
 def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
-                       n_sims=5000, max_legs_per_game=3, max_total_legs=8):
+                       n_sims=5000, max_legs_per_game=3, max_total_legs=8,
+                       legs_mode="prefer", payout_mode="off", conn="or"):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -1041,9 +1042,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     probability is the product of the per-game joint odds. The independent
     product of every leg's marginal is also returned so the correlation effect
     of any stacked game is visible.
+
+    `legs_mode`/`payout_mode` ("require"/"prefer"/"off") + `conn` ("and"/"or")
+    control whether the leg count and the payout are hard requirements or just
+    recommendations.
     """
     import mlb_sim
-    mode = "payout" if (target_payout and target_payout > 1) else "legs"
     floor = max(0.05, min(0.97, target_pct / 100.0))
     games_bundles = []
     for g in games:
@@ -1058,12 +1062,11 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             games_bundles.append((g["matchup"], bundles))
     if not games_bundles:
         return None
-    item = mlb_sim.assemble_mixed(games_bundles, mode, n_legs,
-                                  target_payout if mode == "payout" else 0,
-                                  max_total_legs)
+    item = mlb_sim.assemble_mixed(games_bundles, n_legs, target_payout,
+                                  legs_mode=legs_mode, payout_mode=payout_mode,
+                                  conn=conn, max_total_legs=max_total_legs)
     if item:
         item["n_sims"] = n_sims
-        item["mode"] = mode
     return item
 
 

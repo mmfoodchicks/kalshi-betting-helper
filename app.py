@@ -818,6 +818,16 @@ def api_baseball_mixed():
     # same_game off -> one leg per game (a plain cross-game combo, still simulated
     # so every leg shows model vs sim); on -> may stack correlated legs in a game.
     same_game = request.args.get("same_game", "1") != "0"
+    # The leg-count and payout targets are each "require" (hard) / "prefer"
+    # (recommendation) / "off", combined by conn ('and'/'or').
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode", "off")
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode not in modes:
+        payout_mode = "off"
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
@@ -825,7 +835,9 @@ def api_baseball_mixed():
     item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
                                        target_payout=payout, n_sims=sims,
                                        max_legs_per_game=3 if same_game else 1,
-                                       max_total_legs=max_total)
+                                       max_total_legs=max_total,
+                                       legs_mode=legs_mode, payout_mode=payout_mode,
+                                       conn=conn)
     return jsonify({"parlay": item})
 
 
