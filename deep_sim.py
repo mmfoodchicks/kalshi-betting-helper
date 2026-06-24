@@ -21,6 +21,10 @@ from deep_data import LG
 
 # League per-PA outcome baseline (K/BB/HBP/HR + hit types); "out" is the remainder.
 _OUT_KEYS = ("k", "bb", "hbp", "hr", "1b", "2b", "3b")
+# Global calibration factors (tuned so a balanced league sample matches MLB
+# per-game R/K/BB/H): trim the slightly-hot three-true-outcomes, lift balls in
+# play so runs land near 4.4/game.
+_K_CAL, _BB_CAL, _HIT_CAL = 0.95, 0.89, 1.10
 
 
 def _log5(b, p, l):
@@ -35,16 +39,16 @@ def _log5(b, p, l):
 def _pa_probs(bat, pit):
     """Outcome probabilities for one plate appearance (sums to 1)."""
     br = bat["rates"]
-    k = _log5(br["k"], pit["kpa"], LG["k"])
-    bb = _log5(br["bb"], pit["bbpa"], LG["bb"])
+    k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL
+    bb = _log5(br["bb"], pit["bbpa"], LG["bb"]) * _BB_CAL
     hr = _log5(br["hr"], pit["hrpa"], LG["hr"])
     hbp = br["hbp"]
     # Remaining mass goes to balls in play (hits + outs), tilted by the pitcher's
     # run prevention (better ERA suppresses hits a touch).
     rest = max(0.0, 1.0 - k - bb - hr - hbp)
-    qual = max(0.7, min(1.3, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
+    qual = max(0.78, min(1.22, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
     s, d, t = br["1b"], br["2b"], br["3b"]
-    hit = (s + d + t) / qual            # better pitcher -> fewer hits in play
+    hit = (s + d + t) / qual * _HIT_CAL  # better pitcher -> fewer hits in play
     bip = s + d + t + 0.0
     # batter's in-play out rate implied by his line (1 - all events)
     out_in_play = max(0.05, 1 - (br["k"] + br["bb"] + br["hbp"] + br["hr"] + bip))
@@ -155,7 +159,10 @@ def _advance(bases, outcome, batter, rng):
             scorers.append(bases[2])
         new = [None, batter, None]             # batter to 2nd
         if bases[0]:
-            new[2] = bases[0]                  # runner from 1st to 3rd
+            if rng.random() < 0.45:            # runner from 1st scores on the double
+                scorers.append(bases[0])
+            else:
+                new[2] = bases[0]              # else holds at 3rd
         bases[0], bases[1], bases[2] = new
         return len(scorers), scorers
     # single: runner on 3rd scores; runner on 2nd scores ~55% else to 3rd;
@@ -164,12 +171,12 @@ def _advance(bases, outcome, batter, rng):
         scorers.append(bases[2])
     new = [batter, None, None]
     if bases[1]:
-        if rng.random() < 0.55:
+        if rng.random() < 0.62:                # runner from 2nd scores on the single
             scorers.append(bases[1])
         else:
             new[2] = bases[1]
     if bases[0]:
-        new[1] = bases[0]
+        new[1] = bases[0]                      # runner from 1st to 2nd
     bases[0], bases[1], bases[2] = new
     return len(scorers), scorers
 
@@ -249,7 +256,17 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None):
                     for s in scorers:
                         bline(s)["r"] += 1
                 elif oc == "out":
-                    bl["ab"] += 1; pl["outs"] += 1; outs += 1
+                    pl["outs"] += 1
+                    # Productive out: with <2 outs, a runner on 3rd scores on a sac
+                    # fly / grounder ~50% (not an at-bat), else a runner advances.
+                    if outs < 2 and bases[2] and rng.random() < 0.50:
+                        score[half] += 1; bl["rbi"] += 1; pl["r"] += 1
+                        st.outing_runs += 1; bline(bases[2])["r"] += 1; bases[2] = None
+                    else:
+                        bl["ab"] += 1
+                        if outs < 2 and bases[1] and not bases[2] and rng.random() < 0.30:
+                            bases[2] = bases[1]; bases[1] = None   # grounder moves him up
+                    outs += 1
                 else:
                     bl["ab"] += 1; bl["h"] += 1; pl["h"] += 1
                     if oc == "2b":
