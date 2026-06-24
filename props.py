@@ -15,6 +15,10 @@ import math
 LEAGUE_HIT_RATE = 0.225          # ~ hits per plate appearance, league-ish
 PA_BY_SLOT = [4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8]  # expected PA by lineup spot
 _MAXR = 22                       # cap runs for the Poisson grid
+# Effective first-inning scoring rate vs runs/9. Real innings are bursty, so a
+# team scores in a given inning much less than Poisson(runs/9) implies; this
+# calibrates a league-average game's RFI to the empirical/market ~50%.
+RFI_K = 0.73
 
 
 def _poisson_pmf(lam, kmax=_MAXR):
@@ -92,11 +96,14 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
-    # RFI (a Run scored in the First Inning, either team). The 1st gets the top
-    # of the order, so it runs a touch above an average inning (~1.08x). YES if
-    # at least one team scores: 1 - P(no run top) * P(no run bottom).
-    lam1_a = er_away / 9.0 * 1.08
-    lam1_h = er_home / 9.0 * 1.08
+    # RFI (a Run scored in the First Inning, either team). A naive Poisson on
+    # runs/inning badly over-counts: real innings are bursty (zero-inflated), so
+    # a team scores in a given inning far less often than Poisson(runs/9) implies.
+    # RFI_K calibrates the effective rate so a league-average game lands near the
+    # empirical ~50% (and Kalshi's ~50c price); it already nets the top-of-order
+    # first-inning boost. YES = at least one team scores: 1 - P(no run each half).
+    lam1_a = er_away / 9.0 * RFI_K
+    lam1_h = er_home / 9.0 * RFI_K
     rfi_yes = 1 - math.exp(-lam1_a) * math.exp(-lam1_h)
 
     home_by, away_by = _spread_ladder(margin)

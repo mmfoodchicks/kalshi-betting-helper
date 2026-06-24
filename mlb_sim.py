@@ -113,6 +113,8 @@ def _team(batters, er, rnd):
 
 
 _N_INNINGS = 9
+# Calibrated effective first-inning scoring rate vs runs/9 (see props.RFI_K).
+_RFI_K = 0.73
 
 
 _DK_HIT = {1: 3, 2: 5, 3: 8, 4: 10}   # DraftKings hitter points by hit type
@@ -341,21 +343,24 @@ def simulate(g, n=5000):
             arr["r"][i] = st[3]; arr["rbi"][i] = st[4]; arr["sb"][i] = st[5]
             arr["dk"][i] = st[6]
 
-    # First-inning run rate for lineup-less teams (RFI fallback): ~er/9, the top
-    # of the order runs a touch hot (1.08x), same shape as the closed-form model.
-    fi_a, fi_h = er_a / 9.0 * 1.08, er_h / 9.0 * 1.08
+    # First-inning scoring is bursty -- a base-out sim leading off with the top of
+    # the order over-counts P(run). Draw RFI from a calibrated per-team rate
+    # (_RFI_K, matching the closed-form model and the empirical/market ~50%)
+    # rather than the simulated first frame, so the marginal isn't inflated.
+    p1a = 1 - math.exp(-_RFI_K * er_a / 9.0)
+    p1h = 1 - math.exp(-_RFI_K * er_h / 9.0)
     for i in range(n):
         if setup_a:
-            ra, sa, f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
+            ra, sa, _f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
         else:
-            ra = _poisson(er_a); f1a = _poisson(fi_a)
+            ra = _poisson(er_a)
         if setup_h:
-            rh, sh, f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
+            rh, sh, _f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
         else:
-            rh = _poisson(er_h); f1h = _poisson(fi_h)
+            rh = _poisson(er_h)
         home_runs[i] = rh
         away_runs[i] = ra
-        rfi[i] = (f1a > 0) or (f1h > 0)
+        rfi[i] = (rnd() < p1a) or (rnd() < p1h)
         if rh > ra:
             home_win[i] = True
         elif rh == ra:
