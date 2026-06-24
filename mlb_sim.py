@@ -735,7 +735,9 @@ def _mixed_item(sel, games_bundles, target_payout=None):
     combined = indep = 1.0
     nlegs = 0
     for gi, b in sel:
-        mu = games_bundles[gi][0]
+        entry = games_bundles[gi]
+        mu = entry[0]
+        suffix = entry[2] if len(entry) > 2 else None
         combined *= b["prob"]
         legs = []
         for c in b["legs"]:
@@ -744,7 +746,7 @@ def _mixed_item(sel, games_bundles, target_payout=None):
             legs.append({"pick": c["label"], "type": c["type"],
                          "prob_pct": round(c["marg"] * 100, 1),
                          "model_pct": c.get("model_pct"), "kref": c.get("kref")})
-        groups.append({"matchup": mu, "size": b["size"],
+        groups.append({"matchup": mu, "size": b["size"], "suffix": suffix,
                        "joint_pct": round(b["prob"] * 100, 1),
                        "same_game": b["size"] > 1, "legs": legs})
     groups.sort(key=lambda g: g["size"], reverse=True)
@@ -780,7 +782,7 @@ def assemble_mixed(games_bundles, legs_target, payout_target,
     # with riskier legs, not just by piling on safe ones.
     RES = 0.05
     dp = {(0, 0): (0.0, [])}                  # (legs, bucket) -> (-log prob, selection)
-    for gi, (_mu, bundles) in enumerate(games_bundles):
+    for gi, (_mu, bundles, *_rest) in enumerate(games_bundles):
         nd = dict(dp)
         for (legs, _bk), (w, sel) in dp.items():
             for b in bundles:

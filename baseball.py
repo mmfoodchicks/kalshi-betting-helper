@@ -513,6 +513,8 @@ def _schedule(date, season):
             "away_sp_id": ap.get("id") if ap else None, "away_sp_name": ap.get("fullName") if ap else None,
             "start": g.get("gameDate"), "start_epoch": kalshi._parse_time(g.get("gameDate")),
             "status": st.get("detailedState", ""), "live": live,
+            "game_number": g.get("gameNumber"),
+            "doubleheader": g.get("doubleHeader") not in (None, "N"),
         })
     return out
 
@@ -697,7 +699,9 @@ def analyze_slate(date, season):
             "in_game": in_game,
             "props": game_props,
             "game_pk": g["game_pk"],
-            "matchup": f"{g['away_name']} @ {g['home_name']}",
+            "matchup": f"{g['away_name']} @ {g['home_name']}"
+                       + (f" (Game {g['game_number']})"
+                          if g.get("doubleheader") and g.get("game_number") else ""),
             "away_name": g["away_name"], "home_name": g["home_name"],
             "away_abbr": away_abbr, "home_abbr": home_abbr,
             "kalshi_suffix": (price_entry["event"].split("-", 1)[1]
@@ -1098,7 +1102,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
         if bundles:
-            games_bundles.append((g["matchup"], bundles))
+            games_bundles.append((g["matchup"], bundles, g.get("kalshi_suffix")))
     if not games_bundles:
         return None
     item = mlb_sim.assemble_mixed(games_bundles, n_legs, target_payout,
@@ -1106,8 +1110,9 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                                   conn=conn, max_total_legs=max_total_legs)
     if item:
         item["n_sims"] = n_sims
-        suf_by = {g["matchup"]: g.get("kalshi_suffix") for g in games}
-        pairs = [(leg, suf_by.get(grp["matchup"]))
+        # Price via each group's own game suffix (carried through the DP) so a
+        # doubleheader's two games don't collide on an identical matchup string.
+        pairs = [(leg, grp.get("suffix"))
                  for grp in item["groups"] for leg in grp["legs"]]
         item.update(_kalshi_payout(pairs))
     return item
