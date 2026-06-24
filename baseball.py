@@ -1149,9 +1149,32 @@ def _kalshi_payout(leg_suffix_pairs):
             "kalshi_full": priced == total and priced > 0}
 
 
+def _cand_side(cand, g):
+    """Which team a candidate leg belongs to ('home'/'away'), or None for a
+    game-level leg (totals, RFI). Used to honor a single-team grid selection."""
+    grp = cand.get("group") or ""
+    if grp.startswith("bat:home:"):
+        return "home"
+    if grp.startswith("bat:away:"):
+        return "away"
+    kref = cand.get("kref") or {}
+    t = kref.get("t")
+    if t in ("ml", "spread"):
+        ha = g.get("home_abbr") or g.get("home_name")
+        return "home" if kref.get("team") == ha else "away"
+    if t == "ks":
+        props = g.get("props") or {}
+        if kref.get("player") == props.get("home_sp_name"):
+            return "home"
+        if kref.get("player") == props.get("away_sp_name"):
+            return "away"
+    return None
+
+
 def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
-                       legs_mode="prefer", payout_mode="off", conn="or"):
+                       legs_mode="prefer", payout_mode="off", conn="or",
+                       game_sel=None, include_live=False):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -1167,12 +1190,47 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     """
     import mlb_sim
     floor = max(0.05, min(0.97, target_pct / 100.0))
+
+    def team_side(g):
+        """If the grid restricts this game to one team, return that team's side."""
+        if not game_sel:
+            return None
+        sel = game_sel.get(g["game_pk"])
+        if sel is True or sel is None:
+            return None
+        return ("home" if sel == g.get("home_name")
+                else "away" if sel == g.get("away_name") else None)
+
     games_bundles = []
     for g in games:
-        if _game_state(g) in ("Final", "Live"):
+        state = _game_state(g)
+        if state == "Final":
+            continue
+        if game_sel and g["game_pk"] not in game_sel:
+            continue
+        if state == "Live":
+            # In-progress games: props are stale, so only the live win leg is
+            # sound. Offer it (model's favored side) as a single-leg bundle.
+            if not include_live or not g.get("pick_prob") or g["pick_prob"] < floor:
+                continue
+            side = team_side(g)
+            pick = g.get("pick")
+            pick_side = "home" if pick == g.get("home_name") else "away"
+            if side and side != pick_side:
+                continue  # selected the team that isn't the live favorite
+            ha = g.get("home_abbr") or g.get("home_name")
+            aa = g.get("away_abbr") or g.get("away_name")
+            leg = {"type": "ML", "label": f"{pick} to win",
+                   "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
+                   "group": "ML", "live": True,
+                   "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
+            bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
+            games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
             continue
         sim = mlb_sim.simulate(g, n_sims)
-        cands = [c for c in mlb_sim.build_candidates(g, sim) if c["marg"] >= floor]
+        side = team_side(g)
+        cands = [c for c in mlb_sim.build_candidates(g, sim)
+                 if c["marg"] >= floor and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
@@ -1249,12 +1307,30 @@ def build_combos(games, max_legs=3, top_n=6):
             by_size[str(n)] = item
 
     # Live-only combos: parlays built purely from games currently in progress.
+    # Scale how many we surface with the size of the live slate — one or two live
+    # games -> one or two combos; a full live board -> up to seven, mixing leg
+    # counts so the list is a varied lineup, not the same legs reshuffled.
+    n_live_games = sum(1 for g in games if _game_state(g) == "Live")
     live_legs = sorted(_candidate_legs(games, live_only=True),
-                       key=lambda l: l["prob"], reverse=True)[:10]
-    live_combos = _assemble(live_legs, max_legs)
+                       key=lambda l: l["prob"], reverse=True)[:12]
+    live_all = _assemble(live_legs, min(max_legs, max(2, n_live_games)))
+    live_all.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
+    # Spread picks across leg counts so a big board shows 2-, 3-, 4-leg combos.
+    n_live_show = max(1, min(7, n_live_games))
+    live_combos, seen = [], set()
+    for sz in (2, 3, 4, 5):
+        for c in live_all:
+            if c["n_legs"] == sz and id(c) not in seen:
+                live_combos.append(c); seen.add(id(c)); break
+    for c in live_all:
+        if len(live_combos) >= n_live_show:
+            break
+        if id(c) not in seen:
+            live_combos.append(c); seen.add(id(c))
+    live_combos = live_combos[:n_live_show]
     live_combos.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
 
     return {"safest": safest, "best_value": best_value,
             "all": sorted(ml_combos, key=lambda c: c["combined_prob_pct"], reverse=True)[:12],
-            "mixed": mixed[:12], "live": live_combos[:8],
+            "mixed": mixed[:12], "live": live_combos,
             "by_size": by_size, "max_legs_available": max_games}

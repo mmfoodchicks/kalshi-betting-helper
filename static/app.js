@@ -8,6 +8,7 @@ function uiBusy() {
   const a = document.activeElement;
   if (a && ["INPUT", "SELECT", "TEXTAREA"].includes(a.tagName)) return true;
   if (document.querySelector(".buyform:not(.hidden)")) return true;
+  if (comboBuilding) return true;  // don't re-render the maker mid-build
   return false;
 }
 
@@ -657,9 +658,20 @@ function renderGame(g) {
 
 // Combo maker state + builder.
 let bbCombosData = null;
+let bbSlateGames = [];
 let parlayLegs = 3;
 let parlayTarget = 65;
 let parlayPayout = 0;
+// Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
+// the maker, so without this the selects snap back to defaults — which used to
+// revert AND→OR and detach the in-flight result. See comboBuilding guard below.)
+let comboLegsModePref = "prefer";
+let comboPayoutModePref = "off";
+let comboConnPref = "or";
+let comboSameGamePref = false;
+let comboIncludeLive = false;
+let comboGameSel = null;   // null/empty = ALL games; else {pk: true|teamName} selection
+let comboBuilding = false; // true while a build is in flight -> pauses auto-refresh
 
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
@@ -670,25 +682,91 @@ window.buildCombo = async () => {
   let t = parseInt(($("comboTarget") || {}).value, 10); if (isNaN(t)) t = 65;
   let p = parseFloat(($("comboPayout") || {}).value) || 0;
   parlayLegs = n; parlayTarget = t; parlayPayout = p;
-  const sameGame = $("comboSameGame") && $("comboSameGame").checked;
-  const legsMode = ($("comboLegsMode") || {}).value || "prefer";
-  const payoutMode = ($("comboPayoutMode") || {}).value || "off";
-  const conn = ($("comboConn") || {}).value || "or";
+  // Persist the control choices so the auto-refresh re-renders them as-set.
+  comboSameGamePref = !!($("comboSameGame") && $("comboSameGame").checked);
+  comboLegsModePref = ($("comboLegsMode") || {}).value || "prefer";
+  comboPayoutModePref = ($("comboPayoutMode") || {}).value || "off";
+  comboConnPref = ($("comboConn") || {}).value || "or";
   const date = $("bbDate").value;
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
-  simLoader(out, sameGame ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
+  comboBuilding = true;
+  simLoader(out, comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
   try {
-    const q = `legs=${n}&target=${t}&payout=${p}&same_game=${sameGame ? 1 : 0}`
-      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`;
+    let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
+      + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
+      + `&include_live=${comboIncludeLive ? 1 : 0}`;
+    const selParam = comboSelParam();
+    if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — need upcoming games.</div>`; return; }
+    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — no eligible games for that selection. Try ALL GAMES, allow live, or loosen a target.</div>`; return; }
     out.innerHTML = renderMixed(d.parlay);
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+  } finally {
+    comboBuilding = false;
   }
+};
+
+// Serialize the game grid selection as "pk" (whole game) or "pk:Team" (one team)
+// entries joined by commas. Empty -> all games.
+function comboSelParam() {
+  if (!comboGameSel) return "";
+  const parts = [];
+  for (const pk in comboGameSel) {
+    const v = comboGameSel[pk];
+    parts.push(v === true ? String(pk) : `${pk}:${v}`);
+  }
+  return parts.join(",");
+}
+
+// Short label for a full MLB team name ("New York Yankees" -> "Yankees",
+// "Boston Red Sox" -> "Red Sox" so the two Sox don't collide).
+function teamShort(name) {
+  if (!name) return "";
+  const t = name.split(" ");
+  return ["Sox", "Jays"].includes(t[t.length - 1]) ? t.slice(-2).join(" ") : t[t.length - 1];
+}
+
+// The game-selection grid: ALL GAMES + one card per eligible game, each with two
+// clickable team chips. Click a team = only that team's legs (auto-selects the
+// game); click the card = the whole game; click ALL GAMES = clear to all.
+function renderGameGrid(games) {
+  const elig = games.filter((g) => ((g.live || {}).state) !== "Final");
+  const allOn = !comboGameSel || !Object.keys(comboGameSel).length;
+  const esc = (s) => (s || "").replace(/'/g, "\\'");
+  let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="comboSelectAll()">ALL<br>GAMES</div>`;
+  cards += elig.map((g) => {
+    const pk = g.game_pk, sel = comboGameSel ? comboGameSel[pk] : undefined;
+    const live = (g.live || {}).state === "Live";
+    const aOn = sel === true || sel === g.away_name;
+    const hOn = sel === true || sel === g.home_name;
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="comboToggleGame(${pk})" title="${g.matchup || ""}">
+      ${live ? '<span class="gg-live">🔴 LIVE</span>' : ""}
+      <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();comboToggleTeam(${pk},'${esc(g.away_name)}')">${teamShort(g.away_name)}</span>
+      <span class="gg-vs">vs</span>
+      <span class="gg-team${hOn ? " on" : ""}" onclick="event.stopPropagation();comboToggleTeam(${pk},'${esc(g.home_name)}')">${teamShort(g.home_name)}</span>
+    </div>`;
+  }).join("");
+  return `<div class="gamegrid">${cards}</div>`;
+}
+
+function refreshGameGrid() {
+  const host = document.querySelector(".combomaker .gamegrid");
+  if (host && bbSlateGames.length) host.outerHTML = renderGameGrid(bbSlateGames);
+}
+window.comboSelectAll = () => { comboGameSel = null; refreshGameGrid(); };
+window.comboToggleGame = (pk) => {
+  if (!comboGameSel) comboGameSel = {};
+  if (comboGameSel[pk] === true) delete comboGameSel[pk]; else comboGameSel[pk] = true;
+  refreshGameGrid();
+};
+window.comboToggleTeam = (pk, team) => {
+  if (!comboGameSel) comboGameSel = {};
+  if (comboGameSel[pk] === team) delete comboGameSel[pk]; else comboGameSel[pk] = team;
+  refreshGameGrid();
 };
 
 window.buildParlay = async () => {
@@ -986,24 +1064,30 @@ async function loadBaseball(silent) {
 
     const c = d.combos;
     bbCombosData = c;
+    bbSlateGames = d.games;
     let html = "";
-    // Unified combo maker: one box, with a checkbox to allow same-game stacking.
+    // Unified combo maker: a game-selection grid + the targets, all persisted
+    // across the auto-refresh so an in-progress build is never clobbered.
     const maxN = c.max_legs_available || 0;
     if (maxN >= 2) {
       const def = Math.min(parlayLegs, maxN);
       const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
         + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
       html += `<div class="combomaker">
-        🎯 <b>Combo maker</b> — each leg ≥
-        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely
+        🎯 <b>Combo maker</b>
+        <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from — or <b>ALL GAMES</b>:</div>
+        ${renderGameGrid(d.games)}
+        <div style="margin-top:8px">each leg ≥
+        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely</div>
         <div class="small" style="margin-top:6px">
-          ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], "prefer")}
+          ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], comboLegsModePref)}
           <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs
-          &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], "or")}&nbsp;
-          ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], parlayPayout > 1 ? "require" : "off")}
+          &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], comboConnPref)}&nbsp;
+          ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], comboPayoutModePref)}
           reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
         </div>
-        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame" style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${comboSameGamePref ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+        &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked"/> include live games (win legs only)</label>
         <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         ${modelLegend()}
@@ -1019,19 +1103,15 @@ async function loadBaseball(silent) {
       html += `<div class="small" style="margin:12px 0 4px"><b>🔴 Live combos</b> — games in progress right now:</div>`;
       html += c.live.map((x) => renderCombo(x)).join("");
     }
-    html += `<div class="small" style="margin:14px 0 4px"><b>Game-winner parlays</b> — by combined chance:</div>`;
-    html += c.all.map((x) => renderCombo(x)).join("");
     if (c.mixed && c.mixed.length) {
       html += `<div class="small" style="margin:14px 0 4px"><b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:</div>`;
       html += c.mixed.map((x) => renderCombo(x)).join("");
     }
-    // Preserve a built combo slip (and the same-game toggle) across the
-    // auto-refresh so it isn't wiped while you're reading/screenshotting it.
+    // Preserve a built combo slip across the auto-refresh so it isn't wiped while
+    // you're reading/screenshotting it. (Control values are restored from prefs.)
     const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
-    const prevSameGame = !!($("comboSameGame") && $("comboSameGame").checked);
     combosBox.innerHTML = html;
     if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
-    if (prevSameGame) { const cb = $("comboSameGame"); if (cb) cb.checked = true; }
   } catch (e) {
     gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
     combosBox.innerHTML = "";

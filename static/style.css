@@ -395,6 +395,21 @@ button.danger { color: var(--no); }
 .combo .cnums b { color: var(--text); }
 .combomaker { background: var(--card2); border: 1px solid rgba(91, 140, 255, 0.4); border-radius: 12px; padding: 13px 15px; margin-bottom: 14px; font-size: 0.9rem; }
 .combomaker input { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 6px; }
+.gamegrid { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 8px; }
+.gg-card {
+  flex: 0 0 auto; min-width: 84px; background: var(--card); border: 2px solid var(--border);
+  border-radius: 10px; padding: 7px 6px; text-align: center; cursor: pointer; user-select: none;
+  font-size: 0.78rem; line-height: 1.25; transition: border-color 0.12s, background 0.12s;
+}
+.gg-card:hover { border-color: var(--accent); }
+.gg-card.on { border-color: var(--accent); background: rgba(91, 140, 255, 0.16); }
+.gg-all { display: flex; align-items: center; justify-content: center; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); }
+.gg-all.on { color: var(--text); }
+.gg-live { display: block; font-size: 0.6rem; color: var(--no); letter-spacing: 0.04em; margin-bottom: 2px; }
+.gg-team { display: block; border-radius: 5px; padding: 2px 4px; margin: 1px 0; }
+.gg-team:hover { background: rgba(91, 140, 255, 0.12); }
+.gg-team.on { background: var(--accent); color: #fff; font-weight: 600; }
+.gg-vs { display: block; font-size: 0.62rem; color: var(--muted); margin: 0; }
 .leggame { font-size: 0.72rem; color: var(--accent); background: var(--card); border-radius: 4px; padding: 0 4px; }
 .legtag {
   display: inline-block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;

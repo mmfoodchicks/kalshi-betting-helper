@@ -935,6 +935,19 @@ def api_baseball_mixed():
         legs_mode = "prefer"
     if payout_mode not in modes:
         payout_mode = "off"
+    include_live = request.args.get("include_live") == "1"
+    # Optional game grid: "sel" = comma list of "pk" (whole game) or "pk:Team"
+    # (only that team's legs). Empty -> all games.
+    sel = {}
+    for tok in (request.args.get("sel") or "").split(","):
+        tok = tok.strip()
+        if not tok:
+            continue
+        pk, _, team = tok.partition(":")
+        try:
+            sel[int(pk)] = team or True
+        except ValueError:
+            pass
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
@@ -944,7 +957,8 @@ def api_baseball_mixed():
                                        max_legs_per_game=3 if same_game else 1,
                                        max_total_legs=max_total,
                                        legs_mode=legs_mode, payout_mode=payout_mode,
-                                       conn=conn)
+                                       conn=conn, game_sel=sel or None,
+                                       include_live=include_live)
     return jsonify({"parlay": item})
 
 
