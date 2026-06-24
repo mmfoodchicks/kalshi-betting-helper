@@ -364,6 +364,78 @@ def prop_hits(date=None, predicted_min=55.0, risky_max_cents=42.0):
     }
 
 
+def prop_hit_combos(date=None, predicted_min=55.0, longshot_max_cents=42.0):
+    """Hindsight COMBOS from graded props (single props are lame): for each slate,
+    the combo of model-liked props that all cashed, and the longshot moonshot —
+    cheap props that all hit, the few-dollars-to-few-thousand parlay. One leg per
+    game so legs are independent and the multiplied payout is honest."""
+    where, params = "graded=1 AND actual=1 AND kalshi_cents IS NOT NULL", []
+    if date:
+        where += " AND date=?"; params.append(date)
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            f"SELECT * FROM prop_log WHERE {where}", params).fetchall()]
+        graded_n = c.execute(
+            "SELECT COUNT(*) n FROM prop_log WHERE graded=1" + (" AND date=?" if date else ""),
+            ([date] if date else [])).fetchone()["n"]
+
+    def leg(r):
+        c_ = r["kalshi_cents"]
+        unit = {"hr": "HR", "ks": "Ks"}.get(r["stat"], "hits")
+        return {"pick": f"{r['name']} {r['line']}+ {unit}",
+                "type": "KS" if r["stat"] == "ks" else ("HR" if r["stat"] == "hr" else "HIT"),
+                "matchup": None, "live": False, "game_pk": r["game_pk"],
+                "prob_pct": r.get("model_pct"), "price_cents": round(c_, 1),
+                "payout_x": round(100.0 / c_, 2) if c_ > 0 else None, "date": r["date"]}
+
+    def combo(legs):
+        """Pack a list of one-per-game legs into a combo payload (multiplied)."""
+        prob = pay = 1.0
+        for l in legs:
+            if l["prob_pct"] is not None:
+                prob *= l["prob_pct"] / 100.0
+            pay *= (l["payout_x"] or 1.0)
+        return {"legs": legs, "n_legs": len(legs),
+                "combined_prob_pct": round(prob * 100, 2) if prob else None,
+                "parlay_payout_x": round(pay, 1), "fair_payout_x": round(pay, 1),
+                "ret_5": round(5 * pay), "ret_10": round(10 * pay),
+                "date": legs[0]["date"]}
+
+    def one_per_game(cands):
+        used, out = set(), []
+        for r in cands:
+            if r["game_pk"] in used:
+                continue
+            used.add(r["game_pk"]); out.append(leg(r))
+        return out
+
+    by_date = {}
+    for r in rows:
+        by_date.setdefault(r["date"], []).append(r)
+
+    predicted_combos, moonshots = [], []
+    for d, rs in by_date.items():
+        liked = sorted((r for r in rs if r.get("model_pct") and r["model_pct"] >= predicted_min),
+                       key=lambda r: r["model_pct"], reverse=True)
+        legs = one_per_game(liked)[:4]
+        if len(legs) >= 2:
+            predicted_combos.append(combo(legs))
+        longs = sorted((r for r in rs if r["kalshi_cents"] <= longshot_max_cents),
+                       key=lambda r: r["kalshi_cents"])
+        mlegs = one_per_game(longs)[:6]
+        if len(mlegs) >= 2:
+            moonshots.append(combo(mlegs))
+
+    predicted_combos.sort(key=lambda c: c["parlay_payout_x"], reverse=True)
+    moonshots.sort(key=lambda c: c["parlay_payout_x"], reverse=True)
+    return {
+        "date": date, "graded_n": graded_n,
+        "predicted_combos": predicted_combos[:4],
+        "moonshot": moonshots[0] if moonshots else None,
+        "predicted_summary": prop_hits(date)["predicted_summary"],
+    }
+
+
 # ---- Bet ledger -----------------------------------------------------------
 def add_bet(kind, description, side, stake, price_cents, notes=None):
     with _lock, _conn() as c:

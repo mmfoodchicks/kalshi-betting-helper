@@ -1022,7 +1022,7 @@ def api_baseball_hits():
         mlb_recorder.grade_due()   # grade any games that just went final
     except Exception:
         pass
-    res = store.prop_hits(date=date)
+    res = store.prop_hit_combos(date=date)
     res["recorder"] = mlb_recorder.status()
     return jsonify(res)
 

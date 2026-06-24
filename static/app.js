@@ -1193,15 +1193,24 @@ async function loadHits() {
   }
 }
 
-function hitChip(p) {
-  const cls = p.hit ? "hitchip win" : "hitchip miss";
-  const mk = p.market_pct != null ? ` · mkt ${p.market_pct}¢` : "";
-  const pay = p.payout_x != null ? ` · ${p.payout_x}×` : "";
-  const ed = (p.edge != null) ? ` <span class="${p.edge >= 0 ? "ev pos" : "ev neg"}">${p.edge >= 0 ? "+" : ""}${p.edge}</span>` : "";
-  return `<div class="${cls}">
-    <span class="hitmark">${p.hit ? "✅" : "❌"}</span>
-    <span class="hitlabel">${p.label}</span>
-    <span class="small">model <b>${p.model_pct != null ? p.model_pct + "%" : "—"}</b>${mk}${ed}${pay}</span>
+
+// A cashed hindsight combo card: every leg hit, here's what the parlay paid.
+function renderHitCombo(c, tag, extraCls) {
+  const legs = c.legs.map((l) =>
+    `<li>✅ <span class="legtag">${l.type}</span> ${l.pick}
+      <span style="color:var(--muted)">(model ${l.prob_pct != null ? l.prob_pct + "%" : "—"}, ${l.price_cents}¢ → ${l.payout_x}×)</span></li>`).join("");
+  return `<div class="combo ${extraCls || ""}">
+    <div class="chead">
+      <span class="ctag">${tag}</span>
+      <span class="small">${c.n_legs} legs · ${c.date || ""}</span>
+    </div>
+    <ul class="legs">${legs}</ul>
+    <div class="cnums">
+      <span>Combined chance <b>${c.combined_prob_pct != null ? c.combined_prob_pct + "%" : "—"}</b></span>
+      <span>Parlay paid <b class="ev pos">${c.parlay_payout_x}×</b></span>
+      <span>$5 → <b class="ev pos">$${c.ret_5.toLocaleString()}</b></span>
+      <span>$10 → <b class="ev pos">$${c.ret_10.toLocaleString()}</b></span>
+    </div>
   </div>`;
 }
 
@@ -1209,24 +1218,24 @@ function renderHits(d) {
   if (!d.graded_n) {
     const rec = d.recorder || {};
     return `<div class="empty">Nothing graded yet for this slate.<br>
-      <span class="small">The recorder logs props every ~10 min and grades them once games go final${rec.logged != null ? ` (so far: ${rec.logged} logged)` : ""}. Check back later tonight.</span></div>`;
+      <span class="small">The recorder logs props every ~10 min and grades them once games go final${rec.logged != null ? ` (so far: ${rec.logged} logged)` : ""}. Combos appear here once a slate finishes. Check back later tonight.</span></div>`;
   }
   const s = d.predicted_summary || {};
   const sumLine = s.recommended
-    ? `<div class="small" style="margin:2px 0 8px">Of <b>${s.recommended}</b> props the model liked (≥55%), <b class="${(s.hit_pct||0) >= 50 ? "ev pos" : "ev neg"}">${s.hit}</b> hit (${s.hit_pct}%). Honest record — misses shown too.</div>`
+    ? `<div class="small" style="margin:2px 0 8px">Of <b>${s.recommended}</b> props the model liked (≥55%), <b class="${(s.hit_pct||0) >= 50 ? "ev pos" : "ev neg"}">${s.hit}</b> hit (${s.hit_pct}%). Honest record.</div>`
     : "";
-  const predicted = (d.predicted || []).length
-    ? d.predicted.map(hitChip).join("")
-    : `<div class="small">No model-liked props have graded for this slate yet.</div>`;
-  const risky = (d.risky || []).length
-    ? d.risky.map(hitChip).join("")
-    : `<div class="small">No longshots cashed this slate (or none graded yet).</div>`;
+  const predicted = (d.predicted_combos || []).length
+    ? d.predicted_combos.map((c, i) => renderHitCombo(c, i === 0 ? "🛡️ Best model combo that cashed" : "✅ Model combo that cashed", "hl")).join("")
+    : `<div class="small">No multi-leg model combo cashed for this slate yet (need ≥2 model-liked props hitting in different games).</div>`;
+  const moon = d.moonshot
+    ? renderHitCombo(d.moonshot, "🚀 Moonshot — longshots that all cashed", "hl prop")
+    : `<div class="small">No longshot moonshot cashed this slate (or none graded yet).</div>`;
   return `
-    <div class="hitsec"><div class="hitsechead">🎯 Predicted hits — props the model liked</div>
+    <div class="hitsec"><div class="hitsechead">🎯 Predicted combos — what the model liked, that cashed</div>
       ${sumLine}${predicted}</div>
-    <div class="hitsec"><div class="hitsechead">🍀 Risky hits — longshots that cashed</div>
-      <div class="small" style="margin:2px 0 8px">If you'd bet these cheap YES prices, here's what they'd have paid. (Hindsight board — not advice.)</div>
-      ${risky}</div>`;
+    <div class="hitsec"><div class="hitsechead">🍀 Risky moonshot — the few-dollars-to-thousands combo</div>
+      <div class="small" style="margin:2px 0 8px">The cheapest YES longshots that all hit on one slate, parlayed. Pure hindsight — what it <i>would</i> have paid, not advice.</div>
+      ${moon}</div>`;
 }
 
 // ---- Backtest -------------------------------------------------------------
