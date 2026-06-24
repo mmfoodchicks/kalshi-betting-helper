@@ -865,11 +865,67 @@ def api_baseball_futures():
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
     except ValueError:
         return jsonify({"error": "bad params"}), 400
+    # Serve the deep pitch-by-pitch board if a completed run is cached for this
+    # season and the client asked for it; otherwise the instant fast board.
+    if request.args.get("engine") == "deep":
+        agg = _deep.get("agg")
+        if agg and _deep.get("season") == season:
+            try:
+                return jsonify(season_sim.deep_board(agg, season))
+            except Exception as e:
+                return jsonify({"error": f"deep board failed: {e}"}), 502
     try:
         board = season_sim.board_cached(season, n=sims)
     except Exception as e:
         return jsonify({"error": f"season sim failed: {e}"}), 502
     return jsonify(board)
+
+
+# Latest completed deep-season run, kept in-process. {agg, season}.
+_deep = {"agg": None, "season": None}
+
+
+@app.route("/api/baseball/futures/deep", methods=["POST"])
+def api_baseball_deep_start():
+    """Kick off the deep multicore season run in the background (it takes minutes).
+    Poll /deep/status; when ready, GET /futures?engine=deep for the deep board."""
+    import threading
+    import datetime as _dt
+    import deep_season
+    if deep_season.PROGRESS.get("running"):
+        return jsonify({"started": False, "already_running": True,
+                        "progress": deep_season.PROGRESS})
+    season = request.args.get("season") or str(_dt.date.today().year)
+    try:
+        seasons = max(100, min(3000, int(request.args.get("seasons", 600))))
+    except ValueError:
+        seasons = 600
+
+    def job():
+        try:
+            agg = deep_season.run_deep(season, n_seasons=seasons)
+            _deep["agg"] = agg
+            _deep["season"] = season
+        except Exception:
+            deep_season.PROGRESS["running"] = False
+    threading.Thread(target=job, daemon=True).start()
+    return jsonify({"started": True, "season": season, "seasons": seasons})
+
+
+@app.route("/api/baseball/futures/deep/status")
+def api_baseball_deep_status():
+    import datetime as _dt
+    import deep_season
+    season = request.args.get("season") or str(_dt.date.today().year)
+    p = dict(deep_season.PROGRESS)
+    if p.get("running") and p.get("started"):
+        import time as _t
+        done, total = p.get("done", 0), p.get("total", 1) or 1
+        elapsed = _t.time() - p["started"]
+        p["pct"] = round(100 * done / total, 1)
+        p["eta_sec"] = round(elapsed / done * (total - done)) if done else None
+    p["ready"] = bool(_deep.get("agg") and _deep.get("season") == season)
+    return jsonify(p)
 
 
 @app.route("/api/baseball/edges")

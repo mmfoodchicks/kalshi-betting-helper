@@ -18,7 +18,6 @@ import random
 import time
 from collections import defaultdict
 
-import baseball
 import deep_data
 import deep_sim
 import season_sim
@@ -75,7 +74,7 @@ def _accum_box(res):
 def _sim_one_season(seed):
     rng = random.Random(seed)
     stand, games = _G["standings"], _G["schedule"]
-    leagues, divisions = _G["leagues"], _G["divisions"]
+    leagues = _G["leagues"]
     profiles = _G["profiles"]
     # Reset this season's per-player accumulators (kept on the worker between
     # seasons for the cross-season fold in run_deep's merge step).
@@ -152,6 +151,7 @@ def _plainify(agg):
     out = {"n": agg["n"]}
     for key in ("division", "playoffs", "pennant", "ws", "wins_sum", "wins_sq"):
         out[key] = dict(agg[key])
+    out["wins_hist"] = {tid: dict(h) for tid, h in agg["wins_hist"].items()}
     for grp in ("bat", "pit"):
         out[grp] = {pid: dict(line) for pid, line in agg[grp].items()}
     return out
@@ -161,6 +161,7 @@ def _new_agg():
     return {"n": 0, "division": defaultdict(int), "playoffs": defaultdict(int),
             "pennant": defaultdict(int), "ws": defaultdict(int),
             "wins_sum": defaultdict(int), "wins_sq": defaultdict(int),
+            "wins_hist": defaultdict(lambda: defaultdict(int)),
             "bat": defaultdict(lambda: defaultdict(float)),
             "pit": defaultdict(lambda: defaultdict(float))}
 
@@ -178,6 +179,7 @@ def _merge_season(agg, s):
     for tid, w in s["wins"].items():
         agg["wins_sum"][tid] += w
         agg["wins_sq"][tid] += w * w
+        agg["wins_hist"][tid][w] += 1
     for pid, line in s["bat"].items():
         d = agg["bat"][pid]
         for k, v in line.items():
@@ -193,6 +195,9 @@ def _merge_agg(a, b):
     for key in ("division", "playoffs", "pennant", "ws", "wins_sum", "wins_sq"):
         for tid, v in b[key].items():
             a[key][tid] += v
+    for tid, hist in b["wins_hist"].items():
+        for w, c in hist.items():
+            a["wins_hist"][tid][w] += c
     for grp in ("bat", "pit"):
         for pid, line in b[grp].items():
             d = a[grp][pid]
@@ -213,17 +218,17 @@ def run_deep(season=None, n_seasons=600, workers=None):
     games = season_sim._remaining_games(season)
     games = [(h, a) for (h, a) in games if h in stand and a in stand]
     tids = list(stand)
-    leagues, divisions = defaultdict(list), defaultdict(list)
+    leagues = defaultdict(list)
     for tid in tids:
         leagues[stand[tid]["league"]].append(tid)
-        divisions[stand[tid]["division"]].append(tid)
     shared = {"standings": stand, "schedule": games, "profiles": _profiles(season, tids),
-              "leagues": dict(leagues), "divisions": dict(divisions)}
+              "leagues": dict(leagues)}
 
     workers = workers or min(mp.cpu_count(), 8)
     PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)
-    # Split into one chunk per worker.
-    per = max(1, n_seasons // workers)
+    # Many small chunks (≈5 per worker) so the progress counter advances smoothly
+    # as imap_unordered returns them, not in a few big jumps.
+    per = max(1, n_seasons // (workers * 5) or 1)
     chunks, seed = [], random.randrange(1 << 30)
     assigned = 0
     while assigned < n_seasons:
@@ -246,5 +251,8 @@ def run_deep(season=None, n_seasons=600, workers=None):
     finally:
         PROGRESS["running"] = False
     agg["season"] = season
-    agg["names"] = {tid: stand[tid]["name"] for tid in tids}
+    agg["n_games_left"] = len(games)
+    agg["meta"] = {tid: {"name": stand[tid]["name"], "division": stand[tid]["division"],
+                         "league": stand[tid]["league"], "wins": stand[tid]["wins"],
+                         "losses": stand[tid]["losses"]} for tid in tids}
     return agg

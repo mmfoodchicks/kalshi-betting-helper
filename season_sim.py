@@ -436,6 +436,69 @@ def board_cached(season=None, n=4000, ttl=600):
                             lambda: futures_board(season, n=n))
 
 
+def deep_board(agg, season=None):
+    """Same board contract as futures_board, but counts come from the deep
+    pitch-by-pitch season run (deep_season.run_deep). Book prices are reused from
+    the fast-sim futures_edges (prices don't depend on our engine)."""
+    season = season or str(datetime.date.today().year)
+    n = agg.get("n") or 1
+    meta = agg["meta"]
+    abbr = {}
+    try:
+        abbr = baseball._abbr_map(season)
+    except Exception:
+        pass
+    fe = futures_edges(season)
+    prow, wt_lines = {}, set()
+    for r in fe["edges"]:
+        if r["type"] == "win_total":
+            prow[("win_total", r["abbr"], r.get("line"))] = r
+            if r.get("line") is not None:
+                wt_lines.add(int(r["line"]))
+        else:
+            prow[(r["type"], r["abbr"])] = r
+
+    def row(tid, count, pr):
+        m = meta[tid]
+        pct = 100.0 * count / n
+        best = pr.get("market_cents")
+        return {"team": m["name"], "abbr": abbr.get(tid),
+                "division": m["division"], "league": m["league"],
+                "proj_wins": round(agg["wins_sum"].get(tid, 0) / n, 1),
+                "wins": m["wins"], "losses": m["losses"],
+                "count": count, "n": n, "model_pct": round(pct, 1),
+                "kalshi_cents": pr.get("kalshi_cents"), "poly_cents": pr.get("poly_cents"),
+                "best_book": pr.get("best_book"),
+                "edge": round(pct - best, 1) if best is not None else None,
+                "thin": pr.get("thin", True)}
+
+    markets, order = {}, []
+    for mtype, key, label in (("world_series", "ws", "World Series champion"),
+                              ("pennant", "pennant", "Pennant (league champion)"),
+                              ("division", "division", "Division winner"),
+                              ("playoffs", "playoffs", "Make the playoffs")):
+        rows = [row(tid, agg[key].get(tid, 0), prow.get((mtype, abbr.get(tid)), {}))
+                for tid in meta]
+        rows.sort(key=lambda r: r["count"], reverse=True)
+        markets[mtype] = {"label": label, "group": "Titles", "teams": rows}
+        order.append(mtype)
+
+    for L in (sorted(wt_lines) or [85, 90, 95, 100]):
+        rows = []
+        for tid in meta:
+            hist = agg["wins_hist"].get(tid, {})
+            cnt = sum(c for w, c in hist.items() if int(w) >= L)
+            rows.append(row(tid, cnt, prow.get(("win_total", abbr.get(tid), L), {})))
+        if sum(1 for r in rows if 5 <= r["model_pct"] <= 95) < 2:
+            continue
+        rows.sort(key=lambda r: r["count"], reverse=True)
+        markets[f"win_{L}"] = {"label": f"{L}+ wins", "group": "Season win totals", "teams": rows}
+        order.append(f"win_{L}")
+
+    return {"season": season, "n_sims": n, "n_games_left": agg.get("n_games_left"),
+            "engine": "deep", "markets": markets, "order": order}
+
+
 def _winner_markets_winstotal(abbr):
     try:
         return [m for m in kalshi.markets_for_series(f"KXMLBWINS-{abbr}", limit=20)
