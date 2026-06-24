@@ -125,46 +125,53 @@ class _Staff:
         self.lines.setdefault(nxt["id"], _new_pit_line())
 
 
-def _advance(bases, outcome, rng):
-    """Mutate bases for a hit/walk; return runs scored and RBIs credited."""
-    runs = 0
+def _advance(bases, outcome, batter, rng):
+    """Mutate bases for a hit/walk. Bases hold the batter object on them so we can
+    credit the run to whoever scores. Returns (runs, scorers)."""
+    scorers = []
     if outcome == "bb" or outcome == "hbp":
         if bases[0] and bases[1] and bases[2]:
-            runs += 1                          # forced in
+            scorers.append(bases[2])           # forced in
+            bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = batter
         elif bases[0] and bases[1]:
-            bases[2] = True
+            bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = batter
         elif bases[0]:
-            bases[1] = True
-        bases[0] = True
-        return runs
+            bases[1] = bases[0]; bases[0] = batter
+        else:
+            bases[0] = batter
+        return len(scorers), scorers
     if outcome == "hr":
-        runs = 1 + sum(1 for b in bases if b)
+        scorers = [b for b in bases if b] + [batter]
         bases[0] = bases[1] = bases[2] = None
-        return runs
+        return len(scorers), scorers
     if outcome == "3b":
-        runs = sum(1 for b in bases if b)
-        bases[0] = bases[1] = None; bases[2] = True
-        return runs
+        scorers = [b for b in bases if b]
+        bases[0] = bases[1] = None; bases[2] = batter
+        return len(scorers), scorers
     if outcome == "2b":
-        runs = (1 if bases[1] else 0) + (1 if bases[2] else 0)
-        new = [None, True, None]               # batter to 2nd
+        if bases[1]:
+            scorers.append(bases[1])
+        if bases[2]:
+            scorers.append(bases[2])
+        new = [None, batter, None]             # batter to 2nd
         if bases[0]:
-            new[2] = True                      # runner from 1st to 3rd
+            new[2] = bases[0]                  # runner from 1st to 3rd
         bases[0], bases[1], bases[2] = new
-        return runs
+        return len(scorers), scorers
     # single: runner on 3rd scores; runner on 2nd scores ~55% else to 3rd;
     # runner on 1st to 2nd; batter to 1st.
-    runs = 1 if bases[2] else 0
-    new = [True, None, None]
+    if bases[2]:
+        scorers.append(bases[2])
+    new = [batter, None, None]
     if bases[1]:
         if rng.random() < 0.55:
-            runs += 1
+            scorers.append(bases[1])
         else:
-            new[2] = True
+            new[2] = bases[1]
     if bases[0]:
-        new[1] = True
+        new[1] = bases[0]
     bases[0], bases[1], bases[2] = new
-    return runs
+    return len(scorers), scorers
 
 
 def _pick_ph(bench, due, pitcher_hand, used):
@@ -236,9 +243,11 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None):
                 elif oc in ("bb", "hbp"):
                     if oc == "bb":
                         bl["bb"] += 1; pl["bb"] += 1
-                    runs = _advance(bases, oc, rng)
+                    runs, scorers = _advance(bases, oc, bat, rng)
                     score[half] += runs; bl["rbi"] += runs
                     pl["r"] += runs; st.outing_runs += runs
+                    for s in scorers:
+                        bline(s)["r"] += 1
                 elif oc == "out":
                     bl["ab"] += 1; pl["outs"] += 1; outs += 1
                 else:
@@ -249,9 +258,11 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None):
                         bl["3b"] += 1
                     elif oc == "hr":
                         bl["hr"] += 1; pl["hr"] += 1
-                    runs = _advance(bases, oc, rng)
+                    runs, scorers = _advance(bases, oc, bat, rng)
                     score[half] += runs; bl["rbi"] += runs
                     pl["r"] += runs; st.outing_runs += runs
+                    for s in scorers:
+                        bline(s)["r"] += 1
                 idx[half] += 1
         if inning >= 9 and score["home"] != score["away"]:
             break
