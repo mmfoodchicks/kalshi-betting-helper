@@ -781,7 +781,9 @@ function modelLegend() {
       <li><b>Sim %</b> — the <i>same</i> outcome measured a different way: we simulate the whole game thousands of times (baserunning, steals, pitch-count &amp; relief, correlations) and count how often it happened. Model and Sim should be close; a gap shows where game context (correlation, a starter getting pulled) moves it.</li>
       <li><b>Market %</b> — Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
       <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) — Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
-      <li><b>Fair payout ×</b> — 1 ÷ probability (a 25% chance is a fair 4×). This is the <b>no-vig fair value</b> from our model. Kalshi's <i>actual</i> payout is lower because it bakes in their margin, so ours being a bit higher is normal. If ours is <i>wildly</i> higher than Kalshi's combo builder (e.g. 100× vs 44×), it means our model strongly disagrees with the market on a leg — either real edge, or we're miscalibrated there, so sanity-check that leg.</li>
+      <li><b>Fair payout ×</b> — 1 ÷ our probability (a 25% chance is a fair 4×). The <b>no-vig fair value</b> from our model.</li>
+      <li><b>Kalshi pays ×</b> — the <i>real</i> payout from Kalshi's live prices (product of each leg's market price), so it matches what you'd see building the combo on Kalshi. It's lower than our fair payout by their margin. If our fair payout is <i>way</i> above Kalshi's, we strongly disagree with the market on a leg — possible edge, or miscalibration to sanity-check. (Lines post closer to game time, so it may read "—" early.)</li>
+      <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> — that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = our sim % minus Kalshi's price.</li>
       <li><b>Weather → ±% runs</b> — park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
     </ul></details>`;
 }
@@ -794,7 +796,14 @@ function legProb(l, nsim) {
     ? `model <b>${l.model_pct}%</b> · sim <b>${l.prob_pct}%</b>`
     : `<b>${l.prob_pct}%</b>`;
   const cnt = (nsim && l.sims_hit != null) ? ` · ${l.sims_hit.toLocaleString()}/${nsim.toLocaleString()}` : "";
-  return `<span style="color:var(--muted)">(${core}${cnt})</span>`;
+  // Live Kalshi price for this exact leg, when quoted. Edge = our sim − market.
+  let mkt = "";
+  if (l.market_cents != null) {
+    const edge = Math.round(l.prob_pct - l.market_cents);
+    mkt = ` <span class="kmkt">Kalshi <b>${l.market_cents}¢</b>${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` +
+      ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span></span>`;
+  }
+  return `<span style="color:var(--muted)">(${core}${cnt})</span>${mkt}`;
 }
 
 // Deep per-pitcher / per-hitter simulated detail behind a same-game slip.
@@ -825,6 +834,16 @@ function renderBreakdown(b, n) {
     </div></details>`;
 }
 
+// Real Kalshi combo payout (product of each leg's live market price), shown next
+// to our fair payout so the number matches Kalshi's own builder.
+function kalshiPayout(m) {
+  if (m.kalshi_payout_x == null) {
+    return `<span style="color:var(--muted)">Kalshi pays — <span class="small">(no live prices yet — markets post closer to game time)</span></span>`;
+  }
+  const partial = m.kalshi_full ? "" : ` <span class="small" style="color:var(--muted)">(${m.kalshi_priced}/${m.kalshi_total_legs} legs priced)</span>`;
+  return `<span>Kalshi pays <b>${m.kalshi_payout_x}×</b>${partial}</span>`;
+}
+
 function renderSGP(s) {
   const nsim = s.n_sims || 0;
   const legs = s.legs.map((l) =>
@@ -843,6 +862,7 @@ function renderSGP(s) {
     <div class="cnums">
       <span>Joint chance <b>${s.combined_prob_pct}%</b>${cnt}</span>
       <span>Fair payout <b>${s.fair_payout_x}×</b></span>
+      ${kalshiPayout(s)}
       <span>Correlation: ${corrTxt}</span>
     </div>
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${s.indep_prob_pct}%</b> (${s.indep_payout_x}×). The simulation gives the real correlated number.${s.has_props ? "" : " <i>Run-based legs only — hitter &amp; strikeout props appear once lineups post (a few hours pre-game).</i>"}</div>
@@ -898,6 +918,7 @@ function renderMixed(m) {
     <div class="cnums">
       <span>Combined chance <b>${m.combined_prob_pct}%</b></span>
       <span>Fair payout <b>${m.fair_payout_x}×</b></span>
+      ${kalshiPayout(m)}
       ${legNote}
       ${payNote}
       <span>Correlation: ${corrTxt}</span>

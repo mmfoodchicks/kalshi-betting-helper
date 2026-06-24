@@ -395,6 +395,9 @@ button.danger { color: var(--no); }
 .hitchip .small { color: var(--muted); }
 .hitchip .small b { color: var(--text); }
 
+/* Live Kalshi price chip on a combo leg */
+.kmkt { color: var(--accent); font-size: 0.82rem; white-space: nowrap; }
+
 /* "What do these numbers mean?" legend */
 .modelhelp { margin-top: 8px; }
 .modelhelp > summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }

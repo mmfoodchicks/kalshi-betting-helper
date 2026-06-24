@@ -487,24 +487,27 @@ def build_candidates(g, sim):
     props = g.get("props") or {}
     cands = []
 
-    def add(typ, label, pred, group=None, model=None):
+    def add(typ, label, pred, group=None, model=None, kref=None):
         # `group` = the underlying market (a player, or ML/Total/Run line); a
         # parlay never stacks two legs from the same group. `model` is the closed-
         # form (exact-math) probability for player props, kept alongside the
-        # simulated marginal so the UI can show both.
+        # simulated marginal so the UI can show both. `kref` is a structured key
+        # used to look up this leg's live Kalshi price (see kalshi_mlb).
         m = _mask(pred, n)
         marg = _popcount(m) / n
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
-                          "group": group or typ, "model_pct": model})
+                          "group": group or typ, "model_pct": model, "kref": kref})
 
     # Moneyline (both sides; contradictory pairs are pruned in the search). The
     # closed-form win prob (g.p_home/p_away) rides along as the model number.
     ph, pa = g.get("p_home"), g.get("p_away")
     add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i],
-        model=round(ph * 100, 1) if ph is not None else None)
+        model=round(ph * 100, 1) if ph is not None else None,
+        kref={"t": "ml", "team": ha})
     add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i],
-        model=round(pa * 100, 1) if pa is not None else None)
+        model=round(pa * 100, 1) if pa is not None else None,
+        kref={"t": "ml", "team": aa})
     # Run line -- Kalshi's adjustable "win by X+" for each side. Full ladder (not
     # just 2/3) so blowout lines are available for longer odds; the marginal
     # filter below drops any margin too unlikely to be useful. The closed-form
@@ -513,9 +516,9 @@ def build_candidates(g, sim):
     home_by, away_by = rl.get("home_by") or {}, rl.get("away_by") or {}
     for mgn in (2, 3, 4, 5, 6, 7):
         add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m,
-            model=home_by.get(str(mgn)))
+            model=home_by.get(str(mgn)), kref={"t": "spread", "team": ha, "by": mgn})
         add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m,
-            model=away_by.get(str(mgn)))
+            model=away_by.get(str(mgn)), kref={"t": "spread", "team": aa, "by": mgn})
     # Game total -- full half-run ladder around the model total (not just +/-1),
     # so you can push the line far out for payout. The closed-form totals ladder
     # supplies the model over/under % at each line.
@@ -524,17 +527,18 @@ def build_candidates(g, sim):
     ladder = {round(t["line"], 1): t for t in (props.get("totals_ladder") or [])}
     for ln in [n + 0.5 for n in range(max(0, base - 5), base + 7)]:
         t = ladder.get(round(ln, 1))
+        kn = int(ln + 0.5)                       # Kalshi total market suffix (Over ln)
         add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln,
-            model=(t["over_pct"] if t else None))
+            model=(t["over_pct"] if t else None), kref={"t": "total", "n": kn, "over": True})
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln,
-            model=(t["under_pct"] if t else None))
+            model=(t["under_pct"] if t else None), kref={"t": "total", "n": kn, "over": False})
     # RFI -- a run in the 1st inning (either team). Kalshi lists only the YES
     # side (you pick "yes there's a run"), so we don't offer a "No" leg. The
     # closed-form rfi_pct rides along as the model number.
     rfi = sim.get("rfi")
     rfi_pct = g.get("props", {}).get("rfi_pct") if isinstance(g.get("props"), dict) else None
     if rfi is not None:
-        add("RFI", "Run in the 1st inning", lambda i: rfi[i], "RFI", rfi_pct)
+        add("RFI", "Run in the 1st inning", lambda i: rfi[i], "RFI", rfi_pct, {"t": "rfi"})
     # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
     # (Hits+Runs+RBIs, Kalshi's combined player market), all from the same
     # base-running sim so they're correctly correlated with each other and runs.
@@ -553,16 +557,17 @@ def build_candidates(g, sim):
             # hr1..); pass it as `model` so legs show model vs simulated.
             for m in (1, 2):
                 add("HR", f"{nm} {m}+ HR", lambda i, a=hr, m=m: a[i] >= m, grp,
-                    bp.get(f"hr{m}"))
+                    bp.get(f"hr{m}"), {"t": "hr", "player": nm, "line": m})
             for m in (2, 3, 4, 5, 6, 7):
                 add("Bases", f"{nm} {m}+ total bases", lambda i, a=tb, m=m: a[i] >= m, grp,
-                    bp.get(f"tb{m}"))
+                    bp.get(f"tb{m}"), {"t": "tb", "player": nm, "line": m})
             for m in (1, 2, 3, 4):
                 add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp,
-                    bp.get(f"hit{m}"))
+                    bp.get(f"hit{m}"), {"t": "hit", "player": nm, "line": m})
             for m in (2, 3, 4, 5, 6):   # HRR is a combined market — no closed form
                 add("HRR", f"{nm} {m}+ H+R+RBI",
-                    lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp)
+                    lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp,
+                    None, {"t": "hrr", "player": nm, "line": m})
     # Starter strikeouts -- full ladder per starter (the high lines are the long
     # odds); the marginal filter drops any that are too unlikely. The closed-form
     # Poisson % lives in the ks_* dict (string keys).
@@ -572,11 +577,13 @@ def build_candidates(g, sim):
     if ks_h and props.get("home_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['home_sp_name']} {line}+ Ks",
-                lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}", ks_h.get(str(line)))
+                lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}", ks_h.get(str(line)),
+                {"t": "ks", "player": props["home_sp_name"], "line": line})
     if ks_a and props.get("away_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['away_sp_name']} {line}+ Ks",
-                lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)))
+                lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)),
+                {"t": "ks", "player": props["away_sp_name"], "line": line})
     return cands
 
 
@@ -672,7 +679,7 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
         "n_legs": len(combo),
         "legs": [{"pick": c["label"], "type": c["type"],
                   "prob_pct": round(c["marg"] * 100, 1),
-                  "model_pct": c.get("model_pct"),
+                  "model_pct": c.get("model_pct"), "kref": c.get("kref"),
                   "sims_hit": int(round(c["marg"] * n))} for c in combo],
         "combined_sims_hit": int(round(joint * n)),
         "combined_prob_pct": round(joint * 100, 1),
@@ -736,7 +743,7 @@ def _mixed_item(sel, games_bundles, target_payout=None):
             nlegs += 1
             legs.append({"pick": c["label"], "type": c["type"],
                          "prob_pct": round(c["marg"] * 100, 1),
-                         "model_pct": c.get("model_pct")})
+                         "model_pct": c.get("model_pct"), "kref": c.get("kref")})
         groups.append({"matchup": mu, "size": b["size"],
                        "joint_pct": round(b["prob"] * 100, 1),
                        "same_game": b["size"] > 1, "legs": legs})

@@ -700,6 +700,9 @@ def analyze_slate(date, season):
             "matchup": f"{g['away_name']} @ {g['home_name']}",
             "away_name": g["away_name"], "home_name": g["home_name"],
             "away_abbr": away_abbr, "home_abbr": home_abbr,
+            "kalshi_suffix": (price_entry["event"].split("-", 1)[1]
+                              if price_entry and price_entry.get("event") and "-" in price_entry["event"]
+                              else None),
             "start": g["start"], "status": g["status"],
             "p_home": round(p_home, 4), "p_away": round(p_away, 4),
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
@@ -1030,10 +1033,41 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
                                  or (g.get("props") or {}).get("batters_away"))
         # Deep per-player / per-pitcher simulated detail behind this slip.
         item["breakdown"] = mlb_sim.deep_breakdown(g, sim)
+        item.update(_kalshi_payout([(leg, g.get("kalshi_suffix")) for leg in item["legs"]]))
         out.append(item)
     out.sort(key=lambda x: x["combined_prob_pct"], reverse=True)
     return {"games": out[:top_n], "best": out[0] if out else None,
             "n_sims": n_sims}
+
+
+def _kalshi_payout(leg_suffix_pairs):
+    """Price each (leg, game-suffix) off live Kalshi markets, annotate the leg
+    with its market cents/payout, and return the combo's real Kalshi payout
+    (product of priced legs). Degrades gracefully: unpriced legs are skipped and
+    flagged so the UI can show a partial/none figure instead of breaking."""
+    try:
+        import kalshi_mlb
+        idx = kalshi_mlb.index()
+    except Exception:
+        idx = {}
+    payout, priced, total = 1.0, 0, 0
+    for leg, suf in leg_suffix_pairs:
+        total += 1
+        c = None
+        try:
+            c = kalshi_mlb.price_leg(idx, suf, leg.get("kref")) if suf and idx else None
+        except Exception:
+            c = None
+        leg["market_cents"] = c
+        if c and 0 < c < 100:
+            leg["market_payout_x"] = round(100.0 / c, 2)
+            payout *= 100.0 / c
+            priced += 1
+        else:
+            leg["market_payout_x"] = None
+    return {"kalshi_payout_x": round(payout, 2) if priced else None,
+            "kalshi_priced": priced, "kalshi_total_legs": total,
+            "kalshi_full": priced == total and priced > 0}
 
 
 def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
@@ -1072,6 +1106,10 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                                   conn=conn, max_total_legs=max_total_legs)
     if item:
         item["n_sims"] = n_sims
+        suf_by = {g["matchup"]: g.get("kalshi_suffix") for g in games}
+        pairs = [(leg, suf_by.get(grp["matchup"]))
+                 for grp in item["groups"] for leg in grp["legs"]]
+        item.update(_kalshi_payout(pairs))
     return item
 
 
