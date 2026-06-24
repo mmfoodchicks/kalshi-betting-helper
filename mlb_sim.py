@@ -261,6 +261,7 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
     pk, pbb, phit, pout = _PITCH
     sp_k = sp_outs = 0
     sp_pitches = 0.0
+    sp_br = 0                                           # baserunners the starter allowed
     bull_k = 0
     outs = 0
     pa = 0
@@ -279,8 +280,12 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
                 bull_k += 1; appr_outs += 1
         elif u < kpa + bb_pa:                           # walk
             p = pbb
+            if starter_in:
+                sp_br += 1
         elif u < kpa + bb_pa + hit_pa:                  # hit
             p = phit
+            if starter_in:
+                sp_br += 1
         else:                                           # out in play
             outs += 1; p = pout
             if starter_in:
@@ -289,7 +294,21 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
                 appr_outs += 1
         if starter_in:
             sp_pitches += p
-            if sp_pitches >= limit or sp_outs >= 21:    # pull: pitch cap or ~7 IP
+            # Performance-aware hook ("rein him in or let him fly"): a starter
+            # dealing a gem earns a longer leash (more Ks on the high lines), a
+            # laboring one gets pulled sooner. Mirrors the deep engine.
+            if sp_outs >= 15:                           # into the 6th+
+                if sp_br == 0:                          # no-hitter/perfect — ride him
+                    eff_limit, outs_cap = limit + 28, 27
+                elif sp_br <= 3:                        # cruising
+                    eff_limit, outs_cap = limit + 10, 24
+                elif sp_br >= 9:                        # laboring — quicker hook
+                    eff_limit, outs_cap = limit - 8, 19
+                else:
+                    eff_limit, outs_cap = limit, 21
+            else:
+                eff_limit, outs_cap = limit, 21
+            if sp_pitches >= eff_limit or sp_outs >= outs_cap:
                 starter_in = False; appr_outs = 0
                 rel_kpa = _rel_kpa(bp_era, rnd)
         elif appr_outs >= 3:                            # next reliever (~1 inning each)
