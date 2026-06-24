@@ -206,6 +206,45 @@ def _merge_agg(a, b):
     return a
 
 
+def team_detail(agg, season, tid):
+    """Per-player simulated SEASON stat lines for one team from a deep run —
+    each player's mean line over the N simulated seasons."""
+    n = agg.get("n") or 1
+    prof = deep_data.team_profile(tid, season)
+    meta = agg.get("meta", {}).get(tid, {})
+
+    def bat_line(p):
+        s = agg["bat"].get(p["id"])
+        if not s or s["pa"] < 1:
+            return None
+        ab = s["ab"] / n
+        return {"name": p["name"], "side": p["side"],
+                "pa": round(s["pa"] / n), "ab": round(ab),
+                "h": round(s["h"] / n), "hr": round(s["hr"] / n),
+                "2b": round(s["2b"] / n), "3b": round(s["3b"] / n),
+                "bb": round(s["bb"] / n), "k": round(s["k"] / n),
+                "r": round(s["r"] / n), "rbi": round(s["rbi"] / n),
+                "avg": round(s["h"] / s["ab"], 3) if s["ab"] else 0}
+
+    def pit_line(p):
+        s = agg["pit"].get(p["id"])
+        if not s or s["outs"] < 1:
+            return None
+        ip = s["outs"] / 3 / n
+        return {"name": p["name"], "hand": p["hand"],
+                "ip": round(ip, 1), "k": round(s["k"] / n), "bb": round(s["bb"] / n),
+                "h": round(s["h"] / n), "hr": round(s["hr"] / n), "r": round(s["r"] / n),
+                "era": round(9 * (s["r"] / n) / ip, 2) if ip else None,
+                "role": "SP" if p in prof["rotation"] else "RP"}
+
+    batting = [b for b in (bat_line(p) for p in prof["lineup"] + prof["bench"]) if b]
+    pitching = [p for p in (pit_line(x) for x in prof["rotation"] + prof["bullpen"]) if p]
+    batting.sort(key=lambda r: r["pa"], reverse=True)
+    pitching.sort(key=lambda r: r["ip"], reverse=True)
+    return {"team": meta.get("name"), "n_sims": n,
+            "batting": batting, "pitching": pitching}
+
+
 # Live progress shared with the API while a run is in flight.
 PROGRESS = {"running": False, "done": 0, "total": 0, "started": 0.0, "season": None}
 

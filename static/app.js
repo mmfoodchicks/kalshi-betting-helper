@@ -1700,6 +1700,8 @@ function renderFeatured(d) {
       <select id="futMarket" onchange="_featMarket=this.value;renderFeaturedTable()">${optgroups}</select>
       <input id="futSearch" placeholder="🔍 search team…" oninput="renderFeaturedTable()" autocomplete="off"/>
     </div>
+    ${d.engine === "deep" ? `<div class="small" style="margin:2px 0 6px;color:var(--muted)">Click a team for its simulated season stat lines.</div>` : ""}
+    <div id="futTeamDetail"></div>
     <div id="futTable"></div>`;
   $("futMarket").value = cur;
   renderFeaturedTable();
@@ -1722,10 +1724,12 @@ function renderFeaturedTable() {
     <span class="fr-rank">#</span><span class="fr-team">Team</span>
     <span class="fr-count">Won (of ${d.n_sims.toLocaleString()} sims)</span>
     <span class="fr-num">Our</span><span class="fr-num">Kalshi</span><span class="fr-num">Poly</span><span class="fr-num">Edge</span></div>`;
+  const deep = d.engine === "deep";
   const body = rows.map((r, i) => {
     const w = Math.round(100 * r.count / maxc);
     const ecls = r.edge == null ? "" : r.edge >= 0 ? "ev pos" : "ev neg";
-    return `<div class="futrow">
+    const click = deep && r.abbr ? ` futrow-click" onclick="openTeamDetail('${r.abbr}')` : "";
+    return `<div class="futrow${click}">
       <span class="fr-rank">${i + 1}</span>
       <span class="fr-team"><b>${r.team}</b><span class="small"> ${r.wins}-${r.losses} · proj ${r.proj_wins}</span></span>
       <span class="fr-count"><span class="fr-bar" style="width:${w}%"></span><span class="fr-ct">${r.count.toLocaleString()} <span class="small">(${r.model_pct}%)</span></span></span>
@@ -1736,6 +1740,37 @@ function renderFeaturedTable() {
     </div>`;
   }).join("");
   $("futTable").innerHTML = head + (body || `<div class="empty">No team matches “${q}”.</div>`);
+}
+
+async function openTeamDetail(abbr) {
+  const box = $("futTeamDetail");
+  if (!box) return;
+  box.innerHTML = `<div class="small" style="padding:8px">Loading ${abbr} simulated season…</div>`;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  try {
+    const d = await (await fetch(`/api/baseball/team?abbr=${abbr}`)).json();
+    box.innerHTML = d.error ? `<div class="small" style="padding:8px">${d.error}</div>` : renderTeamDetail(d);
+  } catch (e) {
+    box.innerHTML = `<div class="small" style="padding:8px">Failed to load team.</div>`;
+  }
+}
+window.openTeamDetail = openTeamDetail;
+window.closeTeamDetail = () => { const b = $("futTeamDetail"); if (b) b.innerHTML = ""; };
+
+function renderTeamDetail(d) {
+  const av = (x) => x.toFixed(3).replace(/^0/, "");
+  const bat = d.batting.map((b) => `<tr><td>${b.name}</td><td>${av(b.avg)}</td><td>${b.h}</td>
+    <td>${b.hr}</td><td>${b.r}</td><td>${b.rbi}</td><td>${b.bb}</td><td>${b.k}</td></tr>`).join("");
+  const pit = d.pitching.map((p) => `<tr><td>${p.name} <span class="small">${p.role}</span></td>
+    <td>${p.ip}</td><td>${p.era != null ? p.era : "—"}</td><td>${p.k}</td><td>${p.bb}</td><td>${p.h}</td><td>${p.hr}</td></tr>`).join("");
+  return `<div class="teamdetail">
+    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons
+      <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
+    <div class="tdtbls">
+      <div><div class="tdcap">⚾ Batting</div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
+      <div><div class="tdcap">🥎 Pitching</div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
+    </div>
+  </div>`;
 }
 
 let sportsLoaded = false;

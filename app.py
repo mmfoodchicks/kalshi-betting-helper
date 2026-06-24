@@ -912,6 +912,28 @@ def api_baseball_deep_start():
     return jsonify({"started": True, "season": season, "seasons": seasons})
 
 
+@app.route("/api/baseball/team")
+def api_baseball_team():
+    """Per-player simulated season stat lines for one team from the latest deep
+    run (hits/HR/BB/K/R for bats, IP/K/BB/ERA for arms). Needs ?abbr=NYY."""
+    import datetime as _dt
+    import deep_season
+    import season_sim  # noqa: F401  (kept parallel to other routes)
+    season = request.args.get("season") or str(_dt.date.today().year)
+    abbr = (request.args.get("abbr") or "").upper()
+    agg = _deep.get("agg")
+    if not agg or _deep.get("season") != season:
+        return jsonify({"error": "Run the deep simulation first to get player lines."}), 409
+    try:
+        amap = baseball._abbr_map(season)            # tid -> abbr
+        tid = next((t for t, a in amap.items() if a == abbr), None)
+        if tid is None:
+            return jsonify({"error": f"unknown team {abbr}"}), 404
+        return jsonify(deep_season.team_detail(agg, season, tid))
+    except Exception as e:
+        return jsonify({"error": f"team detail failed: {e}"}), 502
+
+
 @app.route("/api/baseball/futures/deep/status")
 def api_baseball_deep_status():
     import datetime as _dt

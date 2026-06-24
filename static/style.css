@@ -433,6 +433,15 @@ button.danger { color: var(--no); }
   display: inline-block; background: rgba(91, 140, 255, 0.16); border: 1px solid var(--accent);
   color: var(--accent); border-radius: 7px; padding: 4px 10px; font-size: 0.8rem; font-weight: 600;
 }
+.futrow-click { cursor: pointer; }
+.futrow-click:hover { background: rgba(91, 140, 255, 0.08); }
+.teamdetail { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin: 6px 0 12px; }
+.teamdetailhead { font-size: 0.92rem; margin-bottom: 8px; }
+.tdclose { float: right; cursor: pointer; color: var(--muted); padding: 0 4px; }
+.tdclose:hover { color: var(--text); }
+.tdtbls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tdcap { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 4px; }
+@media (max-width: 720px) { .tdtbls { grid-template-columns: 1fr; } }
 @media (max-width: 620px) {
   .futrow { grid-template-columns: 22px 1fr 60px 48px 48px 48px; }
   .futrow .fr-count, .futhead .fr-count { display: none; }
