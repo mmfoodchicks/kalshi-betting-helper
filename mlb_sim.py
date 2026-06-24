@@ -528,13 +528,13 @@ def build_candidates(g, sim):
             model=(t["over_pct"] if t else None))
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln,
             model=(t["under_pct"] if t else None))
-    # RFI -- a run in the 1st inning (either team). Closed-form rfi_pct rides along.
+    # RFI -- a run in the 1st inning (either team). Kalshi lists only the YES
+    # side (you pick "yes there's a run"), so we don't offer a "No" leg. The
+    # closed-form rfi_pct rides along as the model number.
     rfi = sim.get("rfi")
     rfi_pct = g.get("props", {}).get("rfi_pct") if isinstance(g.get("props"), dict) else None
     if rfi is not None:
         add("RFI", "Run in the 1st inning", lambda i: rfi[i], "RFI", rfi_pct)
-        add("RFI", "No run in the 1st inning", lambda i: not rfi[i], "RFI",
-            round(100 - rfi_pct, 1) if rfi_pct is not None else None)
     # Hitter props -- top 3 hitters per side. Hits / total bases / HR / HRR
     # (Hits+Runs+RBIs, Kalshi's combined player market), all from the same
     # base-running sim so they're correctly correlated with each other and runs.

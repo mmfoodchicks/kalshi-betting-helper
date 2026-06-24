@@ -617,7 +617,10 @@ function renderGame(g) {
   const w = g.weather;
   let wxLine = "";
   if (w && w.available) {
-    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} (${w.wind_effect})${w.precip_pct ? `, ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""} <span style="color:var(--border)">[${w.source}]</span></div>`;
+    const rp = w.run_pct;
+    const runTag = (rp != null && Math.abs(rp) >= 0.3)
+      ? ` → <b class="${rp > 0 ? "ev pos" : "ev neg"}">${rp > 0 ? "+" : ""}${rp}% runs</b>` : "";
+    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} — ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""} <span style="color:var(--border)">[${w.source}]</span></div>`;
   } else if (w && w.roof === "fixed") {
     wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: dome — weather neutral</div>`;
   }
@@ -767,6 +770,20 @@ function simLoader(el, msg) {
     timeEl.textContent = dt.toFixed(1) + "s";
   }, 100);
   return () => clearInterval(id);
+}
+
+// Plain-English legend for every number the model shows. Reused wherever model
+// numbers appear, so "what does this % mean?" is always one click away.
+function modelLegend() {
+  return `<details class="modelhelp"><summary>ℹ️ What do these numbers mean?</summary>
+    <ul class="legendlist">
+      <li><b>Model %</b> — our estimate of the chance this hits, from the matchup math: each hitter's rate vs the opposing pitcher, the starter's K rate, and the run distribution adjusted for park &amp; weather. This is the exact closed-form number.</li>
+      <li><b>Sim %</b> — the <i>same</i> outcome measured a different way: we simulate the whole game thousands of times (baserunning, steals, pitch-count &amp; relief, correlations) and count how often it happened. Model and Sim should be close; a gap shows where game context (correlation, a starter getting pulled) moves it.</li>
+      <li><b>Market %</b> — Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
+      <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) — Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
+      <li><b>Fair payout ×</b> — 1 ÷ probability. A 25% chance is a fair 4× ($1 → $4). It's what a break-even bet pays, before any edge.</li>
+      <li><b>Weather → ±% runs</b> — park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
+    </ul></details>`;
 }
 
 // A leg's probability display. Player props carry BOTH the model's closed-form
@@ -968,6 +985,7 @@ async function loadBaseball(silent) {
         <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame" style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
         <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
+        ${modelLegend()}
         <div id="comboOut"></div>
       </div>`;
     }

@@ -461,17 +461,22 @@ def _weather_block(winfo):
     wind_desc = "calm"
     if wx.get("wind_mph"):
         if out_mph > 3:
-            wind_desc = f"blowing out {out_mph} mph"
+            wind_desc = f"blowing OUT to center {out_mph} mph"
         elif out_mph < -3:
-            wind_desc = f"blowing in {abs(out_mph)} mph"
+            wind_desc = f"blowing IN from center {abs(out_mph)} mph"
         else:
-            wind_desc = "crosswind"
+            wind_desc = "crosswind (little run effect)"
+    factor = winfo.get("factor", 1.0)
     return {
         "available": True, "stadium": s["name"], "roof": s["roof"],
         "temp_f": wx.get("temp_f"), "wind_mph": wx.get("wind_mph"),
         "wind_dir": wx.get("wind_dir"), "wind_effect": wind_desc,
+        "wind_out_mph": out_mph,          # +out (toward CF, more runs) / -in
+        "cf_bearing_deg": s.get("cf_bearing_deg"),
         "precip_pct": wx.get("precip_pct"), "summary": wx.get("summary"),
-        "run_factor": round(winfo.get("factor", 1.0), 3), "source": wx.get("source"),
+        "run_factor": round(factor, 3),
+        "run_pct": round((factor - 1.0) * 100, 1),   # net weather nudge to runs
+        "source": wx.get("source"),
     }
 
 

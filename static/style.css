@@ -380,6 +380,13 @@ button.danger { color: var(--no); }
   border-radius: 5px; padding: 1px 5px; margin-right: 4px;
 }
 
+/* "What do these numbers mean?" legend */
+.modelhelp { margin-top: 8px; }
+.modelhelp > summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }
+.legendlist { margin: 8px 0 2px; padding-left: 18px; }
+.legendlist li { font-size: 0.82rem; color: var(--muted); margin: 5px 0; line-height: 1.4; }
+.legendlist li b { color: var(--text); }
+
 /* Progress bar for long simulations */
 .simloader { padding: 14px 4px; }
 .simloader-msg { color: var(--text); margin-bottom: 8px; }
