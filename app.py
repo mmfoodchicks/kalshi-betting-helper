@@ -774,6 +774,29 @@ def api_baseball_parlay():
     return jsonify({"combo": combo})
 
 
+@app.route("/api/baseball/season")
+def api_baseball_season():
+    """Our season Monte Carlo (division/playoff/pennant/WS odds + win totals) and
+    the resulting edges vs Kalshi futures markets."""
+    import datetime as _dt
+    import season_sim
+    season = request.args.get("season") or str(_dt.date.today().year)
+    try:
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        sim = season_sim.cached(season, n=sims)
+        fut = season_sim.futures_edges(season, sim=sim)
+    except Exception as e:
+        return jsonify({"error": f"season sim failed: {e}"}), 502
+    teams = [{k: v for k, v in t.items() if k != "_wins_sample"} for t in sim["teams"]]
+    return jsonify({"season": season, "n_sims": sim["n_sims"],
+                    "n_games_left": sim["n_games_left"], "teams": teams,
+                    "futures": fut["edges"], "futures_summary": fut["summary"],
+                    "n_liquid": fut.get("n_liquid")})
+
+
 @app.route("/api/baseball/edges")
 def api_baseball_edges():
     """Rank the biggest model/sim-vs-Kalshi disparities across the day's slate.

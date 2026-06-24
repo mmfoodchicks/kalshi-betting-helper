@@ -19,9 +19,21 @@ Pipeline:
 import datetime
 import random
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from math import comb
 
 import baseball
+import kalshi
+
+# Kalshi futures series. Winner-style series have one YES market per team
+# (ticker ...-{ABBR}); we map each to one of our simulated probabilities.
+_WS_SERIES = ("KXMLBWS", "KXMLBWORLD")          # World Series winner (try both)
+_PENNANT = {"KXMLBAL": 103, "KXMLBNL": 104}
+_DIVISION = ("KXMLBALEAST", "KXMLBALCENT", "KXMLBALWEST",
+             "KXMLBNLEAST", "KXMLBNLCENT", "KXMLBNLWEST")
+_PLAYOFFS = "KXMLBPLAYOFFS"
+_CONF = {"win_total": "med", "division": "med", "playoffs": "med",
+         "pennant": "low", "world_series": "low"}
 
 # MLB postseason: 6 seeds per league. 3 division winners (seeded 1-3 by record)
 # + 3 wild cards (4-6). 1&2 bye; WC best-of-3 (3v6, 4v5); DS best-of-5; LCS and
@@ -209,6 +221,103 @@ def simulate(season=None, n=4000):
     teams_out.sort(key=lambda t: t["p_ws"], reverse=True)
     return {"season": season, "n_sims": n, "n_games_left": len(games),
             "teams": teams_out}
+
+
+def _winner_markets(series):
+    """[(abbr, market)] for a winner-style futures series (one YES per team)."""
+    out = []
+    try:
+        for m in kalshi.markets_for_series(series, limit=60):
+            if m.get("yes_ask") is None:
+                continue
+            out.append((m["ticker"].rsplit("-", 1)[-1], m))
+    except Exception:
+        pass
+    return out
+
+
+def _row(team, model_pct, m, mtype, label):
+    cents = m.get("yes_ask")
+    spread = (round(cents - m["yes_bid"], 1)
+              if cents is not None and m.get("yes_bid") is not None else None)
+    vol = m.get("volume") or 0
+    return {
+        "type": mtype, "team": team["name"], "abbr": team["abbr"], "label": label,
+        "model_pct": round(model_pct, 1), "market_cents": cents,
+        "market_payout_x": round(100.0 / cents, 2) if cents else None,
+        "edge": round(model_pct - cents, 1), "ticker": m["ticker"],
+        "volume": vol, "spread": spread,
+        "thin": spread is None or spread >= 12 or vol < 20,
+        "confidence": _CONF.get(mtype, "med"),
+    }
+
+
+def futures_edges(season=None, sim=None, n=4000):
+    """Match the season sim to live Kalshi futures and rank model-vs-market edges.
+    Covers World Series, pennants, division winners, playoff berths, and per-team
+    season win totals. Returns rows sorted by absolute edge + a lean summary."""
+    season = season or str(datetime.date.today().year)
+    sim = sim or cached(season, n)
+    by_abbr = {t["abbr"]: t for t in sim["teams"] if t.get("abbr")}
+    sample = {t["abbr"]: t.get("_wins_sample") or [] for t in sim["teams"]}
+    rows = []
+
+    def winner(series_iter, mtype, prob_key, label_fn):
+        for series in series_iter:
+            for abbr, m in _winner_markets(series):
+                t = by_abbr.get(abbr)
+                if t:
+                    rows.append(_row(t, t[prob_key], m, mtype, label_fn(t)))
+
+    winner(_WS_SERIES, "world_series", "p_ws", lambda t: f"{t['name']} win World Series")
+    winner(_PENNANT, "pennant", "p_pennant", lambda t: f"{t['name']} win pennant")
+    winner(_DIVISION, "division", "p_division", lambda t: f"{t['name']} win division")
+    winner((_PLAYOFFS,), "playoffs", "p_playoffs", lambda t: f"{t['name']} make playoffs")
+
+    # Season win totals: one series per team, P(final wins >= line). Fetch parallel.
+    def win_total(t):
+        s = sample.get(t["abbr"]) or []
+        if not s:
+            return []
+        ladder = []
+        for m in _winner_markets_winstotal(t["abbr"]):
+            line = m.get("floor")
+            if line is None:
+                continue
+            model = 100.0 * sum(1 for w in s if w >= line) / len(s)
+            ladder.append(_row(t, model, m, "win_total",
+                               f"{t['name']} {int(line)}+ wins"))
+        return ladder
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        for ladder in ex.map(win_total, sim["teams"]):
+            rows.extend(ladder)
+
+    # Real (liquid) edges first, biggest gap first; stale/untraded markets sink.
+    rows.sort(key=lambda r: (r["thin"], -abs(r["edge"])))
+    # Lean summary over LIQUID markets only (preseason win-total books are full of
+    # stale wide quotes that would otherwise dominate and mislead).
+    summary = {}
+    for r in rows:
+        if r["thin"]:
+            continue
+        s = summary.setdefault(r["type"], {"count": 0, "pos": 0, "neg": 0, "edge_sum": 0.0})
+        s["count"] += 1
+        s["pos" if r["edge"] >= 0 else "neg"] += 1
+        s["edge_sum"] += r["edge"]
+    for t, s in summary.items():
+        s["avg_edge"] = round(s["edge_sum"] / s["count"], 1)
+        del s["edge_sum"]
+    liquid = sum(1 for r in rows if not r["thin"])
+    return {"season": season, "n_sims": sim["n_sims"], "edges": rows,
+            "n_liquid": liquid, "summary": summary}
+
+
+def _winner_markets_winstotal(abbr):
+    try:
+        return [m for m in kalshi.markets_for_series(f"KXMLBWINS-{abbr}", limit=20)
+                if m.get("yes_ask") is not None]
+    except Exception:
+        return []
 
 
 def cached(season=None, n=4000, ttl=21600):
