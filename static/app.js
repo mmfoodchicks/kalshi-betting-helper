@@ -1444,10 +1444,15 @@ function renderSportEvent(e, sportKey) {
       const ecls = ec > 0 ? "ev pos" : ec < 0 ? "ev neg" : "";
       modelStr = ` · model <b>${o.model_pct}%</b>${ec != null ? ` · edge <b class="${ecls}">${ec > 0 ? "+" : ""}${ec}¢</b>` : ""}`;
     }
+    // Spread chip: flags a wide/untradeable quote behind the "fair %".
+    const sp = o.spread;
+    const spStr = (sp != null)
+      ? ` · <span class="${sp >= 10 ? "ev neg" : ""}" title="bid-ask spread">spread ${sp}¢</span>`
+      : ` · <span class="ev neg" title="no two-sided quote">no bid</span>`;
     return `<div class="sportout">
       <div class="left">
         <span class="oname">${o.name}</span>
-        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${modelStr}</span>
+        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${spStr}${modelStr}</span>
       </div>
       <button class="track-mini" id="${f}_btn" onclick="showSportLog('${o.ticker}')">Log</button>
       <div class="buyform hidden" id="${f}">
@@ -1457,14 +1462,20 @@ function renderSportEvent(e, sportKey) {
     </div>`;
   });
   const outs = collapseRows(outRows, "more");
-  const arb = e.arbitrage_pct
+  // Liquidity gate: in thin/untraded books the fair %, edge and "arbitrage" are
+  // mirages off stale quotes, so warn and suppress the misleading callouts.
+  const thin = e.liquidity === "thin" || e.liquidity === "none";
+  const liqWarn = thin
+    ? `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ ${e.liquidity === "none" ? "Untraded / one-sided book" : "Thin market"} (${e.volume || 0} contracts) — the no-vig fair %, edges and any "arbitrage" here come off stale, wide quotes and aren't reliably tradeable.</div>`
+    : "";
+  const arb = (e.arbitrage_pct && !thin)
     ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
   // Racing: the model edge pick beats the market-favorite lean when present.
   const mp = e.model_pick
     ? `<div class="note" style="border:1px solid var(--yes);color:var(--yes)">🏁 Model edge pick: <b>${e.model_pick.name}</b> @ ${e.model_pick.yes_ask}¢ — model <b>${e.model_pick.model_pct}%</b> vs market, <b>+${e.model_pick.edge_cents}¢ edge</b></div>`
     : "";
-  const pick = e.pick
+  const pick = (e.pick && !thin)
     ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">✅ Buy this one: <b>${e.pick.name}</b> @ ${e.pick.yes_ask}¢ · <b>${e.pick.fair_pct}%</b> confidence (market favorite)</div>`
     : "";
   return `<div class="bbgame">
@@ -1472,6 +1483,7 @@ function renderSportEvent(e, sportKey) {
       <div class="matchup">${e.title}</div>
       <div class="small" style="text-align:right">closes ${fmtCountdown(secs)}<br>${vig != null ? `vig <b class="${vigCls}">${vig}%</b>` : ""}</div>
     </div>
+    ${liqWarn}
     ${mp}
     ${pick}
     ${arb}

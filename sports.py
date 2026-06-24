@@ -68,13 +68,34 @@ def get_events(sport_key, limit=200):
         total = sum(asks)
         for o in e["outcomes"]:
             o["fair_pct"] = round(100 * o["yes_ask"] / total, 1) if (total and o["yes_ask"]) else None
+            # Bid-ask spread: how wide/uncertain the quote is. A wide spread means
+            # the "fair %" is a guess off a stale quote, not a real tradeable price.
+            o["spread"] = (round(o["yes_ask"] - o["yes_bid"], 1)
+                           if (o["yes_ask"] is not None and o["yes_bid"] is not None) else None)
         e["overround_pct"] = round(total - 100, 1) if total else None
         # Arbitrage: if the outcome prices sum to < 100¢, buying them all is a
         # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
         e["arbitrage_pct"] = round(100 - total, 1) if (total and total < 100) else None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
-        # "Buy this one": the de-vig favorite (market lean, not an independent edge).
+        # Liquidity read for the whole event: is this actually tradeable, or a thin
+        # untraded book where the fair % / edge / arbitrage can't be trusted? Based
+        # on total contracts traded and the favorite's bid-ask width.
+        vol = 0.0
+        for o in e["outcomes"]:
+            try:
+                vol += float(o.get("volume") or 0)
+            except (TypeError, ValueError):
+                pass
         top = e["outcomes"][0] if e["outcomes"] else None
+        top_spread = top.get("spread") if top else None
+        if top_spread is None or vol <= 0:
+            e["liquidity"] = "none"      # no two-sided quote or no trades at all
+        elif top_spread >= 10 or vol < 50:
+            e["liquidity"] = "thin"      # wide/lightly-traded: treat numbers as soft
+        else:
+            e["liquidity"] = "ok"
+        e["volume"] = vol
+        # "Buy this one": the de-vig favorite (market lean, not an independent edge).
         e["pick"] = {"name": top["name"], "fair_pct": top["fair_pct"], "yes_ask": top["yes_ask"]} \
             if (top and top.get("fair_pct") is not None) else None
         out.append(e)
