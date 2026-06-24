@@ -324,8 +324,10 @@ def futures_edges(season=None, sim=None, n=4000):
             if line is None:
                 continue
             model = 100.0 * sum(1 for w in s if w >= line) / len(s)
-            ladder.append(_futrow(t, "win_total", f"{t['name']} {int(line)}+ wins",
-                                  model, m, None))
+            row = _futrow(t, "win_total", f"{t['name']} {int(line)}+ wins",
+                          model, m, None)
+            row["line"] = int(line)
+            ladder.append(row)
         return ladder
     with ThreadPoolExecutor(max_workers=10) as ex:
         for ladder in ex.map(win_total, teams):
@@ -349,6 +351,89 @@ def futures_edges(season=None, sim=None, n=4000):
     liquid = sum(1 for r in rows if not r["thin"])
     return {"season": season, "n_sims": sim["n_sims"], "edges": rows,
             "n_liquid": liquid, "summary": summary}
+
+
+def futures_board(season=None, sim=None, n=4000):
+    """The futures redesign: per-market, the FULL ranked team list with how many
+    of the N simulated seasons each team won it, alongside our model %, Kalshi and
+    Polymarket. Markets are selectable (World Series / pennant / division /
+    playoffs / win-total lines); every team is listed (priced or not) so you can
+    search any of them. Reuses futures_edges purely as the book-price source."""
+    season = season or str(datetime.date.today().year)
+    sim = sim or cached(season, n)
+    fe = futures_edges(season, sim=sim)
+    ns = sim["n_sims"]
+    teams = sim["teams"]
+
+    # Book prices keyed for lookup. Winner markets by (type, abbr); win totals by
+    # (abbr, line) since each line is its own contract.
+    prow, wt_lines = {}, set()
+    for r in fe["edges"]:
+        if r["type"] == "win_total":
+            prow[("win_total", r["abbr"], r.get("line"))] = r
+            if r.get("line") is not None:
+                wt_lines.add(int(r["line"]))
+        else:
+            prow[(r["type"], r["abbr"])] = r
+
+    def enrich(t, mtype, pct, count, pr):
+        return {
+            "team": t["name"], "abbr": t["abbr"], "division": t["division"],
+            "league": t["league"], "proj_wins": t.get("proj_wins"),
+            "wins": t.get("wins"), "losses": t.get("losses"),
+            "count": count, "n": ns, "model_pct": round(pct, 1),
+            "kalshi_cents": pr.get("kalshi_cents"), "poly_cents": pr.get("poly_cents"),
+            "best_book": pr.get("best_book"), "edge": pr.get("edge"),
+            "thin": pr.get("thin", True),
+        }
+
+    def winner_market(mtype, key):
+        rows = []
+        for t in teams:
+            pct = t.get(key)
+            if pct is None:
+                continue
+            rows.append(enrich(t, mtype, pct, round(pct / 100.0 * ns),
+                               prow.get((mtype, t["abbr"]), {})))
+        rows.sort(key=lambda r: r["model_pct"], reverse=True)
+        return rows
+
+    markets, order = {}, []
+    for mtype, key, label in (("world_series", "p_ws", "World Series champion"),
+                              ("pennant", "p_pennant", "Pennant (league champion)"),
+                              ("division", "p_division", "Division winner"),
+                              ("playoffs", "p_playoffs", "Make the playoffs")):
+        markets[mtype] = {"label": label, "group": "Titles", "teams": winner_market(mtype, key)}
+        order.append(mtype)
+
+    # Win-total lines: each "L+ wins" is its own selectable market. Kalshi lists a
+    # huge ladder (35..115), but most lines are trivial (everyone ~100% or ~0%).
+    # Keep only lines that actually discriminate — at least two teams in a live
+    # 5-95% band — so the dropdown shows the meaningful band (~80-105).
+    for L in (sorted(wt_lines) or [85, 90, 95, 100]):
+        rows = []
+        for t in teams:
+            s = t.get("_wins_sample") or []
+            if not s:
+                continue
+            cnt = sum(1 for w in s if w >= L)
+            rows.append(enrich(t, "win_total", 100.0 * cnt / ns, cnt,
+                               prow.get(("win_total", t["abbr"], L), {})))
+        if sum(1 for r in rows if 5 <= r["model_pct"] <= 95) < 2:
+            continue
+        rows.sort(key=lambda r: r["model_pct"], reverse=True)
+        key = f"win_{L}"
+        markets[key] = {"label": f"{L}+ wins", "group": "Season win totals", "teams": rows}
+        order.append(key)
+
+    return {"season": season, "n_sims": ns, "n_games_left": sim["n_games_left"],
+            "engine": sim.get("engine", "fast"), "markets": markets, "order": order}
+
+
+def board_cached(season=None, n=4000, ttl=600):
+    season = season or str(datetime.date.today().year)
+    return baseball._cached(("futures_board", season, n), ttl,
+                            lambda: futures_board(season, n=n))
 
 
 def _winner_markets_winstotal(abbr):

@@ -410,6 +410,29 @@ button.danger { color: var(--no); }
 .gg-team:hover { background: rgba(91, 140, 255, 0.12); }
 .gg-team.on { background: var(--accent); color: #fff; font-weight: 600; }
 .gg-vs { display: block; font-size: 0.62rem; color: var(--muted); margin: 0; }
+/* Futures board: market dropdown + search + ranked team list */
+.futctl { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; flex-wrap: wrap; }
+.futctl label { color: var(--muted); }
+.futctl select, .futctl input {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 7px; padding: 6px 9px; font-size: 0.9rem;
+}
+.futctl input { flex: 1; min-width: 140px; }
+.futrow {
+  display: grid; grid-template-columns: 28px 1fr 168px 60px 56px 56px 56px;
+  align-items: center; gap: 8px; padding: 7px 6px; border-bottom: 1px solid var(--border); font-size: 0.9rem;
+}
+.futhead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--border); }
+.fr-rank { color: var(--muted); text-align: center; }
+.fr-team .small { color: var(--muted); }
+.fr-count { position: relative; height: 20px; display: flex; align-items: center; }
+.fr-bar { position: absolute; left: 0; top: 0; height: 100%; background: rgba(91, 140, 255, 0.22); border-radius: 4px; }
+.fr-ct { position: relative; z-index: 1; padding-left: 6px; }
+.fr-num { text-align: right; }
+@media (max-width: 620px) {
+  .futrow { grid-template-columns: 22px 1fr 60px 48px 48px 48px; }
+  .futrow .fr-count, .futhead .fr-count { display: none; }
+}
 .leggame { font-size: 0.72rem; color: var(--accent); background: var(--card); border-radius: 4px; padding: 0 4px; }
 .legtag {
   display: inline-block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;

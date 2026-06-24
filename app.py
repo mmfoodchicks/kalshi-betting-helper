@@ -852,6 +852,26 @@ def api_baseball_season():
                     "n_liquid": fut.get("n_liquid")})
 
 
+@app.route("/api/baseball/futures")
+def api_baseball_futures():
+    """Futures board: pick a market (World Series / pennant / division / playoffs /
+    win-total line) and get the full ranked team list — how many of the N sims
+    each team won it, our model %, Kalshi and Polymarket. Built for the dropdown +
+    search UI."""
+    import datetime as _dt
+    import season_sim
+    season = request.args.get("season") or str(_dt.date.today().year)
+    try:
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        board = season_sim.board_cached(season, n=sims)
+    except Exception as e:
+        return jsonify({"error": f"season sim failed: {e}"}), 502
+    return jsonify(board)
+
+
 @app.route("/api/baseball/edges")
 def api_baseball_edges():
     """Rank the biggest model/sim-vs-Kalshi disparities across the day's slate.

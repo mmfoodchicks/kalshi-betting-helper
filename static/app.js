@@ -1627,12 +1627,14 @@ async function loadLive() {
   }
 }
 
+let _boardData = null, _featMarket = null;
 async function loadFeatured() {
   const box = $("featuredResults");
   box.innerHTML = `<div class="empty">Simulating the rest of the season (a few seconds)…</div>`;
   try {
-    const d = await (await fetch("/api/baseball/season")).json();
+    const d = await (await fetch("/api/baseball/futures")).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    _boardData = d;
     renderFeatured(d);
   } catch (e) {
     box.innerHTML = `<div class="empty">Season sim failed.</div>`;
@@ -1640,40 +1642,60 @@ async function loadFeatured() {
 }
 
 function renderFeatured(d) {
-  const liquid = (d.futures || []).filter((r) => !r.thin);
-  const lean = Object.entries(d.futures_summary || {})
-    .map(([k, s]) => `<span class="leanchip">${k.replace("_", " ")}: <b>${s.pos}↑</b>/<b>${s.neg}↓</b> avg ${s.avg_edge >= 0 ? "+" : ""}${s.avg_edge}</span>`).join("");
+  const engineNote = d.engine === "deep"
+    ? `<b>deep pitch-by-pitch engine</b> — game-by-game, run-by-run`
+    : `fast model (expected runs → Pythagorean)`;
   $("featuredSummary").innerHTML =
-    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>${d.n_liquid}</b> liquid futures priced (stale preseason books hidden).</div>
-     <div class="leanrow">${lean}</div>`;
+    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
+  // Grouped market dropdown (Titles / Season win totals).
+  const groups = {};
+  d.order.forEach((k) => { const m = d.markets[k]; (groups[m.group] = groups[m.group] || []).push([k, m.label]); });
+  const optgroups = Object.entries(groups).map(([g, items]) =>
+    `<optgroup label="${g}">${items.map(([k, lbl]) => `<option value="${k}">${lbl}</option>`).join("")}</optgroup>`).join("");
+  const cur = (_featMarket && d.markets[_featMarket]) ? _featMarket : d.order[0];
+  _featMarket = cur;
+  $("featuredResults").innerHTML = `
+    <div class="futctl">
+      <label class="small">Market</label>
+      <select id="futMarket" onchange="_featMarket=this.value;renderFeaturedTable()">${optgroups}</select>
+      <input id="futSearch" placeholder="🔍 search team…" oninput="renderFeaturedTable()" autocomplete="off"/>
+    </div>
+    <div id="futTable"></div>`;
+  $("futMarket").value = cur;
+  renderFeaturedTable();
+}
+
+function renderFeaturedTable() {
+  const d = _boardData; if (!d) return;
+  const m = d.markets[_featMarket]; if (!m) return;
+  const q = (($("futSearch") || {}).value || "").toLowerCase().trim();
+  let rows = m.teams;
+  if (q) rows = rows.filter((r) => r.team.toLowerCase().includes(q) || (r.abbr || "").toLowerCase().includes(q));
   // Bold the cheaper book (the one you'd buy our side on).
   const bk = (r, book) => {
     const c = book === "Kalshi" ? r.kalshi_cents : r.poly_cents;
     if (c == null) return "—";
     return r.best_book === book ? `<b>${c}¢</b>` : `${c}¢`;
   };
-  const eHead = `<div class="edgerow edgehead"><span class="ecol-edge">Edge</span><span class="ecol-pick">Market</span><span class="ecol-num">Our</span><span class="ecol-num">Kalshi</span><span class="ecol-num">Poly</span><span class="ecol-conf">Trust</span></div>`;
-  const eRows = liquid.slice(0, 24).map((r) => {
-    const cls = r.edge >= 0 ? "pos" : "neg";
-    return `<div class="edgerow">
-      <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}</span>
-      <span class="ecol-pick"><b>${r.label}</b><span class="emu">${r.type.replace("_", " ")} · best ${r.best_book || "—"}</span></span>
-      <span class="ecol-num">${r.model_pct}%</span>
-      <span class="ecol-num">${bk(r, "Kalshi")}</span>
-      <span class="ecol-num">${bk(r, "Polymarket")}</span>
-      <span class="ecol-conf conf-${r.confidence}">${r.confidence}</span>
+  const maxc = Math.max(1, ...m.teams.map((r) => r.count));
+  const head = `<div class="futrow futhead">
+    <span class="fr-rank">#</span><span class="fr-team">Team</span>
+    <span class="fr-count">Won (of ${d.n_sims.toLocaleString()} sims)</span>
+    <span class="fr-num">Our</span><span class="fr-num">Kalshi</span><span class="fr-num">Poly</span><span class="fr-num">Edge</span></div>`;
+  const body = rows.map((r, i) => {
+    const w = Math.round(100 * r.count / maxc);
+    const ecls = r.edge == null ? "" : r.edge >= 0 ? "ev pos" : "ev neg";
+    return `<div class="futrow">
+      <span class="fr-rank">${i + 1}</span>
+      <span class="fr-team"><b>${r.team}</b><span class="small"> ${r.wins}-${r.losses} · proj ${r.proj_wins}</span></span>
+      <span class="fr-count"><span class="fr-bar" style="width:${w}%"></span><span class="fr-ct">${r.count.toLocaleString()} <span class="small">(${r.model_pct}%)</span></span></span>
+      <span class="fr-num"><b>${r.model_pct}%</b></span>
+      <span class="fr-num">${bk(r, "Kalshi")}</span>
+      <span class="fr-num">${bk(r, "Polymarket")}</span>
+      <span class="fr-num ${ecls}">${r.edge == null ? "—" : (r.edge >= 0 ? "+" : "") + r.edge}</span>
     </div>`;
   }).join("");
-  const sRows = d.teams.map((t) => `<tr>
-    <td>${t.name}</td><td>${t.wins}-${t.losses}</td><td><b>${t.proj_wins}</b></td>
-    <td class="small">${t.proj_p10}–${t.proj_p90}</td>
-    <td>${t.p_playoffs}%</td><td>${t.p_division}%</td><td>${t.p_pennant}%</td><td><b>${t.p_ws}%</b></td>
-  </tr>`).join("");
-  $("featuredResults").innerHTML =
-    `<div class="teamhdr">🎯 Biggest futures edges — our model vs Kalshi</div>
-     ${liquid.length ? eHead + eRows : `<div class="empty">No liquid futures priced right now (most futures post wider/quiet markets — check back near key dates).</div>`}
-     <div class="teamhdr" style="margin-top:16px">📊 Projected standings & odds (${d.n_sims.toLocaleString()} sims)</div>
-     <table class="seasontbl"><thead><tr><th>Team</th><th>W-L</th><th>Proj</th><th>10–90</th><th>PO%</th><th>Div%</th><th>Pen%</th><th>WS%</th></tr></thead><tbody>${sRows}</tbody></table>`;
+  $("futTable").innerHTML = head + (body || `<div class="empty">No team matches “${q}”.</div>`);
 }
 
 let sportsLoaded = false;
