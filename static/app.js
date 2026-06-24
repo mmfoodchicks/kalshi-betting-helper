@@ -781,7 +781,7 @@ function modelLegend() {
       <li><b>Sim %</b> — the <i>same</i> outcome measured a different way: we simulate the whole game thousands of times (baserunning, steals, pitch-count &amp; relief, correlations) and count how often it happened. Model and Sim should be close; a gap shows where game context (correlation, a starter getting pulled) moves it.</li>
       <li><b>Market %</b> — Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
       <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) — Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
-      <li><b>Fair payout ×</b> — 1 ÷ probability. A 25% chance is a fair 4× ($1 → $4). It's what a break-even bet pays, before any edge.</li>
+      <li><b>Fair payout ×</b> — 1 ÷ probability (a 25% chance is a fair 4×). This is the <b>no-vig fair value</b> from our model. Kalshi's <i>actual</i> payout is lower because it bakes in their margin, so ours being a bit higher is normal. If ours is <i>wildly</i> higher than Kalshi's combo builder (e.g. 100× vs 44×), it means our model strongly disagrees with the market on a leg — either real edge, or we're miscalibrated there, so sanity-check that leg.</li>
       <li><b>Weather → ±% runs</b> — park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
     </ul></details>`;
 }
@@ -903,7 +903,7 @@ function renderMixed(m) {
       <span>Correlation: ${corrTxt}</span>
     </div>
     ${hardWarn}
-    <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply.</div>
+    <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) — Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;
 }
 
