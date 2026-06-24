@@ -52,6 +52,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="crypto">⚡ Crypto</button>
     <button class="tab" data-tab="baseball">⚾ Baseball</button>
+    <button class="tab" data-tab="edges">🎯 Edge Finder</button>
     <button class="tab" data-tab="hits">📈 Hits</button>
     <button class="tab" data-tab="football">🏈 Football</button>
     <button class="tab" data-tab="sports">🏆 Sports</button>
@@ -207,6 +208,36 @@
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
    </div><!-- /tab-baseball -->
+
+   <div id="tab-edges" class="hidden">
+    <section class="card">
+      <h2>🎯 Edge Finder</h2>
+      <p class="sub">Every MLB leg we can price live, ranked by the gap between <b>our model</b> and <b>Kalshi's price</b>. Edge = our simulated chance − Kalshi's implied chance. This is a <b>disagreement finder, not a guarantee</b>: a gap is only money if our model is right. Lines are often loosely quoted until close to game time, and a whole market leaning one way (flagged below) usually means model bias, not free money.</p>
+      <div class="row" style="gap:8px;align-items:center">
+        <label class="small">Slate
+          <select id="edgeDate" style="width:auto;margin-left:4px"></select>
+        </label>
+        <label class="small">Min edge
+          <select id="edgeMin" style="width:auto;margin-left:4px">
+            <option value="4">4¢</option>
+            <option value="7" selected>7¢</option>
+            <option value="10">10¢</option>
+            <option value="15">15¢</option>
+          </select>
+        </label>
+        <label class="small">Side
+          <select id="edgeSide" style="width:auto;margin-left:4px">
+            <option value="all" selected>All</option>
+            <option value="pos">We're higher (YES value)</option>
+            <option value="neg">We're lower</option>
+          </select>
+        </label>
+        <button class="track-mini primary-mini" onclick="loadEdges()">Scan slate</button>
+      </div>
+      <div id="edgeSummary"></div>
+      <div id="edgeResults" class="markets"><div class="empty">Pick a slate and scan.</div></div>
+    </section>
+   </div><!-- /tab-edges -->
 
    <div id="tab-hits" class="hidden">
     <section class="card">

@@ -1046,6 +1046,7 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      $("tab-edges").classList.toggle("hidden", tab !== "edges");
       $("tab-hits").classList.toggle("hidden", tab !== "hits");
       $("tab-football").classList.toggle("hidden", tab !== "football");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
@@ -1076,6 +1077,10 @@ function setupTabs() {
       if (tab === "hits" && !$("hitsDate").dataset.loaded) {
         $("hitsDate").dataset.loaded = "1";
         initHits();
+      }
+      if (tab === "edges" && !$("edgeDate").dataset.loaded) {
+        $("edgeDate").dataset.loaded = "1";
+        initEdges();
       }
     });
   });
@@ -1181,6 +1186,90 @@ function renderBacktest(r) {
     <div class="calbox">${cal}</div>
     <div class="small" style="margin-top:8px">Brier below 0.25 and ROI above 0 mean the model is adding real signal. If not, treat this coin/horizon as a coin flip.</div>
   </div>`;
+}
+
+// ---- Edge Finder ----------------------------------------------------------
+let _edgeData = null;
+
+function initEdges() {
+  const sel = $("edgeDate");
+  if (!sel) return;
+  const today = new Date();
+  let opts = "";
+  for (let i = 0; i < 4; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    opts += `<option value="${iso}">${i === 0 ? "Today" : i === 1 ? "Tomorrow" : iso}</option>`;
+  }
+  sel.innerHTML = opts;
+  $("edgeMin").onchange = renderEdges;
+  $("edgeSide").onchange = renderEdges;
+  loadEdges();
+}
+
+async function loadEdges() {
+  const box = $("edgeResults");
+  const date = $("edgeDate").value;
+  box.innerHTML = `<div class="empty">Scanning every priced leg across the slate… (simulating each game, a few seconds)</div>`;
+  $("edgeSummary").innerHTML = "";
+  try {
+    const d = await (await fetch(`/api/baseball/edges?date=${date}&min_edge=4`)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    _edgeData = d;
+    renderEdges();
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Scan failed: ${e}</div>`;
+  }
+}
+
+const CONF_LABEL = { high: "trusted", med: "medium", low: "soft" };
+
+function renderEdges() {
+  const d = _edgeData;
+  if (!d) return;
+  const box = $("edgeResults");
+  if (!d.edges || !d.edges.length) {
+    box.innerHTML = `<div class="empty">No legs priced yet — Kalshi posts most props/totals closer to game time. Try again nearer first pitch.</div>`;
+    return;
+  }
+  // Per-market lean banner: flags systematic model bias vs one-off edges.
+  const leaned = Object.entries(d.summary).filter(([, s]) => s.lean);
+  const chips = Object.entries(d.summary)
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([t, s]) => `<span class="leanchip${s.lean ? " warn" : ""}">${t}: <b>${s.pos}↑</b>/<b>${s.neg}↓</b> avg ${s.avg_edge >= 0 ? "+" : ""}${s.avg_edge}${s.lean ? " ⚠" : ""}</span>`)
+    .join("");
+  let banner = `<div class="leanrow">${chips}</div>`;
+  if (leaned.length) {
+    banner += `<div class="leanwarn">⚠ ${leaned.map(([t]) => t).join(", ")} lean almost entirely one way across the slate — that's usually <b>our model</b> being systematically off on that market, not ${leaned.length > 1 ? "those" : "that"} being real edges. Treat with skepticism.</div>`;
+  }
+  $("edgeSummary").innerHTML = banner;
+
+  const minEdge = parseFloat($("edgeMin").value);
+  const side = $("edgeSide").value;
+  let rows = d.edges.filter((r) => Math.abs(r.edge) >= minEdge);
+  if (side === "pos") rows = rows.filter((r) => r.edge > 0);
+  else if (side === "neg") rows = rows.filter((r) => r.edge < 0);
+  rows.sort((a, b) => b.edge - a.edge);
+  if (!rows.length) { box.innerHTML = `<div class="empty">Nothing at that filter. Lower the min edge or change the side.</div>`; return; }
+
+  const head = `<div class="edgerow edgehead">
+    <span class="ecol-edge">Edge</span><span class="ecol-pick">Leg</span>
+    <span class="ecol-num">Our %</span><span class="ecol-num">Kalshi</span>
+    <span class="ecol-num">Pays</span><span class="ecol-conf">Trust</span></div>`;
+  const body = rows.map((r) => {
+    const cls = r.edge >= 0 ? "pos" : "neg";
+    const model = (r.model_pct != null) ? ` <span class="emodel">model ${r.model_pct}%</span>` : "";
+    return `<div class="edgerow">
+      <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}</span>
+      <span class="ecol-pick"><b>${r.pick}</b><span class="emu">${r.matchup}</span></span>
+      <span class="ecol-num">${r.our_pct}%${model}</span>
+      <span class="ecol-num">${r.market_cents}¢</span>
+      <span class="ecol-num">${r.market_payout_x}×</span>
+      <span class="ecol-conf conf-${r.confidence}">${CONF_LABEL[r.confidence] || r.confidence}</span>
+    </div>`;
+  }).join("");
+  box.innerHTML = head + body +
+    `<div class="small" style="margin-top:10px;color:var(--muted)">Showing ${rows.length} of ${d.n_priced} priced legs. <b>Edge</b> = our simulated chance − Kalshi's price. <b>Trust</b> reflects how well-grounded the model is for that market (Ks/Total/ML strongest). Positive edge = we think YES is likelier than the market.</div>`;
 }
 
 async function runBacktest() {

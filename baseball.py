@@ -1044,6 +1044,81 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
             "n_sims": n_sims}
 
 
+def _edge_confidence(typ):
+    """How much to trust a model-vs-market gap, by market. The model is best
+    grounded where it leans on stable team/pitcher rates (moneyline, total, Ks);
+    weaker on low-base-rate or combined-stat props (HR, H+R+RBI)."""
+    return {"ML": "high", "Total": "high", "Ks": "high",
+            "Run line": "med", "Hit": "med", "Bases": "med",
+            "RFI": "med", "HR": "low", "HRR": "low"}.get(typ, "med")
+
+
+def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60):
+    """Scan every priced leg across the slate and rank model-vs-Kalshi gaps.
+
+    For each candidate leg we already know our simulated probability (and, for
+    most, a closed-form model probability) and can look up Kalshi's live price.
+    The edge is our probability minus Kalshi's implied probability (the price in
+    cents). A positive edge means we think YES is likelier than the market does.
+
+    This is a disagreement finder, not a money printer: a gap is only an edge if
+    the model is right, so each row carries a confidence by market type and the
+    UI flags that lines are often loosely quoted until close to game time.
+    """
+    import mlb_sim
+    import kalshi_mlb
+    idx = kalshi_mlb.index()
+    rows = []
+    for g in games:
+        if _game_state(g) in ("Final", "Live"):
+            continue
+        suffix = g.get("kalshi_suffix")
+        if not suffix or not idx.get(suffix):
+            continue
+        sim = mlb_sim.simulate(g, n_sims)
+        for c in mlb_sim.build_candidates(g, sim):
+            kref = c.get("kref")
+            if not kref:
+                continue
+            cents = None
+            try:
+                cents = kalshi_mlb.price_leg(idx, suffix, kref)
+            except Exception:
+                cents = None
+            if not cents or not (0 < cents < 100):
+                continue
+            sim_pct = round(c["marg"] * 100, 1)         # holistic estimate (combos use this)
+            model_pct = c.get("model_pct")
+            edge = round(sim_pct - cents, 1)
+            rows.append({
+                "matchup": g["matchup"], "type": c["type"], "pick": c["label"],
+                "our_pct": sim_pct, "model_pct": model_pct,
+                "market_cents": cents, "market_payout_x": round(100.0 / cents, 2),
+                "edge": edge, "confidence": _edge_confidence(c["type"]),
+            })
+    # Per-market lean over ALL priced legs. If a whole market type is one-sided
+    # (e.g. every starter's Ks read high vs the market), that's a systematic model
+    # bias to distrust, not a slate full of independent edges -- surface it so the
+    # user can tell the two apart.
+    summary = {}
+    for r in rows:
+        s = summary.setdefault(r["type"], {"count": 0, "pos": 0, "neg": 0, "edge_sum": 0.0})
+        s["count"] += 1
+        s["pos" if r["edge"] >= 0 else "neg"] += 1
+        s["edge_sum"] += r["edge"]
+    for t, s in summary.items():
+        s["avg_edge"] = round(s["edge_sum"] / s["count"], 1)
+        # "lean" when a market is lopsided enough that the gap looks like model bias
+        frac = max(s["pos"], s["neg"]) / s["count"]
+        s["lean"] = (frac >= 0.78 and s["count"] >= 5 and abs(s["avg_edge"]) >= 5)
+        del s["edge_sum"]
+
+    filtered = [r for r in rows if abs(r["edge"]) >= min_edge]
+    filtered.sort(key=lambda r: abs(r["edge"]), reverse=True)  # biggest gaps, either way
+    return {"edges": filtered[:top_n], "n_priced": len(rows),
+            "summary": summary, "n_sims": n_sims}
+
+
 def _kalshi_payout(leg_suffix_pairs):
     """Price each (leg, game-suffix) off live Kalshi markets, annotate the leg
     with its market cents/payout, and return the combo's real Kalshi payout

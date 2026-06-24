@@ -257,6 +257,28 @@ button.danger { color: var(--no); }
 .ev.pos { color: var(--yes); font-weight: 700; }
 .ev.neg { color: var(--no); font-weight: 700; }
 
+/* ---- Edge Finder ---- */
+.leanrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.leanchip { font-size: 0.78rem; padding: 3px 8px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--muted); }
+.leanchip.warn { background: rgba(255,176,32,0.12); border-color: rgba(255,176,32,0.5); color: #ffd27a; }
+.leanwarn { margin: 8px 0; padding: 9px 11px; border-radius: 10px; font-size: 0.85rem;
+  background: rgba(255,176,32,0.1); border: 1px solid rgba(255,176,32,0.4); color: #ffd27a; }
+.edgerow { display: grid; grid-template-columns: 52px 1fr 84px 58px 56px 64px;
+  align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.edgerow.edgehead { font-size: 0.74rem; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--muted); border-bottom: 1px solid rgba(255,255,255,0.14); }
+.ecol-edge { font-size: 1.0rem; text-align: center; }
+.ecol-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.86rem; }
+.ecol-conf { text-align: center; font-size: 0.72rem; }
+.ecol-pick .emu { display: block; color: var(--muted); font-size: 0.74rem; }
+.emodel { color: var(--muted); font-size: 0.72rem; }
+.conf-high { color: var(--yes); } .conf-med { color: #ffd27a; } .conf-low { color: var(--no); }
+@media (max-width: 560px) {
+  .edgerow { grid-template-columns: 44px 1fr 52px 50px; }
+  .edgerow .ecol-num:nth-of-type(5), .edgerow .ecol-conf { display: none; }
+}
+
 .note { margin-top: 10px; padding: 9px 11px; border-radius: 10px; font-size: 0.85rem; }
 .note.dip { background: rgba(91, 140, 255, 0.12); border: 1px solid rgba(91, 140, 255, 0.5); color: #aac4ff; }
 .note.exit { background: rgba(240, 180, 41, 0.1); border: 1px solid rgba(240, 180, 41, 0.5); color: var(--hold); }

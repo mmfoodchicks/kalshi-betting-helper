@@ -767,6 +767,28 @@ def api_baseball_parlay():
     return jsonify({"combo": combo})
 
 
+@app.route("/api/baseball/edges")
+def api_baseball_edges():
+    """Rank the biggest model/sim-vs-Kalshi disparities across the day's slate.
+    For each leg we can price live, edge = our simulated probability minus
+    Kalshi's implied price. A disagreement finder, flagged by confidence."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        min_edge = float(request.args.get("min_edge", 4))
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    res = baseball.find_edges(games, n_sims=sims, min_edge=min_edge)
+    res["date"] = date
+    return jsonify(res)
+
+
 @app.route("/api/baseball/sgp")
 def api_baseball_sgp():
     """Same-game parlays with correlation-aware (simulated) joint odds. Legs from
