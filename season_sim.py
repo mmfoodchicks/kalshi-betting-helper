@@ -236,45 +236,84 @@ def _winner_markets(series):
     return out
 
 
-def _row(team, model_pct, m, mtype, label):
-    cents = m.get("yes_ask")
-    spread = (round(cents - m["yes_bid"], 1)
-              if cents is not None and m.get("yes_bid") is not None else None)
-    vol = m.get("volume") or 0
+def _futrow(team, mtype, label, model_pct, kmarket, poly_cents):
+    """One futures row priced against Kalshi and/or Polymarket. Edge is vs the
+    cheapest book that lists our side (the one we'd actually buy)."""
+    kc = kmarket.get("yes_ask") if kmarket else None
+    spread = vol = None
+    if kmarket:
+        vol = kmarket.get("volume") or 0
+        if kc is not None and kmarket.get("yes_bid") is not None:
+            spread = round(kc - kmarket["yes_bid"], 1)
+    books = {b: c for b, c in (("Kalshi", kc), ("Polymarket", poly_cents)) if c}
+    best_book = min(books, key=books.get) if books else None
+    best = books.get(best_book)
+    # Thin only if our sole quote is a wide/untraded Kalshi book.
+    thin = (poly_cents is None and (spread is None or spread >= 12 or (vol or 0) < 20))
     return {
         "type": mtype, "team": team["name"], "abbr": team["abbr"], "label": label,
-        "model_pct": round(model_pct, 1), "market_cents": cents,
-        "market_payout_x": round(100.0 / cents, 2) if cents else None,
-        "edge": round(model_pct - cents, 1), "ticker": m["ticker"],
-        "volume": vol, "spread": spread,
-        "thin": spread is None or spread >= 12 or vol < 20,
+        "model_pct": round(model_pct, 1),
+        "kalshi_cents": kc, "poly_cents": poly_cents,
+        "market_cents": best, "best_book": best_book,
+        "market_payout_x": round(100.0 / best, 2) if best else None,
+        "edge": round(model_pct - best, 1) if best is not None else None,
+        "edge_kalshi": round(model_pct - kc, 1) if kc is not None else None,
+        "edge_poly": round(model_pct - poly_cents, 1) if poly_cents is not None else None,
+        "ticker": kmarket.get("ticker") if kmarket else None,
+        "volume": vol, "spread": spread, "thin": thin,
         "confidence": _CONF.get(mtype, "med"),
     }
 
 
+def _kalshi_winner_map(series_iter):
+    out = {}
+    for series in series_iter:
+        for abbr, m in _winner_markets(series):
+            out.setdefault(abbr, m)
+    return out
+
+
 def futures_edges(season=None, sim=None, n=4000):
-    """Match the season sim to live Kalshi futures and rank model-vs-market edges.
-    Covers World Series, pennants, division winners, playoff berths, and per-team
-    season win totals. Returns rows sorted by absolute edge + a lean summary."""
+    """Rank our season model vs BOTH books (Kalshi + Polymarket) across World
+    Series, pennants, divisions, playoff berths, and per-team win totals. Rows are
+    model-driven, so a future shows even when only one book lists it. Edge is vs
+    the cheaper book; returns rows sorted by absolute edge + a lean summary."""
     season = season or str(datetime.date.today().year)
     sim = sim or cached(season, n)
-    by_abbr = {t["abbr"]: t for t in sim["teams"] if t.get("abbr")}
-    sample = {t["abbr"]: t.get("_wins_sample") or [] for t in sim["teams"]}
+    teams = sim["teams"]
+    sample = {t["abbr"]: t.get("_wins_sample") or [] for t in teams}
+
+    k_ws = _kalshi_winner_map(_WS_SERIES)
+    k_pen = _kalshi_winner_map(_PENNANT.keys())
+    k_div = _kalshi_winner_map(_DIVISION)
+    k_po = _kalshi_winner_map((_PLAYOFFS,))
+    poly = {}
+    pm = None
+    try:
+        import polymarket as pm
+        pf = pm.mlb_futures()
+        poly = {"world_series": pf.get("world_series", {}),
+                "pennant": {**pf.get("al", {}), **pf.get("nl", {})}}
+    except Exception:
+        pm = None
+
     rows = []
+    cats = [("world_series", "p_ws", k_ws, "win World Series"),
+            ("pennant", "p_pennant", k_pen, "win pennant"),
+            ("division", "p_division", k_div, "win division"),
+            ("playoffs", "p_playoffs", k_po, "make playoffs")]
+    for mtype, key, kmap, verb in cats:
+        for t in teams:
+            model = t.get(key)
+            if model is None:
+                continue
+            pc = pm.match_team(t["name"], poly[mtype]) if (pm and mtype in poly) else None
+            km = kmap.get(t["abbr"])
+            if km is None and pc is None:
+                continue
+            rows.append(_futrow(t, mtype, f"{t['name']} {verb}", model, km, pc))
 
-    def winner(series_iter, mtype, prob_key, label_fn):
-        for series in series_iter:
-            for abbr, m in _winner_markets(series):
-                t = by_abbr.get(abbr)
-                if t:
-                    rows.append(_row(t, t[prob_key], m, mtype, label_fn(t)))
-
-    winner(_WS_SERIES, "world_series", "p_ws", lambda t: f"{t['name']} win World Series")
-    winner(_PENNANT, "pennant", "p_pennant", lambda t: f"{t['name']} win pennant")
-    winner(_DIVISION, "division", "p_division", lambda t: f"{t['name']} win division")
-    winner((_PLAYOFFS,), "playoffs", "p_playoffs", lambda t: f"{t['name']} make playoffs")
-
-    # Season win totals: one series per team, P(final wins >= line). Fetch parallel.
+    # Season win totals: one Kalshi series per team, P(final wins >= line).
     def win_total(t):
         s = sample.get(t["abbr"]) or []
         if not s:
@@ -285,11 +324,11 @@ def futures_edges(season=None, sim=None, n=4000):
             if line is None:
                 continue
             model = 100.0 * sum(1 for w in s if w >= line) / len(s)
-            ladder.append(_row(t, model, m, "win_total",
-                               f"{t['name']} {int(line)}+ wins"))
+            ladder.append(_futrow(t, "win_total", f"{t['name']} {int(line)}+ wins",
+                                  model, m, None))
         return ladder
     with ThreadPoolExecutor(max_workers=10) as ex:
-        for ladder in ex.map(win_total, sim["teams"]):
+        for ladder in ex.map(win_total, teams):
             rows.extend(ladder)
 
     # Real (liquid) edges first, biggest gap first; stale/untraded markets sink.

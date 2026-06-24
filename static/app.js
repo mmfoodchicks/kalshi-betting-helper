@@ -1557,15 +1557,21 @@ function renderFeatured(d) {
   $("featuredSummary").innerHTML =
     `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>${d.n_liquid}</b> liquid futures priced (stale preseason books hidden).</div>
      <div class="leanrow">${lean}</div>`;
-  const eHead = `<div class="edgerow edgehead"><span class="ecol-edge">Edge</span><span class="ecol-pick">Market</span><span class="ecol-num">Our</span><span class="ecol-num">Kalshi</span><span class="ecol-num">Pays</span><span class="ecol-conf">Trust</span></div>`;
-  const eRows = liquid.slice(0, 20).map((r) => {
+  // Bold the cheaper book (the one you'd buy our side on).
+  const bk = (r, book) => {
+    const c = book === "Kalshi" ? r.kalshi_cents : r.poly_cents;
+    if (c == null) return "—";
+    return r.best_book === book ? `<b>${c}¢</b>` : `${c}¢`;
+  };
+  const eHead = `<div class="edgerow edgehead"><span class="ecol-edge">Edge</span><span class="ecol-pick">Market</span><span class="ecol-num">Our</span><span class="ecol-num">Kalshi</span><span class="ecol-num">Poly</span><span class="ecol-conf">Trust</span></div>`;
+  const eRows = liquid.slice(0, 24).map((r) => {
     const cls = r.edge >= 0 ? "pos" : "neg";
     return `<div class="edgerow">
       <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}</span>
-      <span class="ecol-pick"><b>${r.label}</b><span class="emu">${r.type.replace("_", " ")}</span></span>
+      <span class="ecol-pick"><b>${r.label}</b><span class="emu">${r.type.replace("_", " ")} · best ${r.best_book || "—"}</span></span>
       <span class="ecol-num">${r.model_pct}%</span>
-      <span class="ecol-num">${r.market_cents}¢</span>
-      <span class="ecol-num">${r.market_payout_x ? r.market_payout_x + "×" : "—"}</span>
+      <span class="ecol-num">${bk(r, "Kalshi")}</span>
+      <span class="ecol-num">${bk(r, "Polymarket")}</span>
       <span class="ecol-conf conf-${r.confidence}">${r.confidence}</span>
     </div>`;
   }).join("");
