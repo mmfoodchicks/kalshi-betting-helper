@@ -1627,18 +1627,70 @@ async function loadLive() {
   }
 }
 
-let _boardData = null, _featMarket = null;
+let _boardData = null, _featMarket = null, _featSport = "mlb";
+const _featIntro = {
+  mlb: `Our season Monte Carlo vs the market — division / playoff / pennant / World Series odds and win totals, vs Kalshi & Polymarket. Click "Run deep sim" for the pitch-by-pitch engine.`,
+  f1: `Deep F1 season sim — every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
+  nascar: `Deep NASCAR Cup sim — pace + points from this season's races, then the full playoff bracket (Round of 16 → 12 → 8 → Championship 4). The winner-take-all finale keeps title odds flat, as in real NASCAR.`,
+};
+function setFeatSport(s) {
+  _featSport = s;
+  document.querySelectorAll("#tab-sports .sportbtn").forEach((b) =>
+    b.classList.toggle("active", b.dataset.fsport === s));
+  const intro = $("featuredIntro"); if (intro) intro.innerHTML = _featIntro[s];
+  loadFeatured();
+}
+
 async function loadFeatured() {
   const box = $("featuredResults");
-  box.innerHTML = `<div class="empty">Simulating the rest of the season (a few seconds)…</div>`;
+  box.innerHTML = `<div class="empty">Simulating the season…</div>`;
+  $("featuredSummary").innerHTML = "";
   try {
-    const d = await (await fetch("/api/baseball/futures")).json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    _boardData = d;
-    renderFeatured(d);
+    if (_featSport === "mlb") {
+      const d = await (await fetch("/api/baseball/futures")).json();
+      if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+      _boardData = d; renderFeatured(d);
+    } else {
+      const d = await (await fetch(`/api/racing/${_featSport}`)).json();
+      if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+      renderRacing(d);
+    }
   } catch (e) {
     box.innerHTML = `<div class="empty">Season sim failed.</div>`;
   }
+}
+
+function renderRacing(d) {
+  const isF1 = d.sport === "f1";
+  $("featuredSummary").innerHTML =
+    `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints" : "pace + the playoff bracket"}.</div>`;
+  const extra = isF1 ? "Poles" : "Top-5s";
+  const head = `<div class="futrow rcrow rchead">
+    <span class="fr-rank">#</span><span class="fr-team">Driver</span>
+    <span class="fr-num">Title</span><span class="fr-num">Proj pts</span>
+    <span class="fr-num">Wins</span><span class="fr-num">${extra}</span><span class="fr-num">${isF1 ? "Pts now" : "Playoff"}</span></div>`;
+  const rows = d.drivers.filter((x) => x.title_pct > 0 || x.exp_wins >= 0.3).slice(0, 22).map((x, i) => {
+    const team = isF1 ? `<span class="small"> ${x.constructor}</span>` : "";
+    const ex = isF1 ? x.exp_poles : x.exp_top5;
+    const last = isF1 ? `<span class="fr-num">${x.points_now}</span>` : `<span class="fr-num">${x.playoff_pct}%</span>`;
+    return `<div class="futrow rcrow">
+      <span class="fr-rank">${i + 1}</span>
+      <span class="fr-team"><b>${x.name}</b>${team}</span>
+      <span class="fr-num"><b>${x.title_pct}%</b></span>
+      <span class="fr-num">${x.proj_points}</span>
+      <span class="fr-num">${x.exp_wins}</span>
+      <span class="fr-num">${ex}</span>
+      ${last}
+    </div>`;
+  }).join("");
+  let cons = "";
+  if (isF1 && d.constructors) {
+    cons = `<div class="teamhdr" style="margin-top:16px">🏆 Constructors' championship</div>`
+      + d.constructors.filter((c) => c.title_pct >= 0.1).map((c) =>
+        `<div class="futrow rcrow"><span class="fr-rank"></span><span class="fr-team"><b>${c.name}</b></span>
+         <span class="fr-num"><b>${c.title_pct}%</b></span><span class="fr-num"></span><span class="fr-num"></span><span class="fr-num"></span><span class="fr-num"></span></div>`).join("");
+  }
+  $("featuredResults").innerHTML = head + rows + cons;
 }
 
 async function startDeepRun() {

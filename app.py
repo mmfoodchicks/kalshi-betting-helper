@@ -881,6 +881,30 @@ def api_baseball_futures():
     return jsonify(board)
 
 
+@app.route("/api/racing/<sport>")
+def api_racing_season(sport):
+    """Deep full-season motorsport sim -> championship odds. F1 simulates
+    qualifying + race (+ sprints) over the remaining calendar; NASCAR runs the
+    playoff bracket. Best-effort Polymarket champion prices attached."""
+    import racing_sim
+    import baseball as _bb
+    sport = (sport or "").lower()
+    if sport not in ("f1", "nascar"):
+        return jsonify({"error": "unknown sport"}), 404
+    try:
+        data = _bb._cached(
+            ("racing_season", sport), 1800,
+            lambda: racing_sim.sim_f1(3000) if sport == "f1" else racing_sim.sim_nascar(3000))
+    except Exception as e:
+        return jsonify({"error": f"sim failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no season data available"}), 502
+    # (Polymarket/Kalshi champion-price matching for motorsport is a follow-up —
+    # the driver-name vs market-title join needs its own verification, so we ship
+    # the model board first rather than attach unreliable prices.)
+    return jsonify(data)
+
+
 # Latest completed deep-season run, kept in-process. {agg, season}.
 _deep = {"agg": None, "season": None}
 

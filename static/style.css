@@ -433,6 +433,15 @@ button.danger { color: var(--no); }
   display: inline-block; background: rgba(91, 140, 255, 0.16); border: 1px solid var(--accent);
   color: var(--accent); border-radius: 7px; padding: 4px 10px; font-size: 0.8rem; font-weight: 600;
 }
+.sporttoggle { display: flex; gap: 6px; margin: 4px 0 12px; flex-wrap: wrap; }
+.sportbtn {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 13px; cursor: pointer; font-size: 0.88rem;
+}
+.sportbtn:hover { border-color: var(--accent); }
+.sportbtn.active { background: rgba(91, 140, 255, 0.16); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.rcrow { grid-template-columns: 26px 1fr 56px 50px 54px 48px 56px; }
+.rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .futrow-click { cursor: pointer; }
 .futrow-click:hover { background: rgba(91, 140, 255, 0.08); }
 .teamdetail { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin: 6px 0 12px; }

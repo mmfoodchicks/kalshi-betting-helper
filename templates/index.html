@@ -283,8 +283,13 @@
     </section>
 
     <section class="card sub-sports sub-featured hidden">
-      <h2>⭐ Featured — MLB season futures</h2>
-      <p class="sub" style="margin:4px 0 12px">Our season Monte Carlo vs the market. We simulate the rest of the schedule from each team's run quality to get our own <b>division / playoff / pennant / World Series</b> odds and <b>season win totals</b>, then compare to Kalshi's futures. Edge = our % − Kalshi price. Season variance is high (<b>confidence: medium</b>), and our model is run-quality based, so it intentionally disagrees with record/reputation pricing — these are disagreements to weigh, not locks.</p>
+      <h2>⭐ Featured — season championship sims</h2>
+      <div class="sporttoggle">
+        <button class="sportbtn active" data-fsport="mlb" onclick="setFeatSport('mlb')">⚾ MLB</button>
+        <button class="sportbtn" data-fsport="f1" onclick="setFeatSport('f1')">🏎️ F1</button>
+        <button class="sportbtn" data-fsport="nascar" onclick="setFeatSport('nascar')">🏁 NASCAR</button>
+      </div>
+      <p class="sub" id="featuredIntro" style="margin:4px 0 12px">Our season Monte Carlo vs the market. We simulate the rest of the schedule from each team's run quality to get our own <b>division / playoff / pennant / World Series</b> odds and <b>season win totals</b>, then compare to Kalshi's futures. Edge = our % − Kalshi price.</p>
       <div id="featuredSummary"></div>
       <div id="featuredResults" class="markets"><div class="empty">Simulating the season…</div></div>
     </section>
