@@ -204,3 +204,199 @@ def sim_f1(n=2000, seed=None):
     return {"sport": "f1", "n_sims": n, "races_left": len(remaining),
             "drivers": drivers, "constructors": constructors}
 
+
+# ---- NASCAR Cup: pace + points from weekend feeds, then the playoff bracket ---
+NASCAR_BASE = "https://cf.nascar.com/cacher"
+# Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
+# approximately via the real playoff-point totals we read from the feeds.
+def _cup_points(pos):
+    if pos <= 1:
+        return 40
+    return max(1, 37 - pos)
+
+
+def nascar_state(year=None, series=1):
+    """Current Cup standings + pace from this season's completed points races:
+    {driver_id: {name, points, playoff_points, wins, race_pace, dnf, starts}}."""
+    import datetime
+    year = year or datetime.date.today().year
+
+    def build():
+        today = datetime.date.today().isoformat()
+        rl = racing._get_json(f"{NASCAR_BASE}/{year}/{series}/race_list_basic.json")
+        pts_races = sorted((r for r in rl if r.get("race_type_id") == 1),
+                           key=lambda r: r.get("race_date", ""))
+        done = [r for r in pts_races if (r.get("race_date") or "")[:10] < today]
+
+        def feed(r):
+            try:
+                d = racing._get_json(
+                    f"{NASCAR_BASE}/{year}/{series}/{r['race_id']}/weekend-feed.json")
+                return d["weekend_race"][0]["results"]
+            except Exception:
+                return []
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            all_res = list(ex.map(feed, done))
+        st = {}
+        for res in all_res:
+            for x in res:
+                did = x["driver_id"]
+                s = st.setdefault(did, {"name": x.get("driver_fullname", ""), "points": 0,
+                                        "playoff_points": 0, "wins": 0, "fins": [], "dnf": 0, "starts": 0})
+                s["points"] += x.get("points_earned", 0)
+                s["playoff_points"] += x.get("playoff_points_earned", 0)
+                s["starts"] += 1
+                fp = x.get("finishing_position", 35)
+                if fp == 1:
+                    s["wins"] += 1
+                if (x.get("finishing_status") or "Running") == "Running":
+                    s["fins"].append(fp)
+                else:
+                    s["dnf"] += 1
+        out = {}
+        prior, k = 20.0, 5.0      # regress pace toward midpack so a part-timer with
+        for did, s in st.items():  # a couple of lucky finishes isn't a fake contender
+            if s["starts"] < 2:
+                continue
+            fins = s["fins"]
+            pace = (sum(fins) + k * prior) / (len(fins) + k)
+            out[did] = {"id": did, "name": s["name"], "points": s["points"],
+                        "playoff_points": s["playoff_points"], "wins": s["wins"],
+                        "race_pace": pace,
+                        "dnf": min(0.30, s["dnf"] / s["starts"]), "starts": s["starts"]}
+        return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done)}
+    return racing._cached(("nascar_state", year, series), 6 * 3600, build) or {}
+
+
+_SIGMA_CUP = 7.5     # Cup field is flat (pole win rate low) -> high race variance
+
+
+def _round_of(idx):
+    """Playoff round for the i-th points race of a 36-race Cup season (1-indexed)."""
+    if idx <= 26:
+        return "regular"
+    if idx <= 29:
+        return "ro16"
+    if idx <= 32:
+        return "ro12"
+    if idx <= 35:
+        return "ro8"
+    return "final"
+
+
+def _sim_cup_race(drivers, rng):
+    """Finishing order (driver ids). Pace + large variance (flat field), DNFs last."""
+    fin, out = [], []
+    for d in drivers:
+        if rng.random() < d["dnf"]:
+            out.append(d["id"])
+        else:
+            fin.append((d["race_pace"] + rng.gauss(0, _SIGMA_CUP), d["id"]))
+    fin.sort()
+    rng.shuffle(out)
+    return [did for _, did in fin] + out
+
+
+def _sim_nascar_season(drivers, phases, rng):
+    """One season forward through the remaining schedule + the playoff bracket."""
+    pts = {d["id"]: d["points"] for d in drivers}
+    wins = {d["id"]: d["wins"] for d in drivers}
+    ppts = {d["id"]: d["playoff_points"] for d in drivers}
+    season_wins = defaultdict(int); top5 = defaultdict(int); top10 = defaultdict(int)
+
+    def run_race():
+        order = _sim_cup_race(drivers, rng)
+        for pos, did in enumerate(order, 1):
+            pts[did] += _cup_points(pos)
+            if pos <= 5:
+                top5[did] += 1
+            if pos <= 10:
+                top10[did] += 1
+        season_wins[order[0]] += 1
+        return order
+
+    for _ in range(phases.get("regular", 0)):
+        w = run_race()[0]
+        wins[w] += 1; ppts[w] += 5            # a win = playoff lock + playoff points
+
+    # Seed the 16-car playoff field: race winners first (by playoff pts), then fill
+    # the rest on regular-season points.
+    field = sorted((d for d in drivers if wins[d["id"]] > 0),
+                   key=lambda d: (ppts[d["id"]], pts[d["id"]]), reverse=True)
+    if len(field) < 16:
+        rest = sorted((d for d in drivers if wins[d["id"]] == 0),
+                      key=lambda d: pts[d["id"]], reverse=True)
+        field += rest[:16 - len(field)]
+    field = field[:16]
+    made_playoffs = {d["id"] for d in field}
+
+    survivors = field
+    base = 2000
+    for rnd, advance_to in (("ro16", 12), ("ro12", 8), ("ro8", 4)):
+        if not phases.get(rnd) or not survivors:
+            continue
+        rpts = {d["id"]: base + ppts[d["id"]] for d in survivors}
+        auto = set()
+        for _ in range(phases[rnd]):
+            order = run_race()
+            for pos, did in enumerate(order, 1):
+                if did in rpts:
+                    rpts[did] += _cup_points(pos)
+            if order[0] in rpts:
+                auto.add(order[0])            # a round win auto-advances
+        survivors = sorted(survivors, key=lambda d: (d["id"] in auto, rpts[d["id"]]),
+                           reverse=True)[:advance_to]
+        base += 1000
+
+    if phases.get("final") and survivors:
+        finalists = {d["id"] for d in survivors[:4]}
+        order = run_race()
+        champ = next((did for did in order if did in finalists), survivors[0]["id"])
+    else:
+        champ = max(survivors, key=lambda d: pts[d["id"]])["id"] if survivors \
+            else max(pts, key=pts.get)
+    return champ, made_playoffs, season_wins, top5, top10, pts
+
+
+def sim_nascar(n=2000, year=None, seed=None):
+    """Monte-Carlo the rest of the Cup season through the playoff bracket."""
+    state = nascar_state(year)
+    drivers_map = (state or {}).get("drivers") or {}
+    if not drivers_map:
+        return None
+    drivers = list(drivers_map.values())
+    n_done = state["n_done"]
+    phases = defaultdict(int)
+    for idx in range(n_done + 1, state["n_points_races"] + 1):
+        phases[_round_of(idx)] += 1
+    rng = random.Random(seed)
+
+    champ = defaultdict(int); po = defaultdict(int)
+    pts_sum = defaultdict(float); w_sum = defaultdict(float)
+    t5 = defaultdict(float); t10 = defaultdict(float)
+
+    def one(_):
+        return _sim_nascar_season(drivers, phases, random.Random(rng.random()))
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for c, made, sw, top5, top10, pts in ex.map(one, range(n)):
+            champ[c] += 1
+            for did in made:
+                po[did] += 1
+            for d in drivers:
+                did = d["id"]
+                pts_sum[did] += pts[did]; w_sum[did] += sw.get(did, 0)
+                t5[did] += top5.get(did, 0); t10[did] += top10.get(did, 0)
+
+    out = []
+    for d in drivers:
+        did = d["id"]
+        out.append({"id": did, "name": d["name"], "points_now": d["points"],
+                    "wins_now": d["wins"], "title_pct": round(100 * champ[did] / n, 1),
+                    "playoff_pct": round(100 * po[did] / n, 1),
+                    "proj_points": round(pts_sum[did] / n), "exp_wins": round(w_sum[did] / n, 1),
+                    "exp_top5": round(t5[did] / n, 1), "exp_top10": round(t10[did] / n, 1)})
+    out.sort(key=lambda x: x["title_pct"], reverse=True)
+    return {"sport": "nascar", "n_sims": n,
+            "races_left": sum(phases.values()), "drivers": out}
+
+
