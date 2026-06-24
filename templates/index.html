@@ -274,10 +274,12 @@
         <h2>🏆 Sports markets</h2>
         <div class="scan-controls">
           <select id="sportSel"></select>
+          <label class="small" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="sportHideThin" style="width:auto"/> hide thin</label>
           <button id="sportBtn">Load</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Live Kalshi markets for the World Cup, tennis, golf &amp; UFC with <b>no-vig fair probabilities</b> — prices normalized to strip out the house margin. The <b>vig %</b> shown is how much edge the house is taking; lower is better value. Tap an outcome to log it to your ledger.</p>
+      <p class="sub" style="margin:4px 0 12px">Live Kalshi markets with <b>no-vig fair probabilities</b> — prices normalized to strip the house margin. The <b>vig %</b> is how much edge the house takes; lower is better value. Markets with thin/untraded books are flagged — their fair % and edges aren't reliably tradeable. Tap an outcome to log it.</p>
+      <div id="sportSummary"></div>
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->

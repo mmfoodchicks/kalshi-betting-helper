@@ -1501,23 +1501,52 @@ async function loadSports() {
   const box = $("sportResults");
   const key = $("sportSel").value;
   box.innerHTML = `<div class="empty">Loading ${key}…</div>`;
+  $("sportSummary").innerHTML = "";
   try {
     const d = await (await fetch("/api/sports/" + key)).json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${key} markets right now.</div>`; return; }
-    let banner = "";
-    if (d.racing_locked) {
-      banner = `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🔒 Grid-based win model & edge picks for racing need the ${tierLabel("pro")} tier. <button class="track-mini primary-mini" onclick="window.bumpTier('pro')">Unlock</button></div>`;
-    } else if (d.grid && d.grid.available) {
-      const basis = d.grid.form_used ? "grid + recent form" : "grid";
-      banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
-    } else if (d.grid && !d.grid.available) {
-      banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} — showing market-favorite picks until qualifying posts.</div>`;
-    }
-    box.innerHTML = banner + d.events.map((e) => renderSportEvent(e, key)).join("");
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; _sportsData = null; return; }
+    if (!d.events.length) { box.innerHTML = `<div class="empty">No open ${key} markets right now.</div>`; _sportsData = null; return; }
+    _sportsData = d; _sportsKey = key;
+    renderSports();
   } catch (e) {
     box.innerHTML = `<div class="empty">Failed to load.</div>`;
   }
+}
+
+let _sportsData = null, _sportsKey = null;
+
+function renderSports() {
+  const d = _sportsData; if (!d) return;
+  const key = _sportsKey;
+  const box = $("sportResults");
+  let banner = "";
+  if (d.racing_locked) {
+    banner = `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🔒 Grid-based win model & edge picks for racing need the ${tierLabel("pro")} tier. <button class="track-mini primary-mini" onclick="window.bumpTier('pro')">Unlock</button></div>`;
+  } else if (d.grid && d.grid.available) {
+    const basis = d.grid.form_used ? "grid + recent form" : "grid";
+    banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
+  } else if (d.grid && !d.grid.available) {
+    banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} — showing market-favorite picks until qualifying posts.</div>`;
+  }
+  // Summary: how many tradeable, the best value (lowest vig among liquid), arbs.
+  const liquid = d.events.filter((e) => e.liquidity === "ok");
+  const arbs = d.events.filter((e) => e.arbitrage_pct && e.liquidity === "ok").length;
+  const vigged = liquid.filter((e) => e.overround_pct != null);
+  const bestVal = vigged.length ? vigged.reduce((a, b) => b.overround_pct < a.overround_pct ? b : a) : null;
+  $("sportSummary").innerHTML = `<div class="leanrow">
+    <span class="leanchip">${liquid.length}/${d.events.length} liquid</span>
+    ${bestVal ? `<span class="leanchip">best value: <b>${bestVal.title.slice(0, 34)}</b> (vig ${bestVal.overround_pct}%)</span>` : ""}
+    ${arbs ? `<span class="leanchip warn">${arbs} possible arb${arbs === 1 ? "" : "s"}</span>` : ""}
+  </div>`;
+  // Liquid markets first (real prices), then chronological; optionally hide thin.
+  const hideThin = $("sportHideThin").checked;
+  let events = d.events.slice();
+  if (hideThin) events = events.filter((e) => e.liquidity === "ok");
+  const rank = { ok: 0, thin: 1, none: 2 };
+  events.sort((a, b) => (rank[a.liquidity] ?? 1) - (rank[b.liquidity] ?? 1)
+    || (a.close_time || 1e18) - (b.close_time || 1e18));
+  if (!events.length) { box.innerHTML = banner + `<div class="empty">All ${d.events.length} markets are thin/untraded. Uncheck "hide thin" to see them.</div>`; return; }
+  box.innerHTML = banner + events.map((e) => renderSportEvent(e, key)).join("");
 }
 
 // ---- Commodities scanner --------------------------------------------------
@@ -2207,6 +2236,7 @@ async function init() {
   // Sports setup
   $("sportBtn").addEventListener("click", loadSports);
   $("sportSel").addEventListener("change", loadSports);
+  $("sportHideThin").addEventListener("change", renderSports);
 
   // Weather setup
   $("wxBtn").addEventListener("click", loadWeather);
