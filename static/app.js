@@ -1641,12 +1641,52 @@ async function loadFeatured() {
   }
 }
 
+async function startDeepRun() {
+  const btn = $("deepBtn"), prog = $("deepProg");
+  if (btn) btn.disabled = true;
+  if (prog) prog.textContent = " starting the deep pitch-by-pitch simulation…";
+  try {
+    await fetch("/api/baseball/futures/deep?seasons=500", { method: "POST" });
+    pollDeepStatus();
+  } catch (e) {
+    if (prog) prog.textContent = " couldn't start — try again.";
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function pollDeepStatus() {
+  const prog = $("deepProg");
+  try {
+    const s = await (await fetch("/api/baseball/futures/deep/status")).json();
+    if (s.ready && !s.running) {
+      if (prog) prog.textContent = " ✓ deep run complete — loading the board…";
+      const d = await (await fetch("/api/baseball/futures?engine=deep")).json();
+      if (!d.error) { _boardData = d; renderFeatured(d); }
+      return;
+    }
+    if (s.running) {
+      const eta = s.eta_sec != null ? `, ~${Math.max(1, Math.ceil(s.eta_sec / 60))} min left` : "";
+      if (prog) prog.textContent = ` running deep sim — ${s.pct || 0}% (${s.done || 0}/${s.total || 0} seasons${eta}). You can keep using the app.`;
+    } else if (prog) {
+      prog.textContent = " deep sim queued…";
+    }
+    setTimeout(pollDeepStatus, 2500);
+  } catch (e) {
+    if (prog) prog.textContent = " status check failed — retrying…";
+    setTimeout(pollDeepStatus, 4000);
+  }
+}
+
 function renderFeatured(d) {
   const engineNote = d.engine === "deep"
     ? `<b>deep pitch-by-pitch engine</b> — game-by-game, run-by-run`
     : `fast model (expected runs → Pythagorean)`;
+  const deepCtl = d.engine === "deep"
+    ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} pitch-by-pitch seasons</span>`
+    : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim</button><span class="small" id="deepProg" style="margin-left:8px"></span>`;
   $("featuredSummary").innerHTML =
-    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
+    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
+     <div style="margin-bottom:8px">${deepCtl}</div>`;
   // Grouped market dropdown (Titles / Season win totals).
   const groups = {};
   d.order.forEach((k) => { const m = d.markets[k]; (groups[m.group] = groups[m.group] || []).push([k, m.label]); });
