@@ -316,6 +316,54 @@ def prop_report(min_edge=8.0):
     }
 
 
+def prop_hits(date=None, predicted_min=55.0, risky_max_cents=42.0):
+    """Showcase from graded props: which ones the model liked actually hit, and
+    which longshots cashed.
+
+    - 'predicted': props the app would lean YES on (model >= predicted_min) that
+      have graded, each marked hit/miss, with a summary hit-rate (honest record).
+    - 'risky': props that HIT but were market longshots (YES priced cheap, big
+      payout) -- the "you'd have won big" board, ranked by payout.
+
+    `date` (YYYY-MM-DD) filters to one slate; omit for all-time."""
+    where, params = "graded=1", []
+    if date:
+        where += " AND date=?"; params.append(date)
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            f"SELECT * FROM prop_log WHERE {where}", params).fetchall()]
+
+    def payout(cents):
+        return round(100.0 / cents, 2) if cents and cents > 0 else None
+
+    def view(r):
+        c_ = r.get("kalshi_cents")
+        return {"name": r["name"], "stat": r["stat"], "line": r["line"],
+                "label": f"{r['name']} {r['line']}+ {('HR' if r['stat']=='hr' else 'hits')}",
+                "model_pct": r.get("model_pct"),
+                "market_pct": round(c_, 1) if c_ is not None else None,
+                "edge": (round(r["model_pct"] - c_, 1)
+                         if r.get("model_pct") is not None and c_ is not None else None),
+                "payout_x": payout(c_), "hit": bool(r.get("actual") == 1),
+                "date": r.get("date")}
+
+    predicted = sorted((view(r) for r in rows
+                        if r.get("model_pct") is not None and r["model_pct"] >= predicted_min),
+                       key=lambda v: (v["hit"], v["model_pct"] or 0), reverse=True)
+    hit_n = sum(1 for p in predicted if p["hit"])
+    risky = sorted((view(r) for r in rows
+                    if r.get("actual") == 1 and r.get("kalshi_cents") is not None
+                    and r["kalshi_cents"] <= risky_max_cents),
+                   key=lambda v: (v["payout_x"] or 0), reverse=True)
+    return {
+        "date": date, "graded_n": len(rows),
+        "predicted": predicted,
+        "predicted_summary": {"recommended": len(predicted), "hit": hit_n,
+                              "hit_pct": round(100 * hit_n / len(predicted), 1) if predicted else None},
+        "risky": risky,
+    }
+
+
 # ---- Bet ledger -----------------------------------------------------------
 def add_bet(kind, description, side, stake, price_cents, notes=None):
     with _lock, _conn() as c:

@@ -380,6 +380,21 @@ button.danger { color: var(--no); }
   border-radius: 5px; padding: 1px 5px; margin-right: 4px;
 }
 
+/* Predicted Hits / Risky Hits board */
+.hitsec { margin-top: 14px; }
+.hitsechead { font-weight: 600; margin-bottom: 4px; }
+.hitchip {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 9px; padding: 7px 11px; margin: 5px 0;
+}
+.hitchip.win { border-left: 3px solid var(--yes, #3ad17a); }
+.hitchip.miss { border-left: 3px solid var(--border); opacity: 0.72; }
+.hitchip .hitmark { font-size: 0.95rem; }
+.hitchip .hitlabel { font-weight: 600; font-size: 0.9rem; }
+.hitchip .small { color: var(--muted); }
+.hitchip .small b { color: var(--text); }
+
 /* "What do these numbers mean?" legend */
 .modelhelp { margin-top: 8px; }
 .modelhelp > summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }

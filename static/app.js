@@ -1025,6 +1025,7 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
+      $("tab-hits").classList.toggle("hidden", tab !== "hits");
       $("tab-football").classList.toggle("hidden", tab !== "football");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
@@ -1051,8 +1052,78 @@ function setupTabs() {
         loadWeather();
       }
       if (tab === "ledger") loadLedger();
+      if (tab === "hits" && !$("hitsDate").dataset.loaded) {
+        $("hitsDate").dataset.loaded = "1";
+        initHits();
+      }
     });
   });
+}
+
+// ---- Predicted Hits / Risky Hits -----------------------------------------
+function initHits() {
+  const sel = $("hitsDate");
+  if (!sel) return;
+  const today = new Date();
+  let opts = "";
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    opts += `<option value="${iso}">${i === 0 ? "Today" : i === 1 ? "Yesterday" : iso}</option>`;
+  }
+  opts += `<option value="">All time</option>`;
+  sel.innerHTML = opts;
+  loadHits();
+}
+
+async function loadHits() {
+  const box = $("hitsResults");
+  if (!box) return;
+  box.innerHTML = `<div class="empty">Loading the board…</div>`;
+  try {
+    const date = ($("hitsDate") || {}).value || "";
+    const d = await (await fetch(`/api/baseball/hits?date=${date}`)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    box.innerHTML = renderHits(d);
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load the board.</div>`;
+  }
+}
+
+function hitChip(p) {
+  const cls = p.hit ? "hitchip win" : "hitchip miss";
+  const mk = p.market_pct != null ? ` · mkt ${p.market_pct}¢` : "";
+  const pay = p.payout_x != null ? ` · ${p.payout_x}×` : "";
+  const ed = (p.edge != null) ? ` <span class="${p.edge >= 0 ? "ev pos" : "ev neg"}">${p.edge >= 0 ? "+" : ""}${p.edge}</span>` : "";
+  return `<div class="${cls}">
+    <span class="hitmark">${p.hit ? "✅" : "❌"}</span>
+    <span class="hitlabel">${p.label}</span>
+    <span class="small">model <b>${p.model_pct != null ? p.model_pct + "%" : "—"}</b>${mk}${ed}${pay}</span>
+  </div>`;
+}
+
+function renderHits(d) {
+  if (!d.graded_n) {
+    const rec = d.recorder || {};
+    return `<div class="empty">Nothing graded yet for this slate.<br>
+      <span class="small">The recorder logs props every ~10 min and grades them once games go final${rec.logged != null ? ` (so far: ${rec.logged} logged)` : ""}. Check back later tonight.</span></div>`;
+  }
+  const s = d.predicted_summary || {};
+  const sumLine = s.recommended
+    ? `<div class="small" style="margin:2px 0 8px">Of <b>${s.recommended}</b> props the model liked (≥55%), <b class="${(s.hit_pct||0) >= 50 ? "ev pos" : "ev neg"}">${s.hit}</b> hit (${s.hit_pct}%). Honest record — misses shown too.</div>`
+    : "";
+  const predicted = (d.predicted || []).length
+    ? d.predicted.map(hitChip).join("")
+    : `<div class="small">No model-liked props have graded for this slate yet.</div>`;
+  const risky = (d.risky || []).length
+    ? d.risky.map(hitChip).join("")
+    : `<div class="small">No longshots cashed this slate (or none graded yet).</div>`;
+  return `
+    <div class="hitsec"><div class="hitsechead">🎯 Predicted hits — props the model liked</div>
+      ${sumLine}${predicted}</div>
+    <div class="hitsec"><div class="hitsechead">🍀 Risky hits — longshots that cashed</div>
+      <div class="small" style="margin:2px 0 8px">If you'd bet these cheap YES prices, here's what they'd have paid. (Hindsight board — not advice.)</div>
+      ${risky}</div>`;
 }
 
 // ---- Backtest -------------------------------------------------------------

@@ -52,6 +52,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="crypto">⚡ Crypto</button>
     <button class="tab" data-tab="baseball">⚾ Baseball</button>
+    <button class="tab" data-tab="hits">📈 Hits</button>
     <button class="tab" data-tab="football">🏈 Football</button>
     <button class="tab" data-tab="sports">🏆 Sports</button>
     <button class="tab" data-tab="commodities">🛢️ Commodities</button>
@@ -206,6 +207,20 @@
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
    </div><!-- /tab-baseball -->
+
+   <div id="tab-hits" class="hidden">
+    <section class="card">
+      <h2>📈 Predicted Hits</h2>
+      <p class="sub">Receipts. The app logs Kalshi batter props through the night with the model's read, then grades them off the real box scores. This board shows the props the model <b>liked that actually hit</b> — and the <b>longshots that cashed</b>.</p>
+      <div class="row" style="gap:8px;align-items:center">
+        <label class="small">Slate
+          <select id="hitsDate" style="width:auto;margin-left:4px"></select>
+        </label>
+        <button class="track-mini primary-mini" onclick="loadHits()">Refresh</button>
+      </div>
+      <div id="hitsResults" class="markets"><div class="empty">Loading…</div></div>
+    </section>
+   </div><!-- /tab-hits -->
 
    <div id="tab-football" class="hidden">
     <section class="card comingsoon">

@@ -888,6 +888,24 @@ def api_baseball_proplog():
     return jsonify(report)
 
 
+@app.route("/api/baseball/hits")
+def api_baseball_hits():
+    """Predicted Hits + Risky Hits: from the recorder's graded props, the ones the
+    model liked that cashed, and the longshots that would've paid big."""
+    import mlb_recorder
+    import datetime as _dt
+    date = request.args.get("date")
+    if date == "today":
+        date = _dt.date.today().isoformat()
+    try:
+        mlb_recorder.grade_due()   # grade any games that just went final
+    except Exception:
+        pass
+    res = store.prop_hits(date=date)
+    res["recorder"] = mlb_recorder.status()
+    return jsonify(res)
+
+
 @app.route("/api/stats")
 def api_stats():
     return jsonify(store.stats())
