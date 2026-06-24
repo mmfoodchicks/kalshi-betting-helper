@@ -1065,10 +1065,7 @@ function setupTabs() {
         $("bbGames").dataset.loaded = "1";
         loadBaseball();
       }
-      if (tab === "sports" && !$("sportResults").dataset.loaded) {
-        $("sportResults").dataset.loaded = "1";
-        loadSports();
-      }
+      if (tab === "sports") initSportsTab();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
@@ -1489,6 +1486,99 @@ function renderSportEvent(e, sportKey) {
     ${arb}
     <div class="sportouts">${outs}</div>
   </div>`;
+}
+
+// ---- Sports tab: Live Now / Featured / All Sports sub-views ----------------
+let _sportsSubInit = false, _liveLoaded = false, _featLoaded = false;
+function initSportsTab() {
+  if (!_sportsSubInit) {
+    document.querySelectorAll("#tab-sports .subtab").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#tab-sports .subtab").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        const s = b.dataset.sub;
+        document.querySelector("#tab-sports .sub-live").classList.toggle("hidden", s !== "live");
+        document.querySelector("#tab-sports .sub-featured").classList.toggle("hidden", s !== "featured");
+        document.querySelector("#tab-sports .sub-all").classList.toggle("hidden", s !== "all");
+        if (s === "live" && !_liveLoaded) { _liveLoaded = true; loadLive(); }
+        if (s === "featured" && !_featLoaded) { _featLoaded = true; loadFeatured(); }
+        if (s === "all" && !$("sportResults").dataset.loaded) { $("sportResults").dataset.loaded = "1"; loadSports(); }
+      });
+    });
+    _sportsSubInit = true;
+  }
+  if (!_liveLoaded) { _liveLoaded = true; loadLive(); }   // default sub-view
+}
+
+async function loadLive() {
+  const box = $("liveResults");
+  box.innerHTML = `<div class="empty">Scanning live games across every sport…</div>`;
+  try {
+    const d = await (await fetch("/api/sports/live")).json();
+    if (!d.games || !d.games.length) {
+      box.innerHTML = `<div class="empty">No games detected live right now. Check back during game windows — baseball shows here the moment first pitch is thrown.</div>`;
+      return;
+    }
+    const conf = d.games.filter((g) => g.confirmed);
+    const inf = d.games.filter((g) => !g.confirmed);
+    let h = "";
+    if (conf.length) {
+      h += `<div class="teamhdr">🔴 Confirmed live</div>`;
+      h += conf.map((g) => `<div class="liverow"><b>${g.sport}</b> ${g.title}
+        <span class="livescore">${g.score || ""}</span> <span class="small">${g.detail || ""}</span></div>`).join("");
+    }
+    if (inf.length) {
+      h += `<div class="teamhdr" style="margin-top:12px">⏳ Likely in-play <span class="small">(inferred from Kalshi market timing — approximate)</span></div>`;
+      h += inf.map((g) => `<div class="liverow"><b>${g.sport}</b> ${g.title}
+        <span class="small">${g.detail || ""}</span>${g.fav ? ` · lean <b>${g.fav.name}</b> ${g.fav.fair}%` : ""}</div>`).join("");
+    }
+    box.innerHTML = h;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load live games.</div>`;
+  }
+}
+
+async function loadFeatured() {
+  const box = $("featuredResults");
+  box.innerHTML = `<div class="empty">Simulating the rest of the season (a few seconds)…</div>`;
+  try {
+    const d = await (await fetch("/api/baseball/season")).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    renderFeatured(d);
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Season sim failed.</div>`;
+  }
+}
+
+function renderFeatured(d) {
+  const liquid = (d.futures || []).filter((r) => !r.thin);
+  const lean = Object.entries(d.futures_summary || {})
+    .map(([k, s]) => `<span class="leanchip">${k.replace("_", " ")}: <b>${s.pos}↑</b>/<b>${s.neg}↓</b> avg ${s.avg_edge >= 0 ? "+" : ""}${s.avg_edge}</span>`).join("");
+  $("featuredSummary").innerHTML =
+    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>${d.n_liquid}</b> liquid futures priced (stale preseason books hidden).</div>
+     <div class="leanrow">${lean}</div>`;
+  const eHead = `<div class="edgerow edgehead"><span class="ecol-edge">Edge</span><span class="ecol-pick">Market</span><span class="ecol-num">Our</span><span class="ecol-num">Kalshi</span><span class="ecol-num">Pays</span><span class="ecol-conf">Trust</span></div>`;
+  const eRows = liquid.slice(0, 20).map((r) => {
+    const cls = r.edge >= 0 ? "pos" : "neg";
+    return `<div class="edgerow">
+      <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}</span>
+      <span class="ecol-pick"><b>${r.label}</b><span class="emu">${r.type.replace("_", " ")}</span></span>
+      <span class="ecol-num">${r.model_pct}%</span>
+      <span class="ecol-num">${r.market_cents}¢</span>
+      <span class="ecol-num">${r.market_payout_x ? r.market_payout_x + "×" : "—"}</span>
+      <span class="ecol-conf conf-${r.confidence}">${r.confidence}</span>
+    </div>`;
+  }).join("");
+  const sRows = d.teams.map((t) => `<tr>
+    <td>${t.name}</td><td>${t.wins}-${t.losses}</td><td><b>${t.proj_wins}</b></td>
+    <td class="small">${t.proj_p10}–${t.proj_p90}</td>
+    <td>${t.p_playoffs}%</td><td>${t.p_division}%</td><td>${t.p_pennant}%</td><td><b>${t.p_ws}%</b></td>
+  </tr>`).join("");
+  $("featuredResults").innerHTML =
+    `<div class="teamhdr">🎯 Biggest futures edges — our model vs Kalshi</div>
+     ${liquid.length ? eHead + eRows : `<div class="empty">No liquid futures priced right now (most futures post wider/quiet markets — check back near key dates).</div>`}
+     <div class="teamhdr" style="margin-top:16px">📊 Projected standings & odds (${d.n_sims.toLocaleString()} sims)</div>
+     <table class="seasontbl"><thead><tr><th>Team</th><th>W-L</th><th>Proj</th><th>10–90</th><th>PO%</th><th>Div%</th><th>Pen%</th><th>WS%</th></tr></thead><tbody>${sRows}</tbody></table>`;
 }
 
 let sportsLoaded = false;

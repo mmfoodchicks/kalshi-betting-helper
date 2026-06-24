@@ -417,6 +417,19 @@ button.danger { color: var(--no); }
 .hitchip .small { color: var(--muted); }
 .hitchip .small b { color: var(--text); }
 
+/* Sports tab sub-navigation (Live / Featured / All) */
+.subnav { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.subtab { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04); color: var(--muted); font-size: 0.86rem; cursor: pointer; }
+.subtab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.liverow { padding: 9px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); line-height: 1.5; }
+.livescore { font-weight: 700; color: var(--yes); margin: 0 4px; }
+.seasontbl { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 6px; }
+.seasontbl th, .seasontbl td { text-align: right; padding: 5px 7px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.seasontbl th:first-child, .seasontbl td:first-child { text-align: left; }
+.seasontbl th { color: var(--muted); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: .03em; }
+.seasontbl tbody tr:hover { background: rgba(255,255,255,0.03); }
+
 /* Live Kalshi price chip on a combo leg */
 .kmkt { color: var(--accent); font-size: 0.82rem; white-space: nowrap; }
 

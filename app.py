@@ -703,6 +703,61 @@ def api_sports(sport_key):
                                       and not tiers.has_feature(_tier(), "racing_picks"))})
 
 
+_live_cache = {"ts": 0.0, "data": None}
+
+
+@app.route("/api/sports/live")
+def api_sports_live():
+    """Games being played right now. MLB is confirmed live from the MLB feed;
+    other sports are inferred in-play from Kalshi market timing (approximate)."""
+    import time as _t
+    import datetime as _dt
+    import sports as S
+    from concurrent.futures import ThreadPoolExecutor
+    now = _t.time()
+    if _live_cache["data"] and now - _live_cache["ts"] < 30:
+        return jsonify(_live_cache["data"])
+    out = []
+    try:
+        today = _dt.date.today().isoformat()
+        for g in baseball._schedule(today, today[:4]):
+            lv = g.get("live") or {}
+            if lv.get("state") == "Live":
+                out.append({
+                    "sport": "⚾ MLB", "confirmed": True,
+                    "title": f"{g['away_name']} @ {g['home_name']}",
+                    "detail": f"{lv.get('inning_state', '')} {lv.get('inning', '')}".strip(),
+                    "score": f"{lv.get('away_runs', 0)}–{lv.get('home_runs', 0)}",
+                })
+    except Exception:
+        pass
+
+    def probe(key):
+        res = []
+        try:
+            for e in S.get_events(key):
+                ct = e.get("close_time")
+                # Heuristic in-play window: market closing within ~4h and trading.
+                if ct and 0 < ct - now < 4 * 3600 and e.get("liquidity") != "none":
+                    top = (e.get("outcomes") or [None])[0]
+                    res.append({
+                        "sport": S.SPORTS[key]["label"], "confirmed": False,
+                        "title": e.get("title"),
+                        "detail": f"closes ~{int((ct - now) / 60)}m · vig {e.get('overround_pct')}%",
+                        "fav": ({"name": top["name"], "fair": top["fair_pct"]}
+                                if top and top.get("fair_pct") is not None else None),
+                    })
+        except Exception:
+            pass
+        return res
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for r in ex.map(probe, list(S.SPORTS.keys())):
+            out.extend(r)
+    data = {"games": out, "confirmed_count": sum(1 for g in out if g["confirmed"])}
+    _live_cache.update(ts=now, data=data)
+    return jsonify(data)
+
+
 @app.route("/api/weather/meta")
 def api_weather_meta():
     import weather_markets

@@ -269,9 +269,29 @@
    </div><!-- /tab-football -->
 
    <div id="tab-sports" class="hidden">
-    <section class="card">
+    <div class="subnav">
+      <button class="subtab active" data-sub="live">🔴 Live Now</button>
+      <button class="subtab" data-sub="featured">⭐ Featured</button>
+      <button class="subtab" data-sub="all">📋 All Sports</button>
+    </div>
+
+    <section class="card sub-sports sub-live">
+      <h2>🔴 Live Now</h2>
+      <p class="sub" style="margin:4px 0 12px">Everything being played right now. Baseball is <b>confirmed live</b> from the MLB feed (with our in-game win probability); other sports are <b>inferred in-play</b> from Kalshi market timing, so treat those as approximate.</p>
+      <div class="row" style="gap:8px"><button class="track-mini primary-mini" onclick="loadLive()">Refresh</button></div>
+      <div id="liveResults" class="markets"><div class="empty">Loading live games…</div></div>
+    </section>
+
+    <section class="card sub-sports sub-featured hidden">
+      <h2>⭐ Featured — MLB season futures</h2>
+      <p class="sub" style="margin:4px 0 12px">Our season Monte Carlo vs the market. We simulate the rest of the schedule from each team's run quality to get our own <b>division / playoff / pennant / World Series</b> odds and <b>season win totals</b>, then compare to Kalshi's futures. Edge = our % − Kalshi price. Season variance is high (<b>confidence: medium</b>), and our model is run-quality based, so it intentionally disagrees with record/reputation pricing — these are disagreements to weigh, not locks.</p>
+      <div id="featuredSummary"></div>
+      <div id="featuredResults" class="markets"><div class="empty">Simulating the season…</div></div>
+    </section>
+
+    <section class="card sub-sports sub-all hidden">
       <div class="row-between">
-        <h2>🏆 Sports markets</h2>
+        <h2>📋 All Sports markets</h2>
         <div class="scan-controls">
           <select id="sportSel"></select>
           <label class="small" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="sportHideThin" style="width:auto"/> hide thin</label>
