@@ -423,12 +423,19 @@ def api_commodities_scan():
         item = dict(m)
         item["days_to_close"] = round(days, 1)
         item["signal"] = sig
+        # Liquidity: an "edge" off a thin/untraded contract is a mirage.
+        spread = (round(m["yes_ask"] - m["yes_bid"], 1)
+                  if (m.get("yes_ask") is not None and m.get("yes_bid") is not None) else None)
+        item["spread"] = spread
+        vol = m.get("volume") or 0
+        item["thin"] = (spread is None or spread >= 10 or vol < 20)
         edges = [e for e in (sig["edge_yes_cents"], sig["edge_no_cents"]) if e is not None]
         item["best_edge"] = max(edges) if edges else None
         enriched.append(item)
     enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
+    basis = commodities.basis_check(spot, markets)
     return jsonify({"key": key, "label": cfg["label"], "spot": round(spot, 4) if spot else None,
-                    "markets": enriched})
+                    "basis": basis, "markets": enriched})
 
 
 @app.route("/api/simulate/price")

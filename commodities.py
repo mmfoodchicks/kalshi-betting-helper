@@ -64,3 +64,46 @@ def get_candles(key, max_age=600.0):
     candles = [{"time": t, "close": c} for t, c in zip(ts, closes) if c is not None]
     _cache[ck] = (now, candles)
     return candles
+
+
+def implied_center(markets):
+    """Infer the price Kalshi's ladder is centered on, to sanity-check our spot
+    against (basis risk). On a threshold ladder ("price >= strike"), YES falls as
+    the strike rises, so the strike where YES crosses 50c is the market's implied
+    median. We only trust a *single coherent* ladder (one series + one expiry),
+    since mixing series/expiries (e.g. WTI's max/min/threshold markets) yields a
+    meaningless number. Returns None if there's no clean threshold ladder.
+    """
+    ladders = {}
+    for m in markets:
+        if (m.get("floor") is not None and m.get("cap") is None and m.get("yes_ask")
+                and m.get("ticker")):
+            key = (m["ticker"].split("-", 1)[0], m.get("close_time"))  # series + expiry
+            ladders.setdefault(key, []).append((m["floor"], m["yes_ask"]))
+    best = max(ladders.values(), key=len, default=[])
+    if len(best) < 2:
+        return None
+    pts = sorted(best)
+    for (s1, y1), (s2, y2) in zip(pts, pts[1:]):
+        if (y1 - 50) * (y2 - 50) <= 0 and y1 != y2:      # 50c is bracketed here
+            t = (50 - y1) / (y2 - y1)
+            return round(s1 + t * (s2 - s1), 2)
+    return min(pts, key=lambda p: abs(p[1] - 50))[0]      # else nearest-to-50c strike
+
+
+def basis_check(spot, markets, tol_pct=2.0, max_real_pct=20.0):
+    """Compare our spot to Kalshi's implied center. A small gap is fine; a moderate
+    one means our price feed and Kalshi's settlement reference disagree (basis
+    risk) so edges are suspect. A huge gap means the ladder isn't a plain
+    price-at-expiry ladder (e.g. WTI max/min markets) and basis can't be verified.
+
+    ok: True (aligned) / False (real mismatch, warn) / None (can't verify).
+    """
+    center = implied_center(markets)
+    if not center or not spot:
+        return {"center": center, "diff_pct": None, "ok": None}
+    diff = round((spot - center) / center * 100, 2)
+    if abs(diff) > max_real_pct:
+        return {"center": center, "diff_pct": diff, "ok": None, "incomparable": True}
+    return {"center": center, "diff_pct": diff, "ok": abs(diff) <= tol_pct}
+

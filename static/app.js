@@ -1522,27 +1522,50 @@ async function loadSports() {
 
 // ---- Commodities scanner --------------------------------------------------
 let comLoaded = false;
-function renderComRow(m) {
+function renderComRow(m, basisBad) {
   const sig = m.signal;
-  const side = sig.recommendation === "BUY YES" ? "YES" : sig.recommendation === "BUY NO" ? "NO" : null;
-  const cls = sig.recommendation !== "HOLD" ? "scanrow edge" : "scanrow";
+  // In a thin book, or when our spot doesn't line up with Kalshi's ladder, the
+  // modeled edge is unreliable -- show it muted as HOLD instead of a buy call.
+  const trusted = !m.thin && !basisBad;
+  const side = (trusted && sig.recommendation === "BUY YES") ? "YES"
+    : (trusted && sig.recommendation === "BUY NO") ? "NO" : null;
+  const cls = side ? "scanrow edge" : "scanrow";
   let action;
   if (side) {
     const cost = side === "YES" ? m.yes_ask : m.no_ask;
     const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
     action = `<div class="actionline">${badge(sig.recommendation, sig.strength)}<span class="edgeval pos">+${m.best_edge}¢ edge</span></div>
       <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}</div>`;
+  } else if (sig.recommendation !== "HOLD") {
+    // There's a modeled edge but we don't trust it (thin / basis off).
+    const why = m.thin ? "thin/untraded" : "spot vs ladder off";
+    action = `<div class="actionline">${badge("HOLD", "flat")}<span class="edgeval neg">edge unreliable (${why})</span></div>
+      <div class="plain">Model sees ${m.best_edge}¢ but the price isn't trustworthy here.</div>`;
   } else {
     action = `<div class="actionline">${badge("HOLD", "flat")}<span class="edgeval neg">no clear edge</span></div>
       <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market.</div>`;
   }
+  const spStr = m.spread != null ? ` · spread ${m.spread}¢` : "";
   return `<div class="${cls}">
     <div class="scanhead">
-      <div class="strike">${m.subtitle || m.ticker}</div>
-      <div class="small">closes in ${m.days_to_close}d · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢</div>
+      <div class="strike">${m.subtitle || m.ticker}${m.thin ? ` <span class="ev neg" style="font-size:.72rem">thin</span>` : ""}</div>
+      <div class="small">closes in ${m.days_to_close}d · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢${spStr}</div>
     </div>
     ${action}
   </div>`;
+}
+
+function comBasisBanner(b, spot) {
+  if (!b || b.center == null) {
+    return `<div class="small">our spot <b>$${spot}</b> — verify it matches Kalshi's level (couldn't auto-read the ladder).</div>`;
+  }
+  if (b.ok === true) {
+    return `<div class="small" style="color:var(--yes)">✓ spot <b>$${spot}</b> aligns with Kalshi-implied <b>$${b.center}</b> (${b.diff_pct > 0 ? "+" : ""}${b.diff_pct}%). Basis looks fine.</div>`;
+  }
+  if (b.ok === null) {
+    return `<div class="small" style="color:var(--muted)">spot <b>$${spot}</b> vs ladder ~$${b.center} — this contract type (max/min/range) isn't directly comparable, so basis can't be auto-verified. Eyeball it.</div>`;
+  }
+  return `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ Basis mismatch: our spot <b>$${spot}</b> vs Kalshi-implied <b>$${b.center}</b> (${b.diff_pct > 0 ? "+" : ""}${b.diff_pct}%). Our feed and Kalshi's settlement reference disagree, so the edges below are unreliable — don't trade off them.</div>`;
 }
 async function loadCommodities() {
   if (!comLoaded) {
@@ -1556,9 +1579,17 @@ async function loadCommodities() {
   try {
     const d = await (await fetch("/api/commodities/scan?key=" + key)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    const spot = `<div class="volbox"><div class="sellhead"><span class="sellaction">${d.label}</span><span class="small">our spot <b>$${d.spot}</b> — verify this matches Kalshi's level</span></div></div>`;
-    if (!d.markets.length) { box.innerHTML = spot + `<div class="empty">No open ${key} contracts right now.</div>`; return; }
-    box.innerHTML = spot + d.markets.map(renderComRow).join("");
+    // Don't trust modeled edges when the basis is off OR the contract type isn't
+    // spot-comparable (max/min/range) -- the spot-GBM model doesn't fit those.
+    const basisBad = d.basis && (d.basis.ok === false || d.basis.incomparable);
+    const tradeable = d.markets.filter((m) => !m.thin);
+    const buys = basisBad ? 0 : tradeable.filter((m) => m.signal.recommendation !== "HOLD").length;
+    const head = `<div class="volbox"><div class="sellhead">
+      <span class="sellaction">${d.label}</span>
+      <span class="small">${buys} actionable edge${buys === 1 ? "" : "s"} · ${tradeable.length}/${d.markets.length} liquid</span>
+    </div>${comBasisBanner(d.basis, d.spot)}</div>`;
+    if (!d.markets.length) { box.innerHTML = head + `<div class="empty">No open ${key} contracts right now.</div>`; return; }
+    box.innerHTML = head + d.markets.map((m) => renderComRow(m, basisBad)).join("");
   } catch (e) {
     box.innerHTML = `<div class="empty">Scan failed.</div>`;
   }
