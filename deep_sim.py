@@ -83,8 +83,27 @@ class _Staff:
         p = self.cur
         is_starter = self.bp_i == 0 and not self.closer_used and p.get("gs", 0) >= 3
         if is_starter:
-            tired = self.outing_bf >= 26 or (inning >= 6 and self.outing_bf >= 20)
+            # Performance-aware leash: a starter who's dealing earns more rope, a
+            # gem (no-hitter / perfect game) almost never gets pulled on workload
+            # alone, and a laboring starter comes out sooner.
+            line = self.lines[p["id"]]
+            baserunners = line["h"] + line["bb"]
+            limit = 26
+            if inning >= 6:
+                if baserunners == 0:           # perfect game in progress — ride him
+                    limit = 42
+                elif line["h"] == 0:           # no-hitter (maybe a walk)
+                    limit = 36
+                elif baserunners <= 3:         # cruising, shutout-ish gem
+                    limit = 30
+                elif baserunners >= 9:          # laboring — quicker hook
+                    limit = 22
+            tired = self.outing_bf >= limit or (inning >= 6 and self.outing_bf >= limit - 6)
             tagged = self.outing_runs >= 5 or (inning >= 6 and self.outing_runs >= 4)
+            # Never pull a no-hitter/perfect game on workload (only damage would).
+            gem = inning >= 6 and line["h"] == 0
+            if gem:
+                tired = False
             if not (tired or tagged) or not self.bp:
                 return
         else:
