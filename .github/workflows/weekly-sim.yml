@@ -1,0 +1,36 @@
+name: Weekly season-sim refresh
+
+# Guarantees the heavy season sims (MLB deep, F1, NASCAR) are re-run weekly even
+# when the app host sleeps / is reclaimed. The in-app scheduler covers a host that
+# stays up; this is the belt-and-suspenders for ephemeral hosting.
+#
+# Setup: add a repo variable APP_URL (Settings -> Secrets and variables ->
+# Actions -> Variables) pointing at the deployed app, e.g. https://your-app.com
+# Optionally add a secret SIM_TOKEN if you later gate /api/sim/rerun.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"      # every Monday 09:00 UTC
+  workflow_dispatch:          # plus a manual "Run workflow" button
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reruns
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          SIM_TOKEN: ${{ secrets.SIM_TOKEN }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL not set — add it as a repo Actions variable. Skipping."
+            exit 0
+          fi
+          AUTH=""
+          [ -n "$SIM_TOKEN" ] && AUTH="-H \"X-Sim-Token: $SIM_TOKEN\""
+          for sport in mlb f1 nascar; do
+            echo "Rerunning $sport…"
+            eval curl -sS -X POST $AUTH "\"$APP_URL/api/sim/rerun?sport=$sport\"" || true
+            echo
+            sleep 5
+          done
