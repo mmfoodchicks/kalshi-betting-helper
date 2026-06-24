@@ -143,6 +143,43 @@ def _ensure_recorder():
             mlb_recorder.start_background()
         except Exception:
             pass
+        try:
+            _init_deep_sims()
+        except Exception:
+            pass
+
+
+def _init_deep_sims():
+    """Register the heavy season sims with the weekly cache/scheduler, reload any
+    persisted result from disk, and start the background weekly refresh."""
+    import deep_cache
+    import datetime as _dt
+
+    def run_mlb():
+        import deep_season
+        season = str(_dt.date.today().year)
+        agg = deep_season.run_deep(season, n_seasons=600)
+        _deep["agg"] = agg
+        _deep["season"] = season
+        return {"agg": agg, "season": season}
+
+    def run_f1():
+        import racing_sim
+        return racing_sim.sim_f1(3000)
+
+    def run_nascar():
+        import racing_sim
+        return racing_sim.sim_nascar(3000)
+
+    deep_cache.register("mlb_deep", run_mlb)
+    deep_cache.register("f1", run_f1)
+    deep_cache.register("nascar", run_nascar)
+    # Restore the MLB deep run from disk so a restart doesn't lose it.
+    payload, _ts = deep_cache.load("mlb_deep")
+    if payload:
+        _deep["agg"] = payload.get("agg")
+        _deep["season"] = payload.get("season")
+    deep_cache.start_scheduler()
 
 
 @app.before_request
@@ -871,7 +908,10 @@ def api_baseball_futures():
         agg = _deep.get("agg")
         if agg and _deep.get("season") == season:
             try:
-                return jsonify(season_sim.deep_board(agg, season))
+                import deep_cache
+                board = season_sim.deep_board(agg, season)
+                board["age_sec"] = deep_cache.age("mlb_deep")
+                return jsonify(board)
             except Exception as e:
                 return jsonify({"error": f"deep board failed: {e}"}), 502
     try:
@@ -886,23 +926,46 @@ def api_racing_season(sport):
     """Deep full-season motorsport sim -> championship odds. F1 simulates
     qualifying + race (+ sprints) over the remaining calendar; NASCAR runs the
     playoff bracket. Best-effort Polymarket champion prices attached."""
-    import racing_sim
-    import baseball as _bb
+    import deep_cache
+    import time as _t
     sport = (sport or "").lower()
     if sport not in ("f1", "nascar"):
         return jsonify({"error": "unknown sport"}), 404
+    # Served from the weekly disk cache (shared by everyone); computed inline on a
+    # cold miss since the racing sims are cheap. The scheduler refreshes weekly.
     try:
-        data = _bb._cached(
-            ("racing_season", sport), 1800,
-            lambda: racing_sim.sim_f1(3000) if sport == "f1" else racing_sim.sim_nascar(3000))
+        data, ts = deep_cache.load(sport)
+        if data is None:
+            data, ts = deep_cache.run_sync(sport)
     except Exception as e:
         return jsonify({"error": f"sim failed: {e}"}), 502
     if not data:
         return jsonify({"error": "no season data available"}), 502
+    data = dict(data)
+    data["generated_at"] = ts
+    data["age_sec"] = (_t.time() - ts) if ts else None
     # (Polymarket/Kalshi champion-price matching for motorsport is a follow-up —
-    # the driver-name vs market-title join needs its own verification, so we ship
-    # the model board first rather than attach unreliable prices.)
+    # the driver-name vs market-title join needs its own verification.)
     return jsonify(data)
+
+
+@app.route("/api/sim/status")
+def api_sim_status():
+    """Freshness + run state of each cached season sim."""
+    import deep_cache
+    return jsonify({k: deep_cache.status(k) for k in ("mlb_deep", "f1", "nascar")})
+
+
+@app.route("/api/sim/rerun", methods=["POST"])
+def api_sim_rerun():
+    """Force a fresh run of one cached season sim (manual weekly-style refresh)."""
+    import deep_cache
+    key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar"}.get(
+        (request.args.get("sport") or "").lower())
+    if not key:
+        return jsonify({"error": "sport must be mlb, f1 or nascar"}), 400
+    started = deep_cache.run_job(key, force=True)
+    return jsonify({"started": started, "status": deep_cache.status(key)})
 
 
 # Latest completed deep-season run, kept in-process. {agg, season}.
@@ -913,27 +976,15 @@ _deep = {"agg": None, "season": None}
 def api_baseball_deep_start():
     """Kick off the deep multicore season run in the background (it takes minutes).
     Poll /deep/status; when ready, GET /futures?engine=deep for the deep board."""
-    import threading
     import datetime as _dt
     import deep_season
+    import deep_cache
     if deep_season.PROGRESS.get("running"):
         return jsonify({"started": False, "already_running": True,
                         "progress": deep_season.PROGRESS})
-    season = request.args.get("season") or str(_dt.date.today().year)
-    try:
-        seasons = max(100, min(3000, int(request.args.get("seasons", 600))))
-    except ValueError:
-        seasons = 600
-
-    def job():
-        try:
-            agg = deep_season.run_deep(season, n_seasons=seasons)
-            _deep["agg"] = agg
-            _deep["season"] = season
-        except Exception:
-            deep_season.PROGRESS["running"] = False
-    threading.Thread(target=job, daemon=True).start()
-    return jsonify({"started": True, "season": season, "seasons": seasons})
+    # Force a fresh run; result is persisted to disk and reused for everyone.
+    started = deep_cache.run_job("mlb_deep", force=True)
+    return jsonify({"started": started, "season": str(_dt.date.today().year)})
 
 
 @app.route("/api/baseball/team")
@@ -942,7 +993,6 @@ def api_baseball_team():
     run (hits/HR/BB/K/R for bats, IP/K/BB/ERA for arms). Needs ?abbr=NYY."""
     import datetime as _dt
     import deep_season
-    import season_sim  # noqa: F401  (kept parallel to other routes)
     season = request.args.get("season") or str(_dt.date.today().year)
     abbr = (request.args.get("abbr") or "").upper()
     agg = _deep.get("agg")
@@ -971,6 +1021,8 @@ def api_baseball_deep_status():
         p["pct"] = round(100 * done / total, 1)
         p["eta_sec"] = round(elapsed / done * (total - done)) if done else None
     p["ready"] = bool(_deep.get("agg") and _deep.get("season") == season)
+    import deep_cache
+    p["age_sec"] = deep_cache.age("mlb_deep")
     return jsonify(p)
 
 

@@ -1660,10 +1660,30 @@ async function loadFeatured() {
   }
 }
 
+function agoStr(sec) {
+  if (sec == null) return "never";
+  if (sec < 90) return "just now";
+  if (sec < 5400) return `${Math.round(sec / 60)} min ago`;
+  if (sec < 172800) return `${Math.round(sec / 3600)} h ago`;
+  return `${Math.round(sec / 86400)} d ago`;
+}
+async function rerunSim(sport, after) {
+  await fetch(`/api/sim/rerun?sport=${sport}`, { method: "POST" });
+  const tick = async () => {
+    const s = (await (await fetch("/api/sim/status")).json())[sport === "mlb" ? "mlb_deep" : sport];
+    if (s && s.running) { setTimeout(tick, 2500); return; }
+    if (after) after();
+  };
+  setTimeout(tick, 2000);
+}
+
 function renderRacing(d) {
   const isF1 = d.sport === "f1";
+  const fresh = `updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly`;
   $("featuredSummary").innerHTML =
-    `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints" : "pace + the playoff bracket"}.</div>`;
+    `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints" : "pace + the playoff bracket"}.
+     <span style="color:var(--muted)">${fresh}</span>
+     <button class="track-mini" style="margin-left:6px" onclick="rerunSim('${d.sport}', loadFeatured)">↻ rerun now</button></div>`;
   const extra = isF1 ? "Poles" : "Top-5s";
   const head = `<div class="futrow rcrow rchead">
     <span class="fr-rank">#</span><span class="fr-team">Driver</span>
@@ -1734,7 +1754,9 @@ function renderFeatured(d) {
     ? `<b>deep pitch-by-pitch engine</b> — game-by-game, run-by-run`
     : `fast model (expected runs → Pythagorean)`;
   const deepCtl = d.engine === "deep"
-    ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} pitch-by-pitch seasons</span>`
+    ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} seasons</span>
+       <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly</span>
+       <button class="track-mini" style="margin-left:6px" onclick="rerunSim('mlb', loadFeatured)">↻ rerun now</button>`
     : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim</button><span class="small" id="deepProg" style="margin-left:8px"></span>`;
   $("featuredSummary").innerHTML =
     `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>

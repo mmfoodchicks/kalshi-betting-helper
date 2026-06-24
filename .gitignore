@@ -10,3 +10,6 @@ markets.db
 
 # Secrets / env
 .env
+
+# Deep-sim cache
+data/
