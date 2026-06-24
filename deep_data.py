@@ -30,10 +30,17 @@ def _f(x, d=0.0):
         return d
 
 
+# Short-IL availability: fraction of the rest of the season a player on each IL
+# is expected to be available (they miss ~the next couple of weeks, then return).
+# 60-day is treated as out for the season; the weekly rerun re-checks all of this.
+SHORT_IL = {"D7": 0.93, "D10": 0.88, "D15": 0.82}
+
+
 def _roster_stats(team_id, season, group):
-    """{player_id: (person, stat)} for one stat group, hydrated in one call."""
+    """{player_id: (person, position, stat, status_code)} for one stat group.
+    Pulls the 40-man so we can see IL status, not just who's active today."""
     def fetch():
-        url = (f"{STATS}/teams/{team_id}/roster?rosterType=active"
+        url = (f"{STATS}/teams/{team_id}/roster?rosterType=40Man"
                f"&hydrate=person(stats(type=season,group={group},season={season}))")
         d = baseball._get(url)
         out = {}
@@ -45,12 +52,13 @@ def _roster_stats(team_id, season, group):
                 if sp:
                     st = sp[0].get("stat")
                     break
-            out[per["id"]] = (per, r.get("position", {}), st)
+            out[per["id"]] = (per, r.get("position", {}), st,
+                              (r.get("status") or {}).get("code", "A"))
         return out
-    return baseball._cached(("deep_roster", team_id, season, group), 21600, fetch)
+    return baseball._cached(("deep_roster40", team_id, season, group), 21600, fetch)
 
 
-def _batter(per, st):
+def _batter(per, st, avail=1.0):
     pa = _f(st.get("plateAppearances"))
     if pa < 25:                       # thin sample -> league-average bat
         rates = dict(LG)
@@ -61,10 +69,11 @@ def _batter(per, st):
                  "hbp": _f(st.get("hitByPitch")) / pa, "hr": hr / pa,
                  "1b": singles / pa, "2b": d2 / pa, "3b": t3 / pa}
     return {"id": per["id"], "name": per.get("boxscoreName") or per["fullName"],
-            "side": per.get("batSide", {}).get("code", "R"), "pa": pa, "rates": rates}
+            "side": per.get("batSide", {}).get("code", "R"), "pa": pa, "rates": rates,
+            "avail": avail}
 
 
-def _pitcher(per, st):
+def _pitcher(per, st, avail=1.0):
     ip = _f(st.get("inningsPitched"))
     k9, bb9 = _f(st.get("strikeoutsPer9Inn")), _f(st.get("walksPer9Inn"))
     hr9 = _f(st.get("homeRunsPer9")) or (_f(st.get("homeRuns")) * 9 / ip if ip else 0)
@@ -80,7 +89,7 @@ def _pitcher(per, st):
             "ip": ip, "gs": _f(st.get("gamesStarted")), "g": _f(st.get("gamesPitched")),
             "sv": _f(st.get("saves")) + _f(st.get("holds")),
             "era": _f(st.get("era"), 4.3),
-            "kpa": kpa, "bbpa": bbpa, "hrpa": hrpa}
+            "kpa": kpa, "bbpa": bbpa, "hrpa": hrpa, "avail": avail}
 
 
 def team_profile(team_id, season=None):
@@ -91,16 +100,22 @@ def team_profile(team_id, season=None):
         hit = _roster_stats(team_id, season, "hitting")
         pit = _roster_stats(team_id, season, "pitching")
         batters, pitchers = [], []
-        for pid, (per, pos, st) in {**hit, **pit}.items():
+        for pid, (per, pos, st, code) in {**hit, **pit}.items():
+            # Active + short-IL players only; 60-day IL, minors (RM), paternity,
+            # suspended -> out (replacement-level depth fills in). Short IL carry an
+            # availability discount so they play most-but-not-all of the rest.
+            if code != "A" and code not in SHORT_IL:
+                continue
+            avail = SHORT_IL.get(code, 1.0)
             abbr = (pos or {}).get("abbreviation", "")
             if abbr == "P":
-                s = pit.get(pid, (None, None, None))[2]
+                s = pit.get(pid, (None, None, None, None))[2]
                 if s:
-                    pitchers.append(_pitcher(per, s))
+                    pitchers.append(_pitcher(per, s, avail))
             else:
-                s = hit.get(pid, (None, None, None))[2]
+                s = hit.get(pid, (None, None, None, None))[2]
                 if s:
-                    batters.append(_batter(per, s))
+                    batters.append(_batter(per, s, avail))
         # Rotation = top starters by games started; bullpen = the rest with innings.
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
                           key=lambda p: (p["gs"], p["ip"]), reverse=True)[:6]

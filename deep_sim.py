@@ -195,15 +195,33 @@ def _pick_ph(bench, due, pitcher_hand, used):
     return best if best_gain > 0.03 else None
 
 
+def _avail_sp(sp, prof, rng):
+    """If the scheduled starter is on a short IL and 'misses' this start, hand the
+    ball to the next available rotation arm (a spot start)."""
+    if sp and sp.get("avail", 1.0) < 1.0 and rng.random() > sp["avail"]:
+        for alt in prof["rotation"]:
+            if alt["id"] != sp["id"] and alt.get("avail", 1.0) >= 1.0:
+                return alt
+    return sp
+
+
 def play_game(home, away, sp_home=None, sp_away=None, rng=None):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
     Returns {home_runs, away_runs, home_win, batting:{pid:line}, pitching:{pid:line}}."""
     rng = rng or random
-    sp_home = sp_home or home["rotation"][0]
-    sp_away = sp_away or away["rotation"][0]
+    sp_home = _avail_sp(sp_home or home["rotation"][0], home, rng)
+    sp_away = _avail_sp(sp_away or away["rotation"][0], away, rng)
     staff = {"home": _Staff(home, sp_home), "away": _Staff(away, sp_away)}
-    lineup = {"home": list(home["lineup"]), "away": list(away["lineup"])}
-    bench = {"home": list(home["bench"]), "away": list(away["bench"])}
+    # Per-game injury availability: a short-IL regular sits this one (replacement
+    # from the bench starts) with probability (1 - avail). Over the season this
+    # reproduces the games they actually miss without deleting them outright.
+    lineup, bench = {}, {}
+    for side, prof in (("home", home), ("away", away)):
+        lu, bn = list(prof["lineup"]), list(prof["bench"])
+        for i, p in enumerate(lu):
+            if p.get("avail", 1.0) < 1.0 and rng.random() > p["avail"] and bn:
+                lu[i] = bn.pop(0)
+        lineup[side], bench[side] = lu, bn
     idx = {"home": 0, "away": 0}
     used_ph = {"home": set(), "away": set()}
     bat_lines = {}
