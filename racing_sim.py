@@ -24,6 +24,10 @@ SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1]              # sprint top 8
 _SIGMA_Q = 2.3      # qualifying variance
 _SIGMA_R = 3.1      # race variance
 _GRID_W = 0.40      # how much the race result leans on grid vs raw race pace
+# Random-event rates (per driver, per race).
+_GRID_PEN = 0.045   # engine/gearbox grid penalty -> start from the back
+_TIME_PEN = 0.05    # in-race time penalty -> drop ~4-9 places
+_INCIDENT = 0.015   # flat crash/incident DNF on top of each driver's reliability
 
 
 def _f1_results():
@@ -127,18 +131,30 @@ def _sim_quali(drivers, rng):
     return [did for did, _ in sorted(grid_pos.items(), key=lambda kv: kv[1])]
 
 
+def _apply_grid_penalties(grid, rng):
+    """Engine/gearbox grid penalties: a driver who takes a penalty (or stalls on
+    the formation lap) is sent to the back for the race start. Pole is still
+    credited from qualifying — only the race START grid moves."""
+    clean, penalized = [], []
+    for did in grid:
+        (penalized if rng.random() < _GRID_PEN else clean).append(did)
+    return clean + penalized
+
+
 def _sim_race(drivers, grid, rng):
-    """Finishing order (list of ids). Blends grid + race pace with variance, and
-    drops DNFs to the back (classified behind all finishers)."""
+    """Finishing order (list of ids). Blends grid + race pace with variance, plus
+    random events: DNFs (crash/mechanical + a flat incident chance) drop to the
+    back, and time penalties cost ~a handful of positions."""
     pos = {did: i + 1 for i, did in enumerate(grid)}
     by_id = {d["id"]: d for d in drivers}
     finishers, retired = [], []
     for did in grid:
         d = by_id[did]
-        if rng.random() < d["dnf"]:
+        if rng.random() < min(0.55, d["dnf"] + _INCIDENT):    # crash / mechanical / collected
             retired.append(did)
             continue
-        score = _GRID_W * pos[did] + (1 - _GRID_W) * d["race"] + rng.gauss(0, _SIGMA_R)
+        pen = rng.randint(4, 9) if rng.random() < _TIME_PEN else 0  # time penalty
+        score = _GRID_W * pos[did] + (1 - _GRID_W) * d["race"] + rng.gauss(0, _SIGMA_R) + pen
         finishers.append((score, did))
     finishers.sort()
     rng.shuffle(retired)                      # DNF order among themselves is noise
@@ -150,27 +166,32 @@ def _award(order, points_table):
 
 
 def _sim_one_season(profiles, remaining, rng):
-    """Play out the remaining schedule once. Returns final driver points and the
-    per-driver win/pole/podium tallies for this season."""
+    """Play out the remaining schedule once. Returns final driver points, the
+    per-driver season tallies, AND per-race (round, pole, winner) so the futures
+    board can price each individual GP's pole + winner markets."""
     drivers = list(profiles.values())
     pts = {d["id"]: d["points"] for d in drivers}
     wins = defaultdict(int); poles = defaultdict(int); podiums = defaultdict(int)
+    race_out = []
     for race in remaining:
-        grid = _sim_quali(drivers, rng)
-        poles[grid[0]] += 1
+        quali = _sim_quali(drivers, rng)
+        pole_id = quali[0]                    # pole = fastest in qualifying
+        poles[pole_id] += 1
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
-            sgrid = _sim_quali(drivers, rng)
+            sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
             sorder = _sim_race(drivers, sgrid, rng)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
+        grid = _apply_grid_penalties(quali, rng)   # engine penalties hit the start
         order = _sim_race(drivers, grid, rng)
         wins[order[0]] += 1
         for did in order[:3]:
             podiums[did] += 1
         for did, p in _award(order, F1_POINTS).items():
             pts[did] += p
-    return pts, wins, poles, podiums
+        race_out.append((race["round"], pole_id, order[0]))
+    return pts, wins, poles, podiums, race_out
 
 
 def sim_f1(n=2000, seed=None):
@@ -182,16 +203,21 @@ def sim_f1(n=2000, seed=None):
         return None
     rng = random.Random(seed)
     con_of = {d["id"]: d["constructor"] for d in profiles.values()}
+    name_of = {d["id"]: d["name"] for d in profiles.values()}
+    team_of = {d["id"]: d["constructor"] for d in profiles.values()}
     champ = defaultdict(int); con_champ = defaultdict(int)
     pts_sum = defaultdict(float)
     w_sum = defaultdict(float); pole_sum = defaultdict(float); pod_sum = defaultdict(float)
+    # Per-race winner/pole tallies, keyed by round.
+    race_pole = defaultdict(lambda: defaultdict(int))
+    race_win = defaultdict(lambda: defaultdict(int))
 
     def one(_):
         return _sim_one_season(profiles, remaining, random.Random(rng.random()))
 
     with ThreadPoolExecutor(max_workers=8) as ex:
         results = ex.map(one, range(n))
-        for pts, wins, poles, podiums in results:
+        for pts, wins, poles, podiums, race_out in results:
             champ[max(pts, key=pts.get)] += 1
             con_pts = defaultdict(float)
             for did, p in pts.items():
@@ -201,6 +227,16 @@ def sim_f1(n=2000, seed=None):
                 pole_sum[did] += poles.get(did, 0)
                 pod_sum[did] += podiums.get(did, 0)
             con_champ[max(con_pts, key=con_pts.get)] += 1
+            for rnd, pole_id, win_id in race_out:
+                race_pole[rnd][pole_id] += 1
+                race_win[rnd][win_id] += 1
+
+    def field(counter):
+        return [{"name": name_of[did], "team": team_of[did], "pct": round(100 * c / n, 1)}
+                for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:14]
+    races = [{"round": r["round"], "name": r["name"], "sprint": r["sprint"],
+              "pole": field(race_pole[r["round"]]), "winner": field(race_win[r["round"]])}
+             for r in remaining]
 
     drivers = []
     for d in profiles.values():
@@ -218,7 +254,7 @@ def sim_f1(n=2000, seed=None):
                            for c, v in con_champ.items()),
                           key=lambda x: x["title_pct"], reverse=True)
     return {"sport": "f1", "n_sims": n, "races_left": len(remaining),
-            "drivers": drivers, "constructors": constructors}
+            "drivers": drivers, "constructors": constructors, "races": races}
 
 
 # ---- NASCAR Cup: pace + points from weekend feeds, then the playoff bracket ---
@@ -280,7 +316,9 @@ def nascar_state(year=None, series=1):
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
                         "race_pace": pace,
                         "dnf": min(0.30, s["dnf"] / s["starts"]), "starts": s["starts"]}
-        return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done)}
+        remaining = [r.get("race_name", "") for r in pts_races[len(done):]]
+        return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
+                "remaining_names": remaining}
     return racing._cached(("nascar_state", year, series), 6 * 3600, build) or {}
 
 
@@ -301,27 +339,39 @@ def _round_of(idx):
 
 
 def _sim_cup_race(drivers, rng):
-    """Finishing order (driver ids). Pace + large variance (flat field), DNFs last."""
+    """Finishing order (driver ids). Pace + large variance (flat field) plus
+    NASCAR's random events: 'the big one' multi-car wreck, per-car incidents/
+    mechanicals, and in-race penalties that cost track position."""
+    big_one = set()
+    if rng.random() < 0.10:                    # a multi-car wreck ~1 in 10 races
+        big_one = set(rng.sample([d["id"] for d in drivers],
+                                 min(len(drivers), rng.randint(3, 6))))
     fin, out = [], []
     for d in drivers:
-        if rng.random() < d["dnf"]:
+        if d["id"] in big_one or rng.random() < min(0.40, d["dnf"] + _INCIDENT):
             out.append(d["id"])
         else:
-            fin.append((d["race_pace"] + rng.gauss(0, _SIGMA_CUP), d["id"]))
+            pen = rng.randint(5, 14) if rng.random() < _TIME_PEN else 0   # penalty -> lose spots
+            fin.append((d["race_pace"] + rng.gauss(0, _SIGMA_CUP) + pen, d["id"]))
     fin.sort()
     rng.shuffle(out)
     return [did for _, did in fin] + out
 
 
-def _sim_nascar_season(drivers, phases, rng):
-    """One season forward through the remaining schedule + the playoff bracket."""
+def _sim_nascar_season(drivers, phases, names, rng):
+    """One season forward through the remaining schedule + the playoff bracket.
+    `names` is the ordered remaining race list, so per-race pole/winner are logged
+    for the per-race futures markets."""
     pts = {d["id"]: d["points"] for d in drivers}
     wins = {d["id"]: d["wins"] for d in drivers}
     ppts = {d["id"]: d["playoff_points"] for d in drivers}
     season_wins = defaultdict(int); top5 = defaultdict(int); top10 = defaultdict(int)
     poles = defaultdict(int)
+    name_iter = iter(names)
+    race_out = []
 
     def run_race():
+        nm = next(name_iter, None)
         # Single-lap qualifying sets the pole (NASCAR's flat field -> wide spread).
         pole = min(drivers, key=lambda d: d["race_pace"] + rng.gauss(0, _SIGMA_CUP * 0.7))
         poles[pole["id"]] += 1
@@ -333,6 +383,8 @@ def _sim_nascar_season(drivers, phases, rng):
             if pos <= 10:
                 top10[did] += 1
         season_wins[order[0]] += 1
+        if nm is not None:
+            race_out.append((nm, pole["id"], order[0]))
         return order
 
     for _ in range(phases.get("regular", 0)):
@@ -375,7 +427,7 @@ def _sim_nascar_season(drivers, phases, rng):
     else:
         champ = max(survivors, key=lambda d: pts[d["id"]])["id"] if survivors \
             else max(pts, key=pts.get)
-    return champ, made_playoffs, season_wins, top5, top10, pts, poles
+    return champ, made_playoffs, season_wins, top5, top10, pts, poles, race_out
 
 
 def sim_nascar(n=2000, year=None, seed=None):
@@ -385,20 +437,24 @@ def sim_nascar(n=2000, year=None, seed=None):
     if not drivers_map:
         return None
     drivers = list(drivers_map.values())
+    name_of = {d["id"]: d["name"] for d in drivers}
     n_done = state["n_done"]
     phases = defaultdict(int)
     for idx in range(n_done + 1, state["n_points_races"] + 1):
         phases[_round_of(idx)] += 1
+    names = state.get("remaining_names") or []
     rng = random.Random(seed)
 
     champ = defaultdict(int); po = defaultdict(int)
     pts_sum = defaultdict(float); w_sum = defaultdict(float)
     t5 = defaultdict(float); t10 = defaultdict(float); pole_sum = defaultdict(float)
+    race_pole = defaultdict(lambda: defaultdict(int))
+    race_win = defaultdict(lambda: defaultdict(int))
 
     def one(_):
-        return _sim_nascar_season(drivers, phases, random.Random(rng.random()))
+        return _sim_nascar_season(drivers, phases, names, random.Random(rng.random()))
     with ThreadPoolExecutor(max_workers=8) as ex:
-        for c, made, sw, top5, top10, pts, poles in ex.map(one, range(n)):
+        for c, made, sw, top5, top10, pts, poles, race_out in ex.map(one, range(n)):
             champ[c] += 1
             for did in made:
                 po[did] += 1
@@ -407,6 +463,9 @@ def sim_nascar(n=2000, year=None, seed=None):
                 pts_sum[did] += pts[did]; w_sum[did] += sw.get(did, 0)
                 t5[did] += top5.get(did, 0); t10[did] += top10.get(did, 0)
                 pole_sum[did] += poles.get(did, 0)
+            for nm, pole_id, win_id in race_out:
+                race_pole[nm][pole_id] += 1
+                race_win[nm][win_id] += 1
 
     out = []
     for d in drivers:
@@ -418,7 +477,13 @@ def sim_nascar(n=2000, year=None, seed=None):
                     "exp_top5": round(t5[did] / n, 1), "exp_top10": round(t10[did] / n, 1),
                     "exp_poles": round(pole_sum[did] / n, 1)})
     out.sort(key=lambda x: x["title_pct"], reverse=True)
+
+    def field(counter):
+        return [{"name": name_of[did], "pct": round(100 * c / n, 1)}
+                for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:16]
+    races = [{"name": nm, "pole": field(race_pole[nm]), "winner": field(race_win[nm])}
+             for nm in names]
     return {"sport": "nascar", "n_sims": n,
-            "races_left": sum(phases.values()), "drivers": out}
+            "races_left": sum(phases.values()), "drivers": out, "races": races}
 
 
