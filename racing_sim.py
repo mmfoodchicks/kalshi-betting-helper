@@ -31,6 +31,21 @@ _TIME_PEN = 0.05    # in-race time penalty -> drop ~4-9 places
 _INCIDENT = 0.015   # flat crash/incident DNF on top of each driver's reliability
 
 
+def _f1_circuit_type(name):
+    """Bucket an F1 circuit by character. Street circuits punish mistakes and
+    reward precision (qualifying-locked, hard to pass); power tracks reward the
+    car's top end. Some drivers are demonstrably stronger on one kind, so we rate
+    a per-type finish delta (heavily regressed — the season is young)."""
+    t = (name or "").lower()
+    if any(k in t for k in ("monaco", "marina bay", "singapore", "baku", "azerbaijan",
+                            "jeddah", "miami", "las vegas", "vegas", "albert park", "melbourne")):
+        return "street"
+    if any(k in t for k in ("monza", "spa", "silverstone", "gilles villeneuve",
+                            "montreal", "red bull ring", "austria")):
+        return "power"
+    return "standard"
+
+
 def _f1_results():
     """Per-driver season form: avg grid, avg finish, DNF rate, starts."""
     def build():
@@ -45,8 +60,12 @@ def _f1_results():
         # upgrades / form). fin_acc/fin_w accumulate weighted finish positions.
         grid, dnf, starts = defaultdict(list), defaultdict(int), defaultdict(int)
         fin_acc, fin_w = defaultdict(float), defaultdict(float)
+        t_acc, t_w, t_n = defaultdict(lambda: defaultdict(float)), \
+            defaultdict(lambda: defaultdict(float)), defaultdict(lambda: defaultdict(int))
         for i, r in enumerate(races):
             w = i + 1
+            ctype = _f1_circuit_type((r.get("Circuit") or {}).get("circuitName")
+                                     or r.get("raceName"))
             for res in r.get("Results", []):
                 did = res["Driver"]["driverId"]
                 starts[did] += 1
@@ -57,7 +76,10 @@ def _f1_results():
                 st = res.get("status", "")
                 if st == "Finished" or st.startswith("+"):
                     try:
-                        fin_acc[did] += w * int(res["position"]); fin_w[did] += w
+                        p = int(res["position"])
+                        fin_acc[did] += w * p; fin_w[did] += w
+                        t_acc[did][ctype] += w * p; t_w[did][ctype] += w
+                        t_n[did][ctype] += 1
                     except (ValueError, KeyError):
                         pass
                 else:
@@ -67,7 +89,7 @@ def _f1_results():
         #  - race pace -> avg grid (where you start strongly predicts the finish),
         #  - DNF rate  -> a field-typical ~9%.
         # A rookie's two lucky podiums no longer read as "finishes 1st on average."
-        _FIN_K, _DNF_K = 6.0, 5.0
+        _FIN_K, _DNF_K, _TYPE_K = 6.0, 5.0, 5.0
         out = {}
         for did in starts:
             g = grid[did] or [13]
@@ -75,7 +97,15 @@ def _f1_results():
             raw_fin = fin_acc[did] / fin_w[did] if fin_w[did] else avg_grid
             avg_fin = (fin_w[did] * raw_fin + _FIN_K * avg_grid) / (fin_w[did] + _FIN_K)
             dnf_rate = (dnf[did] + _DNF_K * 0.09) / (starts[did] + _DNF_K)
-            out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin,
+            # Per-circuit-type finish delta vs the driver's own baseline, regressed
+            # hard (_TYPE_K) because only a handful of races exist this early; it
+            # sharpens as more street/power weekends accumulate.
+            by_type = {}
+            for ct, acc in t_acc[did].items():
+                raw_t = acc / t_w[did][ct]
+                nt = t_n[did][ct]
+                by_type[ct] = round((raw_t - raw_fin) * nt / (nt + _TYPE_K), 2)
+            out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin, "race_by_type": by_type,
                         "dnf": dnf_rate, "starts": starts[did]}
         return out
     return racing._cached(("f1_results",), 6 * 3600, build) or {}
@@ -95,9 +125,10 @@ def _qtime(t):
 
 
 def _f1_quali_gaps():
-    """Per-driver qualifying pace as a RECENCY-WEIGHTED average gap to pole, in
-    seconds. This is far finer than grid position: it knows whether a P2 was 0.05s
-    or 0.5s off pole, so pole odds reflect true pace, not just rank."""
+    """Per-driver RAW qualifying pace as {driver_id: {gap, n}}: a recency-weighted
+    average gap to pole (seconds) and the number of sessions behind it. Far finer
+    than grid position — it knows whether a P2 was 0.05s or 0.5s off pole — and the
+    sample count lets f1_profiles pool small samples toward the car's pace."""
     def build():
         races = []
         for off in (0, 100):
@@ -106,7 +137,7 @@ def _f1_quali_gaps():
             races += rs
             if len(rs) < 5:
                 break
-        acc, wsum = defaultdict(float), defaultdict(float)
+        acc, wsum, cnt = defaultdict(float), defaultdict(float), defaultdict(int)
         for i, r in enumerate(races):                 # chronological -> later = more recent
             w = i + 1                                  # linear recency weight
             bests = {}
@@ -121,10 +152,10 @@ def _f1_quali_gaps():
             for did, b in bests.items():
                 acc[did] += w * min(b - pole, 3.0)     # cap blowout/wet-session gaps
                 wsum[did] += w
-        # Shrink toward a midfield ~0.7s gap so a single banker lap (or a
-        # rain-shortened session) doesn't crown someone the pole favourite.
-        _QK = 4.0
-        return {did: (acc[did] + _QK * 0.7) / (wsum[did] + _QK) for did in acc}
+                cnt[did] += 1
+        # Raw recency-weighted gap + session count; shrinkage happens in
+        # f1_profiles, where the constructor (teammate) signal is available.
+        return {did: {"gap": acc[did] / wsum[did], "n": cnt[did]} for did in acc}
     return racing._cached(("f1_quali_gaps",), 6 * 3600, build) or {}
 
 
@@ -137,21 +168,44 @@ def f1_profiles():
             return {}
         form = _f1_results()
         gaps = _f1_quali_gaps()
+        standings = lst[0]["DriverStandings"]
+
+        # Teammate pooling: a driver's car is shared evidence of pace, so each
+        # constructor's "car pace" is the sample-weighted mean of its drivers' raw
+        # quali gaps. A noisy driver then shrinks toward their CAR's pace (what the
+        # teammate proves the car can do), not a blind midfield guess.
+        car_acc, car_w = defaultdict(float), defaultdict(float)
+        for x in standings:
+            did = x["Driver"]["driverId"]
+            cid = x["Constructors"][-1]["constructorId"]
+            g = gaps.get(did)
+            if g:
+                car_acc[cid] += g["gap"] * g["n"]; car_w[cid] += g["n"]
+        car_pace = {cid: car_acc[cid] / car_w[cid] for cid in car_acc}
+
+        _QK = 4.0          # quali pseudo-sessions to shrink by
         out = {}
-        for x in lst[0]["DriverStandings"]:
+        for x in standings:
             dr = x["Driver"]; did = dr["driverId"]
-            con = x["Constructors"][-1]
-            f = form.get(did, {"avg_grid": 13.0, "avg_fin": 13.0, "dnf": 0.08, "starts": 0})
+            con = x["Constructors"][-1]; cid = con["constructorId"]
+            f = form.get(did, {"avg_grid": 13.0, "avg_fin": 13.0, "dnf": 0.08,
+                               "starts": 0, "race_by_type": {}})
+            g = gaps.get(did, {"gap": 1.1, "n": 0})
+            # prior = mostly the car's pace, with a dash of field-midfield so a
+            # one-car team or a brand-new lineup can't run away on no evidence.
+            prior = 0.7 * car_pace.get(cid, 0.9) + 0.3 * 0.9
+            quali = (g["n"] * g["gap"] + _QK * prior) / (g["n"] + _QK)
             out[did] = {
                 "id": did, "name": f"{dr.get('givenName','')} {dr.get('familyName','')}".strip(),
                 "code": dr.get("code") or dr.get("familyName", "")[:3].upper(),
-                "constructor": con["name"], "constructor_id": con["constructorId"],
+                "constructor": con["name"], "constructor_id": cid,
                 "points": float(x["points"]), "wins": int(x["wins"]),
                 "position": int(x["position"]),
-                # quali pace is now a gap-to-pole in SECONDS (default ~1.1s = midfield
-                # for drivers with no quali data); race pace stays position-scale.
-                "quali": gaps.get(did, 1.1), "avg_grid": f["avg_grid"],
-                "race": f["avg_fin"], "dnf": min(0.45, f["dnf"]),
+                # quali pace is a teammate-pooled gap-to-pole in SECONDS; race pace
+                # stays position-scale (regressed toward grid in _f1_results).
+                "quali": quali, "avg_grid": f["avg_grid"],
+                "race": f["avg_fin"], "race_by_type": f.get("race_by_type", {}),
+                "dnf": min(0.45, f["dnf"]),
             }
         return out
     return racing._cached(("f1_profiles",), 3 * 3600, build) or {}
@@ -171,9 +225,10 @@ def f1_remaining():
             if r.get("date", "") >= today:
                 loc = (r.get("Circuit") or {}).get("Location") or {}
                 clim = race_weather.climate(loc.get("lat"), loc.get("long"), r["date"]) or {}
+                cir = (r.get("Circuit") or {}).get("circuitName")
                 out.append({"round": int(r["round"]), "name": r["raceName"],
-                            "sprint": "Sprint" in r,
-                            "circuit": (r.get("Circuit") or {}).get("circuitName"),
+                            "sprint": "Sprint" in r, "circuit": cir,
+                            "type": _f1_circuit_type(cir or r["raceName"]),
                             "wet_prob": clim.get("wet_prob", 0.12),
                             "avg_wind": clim.get("avg_wind")})
         return out
@@ -213,12 +268,14 @@ def _apply_grid_penalties(grid, rng):
     return clean + penalized
 
 
-def _sim_race(drivers, grid, rng, wet=False):
+def _sim_race(drivers, grid, rng, wet=False, ctype="standard"):
     """Finishing order (list of ids). Blends grid + race pace with variance, plus
     random events: DNFs (crash/mechanical + a flat incident chance) drop to the
-    back, and time penalties cost positions. A WET race is far more chaotic — more
-    spins/DNFs, wider variance, and tyre-call gambles (the wrong-tyre fiasco) that
-    can drop a frontrunner or vault a midfielder."""
+    back, and time penalties cost positions. Circuit type nudges each driver by
+    their per-type form (a street-circuit specialist gains on street tracks). A WET
+    race is far more chaotic — more spins/DNFs, wider variance, and tyre-call
+    gambles (the wrong-tyre fiasco) that can drop a frontrunner or vault a
+    midfielder."""
     sigma = _SIGMA_R * (1.8 if wet else 1.0)
     dnf_extra = 0.06 if wet else 0.0
     pos = {did: i + 1 for i, did in enumerate(grid)}
@@ -233,7 +290,8 @@ def _sim_race(drivers, grid, rng, wet=False):
         gamble = 0
         if wet and rng.random() < 0.12:       # tyre-call gamble: usually wrong, sometimes genius
             gamble = rng.randint(3, 10) if rng.random() < 0.6 else -rng.randint(3, 8)
-        score = _GRID_W * pos[did] + (1 - _GRID_W) * d["race"] + rng.gauss(0, sigma) + pen + gamble
+        race_pace = d["race"] + d.get("race_by_type", {}).get(ctype, 0.0)
+        score = _GRID_W * pos[did] + (1 - _GRID_W) * race_pace + rng.gauss(0, sigma) + pen + gamble
         finishers.append((score, did))
     finishers.sort()
     rng.shuffle(retired)
@@ -257,14 +315,15 @@ def _sim_one_season(profiles, remaining, rng):
         pole_id = quali[0]                    # pole = fastest in qualifying
         poles[pole_id] += 1
         wet = rng.random() < race.get("wet_prob", 0.0)   # rain rolled from circuit climate
+        ctype = race.get("type", "standard")
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
             sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
-            sorder = _sim_race(drivers, sgrid, rng, wet=wet)
+            sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
         grid = _apply_grid_penalties(quali, rng)   # engine penalties hit the start
-        order = _sim_race(drivers, grid, rng, wet=wet)
+        order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype)
         wins[order[0]] += 1
         for did in order[:3]:
             podiums[did] += 1
