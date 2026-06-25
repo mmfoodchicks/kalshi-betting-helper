@@ -90,6 +90,129 @@ def _f(v, default=0.0):
         return default
 
 
+_HIT_EVENTS = {"Single", "Double", "Triple", "Home Run"}
+
+
+def _slate_game(game_pk):
+    """Our analyzed model for one game (props + SP) by game_pk, best-effort."""
+    try:
+        feed_date = _get(f"{STATS_BASE}/schedule?sportId=1&gamePk={game_pk}"
+                         "&fields=dates,games,gamePk,officialDate,season")
+        date = feed_date["dates"][0]["games"][0]["officialDate"]
+        for g in analyze_slate(date, date[:4]):
+            if g.get("game_pk") == game_pk:
+                return g
+    except Exception:
+        pass
+    return None
+
+
+def _batter_model(slate, side, name):
+    """Match a live hitter to our model props -> (full-game hit%, P(2nd|1st)%,
+    per-PA hit rate, expected PA)."""
+    if not slate:
+        return None
+    import props as _props
+    key = "batters_home" if side == "home" else "batters_away"
+    nm = _norm(name)
+    for b in (slate.get("props") or {}).get(key) or []:
+        if _norm(b.get("name", "")) == nm:
+            h1 = b.get("hit1"); h2 = b.get("hit2")
+            r = (b.get("r1") or 0) + (b.get("r2") or 0) + (b.get("r3") or 0) + (b.get("rhr") or 0)
+            return {"hit1": h1, "second_given_first": round(h2 / h1 * 100, 1) if h1 else None,
+                    "r_hit": r, "exp_pa": b.get("pa") or 4.2}
+    return None
+
+
+def _norm(s):
+    return "".join(c for c in (s or "").lower() if c.isalnum() or c == " ").strip()
+
+
+def live_game_feedback(game_pk):
+    """Rich live-game feed: pitcher live lines (pitch count, K/BB/H/IP + season
+    ERA/WHIP and our K projection), and per-hitter AB-by-AB results with our
+    model's hit odds + the conditional odds of a 2nd hit, plus live remaining-AB
+    hit odds. Merges MLB's live feed with our slate model."""
+    feed = _get(f"https://statsapi.mlb.com/api/v1.1/game/{game_pk}/feed/live")
+    ld = feed["liveData"]; gd = feed["gameData"]
+    box = ld["boxscore"]["teams"]
+    ls = ld.get("linescore", {})
+    names = {s: gd["teams"][s]["clubName"] for s in ("home", "away")}
+    slate = _slate_game(game_pk)
+    sp_model = {}
+    if slate:
+        for s, k in (("home", "home_sp"), ("away", "away_sp")):
+            blk = slate.get(k) or {}
+            if blk.get("k9"):
+                sp_model[s] = blk
+
+    # AB-by-AB log per batter id.
+    ablog = {}
+    for pl in ld.get("plays", {}).get("allPlays", []):
+        res = pl.get("result", {})
+        ev = res.get("event")
+        bid = (pl.get("matchup") or {}).get("batter", {}).get("id")
+        if ev and bid:
+            ablog.setdefault(bid, []).append({"event": ev, "hit": ev in _HIT_EVENTS,
+                                              "rbi": res.get("rbi", 0)})
+
+    pitchers, hitters = [], []
+    for side in ("away", "home"):
+        players = box[side]["players"]
+        for p in players.values():
+            person = p["person"]; nm = person["fullName"]
+            ps = p.get("stats", {}).get("pitching", {})
+            ss = p.get("seasonStats", {}).get("pitching", {})
+            if ps.get("numberOfPitches"):
+                k_now = int(ps.get("strikeOuts", 0))
+                model_k = sp_model.get(side, {}).get("k9")
+                pitchers.append({
+                    "name": nm, "side": side, "team": names[side],
+                    "pitches": int(ps.get("numberOfPitches", 0)),
+                    "ip": ps.get("inningsPitched"), "k": k_now,
+                    "bb": int(ps.get("baseOnBalls", 0)), "h": int(ps.get("hits", 0)),
+                    "er": int(ps.get("earnedRuns", 0)),
+                    "season_era": ss.get("era"), "season_whip": ss.get("whip"),
+                    "model_k9": model_k,
+                    "starter": (p.get("gameStatus", {}) or {}).get("isCurrentPitcher") is not None
+                               and bool(ps.get("gamesStarted")),
+                })
+            order = p.get("battingOrder")
+            if order:
+                bs = p.get("stats", {}).get("batting", {})
+                bss = p.get("seasonStats", {}).get("batting", {})
+                log = ablog.get(person["id"], [])
+                h_now = int(bs.get("hits", 0)); ab_now = int(bs.get("atBats", 0))
+                m = _batter_model(slate, side, nm)
+                next_hit = None
+                if m and m["r_hit"]:
+                    rem = max(0, round(m["exp_pa"]) - len(log))
+                    next_hit = round(100 * (1 - (1 - m["r_hit"]) ** rem), 1) if rem else 0.0
+                hitters.append({
+                    "name": nm, "side": side, "team": names[side], "order": int(order) // 100,
+                    "ab_log": [x["event"] for x in log],
+                    "hits": h_now, "ab": ab_now, "avg": bss.get("avg"),
+                    "model_hit_pct": m["hit1"] if m else None,
+                    "second_given_first": m["second_given_first"] if m else None,
+                    "live_next_hit_pct": next_hit,
+                })
+    hitters.sort(key=lambda x: (x["side"] != "away", x["order"]))
+    pitchers.sort(key=lambda x: -x["pitches"])
+    return {
+        "game_pk": game_pk, "away": names["away"], "home": names["home"],
+        "state": {
+            "inning": ls.get("currentInning"), "half": ls.get("inningState"),
+            "outs": ls.get("outs"), "balls": (ld.get("plays", {}).get("currentPlay", {})
+                                              .get("count", {}) or {}).get("balls"),
+            "strikes": (ld.get("plays", {}).get("currentPlay", {}).get("count", {}) or {}).get("strikes"),
+            "away_runs": (ls.get("teams", {}).get("away", {}) or {}).get("runs"),
+            "home_runs": (ls.get("teams", {}).get("home", {}) or {}).get("runs"),
+            "status": gd.get("status", {}).get("detailedState"),
+        },
+        "pitchers": pitchers, "hitters": hitters,
+    }
+
+
 # ---- league-wide team stats (one call each, cached) -----------------------
 def _team_split_map(season, group, sit_code, fields):
     """Generic league-wide statSplits fetch -> {team_id: {field: value}}."""

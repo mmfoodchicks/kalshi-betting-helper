@@ -988,6 +988,16 @@ def api_baseball_deep_start():
     return jsonify({"started": started, "season": str(_dt.date.today().year)})
 
 
+@app.route("/api/baseball/live/<int:game_pk>")
+def api_baseball_live(game_pk):
+    """Live-game feedback: pitcher pitch counts + lines, per-hitter AB results, and
+    our model's hit odds (incl. conditional 2nd-hit + live remaining-AB odds)."""
+    try:
+        return jsonify(baseball.live_game_feedback(game_pk))
+    except Exception as e:
+        return jsonify({"error": f"live feed failed: {e}"}), 502
+
+
 @app.route("/api/baseball/team")
 def api_baseball_team():
     """Per-player simulated season stat lines for one team from the latest deep

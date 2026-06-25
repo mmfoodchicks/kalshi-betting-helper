@@ -594,6 +594,66 @@ function spLine(sp) {
   return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}`;
 }
 
+// ---- Live game feedback feed (pitch counts, AB-by-AB, live model odds) -----
+const _liveFeedTimers = {};
+window.toggleLiveFeed = (pk) => {
+  const box = $(`lf-${pk}`);
+  if (!box) return;
+  if (box.dataset.open === "1") {
+    box.dataset.open = ""; box.innerHTML = "";
+    clearInterval(_liveFeedTimers[pk]); delete _liveFeedTimers[pk];
+    return;
+  }
+  box.dataset.open = "1";
+  box.innerHTML = `<div class="small" style="padding:8px">Loading live feed…</div>`;
+  const load = async () => {
+    try {
+      const d = await (await fetch(`/api/baseball/live/${pk}`)).json();
+      if (box.dataset.open !== "1") return;
+      box.innerHTML = d.error ? `<div class="small">${d.error}</div>` : renderLiveFeed(d);
+    } catch (e) { box.innerHTML = `<div class="small">Live feed unavailable.</div>`; }
+  };
+  load();
+  _liveFeedTimers[pk] = setInterval(load, 20000);   // refresh while open
+};
+
+function renderLiveFeed(d) {
+  const s = d.state || {};
+  const head = `<div class="lf-state"><b>${d.away}</b> ${s.away_runs ?? 0} – ${s.home_runs ?? 0} <b>${d.home}</b>
+    · ${s.half || ""} ${s.inning || ""} · ${s.outs ?? 0} out · ${s.status || ""}</div>`;
+  const pit = (d.pitchers || []).map((p) => {
+    const pace = p.model_k9 ? ` · model ${p.model_k9} K/9` : "";
+    return `<div class="lf-pcard">
+      <div class="lf-pname">${p.name} <span class="small">${p.team}</span></div>
+      <div class="lf-pline"><b>${p.pitches}</b> pitches · ${p.ip} IP · <b>${p.k}</b> K · ${p.bb} BB · ${p.h} H · ${p.er} ER</div>
+      <div class="small">season ERA <b>${p.season_era ?? "—"}</b> · WHIP <b>${p.season_whip ?? "—"}</b>${pace}</div>
+    </div>`;
+  }).join("");
+  const abBadge = (ev) => {
+    const hit = ["Single", "Double", "Triple", "Home Run"].includes(ev);
+    const k = ev === "Strikeout";
+    return `<span class="lf-ab ${hit ? "hit" : k ? "k" : "out"}" title="${ev}">${ev === "Home Run" ? "HR" : ev === "Strikeout" ? "K" : ev[0]}</span>`;
+  };
+  const rows = (d.hitters || []).map((h) => `<tr>
+    <td>${h.order}. ${h.name}</td>
+    <td><b>${h.hits}</b>/${h.ab}</td>
+    <td class="lf-log">${(h.ab_log || []).map(abBadge).join("")}</td>
+    <td>${h.model_hit_pct != null ? h.model_hit_pct + "%" : "—"}</td>
+    <td>${h.second_given_first != null ? h.second_given_first + "%" : "—"}</td>
+    <td>${h.live_next_hit_pct != null ? h.live_next_hit_pct + "%" : "—"}</td>
+  </tr>`).join("");
+  return `<div class="lf-wrap">
+    ${head}
+    <div class="lf-pgrid">${pit}</div>
+    <table class="lf-table"><thead><tr>
+      <th>Hitter</th><th>H/AB</th><th>AB results</th>
+      <th title="Model: chance of 1+ hit this game">Hit%</th>
+      <th title="Given a hit, chance of a 2nd">2nd</th>
+      <th title="Model chance of a hit in his remaining ABs">Next AB</th>
+    </tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
 function renderGame(g) {
   const pct = Math.round(g.pick_prob * 100);
   const edge = g.edge_cents;
@@ -636,7 +696,9 @@ function renderGame(g) {
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
-    ${g.in_game ? `<div class="small" style="color:var(--no)">📈 Live in-game win probability — ${g.in_game.state} ${g.in_game.inning}, ${g.in_game.outs} out${g.in_game.on_base.length ? `, runners on ${g.in_game.on_base.join("/")}` : ", bases empty"}</div>` : ""}
+    ${g.in_game ? `<div class="small" style="color:var(--no)">📈 Live in-game win probability — ${g.in_game.state} ${g.in_game.inning}, ${g.in_game.outs} out${g.in_game.on_base.length ? `, runners on ${g.in_game.on_base.join("/")}` : ", bases empty"}</div>
+    <button class="track-mini" style="margin-top:6px" onclick="toggleLiveFeed(${g.game_pk})">📡 Live feed — pitches · AB results · model odds</button>
+    <div id="lf-${g.game_pk}" class="livefeed"></div>` : ""}
     <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
     ${wxLine}
     <div class="matchgrid">
