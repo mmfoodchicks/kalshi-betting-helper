@@ -945,8 +945,13 @@ def api_racing_season(sport):
     data = dict(data)
     data["generated_at"] = ts
     data["age_sec"] = (_t.time() - ts) if ts else None
-    # (Polymarket/Kalshi champion-price matching for motorsport is a follow-up —
-    # the driver-name vs market-title join needs its own verification.)
+    # Live Kalshi prices on the championship + upcoming-race markets (model stays
+    # weekly-cached; prices fetched fresh per request).
+    try:
+        import racing_prices
+        racing_prices.attach(data)
+    except Exception:
+        pass
     return jsonify(data)
 
 

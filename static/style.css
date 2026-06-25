@@ -407,6 +407,8 @@ button.danger { color: var(--no); }
 @media (max-width: 620px) { .lf-pgrid { grid-template-columns: 1fr; } }
 .rcrow { grid-template-columns: 26px 1fr 56px 50px 54px 48px 56px; }
 .rcrow2 { grid-template-columns: 28px 1fr 66px; }
+.rcrowD { grid-template-columns: 26px 1fr 56px 52px 52px 60px 48px; }   /* championship + Kalshi/edge */
+.rcrowR { grid-template-columns: 28px 1fr 58px 52px 52px; }             /* per-race: model/Kalshi/edge */
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
 .deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }

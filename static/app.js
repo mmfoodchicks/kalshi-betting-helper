@@ -1772,34 +1772,40 @@ function renderRacing(d) {
   renderRaceMarket();
 }
 
+function _pxCells(x) {  // Kalshi ¢ + edge cells (— when unmatched)
+  const k = x.kalshi_cents != null ? `${x.kalshi_cents}¢` : "—";
+  const e = x.edge != null ? `<span class="${x.edge >= 0 ? "ev pos" : "ev neg"}">${x.edge >= 0 ? "+" : ""}${x.edge}</span>` : "—";
+  return `<span class="fr-num">${k}</span><span class="fr-num">${e}</span>`;
+}
+
 function renderRaceMarket() {
   const d = _raceData; if (!d) return;
   const isF1 = d.sport === "f1", m = _raceMarket;
   let html;
   if (m === "drivers") {
-    const extra = isF1 ? "Poles" : "Top-5s";
-    html = `<div class="futrow rcrow rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span>
-      <span class="fr-num">Title</span><span class="fr-num">Proj pts</span><span class="fr-num">Wins</span>
-      <span class="fr-num">${extra}</span><span class="fr-num">${isF1 ? "Pts now" : "Playoff"}</span></div>`
+    html = `<div class="futrow rcrowD rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span>
+      <span class="fr-num">Title</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span>
+      <span class="fr-num">Proj pts</span><span class="fr-num">Wins</span></div>`
       + d.drivers.filter((x) => x.title_pct > 0 || x.exp_wins >= 0.3).slice(0, 24).map((x, i) => `
-        <div class="futrow rcrow"><span class="fr-rank">${i + 1}</span>
+        <div class="futrow rcrowD"><span class="fr-rank">${i + 1}</span>
           <span class="fr-team"><b>${x.name}</b>${isF1 ? `<span class="small"> ${x.constructor}</span>` : ""}</span>
-          <span class="fr-num"><b>${x.title_pct}%</b></span><span class="fr-num">${x.proj_points}</span>
-          <span class="fr-num">${x.exp_wins}</span><span class="fr-num">${isF1 ? x.exp_poles : x.exp_top5}</span>
-          <span class="fr-num">${isF1 ? x.points_now : x.playoff_pct + "%"}</span></div>`).join("");
+          <span class="fr-num"><b>${x.title_pct}%</b></span>${_pxCells(x)}
+          <span class="fr-num">${x.proj_points}</span><span class="fr-num">${x.exp_wins}</span></div>`).join("");
   } else if (m === "constructors") {
-    html = (d.constructors || []).filter((c) => c.title_pct >= 0.1).map((c, i) =>
-      `<div class="futrow rcrow2"><span class="fr-rank">${i + 1}</span><span class="fr-team"><b>${c.name}</b></span>
-       <span class="fr-num"><b>${c.title_pct}%</b></span></div>`).join("");
+    html = `<div class="futrow rcrowR rchead"><span class="fr-rank">#</span><span class="fr-team">Constructor</span><span class="fr-num">Title</span><span class="fr-num"></span><span class="fr-num"></span></div>`
+      + (d.constructors || []).filter((c) => c.title_pct >= 0.1).map((c, i) =>
+        `<div class="futrow rcrowR"><span class="fr-rank">${i + 1}</span><span class="fr-team"><b>${c.name}</b></span>
+         <span class="fr-num"><b>${c.title_pct}%</b></span><span class="fr-num"></span><span class="fr-num"></span></div>`).join("");
   } else {
     const [kind, idx] = m.split(":");
     const race = d.races[+idx];
     const list = kind === "pole" ? race.pole : race.winner;
-    html = `<div class="teamhdr" style="margin:0 0 6px">${race.name} — ${kind === "pole" ? "🏁 Pole position" : "🏆 Race winner"} odds</div>`
-      + `<div class="futrow rcrow2 rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span></div>`
-      + list.map((x, i) => `<div class="futrow rcrow2"><span class="fr-rank">${i + 1}</span>
+    const note = race.priced ? "" : ` <span class="small" style="color:var(--muted)">— model only; Kalshi prices appear once it's the next race</span>`;
+    html = `<div class="teamhdr" style="margin:0 0 6px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>`
+      + `<div class="futrow rcrowR rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span></div>`
+      + list.map((x, i) => `<div class="futrow rcrowR"><span class="fr-rank">${i + 1}</span>
           <span class="fr-team"><b>${x.name}</b>${x.team ? `<span class="small"> ${x.team}</span>` : ""}</span>
-          <span class="fr-num"><b>${x.pct}%</b></span></div>`).join("");
+          <span class="fr-num"><b>${x.pct}%</b></span>${_pxCells(x)}</div>`).join("");
   }
   $("raceTable").innerHTML = html;
 }
