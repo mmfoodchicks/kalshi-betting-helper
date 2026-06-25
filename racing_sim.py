@@ -19,10 +19,11 @@ ERGAST = "https://api.jolpi.ca/ergast/f1/current"
 F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]       # race top 10
 SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1]              # sprint top 8
 
-# Field-spread knobs (in finishing-position units of noise). Tuned so the pole
-# sits on a realistic share of wins and the title race isn't a coin flip.
-_SIGMA_Q = 2.3      # qualifying variance
-_SIGMA_R = 3.1      # race variance
+# Field-spread knobs. Tuned so the pole sits on a realistic share of wins and the
+# title race isn't a coin flip.
+_SIGMA_Q = 0.20     # qualifying variance, in SECONDS of lap time (quali is a
+                    # gap-to-pole now); ~one-session spread for the same car
+_SIGMA_R = 3.1      # race variance, in finishing-position units
 _GRID_W = 0.40      # how much the race result leans on grid vs raw race pace
 # Random-event rates (per driver, per race).
 _GRID_PEN = 0.045   # engine/gearbox grid penalty -> start from the back
@@ -40,9 +41,12 @@ def _f1_results():
             races += rs
             if len(rs) < 5:
                 break
-        grid, fin, dnf, starts = (defaultdict(list), defaultdict(list),
-                                  defaultdict(int), defaultdict(int))
-        for r in races:
+        # Recency-weighted race pace (recent rounds count more -> catches car
+        # upgrades / form). fin_acc/fin_w accumulate weighted finish positions.
+        grid, dnf, starts = defaultdict(list), defaultdict(int), defaultdict(int)
+        fin_acc, fin_w = defaultdict(float), defaultdict(float)
+        for i, r in enumerate(races):
+            w = i + 1
             for res in r.get("Results", []):
                 did = res["Driver"]["driverId"]
                 starts[did] += 1
@@ -53,19 +57,75 @@ def _f1_results():
                 st = res.get("status", "")
                 if st == "Finished" or st.startswith("+"):
                     try:
-                        fin[did].append(int(res["position"]))   # running pace only
+                        fin_acc[did] += w * int(res["position"]); fin_w[did] += w
                     except (ValueError, KeyError):
                         pass
                 else:
                     dnf[did] += 1                                # reliability, handled separately
+        # Early in a season (or for part-timers) a couple of results are pure
+        # noise, so we shrink toward stable priors by sample size:
+        #  - race pace -> avg grid (where you start strongly predicts the finish),
+        #  - DNF rate  -> a field-typical ~9%.
+        # A rookie's two lucky podiums no longer read as "finishes 1st on average."
+        _FIN_K, _DNF_K = 6.0, 5.0
         out = {}
         for did in starts:
             g = grid[did] or [13]
-            f = fin[did] or [13]
-            out[did] = {"avg_grid": sum(g) / len(g), "avg_fin": sum(f) / len(f),
-                        "dnf": dnf[did] / starts[did], "starts": starts[did]}
+            avg_grid = sum(g) / len(g)
+            raw_fin = fin_acc[did] / fin_w[did] if fin_w[did] else avg_grid
+            avg_fin = (fin_w[did] * raw_fin + _FIN_K * avg_grid) / (fin_w[did] + _FIN_K)
+            dnf_rate = (dnf[did] + _DNF_K * 0.09) / (starts[did] + _DNF_K)
+            out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin,
+                        "dnf": dnf_rate, "starts": starts[did]}
         return out
     return racing._cached(("f1_results",), 6 * 3600, build) or {}
+
+
+def _qtime(t):
+    """Ergast lap-time string -> seconds ('1:12.578' -> 72.578)."""
+    if not t:
+        return None
+    try:
+        if ":" in t:
+            m, s = t.split(":")
+            return int(m) * 60 + float(s)
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _f1_quali_gaps():
+    """Per-driver qualifying pace as a RECENCY-WEIGHTED average gap to pole, in
+    seconds. This is far finer than grid position: it knows whether a P2 was 0.05s
+    or 0.5s off pole, so pole odds reflect true pace, not just rank."""
+    def build():
+        races = []
+        for off in (0, 100):
+            d = racing._get_json(f"{ERGAST}/qualifying.json?limit=100&offset={off}")
+            rs = d.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+            races += rs
+            if len(rs) < 5:
+                break
+        acc, wsum = defaultdict(float), defaultdict(float)
+        for i, r in enumerate(races):                 # chronological -> later = more recent
+            w = i + 1                                  # linear recency weight
+            bests = {}
+            for x in r.get("QualifyingResults", []):
+                ts = [_qtime(x.get(q)) for q in ("Q1", "Q2", "Q3")]
+                ts = [t for t in ts if t]
+                if ts:
+                    bests[x["Driver"]["driverId"]] = min(ts)
+            if not bests:
+                continue
+            pole = min(bests.values())
+            for did, b in bests.items():
+                acc[did] += w * min(b - pole, 3.0)     # cap blowout/wet-session gaps
+                wsum[did] += w
+        # Shrink toward a midfield ~0.7s gap so a single banker lap (or a
+        # rain-shortened session) doesn't crown someone the pole favourite.
+        _QK = 4.0
+        return {did: (acc[did] + _QK * 0.7) / (wsum[did] + _QK) for did in acc}
+    return racing._cached(("f1_quali_gaps",), 6 * 3600, build) or {}
 
 
 def f1_profiles():
@@ -76,6 +136,7 @@ def f1_profiles():
         if not lst:
             return {}
         form = _f1_results()
+        gaps = _f1_quali_gaps()
         out = {}
         for x in lst[0]["DriverStandings"]:
             dr = x["Driver"]; did = dr["driverId"]
@@ -87,7 +148,10 @@ def f1_profiles():
                 "constructor": con["name"], "constructor_id": con["constructorId"],
                 "points": float(x["points"]), "wins": int(x["wins"]),
                 "position": int(x["position"]),
-                "quali": f["avg_grid"], "race": f["avg_fin"], "dnf": min(0.45, f["dnf"]),
+                # quali pace is now a gap-to-pole in SECONDS (default ~1.1s = midfield
+                # for drivers with no quali data); race pace stays position-scale.
+                "quali": gaps.get(did, 1.1), "avg_grid": f["avg_grid"],
+                "race": f["avg_fin"], "dnf": min(0.45, f["dnf"]),
             }
         return out
     return racing._cached(("f1_profiles",), 3 * 3600, build) or {}
