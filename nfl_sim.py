@@ -186,9 +186,45 @@ def project(prior_season=None, n_seasons=4000, seed=None):
             "season": round(sum(totals) / len(totals), 1),
             "rookie": True, "pick": rk["pick"],
         })
-    rows.sort(key=lambda r: -r["fppg"])
+    # Draft value = value over replacement (VOR): season projection minus the
+    # last startable player at that position in a 12-team best-ball league. This
+    # is what makes positions comparable on a draft board.
+    _REPL = {"QB": 16, "RB": 36, "WR": 48, "TE": 16}
+    for pos in _FANTASY_POS:
+        lst = sorted((r for r in rows if r["pos"] == pos), key=lambda x: -x["season"])
+        repl = lst[min(len(lst) - 1, _REPL[pos])]["season"] if lst else 0.0
+        for r in lst:
+            r["value"] = round(r["season"] - repl, 1)
+    rows.sort(key=lambda r: -r["value"])
+    for i, r in enumerate(rows, 1):
+        r["adp"] = i                                   # our value-rank, a proxy ADP
     by_pos = {}
     for pos in _FANTASY_POS:
         by_pos[pos] = [r for r in rows if r["pos"] == pos][:30]
     return {"sport": "nfl_dfs", "season": prior_season + 1, "n_seasons": n_seasons,
-            "overall": rows[:40], "by_pos": by_pos}
+            "pool": rows, "overall": rows[:40], "by_pos": by_pos}
+
+
+# ---- Cached board for the draft room / DFS UI ------------------------------
+import threading as _threading
+import time as _time
+_inflight = [False]
+
+
+def board():
+    """Cached projection pool. NON-BLOCKING: serves the cached sim if fresh, else
+    computes it in the background and returns None until ready."""
+    key = ("nfl_fantasy_board",)
+    hit = nfl_awards.racing._form_cache.get(key)
+    if hit and (_time.time() - hit[0]) < 24 * 3600 and hit[1] is not None:
+        return hit[1]
+    if not _inflight[0]:
+        _inflight[0] = True
+
+        def _bg():
+            try:
+                nfl_awards.racing._cached(key, 24 * 3600, lambda: project(n_seasons=3000))
+            finally:
+                _inflight[0] = False
+        _threading.Thread(target=_bg, daemon=True).start()
+    return None

@@ -430,6 +430,37 @@ button.danger { color: var(--no); }
 .ufc-fnums { display: grid; grid-template-columns: 78px 46px 46px 84px; gap: 8px; align-items: center; }
 .ufc-win { text-align: right; font-weight: 600; }
 .ufc-method { display: flex; gap: 12px; margin-top: 5px; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 5px; }
+/* Best-ball draft room */
+.dr-slots { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.dr-slot { width: 36px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.04); color: var(--text); cursor: pointer; font-weight: 600; }
+.dr-slot:hover { border-color: var(--accent); color: var(--accent); }
+.dr-cols { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; }
+@media (min-width: 900px) { .dr-cols { grid-template-columns: 1fr 240px; } }
+.dr-poolctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.dr-poolctl input { padding: 6px 9px; font-size: 0.85rem; flex: 1 1 140px; }
+.dr-pf { padding: 4px 9px; font-size: 0.78rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.dr-pf.active { border-color: var(--accent); color: var(--accent); }
+.dr-pool { max-height: 460px; overflow-y: auto; border: 1px solid var(--border); border-radius: 9px; }
+.dr-prow { display: grid; grid-template-columns: 30px 1fr 34px 38px 64px 40px; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 0.85rem; }
+.dr-prow:hover { background: rgba(91,140,255,0.10); }
+.dr-padp { color: var(--muted); text-align: center; font-size: 0.78rem; }
+.dr-pvor { color: var(--pos); text-align: right; font-size: 0.78rem; }
+.dr-pboom { color: var(--muted); text-align: right; font-size: 0.78rem; }
+.dr-rk { background: rgba(255,170,60,0.2); color: #ffb13d; border-radius: 4px; padding: 0 4px; font-size: 0.68rem; font-weight: 700; }
+.dr-recs { border: 1px solid rgba(52,199,123,0.4); border-radius: 10px; padding: 9px 11px; margin-bottom: 10px; background: rgba(52,199,123,0.06); }
+.dr-recs-h { font-weight: 600; margin-bottom: 6px; }
+.dr-rec { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); }
+.dr-rec.top .dr-rec-main b { color: var(--pos); }
+.dr-rec-meta { grid-column: 1; font-size: 0.78rem; color: var(--muted); }
+.dr-rec button { grid-row: 1 / span 2; }
+.dr-side { font-size: 0.82rem; }
+.dr-roster-h, .dr-board-h { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin: 4px 0; }
+.dr-rrow { padding: 3px 0; border-bottom: 1px solid var(--border); }
+.dr-teams { display: flex; flex-wrap: wrap; gap: 4px; }
+.dr-tcount { font-size: 0.72rem; padding: 2px 5px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); }
+.dr-tcount.mine { border-color: var(--accent); color: var(--accent); }
+.dr-tcount.clock { background: rgba(52,199,123,0.18); color: var(--pos); }
+.dr-team { color: var(--muted); font-size: 0.78rem; }
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
 .deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }

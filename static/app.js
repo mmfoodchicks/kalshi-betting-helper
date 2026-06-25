@@ -1190,6 +1190,7 @@ function setupTabs() {
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
+      $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
@@ -1208,6 +1209,7 @@ function setupTabs() {
       if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
       if (tab === "ufc") initUFC();
+      if (tab === "draft") initDraft();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
@@ -1851,6 +1853,158 @@ async function rerunPro(lg) {
   try { await fetch(`/api/sim/rerun?sport=${lg}`, { method: "POST" }); } catch (e) {}
   $("nflResults").innerHTML = `<div class="empty">Rerun started — reloading shortly…</div>`;
   setTimeout(loadNFL, 6000);
+}
+
+// ---- Best-Ball Draft Room ----
+let _drPool = null, _drState = null, _drPoll = null, _drPos = "ALL";
+function initDraft() {
+  if (!$("draftResults").dataset.loaded) { $("draftResults").dataset.loaded = "1"; loadDraft(); }
+}
+async function loadDraft() {
+  try {
+    const r = await fetch("/api/nfl/fantasy");
+    if (r.status === 202) {
+      $("draftResults").innerHTML = `<div class="empty">Simulating the season for every player (4,000 seasons w/ injury, variance, boom/bust)… ~1 min cold start.</div>`;
+      if (!_drPoll) _drPoll = setInterval(loadDraft, 8000);
+      return;
+    }
+    const d = await r.json();
+    if (d.error) { $("draftResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (_drPoll) { clearInterval(_drPoll); _drPoll = null; }
+    _drPool = d.pool;
+    $("draftResults").innerHTML = "";
+    renderDraftSetup();
+  } catch (e) { $("draftResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
+}
+function renderDraftSetup() {
+  const slots = Array.from({ length: 12 }, (_, i) => i + 1)
+    .map((s) => `<button class="dr-slot" onclick="startDraft(${s})">${s}</button>`).join("");
+  $("draftSetup").innerHTML = `<div class="small">12-team snake best-ball · pick your draft slot:</div>
+    <div class="dr-slots">${slots}</div>
+    <div class="small" style="color:var(--muted);margin-top:4px">${_drPool.length} players projected (vets + rookies). I'll log every team's pick as you go and tell you who to take on your clock.</div>`;
+  $("draftSummary").innerHTML = "";
+}
+// snake order: which team (0-indexed) is on the clock for a 0-indexed overall pick
+function _drTeam(p, teams) {
+  const rd = Math.floor(p / teams), inr = p % teams;
+  return rd % 2 === 0 ? inr : teams - 1 - inr;
+}
+function startDraft(slot) {
+  const teams = 12, rounds = 18;
+  _drState = {
+    teams, rounds, mySlot: slot - 1, pick: 0,
+    drafted: {}, rosters: Array.from({ length: teams }, () => []),
+  };
+  $("draftSetup").innerHTML = `<button class="track-mini" onclick="renderDraftSetup()">↺ restart</button>
+    <span class="small" style="margin-left:8px">You are <b>Team ${slot}</b> (12-team snake, ${rounds} rounds).</span>`;
+  $("draftBody").classList.remove("hidden");
+  drawDraft();
+}
+function _drMyNextPick() {  // 0-indexed overall pick number of my next turn (or -1)
+  const s = _drState;
+  for (let p = s.pick; p < s.teams * s.rounds; p++) if (_drTeam(p, s.teams) === s.mySlot) return p;
+  return -1;
+}
+function draftPlayer(id) {
+  const s = _drState; if (!s) return;
+  const team = _drTeam(s.pick, s.teams);
+  s.drafted[id] = team;
+  const pl = _drPool.find((p) => p.id === id);
+  if (pl) s.rosters[team].push(pl);
+  s.pick++;
+  drawDraft();
+}
+function _drAvail() { return _drPool.filter((p) => !(p.id in _drState.drafted)); }
+function drawDraft() {
+  const s = _drState;
+  const done = s.pick >= s.teams * s.rounds;
+  const team = done ? -1 : _drTeam(s.pick, s.teams);
+  const myTurn = team === s.mySlot;
+  const rd = Math.floor(s.pick / s.teams) + 1, inr = (s.pick % s.teams) + 1;
+  $("draftOnClock").innerHTML = done ? "Draft complete 🏆"
+    : myTurn ? `<b style="color:var(--pos)">YOUR PICK — ${rd}.${String(inr).padStart(2, "0")}</b>`
+      : `On the clock: <b>Team ${team + 1}</b> · pick ${rd}.${String(inr).padStart(2, "0")}`;
+  renderDraftRecs(myTurn);
+  renderDraftPool();
+  renderDraftRoster();
+  renderDraftBoardGrid();
+}
+function _drStackBonus(pl, roster) {
+  // best-ball loves correlation: QB with his pass-catchers and vice-versa
+  if (pl.pos === "QB") {
+    if (roster.some((r) => (r.pos === "WR" || r.pos === "TE") && r.team === pl.team)) return 1;
+  } else if (pl.pos === "WR" || pl.pos === "TE") {
+    if (roster.some((r) => r.pos === "QB" && r.team === pl.team)) return 1;
+  }
+  return 0;
+}
+function _drNeed(pos, roster, rounds) {
+  const target = { QB: Math.max(2, rounds * 0.12), RB: rounds * 0.33, WR: rounds * 0.42, TE: Math.max(2, rounds * 0.12) }[pos] || 1;
+  const have = roster.filter((r) => r.pos === pos).length;
+  return Math.max(0.55, Math.min(1.5, 1 + (target - have) / target * 0.6));
+}
+function computeRecs() {
+  const s = _drState, avail = _drAvail(), roster = s.rosters[s.mySlot];
+  const myNext = _drMyNextPick();
+  const after = myNext < 0 ? 0 : (() => { for (let p = myNext + 1; p < s.teams * s.rounds; p++) if (_drTeam(p, s.teams) === s.mySlot) return p; return s.teams * s.rounds; })();
+  const gap = after - myNext;                       // picks between this and my next turn
+  const scored = avail.map((pl) => {
+    const stack = _drStackBonus(pl, roster);
+    const need = _drNeed(pl.pos, roster, s.rounds);
+    const score = (pl.value + 12) * need * (1 + 0.18 * stack);
+    return { pl, score, stack, need };
+  }).sort((a, b) => b.score - a.score);
+  // rank within available by raw VOR for the "won't last" call
+  const byVor = [...avail].sort((a, b) => b.value - a.value);
+  return scored.slice(0, 4).map((x) => {
+    const reasons = [];
+    if (byVor[0] && byVor[0].id === x.pl.id) reasons.push("Best value on the board");
+    if (x.stack) reasons.push(`Stacks your ${x.pl.pos === "QB" ? "pass-catcher" : "QB"} (${x.pl.team})`);
+    if (x.need >= 1.2) reasons.push(`You're light at ${x.pl.pos}`);
+    else if (x.need <= 0.7) reasons.push(`Already deep at ${x.pl.pos}`);
+    const vorRank = byVor.findIndex((p) => p.id === x.pl.id);
+    if (gap > 0 && vorRank >= 0 && vorRank < gap * 0.8) reasons.push(`Won't last to your next pick`);
+    if (x.pl.rookie) reasons.push("Rookie upside (boom/bust)");
+    return { ...x.pl, reasons };
+  });
+}
+function renderDraftRecs(myTurn) {
+  if (!myTurn) { $("draftRecs").innerHTML = ""; return; }
+  const recs = computeRecs();
+  if (!recs.length) { $("draftRecs").innerHTML = ""; return; }
+  $("draftRecs").innerHTML = `<div class="dr-recs"><div class="dr-recs-h">🎯 Take one of these:</div>
+    ${recs.map((r, i) => `<div class="dr-rec ${i === 0 ? "top" : ""}">
+      <div class="dr-rec-main"><b>${r.name}</b> <span class="legtag">${r.pos}</span> <span class="dr-team">${r.team}</span>${r.rookie ? ' <span class="dr-rk">R</span>' : ""}</div>
+      <div class="dr-rec-meta">VOR <b>${r.value}</b> · boom ${r.boom} · ${r.reasons.join(" · ")}</div>
+      <button class="track-mini primary-mini" onclick="draftPlayer('${r.id}')">Draft</button></div>`).join("")}</div>`;
+}
+function renderDraftPool() {
+  if (!_drState) return;
+  const q = ($("draftSearch") ? $("draftSearch").value : "").toLowerCase();
+  const filt = ["ALL", "QB", "RB", "WR", "TE"].map((p) =>
+    `<button class="dr-pf ${_drPos === p ? "active" : ""}" onclick="_drPos='${p}';renderDraftPool()">${p}</button>`).join("");
+  $("draftPosFilter").innerHTML = filt;
+  let avail = _drAvail();
+  if (_drPos !== "ALL") avail = avail.filter((p) => p.pos === _drPos);
+  if (q) avail = avail.filter((p) => (p.name || "").toLowerCase().includes(q));
+  const rows = avail.slice(0, 80).map((p) => `<div class="dr-prow" onclick="draftPlayer('${p.id}')">
+    <span class="dr-padp">${p.adp}</span>
+    <span class="dr-pname">${p.name}${p.rookie ? ' <span class="dr-rk">R</span>' : ""}</span>
+    <span class="legtag">${p.pos}</span><span class="dr-team">${p.team || ""}</span>
+    <span class="dr-pvor">VOR ${p.value}</span><span class="dr-pboom">${p.boom}</span></div>`).join("");
+  $("draftPool").innerHTML = rows || `<div class="empty">No players.</div>`;
+}
+function renderDraftRoster() {
+  const r = _drState.rosters[_drState.mySlot];
+  const cnt = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  r.forEach((p) => cnt[p.pos]++);
+  $("draftRoster").innerHTML = `<div class="dr-roster-h">Your roster (${r.length}) · QB ${cnt.QB} RB ${cnt.RB} WR ${cnt.WR} TE ${cnt.TE}</div>
+    ${r.map((p) => `<div class="dr-rrow"><span class="legtag">${p.pos}</span> ${p.name} <span class="dr-team">${p.team}</span></div>`).join("") || '<div class="small" style="color:var(--muted)">no picks yet</div>'}`;
+}
+function renderDraftBoardGrid() {
+  const s = _drState, team = s.pick < s.teams * s.rounds ? _drTeam(s.pick, s.teams) : -1;
+  $("draftBoard").innerHTML = `<div class="dr-board-h">Teams (picks made)</div><div class="dr-teams">` +
+    s.rosters.map((ro, i) => `<span class="dr-tcount ${i === s.mySlot ? "mine" : ""} ${i === team ? "clock" : ""}">T${i + 1}:${ro.length}</span>`).join("") + "</div>";
 }
 
 // ---- UFC ----

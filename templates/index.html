@@ -53,6 +53,7 @@
     <button class="tab" data-tab="sports">Live &amp; Futures</button>
     <button class="tab" data-tab="baseball">Baseball</button>
     <button class="tab" data-tab="nfl">NFL</button>
+    <button class="tab" data-tab="draft">Draft Room</button>
     <button class="tab" data-tab="worldcup">World Cup</button>
     <button class="tab" data-tab="ufc">UFC</button>
     <span class="navsep"></span>
@@ -299,6 +300,31 @@
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->
+
+   <div id="tab-draft" class="hidden">
+    <section class="card">
+      <div class="row-between"><h2>🏈 Best-Ball Draft Room</h2><span id="draftOnClock" class="small"></span></div>
+      <div id="draftSetup" class="dr-setup"></div>
+      <div id="draftSummary" class="small"></div>
+      <div id="draftBody" class="hidden">
+        <div id="draftRecs"></div>
+        <div class="dr-cols">
+          <div class="dr-poolwrap">
+            <div class="dr-poolctl">
+              <input id="draftSearch" placeholder="Search player…" oninput="renderDraftPool()">
+              <span id="draftPosFilter"></span>
+            </div>
+            <div id="draftPool" class="dr-pool"></div>
+          </div>
+          <div class="dr-side">
+            <div id="draftRoster"></div>
+            <div id="draftBoard"></div>
+          </div>
+        </div>
+      </div>
+      <div id="draftResults"><div class="empty">Loading the simulator…</div></div>
+    </section>
+   </div><!-- /tab-draft -->
 
    <div id="tab-nfl" class="hidden">
     <section class="card">

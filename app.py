@@ -998,6 +998,22 @@ def api_pro_league(league):
     return jsonify(data)
 
 
+@app.route("/api/nfl/fantasy")
+def api_nfl_fantasy():
+    """NFL fantasy / best-ball projection pool (the draft-room engine): per-player
+    fppg / floor / ceiling / boom / season + draft value (VOR), vets and rookies.
+    Cold start computes in the background (202 until ready)."""
+    try:
+        import nfl_sim
+        b = nfl_sim.board()
+    except Exception as e:
+        return jsonify({"error": f"nfl sim failed: {e}"}), 502
+    if not b:
+        return jsonify({"status": "computing",
+                        "message": "simulating the season for every player…"}), 202
+    return jsonify(b)
+
+
 @app.route("/api/ufc")
 def api_ufc():
     """UFC card simulator: per-bout win odds, method/round and each fighter's DK
