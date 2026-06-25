@@ -127,7 +127,9 @@ def fighter_rating(fid, name=None):
         fin_against = sum(1 for f in fights if not f["win"] and f["method"] in ("ko", "sub"))
         nf = len(fights)
         # Shrink rates toward league average by sample size (k pseudo-fights).
-        k = 2.5
+        # Generous so a 1-2 fight sample (a debut or short ESPN history) can't read
+        # as elite — a prospect regresses hard toward the field.
+        k = 4.5
 
         def sh(obs, prior, n=nf):
             return (n * obs + k * prior) / (n + k)
