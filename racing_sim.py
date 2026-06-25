@@ -341,6 +341,26 @@ def sim_f1(n=2000, seed=None):
 
 # ---- NASCAR Cup: pace + points from weekend feeds, then the playoff bracket ---
 NASCAR_BASE = "https://cf.nascar.com/cacher"
+
+
+def _nascar_track_type(name):
+    """Classify a Cup track into a racing-skill category. Track type matters a
+    lot in NASCAR: superspeedways are drafting lotteries anyone can win, road
+    courses reward a different skset, short tracks are about track position. We
+    rate each driver per category so a road-course ace's edge shows up only at
+    road courses."""
+    t = (name or "").lower()
+    if any(k in t for k in ("daytona", "talladega", "atlanta")):
+        return "superspeedway"           # pack/draft racing -> high chaos
+    if any(k in t for k in ("sonoma", "watkins", "cota", "circuit of the americas",
+                            "road", "roval", "chicago", "mexico")):
+        return "road"
+    if any(k in t for k in ("martinsville", "richmond", "bristol", "phoenix",
+                            "new hampshire", "wilkesboro", "iowa")):
+        return "short"
+    return "intermediate"                # 1.5-mile ovals, the default
+
+
 # Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
 # approximately via the real playoff-point totals we read from the feeds.
 def _cup_points(pos):
@@ -372,13 +392,15 @@ def nascar_state(year=None, series=1):
         with ThreadPoolExecutor(max_workers=6) as ex:
             all_res = list(ex.map(feed, done))
         st = {}
-        for i, res in enumerate(all_res):          # all_res is chronological
+        for i, (r, res) in enumerate(zip(done, all_res)):   # chronological, race-paired
             w = i + 1                              # linear recency weight: catch form/upgrades
+            tt = _nascar_track_type(r.get("track_name", ""))
             for x in res:
                 did = x["driver_id"]
                 s = st.setdefault(did, {"name": x.get("driver_fullname", ""), "points": 0,
                                         "playoff_points": 0, "wins": 0, "n_fin": 0,
-                                        "fin_acc": 0.0, "fin_w": 0.0, "dnf": 0, "starts": 0})
+                                        "fin_acc": 0.0, "fin_w": 0.0, "dnf": 0, "starts": 0,
+                                        "t_acc": {}, "t_w": {}, "t_n": {}})
                 s["points"] += x.get("points_earned", 0)
                 s["playoff_points"] += x.get("playoff_points_earned", 0)
                 s["starts"] += 1
@@ -388,10 +410,14 @@ def nascar_state(year=None, series=1):
                 if (x.get("finishing_status") or "Running") == "Running":
                     s["n_fin"] += 1
                     s["fin_acc"] += w * fp; s["fin_w"] += w
+                    s["t_acc"][tt] = s["t_acc"].get(tt, 0.0) + w * fp
+                    s["t_w"][tt] = s["t_w"].get(tt, 0.0) + w
+                    s["t_n"][tt] = s["t_n"].get(tt, 0) + 1
                 else:
                     s["dnf"] += 1
         out = {}
         prior, k = 20.0, 5.0      # regress pace toward midpack so a part-timer with
+        _TK = 4.0                 # per-category pseudo-races: shrink track-type delta
         for did, s in st.items():  # a couple of lucky finishes isn't a fake contender
             if s["starts"] < 2:
                 continue
@@ -401,9 +427,16 @@ def nascar_state(year=None, series=1):
             raw = s["fin_acc"] / s["fin_w"] if s["fin_w"] else prior
             n_eff = s["n_fin"]
             pace = (n_eff * raw + k * prior) / (n_eff + k)
+            # Per-track-type delta vs the driver's own baseline (negative = better
+            # than usual on that kind of track), regressed by category sample size.
+            by_type = {}
+            for tt, acc in s["t_acc"].items():
+                raw_t = acc / s["t_w"][tt]
+                n_t = s["t_n"][tt]
+                by_type[tt] = round((raw_t - raw) * n_t / (n_t + _TK), 2)
             out[did] = {"id": did, "name": s["name"], "points": s["points"],
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
-                        "race_pace": pace,
+                        "race_pace": pace, "pace_by_type": by_type,
                         "dnf": min(0.30, s["dnf"] / s["starts"]), "starts": s["starts"]}
         import race_weather
         remaining = []
@@ -411,6 +444,7 @@ def nascar_state(year=None, series=1):
             clim = race_weather.nascar_climate(r.get("track_name", ""),
                                                (r.get("race_date") or "")[:10]) or {}
             remaining.append({"name": r.get("race_name", ""), "track": r.get("track_name"),
+                              "type": _nascar_track_type(r.get("track_name", "")),
                               "wet_prob": clim.get("wet_prob", 0.10),
                               "avg_wind": clim.get("avg_wind")})
         return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
@@ -434,25 +468,38 @@ def _round_of(idx):
     return "final"
 
 
-def _sim_cup_race(drivers, rng, wet=False):
+def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
     """Finishing order (driver ids). Pace + large variance (flat field) plus
     NASCAR's random events: 'the big one' multi-car wreck, per-car incidents/
-    mechanicals, and penalties. RAIN makes it wilder — a bigger wreck chance and
-    a possible rain-shortened/called race (higher variance, track-position wins)."""
+    mechanicals, and penalties. Track TYPE reshapes it: a superspeedway is a
+    drafting lottery (everyone bunched, huge wreck risk, anyone can win), road
+    courses are more skill-deterministic. RAIN makes it wilder — a bigger wreck
+    chance and a possible rain-shortened/called race (track-position wins)."""
     sigma = _SIGMA_CUP * (1.35 if wet else 1.0)
     big_p = 0.20 if wet else 0.10
+    compress = 1.0                              # how much pace separates the field
+    if ttype == "superspeedway":
+        sigma *= 1.6; big_p = max(big_p, 0.32); compress = 0.45   # pack-racing lottery
+    elif ttype == "road":
+        sigma *= 0.85                           # skill shows through, fewer wrecks
+    elif ttype == "short":
+        sigma *= 0.92
     big_one = set()
     if rng.random() < big_p:                   # multi-car wreck (more likely in the wet)
         big_one = set(rng.sample([d["id"] for d in drivers],
                                  min(len(drivers), rng.randint(3, 7))))
     dnf_extra = 0.05 if wet else 0.0
+    mean_pace = sum(d["race_pace"] for d in drivers) / len(drivers)
     fin, out = [], []
     for d in drivers:
         if d["id"] in big_one or rng.random() < min(0.45, d["dnf"] + _INCIDENT + dnf_extra):
             out.append(d["id"])
         else:
             pen = rng.randint(5, 14) if rng.random() < _TIME_PEN else 0   # penalty -> lose spots
-            fin.append((d["race_pace"] + rng.gauss(0, sigma) + pen, d["id"]))
+            pace = d["race_pace"] + d.get("pace_by_type", {}).get(ttype, 0.0)
+            if compress < 1.0:                  # superspeedway: bunch the field toward the mean
+                pace = mean_pace + compress * (pace - mean_pace)
+            fin.append((pace + rng.gauss(0, sigma) + pen, d["id"]))
     fin.sort()
     rng.shuffle(out)
     return [did for _, did in fin] + out
@@ -472,11 +519,15 @@ def _sim_nascar_season(drivers, phases, schedule, rng):
 
     def run_race():
         r = next(race_iter, None)
+        ttype = (r or {}).get("type", "intermediate")
         wet = bool(r) and rng.random() < (r.get("wet_prob") or 0.0)
-        # Single-lap qualifying sets the pole (NASCAR's flat field -> wide spread).
-        pole = min(drivers, key=lambda d: d["race_pace"] + rng.gauss(0, _SIGMA_CUP * 0.7))
+        # Single-lap qualifying sets the pole (NASCAR's flat field -> wide spread);
+        # superspeedway qualifying is its own lottery, so the spread is even wider.
+        psig = _SIGMA_CUP * 0.7 * (1.5 if ttype == "superspeedway" else 1.0)
+        pole = min(drivers, key=lambda d: d["race_pace"]
+                   + d.get("pace_by_type", {}).get(ttype, 0.0) + rng.gauss(0, psig))
         poles[pole["id"]] += 1
-        order = _sim_cup_race(drivers, rng, wet=wet)
+        order = _sim_cup_race(drivers, rng, wet=wet, ttype=ttype)
         for pos, did in enumerate(order, 1):
             pts[did] += _cup_points(pos)
             if pos <= 5:
