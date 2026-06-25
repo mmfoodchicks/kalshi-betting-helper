@@ -79,6 +79,47 @@ def _crypto_legs():
     return legs
 
 
+def _worldcup_legs():
+    """World Cup legs from OUR simulator (model probabilities, not de-vig). One
+    event per upcoming match, with candidate legs the target-tuner picks from:
+    3-way result, over/under 2.5 goals, both-teams-to-score. Champion futures are
+    added as their own low-probability events (useful in payout mode)."""
+    legs = []
+    try:
+        import worldcup
+        data = worldcup.board()
+    except Exception:
+        return legs
+    if not data:
+        return legs
+    cat = "⚽ World Cup"
+    for m in data.get("matches", []):
+        ev = f"wc_{m['home']}_{m['away']}_{m['date']}"
+        mk = m.get("markets") or {}
+        w = mk.get("winner") or {}
+        matchup = f"{m['home']} v {m['away']}"
+
+        def leg(label, prob_pct, cents, typ):
+            legs.append({"category": cat, "event_id": ev, "label": label,
+                         "matchup": matchup, "prob": prob_pct / 100.0,
+                         "price_cents": cents, "type": typ})
+        leg(f"{m['home']} to win", m["p_home"], (w.get("home") or {}).get("cents"), "WC Result")
+        leg("Draw", m["p_draw"], (w.get("draw") or {}).get("cents"), "WC Result")
+        leg(f"{m['away']} to win", m["p_away"], (w.get("away") or {}).get("cents"), "WC Result")
+        leg("Over 2.5 goals", m["over25"], (mk.get("over25") or {}).get("cents"), "WC Total")
+        leg("Under 2.5 goals", round(100 - m["over25"], 1), None, "WC Total")
+        leg("Both teams to score", m["btts_pct"], (mk.get("btts") or {}).get("cents"), "WC BTTS")
+    for t in data.get("teams", []):
+        if t["champion_pct"] < 1:
+            continue
+        cm = (t.get("champion_market") or {}).get("kalshi") or {}
+        legs.append({"category": cat, "event_id": f"wc_champ_{t['name']}",
+                     "label": f"{t['name']} to win the World Cup", "matchup": "Champion",
+                     "prob": t["champion_pct"] / 100.0, "price_cents": cm.get("cents"),
+                     "type": "WC Champion"})
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -103,9 +144,12 @@ def gather(cats, date, season):
         legs += _mlb_legs(date, season)
     if "crypto" in cats:
         legs += _crypto_legs()
+    if "soccer" in cats:
+        legs += _worldcup_legs()                 # our World Cup model, not de-vig
     for k in SPORT_KEYS:
-        if k in cats:
-            legs += _sport_legs(k)
+        if k == "soccer" or k not in cats:
+            continue
+        legs += _sport_legs(k)
     return legs
 
 

@@ -250,6 +250,22 @@ def simulate(n=20000, seed=None):
                      upcoming, m_w, m_tot, m_btts)
 
 
+def board(n=12000):
+    """Cached simulator board with Kalshi/Poly prices attached — what the API and
+    the combo maker read (so we don't re-run the Monte Carlo every request)."""
+    def build():
+        data = simulate(n)
+        if not data:
+            return None
+        try:
+            import worldcup_prices
+            worldcup_prices.attach(data)
+        except Exception:
+            pass
+        return data
+    return racing._cached(("wc_board",), 1200, build)
+
+
 def _tally_match(mi, a, b, ga, gb, m_w, m_tot, m_btts, denom=None):
     if ga > gb:
         m_w[mi]["home"] += 1
