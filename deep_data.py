@@ -37,65 +37,123 @@ SHORT_IL = {"D7": 0.93, "D10": 0.88, "D15": 0.82}
 
 
 def _roster_stats(team_id, season, group):
-    """{player_id: (person, position, stat, status_code)} for one stat group.
-    Pulls the 40-man so we can see IL status, not just who's active today."""
+    """{player_id: (person, position, season_stat, career_stat, status_code)} for
+    one stat group. Pulls the 40-man so we can see IL + minor-league status, and
+    hydrates BOTH this season and career so the engine can regress small samples
+    toward a real talent baseline."""
     def fetch():
         url = (f"{STATS}/teams/{team_id}/roster?rosterType=40Man"
-               f"&hydrate=person(stats(type=season,group={group},season={season}))")
+               f"&hydrate=person(stats(type=[season,career],group=[{group}],season={season}))")
         d = baseball._get(url)
         out = {}
         for r in d.get("roster", []):
             per = r.get("person", {})
-            st = None
+            season_st = career_st = None
             for s in (per.get("stats") or []):
                 sp = s.get("splits") or []
-                if sp:
-                    st = sp[0].get("stat")
-                    break
-            out[per["id"]] = (per, r.get("position", {}), st,
+                if not sp:
+                    continue
+                tp = (s.get("type") or {}).get("displayName")
+                if tp == "career":
+                    career_st = sp[0].get("stat")
+                elif tp == "season" or season_st is None:
+                    season_st = sp[0].get("stat")
+            out[per["id"]] = (per, r.get("position", {}), season_st, career_st,
                               (r.get("status") or {}).get("code", "A"))
         return out
-    return baseball._cached(("deep_roster40", team_id, season, group), 21600, fetch)
+    return baseball._cached(("deep_roster40c", team_id, season, group), 21600, fetch)
 
 
-def _batter(per, st, avail=1.0, mults=(1.0, 1.0)):
+def _shrink(obs, prior, n, k):
+    """Sample-weighted blend toward a prior: little data -> mostly prior, lots of
+    data -> mostly observed. k is the stabilization point (in the same units as n)."""
+    return (n * obs + k * prior) / (n + k) if (n + k) else prior
+
+
+# Stabilization points (Bayesian shrinkage k): how much data it takes for an
+# observed rate to be trusted half-and-half vs the prior. Batting in PA, pitching
+# in batters faced. HR/power are noisiest (largest k); K is the most stable.
+_BAT_K = {"k": 60, "bb": 120, "hit": 320, "pow": 200, "hbp": 80}
+_PIT_K = {"k": 70, "bb": 170, "hr": 500, "era": 320}
+
+
+def _bat_rates_from(st, pa):
+    """Per-PA component rates from a hitting stat line (None-safe)."""
+    if not st or pa <= 0:
+        return None
+    return {"k": _f(st.get("strikeOuts")) / pa, "bb": _f(st.get("baseOnBalls")) / pa,
+            "hbp": _f(st.get("hitByPitch")) / pa, "hr": _f(st.get("homeRuns")) / pa,
+            "2b": _f(st.get("doubles")) / pa, "3b": _f(st.get("triples")) / pa,
+            "hit": _f(st.get("hits")) / pa}
+
+
+def _batter(per, st, career=None, avail=1.0, mults=(1.0, 1.0)):
+    """Batter profile with Bayesian shrinkage: blend this season toward a career
+    prior (or league average if no career book), weighted by plate appearances, so
+    a 40-PA hot start doesn't read as true talent. Statcast xBA/xSLG then nudges
+    the regressed contact/power toward deserved quality."""
     pa = _f(st.get("plateAppearances"))
-    if pa < 25:                       # thin sample -> league-average bat
-        rates = dict(LG)
-    else:
-        # Statcast xBA/xSLG true-talent adjustment (same signal the combo sim
-        # uses): contact scales hit rate toward xBA, power scales XBH toward xSLG.
-        contact, power = mults
-        d2 = _f(st.get("doubles")) / pa * power
-        t3 = _f(st.get("triples")) / pa * power
-        hr = _f(st.get("homeRuns")) / pa * power
-        hit = _f(st.get("hits")) / pa * contact
-        singles = max(0.0, hit - d2 - t3 - hr)
-        rates = {"k": _f(st.get("strikeOuts")) / pa, "bb": _f(st.get("baseOnBalls")) / pa,
-                 "hbp": _f(st.get("hitByPitch")) / pa, "hr": hr,
-                 "1b": singles, "2b": d2, "3b": t3}
+    obs = _bat_rates_from(st, pa) or {}
+    cpa = _f((career or {}).get("plateAppearances"))
+    cprior = _bat_rates_from(career, cpa) if cpa >= 50 else None
+    lg_hit = LG["1b"] + LG["2b"] + LG["3b"] + LG["hr"]
+    pri = {"k": LG["k"], "bb": LG["bb"], "hbp": LG["hbp"], "hr": LG["hr"],
+           "2b": LG["2b"], "3b": LG["3b"], "hit": lg_hit}
+    if cprior:                                   # career book available -> better prior
+        pri.update(cprior)
+    g = lambda c: obs.get(c, pri[c])
+    k = _shrink(g("k"), pri["k"], pa, _BAT_K["k"])
+    bb = _shrink(g("bb"), pri["bb"], pa, _BAT_K["bb"])
+    hbp = _shrink(g("hbp"), pri["hbp"], pa, _BAT_K["hbp"])
+    hit = _shrink(g("hit"), pri["hit"], pa, _BAT_K["hit"])
+    d2 = _shrink(g("2b"), pri["2b"], pa, _BAT_K["pow"])
+    t3 = _shrink(g("3b"), pri["3b"], pa, _BAT_K["pow"])
+    hr = _shrink(g("hr"), pri["hr"], pa, _BAT_K["pow"])
+    # Statcast true-talent nudge on the already-regressed rates.
+    contact, power = mults
+    d2 *= power; t3 *= power; hr *= power; hit *= contact
+    singles = max(0.0, hit - d2 - t3 - hr)
+    rates = {"k": k, "bb": bb, "hbp": hbp, "hr": hr, "1b": singles, "2b": d2, "3b": t3}
     return {"id": per["id"], "name": per.get("boxscoreName") or per["fullName"],
             "side": per.get("batSide", {}).get("code", "R"), "pa": pa, "rates": rates,
             "avail": avail}
 
 
-def _pitcher(per, st, avail=1.0):
-    ip = _f(st.get("inningsPitched"))
+def _pit_rates_from(st, ip):
+    """Per-batter-faced K/BB/HR from a pitching stat line (None-safe)."""
+    if not st or ip <= 0:
+        return None
     k9, bb9 = _f(st.get("strikeoutsPer9Inn")), _f(st.get("walksPer9Inn"))
-    hr9 = _f(st.get("homeRunsPer9")) or (_f(st.get("homeRuns")) * 9 / ip if ip else 0)
-    # Per-batter rates; regress thin samples toward league average.
-    if ip < 10:
-        kpa, bbpa, hrpa = LG["k"], LG["bb"], LG["hr"]
-    else:
-        kpa = min(0.45, k9 / PA_PER_9) if k9 else LG["k"]
-        bbpa = min(0.20, bb9 / PA_PER_9) if bb9 else LG["bb"]
-        hrpa = min(0.08, hr9 / PA_PER_9) if hr9 else LG["hr"]
+    hr9 = _f(st.get("homeRunsPer9")) or (_f(st.get("homeRuns")) * 9 / ip)
+    return {"k": min(0.50, k9 / PA_PER_9) if k9 else LG["k"],
+            "bb": min(0.22, bb9 / PA_PER_9) if bb9 else LG["bb"],
+            "hr": min(0.09, hr9 / PA_PER_9) if hr9 else LG["hr"]}
+
+
+def _pitcher(per, st, career=None, avail=1.0):
+    """Pitcher profile with Bayesian shrinkage: regress this season's K/BB/HR/ERA
+    toward a career prior (or league average) weighted by batters faced. A 20-IP
+    1.50-ERA hot streak no longer projects as an immortal ace over 180 innings."""
+    ip = _f(st.get("inningsPitched"))
+    bf = ip * PA_PER_9 / 9.0                      # ~ batters faced, the sample size
+    obs = _pit_rates_from(st, ip) or {"k": LG["k"], "bb": LG["bb"], "hr": LG["hr"]}
+    cip = _f((career or {}).get("inningsPitched"))
+    cprior = _pit_rates_from(career, cip) if cip >= 20 else None
+    pri = {"k": LG["k"], "bb": LG["bb"], "hr": LG["hr"]}
+    if cprior:
+        pri.update(cprior)
+    kpa = _shrink(obs["k"], pri["k"], bf, _PIT_K["k"])
+    bbpa = _shrink(obs["bb"], pri["bb"], bf, _PIT_K["bb"])
+    hrpa = _shrink(obs["hr"], pri["hr"], bf, _PIT_K["hr"])
+    # ERA (run-prevention proxy used for in-play hit suppression): shrink toward
+    # career ERA, or league ~4.30 if no career book.
+    era_prior = _f((career or {}).get("era"), 4.30) if cip >= 20 else 4.30
+    era = round(_shrink(_f(st.get("era"), era_prior), era_prior, bf, _PIT_K["era"]), 2)
     return {"id": per["id"], "name": per.get("boxscoreName") or per["fullName"],
             "hand": per.get("pitchHand", {}).get("code", "R"),
             "ip": ip, "gs": _f(st.get("gamesStarted")), "g": _f(st.get("gamesPitched")),
             "sv": _f(st.get("saves")) + _f(st.get("holds")),
-            "era": _f(st.get("era"), 4.3),
-            "kpa": kpa, "bbpa": bbpa, "hrpa": hrpa, "avail": avail}
+            "era": era, "kpa": kpa, "bbpa": bbpa, "hrpa": hrpa, "avail": avail}
 
 
 def team_profile(team_id, season=None):
@@ -113,39 +171,51 @@ def team_profile(team_id, season=None):
             xstats = savant.expected_stats(season) or {}
         except Exception:
             pass
-        batters, pitchers = [], []
-        for pid, (per, pos, st, code) in {**hit, **pit}.items():
-            # Active + short-IL players only; 60-day IL, minors (RM), paternity,
-            # suspended -> out (replacement-level depth fills in). Short IL carry an
-            # availability discount so they play most-but-not-all of the rest.
-            if code != "A" and code not in SHORT_IL:
+        batters, pitchers, depth = [], [], []
+        for pid in set(hit) | set(pit):
+            h, p = hit.get(pid), pit.get(pid)
+            per, pos, code = (p or h)[0], (p or h)[1], (p or h)[4]
+            # Active + short-IL play; RM (reassigned to minors) become emergency
+            # taxi-squad depth; 60-day IL / suspended / paternity -> out.
+            active = code == "A" or code in SHORT_IL
+            is_depth = code == "RM"
+            if not (active or is_depth):
                 continue
             avail = SHORT_IL.get(code, 1.0)
             abbr = (pos or {}).get("abbreviation", "")
-            if abbr == "P":
-                s = pit.get(pid, (None, None, None, None))[2]
-                if s:
-                    pitchers.append(_pitcher(per, s, avail))
-            else:
-                s = hit.get(pid, (None, None, None, None))[2]
-                if s:
-                    mults = (1.0, 1.0)
-                    try:
-                        import savant
-                        mults = savant.quality_mults(xstats.get(pid))
-                    except Exception:
-                        pass
-                    batters.append(_batter(per, s, avail, mults))
+            two_way = abbr == "TWP"
+            is_pitcher_pos = abbr in ("P", "TWP")
+            pst, pcar = (p[2], p[3]) if p else (None, None)
+            hst, hcar = (h[2], h[3]) if h else (None, None)
+            # Pitching side: pure pitchers + two-way players. A two-way ace lands in
+            # BOTH pools, so his elite innings reach the rotation instead of being
+            # dropped and his bat reallocated to the bullpen bottom.
+            if is_pitcher_pos and pst:
+                arm = _pitcher(per, pst, pcar, avail)
+                (depth if is_depth else pitchers).append(arm)
+            # Batting side: position players + two-way (never pure pitchers, never
+            # taxi-squad depth — those only matter as call-up arms).
+            if (not is_pitcher_pos or two_way) and hst and not is_depth:
+                mults = (1.0, 1.0)
+                try:
+                    import savant
+                    mults = savant.quality_mults(xstats.get(pid))
+                except Exception:
+                    pass
+                batters.append(_batter(per, hst, hcar, avail, mults))
         # Rotation = top starters by games started; bullpen = the rest with innings.
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
                           key=lambda p: (p["gs"], p["ip"]), reverse=True)[:6]
         sid = {p["id"] for p in starters}
         # Quality score: more Ks, fewer walks, lower ERA = better. Bullpen is ranked
         # WORST-first so the best arm (closer) is held back for late innings.
+        def quality(p):
+            return (p["kpa"] - p["bbpa"]) - p["era"] / 20.0
         relievers = [p for p in pitchers if p["id"] not in sid and p["ip"] > 0]
-        relievers.sort(key=lambda p: (p["kpa"] - p["bbpa"]) - p["era"] / 20.0)
+        relievers.sort(key=quality)
+        depth.sort(key=quality)                       # worst-first; real org arms
         # Lineup = nine regulars by plate appearances; bench = remaining bats.
         batters.sort(key=lambda b: b["pa"], reverse=True)
-        return {"rotation": starters or pitchers[:1],
-                "bullpen": relievers, "lineup": batters[:9], "bench": batters[9:]}
-    return baseball._cached(("deep_profile", team_id, season), 21600, build)
+        return {"rotation": starters or pitchers[:1], "bullpen": relievers,
+                "depth": depth[:6], "lineup": batters[:9], "bench": batters[9:]}
+    return baseball._cached(("deep_profile2", team_id, season), 21600, build)

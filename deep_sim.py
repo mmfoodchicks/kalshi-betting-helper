@@ -76,6 +76,7 @@ class _Staff:
     def __init__(self, prof, starter):
         self.cur = starter
         self.bp = list(prof["bullpen"])      # worst-first; closer is last
+        self.depth = list(prof.get("depth", []))   # taxi-squad arms for emergencies
         self.bp_i = 0
         self.closer_used = False
         self.outing_runs = 0                 # runs charged to the current pitcher's outing
@@ -122,8 +123,11 @@ class _Staff:
         elif self.bp_i < len(self.bp):
             nxt = self.bp[self.bp_i]
             self.bp_i += 1
+        elif self.depth:
+            nxt = self.depth.pop(0)           # pen exhausted -> call up an org arm,
+                                              # not overload one gassed pitcher
         else:
-            return                            # bullpen exhausted -> ride current arm
+            return                            # truly out of arms -> ride current
         self.cur = nxt
         self.outing_runs = self.outing_bf = 0
         self.lines.setdefault(nxt["id"], _new_pit_line())
