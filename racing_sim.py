@@ -105,8 +105,10 @@ def _f1_results():
                 raw_t = acc / t_w[did][ct]
                 nt = t_n[did][ct]
                 by_type[ct] = round((raw_t - raw_fin) * nt / (nt + _TYPE_K), 2)
+            # dnf is a flat-prior fallback; dnf_n/starts let f1_profiles re-pool
+            # reliability by constructor (failures are a shared-car property).
             out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin, "race_by_type": by_type,
-                        "dnf": dnf_rate, "starts": starts[did]}
+                        "dnf": dnf_rate, "dnf_n": dnf[did], "starts": starts[did]}
         return out
     return racing._cached(("f1_results",), 6 * 3600, build) or {}
 
@@ -175,15 +177,25 @@ def f1_profiles():
         # quali gaps. A noisy driver then shrinks toward their CAR's pace (what the
         # teammate proves the car can do), not a blind midfield guess.
         car_acc, car_w = defaultdict(float), defaultdict(float)
+        # Reliability is also a shared-car property (engine/gearbox failures hit
+        # both cars), so pool DNFs by constructor too: tally team failures/starts.
+        car_dnf, car_starts = defaultdict(int), defaultdict(int)
         for x in standings:
             did = x["Driver"]["driverId"]
             cid = x["Constructors"][-1]["constructorId"]
             g = gaps.get(did)
             if g:
                 car_acc[cid] += g["gap"] * g["n"]; car_w[cid] += g["n"]
+            f = form.get(did)
+            if f:
+                car_dnf[cid] += f.get("dnf_n", 0); car_starts[cid] += f.get("starts", 0)
         car_pace = {cid: car_acc[cid] / car_w[cid] for cid in car_acc}
+        # Team DNF rate, itself shrunk toward the field-typical ~9%.
+        car_rel = {cid: (car_dnf[cid] + 4 * 0.09) / (car_starts[cid] + 4)
+                   for cid in car_starts}
 
         _QK = 4.0          # quali pseudo-sessions to shrink by
+        _RELK = 6.0        # reliability pseudo-starts: pull a driver's DNF toward the car's
         out = {}
         for x in standings:
             dr = x["Driver"]; did = dr["driverId"]
@@ -195,6 +207,11 @@ def f1_profiles():
             # one-car team or a brand-new lineup can't run away on no evidence.
             prior = 0.7 * car_pace.get(cid, 0.9) + 0.3 * 0.9
             quali = (g["n"] * g["gap"] + _QK * prior) / (g["n"] + _QK)
+            # Pool the driver's own failures toward their CAR's reliability, so one
+            # mechanical DNF doesn't brand a driver fragile when his teammate has
+            # been bulletproof (and a flaky engine taints both cars correctly).
+            team_rel = car_rel.get(cid, 0.09)
+            dnf = min(0.45, (f.get("dnf_n", 0) + _RELK * team_rel) / (f.get("starts", 0) + _RELK))
             out[did] = {
                 "id": did, "name": f"{dr.get('givenName','')} {dr.get('familyName','')}".strip(),
                 "code": dr.get("code") or dr.get("familyName", "")[:3].upper(),
@@ -205,7 +222,7 @@ def f1_profiles():
                 # stays position-scale (regressed toward grid in _f1_results).
                 "quali": quali, "avg_grid": f["avg_grid"],
                 "race": f["avg_fin"], "race_by_type": f.get("race_by_type", {}),
-                "dnf": min(0.45, f["dnf"]),
+                "dnf": dnf,
             }
         return out
     return racing._cached(("f1_profiles",), 3 * 3600, build) or {}
