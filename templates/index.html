@@ -52,6 +52,7 @@
     <span class="navgroup">Sports</span>
     <button class="tab" data-tab="sports">Live &amp; Futures</button>
     <button class="tab" data-tab="baseball">Baseball</button>
+    <button class="tab" data-tab="worldcup">World Cup</button>
     <span class="navsep"></span>
     <span class="navgroup">Tools</span>
     <button class="tab" data-tab="combine">Combos</button>
@@ -296,6 +297,20 @@
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->
+
+   <div id="tab-worldcup" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>⚽ World Cup 2026</h2>
+        <div class="subtabs" id="wcSubtabs">
+          <button class="subtab active" data-wcsub="futures">🏆 Futures</button>
+          <button class="subtab" data-wcsub="matches">📅 Matches</button>
+        </div>
+      </div>
+      <div id="wcSummary" class="small"></div>
+      <div id="wcResults" class="markets"><div class="empty">Loading the simulator…</div></div>
+    </section>
+   </div><!-- /tab-worldcup -->
 
    <div id="tab-commodities" class="hidden">
     <section class="card">

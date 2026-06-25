@@ -409,6 +409,10 @@ button.danger { color: var(--no); }
 .rcrow2 { grid-template-columns: 28px 1fr 66px; }
 .rcrowD { grid-template-columns: 26px 1fr 56px 52px 52px 60px 48px; }   /* championship + Kalshi/edge */
 .rcrowR { grid-template-columns: 28px 1fr 58px 52px 52px; }             /* per-race: model/Kalshi/edge */
+.wcrow { grid-template-columns: 28px 1fr 56px 52px 48px 52px 52px 60px; } /* WC futures: champ/Kalshi/edge/poly/final/adv */
+.wcmrow { grid-template-columns: 1fr 44px 40px 1fr 44px 40px 1fr 44px 40px; font-size: 0.86rem; } /* 3x (label,pct,edge) */
+.wcmatch { border-bottom: 1px solid var(--border); padding: 4px 0 7px; }
+.wcmatch-h { padding: 7px 6px 2px; }
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
 .deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }

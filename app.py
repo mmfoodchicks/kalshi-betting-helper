@@ -955,6 +955,21 @@ def api_racing_season(sport):
     return jsonify(data)
 
 
+@app.route("/api/worldcup")
+def api_worldcup():
+    """World Cup simulator board: per-team champion/advance/round odds and per-match
+    result/total/BTTS probabilities, with live Kalshi + Polymarket prices + edges.
+    Cached ~20 min (the tournament is live)."""
+    try:
+        import worldcup
+        data = worldcup.board()
+    except Exception as e:
+        return jsonify({"error": f"world cup sim failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no world cup data available"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/sim/status")
 def api_sim_status():
     """Freshness + run state of each cached season sim."""

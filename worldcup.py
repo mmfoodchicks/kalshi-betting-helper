@@ -41,7 +41,7 @@ _RATING = {
     "Congo DR": 1720,
 }
 _DEFAULT_RATING = 1700
-_MU_TOTAL = 2.65          # avg goals per WC match (both teams)
+_MU_TOTAL = 2.85          # avg goals per WC match (both teams; recent tournaments)
 _ELO_PER_GOAL = 170.0     # Elo points ~ one goal of supremacy
 _KO_ROUNDS = [("r32", 32), ("r16", 16), ("qf", 8), ("sf", 4), ("final", 2)]
 
