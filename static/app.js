@@ -1126,9 +1126,6 @@ function setupTabs() {
       const tab = btn.dataset.tab;
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
-      $("tab-edges").classList.toggle("hidden", tab !== "edges");
-      $("tab-hits").classList.toggle("hidden", tab !== "hits");
-      $("tab-football").classList.toggle("hidden", tab !== "football");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -1141,24 +1138,33 @@ function setupTabs() {
         $("comResults").dataset.loaded = "1";
         loadCommodities();
       }
-      if (tab === "baseball" && !$("bbGames").dataset.loaded) {
-        $("bbGames").dataset.loaded = "1";
-        loadBaseball();
-      }
+      if (tab === "baseball") initBaseballTab();
       if (tab === "sports") initSportsTab();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
       }
       if (tab === "ledger") loadLedger();
-      if (tab === "hits" && !$("hitsDate").dataset.loaded) {
-        $("hitsDate").dataset.loaded = "1";
-        initHits();
-      }
-      if (tab === "edges" && !$("edgeDate").dataset.loaded) {
-        $("edgeDate").dataset.loaded = "1";
-        initEdges();
-      }
+    });
+  });
+  setupBaseballSubtabs();
+}
+
+// Baseball hub: Slate & combos / Edges / Hits as sub-views (formerly separate tabs).
+function initBaseballTab() {
+  if (!$("bbGames").dataset.loaded) { $("bbGames").dataset.loaded = "1"; loadBaseball(); }
+}
+function setupBaseballSubtabs() {
+  document.querySelectorAll("#tab-baseball .subtab").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#tab-baseball .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      const s = b.dataset.bbsub;
+      document.querySelector("#tab-baseball .bb-slate").classList.toggle("hidden", s !== "slate");
+      document.querySelector("#tab-baseball .bb-edges").classList.toggle("hidden", s !== "edges");
+      document.querySelector("#tab-baseball .bb-hits").classList.toggle("hidden", s !== "hits");
+      if (s === "edges" && !$("edgeDate").dataset.loaded) { $("edgeDate").dataset.loaded = "1"; initEdges(); }
+      if (s === "hits" && !$("hitsDate").dataset.loaded) { $("hitsDate").dataset.loaded = "1"; initHits(); }
     });
   });
 }

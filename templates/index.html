@@ -52,13 +52,10 @@
     <span class="navgroup">Sports</span>
     <button class="tab" data-tab="sports">Live &amp; Futures</button>
     <button class="tab" data-tab="baseball">Baseball</button>
-    <button class="tab" data-tab="edges">Edges</button>
-    <button class="tab" data-tab="hits">Hits</button>
-    <button class="tab" data-tab="football">Football</button>
     <span class="navsep"></span>
     <span class="navgroup">Tools</span>
     <button class="tab" data-tab="combine">Combos</button>
-    <button class="tab" data-tab="sim">Simulator</button>
+    <button class="tab" data-tab="sim">DFS</button>
     <button class="tab" data-tab="ledger">Ledger</button>
   </nav>
 
@@ -165,6 +162,12 @@
    </div><!-- /tab-crypto -->
 
    <div id="tab-baseball" class="hidden">
+    <div class="subnav">
+      <button class="subtab active" data-bbsub="slate">⚾ Slate &amp; combos</button>
+      <button class="subtab" data-bbsub="edges">🎯 Edges</button>
+      <button class="subtab" data-bbsub="hits">📈 Hits</button>
+    </div>
+    <div class="bb-slate">
     <section class="card">
       <div class="row-between">
         <h2>⚾ Today's MLB insights</h2>
@@ -206,9 +209,9 @@
       <p class="sub" style="margin:4px 0 12px">Combine picks for a bigger payout — all legs must win. Combined odds = each pick's probability multiplied together. <b>The % is OUR model's probability</b> (props like hits/totals/run-line are model estimates Kalshi may not even list); a <b>¢ price</b> shown means it's a live Kalshi game-winner market.</p>
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
     </section>
-   </div><!-- /tab-baseball -->
+    </div><!-- /bb-slate -->
 
-   <div id="tab-edges" class="hidden">
+    <div class="bb-edges hidden">
     <section class="card">
       <h2>🎯 Edge Finder</h2>
       <p class="sub">Every MLB leg we can price live, ranked by the gap between <b>our model</b> and <b>Kalshi's price</b>. Edge = our simulated chance − Kalshi's implied chance. This is a <b>disagreement finder, not a guarantee</b>: a gap is only money if our model is right. Lines are often loosely quoted until close to game time, and a whole market leaning one way (flagged below) usually means model bias, not free money.</p>
@@ -236,9 +239,9 @@
       <div id="edgeSummary"></div>
       <div id="edgeResults" class="markets"><div class="empty">Pick a slate and scan.</div></div>
     </section>
-   </div><!-- /tab-edges -->
+    </div><!-- /bb-edges -->
 
-   <div id="tab-hits" class="hidden">
+    <div class="bb-hits hidden">
     <section class="card">
       <h2>📈 Predicted Hits</h2>
       <p class="sub">Receipts. The app logs Kalshi batter props through the night with the model's read, then grades them off the real box scores. This board shows the props the model <b>liked that actually hit</b> — and the <b>longshots that cashed</b>.</p>
@@ -250,22 +253,8 @@
       </div>
       <div id="hitsResults" class="markets"><div class="empty">Loading…</div></div>
     </section>
-   </div><!-- /tab-hits -->
-
-   <div id="tab-football" class="hidden">
-    <section class="card comingsoon">
-      <div class="cs-badge">🏈 Coming for the NFL season</div>
-      <h2>Football — the full baseball stack, for football</h2>
-      <p class="sub" style="margin:4px 0 16px">When the season kicks off, this tab does <b>everything the Baseball tab does</b> — no difference at all. Same engine, same honesty, just a different sport.</p>
-      <div class="cs-grid">
-        <div class="cs-item"><div class="cs-ico">📊</div><div><b>Game model &amp; edges</b><span>An expected-points / win-probability model for every game, matched to live Kalshi prices to surface the edge — picks ranked most-confident first.</span></div></div>
-        <div class="cs-item"><div class="cs-ico">🎯</div><div><b>Player &amp; game props</b><span>Passing / rushing / receiving yards, receptions, TDs, completions and more — with the full adjustable alternate-line ladders.</span></div></div>
-        <div class="cs-item"><div class="cs-ico">🎲</div><div><b>Simulators &amp; same-game parlays</b><span>A drive/play-level simulator that keeps correlated legs honest (a QB's yards move with his WR1's, the team total, and the game script).</span></div></div>
-        <div class="cs-item"><div class="cs-ico">💰</div><div><b>Value finder &amp; combos</b><span>Kalshi's price vs a sharper reference, plus the payout-governed combo maker with the same confidence floor.</span></div></div>
-      </div>
-      <p class="sub" style="margin:16px 0 0">We won't ship it until there's live data and markets to test it on — untested guesswork helps no one. Same principle as everywhere else: <b>math doesn't lie.</b></p>
-    </section>
-   </div><!-- /tab-football -->
+    </div><!-- /bb-hits -->
+   </div><!-- /tab-baseball -->
 
    <div id="tab-sports" class="hidden">
     <div class="subnav">
