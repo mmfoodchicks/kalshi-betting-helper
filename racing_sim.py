@@ -115,6 +115,67 @@ def _f1_results():
     return racing._cached(("f1_results",), 6 * 3600, build) or {}
 
 
+def f1_type_skill(year=None, n_back=2):
+    """Per-driver per-circuit-type skill delta, car-free, across recent F1 seasons.
+
+    Same delta-of-deltas as NASCAR: for each season, (in-type avg finish − that
+    season's overall avg finish), recency-weighted across seasons and regressed by
+    in-type sample. The delta-of-deltas strips out the car a driver had each year,
+    so a street/wet specialist keeps that skill even through a team change — and it
+    gives a real sample where the current 5-race season has almost none."""
+    import datetime
+    year = year or datetime.date.today().year
+    base = ERGAST.rsplit("/", 1)[0]                  # .../ergast/f1
+
+    def build():
+        seasons = list(range(year - n_back, year + 1))
+        per = defaultdict(lambda: defaultdict(lambda: {"type": defaultdict(list), "all": []}))
+        for yr in seasons:
+            races = []
+            for off in (0, 100, 200, 300, 400):
+                try:
+                    d = racing._get_json(f"{base}/{yr}/results.json?limit=100&offset={off}")
+                except Exception:
+                    break
+                rs_ = d.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+                races += rs_
+                if len(rs_) < 100:
+                    break
+            for r in races:
+                ct = _f1_circuit_type((r.get("Circuit") or {}).get("circuitName") or r.get("raceName"))
+                for res in r.get("Results", []):
+                    st = res.get("status", "")
+                    if not (st == "Finished" or st.startswith("+")):
+                        continue
+                    try:
+                        fp = int(res["position"])
+                    except (ValueError, KeyError):
+                        continue
+                    did = res["Driver"]["driverId"]
+                    per[did][yr]["type"][ct].append(fp)
+                    per[did][yr]["all"].append(fp)
+        sw = {yr: i + 1 for i, yr in enumerate(seasons)}
+        _SK = 3.0
+        out = {}
+        for did, byseason in per.items():
+            acc = defaultdict(float); wsum = defaultdict(float); nsum = defaultdict(int)
+            for yr, data in byseason.items():
+                allf = data["all"]
+                if len(allf) < 3:
+                    continue
+                overall = sum(allf) / len(allf)
+                for ct, fins in data["type"].items():
+                    type_avg = sum(fins) / len(fins)
+                    w = sw[yr] * len(fins)
+                    acc[ct] += w * (type_avg - overall)
+                    wsum[ct] += w
+                    nsum[ct] += len(fins)
+            out[did] = {ct: round((acc[ct] / wsum[ct]) * nsum[ct] / (nsum[ct] + _SK), 2)
+                        for ct in acc if wsum[ct]}
+        return out
+    return racing._cached(("f1_type_skill", year, n_back), 7 * 86400, build) or {}
+
+
 def _qtime(t):
     """Ergast lap-time string -> seconds ('1:12.578' -> 72.578)."""
     if not t:
@@ -172,6 +233,7 @@ def f1_profiles():
             return {}
         form = _f1_results()
         gaps = _f1_quali_gaps()
+        skill = f1_type_skill()                       # multi-year, car-free circuit-type skill
         standings = lst[0]["DriverStandings"]
 
         # Teammate pooling: a driver's car is shared evidence of pace, so each
@@ -223,7 +285,9 @@ def f1_profiles():
                 # quali pace is a teammate-pooled gap-to-pole in SECONDS; race pace
                 # stays position-scale (regressed toward grid in _f1_results).
                 "quali": quali, "avg_grid": f["avg_grid"],
-                "race": f["avg_fin"], "race_by_type": f.get("race_by_type", {}),
+                "race": f["avg_fin"],
+                # multi-year circuit-type skill primary, this-season as the fallback
+                "race_by_type": {**f.get("race_by_type", {}), **skill.get(did, {})},
                 "dnf": dnf,
             }
         return out
