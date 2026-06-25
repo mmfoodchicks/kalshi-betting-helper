@@ -89,7 +89,7 @@ def _f1_results():
         #  - race pace -> avg grid (where you start strongly predicts the finish),
         #  - DNF rate  -> a field-typical ~9%.
         # A rookie's two lucky podiums no longer read as "finishes 1st on average."
-        _FIN_K, _DNF_K, _TYPE_K = 6.0, 5.0, 5.0
+        _FIN_K, _DNF_K, _TYPE_K = 6.0, 5.0, 2.5   # _TYPE_K light: circuit-type skill persists
         out = {}
         for did in starts:
             g = grid[did] or [13]
@@ -97,14 +97,16 @@ def _f1_results():
             raw_fin = fin_acc[did] / fin_w[did] if fin_w[did] else avg_grid
             avg_fin = (fin_w[did] * raw_fin + _FIN_K * avg_grid) / (fin_w[did] + _FIN_K)
             dnf_rate = (dnf[did] + _DNF_K * 0.09) / (starts[did] + _DNF_K)
-            # Per-circuit-type finish delta vs the driver's own baseline, regressed
-            # hard (_TYPE_K) because only a handful of races exist this early; it
-            # sharpens as more street/power weekends accumulate.
+            # Per-circuit-type pace: shrink the driver's in-type finish toward his
+            # OWN race pace as an absolute estimate (not toward "no effect" added
+            # onto the regressed base — that double-washes a specialist). Stored as
+            # a delta the sim adds to avg_fin.
             by_type = {}
             for ct, acc in t_acc[did].items():
                 raw_t = acc / t_w[did][ct]
                 nt = t_n[did][ct]
-                by_type[ct] = round((raw_t - raw_fin) * nt / (nt + _TYPE_K), 2)
+                type_pace = (nt * raw_t + _TYPE_K * avg_fin) / (nt + _TYPE_K)
+                by_type[ct] = round(type_pace - avg_fin, 2)
             # dnf is a flat-prior fallback; dnf_n/starts let f1_profiles re-pool
             # reliability by constructor (failures are a shared-car property).
             out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin, "race_by_type": by_type,
