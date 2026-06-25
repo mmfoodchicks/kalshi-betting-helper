@@ -115,6 +115,11 @@ select, input, textarea {
   font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+/* Native dropdown popup: force a solid dark background + light text so the
+   options are readable (the translucent select bg made them near-invisible). */
+select option { background: #1a2030; color: var(--text); }
+select option:checked { background: #2a3550; color: #fff; }
+select optgroup { background: #12161f; color: var(--muted); font-weight: 600; }
 input::placeholder { color: var(--faint); }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--accent);
