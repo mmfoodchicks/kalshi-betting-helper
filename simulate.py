@@ -157,8 +157,11 @@ def apply_grid(players, sport, date=None):
                 "reason": "no qualifying grid posted yet (check back after qualifying)"}
     n = len(players)
     field = grid["field"]
-    # Deserved finishing spot ~ salary rank (DK prices by car quality), sharpened
-    # with recent form so a cheap car running well isn't unfairly buried.
+    # Deserved finishing spot. Primary source = our race SIMULATOR's expected
+    # finish for this driver (it simulates qualifying + the race with car pace,
+    # track-type form, DNFs and wet chaos). Fallback when a driver isn't in the
+    # sim: salary rank (DK prices by car quality), sharpened with recent form.
+    sim_fin = _sim_expected_finish(sport)       # {normalized_name: avg_finish} or {}
     order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
     deserved = [0.0] * n
     for rank, i in enumerate(order):
@@ -173,27 +176,59 @@ def apply_grid(players, sport, date=None):
     except Exception:
         form = {}
     lam = 0.55                                  # partial mean-reversion of the grid
-    matched, unmatched, form_hits = 0, [], 0
+    matched, unmatched, form_hits, sim_hits = 0, [], 0, 0
     for i, p in enumerate(players):
         start = racing.lookup(grid, p["name"])
         if start is None:
             unmatched.append(p["name"])
             continue
         matched += 1
-        fv = racing._match_prob(form, None, p["name"]) if form else None
-        if fv is not None:                      # blend salary-deserved with form
-            deserved[i] = min(field, max(1.0, 0.5 * deserved[i] + 0.5 * fv))
-            form_hits += 1
+        sv = sim_fin.get(_norm_name(p["name"]))
+        if sv is not None:                      # the simulator knows this driver
+            deserved[i] = min(field, max(1.0, sv))
+            sim_hits += 1
+        else:
+            fv = racing._match_prob(form, None, p["name"]) if form else None
+            if fv is not None:                  # blend salary-deserved with form
+                deserved[i] = min(field, max(1.0, 0.5 * deserved[i] + 0.5 * fv))
+                form_hits += 1
         # delta < 0: starting better than deserved -> expected to lose spots.
         delta = start - deserved[i]
         adj = max(-15.0, min(15.0, lam * delta))
         p["start"] = start
+        p["exp_finish"] = round(deserved[i], 1)
         p["pd_adj"] = round(adj, 1)
         p["base_proj"] = p["proj"]
         p["proj"] = max(0.0, p["proj"] + adj)
     return {"available": True, "race": grid["race"], "series": grid["series"],
             "field": field, "matched": matched, "unmatched": unmatched[:25],
-            "form_used": form_hits > 0}
+            "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits}
+
+
+def _norm_name(s):
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+    return "".join(c for c in s.lower() if c.isalnum() or c == " ").strip()
+
+
+def _sim_expected_finish(sport):
+    """{normalized_name: avg_finish} from the race simulator's next-race profile,
+    keyed by full name AND last name so DK's name spellings still match."""
+    if sport not in ("f1", "nascar"):
+        return {}
+    try:
+        import racing_sim
+        prof = racing_sim.next_race_profile(sport)
+    except Exception:
+        prof = None
+    if not prof or not prof.get("drivers"):
+        return {}
+    out = {}
+    for name, s in prof["drivers"].items():
+        nm = _norm_name(name)
+        out[nm] = s["avg_finish"]
+        out.setdefault(nm.split()[-1], s["avg_finish"])   # last-name fallback
+    return out
 
 
 def dfs_optimize(players, roster, cap, key="value"):

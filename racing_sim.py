@@ -716,3 +716,91 @@ def sim_nascar(n=2000, year=None, seed=None):
             "races_left": sum(phases.values()), "drivers": out, "races": races}
 
 
+
+
+# ---- Single-race finish distribution for DFS ------------------------------
+import threading as _threading
+import time as _time
+_nr_inflight = set()
+
+
+def next_race_profile(sport):
+    """Cached next-race finish profile for the DFS feed. NON-BLOCKING: returns the
+    cached profile if it's fresh, otherwise kicks a background compute and returns
+    None for now (the DFS falls back to its salary/form proxy and upgrades to the
+    sim automatically on the next build). Recomputed every few hours."""
+    key = ("next_race", sport)
+    hit = racing._form_cache.get(key)
+    if hit and (_time.time() - hit[0]) < 3 * 3600 and hit[1] is not None:
+        return hit[1]
+    if sport not in _nr_inflight:
+        _nr_inflight.add(sport)
+
+        def _bg():
+            try:
+                racing._cached(key, 3 * 3600, lambda: next_race_sim(sport, 2000))
+            finally:
+                _nr_inflight.discard(sport)
+        _threading.Thread(target=_bg, daemon=True).start()
+    return None
+
+
+def next_race_sim(sport, n=2500, seed=None):
+    """Simulate the NEXT race many times and return each driver's finish profile
+    {name: {avg_finish, p_win, p_top5, p_top10, p_top20}} -- the "where does each
+    racer end" signal the DFS optimizer feeds on (expected finish drives
+    DraftKings position points + place differential). Grid-independent: it runs
+    the sim's own qualifying, so it's a true expected finish, not a start-biased
+    one."""
+    rng = random.Random(seed)
+    fin = defaultdict(float); win = defaultdict(int)
+    t5 = defaultdict(int); t10 = defaultdict(int); t20 = defaultdict(int)
+    name_of = {}
+
+    if sport == "f1":
+        profs = f1_profiles(); rem = f1_remaining()
+        if not profs or not rem:
+            return None
+        drivers = list(profs.values())
+        name_of = {d["id"]: d["name"] for d in drivers}
+        race = rem[0]
+        ctype = race.get("type", "standard"); wet_p = race.get("wet_prob", 0.0)
+        for _ in range(n):
+            grid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
+            order = _sim_race(drivers, grid, rng, wet=rng.random() < wet_p, ctype=ctype)
+            _tally_finish(order, fin, win, t5, t10, t20)
+    elif sport == "nascar":
+        state = nascar_state()
+        dmap = (state or {}).get("drivers") or {}
+        rem = (state or {}).get("remaining") or []
+        if not dmap or not rem:
+            return None
+        drivers = list(dmap.values())
+        name_of = {d["id"]: d["name"] for d in drivers}
+        race = rem[0]
+        ttype = race.get("type", "intermediate"); wet_p = race.get("wet_prob", 0.0)
+        for _ in range(n):
+            order = _sim_cup_race(drivers, rng, wet=rng.random() < wet_p, ttype=ttype)
+            _tally_finish(order, fin, win, t5, t10, t20)
+    else:
+        return None
+
+    out = {}
+    for did, nm in name_of.items():
+        out[nm] = {"avg_finish": round(fin[did] / n, 2),
+                   "p_win": round(win[did] / n, 3), "p_top5": round(t5[did] / n, 3),
+                   "p_top10": round(t10[did] / n, 3), "p_top20": round(t20[did] / n, 3)}
+    return {"sport": sport, "race": race.get("name"), "n_sims": n, "drivers": out}
+
+
+def _tally_finish(order, fin, win, t5, t10, t20):
+    for pos, did in enumerate(order, 1):
+        fin[did] += pos
+        if pos == 1:
+            win[did] += 1
+        if pos <= 5:
+            t5[did] += 1
+        if pos <= 10:
+            t10[did] += 1
+        if pos <= 20:
+            t20[did] += 1
