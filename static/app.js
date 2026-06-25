@@ -1745,40 +1745,63 @@ async function rerunSim(sport, after) {
   setTimeout(tick, 2000);
 }
 
+let _raceData = null, _raceMarket = "drivers";
 function renderRacing(d) {
+  _raceData = d;
   const isF1 = d.sport === "f1";
   const fresh = `updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly`;
   $("featuredSummary").innerHTML =
-    `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints" : "pace + the playoff bracket"}.
+    `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints, with grid penalties / DNFs / time penalties" : "pace + the playoff bracket, with wrecks / incidents / penalties"}.
      <span style="color:var(--muted)">${fresh}</span>
      <button class="track-mini" style="margin-left:6px" onclick="rerunSim('${d.sport}', loadFeatured)">↻ rerun now</button></div>`;
-  const extra = isF1 ? "Poles" : "Top-5s";
-  const head = `<div class="futrow rcrow rchead">
-    <span class="fr-rank">#</span><span class="fr-team">Driver</span>
-    <span class="fr-num">Title</span><span class="fr-num">Proj pts</span>
-    <span class="fr-num">Wins</span><span class="fr-num">${extra}</span><span class="fr-num">${isF1 ? "Pts now" : "Playoff"}</span></div>`;
-  const rows = d.drivers.filter((x) => x.title_pct > 0 || x.exp_wins >= 0.3).slice(0, 22).map((x, i) => {
-    const team = isF1 ? `<span class="small"> ${x.constructor}</span>` : "";
-    const ex = isF1 ? x.exp_poles : x.exp_top5;
-    const last = isF1 ? `<span class="fr-num">${x.points_now}</span>` : `<span class="fr-num">${x.playoff_pct}%</span>`;
-    return `<div class="futrow rcrow">
-      <span class="fr-rank">${i + 1}</span>
-      <span class="fr-team"><b>${x.name}</b>${team}</span>
-      <span class="fr-num"><b>${x.title_pct}%</b></span>
-      <span class="fr-num">${x.proj_points}</span>
-      <span class="fr-num">${x.exp_wins}</span>
-      <span class="fr-num">${ex}</span>
-      ${last}
-    </div>`;
-  }).join("");
-  let cons = "";
-  if (isF1 && d.constructors) {
-    cons = `<div class="teamhdr" style="margin-top:16px">🏆 Constructors' championship</div>`
-      + d.constructors.filter((c) => c.title_pct >= 0.1).map((c) =>
-        `<div class="futrow rcrow"><span class="fr-rank"></span><span class="fr-team"><b>${c.name}</b></span>
-         <span class="fr-num"><b>${c.title_pct}%</b></span><span class="fr-num"></span><span class="fr-num"></span><span class="fr-num"></span><span class="fr-num"></span></div>`).join("");
+  const races = d.races || [];
+  // Validate the remembered market against this sport's data.
+  if (_raceMarket === "constructors" && !isF1) _raceMarket = "drivers";
+  if (/^(win|pole):/.test(_raceMarket) && !races[+_raceMarket.split(":")[1]]) _raceMarket = "drivers";
+  let opts = `<optgroup label="Championship"><option value="drivers">Drivers' Championship</option>`;
+  if (isF1) opts += `<option value="constructors">Constructors' Championship</option>`;
+  opts += `</optgroup><optgroup label="Race winner">`
+    + races.map((r, i) => `<option value="win:${i}">${r.name}${r.sprint ? " (sprint wknd)" : ""}</option>`).join("")
+    + `</optgroup><optgroup label="Pole position">`
+    + races.map((r, i) => `<option value="pole:${i}">${r.name}</option>`).join("") + `</optgroup>`;
+  $("featuredResults").innerHTML = `
+    <div class="futctl"><label class="small">Market</label>
+      <select id="raceMarket" onchange="_raceMarket=this.value;renderRaceMarket()">${opts}</select></div>
+    <div id="raceTable"></div>`;
+  $("raceMarket").value = _raceMarket;
+  renderRaceMarket();
+}
+
+function renderRaceMarket() {
+  const d = _raceData; if (!d) return;
+  const isF1 = d.sport === "f1", m = _raceMarket;
+  let html;
+  if (m === "drivers") {
+    const extra = isF1 ? "Poles" : "Top-5s";
+    html = `<div class="futrow rcrow rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span>
+      <span class="fr-num">Title</span><span class="fr-num">Proj pts</span><span class="fr-num">Wins</span>
+      <span class="fr-num">${extra}</span><span class="fr-num">${isF1 ? "Pts now" : "Playoff"}</span></div>`
+      + d.drivers.filter((x) => x.title_pct > 0 || x.exp_wins >= 0.3).slice(0, 24).map((x, i) => `
+        <div class="futrow rcrow"><span class="fr-rank">${i + 1}</span>
+          <span class="fr-team"><b>${x.name}</b>${isF1 ? `<span class="small"> ${x.constructor}</span>` : ""}</span>
+          <span class="fr-num"><b>${x.title_pct}%</b></span><span class="fr-num">${x.proj_points}</span>
+          <span class="fr-num">${x.exp_wins}</span><span class="fr-num">${isF1 ? x.exp_poles : x.exp_top5}</span>
+          <span class="fr-num">${isF1 ? x.points_now : x.playoff_pct + "%"}</span></div>`).join("");
+  } else if (m === "constructors") {
+    html = (d.constructors || []).filter((c) => c.title_pct >= 0.1).map((c, i) =>
+      `<div class="futrow rcrow2"><span class="fr-rank">${i + 1}</span><span class="fr-team"><b>${c.name}</b></span>
+       <span class="fr-num"><b>${c.title_pct}%</b></span></div>`).join("");
+  } else {
+    const [kind, idx] = m.split(":");
+    const race = d.races[+idx];
+    const list = kind === "pole" ? race.pole : race.winner;
+    html = `<div class="teamhdr" style="margin:0 0 6px">${race.name} — ${kind === "pole" ? "🏁 Pole position" : "🏆 Race winner"} odds</div>`
+      + `<div class="futrow rcrow2 rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span></div>`
+      + list.map((x, i) => `<div class="futrow rcrow2"><span class="fr-rank">${i + 1}</span>
+          <span class="fr-team"><b>${x.name}</b>${x.team ? `<span class="small"> ${x.team}</span>` : ""}</span>
+          <span class="fr-num"><b>${x.pct}%</b></span></div>`).join("");
   }
-  $("featuredResults").innerHTML = head + rows + cons;
+  $("raceTable").innerHTML = html;
 }
 
 let _deepTimer = null;
