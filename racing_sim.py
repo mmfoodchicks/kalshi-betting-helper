@@ -105,10 +105,26 @@ def f1_remaining():
 
 
 def _sim_quali(drivers, rng):
-    """Grid order (list of driver ids) from qualifying pace + variance."""
-    scored = [(d["quali"] + rng.gauss(0, _SIGMA_Q), d["id"]) for d in drivers]
-    scored.sort()
-    return [did for _, did in scored]
+    """Full Q1/Q2/Q3 knockout qualifying -> grid order (list of driver ids).
+
+    Each segment is a FRESH flying lap (its own noise draw), and the slowest are
+    knocked out: Q1 trims the field to 15, Q2 to 10, Q3 is the top-10 pole
+    shootout. This is what makes pole odds realistic — a genuinely fast car gets
+    three laps to avoid elimination and a clean shootout for P1, rather than a
+    single draw where one bad lap buries it."""
+    grid_pos = {}
+    remaining = list(drivers)
+    for cut in (15, 10, 0):                    # survivors after Q1, Q2; Q3 = final 10
+        timed = sorted(remaining, key=lambda d: d["quali"] + rng.gauss(0, _SIGMA_Q))
+        if cut and len(timed) > cut:
+            for i, d in enumerate(timed[cut:]):    # eliminated -> grid (cut+1)+
+                grid_pos[d["id"]] = cut + 1 + i
+            remaining = timed[:cut]
+        else:
+            for i, d in enumerate(timed):          # final segment sets the rest
+                grid_pos[d["id"]] = 1 + i
+            break
+    return [did for did, _ in sorted(grid_pos.items(), key=lambda kv: kv[1])]
 
 
 def _sim_race(drivers, grid, rng):
@@ -303,8 +319,12 @@ def _sim_nascar_season(drivers, phases, rng):
     wins = {d["id"]: d["wins"] for d in drivers}
     ppts = {d["id"]: d["playoff_points"] for d in drivers}
     season_wins = defaultdict(int); top5 = defaultdict(int); top10 = defaultdict(int)
+    poles = defaultdict(int)
 
     def run_race():
+        # Single-lap qualifying sets the pole (NASCAR's flat field -> wide spread).
+        pole = min(drivers, key=lambda d: d["race_pace"] + rng.gauss(0, _SIGMA_CUP * 0.7))
+        poles[pole["id"]] += 1
         order = _sim_cup_race(drivers, rng)
         for pos, did in enumerate(order, 1):
             pts[did] += _cup_points(pos)
@@ -355,7 +375,7 @@ def _sim_nascar_season(drivers, phases, rng):
     else:
         champ = max(survivors, key=lambda d: pts[d["id"]])["id"] if survivors \
             else max(pts, key=pts.get)
-    return champ, made_playoffs, season_wins, top5, top10, pts
+    return champ, made_playoffs, season_wins, top5, top10, pts, poles
 
 
 def sim_nascar(n=2000, year=None, seed=None):
@@ -373,12 +393,12 @@ def sim_nascar(n=2000, year=None, seed=None):
 
     champ = defaultdict(int); po = defaultdict(int)
     pts_sum = defaultdict(float); w_sum = defaultdict(float)
-    t5 = defaultdict(float); t10 = defaultdict(float)
+    t5 = defaultdict(float); t10 = defaultdict(float); pole_sum = defaultdict(float)
 
     def one(_):
         return _sim_nascar_season(drivers, phases, random.Random(rng.random()))
     with ThreadPoolExecutor(max_workers=8) as ex:
-        for c, made, sw, top5, top10, pts in ex.map(one, range(n)):
+        for c, made, sw, top5, top10, pts, poles in ex.map(one, range(n)):
             champ[c] += 1
             for did in made:
                 po[did] += 1
@@ -386,6 +406,7 @@ def sim_nascar(n=2000, year=None, seed=None):
                 did = d["id"]
                 pts_sum[did] += pts[did]; w_sum[did] += sw.get(did, 0)
                 t5[did] += top5.get(did, 0); t10[did] += top10.get(did, 0)
+                pole_sum[did] += poles.get(did, 0)
 
     out = []
     for d in drivers:
@@ -394,7 +415,8 @@ def sim_nascar(n=2000, year=None, seed=None):
                     "wins_now": d["wins"], "title_pct": round(100 * champ[did] / n, 1),
                     "playoff_pct": round(100 * po[did] / n, 1),
                     "proj_points": round(pts_sum[did] / n), "exp_wins": round(w_sum[did] / n, 1),
-                    "exp_top5": round(t5[did] / n, 1), "exp_top10": round(t10[did] / n, 1)})
+                    "exp_top5": round(t5[did] / n, 1), "exp_top10": round(t10[did] / n, 1),
+                    "exp_poles": round(pole_sum[did] / n, 1)})
     out.sort(key=lambda x: x["title_pct"], reverse=True)
     return {"sport": "nascar", "n_sims": n,
             "races_left": sum(phases.values()), "drivers": out}

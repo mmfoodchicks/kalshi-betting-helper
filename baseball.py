@@ -112,7 +112,6 @@ def _batter_model(slate, side, name):
     per-PA hit rate, expected PA)."""
     if not slate:
         return None
-    import props as _props
     key = "batters_home" if side == "home" else "batters_away"
     nm = _norm(name)
     for b in (slate.get("props") or {}).get(key) or []:
