@@ -36,19 +36,22 @@ def _log5(b, p, l):
     return num / den if den > 0 else b
 
 
-def _pa_probs(bat, pit):
-    """Outcome probabilities for one plate appearance (sums to 1)."""
+def _pa_probs(bat, pit, env=1.0):
+    """Outcome probabilities for one plate appearance (sums to 1). `env` is a
+    run-environment multiplier (>1 = hitter-friendly park/weather, <1 = pitcher-
+    friendly) that scales power and balls-in-play hits; 1.0 leaves the season sim
+    untouched."""
     br = bat["rates"]
     k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL
     bb = _log5(br["bb"], pit["bbpa"], LG["bb"]) * _BB_CAL
-    hr = _log5(br["hr"], pit["hrpa"], LG["hr"])
+    hr = _log5(br["hr"], pit["hrpa"], LG["hr"]) * env
     hbp = br["hbp"]
     # Remaining mass goes to balls in play (hits + outs), tilted by the pitcher's
     # run prevention (better ERA suppresses hits a touch).
     rest = max(0.0, 1.0 - k - bb - hr - hbp)
     qual = max(0.78, min(1.22, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
     s, d, t = br["1b"], br["2b"], br["3b"]
-    hit = (s + d + t) / qual * _HIT_CAL  # better pitcher -> fewer hits in play
+    hit = (s + d + t) / qual * _HIT_CAL * env  # park/weather scales hits in play
     bip = s + d + t + 0.0
     # batter's in-play out rate implied by his line (1 - all events)
     out_in_play = max(0.05, 1 - (br["k"] + br["bb"] + br["hbp"] + br["hr"] + bip))
@@ -209,8 +212,10 @@ def _avail_sp(sp, prof, rng):
     return sp
 
 
-def play_game(home, away, sp_home=None, sp_away=None, rng=None):
+def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
+    `env` scales the run environment (park + weather) for DFS slate sims; it
+    defaults to 1.0 so the season engine is unchanged.
     Returns {home_runs, away_runs, home_win, batting:{pid:line}, pitching:{pid:line}}."""
     rng = rng or random
     sp_home = _avail_sp(sp_home or home["rotation"][0], home, rng)
@@ -255,7 +260,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None):
                         used_ph[half].add(ph["id"])
                         bench[half] = [b for b in bench[half] if b["id"] != ph["id"]]
                         bat = ph
-                probs = _pa_probs(bat, pit)
+                probs = _pa_probs(bat, pit, env)
                 r = rng.random()
                 cum = 0.0
                 for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):

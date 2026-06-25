@@ -126,6 +126,113 @@ def projections(games, n_sims=4000):
     return proj
 
 
+# ---- Deep pitch-by-pitch projections (shared engine) -----------------------
+_LG_RUNS = 4.35     # league average runs per team per game (env normalizer)
+
+
+def _team_ids(season):
+    """{team abbreviation: MLB team id} so we can map a slate's abbrs to the deep
+    roster profiles (the slate carries abbrs + starter names, not ids)."""
+    import baseball
+
+    def build():
+        d = baseball._get(f"https://statsapi.mlb.com/api/v1/teams?sportId=1&season={season}")
+        return {t.get("abbreviation", ""): t["id"] for t in d.get("teams", []) if t.get("abbreviation")}
+    return baseball._cached(("dfs_team_ids", season), 86400, build) or {}
+
+
+def _match_sp(prof, name):
+    """The posted starter from the deep profile, matched by name (full, then last),
+    falling back to the ace if the slate's starter isn't in the profile."""
+    pool = (prof.get("rotation") or []) + (prof.get("bullpen") or []) + (prof.get("depth") or [])
+    tgt = _norm(name)
+    if tgt:
+        for p in pool:
+            if _norm(p["name"]) == tgt:
+                return p
+        last = tgt.split()[-1]
+        for p in pool:
+            if _norm(p["name"]).split()[-1:] == [last]:
+                return p
+    return (prof.get("rotation") or [None])[0]
+
+
+def _hitter_dk(l):
+    """DraftKings hitter points from a deep box line (no SB/HBP — not modeled)."""
+    singles = l["h"] - l["2b"] - l["3b"] - l["hr"]
+    return (3 * singles + 5 * l["2b"] + 8 * l["3b"] + 10 * l["hr"]
+            + 2 * l["rbi"] + 2 * l["r"] + 2 * l["bb"])
+
+
+def _pitcher_dk(l, won):
+    """DraftKings pitcher points from a deep box line. Win goes to a starter whose
+    side won and who went 5+ (15 outs) — DK's rule, approximated."""
+    win = 4 if (won and l["outs"] >= 15) else 0
+    return 0.75 * l["outs"] + 2 * l["k"] - 2 * l["r"] - 0.6 * l["h"] - 0.6 * l["bb"] + win
+
+
+def deep_projections(games, season, n=3000):
+    """Per-player DraftKings point distributions from the DEEP pitch-by-pitch
+    engine -- the same simulator behind the 4,000-season run. Each slate game is
+    played with the ACTUAL posted starters, so pitchers face the real opposing
+    lineup (not a standalone ERA/WHIP formula) and same-game hitters are
+    correlated for stacking. Park + weather enter via a run-environment multiplier
+    derived from the slate's expected runs. Same output shape as projections()."""
+    import deep_data
+    import deep_sim
+    tid = _team_ids(season)
+    proj = {}
+    for g in games:
+        if (g.get("live") or {}).get("state") == "Final":
+            continue
+        hid, aid = tid.get(g.get("home_abbr")), tid.get(g.get("away_abbr"))
+        if not hid or not aid:
+            continue
+        try:
+            hp = deep_data.team_profile(hid, season)
+            ap = deep_data.team_profile(aid, season)
+        except Exception:
+            continue
+        if not (hp and ap and hp.get("lineup") and ap.get("lineup")):
+            continue
+        sp_h = _match_sp(hp, (g.get("home_sp") or {}).get("name"))
+        sp_a = _match_sp(ap, (g.get("away_sp") or {}).get("name"))
+        sp_h_id = sp_h["id"] if sp_h else None
+        sp_a_id = sp_a["id"] if sp_a else None
+        er = (g.get("exp_runs_home") or 4.3) + (g.get("exp_runs_away") or 4.3)
+        env = max(0.72, min(1.40, er / (2 * _LG_RUNS)))   # park + weather signal
+        meta_bat, meta_pit = {}, {}
+        for prof, abbr in ((hp, g.get("home_abbr")), (ap, g.get("away_abbr"))):
+            for b in (prof.get("lineup") or []) + (prof.get("bench") or []):
+                meta_bat[b["id"]] = (b["name"], abbr)
+            for p in (prof.get("rotation") or []) + (prof.get("bullpen") or []):
+                meta_pit[p["id"]] = (p["name"], abbr)
+        bat_acc, pit_acc = {}, {}
+        for i in range(n):
+            res = deep_sim.play_game(hp, ap, sp_h, sp_a, env=env)
+            hw = res["home_win"]
+            for pid, line in res["batting"].items():
+                bat_acc.setdefault(pid, [0.0] * n)[i] = _hitter_dk(line)
+            for pid, line in res["pitching"].items():
+                won = (hw and pid == sp_h_id) or ((not hw) and pid == sp_a_id)
+                pit_acc.setdefault(pid, [0.0] * n)[i] = _pitcher_dk(line, won)
+        # Pitchers first so a two-way player's HITTER line wins the name key (the
+        # common DFS case).
+        for pid, arr in pit_acc.items():
+            nm, abbr = meta_pit.get(pid, (None, None))
+            d = _dist(arr) if nm else None
+            if d and d["proj"] > 1:
+                proj[_norm(nm)] = {"kind": "pit", "team": abbr or "",
+                                   "game": g.get("game_pk"), "arr": arr, **d}
+        for pid, arr in bat_acc.items():
+            nm, abbr = meta_bat.get(pid, (None, None))
+            d = _dist(arr) if nm else None
+            if d:
+                proj[_norm(nm)] = {"kind": "bat", "team": abbr or "",
+                                   "game": g.get("game_pk"), "arr": arr, **d}
+    return proj
+
+
 # ---- Kalshi betting-market signals (the edge the DFS sites don't have) -----
 def market_signals(season):
     """{normalized name: market-implied boom probability} from Kalshi's batter
@@ -489,7 +596,18 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         games = baseball.analyze_slate(date, date[:4])
     except Exception as e:
         return {"error": f"slate failed: {e}"}
-    proj = projections(games, n_sims)
+    # Deep pitch-by-pitch engine (pitchers vs the real lineup); fall back to the
+    # lighter game sim if team profiles aren't available.
+    season = date[:4]
+    proj = {}
+    try:
+        proj = deep_projections(games, season, min(3000, n_sims))
+    except Exception:
+        proj = {}
+    engine = "deep"
+    if not proj:
+        proj = projections(games, n_sims)
+        engine = "fast"
     if not proj:
         return {"error": "no projections — lineups may not be posted yet"}
     market_boom = {}
@@ -554,6 +672,7 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
 
     out = {
         "objective": objective, "n_lineups": len(payloads),
+        "engine": engine,
         "lineups": payloads, "exposure": exposure,
         "leverage_board": leverage_board,
         "pool": len(players), "sim_players": len(sim_players),

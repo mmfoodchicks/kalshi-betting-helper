@@ -2477,7 +2477,7 @@ function renderMlbDfs(d) {
 
   return `<div class="dfs-wrap">
     <div class="dfs-top">
-      <div class="dfs-title">⚾ MLB DFS — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}</div>
+      <div class="dfs-title">⚾ MLB DFS — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}${d.engine === "deep" ? ` <span class="dfs-chip" style="background:rgba(91,140,255,0.15);color:var(--accent)">deep engine</span>` : ""}</div>
       <div class="dfs-meta">${d.n_lineups} lineup${d.n_lineups > 1 ? "s" : ""} · ${d.sim_players} sim-projected players in pool of ${d.pool}</div>
     </div>
     ${boardHtml}
@@ -2485,7 +2485,9 @@ function renderMlbDfs(d) {
     <div class="dfs-lineups">${d.lineups.map(lineupCard).join("")}</div>
     ${expHtml}
     ${un}
-    <div class="small" style="margin-top:8px;color:var(--muted)">🎲 hitters come from the correlated game sim (stacking rewards the ceiling); pitchers are simulated from rate stats. Ownership/leverage are model estimates. Needs posted lineups (a few hours pre-game).</div>
+    <div class="small" style="margin-top:8px;color:var(--muted)">🎲 ${d.engine === "deep"
+      ? "every game is played out by the deep pitch-by-pitch engine (the same one behind the 4,000-season run): pitchers face the real opposing lineup, same-game hitters are correlated for stacking, and park + weather scale the run environment"
+      : "hitters come from the correlated game sim; pitchers from rate stats"}. Ownership/leverage are model estimates. Needs posted lineups (a few hours pre-game).</div>
   </div>`;
 }
 
