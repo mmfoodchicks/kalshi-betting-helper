@@ -18,49 +18,48 @@
   <link rel="stylesheet" href="/static/style.css?v={{ v }}" />
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-bg" aria-hidden="true">
-      <div class="slide"></div><div class="slide"></div><div class="slide"></div>
-      <div class="slide"></div><div class="slide"></div><div class="slide"></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-mark">V</span><span class="brand-name">Vigil</span></div>
+      <p class="sub">Model odds &amp; live edges across Kalshi, DraftKings &amp; crypto — estimates, not guarantees. Bet responsibly.</p>
+      <div class="settingsbar">
+        <span class="setlabel">Bankroll</span> $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:84px"/>
+        <span class="setlabel">Kelly</span>
+        <select id="kellyMult">
+          <option value="0.25">¼ (safe)</option>
+          <option value="0.5" selected>½ (balanced)</option>
+          <option value="1">full (aggressive)</option>
+          <option value="0">off</option>
+        </select>
+        <span class="setlabel">Plan</span>
+        <select id="tierSel">
+          <option value="owner">Owner</option>
+          <option value="free">Free</option>
+          <option value="pro">Pro</option>
+          <option value="edge">Edge</option>
+        </select>
+        <span class="hint" id="tierHint"></span>
+      </div>
     </div>
-    <div class="hero-scrim" aria-hidden="true"></div>
-    <div class="hero-content">
-      <div class="brand"><span class="brand-mark">⚡</span><h1><span>Vigil</span></h1></div>
-      <p class="sub">Model odds &amp; live edges across Kalshi, DraftKings, crypto &amp; more — estimates, not guarantees. Bet responsibly.</p>
-    <div class="settingsbar">
-      💰 Bankroll $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:90px"/>
-      · Kelly
-      <select id="kellyMult">
-        <option value="0.25">¼ (safe)</option>
-        <option value="0.5" selected>½ (balanced)</option>
-        <option value="1">full (aggressive)</option>
-        <option value="0">off</option>
-      </select>
-      <span class="hint">sizes each bet from its edge</span>
-      · 💳 Plan
-      <select id="tierSel">
-        <option value="owner">👑 Owner (God)</option>
-        <option value="free">Free</option>
-        <option value="pro">Pro</option>
-        <option value="edge">Edge</option>
-      </select>
-      <span class="hint" id="tierHint"></span>
-    </div>
-    </div><!-- /hero-content -->
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="crypto">⚡ Crypto</button>
-    <button class="tab" data-tab="baseball">⚾ Baseball</button>
-    <button class="tab" data-tab="edges">🎯 Edge Finder</button>
-    <button class="tab" data-tab="hits">📈 Hits</button>
-    <button class="tab" data-tab="football">🏈 Football</button>
-    <button class="tab" data-tab="sports">🏆 Sports</button>
-    <button class="tab" data-tab="commodities">🛢️ Commodities</button>
-    <button class="tab" data-tab="weather">🌡️ Weather</button>
-    <button class="tab" data-tab="sim">🎲 Simulator</button>
-    <button class="tab" data-tab="combine">🎰 Combos</button>
-    <button class="tab" data-tab="ledger">📒 Ledger</button>
+    <span class="navgroup">Markets</span>
+    <button class="tab active" data-tab="crypto">Crypto</button>
+    <button class="tab" data-tab="commodities">Commodities</button>
+    <button class="tab" data-tab="weather">Weather</button>
+    <span class="navsep"></span>
+    <span class="navgroup">Sports</span>
+    <button class="tab" data-tab="sports">Live &amp; Futures</button>
+    <button class="tab" data-tab="baseball">Baseball</button>
+    <button class="tab" data-tab="edges">Edges</button>
+    <button class="tab" data-tab="hits">Hits</button>
+    <button class="tab" data-tab="football">Football</button>
+    <span class="navsep"></span>
+    <span class="navgroup">Tools</span>
+    <button class="tab" data-tab="combine">Combos</button>
+    <button class="tab" data-tab="sim">Simulator</button>
+    <button class="tab" data-tab="ledger">Ledger</button>
   </nav>
 
   <main>
