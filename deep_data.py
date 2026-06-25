@@ -58,16 +58,22 @@ def _roster_stats(team_id, season, group):
     return baseball._cached(("deep_roster40", team_id, season, group), 21600, fetch)
 
 
-def _batter(per, st, avail=1.0):
+def _batter(per, st, avail=1.0, mults=(1.0, 1.0)):
     pa = _f(st.get("plateAppearances"))
     if pa < 25:                       # thin sample -> league-average bat
         rates = dict(LG)
     else:
-        h = _f(st.get("hits")); d2 = _f(st.get("doubles")); t3 = _f(st.get("triples"))
-        hr = _f(st.get("homeRuns")); singles = max(0.0, h - d2 - t3 - hr)
+        # Statcast xBA/xSLG true-talent adjustment (same signal the combo sim
+        # uses): contact scales hit rate toward xBA, power scales XBH toward xSLG.
+        contact, power = mults
+        d2 = _f(st.get("doubles")) / pa * power
+        t3 = _f(st.get("triples")) / pa * power
+        hr = _f(st.get("homeRuns")) / pa * power
+        hit = _f(st.get("hits")) / pa * contact
+        singles = max(0.0, hit - d2 - t3 - hr)
         rates = {"k": _f(st.get("strikeOuts")) / pa, "bb": _f(st.get("baseOnBalls")) / pa,
-                 "hbp": _f(st.get("hitByPitch")) / pa, "hr": hr / pa,
-                 "1b": singles / pa, "2b": d2 / pa, "3b": t3 / pa}
+                 "hbp": _f(st.get("hitByPitch")) / pa, "hr": hr,
+                 "1b": singles, "2b": d2, "3b": t3}
     return {"id": per["id"], "name": per.get("boxscoreName") or per["fullName"],
             "side": per.get("batSide", {}).get("code", "R"), "pa": pa, "rates": rates,
             "avail": avail}
@@ -99,6 +105,14 @@ def team_profile(team_id, season=None):
     def build():
         hit = _roster_stats(team_id, season, "hitting")
         pit = _roster_stats(team_id, season, "pitching")
+        # Statcast xStats so the deep run uses true-talent batter rates (the same
+        # refinement the combo sim applies). Best-effort: falls back to raw rates.
+        xstats = {}
+        try:
+            import savant
+            xstats = savant.expected_stats(season) or {}
+        except Exception:
+            pass
         batters, pitchers = [], []
         for pid, (per, pos, st, code) in {**hit, **pit}.items():
             # Active + short-IL players only; 60-day IL, minors (RM), paternity,
@@ -115,7 +129,13 @@ def team_profile(team_id, season=None):
             else:
                 s = hit.get(pid, (None, None, None, None))[2]
                 if s:
-                    batters.append(_batter(per, s, avail))
+                    mults = (1.0, 1.0)
+                    try:
+                        import savant
+                        mults = savant.quality_mults(xstats.get(pid))
+                    except Exception:
+                        pass
+                    batters.append(_batter(per, s, avail, mults))
         # Rotation = top starters by games started; bullpen = the rest with innings.
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
                           key=lambda p: (p["gs"], p["ip"]), reverse=True)[:6]
