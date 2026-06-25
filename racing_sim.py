@@ -94,16 +94,24 @@ def f1_profiles():
 
 
 def f1_remaining():
-    """Remaining races this season as [{round, name, sprint}]."""
+    """Remaining races as [{round, name, sprint, circuit, wet_prob, avg_wind}].
+    Wet-race probability + wind come from the circuit's historical race-day
+    climate (Open-Meteo archive)."""
     import datetime
+    import race_weather
     def build():
         d = racing._get_json(f"{ERGAST}.json")
         today = datetime.date.today().isoformat()
         out = []
         for r in d["MRData"]["RaceTable"]["Races"]:
             if r.get("date", "") >= today:
+                loc = (r.get("Circuit") or {}).get("Location") or {}
+                clim = race_weather.climate(loc.get("lat"), loc.get("long"), r["date"]) or {}
                 out.append({"round": int(r["round"]), "name": r["raceName"],
-                            "sprint": "Sprint" in r})
+                            "sprint": "Sprint" in r,
+                            "circuit": (r.get("Circuit") or {}).get("circuitName"),
+                            "wet_prob": clim.get("wet_prob", 0.12),
+                            "avg_wind": clim.get("avg_wind")})
         return out
     return racing._cached(("f1_remaining",), 6 * 3600, build) or []
 
@@ -141,23 +149,30 @@ def _apply_grid_penalties(grid, rng):
     return clean + penalized
 
 
-def _sim_race(drivers, grid, rng):
+def _sim_race(drivers, grid, rng, wet=False):
     """Finishing order (list of ids). Blends grid + race pace with variance, plus
     random events: DNFs (crash/mechanical + a flat incident chance) drop to the
-    back, and time penalties cost ~a handful of positions."""
+    back, and time penalties cost positions. A WET race is far more chaotic — more
+    spins/DNFs, wider variance, and tyre-call gambles (the wrong-tyre fiasco) that
+    can drop a frontrunner or vault a midfielder."""
+    sigma = _SIGMA_R * (1.8 if wet else 1.0)
+    dnf_extra = 0.06 if wet else 0.0
     pos = {did: i + 1 for i, did in enumerate(grid)}
     by_id = {d["id"]: d for d in drivers}
     finishers, retired = [], []
     for did in grid:
         d = by_id[did]
-        if rng.random() < min(0.55, d["dnf"] + _INCIDENT):    # crash / mechanical / collected
+        if rng.random() < min(0.6, d["dnf"] + _INCIDENT + dnf_extra):   # crash / mechanical / spin
             retired.append(did)
             continue
-        pen = rng.randint(4, 9) if rng.random() < _TIME_PEN else 0  # time penalty
-        score = _GRID_W * pos[did] + (1 - _GRID_W) * d["race"] + rng.gauss(0, _SIGMA_R) + pen
+        pen = rng.randint(4, 9) if rng.random() < _TIME_PEN else 0
+        gamble = 0
+        if wet and rng.random() < 0.12:       # tyre-call gamble: usually wrong, sometimes genius
+            gamble = rng.randint(3, 10) if rng.random() < 0.6 else -rng.randint(3, 8)
+        score = _GRID_W * pos[did] + (1 - _GRID_W) * d["race"] + rng.gauss(0, sigma) + pen + gamble
         finishers.append((score, did))
     finishers.sort()
-    rng.shuffle(retired)                      # DNF order among themselves is noise
+    rng.shuffle(retired)
     return [did for _, did in finishers] + retired
 
 
@@ -177,14 +192,15 @@ def _sim_one_season(profiles, remaining, rng):
         quali = _sim_quali(drivers, rng)
         pole_id = quali[0]                    # pole = fastest in qualifying
         poles[pole_id] += 1
+        wet = rng.random() < race.get("wet_prob", 0.0)   # rain rolled from circuit climate
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
             sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
-            sorder = _sim_race(drivers, sgrid, rng)
+            sorder = _sim_race(drivers, sgrid, rng, wet=wet)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
         grid = _apply_grid_penalties(quali, rng)   # engine penalties hit the start
-        order = _sim_race(drivers, grid, rng)
+        order = _sim_race(drivers, grid, rng, wet=wet)
         wins[order[0]] += 1
         for did in order[:3]:
             podiums[did] += 1
@@ -235,6 +251,8 @@ def sim_f1(n=2000, seed=None):
         return [{"name": name_of[did], "team": team_of[did], "pct": round(100 * c / n, 1)}
                 for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:14]
     races = [{"round": r["round"], "name": r["name"], "sprint": r["sprint"],
+              "circuit": r.get("circuit"), "wet_prob": r.get("wet_prob"),
+              "avg_wind": r.get("avg_wind"),
               "pole": field(race_pole[r["round"]]), "winner": field(race_win[r["round"]])}
              for r in remaining]
 

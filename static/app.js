@@ -1801,7 +1801,9 @@ function renderRaceMarket() {
     const race = d.races[+idx];
     const list = kind === "pole" ? race.pole : race.winner;
     const note = race.priced ? "" : ` <span class="small" style="color:var(--muted)">— model only; Kalshi prices appear once it's the next race</span>`;
-    html = `<div class="teamhdr" style="margin:0 0 6px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>`
+    const wx = race.wet_prob != null
+      ? `<div class="small" style="color:var(--muted);margin:-2px 0 6px">🌧️ ${Math.round(race.wet_prob * 100)}% wet-race risk${race.avg_wind ? ` · 💨 ${race.avg_wind} km/h avg` : ""}${race.circuit ? ` · ${race.circuit}` : ""} <span style="color:var(--faint)">(historical race-day climate; wet races scramble the order)</span></div>` : "";
+    html = `<div class="teamhdr" style="margin:0 0 2px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>${wx}`
       + `<div class="futrow rcrowR rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span></div>`
       + list.map((x, i) => `<div class="futrow rcrowR"><span class="fr-rank">${i + 1}</span>
           <span class="fr-team"><b>${x.name}</b>${x.team ? `<span class="small"> ${x.team}</span>` : ""}</span>
