@@ -424,6 +424,12 @@ button.danger { color: var(--no); }
 .nflwt { font-size: 0.78rem; padding: 2px 7px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); white-space: nowrap; }
 .nflwt.pos { border-color: rgba(52, 199, 123, 0.5); color: var(--pos); }
 .nflwt.neg { border-color: rgba(255, 99, 99, 0.35); color: var(--neg); }
+.ufc-bout { border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 9px; }
+.ufc-bweight { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 5px; }
+.ufc-fighter { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; gap: 10px; }
+.ufc-fnums { display: grid; grid-template-columns: 78px 46px 46px 84px; gap: 8px; align-items: center; }
+.ufc-win { text-align: right; font-weight: 600; }
+.ufc-method { display: flex; gap: 12px; margin-top: 5px; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 5px; }
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
 .deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }

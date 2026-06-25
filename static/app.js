@@ -1190,6 +1190,7 @@ function setupTabs() {
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
+      $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -1206,6 +1207,7 @@ function setupTabs() {
       if (tab === "sports") initSportsTab();
       if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
+      if (tab === "ufc") initUFC();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
@@ -1849,6 +1851,57 @@ async function rerunPro(lg) {
   try { await fetch(`/api/sim/rerun?sport=${lg}`, { method: "POST" }); } catch (e) {}
   $("nflResults").innerHTML = `<div class="empty">Rerun started — reloading shortly…</div>`;
   setTimeout(loadNFL, 6000);
+}
+
+// ---- UFC ----
+let _ufcData = null, _ufcPoll = null;
+function initUFC() {
+  if (!$("ufcResults").dataset.loaded) { $("ufcResults").dataset.loaded = "1"; loadUFC(); }
+}
+async function loadUFC() {
+  try {
+    const r = await fetch("/api/ufc");
+    if (r.status === 202) {
+      $("ufcResults").innerHTML = `<div class="empty">Rating every fighter from their fight history & simulating the card… ~1 min on a cold start.</div>`;
+      if (!_ufcPoll) _ufcPoll = setInterval(loadUFC, 8000);
+      return;
+    }
+    const d = await r.json();
+    if (d.error) { $("ufcResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (_ufcPoll) { clearInterval(_ufcPoll); _ufcPoll = null; }
+    _ufcData = d;
+    renderUFC();
+  } catch (e) { $("ufcResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
+}
+function _ufcEdge(e) {
+  if (e == null) return "—";
+  return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
+}
+function _fighterRow(f) {
+  const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "—";
+  const fair = f.fair_win != null && f.fair_win !== f.win_pct
+    ? ` <span class="small" style="color:var(--muted)" title="confidence-blended with the market">→${f.fair_win}%</span>` : "";
+  return `<div class="ufc-fighter">
+      <div class="ufc-fname"><b>${f.name}</b> <span class="small" style="color:var(--muted)">${f.record} · ${f.fights}f</span></div>
+      <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
+        <span class="fr-num">${px}</span><span class="fr-num">${_ufcEdge(f.edge)}</span>
+        <span class="fr-num" title="DraftKings projection / ceiling">DK ${f.proj}<span style="color:var(--muted)">/${f.ceil}</span></span></div>
+    </div>`;
+}
+function renderUFC() {
+  const d = _ufcData; if (!d) return;
+  $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · model = ratings from each fighter's past fights → win prob, method/round & DK points. Edge = our fair win% (blended toward the market when fight history is thin) − Kalshi ask.`;
+  const bouts = d.bouts.map((bt) => {
+    const m = bt.method || {};
+    const methodBar = `<div class="ufc-method">
+        <span title="KO/TKO">KO ${m.ko ?? 0}%</span><span title="Submission">SUB ${m.sub ?? 0}%</span><span title="Decision">DEC ${m.dec ?? 0}%</span></div>`;
+    return `<div class="ufc-bout">
+        <div class="ufc-bweight">${bt.weight || ""} · ${bt.rounds || 3} rounds</div>
+        ${_fighterRow(bt.a)}${_fighterRow(bt.b)}
+        ${methodBar}
+      </div>`;
+  }).join("");
+  $("ufcResults").innerHTML = bouts;
 }
 
 // ---- World Cup ----

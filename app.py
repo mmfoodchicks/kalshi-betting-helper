@@ -998,6 +998,27 @@ def api_pro_league(league):
     return jsonify(data)
 
 
+@app.route("/api/ufc")
+def api_ufc():
+    """UFC card simulator: per-bout win odds, method/round and each fighter's DK
+    projection, with live Kalshi prices + edges. The board (model) is cached; a
+    cold start computes in the background and returns 202 until ready."""
+    try:
+        import ufc_sim
+        board = ufc_sim.board()
+    except Exception as e:
+        return jsonify({"error": f"ufc sim failed: {e}"}), 502
+    if not board:
+        return jsonify({"status": "computing",
+                        "message": "rating every fighter from their fight history…"}), 202
+    try:
+        import ufc_prices
+        ufc_prices.attach(board)
+    except Exception:
+        pass
+    return jsonify(board)
+
+
 @app.route("/api/worldcup")
 def api_worldcup():
     """World Cup simulator board: per-team champion/advance/round odds and per-match

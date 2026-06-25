@@ -120,6 +120,33 @@ def _worldcup_legs():
     return legs
 
 
+def _ufc_legs():
+    """UFC moneyline legs from OUR fight simulator (model win %, not de-vig). One
+    event per bout with both fighters as candidate legs + the live Kalshi price."""
+    legs = []
+    try:
+        import ufc_sim
+        import ufc_prices
+        board = ufc_sim.board()
+        if not board:
+            return legs
+        ufc_prices.attach(board)
+    except Exception:
+        return legs
+    for bt in board.get("bouts", []):
+        ev = f"ufc_{bt['a']['id']}_{bt['b']['id']}"
+        matchup = f"{bt['a']['name']} vs {bt['b']['name']}"
+        for side in ("a", "b"):
+            f = bt[side]
+            # confidence-blended fair win (defers to market when history is thin)
+            prob = f.get("fair_win", f["win_pct"]) / 100.0
+            legs.append({"category": "🥊 UFC", "event_id": ev,
+                         "label": f"{f['name']} to win", "matchup": matchup,
+                         "prob": prob, "price_cents": f.get("kalshi_cents"),
+                         "type": "UFC ML"})
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -146,8 +173,10 @@ def gather(cats, date, season):
         legs += _crypto_legs()
     if "soccer" in cats:
         legs += _worldcup_legs()                 # our World Cup model, not de-vig
+    if "ufc" in cats:
+        legs += _ufc_legs()                      # our UFC fight model, not de-vig
     for k in SPORT_KEYS:
-        if k == "soccer" or k not in cats:
+        if k in ("soccer", "ufc") or k not in cats:
             continue
         legs += _sport_legs(k)
     return legs
