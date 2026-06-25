@@ -245,14 +245,16 @@ def _rel_kpa(bp_era, rnd):
 _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
-def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
+def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
     being hit -- workload scales with the runs the offense actually scored this
-    sim), then a random assortment of relievers (each a fresh K-rate draw from
-    the team's bullpen quality, ~1 inning apiece) finishes. Returns the STARTER's
-    (Ks, pitches, outs) and the bullpen's combined Ks."""
+    sim), then relievers (~1 inning apiece) finish. When the deep engine's named
+    bullpen is supplied (`bullpen` = [{kpa, era}], best arm last) we cycle through
+    the real relievers worst-first; otherwise we fall back to a generic K-rate
+    draw off the bullpen's ERA. Returns the STARTER's (Ks, pitches, outs) and the
+    bullpen's combined Ks."""
     sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
@@ -268,6 +270,15 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
     starter_in = True
     rel_kpa = sp_kpa
     appr_outs = 0                                        # outs by the current reliever
+    pen_i = [0]                                          # index into the named bullpen
+
+    def next_reliever():
+        # Named arms enter worst-first (closer held back); else a generic draw.
+        if bullpen:
+            arm = bullpen[min(pen_i[0], len(bullpen) - 1)]
+            pen_i[0] += 1
+            return max(0.12, min(0.45, arm["kpa"]))
+        return _rel_kpa(bp_era, rnd)
     while outs < 27 and pa < 70:
         pa += 1
         kpa = sp_kpa if starter_in else rel_kpa
@@ -310,10 +321,10 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd):
                 eff_limit, outs_cap = limit, 21
             if sp_pitches >= eff_limit or sp_outs >= outs_cap:
                 starter_in = False; appr_outs = 0
-                rel_kpa = _rel_kpa(bp_era, rnd)
+                rel_kpa = next_reliever()
         elif appr_outs >= 3:                            # next reliever (~1 inning each)
             appr_outs = 0
-            rel_kpa = _rel_kpa(bp_era, rnd)
+            rel_kpa = next_reliever()
     return sp_k, int(round(sp_pitches)), sp_outs, bull_k
 
 
@@ -387,12 +398,14 @@ def simulate(g, n=5000):
         # Home staff faces the away offense (so its workload scales with away_runs).
         if do_home_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),
-                                               ht.get("bullpen_whip"), ra, rnd)
+                                               ht.get("bullpen_whip"), ra, rnd,
+                                               bullpen=ht.get("bp_arms"))
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(away_k9, at.get("bullpen_era"),
-                                               at.get("bullpen_whip"), rh, rnd)
+                                               at.get("bullpen_whip"), rh, rnd,
+                                               bullpen=at.get("bp_arms"))
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 

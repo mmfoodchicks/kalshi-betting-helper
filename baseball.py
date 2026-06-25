@@ -552,6 +552,26 @@ def analyze_slate(date, season):
             for pk, lu in zip(pks, ex.map(_boxscore_lineup, pks)):
                 lineups[pk] = lu
 
+    # Named bullpens from the deep engine's shared player profiles -> feeds the
+    # combo pitching sim with real relievers (K-rates) instead of anonymous draws.
+    # IL-aware + cached (same data the 4,000-season deep sim runs on). Best-effort.
+    bp_arms = {}
+    tids = list({g["home_id"] for g in schedule} | {g["away_id"] for g in schedule})
+
+    def _arms(tid):
+        try:
+            import deep_data
+            prof = deep_data.team_profile(tid, season)
+            return [{"kpa": r["kpa"], "era": r["era"]} for r in prof.get("bullpen", [])][:8]
+        except Exception:
+            return None
+    try:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for tid, arms in zip(tids, ex.map(_arms, tids)):
+                bp_arms[tid] = arms
+    except Exception:
+        bp_arms = {}
+
     def fetch_weather(g):
         s = stadiums_mod.STADIUMS.get(g["home_id"])
         if not s:
@@ -718,12 +738,14 @@ def analyze_slate(date, season):
                           "ops_vs_opp_hand": round(ops_hand(g['home_id'], a_hand) or 0, 3),
                           "rpg": round(th(g['home_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bph.get("era", 0), 2), "bullpen_whip": round(bph.get("whip", 0), 2),
+                          "bp_arms": bp_arms.get(g['home_id']),
                           "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
             "away_team": {"ops": round(th(g['away_id']).get("ops", 0), 3),
                           "ops_vs_opp_hand": round(ops_hand(g['away_id'], h_hand) or 0, 3),
                           "rpg": round(th(g['away_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bpa.get("era", 0), 2), "bullpen_whip": round(bpa.get("whip", 0), 2),
+                          "bp_arms": bp_arms.get(g['away_id']),
                           "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},
             "pick": pick_name, "pick_is_home": pick_home,
