@@ -493,7 +493,10 @@ def nascar_state(year=None, series=1):
                     s["dnf"] += 1
         out = {}
         prior, k = 20.0, 5.0      # regress pace toward midpack so a part-timer with
-        _TK = 4.0                 # per-category pseudo-races: shrink track-type delta
+        _TK = 2.0                 # per-category pseudo-races: shrink track-type pace.
+                                  # Light, because track-type skill is genuinely
+                                  # persistent in NASCAR — a road ace's couple of
+                                  # dominant road runs are strong, real signal.
         for did, s in st.items():  # a couple of lucky finishes isn't a fake contender
             if s["starts"] < 2:
                 continue
@@ -509,7 +512,13 @@ def nascar_state(year=None, series=1):
             for tt, acc in s["t_acc"].items():
                 raw_t = acc / s["t_w"][tt]
                 n_t = s["t_n"][tt]
-                by_type[tt] = round((raw_t - raw) * n_t / (n_t + _TK), 2)
+                # Absolute in-type pace, shrunk toward the driver's OWN overall pace
+                # (not toward "no track effect"). This stops a specialist's real
+                # signal from being washed out twice — once by the delta regression
+                # and again by the midpack-regressed base — so a road ace like SVG
+                # keeps his road mastery. Stored as a delta the sim adds to race_pace.
+                type_pace = (n_t * raw_t + _TK * pace) / (n_t + _TK)
+                by_type[tt] = round(type_pace - pace, 2)
             out[did] = {"id": did, "name": s["name"], "points": s["points"],
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
                         "race_pace": pace, "pace_by_type": by_type,
