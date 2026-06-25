@@ -1189,6 +1189,7 @@ function setupTabs() {
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
+      $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
       $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -1204,6 +1205,7 @@ function setupTabs() {
       if (tab === "baseball") initBaseballTab();
       if (tab === "sports") initSportsTab();
       if (tab === "worldcup") initWorldCup();
+      if (tab === "nfl") initNFL();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
@@ -1772,6 +1774,81 @@ function renderRacing(d) {
     <div id="raceTable"></div>`;
   $("raceMarket").value = _raceMarket;
   renderRaceMarket();
+}
+
+// ---- NFL futures projection ----
+let _nflData = null, _nflSub = "futures", _nflPoll = null;
+function initNFL() {
+  if (!$("nflResults").dataset.loaded) { $("nflResults").dataset.loaded = "1"; loadNFL(); }
+  document.querySelectorAll("#nflSubtabs .subtab").forEach((b) => {
+    if (b.dataset.wired) return;
+    b.dataset.wired = "1";
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#nflSubtabs .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      _nflSub = b.dataset.nflsub;
+      renderNFL();
+    });
+  });
+}
+async function loadNFL() {
+  try {
+    const r = await fetch("/api/pro/nfl");
+    if (r.status === 202) {       // projection warming up — poll until ready
+      $("nflResults").innerHTML = `<div class="empty">Projecting the season (4,000 simulations)… this takes ~30s on a cold start.</div>`;
+      if (!_nflPoll) _nflPoll = setInterval(loadNFL, 8000);
+      return;
+    }
+    const d = await r.json();
+    if (d.error) { $("nflResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (_nflPoll) { clearInterval(_nflPoll); _nflPoll = null; }
+    _nflData = d;
+    renderNFL();
+  } catch (e) { $("nflResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
+}
+function _nflOut(t) {  // small note of who's out / rookies driving the roster modifier
+  const outs = (t.out_list || []).filter((o) => o.reason === "suspended" || o.reason === "injured");
+  if (!outs.length) return "";
+  return ` <span class="small" style="color:var(--neg)" title="${outs.map((o) => o.pos + " " + o.name + " (" + o.reason + ")").join(", ")}">▾${outs.length} out</span>`;
+}
+function renderNFL() {
+  const d = _nflData; if (!d) return;
+  const age = d.age_sec != null ? `updated ${agoStr(d.age_sec)} · ` : "";
+  $("nflSummary").innerHTML = `Simulated <b>${(d.n_sims || 0).toLocaleString()}</b> seasons · prior-year point differential (regressed) + live roster availability from ESPN. <span style="color:var(--muted)">${age}refreshes weekly.</span> <button class="track-mini" onclick="rerunPro('nfl')">↻ rerun</button>`;
+  if (_nflSub === "wins") return renderNFLWins(d);
+  const rows = d.teams.map((t, i) => `<div class="futrow nflrow">
+      <span class="fr-rank">${i + 1}</span>
+      <span class="fr-team">${t.name} <span class="small" style="color:var(--muted)">${(t.division || "").replace(/^(AFC|NFC) /, "$1 ")}</span>${_nflOut(t)}</span>
+      <span class="fr-num">${t.champ_pct}%</span>
+      <span class="fr-num">${t.conf_pct}%</span>
+      <span class="fr-num">${t.division_pct}%</span>
+      <span class="fr-num">${t.playoff_pct}%</span>
+      <span class="fr-num">${t.proj_wins}</span>
+      <span class="fr-num small" style="color:var(--muted)">${t.prior}</span></div>`).join("");
+  $("nflResults").innerHTML = `
+    <div class="futrow nflrow rchead"><span class="fr-rank">#</span><span class="fr-team">Team</span>
+      <span class="fr-num">SB</span><span class="fr-num">Conf</span><span class="fr-num">Div</span>
+      <span class="fr-num">Playoff</span><span class="fr-num">Proj W</span><span class="fr-num">'25</span></div>
+    ${rows}
+    <div class="small" style="color:var(--muted);margin-top:8px">Super Bowl / conference / division markets light up here once Kalshi opens them. Win-total edges are live now — see the Win totals tab.</div>`;
+}
+function renderNFLWins(d) {
+  // Teams with win-total markets, sorted by the biggest available edge.
+  const teams = d.teams.filter((t) => (t.markets || {}).win_totals && t.markets.win_totals.length);
+  if (!teams.length) { $("nflResults").innerHTML = `<div class="empty">No win-total markets matched right now.</div>`; return; }
+  const rows = teams.map((t) => {
+    const cells = t.markets.win_totals.map((w) => {
+      const ec = w.edge == null ? "" : (w.edge >= 0 ? "pos" : "neg");
+      return `<span class="nflwt ${ec}" title="model ${w.model}% vs ${w.cents}¢">${w.line}+ <b>${w.edge >= 0 ? "+" : ""}${w.edge == null ? "—" : w.edge}</b></span>`;
+    }).join("");
+    return `<div class="nflwtrow"><div class="nflwt-team"><b>${t.name}</b> <span class="small" style="color:var(--muted)">proj ${t.proj_wins}W</span></div><div class="nflwt-lines">${cells}</div></div>`;
+  });
+  $("nflResults").innerHTML = `<div class="small" style="color:var(--muted);margin-bottom:6px">Each chip = win-total line: <b>edge</b> (model% − Kalshi ¢). Green = model likes the over.</div>${rows.join("")}`;
+}
+async function rerunPro(lg) {
+  try { await fetch(`/api/sim/rerun?sport=${lg}`, { method: "POST" }); } catch (e) {}
+  $("nflResults").innerHTML = `<div class="empty">Rerun started — reloading shortly…</div>`;
+  setTimeout(loadNFL, 6000);
 }
 
 // ---- World Cup ----

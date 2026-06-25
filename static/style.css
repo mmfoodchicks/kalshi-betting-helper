@@ -413,6 +413,12 @@ button.danger { color: var(--no); }
 .wcmrow { grid-template-columns: 1fr 44px 40px 1fr 44px 40px 1fr 44px 40px; font-size: 0.86rem; } /* 3x (label,pct,edge) */
 .wcmatch { border-bottom: 1px solid var(--border); padding: 4px 0 7px; }
 .wcmatch-h { padding: 7px 6px 2px; }
+.nflrow { grid-template-columns: 28px 1fr 52px 52px 48px 60px 56px 44px; } /* SB/Conf/Div/Playoff/ProjW/'25 */
+.nflwtrow { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: center; padding: 6px; border-bottom: 1px solid var(--border); }
+.nflwt-lines { display: flex; flex-wrap: wrap; gap: 5px; }
+.nflwt { font-size: 0.78rem; padding: 2px 7px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); white-space: nowrap; }
+.nflwt.pos { border-color: rgba(52, 199, 123, 0.5); color: var(--pos); }
+.nflwt.neg { border-color: rgba(255, 99, 99, 0.35); color: var(--neg); }
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
 .deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }

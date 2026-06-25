@@ -171,15 +171,31 @@ def _init_deep_sims():
         import racing_sim
         return racing_sim.sim_nascar(3000)
 
+    def run_pro(league):
+        def run():
+            import pro_sim
+            return pro_sim.project(league, 4000)
+        return run
+
     deep_cache.register("mlb_deep", run_mlb)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
+    # Pro-league preseason projections. NFL is live now; NBA/NHL light up once
+    # their upcoming-season schedules publish (their run returns None until then).
+    for _lg in ("nfl", "nba", "nhl"):
+        deep_cache.register(_lg, run_pro(_lg))
     # Restore the MLB deep run from disk so a restart doesn't lose it.
     payload, _ts = deep_cache.load("mlb_deep")
     if payload:
         _deep["agg"] = payload.get("agg")
         _deep["season"] = payload.get("season")
     deep_cache.start_scheduler()
+    # Warm the NFL projection in the background if we don't have one cached.
+    try:
+        if deep_cache.load("nfl")[0] is None:
+            deep_cache.run_job("nfl")
+    except Exception:
+        pass
 
 
 @app.before_request
@@ -955,6 +971,33 @@ def api_racing_season(sport):
     return jsonify(data)
 
 
+@app.route("/api/pro/<league>")
+def api_pro_league(league):
+    """Roster-aware preseason futures projection (NFL now; NBA/NHL when their
+    schedules publish). Served from the weekly cache; live Kalshi prices + edges
+    attached per request. Returns a 'computing' status while a cold run warms up."""
+    import deep_cache
+    import time as _t
+    league = (league or "").lower()
+    if league not in ("nfl", "nba", "nhl"):
+        return jsonify({"error": "unknown league"}), 404
+    data, ts = deep_cache.load(league)
+    if data is None:
+        started = deep_cache.run_job(league, force=True)
+        st = deep_cache.status(league)
+        return jsonify({"status": "computing" if (started or st["running"]) else "unavailable",
+                        "league": league, "running": st["running"]}), 202
+    data = dict(data)
+    data["generated_at"] = ts
+    data["age_sec"] = (_t.time() - ts) if ts else None
+    try:
+        import pro_prices
+        pro_prices.attach(league, data)
+    except Exception:
+        pass
+    return jsonify(data)
+
+
 @app.route("/api/worldcup")
 def api_worldcup():
     """World Cup simulator board: per-team champion/advance/round odds and per-match
@@ -981,10 +1024,11 @@ def api_sim_status():
 def api_sim_rerun():
     """Force a fresh run of one cached season sim (manual weekly-style refresh)."""
     import deep_cache
-    key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar"}.get(
+    key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar",
+           "nfl": "nfl", "nba": "nba", "nhl": "nhl"}.get(
         (request.args.get("sport") or "").lower())
     if not key:
-        return jsonify({"error": "sport must be mlb, f1 or nascar"}), 400
+        return jsonify({"error": "unknown sport"}), 400
     started = deep_cache.run_job(key, force=True)
     return jsonify({"started": started, "status": deep_cache.status(key)})
 

@@ -52,6 +52,7 @@
     <span class="navgroup">Sports</span>
     <button class="tab" data-tab="sports">Live &amp; Futures</button>
     <button class="tab" data-tab="baseball">Baseball</button>
+    <button class="tab" data-tab="nfl">NFL</button>
     <button class="tab" data-tab="worldcup">World Cup</button>
     <span class="navsep"></span>
     <span class="navgroup">Tools</span>
@@ -297,6 +298,20 @@
       <div id="sportResults" class="markets"><div class="empty">Pick a sport, then Load.</div></div>
     </section>
    </div><!-- /tab-sports -->
+
+   <div id="tab-nfl" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏈 NFL 2026 — preseason projection</h2>
+        <div class="subtabs" id="nflSubtabs">
+          <button class="subtab active" data-nflsub="futures">🏆 Futures</button>
+          <button class="subtab" data-nflsub="wins">📊 Win totals</button>
+        </div>
+      </div>
+      <div id="nflSummary" class="small"></div>
+      <div id="nflResults" class="markets"><div class="empty">Loading the projection…</div></div>
+    </section>
+   </div><!-- /tab-nfl -->
 
    <div id="tab-worldcup" class="hidden">
     <section class="card">

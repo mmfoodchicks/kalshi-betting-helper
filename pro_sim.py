@@ -117,11 +117,14 @@ def _bracket(seeds, rate, k, best_of, rng):
     return field[0] if field else (bye[0] if bye else None)
 
 
-def _one_season(rate, schedule, conf_ids, p, rng):
+def _one_season(rate, schedule, conf_ids, p, rng, game_p=None):
     k, home = p["k"], p["home"]
     wins = defaultdict(int)
-    for h, a in schedule:
-        if rng.random() < _wp(rate[h]["rating"], rate[a]["rating"], k, home):
+    # Regular-season win probs are fixed across sims, so they're precomputed once
+    # in project() and passed in as game_p (avoids ~1M exp() calls per run).
+    rnd = rng.random
+    for i, (h, a) in enumerate(schedule):
+        if rnd() < game_p[i]:
             wins[h] += 1
         else:
             wins[a] += 1
@@ -169,13 +172,16 @@ def project(league, n=4000, seed=None):
     for tid, r in rate.items():
         conf_ids[r["conf"]].append(tid)
     rng = random.Random(seed)
+    # Precompute each scheduled game's home-win probability once.
+    k, home = p["k"], p["home"]
+    game_p = [_wp(rate[h]["rating"], rate[a]["rating"], k, home) for h, a in schedule]
 
     champ = defaultdict(int); conf_w = defaultdict(int)
     div_w = defaultdict(int); playoff = defaultdict(int)
     win_sum = defaultdict(float)
     win_hist = defaultdict(lambda: defaultdict(int))     # tid -> wins -> count
     for _ in range(n):
-        wins, c, ccs, dws, made = _one_season(rate, schedule, conf_ids, p, rng)
+        wins, c, ccs, dws, made = _one_season(rate, schedule, conf_ids, p, rng, game_p)
         if c is not None:
             champ[c] += 1
         for cc in ccs:
