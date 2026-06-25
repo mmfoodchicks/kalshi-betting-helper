@@ -431,12 +431,80 @@ def _nascar_track_type(name):
     if any(k in t for k in ("daytona", "talladega", "atlanta")):
         return "superspeedway"           # pack/draft racing -> high chaos
     if any(k in t for k in ("sonoma", "watkins", "cota", "circuit of the americas",
-                            "road", "roval", "chicago", "mexico")):
-        return "road"
+                            "road course", "roval", "street", "mexico")):
+        return "road"                    # NOT bare "chicago" — that hits Chicagoland
+                                         # Speedway (an oval); "street" = the Chicago
+                                         # street race
     if any(k in t for k in ("martinsville", "richmond", "bristol", "phoenix",
                             "new hampshire", "wilkesboro", "iowa")):
         return "short"
     return "intermediate"                # 1.5-mile ovals, the default
+
+
+def nascar_type_skill(year=None, series=1, n_back=2):
+    """Per-driver per-track-type SKILL delta, isolated from the car, across recent
+    seasons (current + n_back prior).
+
+    Track-type skill (a road ace's road craft) is persistent, but a single season
+    has too few road races to measure it — so we look back. The trap is that a raw
+    finish from two years ago reflects the CAR the driver had then, not just skill.
+    We avoid it with a delta-of-deltas: for each season we take (in-type avg finish
+    − that season's overall avg finish) — how much better than the driver's OWN
+    baseline on that track type — then recency-weight across seasons and regress by
+    the total in-type sample. The result is applied to the CURRENT base pace."""
+    import datetime
+    year = year or datetime.date.today().year
+
+    def build():
+        seasons = list(range(year - n_back, year + 1))
+        today = datetime.date.today().isoformat()
+        # per[did][season] = {"type": {tt: [finishes]}, "all": [finishes]}
+        per = defaultdict(lambda: defaultdict(lambda: {"type": defaultdict(list), "all": []}))
+        for yr in seasons:
+            try:
+                rl = racing._get_json(f"{NASCAR_BASE}/{yr}/{series}/race_list_basic.json")
+            except Exception:
+                continue
+            pts = sorted((r for r in rl if r.get("race_type_id") == 1),
+                         key=lambda r: r.get("race_date", ""))
+            done = [r for r in pts if (r.get("race_date") or "")[:10] < today]
+
+            def feed(r):
+                try:
+                    d = racing._get_json(
+                        f"{NASCAR_BASE}/{yr}/{series}/{r['race_id']}/weekend-feed.json")
+                    return r, d["weekend_race"][0]["results"]
+                except Exception:
+                    return r, []
+            with ThreadPoolExecutor(max_workers=6) as ex:
+                for r, res in ex.map(feed, done):
+                    tt = _nascar_track_type(r.get("track_name", ""))
+                    for x in res:
+                        if (x.get("finishing_status") or "Running") != "Running":
+                            continue                       # DNFs handled by the base/reliability
+                        fp = x.get("finishing_position", 35)
+                        per[x["driver_id"]][yr]["type"][tt].append(fp)
+                        per[x["driver_id"]][yr]["all"].append(fp)
+        sw = {yr: i + 1 for i, yr in enumerate(seasons)}   # recency weight, current highest
+        _SK = 2.5
+        out = {}
+        for did, byseason in per.items():
+            acc = defaultdict(float); wsum = defaultdict(float); nsum = defaultdict(int)
+            for yr, data in byseason.items():
+                allf = data["all"]
+                if len(allf) < 3:
+                    continue
+                overall = sum(allf) / len(allf)
+                for tt, fins in data["type"].items():
+                    type_avg = sum(fins) / len(fins)
+                    w = sw[yr] * len(fins)                  # recency * sample
+                    acc[tt] += w * (type_avg - overall)     # delta-of-deltas (car-free)
+                    wsum[tt] += w
+                    nsum[tt] += len(fins)
+            out[did] = {tt: round((acc[tt] / wsum[tt]) * nsum[tt] / (nsum[tt] + _SK), 2)
+                        for tt in acc if wsum[tt]}
+        return out
+    return racing._cached(("nascar_type_skill", year, series, n_back), 7 * 86400, build) or {}
 
 
 # Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
@@ -493,12 +561,14 @@ def nascar_state(year=None, series=1):
                     s["t_n"][tt] = s["t_n"].get(tt, 0) + 1
                 else:
                     s["dnf"] += 1
+        # Per-track-type SKILL deltas from multiple recent seasons (current + 2
+        # prior), car-free (delta-of-deltas). This gives a road ace a real road
+        # sample instead of this season's two races, so a specialist isn't washed
+        # out. Current-season t_acc is the fallback when multi-year is unavailable.
+        skill = nascar_type_skill(year, series)
         out = {}
         prior, k = 20.0, 5.0      # regress pace toward midpack so a part-timer with
-        _TK = 2.0                 # per-category pseudo-races: shrink track-type pace.
-                                  # Light, because track-type skill is genuinely
-                                  # persistent in NASCAR — a road ace's couple of
-                                  # dominant road runs are strong, real signal.
+        _TK = 2.0                 # per-category pseudo-races for the single-season fallback
         for did, s in st.items():  # a couple of lucky finishes isn't a fake contender
             if s["starts"] < 2:
                 continue
@@ -508,17 +578,12 @@ def nascar_state(year=None, series=1):
             raw = s["fin_acc"] / s["fin_w"] if s["fin_w"] else prior
             n_eff = s["n_fin"]
             pace = (n_eff * raw + k * prior) / (n_eff + k)
-            # Per-track-type delta vs the driver's own baseline (negative = better
-            # than usual on that kind of track), regressed by category sample size.
-            by_type = {}
-            for tt, acc in s["t_acc"].items():
+            by_type = dict(skill.get(did, {}))     # multi-year skill (delta to add to pace)
+            for tt, acc in s["t_acc"].items():     # fill any gap from this season only
+                if tt in by_type:
+                    continue
                 raw_t = acc / s["t_w"][tt]
                 n_t = s["t_n"][tt]
-                # Absolute in-type pace, shrunk toward the driver's OWN overall pace
-                # (not toward "no track effect"). This stops a specialist's real
-                # signal from being washed out twice — once by the delta regression
-                # and again by the midpack-regressed base — so a road ace like SVG
-                # keeps his road mastery. Stored as a delta the sim adds to race_pace.
                 type_pace = (n_t * raw_t + _TK * pace) / (n_t + _TK)
                 by_type[tt] = round(type_pace - pace, 2)
             out[did] = {"id": did, "name": s["name"], "points": s["points"],
