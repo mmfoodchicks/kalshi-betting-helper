@@ -118,21 +118,42 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
                              for r, c in sorted(rounds_hist.items())}}
 
 
+def _compute_board(n):
+    c = ufc_data.card()
+    if not c or not c.get("bouts"):
+        return None
+    bouts = []
+    for bt in c["bouts"]:
+        ra = ufc_data.fighter_rating(bt["a_id"], bt["a_name"])
+        rb = ufc_data.fighter_rating(bt["b_id"], bt["b_name"])
+        res = simulate_bout(ra, rb, rounds=bt.get("rounds", 3), n=n)
+        res["weight"] = bt.get("weight")
+        bouts.append(res)
+    return {"sport": "ufc", "event": c.get("event"), "date": c.get("date"),
+            "n_sims": n, "bouts": bouts}
+
+
+import threading as _threading
+import time as _time
+_board_inflight = [False]
+
+
 def board(n=15000):
-    """Whole-card simulator board (cached): every bout's win odds + method + each
-    fighter's DK projection. Heavy first build (rates every fighter), then cached."""
-    def build():
-        c = ufc_data.card()
-        if not c or not c.get("bouts"):
-            return None
-        bouts = []
-        for bt in c["bouts"]:
-            ra = ufc_data.fighter_rating(bt["a_id"], bt["a_name"])
-            rb = ufc_data.fighter_rating(bt["b_id"], bt["b_name"])
-            res = simulate_bout(ra, rb, rounds=bt.get("rounds", 3), n=n)
-            res["weight"] = bt.get("weight")
-            bouts.append(res)
-        return {"sport": "ufc", "event": c.get("event"), "date": c.get("date"),
-                "n_sims": n, "bouts": bouts}
+    """Whole-card simulator board. NON-BLOCKING: returns the cached board if fresh,
+    else kicks a background compute (rating every fighter from history is slow the
+    first time) and returns None until it's ready. Cached 6h."""
     import racing
-    return racing._cached(("ufc_board",), 6 * 3600, build)
+    key = ("ufc_board",)
+    hit = racing._form_cache.get(key)
+    if hit and (_time.time() - hit[0]) < 6 * 3600 and hit[1] is not None:
+        return hit[1]
+    if not _board_inflight[0]:
+        _board_inflight[0] = True
+
+        def _bg():
+            try:
+                racing._cached(key, 6 * 3600, lambda: _compute_board(n))
+            finally:
+                _board_inflight[0] = False
+        _threading.Thread(target=_bg, daemon=True).start()
+    return None

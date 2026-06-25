@@ -2533,6 +2533,12 @@ async function runDfsSim() {
     } else if (g && !g.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} — using season points only (no place-differential adjustment yet).</div>`;
     }
+    const u = d.ufc;
+    if (u && u.available) {
+      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> — ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points).</div>`;
+    } else if (u && !u.available) {
+      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 ${u.reason}.</div>`;
+    }
     box.innerHTML = `<div class="bbgame">
       <div class="matchup">Optimal ${d.roster}-player lineup (${d.pool} in pool)</div>
       ${gridBanner}

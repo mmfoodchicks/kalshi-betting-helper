@@ -316,19 +316,57 @@ def dfs_sim(lineup, n=20000, cv=0.55):
             "max": round(totals[-1], 1), "n": n}
 
 
+def apply_ufc(players):
+    """UFC DFS: replace each fighter's CSV projection with OUR fight-simulator
+    projection (win prob + method/round -> DraftKings points). Non-blocking — the
+    board computes in the background on a cold start, falling back to the CSV
+    numbers until it's ready, then upgrading on the next build."""
+    try:
+        import ufc_sim
+        board = ufc_sim.board()
+    except Exception as e:
+        return {"available": False, "reason": f"fight sim failed: {e}"}
+    if not board:
+        return {"available": False,
+                "reason": "fighter sim warming up (rating every fighter from history) — using CSV projections; rerun in ~1 min"}
+    idx = {}
+    for bt in board.get("bouts", []):
+        for side in ("a", "b"):
+            f = bt[side]
+            nm = _norm_name(f["name"])
+            idx[nm] = f
+            idx.setdefault(nm.split()[-1], f)
+    matched = 0
+    for p in players:
+        f = idx.get(_norm_name(p["name"])) or idx.get(_norm_name(p["name"]).split()[-1])
+        if f:
+            p["base_proj"] = p["proj"]
+            p["proj"] = f["proj"]
+            p["ceil_proj"] = f["ceil"]
+            p["win_pct"] = f["win_pct"]
+            matched += 1
+    return {"available": True, "event": board.get("event"), "matched": matched,
+            "sim_used": matched > 0, "fighters": sum(len(b) for b in [board.get("bouts", [])]) * 2}
+
+
 def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
               objective="projection", date=None, sims=20000):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
-    # Racing: pull the qualifying grid and adjust for place differential so a
-    # pole-sitter isn't over-rated on raw season points.
+    # Racing: qualifying-grid place differential. UFC: our fight-sim projections.
     grid_status = None
+    ufc_status = None
     if sport in ("nascar", "f1"):
         try:
             grid_status = apply_grid(players, sport, date)
         except Exception as e:
             grid_status = {"available": False, "reason": f"grid fetch failed: {e}"}
+    elif sport == "ufc":
+        try:
+            ufc_status = apply_ufc(players)
+        except Exception as e:
+            ufc_status = {"available": False, "reason": f"fight sim failed: {e}"}
     cv = {"nascar": 0.5, "f1": 0.5, "ufc": 0.6}.get(sport, 0.55)
     if mode == "showdown":
         lineup = dfs_showdown(players, cap, objective, cv, flex_count=max(1, roster - 1))
@@ -348,6 +386,7 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         "total_proj": round(sum(p["proj"] for p in lineup), 1),
         "cap": cap, "roster": roster, "sim": sim, "pool": len(players),
         "mode": mode, "objective": objective, "grid": grid_status,
+        "ufc": ufc_status,
     }
 
 
