@@ -2137,7 +2137,8 @@ function renderSports() {
   if (d.racing_locked) {
     banner = `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🔒 Grid-based win model & edge picks for racing need the ${tierLabel("pro")} tier. <button class="track-mini primary-mini" onclick="window.bumpTier('pro')">Unlock</button></div>`;
   } else if (d.grid && d.grid.available) {
-    const basis = d.grid.form_used ? "grid + recent form" : "grid";
+    const basis = d.grid.sim_used ? `race simulator (${d.grid.sim_drivers} drivers) + grid place-differential`
+      : d.grid.form_used ? "grid + recent form" : "grid";
     banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
   } else if (d.grid && !d.grid.available) {
     banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} — showing market-favorite picks until qualifying posts.</div>`;
@@ -2523,8 +2524,10 @@ async function runDfsSim() {
     if (g && g.available) {
       const un = g.unmatched && g.unmatched.length
         ? ` · <span style="color:var(--muted)">${g.unmatched.length} unmatched (no grid adj)</span>` : "";
-      const fb = g.form_used ? " + recent form" : "";
-      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: <b>${g.race}</b> (${g.series}, ${g.field}-car field) — ${g.matched} drivers matched${un}. Projections adjusted for place differential off the actual qualifying order${fb}.</div>`;
+      const basis = g.sim_used
+        ? `expected finish from the <b>race simulator</b> (${g.sim_drivers} drivers)`
+        : (g.form_used ? "recent form" : "salary-deserved finish");
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: <b>${g.race}</b> (${g.series}, ${g.field}-car field) — ${g.matched} drivers matched${un}. Place differential off the actual qualifying order, using ${basis}.${g.sim_used ? "" : " <span style=\"color:var(--muted)\">(simulator warming up — rerun in ~1 min for sim-driven finishes)</span>"}</div>`;
     } else if (g && !g.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} — using season points only (no place-differential adjustment yet).</div>`;
     }
