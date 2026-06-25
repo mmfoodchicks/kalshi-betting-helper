@@ -372,11 +372,13 @@ def nascar_state(year=None, series=1):
         with ThreadPoolExecutor(max_workers=6) as ex:
             all_res = list(ex.map(feed, done))
         st = {}
-        for res in all_res:
+        for i, res in enumerate(all_res):          # all_res is chronological
+            w = i + 1                              # linear recency weight: catch form/upgrades
             for x in res:
                 did = x["driver_id"]
                 s = st.setdefault(did, {"name": x.get("driver_fullname", ""), "points": 0,
-                                        "playoff_points": 0, "wins": 0, "fins": [], "dnf": 0, "starts": 0})
+                                        "playoff_points": 0, "wins": 0, "n_fin": 0,
+                                        "fin_acc": 0.0, "fin_w": 0.0, "dnf": 0, "starts": 0})
                 s["points"] += x.get("points_earned", 0)
                 s["playoff_points"] += x.get("playoff_points_earned", 0)
                 s["starts"] += 1
@@ -384,7 +386,8 @@ def nascar_state(year=None, series=1):
                 if fp == 1:
                     s["wins"] += 1
                 if (x.get("finishing_status") or "Running") == "Running":
-                    s["fins"].append(fp)
+                    s["n_fin"] += 1
+                    s["fin_acc"] += w * fp; s["fin_w"] += w
                 else:
                     s["dnf"] += 1
         out = {}
@@ -392,8 +395,12 @@ def nascar_state(year=None, series=1):
         for did, s in st.items():  # a couple of lucky finishes isn't a fake contender
             if s["starts"] < 2:
                 continue
-            fins = s["fins"]
-            pace = (sum(fins) + k * prior) / (len(fins) + k)
+            # recency-weighted average finish, then blend toward midpack by how
+            # many races we actually have (k pseudo-races), keeping regression in
+            # race-count units even though weights sum large.
+            raw = s["fin_acc"] / s["fin_w"] if s["fin_w"] else prior
+            n_eff = s["n_fin"]
+            pace = (n_eff * raw + k * prior) / (n_eff + k)
             out[did] = {"id": did, "name": s["name"], "points": s["points"],
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
                         "race_pace": pace,
