@@ -334,9 +334,16 @@ def nascar_state(year=None, series=1):
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
                         "race_pace": pace,
                         "dnf": min(0.30, s["dnf"] / s["starts"]), "starts": s["starts"]}
-        remaining = [r.get("race_name", "") for r in pts_races[len(done):]]
+        import race_weather
+        remaining = []
+        for r in pts_races[len(done):]:
+            clim = race_weather.nascar_climate(r.get("track_name", ""),
+                                               (r.get("race_date") or "")[:10]) or {}
+            remaining.append({"name": r.get("race_name", ""), "track": r.get("track_name"),
+                              "wet_prob": clim.get("wet_prob", 0.10),
+                              "avg_wind": clim.get("avg_wind")})
         return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
-                "remaining_names": remaining}
+                "remaining": remaining}
     return racing._cached(("nascar_state", year, series), 6 * 3600, build) or {}
 
 
@@ -356,44 +363,49 @@ def _round_of(idx):
     return "final"
 
 
-def _sim_cup_race(drivers, rng):
+def _sim_cup_race(drivers, rng, wet=False):
     """Finishing order (driver ids). Pace + large variance (flat field) plus
     NASCAR's random events: 'the big one' multi-car wreck, per-car incidents/
-    mechanicals, and in-race penalties that cost track position."""
+    mechanicals, and penalties. RAIN makes it wilder — a bigger wreck chance and
+    a possible rain-shortened/called race (higher variance, track-position wins)."""
+    sigma = _SIGMA_CUP * (1.35 if wet else 1.0)
+    big_p = 0.20 if wet else 0.10
     big_one = set()
-    if rng.random() < 0.10:                    # a multi-car wreck ~1 in 10 races
+    if rng.random() < big_p:                   # multi-car wreck (more likely in the wet)
         big_one = set(rng.sample([d["id"] for d in drivers],
-                                 min(len(drivers), rng.randint(3, 6))))
+                                 min(len(drivers), rng.randint(3, 7))))
+    dnf_extra = 0.05 if wet else 0.0
     fin, out = [], []
     for d in drivers:
-        if d["id"] in big_one or rng.random() < min(0.40, d["dnf"] + _INCIDENT):
+        if d["id"] in big_one or rng.random() < min(0.45, d["dnf"] + _INCIDENT + dnf_extra):
             out.append(d["id"])
         else:
             pen = rng.randint(5, 14) if rng.random() < _TIME_PEN else 0   # penalty -> lose spots
-            fin.append((d["race_pace"] + rng.gauss(0, _SIGMA_CUP) + pen, d["id"]))
+            fin.append((d["race_pace"] + rng.gauss(0, sigma) + pen, d["id"]))
     fin.sort()
     rng.shuffle(out)
     return [did for _, did in fin] + out
 
 
-def _sim_nascar_season(drivers, phases, names, rng):
+def _sim_nascar_season(drivers, phases, schedule, rng):
     """One season forward through the remaining schedule + the playoff bracket.
-    `names` is the ordered remaining race list, so per-race pole/winner are logged
-    for the per-race futures markets."""
+    `schedule` is the ordered remaining race list ({name, wet_prob}), so per-race
+    pole/winner are logged and rain events fire per the track's climate."""
     pts = {d["id"]: d["points"] for d in drivers}
     wins = {d["id"]: d["wins"] for d in drivers}
     ppts = {d["id"]: d["playoff_points"] for d in drivers}
     season_wins = defaultdict(int); top5 = defaultdict(int); top10 = defaultdict(int)
     poles = defaultdict(int)
-    name_iter = iter(names)
+    race_iter = iter(schedule)
     race_out = []
 
     def run_race():
-        nm = next(name_iter, None)
+        r = next(race_iter, None)
+        wet = bool(r) and rng.random() < (r.get("wet_prob") or 0.0)
         # Single-lap qualifying sets the pole (NASCAR's flat field -> wide spread).
         pole = min(drivers, key=lambda d: d["race_pace"] + rng.gauss(0, _SIGMA_CUP * 0.7))
         poles[pole["id"]] += 1
-        order = _sim_cup_race(drivers, rng)
+        order = _sim_cup_race(drivers, rng, wet=wet)
         for pos, did in enumerate(order, 1):
             pts[did] += _cup_points(pos)
             if pos <= 5:
@@ -401,8 +413,8 @@ def _sim_nascar_season(drivers, phases, names, rng):
             if pos <= 10:
                 top10[did] += 1
         season_wins[order[0]] += 1
-        if nm is not None:
-            race_out.append((nm, pole["id"], order[0]))
+        if r is not None:
+            race_out.append((r["name"], pole["id"], order[0]))
         return order
 
     for _ in range(phases.get("regular", 0)):
@@ -460,7 +472,7 @@ def sim_nascar(n=2000, year=None, seed=None):
     phases = defaultdict(int)
     for idx in range(n_done + 1, state["n_points_races"] + 1):
         phases[_round_of(idx)] += 1
-    names = state.get("remaining_names") or []
+    schedule = state.get("remaining") or []
     rng = random.Random(seed)
 
     champ = defaultdict(int); po = defaultdict(int)
@@ -470,7 +482,7 @@ def sim_nascar(n=2000, year=None, seed=None):
     race_win = defaultdict(lambda: defaultdict(int))
 
     def one(_):
-        return _sim_nascar_season(drivers, phases, names, random.Random(rng.random()))
+        return _sim_nascar_season(drivers, phases, schedule, random.Random(rng.random()))
     with ThreadPoolExecutor(max_workers=8) as ex:
         for c, made, sw, top5, top10, pts, poles, race_out in ex.map(one, range(n)):
             champ[c] += 1
@@ -499,8 +511,9 @@ def sim_nascar(n=2000, year=None, seed=None):
     def field(counter):
         return [{"name": name_of[did], "pct": round(100 * c / n, 1)}
                 for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:16]
-    races = [{"name": nm, "pole": field(race_pole[nm]), "winner": field(race_win[nm])}
-             for nm in names]
+    races = [{"name": r["name"], "wet_prob": r.get("wet_prob"), "avg_wind": r.get("avg_wind"),
+              "pole": field(race_pole[r["name"]]), "winner": field(race_win[r["name"]])}
+             for r in schedule]
     return {"sport": "nascar", "n_sims": n,
             "races_left": sum(phases.values()), "drivers": out, "races": races}
 
