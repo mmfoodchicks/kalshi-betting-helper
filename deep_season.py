@@ -253,6 +253,9 @@ def run_deep(season=None, n_seasons=600, workers=None):
     """Run the deep season Monte Carlo across processes; return aggregates keyed by
     team id (counts) and player id (summed season lines)."""
     season = season or str(__import__("datetime").date.today().year)
+    # Flag running immediately so the loading bar appears during the (network)
+    # roster/standings prep, not only once the sim chunks start.
+    PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)
     stand = season_sim._standings(season)
     games = season_sim._remaining_games(season)
     games = [(h, a) for (h, a) in games if h in stand and a in stand]
@@ -265,9 +268,9 @@ def run_deep(season=None, n_seasons=600, workers=None):
 
     workers = workers or min(mp.cpu_count(), 8)
     PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)
-    # Many small chunks (≈5 per worker) so the progress counter advances smoothly
-    # as imap_unordered returns them, not in a few big jumps.
-    per = max(1, n_seasons // (workers * 5) or 1)
+    # Many small chunks (~20 per worker) so the loading bar advances smoothly over
+    # a long 4,000-season run instead of jumping in a few big steps.
+    per = max(1, n_seasons // (workers * 20) or 1)
     chunks, seed = [], random.randrange(1 << 30)
     assigned = 0
     while assigned < n_seasons:
@@ -289,6 +292,9 @@ def run_deep(season=None, n_seasons=600, workers=None):
                 PROGRESS["done"] = agg["n"]
     finally:
         PROGRESS["running"] = False
+    # Convert to plain dicts so the result is picklable for the disk cache
+    # (defaultdicts with lambda factories — wins_hist/bat/pit — can't pickle).
+    agg = _plainify(agg)
     agg["season"] = season
     agg["n_games_left"] = len(games)
     agg["meta"] = {tid: {"name": stand[tid]["name"], "division": stand[tid]["division"],

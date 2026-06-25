@@ -442,6 +442,9 @@ button.danger { color: var(--no); }
 .sportbtn.active { background: rgba(91, 140, 255, 0.16); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .rcrow { grid-template-columns: 26px 1fr 56px 50px 54px 48px 56px; }
 .rchead { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.deepbar-wrap { background: rgba(91, 140, 255, 0.08); border: 1px solid rgba(91, 140, 255, 0.32); border-radius: 9px; padding: 9px 11px; }
+.deepbar { height: 11px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }
+.deepbar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #7aa2ff); transition: width 0.6s ease; }
 .futrow-click { cursor: pointer; }
 .futrow-click:hover { background: rgba(91, 140, 255, 0.08); }
 .teamdetail { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin: 6px 0 12px; }

@@ -158,7 +158,7 @@ def _init_deep_sims():
     def run_mlb():
         import deep_season
         season = str(_dt.date.today().year)
-        agg = deep_season.run_deep(season, n_seasons=600)
+        agg = deep_season.run_deep(season, n_seasons=4000)
         _deep["agg"] = agg
         _deep["season"] = season
         return {"agg": agg, "season": season}
@@ -902,9 +902,10 @@ def api_baseball_futures():
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
     except ValueError:
         return jsonify({"error": "bad params"}), 400
-    # Serve the deep pitch-by-pitch board if a completed run is cached for this
-    # season and the client asked for it; otherwise the instant fast board.
-    if request.args.get("engine") == "deep":
+    # The deep 4,000-season pitch-by-pitch run is the headline: serve it by
+    # default whenever a completed run is cached. Only ?engine=fast forces the
+    # instant Pythagorean board (the cold-start fallback before the first deep run).
+    if request.args.get("engine") != "fast":
         agg = _deep.get("agg")
         if agg and _deep.get("season") == season:
             try:

@@ -1649,7 +1649,7 @@ async function loadFeatured() {
     if (_featSport === "mlb") {
       const d = await (await fetch("/api/baseball/futures")).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-      _boardData = d; renderFeatured(d);
+      _boardData = d; renderFeatured(d); monitorDeep();
     } else {
       const d = await (await fetch(`/api/racing/${_featSport}`)).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -1713,39 +1713,43 @@ function renderRacing(d) {
   $("featuredResults").innerHTML = head + rows + cons;
 }
 
+let _deepTimer = null;
 async function startDeepRun() {
-  const btn = $("deepBtn"), prog = $("deepProg");
-  if (btn) btn.disabled = true;
-  if (prog) prog.textContent = " starting the deep pitch-by-pitch simulation…";
-  try {
-    await fetch("/api/baseball/futures/deep?seasons=500", { method: "POST" });
-    pollDeepStatus();
-  } catch (e) {
-    if (prog) prog.textContent = " couldn't start — try again.";
-    if (btn) btn.disabled = false;
-  }
+  const btn = $("deepBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "starting…"; }
+  try { await fetch("/api/baseball/futures/deep", { method: "POST" }); } catch (e) {}
+  monitorDeep();
 }
 
-async function pollDeepStatus() {
+function deepBar(s) {
+  const pct = Math.max(0, Math.min(100, s.pct || 0));
+  const eta = s.eta_sec != null ? `~${Math.max(1, Math.ceil(s.eta_sec / 60))} min left` : "estimating…";
+  return `<div class="deepbar-wrap">
+    <div class="small">⚡ <b>Deep pitch-by-pitch sim running</b> — every pitch, hit &amp; walk across <b>${(s.total || 0).toLocaleString()}</b> seasons.
+      <span style="color:var(--muted)">Keep using the app; it runs in the background and caches when done.</span></div>
+    <div class="deepbar"><div class="deepbar-fill" style="width:${pct}%"></div></div>
+    <div class="small" style="display:flex;justify-content:space-between">
+      <span>${(s.done || 0).toLocaleString()} / ${(s.total || 0).toLocaleString()} seasons · ${eta}</span><span><b>${pct}%</b></span></div>
+  </div>`;
+}
+
+// Poll the deep-run status and drive the loading bar. Works whether the run was
+// kicked by the button or by the weekly scheduler; swaps to the deep board on
+// completion.
+async function monitorDeep() {
+  clearTimeout(_deepTimer);
   const prog = $("deepProg");
-  try {
-    const s = await (await fetch("/api/baseball/futures/deep/status")).json();
-    if (s.ready && !s.running) {
-      if (prog) prog.textContent = " ✓ deep run complete — loading the board…";
-      const d = await (await fetch("/api/baseball/futures?engine=deep")).json();
-      if (!d.error) { _boardData = d; renderFeatured(d); }
-      return;
+  let s;
+  try { s = await (await fetch("/api/baseball/futures/deep/status")).json(); }
+  catch (e) { _deepTimer = setTimeout(monitorDeep, 6000); return; }
+  if (s.running) {
+    if (prog) prog.innerHTML = deepBar(s);
+    _deepTimer = setTimeout(monitorDeep, 3000);
+  } else {
+    if (prog) prog.innerHTML = "";
+    if (s.ready && _featSport === "mlb" && (!_boardData || _boardData.engine !== "deep")) {
+      loadFeatured();                          // a run just finished -> show deep board
     }
-    if (s.running) {
-      const eta = s.eta_sec != null ? `, ~${Math.max(1, Math.ceil(s.eta_sec / 60))} min left` : "";
-      if (prog) prog.textContent = ` running deep sim — ${s.pct || 0}% (${s.done || 0}/${s.total || 0} seasons${eta}). You can keep using the app.`;
-    } else if (prog) {
-      prog.textContent = " deep sim queued…";
-    }
-    setTimeout(pollDeepStatus, 2500);
-  } catch (e) {
-    if (prog) prog.textContent = " status check failed — retrying…";
-    setTimeout(pollDeepStatus, 4000);
   }
 }
 
@@ -1756,11 +1760,12 @@ function renderFeatured(d) {
   const deepCtl = d.engine === "deep"
     ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} seasons</span>
        <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly</span>
-       <button class="track-mini" style="margin-left:6px" onclick="rerunSim('mlb', loadFeatured)">↻ rerun now</button>`
-    : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim</button><span class="small" id="deepProg" style="margin-left:8px"></span>`;
+       <button class="track-mini" style="margin-left:6px" onclick="startDeepRun()">↻ rerun now</button>`
+    : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim (~4,000 seasons)</button>`;
   $("featuredSummary").innerHTML =
     `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
-     <div style="margin-bottom:8px">${deepCtl}</div>`;
+     <div style="margin-bottom:8px">${deepCtl}</div>
+     <div id="deepProg" style="margin-bottom:8px"></div>`;
   // Grouped market dropdown (Titles / Season win totals).
   const groups = {};
   d.order.forEach((k) => { const m = d.markets[k]; (groups[m.group] = groups[m.group] || []).push([k, m.label]); });
