@@ -483,6 +483,7 @@ button.danger { color: var(--no); }
 .grade-starters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .grade-st { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 0.8rem; }
 .grade-st b { color: var(--accent); margin-right: 3px; }
+.grade-bye { color: var(--muted); font-size: 0.72rem; margin-left: 4px; opacity: 0.85; }
 /* Multi-team grader inputs */
 .grade-team-in { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
 .grade-team-hd { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }

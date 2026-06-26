@@ -2124,6 +2124,14 @@ function renderMultiGrade(d) {
         </div>`;
     }).join("");
     const stacks = (g.stacks || []).length ? `🔗 ${g.stacks.map((s) => `${s.qb}+${s.partners.join(", ")}`).join(" · ")}` : "No stacks";
+    const sch = g.schedule || {};
+    const schBits = [];
+    if (sch.playoff_sos != null) schBits.push(`Playoff (wk 15-17) SoS <b>${sch.playoff_sos}</b> <span class="small" style="color:var(--muted)">(opp wins; lower = easier)</span>`);
+    (sch.matchup_notes || []).forEach((n) => schBits.push(n));
+    (sch.bye_notes || []).forEach((n) => schBits.push(`📅 ${n}`));
+    const schedBlock = schBits.length
+      ? `<details style="margin-top:6px"><summary class="small">🗓️ Bye weeks & playoff matchups</summary><ul class="grade-list">${schBits.map((s) => `<li>${s}</li>`).join("")}</ul></details>`
+      : "";
     const narrative = g.llm_narrative || g.narrative || "";
     const pitch = g.pitch ? `<div class="grade-pitch-show small">🗣️ <b>${g.label}'s case:</b> ${g.pitch}</div>` : "";
     const unmatched = (g.unmatched && g.unmatched.length)
@@ -2138,11 +2146,12 @@ function renderMultiGrade(d) {
       <div class="grade-catgrid">${cats}</div>
       <div class="grade-posgrid">${posCards}</div>
       <div class="small" style="margin-top:8px">${stacks}</div>
+      ${schedBlock}
       <div class="grade-cols">
         ${(g.strengths || []).length ? `<div><div class="grade-h">💪 Strengths</div><ul class="grade-list">${g.strengths.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
         ${(g.weaknesses || []).length ? `<div><div class="grade-h">⚠️ Weaknesses</div><ul class="grade-list">${g.weaknesses.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
       </div>
-      <details style="margin-top:6px"><summary class="small">Best lineup</summary><div class="grade-starters">${(g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}</span>`).join("")}</div></details>
+      <details style="margin-top:6px"><summary class="small">Best lineup</summary><div class="grade-starters">${(g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}${s.bye ? ` <span class="grade-bye">bye ${s.bye}</span>` : ""}</span>`).join("")}</div></details>
       ${unmatched}
     </details>`;
   }).join("");

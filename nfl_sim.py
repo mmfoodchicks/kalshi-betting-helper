@@ -296,11 +296,89 @@ def _scaled(val, par, spread=0.28):
 
 
 # Best-ball overall weighting: ceiling & starting power dominate (boom weeks win
-# best ball), with depth, stars, and stacks as the next tier.
-_CAT_W = {"ceiling": 0.22, "starting": 0.20, "depth": 0.15, "stars": 0.13,
-          "stacks": 0.10, "balance": 0.08, "floor": 0.07, "upside": 0.05}
+# best ball), with depth, stars, stacks and bye spread as the next tier.
+_CAT_W = {"ceiling": 0.20, "starting": 0.18, "depth": 0.12, "stars": 0.12,
+          "byes": 0.10, "stacks": 0.09, "balance": 0.07, "floor": 0.07, "upside": 0.05}
 # Ideal roster construction for an 18-pick best-ball team.
 _IDEAL = {"QB": (2, 3), "RB": (5, 7), "WR": (6, 9), "TE": (2, 3)}
+
+
+def _bye_analysis(roster):
+    """Attach each player's bye week (in place) and score how well byes are spread.
+    The real best-ball risk is a position whose startable players all sit the same
+    week -- a guaranteed dead spot your auto-lineup can't fill. Returns
+    (score, notes, worst). No-ops gracefully if the schedule isn't reachable."""
+    try:
+        import nfl_schedule
+        sched = nfl_schedule.schedule()
+    except Exception:
+        sched = {}
+    if not sched:
+        for p in roster:
+            p["bye"] = None
+        return 70.0, [], None
+    import nfl_schedule
+    for p in roster:
+        i = sched.get(nfl_schedule._canon(p.get("team")))
+        p["bye"] = i.get("bye") if i else None
+
+    by = {"QB": [], "RB": [], "WR": [], "TE": []}
+    for p in roster:
+        if p.get("pos") in by:
+            by[p["pos"]].append(p)
+    for pos in by:
+        by[pos].sort(key=lambda x: -(x.get("season") or 0))
+    look = {"QB": 2, "RB": 3, "WR": 4, "TE": 2}
+    penalty, notes = 0, []
+    week_out = {}
+    for pos in ("QB", "RB", "WR", "TE"):
+        top = by[pos][:look[pos]]
+        if len(top) < _START[pos]:
+            continue                                   # depth issue, not a bye issue
+        for wk in set(p.get("bye") for p in top if p.get("bye")):
+            avail = sum(1 for p in top if p.get("bye") != wk)
+            short = _START[pos] - avail
+            if short > 0:
+                penalty += short
+                outs = [p["name"].split()[-1] for p in top if p.get("bye") == wk]
+                notes.append(f"{pos} Wk {wk}: {', '.join(outs)} all on bye — short {short} starter(s) that week.")
+    for p in roster:
+        if p.get("bye"):
+            week_out[p["bye"]] = week_out.get(p["bye"], 0) + 1
+    worst = max(week_out.items(), key=lambda kv: kv[1]) if week_out else None
+    score = max(15.0, 100 - 17 * penalty)
+    return score, notes, worst
+
+
+def _schedule_insight(starters):
+    """Best-ball playoffs run weeks 15-17, so a starter's playoff matchups matter.
+    Pull each starter's team strength-of-schedule for those weeks and surface the
+    softest/toughest playoff slates. Returns (roster_playoff_sos, notes) or
+    (None, []) if the schedule can't be reached."""
+    try:
+        import nfl_schedule
+        sched = nfl_schedule.schedule()
+    except Exception:
+        sched = {}
+    if not sched:
+        return None, []
+    import nfl_schedule
+    rows = []
+    for p in starters:
+        i = sched.get(nfl_schedule._canon(p.get("team")))
+        if i and i.get("playoff_sos") is not None:
+            rows.append((p, i["playoff_sos"]))
+    if not rows:
+        return None, []
+    avg = sum(s for _, s in rows) / len(rows)
+    notes = []
+    soft = [p["name"].split()[-1] for p, s in sorted(rows, key=lambda r: r[1])[:2] if s <= 8.0]
+    tough = [p["name"].split()[-1] for p, s in sorted(rows, key=lambda r: -r[1])[:2] if s >= 9.5]
+    if soft:
+        notes.append(f"Soft week 15-17 slate for {', '.join(soft)} — a championship-week tailwind.")
+    if tough:
+        notes.append(f"Tough playoff matchups for {', '.join(tough)} (face winning teams weeks 15-17).")
+    return round(avg, 1), notes
 
 
 def _positional_ranks(pool):
@@ -338,6 +416,10 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
 
     pool_rank = _positional_ranks(pool)
     counts = {pos: sum(1 for p in roster if p.get("pos") == pos) for pos in _FANTASY_POS}
+
+    # ---- Bye-week spread + fantasy-playoff (wk 15-17) matchups ----
+    bye_score, bye_notes, bye_worst = _bye_analysis(roster)   # attaches p["bye"]
+    playoff_sos, sched_notes = _schedule_insight(starters)
 
     # ---- Per-position analysis + "why good / why bad" notes ----
     positions = {}
@@ -426,6 +508,8 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
     cats["stars"] = min(100.0, 45 + 22 * len(anchors) + 6 * (len(studs) - len(anchors)))
     # upside: best around 3-4 darts; too few = low swing, too many = volatile
     cats["upside"] = max(20.0, 100 - 14 * abs(n_dart - 3.5))
+    # byes: how well bye weeks are spread (no position dark on a single week)
+    cats["byes"] = bye_score
 
     overall = sum(cats[k] * w for k, w in _CAT_W.items())
     score = round(max(0, min(100, overall)))
@@ -433,7 +517,8 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
     cat_labels = {"starting": ("🎯", "Starting Power"), "ceiling": ("🚀", "Ceiling"),
                   "floor": ("🛡️", "Floor"), "depth": ("📚", "Depth"),
                   "stacks": ("🔗", "Stacks"), "balance": ("⚖️", "Construction"),
-                  "stars": ("⭐", "Star Power"), "upside": ("🎲", "Upside")}
+                  "stars": ("⭐", "Star Power"), "upside": ("🎲", "Upside"),
+                  "byes": ("📅", "Bye Weeks")}
     cat_why = {
         "starting": f"Your best weekly lineup projects {proj:.0f} pts ({'above' if proj >= par_proj else 'below'} the ~{par_proj:.0f} field average).",
         "ceiling": f"Boom-week ceiling of {ceil:.0f} pts — {'spike weeks win best ball, and you have them' if ceil >= par_ceil else 'short on the smash weeks that win best ball'}.",
@@ -443,10 +528,13 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
         "balance": f"{archetype} build ({counts['QB']}QB/{counts['RB']}RB/{counts['WR']}WR/{counts['TE']}TE).",
         "stars": (f"{len(anchors)} early-round anchor(s): " + ", ".join(a["name"] for a in anchors[:3])) if anchors else "No top-24 anchors — you lack a true league-winner.",
         "upside": f"{len(rookies)} rookies + {len(returnees)} bounce-back/new-role fliers — " + ("a healthy dose of dart throws." if 2 <= n_dart <= 5 else "very few swing picks." if n_dart < 2 else "high variance; make sure the base is stable."),
+        "byes": (("; ".join(bye_notes)) if bye_notes else
+                 (f"Byes are well spread — no week leaves a position dark"
+                  + (f" (heaviest week has {bye_worst[1]} players out)." if bye_worst else "."))),
     }
     categories = [{"key": k, "emoji": cat_labels[k][0], "label": cat_labels[k][1],
                    "score": round(cats[k]), "grade": _letter(cats[k]), "why": cat_why[k]}
-                  for k in ("starting", "ceiling", "depth", "stars", "stacks", "balance", "floor", "upside")]
+                  for k in ("starting", "ceiling", "depth", "stars", "byes", "stacks", "balance", "floor", "upside")]
 
     # ---- Strengths / weaknesses from the category + position reads ----
     strengths, weaknesses = [], []
@@ -459,6 +547,16 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
     for pos, v in positions.items():
         if v["thin"] and len(weaknesses) < 4:
             weaknesses.append(f"Thin at {pos} ({v['count']}) — {v['note']}")
+    # bye-week dead spots are concrete weaknesses worth calling out explicitly
+    for n in bye_notes:
+        if len(weaknesses) < 5:
+            weaknesses.append(f"📅 {n}")
+    # a soft fantasy-playoff (wk 15-17) slate is a real edge; a tough one a caution
+    for n in sched_notes:
+        if "tailwind" in n and len(strengths) < 4:
+            strengths.append(f"🗓️ {n}")
+        elif len(weaknesses) < 6:
+            weaknesses.append(f"🗓️ {n}")
 
     # ---- Narrative (templated; LLM optionally upgrades it) ----
     best_cat = max(categories, key=lambda c: c["score"])
@@ -477,10 +575,14 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
         "categories": categories, "positions": positions, "stacks": stacks,
         "anchors": [a["name"] for a in anchors],
         "starters": [{"name": p["name"], "pos": p["pos"], "team": p.get("team"),
-                      "fppg": p.get("fppg"), "boom": p.get("boom")} for p in starters],
+                      "fppg": p.get("fppg"), "boom": p.get("boom"), "bye": p.get("bye")} for p in starters],
         "strengths": strengths, "weaknesses": weaknesses,
         "vs_field": round((proj / par_proj - 1) * 100, 1) if par_proj else 0,
         "narrative": narrative,
+        "schedule": {"bye_notes": bye_notes,
+                     "bye_worst_week": (bye_worst[0] if bye_worst else None),
+                     "bye_worst_count": (bye_worst[1] if bye_worst else None),
+                     "playoff_sos": playoff_sos, "matchup_notes": sched_notes},
     }
     if pitch and pitch.strip():
         out["pitch"] = pitch.strip()
@@ -528,6 +630,8 @@ def _llm_narrative(g, pitch=None):
             "counts": g["counts"], "stacks": [f"{s['qb']}+{','.join(s['partners'])}" for s in g["stacks"]],
             "categories": {c["label"]: c["grade"] for c in g["categories"]},
             "positions": {p: v["grade"] for p, v in g["positions"].items()},
+            "bye_week_issues": (g.get("schedule") or {}).get("bye_notes") or [],
+            "playoff_wk15_17_matchups": (g.get("schedule") or {}).get("matchup_notes") or [],
         }
         sys = ("You are a sharp, concise fantasy-football analyst grading a best-ball draft team. "
                "In 2-3 punchy sentences, say why the team is good or bad and the single biggest thing "
@@ -598,7 +702,7 @@ def grade_multi(teams, use_llm=False):
     # category leaders (who's best at each)
     leaders = {}
     if ranked:
-        for c in ("starting", "ceiling", "depth", "stars", "stacks", "balance", "floor", "upside"):
+        for c in ("starting", "ceiling", "depth", "stars", "byes", "stacks", "balance", "floor", "upside"):
             best = max(ranked, key=lambda g: next((x["score"] for x in g["categories"] if x["key"] == c), 0))
             leaders[c] = best["label"]
     return {"teams": ranked, "errors": [g for g in graded if g.get("error")],
