@@ -255,64 +255,129 @@ def _item(combo):
     return item
 
 
-def select_legs(by_event, target_pct, n_legs, target_payout=None, max_legs=12):
-    """Pick the legs for the combo.
+def _assemble(by_event, target, legs_target, payout_target,
+              legs_mode="prefer", payout_mode="off", conn="or", max_legs=12):
+    """Pick the legs under two optional, combinable targets -- a leg count and a
+    fair payout -- exactly like the baseball mixed maker. Each target is "require"
+    (hard), "prefer" (a recommendation that nudges but never blocks), or "off";
+    when combined as "require", `conn` ('and'/'or') says whether both must hold or
+    just one.
 
-    Payout mode: the target multiplier governs -- reach it with the highest
-    combined probability, preferring n_legs and only expanding the count when it
-    can't be reached (see parlay.payout_combo). Returns (legs, target, meta).
-    Confidence mode: best leg per event at the target, safest n_legs."""
-    target = max(0.05, min(0.97, target_pct / 100.0))
-    if target_payout and target_payout > 1:
-        import parlay
-        # Confidence floor required: only legs >= target are eligible; the
-        # selector adds as many qualifying legs as needed to reach the payout.
+    Method: each event contributes at most one leg (legs ≥ the per-leg floor are
+    eligible). A DP builds the most-likely parlay at every leg count and payout
+    level (the frontier); we then pick the state that best satisfies the active
+    targets, breaking ties toward the safest parlay -- or, when chasing an unmet
+    payout, toward the bigger payout. Returns (legs, meta) or ([], None)."""
+    import math
+    # eligible legs per event (those clearing the per-leg confidence floor)
+    groups = []
+    for vs in by_event.values():
+        ok = [v for v in vs if v["prob"] >= target]
+        if ok:
+            groups.append(ok)
+    # best-effort: if the floor is too strict to field 2 legs, fall back to each
+    # event's best leg so the maker still returns something (legs flagged below).
+    if len(groups) < 2:
         groups = []
         for vs in by_event.values():
-            ok = [v for v in vs if v["prob"] >= target]
-            if ok:
-                groups.append(ok)
-        res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
-        if not res:
-            return [], target, None
-        return res["legs"], target, res
-    chosen = []
-    for vs in by_event.values():
-        meeting = [v for v in vs if v["prob"] >= target]
-        pick = (min(meeting, key=lambda v: v["prob"]) if meeting
-                else max(vs, key=lambda v: v["prob"]))
-        pick = dict(pick)
-        pick["meets"] = bool(meeting)
-        chosen.append(pick)
-    chosen.sort(key=lambda v: (v["meets"], v["prob"]), reverse=True)
-    n = max(2, min(n_legs, len(chosen)))
-    return chosen[:n], target, None
+            if vs:
+                groups.append([max(vs, key=lambda v: v["prob"])])
+    if len(groups) < 2:
+        return [], None
+
+    RES = 0.05
+    dp = {(0, 0): (0.0, [])}                    # (n_legs, bucket) -> (-log prob, legs)
+    for legs in groups:
+        nd = dict(dp)                           # skipping this event is allowed
+        for (nlegs, _bk), (w, sel) in dp.items():
+            for l in legs:
+                nl = nlegs + 1
+                if nl > max_legs:
+                    continue
+                nw = w - math.log(max(0.01, l["prob"]))
+                key = (nl, int(nw / RES))
+                if key not in nd or nw < nd[key][0]:
+                    nd[key] = (nw, sel + [l])
+        dp = nd
+    states = []
+    for (nlegs, _bk), (w, sel) in dp.items():
+        if nlegs < 2 or not sel:
+            continue
+        prob = math.exp(-w)
+        states.append({"legs": nlegs, "prob": prob,
+                       "payout": (1.0 / prob if prob > 0 else None), "sel": sel})
+    if not states:
+        return [], None
+
+    want_legs = legs_mode in ("require", "prefer")
+    want_payout = payout_mode in ("require", "prefer") and bool(payout_target and payout_target > 1)
+    X = max(2, min(legs_target or 2, max_legs))
+    Y = payout_target or 0
+    meets_legs = lambda s: s["legs"] == X
+    meets_payout = lambda s: s["payout"] is not None and s["payout"] >= Y
+
+    reqs = []
+    if legs_mode == "require":
+        reqs.append(meets_legs)
+    if payout_mode == "require" and want_payout:
+        reqs.append(meets_payout)
+    feasible, hard_ok = states, True
+    if reqs:
+        combine_fn = all if conn == "and" else any
+        feas = [s for s in states if combine_fn(r(s) for r in reqs)]
+        if feas:
+            feasible = feas
+        else:
+            hard_ok = False                     # unsatisfiable -> best effort
+
+    def rank(s):
+        primary = (1 if want_payout and meets_payout(s) else 0) \
+                  + (1 if want_legs and meets_legs(s) else 0)
+        secondary = s["payout"] if (want_payout and not meets_payout(s)) else s["prob"]
+        return (primary, secondary)
+
+    best = max(feasible, key=rank)
+    chosen = [dict(l, meets=(l["prob"] >= target)) for l in best["sel"]]
+    return chosen, {"state": best, "X": X, "Y": Y, "want_legs": want_legs,
+                    "want_payout": want_payout, "meets_legs": meets_legs(best),
+                    "meets_payout": meets_payout(best), "hard_ok": hard_ok}
 
 
-def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12):
+def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
+          legs_mode="prefer", payout_mode=None, conn="or"):
     legs = gather(cats, date, season)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1
     if not legs:
         return {"combo": None, "counts": counts}
+    # Back-compat default: a payout target with no explicit mode means "require it"
+    # (the old behavior was payout-governed when payout > 1).
+    if payout_mode is None:
+        payout_mode = "require" if (target_payout and target_payout > 1) else "off"
+    target = max(0.05, min(0.97, target_pct / 100.0))
     by_event = {}
     for l in legs:
         by_event.setdefault(l["event_id"], []).append(l)
-    chosen, target, meta = select_legs(by_event, target_pct, n_legs, target_payout,
-                                       max_legs=max_legs)
+    chosen, meta = _assemble(by_event, target, n_legs, target_payout,
+                             legs_mode=legs_mode, payout_mode=payout_mode,
+                             conn=conn, max_legs=max_legs)
     if not chosen:
         return {"combo": None, "counts": counts}
     item = _item(chosen)
     item["target_pct"] = round(target * 100, 1)
     item["legs_meeting_target"] = sum(1 for v in chosen if v.get("meets"))
-    if target_payout:
+    item["legs_used"] = len(chosen)
+    item["requested_legs"] = n_legs
+    item["legs_mode"] = legs_mode
+    item["payout_mode"] = payout_mode
+    item["conn"] = conn
+    item["hard_ok"] = meta["hard_ok"]
+    if meta["want_legs"]:
+        item["legs_target"] = meta["X"]
+        item["legs_met"] = meta["meets_legs"]
+        item["expanded"] = len(chosen) != n_legs
+    if meta["want_payout"]:
         item["target_payout_x"] = target_payout
-        if meta:
-            item["payout_reached"] = meta["reached"]
-            item["legs_used"] = meta["n_used"]
-            item["requested_legs"] = meta["requested_legs"]
-            item["expanded"] = meta["expanded"]
-        else:
-            item["payout_reached"] = (item.get("fair_payout_x") or 0) >= target_payout
+        item["payout_reached"] = meta["meets_payout"]
     return {"combo": item, "counts": counts}

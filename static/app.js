@@ -2955,26 +2955,33 @@ async function buildCombine() {
   const n = parseInt($("cmbN").value, 10) || 4;
   const t = parseInt($("cmbTarget").value, 10) || 65;
   const p = parseFloat($("cmbPayout").value) || 0;
+  const legsMode = ($("cmbLegsMode") || {}).value || "prefer";
+  const payoutMode = ($("cmbPayoutMode") || {}).value || "off";
+  const conn = ($("cmbConn") || {}).value || "or";
   const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
   out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
   try {
-    const d = await (await fetch(`/api/combine?cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`)).json();
+    const q = `cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`
+      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`;
+    const d = await (await fetch(`/api/combine?${q}`)).json();
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
     if (d.counts && Object.keys(d.counts).length)
       html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
     if (d.combo) {
       const c = d.combo;
-      let title, note = "";
-      if (p > 1) {
-        title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
-        if (c.expanded) note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
-        if (c.payout_reached === false) note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the max at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor or target, or add categories.</div>`;
-        note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds legs that's the same however you split them — extra legs just land closer to the target.</div>`;
-      } else {
-        title = `🎰 ${c.n_legs}-leg mega parlay (≥${t}%)`;
-        if (c.legs_meeting_target != null) note = `<div class="small">${c.legs_meeting_target}/${c.n_legs} legs meet the ${t}% target.</div>`;
-      }
+      const wantPayout = payoutMode !== "off" && p > 1;
+      const title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
+      let note = "";
+      if (c.expanded && c.legs_used !== c.requested_legs)
+        note += `<div class="small">Used <b>${c.legs_used}</b> legs (you set ${c.requested_legs}) to best fit your targets while keeping every leg ≥ ${t}%.</div>`;
+      if (c.legs_met === false && legsMode === "require")
+        note += `<div class="small">⚠️ Couldn't field exactly ${c.legs_target} legs ≥ ${t}% — showing the closest (${c.legs_used}).</div>`;
+      if (wantPayout && c.payout_reached === false)
+        note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the best at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor, drop the leg-count requirement, or add categories.</div>`;
+      if (c.hard_ok === false)
+        note += `<div class="small" style="color:#e0566a">⚠️ Your required target(s) couldn't both be met${conn === "and" ? " (AND)" : ""} — showing the closest parlay. Try switching AND→OR or relaxing one target to <b>recommend</b>.</div>`;
+      note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). ${c.legs_meeting_target}/${c.legs_used} legs meet the ${t}% target.</div>`;
       html += renderCombo(c, title, "hl prop") + note;
       html += comboSimControl(c);
     } else {

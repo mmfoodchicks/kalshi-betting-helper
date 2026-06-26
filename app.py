@@ -853,9 +853,20 @@ def api_combine():
         payout = float(payout) if payout not in (None, "", "0") else None
     except ValueError:
         return jsonify({"error": "bad legs/target"}), 400
+    # Each target (legs / payout) is "require" (hard) / "prefer" (recommend) /
+    # "off", combined by conn ('and'/'or') -- same controls as the baseball maker.
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode")
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode is not None and payout_mode not in modes:
+        payout_mode = None
     try:
         return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout,
-                                     max_legs=tiers.cap_legs(_tier(), 30)))
+                                     max_legs=tiers.cap_legs(_tier(), 30),
+                                     legs_mode=legs_mode, payout_mode=payout_mode, conn=conn))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
