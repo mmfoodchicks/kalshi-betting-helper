@@ -161,7 +161,8 @@ def apply_grid(players, sport, date=None):
     # finish for this driver (it simulates qualifying + the race with car pace,
     # track-type form, DNFs and wet chaos). Fallback when a driver isn't in the
     # sim: salary rank (DK prices by car quality), sharpened with recent form.
-    sim_fin = _sim_expected_finish(sport)       # {normalized_name: avg_finish} or {}
+    sim_prof = _sim_profile(sport)              # {normalized_name: {...}} or {}
+    sim_fin = {nm: s["avg_finish"] for nm, s in sim_prof.items()}
     order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
     deserved = [0.0] * n
     for rank, i in enumerate(order):
@@ -200,6 +201,10 @@ def apply_grid(players, sport, date=None):
         p["pd_adj"] = round(adj, 1)
         p["base_proj"] = p["proj"]
         p["proj"] = max(0.0, p["proj"] + adj)
+        # Per-driver GPP ceiling from the sim's finish distribution (so GPP tilts to
+        # high-variance drivers rather than mirroring cash). cv=0.5 fallback for
+        # drivers the sim doesn't cover.
+        p["ceil_proj"] = round(_driver_ceiling(p["proj"], sim_prof.get(_norm_name(p["name"])), 0.5), 1)
     return {"available": True, "race": grid["race"], "series": grid["series"],
             "field": field, "matched": matched, "unmatched": unmatched[:25],
             "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits}
@@ -211,9 +216,9 @@ def _norm_name(s):
     return "".join(c for c in s.lower() if c.isalnum() or c == " ").strip()
 
 
-def _sim_expected_finish(sport):
-    """{normalized_name: avg_finish} from the race simulator's next-race profile,
-    keyed by full name AND last name so DK's name spellings still match."""
+def _sim_profile(sport):
+    """{normalized_name: {avg_finish, p_win, p_top5, p_top10, p_top20}} from the race
+    simulator's next-race profile, keyed by full AND last name for DK spellings."""
     if sport not in ("f1", "nascar"):
         return {}
     try:
@@ -226,36 +231,89 @@ def _sim_expected_finish(sport):
     out = {}
     for name, s in prof["drivers"].items():
         nm = _norm_name(name)
-        out[nm] = s["avg_finish"]
-        out.setdefault(nm.split()[-1], s["avg_finish"])   # last-name fallback
+        out[nm] = s
+        out.setdefault(nm.split()[-1], s)
     return out
 
 
-def dfs_optimize(players, roster, cap, key="value"):
+def _driver_ceiling(proj, s, cv):
+    """A per-driver GPP ceiling. Two drivers with the same expected finish can have
+    very different upside -- a midpack car that occasionally wins is a tournament
+    play; a steady points-finisher is not. We read the boom-side finish from the
+    sim's win/top-N probabilities and scale the projection by how much better that
+    boom is than the mean, so GPP tilts toward high-variance drivers (cash doesn't)."""
+    if not s:
+        return proj * (1 + cv)
+    if s.get("p_win", 0) >= 0.08:
+        boom = 1.5
+    elif s.get("p_top5", 0) >= 0.12:
+        boom = 3.5
+    elif s.get("p_top10", 0) >= 0.15:
+        boom = 8.0
+    elif s.get("p_top20", 0) >= 0.20:
+        boom = 16.0
+    else:
+        boom = max(1.0, s.get("avg_finish", 20.0))
+    avg = max(1.0, s.get("avg_finish", 20.0))
+    upside = min(1.2, max(0.0, 0.6 * (avg / boom - 1)))
+    return proj * (1 + upside)
+
+
+def _sim_expected_finish(sport):
+    """{normalized_name: avg_finish}, derived from the full sim profile."""
+    out = {}
+    for nm, s in _sim_profile(sport).items():
+        out[nm] = s["avg_finish"]
+    return out
+
+
+def dfs_optimize(players, roster, cap, key="value", exclusive_group=None):
     """Max-`key` lineup of exactly `roster` players under the salary cap
     (0/1 knapsack with a cardinality constraint; salary in $100 units).
+
+    `exclusive_group(player) -> id` marks players that can't coexist on a lineup:
+    at most ONE player per group is ever chosen. For UFC that's the bout — you must
+    never roster both fighters in a fight, since one is guaranteed to lose. Players
+    with no group (id falsy) are each their own singleton, so they're unconstrained.
 
     Each DP cell carries the actual selected indices so reconstruction can never
     reuse a player (shared back-pointers can otherwise rebuild an invalid path)."""
     U = int(cap // 100)
     NEG = float("-inf")
+    # Bucket players into mutually-exclusive groups (singletons when ungrouped).
+    if exclusive_group is not None:
+        groups = {}
+        for idx in range(len(players)):
+            gid = exclusive_group(players[idx])
+            groups.setdefault(gid if gid else ("_solo", idx), []).append(idx)
+        group_list = list(groups.values())
+    else:
+        group_list = [[idx] for idx in range(len(players))]
+
     # dp[k][s] = (best value, tuple of chosen indices) using exactly k players.
     dp = [[(NEG, None)] * (U + 1) for _ in range(roster + 1)]
     dp[0][0] = (0.0, ())
-    for idx, pl in enumerate(players):
-        su = int(round(pl["salary"] / 100))
-        if su > U or su <= 0:
-            continue
-        pr = pl.get(key, pl["proj"])
-        for k in range(roster - 1, -1, -1):       # descending -> each item used once
-            row = dp[k]
-            nxt = dp[k + 1]
-            for s in range(U - su, -1, -1):
-                val, sel = row[s]
-                if val == NEG:
-                    continue
-                if val + pr > nxt[s + su][0]:
-                    nxt[s + su] = (val + pr, sel + (idx,))
+    for members in group_list:
+        # Group knapsack: each member is evaluated against the state from BEFORE
+        # this group (dp), writing into new_dp, so two members of the same group can
+        # never both be selected. new_dp seeded with "take nobody from this group".
+        new_dp = [row[:] for row in dp]
+        for idx in members:
+            pl = players[idx]
+            su = int(round(pl["salary"] / 100))
+            if su > U or su <= 0:
+                continue
+            pr = pl.get(key, pl["proj"])
+            for k in range(roster - 1, -1, -1):
+                row = dp[k]
+                nrow = new_dp[k + 1]
+                for s in range(U - su, -1, -1):
+                    val, sel = row[s]
+                    if val == NEG:
+                        continue
+                    if val + pr > nrow[s + su][0]:
+                        nrow[s + su] = (val + pr, sel + (idx,))
+        dp = new_dp
     best, bsel = NEG, None
     for s in range(U + 1):
         val, sel = dp[roster][s]
@@ -284,9 +342,10 @@ def _set_values(players, objective, cv):
             p["value"] = p["proj"]
 
 
-def dfs_showdown(players, cap, objective, cv, flex_count=5):
+def dfs_showdown(players, cap, objective, cv, flex_count=5, exclusive_group=None):
     """Captain (1.5x salary + 1.5x points) + flex lineup. Tries each player as
-    captain and knapsacks the rest."""
+    captain and knapsacks the rest. `exclusive_group` forbids co-rostering players
+    in the same group (e.g. both fighters of a UFC bout) -- including the captain."""
     seen = {}
     for p in players:  # dedupe by name (showdown CSVs list CPT + FLEX); keep base salary
         if p["name"] not in seen or p["salary"] < seen[p["name"]]["salary"]:
@@ -300,7 +359,11 @@ def dfs_showdown(players, cap, objective, cv, flex_count=5):
         if rem < 0:
             continue
         rest = pool[:i] + pool[i + 1:]
-        flex = dfs_optimize(rest, flex_count, int(rem))
+        if exclusive_group is not None:        # drop the captain's group-mates from the flex
+            cg = exclusive_group(capt)
+            if cg:
+                rest = [p for p in rest if exclusive_group(p) != cg]
+        flex = dfs_optimize(rest, flex_count, int(rem), exclusive_group=exclusive_group)
         if not flex:
             continue
         score = capt["value"] * 1.5 + sum(p["value"] for p in flex)
@@ -387,11 +450,15 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         except Exception as e:
             ufc_status = {"available": False, "reason": f"fight sim failed: {e}"}
     cv = {"nascar": 0.5, "f1": 0.5, "ufc": 0.6}.get(sport, 0.55)
+    # UFC: never roster both fighters of a bout (one is guaranteed to lose). The DK
+    # "Game Info" column is identical for both fighters in a fight, so it's the bout key.
+    exclusive = (lambda p: p.get("game")) if sport == "ufc" else None
     if mode == "showdown":
-        lineup = dfs_showdown(players, cap, objective, cv, flex_count=max(1, roster - 1))
+        lineup = dfs_showdown(players, cap, objective, cv,
+                              flex_count=max(1, roster - 1), exclusive_group=exclusive)
     else:
         _set_values(players, objective, cv)
-        lineup = dfs_optimize(players, roster, cap)
+        lineup = dfs_optimize(players, roster, cap, exclusive_group=exclusive)
     if not lineup:
         return {"error": "no valid lineup fits the salary cap"}
     sim = dfs_sim(lineup, n=sims, cv=cv)
