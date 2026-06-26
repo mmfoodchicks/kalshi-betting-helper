@@ -156,6 +156,36 @@ def _default(fid, name, n):
             "durability": _LG["durability"]}
 
 
+# How each rate component feeds the single 0-100 power rating (sums to 1).
+_RW = {"ss_pm": 0.22, "str_def": 0.18, "kd_p15": 0.16, "finish_rate": 0.12,
+       "td_p15": 0.12, "td_def": 0.10, "durability": 0.10}
+
+
+def power_rating(r):
+    """A single 0-100 fighter rating (league average == 50). NOT an Elo -- we have
+    no head-to-head result graph for UFC -- but a normalized blend of striking,
+    grappling, finishing and durability versus the league baseline. A fighter with
+    no usable history sits at exactly 50 (we genuinely don't know them yet)."""
+    score = 50.0
+    for k, w in _RW.items():
+        base = _LG[k] or 1.0
+        ratio = (r.get(k, base) or 0.0) / base
+        score += w * 50.0 * (min(2.0, max(0.0, ratio)) - 1.0)   # ratio 1->+0, 2->+50w
+    return int(round(max(1, min(99, score))))
+
+
+def rating_components(r):
+    """Per-area 0-100 sub-ratings (league average 50) for display."""
+    def sub(k):
+        base = _LG[k] or 1.0
+        ratio = (r.get(k, base) or 0.0) / base
+        return int(round(max(1, min(99, 50 + 50 * (min(2.0, max(0.0, ratio)) - 1.0)))))
+    return {"striking": sub("ss_pm"), "str_def": sub("str_def"),
+            "takedowns": sub("td_p15"), "td_def": sub("td_def"),
+            "power": sub("kd_p15"), "finishing": sub("finish_rate"),
+            "durability": sub("durability")}
+
+
 def _athlete_name(ref):
     try:
         return _get(ref).get("displayName")

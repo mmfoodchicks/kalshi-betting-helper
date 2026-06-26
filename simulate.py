@@ -267,9 +267,21 @@ def dfs_optimize(players, roster, cap, key="value"):
 
 
 def _set_values(players, objective, cv):
-    # 'ceiling' rewards upside (for GPP); 'projection' is plain mean (for cash).
+    """Set each player's optimizer value. 'projection' (cash) is the plain mean;
+    'ceiling' (GPP) rewards upside.
+
+    Critically, GPP must use each player's OWN ceiling -- a flat multiple of proj
+    (proj*(1+cv)) scales every player identically, so the knapsack picks the exact
+    same lineup and GPP looks no different from cash. UFC fighters carry a real
+    per-fighter simulated ceiling (`ceil_proj`, the 90th-pct DK night), so a
+    finisher with knockout power outranks a steady decision-grinder of equal mean.
+    Without a per-player ceiling we fall back to the flat boost (e.g. racing, where
+    we don't model per-driver variance), which leaves cash and GPP equivalent."""
     for p in players:
-        p["value"] = p["proj"] * (1 + cv) if objective == "ceiling" else p["proj"]
+        if objective == "ceiling":
+            p["value"] = p.get("ceil_proj") or p["proj"] * (1 + cv)
+        else:
+            p["value"] = p["proj"]
 
 
 def dfs_showdown(players, cap, objective, cv, flex_count=5):
@@ -344,6 +356,11 @@ def apply_ufc(players):
             p["proj"] = f["proj"]
             p["ceil_proj"] = f["ceil"]
             p["win_pct"] = f["win_pct"]
+            p["rating"] = f.get("rating")
+            p["record"] = f.get("record")
+            p["fights"] = f.get("fights")
+            p["thin"] = f.get("thin")
+            p["defaulted"] = f.get("defaulted")
             matched += 1
     return {"available": True, "event": board.get("event"), "matched": matched,
             "sim_used": matched > 0, "fighters": sum(len(b) for b in [board.get("bouts", [])]) * 2}
@@ -380,7 +397,11 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
                     "captain": p.get("captain", False), "start": p.get("start"),
                     "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
-                    if p.get("base_proj") is not None else None}
+                    if p.get("base_proj") is not None else None,
+                    "ceil_proj": round(p["ceil_proj"], 1) if p.get("ceil_proj") is not None else None,
+                    "win_pct": p.get("win_pct"), "rating": p.get("rating"),
+                    "record": p.get("record"), "fights": p.get("fights"),
+                    "thin": p.get("thin"), "defaulted": p.get("defaulted")}
                    for p in lineup],
         "total_salary": int(sum(p["salary"] for p in lineup)),
         "total_proj": round(sum(p["proj"] for p in lineup), 1),

@@ -430,6 +430,8 @@ button.danger { color: var(--no); }
 .ufc-fnums { display: grid; grid-template-columns: 78px 46px 46px 84px; gap: 8px; align-items: center; }
 .ufc-win { text-align: right; font-weight: 600; }
 .ufc-method { display: flex; gap: 12px; margin-top: 5px; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 5px; }
+.ufc-rating { display: inline-block; border: 1px solid var(--muted); border-radius: 5px; padding: 0 5px; font-size: 0.72rem; font-weight: 700; cursor: help; vertical-align: middle; }
+.ufc-debut { font-size: 0.7rem; color: #e0a23a; cursor: help; white-space: nowrap; }
 /* Tennis */
 .tn-match { border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 9px; }
 .tn-mhead { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 5px; }

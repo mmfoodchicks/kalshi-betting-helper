@@ -2182,12 +2182,25 @@ function _ufcEdge(e) {
   if (e == null) return "—";
   return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
 }
+function _ratingChip(f) {
+  if (f.rating == null) return "";
+  const rc = f.rating >= 60 ? "#3ad17a" : f.rating <= 40 ? "#e0566a" : "var(--muted)";
+  const c = f.components || {};
+  const tip = [`Power rating (league avg = 50) from our fight-history model — not an Elo.`,
+    `Striking ${c.striking}`, `Strike def ${c.str_def}`, `Power/KD ${c.power}`,
+    `Finishing ${c.finishing}`, `Takedowns ${c.takedowns}`, `TD def ${c.td_def}`,
+    `Durability ${c.durability}`].join(" • ");
+  let flag = "";
+  if (f.defaulted) flag = ` <span class="ufc-debut" title="No UFC fight history — this is a league-average placeholder (rating 50), not a real read on the fighter">⚠️ debut</span>`;
+  else if (f.thin) flag = ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average, treat with caution">⚠️ thin</span>`;
+  return ` <span class="ufc-rating" style="border-color:${rc};color:${rc}" title="${tip}">⚡${f.rating}</span>${flag}`;
+}
 function _fighterRow(f) {
   const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "—";
   const fair = f.fair_win != null && f.fair_win !== f.win_pct
     ? ` <span class="small" style="color:var(--muted)" title="confidence-blended with the market">→${f.fair_win}%</span>` : "";
   return `<div class="ufc-fighter">
-      <div class="ufc-fname"><b>${f.name}</b> <span class="small" style="color:var(--muted)">${f.record} · ${f.fights}f</span></div>
+      <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)} <span class="small" style="color:var(--muted)">${f.record} · ${f.fights}f</span></div>
       <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_ufcEdge(f.edge)}</span>
         <span class="fr-num" title="DraftKings projection / ceiling">DK ${f.proj}<span style="color:var(--muted)">/${f.ceil}</span></span></div>
@@ -2195,7 +2208,7 @@ function _fighterRow(f) {
 }
 function renderUFC() {
   const d = _ufcData; if (!d) return;
-  $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · model = ratings from each fighter's past fights → win prob, method/round & DK points. Edge = our fair win% (blended toward the market when fight history is thin) − Kalshi ask.`;
+  $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · model = ratings from each fighter's past fights → win prob, method/round & DK points. <span class="ufc-rating" style="border-color:var(--muted);color:var(--muted)">⚡</span> = our 0-100 power rating (league avg 50; hover for the striking/grappling/finishing breakdown). ⚠️ flags fighters with no/thin UFC history running on a league-average baseline. Edge = our fair win% (blended toward the market when history is thin) − Kalshi ask.`;
   const bouts = d.bouts.map((bt) => {
     const m = bt.method || {};
     const methodBar = `<div class="ufc-method">
@@ -2969,7 +2982,22 @@ async function runDfsSim() {
         const cls = p.pd_adj > 0 ? "#3ad17a" : "#e0566a";
         pd = ` <span style="color:${cls}">(${p.pd_adj > 0 ? "+" : ""}${p.pd_adj} PD, was ${p.base_proj})</span>`;
       }
-      return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${pd}</span></div></div>`;
+      // UFC: show our internal fighter rating, win%, GPP ceiling, and flag debuts.
+      let ufcBits = "";
+      if (p.rating != null || p.win_pct != null) {
+        const parts = [];
+        if (p.rating != null) {
+          const rc = p.rating >= 60 ? "#3ad17a" : p.rating <= 40 ? "#e0566a" : "var(--muted)";
+          parts.push(`rating <b style="color:${rc}">${p.rating}</b>`);
+        }
+        if (p.win_pct != null) parts.push(`win ${p.win_pct}%`);
+        if (p.ceil_proj != null) parts.push(`ceil ${p.ceil_proj}`);
+        if (p.record) parts.push(`${p.record}`);
+        ufcBits = ` <span class="small" style="color:var(--muted)">· ${parts.join(" · ")}</span>`;
+        if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No UFC fight history — projected at a league-average baseline, not a real read">⚠️ debut (league-avg est.)</span>`;
+        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating is shrunk hard toward league average">⚠️ thin data</span>`;
+      }
+      return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${pd}${ufcBits}</span></div></div>`;
     }).join("");
     let gridBanner = "";
     const g = d.grid;
@@ -2985,7 +3013,10 @@ async function runDfsSim() {
     }
     const u = d.ufc;
     if (u && u.available) {
-      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> — ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points).</div>`;
+      const mode = d.objective === "ceiling"
+        ? `<b style="color:#3ad17a">GPP / ceiling</b> — optimizing each fighter's 90th-pct (boom) night, so finishers with knockout upside are favored`
+        : `<b>Cash / projection</b> — optimizing mean points for a steady floor`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> — ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points). Mode: ${mode}.</div>`;
     } else if (u && !u.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🥊 ${u.reason}.</div>`;
     }
