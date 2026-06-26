@@ -1965,8 +1965,23 @@ function computeRecs() {
     const vorRank = byVor.findIndex((p) => p.id === x.pl.id);
     if (gap > 0 && vorRank >= 0 && vorRank < gap * 0.8) reasons.push(`Won't last to your next pick`);
     if (x.pl.rookie) reasons.push("Rookie upside (boom/bust)");
+    if (x.pl.injury_return) reasons.push("Injury bounce-back (consensus still buys him)");
+    if (x.pl.fa) reasons.push("Free agent — landing spot pending");
+    else if (x.pl.new_team) reasons.push(`New team (${x.pl.sleeper_team || x.pl.team})`);
     return { ...x.pl, reasons };
   });
+}
+function _drFlags(p) {
+  // Forward-looking status badges from the live draft consensus / injury feed.
+  let h = "";
+  if (p.fa) h += ' <span class="dr-fl fa" title="Free agent / unsigned">FA</span>';
+  if (p.new_team) h += ` <span class="dr-fl new" title="New team this season">→${p.sleeper_team || ""}</span>`;
+  if (p.injury_return) h += ` <span class="dr-fl ir" title="Returning from injury">${p.injury || "INJ"}</span>`;
+  else if (p.injury) h += ` <span class="dr-fl q" title="${p.injury}">Q</span>`;
+  return h;
+}
+function _drCons(p) {
+  return p.consensus_rank ? ` <span class="dr-cons" title="Sleeper consensus draft rank">ADP ${p.consensus_rank}</span>` : "";
 }
 function renderDraftRecs(myTurn) {
   if (!myTurn) { $("draftRecs").innerHTML = ""; return; }
@@ -1974,7 +1989,7 @@ function renderDraftRecs(myTurn) {
   if (!recs.length) { $("draftRecs").innerHTML = ""; return; }
   $("draftRecs").innerHTML = `<div class="dr-recs"><div class="dr-recs-h">🎯 Take one of these:</div>
     ${recs.map((r, i) => `<div class="dr-rec ${i === 0 ? "top" : ""}">
-      <div class="dr-rec-main"><b>${r.name}</b> <span class="legtag">${r.pos}</span> <span class="dr-team">${r.team}</span>${r.rookie ? ' <span class="dr-rk">R</span>' : ""}</div>
+      <div class="dr-rec-main"><b>${r.name}</b> <span class="legtag">${r.pos}</span> <span class="dr-team">${r.team}</span>${r.rookie ? ' <span class="dr-rk">R</span>' : ""}${_drFlags(r)}${_drCons(r)}</div>
       <div class="dr-rec-meta">VOR <b>${r.value}</b> · boom ${r.boom} · ${r.reasons.join(" · ")}</div>
       <button class="track-mini primary-mini" onclick="draftPlayer('${r.id}')">Draft</button></div>`).join("")}</div>`;
 }
@@ -1989,7 +2004,7 @@ function renderDraftPool() {
   if (q) avail = avail.filter((p) => (p.name || "").toLowerCase().includes(q));
   const rows = avail.slice(0, 80).map((p) => `<div class="dr-prow" onclick="draftPlayer('${p.id}')">
     <span class="dr-padp">${p.adp}</span>
-    <span class="dr-pname">${p.name}${p.rookie ? ' <span class="dr-rk">R</span>' : ""}</span>
+    <span class="dr-pname">${p.name}${p.rookie ? ' <span class="dr-rk">R</span>' : ""}${_drFlags(p)}${_drCons(p)}</span>
     <span class="legtag">${p.pos}</span><span class="dr-team">${p.team || ""}</span>
     <span class="dr-pvor">VOR ${p.value}</span><span class="dr-pboom">${p.boom}</span></div>`).join("");
   $("draftPool").innerHTML = rows || `<div class="empty">No players.</div>`;
@@ -1999,7 +2014,7 @@ function renderDraftRoster() {
   const cnt = { QB: 0, RB: 0, WR: 0, TE: 0 };
   r.forEach((p) => cnt[p.pos]++);
   $("draftRoster").innerHTML = `<div class="dr-roster-h">Your roster (${r.length}) · QB ${cnt.QB} RB ${cnt.RB} WR ${cnt.WR} TE ${cnt.TE}</div>
-    ${r.map((p) => `<div class="dr-rrow"><span class="legtag">${p.pos}</span> ${p.name} <span class="dr-team">${p.team}</span></div>`).join("") || '<div class="small" style="color:var(--muted)">no picks yet</div>'}`;
+    ${r.map((p) => `<div class="dr-rrow"><span class="legtag">${p.pos}</span> ${p.name} <span class="dr-team">${p.team}</span>${_drFlags(p)}</div>`).join("") || '<div class="small" style="color:var(--muted)">no picks yet</div>'}`;
 }
 function renderDraftBoardGrid() {
   const s = _drState, team = s.pick < s.teams * s.rounds ? _drTeam(s.pick, s.teams) : -1;

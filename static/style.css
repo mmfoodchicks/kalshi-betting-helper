@@ -447,6 +447,12 @@ button.danger { color: var(--no); }
 .dr-pvor { color: var(--pos); text-align: right; font-size: 0.78rem; }
 .dr-pboom { color: var(--muted); text-align: right; font-size: 0.78rem; }
 .dr-rk { background: rgba(255,170,60,0.2); color: #ffb13d; border-radius: 4px; padding: 0 4px; font-size: 0.68rem; font-weight: 700; }
+.dr-fl { border-radius: 4px; padding: 0 4px; font-size: 0.66rem; font-weight: 700; margin-left: 3px; }
+.dr-fl.fa { background: rgba(120,160,255,0.2); color: #8ab0ff; }
+.dr-fl.new { background: rgba(120,160,255,0.18); color: #8ab0ff; }
+.dr-fl.ir { background: rgba(255,90,90,0.2); color: #ff7a7a; }
+.dr-fl.q { background: rgba(255,200,80,0.18); color: #ffcf66; }
+.dr-cons { color: var(--muted); font-size: 0.66rem; margin-left: 3px; opacity: 0.85; }
 .dr-recs { border: 1px solid rgba(52,199,123,0.4); border-radius: 10px; padding: 9px 11px; margin-bottom: 10px; background: rgba(52,199,123,0.06); }
 .dr-recs-h { font-weight: 600; margin-bottom: 6px; }
 .dr-rec { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); }

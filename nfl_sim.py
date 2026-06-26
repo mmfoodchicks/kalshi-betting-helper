@@ -186,6 +186,16 @@ def project(prior_season=None, n_seasons=4000, seed=None):
             "season": round(sum(totals) / len(totals), 1),
             "rookie": True, "pick": rk["pick"],
         })
+    # Pull in draftable consensus players the production pool is missing (expected
+    # starters with little past production -- injury returners, promoted backups),
+    # projected at the role their consensus rank implies. Done BEFORE VOR so they
+    # are valued on the same scale as everyone else.
+    try:
+        import nfl_adp
+        nfl_adp.inject(rows)
+    except Exception:
+        pass
+
     # Draft value = value over replacement (VOR): season projection minus the
     # last startable player at that position in a 12-team best-ball league. This
     # is what makes positions comparable on a draft board.
@@ -195,9 +205,18 @@ def project(prior_season=None, n_seasons=4000, seed=None):
         repl = lst[min(len(lst) - 1, _REPL[pos])]["season"] if lst else 0.0
         for r in lst:
             r["value"] = round(r["season"] - repl, 1)
+    # Blend value toward the live draft consensus and flag FA / new-team / injury
+    # returners, so players whose PAST stats understate their EXPECTED 2026 role
+    # (Deebo, Charbonnet, Tank Dell...) are no longer buried. Self-corrects as the
+    # consensus + injury feeds update through the offseason.
+    try:
+        import nfl_adp
+        nfl_adp.blend(rows)
+    except Exception:
+        pass
     rows.sort(key=lambda r: -r["value"])
     for i, r in enumerate(rows, 1):
-        r["adp"] = i                                   # our value-rank, a proxy ADP
+        r["adp"] = i                                   # consensus-blended value rank
     by_pos = {}
     for pos in _FANTASY_POS:
         by_pos[pos] = [r for r in rows if r["pos"] == pos][:30]
