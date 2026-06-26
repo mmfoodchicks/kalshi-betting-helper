@@ -2894,9 +2894,11 @@ function renderMlbDfs(d) {
   const playerRow = (p) => {
     const star = p.sim ? "🎲" : "·";
     const own = p.own != null ? `<span class="dfs-own">${p.own}%</span>` : "";
+    const unconf = p.confirmed === false
+      ? ` <span class="ufc-debut" title="Not confirmed in a posted lineup — projected from DraftKings' season average, not our sim. Re-run closer to first pitch.">⚠️ unconfirmed</span>` : "";
     return `<div class="dfs-prow">
       <div class="dfs-pmain"><span class="legtag">${p.pos}</span> <b>${p.name}</b>
-        ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}</div>
+        ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}${unconf}</div>
       <div class="dfs-pmeta">$${p.salary.toLocaleString()} · <span title="simulated">${star}</span> proj <b>${p.proj}</b> · ceil ${p.ceil} · own ${own} ${lev(p.lev)}</div>
     </div>`;
   };
@@ -2939,6 +2941,10 @@ function renderMlbDfs(d) {
     expHtml = `<details class="dfs-exp"><summary>Exposure across ${d.n_lineups} lineups</summary><div class="dfs-chips">${chips}</div></details>`;
   }
 
+  const padWarn = d.auto_padded
+    ? `<div class="dfs-note" style="border-color:#e0a23a;color:#e0a23a">⚠️ Not enough confirmed starters to fill a roster (lineups may not be posted yet), so gaps were filled from DraftKings' season averages — those players are flagged <b>⚠️ unconfirmed</b> below. Re-run closer to first pitch for a fully sim-driven lineup.</div>`
+    : "";
+
   let csHead = "";
   if (d.contest_sim && !d.contest_sim.error) {
     const c = d.contest_sim;
@@ -2956,6 +2962,7 @@ function renderMlbDfs(d) {
       <div class="dfs-title">⚾ MLB DFS — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}${d.engine === "deep" ? ` <span class="dfs-chip" style="background:rgba(91,140,255,0.15);color:var(--accent)">deep engine</span>` : ""}</div>
       <div class="dfs-meta">${d.n_lineups} lineup${d.n_lineups > 1 ? "s" : ""} · ${d.sim_players} sim-projected players in pool of ${d.pool}</div>
     </div>
+    ${padWarn}
     ${boardHtml}
     ${csHead}
     <div class="dfs-lineups">${d.lineups.map(lineupCard).join("")}</div>

@@ -682,6 +682,42 @@ def _biggest_stack(lineup):
     return {"team": tm, "n": teams[tm]} if teams[tm] >= 2 else None
 
 
+def _assemble_pool(players_raw, proj, include_unconfirmed):
+    """CSV rows -> roster pool. We prefer players the sim confirms as starting;
+    `include_unconfirmed` pads the rest off DraftKings' season average so a lineup
+    can still be built when lineups aren't fully posted yet."""
+    players, unmatched = [], []
+    for p in players_raw:
+        elig = _eligible(p.get("pos"))
+        if not elig:
+            continue
+        pr = proj.get(_norm(p["name"]))
+        confirmed = pr is not None
+        if not pr:
+            if not include_unconfirmed or not p.get("proj"):
+                unmatched.append(p["name"])
+                continue
+            pr = {"proj": p["proj"], "median": p["proj"], "floor": p["proj"] * 0.5,
+                  "ceil": p["proj"] * 1.6, "kind": "?", "team": None, "arr": None}
+        players.append({"name": p["name"], "salary": p["salary"], "elig": elig,
+                        "median": pr["median"], "ceil": pr["ceil"], "floor": pr["floor"],
+                        "proj": pr["proj"], "team": pr.get("team"), "kind": pr.get("kind"),
+                        "arr": pr.get("arr"), "confirmed": confirmed,
+                        "sim": pr.get("kind") in ("bat", "pit")})
+    return players, unmatched
+
+
+def _missing_positions(players):
+    """Roster slots the pool can't even nominally fill (ignores the cap): a position
+    whose eligible-player count is short of how many of that slot the roster needs."""
+    from collections import Counter
+    need = Counter(ROSTER)
+    have = Counter()
+    for pos in need:
+        have[pos] = sum(1 for p in players if pos in p["elig"])
+    return [f"{need[pos] - have[pos]}×{pos}" for pos in need if have[pos] < need[pos]]
+
+
 def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
           n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
           contest=None, field_size=200, contest_iters=400, entry_fee=1.0,
@@ -715,29 +751,34 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
     except Exception:
         pass
 
-    players, unmatched = [], []
-    for p in players_raw:
-        elig = _eligible(p.get("pos"))
-        if not elig:
-            continue
-        pr = proj.get(_norm(p["name"]))
-        confirmed = pr is not None
-        if not pr:
-            # The CSV is the WHOLE DraftKings slate (every hitter, every reliever).
-            # We only roster players our sim confirms as starting; anyone else is
-            # reported as unmatched rather than padded in off DraftKings' season
-            # average. (include_unconfirmed re-enables the old fill-from-AvgPPG
-            # behavior for power users who explicitly want the full pool.)
-            if not include_unconfirmed or not p.get("proj"):
-                unmatched.append(p["name"])
-                continue
-            pr = {"proj": p["proj"], "median": p["proj"], "floor": p["proj"] * 0.5,
-                  "ceil": p["proj"] * 1.6, "kind": "?", "team": None, "arr": None}
-        players.append({"name": p["name"], "salary": p["salary"], "elig": elig,
-                        "median": pr["median"], "ceil": pr["ceil"], "floor": pr["floor"],
-                        "proj": pr["proj"], "team": pr.get("team"), "kind": pr.get("kind"),
-                        "arr": pr.get("arr"), "confirmed": confirmed,
-                        "sim": pr.get("kind") in ("bat", "pit")})
+    n_lineups = max(1, min(150, n_lineups))
+
+    def _build_lineups(players):
+        if n_lineups == 1:
+            res = optimize(players, cap, objective)
+            return [res] if res else None
+        return optimize_portfolio(players, cap, objective, n_lineups,
+                                  max_exposure, min_uniq, stack_min)
+
+    players, unmatched = _assemble_pool(players_raw, proj, include_unconfirmed)
+    lineups = _build_lineups(players)
+    auto_padded = False
+    # If the sim-confirmed pool alone can't field a roster (common when lineups
+    # aren't fully posted yet), fall back to padding the gaps from the CSV's
+    # season averages so the user still gets a lineup -- flagged as unconfirmed.
+    if not lineups and not include_unconfirmed:
+        players, unmatched = _assemble_pool(players_raw, proj, True)
+        lineups = _build_lineups(players)
+        auto_padded = bool(lineups)
+
+    if not lineups:
+        n_conf = sum(1 for p in players if p.get("confirmed"))
+        miss = _missing_positions(players)
+        why = (f"short {', '.join(miss)} — not enough players at those slots"
+               if miss else "no combination fits the salary cap")
+        return {"error": f"couldn't fill a valid roster ({why}). "
+                f"Matched {n_conf} confirmed starters of {len(players_raw)} CSV players — "
+                "if lineups aren't posted yet, try again closer to first pitch."}
 
     add_ownership_leverage(players, market_boom)
 
@@ -748,20 +789,6 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
                        "proj": round(p["proj"], 1), "own": p.get("own"), "lev": p.get("lev"),
                        "mkt_boom": p.get("mkt_boom"), "sharp": p.get("sharp")}
                       for p in board[:12]]
-
-    n_lineups = max(1, min(150, n_lineups))
-    if n_lineups == 1:
-        res = optimize(players, cap, objective)
-        if not res:
-            return {"error": "couldn't fill a valid roster (need P,P,C,1B,2B,3B,SS,OF×3 under cap)"}
-        score, lineup, sal = res
-        lineups = [(score, lineup, sal)]
-    else:
-        port = optimize_portfolio(players, cap, objective, n_lineups,
-                                  max_exposure, min_uniq, stack_min)
-        if not port:
-            return {"error": "couldn't build the lineup portfolio under the constraints"}
-        lineups = port
 
     payloads = [_lineup_payload(ln, sal, cap, objective) for _, ln, sal in lineups]
 
@@ -781,6 +808,7 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         "leverage_board": leverage_board,
         "pool": len(players), "sim_players": len(sim_players),
         "unmatched": unmatched[:15],
+        "auto_padded": auto_padded,
         # Back-compat single-lineup fields (older UI path reads these).
         "lineup": payloads[0]["players"], "total_salary": payloads[0]["salary"],
         "cap": cap, "total_proj": payloads[0]["proj"],
