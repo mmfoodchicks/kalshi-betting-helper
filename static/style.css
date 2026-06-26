@@ -442,6 +442,11 @@ button.danger { color: var(--no); }
 .tn-chip { font-size: 0.72rem; color: var(--muted); background: rgba(255,255,255,0.05); border-radius: 6px; padding: 1px 7px; }
 .tn-insights { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
 .tn-insight { font-size: 0.78rem; color: var(--text); }
+.tn-tier { float: right; font-size: 0.7rem; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.tn-lean { margin-top: 7px; font-size: 0.86rem; padding: 6px 9px; border-radius: 8px;
+  background: rgba(52,199,123,0.08); border: 1px solid rgba(52,199,123,0.28); }
+.tn-lean.strong { background: rgba(52,199,123,0.16); border-color: rgba(52,199,123,0.6); }
+.tn-lean.none { background: rgba(255,255,255,0.03); border-color: var(--border); color: var(--muted); }
 /* Best-ball draft room */
 .dr-slots { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .dr-slot { width: 36px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.04); color: var(--text); cursor: pointer; font-weight: 600; }

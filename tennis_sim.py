@@ -87,11 +87,19 @@ def _set(rng, holdA, holdB, pa, pb, a_serving):
             return gA > gB, gA, gB, (not a_first), asg, bsg
 
 
-def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None):
-    """Monte-Carlo the match. rates_* are {spw,rpw,ace,df}. Returns a board of
+def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None):
+    """Monte-Carlo the match. rates_* are {spw,rpw,ace,df}. `fatigue` is an optional
+    (tired_a, tired_b) pair of recent-load scores: the more-fatigued player serves
+    slightly worse (capped ~2.5% of a point), which compounds through the hold and
+    deciding-set math the way tired legs actually cost matches. Returns a board of
     coherent market probabilities for both players."""
     rng = random.Random(seed)
     pa, pb = point_probs(rates_a, rates_b, lg)
+    if fatigue:
+        # differential only -- if both are equally tired it washes out
+        shift = max(-0.025, min(0.025, (fatigue[0] - fatigue[1]) * 0.004))
+        pa = min(0.90, max(0.50, pa - shift))
+        pb = min(0.90, max(0.50, pb + shift))
     holdA, holdB = _hold(pa), _hold(pb)
     need = best_of // 2 + 1
     max_sets = best_of

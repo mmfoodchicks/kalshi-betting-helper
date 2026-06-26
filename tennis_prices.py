@@ -33,6 +33,46 @@ def _norm(s):
     return " ".join("".join(c for c in s.lower() if c.isalnum() or c == " ").split())
 
 
+def _fatigue_index():
+    """{norm_name: {load, rest_days, recent}} from a short crawl of ESPN's dated
+    tennis scoreboards. `load` is recency-weighted recent sets played (a 3-setter
+    yesterday costs more than a 2-setter last week); `rest_days` is days since the
+    player's last match. Together these are the differential fatigue signal the sim
+    uses -- tennis is brutal on tired legs, especially in deciding sets."""
+    def build():
+        today = datetime.date.today()
+        wmap = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.42, 4: 0.28, 5: 0.18, 6: 0.1}
+        agg = {}
+        for tour in ("atp", "wta"):
+            for i in range(7):
+                d = today - datetime.timedelta(days=i)
+                ds = d.strftime("%Y%m%d")
+                try:
+                    j = racing._get_json(
+                        f"https://site.api.espn.com/apis/site/v2/sports/tennis/{tour}/scoreboard?dates={ds}",
+                        timeout=12)
+                except Exception:
+                    continue
+                for e in j.get("events", []):
+                    for g in (e.get("groupings") or []):
+                        for c in (g.get("competitions") or []):
+                            if c.get("status", {}).get("type", {}).get("state") != "post":
+                                continue
+                            comps = c.get("competitors") or []
+                            sets = max((len(x.get("linescores") or []) for x in comps), default=2) or 2
+                            for x in comps:
+                                nm = _norm((x.get("athlete") or {}).get("displayName"))
+                                if not nm:
+                                    continue
+                                a = agg.setdefault(nm, {"load": 0.0, "rest_days": 99, "recent": []})
+                                a["load"] += wmap.get(i, 0.0) * sets
+                                a["rest_days"] = min(a["rest_days"], i)
+                                if len(a["recent"]) < 4:
+                                    a["recent"].append({"days_ago": i, "sets": sets})
+        return agg
+    return racing._cached(("tennis_fatigue",), 3 * 3600, build) or {}
+
+
 def _surface_for(date):
     """Infer court surface from the tennis calendar (the match markets don't carry
     it). Clay spring, grass for the ~5 weeks into mid-July, hard the rest."""
@@ -118,10 +158,21 @@ def _insights(a, b, sim, surface):
     # ace-heavy
     if sim["aces_total"] >= 18:
         out.append(f"🔥 Big-serving match (~{sim['aces_total']:.0f} aces) — ace overs in play")
-    return out[:5]
+    # fatigue differential
+    fa, fb = a.get("fatigue"), b.get("fatigue")
+    la, lb = (fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)
+    if abs(la - lb) >= 2.2:
+        fresh, tired = (a, b) if la < lb else (b, a)
+        tf = tired.get("fatigue") or {}
+        rec = (tf.get("recent") or [{}])[0]
+        when = "today" if rec.get("days_ago") == 0 else f"{rec.get('days_ago')}d ago" if rec.get("days_ago") else "recently"
+        sets = rec.get("sets")
+        detail = f"{sets}-set match {when}" if sets else "a heavier recent load"
+        out.append(f"😮‍💨 Fatigue edge: {fresh['name'].split()[-1]} is fresher ({tired['name'].split()[-1]} had {detail})")
+    return out[:6]
 
 
-def _build_match(tour_label, ev, players, n_sims):
+def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None):
     if len(players) != 2:
         return None
     date = _event_date(ev)
@@ -134,11 +185,17 @@ def _build_match(tour_label, ev, players, n_sims):
 
     a = {"name": players[0]["name"], "cents": players[0]["cents"], "ticker": players[0]["ticker"]}
     b = {"name": players[1]["name"], "cents": players[1]["cents"], "ticker": players[1]["ticker"]}
+    # recent-load fatigue per player (differential drives the sim)
+    fidx = fatigue_idx or {}
+    fa = fidx.get(_norm(a["name"]))
+    fb = fidx.get(_norm(b["name"]))
+    a["fatigue"], b["fatigue"] = fa, fb
     sim = None
     if ra and rb:
         da = {"spw": ra[0], "rpw": ra[1], "ace": ra[2], "df": ra[3]}
         db = {"spw": rb[0], "rpw": rb[1], "ace": rb[2], "df": rb[3]}
-        sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims)
+        fpair = ((fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)) if (fa or fb) else None
+        sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims, fatigue=fpair)
         a["model_win"], b["model_win"] = sim["p_a"], sim["p_b"]
         a["hold"], b["hold"] = sim["holdA"], sim["holdB"]
         a["prof"], b["prof"] = ra[4], rb[4]
@@ -170,8 +227,27 @@ def _build_match(tour_label, ev, players, n_sims):
             p["fair_win"] = fair
             p["edge"] = round(fair - p["cents"], 1) if p["cents"] is not None else None
 
+    # Confidence tier (how much charting backs the read) so the user knows which
+    # model numbers to trust.
+    conf_n = min(a["n"], b["n"])
+    tier = "high" if conf_n >= 40 else "medium" if conf_n >= 12 else "thin"
+    # The single "lean": the side with the best positive edge, discounted by how
+    # thin the charting is. play_strength sorts the board so trustworthy edges
+    # rise above thin-data mirages.
+    lean = None
+    best_p = None
+    for p in (a, b):
+        if p.get("edge") is not None and p["edge"] > 0:
+            if best_p is None or p["edge"] > best_p["edge"]:
+                best_p = p
+    if best_p:
+        strength = round(best_p["edge"] * w, 1)        # edge x confidence weight
+        lean = {"pick": best_p["name"], "fair_win": best_p["fair_win"],
+                "cents": best_p["cents"], "edge": best_p["edge"], "strength": strength}
+
     match = {"event": ev, "tour": tour_label, "date": date, "surface": surface,
-             "best_of": best_of, "a": a, "b": b}
+             "best_of": best_of, "a": a, "b": b, "conf_tier": tier,
+             "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
     if sim:
         match.update({
             "mean_games": sim["mean_games"], "games_ladder": sim["games_ladder"],
@@ -194,21 +270,21 @@ def _is_slam(ev):
 
 
 def _compute(n_sims=12000):
+    fatigue_idx = _fatigue_index()
     matches = []
     for tcode, (label, series) in _TOURS.items():
         evs = _match_markets(series)
         for ev, players in evs.items():
             try:
-                m = _build_match(label, ev, players, n_sims)
+                m = _build_match(label, ev, players, n_sims, fatigue_idx)
             except Exception:
                 m = None
             if m:
                 matches.append(m)
-    # sort: biggest model-vs-market edge first, then by confidence
-    def keyfn(m):
-        edges = [p.get("edge") or -99 for p in (m["a"], m["b"])]
-        return (max(edges), m["a"].get("confidence", 0))
-    matches.sort(key=keyfn, reverse=True)
+    # Sort by play strength (edge discounted by charting confidence) so the most
+    # trustworthy plays top the board -- thin-data mirages sink.
+    matches.sort(key=lambda m: (m.get("play_strength", 0),
+                                m["a"].get("confidence", 0)), reverse=True)
     return {"sport": "tennis", "generated": datetime.datetime.utcnow().isoformat() + "Z",
             "n_matches": len(matches), "matches": matches}
 

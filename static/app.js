@@ -2129,8 +2129,9 @@ function renderTennis() {
   else if (_tnSub === "wta") matches = matches.filter((m) => m.tour === "WTA");
   else if (_tnSub === "edges") matches = matches.filter((m) =>
     [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
-  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b> · model = each player's serve/return rates from their charted matches (recency-weighted, surface-split) → point-by-point match sim. Edge = our fair win% (blended toward the market when charting is thin) − Kalshi ask. <span style="color:var(--muted)">Surface inferred from the calendar.</span>`;
+  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>, sorted best play first (edge × how much charting backs it). Model = each player's serve/return rates from their charted matches (recency-weighted, surface-split) → point-by-point sim, adjusted for <b>recent-match fatigue</b>. The green <b>✅ Lean</b> is the side to look at; <b>🟢/🟡/🔴</b> shows how much data backs it. Edge = fair win% (blended toward the market when charting is thin) − Kalshi ask. <span style="color:var(--muted)">Surface inferred from the calendar.</span>`;
   if (!matches.length) { $("tnResults").innerHTML = `<div class="empty">No matches in this view.</div>`; return; }
+  const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'] };
   $("tnResults").innerHTML = matches.map((m) => {
     const a = m.a, b = m.b;
     const ts = m.total_sets || {};
@@ -2142,9 +2143,18 @@ function renderTennis() {
     const distance = ts["3"] != null && m.best_of === 3
       ? `<span class="tn-chip" title="probability the match goes 3 sets">3-set ${ts["3"]}%</span>` : "";
     const insights = (m.insights || []).map((i) => `<div class="tn-insight">${i}</div>`).join("");
+    const [tEmoji, tText] = tierTag[m.conf_tier] || tierTag.thin;
+    const L = m.lean;
+    const strong = L && L.strength >= 6;
+    const lean = L
+      ? `<div class="tn-lean${strong ? " strong" : ""}" title="best edge, discounted by how much charting backs it">
+           ${strong ? "⭐ " : ""}✅ Lean: <b>${L.pick}</b> to win — ${L.fair_win}% vs ${L.cents}¢ <span class="ev pos">+${L.edge}</span></div>`
+      : `<div class="tn-lean none">No edge — model agrees with the market</div>`;
     return `<div class="tn-match">
-        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of}</div>
+        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of}
+          <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${_tnPlayer(a)}${_tnPlayer(b)}
+        ${lean}
         <div class="tn-derived">${games}${distance}${aces}${setsLine ? `<span class="tn-chip">${setsLine}</span>` : ""}</div>
         ${insights ? `<div class="tn-insights">${insights}</div>` : ""}
       </div>`;
