@@ -185,15 +185,19 @@ def league(tour="m"):
                     "rpw": 0.358 if tour == "m" else 0.44, "ace": 0.07}
 
 
-def resolve(name, tour="m"):
+def resolve(name, tour="m", fuzzy=True):
     """Profile for a player name (exact-normalized, then unambiguous last-name),
-    or None."""
+    or None. `fuzzy=False` requires an exact full-name match -- used for ITF, where
+    a last-name match could wrongly attach a charted ATP player to an unrelated
+    lower-tier player and invent a false edge."""
     p = profiles(tour)
     if not p:
         return None
     nm = _norm(name)
     if nm in p:
         return p[nm]
+    if not fuzzy:
+        return None
     last = nm.split()[-1] if nm.split() else nm
     hits = [v for k, v in p.items() if k != "__league__" and k.split()[-1:] == [last]]
     if len(hits) == 1:
@@ -209,10 +213,11 @@ def resolve(name, tour="m"):
     return None
 
 
-def match_rates(name, surface, tour="m"):
+def match_rates(name, surface, tour="m", fuzzy=True):
     """(spw, rpw, ace, df, profile) for a player on a surface, or None. Falls back
-    to overall when the surface bucket is empty."""
-    prof = resolve(name, tour)
+    to overall when the surface bucket is empty. `fuzzy=False` (ITF) requires an
+    exact name match to avoid false-attaching a charted player."""
+    prof = resolve(name, tour, fuzzy=fuzzy)
     if not prof:
         return None
     s = (prof.get("surf") or {}).get(surface) or prof.get("overall")

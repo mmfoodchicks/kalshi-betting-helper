@@ -23,7 +23,17 @@ import racing
 import tennis_data as td
 import tennis_sim as ts
 
-_TOURS = {"m": ("ATP", "KXATPMATCH"), "w": ("WTA", "KXWTAMATCH")}
+# (display label, Kalshi series, data tour-code). ATP/WTA are the charted tours;
+# ITF is the lowest pro tier -- its players are mostly absent from the Match
+# Charting Project, so those matches show market-priced (de-vig) with no model
+# edge rather than a fabricated one. ITF men use the men's serve model, ITF women
+# the women's.
+_TOURS = [
+    ("ATP", "KXATPMATCH", "m"),
+    ("WTA", "KXWTAMATCH", "w"),
+    ("ITF", "KXITFMATCH", "m"),
+    ("ITF-W", "KXITFWMATCH", "w"),
+]
 _form = racing._form_cache
 _inflight = {}
 
@@ -172,15 +182,17 @@ def _insights(a, b, sim, surface):
     return out[:6]
 
 
-def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None):
+def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
     if len(players) != 2:
         return None
     date = _event_date(ev)
     surface = _surface_for(date)
     best_of = 5 if (tour_label == "ATP" and _is_slam(ev)) else 3
-    tcode = "m" if tour_label == "ATP" else "w"
-    ra = td.match_rates(players[0]["name"], surface, tcode)
-    rb = td.match_rates(players[1]["name"], surface, tcode)
+    # ITF: exact-name match only (no last-name fuzzy) so we never attach a charted
+    # ATP/WTA player to an unrelated lower-tier player and invent an edge.
+    fuzzy = not tour_label.startswith("ITF")
+    ra = td.match_rates(players[0]["name"], surface, tcode, fuzzy=fuzzy)
+    rb = td.match_rates(players[1]["name"], surface, tcode, fuzzy=fuzzy)
     lg = td.league(tcode)
 
     a = {"name": players[0]["name"], "cents": players[0]["cents"], "ticker": players[0]["ticker"]}
@@ -211,6 +223,11 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None):
     if ca is not None and cb is not None and (ca + cb) > 0:
         mkt_a = round(100.0 * ca / (ca + cb), 1)
         mkt_b = round(100.0 * cb / (ca + cb), 1)
+    # Overround (vig). A no-liquidity pre-match book quotes both sides high (e.g.
+    # 94/94 -> overround ~88); a real two-sided market is ~100-110. We treat a
+    # huge overround as "not really priced" and keep it out of the board/combos.
+    overround = (ca + cb - 100) if (ca is not None and cb is not None) else None
+    tradeable = overround is not None and overround <= 25
     conf = min(a["n"], b["n"])
     w = conf / (conf + 12.0)
     for p, mk in ((a, mkt_a), (b, mkt_b)):
@@ -228,9 +245,10 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None):
             p["edge"] = round(fair - p["cents"], 1) if p["cents"] is not None else None
 
     # Confidence tier (how much charting backs the read) so the user knows which
-    # model numbers to trust.
+    # model numbers to trust. ITF / unknown players have no charting -> "market".
+    modeled = sim is not None
     conf_n = min(a["n"], b["n"])
-    tier = "high" if conf_n >= 40 else "medium" if conf_n >= 12 else "thin"
+    tier = ("high" if conf_n >= 40 else "medium" if conf_n >= 12 else "thin") if modeled else "market"
     # The single "lean": the side with the best positive edge, discounted by how
     # thin the charting is. play_strength sorts the board so trustworthy edges
     # rise above thin-data mirages.
@@ -246,7 +264,8 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None):
                 "cents": best_p["cents"], "edge": best_p["edge"], "strength": strength}
 
     match = {"event": ev, "tour": tour_label, "date": date, "surface": surface,
-             "best_of": best_of, "a": a, "b": b, "conf_tier": tier,
+             "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
+             "tradeable": tradeable, "overround": overround,
              "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
     if sim:
         match.update({
@@ -272,15 +291,18 @@ def _is_slam(ev):
 def _compute(n_sims=12000):
     fatigue_idx = _fatigue_index()
     matches = []
-    for tcode, (label, series) in _TOURS.items():
+    for label, series, tcode in _TOURS:
         evs = _match_markets(series)
         for ev, players in evs.items():
             try:
-                m = _build_match(label, ev, players, n_sims, fatigue_idx)
+                m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode)
             except Exception:
                 m = None
             if m:
                 matches.append(m)
+    # Keep modeled matches (we have a real read) and tradeable ones (a genuine
+    # two-sided market); drop no-liquidity pre-match ITF noise.
+    matches = [m for m in matches if m.get("modeled") or m.get("tradeable")]
     # Sort by play strength (edge discounted by charting confidence) so the most
     # trustworthy plays top the board -- thin-data mirages sink.
     matches.sort(key=lambda m: (m.get("play_strength", 0),

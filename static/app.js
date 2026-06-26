@@ -2112,8 +2112,10 @@ function _tnEdge(e) {
 }
 function _tnPlayer(p, served) {
   const px = p.cents != null ? `${p.cents}¢` : "—";
-  const mdl = p.model_win != null ? `${p.model_win}%` : "—";
-  const fair = (p.fair_win != null && p.fair_win !== p.model_win)
+  // model win% when we have it; otherwise the de-vig Kalshi win% (ITF / no charting)
+  const mdl = p.model_win != null ? `${p.model_win}%`
+    : (p.mkt_win != null ? `${p.mkt_win}%<span class="small" style="color:var(--muted)"> mkt</span>` : "—");
+  const fair = (p.model_win != null && p.fair_win != null && p.fair_win !== p.model_win)
     ? ` <span class="small" style="color:var(--muted)" title="confidence-blended toward the market">→${p.fair_win}%</span>` : "";
   const hold = p.hold != null ? `<span class="tn-hold" title="probability of holding serve">hold ${p.hold}%</span>` : "";
   return `<div class="tn-player">
@@ -2127,11 +2129,12 @@ function renderTennis() {
   let matches = (d.matches || []).slice();
   if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
   else if (_tnSub === "wta") matches = matches.filter((m) => m.tour === "WTA");
+  else if (_tnSub === "itf") matches = matches.filter((m) => (m.tour || "").startsWith("ITF"));
   else if (_tnSub === "edges") matches = matches.filter((m) =>
     [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
   $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>, sorted best play first (edge × how much charting backs it). Model = each player's serve/return rates from their charted matches (recency-weighted, surface-split) → point-by-point sim, adjusted for <b>recent-match fatigue</b>. The green <b>✅ Lean</b> is the side to look at; <b>🟢/🟡/🔴</b> shows how much data backs it. Edge = fair win% (blended toward the market when charting is thin) − Kalshi ask. <span style="color:var(--muted)">Surface inferred from the calendar.</span>`;
   if (!matches.length) { $("tnResults").innerHTML = `<div class="empty">No matches in this view.</div>`; return; }
-  const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'] };
+  const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'], market: ['⚪', 'Market only — no charting data'] };
   $("tnResults").innerHTML = matches.map((m) => {
     const a = m.a, b = m.b;
     const ts = m.total_sets || {};
@@ -2149,7 +2152,9 @@ function renderTennis() {
     const lean = L
       ? `<div class="tn-lean${strong ? " strong" : ""}" title="best edge, discounted by how much charting backs it">
            ${strong ? "⭐ " : ""}✅ Lean: <b>${L.pick}</b> to win — ${L.fair_win}% vs ${L.cents}¢ <span class="ev pos">+${L.edge}</span></div>`
-      : `<div class="tn-lean none">No edge — model agrees with the market</div>`;
+      : (m.modeled === false
+        ? `<div class="tn-lean none">Market-priced — no charting data on these players, so we defer to Kalshi's odds</div>`
+        : `<div class="tn-lean none">No edge — model agrees with the market</div>`);
     return `<div class="tn-match">
         <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
@@ -2988,7 +2993,9 @@ async function buildRecommended() {
       const ev = c.ev_pct != null ? ` · EV <b class="${c.ev_pct >= 0 ? "pos" : "neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b>` : "";
       const edge = c.total_edge_cents ? ` · total edge ${c.total_edge_cents > 0 ? "+" : ""}${c.total_edge_cents}¢` : "";
       html += renderCombo(c, title, cls);
-      html += `<div class="small" style="margin:-4px 0 10px">${c.n_legs} legs · ~${c.combined_prob_pct}% to cash · ${c.fair_payout_x}× fair${ev}${edge}</div>`;
+      const why = (c.reasons && c.reasons.length)
+        ? `<div class="small" style="margin:2px 0 0">${c.reasons.map((r) => `<div>${r}</div>`).join("")}</div>` : "";
+      html += `<div class="small" style="margin:-4px 0 10px">${c.n_legs} legs · ~${c.combined_prob_pct}% to cash · ${c.fair_payout_x}× fair${ev}${edge}${why}</div>`;
       any = true;
     }
     if (!any) html += `<div class="empty">Not enough legs to build a combo from those sports right now. Try checking more sports.</div>`;

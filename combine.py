@@ -147,11 +147,32 @@ def _ufc_legs():
     return legs
 
 
-def _tennis_legs(tours=("ATP", "WTA")):
+def _poisson_over(mean, line):
+    """P(X > line) for X ~ Poisson(mean), line a half-integer. Used for the ace
+    over/under, whose count is well-modelled as Poisson around the expected total."""
+    import math
+    if mean <= 0:
+        return 0.0
+    k = int(math.floor(line)) + 1            # P(X >= k)
+    cdf = 0.0
+    term = math.exp(-mean)
+    for i in range(0, k):
+        if i > 0:
+            term *= mean / i
+        cdf += term
+    return max(0.0, min(1.0, 1.0 - cdf))
+
+
+_TENNIS_CAT = {"ATP": "🎾 Tennis", "WTA": "🎾 Tennis (WTA)",
+               "ITF": "🎾 Tennis (ITF)", "ITF-W": "🎾 Tennis (ITF-W)"}
+
+
+def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
     """Tennis legs from OUR match simulator (model probabilities, not de-vig). One
     event per match with both players as winner legs, plus the coherent derived
-    markets (total games over/under, match goes the distance) the sim prices
-    together -- so a tennis parlay stays internally consistent."""
+    markets -- total games over/under, total sets, aces -- the sim prices together,
+    so a tennis parlay stays internally consistent. Each leg carries a short `why`
+    so the recommended combos can explain themselves."""
     legs = []
     try:
         import tennis_prices
@@ -167,25 +188,46 @@ def _tennis_legs(tours=("ATP", "WTA")):
         if a.get("fair_win") is None and a.get("model_win") is None:
             continue
         ev = f"tennis_{m['event']}"
-        cat = "🎾 Tennis" if m["tour"] == "ATP" else "🎾 Tennis (WTA)"
+        cat = _TENNIS_CAT.get(m["tour"], "🎾 Tennis")
         mu = f"{a['name']} vs {b['name']}"
+        # one short reason for the match -> the favoured side's winner leg
+        insights = m.get("insights") or []
+        why = insights[0] if insights else None
 
-        def leg(label, prob_pct, cents, typ):
+        def leg(label, prob_pct, cents, typ, why=None):
             if prob_pct is None:
                 return
-            legs.append({"category": cat, "event_id": ev, "label": label,
-                         "matchup": mu, "prob": max(0.01, min(0.99, prob_pct / 100.0)),
-                         "price_cents": cents, "type": typ})
+            d = {"category": cat, "event_id": ev, "label": label, "matchup": mu,
+                 "prob": max(0.01, min(0.99, prob_pct / 100.0)),
+                 "price_cents": cents, "type": typ}
+            if why:
+                d["why"] = why
+            legs.append(d)
+
+        fav_is_a = (a.get("fair_win") or a.get("model_win") or 0) >= (b.get("fair_win") or b.get("model_win") or 0)
         # winner legs use the confidence-blended fair win% (falls back to model)
         leg(f"{a['name']} to win", a.get("fair_win") if a.get("fair_win") is not None else a.get("model_win"),
-            a.get("cents"), "Match")
+            a.get("cents"), "Match", why if fav_is_a else None)
         leg(f"{b['name']} to win", b.get("fair_win") if b.get("fair_win") is not None else b.get("model_win"),
-            b.get("cents"), "Match")
-        # match goes the distance (3 sets for Bo3) -- model only
+            b.get("cents"), "Match", why if not fav_is_a else None)
+        # total sets / goes the distance (Bo3) -- model only
         ts = m.get("total_sets") or {}
         if m.get("best_of") == 3 and ts.get("3") is not None:
             leg("Match goes 3 sets", ts["3"], None, "Sets")
             leg("Match in straight sets", round(100 - ts["3"], 1), None, "Sets")
+        # total games over/under at the line nearest the model mean
+        ladder = m.get("games_ladder") or {}
+        mean_g = m.get("mean_games")
+        if ladder and mean_g is not None:
+            line = min(ladder.keys(), key=lambda s: abs(float(s) - mean_g))
+            p_over = ladder[line]
+            leg(f"Over {line} games", p_over, None, "Games")
+            leg(f"Under {line} games", round(100 - p_over, 1), None, "Games")
+        # total aces over (Poisson around the model mean)
+        ace_mean = m.get("aces_total")
+        if ace_mean and ace_mean > 4:
+            aline = round(ace_mean) - 0.5
+            leg(f"Over {aline} aces", round(100 * _poisson_over(ace_mean, aline), 1), None, "Aces")
     return legs
 
 
@@ -219,10 +261,10 @@ def gather(cats, date, season):
         legs += _ufc_legs()                      # our UFC fight model, not de-vig
     if "tennis" in cats or "wta" in cats:        # our tennis match model, not de-vig
         tours = []
-        if "tennis" in cats:
-            tours.append("ATP")
-        if "wta" in cats:
-            tours.append("WTA")
+        if "tennis" in cats:                      # men: charted ATP + live ITF men
+            tours += ["ATP", "ITF"]
+        if "wta" in cats:                         # women: charted WTA + live ITF women
+            tours += ["WTA", "ITF-W"]
         legs += _tennis_legs(tuple(tours))
     for k in SPORT_KEYS:
         if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
@@ -242,7 +284,7 @@ def _item(combo):
     item = {
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l["type"],
                   "category": l["category"], "prob_pct": round(l["prob"] * 100, 1),
-                  "price_cents": l.get("price_cents")} for l in combo],
+                  "price_cents": l.get("price_cents"), "why": l.get("why")} for l in combo],
         "n_legs": len(combo),
         "combined_prob_pct": round(prob * 100, 1),
         "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
@@ -375,6 +417,12 @@ def recommended(cats, date, season, max_legs=12):
         it.update(extra)
         tot_edge = sum(_leg_edge(l) or 0 for l in chosen)
         it["total_edge_cents"] = round(tot_edge, 1)
+        # a couple of plain-English angles for the combo, from its legs
+        reasons = []
+        for l in chosen:
+            if l.get("why") and l["why"] not in reasons:
+                reasons.append(l["why"])
+        it["reasons"] = reasons[:3]
         return it
 
     # SAFEST: the highest-probability leg per event, the safest few.
