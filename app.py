@@ -762,16 +762,17 @@ _live_cache = {"ts": 0.0, "data": None}
 
 @app.route("/api/sports/live")
 def api_sports_live():
-    """Games being played right now. MLB is confirmed live from the MLB feed;
-    other sports are inferred in-play from Kalshi market timing (approximate)."""
+    """Every game we track that's being played RIGHT NOW, confirmed from each
+    league's live scoreboard (not market-timing guesses). MLB carries its richer
+    inning/base-out feed; the other tracked leagues come from ESPN scoreboards and
+    surface the moment a game flips to in-progress."""
     import time as _t
     import datetime as _dt
-    import sports as S
-    from concurrent.futures import ThreadPoolExecutor
     now = _t.time()
     if _live_cache["data"] and now - _live_cache["ts"] < 30:
         return jsonify(_live_cache["data"])
     out = []
+    # MLB: richer dedicated feed (inning + score).
     try:
         today = _dt.date.today().isoformat()
         for g in baseball._schedule(today, today[:4]):
@@ -785,28 +786,12 @@ def api_sports_live():
                 })
     except Exception:
         pass
-
-    def probe(key):
-        res = []
-        try:
-            for e in S.get_events(key):
-                ct = e.get("close_time")
-                # Heuristic in-play window: market closing within ~4h and trading.
-                if ct and 0 < ct - now < 4 * 3600 and e.get("liquidity") != "none":
-                    top = (e.get("outcomes") or [None])[0]
-                    res.append({
-                        "sport": S.SPORTS[key]["label"], "confirmed": False,
-                        "title": e.get("title"),
-                        "detail": f"closes ~{int((ct - now) / 60)}m · vig {e.get('overround_pct')}%",
-                        "fav": ({"name": top["name"], "fair": top["fair_pct"]}
-                                if top and top.get("fair_pct") is not None else None),
-                    })
-        except Exception:
-            pass
-        return res
-    with ThreadPoolExecutor(max_workers=8) as ex:
-        for r in ex.map(probe, list(S.SPORTS.keys())):
-            out.extend(r)
+    # Every other tracked team sport, confirmed live from its ESPN scoreboard.
+    try:
+        import live as _live
+        out.extend(_live.confirmed_live())
+    except Exception:
+        pass
     data = {"games": out, "confirmed_count": sum(1 for g in out if g["confirmed"])}
     _live_cache.update(ts=now, data=data)
     return jsonify(data)

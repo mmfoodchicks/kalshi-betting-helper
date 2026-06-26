@@ -1683,7 +1683,7 @@ async function loadLive() {
   try {
     const d = await (await fetch("/api/sports/live")).json();
     if (!d.games || !d.games.length) {
-      box.innerHTML = `<div class="empty">No games detected live right now. Check back during game windows — baseball shows here the moment first pitch is thrown.</div>`;
+      box.innerHTML = `<div class="empty">No tracked games are live right now. Any MLB, WNBA, NHL, NBA, NFL, college football, or soccer game we track appears here the moment it tips off, with the live score and game clock.</div>`;
       return;
     }
     const conf = d.games.filter((g) => g.confirmed);
