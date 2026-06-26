@@ -149,6 +149,18 @@ button.danger { color: var(--no); }
 
 .scan-controls { display: flex; gap: 8px; }
 .scan-controls select, .scan-controls button { padding: 8px 11px; font-size: 0.9rem; }
+/* Control rows whose label+input pairs need to read as discrete, spaced chips. */
+.ctl-row { flex-wrap: wrap; gap: 10px; align-items: stretch; }
+.ctl-row > label.small {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; color: var(--muted); cursor: help;
+}
+.ctl-row > label.small input, .ctl-row > label.small select {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 7px; font-size: 0.85rem;
+}
+.ctl-row > select { border-radius: 8px; }
 
 .catrow { display: flex; flex-wrap: wrap; gap: 10px; }
 .catrow label { flex-direction: row; align-items: center; gap: 5px; color: var(--text); font-size: 0.88rem; cursor: pointer; }

@@ -473,21 +473,22 @@
         <button id="simBtn" class="primary">Run</button>
       </div>
       <div id="g_dfs" class="hidden" style="margin-top:10px">
-        <div class="scan-controls" style="gap:8px;flex-wrap:wrap">
-          <select id="dfsSport"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option><option value="mlb">⚾ MLB (sim-driven)</option></select>
-          <select id="dfsMode"><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
-          <select id="dfsObjective"><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option></select>
-          <label class="small">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
-          <label class="small">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
+        <div class="scan-controls ctl-row">
+          <select id="dfsSport" title="Which sport's DFS slate this CSV is for"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option><option value="mlb">⚾ MLB (sim-driven)</option></select>
+          <select id="dfsMode" title="Classic = a full roster from the whole slate. Showdown = one game, a 1.5× captain plus flex."><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
+          <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments)."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option></select>
+          <label class="small" title="How many players make up one lineup (DraftKings sets this per contest).">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
+          <label class="small" title="The salary cap a lineup must fit under.">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>
-        <div id="dfsMlbOpts" class="scan-controls hidden" style="gap:8px;flex-wrap:wrap;margin-top:8px">
-          <label class="small">lineups <input id="dfsLineups" type="number" value="1" min="1" max="150" style="width:54px"/></label>
-          <label class="small">max exp% <input id="dfsMaxExp" type="number" value="60" min="5" max="100" style="width:54px"/></label>
-          <label class="small">stack <select id="dfsStack"><option value="0">none</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select></label>
-          <label class="small">unique <input id="dfsUniq" type="number" value="2" min="1" max="6" style="width:44px"/></label>
-          <label class="small">contest <select id="dfsContest"><option value="">— off —</option><option value="gpp">GPP (top-heavy)</option><option value="double_up">Double-up</option></select></label>
-          <label class="small">field <input id="dfsField" type="number" value="200" min="20" max="400" style="width:60px"/></label>
+        <div id="dfsMlbOpts" class="scan-controls ctl-row hidden" style="margin-top:8px">
+          <label class="small" title="How many different lineups to build as a portfolio. Set above 1 to use the exposure/unique rules below.">lineups <input id="dfsLineups" type="number" value="1" min="1" max="150" style="width:54px"/></label>
+          <label class="small" title="Exposure cap: the most lineups (as a %) any single player is allowed to appear in across your portfolio. Lower = more spread out.">max exp% <input id="dfsMaxExp" type="number" value="60" min="5" max="100" style="width:54px"/></label>
+          <label class="small" title="Minimum hitters from the SAME team in each lineup. Stacking correlates upside — when a team has a big inning, your stacked bats boom together.">stack <select id="dfsStack"><option value="0">none</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select></label>
+          <label class="small" title="Uniqueness: each lineup must differ from every other lineup you build by at least this many players, so your portfolio isn't near-duplicates. Only matters when lineups is above 1.">unique <input id="dfsUniq" type="number" value="2" min="1" max="6" style="width:44px"/></label>
+          <label class="small" title="Simulate your lineup(s) against a fake opponent field to estimate win% and ROI. GPP = top-heavy payouts (only the top finishers win big). Double-up = ~half the field doubles their money.">contest <select id="dfsContest"><option value="">— off —</option><option value="gpp">GPP (top-heavy)</option><option value="double_up">Double-up</option></select></label>
+          <label class="small" title="How many fake opponent lineups to simulate in the contest above. Bigger field = a more realistic win%/ROI estimate, but slower. Only used when contest is on.">field <input id="dfsField" type="number" value="200" min="20" max="400" style="width:60px"/></label>
         </div>
+        <p id="dfsMlbHint" class="sub hidden" style="margin:6px 0 0;font-size:0.78rem">💡 <b>unique</b> = how many players each lineup must differ by (only with 2+ lineups) · <b>field</b> = size of the simulated opponent pool for the contest win%/ROI (only when contest is on).</p>
         <p class="sub" style="margin:6px 0 4px">Paste your DraftKings <b>DKSalaries.csv</b> (downloaded from the contest). MLB is sim-driven: it builds your lineup(s) under the cap with projected <b>ownership + leverage</b>, optional <b>multi-lineup portfolio</b> (exposure / stacking / uniqueness), and can <b>simulate them against a field</b> for win% &amp; ROI. <span id="dfsLock"></span></p>
         <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
       </div>

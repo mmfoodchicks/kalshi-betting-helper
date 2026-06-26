@@ -2783,7 +2783,11 @@ async function initSim() {
   $("simBtn").addEventListener("click", runSim);
   $("simMode").addEventListener("change", simModeChange);
   // MLB DFS options only apply to the sim-driven MLB path.
-  const dfsMlbToggle = () => { if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", $("dfsSport").value !== "mlb"); };
+  const dfsMlbToggle = () => {
+    const isMlb = $("dfsSport").value === "mlb";
+    if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", !isMlb);
+    if ($("dfsMlbHint")) $("dfsMlbHint").classList.toggle("hidden", !isMlb);
+  };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
   try {
