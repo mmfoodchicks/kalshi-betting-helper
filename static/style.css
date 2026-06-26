@@ -520,6 +520,7 @@ button.danger { color: var(--no); }
 
 /* Sports tab sub-navigation (Live / Featured / All) */
 .subnav { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .subtab { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.04); color: var(--muted); font-size: 0.86rem; cursor: pointer; }
 .subtab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
@@ -703,4 +704,25 @@ body.tier-locked .owner-only { display: none !important; }
   .kv { font-size: 0.8rem; gap: 4px 12px; }
 
   table { font-size: 0.8rem; }
+
+  /* Section header + its sub-tabs stack instead of crowding one line. */
+  .row-between > h2 { width: 100%; }
+  .subtabs { width: 100%; overflow-x: auto; flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtab { flex: 0 0 auto; white-space: nowrap; }
+
+  /* Number grids in the sim boards were fixed-width and overflowed phones:
+     give the name the slack and shrink the numeric columns. */
+  .ufc-fighter, .tn-player { gap: 8px; }
+  .ufc-fname, .tn-pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ufc-fnums { grid-template-columns: 58px 40px 38px 56px; gap: 6px; font-size: 0.82rem; }
+  .tn-pnums { grid-template-columns: 72px 42px 38px; gap: 6px; font-size: 0.82rem; }
+  .tn-hold { display: block; margin-left: 0; }
+
+  /* Draft pool: drop the boom column on phones so the name isn't crushed.
+     5 visible children (adp, name, pos, team, VOR) -> 5 columns. */
+  .dr-prow { grid-template-columns: 26px 1fr 30px 34px 54px; gap: 6px; font-size: 0.82rem; }
+  .dr-prow .dr-pboom { display: none; }
+  .dr-cols { grid-template-columns: 1fr; }
 }
