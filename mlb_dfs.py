@@ -497,14 +497,79 @@ def _field_lineup(by_pos, cap, own_weights, rng, tries=6):
     return None
 
 
-def contest_sim(your_lineups, players, field_size=200, n_iter=400,
-                contest="gpp", entry_fee=1.0):
-    """Estimate win% / ROI for your lineups against a simulated field.
+def _ncdf(z):
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
-    The field is built by ownership-weighted random rosters; every player's score
-    each iteration is drawn from its sim sample (same-game hitters share the index
-    so stacks stay correlated). Honest: the field model and payout curve are
-    approximations, not a real contest's exact structure."""
+
+def _npdf(z):
+    return math.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
+
+
+def _gpp_curve(C, pool, first, fee):
+    """Analytic top-heavy GPP payout(rank) for a C-entry contest.
+
+    Pays ~20% of the field; 1st = `first`, decaying as a power law down to a
+    ~1.5x-entry min-cash, with the exponent solved so the paid spots sum to about
+    `pool`. Returns (payout_fn, places_paid). This is what lets us price a real
+    11,000- or 1,000,000-entry tournament without simulating every entrant."""
+    places = max(1, int(round(0.20 * C)))
+    min_cash = max(fee * 1.5, 0.01)
+    first = max(first, min_cash)
+
+    def total_for(k):
+        if k <= 0:
+            rstar = float(places)
+        else:
+            rstar = min(float(places), max(1.0, (first / min_cash) ** (1.0 / k)))
+        if abs(k - 1.0) < 1e-6:
+            integ = first * math.log(max(1e-9, rstar))
+        else:
+            integ = first * (rstar ** (1.0 - k) - 1.0) / (1.0 - k)
+        return integ + max(0.0, places - rstar) * min_cash
+
+    lo, hi = 0.2, 4.0                                  # bisection on the exponent
+    for _ in range(40):
+        k = 0.5 * (lo + hi)
+        if total_for(k) > pool:
+            lo = k                                     # steeper decay -> smaller total
+        else:
+            hi = k
+    k = 0.5 * (lo + hi)
+
+    def payout(r):
+        if r < 1 or r > places:
+            return 0.0
+        return max(min_cash, first * r ** (-k))
+    return payout, places
+
+
+def _rank_grid(places, n=240):
+    """Log-spaced (rank, width) cells over the paid ranks 2..places, for
+    integrating the steep payout curve against the finishing-rank distribution."""
+    if places < 2:
+        return []
+    lo, hi = math.log(2.0), math.log(float(places))
+    if hi <= lo:
+        return [(2.0, 1.0)]
+    edges = [math.exp(lo + (hi - lo) * i / n) for i in range(n + 1)]
+    return [((edges[i] + edges[i + 1]) / 2.0, edges[i + 1] - edges[i]) for i in range(n)]
+
+
+def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp",
+                entry_fee=1.0, contest_size=None, prize_pool=None, first_prize=None):
+    """Estimate win% / cash% / ROI for your lineups in a contest of ANY size.
+
+    Big GPPs have tens of thousands to millions of entries; you can't simulate them
+    all. Instead we build a fast ownership-weighted SAMPLE field, and on each slate
+    outcome fit the opponents' score distribution. From that we get q = the chance a
+    random opponent beats your lineup this slate, then extrapolate analytically to
+    the real `contest_size`: you win only if all C-1 opponents fall below you
+    (prob (1-q)^(C-1)), your finishing rank ~ 1 + Binomial(C-1, q), and we integrate
+    a realistic top-heavy payout curve over that rank distribution for ROI.
+
+    Honest: the field model, the normal score-fit and the payout curve are
+    approximations -- but they scale correctly with contest size, which a literal
+    few-hundred-entry sim never did."""
     by_pos = _by_pos(players)
     if by_pos is None or not your_lineups:
         return None
@@ -516,12 +581,24 @@ def contest_sim(your_lineups, players, field_size=200, n_iter=400,
 
     rng = random.Random(12345)
     field = []
-    for _ in range(field_size):
+    for _ in range(sample_size):
         fl = _field_lineup(by_pos, 50000, own_w, rng)
         if fl:
             field.append(fl)
-    if not field:
+    if len(field) < 30:
         return None
+
+    C = max(2, int(contest_size or (len(field) + 1)))
+    pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85   # ~15% rake
+    if contest == "double_up":
+        cash_places = max(1, int(round(0.45 * C)))
+        du_each = pool / cash_places                  # even split among cashers (~2x)
+        payout, places = (lambda r: du_each if r <= cash_places else 0.0), cash_places
+        first = du_each
+    else:
+        first = float(first_prize) if first_prize else 0.20 * pool
+        payout, places = _gpp_curve(C, pool, first, entry_fee)
+    grid = _rank_grid(places)
 
     def score(names, it):
         s = 0.0
@@ -531,56 +608,47 @@ def contest_sim(your_lineups, players, field_size=200, n_iter=400,
         return s
 
     your_names = [[p["name"] for p in ln] for ln in your_lineups]
-    n_entries = len(field) + 1                         # you take one of the slots
-    stats = [{"win": 0, "top1pct": 0, "cash": 0, "total": 0.0} for _ in your_names]
-    cash_line = int(0.2 * n_entries) if contest == "gpp" else int(0.5 * n_entries)
+    stats = [{"win": 0.0, "top1": 0.0, "cash": 0.0, "ret": 0.0} for _ in your_names]
+    top1_line = max(1, int(0.01 * C))
 
     for it in range(n_iter):
-        fscores = sorted((score(f, it) for f in field), reverse=True)
+        fs = [score(f, it) for f in field]
+        mu = statistics.fmean(fs)
+        sd = statistics.pstdev(fs) or 1.0
         for li, names in enumerate(your_names):
             ys = score(names, it)
-            beat = sum(1 for fs in fscores if fs < ys)
-            rank = len(fscores) - beat + 1            # 1 = first
+            q = max(1e-12, min(1.0, 1.0 - _ncdf((ys - mu) / sd)))   # P(an opp beats you)
             st = stats[li]
-            if rank == 1:
-                st["win"] += 1
-            if rank <= max(1, int(0.01 * n_entries)):
-                st["top1pct"] += 1
-            if rank <= cash_line:
-                st["cash"] += 1
-            st["total"] += _payout(rank, n_entries, contest, entry_fee)
+            # Win = every one of the C-1 opponents finishes below you.
+            winp = math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
+            st["win"] += winp
+            # Finishing rank ~ 1 + Binomial(C-1, q), approximated Normal for large C.
+            mr = 1.0 + (C - 1) * q
+            sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
+            st["cash"] += _ncdf((places - mr) / sr)
+            st["top1"] += _ncdf((top1_line - mr) / sr)
+            if contest == "double_up":
+                st["ret"] += du_each * _ncdf((places - mr) / sr)
+            else:
+                ev = first * winp                      # 1st exactly (rare; exact tail)
+                for r, wd in grid:
+                    ev += payout(r) * _npdf((r - mr) / sr) / sr * wd
+                st["ret"] += ev
 
     out = []
-    for li, st in enumerate(stats):
-        roi = 100.0 * (st["total"] / n_iter - entry_fee) / entry_fee
-        out.append({"win_pct": round(100 * st["win"] / n_iter, 2),
-                    "top1_pct": round(100 * st["top1pct"] / n_iter, 1),
+    for st in stats:
+        ret = st["ret"] / n_iter
+        roi = 100.0 * (ret - entry_fee) / entry_fee
+        out.append({"win_pct": round(100 * st["win"] / n_iter, 4),
+                    "top1_pct": round(100 * st["top1"] / n_iter, 2),
                     "cash_pct": round(100 * st["cash"] / n_iter, 1),
                     "roi_pct": round(roi, 1),
-                    "avg_return": round(st["total"] / n_iter, 2)})
+                    "avg_return": round(ret, 2)})
     best = max(range(len(out)), key=lambda i: out[i]["roi_pct"]) if out else None
-    return {"field_size": len(field), "entries": n_entries, "iterations": n_iter,
-            "contest": contest, "entry_fee": entry_fee, "lineups": out,
+    return {"sample_size": len(field), "entries": C, "iterations": n_iter,
+            "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
+            "first_prize": round(first), "places_paid": places, "lineups": out,
             "best_lineup_index": best}
-
-
-def _payout(rank, entries, contest, fee):
-    """Return for finishing `rank` of `entries` (rough, standard-shaped curves)."""
-    if contest == "double_up":
-        return 2.0 * fee if rank <= int(0.5 * entries) else 0.0
-    # GPP: top-heavy. ~20% cash; winner ~ 20x, decaying.
-    frac = rank / max(1, entries)
-    if frac > 0.20:
-        return 0.0
-    if rank == 1:
-        return 20.0 * fee
-    if rank <= max(2, int(0.001 * entries)):
-        return 8.0 * fee
-    if rank <= max(3, int(0.01 * entries)):
-        return 3.0 * fee
-    if rank <= max(4, int(0.05 * entries)):
-        return 1.8 * fee
-    return 1.4 * fee
 
 
 # ---- Public build ----------------------------------------------------------
@@ -617,7 +685,8 @@ def _biggest_stack(lineup):
 def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
           n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
           contest=None, field_size=200, contest_iters=400, entry_fee=1.0,
-          include_unconfirmed=False):
+          include_unconfirmed=False, contest_size=None, prize_pool=None,
+          first_prize=None):
     import baseball
     players_raw = _sim.parse_dk_csv(csv_text)
     if len(players_raw) < 10:
@@ -721,8 +790,9 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         try:
             out["contest_sim"] = contest_sim(
                 [ln for _, ln, _s in lineups], players,
-                field_size=min(400, field_size), n_iter=min(800, contest_iters),
-                contest=contest, entry_fee=entry_fee)
+                sample_size=min(1200, max(200, field_size)),
+                n_iter=min(800, contest_iters), contest=contest, entry_fee=entry_fee,
+                contest_size=contest_size, prize_pool=prize_pool, first_prize=first_prize)
         except Exception as e:
             out["contest_sim"] = {"error": f"contest sim failed: {e}"}
     return out

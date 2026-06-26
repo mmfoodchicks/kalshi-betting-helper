@@ -2903,9 +2903,13 @@ function renderMlbDfs(d) {
 
   const lineupCard = (ln, i) => {
     const cs = d.contest_sim && d.contest_sim.lineups && d.contest_sim.lineups[i];
+    const winTxt = cs ? (cs.win_pct >= 1 ? `${cs.win_pct}%`
+      : cs.win_pct > 0 ? `~1 in ${Math.round(100 / cs.win_pct).toLocaleString()}`
+      : "<1 in 1M") : "";
     const csLine = cs ? `<div class="dfs-csrow">
-        <span>win <b>${cs.win_pct}%</b></span><span>cash <b>${cs.cash_pct}%</b></span>
-        <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span></div>` : "";
+        <span title="chance this lineup finishes 1st in the full field">win <b>${winTxt}</b></span>
+        <span title="chance you finish in the paid places">cash <b>${cs.cash_pct}%</b></span>
+        <span title="modeled return on your entry fee in this contest">ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span></div>` : "";
     const stk = ln.stack ? `<span class="dfs-chip">${ln.stack.team} ${ln.stack.n}-stack</span>` : "";
     const isBest = d.contest_sim && d.contest_sim.best_lineup_index === i;
     return `<div class="dfs-lineup${isBest ? " best" : ""}">
@@ -2938,7 +2942,8 @@ function renderMlbDfs(d) {
   let csHead = "";
   if (d.contest_sim && !d.contest_sim.error) {
     const c = d.contest_sim;
-    csHead = `<div class="dfs-note">🏆 Simulated vs a ${c.field_size}-lineup ${c.contest === "double_up" ? "double-up" : "GPP"} field over ${c.iterations} runs — win% / cash% / ROI per lineup below. <i>Field &amp; payout are modeled estimates.</i></div>`;
+    const money = (v) => "$" + Math.round(v).toLocaleString();
+    csHead = `<div class="dfs-note">🏆 ${c.entries.toLocaleString()}-entry ${c.contest === "double_up" ? "double-up" : "GPP"}${c.prize_pool ? ` · ${money(c.prize_pool)} pool · ${money(c.first_prize)} to 1st · ${(c.places_paid || 0).toLocaleString()} paid` : ""} · ${money(c.entry_fee)} entry. Your strength is gauged on a ${c.sample_size}-lineup sample, then scaled to the full field. <i>Field, score-fit &amp; payout curve are modeled estimates.</i></div>`;
   } else if (d.contest_sim && d.contest_sim.error) {
     csHead = `<div class="dfs-note">${d.contest_sim.error}</div>`;
   }
@@ -2978,7 +2983,11 @@ async function runDfsSim() {
         stack_min: parseInt(($("dfsStack") || {}).value, 10) || 0,
         min_uniq: parseInt(($("dfsUniq") || {}).value, 10) || 2,
         contest: ($("dfsContest") || {}).value || null,
-        field_size: parseInt(($("dfsField") || {}).value, 10) || 200 }),
+        field_size: parseInt(($("dfsField") || {}).value, 10) || 600,
+        contest_size: parseInt(($("dfsEntries") || {}).value, 10) || 0,
+        entry_fee: parseFloat(($("dfsEntry") || {}).value) || 1,
+        prize_pool: parseFloat(($("dfsPool") || {}).value) || 0,
+        first_prize: parseFloat(($("dfsFirst") || {}).value) || 0 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
