@@ -43,9 +43,13 @@ def _get(url):
         return json.loads(r.read())
 
 
-def _harvest(series, tier_start):
-    """Settled matches for a series -> [(date, winner, loser, tier_start)]. Pairs
-    the two per-player markets by event and reads the 'yes' result as the winner."""
+_STORE_KEY = "tennis_elo_results"     # persistent accumulating match store
+
+
+def _harvest(series, gender, tier_start):
+    """Recently-settled matches for a series -> {event: [date, winner, loser,
+    gender, tier_start]}. Pairs the two per-player markets by event and reads the
+    'yes' result as the winner. Event-keyed so callers can dedup into a store."""
     by_event = {}
     cursor, pages = "", 0
     while pages < _MAX_PAGES:
@@ -69,25 +73,40 @@ def _harvest(series, tier_start):
         pages += 1
         if not cursor:
             break
-    out = []
-    for info in by_event.values():
+    out = {}
+    for ev, info in by_event.items():
         ps = info["p"]
         if len(ps) != 2:
             continue
         (n1, r1), (n2, r2) = ps
         if r1 == "yes" and r2 == "no":
-            out.append((info["date"], n1, n2, tier_start))
+            out[ev] = [info["date"], n1, n2, gender, tier_start]
         elif r2 == "yes" and r1 == "no":
-            out.append((info["date"], n2, n1, tier_start))
+            out[ev] = [info["date"], n2, n1, gender, tier_start]
     return out
 
 
 def _build():
-    """{'m': {norm: {elo, n, name, last}}, 'w': {...}} from settled results, run in
-    true chronological order across ALL series in each gender pool."""
-    by_gender = {"m": [], "w": []}
+    """{'m': {...}, 'w': {...}} Elo pools. Harvests recently-settled matches, MERGES
+    them into a persistent store keyed by event (so history accumulates across runs
+    instead of a rolling window), then runs the Elo over the full accumulated set in
+    true chronological order."""
+    import deep_cache
+    store = deep_cache.load(_STORE_KEY)[0] or {}     # {event: [date,w,l,gender,tier]}
     for series, g, tier_start in _SERIES:
-        by_gender[g] += _harvest(series, tier_start)
+        try:
+            store.update(_harvest(series, g, tier_start))
+        except Exception:
+            pass
+    try:
+        deep_cache.save(_STORE_KEY, store)
+    except Exception:
+        pass
+
+    by_gender = {"m": [], "w": []}
+    for rec in store.values():
+        date, win, los, g, tier_start = rec
+        by_gender.get(g, by_gender["m"]).append((date, win, los, tier_start))
     pools = {"m": {}, "w": {}}
     for g, matches in by_gender.items():
         matches.sort(key=lambda x: x[0])             # global chronological order
