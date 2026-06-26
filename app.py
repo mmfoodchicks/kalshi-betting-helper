@@ -1056,7 +1056,8 @@ def api_nfl_grade():
         teams = d.get("teams")
         if isinstance(teams, list) and teams:
             clean = [{"label": str(t.get("label") or "")[:40],
-                      "names": [str(n) for n in (t.get("names") or [])][:40]}
+                      "names": [str(n) for n in (t.get("names") or [])][:40],
+                      "pitch": str(t.get("pitch") or "")[:2000]}
                      for t in teams[:16]]
             res = nfl_sim.grade_multi(clean, use_llm=use_llm)
             if res is None:
@@ -1065,12 +1066,51 @@ def api_nfl_grade():
         names = d.get("names") or []
         if not isinstance(names, list) or not names:
             return jsonify({"error": "send a 'names' list or 'teams'"}), 400
-        g, _ = nfl_sim.grade_names([str(n) for n in names][:40], use_llm=use_llm)
+        g, _ = nfl_sim.grade_names([str(n) for n in names][:40], use_llm=use_llm,
+                                   pitch=str(d.get("pitch") or "")[:2000])
         if g is None:
             return jsonify({"status": "computing", "message": "warming the projection pool…"}), 202
         return jsonify(g)
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/settings/ai_key", methods=["GET", "POST"])
+def api_ai_key():
+    """Set up the optional Anthropic key for AI explanations. GET reports whether a
+    key is configured (never returns the key). POST saves a pasted key to a local,
+    gitignored file and verifies it with a tiny test call."""
+    import os
+    import nfl_sim
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "anthropic_key.txt")
+    if request.method == "GET":
+        return jsonify({"configured": nfl_sim.ai_available()})
+    d = request.get_json(force=True) or {}
+    key = str(d.get("key") or "").strip()
+    if not key:                                       # empty -> clear it
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        return jsonify({"configured": False, "cleared": True})
+    if not key.startswith("sk-ant-"):
+        return jsonify({"error": "That doesn't look like an Anthropic key (they start with 'sk-ant-')."}), 400
+    # verify with a 1-token call before saving
+    try:
+        import anthropic
+        anthropic.Anthropic(api_key=key).messages.create(
+            model="claude-haiku-4-5", max_tokens=1,
+            messages=[{"role": "user", "content": "hi"}])
+    except Exception as e:
+        return jsonify({"error": f"Key didn't work: {str(e)[:160]}"}), 400
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(key)
+        os.chmod(path, 0o600)
+    except Exception as e:
+        return jsonify({"error": f"Couldn't save: {e}"}), 500
+    return jsonify({"configured": True, "verified": True})
 
 
 @app.route("/api/ufc")

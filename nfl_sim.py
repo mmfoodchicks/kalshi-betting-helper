@@ -312,10 +312,11 @@ def _positional_ranks(pool):
     return pr
 
 
-def grade_roster(roster, pool=None, use_llm=False):
+def grade_roster(roster, pool=None, use_llm=False, pitch=None):
     """Grade a best-ball roster across eight categories, with per-position
     explanations, stacks, a plain-English narrative (optionally LLM-written), and
-    an overall letter + 0-100 score benchmarked against a field of chalk ADP teams."""
+    an overall letter + 0-100 score benchmarked against a field of chalk ADP teams.
+    `pitch` is the drafter's optional written case, which the LLM read can weigh."""
     roster = [p for p in roster if p and p.get("pos") in _FANTASY_POS]
     if len(roster) < 4:
         return {"error": "Add at least a few players to grade a team."}
@@ -481,18 +482,42 @@ def grade_roster(roster, pool=None, use_llm=False):
         "vs_field": round((proj / par_proj - 1) * 100, 1) if par_proj else 0,
         "narrative": narrative,
     }
+    if pitch and pitch.strip():
+        out["pitch"] = pitch.strip()
     if use_llm:
-        llm = _llm_narrative(out)
+        llm = _llm_narrative(out, pitch)
         if llm:
             out["llm_narrative"] = llm
     return out
 
 
-def _llm_narrative(g):
-    """Optional: a sharp 2-3 sentence analyst take from a small LLM. Only fires when
-    an ANTHROPIC_API_KEY is configured; otherwise the templated narrative stands."""
+def _anthropic_key():
+    """The user's Anthropic key, from the env var or a local gitignored file
+    (data/anthropic_key.txt). Returns None if neither is set."""
     import os
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    k = os.environ.get("ANTHROPIC_API_KEY")
+    if k:
+        return k.strip()
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "anthropic_key.txt")
+    try:
+        with open(path) as f:
+            v = f.read().strip()
+            return v or None
+    except Exception:
+        return None
+
+
+def ai_available():
+    return bool(_anthropic_key())
+
+
+def _llm_narrative(g, pitch=None):
+    """Optional: a sharp 2-3 sentence analyst take from a small LLM (Haiku). Only
+    fires when an Anthropic key is configured; otherwise the templated narrative
+    stands. If the drafter left a `pitch` (their argument for the team), the model
+    weighs it -- it can be swayed, but stays honest about whether the case holds."""
+    key = _anthropic_key()
+    if not key:
         return None
     try:
         import json
@@ -504,20 +529,27 @@ def _llm_narrative(g):
             "categories": {c["label"]: c["grade"] for c in g["categories"]},
             "positions": {p: v["grade"] for p, v in g["positions"].items()},
         }
-        client = anthropic.Anthropic()
+        sys = ("You are a sharp, concise fantasy-football analyst grading a best-ball draft team. "
+               "In 2-3 punchy sentences, say why the team is good or bad and the single biggest thing "
+               "to note. Be specific, name players, don't just restate numbers, no preamble. Best-ball "
+               "playoffs run weeks 15-17 (week 17 is usually the championship), so a strong week-17 "
+               "outlook is a real but secondary edge behind raw ceiling and talent.")
+        content = json.dumps(brief)
+        if pitch and pitch.strip():
+            sys += (" The drafter has made a case for their team (below). Weigh their argument fairly -- "
+                    "let a genuinely good point sway you and acknowledge it -- but stay honest: if the "
+                    "reasoning is weak or doesn't change the math, say so politely.")
+            content += "\n\nThe drafter's argument:\n" + pitch.strip()[:1500]
+        client = anthropic.Anthropic(api_key=key)
         msg = client.messages.create(
-            model="claude-haiku-4-5", max_tokens=200,
-            system=("You are a sharp, concise fantasy-football analyst grading a best-ball draft team. "
-                    "In 2-3 punchy sentences, say why the team is good or bad and the single biggest "
-                    "thing to note (a strength to lean on or a hole to worry about). Be specific, name "
-                    "players, don't just restate numbers, no preamble."),
-            messages=[{"role": "user", "content": json.dumps(brief)}])
+            model="claude-haiku-4-5", max_tokens=220,
+            system=sys, messages=[{"role": "user", "content": content}])
         return "".join(b.text for b in msg.content if b.type == "text").strip() or None
     except Exception:
         return None
 
 
-def grade_names(names, use_llm=False):
+def grade_names(names, use_llm=False, pitch=None):
     """Grade a roster given player NAMES. Resolves each against the projection pool
     (duplicates across separately-graded teams are fine). Returns (grade, unmatched)."""
     b = board()
@@ -534,16 +566,17 @@ def grade_names(names, use_llm=False):
             roster.append(p)
         elif nm.strip():
             unmatched.append(nm.strip())
-    g = grade_roster(roster, pool, use_llm=use_llm)
+    g = grade_roster(roster, pool, use_llm=use_llm, pitch=pitch)
     g["unmatched"] = unmatched
     g["matched"] = [p["name"] for p in roster]
     return g, unmatched
 
 
 def grade_multi(teams, use_llm=False):
-    """Grade several teams and rank them. `teams` = [{label, names}]. Each team is
-    resolved independently, so the SAME player can appear on multiple teams (9
-    drafters, 9 separate rosters). Adds a leaderboard + per-category 'who's best'."""
+    """Grade several teams and rank them. `teams` = [{label, names, pitch}]. Each
+    team is resolved independently, so the SAME player can appear on multiple teams
+    (9 drafters, 9 separate rosters). Adds a leaderboard + per-category 'who's
+    best'. Each drafter's optional `pitch` is weighed by the LLM read."""
     b = board()
     pool = (b or {}).get("pool") or []
     if not pool:
@@ -554,7 +587,7 @@ def grade_multi(teams, use_llm=False):
         names = t.get("names") or []
         roster = [idx[_gkey(nm)] for nm in names if _gkey(nm) in idx]
         unmatched = [nm for nm in names if nm.strip() and _gkey(nm) not in idx]
-        g = grade_roster(roster, pool, use_llm=use_llm)
+        g = grade_roster(roster, pool, use_llm=use_llm, pitch=t.get("pitch"))
         g["label"] = t.get("label") or f"Team {i + 1}"
         g["unmatched"] = unmatched
         graded.append(g)

@@ -2024,20 +2024,46 @@ function renderDraftBoardGrid() {
     s.rosters.map((ro, i) => `<span class="dr-tcount ${i === s.mySlot ? "mine" : ""} ${i === team ? "clock" : ""}">T${i + 1}:${ro.length}</span>`).join("") + "</div>";
 }
 
+// ---- AI key setup (optional, stored locally on the user's machine) ----
+async function refreshAiKeyStatus() {
+  try {
+    const d = await (await fetch("/api/settings/ai_key")).json();
+    _setAiKeyUI(d.configured);
+  } catch (e) { /* leave as-is */ }
+}
+function _setAiKeyUI(configured) {
+  const s = $("aiKeyStatus");
+  if (s) s.innerHTML = configured ? '<span style="color:var(--pos)">✓ on</span>' : '<span style="color:var(--muted)">(off)</span>';
+  if (configured && $("gradeLLM")) $("gradeLLM").checked = true;
+}
+async function saveAiKey(key) {
+  const msg = $("aiKeyMsg");
+  msg.textContent = key ? "Verifying…" : "Clearing…";
+  try {
+    const d = await (await fetch("/api/settings/ai_key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) })).json();
+    if (d.error) { msg.innerHTML = `<span style="color:#e0566a">${d.error}</span>`; return; }
+    if (d.cleared) { msg.innerHTML = '<span style="color:var(--muted)">Key removed — AI explanations off.</span>'; _setAiKeyUI(false); $("aiKeyInput").value = ""; return; }
+    msg.innerHTML = '<span style="color:var(--pos)">✓ Key verified &amp; saved (stored locally). AI explanations are on.</span>';
+    _setAiKeyUI(true);
+    $("aiKeyInput").value = "";
+  } catch (e) { msg.innerHTML = '<span style="color:#e0566a">Save failed — try again.</span>'; }
+}
+
 // ---- Best-ball Team Grader (multi-team) ----
-let _gradeTeams = [{ label: "", text: "" }, { label: "", text: "" }];
+let _gradeTeams = [{ label: "", text: "", pitch: "" }];
 function renderGradeTeams() {
   $("gradeTeams").innerHTML = _gradeTeams.map((t, i) => `
     <div class="grade-team-in">
       <div class="grade-team-hd">
-        <input class="grade-label" placeholder="Drafter name (e.g. Grok, ChatGPT, You)" value="${(t.label || "").replace(/"/g, "&quot;")}" oninput="_gradeTeams[${i}].label=this.value">
+        <input class="grade-label" placeholder="Title / drafter name (e.g. Grok, ChatGPT, You, Dad)" value="${(t.label || "").replace(/"/g, "&quot;")}" oninput="_gradeTeams[${i}].label=this.value">
         ${_gradeTeams.length > 1 ? `<button class="track-mini" onclick="removeGradeTeam(${i})">✕</button>` : ""}
       </div>
       <textarea class="grade-ta" rows="5" placeholder="Paste this team — one player per line, or comma-separated&#10;Josh Allen&#10;Bijan Robinson&#10;…" oninput="_gradeTeams[${i}].text=this.value">${t.text || ""}</textarea>
+      <textarea class="grade-ta grade-pitch" rows="2" placeholder="Their argument (optional) — let this drafter plead their case to sway the AI grader…" oninput="_gradeTeams[${i}].pitch=this.value">${t.pitch || ""}</textarea>
     </div>`).join("");
 }
-window.removeGradeTeam = (i) => { _gradeTeams.splice(i, 1); if (!_gradeTeams.length) _gradeTeams.push({ label: "", text: "" }); renderGradeTeams(); };
-function addGradeTeam(label, text) { _gradeTeams.push({ label: label || "", text: text || "" }); renderGradeTeams(); }
+window.removeGradeTeam = (i) => { _gradeTeams.splice(i, 1); if (!_gradeTeams.length) _gradeTeams.push({ label: "", text: "", pitch: "" }); renderGradeTeams(); };
+function addGradeTeam(label, text) { _gradeTeams.push({ label: label || "", text: text || "", pitch: "" }); renderGradeTeams(); }
 function gradeAddMine() {
   if (!_drState || !_drState.rosters[_drState.mySlot] || !_drState.rosters[_drState.mySlot].length) {
     $("gradeOut").innerHTML = `<div class="empty">No drafted team yet — start a draft and make some picks first.</div>`;
@@ -2048,7 +2074,7 @@ function gradeAddMine() {
 async function gradeRunAll() {
   const out = $("gradeOut");
   const teams = _gradeTeams
-    .map((t) => ({ label: t.label, names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean) }))
+    .map((t) => ({ label: t.label, pitch: t.pitch, names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean) }))
     .filter((t) => t.names.length);
   if (!teams.length) { out.innerHTML = `<div class="empty">Paste at least one team.</div>`; return; }
   const useLLM = $("gradeLLM") && $("gradeLLM").checked;
@@ -2069,19 +2095,22 @@ function renderMultiGrade(d) {
   const teams = d.teams || [];
   if (!teams.length) return `<div class="empty">No teams could be graded.</div>`;
   const medal = (r) => (r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `#${r}`);
-  // leaderboard
-  let html = `<div class="grade-board"><div class="grade-board-h">🏆 Leaderboard</div>`;
-  html += teams.map((g) => {
-    const col = _gradeColor(g.grade);
-    return `<div class="grade-row">
-        <span class="grade-rank">${medal(g.rank)}</span>
-        <span class="grade-rname"><b>${g.label}</b></span>
-        <span class="grade-rgrade" style="color:${col}">${g.grade}</span>
-        <span class="grade-rscore">${g.score}</span>
-        <span class="small" style="color:var(--muted)">${g.archetype} · ${g.ceiling_week} ceiling</span>
-      </div>`;
-  }).join("");
-  html += `</div>`;
+  let html = "";
+  // Leaderboard only for head-to-head (2+ teams); a single team just gets graded.
+  if (teams.length > 1) {
+    html += `<div class="grade-board"><div class="grade-board-h">🏆 Leaderboard</div>`;
+    html += teams.map((g) => {
+      const col = _gradeColor(g.grade);
+      return `<div class="grade-row">
+          <span class="grade-rank">${medal(g.rank)}</span>
+          <span class="grade-rname"><b>${g.label}</b></span>
+          <span class="grade-rgrade" style="color:${col}">${g.grade}</span>
+          <span class="grade-rscore">${g.score}</span>
+          <span class="small" style="color:var(--muted)">${g.archetype} · ${g.ceiling_week} ceiling</span>
+        </div>`;
+    }).join("");
+    html += `</div>`;
+  }
   // per-team detail (winner expanded)
   html += teams.map((g, i) => {
     const col = _gradeColor(g.grade);
@@ -2096,6 +2125,7 @@ function renderMultiGrade(d) {
     }).join("");
     const stacks = (g.stacks || []).length ? `🔗 ${g.stacks.map((s) => `${s.qb}+${s.partners.join(", ")}`).join(" · ")}` : "No stacks";
     const narrative = g.llm_narrative || g.narrative || "";
+    const pitch = g.pitch ? `<div class="grade-pitch-show small">🗣️ <b>${g.label}'s case:</b> ${g.pitch}</div>` : "";
     const unmatched = (g.unmatched && g.unmatched.length)
       ? `<div class="small" style="color:#ff9f43;margin-top:6px">⚠️ Couldn't find: ${g.unmatched.join(", ")}</div>` : "";
     return `<details class="grade-card" ${i === 0 ? "open" : ""}>
@@ -2103,6 +2133,7 @@ function renderMultiGrade(d) {
         <span class="grade-letter sm" style="color:${col};border-color:${col}">${g.grade}</span>
         <span><b>${g.label}</b> · ${g.score}/100 · ${g.archetype}</span>
       </summary>
+      ${pitch}
       <div class="grade-narr">${g.llm_narrative ? "🤖 " : ""}${narrative}</div>
       <div class="grade-catgrid">${cats}</div>
       <div class="grade-posgrid">${posCards}</div>
@@ -3336,6 +3367,9 @@ async function init() {
     $("gradeAddBtn").addEventListener("click", () => addGradeTeam());
     $("gradeMineBtn").addEventListener("click", gradeAddMine);
     $("gradeRunBtn").addEventListener("click", gradeRunAll);
+    $("aiKeySave").addEventListener("click", () => saveAiKey($("aiKeyInput").value));
+    $("aiKeyClear").addEventListener("click", () => saveAiKey(""));
+    refreshAiKeyStatus();
   }
 
   // Mega combo maker

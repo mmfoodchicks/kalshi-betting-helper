@@ -328,7 +328,17 @@
 
     <section class="card">
       <div class="row-between"><h2>🏆 Team Grader</h2></div>
-      <p class="sub" style="margin:4px 0 10px">Grade and <b>rank multiple teams</b> — add one per drafter (Grok, ChatGPT, you, your dad…). Each gets an overall grade plus 8 category grades (ceiling, depth, stacks, star power, construction…), per-position breakdowns, and a plain-English why. Paste one player per line (or comma-separated). <b>Duplicate players across teams are fine.</b></p>
+      <p class="sub" style="margin:4px 0 10px">Grade one team, or add several (one per drafter — Grok, ChatGPT, you, your dad…) to <b>rank them head-to-head</b>. Each gets an overall grade plus 8 category grades (ceiling, depth, stacks, star power, construction…), per-position breakdowns, and a plain-English why. Paste one player per line (or comma-separated); each box can also hold the drafter's <b>argument</b> to plead their case. <b>Duplicate players across teams are fine.</b></p>
+      <details class="grade-keybox">
+        <summary class="small">🔑 Set up AI explanations <span id="aiKeyStatus" class="small"></span></summary>
+        <div class="small" style="margin:6px 0">Optional. Paste your Anthropic API key and the grader will write a sharp analyst take per team (and read each drafter's argument). Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → API Keys. It's stored only on this machine (never uploaded or committed).</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="aiKeyInput" type="password" placeholder="sk-ant-…" style="flex:1 1 240px;font-size:16px" autocomplete="off">
+          <button id="aiKeySave" class="track-mini">Save &amp; verify</button>
+          <button id="aiKeyClear" class="track-mini">Clear</button>
+        </div>
+        <div id="aiKeyMsg" class="small" style="margin-top:6px"></div>
+      </details>
       <div id="gradeTeams"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center">
         <button id="gradeAddBtn" class="track-mini">＋ Add team</button>
