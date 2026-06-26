@@ -1192,6 +1192,7 @@ function setupTabs() {
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
       $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
+      $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
       $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -1209,6 +1210,7 @@ function setupTabs() {
       if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
       if (tab === "ufc") initUFC();
+      if (tab === "tennis") initTennis();
       if (tab === "draft") initDraft();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
@@ -2071,6 +2073,82 @@ function renderUFC() {
       </div>`;
   }).join("");
   $("ufcResults").innerHTML = bouts;
+}
+
+// ---- Tennis ----
+let _tnData = null, _tnPoll = null, _tnSub = "all";
+function initTennis() {
+  if (!$("tnResults").dataset.loaded) {
+    $("tnResults").dataset.loaded = "1";
+    loadTennis();
+    document.querySelectorAll("#tnSubtabs .subtab").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#tnSubtabs .subtab").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        _tnSub = b.dataset.tnsub;
+        renderTennis();
+      });
+    });
+  }
+}
+async function loadTennis() {
+  try {
+    const r = await fetch("/api/tennis");
+    if (r.status === 202) {
+      $("tnResults").innerHTML = `<div class="empty">Rating every player from their charted matches & simulating each match point-by-point… ~1 min on a cold start.</div>`;
+      if (!_tnPoll) _tnPoll = setInterval(loadTennis, 8000);
+      return;
+    }
+    const d = await r.json();
+    if (d.error) { $("tnResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (_tnPoll) { clearInterval(_tnPoll); _tnPoll = null; }
+    _tnData = d;
+    renderTennis();
+  } catch (e) { $("tnResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
+}
+function _tnEdge(e) {
+  if (e == null) return "";
+  return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
+}
+function _tnPlayer(p, served) {
+  const px = p.cents != null ? `${p.cents}¢` : "—";
+  const mdl = p.model_win != null ? `${p.model_win}%` : "—";
+  const fair = (p.fair_win != null && p.fair_win !== p.model_win)
+    ? ` <span class="small" style="color:var(--muted)" title="confidence-blended toward the market">→${p.fair_win}%</span>` : "";
+  const hold = p.hold != null ? `<span class="tn-hold" title="probability of holding serve">hold ${p.hold}%</span>` : "";
+  return `<div class="tn-player">
+      <div class="tn-pname"><b>${p.name}</b> ${hold}</div>
+      <div class="tn-pnums"><span class="tn-win">${mdl}${fair}</span>
+        <span class="fr-num">${px}</span><span class="fr-num">${_tnEdge(p.edge)}</span></div>
+    </div>`;
+}
+function renderTennis() {
+  const d = _tnData; if (!d) return;
+  let matches = (d.matches || []).slice();
+  if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
+  else if (_tnSub === "wta") matches = matches.filter((m) => m.tour === "WTA");
+  else if (_tnSub === "edges") matches = matches.filter((m) =>
+    [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
+  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b> · model = each player's serve/return rates from their charted matches (recency-weighted, surface-split) → point-by-point match sim. Edge = our fair win% (blended toward the market when charting is thin) − Kalshi ask. <span style="color:var(--muted)">Surface inferred from the calendar.</span>`;
+  if (!matches.length) { $("tnResults").innerHTML = `<div class="empty">No matches in this view.</div>`; return; }
+  $("tnResults").innerHTML = matches.map((m) => {
+    const a = m.a, b = m.b;
+    const ts = m.total_sets || {};
+    const setsLine = Object.keys(ts).length
+      ? Object.entries(ts).map(([k, v]) => `${k} sets ${v}%`).join(" · ") : "";
+    const games = m.mean_games != null
+      ? `<span class="tn-chip" title="model expected total games">~${m.mean_games} games</span>` : "";
+    const aces = m.aces_total ? `<span class="tn-chip" title="model expected total aces">~${m.aces_total} aces</span>` : "";
+    const distance = ts["3"] != null && m.best_of === 3
+      ? `<span class="tn-chip" title="probability the match goes 3 sets">3-set ${ts["3"]}%</span>` : "";
+    const insights = (m.insights || []).map((i) => `<div class="tn-insight">${i}</div>`).join("");
+    return `<div class="tn-match">
+        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of}</div>
+        ${_tnPlayer(a)}${_tnPlayer(b)}
+        <div class="tn-derived">${games}${distance}${aces}${setsLine ? `<span class="tn-chip">${setsLine}</span>` : ""}</div>
+        ${insights ? `<div class="tn-insights">${insights}</div>` : ""}
+      </div>`;
+  }).join("");
 }
 
 // ---- World Cup ----

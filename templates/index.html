@@ -56,6 +56,7 @@
     <button class="tab" data-tab="draft">Draft Room</button>
     <button class="tab" data-tab="worldcup">World Cup</button>
     <button class="tab" data-tab="ufc">UFC</button>
+    <button class="tab" data-tab="tennis">Tennis</button>
     <span class="navsep"></span>
     <span class="navgroup">Tools</span>
     <button class="tab" data-tab="combine">Combos</button>
@@ -347,6 +348,22 @@
       <div id="ufcResults" class="markets"><div class="empty">Loading the card…</div></div>
     </section>
    </div><!-- /tab-ufc -->
+
+   <div id="tab-tennis" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🎾 Tennis — match simulator</h2>
+        <div class="subtabs" id="tnSubtabs">
+          <button class="subtab active" data-tnsub="all">All</button>
+          <button class="subtab" data-tnsub="atp">ATP</button>
+          <button class="subtab" data-tnsub="wta">WTA</button>
+          <button class="subtab" data-tnsub="edges">Edges</button>
+        </div>
+      </div>
+      <div id="tnSummary" class="small"></div>
+      <div id="tnResults" class="markets"><div class="empty">Loading the slate…</div></div>
+    </section>
+   </div><!-- /tab-tennis -->
 
    <div id="tab-worldcup" class="hidden">
     <section class="card">

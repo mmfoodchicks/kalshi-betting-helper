@@ -430,6 +430,18 @@ button.danger { color: var(--no); }
 .ufc-fnums { display: grid; grid-template-columns: 78px 46px 46px 84px; gap: 8px; align-items: center; }
 .ufc-win { text-align: right; font-weight: 600; }
 .ufc-method { display: flex; gap: 12px; margin-top: 5px; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 5px; }
+/* Tennis */
+.tn-match { border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; margin-bottom: 9px; }
+.tn-mhead { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 5px; }
+.tn-player { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; gap: 10px; }
+.tn-pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tn-pnums { display: grid; grid-template-columns: 92px 46px 46px; gap: 8px; align-items: center; }
+.tn-win { text-align: right; font-weight: 600; }
+.tn-hold { font-size: 0.72rem; color: var(--muted); margin-left: 5px; }
+.tn-derived { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; }
+.tn-chip { font-size: 0.72rem; color: var(--muted); background: rgba(255,255,255,0.05); border-radius: 6px; padding: 1px 7px; }
+.tn-insights { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.tn-insight { font-size: 0.78rem; color: var(--text); }
 /* Best-ball draft room */
 .dr-slots { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .dr-slot { width: 36px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.04); color: var(--text); cursor: pointer; font-weight: 600; }

@@ -1051,6 +1051,22 @@ def api_worldcup():
     return jsonify(data)
 
 
+@app.route("/api/tennis")
+def api_tennis():
+    """Tennis match board: per-match model win% vs the de-vig Kalshi price (with a
+    confidence blend), the coherent derived markets (total games / sets / aces),
+    and plain-English angles. Non-blocking: 202 while the first board computes."""
+    try:
+        import tennis_prices
+        board = tennis_prices.board()
+    except Exception as e:
+        return jsonify({"error": f"tennis sim failed: {e}"}), 502
+    if not board:
+        return jsonify({"status": "computing",
+                        "message": "rating players from their charted matches…"}), 202
+    return jsonify(board)
+
+
 @app.route("/api/sim/status")
 def api_sim_status():
     """Freshness + run state of each cached season sim."""

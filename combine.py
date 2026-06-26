@@ -147,6 +147,48 @@ def _ufc_legs():
     return legs
 
 
+def _tennis_legs(tours=("ATP", "WTA")):
+    """Tennis legs from OUR match simulator (model probabilities, not de-vig). One
+    event per match with both players as winner legs, plus the coherent derived
+    markets (total games over/under, match goes the distance) the sim prices
+    together -- so a tennis parlay stays internally consistent."""
+    legs = []
+    try:
+        import tennis_prices
+        board = tennis_prices.board()
+        if not board:
+            return legs
+    except Exception:
+        return legs
+    for m in board.get("matches", []):
+        if m.get("tour") not in tours:
+            continue
+        a, b = m["a"], m["b"]
+        if a.get("fair_win") is None and a.get("model_win") is None:
+            continue
+        ev = f"tennis_{m['event']}"
+        cat = "🎾 Tennis" if m["tour"] == "ATP" else "🎾 Tennis (WTA)"
+        mu = f"{a['name']} vs {b['name']}"
+
+        def leg(label, prob_pct, cents, typ):
+            if prob_pct is None:
+                return
+            legs.append({"category": cat, "event_id": ev, "label": label,
+                         "matchup": mu, "prob": max(0.01, min(0.99, prob_pct / 100.0)),
+                         "price_cents": cents, "type": typ})
+        # winner legs use the confidence-blended fair win% (falls back to model)
+        leg(f"{a['name']} to win", a.get("fair_win") if a.get("fair_win") is not None else a.get("model_win"),
+            a.get("cents"), "Match")
+        leg(f"{b['name']} to win", b.get("fair_win") if b.get("fair_win") is not None else b.get("model_win"),
+            b.get("cents"), "Match")
+        # match goes the distance (3 sets for Bo3) -- model only
+        ts = m.get("total_sets") or {}
+        if m.get("best_of") == 3 and ts.get("3") is not None:
+            leg("Match goes 3 sets", ts["3"], None, "Sets")
+            leg("Match in straight sets", round(100 - ts["3"], 1), None, "Sets")
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -175,8 +217,15 @@ def gather(cats, date, season):
         legs += _worldcup_legs()                 # our World Cup model, not de-vig
     if "ufc" in cats:
         legs += _ufc_legs()                      # our UFC fight model, not de-vig
+    if "tennis" in cats or "wta" in cats:        # our tennis match model, not de-vig
+        tours = []
+        if "tennis" in cats:
+            tours.append("ATP")
+        if "wta" in cats:
+            tours.append("WTA")
+        legs += _tennis_legs(tuple(tours))
     for k in SPORT_KEYS:
-        if k in ("soccer", "ufc") or k not in cats:
+        if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
             continue
         legs += _sport_legs(k)
     return legs
