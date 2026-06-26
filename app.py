@@ -622,7 +622,8 @@ def api_simulate_dfs():
             min_uniq=_i("min_uniq", 2, 1, 6), stack_min=_i("stack_min", 4, 0, 5),
             contest=contest, field_size=_i("field_size", 200, 20, 400),
             contest_iters=_i("contest_iters", 400, 50, 800),
-            entry_fee=_f("entry_fee", 1.0, 0.01, 100000)))
+            entry_fee=_f("entry_fee", 1.0, 0.01, 100000),
+            include_unconfirmed=bool(d.get("include_unconfirmed"))))
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),

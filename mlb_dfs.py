@@ -201,12 +201,37 @@ def deep_projections(games, season, n=3000):
         sp_a_id = sp_a["id"] if sp_a else None
         er = (g.get("exp_runs_home") or 4.3) + (g.get("exp_runs_away") or 4.3)
         env = max(0.72, min(1.40, er / (2 * _LG_RUNS)))   # park + weather signal
+        # DFS only rosters players who actually START. The sim still plays the
+        # whole roster (bench/bullpen) for realism, but we surface ONLY the posted
+        # starting nine + the two starting pitchers. When MLB has posted the real
+        # lineup we filter to exactly those names; otherwise we fall back to the
+        # profile's nine regulars. Relievers are never DFS-relevant on a starter
+        # slate, so the only pitchers we keep are the two starters.
+        gprops = g.get("props") or {}
+        posted = set()
+        for _k in ("batters_home", "batters_away"):
+            for b in (gprops.get(_k) or []):
+                nm = _norm(b.get("name") or "")
+                if nm:
+                    posted.add(nm)
         meta_bat, meta_pit = {}, {}
+        start_bat_ids = set()
         for prof, abbr in ((hp, g.get("home_abbr")), (ap, g.get("away_abbr"))):
             for b in (prof.get("lineup") or []) + (prof.get("bench") or []):
                 meta_bat[b["id"]] = (b["name"], abbr)
+            for b in (prof.get("lineup") or [])[:9]:    # profile's assumed regulars
+                start_bat_ids.add(b["id"])
             for p in (prof.get("rotation") or []) + (prof.get("bullpen") or []):
                 meta_pit[p["id"]] = (p["name"], abbr)
+        start_pit_ids = {pid for pid in (sp_h_id, sp_a_id) if pid}
+
+        def _is_starter_bat(pid):
+            nm, _ = meta_bat.get(pid, (None, None))
+            if not nm:
+                return False
+            if posted:                                  # real lineup posted -> trust it
+                return _norm(nm) in posted
+            return pid in start_bat_ids                 # else fall back to the regulars
         bat_acc, pit_acc = {}, {}
         for i in range(n):
             res = deep_sim.play_game(hp, ap, sp_h, sp_a, env=env)
@@ -217,14 +242,18 @@ def deep_projections(games, season, n=3000):
                 won = (hw and pid == sp_h_id) or ((not hw) and pid == sp_a_id)
                 pit_acc.setdefault(pid, [0.0] * n)[i] = _pitcher_dk(line, won)
         # Pitchers first so a two-way player's HITTER line wins the name key (the
-        # common DFS case).
+        # common DFS case). Only the two starting pitchers are surfaced.
         for pid, arr in pit_acc.items():
+            if pid not in start_pit_ids:
+                continue
             nm, abbr = meta_pit.get(pid, (None, None))
             d = _dist(arr) if nm else None
             if d and d["proj"] > 1:
                 proj[_norm(nm)] = {"kind": "pit", "team": abbr or "",
                                    "game": g.get("game_pk"), "arr": arr, **d}
         for pid, arr in bat_acc.items():
+            if not _is_starter_bat(pid):
+                continue
             nm, abbr = meta_bat.get(pid, (None, None))
             d = _dist(arr) if nm else None
             if d:
@@ -587,7 +616,8 @@ def _biggest_stack(lineup):
 
 def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
           n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
-          contest=None, field_size=200, contest_iters=400, entry_fee=1.0):
+          contest=None, field_size=200, contest_iters=400, entry_fee=1.0,
+          include_unconfirmed=False):
     import baseball
     players_raw = _sim.parse_dk_csv(csv_text)
     if len(players_raw) < 10:
@@ -624,7 +654,12 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         pr = proj.get(_norm(p["name"]))
         confirmed = pr is not None
         if not pr:
-            if not p.get("proj"):
+            # The CSV is the WHOLE DraftKings slate (every hitter, every reliever).
+            # We only roster players our sim confirms as starting; anyone else is
+            # reported as unmatched rather than padded in off DraftKings' season
+            # average. (include_unconfirmed re-enables the old fill-from-AvgPPG
+            # behavior for power users who explicitly want the full pool.)
+            if not include_unconfirmed or not p.get("proj"):
                 unmatched.append(p["name"])
                 continue
             pr = {"proj": p["proj"], "median": p["proj"], "floor": p["proj"] * 0.5,
