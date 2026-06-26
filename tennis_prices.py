@@ -21,7 +21,14 @@ import unicodedata
 import kalshi
 import racing
 import tennis_data as td
+import tennis_elo
 import tennis_sim as ts
+
+_ELO_MIN = 8              # min settled matches before an Elo-only read is trusted
+# How hard the model defers to a liquid market, by source. Charting is reliable
+# (small k -> keep our read); a provisional Elo on an obscure ITF player is not,
+# so it defers hard (large k) -- a 5-match Elo never overrides a liquid price.
+_BLEND_K = {"serve": 12.0, "serve+elo": 14.0, "elo": 30.0, "market": 12.0}
 
 # (display label, Kalshi series, data tour-code). ATP/WTA are the charted tours;
 # ITF is the lowest pro tier -- its players are mostly absent from the Match
@@ -202,22 +209,46 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
     fa = fidx.get(_norm(a["name"]))
     fb = fidx.get(_norm(b["name"]))
     a["fatigue"], b["fatigue"] = fa, fb
+    a["n"], b["n"] = (ra[4]["n"] if ra else 0), (rb[4]["n"] if rb else 0)
+    # Elo from settled results -- works for everyone, including ITF players the
+    # charting never sees. This is the UFC-style "rate them from past matches".
+    elo_pa = None
+    ea = tennis_elo.rate(a["name"], tcode)
+    eb = tennis_elo.rate(b["name"], tcode)
+    if ea and eb:
+        elo_pa = round(100.0 * tennis_elo.win_prob(ea["elo"], eb["elo"]), 1)
+        a["elo"], b["elo"] = round(ea["elo"]), round(eb["elo"])
+        a["elo_n"], b["elo_n"] = ea["n"], eb["n"]
+    elo_n = min((ea or {}).get("n", 0), (eb or {}).get("n", 0)) if (ea and eb) else 0
+    elo_ok = elo_pa is not None and elo_n >= _ELO_MIN
+
     sim = None
+    source = "market"
+    conf = 0
     if ra and rb:
         da = {"spw": ra[0], "rpw": ra[1], "ace": ra[2], "df": ra[3]}
         db = {"spw": rb[0], "rpw": rb[1], "ace": rb[2], "df": rb[3]}
         fpair = ((fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)) if (fa or fb) else None
         sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims, fatigue=fpair)
-        a["model_win"], b["model_win"] = sim["p_a"], sim["p_b"]
         a["hold"], b["hold"] = sim["holdA"], sim["holdB"]
         a["prof"], b["prof"] = ra[4], rb[4]
-        a["n"], b["n"] = ra[4]["n"], rb[4]["n"]
+        if elo_ok:                              # ensemble the two independent reads
+            model_pa = round(0.55 * sim["p_a"] + 0.45 * elo_pa, 1)
+            source = "serve+elo"
+            conf = max(min(a["n"], b["n"]), elo_n)
+        else:
+            model_pa = sim["p_a"]
+            source = "serve"
+            conf = min(a["n"], b["n"])
+        a["model_win"], b["model_win"] = model_pa, round(100 - model_pa, 1)
+    elif elo_ok:                                # no charting, but Elo has them
+        a["model_win"], b["model_win"] = elo_pa, round(100 - elo_pa, 1)
+        source = "elo"
+        conf = elo_n
     else:
-        # no profile for one side -> lean fully on the market later
         a["model_win"] = b["model_win"] = None
-        a["n"] = b["n"] = 0
 
-    # de-vig market + confidence blend (thin charting -> defer to market)
+    # de-vig market + confidence blend (thin sample -> defer to market)
     ca, cb = a["cents"], b["cents"]
     mkt_a = mkt_b = None
     if ca is not None and cb is not None and (ca + cb) > 0:
@@ -228,8 +259,7 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
     # huge overround as "not really priced" and keep it out of the board/combos.
     overround = (ca + cb - 100) if (ca is not None and cb is not None) else None
     tradeable = overround is not None and overround <= 25
-    conf = min(a["n"], b["n"])
-    w = conf / (conf + 12.0)
+    w = conf / (conf + _BLEND_K.get(source, 12.0))
     for p, mk in ((a, mkt_a), (b, mkt_b)):
         p["mkt_win"] = mk
         p["confidence"] = round(w, 2)
@@ -243,12 +273,21 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
             fair = round(w * p["model_win"] + (1 - w) * mk, 1)
             p["fair_win"] = fair
             p["edge"] = round(fair - p["cents"], 1) if p["cents"] is not None else None
+            # Elo-only on a lopsided, liquid market: the market is near-certain and
+            # our thin Elo can't beat it -- never let it manufacture a longshot edge.
+            if source == "elo" and p["cents"] is not None and not (12 <= p["cents"] <= 88):
+                p["edge"] = None
 
-    # Confidence tier (how much charting backs the read) so the user knows which
-    # model numbers to trust. ITF / unknown players have no charting -> "market".
-    modeled = sim is not None
-    conf_n = min(a["n"], b["n"])
-    tier = ("high" if conf_n >= 40 else "medium" if conf_n >= 12 else "thin") if modeled else "market"
+    # Confidence tier (how much backs the read) so the user knows what to trust.
+    # serve charting -> high/medium/thin; Elo-only -> "elo"; nothing -> "market".
+    modeled = a["model_win"] is not None
+    if not modeled:
+        tier = "market"
+    elif source == "elo":
+        tier = "elo"
+    else:
+        cn = min(a["n"], b["n"])
+        tier = "high" if cn >= 40 else "medium" if cn >= 12 else "thin"
     # The single "lean": the side with the best positive edge, discounted by how
     # thin the charting is. play_strength sorts the board so trustworthy edges
     # rise above thin-data mirages.
@@ -265,15 +304,21 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
 
     match = {"event": ev, "tour": tour_label, "date": date, "surface": surface,
              "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
-             "tradeable": tradeable, "overround": overround,
+             "model_source": source, "tradeable": tradeable, "overround": overround,
              "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
+    insights = _insights(a, b, sim, surface) if sim else []
+    # Elo angle (works with or without the serve sim)
+    if "elo" in source and a.get("elo") and b.get("elo"):
+        hi, lo = (a, b) if a["elo"] >= b["elo"] else (b, a)
+        if abs(a["elo"] - b["elo"]) >= 25:
+            insights.append(f"📊 Elo favors {hi['name'].split()[-1]} ({hi['elo']} vs {lo['elo']}, from {min(a.get('elo_n', 0), b.get('elo_n', 0))}+ recent results)")
     if sim:
         match.update({
             "mean_games": sim["mean_games"], "games_ladder": sim["games_ladder"],
             "total_sets": sim["total_sets"], "a_straight": sim["a_straight"],
             "aces_total": sim["aces_total"], "aces_a": sim["aces_a"], "aces_b": sim["aces_b"],
-            "set_winners": {k: v for k, v in sim.items() if k.startswith("set")},
-            "insights": _insights(a, b, sim, surface)})
+            "set_winners": {k: v for k, v in sim.items() if k.startswith("set")}})
+    match["insights"] = insights[:6]
     # strip non-serializable / heavy bits before returning
     for p in (a, b):
         p.pop("prof", None)

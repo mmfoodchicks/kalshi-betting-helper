@@ -2118,8 +2118,9 @@ function _tnPlayer(p, served) {
   const fair = (p.model_win != null && p.fair_win != null && p.fair_win !== p.model_win)
     ? ` <span class="small" style="color:var(--muted)" title="confidence-blended toward the market">→${p.fair_win}%</span>` : "";
   const hold = p.hold != null ? `<span class="tn-hold" title="probability of holding serve">hold ${p.hold}%</span>` : "";
+  const elo = p.elo != null ? `<span class="tn-hold" title="our Elo rating from recent match results (${p.elo_n} matches)">Elo ${p.elo}</span>` : "";
   return `<div class="tn-player">
-      <div class="tn-pname"><b>${p.name}</b> ${hold}</div>
+      <div class="tn-pname"><b>${p.name}</b> ${hold}${elo}</div>
       <div class="tn-pnums"><span class="tn-win">${mdl}${fair}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_tnEdge(p.edge)}</span></div>
     </div>`;
@@ -2132,9 +2133,9 @@ function renderTennis() {
   else if (_tnSub === "itf") matches = matches.filter((m) => (m.tour || "").startsWith("ITF"));
   else if (_tnSub === "edges") matches = matches.filter((m) =>
     [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
-  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>, sorted best play first (edge × how much charting backs it). Model = each player's serve/return rates from their charted matches (recency-weighted, surface-split) → point-by-point sim, adjusted for <b>recent-match fatigue</b>. The green <b>✅ Lean</b> is the side to look at; <b>🟢/🟡/🔴</b> shows how much data backs it. Edge = fair win% (blended toward the market when charting is thin) − Kalshi ask. <span style="color:var(--muted)">Surface inferred from the calendar.</span>`;
+  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>, sorted best play first. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b> built from settled results. For ITF / uncharted players we rate them from Elo alone (📊), and where there's no data we show the market (⚪). The green <b>✅ Lean</b> is the side to look at; Elo defers to liquid markets, so no longshot traps. Edge = fair win% − Kalshi ask.`;
   if (!matches.length) { $("tnResults").innerHTML = `<div class="empty">No matches in this view.</div>`; return; }
-  const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'], market: ['⚪', 'Market only — no charting data'] };
+  const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'], elo: ['📊', 'Elo (recent results)'], market: ['⚪', 'Market only'] };
   $("tnResults").innerHTML = matches.map((m) => {
     const a = m.a, b = m.b;
     const ts = m.total_sets || {};
