@@ -325,6 +325,17 @@
       </div>
       <div id="draftResults"><div class="empty">Loading the simulator…</div></div>
     </section>
+
+    <section class="card">
+      <div class="row-between"><h2>🏆 Team Grader</h2></div>
+      <p class="sub" style="margin:4px 0 10px">Grade any best-ball roster — overall grade, where you're strong/weak by position, your best lineup, stacks, and ceiling. Grade the team you just drafted, or paste any team (one player per line, or comma-separated).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button id="gradeMineBtn" class="track-mini primary-mini">Grade my drafted team</button>
+      </div>
+      <textarea id="gradeInput" rows="6" placeholder="Paste a team — e.g.&#10;Josh Allen&#10;Bijan Robinson&#10;CeeDee Lamb&#10;…" style="width:100%;font-size:16px"></textarea>
+      <div style="margin-top:8px"><button id="gradeTextBtn" class="track-mini primary-mini">Grade this team</button></div>
+      <div id="gradeOut" class="markets" style="margin-top:12px"></div>
+    </section>
    </div><!-- /tab-draft -->
 
    <div id="tab-nfl" class="hidden">

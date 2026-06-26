@@ -224,6 +224,197 @@ def project(prior_season=None, n_seasons=4000, seed=None):
             "pool": rows, "overall": rows[:40], "by_pos": by_pos}
 
 
+# ---- Best-ball team grader --------------------------------------------------
+# DraftKings best-ball starting lineup: 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX (RB/WR/TE).
+_START = {"QB": 1, "RB": 2, "WR": 3, "TE": 1}
+_FLEX = ("RB", "WR", "TE")
+# Healthy roster construction for an 18-pick best-ball team (need bodies to fill
+# the lineup every week across byes / bad games).
+_DEPTH_TARGET = {"QB": 2, "RB": 5, "WR": 6, "TE": 2}
+
+
+def _optimal(roster, key):
+    """Best lineup by `key` (fppg or boom) + its total. Best-ball auto-starts your
+    top players, so the team's weekly output is this optimum, not a fixed lineup."""
+    by = {"QB": [], "RB": [], "WR": [], "TE": []}
+    for p in roster:
+        if p.get("pos") in by:
+            by[p["pos"]].append(p)
+    for v in by.values():
+        v.sort(key=lambda p: -(p.get(key) or 0))
+    starters, used = [], set()
+    for pos, n in _START.items():
+        for p in by[pos][:n]:
+            starters.append(p); used.add(id(p))
+    flex_pool = sorted((p for p in roster if p.get("pos") in _FLEX and id(p) not in used),
+                       key=lambda p: -(p.get(key) or 0))
+    if flex_pool:
+        starters.append(flex_pool[0])
+    return starters, sum((p.get(key) or 0) for p in starters)
+
+
+def _letter(score):
+    for cut, g in ((90, "A+"), (83, "A"), (78, "A-"), (72, "B+"), (66, "B"),
+                   (60, "B-"), (54, "C+"), (48, "C"), (42, "C-"), (35, "D+"),
+                   (28, "D"), (0, "F")):
+        if score >= cut:
+            return g
+    return "F"
+
+
+def _par_teams(pool, teams=12, rounds=18):
+    """Reference 'chalk' teams: draft straight down ADP from each draft slot
+    (snake), giving the field of typical drafted rosters to grade against."""
+    ranked = sorted(pool, key=lambda p: p.get("adp", 9999))
+    out = []
+    for slot in range(1, teams + 1):
+        picks, overalls = [], []
+        for r in range(rounds):
+            o = r * teams + (slot if r % 2 == 0 else teams - slot + 1)
+            overalls.append(o - 1)               # 0-indexed ADP rank
+        for idx in overalls:
+            if idx < len(ranked):
+                picks.append(ranked[idx])
+        if len(picks) >= 8:
+            out.append(picks)
+    return out
+
+
+def _team_score(roster):
+    """Best-ball value: weekly projection plus a heavy weight on ceiling (boom
+    weeks win best ball)."""
+    _, proj = _optimal(roster, "fppg")
+    _, ceil = _optimal(roster, "boom")
+    return 0.6 * proj + 0.4 * ceil, proj, ceil
+
+
+def grade_roster(roster, pool=None):
+    """Grade a best-ball roster: overall letter + 0-100, per-position strength, the
+    optimal lineup, stacks, and plain-English strengths/weaknesses."""
+    roster = [p for p in roster if p and p.get("pos") in _FANTASY_POS]
+    if len(roster) < 4:
+        return {"error": "Add at least a few players to grade a team."}
+    if pool is None:
+        b = board()
+        pool = (b or {}).get("pool") or []
+
+    score_raw, proj, ceil = _team_score(roster)
+    starters, _ = _optimal(roster, "fppg")
+    start_ids = {id(p) for p in starters}
+
+    # Grade vs the field of chalk ADP teams (ratio to the average par team).
+    par = _par_teams(pool) if pool else []
+    par_scores = [_team_score(t)[0] for t in par]
+    par_mean = (sum(par_scores) / len(par_scores)) if par_scores else score_raw or 1.0
+    ratio = score_raw / par_mean if par_mean else 1.0
+    score = max(0, min(100, 50 + (ratio - 1) * 300))
+
+    # Positional strength: average positional rank (in the pool) of the players
+    # you'd actually start at each spot.
+    pool_rank = {}
+    for pos in _FANTASY_POS:
+        lst = sorted((p for p in pool if p.get("pos") == pos), key=lambda x: -(x.get("season") or 0))
+        for i, p in enumerate(lst, 1):
+            pool_rank[(pos, p.get("name"))] = i
+    counts = {pos: sum(1 for p in roster if p.get("pos") == pos) for pos in _FANTASY_POS}
+    positions, strengths, weaknesses = {}, [], []
+    # par counts at each position (how deep the average team goes)
+    for pos in ("QB", "RB", "WR", "TE"):
+        grp = sorted((p for p in roster if p.get("pos") == pos), key=lambda x: -(x.get("season") or 0))
+        n = len(grp)
+        starters_here = [p for p in grp if id(p) in start_ids]
+        ranks = [pool_rank.get((pos, p.get("name"))) for p in starters_here if pool_rank.get((pos, p.get("name")))]
+        avg_rank = (sum(ranks) / len(ranks)) if ranks else None
+        # rank-per-starter thresholds (a startable RB is ~top-24, elite ~top-8)
+        starters_needed = _START[pos]
+        good_cut = {"QB": 8, "RB": 18, "WR": 24, "TE": 8}[pos]
+        elite_cut = {"QB": 4, "RB": 8, "WR": 10, "TE": 4}[pos]
+        if avg_rank is None:
+            pgrade = "F"
+        elif avg_rank <= elite_cut:
+            pgrade = "A"
+        elif avg_rank <= good_cut:
+            pgrade = "B"
+        elif avg_rank <= good_cut * 1.8:
+            pgrade = "C"
+        else:
+            pgrade = "D"
+        thin = n < _DEPTH_TARGET[pos]
+        positions[pos] = {"count": n, "grade": pgrade, "avg_starter_rank":
+                          round(avg_rank, 1) if avg_rank else None, "thin": thin,
+                          "best": grp[0]["name"] if grp else None}
+        if pgrade in ("A",) and not thin:
+            strengths.append(f"Strong at {pos} — your starters are top-tier (best: {grp[0]['name']})")
+        if thin:
+            weaknesses.append(f"Thin at {pos}: only {n} (want {_DEPTH_TARGET[pos]}+) — risky across byes/injuries")
+        elif pgrade in ("D", "F"):
+            weaknesses.append(f"Weak {pos} room — your starters here are below replacement")
+
+    # Stacks: a QB with same-team pass-catchers (correlated ceiling).
+    stacks = []
+    qbs = [p for p in roster if p.get("pos") == "QB"]
+    catchers = [p for p in roster if p.get("pos") in ("WR", "TE")]
+    for qb in qbs:
+        mates = [c["name"] for c in catchers if c.get("team") and c.get("team") == qb.get("team")]
+        if mates:
+            stacks.append({"qb": qb["name"], "team": qb.get("team"), "partners": mates})
+    # Modifiers
+    if stacks:
+        score = min(100, score + 3 * sum(len(s["partners"]) for s in stacks))
+        strengths.append("Has stacks: " + "; ".join(f"{s['qb']} + {', '.join(s['partners'])}" for s in stacks))
+    else:
+        weaknesses.append("No QB↔pass-catcher stacks — you're leaving correlated ceiling on the table")
+    # ceiling read (best ball lives on boom weeks)
+    boom_total = sum((p.get("boom") or 0) for p in roster)
+    if ceil >= par_mean * 0.45:        # ceiling lineup is a big share of the score
+        strengths.append("High weekly ceiling — lots of boom/spike weeks, exactly what wins best ball")
+    rookies = [p["name"] for p in roster if p.get("rookie")]
+    if len(rookies) >= 4:
+        weaknesses.append(f"{len(rookies)} rookies — high upside but boom/bust; make sure you have a stable base")
+
+    score = round(score)
+    return {
+        "grade": _letter(score), "score": score,
+        "proj_week": round(proj, 1), "ceiling_week": round(ceil, 1),
+        "boom_total": round(boom_total, 1),
+        "n_players": len(roster), "counts": counts,
+        "positions": positions, "stacks": stacks,
+        "starters": [{"name": p["name"], "pos": p["pos"], "team": p.get("team"),
+                      "fppg": p.get("fppg"), "boom": p.get("boom")} for p in starters],
+        "strengths": strengths[:5], "weaknesses": weaknesses[:5],
+        "vs_field": round((ratio - 1) * 100, 1),    # % better/worse than a chalk team
+    }
+
+
+def grade_names(names):
+    """Grade a roster given player NAMES (for the standalone grader). Resolves each
+    name against the projection pool; returns (grade, unmatched names)."""
+    b = board()
+    pool = (b or {}).get("pool") or []
+    if not pool:
+        return None, []
+    idx = {}
+    for p in pool:
+        idx[_gkey(p.get("name"))] = p
+    roster, unmatched = [], []
+    for nm in names:
+        p = idx.get(_gkey(nm))
+        if p:
+            roster.append(p)
+        elif nm.strip():
+            unmatched.append(nm.strip())
+    g = grade_roster(roster, pool)
+    g["unmatched"] = unmatched
+    g["matched"] = [p["name"] for p in roster]
+    return g, unmatched
+
+
+def _gkey(name):
+    import unicodedata
+    s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
+    return "".join(c for c in s.lower() if c.isalnum())
+
+
 # ---- Cached board for the draft room / DFS UI ------------------------------
 import threading as _threading
 import time as _time

@@ -2024,6 +2024,74 @@ function renderDraftBoardGrid() {
     s.rosters.map((ro, i) => `<span class="dr-tcount ${i === s.mySlot ? "mine" : ""} ${i === team ? "clock" : ""}">T${i + 1}:${ro.length}</span>`).join("") + "</div>";
 }
 
+// ---- Best-ball Team Grader ----
+async function gradeMyTeam() {
+  if (!_drState || !_drState.rosters[_drState.mySlot] || !_drState.rosters[_drState.mySlot].length) {
+    $("gradeOut").innerHTML = `<div class="empty">No drafted team yet — start a draft and make some picks, or paste a team below.</div>`;
+    return;
+  }
+  const names = _drState.rosters[_drState.mySlot].map((p) => p.name);
+  await _gradeNames(names);
+}
+async function gradeTeamText() {
+  const raw = ($("gradeInput").value || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+  if (!raw.length) { $("gradeOut").innerHTML = `<div class="empty">Paste a team first.</div>`; return; }
+  await _gradeNames(raw);
+}
+async function _gradeNames(names) {
+  const out = $("gradeOut");
+  out.innerHTML = `<div class="empty">Grading ${names.length} players…</div>`;
+  try {
+    const r = await fetch("/api/nfl/grade", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ names }) });
+    if (r.status === 202) { out.innerHTML = `<div class="empty">Warming the projection pool (cold start, ~1 min) — try again shortly.</div>`; return; }
+    const g = await r.json();
+    if (g.error) { out.innerHTML = `<div class="empty">${g.error}</div>`; return; }
+    out.innerHTML = renderGrade(g);
+  } catch (e) { out.innerHTML = `<div class="empty">Grade failed — try again.</div>`; }
+}
+function _gradeColor(letter) {
+  const c = (letter || "")[0];
+  return c === "A" ? "#34c77b" : c === "B" ? "#8ad06a" : c === "C" ? "#ffcf66" : c === "D" ? "#ff9f43" : "#e0566a";
+}
+function renderGrade(g) {
+  const col = _gradeColor(g.grade);
+  const vf = g.vs_field >= 0 ? `+${g.vs_field}%` : `${g.vs_field}%`;
+  const posOrder = ["QB", "RB", "WR", "TE"];
+  const posCards = posOrder.map((pos) => {
+    const v = g.positions[pos]; if (!v) return "";
+    const pc = _gradeColor(v.grade);
+    return `<div class="grade-pos">
+        <div class="grade-pos-h"><b>${pos}</b> <span style="color:${pc};font-weight:700">${v.grade}</span></div>
+        <div class="small">${v.count} rostered${v.avg_starter_rank ? ` · starters ~${pos}${Math.round(v.avg_starter_rank)}` : ""}${v.thin ? ' · <span style="color:#e0566a">thin</span>' : ""}</div>
+        <div class="small" style="color:var(--muted)">${v.best || "—"}</div>
+      </div>`;
+  }).join("");
+  const starters = (g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}</span>`).join("");
+  const stacks = (g.stacks || []).length
+    ? `<div class="small" style="margin-top:6px">🔗 Stacks: ${g.stacks.map((s) => `${s.qb} + ${s.partners.join(", ")}`).join(" · ")}</div>` : "";
+  const str = (g.strengths || []).map((s) => `<li>${s}</li>`).join("");
+  const wk = (g.weaknesses || []).map((s) => `<li>${s}</li>`).join("");
+  const unmatched = (g.unmatched && g.unmatched.length)
+    ? `<div class="small" style="color:#ff9f43;margin-top:6px">⚠️ Couldn't find: ${g.unmatched.join(", ")} (check spelling / not a skill-position player)</div>` : "";
+  return `<div class="grade-card">
+      <div class="grade-top">
+        <div class="grade-letter" style="color:${col};border-color:${col}">${g.grade}</div>
+        <div>
+          <div><b>${g.score}/100</b> · ${vf} vs a chalk team</div>
+          <div class="small" style="color:var(--muted)">${g.n_players} players · ~${g.proj_week} proj pts/wk · ${g.ceiling_week} ceiling/wk</div>
+        </div>
+      </div>
+      <div class="grade-posgrid">${posCards}</div>
+      ${stacks}
+      <div class="grade-cols">
+        ${str ? `<div><div class="grade-h">💪 Strengths</div><ul class="grade-list">${str}</ul></div>` : ""}
+        ${wk ? `<div><div class="grade-h">⚠️ Weaknesses</div><ul class="grade-list">${wk}</ul></div>` : ""}
+      </div>
+      <details style="margin-top:8px"><summary class="small">Your best lineup</summary><div class="grade-starters">${starters}</div></details>
+      ${unmatched}
+    </div>`;
+}
+
 // ---- UFC ----
 let _ufcData = null, _ufcPoll = null;
 function initUFC() {
@@ -3235,6 +3303,10 @@ async function init() {
   // Commodities
   $("comBtn").addEventListener("click", loadCommodities);
   $("comSel").addEventListener("change", loadCommodities);
+
+  // Best-ball team grader
+  if ($("gradeMineBtn")) $("gradeMineBtn").addEventListener("click", gradeMyTeam);
+  if ($("gradeTextBtn")) $("gradeTextBtn").addEventListener("click", gradeTeamText);
 
   // Mega combo maker
   $("cmbBtn").addEventListener("click", buildCombine);

@@ -1043,6 +1043,25 @@ def api_nfl_fantasy():
     return jsonify(b)
 
 
+@app.route("/api/nfl/grade", methods=["POST"])
+def api_nfl_grade():
+    """Grade a best-ball roster (player names) -> overall grade, per-position
+    strength, stacks, strengths/weaknesses."""
+    try:
+        import nfl_sim
+        d = request.get_json(force=True) or {}
+        names = d.get("names") or []
+        if not isinstance(names, list) or not names:
+            return jsonify({"error": "send a 'names' list"}), 400
+        g, _ = nfl_sim.grade_names([str(n) for n in names][:40])
+        if g is None:
+            return jsonify({"status": "computing",
+                            "message": "warming the projection pool…"}), 202
+        return jsonify(g)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/ufc")
 def api_ufc():
     """UFC card simulator: per-bout win odds, method/round and each fighter's DK

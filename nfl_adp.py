@@ -45,19 +45,16 @@ def _canon_team(t):
     return _TEAM_CANON.get(t, t)
 
 
-def _fetch_players():
-    """GET Sleeper's full players blob. The feed is unfiltered (every NFL player,
-    ~12MB) so we request gzip -- it compresses to ~2.5MB, which avoids the body
-    truncation large plain responses can hit behind a proxy. Falls back to a plain
-    read (salvaging IncompleteRead's partial) if the host doesn't gzip."""
+def _fetch_players_once():
+    """One attempt at Sleeper's full players blob. The feed is unfiltered (~12MB)
+    so we request gzip (~2.5MB) to avoid the body truncation large responses hit
+    behind a proxy; reads in chunks and salvages IncompleteRead's partial."""
     req = urllib.request.Request(_URL, headers={
         "User-Agent": "vigil/1.0", "Accept": "application/json",
         "Accept-Encoding": "gzip"})
+    buf = bytearray()
     with urllib.request.urlopen(req, timeout=60) as resp:
-        enc = (resp.headers.get("Content-Encoding") or "").lower()
-        if "gzip" in enc:
-            return json.loads(gzip.decompress(resp.read()).decode("utf-8"))
-        buf = bytearray()
+        gz = "gzip" in (resp.headers.get("Content-Encoding") or "").lower()
         while True:
             try:
                 chunk = resp.read(65536)
@@ -67,7 +64,80 @@ def _fetch_players():
             if not chunk:
                 break
             buf += chunk
-    return json.loads(buf.decode("utf-8"))
+    if gz:
+        try:
+            raw = gzip.decompress(bytes(buf))
+        except Exception:
+            raw = _inflate_partial(bytes(buf))   # truncated stream -> decompress prefix
+    else:
+        raw = bytes(buf)
+    text = raw.decode("utf-8", "ignore")
+    try:
+        return json.loads(text)
+    except ValueError:
+        return _salvage_players(text)            # truncated body -> keep what we got
+
+
+def _inflate_partial(raw_gzip):
+    """Inflate as much of a truncated gzip stream as possible."""
+    import zlib
+    d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    out = bytearray()
+    for i in range(0, len(raw_gzip), 65536):
+        try:
+            out += d.decompress(raw_gzip[i:i + 65536])
+        except zlib.error:
+            break
+    return bytes(out)
+
+
+def _salvage_players(text):
+    """Parse a truncated Sleeper blob ('{"id":{...},"id2":{...},...') by walking the
+    brace depth (string-aware) to the last point a TOP-LEVEL player object closed,
+    then closing the JSON there. We lose the tail (a random id-keyed slice) but keep
+    the bulk -- far better than an empty pool when a proxy/CDN truncates the body."""
+    depth = 0
+    in_str = False
+    esc = False
+    last_complete = None
+    for i, ch in enumerate(text):
+        if esc:
+            esc = False
+            continue
+        if ch == "\\":
+            esc = True
+            continue
+        if ch == '"':
+            in_str = not in_str
+            continue
+        if in_str:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 1:                 # a top-level player object just closed
+                last_complete = i
+    if last_complete is None:
+        return {}
+    try:
+        return json.loads(text[:last_complete + 1] + "}")
+    except ValueError:
+        return {}
+
+
+def _fetch_players():
+    """Resilient fetch: the proxy truncates the big response intermittently, so
+    retry a few times before giving up (a retry almost always lands intact)."""
+    import time
+    last = None
+    for attempt in range(4):
+        try:
+            return _fetch_players_once()
+        except Exception as e:                  # truncated body / transient network
+            last = e
+            time.sleep(1.0 * (attempt + 1))
+    raise last
 
 
 def _norm(name):
