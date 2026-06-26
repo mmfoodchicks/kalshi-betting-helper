@@ -1045,18 +1045,29 @@ def api_nfl_fantasy():
 
 @app.route("/api/nfl/grade", methods=["POST"])
 def api_nfl_grade():
-    """Grade a best-ball roster (player names) -> overall grade, per-position
-    strength, stacks, strengths/weaknesses."""
+    """Grade one or many best-ball rosters. Body: {names:[...]} for a single team, or
+    {teams:[{label, names}]} to grade + rank several (duplicate players allowed
+    across teams). `use_llm: true` adds a small-LLM written narrative when an
+    ANTHROPIC_API_KEY is configured."""
     try:
         import nfl_sim
         d = request.get_json(force=True) or {}
+        use_llm = bool(d.get("use_llm"))
+        teams = d.get("teams")
+        if isinstance(teams, list) and teams:
+            clean = [{"label": str(t.get("label") or "")[:40],
+                      "names": [str(n) for n in (t.get("names") or [])][:40]}
+                     for t in teams[:16]]
+            res = nfl_sim.grade_multi(clean, use_llm=use_llm)
+            if res is None:
+                return jsonify({"status": "computing", "message": "warming the projection pool…"}), 202
+            return jsonify(res)
         names = d.get("names") or []
         if not isinstance(names, list) or not names:
-            return jsonify({"error": "send a 'names' list"}), 400
-        g, _ = nfl_sim.grade_names([str(n) for n in names][:40])
+            return jsonify({"error": "send a 'names' list or 'teams'"}), 400
+        g, _ = nfl_sim.grade_names([str(n) for n in names][:40], use_llm=use_llm)
         if g is None:
-            return jsonify({"status": "computing",
-                            "message": "warming the projection pool…"}), 202
+            return jsonify({"status": "computing", "message": "warming the projection pool…"}), 202
         return jsonify(g)
     except Exception as e:
         return jsonify({"error": str(e)}), 502

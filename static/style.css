@@ -483,9 +483,33 @@ button.danger { color: var(--no); }
 .grade-starters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .grade-st { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font-size: 0.8rem; }
 .grade-st b { color: var(--accent); margin-right: 3px; }
+/* Multi-team grader inputs */
+.grade-team-in { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+.grade-team-hd { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.grade-label { flex: 1; font-size: 16px; padding: 5px 8px; }
+.grade-ta { width: 100%; font-size: 16px; resize: vertical; }
+/* Leaderboard */
+.grade-board { border: 1px solid rgba(52,199,123,0.4); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; background: rgba(52,199,123,0.05); }
+.grade-board-h { font-weight: 700; margin-bottom: 6px; }
+.grade-row { display: grid; grid-template-columns: 40px 1fr 32px 40px auto; gap: 8px; align-items: center; padding: 5px 0; border-top: 1px solid var(--border); }
+.grade-rank { font-size: 1.05rem; text-align: center; }
+.grade-rgrade { font-weight: 800; text-align: center; }
+.grade-rscore { font-weight: 700; text-align: right; }
+.grade-sum { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.grade-sum::-webkit-details-marker { display: none; }
+.grade-letter.sm { font-size: 1.3rem; min-width: 44px; border-width: 2px; }
+.grade-narr { font-size: 0.9rem; margin: 8px 0; padding: 8px 10px; background: var(--card); border-radius: 8px; line-height: 1.5; }
+.grade-catgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+.grade-cat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+.grade-cat-l { font-size: 0.78rem; font-weight: 600; }
+.grade-cat-g { float: right; font-weight: 800; }
+.grade-cat-why { color: var(--muted); margin-top: 3px; line-height: 1.35; }
 @media (max-width: 640px) {
   .grade-posgrid { grid-template-columns: repeat(2, 1fr); }
+  .grade-catgrid { grid-template-columns: repeat(2, 1fr); }
   .grade-cols { grid-template-columns: 1fr; gap: 8px; }
+  .grade-row { grid-template-columns: 32px 1fr 30px 34px; }
+  .grade-row .small { grid-column: 2 / -1; }
 }
 .dr-recs { border: 1px solid rgba(52,199,123,0.4); border-radius: 10px; padding: 9px 11px; margin-bottom: 10px; background: rgba(52,199,123,0.06); }
 .dr-recs-h { font-weight: 600; margin-bottom: 6px; }

@@ -2024,72 +2024,98 @@ function renderDraftBoardGrid() {
     s.rosters.map((ro, i) => `<span class="dr-tcount ${i === s.mySlot ? "mine" : ""} ${i === team ? "clock" : ""}">T${i + 1}:${ro.length}</span>`).join("") + "</div>";
 }
 
-// ---- Best-ball Team Grader ----
-async function gradeMyTeam() {
+// ---- Best-ball Team Grader (multi-team) ----
+let _gradeTeams = [{ label: "", text: "" }, { label: "", text: "" }];
+function renderGradeTeams() {
+  $("gradeTeams").innerHTML = _gradeTeams.map((t, i) => `
+    <div class="grade-team-in">
+      <div class="grade-team-hd">
+        <input class="grade-label" placeholder="Drafter name (e.g. Grok, ChatGPT, You)" value="${(t.label || "").replace(/"/g, "&quot;")}" oninput="_gradeTeams[${i}].label=this.value">
+        ${_gradeTeams.length > 1 ? `<button class="track-mini" onclick="removeGradeTeam(${i})">✕</button>` : ""}
+      </div>
+      <textarea class="grade-ta" rows="5" placeholder="Paste this team — one player per line, or comma-separated&#10;Josh Allen&#10;Bijan Robinson&#10;…" oninput="_gradeTeams[${i}].text=this.value">${t.text || ""}</textarea>
+    </div>`).join("");
+}
+window.removeGradeTeam = (i) => { _gradeTeams.splice(i, 1); if (!_gradeTeams.length) _gradeTeams.push({ label: "", text: "" }); renderGradeTeams(); };
+function addGradeTeam(label, text) { _gradeTeams.push({ label: label || "", text: text || "" }); renderGradeTeams(); }
+function gradeAddMine() {
   if (!_drState || !_drState.rosters[_drState.mySlot] || !_drState.rosters[_drState.mySlot].length) {
-    $("gradeOut").innerHTML = `<div class="empty">No drafted team yet — start a draft and make some picks, or paste a team below.</div>`;
+    $("gradeOut").innerHTML = `<div class="empty">No drafted team yet — start a draft and make some picks first.</div>`;
     return;
   }
-  const names = _drState.rosters[_drState.mySlot].map((p) => p.name);
-  await _gradeNames(names);
+  addGradeTeam("My team", _drState.rosters[_drState.mySlot].map((p) => p.name).join("\n"));
 }
-async function gradeTeamText() {
-  const raw = ($("gradeInput").value || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
-  if (!raw.length) { $("gradeOut").innerHTML = `<div class="empty">Paste a team first.</div>`; return; }
-  await _gradeNames(raw);
-}
-async function _gradeNames(names) {
+async function gradeRunAll() {
   const out = $("gradeOut");
-  out.innerHTML = `<div class="empty">Grading ${names.length} players…</div>`;
+  const teams = _gradeTeams
+    .map((t) => ({ label: t.label, names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean) }))
+    .filter((t) => t.names.length);
+  if (!teams.length) { out.innerHTML = `<div class="empty">Paste at least one team.</div>`; return; }
+  const useLLM = $("gradeLLM") && $("gradeLLM").checked;
+  out.innerHTML = `<div class="empty">Grading ${teams.length} team${teams.length > 1 ? "s" : ""}…${useLLM ? " (AI explanations on)" : ""}</div>`;
   try {
-    const r = await fetch("/api/nfl/grade", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ names }) });
+    const r = await fetch("/api/nfl/grade", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teams, use_llm: useLLM }) });
     if (r.status === 202) { out.innerHTML = `<div class="empty">Warming the projection pool (cold start, ~1 min) — try again shortly.</div>`; return; }
-    const g = await r.json();
-    if (g.error) { out.innerHTML = `<div class="empty">${g.error}</div>`; return; }
-    out.innerHTML = renderGrade(g);
+    const d = await r.json();
+    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    out.innerHTML = renderMultiGrade(d);
   } catch (e) { out.innerHTML = `<div class="empty">Grade failed — try again.</div>`; }
 }
 function _gradeColor(letter) {
   const c = (letter || "")[0];
   return c === "A" ? "#34c77b" : c === "B" ? "#8ad06a" : c === "C" ? "#ffcf66" : c === "D" ? "#ff9f43" : "#e0566a";
 }
-function renderGrade(g) {
-  const col = _gradeColor(g.grade);
-  const vf = g.vs_field >= 0 ? `+${g.vs_field}%` : `${g.vs_field}%`;
-  const posOrder = ["QB", "RB", "WR", "TE"];
-  const posCards = posOrder.map((pos) => {
-    const v = g.positions[pos]; if (!v) return "";
-    const pc = _gradeColor(v.grade);
-    return `<div class="grade-pos">
-        <div class="grade-pos-h"><b>${pos}</b> <span style="color:${pc};font-weight:700">${v.grade}</span></div>
-        <div class="small">${v.count} rostered${v.avg_starter_rank ? ` · starters ~${pos}${Math.round(v.avg_starter_rank)}` : ""}${v.thin ? ' · <span style="color:#e0566a">thin</span>' : ""}</div>
-        <div class="small" style="color:var(--muted)">${v.best || "—"}</div>
+function renderMultiGrade(d) {
+  const teams = d.teams || [];
+  if (!teams.length) return `<div class="empty">No teams could be graded.</div>`;
+  const medal = (r) => (r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `#${r}`);
+  // leaderboard
+  let html = `<div class="grade-board"><div class="grade-board-h">🏆 Leaderboard</div>`;
+  html += teams.map((g) => {
+    const col = _gradeColor(g.grade);
+    return `<div class="grade-row">
+        <span class="grade-rank">${medal(g.rank)}</span>
+        <span class="grade-rname"><b>${g.label}</b></span>
+        <span class="grade-rgrade" style="color:${col}">${g.grade}</span>
+        <span class="grade-rscore">${g.score}</span>
+        <span class="small" style="color:var(--muted)">${g.archetype} · ${g.ceiling_week} ceiling</span>
       </div>`;
   }).join("");
-  const starters = (g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}</span>`).join("");
-  const stacks = (g.stacks || []).length
-    ? `<div class="small" style="margin-top:6px">🔗 Stacks: ${g.stacks.map((s) => `${s.qb} + ${s.partners.join(", ")}`).join(" · ")}</div>` : "";
-  const str = (g.strengths || []).map((s) => `<li>${s}</li>`).join("");
-  const wk = (g.weaknesses || []).map((s) => `<li>${s}</li>`).join("");
-  const unmatched = (g.unmatched && g.unmatched.length)
-    ? `<div class="small" style="color:#ff9f43;margin-top:6px">⚠️ Couldn't find: ${g.unmatched.join(", ")} (check spelling / not a skill-position player)</div>` : "";
-  return `<div class="grade-card">
-      <div class="grade-top">
-        <div class="grade-letter" style="color:${col};border-color:${col}">${g.grade}</div>
-        <div>
-          <div><b>${g.score}/100</b> · ${vf} vs a chalk team</div>
-          <div class="small" style="color:var(--muted)">${g.n_players} players · ~${g.proj_week} proj pts/wk · ${g.ceiling_week} ceiling/wk</div>
-        </div>
-      </div>
+  html += `</div>`;
+  // per-team detail (winner expanded)
+  html += teams.map((g, i) => {
+    const col = _gradeColor(g.grade);
+    const cats = (g.categories || []).map((c) =>
+      `<div class="grade-cat"><span class="grade-cat-l">${c.emoji} ${c.label}</span><span class="grade-cat-g" style="color:${_gradeColor(c.grade)}">${c.grade}</span><div class="grade-cat-why small">${c.why}</div></div>`).join("");
+    const posCards = ["QB", "RB", "WR", "TE"].map((pos) => {
+      const v = g.positions[pos]; if (!v) return "";
+      return `<div class="grade-pos">
+          <div class="grade-pos-h"><b>${pos}</b> <span style="color:${_gradeColor(v.grade)};font-weight:700">${v.grade}</span> <span class="small" style="color:var(--muted)">${v.count}</span></div>
+          <div class="small" style="color:var(--muted)">${v.note}</div>
+        </div>`;
+    }).join("");
+    const stacks = (g.stacks || []).length ? `🔗 ${g.stacks.map((s) => `${s.qb}+${s.partners.join(", ")}`).join(" · ")}` : "No stacks";
+    const narrative = g.llm_narrative || g.narrative || "";
+    const unmatched = (g.unmatched && g.unmatched.length)
+      ? `<div class="small" style="color:#ff9f43;margin-top:6px">⚠️ Couldn't find: ${g.unmatched.join(", ")}</div>` : "";
+    return `<details class="grade-card" ${i === 0 ? "open" : ""}>
+      <summary class="grade-sum">
+        <span class="grade-letter sm" style="color:${col};border-color:${col}">${g.grade}</span>
+        <span><b>${g.label}</b> · ${g.score}/100 · ${g.archetype}</span>
+      </summary>
+      <div class="grade-narr">${g.llm_narrative ? "🤖 " : ""}${narrative}</div>
+      <div class="grade-catgrid">${cats}</div>
       <div class="grade-posgrid">${posCards}</div>
-      ${stacks}
+      <div class="small" style="margin-top:8px">${stacks}</div>
       <div class="grade-cols">
-        ${str ? `<div><div class="grade-h">💪 Strengths</div><ul class="grade-list">${str}</ul></div>` : ""}
-        ${wk ? `<div><div class="grade-h">⚠️ Weaknesses</div><ul class="grade-list">${wk}</ul></div>` : ""}
+        ${(g.strengths || []).length ? `<div><div class="grade-h">💪 Strengths</div><ul class="grade-list">${g.strengths.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
+        ${(g.weaknesses || []).length ? `<div><div class="grade-h">⚠️ Weaknesses</div><ul class="grade-list">${g.weaknesses.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
       </div>
-      <details style="margin-top:8px"><summary class="small">Your best lineup</summary><div class="grade-starters">${starters}</div></details>
+      <details style="margin-top:6px"><summary class="small">Best lineup</summary><div class="grade-starters">${(g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}</span>`).join("")}</div></details>
       ${unmatched}
-    </div>`;
+    </details>`;
+  }).join("");
+  return html;
 }
 
 // ---- UFC ----
@@ -3304,9 +3330,13 @@ async function init() {
   $("comBtn").addEventListener("click", loadCommodities);
   $("comSel").addEventListener("change", loadCommodities);
 
-  // Best-ball team grader
-  if ($("gradeMineBtn")) $("gradeMineBtn").addEventListener("click", gradeMyTeam);
-  if ($("gradeTextBtn")) $("gradeTextBtn").addEventListener("click", gradeTeamText);
+  // Best-ball team grader (multi-team)
+  if ($("gradeTeams")) {
+    renderGradeTeams();
+    $("gradeAddBtn").addEventListener("click", () => addGradeTeam());
+    $("gradeMineBtn").addEventListener("click", gradeAddMine);
+    $("gradeRunBtn").addEventListener("click", gradeRunAll);
+  }
 
   // Mega combo maker
   $("cmbBtn").addEventListener("click", buildCombine);
