@@ -126,34 +126,96 @@ def fighter_rating(fid, name=None):
         fin_for = sum(1 for f in fights if f["win"] and f["method"] in ("ko", "sub"))
         fin_against = sum(1 for f in fights if not f["win"] and f["method"] in ("ko", "sub"))
         nf = len(fights)
-        # Shrink rates toward league average by sample size (k pseudo-fights).
-        # Generous so a 1-2 fight sample (a debut or short ESPN history) can't read
-        # as elite — a prospect regresses hard toward the field.
-        k = 4.5
-
-        def sh(obs, prior, n=nf):
-            return (n * obs + k * prior) / (n + k)
+        prof = career_profile(fid)
+        # Finish rate & durability: the career record (incl. pre-UFC fights) is a far
+        # bigger, more stable sample than the few UFC bouts we box-score, so prefer it
+        # when present (it subsumes the UFC fights anyway), shrunk by its own size.
+        if prof:
+            fr_obs, fr_n = prof["finish_rate"], prof["fights"]
+            du_obs, du_n = prof["durability"], prof["fights"]
+        else:
+            fr_obs, fr_n = (fin_for / nf), nf
+            du_obs, du_n = (1 - fin_against / nf), nf
         return {
             "id": fid, "name": name, "fights": nf, "record_w": wins, "record_l": nf - wins,
-            "ss_pm": round(sh(ssl / tot_min, _LG["ss_pm"]), 2),
-            "ss_absorbed_pm": round(sh(opp_ssl / tot_min, _LG["ss_absorbed_pm"]), 2),
-            "str_def": round(sh(1 - (opp_ssl / opp_ssa) if opp_ssa else _LG["str_def"], _LG["str_def"]), 3),
-            "td_p15": round(sh(tdl / tot_min * 15, _LG["td_p15"]), 2),
-            "td_def": round(sh(1 - (opp_tdl / opp_tda) if opp_tda else _LG["td_def"], _LG["td_def"]), 3),
-            "kd_p15": round(sh(kd / tot_min * 15, _LG["kd_p15"]), 3),
-            "finish_rate": round(sh(fin_for / nf, _LG["finish_rate"]), 3),
-            "durability": round(sh(1 - fin_against / nf, _LG["durability"]), 3),
+            "ss_pm": round(_shrink(ssl / tot_min, _LG["ss_pm"], nf), 2),
+            "ss_absorbed_pm": round(_shrink(opp_ssl / tot_min, _LG["ss_absorbed_pm"], nf), 2),
+            "str_def": round(_shrink(1 - (opp_ssl / opp_ssa) if opp_ssa else _LG["str_def"], _LG["str_def"], nf), 3),
+            "td_p15": round(_shrink(tdl / tot_min * 15, _LG["td_p15"], nf), 2),
+            "td_def": round(_shrink(1 - (opp_tdl / opp_tda) if opp_tda else _LG["td_def"], _LG["td_def"], nf), 3),
+            "kd_p15": round(_shrink(kd / tot_min * 15, _LG["kd_p15"], nf), 3),
+            "finish_rate": round(_shrink(fr_obs, _LG["finish_rate"], fr_n), 3),
+            "durability": round(_shrink(du_obs, _LG["durability"], du_n), 3),
+            "career": prof,
         }
     return racing._cached(("ufc_fighter", fid), 14 * 86400, build) or _default(fid, name, 0)
 
 
+_K = 4.5   # pseudo-fights of shrinkage toward the prior (a thin sample regresses hard)
+
+
+def _shrink(obs, prior, n):
+    return (n * obs + _K * prior) / (n + _K)
+
+
+def career_profile(fid):
+    """Full PRO MMA record (including pre-UFC / regional fights) from ESPN's records
+    endpoint -- this exists even for UFC debutants, so it's our only read on a
+    fighter who has never set foot in the Octagon. Returns the record, the
+    finish/decision breakdown, a finish rate and a durability proxy, or None if ESPN
+    has no record for them. Cached two weeks (a record only changes when they fight).
+
+    Caveat worth keeping in mind: regional/other-promotion competition is softer than
+    the UFC, so a glossy pre-UFC record is a weaker signal than the same line in the
+    UFC -- like reading college stats for an NFL rookie. We use it, but shrink it."""
+    def build():
+        try:
+            rec = _get(f"{ATH}/{fid}/records?lang=en&region=us")
+        except Exception:
+            return None
+        it = next((x for x in (rec.get("items") or [])
+                   if x and x.get("type") == "total"), None)
+        if not it:
+            return None
+        st = {s.get("type"): (s.get("value") or 0) for s in it.get("stats", [])}
+        w = int(st.get("wins", 0)); l = int(st.get("losses", 0))
+        n = w + l
+        if n <= 0:
+            return None
+        ko = int(st.get("tkos", 0)); sub = int(st.get("submissions", 0))
+        kol = int(st.get("tkolosses", 0)); subl = int(st.get("submissionlosses", 0))
+        fin_for, fin_against = ko + sub, kol + subl
+        return {
+            "record": it.get("summary") or f"{w}-{l}",
+            "w": w, "l": l, "fights": n,
+            "ko_wins": ko, "sub_wins": sub, "dec_wins": max(0, w - fin_for),
+            "finish_rate": round(fin_for / n, 3),
+            "durability": round(1 - fin_against / n, 3),
+            "win_rate": round(w / n, 3),
+            "title_fights": int(st.get("titlewins", 0)) + int(st.get("titlelosses", 0)) + int(st.get("titledraws", 0)),
+        }
+    return racing._cached(("ufc_career", fid), 14 * 86400, build)
+
+
 def _default(fid, name, n):
-    """League-average rating for a fighter with no usable history (debut)."""
-    return {"id": fid, "name": name, "fights": n, "record_w": 0, "record_l": 0,
-            "ss_pm": _LG["ss_pm"], "ss_absorbed_pm": _LG["ss_absorbed_pm"],
-            "str_def": _LG["str_def"], "td_p15": _LG["td_p15"], "td_def": _LG["td_def"],
-            "kd_p15": _LG["kd_p15"], "finish_rate": _LG["finish_rate"],
-            "durability": _LG["durability"]}
+    """Best estimate for a fighter with no UFC box-score history. We have no UFC
+    striking/grappling rates for them, but we DO pull their pro career record (incl.
+    pre-UFC fights) and seed finish rate + durability from it, so a 19-3 regional
+    finisher no longer reads identically to a winless unknown."""
+    d = {"id": fid, "name": name, "fights": n, "record_w": 0, "record_l": 0,
+         "ss_pm": _LG["ss_pm"], "ss_absorbed_pm": _LG["ss_absorbed_pm"],
+         "str_def": _LG["str_def"], "td_p15": _LG["td_p15"], "td_def": _LG["td_def"],
+         "kd_p15": _LG["kd_p15"], "finish_rate": _LG["finish_rate"],
+         "durability": _LG["durability"], "career": None}
+    try:
+        prof = career_profile(fid)
+    except Exception:
+        prof = None
+    if prof:
+        d["career"] = prof
+        d["finish_rate"] = round(_shrink(prof["finish_rate"], _LG["finish_rate"], prof["fights"]), 3)
+        d["durability"] = round(_shrink(prof["durability"], _LG["durability"], prof["fights"]), 3)
+    return d
 
 
 # How each rate component feeds the single 0-100 power rating (sums to 1).
@@ -171,6 +233,14 @@ def power_rating(r):
         base = _LG[k] or 1.0
         ratio = (r.get(k, base) or 0.0) / base
         score += w * 50.0 * (min(2.0, max(0.0, ratio)) - 1.0)   # ratio 1->+0, 2->+50w
+    # Career nudge: a proven winner with real experience gets credit beyond the rate
+    # components (which, for a debut, are mostly league-average placeholders). Kept
+    # small and capped -- regional wins are softer than UFC wins, so it complements
+    # the rate model rather than overwhelming it.
+    c = r.get("career")
+    if c and c.get("fights", 0) >= 3:
+        score += max(-6.0, min(8.0, (c["win_rate"] - 0.5) * 16))     # 100% W -> +8, 50% -> 0
+        score += min(4.0, c["fights"] / 25.0 * 4.0)                  # deep experience -> +4
     return int(round(max(1, min(99, score))))
 
 

@@ -2191,16 +2191,20 @@ function _ratingChip(f) {
     `Finishing ${c.finishing}`, `Takedowns ${c.takedowns}`, `TD def ${c.td_def}`,
     `Durability ${c.durability}`].join(" • ");
   let flag = "";
-  if (f.defaulted) flag = ` <span class="ufc-debut" title="No UFC fight history — this is a league-average placeholder (rating 50), not a real read on the fighter">⚠️ debut</span>`;
-  else if (f.thin) flag = ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average, treat with caution">⚠️ thin</span>`;
+  if (f.debut) flag = ` <span class="ufc-debut" title="UFC debut — no Octagon box scores yet. Striking/grappling are league-average estimates; finishing & durability are seeded from the pro record (regional competition is softer than the UFC, so it's shrunk).">⚠️ UFC debut · pro ${f.career_record}</span>`;
+  else if (f.defaulted) flag = ` <span class="ufc-debut" title="No fight history at all — a league-average placeholder (rating 50), not a real read">⚠️ no data</span>`;
+  else if (f.thin) flag = ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average, treat with caution${f.career_record ? "; pro record " + f.career_record : ""}">⚠️ thin${f.career_record ? " · pro " + f.career_record : ""}</span>`;
   return ` <span class="ufc-rating" style="border-color:${rc};color:${rc}" title="${tip}">⚡${f.rating}</span>${flag}`;
 }
 function _fighterRow(f) {
   const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "—";
   const fair = f.fair_win != null && f.fair_win !== f.win_pct
     ? ` <span class="small" style="color:var(--muted)" title="confidence-blended with the market">→${f.fair_win}%</span>` : "";
+  const recTxt = f.fights > 0
+    ? `${f.record} · ${f.fights}f`
+    : (f.career_record ? `pro ${f.career_record}` : `${f.record} · ${f.fights}f`);
   return `<div class="ufc-fighter">
-      <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)} <span class="small" style="color:var(--muted)">${f.record} · ${f.fights}f</span></div>
+      <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)} <span class="small" style="color:var(--muted)">${recTxt}</span></div>
       <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_ufcEdge(f.edge)}</span>
         <span class="fr-num" title="DraftKings projection / ceiling">DK ${f.proj}<span style="color:var(--muted)">/${f.ceil}</span></span></div>
@@ -2992,10 +2996,13 @@ async function runDfsSim() {
         }
         if (p.win_pct != null) parts.push(`win ${p.win_pct}%`);
         if (p.ceil_proj != null) parts.push(`ceil ${p.ceil_proj}`);
-        if (p.record) parts.push(`${p.record}`);
+        // UFC record if we have UFC fights, else the pro/career record (pre-UFC).
+        if (p.fights > 0 && p.record) parts.push(`UFC ${p.record}`);
+        else if (p.career_record) parts.push(`pro ${p.career_record}`);
         ufcBits = ` <span class="small" style="color:var(--muted)">· ${parts.join(" · ")}</span>`;
-        if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No UFC fight history — projected at a league-average baseline, not a real read">⚠️ debut (league-avg est.)</span>`;
-        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating is shrunk hard toward league average">⚠️ thin data</span>`;
+        if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut — no Octagon box scores, so striking/grappling are league-average estimates; finishing & durability are seeded from the pro record (regional competition is softer, so it's shrunk)">⚠️ UFC debut (pro ${p.career_record})</span>`;
+        else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all — pure league-average placeholder">⚠️ no data (league-avg est.)</span>`;
+        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average">⚠️ thin data</span>`;
       }
       return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${pd}${ufcBits}</span></div></div>`;
     }).join("");

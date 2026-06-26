@@ -358,9 +358,11 @@ def apply_ufc(players):
             p["win_pct"] = f["win_pct"]
             p["rating"] = f.get("rating")
             p["record"] = f.get("record")
+            p["career_record"] = f.get("career_record")
             p["fights"] = f.get("fights")
             p["thin"] = f.get("thin")
             p["defaulted"] = f.get("defaulted")
+            p["debut"] = f.get("debut")
             matched += 1
     return {"available": True, "event": board.get("event"), "matched": matched,
             "sim_used": matched > 0, "fighters": sum(len(b) for b in [board.get("bouts", [])]) * 2}
@@ -400,8 +402,9 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
                     if p.get("base_proj") is not None else None,
                     "ceil_proj": round(p["ceil_proj"], 1) if p.get("ceil_proj") is not None else None,
                     "win_pct": p.get("win_pct"), "rating": p.get("rating"),
-                    "record": p.get("record"), "fights": p.get("fights"),
-                    "thin": p.get("thin"), "defaulted": p.get("defaulted")}
+                    "record": p.get("record"), "career_record": p.get("career_record"),
+                    "fights": p.get("fights"), "thin": p.get("thin"),
+                    "defaulted": p.get("defaulted"), "debut": p.get("debut")}
                    for p in lineup],
         "total_salary": int(sum(p["salary"] for p in lineup)),
         "total_proj": round(sum(p["proj"] for p in lineup), 1),

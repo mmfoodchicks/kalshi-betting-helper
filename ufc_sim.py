@@ -109,11 +109,17 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
     def fighter_out(f):
         d = _dist(dk[f["id"]])
         nf = f.get("fights", 0)
+        car = f.get("career")
         return {"id": f["id"], "name": f["name"], "fights": nf,
                 "record": f"{f['record_w']}-{f['record_l']}",
                 "rating": ufc_data.power_rating(f),
                 "components": ufc_data.rating_components(f),
-                "thin": nf < 3, "defaulted": nf == 0,
+                "career": car,
+                "career_record": car.get("record") if car else None,
+                # "defaulted" = we know nothing (no UFC fights AND no pro record).
+                # A UFC debutant with a pro career record is NOT a blind placeholder.
+                "thin": nf < 3, "defaulted": nf == 0 and not car,
+                "debut": nf == 0 and bool(car),
                 "win_pct": round(100 * wins[f["id"]] / n, 1), **d}
     return {"rounds": rounds, "n_sims": n,
             "a": fighter_out(a), "b": fighter_out(b),
