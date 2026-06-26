@@ -343,6 +343,68 @@ def _assemble(by_event, target, legs_target, payout_target,
                     "meets_payout": meets_payout(best), "hard_ok": hard_ok}
 
 
+def _leg_edge(l):
+    """Edge in cents = our prob - the Kalshi ask, or None if the leg isn't priced."""
+    return (l["prob"] * 100 - l["price_cents"]) if l.get("price_cents") else None
+
+
+def recommended(cats, date, season, max_legs=12):
+    """Auto-built recommended parlays from the checked sports -- the same idea as
+    the baseball tab's safest / best-value / best combos, across categories:
+
+      - safest:     the most-likely legs (one per event), best chance to cash.
+      - best_value: only legs where OUR model beats the Kalshi price (+EV), by
+                    descending edge -- the parlay the market is mispricing.
+      - best:       the all-arounder -- best-edge legs among reasonably likely
+                    ones (>= 55%), balancing payout and hit rate.
+    """
+    legs = gather(cats, date, season)
+    counts = {}
+    for l in legs:
+        counts[l["category"]] = counts.get(l["category"], 0) + 1
+    if not legs:
+        return {"safest": None, "best": None, "best_value": None, "counts": counts}
+    by_event = {}
+    for l in legs:
+        by_event.setdefault(l["event_id"], []).append(l)
+
+    def pack(chosen, **extra):
+        if len(chosen) < 2:
+            return None
+        it = _item(chosen)
+        it.update(extra)
+        tot_edge = sum(_leg_edge(l) or 0 for l in chosen)
+        it["total_edge_cents"] = round(tot_edge, 1)
+        return it
+
+    # SAFEST: the highest-probability leg per event, the safest few.
+    safe = sorted((max(vs, key=lambda v: v["prob"]) for vs in by_event.values()),
+                  key=lambda l: -l["prob"])
+    safest = pack(safe[:min(4, len(safe))])
+
+    # BEST VALUE: best +EV leg per event, only positive-edge, by descending edge.
+    val = []
+    for vs in by_event.values():
+        priced = [v for v in vs if v.get("price_cents")]
+        if priced:
+            top = max(priced, key=lambda v: _leg_edge(v))
+            if (_leg_edge(top) or 0) > 0:
+                val.append(top)
+    val.sort(key=lambda l: -(_leg_edge(l) or 0))
+    best_value = pack(val[:min(5, len(val))])
+
+    # BEST all-arounder: best-edge (then prob) leg per event among >=55% legs.
+    pool = []
+    for vs in by_event.values():
+        ok = [v for v in vs if v["prob"] >= 0.55]
+        if ok:
+            pool.append(max(ok, key=lambda v: ((_leg_edge(v) or 0), v["prob"])))
+    pool.sort(key=lambda v: ((_leg_edge(v) or 0), v["prob"]), reverse=True)
+    best = pack(pool[:min(4, len(pool))])
+
+    return {"safest": safest, "best": best, "best_value": best_value, "counts": counts}
+
+
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
           legs_mode="prefer", payout_mode=None, conn="or"):
     legs = gather(cats, date, season)

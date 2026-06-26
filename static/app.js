@@ -2953,10 +2953,49 @@ let combineCatsLoaded = false;
 async function loadCombineCats() {
   if (combineCatsLoaded) return;
   const meta = await (await fetch("/api/combine/meta")).json();
+  // Default: nothing checked -- the user picks which sports to combine.
   $("combineCats").innerHTML = Object.entries(meta).map(([k, v]) =>
-    `<label><input type="checkbox" value="${k}" ${["mlb", "crypto"].includes(k) ? "checked" : ""}/> ${v}</label>`
+    `<label><input type="checkbox" value="${k}"/> ${v}</label>`
   ).join("");
   combineCatsLoaded = true;
+}
+async function buildRecommended() {
+  const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
+  const out = $("cmbRecOut");
+  if (!cats.length) { out.innerHTML = `<div class="empty">Check one or more sports above first.</div>`; return; }
+  const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
+  out.innerHTML = `<div class="empty">Building the best combos across ${cats.length} sport${cats.length > 1 ? "s" : ""}…</div>`;
+  try {
+    const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}`)).json();
+    if (d.error === "no_cats") { out.innerHTML = `<div class="empty">Check one or more sports above first.</div>`; return; }
+    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    let html = "";
+    if (d.counts && Object.keys(d.counts).length)
+      html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
+    const seen = new Set();
+    const blocks = [
+      ["best", "⭐ Best (all-around)", "hl value"],
+      ["safest", "🛡️ Safest", "hl"],
+      ["best_value", "💰 Best value (+EV)", "hl prop"],
+    ];
+    let any = false;
+    for (const [key, title, cls] of blocks) {
+      const c = d[key];
+      if (!c) continue;
+      const sig = JSON.stringify(c.legs);
+      if (seen.has(sig)) continue;          // skip duplicates (e.g. best == best_value)
+      seen.add(sig);
+      const ev = c.ev_pct != null ? ` · EV <b class="${c.ev_pct >= 0 ? "pos" : "neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b>` : "";
+      const edge = c.total_edge_cents ? ` · total edge ${c.total_edge_cents > 0 ? "+" : ""}${c.total_edge_cents}¢` : "";
+      html += renderCombo(c, title, cls);
+      html += `<div class="small" style="margin:-4px 0 10px">${c.n_legs} legs · ~${c.combined_prob_pct}% to cash · ${c.fair_payout_x}× fair${ev}${edge}</div>`;
+      any = true;
+    }
+    if (!any) html += `<div class="empty">Not enough legs to build a combo from those sports right now. Try checking more sports.</div>`;
+    out.innerHTML = html;
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Build failed — try again.</div>`;
+  }
 }
 async function buildCombine() {
   const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
@@ -3191,6 +3230,17 @@ async function init() {
 
   // Mega combo maker
   $("cmbBtn").addEventListener("click", buildCombine);
+  $("cmbRecBtn").addEventListener("click", buildRecommended);
+  document.querySelectorAll("#cmbSubtabs .subtab").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#cmbSubtabs .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      const rec = b.dataset.cmbsub === "rec";
+      $("cmbRecView").classList.toggle("hidden", !rec);
+      $("cmbMakerView").classList.toggle("hidden", rec);
+      $("combineOut").classList.toggle("hidden", rec);
+    });
+  });
 
   refreshMarkets();
   // Auto-refresh ticks skip while the user is typing / has a form open.

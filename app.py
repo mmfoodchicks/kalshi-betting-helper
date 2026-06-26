@@ -871,6 +871,23 @@ def api_combine():
         return jsonify({"error": str(e)}), 502
 
 
+@app.route("/api/combine/recommended")
+def api_combine_recommended():
+    """Auto-built safest / best-value / best parlays from the checked sports."""
+    import datetime as _dt
+    import combine
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = date[:4]
+    cats = [c for c in (request.args.get("cats", "") or "").split(",") if c]
+    if not cats:
+        return jsonify({"error": "no_cats", "counts": {}})
+    try:
+        return jsonify(combine.recommended(cats, date, season,
+                                           max_legs=tiers.cap_legs(_tier(), 30)))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/baseball/parlay")
 def api_baseball_parlay():
     """Build an N-leg parlay tuned to a target per-leg confidence, picking the
