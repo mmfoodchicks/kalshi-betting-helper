@@ -33,6 +33,23 @@ def _norm(name):
     return " ".join("".join(c for c in s.lower() if c.isalpha() or c == " ").split())
 
 
+_SUFFIX = {"jr", "sr", "ii", "iii", "iv", "v"}
+
+
+def _name_parts(name):
+    """(lastname, first_initial) from either a full "First Last" name (DraftKings /
+    posted lineups) or the roster profile's "Last, I" form -- so the two feeds can
+    be matched despite their different formats."""
+    toks = [t for t in _norm(name).split() if t not in _SUFFIX]
+    if not toks:
+        return ("", "")
+    if len(toks) >= 2 and len(toks[-1]) == 1:      # "Last I" (profile boxscore form)
+        return (toks[0], toks[-1])
+    if len(toks) >= 2:                              # "First Last"
+        return (toks[-1], toks[0][0])
+    return (toks[0], "")                            # single token (e.g. "Meidroth")
+
+
 def _eligible(pos_str):
     out = set()
     for tok in (pos_str or "").replace("-", "/").split("/"):
@@ -208,12 +225,28 @@ def deep_projections(games, season, n=3000):
         # profile's nine regulars. Relievers are never DFS-relevant on a starter
         # slate, so the only pitchers we keep are the two starters.
         gprops = g.get("props") or {}
-        posted = set()
+        # The posted lineup carries FULL names ("Bobby Witt Jr."); the roster profile
+        # stores abbreviated ones ("Witt, B"). Index the posted names by
+        # (last, initial) so we can both (a) tell who's actually starting and
+        # (b) re-key our projection to the full name DraftKings uses.
+        posted_full, posted_last = {}, {}
         for _k in ("batters_home", "batters_away"):
             for b in (gprops.get(_k) or []):
-                nm = _norm(b.get("name") or "")
-                if nm:
-                    posted.add(nm)
+                full = b.get("name") or ""
+                if not full:
+                    continue
+                last, init = _name_parts(full)
+                posted_full[(last, init)] = full
+                posted_last.setdefault(last, []).append(full)
+        posted = bool(posted_full)
+
+        def _posted_name(profile_name):
+            """The posted full name for a profile player, or None if not starting."""
+            last, init = _name_parts(profile_name)
+            if (last, init) in posted_full:
+                return posted_full[(last, init)]
+            cands = posted_last.get(last)
+            return cands[0] if cands and len(cands) == 1 else None
         meta_bat, meta_pit = {}, {}
         start_bat_ids = set()
         for prof, abbr in ((hp, g.get("home_abbr")), (ap, g.get("away_abbr"))):
@@ -225,12 +258,15 @@ def deep_projections(games, season, n=3000):
                 meta_pit[p["id"]] = (p["name"], abbr)
         start_pit_ids = {pid for pid in (sp_h_id, sp_a_id) if pid}
 
+        sp_fullname = {sp_h_id: (g.get("home_sp") or {}).get("name"),
+                       sp_a_id: (g.get("away_sp") or {}).get("name")}
+
         def _is_starter_bat(pid):
             nm, _ = meta_bat.get(pid, (None, None))
             if not nm:
                 return False
             if posted:                                  # real lineup posted -> trust it
-                return _norm(nm) in posted
+                return _posted_name(nm) is not None
             return pid in start_bat_ids                 # else fall back to the regulars
         bat_acc, pit_acc = {}, {}
         for i in range(n):
@@ -246,7 +282,10 @@ def deep_projections(games, season, n=3000):
         for pid, arr in pit_acc.items():
             if pid not in start_pit_ids:
                 continue
-            nm, abbr = meta_pit.get(pid, (None, None))
+            _pnm, abbr = meta_pit.get(pid, (None, None))
+            # Key by the slate's full starter name (DraftKings form), not the
+            # profile's abbreviated one, so the CSV actually matches.
+            nm = sp_fullname.get(pid) or _pnm
             d = _dist(arr) if nm else None
             if d and d["proj"] > 1:
                 proj[_norm(nm)] = {"kind": "pit", "team": abbr or "",
@@ -254,7 +293,9 @@ def deep_projections(games, season, n=3000):
         for pid, arr in bat_acc.items():
             if not _is_starter_bat(pid):
                 continue
-            nm, abbr = meta_bat.get(pid, (None, None))
+            _pnm, abbr = meta_bat.get(pid, (None, None))
+            # Prefer the posted full name; fall back to the profile name pre-lineup.
+            nm = (_posted_name(_pnm) if posted else None) or _pnm
             d = _dist(arr) if nm else None
             if d:
                 proj[_norm(nm)] = {"kind": "bat", "team": abbr or "",
