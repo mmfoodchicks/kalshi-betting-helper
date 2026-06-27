@@ -93,6 +93,7 @@ def parse_dk_csv(text):
             if name and salary > 0:
                 out.append({"name": name, "salary": salary, "proj": proj,
                             "pos": (r.get("Position") or r.get("Roster Position") or "").strip(),
+                            "roster_pos": (r.get("Roster Position") or "").strip().upper(),
                             "game": (r.get("Game Info") or r.get("GameInfo") or "").strip()})
         if out:
             return out
@@ -132,9 +133,11 @@ def parse_dk_csv(text):
                     proj = v
                     break
         game = parts[6].strip() if len(parts) > 6 else ""
+        # Roster Position (col 4) carries CPT / D / CNSTR for captain-mode slates.
+        rpos = parts[4].strip().upper() if len(parts) > 4 else ""
         if name and salary and salary > 0:
             out.append({"name": name, "salary": salary, "proj": proj or 0.0,
-                        "pos": pos, "game": game})
+                        "pos": pos, "roster_pos": rpos, "game": game})
     return out
 
 
@@ -377,6 +380,41 @@ def dfs_showdown(players, cap, objective, cv, flex_count=5, exclusive_group=None
     return [cap_row] + [{**p, "captain": False} for p in flex]
 
 
+def _f1_showdown(players, cap, objective, cv):
+    """DraftKings F1 Captain Mode: exactly 1 captain (a DRIVER at 1.5x cost & 1.5x
+    points), 4 more drivers, and 1 constructor, under the cap. The CSV lists each
+    driver twice -- a CPT row (already 1.5x salary) and a D row -- plus CNSTR rows;
+    the generic knapsack ignored all that and just grabbed the six highest-value
+    slots (which were constructors). This builds the real roster shape."""
+    cpt = [p for p in players if p.get("roster_pos") == "CPT"]
+    drv = [p for p in players if p.get("roster_pos") == "D"]
+    con = [p for p in players if p.get("roster_pos") == "CNSTR"]
+    if not cpt or len(drv) < 4 or not con:
+        return None
+    _set_values(players, objective, cv)
+    best = None
+    for c in cpt:
+        if c["salary"] > cap:
+            continue
+        cval = c["value"] * 1.5                       # captain scores 1.5x
+        pool = [d for d in drv if d["name"] != c["name"]]
+        for k in con:
+            rem = cap - c["salary"] - k["salary"]
+            if rem < 0:
+                continue
+            four = dfs_optimize(pool, 4, int(rem))    # best 4 drivers under what's left
+            if not four:
+                continue
+            score = cval + k["value"] + sum(d["value"] for d in four)
+            if best is None or score > best[0]:
+                best = (score, c, k, four)
+    if not best:
+        return None
+    _, c, k, four = best
+    cap_row = {**c, "captain": True, "proj": c["proj"] * 1.5}
+    return [cap_row] + [{**d, "captain": False} for d in four] + [{**k, "captain": False}]
+
+
 def dfs_sim(lineup, n=20000, cv=0.55):
     """Monte Carlo a lineup's total DK points (per-player variance ~ cv)."""
     totals = []
@@ -453,7 +491,11 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     # UFC: never roster both fighters of a bout (one is guaranteed to lose). The DK
     # "Game Info" column is identical for both fighters in a fight, so it's the bout key.
     exclusive = (lambda p: p.get("game")) if sport == "ufc" else None
-    if mode == "showdown":
+    # F1/NASCAR captain-mode slates (CPT + drivers + a constructor) have a fixed
+    # roster shape the generic knapsack can't express -- detect & build them right.
+    if sport in ("f1", "nascar") and any(p.get("roster_pos") == "CNSTR" for p in players):
+        lineup = _f1_showdown(players, cap, objective, cv)
+    elif mode == "showdown":
         lineup = dfs_showdown(players, cap, objective, cv,
                               flex_count=max(1, roster - 1), exclusive_group=exclusive)
     else:
