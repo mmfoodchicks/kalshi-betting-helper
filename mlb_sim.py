@@ -98,17 +98,40 @@ def _team(batters, er, rnd):
     if not er:
         return _build_setup(rows, 1.0)
     mult = 1.0
-    for _ in range(4):                       # converge the rate multiplier to er
+    # Converge the rate multiplier until simulated mean runs sit within ~1.5% of
+    # er. Two things made the old loop leave a systematic few-percent bias on the
+    # TOTAL (as big as the edges we hunt): a loose 5% acceptance off noisy
+    # 300-game samples, and a correction exponent assuming runs ~ mult^1.4 when
+    # the true response is ~ mult^2.2 (more baserunners -> more PAs -> compound),
+    # so every step overshot and the loop exited on oscillation peaks. We now
+    # LEARN the local exponent from successive iterations (secant method).
+    k_exp, prev = 0.45, None                 # 1/2.2 starting guess
+    for _ in range(6):
         setup = _build_setup(rows, mult)
-        mean = sum(_play_game(setup, rnd)[0] for _ in range(300)) / 300.0
+        mean = sum(_play_game(setup, rnd)[0] for _ in range(500)) / 500.0
         if mean <= 0.3:
             mult *= 1.5
             continue
-        if abs(mean - er) <= 0.05 * er:      # close enough
+        if abs(mean - er) <= 0.015 * er:     # close enough
             break
+        # Learn the slope only from well-separated points (nearby mults give a
+        # noise-dominated estimate that can send the next step wild), and keep
+        # the exponent inside a sane band either way.
+        if prev and prev[1] > 0.3 and abs(math.log(mult / prev[0])) > 0.03:
+            k = math.log(mean / prev[1]) / math.log(mult / prev[0])
+            if 0.8 < k < 4.0:                # sane local slope -> use it
+                k_exp = max(0.3, min(0.7, 1.0 / k))
+        prev = (mult, mean)
         # Clamp near 1.0 so matchup calibration nudges team runs to er without
-        # badly distorting each hitter's true rate (runs ~ mult^1.5 -> exp 0.7).
-        mult = max(0.7, min(1.5, mult * (er / mean) ** 0.7))
+        # badly distorting each hitter's true rate.
+        mult = max(0.7, min(1.5, mult * (er / mean) ** k_exp))
+    # Final centering pass: acceptance still fires on a noisy estimate, so one
+    # more measurement plus a single corrective nudge (never re-checked, so it
+    # can't oscillate) centers the residual around ~1%.
+    setup = _build_setup(rows, mult)
+    mean = sum(_play_game(setup, rnd)[0] for _ in range(700)) / 700.0
+    if mean > 0.3:
+        mult = max(0.7, min(1.5, mult * (er / mean) ** k_exp))
     return _build_setup(rows, mult)
 
 
@@ -374,23 +397,28 @@ def simulate(g, n=5000):
             arr["dk"][i] = st[6]
 
     # First-inning scoring is bursty -- a base-out sim leading off with the top of
-    # the order over-counts P(run). Draw RFI from a calibrated per-team rate
-    # (_RFI_K, matching the closed-form model and the empirical/market ~50%)
-    # rather than the simulated first frame, so the marginal isn't inflated.
+    # the order over-counts P(run), but the SIMULATED first frame carries the real
+    # correlation with the rest of the game (a 1st-inning run and the Over cash
+    # together). So we take the sim's own first-inning outcome and recalibrate its
+    # marginal to the closed-form rate (_RFI_K, the empirical/market ~50%) by
+    # thinning the yes's -- correlation preserved, marginal honest. A side with no
+    # posted lineup falls back to an independent calibrated draw.
     p1a = 1 - math.exp(-_RFI_K * er_a / 9.0)
     p1h = 1 - math.exp(-_RFI_K * er_h / 9.0)
+    p_target = 1 - (1 - p1a) * (1 - p1h)      # P(either team scores in the 1st)
+    f1_raw = [False] * n                      # simulated 1st-inning run (either team)
     for i in range(n):
         if setup_a:
-            ra, sa, _f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
+            ra, sa, f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
         else:
-            ra = _poisson(er_a)
+            ra = _poisson(er_a); f1a = 1 if rnd() < p1a else 0
         if setup_h:
-            rh, sh, _f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
+            rh, sh, f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
         else:
-            rh = _poisson(er_h)
+            rh = _poisson(er_h); f1h = 1 if rnd() < p1h else 0
         home_runs[i] = rh
         away_runs[i] = ra
-        rfi[i] = (rnd() < p1a) or (rnd() < p1h)
+        f1_raw[i] = bool(f1a) or bool(f1h)
         if rh > ra:
             home_win[i] = True
         elif rh == ra:
@@ -408,6 +436,23 @@ def simulate(g, n=5000):
                                                bullpen=at.get("bp_arms"))
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
+
+    # Recalibrate the simulated RFI marginal to the closed-form target: thin the
+    # yes's when the sim runs hot (the usual case -- top of the order leads off),
+    # or promote a few independent no's if it somehow runs cold. Thinning keeps
+    # every retained yes tied to its simulated game, so RFI x Over / RFI x ML
+    # correlations survive into the SGP masks.
+    p_sim = sum(f1_raw) / n if n else 0.0
+    if p_sim > p_target > 0:
+        keep = p_target / p_sim
+        for i in range(n):
+            rfi[i] = f1_raw[i] and (rnd() < keep)
+    elif p_sim < p_target:
+        boost = (p_target - p_sim) / max(1e-9, 1.0 - p_sim)
+        for i in range(n):
+            rfi[i] = f1_raw[i] or (rnd() < boost)
+    else:
+        rfi = f1_raw
 
     return {"n": n, "home_runs": home_runs, "away_runs": away_runs,
             "home_k": home_k, "away_k": away_k, "home_win": home_win,
