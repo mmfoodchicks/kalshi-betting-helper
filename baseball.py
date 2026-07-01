@@ -623,15 +623,19 @@ def _boxscore_lineup(game_pk):
     """Posted lineup per side -> {'home': [batter, ...], 'away': [...]}.
 
     batter = {name, ops, ab, hits, pa} from season stats (ordered by lineup spot).
-    """
+    Also returns `<side>_posted` (is the batting order actually up yet) and
+    `<side>_sp` (the starting pitcher id the boxscore lists, once the game is under
+    way) so callers can tell a confirmed lineup from a projected one and catch a
+    late scratch (boxscore starter != the listed probable)."""
     def fetch():
         try:
             d = _get(f"{STATS_BASE}/game/{game_pk}/boxscore")
             out = {}
             for side in ("home", "away"):
                 t = d["teams"][side]
+                order = t.get("battingOrder") or []
                 batters = []
-                for pid in t.get("battingOrder", []):
+                for pid in order:
                     pl = t["players"].get(f"ID{pid}", {})
                     bs = pl.get("seasonStats", {}).get("batting", {})
                     batters.append({
@@ -645,10 +649,62 @@ def _boxscore_lineup(game_pk):
                         "sb": _f(bs.get("stolenBases")), "cs": _f(bs.get("caughtStealing")),
                     })
                 out[side] = batters
+                out[side + "_posted"] = bool(order)
+                pitchers = t.get("pitchers") or []
+                if pitchers:
+                    sp = t["players"].get(f"ID{pitchers[0]}", {})
+                    out[side + "_sp"] = {"id": pitchers[0],
+                                         "name": sp.get("person", {}).get("fullName", "")}
+                else:
+                    out[side + "_sp"] = None
             return out
         except Exception:
             return None
     return _cached(("box", game_pk), 300, fetch)
+
+
+def _confirm_status(g, lu):
+    """Scratch / confirmation guard for one game: is our read built on posted
+    lineups and the listed starters, or is it still provisional (and liable to
+    move)? Catches the two bets you don't want to make blind — a starter that's
+    been scratched (the posted/actual arm differs from the listed probable) and a
+    game whose starter is still TBD (the model falls back to league average)."""
+    state = (g.get("live") or {}).get("state")
+    final = state == "Final"
+
+    def sp_status(side, sp_id):
+        if final:
+            return "final"
+        if not sp_id:
+            return "tbd"                              # no probable -> league-average read
+        actual = (lu.get(side + "_sp") or {})
+        if actual.get("id") and actual["id"] != sp_id:
+            return "scratched"
+        return "listed"
+
+    h = sp_status("home", g.get("home_sp_id"))
+    a = sp_status("away", g.get("away_sp_id"))
+    scratched = []
+    if h == "scratched":
+        scratched.append({"side": "home", "listed": g.get("home_sp_name"),
+                          "actual": (lu.get("home_sp") or {}).get("name")})
+    if a == "scratched":
+        scratched.append({"side": "away", "listed": g.get("away_sp_name"),
+                          "actual": (lu.get("away_sp") or {}).get("name")})
+    # Human note, worst issue first: a scratch is a red flag, a TBD starter or an
+    # unposted lineup is a "provisional" yellow flag.
+    note, level = "", "ok"
+    if scratched:
+        who = ", ".join(f"{s['listed'] or 'listed SP'} → {s['actual'] or 'new SP'}" for s in scratched)
+        note, level = f"Starter changed: {who} — model still on the listed arm, refresh before betting.", "scratch"
+    elif h == "tbd" or a == "tbd":
+        note, level = "Starter TBD — pitching read is league-average until it's announced.", "provisional"
+    elif not final and not (lu.get("home_posted") and lu.get("away_posted")):
+        note, level = "Lineups not posted yet — offense assumes the regulars play; may shift once cards are out.", "provisional"
+    return {"level": level, "note": note,
+            "home_lineup": "confirmed" if lu.get("home_posted") else "projected",
+            "away_lineup": "confirmed" if lu.get("away_posted") else "projected",
+            "home_sp": h, "away_sp": a, "scratched": scratched}
 
 
 def _lineup_factor(batters, team_ops, lg):
@@ -901,6 +957,7 @@ def analyze_slate(date, season):
         lu = lineups.get(g["game_pk"]) or {}
         lf_home, lops_home = _lineup_factor(lu.get("home"), th(g["home_id"]).get("ops"), lg)
         lf_away, lops_away = _lineup_factor(lu.get("away"), th(g["away_id"]).get("ops"), lg)
+        confirm = _confirm_status(g, lu)
         if lf_home:
             off_h *= lf_home
         if lf_away:
@@ -1040,6 +1097,7 @@ def analyze_slate(date, season):
                               if price_entry and price_entry.get("event") and "-" in price_entry["event"]
                               else None),
             "start": g["start"], "status": g["status"],
+            "confirm": confirm,
             "p_home": round(p_home, 4), "p_away": round(p_away, 4),
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
             "exp_total": exp_total, "park_factor": park,
