@@ -189,6 +189,17 @@ def live_game_feedback(game_pk):
                 starter[side] = {"id": p["person"]["id"], "name": p["person"]["fullName"]}
                 break
 
+    # Our deep pitch-by-pitch sim's batter-vs-starter read (large sample, model),
+    # keyed by MLB player id so it matches the box directly. Non-blocking.
+    sim_bvp = {}
+    try:
+        import mlb_dfs
+        season = str((gd.get("game") or {}).get("season") or "")
+        if slate and season:
+            sim_bvp = mlb_dfs.game_sim_bvp(slate, season) or {}
+    except Exception:
+        sim_bvp = {}
+
     pitchers, hitters = [], []
     bvp_tasks = []                          # (hitter_dict, batter_id, opp_starter_id)
     for side in ("away", "home"):
@@ -232,6 +243,7 @@ def live_game_feedback(game_pk):
                     "second_given_first": m["second_given_first"] if m else None,
                     "live_next_hit_pct": next_hit,
                     "vs_pitcher": opp_sp["name"] if opp_sp else None, "bvp": None,
+                    "sim_bvp": sim_bvp.get(person["id"]),
                 }
                 hitters.append(hd)
                 if opp_sp:

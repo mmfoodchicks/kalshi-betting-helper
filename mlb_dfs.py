@@ -303,6 +303,73 @@ def deep_projections(games, season, n=3000):
     return proj
 
 
+# ---- Simulated batter-vs-starting-pitcher (from the deep engine) -----------
+import threading as _thr
+import time as _tm
+_bvp_inflight = set()
+
+
+def _compute_game_bvp(g, season, n):
+    """Run the deep pitch-by-pitch engine n times for one game and aggregate every
+    batter's line against the opposing STARTER -> {batter_id: {ab,h,hr,k,bb,pa,
+    avg,k_pct,hr_pct,bb_pct}}. batter_id is the real MLB id (matches the live box)."""
+    import deep_data
+    import deep_sim
+    tid = _team_ids(season)
+    hid, aid = tid.get(g.get("home_abbr")), tid.get(g.get("away_abbr"))
+    if not hid or not aid:
+        return {}
+    try:
+        hp = deep_data.team_profile(hid, season)
+        ap = deep_data.team_profile(aid, season)
+    except Exception:
+        return {}
+    if not (hp and ap and hp.get("lineup") and ap.get("lineup")):
+        return {}
+    sp_h = _match_sp(hp, (g.get("home_sp") or {}).get("name"))
+    sp_a = _match_sp(ap, (g.get("away_sp") or {}).get("name"))
+    er = (g.get("exp_runs_home") or 4.3) + (g.get("exp_runs_away") or 4.3)
+    env = max(0.72, min(1.40, er / (2 * _LG_RUNS)))
+    acc = {}
+    for _ in range(n):
+        deep_sim.play_game(hp, ap, sp_h, sp_a, env=env, bvp=acc)
+    out = {}
+    for pid, l in acc.items():
+        pa, ab = l["pa"], l["ab"]
+        if pa < 1:
+            continue
+        out[pid] = {"pa": pa, "ab": ab, "h": l["h"], "hr": l["hr"], "k": l["k"], "bb": l["bb"],
+                    "avg": round(l["h"] / ab, 3) if ab else 0.0,
+                    "k_pct": round(100 * l["k"] / pa, 1),
+                    "hr_pct": round(100 * l["hr"] / pa, 1),
+                    "bb_pct": round(100 * l["bb"] / pa, 1)}
+    return out
+
+
+def game_sim_bvp(g, season, n=600):
+    """Simulated batter-vs-starter lines for one game. NON-BLOCKING: returns the
+    cached result if fresh, else kicks a background compute and returns {} for now
+    (it lands on a later call). Cached 6h -- the matchup doesn't change intra-day."""
+    import racing
+    pk = g.get("game_pk")
+    if not pk:
+        return {}
+    key = ("sim_bvp", pk)
+    hit = racing._form_cache.get(key)
+    if hit and (_tm.time() - hit[0]) < 6 * 3600 and hit[1] is not None:
+        return hit[1]
+    if pk not in _bvp_inflight:
+        _bvp_inflight.add(pk)
+
+        def _bg():
+            try:
+                racing._cached(key, 6 * 3600, lambda: _compute_game_bvp(g, str(season), n))
+            finally:
+                _bvp_inflight.discard(pk)
+        _thr.Thread(target=_bg, daemon=True).start()
+    return {}
+
+
 # ---- Kalshi betting-market signals (the edge the DFS sites don't have) -----
 def market_signals(season):
     """{normalized name: market-implied boom probability} from Kalshi's batter

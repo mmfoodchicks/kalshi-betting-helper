@@ -212,15 +212,19 @@ def _avail_sp(sp, prof, rng):
     return sp
 
 
-def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0):
+def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
     `env` scales the run environment (park + weather) for DFS slate sims; it
-    defaults to 1.0 so the season engine is unchanged.
+    defaults to 1.0 so the season engine is unchanged. When `bvp` is a dict, every
+    plate appearance a batter takes AGAINST A STARTER is logged into it
+    ({batter_id: bat_line}) -- accumulate it across many sims for a large-sample,
+    pure-model batter-vs-starting-pitcher read.
     Returns {home_runs, away_runs, home_win, batting:{pid:line}, pitching:{pid:line}}."""
     rng = rng or random
     sp_home = _avail_sp(sp_home or home["rotation"][0], home, rng)
     sp_away = _avail_sp(sp_away or away["rotation"][0], away, rng)
     staff = {"home": _Staff(home, sp_home), "away": _Staff(away, sp_away)}
+    sp_ids = {"home": sp_home["id"], "away": sp_away["id"]}   # for batter-vs-starter logging
     # Per-game injury availability: a short-IL regular sits this one (replacement
     # from the bench starts) with probability (1 - avail). Over the season this
     # reproduces the games they actually miss without deleting them outright.
@@ -307,6 +311,20 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0):
                     pl["r"] += runs; st.outing_runs += runs
                     for s in scorers:
                         bline(s)["r"] += 1
+                # Log this PA into the batter-vs-starter tally (only vs the starter).
+                if bvp is not None and pit["id"] == sp_ids[opp]:
+                    bv = bvp.setdefault(bat["id"], _new_bat_line())
+                    bv["pa"] += 1
+                    if oc == "bb":
+                        bv["bb"] += 1
+                    elif oc != "hbp":
+                        bv["ab"] += 1
+                        if oc == "k":
+                            bv["k"] += 1
+                        elif oc not in ("out",):
+                            bv["h"] += 1
+                            if oc == "hr":
+                                bv["hr"] += 1
                 idx[half] += 1
         if inning >= 9 and score["home"] != score["away"]:
             break

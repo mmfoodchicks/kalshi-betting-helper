@@ -635,12 +635,19 @@ function renderLiveFeed(d) {
     return `<span class="lf-ab ${hit ? "hit" : k ? "k" : "out"}" title="${ev}">${ev === "Home Run" ? "HR" : ev === "Strikeout" ? "K" : ev[0]}</span>`;
   };
   const bvpCell = (h) => {
-    const b = h.bvp;
-    if (!b) return `<span class="small" style="color:var(--muted)">—</span>`;
-    const avg = b.ab > 0 ? b.h / b.ab : 0;
-    const cls = b.ab >= 3 && avg >= 0.35 ? "hit" : (b.ab >= 5 && avg <= 0.12 ? "k" : "");
-    const extra = (b.hr ? ` ${b.hr}HR` : "") + (b.so ? ` ${b.so}K` : "");
-    return `<span class="lf-bvp ${cls}" title="Career vs ${h.vs_pitcher || "the starter"}: ${b.h}-for-${b.ab}${extra}, ${b.bb} BB · OPS ${b.ops || "—"} (${b.pa} PA — small sample, use as color not gospel)">${b.h}-${b.ab}${b.hr ? ` ${b.hr}HR` : ""}</span>`;
+    const s = h.sim_bvp, b = h.bvp;
+    if (s) {   // our pitch-by-pitch sim vs the starter — large sample, pure model
+      const cls = s.avg >= 0.290 ? "hit" : (s.avg <= 0.215 ? "k" : "");
+      const career = b ? ` · real career ${b.h}-${b.ab} (${b.pa} PA)` : "";
+      return `<span class="lf-bvp ${cls}" title="Our pitch-by-pitch sim — ${s.pa} simulated matchups vs ${h.vs_pitcher || "the starter"}: AVG ${s.avg} · ${s.k_pct}% K · ${s.hr_pct}% HR · ${s.bb_pct}% BB${career}">${s.avg}<span class="small" style="opacity:.7"> ${s.k_pct}%K</span></span>`;
+    }
+    if (b) {   // fall back to the real (small-sample) career line while the sim warms
+      const avg = b.ab > 0 ? b.h / b.ab : 0;
+      const cls = b.ab >= 3 && avg >= 0.35 ? "hit" : (b.ab >= 5 && avg <= 0.12 ? "k" : "");
+      const extra = (b.hr ? ` ${b.hr}HR` : "") + (b.so ? ` ${b.so}K` : "");
+      return `<span class="lf-bvp ${cls}" title="Real career vs ${h.vs_pitcher || "the starter"}: ${b.h}-for-${b.ab}${extra}, ${b.bb} BB · OPS ${b.ops || "—"} (${b.pa} PA — small sample)">${b.h}-${b.ab}${b.hr ? ` ${b.hr}HR` : ""}</span>`;
+    }
+    return `<span class="small" style="color:var(--muted)" title="Simulating this matchup pitch-by-pitch… refresh in a moment">…</span>`;
   };
   const rows = (d.hitters || []).map((h) => `<tr>
     <td>${h.order}. ${h.name}</td>
@@ -656,7 +663,7 @@ function renderLiveFeed(d) {
     <div class="lf-pgrid">${pit}</div>
     <table class="lf-table"><thead><tr>
       <th>Hitter</th><th>H/AB</th>
-      <th title="Batter's career line vs today's opposing starter (small sample — color, not a strong signal)">vs SP</th>
+      <th title="Our pitch-by-pitch sim's read on this hitter vs today's starter — AVG / K% over hundreds of simulated matchups (real career line in the tooltip)">vs SP (sim)</th>
       <th>AB results</th>
       <th title="Model: chance of 1+ hit this game">Hit%</th>
       <th title="Given a hit, chance of a 2nd">2nd</th>
