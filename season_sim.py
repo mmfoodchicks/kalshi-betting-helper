@@ -320,13 +320,17 @@ def futures_edges(season=None, sim=None, n=4000):
             return []
         ladder = []
         for m in _winner_markets_winstotal(t["abbr"]):
-            line = m.get("floor")
-            if line is None:
+            fl = m.get("floor")
+            if fl is None:
                 continue
+            # Kalshi win-total floors are half-strikes (92.5 = "wins ABOVE 92.5"
+            # = 93+ wins). int(92.5)=92 mislabeled the market AND made deep_board
+            # (which re-derives counts from row["line"]) price the wrong bucket.
+            line = int(fl) + 1 if fl != int(fl) else int(fl)
             model = 100.0 * sum(1 for w in s if w >= line) / len(s)
-            row = _futrow(t, "win_total", f"{t['name']} {int(line)}+ wins",
+            row = _futrow(t, "win_total", f"{t['name']} {line}+ wins",
                           model, m, None)
-            row["line"] = int(line)
+            row["line"] = line
             ladder.append(row)
         return ladder
     with ThreadPoolExecutor(max_workers=10) as ex:

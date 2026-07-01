@@ -64,18 +64,30 @@ def get_events(sport_key, limit=200):
     out = []
     for e in events.values():
         # De-vig: fair_i = price_i / sum(prices). Sum > 100 => house margin.
-        asks = [o["yes_ask"] for o in e["outcomes"] if o["yes_ask"]]
-        total = sum(asks)
+        # Price each outcome at the bid-ask MIDPOINT when a bid exists (the ask
+        # alone carries half the spread, which on thin books skews the fair %),
+        # falling back to the ask on one-sided quotes.
+        def mid(o):
+            a, b = o.get("yes_ask"), o.get("yes_bid")
+            if a is None:
+                return None
+            return (a + b) / 2.0 if b else a
+        mids = {id(o): mid(o) for o in e["outcomes"]}
+        total = sum(v for v in mids.values() if v)
         for o in e["outcomes"]:
-            o["fair_pct"] = round(100 * o["yes_ask"] / total, 1) if (total and o["yes_ask"]) else None
+            v = mids[id(o)]
+            o["fair_pct"] = round(100 * v / total, 1) if (total and v) else None
             # Bid-ask spread: how wide/uncertain the quote is. A wide spread means
             # the "fair %" is a guess off a stale quote, not a real tradeable price.
             o["spread"] = (round(o["yes_ask"] - o["yes_bid"], 1)
                            if (o["yes_ask"] is not None and o["yes_bid"] is not None) else None)
-        e["overround_pct"] = round(total - 100, 1) if total else None
+        # Overround/arbitrage stay on the ASKS -- that's what you'd actually pay
+        # to buy every outcome; the mid-based fair % above is just the estimate.
+        ask_total = sum(o["yes_ask"] for o in e["outcomes"] if o["yes_ask"])
+        e["overround_pct"] = round(ask_total - 100, 1) if ask_total else None
         # Arbitrage: if the outcome prices sum to < 100¢, buying them all is a
         # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
-        e["arbitrage_pct"] = round(100 - total, 1) if (total and total < 100) else None
+        e["arbitrage_pct"] = round(100 - ask_total, 1) if (ask_total and ask_total < 100) else None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
         # Liquidity read for the whole event: is this actually tradeable, or a thin
         # untraded book where the fair % / edge / arbitrage can't be trusted? Based
