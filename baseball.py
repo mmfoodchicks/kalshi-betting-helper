@@ -27,6 +27,7 @@ probability. Inputs folded in:
 
 import itertools
 import time as _time
+from datetime import datetime as _dt, timedelta as _td
 from concurrent.futures import ThreadPoolExecutor
 
 import kalshi  # reuse BASE + _get_json + _parse_time + _cents helpers
@@ -463,9 +464,105 @@ def _bullpen_ra9(team_bp, lg):
     return 0.70 * era + 0.30 * whip_ra9
 
 
-def _pitching_factor(sp, team_bp, lg):
+def _pen_boxscore_pitchers(game_pk):
+    """Relievers who appeared in a finished game -> {team_id: [(pid, name, pitches), ...]}.
+    The first pitcher in each side's `pitchers` list is the starter and is skipped."""
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/game/{game_pk}/boxscore")
+            out = {}
+            for side in ("home", "away"):
+                t = d["teams"][side]
+                tid = t.get("team", {}).get("id")
+                arms = []
+                for pid in (t.get("pitchers") or [])[1:]:      # [0] is the starter
+                    pl = t["players"].get(f"ID{pid}", {})
+                    # Skip position players mopping up a blowout — they aren't real
+                    # bullpen arms and shouldn't count against tomorrow's pen. (MLB
+                    # tags them position "P" while pitching, so check every position
+                    # they played that game — a true reliever only ever shows "P".)
+                    allpos = pl.get("allPositions") or []
+                    if any((p or {}).get("abbreviation") not in (None, "P") for p in allpos):
+                        continue
+                    ps = pl.get("stats", {}).get("pitching", {})
+                    pitches = _f(ps.get("numberOfPitches") or ps.get("pitchesThrown"))
+                    nm = pl.get("person", {}).get("fullName", "")
+                    arms.append((pid, nm, pitches))
+                if tid:
+                    out[tid] = arms
+            return out
+        except Exception:
+            return None
+    return _cached(("penbox", game_pk), 1800, fetch)
+
+
+def _bullpen_fatigue(date, season):
+    """{team_id: {"factor", "count", "arms"}} — how gassed each pen is tonight.
+
+    Looks back at the last two days of finished games and tallies each reliever's
+    recent workload. An arm is "gassed" (likely unavailable / less effective) if it
+    pitched on back-to-back days or threw a heavy count yesterday; "tired" for a
+    moderate outing yesterday. The more high-leverage arms down, the higher the
+    factor (>1.0) applied to the bullpen's run prevention — nudging totals up.
+    Best-effort: any fetch failure yields a neutral 1.0 for that team."""
+    def fetch():
+        try:
+            base = _dt.strptime(date, "%Y-%m-%d")
+        except Exception:
+            return {}
+        # day 1 = yesterday (heaviest weight), day 2 = the day before
+        days = {1: (base - _td(days=1)).strftime("%Y-%m-%d"),
+                2: (base - _td(days=2)).strftime("%Y-%m-%d")}
+        pks_by_day = {}
+        for dnum, dstr in days.items():
+            try:
+                data = _get(f"{STATS_BASE}/schedule?sportId=1&date={dstr}")
+                dates = data.get("dates", [])
+                gms = dates[0]["games"] if dates else []
+                pks_by_day[dnum] = [g.get("gamePk") for g in gms
+                                    if g.get("status", {}).get("abstractGameState") == "Final"]
+            except Exception:
+                pks_by_day[dnum] = []
+        # usage[team][pid] = {"days": set(), "name": str, "pitches_y": int}
+        usage = {}
+        all_pks = [(d, pk) for d, pks in pks_by_day.items() for pk in pks if pk]
+        boxes = {}
+        if all_pks:
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                for (dnum, pk), box in zip(all_pks, ex.map(lambda x: _pen_boxscore_pitchers(x[1]), all_pks)):
+                    boxes[(dnum, pk)] = box
+        for (dnum, pk), box in boxes.items():
+            if not box:
+                continue
+            for tid, arms in box.items():
+                tu = usage.setdefault(tid, {})
+                for pid, nm, pitches in arms:
+                    a = tu.setdefault(pid, {"days": set(), "name": nm, "pitches_y": 0})
+                    a["days"].add(dnum)
+                    if dnum == 1:
+                        a["pitches_y"] = max(a["pitches_y"], pitches)
+        out = {}
+        for tid, tu in usage.items():
+            score = 0.0
+            gassed = []
+            for pid, a in tu.items():
+                back_to_back = a["days"] == {1, 2}
+                heavy_y = 1 in a["days"] and a["pitches_y"] >= 28
+                mod_y = 1 in a["days"] and 15 <= a["pitches_y"] < 28
+                if back_to_back or heavy_y:
+                    score += 1.0
+                    gassed.append(a["name"])
+                elif mod_y:
+                    score += 0.4
+            factor = 1.0 + min(0.12, 0.025 * score)
+            out[tid] = {"factor": round(factor, 3), "count": len(gassed), "arms": gassed[:4]}
+        return out
+    return _cached(("penfatigue", date, season), 1800, fetch)
+
+
+def _pitching_factor(sp, team_bp, lg, bp_fatigue=1.0):
     sp_ra9 = _starter_ra9(sp, lg)
-    bp_ra9 = _bullpen_ra9(team_bp, lg)
+    bp_ra9 = _bullpen_ra9(team_bp, lg) * bp_fatigue    # gassed pen -> higher RA9
     if sp_ra9 is None:
         game_ra9 = bp_ra9
     else:
@@ -717,6 +814,10 @@ def analyze_slate(date, season):
     rec = _records_map(season); abbr_map = _abbr_map(season)
     lg = _league_avgs(hit, pit, bp, hitplat)
     try:
+        pen_fatigue = _bullpen_fatigue(date, season)   # {team_id: {factor, count, arms}}
+    except Exception:
+        pen_fatigue = {}
+    try:
         kalshi_index = get_kalshi_prices()
     except Exception:
         kalshi_index = {}
@@ -791,8 +892,10 @@ def analyze_slate(date, season):
 
         off_h = _offense_factor(th(g["home_id"]), ops_hand(g["home_id"], a_hand), a_hand, lg)
         off_a = _offense_factor(th(g["away_id"]), ops_hand(g["away_id"], h_hand), h_hand, lg)
-        pit_a_factor, a_sp_ra9, a_bp_ra9 = _pitching_factor(a_sp, tbp(g["away_id"]), lg)
-        pit_h_factor, h_sp_ra9, h_bp_ra9 = _pitching_factor(h_sp, tbp(g["home_id"]), lg)
+        fat_a = pen_fatigue.get(g["away_id"]) or {}
+        fat_h = pen_fatigue.get(g["home_id"]) or {}
+        pit_a_factor, a_sp_ra9, a_bp_ra9 = _pitching_factor(a_sp, tbp(g["away_id"]), lg, fat_a.get("factor", 1.0))
+        pit_h_factor, h_sp_ra9, h_bp_ra9 = _pitching_factor(h_sp, tbp(g["home_id"]), lg, fat_h.get("factor", 1.0))
 
         # Posted-lineup adjustment to each offense (rest days, call-ups, injuries).
         lu = lineups.get(g["game_pk"]) or {}
@@ -924,6 +1027,7 @@ def analyze_slate(date, season):
                           "rpg": round(th(g['home_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bph.get("era", 0), 2), "bullpen_whip": round(bph.get("whip", 0), 2),
                           "bp_arms": bp_arms.get(g['home_id']),
+                          "bullpen_fatigue": fat_h or None,
                           "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
             "away_team": {"ops": round(th(g['away_id']).get("ops", 0), 3),
@@ -931,6 +1035,7 @@ def analyze_slate(date, season):
                           "rpg": round(th(g['away_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bpa.get("era", 0), 2), "bullpen_whip": round(bpa.get("whip", 0), 2),
                           "bp_arms": bp_arms.get(g['away_id']),
+                          "bullpen_fatigue": fat_a or None,
                           "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},
             "pick": pick_name, "pick_is_home": pick_home,

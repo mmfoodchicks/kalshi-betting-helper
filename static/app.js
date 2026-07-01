@@ -693,6 +693,14 @@ function renderGame(g) {
     const arrow = t.lineup_factor > 1.02 ? " ▲" : t.lineup_factor < 0.98 ? " ▼" : "";
     return ` · lineup OPS <b>${t.lineup_ops}</b>${arrow}`;
   };
+  // Bullpen fatigue: gassed arms from the last 1-2 days -> weaker pen tonight (leans OVER)
+  const bpf = (t) => {
+    const f = t.bullpen_fatigue;
+    if (!f || !f.count) return "";
+    const arms = (f.arms || []).join(", ");
+    const pct = Math.round((f.factor - 1) * 100);
+    return `<div class="small" style="color:var(--no)" title="${arms}">🔋 Bullpen fatigue: <b>${f.count}</b> arm${f.count > 1 ? "s" : ""} gassed (+${pct}% pen RA9 → leans OVER)</div>`;
+  };
   const w = g.weather;
   let wxLine = "";
   if (w && w.roof === "fixed") {
@@ -726,11 +734,13 @@ function renderGame(g) {
         <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>
         <div class="small">SP: ${spLine(g.away_sp)}</div>
         <div class="small">Team OPS <b>${at.ops}</b>${plat(at, g.home_sp)} · ${at.rpg} R/G · bullpen <b>${at.bullpen_era}</b> ERA, ${at.bullpen_whip} WHIP${lf(at)}</div>
+        ${bpf(at)}
       </div>
       <div>
         <div class="teamhdr">${g.home_abbr} ${rec(ht)} · home</div>
         <div class="small">SP: ${spLine(g.home_sp)}</div>
         <div class="small">Team OPS <b>${ht.ops}</b>${plat(ht, g.away_sp)} · ${ht.rpg} R/G · bullpen <b>${ht.bullpen_era}</b> ERA, ${ht.bullpen_whip} WHIP${lf(ht)}</div>
+        ${bpf(ht)}
       </div>
     </div>
     <div class="small" style="margin-top:8px">${market}</div>
