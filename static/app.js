@@ -2851,9 +2851,15 @@ async function initSim() {
   $("simMode").addEventListener("change", simModeChange);
   // MLB DFS options only apply to the sim-driven MLB path.
   const dfsMlbToggle = () => {
-    const isMlb = $("dfsSport").value === "mlb";
-    if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", !isMlb);
-    if ($("dfsMlbHint")) $("dfsMlbHint").classList.toggle("hidden", !isMlb);
+    const sp = $("dfsSport").value;
+    const isMlb = sp === "mlb";
+    // Portfolio + contest controls now apply to every DFS sport.
+    const dfs = ["mlb", "ufc", "f1", "nascar"].includes(sp);
+    if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", !dfs);
+    if ($("dfsMlbHint")) $("dfsMlbHint").classList.toggle("hidden", !dfs);
+    // Stacking is MLB-only (correlated same-team hitters).
+    const stackLbl = $("dfsStack") ? $("dfsStack").closest("label") : null;
+    if (stackLbl) stackLbl.classList.toggle("hidden", !isMlb);
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
@@ -3066,14 +3072,13 @@ async function runDfsSim() {
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (d.total_ceil != null) { box.innerHTML = renderMlbDfs(d); return; }   // sim-driven MLB
-    const rows = d.lineup.map((p) => {
+    const dfsRow = (p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
       let pd = "";
       if (p.pd_adj != null && Math.abs(p.pd_adj) >= 0.1) {
         const cls = p.pd_adj > 0 ? "#3ad17a" : "#e0566a";
         pd = ` <span style="color:${cls}">(${p.pd_adj > 0 ? "+" : ""}${p.pd_adj} PD, was ${p.base_proj})</span>`;
       }
-      // UFC: show our internal fighter rating, win%, GPP ceiling, and flag debuts.
       let ufcBits = "";
       if (p.rating != null || p.win_pct != null) {
         const parts = [];
@@ -3083,16 +3088,16 @@ async function runDfsSim() {
         }
         if (p.win_pct != null) parts.push(`win ${p.win_pct}%`);
         if (p.ceil_proj != null) parts.push(`ceil ${p.ceil_proj}`);
-        // UFC record if we have UFC fights, else the pro/career record (pre-UFC).
         if (p.fights > 0 && p.record) parts.push(`UFC ${p.record}`);
         else if (p.career_record) parts.push(`pro ${p.career_record}`);
         ufcBits = ` <span class="small" style="color:var(--muted)">· ${parts.join(" · ")}</span>`;
-        if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut — no Octagon box scores, so striking/grappling are league-average estimates; finishing & durability are seeded from the pro record (regional competition is softer, so it's shrunk)">⚠️ UFC debut (pro ${p.career_record})</span>`;
-        else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all — pure league-average placeholder">⚠️ no data (league-avg est.)</span>`;
-        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average">⚠️ thin data</span>`;
+        if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut — striking/grappling are league-average; finishing & durability seeded from the pro record">⚠️ UFC debut (pro ${p.career_record})</span>`;
+        else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all — pure league-average placeholder">⚠️ no data</span>`;
+        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating shrunk toward league average">⚠️ thin</span>`;
       }
-      return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${pd}${ufcBits}</span></div></div>`;
-    }).join("");
+      const own = p.own != null ? ` · <span title="projected field ownership">own ${p.own}%</span>` : "";
+      return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${own}${pd}${ufcBits}</span></div></div>`;
+    };
     let gridBanner = "";
     const g = d.grid;
     if (g && g.available) {
@@ -3114,15 +3119,44 @@ async function runDfsSim() {
     } else if (u && !u.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🥊 ${u.reason}.</div>`;
     }
+    // Contest simulation banner (win% / cash% / ROI at the real field size).
+    let csBanner = "";
+    const cs = d.contest_sim;
+    if (cs && !cs.error) {
+      const money = (v) => "$" + Math.round(v).toLocaleString();
+      csBanner = `<div class="dfs-note" style="margin-top:6px">🏆 ${cs.entries.toLocaleString()}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"}${cs.prize_pool ? ` · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${(cs.places_paid || 0).toLocaleString()} paid` : ""} · ${money(cs.entry_fee)} entry. Strength gauged on a ${cs.sample_size}-lineup field, scaled to the full contest. <i>Modeled estimate.</i></div>`;
+    } else if (cs && cs.error) {
+      csBanner = `<div class="dfs-note" style="margin-top:6px">${cs.error}</div>`;
+    }
+    const lineups = d.lineups && d.lineups.length ? d.lineups : [{ lineup: d.lineup, total_salary: d.total_salary, total_proj: d.total_proj, own_sum: null, sim: d.sim }];
+    const csRow = (i) => {
+      const l = cs && !cs.error && cs.lineups && cs.lineups[i];
+      if (!l) return "";
+      const winTxt = l.win_pct >= 1 ? `${l.win_pct}%` : l.win_pct > 0 ? `~1 in ${Math.round(100 / l.win_pct).toLocaleString()}` : "<1 in 1M";
+      return `<div class="dfs-csrow"><span title="chance this lineup wins the whole field">win <b>${winTxt}</b></span><span>cash <b>${l.cash_pct}%</b></span><span>ROI <b class="${l.roi_pct >= 0 ? "ev pos" : "ev neg"}">${l.roi_pct >= 0 ? "+" : ""}${l.roi_pct}%</b></span></div>`;
+    };
+    const lineupCards = lineups.map((L, i) => {
+      const best = cs && !cs.error && cs.best_lineup_index === i;
+      return `<div class="dfs-lineup${best ? " best" : ""}">
+        ${lineups.length > 1 ? `<div class="dfs-lhead"><b>Lineup ${i + 1}${best ? " 👑" : ""}</b> <span class="dfs-ltot">$${L.total_salary.toLocaleString()} · proj <b>${L.total_proj}</b>${L.own_sum != null ? ` · own Σ ${L.own_sum}%` : ""} · 🟢 ceil ${L.sim.ceiling}</span></div>` : ""}
+        ${csRow(i)}
+        <div class="sportouts" style="margin-top:6px">${L.lineup.map(dfsRow).join("")}</div>
+      </div>`;
+    }).join("");
+    let expHtml = "";
+    if (d.exposure && d.exposure.length) {
+      const chips = d.exposure.map((e) => `<span class="dfs-chip">${e.name.split(" ").slice(-1)[0]} <b>${e.pct}%</b></span>`).join("");
+      expHtml = `<details class="dfs-exp"><summary>Exposure across ${d.n_lineups} lineups</summary><div class="dfs-chips">${chips}</div></details>`;
+    }
     box.innerHTML = `<div class="bbgame">
-      <div class="matchup">Optimal ${d.roster}-player lineup (${d.pool} in pool)</div>
+      <div class="matchup">${lineups.length > 1 ? `${lineups.length}-lineup portfolio` : `Optimal ${d.roster}-player lineup`} (${d.pool} in pool)</div>
       ${gridBanner}
-      <div class="kv" style="margin-top:6px"><span>Salary <b>$${d.total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span>
-        <span>Projected <b>${d.total_proj}</b> pts</span></div>
-      <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span>
-        <span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>
-      <div class="sportouts" style="margin-top:8px">${rows}</div>
-      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-percentile simulated totals — the ceiling is what matters for GPP tournaments.${g && g.available ? " <b>PD</b> = place-differential adjustment: a driver starting better than his car deserves loses expected points; one buried deep gains." : ""}</div>
+      ${csBanner}
+      ${lineups.length === 1 ? `<div class="kv" style="margin-top:6px"><span>Salary <b>$${lineups[0].total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span><span>Projected <b>${lineups[0].total_proj}</b> pts</span></div>
+      <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span><span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>` : ""}
+      <div class="dfs-lineups" style="margin-top:8px">${lineupCards}</div>
+      ${expHtml}
+      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-pct simulated totals — ceiling matters for GPP.${g && g.available ? " <b>PD</b> = place-differential adjustment." : ""} Ownership is a model estimate of what the field rosters.</div>
     </div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }

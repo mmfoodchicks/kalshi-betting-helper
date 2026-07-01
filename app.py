@@ -627,10 +627,25 @@ def api_simulate_dfs():
             prize_pool=(_f("prize_pool", 0, 0, 1e9) or None),
             first_prize=(_f("first_prize", 0, 0, 1e9) or None),
             include_unconfirmed=bool(d.get("include_unconfirmed"))))
+    # UFC / F1 / NASCAR: single or multi-lineup portfolio + large-field contest sim.
+    def _num(key, default, cast=float):
+        try:
+            return cast(d.get(key, default))
+        except (ValueError, TypeError):
+            return default
+    contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
-        date=d.get("date") or _dt.date.today().isoformat(), sims=n))
+        date=d.get("date") or _dt.date.today().isoformat(), sims=n,
+        n_lineups=max(1, min(150, _num("lineups", 1, int))),
+        max_exposure=max(5.0, min(100.0, _num("max_exposure", 60.0))),
+        min_uniq=max(1, min(6, _num("min_uniq", 1, int))),
+        contest=contest,
+        contest_size=(int(_num("contest_size", 0, int)) or None),
+        entry_fee=max(0.01, _num("entry_fee", 1.0)),
+        prize_pool=(_num("prize_pool", 0.0) or None),
+        first_prize=(_num("first_prize", 0.0) or None)))
 
 
 def _prop_types():

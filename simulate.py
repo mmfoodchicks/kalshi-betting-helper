@@ -429,6 +429,136 @@ def dfs_sim(lineup, n=20000, cv=0.55):
             "max": round(totals[-1], 1), "n": n}
 
 
+# ---- Projected ownership + portfolio + large-field contest sim (generic) ----
+def _estimate_ownership(players, roster):
+    """Rough projected FIELD ownership (% of lineups that roster a player) from
+    points-per-$1k value: chalk (high value) gets rostered a lot. Softmax over
+    value, scaled so total ownership ~ roster*100 (each lineup holds `roster`
+    players). Not an external feed, but a sound model of what the field will do."""
+    for p in players:
+        p["_val"] = (p.get("proj") or 0.0) / max(1.0, p["salary"] / 1000.0)
+    mx = max((p["_val"] for p in players), default=1.0) or 1.0
+    raw = {p["name"]: math.exp(2.4 * (p["_val"] / mx - 1.0)) for p in players}
+    tot = sum(raw.values()) or 1.0
+    for p in players:
+        p["own"] = round(max(0.3, min(75.0, 100.0 * roster * raw[p["name"]] / tot)), 1)
+
+
+def _field_lineup(players, roster, cap, rng, exclusive_group=None, tries=12):
+    """One ownership-weighted valid field lineup (list of player dicts) or None."""
+    w = [max(0.1, p.get("own", 1.0)) for p in players]
+    idxs = list(range(len(players)))
+    for _ in range(tries):
+        chosen, groups, sal, avail = [], set(), 0.0, list(idxs)
+        while len(chosen) < roster and avail:
+            i = rng.choices(avail, weights=[w[j] for j in avail])[0]
+            avail.remove(i)
+            p = players[i]
+            g = exclusive_group(p) if exclusive_group else None
+            if sal + p["salary"] <= cap and (not g or g not in groups):
+                chosen.append(p); sal += p["salary"]
+                if g:
+                    groups.add(g)
+        if len(chosen) == roster:
+            return chosen
+    return None
+
+
+def _portfolio(players, roster, cap, objective, cv, n_lineups, max_exposure,
+               min_uniq, exclusive_group):
+    """Build up to `n_lineups` diverse lineups: value-perturbed knapsack restarts,
+    an exposure cap (no player in more than max_exposure% of lineups) and a
+    uniqueness floor (each lineup differs from the others by >= min_uniq)."""
+    _set_values(players, objective, cv)
+    base = {p["name"]: p["value"] for p in players}
+    max_count = max(1, int(round(max_exposure / 100.0 * n_lineups)))
+    chosen, exposure = [], {}
+    for attempt in range(n_lineups * 25):
+        if len(chosen) >= n_lineups:
+            break
+        pool = [p for p in players if exposure.get(p["name"], 0) < max_count]
+        for p in pool:                       # perturb values to force diversity
+            jitter = 1.0 if attempt == 0 else (0.80 + 0.40 * random.random())
+            p["value"] = base[p["name"]] * jitter
+        lu = dfs_optimize(pool, roster, cap, exclusive_group=exclusive_group)
+        if not lu:
+            break
+        key = frozenset(p["name"] for p in lu)
+        if any(len(key & frozenset(p["name"] for p in c)) > roster - min_uniq for c in chosen):
+            continue
+        chosen.append(lu)
+        for p in lu:
+            exposure[p["name"]] = exposure.get(p["name"], 0) + 1
+    for p in players:                        # restore clean values
+        p["value"] = base[p["name"]]
+    return chosen
+
+
+def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fee=1.0,
+                 contest_size=None, prize_pool=None, first_prize=None,
+                 exclusive_group=None, n_iter=400, field_n=500):
+    """Win% / cash% / ROI for lineups in a contest of ANY size. Ownership-weighted
+    sample field + analytic extrapolation to the real entry count with a top-heavy
+    payout curve -- the same approach as the MLB contest sim, generalized to
+    projection-based sports (players scored independently, no stacks)."""
+    import statistics
+    import mlb_dfs
+    rng = random.Random(1234)
+    field = []
+    for _ in range(field_n):
+        fl = _field_lineup(players, roster, cap, rng, exclusive_group)
+        if fl:
+            field.append([p["name"] for p in fl])
+    if len(field) < 20:
+        return None
+    by = {p["name"]: p for p in players}
+    C = max(2, int(contest_size or (len(field) + 1)))
+    pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85
+    if contest == "double_up":
+        places = max(1, int(round(0.45 * C)))
+        du = pool / places
+        payout, first = (lambda r: du if r <= places else 0.0), du
+    else:
+        first = float(first_prize) if first_prize else 0.20 * pool
+        payout, places = mlb_dfs._gpp_curve(C, pool, first, entry_fee)
+    grid = mlb_dfs._rank_grid(places)
+    ncdf, npdf = mlb_dfs._ncdf, mlb_dfs._npdf
+    your = [[p["name"] for p in ln] for ln in your_lineups]
+    stats = [{"win": 0.0, "cash": 0.0, "ret": 0.0} for _ in your]
+    for _ in range(n_iter):
+        sc = {nm: max(0.0, rng.gauss(p["proj"], (p["proj"] or 1.0) * cv)) for nm, p in by.items()}
+        fs = [sum(sc.get(nm, 0.0) for nm in fl) for fl in field]
+        mu = statistics.fmean(fs)
+        sd = statistics.pstdev(fs) or 1.0
+        for li, names in enumerate(your):
+            ys = sum(sc.get(nm, 0.0) for nm in names)
+            q = max(1e-12, min(1.0, 1.0 - ncdf((ys - mu) / sd)))
+            st = stats[li]
+            st["win"] += math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
+            mr = 1.0 + (C - 1) * q
+            sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
+            st["cash"] += ncdf((places - mr) / sr)
+            if contest == "double_up":
+                st["ret"] += du * ncdf((places - mr) / sr)
+            else:
+                ev = first * (math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0)
+                for r, wd in grid:
+                    ev += payout(r) * npdf((r - mr) / sr) / sr * wd
+                st["ret"] += ev
+    out = []
+    for st in stats:
+        ret = st["ret"] / n_iter
+        out.append({"win_pct": round(100 * st["win"] / n_iter, 4),
+                    "cash_pct": round(100 * st["cash"] / n_iter, 1),
+                    "roi_pct": round(100 * (ret - entry_fee) / entry_fee, 1),
+                    "avg_return": round(ret, 2)})
+    best = max(range(len(out)), key=lambda i: out[i]["roi_pct"]) if out else None
+    return {"entries": C, "iterations": n_iter, "sample_size": len(field),
+            "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
+            "first_prize": round(first), "places_paid": places,
+            "lineups": out, "best_lineup_index": best}
+
+
 def apply_ufc(players):
     """UFC DFS: replace each fighter's CSV projection with OUR fight-simulator
     projection (win prob + method/round -> DraftKings points). Non-blocking — the
@@ -469,8 +599,23 @@ def apply_ufc(players):
             "sim_used": matched > 0, "fighters": sum(len(b) for b in [board.get("bouts", [])]) * 2}
 
 
+def _lineup_player(p):
+    return {"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
+            "captain": p.get("captain", False), "start": p.get("start"),
+            "own": p.get("own"),
+            "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
+            if p.get("base_proj") is not None else None,
+            "ceil_proj": round(p["ceil_proj"], 1) if p.get("ceil_proj") is not None else None,
+            "win_pct": p.get("win_pct"), "rating": p.get("rating"),
+            "record": p.get("record"), "career_record": p.get("career_record"),
+            "fights": p.get("fights"), "thin": p.get("thin"),
+            "defaulted": p.get("defaulted"), "debut": p.get("debut")}
+
+
 def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
-              objective="projection", date=None, sims=20000):
+              objective="projection", date=None, sims=20000,
+              n_lineups=1, max_exposure=60.0, min_uniq=1, contest=None,
+              contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
@@ -491,35 +636,68 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     # UFC: never roster both fighters of a bout (one is guaranteed to lose). The DK
     # "Game Info" column is identical for both fighters in a fight, so it's the bout key.
     exclusive = (lambda p: p.get("game")) if sport == "ufc" else None
-    # F1/NASCAR captain-mode slates (CPT + drivers + a constructor) have a fixed
-    # roster shape the generic knapsack can't express -- detect & build them right.
-    if sport in ("f1", "nascar") and any(p.get("roster_pos") == "CNSTR" for p in players):
-        lineup = _f1_showdown(players, cap, objective, cv)
+    n_lineups = max(1, min(150, int(n_lineups)))
+    captain_mode = sport in ("f1", "nascar") and any(p.get("roster_pos") == "CNSTR" for p in players)
+
+    # ---- Build lineup(s) ----
+    if captain_mode:
+        lu = _f1_showdown(players, cap, objective, cv)
+        lineups = [lu] if lu else []
     elif mode == "showdown":
-        lineup = dfs_showdown(players, cap, objective, cv,
-                              flex_count=max(1, roster - 1), exclusive_group=exclusive)
+        lu = dfs_showdown(players, cap, objective, cv,
+                          flex_count=max(1, roster - 1), exclusive_group=exclusive)
+        lineups = [lu] if lu else []
+    elif n_lineups > 1:
+        lineups = _portfolio(players, roster, cap, objective, cv, n_lineups,
+                             max_exposure, min_uniq, exclusive)
     else:
         _set_values(players, objective, cv)
-        lineup = dfs_optimize(players, roster, cap, exclusive_group=exclusive)
-    if not lineup:
+        lu = dfs_optimize(players, roster, cap, exclusive_group=exclusive)
+        lineups = [lu] if lu else []
+    if not lineups or not lineups[0]:
         return {"error": "no valid lineup fits the salary cap"}
-    sim = dfs_sim(lineup, n=sims, cv=cv)
+
+    _estimate_ownership(players, roster)     # projected field ownership for the sim
+
+    # ---- Contest simulation (win% / cash% / ROI at the real field size) ----
+    contest_sim = None
+    if contest in ("gpp", "double_up"):
+        try:
+            contest_sim = _contest_sim(lineups, players, roster, cap, cv, contest=contest,
+                                       entry_fee=entry_fee, contest_size=contest_size,
+                                       prize_pool=prize_pool, first_prize=first_prize,
+                                       exclusive_group=exclusive)
+        except Exception as e:
+            contest_sim = {"error": f"contest sim failed: {e}"}
+
+    per_sims = min(sims, 4000) if len(lineups) > 1 else sims
+    lineups_out = [{
+        "lineup": [_lineup_player(p) for p in ln],
+        "total_salary": int(sum(p["salary"] for p in ln)),
+        "total_proj": round(sum(p["proj"] for p in ln), 1),
+        "own_sum": round(sum(p.get("own", 0) or 0 for p in ln), 1),
+        "sim": dfs_sim(ln, n=per_sims, cv=cv),
+    } for ln in lineups]
+
+    # Exposure report across the portfolio.
+    exp = {}
+    for ln in lineups:
+        for p in ln:
+            exp[p["name"]] = exp.get(p["name"], 0) + 1
+    exposure = sorted(({"name": nm, "lineups": c, "pct": round(100 * c / len(lineups), 1)}
+                       for nm, c in exp.items()), key=lambda x: -x["lineups"])[:25]
+
+    first_out = lineups_out[0]
     return {
-        "lineup": [{"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
-                    "captain": p.get("captain", False), "start": p.get("start"),
-                    "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
-                    if p.get("base_proj") is not None else None,
-                    "ceil_proj": round(p["ceil_proj"], 1) if p.get("ceil_proj") is not None else None,
-                    "win_pct": p.get("win_pct"), "rating": p.get("rating"),
-                    "record": p.get("record"), "career_record": p.get("career_record"),
-                    "fights": p.get("fights"), "thin": p.get("thin"),
-                    "defaulted": p.get("defaulted"), "debut": p.get("debut")}
-                   for p in lineup],
-        "total_salary": int(sum(p["salary"] for p in lineup)),
-        "total_proj": round(sum(p["proj"] for p in lineup), 1),
-        "cap": cap, "roster": roster, "sim": sim, "pool": len(players),
-        "mode": mode, "objective": objective, "grid": grid_status,
-        "ufc": ufc_status,
+        # Back-compat single-lineup fields (existing UI path).
+        "lineup": first_out["lineup"], "total_salary": first_out["total_salary"],
+        "total_proj": first_out["total_proj"], "sim": first_out["sim"],
+        "cap": cap, "roster": roster, "pool": len(players),
+        "mode": mode, "objective": objective, "grid": grid_status, "ufc": ufc_status,
+        # Portfolio + contest.
+        "n_lineups": len(lineups_out), "lineups": lineups_out,
+        "exposure": exposure if len(lineups_out) > 1 else [],
+        "contest_sim": contest_sim,
     }
 
 
