@@ -1001,6 +1001,14 @@ def analyze_slate(date, season):
                       "batters_home": bat_home, "batters_away": bat_away,
                       "ks_home": ks_home, "ks_away": ks_away,
                       "home_sp_name": g.get("home_sp_name"), "away_sp_name": g.get("away_sp_name")}
+        # Kill phantom lines Kalshi won't book: trim game totals + run-line ladders
+        # to the lines the sportsbook actually offers (with a sane fallback when the
+        # Kalshi index is unavailable). Player-prop bet surfaces (Edge Finder, combo
+        # maker) already drop any leg without a live Kalshi price via price_leg.
+        gctx = {"kalshi_suffix": (price_entry["event"].split("-", 1)[1]
+                                  if price_entry and price_entry.get("event") and "-" in price_entry["event"]
+                                  else None)}
+        _validate_game_props(game_props, gctx)
 
         games.append({
             "live": g["live"],
@@ -1229,6 +1237,40 @@ def _tradeable_total(line, ktot):
     if ktot:
         return ktot.get(line)                        # {over,under} or None
     return {} if 6.5 <= line <= 12.5 else None       # Kalshi down -> sane range, no price
+
+
+def _validate_game_props(gp, g):
+    """Trim the displayed slate props to lines Kalshi actually books, so the UI
+    never shows a phantom line the sportsbook won't quote (the classic 'Under
+    19.5 runs at 99.7%'). Game-level markets — totals and the run-line ladder —
+    key reliably off the Kalshi index; when it's unavailable we fall back to
+    realistic MLB ranges. Player props are validated per line in _validate_player_props."""
+    ktot = _ktotals(g)                                    # {line: {over,under}} or {}
+    def ok_total(ln):
+        return _tradeable_total(round(ln, 1), ktot) is not None
+    if gp.get("totals_ladder"):
+        gp["totals_ladder"] = [t for t in gp["totals_ladder"] if ok_total(t["line"])]
+    if gp.get("totals"):
+        gp["totals"] = [t for t in gp["totals"] if ok_total(t["line"])]
+    # Run line: keep only the win-by margins Kalshi lists for each side.
+    try:
+        import kalshi_mlb
+        kg = kalshi_mlb.index().get(g.get("kalshi_suffix")) or {}
+    except Exception:
+        kg = {}
+    spread = kg.get("spread") or {}
+    rl = gp.get("run_line") or {}
+    def trim_by(team_abbr, by_map):
+        if not by_map:
+            return by_map
+        if spread:
+            ok = {str(by) for (tm, by) in spread if tm == team_abbr}
+            return {k: v for k, v in by_map.items() if k in ok}
+        return {k: v for k, v in by_map.items() if int(k) <= 4}   # Kalshi down -> sane range
+    if rl:
+        rl["home_by"] = trim_by(rl.get("home"), rl.get("home_by"))
+        rl["away_by"] = trim_by(rl.get("away"), rl.get("away_by"))
+    return gp
 
 
 def _game_variants(g, types=None):

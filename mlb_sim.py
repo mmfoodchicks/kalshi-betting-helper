@@ -548,25 +548,31 @@ def build_candidates(g, sim, types=None):
     add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i],
         model=round(pa * 100, 1) if pa is not None else None,
         kref={"t": "ml", "team": aa})
-    # Run line -- Kalshi's adjustable "win by X+" for each side. Full ladder (not
-    # just 2/3) so blowout lines are available for longer odds; the marginal
-    # filter below drops any margin too unlikely to be useful. The closed-form
-    # spread ladder supplies the model number per margin.
+    # Run line -- Kalshi's adjustable "win by X+" for each side. analyze_slate has
+    # trimmed the spread ladders to the margins Kalshi books, so iterate those (with
+    # a sane 2/3 fallback for a bare game dict). The marginal filter below still
+    # drops any margin too unlikely to be useful.
     rl = props.get("run_line") or {}
     home_by, away_by = rl.get("home_by") or {}, rl.get("away_by") or {}
-    for mgn in (2, 3, 4, 5, 6, 7):
+    def _margins(by_map):
+        ms = sorted(int(k) for k in by_map) if by_map else [2, 3]
+        return ms
+    for mgn in _margins(home_by):
         add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m,
             model=home_by.get(str(mgn)), kref={"t": "spread", "team": ha, "by": mgn})
+    for mgn in _margins(away_by):
         add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m,
             model=away_by.get(str(mgn)), kref={"t": "spread", "team": aa, "by": mgn})
-    # Game total -- full half-run ladder around the model total (not just +/-1),
-    # so you can push the line far out for payout. The closed-form totals ladder
-    # supplies the model over/under % at each line.
-    tot_mean = g.get("exp_total") or (er(g))
-    base = round(tot_mean)
+    # Game total -- iterate the totals ladder, which analyze_slate has already
+    # trimmed to lines Kalshi actually books (no phantom 'Over 15.5' the sportsbook
+    # won't quote). Each ladder entry carries the closed-form over/under %.
     ladder = {round(t["line"], 1): t for t in (props.get("totals_ladder") or [])}
-    for ln in [n + 0.5 for n in range(max(0, base - 5), base + 7)]:
-        t = ladder.get(round(ln, 1))
+    if not ladder:                               # bare game dict (no analyze_slate) -> sane window
+        tot_mean = g.get("exp_total") or er(g)
+        base = round(tot_mean)
+        ladder = {n + 0.5: None for n in range(max(6, base - 3), base + 4)}
+    for ln in sorted(ladder):
+        t = ladder[ln]
         kn = int(ln + 0.5)                       # Kalshi total market suffix (Over ln)
         add("Total", f"Over {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) > ln,
             model=(t["over_pct"] if t else None), kref={"t": "total", "n": kn, "over": True})
