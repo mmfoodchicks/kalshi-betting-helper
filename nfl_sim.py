@@ -660,12 +660,10 @@ def grade_names(names, use_llm=False, pitch=None):
     pool = (b or {}).get("pool") or []
     if not pool:
         return None, []
-    idx = {}
-    for p in pool:
-        idx[_gkey(p.get("name"))] = p
+    resolve = _resolver(pool)
     roster, unmatched = [], []
     for nm in names:
-        p = idx.get(_gkey(nm))
+        p = resolve(nm)
         if p:
             roster.append(p)
         elif nm.strip():
@@ -685,12 +683,13 @@ def grade_multi(teams, use_llm=False):
     pool = (b or {}).get("pool") or []
     if not pool:
         return None
-    idx = {_gkey(p.get("name")): p for p in pool}
+    resolve = _resolver(pool)
     graded = []
     for i, t in enumerate(teams):
         names = t.get("names") or []
-        roster = [idx[_gkey(nm)] for nm in names if _gkey(nm) in idx]
-        unmatched = [nm for nm in names if nm.strip() and _gkey(nm) not in idx]
+        roster = [resolve(nm) for nm in names]
+        unmatched = [nm for nm, p in zip(names, roster) if p is None and nm.strip()]
+        roster = [p for p in roster if p is not None]
         g = grade_roster(roster, pool, use_llm=use_llm, pitch=t.get("pitch"))
         g["label"] = t.get("label") or f"Team {i + 1}"
         g["unmatched"] = unmatched
@@ -713,6 +712,42 @@ def _gkey(name):
     import unicodedata
     s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
     return "".join(c for c in s.lower() if c.isalnum())
+
+
+_NAME_SUFFIX = {"jr", "sr", "ii", "iii", "iv", "v"}
+
+
+def _gkey_loose(name):
+    """(lastname, first-initial) after dropping suffixes -- a forgiving fallback that
+    matches nicknames (Nick/Nicholas), suffix variants (OBJ Jr., Gadsden II) and
+    minor misspellings (Jahmyyr/Jahmyr) the exact key misses."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode().lower()
+    toks = [t for t in "".join(c if c.isalnum() else " " for c in s).split()
+            if t not in _NAME_SUFFIX]
+    if not toks:
+        return None
+    return (toks[-1], toks[0][0]) if len(toks) > 1 else (toks[0], "")
+
+
+def _resolver(pool):
+    """fn(name) -> pool player: exact normalized match first, then an unambiguous
+    (last-name, first-initial) fallback (skips when >1 player would collide)."""
+    exact, loose = {}, {}
+    for p in pool:
+        exact[_gkey(p.get("name"))] = p
+        lk = _gkey_loose(p.get("name"))
+        if lk:
+            loose.setdefault(lk, []).append(p)
+
+    def resolve(name):
+        p = exact.get(_gkey(name))
+        if p:
+            return p
+        lk = _gkey_loose(name)
+        cands = loose.get(lk) if lk else None
+        return cands[0] if cands and len(cands) == 1 else None
+    return resolve
 
 
 # ---- Cached board for the draft room / DFS UI ------------------------------
