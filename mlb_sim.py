@@ -268,7 +268,7 @@ def _rel_kpa(bp_era, rnd):
 _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
-def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None):
+def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -282,7 +282,11 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None):
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
     bb_pa = 0.078
-    limit = max(72, min(118, random.gauss(96, 11)))     # this start's pitch count cap
+    # This start's pitch-count cap, centered on THE PITCHER's typical workload
+    # (~16.2 pitches per expected inning) -- an opener gets hooked in the 4th,
+    # a workhorse rides into the 7th. Falls back to a league-ish 88.
+    center = max(60.0, min(112.0, (exp_ip or 5.4) * 16.2))
+    limit = max(52, min(120, random.gauss(center, 10)))
     pk, pbb, phit, pout = _PITCH
     sp_k = sp_outs = 0
     sp_pitches = 0.0
@@ -365,10 +369,13 @@ def simulate(g, n=5000):
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 
     # Pitching inputs: starter K/9 (fall back from expected Ks) + bullpen quality.
+    # Each starter's expected innings ride along so his pitch limit is his own.
     hsp, asp = g.get("home_sp") or {}, g.get("away_sp") or {}
     ht, at = g.get("home_team") or {}, g.get("away_team") or {}
-    home_k9 = hsp.get("k9") or (lam_h / 5.6 * 9 if lam_h else None)
-    away_k9 = asp.get("k9") or (lam_a / 5.6 * 9 if lam_a else None)
+    ip_h = (props.get("ks_home") or {}).get("exp_ip") or 5.4
+    ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
+    home_k9 = hsp.get("k9") or (lam_h / ip_h * 9 if lam_h else None)
+    away_k9 = asp.get("k9") or (lam_a / ip_a * 9 if lam_a else None)
     do_home_pitch = home_k9 is not None
     do_away_pitch = away_k9 is not None
 
@@ -427,13 +434,13 @@ def simulate(g, n=5000):
         if do_home_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),
                                                ht.get("bullpen_whip"), ra, rnd,
-                                               bullpen=ht.get("bp_arms"))
+                                               bullpen=ht.get("bp_arms"), exp_ip=ip_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(away_k9, at.get("bullpen_era"),
                                                at.get("bullpen_whip"), rh, rnd,
-                                               bullpen=at.get("bp_arms"))
+                                               bullpen=at.get("bp_arms"), exp_ip=ip_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 

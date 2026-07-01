@@ -278,8 +278,10 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
             "spd": spd, "sbr": sbr}
 
 
-def pitcher_k_props(k9, exp_ip=5.6):
-    """Strikeout props for a starter: P(K >= line) via Poisson(expected Ks)."""
+def pitcher_k_props(k9, exp_ip=5.3):
+    """Strikeout props for a starter: P(K >= line) via Poisson(expected Ks).
+    `exp_ip` is THIS pitcher's expected innings (from his workload history) --
+    a 6.3-IP workhorse and a 3.5-IP opener get very different ladders."""
     if not k9 or k9 <= 0:
         return None
     lam = k9 / 9.0 * exp_ip
@@ -291,6 +293,7 @@ def pitcher_k_props(k9, exp_ip=5.6):
         # sort-keys JSON serialization).
         out[str(line)] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
     out["expected"] = round(lam, 1)
+    out["exp_ip"] = round(exp_ip, 1)
     return out
 
 

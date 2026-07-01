@@ -597,7 +597,8 @@ function spLine(sp) {
   const hand = sp.hand ? `${sp.hand}HP` : "";
   const recent = sp.recent_era != null ? ` · last5 <b>${sp.recent_era}</b> ERA` : "";
   const fip = sp.fip != null ? `, <b>${sp.fip}</b> FIP` : "";
-  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}`;
+  const wl = sp.exp_ip != null ? ` · <span title="expected innings this start, from his workload history — sizes the K ladder">~${sp.exp_ip} IP tonight</span>` : "";
+  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}${wl}`;
 }
 
 // ---- Live game feedback feed (pitch counts, AB-by-AB, live model odds) -----

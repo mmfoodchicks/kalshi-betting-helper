@@ -91,6 +91,17 @@ def _f(v, default=0.0):
         return default
 
 
+def _ip_float(v, default=0.0):
+    """MLB innings-pitched strings are base-3 after the point ('45.1' = 45 and
+    ONE THIRD innings, not 45.1). Convert to true decimal innings."""
+    try:
+        s = str(v)
+        whole, _, frac = s.partition(".")
+        return float(whole) + (int(frac or 0) / 3.0)
+    except (TypeError, ValueError):
+        return default
+
+
 _HIT_EVENTS = {"Single", "Double", "Triple", "Home Run"}
 
 
@@ -372,7 +383,9 @@ def _pitcher_stats(pid, season):
                     continue
                 st = sp[0]["stat"]
                 rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")),
-                       "ip": _f(st.get("inningsPitched")), "k9": _f(st.get("strikeoutsPer9Inn")),
+                       "ip": _ip_float(st.get("inningsPitched")),
+                       "gs": _f(st.get("gamesStarted")),
+                       "k9": _f(st.get("strikeoutsPer9Inn")),
                        "hr": _f(st.get("homeRuns")), "bb": _f(st.get("baseOnBalls")),
                        "k": _f(st.get("strikeOuts")), "hbp": _f(st.get("hitByPitch"))}
                 if disp == "season":
@@ -740,6 +753,24 @@ def _lineup_factor(batters, team_ops, lg):
     return max(0.85, min(1.12, factor)), round(lineup_ops, 3)
 
 
+def _exp_ip_per_start(sp):
+    """A starter's expected innings THIS start, from his own workload history —
+    a workhorse (6.3 IP/GS) and an opener (3.5) should not share one K ladder.
+    Season IP-per-start regressed toward the league ~5.3 by starts (k=5), with a
+    30% blend toward recent form when available. Clamped to a sane range."""
+    s = (sp or {}).get("season") or {}
+    ip, gs = s.get("ip") or 0.0, s.get("gs") or 0
+    if not gs:
+        return 5.3
+    per = ip / gs
+    per = (gs * per + 5 * 5.3) / (gs + 5)          # shrink small samples
+    r = (sp or {}).get("recent") or {}
+    rip, rgs = r.get("ip") or 0.0, r.get("gs") or 0
+    if rgs >= 2:                                    # recent workload (last 5)
+        per = 0.7 * per + 0.3 * (rip / rgs)
+    return max(3.0, min(7.2, per))
+
+
 def _opp_hit_factor(opp_sp, opp_bp, lg):
     """How many hits the opposing pitching tends to allow vs league (1.0 = avg).
 
@@ -1037,6 +1068,7 @@ def analyze_slate(date, season):
             fip = _fip(s)
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
                     "ip": s["ip"], "k9": round(s.get("k9", 0), 1),
+                    "exp_ip": round(_exp_ip_per_start(st), 1),
                     "fip": round(fip, 2) if fip is not None else None,
                     "recent_era": round(r["era"], 2) if r.get("ip") else None,
                     "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
@@ -1071,9 +1103,12 @@ def analyze_slate(date, season):
         if lu.get("away"):
             hit_away = props_mod.hit_props(lu["away"], ohf_away)
             bat_away = bat_list(lu["away"], ohf_away)
-        # Starter strikeout props.
-        ks_home = props_mod.pitcher_k_props((h_sp or {}).get("season", {}).get("k9")) if h_sp else None
-        ks_away = props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9")) if a_sp else None
+        # Starter strikeout props, sized to THIS pitcher's expected workload
+        # (season/recent IP per start), not a one-size 5.6-inning template.
+        ks_home = (props_mod.pitcher_k_props((h_sp or {}).get("season", {}).get("k9"),
+                                             _exp_ip_per_start(h_sp)) if h_sp else None)
+        ks_away = (props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9"),
+                                             _exp_ip_per_start(a_sp)) if a_sp else None)
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
                       "model_total": gp["model_total"], "rfi_pct": gp.get("rfi_pct"),
