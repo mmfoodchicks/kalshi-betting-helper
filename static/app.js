@@ -3602,6 +3602,15 @@ async function loadPropLog() {
     if (r.calibration && r.calibration.length)
       html += `<div class="small" style="margin-top:3px">Model calibration: ` + r.calibration.map((b) =>
         `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b> <span style="color:var(--muted)">(${b.n})</span>`).join(" · ") + `</div>`;
+    const clv = r.clv || {};
+    if (clv.picks) {
+      const cls = clv.avg_clv_cents >= 0 ? "ev pos" : "ev neg";
+      html += `<div class="small" style="margin-top:6px" title="Closing-line value: for props the model flagged at first sight, did Kalshi's CLOSING price move toward our number? Beating the close consistently proves edge independent of win/loss luck.">📐 <b>CLV</b> (beat-the-close): <b class="${cls}">${clv.avg_clv_cents >= 0 ? "+" : ""}${clv.avg_clv_cents}¢</b> avg · beat close <b>${clv.beat_close_pct}%</b>${clv.push_pct ? ` (push ${clv.push_pct}%)` : ""} · won ${clv.win_pct}% <span style="color:var(--muted)">(${clv.picks} flagged picks)</span></div>`;
+      if (clv.picks < 50)
+        html += `<div class="small" style="color:var(--muted)">CLV needs ~50+ picks to mean much — it accumulates as the recorder runs.</div>`;
+    } else {
+      html += `<div class="small" style="color:var(--muted);margin-top:6px">📐 CLV (beat-the-close) starts tracking from today's props — the recorder now snapshots each prop's ENTRY price and compares it to the close.</div>`;
+    }
     if (r.graded < 100)
       html += `<div class="small" style="color:var(--muted);margin-top:3px">⚠️ Only ${r.graded} graded — too few to trust the ROI; watch the Brier scores converge first (~100+ needed).</div>`;
     el.innerHTML = html;

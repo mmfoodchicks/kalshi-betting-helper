@@ -91,6 +91,14 @@ def init_db():
                 UNIQUE(game_pk, player_id, market)
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_prop_graded ON prop_log(graded)")
+        # Additive migration: entry-time snapshot for closing-line-value (CLV).
+        # log_prop refreshes price/model in place while ungraded, so without
+        # these the entry read is lost by grading time.
+        for col in ("entry_cents REAL", "entry_model_pct REAL", "entry_ts INTEGER"):
+            try:
+                c.execute(f"ALTER TABLE prop_log ADD COLUMN {col}")
+            except Exception:
+                pass                       # column already exists
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
@@ -211,20 +219,29 @@ def mlb_record():
 def log_prop(game_pk, date, player_id, name, stat, line, market,
              model_pct, kalshi_cents, recent_pct, season_pct):
     """Record (or refresh, while still ungraded) one batter prop observation."""
+    now = int(time.time())
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO prop_log
                (ts, game_pk, date, player_id, name, stat, line, market,
-                model_pct, kalshi_cents, recent_pct, season_pct)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (int(time.time()), game_pk, date, player_id, name, stat, line, market,
-             model_pct, kalshi_cents, recent_pct, season_pct),
+                model_pct, kalshi_cents, recent_pct, season_pct,
+                entry_cents, entry_model_pct, entry_ts)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (now, game_pk, date, player_id, name, stat, line, market,
+             model_pct, kalshi_cents, recent_pct, season_pct,
+             kalshi_cents, model_pct, now),
         )
-        # Keep the latest pre-game read (price/model/form drift) until it grades.
+        # Keep the latest pre-game read (price/model/form drift) until it grades —
+        # that becomes the CLOSING read. The entry_* snapshot is frozen at first
+        # sight (backfilled once if the market had no quote when first logged).
         c.execute(
-            """UPDATE prop_log SET kalshi_cents=?, model_pct=?, recent_pct=?, season_pct=?
+            """UPDATE prop_log SET kalshi_cents=?, model_pct=?, recent_pct=?, season_pct=?,
+                   entry_model_pct=COALESCE(entry_model_pct, ?),
+                   entry_ts=CASE WHEN entry_cents IS NULL THEN ? ELSE entry_ts END,
+                   entry_cents=COALESCE(entry_cents, ?)
                WHERE game_pk=? AND player_id=? AND market=? AND graded=0""",
-            (kalshi_cents, model_pct, recent_pct, season_pct, game_pk, player_id, market),
+            (kalshi_cents, model_pct, recent_pct, season_pct,
+             model_pct, now, kalshi_cents, game_pk, player_id, market),
         )
 
 
@@ -313,7 +330,56 @@ def prop_report(min_edge=8.0):
         "calibration": bins,
         "model_edge_roi": roi_for(edge_sig("model_pct")),
         "recent_edge_roi": roi_for(edge_sig("recent_pct")),
+        "clv": clv_report(min_edge),
     }
+
+
+def clv_report(min_edge=8.0):
+    """Closing-line value: for every prop the model flagged at ENTRY (its first
+    logged read), did the market close closer to our number? Beating the close
+    consistently is the gold-standard proof of edge — it isolates model skill
+    from short-run win/loss variance. Buying YES: CLV = close − entry (the
+    market came up to us). Fading (NO): CLV = entry − close."""
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            """SELECT market, entry_cents, entry_model_pct, kalshi_cents, actual, entry_ts, ts
+               FROM prop_log WHERE graded=1
+                 AND entry_cents IS NOT NULL AND kalshi_cents IS NOT NULL
+                 AND entry_model_pct IS NOT NULL""").fetchall()]
+    picks = []
+    for r in rows:
+        ey = r["entry_model_pct"] - r["entry_cents"]     # entry-time edge on YES
+        if ey >= min_edge:
+            side, clv = "YES", r["kalshi_cents"] - r["entry_cents"]
+        elif -ey >= min_edge:
+            side, clv = "NO", r["entry_cents"] - r["kalshi_cents"]
+        else:
+            continue
+        # A single 10-min snapshot window can't move; require some time between
+        # entry and close so "CLV 0" means the market held, not that we only
+        # ever saw one quote.
+        if (r["ts"] or 0) - (r["entry_ts"] or 0) < 900:
+            continue
+        picks.append({"side": side, "clv": clv, "market": r["market"],
+                      "won": bool(r["actual"]) if side == "YES" else not r["actual"]})
+    if not picks:
+        return {"picks": 0}
+    n = len(picks)
+    avg = sum(p["clv"] for p in picks) / n
+    beat = sum(1 for p in picks if p["clv"] > 0)
+    push = sum(1 for p in picks if p["clv"] == 0)
+    by_mkt = {}
+    for p in picks:
+        m = by_mkt.setdefault(p["market"], {"n": 0, "clv_sum": 0.0, "beat": 0})
+        m["n"] += 1; m["clv_sum"] += p["clv"]; m["beat"] += 1 if p["clv"] > 0 else 0
+    for m in by_mkt.values():
+        m["avg_clv"] = round(m["clv_sum"] / m["n"], 1)
+        del m["clv_sum"]
+    return {"picks": n, "avg_clv_cents": round(avg, 2),
+            "beat_close_pct": round(100 * beat / n, 1),
+            "push_pct": round(100 * push / n, 1),
+            "win_pct": round(100 * sum(p["won"] for p in picks) / n, 1),
+            "by_market": by_mkt}
 
 
 def prop_hits(date=None, predicted_min=55.0, risky_max_cents=42.0):

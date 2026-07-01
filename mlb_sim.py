@@ -268,7 +268,8 @@ def _rel_kpa(bp_era, rnd):
 _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
-def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None):
+def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None,
+                  er_opp=None, pen_out=0):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -276,9 +277,23 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
     sim), then relievers (~1 inning apiece) finish. When the deep engine's named
     bullpen is supplied (`bullpen` = [{kpa, era}], best arm last) we cycle through
     the real relievers worst-first; otherwise we fall back to a generic K-rate
-    draw off the bullpen's ERA. Returns the STARTER's (Ks, pitches, outs) and the
-    bullpen's combined Ks."""
+    draw off the bullpen's ERA. `pen_out` gassed arms (pitched back-to-back /
+    heavy yesterday) are unavailable, thinning the BEST end of the pen. Returns
+    the STARTER's (Ks, pitches, outs) and the bullpen's combined Ks."""
     sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
+    # Correlate the starter's whiffs with THIS sim's game script: on a night the
+    # opposing offense is quiet he misses more bats, on a night they're teeing
+    # off he misses fewer. The tilt is mean-preserving (E[opp_runs] = er_opp) so
+    # the K marginal stays calibrated -- it just gains the real K x opponent-runs
+    # negative correlation (so "6+ Ks" x "opponent under" prices as correlated in
+    # SGPs) and realistic overdispersion in the tails.
+    if er_opp and er_opp > 0.5:
+        # 0.17 lands the combined correlation (tilt + workload hook) in the
+        # empirical -0.25..-0.35 band; 0.30 overshot to -0.42.
+        tilt = 1.0 + 0.17 * (er_opp - opp_runs) / max(2.5, er_opp)
+        sp_kpa = max(0.08, min(0.45, sp_kpa * max(0.80, min(1.22, tilt))))
+    if pen_out and bullpen:
+        bullpen = bullpen[:-int(pen_out)] or bullpen[:1]   # best arms sit tonight
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
     bb_pa = 0.078
@@ -376,6 +391,10 @@ def simulate(g, n=5000):
     ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
     home_k9 = hsp.get("k9") or (lam_h / ip_h * 9 if lam_h else None)
     away_k9 = asp.get("k9") or (lam_a / ip_a * 9 if lam_a else None)
+    # Gassed relievers (back-to-back days / heavy count yesterday) sit tonight:
+    # thin the best end of each named pen in the pitching sim.
+    pen_h = int((ht.get("bullpen_fatigue") or {}).get("count") or 0)
+    pen_a = int((at.get("bullpen_fatigue") or {}).get("count") or 0)
     do_home_pitch = home_k9 is not None
     do_away_pitch = away_k9 is not None
 
@@ -434,13 +453,15 @@ def simulate(g, n=5000):
         if do_home_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),
                                                ht.get("bullpen_whip"), ra, rnd,
-                                               bullpen=ht.get("bp_arms"), exp_ip=ip_h)
+                                               bullpen=ht.get("bp_arms"), exp_ip=ip_h,
+                                               er_opp=er_a, pen_out=pen_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(away_k9, at.get("bullpen_era"),
                                                at.get("bullpen_whip"), rh, rnd,
-                                               bullpen=at.get("bp_arms"), exp_ip=ip_a)
+                                               bullpen=at.get("bp_arms"), exp_ip=ip_a,
+                                               er_opp=er_h, pen_out=pen_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 
