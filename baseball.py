@@ -164,7 +164,9 @@ def live_game_feedback(game_pk):
             ss = p.get("seasonStats", {}).get("pitching", {})
             if ps.get("numberOfPitches"):
                 k_now = int(ps.get("strikeOuts", 0))
-                model_k = sp_model.get(side, {}).get("k9")
+                is_starter = bool(ps.get("gamesStarted"))
+                # Our K projection is the STARTER's — don't show it against relievers.
+                model_k = sp_model.get(side, {}).get("k9") if is_starter else None
                 pitchers.append({
                     "name": nm, "side": side, "team": names[side],
                     "pitches": int(ps.get("numberOfPitches", 0)),
@@ -172,9 +174,7 @@ def live_game_feedback(game_pk):
                     "bb": int(ps.get("baseOnBalls", 0)), "h": int(ps.get("hits", 0)),
                     "er": int(ps.get("earnedRuns", 0)),
                     "season_era": ss.get("era"), "season_whip": ss.get("whip"),
-                    "model_k9": model_k,
-                    "starter": (p.get("gameStatus", {}) or {}).get("isCurrentPitcher") is not None
-                               and bool(ps.get("gamesStarted")),
+                    "model_k9": model_k, "starter": is_starter,
                 })
             order = p.get("battingOrder")
             if order:
