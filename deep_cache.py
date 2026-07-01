@@ -1,27 +1,37 @@
-"""Persistent cache + weekly scheduler for the heavy season simulations.
+"""Persistent cache + nightly scheduler for the heavy season simulations.
 
 The deep MLB run (and the F1 / NASCAR sims) are expensive, so we compute them
 ONCE, persist the result to disk, and serve the same artifact to every user.
-A background scheduler re-runs anything older than a week; the result also
-survives process restarts by reloading from disk on boot. A manual rerun
-(owner-triggered) forces a fresh run on demand.
+A background scheduler re-runs each job once per day (shortly after local
+midnight) so every morning reflects the latest rosters, standings and IL moves;
+the result also survives process restarts by reloading from disk on boot. A
+manual rerun (owner-triggered) forces a fresh run on demand.
 
 Note on hosting: disk persistence survives restarts within a host's lifetime.
 If the host is fully reclaimed (ephemeral containers), point CACHE_DIR at durable
-storage or have an external cron hit the manual-rerun endpoint weekly — that's
-the only way to guarantee a weekly run when the box can sleep.
+storage or have an external cron hit the manual-rerun endpoint nightly — that's
+the only way to guarantee the nightly run when the box can sleep.
 """
 
 import os
 import pickle
 import threading
 import time
+import datetime as _dt
 
 CACHE_DIR = os.environ.get("DEEP_CACHE_DIR") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "data", "deep")
 WEEK = 7 * 86400
+DAY = 86400
 
 _lock = threading.Lock()
+
+
+def _last_midnight_epoch():
+    """Epoch of the most recent LOCAL midnight — the boundary a nightly job must
+    have run after to count as fresh for today."""
+    now = _dt.datetime.now()
+    return now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
 def _path(key):
@@ -68,14 +78,29 @@ def is_stale(key, max_age=WEEK):
     return a is None or a > max_age
 
 
-# ---- Weekly scheduler ------------------------------------------------------
-# Each registered job: key -> {"run": callable() , "max_age": seconds, "running": bool}
+def is_stale_daily(key):
+    """True if this job hasn't run since the most recent local midnight (or ever)."""
+    _, ts = load(key)
+    return ts is None or ts < _last_midnight_epoch()
+
+
+# ---- Nightly scheduler -----------------------------------------------------
+# Each registered job: key -> {"run": callable(), "cadence": "daily"|"age",
+#                              "max_age": seconds, "running": bool}
 _jobs = {}
 _sched_started = False
 
 
-def register(key, run, max_age=WEEK):
-    _jobs[key] = {"run": run, "max_age": max_age, "running": False}
+def register(key, run, max_age=DAY, cadence="daily"):
+    """Register a schedulable job. cadence="daily" reruns once per day just after
+    local midnight; cadence="age" reruns when older than max_age seconds."""
+    _jobs[key] = {"run": run, "max_age": max_age, "cadence": cadence, "running": False}
+
+
+def _job_stale(key, job):
+    if job.get("cadence") == "daily":
+        return is_stale_daily(key)
+    return is_stale(key, job["max_age"])
 
 
 def run_job(key, force=False):
@@ -84,7 +109,7 @@ def run_job(key, force=False):
     job = _jobs.get(key)
     if not job or job["running"]:
         return False
-    if not force and not is_stale(key, job["max_age"]):
+    if not force and not _job_stale(key, job):
         return False
 
     def _worker():
@@ -114,12 +139,19 @@ def run_sync(key):
 
 def status(key):
     job = _jobs.get(key) or {}
-    return {"age_sec": age(key), "running": bool(job.get("running")),
-            "max_age": job.get("max_age", WEEK)}
+    a = age(key)
+    cadence = job.get("cadence", "daily")
+    return {"age_sec": a, "running": bool(job.get("running")),
+            "max_age": job.get("max_age", DAY), "cadence": cadence,
+            # True once the cache predates today's midnight -> the scheduler will
+            # rerun it on its next pass; the UI uses this to know a refresh is due.
+            "stale": (is_stale_daily(key) if cadence == "daily"
+                      else is_stale(key, job.get("max_age", DAY)))}
 
 
-def start_scheduler(check_every=6 * 3600):
-    """Background loop: on boot and every `check_every` seconds, kick any stale
+def start_scheduler(check_every=1800):
+    """Background loop: on boot and every `check_every` seconds (default 30 min, so
+    the nightly rerun fires within half an hour of local midnight), kick any stale
     registered job. Staggered so they don't all fire at once."""
     global _sched_started
     if _sched_started:

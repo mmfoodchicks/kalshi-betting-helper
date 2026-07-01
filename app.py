@@ -150,8 +150,9 @@ def _ensure_recorder():
 
 
 def _init_deep_sims():
-    """Register the heavy season sims with the weekly cache/scheduler, reload any
-    persisted result from disk, and start the background weekly refresh."""
+    """Register the heavy season sims with the nightly cache/scheduler, reload any
+    persisted result from disk, and start the background refresh (reruns each job
+    once per day just after local midnight)."""
     import deep_cache
     import datetime as _dt
 

@@ -448,6 +448,13 @@ def deep_board(agg, season=None):
         abbr = baseball._abbr_map(season)
     except Exception:
         pass
+    # The deep run freezes each team's W-L at run time; overlay TODAY's standings so
+    # the record shown is current (the sim can be up to a day old between reruns).
+    cur = {}
+    try:
+        cur = _standings(season)
+    except Exception:
+        cur = {}
     fe = futures_edges(season)
     prow, wt_lines = {}, set()
     for r in fe["edges"]:
@@ -460,12 +467,13 @@ def deep_board(agg, season=None):
 
     def row(tid, count, pr):
         m = meta[tid]
+        st = cur.get(tid) or m               # live standings, else the run-time snapshot
         pct = 100.0 * count / n
         best = pr.get("market_cents")
         return {"team": m["name"], "abbr": abbr.get(tid),
                 "division": m["division"], "league": m["league"],
                 "proj_wins": round(agg["wins_sum"].get(tid, 0) / n, 1),
-                "wins": m["wins"], "losses": m["losses"],
+                "wins": st["wins"], "losses": st["losses"],
                 "count": count, "n": n, "model_pct": round(pct, 1),
                 "kalshi_cents": pr.get("kalshi_cents"), "poly_cents": pr.get("poly_cents"),
                 "best_book": pr.get("best_book"),
