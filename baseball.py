@@ -1001,6 +1001,22 @@ def analyze_slate(date, season):
                       "batters_home": bat_home, "batters_away": bat_away,
                       "ks_home": ks_home, "ks_away": ks_away,
                       "home_sp_name": g.get("home_sp_name"), "away_sp_name": g.get("away_sp_name")}
+        # Live-decaying odds: once a game is underway the pre-game totals/run line are
+        # stale (they ignore runs already scored). Recompute the displayed totals +
+        # run line from the current score plus expected remaining runs so the odds the
+        # user sees tick with the game. `props_live` flags the swap for the UI.
+        if in_game and in_game.get("exp_rem_home") is not None:
+            lp = props_mod.live_game_props(
+                in_game["home_score"], in_game["away_score"],
+                in_game["exp_rem_home"], in_game["exp_rem_away"],
+                home_abbr or g["home_id"], away_abbr or g["away_id"])
+            lt = lp["model_total"]
+            game_props["run_line"] = lp["run_line"]
+            game_props["totals_ladder"] = lp["totals_ladder"]
+            game_props["model_total"] = lt
+            wanted = {round(lt) - 0.5, round(lt) + 0.5, 8.5}
+            game_props["totals"] = [t for t in lp["totals_ladder"] if t["line"] in wanted]
+            game_props["props_live"] = True
         # Kill phantom lines Kalshi won't book: trim game totals + run-line ladders
         # to the lines the sportsbook actually offers (with a sane fallback when the
         # Kalshi index is unavailable). Player-prop bet surfaces (Edge Finder, combo

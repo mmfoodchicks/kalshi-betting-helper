@@ -564,8 +564,10 @@ function renderProps(g) {
       ${rows}
     </div>`;
   };
+  const liveTag = p.props_live
+    ? ` <span class="ev pos" style="font-size:.8em">● LIVE — updates with the score</span>` : "";
   return `<details class="props">
-    <summary>📊 Props &amp; odds — run line, totals, hit props</summary>
+    <summary>📊 Props &amp; odds — run line, totals, hit props${liveTag}</summary>
     <div class="propgrid">
       <div class="propcard">
         <div class="teamhdr">Run line — Kalshi "win by X+" (adjustable)</div>
