@@ -127,6 +127,31 @@ def _norm(s):
     return "".join(c for c in (s or "").lower() if c.isalnum() or c == " ").strip()
 
 
+def _bvp(batter_id, pitcher_id):
+    """Career batter-vs-pitcher line (small-sample, informational). Cached 12h."""
+    if not batter_id or not pitcher_id:
+        return None
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/people/{batter_id}/stats?stats=vsPlayerTotal"
+                     f"&opposingPlayerId={pitcher_id}&group=hitting&sportId=1")
+        except Exception:
+            return None
+        for s in d.get("stats", []):
+            for sp in s.get("splits", []):
+                st = sp.get("stat", {})
+                ab = int(st.get("atBats", 0) or 0)
+                pa = ab + int(st.get("baseOnBalls", 0) or 0) + int(st.get("hitByPitch", 0) or 0)
+                if pa <= 0:
+                    return None
+                return {"ab": ab, "pa": pa, "h": int(st.get("hits", 0) or 0),
+                        "hr": int(st.get("homeRuns", 0) or 0), "so": int(st.get("strikeOuts", 0) or 0),
+                        "bb": int(st.get("baseOnBalls", 0) or 0),
+                        "avg": st.get("avg"), "ops": st.get("ops")}
+        return None
+    return _cached(("bvp", batter_id, pitcher_id), 12 * 3600, fetch)
+
+
 def live_game_feedback(game_pk):
     """Rich live-game feed: pitcher live lines (pitch count, K/BB/H/IP + season
     ERA/WHIP and our K projection), and per-hitter AB-by-AB results with our
@@ -155,9 +180,21 @@ def live_game_feedback(game_pk):
             ablog.setdefault(bid, []).append({"event": ev, "hit": ev in _HIT_EVENTS,
                                               "rbi": res.get("rbi", 0)})
 
+    # Each side's starting pitcher — the arm the opposing lineup's batter-vs-pitcher
+    # history is most meaningful against.
+    starter = {}
+    for side in ("away", "home"):
+        for p in box[side]["players"].values():
+            if p.get("stats", {}).get("pitching", {}).get("gamesStarted"):
+                starter[side] = {"id": p["person"]["id"], "name": p["person"]["fullName"]}
+                break
+
     pitchers, hitters = [], []
+    bvp_tasks = []                          # (hitter_dict, batter_id, opp_starter_id)
     for side in ("away", "home"):
         players = box[side]["players"]
+        opp = "home" if side == "away" else "away"
+        opp_sp = starter.get(opp)
         for p in players.values():
             person = p["person"]; nm = person["fullName"]
             ps = p.get("stats", {}).get("pitching", {})
@@ -187,14 +224,28 @@ def live_game_feedback(game_pk):
                 if m and m["r_hit"]:
                     rem = max(0, round(m["exp_pa"]) - len(log))
                     next_hit = round(100 * (1 - (1 - m["r_hit"]) ** rem), 1) if rem else 0.0
-                hitters.append({
+                hd = {
                     "name": nm, "side": side, "team": names[side], "order": int(order) // 100,
                     "ab_log": [x["event"] for x in log],
                     "hits": h_now, "ab": ab_now, "avg": bss.get("avg"),
                     "model_hit_pct": m["hit1"] if m else None,
                     "second_given_first": m["second_given_first"] if m else None,
                     "live_next_hit_pct": next_hit,
-                })
+                    "vs_pitcher": opp_sp["name"] if opp_sp else None, "bvp": None,
+                }
+                hitters.append(hd)
+                if opp_sp:
+                    bvp_tasks.append((hd, person["id"], opp_sp["id"]))
+
+    # Batter-vs-pitcher career lines, fetched in parallel (cached, so cheap after
+    # the first live poll of a game).
+    if bvp_tasks:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for hd, res in zip([t[0] for t in bvp_tasks],
+                               ex.map(lambda t: _bvp(t[1], t[2]), bvp_tasks)):
+                hd["bvp"] = res
+
     hitters.sort(key=lambda x: (x["side"] != "away", x["order"]))
     pitchers.sort(key=lambda x: -x["pitches"])
     return {

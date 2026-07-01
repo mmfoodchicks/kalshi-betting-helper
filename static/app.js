@@ -634,9 +634,18 @@ function renderLiveFeed(d) {
     const k = ev === "Strikeout";
     return `<span class="lf-ab ${hit ? "hit" : k ? "k" : "out"}" title="${ev}">${ev === "Home Run" ? "HR" : ev === "Strikeout" ? "K" : ev[0]}</span>`;
   };
+  const bvpCell = (h) => {
+    const b = h.bvp;
+    if (!b) return `<span class="small" style="color:var(--muted)">—</span>`;
+    const avg = b.ab > 0 ? b.h / b.ab : 0;
+    const cls = b.ab >= 3 && avg >= 0.35 ? "hit" : (b.ab >= 5 && avg <= 0.12 ? "k" : "");
+    const extra = (b.hr ? ` ${b.hr}HR` : "") + (b.so ? ` ${b.so}K` : "");
+    return `<span class="lf-bvp ${cls}" title="Career vs ${h.vs_pitcher || "the starter"}: ${b.h}-for-${b.ab}${extra}, ${b.bb} BB · OPS ${b.ops || "—"} (${b.pa} PA — small sample, use as color not gospel)">${b.h}-${b.ab}${b.hr ? ` ${b.hr}HR` : ""}</span>`;
+  };
   const rows = (d.hitters || []).map((h) => `<tr>
     <td>${h.order}. ${h.name}</td>
     <td><b>${h.hits}</b>/${h.ab}</td>
+    <td>${bvpCell(h)}</td>
     <td class="lf-log">${(h.ab_log || []).map(abBadge).join("")}</td>
     <td>${h.model_hit_pct != null ? h.model_hit_pct + "%" : "—"}</td>
     <td>${h.second_given_first != null ? h.second_given_first + "%" : "—"}</td>
@@ -646,7 +655,9 @@ function renderLiveFeed(d) {
     ${head}
     <div class="lf-pgrid">${pit}</div>
     <table class="lf-table"><thead><tr>
-      <th>Hitter</th><th>H/AB</th><th>AB results</th>
+      <th>Hitter</th><th>H/AB</th>
+      <th title="Batter's career line vs today's opposing starter (small sample — color, not a strong signal)">vs SP</th>
+      <th>AB results</th>
       <th title="Model: chance of 1+ hit this game">Hit%</th>
       <th title="Given a hit, chance of a 2nd">2nd</th>
       <th title="Model chance of a hit in his remaining ABs">Next AB</th>
@@ -677,13 +688,15 @@ function renderGame(g) {
   };
   const w = g.weather;
   let wxLine = "";
-  if (w && w.available) {
+  if (w && w.roof === "fixed") {
+    // Fixed dome: weather has zero effect — say so instead of a misleading wx line.
+    wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: <b>dome</b> — weather neutral (no wind/temp effect on runs)</div>`;
+  } else if (w && w.available) {
     const rp = w.run_pct;
     const runTag = (rp != null && Math.abs(rp) >= 0.3)
       ? ` → <b class="${rp > 0 ? "ev pos" : "ev neg"}">${rp > 0 ? "+" : ""}${rp}% runs</b>` : "";
-    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} — ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""} <span style="color:var(--border)">[${w.source}]</span></div>`;
-  } else if (w && w.roof === "fixed") {
-    wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: dome — weather neutral</div>`;
+    const roofTag = w.roof === "retractable" ? ` · <b>retractable roof</b> (weather at half weight)` : "";
+    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} — ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""}${roofTag} <span style="color:var(--border)">[${w.source}]</span></div>`;
   }
   return `<div class="${cls}" data-pk="${g.game_pk}">
     <div class="top">

@@ -421,6 +421,9 @@ button.danger { color: var(--no); }
 .lf-ab.hit { background: rgba(52, 211, 153, 0.22); color: var(--yes); }
 .lf-ab.k { background: rgba(248, 113, 113, 0.22); color: var(--no); }
 .lf-ab.out { background: rgba(255, 255, 255, 0.07); color: var(--muted); }
+.lf-bvp { font-size: 0.74rem; font-weight: 600; padding: 1px 5px; border-radius: 4px; cursor: help; white-space: nowrap; }
+.lf-bvp.hit { background: rgba(52, 211, 153, 0.18); color: var(--yes); }
+.lf-bvp.k { background: rgba(248, 113, 113, 0.18); color: var(--no); }
 @media (max-width: 620px) { .lf-pgrid { grid-template-columns: 1fr; } }
 .rcrow { grid-template-columns: 26px 1fr 56px 50px 54px 48px 56px; }
 .rcrow2 { grid-template-columns: 28px 1fr 66px; }
