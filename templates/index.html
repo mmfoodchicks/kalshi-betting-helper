@@ -178,6 +178,12 @@
         <h2>⚾ Today's MLB insights</h2>
         <div class="scan-controls">
           <input id="bbDate" type="date" />
+          <select id="bbSort" title="Sort the slate" onchange="setSlateSort(this.value)" style="width:auto;padding:2px 4px">
+            <option value="confidence">Sort: confidence</option>
+            <option value="start">Sort: start time</option>
+            <option value="total">Sort: total (high→low)</option>
+            <option value="edge">Sort: Kalshi edge</option>
+          </select>
           <button id="bbBtn" class="primary">Load slate</button>
           <button id="bbRefresh">↻ Refresh</button>
         </div>

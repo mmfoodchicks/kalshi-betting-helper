@@ -751,6 +751,37 @@ function renderGame(g) {
 // Combo maker state + builder.
 let bbCombosData = null;
 let bbSlateGames = [];
+let bbSlateSort = "confidence";
+
+// Sort the slate for display. Live/soon games always float when sorting by start.
+function sortSlateGames(games) {
+  const g = games.slice();
+  const isLive = (x) => (x.live && (x.live.is_live || x.live.state === "Live")) ? 0 : 1;
+  const cmp = {
+    confidence: (a, b) => (b.pick_prob || 0) - (a.pick_prob || 0),
+    total:      (a, b) => (b.exp_total || 0) - (a.exp_total || 0),
+    edge:       (a, b) => (b.edge_cents ?? -999) - (a.edge_cents ?? -999),
+    start:      (a, b) => isLive(a) - isLive(b)
+                          || (Date.parse(a.start || 0) || 0) - (Date.parse(b.start || 0) || 0),
+  }[bbSlateSort] || null;
+  return cmp ? g.sort(cmp) : g;
+}
+
+// Re-render just the game cards in the current sort order (preserves open props).
+function renderSlateGames() {
+  const box = $("bbGames");
+  if (!box || !bbSlateGames.length) return;
+  const open = new Set();
+  box.querySelectorAll(".bbgame[data-pk] details.props[open]").forEach((el) =>
+    open.add(el.closest(".bbgame").dataset.pk));
+  box.innerHTML = sortSlateGames(bbSlateGames).map(renderGame).join("");
+  open.forEach((pk) => {
+    const el = box.querySelector(`.bbgame[data-pk="${pk}"] details.props`);
+    if (el) el.open = true;
+  });
+}
+
+window.setSlateSort = (v) => { bbSlateSort = v; renderSlateGames(); };
 let parlayLegs = 3;
 let parlayTarget = 65;
 let parlayPayout = 0;
@@ -1163,21 +1194,15 @@ async function loadBaseball(silent) {
       combosBox.innerHTML = `<div class="empty">No games, no combos.</div>`;
       return;
     }
-    // Preserve which games have their props panel expanded across refreshes.
-    const open = new Set();
-    gamesBox.querySelectorAll(".bbgame[data-pk] details.props[open]").forEach((el) =>
-      open.add(el.closest(".bbgame").dataset.pk));
-    gamesBox.innerHTML = d.games.map(renderGame).join("");
-    open.forEach((pk) => {
-      const el = gamesBox.querySelector(`.bbgame[data-pk="${pk}"] details.props`);
-      if (el) el.open = true;
-    });
+    // Store the raw slate, then render in the user's chosen sort order (this also
+    // preserves which games have their props panel expanded across refreshes).
+    bbSlateGames = d.games;
+    renderSlateGames();
     loadBaseballRecord();
     loadPropLog();
 
     const c = d.combos;
     bbCombosData = c;
-    bbSlateGames = d.games;
     let html = "";
     // Unified combo maker: a game-selection grid + the targets, all persisted
     // across the auto-refresh so an in-progress build is never clobbered.
