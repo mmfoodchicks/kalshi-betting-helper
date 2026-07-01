@@ -755,6 +755,26 @@ let comboIncludeLive = false;
 let comboGameSel = null;   // null/empty = ALL games; else {pk: true|teamName} selection
 let comboBuilding = false; // true while a build is in flight -> pauses auto-refresh
 
+// Prop-type filter for the combo/edge builders. Empty set = all types allowed.
+let _mlbTypes = new Set();
+const _MLB_TYPES = [["ML", "Moneyline"], ["Total", "Totals"], ["Run line", "Run line"],
+  ["Hit", "Hits"], ["HR", "Home runs"], ["Bases", "Total bases"], ["Ks", "Strikeouts"],
+  ["RFI", "1st-inn run"], ["HRR", "H+R+RBI"]];
+function mlbTypeChipsHTML() {
+  return `<span class="ptchips">` + _MLB_TYPES.map(([v, l]) =>
+    `<span class="ptchip${_mlbTypes.has(v) ? " on" : ""}" onclick="toggleMlbType(this,'${v}')">${l}</span>`).join("") + `</span>`;
+}
+function mlbTypeChipRow() {
+  return `<div class="small" style="margin-top:8px">Prop types <span style="color:var(--muted)">(none selected = all)</span>: ${mlbTypeChipsHTML()}</div>`;
+}
+window.toggleMlbType = (el, t) => {
+  if (_mlbTypes.has(t)) { _mlbTypes.delete(t); el.classList.remove("on"); }
+  else { _mlbTypes.add(t); el.classList.add("on"); }
+};
+function mlbTypesParam() {
+  return _mlbTypes.size ? "&types=" + [..._mlbTypes].map(encodeURIComponent).join(",") : "";
+}
+
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
 window.buildCombo = async () => {
@@ -780,6 +800,7 @@ window.buildCombo = async () => {
       + `&include_live=${comboIncludeLive ? 1 : 0}`;
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
+    q += mlbTypesParam();
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
@@ -1170,7 +1191,8 @@ async function loadBaseball(silent) {
         </div>
         <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${comboSameGamePref ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
         &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked"/> include live games (win legs only)</label>
-        <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
+        ${mlbTypeChipRow()}
+        <button class="track-mini primary-mini" style="margin-top:6px" onclick="buildCombo()">Build</button>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         ${modelLegend()}
         <div id="comboOut"></div>
@@ -1394,10 +1416,11 @@ function initEdges() {
 async function loadEdges() {
   const box = $("edgeResults");
   const date = $("edgeDate").value;
+  if ($("edgeTypeChips")) $("edgeTypeChips").innerHTML = "Prop types <span style='color:var(--muted)'>(none = all, then re-scan)</span>: " + mlbTypeChipsHTML();
   box.innerHTML = `<div class="empty">Scanning every priced leg across the slate… (simulating each game, a few seconds)</div>`;
   $("edgeSummary").innerHTML = "";
   try {
-    const d = await (await fetch(`/api/baseball/edges?date=${date}&min_edge=4`)).json();
+    const d = await (await fetch(`/api/baseball/edges?date=${date}&min_edge=4${mlbTypesParam()}`)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     _edgeData = d;
     renderEdges();

@@ -360,6 +360,10 @@ button.danger { color: var(--no); }
 .combo .cnums b { color: var(--text); }
 .combomaker { background: var(--card2); border: 1px solid rgba(91, 140, 255, 0.4); border-radius: 12px; padding: 13px 15px; margin-bottom: 14px; font-size: 0.9rem; }
 .combomaker input { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 6px; }
+.ptchips { display: inline-flex; flex-wrap: wrap; gap: 5px; vertical-align: middle; }
+.ptchip { display: inline-block; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; font-size: 0.78rem; user-select: none; }
+.ptchip:hover { border-color: var(--accent); }
+.ptchip.on { background: rgba(91, 140, 255, 0.22); border-color: var(--accent); color: var(--text); font-weight: 600; }
 .gamegrid { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 8px; }
 .gg-card {
   flex: 0 0 auto; min-width: 84px; background: var(--card); border: 2px solid var(--border);

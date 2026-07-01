@@ -946,12 +946,13 @@ def _game_state(g):
     return (g.get("live") or {}).get("state") or ""
 
 
-def _candidate_legs(games, live_only=False):
+def _candidate_legs(games, live_only=False, types=None):
     """All bettable legs across the slate: moneyline + run line + totals + hits.
 
     Skips games that are already Final (those results are decided). If
-    `live_only` is set, includes only games currently in progress. Each leg is
-    tagged with `live`. Combos enforce one leg per game so they stay independent.
+    `live_only` is set, includes only games currently in progress. `types` (a set
+    of type names) restricts which prop kinds are produced. Each leg is tagged with
+    `live`. Combos enforce one leg per game so they stay independent.
     """
     legs = []
     for g in games:
@@ -964,6 +965,8 @@ def _candidate_legs(games, live_only=False):
         pk = g["game_pk"]; mu = g["matchup"]
 
         def add(typ, label, prob, price=None):
+            if types and typ not in types:
+                return
             legs.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
                          "prob": prob, "price_cents": price, "live": live})
 
@@ -1123,8 +1126,9 @@ def _tradeable_total(line, ktot):
     return {} if 6.5 <= line <= 12.5 else None       # Kalshi down -> sane range, no price
 
 
-def _game_variants(g):
+def _game_variants(g, types=None):
     """Every line variant for a game, so the combo maker can tune for confidence.
+    `types` (a set of type names) restricts which prop kinds are produced.
 
     Includes moneyline, run line (±1.5), the full totals ladder (over/under at
     each line), and the top hitters' 1+/2+ hit props. Returns leg dicts with a
@@ -1138,6 +1142,8 @@ def _game_variants(g):
     pk, mu = g["game_pk"], g["matchup"]
 
     def add(typ, label, prob, price=None):
+        if types and typ not in types:
+            return
         if 0.02 <= prob <= 0.995:
             out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
                         "prob": prob, "price_cents": price, "live": live})
@@ -1196,7 +1202,7 @@ def _game_variants(g):
     return out
 
 
-def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12):
+def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12, types=None):
     """Build a parlay.
 
     Payout mode (target_payout given): the target multiplier governs. We pick the
@@ -1215,7 +1221,7 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
         # reach the payout (expanding the count), never dropping below the floor.
         groups = []
         for g in games:
-            vs = [v for v in _game_variants(g) if v["prob"] >= target]
+            vs = [v for v in _game_variants(g, types) if v["prob"] >= target]
             if vs:
                 groups.append(vs)
         res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
@@ -1234,7 +1240,7 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
     chosen = []  # one best variant per game, tuned near the target confidence
     for g in games:
-        variants = _game_variants(g)
+        variants = _game_variants(g, types)
         if not variants:
             continue
         meeting = [v for v in variants if v["prob"] >= target]
@@ -1253,7 +1259,7 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
 
 def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
-                            n_sims=5000, max_legs=4, top_n=8):
+                            n_sims=5000, max_legs=4, top_n=8, types=None):
     """Same-game parlays with honest, correlation-aware joint odds.
 
     Unlike the cross-game combos (independent games -> exact product), legs from
@@ -1268,7 +1274,7 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         if _game_state(g) in ("Final", "Live"):
             continue  # settled games are decided; live in-game props are stale
         sim = mlb_sim.simulate(g, n_sims)
-        cands = [c for c in mlb_sim.build_candidates(g, sim) if c["marg"] >= target]
+        cands = [c for c in mlb_sim.build_candidates(g, sim, types) if c["marg"] >= target]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
                                       target_payout, max_legs)
         if not item:
@@ -1294,7 +1300,7 @@ def _edge_confidence(typ):
             "RFI": "med", "HR": "low", "HRR": "low"}.get(typ, "med")
 
 
-def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60):
+def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
     """Scan every priced leg across the slate and rank model-vs-Kalshi gaps.
 
     For each candidate leg we already know our simulated probability (and, for
@@ -1317,7 +1323,7 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60):
         if not suffix or not idx.get(suffix):
             continue
         sim = mlb_sim.simulate(g, n_sims)
-        for c in mlb_sim.build_candidates(g, sim):
+        for c in mlb_sim.build_candidates(g, sim, types):
             kref = c.get("kref")
             if not kref:
                 continue
@@ -1414,7 +1420,7 @@ def _cand_side(cand, g):
 
 def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
-                       legs_mode="prefer", payout_mode="off", conn="or",
+                       legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
@@ -1470,7 +1476,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             continue
         sim = mlb_sim.simulate(g, n_sims)
         side = team_side(g)
-        cands = [c for c in mlb_sim.build_candidates(g, sim)
+        cands = [c for c in mlb_sim.build_candidates(g, sim, types)
                  if c["marg"] >= floor and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
@@ -1518,7 +1524,7 @@ def grade_picks():
                                     winner, actual_total=total)
 
 
-def build_combos(games, max_legs=3, top_n=6):
+def build_combos(games, max_legs=3, top_n=6, types=None):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.
     live_games = [g for g in games if _game_state(g) != "Final"]
@@ -1534,7 +1540,7 @@ def build_combos(games, max_legs=3, top_n=6):
     best_value = max(priced, key=lambda c: c["ev_pct"], default=None)
 
     # Mixed combos draw from every bet type (moneyline + props).
-    all_legs = _candidate_legs(live_games)
+    all_legs = _candidate_legs(live_games, types=types)
     legs = sorted(all_legs, key=lambda l: l["prob"], reverse=True)[:10]
     mixed = _assemble(legs, max_legs)
     mixed.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
@@ -1552,7 +1558,7 @@ def build_combos(games, max_legs=3, top_n=6):
     # games -> one or two combos; a full live board -> up to seven, mixing leg
     # counts so the list is a varied lineup, not the same legs reshuffled.
     n_live_games = sum(1 for g in games if _game_state(g) == "Live")
-    live_legs = sorted(_candidate_legs(games, live_only=True),
+    live_legs = sorted(_candidate_legs(games, live_only=True, types=types),
                        key=lambda l: l["prob"], reverse=True)[:12]
     live_all = _assemble(live_legs, min(max_legs, max(2, n_live_games)))
     live_all.sort(key=lambda c: c["combined_prob_pct"], reverse=True)

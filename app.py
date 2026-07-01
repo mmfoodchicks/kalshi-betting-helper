@@ -633,6 +633,15 @@ def api_simulate_dfs():
         date=d.get("date") or _dt.date.today().isoformat(), sims=n))
 
 
+def _prop_types():
+    """Optional prop-type filter from ?types=ML,Total,Hit,... (None = all types)."""
+    raw = request.args.get("types")
+    if not raw:
+        return None
+    got = {t.strip() for t in raw.split(",") if t.strip()}
+    return got or None
+
+
 @app.route("/api/baseball/today")
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""
@@ -653,7 +662,7 @@ def api_baseball_today():
                                   pred_total=g.get("exp_total"))
             # Track the latest pre-game price of our side for closing-line value.
             store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
-    combos = baseball.build_combos(games)
+    combos = baseball.build_combos(games, types=_prop_types())
     return jsonify({"date": date, "games": games, "combos": combos})
 
 
@@ -895,7 +904,7 @@ def api_baseball_parlay():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     combo = baseball.build_target_parlay(games, legs, target, target_payout=payout,
-                                         max_legs=tiers.cap_legs(_tier(), 30))
+                                         max_legs=tiers.cap_legs(_tier(), 30), types=_prop_types())
     return jsonify({"combo": combo})
 
 
@@ -1290,7 +1299,7 @@ def api_baseball_edges():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    res = baseball.find_edges(games, n_sims=sims, min_edge=min_edge)
+    res = baseball.find_edges(games, n_sims=sims, min_edge=min_edge, types=_prop_types())
     res["date"] = date
     return jsonify(res)
 
@@ -1318,7 +1327,7 @@ def api_baseball_sgp():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    res = baseball.build_same_game_parlays(games, n_legs=legs, target_pct=target,
+    res = baseball.build_same_game_parlays(games, n_legs=legs, target_pct=target, types=_prop_types(),
                                            target_payout=payout, n_sims=sims)
     return jsonify(res)
 
@@ -1379,7 +1388,7 @@ def api_baseball_mixed():
                                        max_total_legs=max_total,
                                        legs_mode=legs_mode, payout_mode=payout_mode,
                                        conn=conn, game_sel=sel or None,
-                                       include_live=include_live)
+                                       include_live=include_live, types=_prop_types())
     return jsonify({"parlay": item})
 
 

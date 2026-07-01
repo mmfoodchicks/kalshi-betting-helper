@@ -510,12 +510,13 @@ def _mask(pred, n):
     return m
 
 
-def build_candidates(g, sim):
+def build_candidates(g, sim, types=None):
     """Curated set of bettable legs for this game, each as a sim bitmask.
 
     Kept deliberately small (one leg per market, top hitters only) so the combo
     search stays fast while still spanning moneyline / run line / total / hitter
-    props / starter strikeouts.
+    props / starter strikeouts. `types` (a set of type names) restricts which prop
+    kinds are produced.
     """
     n = sim["n"]
     hr_runs, ar_runs, hwin = sim["home_runs"], sim["away_runs"], sim["home_win"]
@@ -525,6 +526,8 @@ def build_candidates(g, sim):
     cands = []
 
     def add(typ, label, pred, group=None, model=None, kref=None):
+        if types and typ not in types:
+            return
         # `group` = the underlying market (a player, or ML/Total/Run line); a
         # parlay never stacks two legs from the same group. `model` is the closed-
         # form (exact-math) probability for player props, kept alongside the
