@@ -620,6 +620,7 @@ button.danger { color: var(--no); }
 .cf-scratch { background: rgba(229,72,77,0.14); border: 1px solid rgba(229,72,77,0.5); color: #ff9ea1; }
 .cf-prov { background: rgba(240,185,11,0.12); border: 1px solid rgba(240,185,11,0.4); color: #f0c14b; }
 .cf-ok { background: rgba(46,160,67,0.12); border: 1px solid rgba(46,160,67,0.4); color: #6ee7a0; }
+.enet { display: block; font-size: 0.68rem; color: var(--muted); font-weight: 400; }
 
 /* Live Kalshi price chip on a combo leg */
 .kmkt { color: var(--accent); font-size: 0.82rem; white-space: nowrap; }

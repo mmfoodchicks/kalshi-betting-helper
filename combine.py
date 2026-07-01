@@ -273,12 +273,20 @@ def gather(cats, date, season):
     return legs
 
 
+def _fee_cents(cents):
+    """Expected Kalshi taker fee per contract at `cents`: 0.07 x p x (1-p) x 100."""
+    p = cents / 100.0
+    return 7.0 * p * (1.0 - p)
+
+
 def _item(combo):
-    prob = 1.0; cost = 1.0; priced = True
+    prob = 1.0; cost = 1.0; cost_net = 1.0; priced = True
     for l in combo:
         prob *= l["prob"]
         if l.get("price_cents"):
-            cost *= l["price_cents"] / 100.0
+            c = l["price_cents"]
+            cost *= c / 100.0
+            cost_net *= min(99.9, c + _fee_cents(c)) / 100.0   # each leg pays a taker fee
         else:
             priced = False
     item = {
@@ -294,6 +302,8 @@ def _item(combo):
         item["parlay_payout_x"] = round(payout, 2)
         item["parlay_cost_cents"] = round(cost * 100, 1)
         item["ev_pct"] = round((prob * payout - 1) * 100, 1)
+        # EV net of Kalshi's per-leg taker fees -- the number you actually bank.
+        item["ev_net_pct"] = round((prob * (1 / cost_net) - 1) * 100, 1)
     return item
 
 

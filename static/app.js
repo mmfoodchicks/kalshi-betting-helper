@@ -89,7 +89,11 @@ function getBankroll() { return parseFloat(localStorage.getItem("bankroll")) || 
 function getKellyMult() { const v = localStorage.getItem("kellyMult"); return v == null ? 0.5 : parseFloat(v); }
 function kellyFraction(prob, costCents) {
   if (prob == null || costCents == null || costCents <= 0 || costCents >= 100) return 0;
-  return Math.max(0, (100 * prob - costCents) / (100 - costCents));
+  // Size against the EFFECTIVE cost: price + Kalshi's taker fee (~7¢·p·(1−p)),
+  // so a thin gross edge that the fee eats sizes to zero instead of a real bet.
+  const eff = costCents + 7 * (costCents / 100) * (1 - costCents / 100);
+  if (eff >= 100) return 0;
+  return Math.max(0, (100 * prob - eff) / (100 - eff));
 }
 // Returns a sizing string for a bet, or "" if there's no edge / no bankroll set.
 function stakeText(prob, costCents) {
@@ -692,8 +696,10 @@ function renderGame(g) {
   const edge = g.edge_cents;
   const cls = edge != null && edge >= 5 ? "bbgame edge" : "bbgame";
   const ht = g.home_team, at = g.away_team;
+  const netTxt = g.net_edge_cents != null
+    ? ` <span class="small" style="color:var(--muted)" title="Kalshi taker fee ~${g.fee_cents}¢">(net ${g.net_edge_cents >= 0 ? "+" : ""}${g.net_edge_cents}¢ after fee)</span>` : "";
   let market = g.pick_price_cents != null
-    ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>`
+    ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>${netTxt}`
     : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
   if (g.pick_price_cents != null) {
     const st = stakeText(g.pick_prob, g.pick_price_cents);
@@ -1079,7 +1085,9 @@ function kalshiPayout(m) {
     return `<span style="color:var(--muted)">Kalshi pays — <span class="small">(no live prices yet — markets post closer to game time)</span></span>`;
   }
   const partial = m.kalshi_full ? "" : ` <span class="small" style="color:var(--muted)">(${m.kalshi_priced}/${m.kalshi_total_legs} legs priced)</span>`;
-  return `<span>Kalshi pays <b>${m.kalshi_payout_x}×</b>${partial}</span>`;
+  const net = m.kalshi_payout_net_x != null
+    ? ` <span class="small" style="color:var(--muted)" title="each leg pays Kalshi's ~1–2¢ taker fee">(${m.kalshi_payout_net_x}× net of fees)</span>` : "";
+  return `<span>Kalshi pays <b>${m.kalshi_payout_x}×</b>${net}${partial}</span>`;
 }
 
 function renderSGP(s) {
@@ -1181,8 +1189,10 @@ function renderCombo(c, tag, extraCls) {
   let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
               <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
   if (c.ev_pct != null) {
+    const netEv = c.ev_net_pct != null
+      ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's per-leg taker fees">(net ${c.ev_net_pct >= 0 ? "+" : ""}${c.ev_net_pct}%)</span>` : "";
     nums += `<span>Parlay payout <b>${c.parlay_payout_x}×</b></span>
-             <span>EV <b class="${c.ev_pct >= 0 ? "ev pos" : "ev neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b></span>`;
+             <span>EV <b class="${c.ev_pct >= 0 ? "ev pos" : "ev neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b>${netEv}</span>`;
   }
   return `<div class="combo ${extraCls || ""}">
     <div class="chead">
@@ -1507,7 +1517,8 @@ function renderEdges() {
   let rows = d.edges.filter((r) => Math.abs(r.edge) >= minEdge);
   if (side === "pos") rows = rows.filter((r) => r.edge > 0);
   else if (side === "neg") rows = rows.filter((r) => r.edge < 0);
-  rows.sort((a, b) => b.edge - a.edge);
+  // Rank by the edge you can actually trade (net of Kalshi's taker fee).
+  rows.sort((a, b) => (b.net_edge ?? b.edge) - (a.net_edge ?? a.edge));
   if (!rows.length) { box.innerHTML = `<div class="empty">Nothing at that filter. Lower the min edge or change the side.</div>`; return; }
 
   const head = `<div class="edgerow edgehead">
@@ -1517,8 +1528,10 @@ function renderEdges() {
   const body = rows.map((r) => {
     const cls = r.edge >= 0 ? "pos" : "neg";
     const model = (r.model_pct != null) ? ` <span class="emodel">model ${r.model_pct}%</span>` : "";
+    const net = (r.net_edge != null)
+      ? `<span class="enet" title="after Kalshi's ~${r.fee_cents}¢ taker fee">net ${r.net_edge >= 0 ? "+" : ""}${r.net_edge}</span>` : "";
     return `<div class="edgerow">
-      <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}</span>
+      <span class="ecol-edge ev ${cls}">${r.edge >= 0 ? "+" : ""}${r.edge}${net}</span>
       <span class="ecol-pick"><b>${r.pick}</b><span class="emu">${r.matchup}</span></span>
       <span class="ecol-num">${r.our_pct}%${model}</span>
       <span class="ecol-num">${r.market_cents}¢</span>
@@ -1527,7 +1540,7 @@ function renderEdges() {
     </div>`;
   }).join("");
   box.innerHTML = head + body +
-    `<div class="small" style="margin-top:10px;color:var(--muted)">Showing ${rows.length} of ${d.n_priced} priced legs. <b>Edge</b> = our simulated chance − Kalshi's price. <b>Trust</b> reflects how well-grounded the model is for that market (Ks/Total/ML strongest). Positive edge = we think YES is likelier than the market.</div>`;
+    `<div class="small" style="margin-top:10px;color:var(--muted)">Showing ${rows.length} of ${d.n_priced} priced legs. <b>Edge</b> = our simulated chance − Kalshi's price; the small <b>net</b> figure subtracts Kalshi's ~1–2¢ taker fee (the edge you actually bank). <b>Trust</b> reflects how well-grounded the model is for that market (Ks/Total/ML strongest). Positive edge = we think YES is likelier than the market.</div>`;
 }
 
 async function runBacktest() {
