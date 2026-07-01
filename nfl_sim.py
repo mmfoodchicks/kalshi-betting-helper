@@ -138,7 +138,9 @@ def project(prior_season=None, n_seasons=4000, seed=None):
         proj = nfl_awards._proj(p["stats"])
         pg = {k: proj.get(k, 0) / GAMES for k in
               ("pass_yds", "pass_td", "int", "rush_yds", "rush_td", "rec_yds", "rec_td", "rec")}
-        pg["int"] = proj.get("pass_yds", 0) / GAMES * 0.0007 if proj.get("pass_yds") else 0  # ~ INT rate
+        # ~1 INT per ~330 pass yards (≈11 over a 3,700-yd season) — the old 0.0007
+        # rate implied only ~3, quietly inflating every QB's DK score.
+        pg["int"] = proj.get("pass_yds", 0) / GAMES * 0.003 if proj.get("pass_yds") else 0
         per_game, totals = [], []
         for _ in range(n_seasons):
             games = int(round(GAMES * max(0.3, min(1.0, rng.gauss(0.92, 0.13)))))  # injury
