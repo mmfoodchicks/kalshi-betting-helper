@@ -972,6 +972,7 @@ def _candidate_legs(games, live_only=False):
         if live:
             continue  # mid-game: props (totals/hits) are stale, so ML only
         p = g.get("props") or {}
+        ktot = _ktotals(g)              # only Kalshi-bookable total lines
         rl = p.get("run_line")
         if rl:
             hb = rl["home_by2_pct"] / 100.0
@@ -982,6 +983,8 @@ def _candidate_legs(games, live_only=False):
                 add("Run line", f"{rl['away']} win by 2+", ab)
         best_tot = None
         for t in p.get("totals", []):
+            if _tradeable_total(t["line"], ktot) is None:
+                continue               # skip lines Kalshi won't book
             over = t["over_pct"] / 100.0; under = t["under_pct"] / 100.0
             side, pr = ("Over", over) if over >= under else ("Under", under)
             if pr >= 0.58 and (best_tot is None or pr > best_tot[1]):
@@ -1096,6 +1099,30 @@ def _add_spread_legs(add, rl):
             add("Run line", f"{tm} win by {m}+", pct / 100.0)
 
 
+def _ktotals(g):
+    """Kalshi's offered total lines for a game -> {line(float): {over,under}¢}, so
+    we only surface totals the sportsbook actually books (no phantom 'Under 19.5'
+    at 99.7% that Kalshi won't even list)."""
+    suf = g.get("kalshi_suffix")
+    if not suf:
+        return {}
+    try:
+        import kalshi_mlb
+        tot = (kalshi_mlb.index().get(suf) or {}).get("total") or {}
+    except Exception:
+        return {}
+    return {n - 0.5: v for n, v in tot.items()}      # Kalshi n = Over (n-0.5)
+
+
+def _tradeable_total(line, ktot):
+    """The Kalshi price dict for a total line, or None if untradeable. When the
+    Kalshi index is available we require the exact line; when it's unavailable we
+    fall back to a realistic MLB range so we still never show absurd phantom lines."""
+    if ktot:
+        return ktot.get(line)                        # {over,under} or None
+    return {} if 6.5 <= line <= 12.5 else None       # Kalshi down -> sane range, no price
+
+
 def _game_variants(g):
     """Every line variant for a game, so the combo maker can tune for confidence.
 
@@ -1123,6 +1150,7 @@ def _game_variants(g):
     # score + expected remaining runs; skip per-batter hit props (we don't track
     # how many at-bats a hitter already has). The moneyline above is already
     # the live in-game win probability.
+    ktot = _ktotals(g)                 # only surface Kalshi-bookable total lines
     ig = g.get("in_game") if live else None
     if live:
         if ig and ig.get("exp_rem_home") is not None:
@@ -1131,15 +1159,21 @@ def _game_variants(g):
                 g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
             _add_spread_legs(add, lp.get("run_line"))
             for t in lp["totals_ladder"]:
-                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
-                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
+                mk = _tradeable_total(t["line"], ktot)
+                if mk is None:
+                    continue
+                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"))
+                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"))
         return out
 
     p = g.get("props") or {}
     _add_spread_legs(add, p.get("run_line"))
     for t in p.get("totals_ladder", []):
-        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0)
-        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0)
+        mk = _tradeable_total(t["line"], ktot)
+        if mk is None:
+            continue
+        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"))
+        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"))
     if p.get("rfi_pct") is not None:
         add("RFI", "Run in the 1st inning", p["rfi_pct"] / 100.0)
         add("RFI", "No run in the 1st inning", 1 - p["rfi_pct"] / 100.0)
