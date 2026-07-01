@@ -36,28 +36,36 @@ def _log5(b, p, l):
     return num / den if den > 0 else b
 
 
-def _pa_probs(bat, pit, env=1.0):
+def _pa_probs(bat, pit, env=1.0, tto_pen=0.0):
     """Outcome probabilities for one plate appearance (sums to 1). `env` is a
     run-environment multiplier (>1 = hitter-friendly park/weather, <1 = pitcher-
     friendly) that scales power and balls-in-play hits; 1.0 leaves the season sim
-    untouched."""
+    untouched. `tto_pen` is the times-through-the-order penalty (0..~0.12): as a
+    starter faces the lineup a 3rd/4th time he loses strikeouts and gives up more
+    contact and power (the well-documented TTO effect)."""
     br = bat["rates"]
-    k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL
+    k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL * (1.0 - tto_pen)
     bb = _log5(br["bb"], pit["bbpa"], LG["bb"]) * _BB_CAL
-    hr = _log5(br["hr"], pit["hrpa"], LG["hr"]) * env
+    hr = _log5(br["hr"], pit["hrpa"], LG["hr"]) * env * (1.0 + 0.8 * tto_pen)
     hbp = br["hbp"]
     # Remaining mass goes to balls in play (hits + outs), tilted by the pitcher's
     # run prevention (better ERA suppresses hits a touch).
     rest = max(0.0, 1.0 - k - bb - hr - hbp)
     qual = max(0.78, min(1.22, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
     s, d, t = br["1b"], br["2b"], br["3b"]
-    hit = (s + d + t) / qual * _HIT_CAL * env  # park/weather scales hits in play
+    hit = (s + d + t) / qual * _HIT_CAL * env * (1.0 + tto_pen)  # park/weather + TTO
     bip = s + d + t + 0.0
     # batter's in-play out rate implied by his line (1 - all events)
     out_in_play = max(0.05, 1 - (br["k"] + br["bb"] + br["hbp"] + br["hr"] + bip))
     out_in_play *= qual                 # better pitcher -> more outs in play
     denom = hit + out_in_play
     p_hit = rest * (hit / denom) if denom else 0.0
+    # Cap the implied batting average per PA so extreme park/weather/TTO stacking
+    # can't push a hitter into fantasy .400+ territory. Total hits (1B/2B/3B + HR)
+    # are held to ~.360 of at-bats (PA ex-BB/HBP); non-HR contact is trimmed to
+    # fit under the cap while HR — a distinct, rarer signal — is left intact.
+    max_hits = 0.360 * max(0.35, 1.0 - bb - hbp)
+    p_hit = min(p_hit, max(0.0, max_hits - hr))
     p_out = rest - p_hit
     hsum = s + d + t or 1.0
     return {"k": k, "bb": bb, "hbp": hbp, "hr": hr,
@@ -264,7 +272,14 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                         used_ph[half].add(ph["id"])
                         bench[half] = [b for b in bench[half] if b["id"] != ph["id"]]
                         bat = ph
-                probs = _pa_probs(bat, pit, env)
+                # Times-through-the-order penalty: only a starter working deep
+                # into a game (3rd+ time through the lineup) degrades. Relievers
+                # and fresh arms carry no penalty.
+                is_sp = st.bp_i == 0 and not st.closer_used and pit.get("gs", 0) >= 3
+                tto_pen = 0.0
+                if is_sp:
+                    tto_pen = max(0.0, min(0.12, (st.outing_bf / 9.0 - 2.0) * 0.06))
+                probs = _pa_probs(bat, pit, env, tto_pen)
                 r = rng.random()
                 cum = 0.0
                 for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):
