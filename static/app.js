@@ -1285,11 +1285,13 @@ async function loadBaseball(silent) {
 }
 
 function setupTabs() {
+  $("bbetsBtn")?.addEventListener("click", loadBestBets);
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const tab = btn.dataset.tab;
+      $("tab-bestbets").classList.toggle("hidden", tab !== "bestbets");
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
@@ -1303,6 +1305,10 @@ function setupTabs() {
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
+      if (tab === "bestbets" && !$("bbetsResults").dataset.loaded) {
+        $("bbetsResults").dataset.loaded = "1";
+        loadBestBets();
+      }
       if (tab === "combine") loadCombineCats();
       if (tab === "sim") initSim();
       if (tab === "commodities" && !$("comResults").dataset.loaded) {
@@ -1324,6 +1330,46 @@ function setupTabs() {
     });
   });
   setupBaseballSubtabs();
+}
+
+// ---- Best Bets: every net-of-fee edge across all models, one screen --------
+const _SRC_LABEL = { mlb: "⚾ MLB slate", mlb_futures: "⚾ MLB futures", ufc: "🥊 UFC",
+                     tennis: "🎾 Tennis", crypto: "⚡ Crypto", arbitrage: "🔒 Arbitrage" };
+async function loadBestBets() {
+  const box = $("bbetsResults"), src = $("bbetsSources");
+  box.innerHTML = `<div class="empty">Hunting edges across every model… (the MLB slate sim is the slow part — ~30s cold)</div>`;
+  src.innerHTML = "";
+  try {
+    const d = await (await fetch("/api/bestbets")).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    // Source status chips: which models contributed, which failed/are warming.
+    src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) =>
+      `<span class="leanchip${s.ok ? "" : " warn"}" title="${s.ok ? "" : (s.error || "unavailable")}">${_SRC_LABEL[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : "✗"}</span>`).join(" ");
+    if (!d.rows || !d.rows.length) {
+      box.innerHTML = `<div class="empty">No positive net-of-fee edges right now — that's an honest answer, not a bug. Markets tighten close to game time; check back when slates/cards post.</div>`;
+      return;
+    }
+    const head = `<div class="edgerow edgehead">
+      <span class="ecol-edge">Net</span><span class="ecol-pick">Bet</span>
+      <span class="ecol-num">Our %</span><span class="ecol-num">Ask</span>
+      <span class="ecol-num">Pays</span><span class="ecol-conf">Trust</span></div>`;
+    const body = d.rows.map((r) => {
+      const stake = stakeText(r.our_pct / 100, r.cents) || "";
+      const note = r.note ? `<span class="emu">⚠ ${r.note}</span>` : "";
+      return `<div class="edgerow">
+        <span class="ecol-edge ev pos">+${r.net_edge}<span class="enet">gross +${r.edge}</span></span>
+        <span class="ecol-pick"><span class="legtag">${r.sport}</span> <b>${r.pick}</b><span class="emu">${r.kind} · ${r.matchup}</span>${note}${stake ? `<span class="emu">${stake}</span>` : ""}</span>
+        <span class="ecol-num">${r.our_pct}%</span>
+        <span class="ecol-num">${r.cents}¢</span>
+        <span class="ecol-num">${r.payout_x ? r.payout_x + "×" : "—"}</span>
+        <span class="ecol-conf conf-${r.trust}">${CONF_LABEL[r.trust] || r.trust}</span>
+      </div>`;
+    }).join("");
+    box.innerHTML = head + body +
+      `<div class="small" style="margin-top:10px;color:var(--muted)">${d.rows.length} bets from ${d.n_candidates} candidates · net = our % − ask − Kalshi taker fee · capped 3 per matchup so one opinion can't flood the board. <b>Trust</b>: soft rows are usually our model's bias, not the market's mistake.</div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Best Bets scan failed — try Rescan.</div>`;
+  }
 }
 
 // Baseball hub: Slate & combos / Edges / Hits as sub-views (formerly separate tabs).

@@ -1298,6 +1298,24 @@ def api_baseball_deep_status():
     return jsonify(p)
 
 
+@app.route("/api/bestbets")
+def api_bestbets():
+    """Cross-sport Best Bets: every positive net-of-fee edge across all our
+    models (MLB slate/props, season futures, UFC, tennis, crypto, arbitrage),
+    ranked by the edge you'd actually bank. Sources degrade independently."""
+    import datetime as _dt
+    import bestbets
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    try:
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 2500))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        return jsonify(bestbets.board(date, date[:4], sims=sims))
+    except Exception as e:
+        return jsonify({"error": f"best bets failed: {e}"}), 502
+
+
 @app.route("/api/baseball/edges")
 def api_baseball_edges():
     """Rank the biggest model/sim-vs-Kalshi disparities across the day's slate.

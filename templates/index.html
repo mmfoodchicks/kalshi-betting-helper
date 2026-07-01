@@ -44,6 +44,8 @@
   </header>
 
   <nav class="tabs">
+    <button class="tab" data-tab="bestbets">🎯 Best Bets</button>
+    <span class="navsep"></span>
     <span class="navgroup">Markets</span>
     <button class="tab active" data-tab="crypto">Crypto</button>
     <button class="tab" data-tab="commodities">Commodities</button>
@@ -65,6 +67,20 @@
   </nav>
 
   <main>
+   <div id="tab-bestbets" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🎯 Best Bets — every edge, one screen</h2>
+        <div class="scan-controls">
+          <button id="bbetsBtn" class="primary">↻ Rescan</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 8px">Every positive <b>net-of-fee</b> edge across all our models — MLB slate &amp; props, season futures, UFC, tennis, daily crypto, plus outright arbitrage. Net edge = our&nbsp;% − Kalshi ask − taker fee: the number you actually bank. First scan crunches every model and can take ~30s.</p>
+      <div id="bbetsSources" class="small" style="margin-bottom:8px"></div>
+      <div id="bbetsResults" class="markets"><div class="empty">Open the tab or hit Rescan to hunt edges across every model.</div></div>
+    </section>
+   </div>
+
    <div id="tab-crypto">
     <section class="card setup">
       <h2>New market</h2>
