@@ -137,10 +137,11 @@ def project(prior_season=None, n_seasons=4000, seed=None):
         # multi-year production -> regressed projection, then per-game expectation
         proj = nfl_awards._proj(p["stats"])
         pg = {k: proj.get(k, 0) / GAMES for k in
-              ("pass_yds", "pass_td", "int", "rush_yds", "rush_td", "rec_yds", "rec_td", "rec")}
-        # ~1 INT per ~330 pass yards (≈11 over a 3,700-yd season) — the old 0.0007
-        # rate implied only ~3, quietly inflating every QB's DK score.
-        pg["int"] = proj.get("pass_yds", 0) / GAMES * 0.003 if proj.get("pass_yds") else 0
+              ("pass_yds", "pass_td", "rush_yds", "rush_td", "rec_yds", "rec_td", "rec")}
+        # Real thrown INTs now come through the full stat line; fall back to a rate
+        # (~1 per 330 pass yds) only if a QB somehow has yards but no INT figure.
+        pg["int"] = (proj.get("pass_int", 0) / GAMES
+                     or (proj.get("pass_yds", 0) / GAMES * 0.003 if proj.get("pass_yds") else 0))
         per_game, totals = [], []
         for _ in range(n_seasons):
             games = int(round(GAMES * max(0.3, min(1.0, rng.gauss(0.92, 0.13)))))  # injury
@@ -397,7 +398,14 @@ def grade_roster(roster, pool=None, use_llm=False, pitch=None):
     explanations, stacks, a plain-English narrative (optionally LLM-written), and
     an overall letter + 0-100 score benchmarked against a field of chalk ADP teams.
     `pitch` is the drafter's optional written case, which the LLM read can weigh."""
-    roster = [p for p in roster if p and p.get("pos") in _FANTASY_POS]
+    # Dedupe by identity so the same player entered twice (e.g. two spellings that
+    # both resolve to him) can't double-count at a position.
+    _seen, _dedup = set(), []
+    for p in roster:
+        if p and p.get("pos") in _FANTASY_POS and id(p) not in _seen:
+            _seen.add(id(p))
+            _dedup.append(p)
+    roster = _dedup
     if len(roster) < 4:
         return {"error": "Add at least a few players to grade a team."}
     if pool is None:

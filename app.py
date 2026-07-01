@@ -1063,6 +1063,38 @@ def api_nfl_grade():
         return jsonify({"error": str(e)}), 502
 
 
+_TEAMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "nfl_teams.json")
+
+
+@app.route("/api/nfl/teams", methods=["GET", "POST"])
+def api_nfl_teams():
+    """Persist the drafter's best-ball teams so they survive reloads and don't have
+    to be retyped. GET returns saved teams; POST {teams:[{label,names,pitch}]}
+    overwrites them. Stored in a gitignored local file."""
+    import json
+    if request.method == "POST":
+        d = request.get_json(force=True, silent=True) or {}
+        teams = d.get("teams")
+        if not isinstance(teams, list):
+            return jsonify({"error": "send a 'teams' list"}), 400
+        clean = [{"label": str(t.get("label") or "")[:40],
+                  "names": [str(n) for n in (t.get("names") or [])][:40],
+                  "pitch": str(t.get("pitch") or "")[:2000]}
+                 for t in teams[:16] if (t.get("names") or t.get("label"))]
+        try:
+            os.makedirs(os.path.dirname(_TEAMS_PATH), exist_ok=True)
+            with open(_TEAMS_PATH, "w") as f:
+                json.dump({"teams": clean}, f)
+        except Exception as e:
+            return jsonify({"error": f"save failed: {e}"}), 500
+        return jsonify({"saved": len(clean)})
+    try:
+        with open(_TEAMS_PATH) as f:
+            return jsonify(json.load(f))
+    except Exception:
+        return jsonify({"teams": []})
+
+
 @app.route("/api/settings/ai_key", methods=["GET", "POST"])
 def api_ai_key():
     """Set up the optional Anthropic key for AI explanations. GET reports whether a

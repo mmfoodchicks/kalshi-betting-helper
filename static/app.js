@@ -2077,6 +2077,7 @@ async function gradeRunAll() {
     .map((t) => ({ label: t.label, pitch: t.pitch, names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean) }))
     .filter((t) => t.names.length);
   if (!teams.length) { out.innerHTML = `<div class="empty">Paste at least one team.</div>`; return; }
+  saveGradeTeams(true);                       // persist so a re-run needs no retyping
   const useLLM = $("gradeLLM") && $("gradeLLM").checked;
   out.innerHTML = `<div class="empty">Grading ${teams.length} team${teams.length > 1 ? "s" : ""}…${useLLM ? " (AI explanations on)" : ""}</div>`;
   try {
@@ -2086,6 +2087,29 @@ async function gradeRunAll() {
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     out.innerHTML = renderMultiGrade(d);
   } catch (e) { out.innerHTML = `<div class="empty">Grade failed — try again.</div>`; }
+}
+
+async function saveGradeTeams(silent) {
+  const teams = _gradeTeams.map((t) => ({
+    label: t.label || "",
+    names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean),
+    pitch: t.pitch || "",
+  })).filter((t) => t.names.length || t.label);
+  try {
+    await fetch("/api/nfl/teams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teams }) });
+    const b = $("gradeSaveBtn");
+    if (b && !silent) { const o = b.textContent; b.textContent = "✓ Saved"; setTimeout(() => { b.textContent = o; }, 1500); }
+  } catch (e) { /* best-effort */ }
+}
+
+async function loadGradeTeams() {
+  try {
+    const d = await (await fetch("/api/nfl/teams")).json();
+    if (d.teams && d.teams.length) {
+      _gradeTeams = d.teams.map((t) => ({ label: t.label || "", text: (t.names || []).join("\n"), pitch: t.pitch || "" }));
+    }
+  } catch (e) { /* keep the default blank team */ }
+  renderGradeTeams();
 }
 function _gradeColor(letter) {
   const c = (letter || "")[0];
@@ -3430,9 +3454,10 @@ async function init() {
 
   // Best-ball team grader (multi-team)
   if ($("gradeTeams")) {
-    renderGradeTeams();
+    loadGradeTeams();                          // restore saved teams (else a blank one)
     $("gradeAddBtn").addEventListener("click", () => addGradeTeam());
     $("gradeMineBtn").addEventListener("click", gradeAddMine);
+    $("gradeSaveBtn").addEventListener("click", () => saveGradeTeams(false));
     $("gradeRunBtn").addEventListener("click", gradeRunAll);
     $("aiKeySave").addEventListener("click", () => saveAiKey($("aiKeyInput").value));
     $("aiKeyClear").addEventListener("click", () => saveAiKey(""));
