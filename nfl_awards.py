@@ -1,26 +1,20 @@
-"""NFL award projections (MVP / OPOY / DPOY / OROY / DROY) via a production sim +
-history-calibrated voting model — the approach Madden's season sim uses, with our
-'ratings' coming from real prior-season production instead of subjective scouting.
+"""NFL player production pool + projection helpers for the fantasy season sim.
 
-Pipeline:
-  1. candidates(): the award-relevant player pool from last season's stat leaders,
-     each with their production + current team + rookie flag (ESPN core API).
-  2. project/simulate: each player's season line is sampled with year-to-year
-     variance, injury (games-played) risk, and a boost tied to their team's
-     projected success (a QB on a winning team throws more TDs) — the team rating
-     comes from pro_sim. Many simulated seasons -> a distribution per player.
-  3. vote(): a per-award scoring model calibrated to history (MVP ≈ a QB on a top
-     team; DPOY ≈ sacks/INTs + team defence; ROY ≈ best rookie production). Each
-     simulated season has one winner per award; we count how often each player
-     wins -> award odds.
+  - candidates(): the relevant player pool from the last few seasons' stat leaders,
+    each carrying a RECENCY-WEIGHTED full stat line (ESPN core API). Pulling the
+    whole per-athlete line (not just the stat they led) keeps secondary production
+    -- a back's catches, a receiver's rushing -- from being zeroed.
+  - _proj(): regress a player's observed line toward the positional baseline,
+    per-stat (passing sticky, sacks/INTs volatile).
+  - _team_wins(): projected wins per team (from the cached NFL team board), used to
+    scale rookie landing spots and offensive environment.
+
+These feed nfl_sim, which Monte-Carlos the fantasy season off them.
 """
 
 import concurrent.futures as _cf
-import math
-import random
 
 import pro_data
-import pro_sim
 import racing
 
 CORE = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
@@ -146,7 +140,7 @@ def candidates(prior_season, n_back=2):
     return racing._cached(("nfl_award_cands_my", prior_season, n_back), 7 * 86400, build) or {}
 
 
-# ---- Projection + season Monte Carlo + voting model ------------------------
+# ---- Projection ------------------------------------------------------------
 # Positional baselines we regress last season's production toward (year-to-year
 # mean reversion). Rough league-typical lines for a relevant starter.
 _BASE = {"pass_yds": 3700, "pass_td": 22, "pass_int": 11, "rush_yds": 650, "rush_td": 6,
@@ -158,8 +152,6 @@ _BASE = {"pass_yds": 3700, "pass_td": 22, "pass_int": 11, "rush_yds": 650, "rush
 _REG = {"pass_yds": 0.82, "pass_td": 0.80, "pass_int": 0.55, "rush_yds": 0.68, "rush_td": 0.66,
         "rec_yds": 0.72, "rec_td": 0.66, "rec": 0.74, "sacks": 0.55, "def_int": 0.48,
         "tackles": 0.74}
-_FORM_SD = 0.24      # season-to-season production swing (breakout / decline / scheme)
-_VOTE_SD = 0.13      # raw voter unpredictability on top of production
 
 
 def _team_wins():
@@ -179,159 +171,3 @@ def _proj(stats):
     """Regress a player's observed stats toward the positional baseline, per-stat."""
     return {k: _REG[k] * stats.get(k, 0) + (1 - _REG[k]) * (_BASE[k] if stats.get(k, 0) else 0)
             for k in _BASE}
-
-
-def _mvp_score(p, line, team_wins):
-    """MVP ≈ a QB on a top team. Production scaled by a steep team-wins factor;
-    non-QBs carry a heavy structural penalty (only a handful of non-QB MVPs ever)."""
-    wf = max(0.15, (team_wins - 5.0) / 7.0) ** 1.3            # team wins matter, less steeply
-    if p["pos"] == "QB":
-        prod = line["pass_yds"] * 0.011 + line["pass_td"] * 3.2 + \
-            line["rush_yds"] * 0.04 + line["rush_td"] * 4.0
-        return prod * wf
-    if p["pos"] in ("RB", "WR"):
-        prod = line["rush_yds"] * 0.011 + line["rush_td"] * 4 + \
-            line["rec_yds"] * 0.009 + line["rec_td"] * 3.5
-        return prod * wf * 0.35                                # structural non-QB penalty
-    return 0.0
-
-
-def _off_score(p, line, team_wins):
-    """OPOY: best offensive producer, only lightly team-dependent."""
-    wf = 0.8 + 0.04 * max(0, team_wins - 8)
-    if p["pos"] == "QB":
-        prod = line["pass_yds"] * 0.010 + line["pass_td"] * 3.0 + line["rush_td"] * 3.0
-    elif p["pos"] in ("RB", "WR", "TE"):
-        prod = (line["rush_yds"] + line["rec_yds"]) * 0.011 + \
-            (line["rush_td"] + line["rec_td"]) * 3.2
-    else:
-        return 0.0
-    return prod * wf
-
-
-def _def_score(p, line, team_wins):
-    """DPOY ≈ sacks/INTs + a nod to playing on a good team."""
-    if p["pos"] in ("QB", "RB", "WR", "TE", "C", "G", "OT", "K", "P"):
-        return 0.0
-    wf = 0.85 + 0.03 * max(0, team_wins - 8)
-    return (line["sacks"] * 6.0 + line["def_int"] * 5.0 + line["tackles"] * 0.35) * wf
-
-
-def simulate(prior_season=2025, n=20000, seed=None):
-    """Monte-Carlo the award races; return per-award ranked win odds."""
-    cands = candidates(prior_season)
-    if not cands:
-        return None
-    tw = _team_wins()
-    lg_win = 8.5
-    rng = random.Random(seed)
-    proj = {pid: _proj(p["stats"]) for pid, p in cands.items()}
-    mvp = {}; opoy = {}; dpoy = {}
-    for pid in cands:
-        mvp[pid] = opoy[pid] = dpoy[pid] = 0
-
-    for _ in range(n):
-        # one team-win draw per team, shared by that team's players (correlation)
-        wsamp = {}
-
-        def team_w(ab):
-            if ab not in wsamp:
-                wsamp[ab] = max(0.0, min(17.0, rng.gauss(tw.get(ab, lg_win), 2.4)))
-            return wsamp[ab]
-        best_mvp = best_dpoy = (None, -1.0)
-        off_scores = []
-        for pid, p in cands.items():
-            games = 17.0 * max(0.25, min(1.0, rng.gauss(0.92, 0.13)))   # injury risk
-            form = math.exp(rng.gauss(0.0, _FORM_SD))                    # year-to-year swing
-            f = games / 17.0 * form
-            line = {k: v * f for k, v in proj[pid].items()}
-            w = team_w(p["team_abbr"])
-            vote = math.exp(rng.gauss(0.0, _VOTE_SD))                    # voter unpredictability
-            ms = _mvp_score(p, line, w) * vote
-            if ms > best_mvp[1]:
-                best_mvp = (pid, ms)
-            ds = _def_score(p, line, w) * vote
-            if ds > best_dpoy[1]:
-                best_dpoy = (pid, ds)
-            os_ = _off_score(p, line, w) * vote
-            if os_ > 0:
-                off_scores.append((os_, pid))
-        if best_mvp[0]:
-            mvp[best_mvp[0]] += 1
-        if best_dpoy[0]:
-            dpoy[best_dpoy[0]] += 1
-        # OPOY rarely goes to the MVP -> award it to the best offensive player who
-        # ISN'T the MVP (a realistic voter split).
-        off_scores.sort(reverse=True)
-        opoy_win = next((pid for _, pid in off_scores if pid != best_mvp[0]), None)
-        if opoy_win:
-            opoy[opoy_win] += 1
-
-    def board(counter):
-        rows = [{"id": pid, "name": cands[pid]["name"], "pos": cands[pid]["pos"],
-                 "team": cands[pid]["team_abbr"], "pct": round(100 * c / n, 1)}
-                for pid, c in counter.items() if c]
-        rows.sort(key=lambda r: -r["pct"])
-        return rows[:15]
-    return {"sport": "nfl_awards", "n_sims": n, "season": prior_season + 1,
-            "mvp": board(mvp), "opoy": board(opoy), "dpoy": board(dpoy)}
-
-
-
-# ---- Cached board + live Kalshi pricing ------------------------------------
-import threading as _threading
-import time as _time
-_inflight = [False]
-
-# Kalshi award series -> our board key (markets open through the offseason).
-_MARKETS = {"mvp": ["KXNFLMVP"], "opoy": ["KXNFLOPOY"], "dpoy": ["KXNFLDPOY"]}
-
-
-def _norm(s):
-    import unicodedata
-    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
-    return " ".join("".join(c for c in s.lower() if c.isalnum() or c == " ").split())
-
-
-def _price(board):
-    """Attach Kalshi yes-ask + edge (model% − ask) to each award's candidates."""
-    import kalshi
-    for award, series_list in _MARKETS.items():
-        rows = board.get(award) or []
-        mkt = {}
-        for st in series_list:
-            try:
-                d = kalshi._get_json(f"{kalshi.BASE}/markets?series_ticker={st}&status=open&limit=400")
-            except Exception:
-                continue
-            for m in d.get("markets", []):
-                nm = _norm(m.get("yes_sub_title"))
-                if nm:
-                    mkt[nm] = kalshi._cents(m.get("yes_ask_dollars"))
-                    mkt.setdefault(nm.split()[-1], mkt[nm])
-        for r in rows:
-            c = mkt.get(_norm(r["name"])) or mkt.get(_norm(r["name"]).split()[-1])
-            r["kalshi_cents"] = c
-            r["edge"] = round(r["pct"] - c, 1) if c is not None else None
-    return board
-
-
-def board():
-    """Cached award board with live Kalshi prices. NON-BLOCKING: serves the cached
-    sim if fresh, else computes it in the background and returns None until ready."""
-    import datetime
-    key = ("nfl_awards_board",)
-    hit = racing._form_cache.get(key)
-    if hit and (_time.time() - hit[0]) < 12 * 3600 and hit[1] is not None:
-        return _price(dict(hit[1]))                  # prices fresh each call
-    if not _inflight[0]:
-        _inflight[0] = True
-
-        def _bg():
-            try:
-                prior = datetime.date.today().year - 1
-                racing._cached(key, 12 * 3600, lambda: simulate(prior, 20000))
-            finally:
-                _inflight[0] = False
-        _threading.Thread(target=_bg, daemon=True).start()
-    return None
