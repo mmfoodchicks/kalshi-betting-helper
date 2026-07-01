@@ -32,8 +32,18 @@ def _f(x, d=0.0):
 
 # Short-IL availability: fraction of the rest of the season a player on each IL
 # is expected to be available (they miss ~the next couple of weeks, then return).
-# 60-day is treated as out for the season; the weekly rerun re-checks all of this.
+# 60-day is treated as out for the season; the nightly rerun re-checks all of this.
 SHORT_IL = {"D7": 0.93, "D10": 0.88, "D15": 0.82}
+
+
+def _is_il(code):
+    """True if a roster status code is any flavor of injured list (D7/D10/D15/D60,
+    DL)."""
+    if not code:
+        return False
+    if code in ("DL",):
+        return True
+    return code[0] == "D" and code[1:].isdigit()   # D7 / D10 / D15 / D60
 
 
 def _roster_stats(team_id, season, group):
@@ -219,3 +229,49 @@ def team_profile(team_id, season=None):
         return {"rotation": starters or pitchers[:1], "bullpen": relievers,
                 "depth": depth[:6], "lineup": batters[:9], "bench": batters[9:]}
     return baseball._cached(("deep_profile2", team_id, season), 21600, build)
+
+
+def _bat_real(st):
+    """Real current-season counting line for a hitter (None-safe)."""
+    ab = _f(st.get("atBats"))
+    return {"pa": round(_f(st.get("plateAppearances"))), "ab": round(ab),
+            "h": round(_f(st.get("hits"))), "hr": round(_f(st.get("homeRuns"))),
+            "2b": round(_f(st.get("doubles"))), "3b": round(_f(st.get("triples"))),
+            "bb": round(_f(st.get("baseOnBalls"))), "k": round(_f(st.get("strikeOuts"))),
+            "r": round(_f(st.get("runs"))), "rbi": round(_f(st.get("rbi"))),
+            "avg": _f(st.get("avg")) or (_f(st.get("hits")) / ab if ab else 0.0)}
+
+
+def _pit_real(st):
+    """Real current-season line for a pitcher (IP kept as the raw MLB string)."""
+    return {"ip": st.get("inningsPitched") or "0.0",
+            "k": round(_f(st.get("strikeOuts"))), "bb": round(_f(st.get("baseOnBalls"))),
+            "h": round(_f(st.get("hits"))), "hr": round(_f(st.get("homeRuns"))),
+            "r": round(_f(st.get("runs"))), "era": _f(st.get("era")),
+            "gs": round(_f(st.get("gamesStarted")))}
+
+
+def roster_lines(team_id, season=None):
+    """Real current-season stat lines + IL status for the full 40-man, keyed by
+    player id: {pid: {name, pos, status, il, bat?, pit?}}. Lets the team view show
+    each player's actual numbers beside the simulated ones, and surfaces injured
+    players the season sim leaves out entirely (they sit at the bottom until active)."""
+    season = season or str(__import__("datetime").date.today().year)
+
+    def build():
+        hit = _roster_stats(team_id, season, "hitting")
+        pit = _roster_stats(team_id, season, "pitching")
+        out = {}
+        for pid in set(hit) | set(pit):
+            h, p = hit.get(pid), pit.get(pid)
+            per, pos, code = (h or p)[0], (h or p)[1], (h or p)[4]
+            rec = {"id": pid, "name": per.get("boxscoreName") or per.get("fullName"),
+                   "pos": (pos or {}).get("abbreviation", ""),
+                   "status": code, "il": _is_il(code)}
+            if h and h[2]:
+                rec["bat"] = _bat_real(h[2])
+            if p and p[2]:
+                rec["pit"] = _pit_real(p[2])
+            out[pid] = rec
+        return out
+    return baseball._cached(("deep_roster_lines", team_id, season), 21600, build)

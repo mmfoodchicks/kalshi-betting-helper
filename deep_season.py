@@ -207,42 +207,83 @@ def _merge_agg(a, b):
 
 
 def team_detail(agg, season, tid):
-    """Per-player simulated SEASON stat lines for one team from a deep run —
-    each player's mean line over the N simulated seasons."""
+    """Per-player stat lines for one team: each player's SIMULATED rest-of-season
+    line (mean over N deep seasons) alongside his REAL current-season numbers, plus
+    injured players the sim leaves out — surfaced at the bottom with their real
+    stats until they come off the IL and rejoin the active group up top."""
     n = agg.get("n") or 1
     prof = deep_data.team_profile(tid, season)
     meta = agg.get("meta", {}).get(tid, {})
+    try:
+        real = deep_data.roster_lines(tid, season)
+    except Exception:
+        real = {}
 
     def bat_line(p):
         s = agg["bat"].get(p["id"])
         if not s or s["pa"] < 1:
             return None
         ab = s["ab"] / n
-        return {"name": p["name"], "side": p["side"],
+        r = real.get(p["id"], {})
+        return {"name": p["name"], "side": p["side"], "id": p["id"],
+                "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
                 "pa": round(s["pa"] / n), "ab": round(ab),
                 "h": round(s["h"] / n), "hr": round(s["hr"] / n),
                 "2b": round(s["2b"] / n), "3b": round(s["3b"] / n),
                 "bb": round(s["bb"] / n), "k": round(s["k"] / n),
                 "r": round(s["r"] / n), "rbi": round(s["rbi"] / n),
-                "avg": round(s["h"] / s["ab"], 3) if s["ab"] else 0}
+                "avg": round(s["h"] / s["ab"], 3) if s["ab"] else 0,
+                "real": r.get("bat")}
 
     def pit_line(p):
         s = agg["pit"].get(p["id"])
         if not s or s["outs"] < 1:
             return None
         ip = s["outs"] / 3 / n
-        return {"name": p["name"], "hand": p["hand"],
+        r = real.get(p["id"], {})
+        return {"name": p["name"], "hand": p["hand"], "id": p["id"],
+                "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
                 "ip": round(ip, 1), "k": round(s["k"] / n), "bb": round(s["bb"] / n),
                 "h": round(s["h"] / n), "hr": round(s["hr"] / n), "r": round(s["r"] / n),
                 "era": round(9 * (s["r"] / n) / ip, 2) if ip else None,
-                "role": "SP" if p in prof["rotation"] else "RP"}
+                "role": "SP" if p in prof["rotation"] else "RP",
+                "real": r.get("pit")}
 
     batting = [b for b in (bat_line(p) for p in prof["lineup"] + prof["bench"]) if b]
     pitching = [p for p in (pit_line(x) for x in prof["rotation"] + prof["bullpen"]) if p]
-    batting.sort(key=lambda r: r["pa"], reverse=True)
-    pitching.sort(key=lambda r: r["ip"], reverse=True)
+
+    # Injured players the sim dropped entirely (e.g. 60-day IL) — show them at the
+    # bottom with their real stats only. When they're activated the next rerun puts
+    # them back in the sim and they climb into the active group above.
+    have = {r["id"] for r in batting} | {r["id"] for r in pitching}
+    for pid, r in real.items():
+        if pid in have or not r.get("il"):
+            continue
+        if r.get("bat") and r["bat"]["pa"] >= 1:
+            batting.append({"name": r["name"], "id": pid, "il": True,
+                            "status": r["status"], "has_sim": False, "real": r["bat"]})
+        elif r.get("pit") and r["pit"]["ip"] not in (None, "0.0", "0"):
+            pitching.append({"name": r["name"], "id": pid, "il": True, "status": r["status"],
+                             "has_sim": False, "role": "P", "real": r["pit"]})
+
+    # Active players first (by playing time), injured players sink to the bottom.
+    batting.sort(key=lambda r: (r["il"], -(r.get("pa") or (r.get("real") or {}).get("pa", 0))))
+    pitching.sort(key=lambda r: (r["il"], -_ip_num(r)))
     return {"team": meta.get("name"), "n_sims": n,
             "batting": batting, "pitching": pitching}
+
+
+def _ip_num(r):
+    """Sort key for pitcher rows: simulated IP if present, else real IP (raw MLB
+    'outs.thirds' string like '45.1')."""
+    if r.get("has_sim"):
+        return r.get("ip") or 0
+    ip = (r.get("real") or {}).get("ip") or "0"
+    try:
+        whole, _, thirds = str(ip).partition(".")
+        return float(whole) + (float(thirds) / 3 if thirds else 0)
+    except Exception:
+        return 0
 
 
 # Live progress shared with the API while a run is in flight.

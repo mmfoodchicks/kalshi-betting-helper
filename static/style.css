@@ -604,6 +604,10 @@ button.danger { color: var(--no); }
 .seasontbl th:first-child, .seasontbl td:first-child { text-align: left; }
 .seasontbl th { color: var(--muted); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: .03em; }
 .seasontbl tbody tr:hover { background: rgba(255,255,255,0.03); }
+.seasontbl .rp { color: var(--muted); font-size: 0.82em; }
+.seasontbl tr.ilrow { opacity: 0.62; }
+.seasontbl tr.ilrow td:first-child { font-style: italic; }
+.iltag { color: var(--no); font-size: 0.72rem; font-style: normal; white-space: nowrap; }
 
 /* Live Kalshi price chip on a combo leg */
 .kmkt { color: var(--accent); font-size: 0.82rem; white-space: nowrap; }

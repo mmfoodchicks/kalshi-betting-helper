@@ -1786,6 +1786,7 @@ async function loadLive() {
 }
 
 let _boardData = null, _featMarket = null, _featSport = "mlb";
+let _deepTimer = null, _featGenTime = 0;   // generation time of the board on screen
 const _featIntro = {
   mlb: `Our season Monte Carlo vs the market — division / playoff / pennant / World Series odds and win totals, vs Kalshi & Polymarket. Click "Run deep sim" for the pitch-by-pitch engine.`,
   f1: `Deep F1 season sim — every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
@@ -1807,12 +1808,13 @@ async function loadFeatured() {
     if (_featSport === "mlb") {
       const d = await (await fetch("/api/baseball/futures")).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-      _boardData = d; renderFeatured(d); monitorDeep();
+      _boardData = d; _featGenTime = _genTime(d.age_sec); renderFeatured(d);
     } else {
       const d = await (await fetch(`/api/racing/${_featSport}`)).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-      renderRacing(d);
+      _featGenTime = _genTime(d.age_sec); renderRacing(d);
     }
+    watchFeatured();   // drive the progress bar + auto-reload when a newer run lands
   } catch (e) {
     box.innerHTML = `<div class="empty">Season sim failed.</div>`;
   }
@@ -1839,7 +1841,7 @@ let _raceData = null, _raceMarket = "drivers";
 function renderRacing(d) {
   _raceData = d;
   const isF1 = d.sport === "f1";
-  const fresh = `updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly`;
+  const fresh = `updated <b>${agoStr(d.age_sec)}</b> · reruns nightly (auto-updates here)`;
   $("featuredSummary").innerHTML =
     `<div class="small" style="margin-bottom:8px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · <b>${d.races_left}</b> races left · ${isF1 ? "qualifying + race + sprints, with grid penalties / DNFs / time penalties" : "pace + the playoff bracket, with wrecks / incidents / penalties"}.
      <span style="color:var(--muted)">${fresh}</span>
@@ -2537,12 +2539,11 @@ function renderRaceMarket() {
   $("raceTable").innerHTML = html;
 }
 
-let _deepTimer = null;
 async function startDeepRun() {
   const btn = $("deepBtn");
   if (btn) { btn.disabled = true; btn.textContent = "starting…"; }
   try { await fetch("/api/baseball/futures/deep", { method: "POST" }); } catch (e) {}
-  monitorDeep();
+  watchFeatured();
 }
 
 function deepBar(s) {
@@ -2557,24 +2558,52 @@ function deepBar(s) {
   </div>`;
 }
 
-// Poll the deep-run status and drive the loading bar. Works whether the run was
-// kicked by the button or by the weekly scheduler; swaps to the deep board on
-// completion.
-async function monitorDeep() {
+// Wall-clock time a cached sim was generated (seconds since epoch) from its age.
+const _genTime = (age) => (Date.now() / 1000) - (age || 0);
+
+// True while the Featured sub-view is the one on screen (so we don't reload a
+// board the user isn't looking at).
+function _featuredVisible() {
+  const tab = $("tab-sports");
+  if (!tab || tab.classList.contains("hidden")) return false;
+  const sub = document.querySelector("#tab-sports .sub-featured");
+  return !!sub && !sub.classList.contains("hidden");
+}
+
+// Watch the current sport's sim: drive the MLB deep progress bar while a run is in
+// flight, and — crucially — reload the board whenever a NEWER run lands (kicked by
+// the button or the nightly scheduler), so the page updates itself without a manual
+// refresh. Keeps a slow heartbeat when idle so a midnight rerun is picked up.
+async function watchFeatured() {
   clearTimeout(_deepTimer);
   const prog = $("deepProg");
-  let s;
-  try { s = await (await fetch("/api/baseball/futures/deep/status")).json(); }
-  catch (e) { _deepTimer = setTimeout(monitorDeep, 6000); return; }
-  if (s.running) {
-    if (prog) prog.innerHTML = deepBar(s);
-    _deepTimer = setTimeout(monitorDeep, 3000);
-  } else {
-    if (prog) prog.innerHTML = "";
-    if (s.ready && _featSport === "mlb" && (!_boardData || _boardData.engine !== "deep")) {
-      loadFeatured();                          // a run just finished -> show deep board
+  let delay = 60000;
+  try {
+    if (_featSport === "mlb") {
+      const s = await (await fetch("/api/baseball/futures/deep/status")).json();
+      if (s.running) {
+        if (prog) prog.innerHTML = deepBar(s);
+        delay = 3000;
+      } else {
+        if (prog) prog.innerHTML = "";
+        const newGen = s.age_sec != null ? _genTime(s.age_sec) : 0;
+        const firstDeep = !_boardData || _boardData.engine !== "deep";
+        const newer = newGen > _featGenTime + 20;      // a fresh run finished
+        if (s.ready && (firstDeep || newer) && _featuredVisible()) {
+          loadFeatured(); return;                      // loadFeatured re-arms the watcher
+        }
+      }
+    } else {
+      const key = _featSport;                          // "f1" | "nascar"
+      const st = (await (await fetch("/api/sim/status")).json())[key] || {};
+      if (st.running) {
+        delay = 5000;
+      } else if (st.age_sec != null && _genTime(st.age_sec) > _featGenTime + 20 && _featuredVisible()) {
+        loadFeatured(); return;
+      }
     }
-  }
+  } catch (e) {}
+  _deepTimer = setTimeout(watchFeatured, delay);
 }
 
 function renderFeatured(d) {
@@ -2583,7 +2612,7 @@ function renderFeatured(d) {
     : `fast model (expected runs → Pythagorean)`;
   const deepCtl = d.engine === "deep"
     ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} seasons</span>
-       <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · auto-refreshes weekly</span>
+       <span class="small" style="color:var(--muted);margin-left:6px">updated <b>${agoStr(d.age_sec)}</b> · reruns nightly (auto-updates here)</span>
        <button class="track-mini" style="margin-left:6px" onclick="startDeepRun()">↻ rerun now</button>`
     : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim (~4,000 seasons)</button>`;
   $("featuredSummary").innerHTML =
@@ -2661,17 +2690,37 @@ window.openTeamDetail = openTeamDetail;
 window.closeTeamDetail = () => { const b = $("futTeamDetail"); if (b) b.innerHTML = ""; };
 
 function renderTeamDetail(d) {
-  const av = (x) => x.toFixed(3).replace(/^0/, "");
-  const bat = d.batting.map((b) => `<tr><td>${b.name}</td><td>${av(b.avg)}</td><td>${b.h}</td>
-    <td>${b.hr}</td><td>${b.r}</td><td>${b.rbi}</td><td>${b.bb}</td><td>${b.k}</td></tr>`).join("");
-  const pit = d.pitching.map((p) => `<tr><td>${p.name} <span class="small">${p.role}</span></td>
-    <td>${p.ip}</td><td>${p.era != null ? p.era : "—"}</td><td>${p.k}</td><td>${p.bb}</td><td>${p.h}</td><td>${p.hr}</td></tr>`).join("");
+  const av = (x) => (x == null ? "—" : x.toFixed(3).replace(/^0/, ""));
+  const rp = (v) => (v == null ? "" : ` <span class="rp">(${v})</span>`);   // real in parens
+  const ilTag = (r) => r.il ? ` <span class="iltag" title="On the injured list${r.status ? " (" + r.status + ")" : ""}">🏥 IL</span>` : "";
+  const bat = d.batting.map((b) => {
+    const r = b.real || {};
+    if (!b.has_sim) {   // injured, no simulated line — real stats only
+      return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.h ?? "—"}</td>
+        <td>${r.hr ?? "—"}</td><td>${r.r ?? "—"}</td><td>${r.rbi ?? "—"}</td><td>${r.bb ?? "—"}</td><td>${r.k ?? "—"}</td></tr>`;
+    }
+    return `<tr${b.il ? ' class="ilrow"' : ""}><td>${b.name}${ilTag(b)}</td>
+      <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.h}${rp(r.h)}</td>
+      <td>${b.hr}${rp(r.hr)}</td><td>${b.r}${rp(r.r)}</td><td>${b.rbi}${rp(r.rbi)}</td>
+      <td>${b.bb}${rp(r.bb)}</td><td>${b.k}${rp(r.k)}</td></tr>`;
+  }).join("");
+  const pit = d.pitching.map((p) => {
+    const r = p.real || {};
+    if (!p.has_sim) {
+      return `<tr class="ilrow"><td>${p.name} <span class="small">${p.role || "P"}</span>${ilTag(p)}</td>
+        <td>${r.ip ?? "—"}</td><td>${r.era != null ? r.era : "—"}</td><td>${r.k ?? "—"}</td>
+        <td>${r.bb ?? "—"}</td><td>${r.h ?? "—"}</td><td>${r.hr ?? "—"}</td></tr>`;
+    }
+    return `<tr${p.il ? ' class="ilrow"' : ""}><td>${p.name} <span class="small">${p.role}</span>${ilTag(p)}</td>
+      <td>${p.ip}${rp(r.ip)}</td><td>${p.era != null ? p.era : "—"}${p.real && r.era != null ? rp(r.era) : ""}</td>
+      <td>${p.k}${rp(r.k)}</td><td>${p.bb}${rp(r.bb)}</td><td>${p.h}${rp(r.h)}</td><td>${p.hr}${rp(r.hr)}</td></tr>`;
+  }).join("");
   return `<div class="teamdetail">
-    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons
+    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls">
-      <div><div class="tdcap">⚾ Batting</div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
-      <div><div class="tdcap">🥎 Pitching</div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
+      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
+      <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
     </div>
   </div>`;
 }
