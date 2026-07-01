@@ -583,6 +583,14 @@ def _offense_factor(team_hit, ops_vs_hand, opp_hand, lg):
 
 
 # ---- Kalshi price matching ------------------------------------------------
+def _kalshi_fee(cents):
+    """Expected Kalshi taker fee in cents per contract at price `cents`:
+    fee = 0.07 x price x (1 - price), i.e. ~1.75¢ at 50¢, ~0.6¢ at 90¢. Kalshi
+    rounds up per order; we use the smooth expectation for edge math."""
+    p = cents / 100.0
+    return round(7.0 * p * (1.0 - p), 1)
+
+
 def get_kalshi_prices():
     markets = []; cursor = None
     for _ in range(4):
@@ -965,15 +973,24 @@ def analyze_slate(date, season):
 
         er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT
         er_away = lg["rpg"] * off_a * pit_h_factor
-        p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
-        p_home = max(0.04, min(0.96, p_home))
-        p_away = 1 - p_home
 
-        # Park + weather drive the expected total (over/under), not the moneyline.
+        # Park + weather scale BOTH teams' run environment. Baking them into the
+        # expected runs (not just the headline total) keeps every downstream
+        # consumer consistent: the totals/run-line ladders, RFI, the Monte Carlo
+        # (which calibrates lineups to these ERs), hitter props and the live
+        # remaining-runs model all see the same environment. The moneyline is
+        # untouched — a common multiplier cancels in the Pythagorean ratio.
         park = PARK_FACTORS.get(g["home_id"], 1.0)
         winfo = weather_by_pk.get(g["game_pk"]) or {}
         wx_factor = winfo.get("factor", 1.0)
-        exp_total = round((er_home + er_away) * park * wx_factor, 1)
+        env = max(0.75, min(1.40, park * wx_factor))
+        er_home *= env
+        er_away *= env
+
+        p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
+        p_home = max(0.04, min(0.96, p_home))
+        p_away = 1 - p_home
+        exp_total = round(er_home + er_away, 1)
 
         # In-game win probability for games in progress: blend the current score
         # and game state with each team's expected remaining runs.
@@ -1002,13 +1019,15 @@ def analyze_slate(date, season):
 
         price_entry, home_abbr, away_abbr = _match_price(
             kalshi_index, abbr_map, g["home_id"], g["away_id"], g["start_epoch"])
-        edge = market_prob = pick_price = None
+        edge = market_prob = pick_price = fee_cents = net_edge = None
         if price_entry:
             pick_abbr = home_abbr if pick_home else away_abbr
             pick_price = price_entry["prices"].get(pick_abbr)
             if pick_price is not None:
                 market_prob = round(pick_price, 1)
                 edge = round(pick_prob * 100 - pick_price, 1)
+                fee_cents = _kalshi_fee(pick_price)
+                net_edge = round(edge - fee_cents, 1)
 
         def sp_block(name, st, h):
             if not st or "season" not in st:
@@ -1031,8 +1050,12 @@ def analyze_slate(date, season):
         gp = props_mod.game_props(er_home, er_away, home_abbr or g["home_id"], away_abbr or g["away_id"])
         hit_home = hit_away = None
         bat_home = bat_away = None
-        ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg)  # home bats vs away pitching
-        ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg)  # away bats vs home pitching
+        # Hits scale roughly with the square root of the run environment (Coors
+        # lifts runs ~28% but hits ~13%), so hitter props see env^0.55 on top of
+        # the opposing pitching. Both lineups share the same park/weather.
+        hit_env = env ** 0.55
+        ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env  # home bats vs away pitching
+        ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env  # away bats vs home pitching
         def bat_list(lineup, ohf):
             out = []
             for i, b in enumerate(lineup):
@@ -1124,6 +1147,7 @@ def analyze_slate(date, season):
             "pick_prob": round(pick_prob, 4), "pick_pct": round(pick_prob * 100, 1),
             "confidence": round(abs(pick_prob - 0.5) * 200),
             "pick_price_cents": pick_price, "market_prob": market_prob, "edge_cents": edge,
+            "fee_cents": fee_cents, "net_edge_cents": net_edge,
         })
     games.sort(key=lambda x: x["pick_prob"], reverse=True)
     return games
@@ -1558,11 +1582,18 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
             sim_pct = round(c["marg"] * 100, 1)         # holistic estimate (combos use this)
             model_pct = c.get("model_pct")
             edge = round(sim_pct - cents, 1)
+            # Kalshi taker fee (~7¢ x p x (1-p) per contract) comes off whichever
+            # side you'd buy, so the tradeable edge is |edge| minus the fee.
+            fee = _kalshi_fee(cents)
+            net = round(edge - fee, 1) if edge >= 0 else round(edge + fee, 1)
+            if edge * net < 0:                          # fee ate the whole edge
+                net = 0.0
             rows.append({
                 "matchup": g["matchup"], "type": c["type"], "pick": c["label"],
                 "our_pct": sim_pct, "model_pct": model_pct,
                 "market_cents": cents, "market_payout_x": round(100.0 / cents, 2),
-                "edge": edge, "confidence": _edge_confidence(c["type"]),
+                "edge": edge, "fee_cents": fee, "net_edge": net,
+                "confidence": _edge_confidence(c["type"]),
             })
     # Per-market lean over ALL priced legs. If a whole market type is one-sided
     # (e.g. every starter's Ks read high vs the market), that's a systematic model
@@ -1582,7 +1613,8 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
         del s["edge_sum"]
 
     filtered = [r for r in rows if abs(r["edge"]) >= min_edge]
-    filtered.sort(key=lambda r: abs(r["edge"]), reverse=True)  # biggest gaps, either way
+    # Rank by the edge you can actually trade (net of Kalshi's fee), biggest first.
+    filtered.sort(key=lambda r: abs(r.get("net_edge", r["edge"])), reverse=True)
     return {"edges": filtered[:top_n], "n_priced": len(rows),
             "summary": summary, "n_sims": n_sims}
 
@@ -1597,7 +1629,7 @@ def _kalshi_payout(leg_suffix_pairs):
         idx = kalshi_mlb.index()
     except Exception:
         idx = {}
-    payout, priced, total = 1.0, 0, 0
+    payout, payout_net, priced, total = 1.0, 1.0, 0, 0
     for leg, suf in leg_suffix_pairs:
         total += 1
         c = None
@@ -1609,10 +1641,13 @@ def _kalshi_payout(leg_suffix_pairs):
         if c and 0 < c < 100:
             leg["market_payout_x"] = round(100.0 / c, 2)
             payout *= 100.0 / c
+            # Net payout: each leg effectively costs price + taker fee.
+            payout_net *= 100.0 / min(99.9, c + _kalshi_fee(c))
             priced += 1
         else:
             leg["market_payout_x"] = None
     return {"kalshi_payout_x": round(payout, 2) if priced else None,
+            "kalshi_payout_net_x": round(payout_net, 2) if priced else None,
             "kalshi_priced": priced, "kalshi_total_legs": total,
             "kalshi_full": priced == total and priced > 0}
 
