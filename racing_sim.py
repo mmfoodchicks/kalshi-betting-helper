@@ -880,6 +880,42 @@ def next_race_profile(sport):
     return None
 
 
+# DraftKings F1 scoring: finishing points (1st 43, 2nd 40, 3rd 38, then 41−pos),
+# ±1 place differential, fastest lap +5, laps led +0.1, defeated teammate +5.
+# F1's dominator pool is tiny (57 laps x 0.1 ≈ 5.7 + the 5-pt fastest lap), so
+# unlike NASCAR the GPP question is finish position + place differential — which
+# is why we re-simulate the race FROM THE REAL GRID once qualifying is done.
+def _dk_f1_fin(pos):
+    if pos <= 1:
+        return 43.0
+    if pos == 2:
+        return 40.0
+    return max(1.0, 41.0 - pos)
+
+
+_F1_LAPS = 57                      # typical race distance; 0.1/lap keeps this minor
+
+
+def _f1_dk_race(order, laps, rng):
+    """Laps-led + fastest-lap DK points for ONE simulated F1 race. The winner
+    leads most laps (modern F1 is front-locked); the fastest lap often goes to a
+    top car that pits late for softs, so it spreads over the top ~8."""
+    dom = {}
+    k = 1 + (1 if rng.random() < 0.55 else 0) + (1 if rng.random() < 0.25 else 0)
+    leaders = order[:max(3, k)]
+    weights = [math.exp(-i / 1.1) * (0.6 + rng.random()) for i in range(len(leaders))]
+    picks = sorted(range(len(leaders)), key=lambda i: -weights[i])[:k]
+    shares = sorted((rng.expovariate(1.0) for _ in picks), reverse=True)
+    tot = sum(shares) or 1.0
+    for idx, sh in zip(picks, shares):
+        dom[leaders[idx]] = 0.1 * laps * sh / tot
+    fl_pool = order[:8]
+    fw = [math.exp(-i / 2.5) for i in range(len(fl_pool))]
+    fl = rng.choices(fl_pool, weights=fw)[0]
+    dom[fl] = dom.get(fl, 0.0) + 5.0
+    return dom
+
+
 # DraftKings NASCAR Classic scoring: finishing points (1st=45, then 44−pos),
 # ±1 per place gained/lost, +0.25 per lap led, +0.45 per fastest lap. Dominator
 # points scale with race LENGTH — a 400-lap short track carries a 280-point
@@ -922,21 +958,30 @@ def _alloc_dominators(order, laps, ttype, rng):
     return dom
 
 
-def next_race_sim(sport, n=2500, seed=None):
+def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
     """Simulate the NEXT race many times and return each driver's finish profile
     {name: {avg_finish, p_win, p_top5, p_top10, p_top20, ...}} -- the signal the
-    DFS optimizer feeds on. For NASCAR it also returns REAL DraftKings scoring
-    components per driver: expected finish points, expected dominator points
-    (laps led x0.25 + fastest x0.45 for THIS race's length and track type), and
-    the 90th-percentile DK night (dk_q90) for true per-driver GPP ceilings.
-    Grid-independent: it runs the sim's own qualifying, so it's a true expected
-    finish, not a start-biased one."""
+    DFS optimizer feeds on -- plus REAL DraftKings scoring components per driver
+    (dk_mean / dk_q90 for true per-player means and GPP ceilings).
+
+    NASCAR: finish points + a dominator model (laps led x0.25 + fastest x0.45)
+    sized to THIS race's length and track type. Grid-independent by design (Cup
+    start position barely predicts the finish); place differential is applied
+    by the DFS layer off the real grid.
+
+    F1: finish points + laps led x0.1 + the 5-pt fastest lap + the defeated-
+    teammate +5. When `fixed_grid` ({normalized name: start pos}) is given --
+    i.e. real qualifying is done -- every simulated race STARTS FROM THAT GRID,
+    so expected finish is conditioned on the actual start and place differential
+    is computed exactly, per sim, inside the DK samples (F1 races lean hard on
+    the grid, so conditioning beats any linear PD adjustment)."""
     rng = random.Random(seed)
     fin = defaultdict(float); win = defaultdict(int)
     t5 = defaultdict(int); t10 = defaultdict(int); t20 = defaultdict(int)
     name_of = {}
-    dk_samples = defaultdict(list)          # NASCAR: per-sim fin_pts + dominator
+    dk_samples = defaultdict(list)          # per-sim DK points (scoring components)
     laps = None; ttype = None
+    grid_conditioned = False
 
     if sport == "f1":
         profs = f1_profiles(); rem = f1_remaining()
@@ -946,10 +991,60 @@ def next_race_sim(sport, n=2500, seed=None):
         name_of = {d["id"]: d["name"] for d in drivers}
         race = rem[0]
         ctype = race.get("type", "standard"); wet_p = race.get("wet_prob", 0.0)
+        laps = _F1_LAPS
+        # Teammate pairs for the defeated-teammate bonus.
+        by_con = defaultdict(list)
+        for d in drivers:
+            by_con[d.get("constructor_id") or d.get("constructor")].append(d["id"])
+        mate_of = {}
+        for ids in by_con.values():
+            if len(ids) == 2:
+                mate_of[ids[0]], mate_of[ids[1]] = ids[1], ids[0]
+        # Resolve the real grid (normalized names) to a driver-id start order.
+        fg_order = None
+        if fixed_grid:
+            id_by_norm = {}
+            for d in drivers:
+                nm = racing.norm_name(d["name"])
+                id_by_norm[nm] = d["id"]
+                last = nm.split()[-1] if nm.split() else nm
+                id_by_norm.setdefault(last, d["id"])
+            pairs = []
+            for nm, pos in fixed_grid.items():
+                did = id_by_norm.get(nm)
+                if did is None and nm.split():
+                    did = id_by_norm.get(nm.split()[-1])
+                if did is not None:
+                    pairs.append((pos, did))
+            # 8+ real matches = a legitimate grid (standings can carry 21-22
+            # entries with mid-season replacements, so don't gate on field size).
+            if len(pairs) >= 8:
+                pairs.sort()
+                seen, fg = set(), []
+                for _pos, did in pairs:
+                    if did not in seen:
+                        fg.append(did); seen.add(did)
+                for d in drivers:                      # anyone unmatched starts last
+                    if d["id"] not in seen:
+                        fg.append(d["id"])
+                fg_order = fg
+                grid_conditioned = True
         for _ in range(n):
-            grid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
+            grid = list(fg_order) if fg_order else \
+                _apply_grid_penalties(_sim_quali(drivers, rng), rng)
+            start_of = {did: i + 1 for i, did in enumerate(grid)}
             order = _sim_race(drivers, grid, rng, wet=rng.random() < wet_p, ctype=ctype)
             _tally_finish(order, fin, win, t5, t10, t20)
+            dom = _f1_dk_race(order, laps, rng)
+            pos_of = {did: i + 1 for i, did in enumerate(order)}
+            for pos, did in enumerate(order, 1):
+                pts = _dk_f1_fin(pos) + dom.get(did, 0.0)
+                mate = mate_of.get(did)
+                if mate is not None and pos < pos_of.get(mate, 99):
+                    pts += 5.0                          # defeated teammate
+                if fg_order:
+                    pts += start_of.get(did, len(order)) - pos   # exact in-sim PD
+                dk_samples[did].append(pts)
     elif sport == "nascar":
         state = nascar_state()
         dmap = (state or {}).get("drivers") or {}
@@ -985,8 +1080,11 @@ def next_race_sim(sport, n=2500, seed=None):
     meta = {"sport": sport, "race": race.get("name"), "n_sims": n, "drivers": out}
     if laps is not None:
         meta["laps"] = laps
-        meta["track_type"] = ttype
-        meta["dominator_pool"] = round(0.7 * laps)            # 0.25+0.45 per lap
+        meta["track_type"] = ttype if sport == "nascar" else race.get("type")
+        # NASCAR: 0.25+0.45 per lap. F1: 0.1 per lap + the single 5-pt fastest lap.
+        meta["dominator_pool"] = round(0.7 * laps) if sport == "nascar" \
+            else round(0.1 * laps + 5)
+        meta["grid_conditioned"] = grid_conditioned
     return meta
 
 

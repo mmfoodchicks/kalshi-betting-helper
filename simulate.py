@@ -94,7 +94,8 @@ def parse_dk_csv(text):
                 out.append({"name": name, "salary": salary, "proj": proj,
                             "pos": (r.get("Position") or r.get("Roster Position") or "").strip(),
                             "roster_pos": (r.get("Roster Position") or "").strip().upper(),
-                            "game": (r.get("Game Info") or r.get("GameInfo") or "").strip()})
+                            "game": (r.get("Game Info") or r.get("GameInfo") or "").strip(),
+                            "team": (r.get("TeamAbbrev") or r.get("Team") or "").strip()})
         if out:
             return out
 
@@ -137,7 +138,8 @@ def parse_dk_csv(text):
         rpos = parts[4].strip().upper() if len(parts) > 4 else ""
         if name and salary and salary > 0:
             out.append({"name": name, "salary": salary, "proj": proj or 0.0,
-                        "pos": pos, "roster_pos": rpos, "game": game})
+                        "pos": pos, "roster_pos": rpos, "game": game,
+                        "team": parts[7].strip() if len(parts) > 7 else ""})
     return out
 
 
@@ -178,6 +180,27 @@ def apply_grid(players, sport, date=None):
             form = racing.get_f1_form() or {}
     except Exception:
         form = {}
+    # F1: real qualifying is done, so RE-SIMULATE the race thousands of times
+    # FROM THE ACTUAL GRID. Expected finish is conditioned on where each driver
+    # actually starts, and place differential is computed exactly per simulated
+    # race inside the DK samples (F1 leans hard on the grid — conditioning beats
+    # any linear PD adjustment). Falls back to the marginal profile on failure.
+    f1_prof, cond_meta = {}, {}
+    if sport == "f1":
+        try:
+            import racing_sim
+            cond = racing_sim.next_race_sim("f1", n=1500, fixed_grid=grid["grid"])
+            if cond and cond.get("grid_conditioned"):
+                for nm2, s2 in (cond.get("drivers") or {}).items():
+                    key = _norm_name(nm2)
+                    f1_prof[key] = s2
+                    if key.split():
+                        f1_prof.setdefault(key.split()[-1], s2)
+                cond_meta = {k: cond.get(k) for k in
+                             ("laps", "dominator_pool", "grid_conditioned", "n_sims")}
+        except Exception:
+            f1_prof = {}
+
     lam = 0.55                                  # partial mean-reversion of the grid
     matched, unmatched, form_hits, sim_hits = 0, [], 0, 0
     dk_hits = 0
@@ -187,6 +210,20 @@ def apply_grid(players, sport, date=None):
             unmatched.append(p["name"])
             continue
         matched += 1
+        # F1 grid-conditioned DK projection (PD already inside the samples).
+        if f1_prof:
+            nm = _norm_name(p["name"])
+            s2 = f1_prof.get(nm) or (f1_prof.get(nm.split()[-1]) if nm.split() else None)
+            if s2 and s2.get("dk_mean") is not None:
+                p["base_proj"] = p["proj"]
+                p["start"] = start
+                csv_anchor = p["proj"] if p["proj"] > 1 else s2["dk_mean"]
+                p["proj"] = max(0.0, 0.75 * s2["dk_mean"] + 0.25 * csv_anchor)
+                p["ceil_proj"] = round(max(p["proj"], s2["dk_q90"]), 1)
+                p["exp_finish"] = round(s2["avg_finish"], 1)
+                p["pd_adj"] = round(start - s2["avg_finish"], 1)   # display; PD is in-sim
+                sim_hits += 1; dk_hits += 1
+                continue
         s = sim_prof.get(_norm_name(p["name"]))
         p["base_proj"] = p["proj"]
         p["start"] = start
@@ -226,12 +263,45 @@ def apply_grid(players, sport, date=None):
         # high-variance drivers rather than mirroring cash). cv=0.5 fallback for
         # drivers the sim doesn't cover.
         p["ceil_proj"] = round(_driver_ceiling(p["proj"], s, 0.5), 1)
+    # F1 constructors: DK scores the team off both cars, so project each CNSTR
+    # row from OUR two driver projections for THIS race. The absolute scale is
+    # anchored to the CSV's own constructor averages (DK knows its table; we
+    # know the race-specific ordering and spread), so no scoring table is
+    # invented — we supply the shape, DK supplies the scale.
+    if sport == "f1":
+        by_team = {}
+        for p in players:
+            if p.get("roster_pos") == "D" and p.get("team"):
+                by_team.setdefault(p["team"], []).append(p)
+        cons = [p for p in players if p.get("roster_pos") == "CNSTR" and p.get("team")]
+        pairs = [(c, by_team.get(c["team"])) for c in cons]
+        vals = [(c["proj"], sum(x["proj"] for x in tp)) for c, tp in pairs
+                if tp and c["proj"] > 1]
+        if vals:
+            csv_mean = sum(v for v, _ in vals) / len(vals)
+            ours_mean = sum(s for _, s in vals) / len(vals) or 1.0
+            k = max(0.2, min(1.5, csv_mean / ours_mean))
+        else:
+            k = 0.45
+        for c, tp in pairs:
+            if not tp:
+                continue
+            c["base_proj"] = c["proj"]
+            ours = k * sum(x["proj"] for x in tp)
+            anchor = c["base_proj"] if c["base_proj"] > 1 else ours
+            c["proj"] = round(0.7 * ours + 0.3 * anchor, 1)
+            c["ceil_proj"] = round(max(c["proj"], k * sum(x.get("ceil_proj") or x["proj"]
+                                                          for x in tp)), 1)
+
+    meta = _sim_meta(sport)
+    if cond_meta:
+        meta.update(cond_meta)
     return {"available": True, "race": grid["race"], "series": grid["series"],
             "field": field, "matched": matched, "unmatched": unmatched[:25],
             "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits,
-            "dk_scored": dk_hits, "track_type": _sim_meta(sport).get("track_type"),
-            "laps": _sim_meta(sport).get("laps"),
-            "dominator_pool": _sim_meta(sport).get("dominator_pool")}
+            "dk_scored": dk_hits, "track_type": meta.get("track_type"),
+            "laps": meta.get("laps"), "dominator_pool": meta.get("dominator_pool"),
+            "grid_conditioned": bool(cond_meta.get("grid_conditioned"))}
 
 
 def _norm_name(s):
