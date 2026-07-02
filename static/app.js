@@ -191,7 +191,10 @@ function renderSignalBody(sig, closeTime, marketId) {
   const pctYes = Math.round(sig.prob_yes * 100);
   const secs = closeTime - Math.floor(Date.now() / 1000);
   const edgeTxt = sig.edge_cents !== null && sig.edge_cents !== undefined
-    ? ` · Edge <b>${sig.edge_cents > 0 ? "+" : ""}${sig.edge_cents}¢</b>` : "";
+    ? ` · Edge <b>${sig.edge_cents > 0 ? "+" : ""}${sig.edge_cents}¢</b>` +
+      (sig.net_edge_cents != null
+        ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's ~${sig.fee_cents}¢ taker fee">(net ${sig.net_edge_cents > 0 ? "+" : ""}${sig.net_edge_cents}¢)</span>` : "")
+    : "";
   let html = `
     ${badge(sig.recommendation, sig.strength)}
     <div class="probbar">
@@ -396,10 +399,13 @@ function renderScanRow(m) {
   if (side) {
     const cost = side === "YES" ? m.yes_ask : m.no_ask;
     const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
+    const net = side === "YES" ? sig.net_edge_yes_cents : sig.net_edge_no_cents;
+    const netTag = net != null
+      ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's taker fee">net +${net}¢</span>` : "";
     const stake = stakeText(fair / 100, cost);
     action = `<div class="actionline">
         ${badge(sig.recommendation, sig.strength)}
-        <span class="edgeval pos">+${bestEdge}¢ edge</span>
+        <span class="edgeval pos">+${bestEdge}¢ edge${netTag}</span>
       </div>
       <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}${sig.dip_note ? ` · 💡 ${sig.dip_note}` : ""}</div>
       ${stake ? `<div class="small" style="margin-top:4px">${stake}</div>` : ""}`;

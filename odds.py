@@ -38,6 +38,16 @@ LEAN_PROB = 0.55
 MIN_EDGE_CENTS = 5.0
 
 
+def taker_fee_cents(cents):
+    """Expected Kalshi taker fee per contract at price `cents`:
+    0.07 x p x (1-p), ~1.8¢ at 50¢. The rest of the app nets this out of every
+    displayed edge; crypto must too."""
+    if cents is None or not (0 < cents < 100):
+        return 0.0
+    p = cents / 100.0
+    return round(7.0 * p * (1.0 - p), 1)
+
+
 def _norm_cdf(x):
     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
@@ -161,10 +171,12 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
         dip_note = "Model favors NO but price just popped — NO is likely cheap. Good fade."
 
     # --- Recommendation ------------------------------------------------------
-    edge = None
+    edge = fee = net_edge = None
     if yes_price_cents is not None:
         # Edge-based: compare our fair value to the live Kalshi YES price.
         edge = round(fair_yes - float(yes_price_cents), 1)  # +ve => YES underpriced
+        fee = taker_fee_cents(float(yes_price_cents))
+        net_edge = round(edge - fee, 1) if edge >= 0 else round(edge + fee, 1)
         if edge >= MIN_EDGE_CENTS:
             rec, strength = "BUY YES", "strong" if edge >= 2 * MIN_EDGE_CENTS else "lean"
             rationale = (f"Fair YES ≈ {fair_yes}¢ vs market {yes_price_cents}¢ "
@@ -220,6 +232,8 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
         "fair_no_cents": fair_no,
         "yes_price_cents": yes_price_cents,
         "edge_cents": edge,
+        "fee_cents": fee,
+        "net_edge_cents": net_edge,
         "recommendation": rec,
         "strength": strength,
         "rationale": rationale,
@@ -400,7 +414,12 @@ def kelly_fraction(prob, cost_cents):
         return 0.0
     if cost_cents <= 0 or cost_cents >= 100:
         return 0.0
-    f = (100.0 * prob - cost_cents) / (100.0 - cost_cents)
+    # Size against the EFFECTIVE cost (price + taker fee), so a thin gross edge
+    # the fee eats sizes to zero instead of a real bet.
+    eff = cost_cents + taker_fee_cents(cost_cents)
+    if eff >= 100:
+        return 0.0
+    f = (100.0 * prob - eff) / (100.0 - eff)
     return max(0.0, f)
 
 
@@ -519,6 +538,9 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
     # Edge = our fair value minus what we'd pay to enter. Positive => underpriced.
     edge_yes = round(fair_yes - yes_ask, 1) if yes_ask is not None else None
     edge_no = round(fair_no - no_ask, 1) if no_ask is not None else None
+    # Net of Kalshi's taker fee — the edge that actually lands in the account.
+    net_yes = round(edge_yes - taker_fee_cents(yes_ask), 1) if edge_yes is not None else None
+    net_no = round(edge_no - taker_fee_cents(no_ask), 1) if edge_no is not None else None
 
     best_side, best_edge = None, None
     if edge_yes is not None and edge_yes >= MIN_EDGE_CENTS:
@@ -570,6 +592,8 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
         "fair_no_cents": fair_no,
         "edge_yes_cents": edge_yes,
         "edge_no_cents": edge_no,
+        "net_edge_yes_cents": net_yes,
+        "net_edge_no_cents": net_no,
         "recommendation": rec,
         "strength": strength,
         "confidence": confidence,
