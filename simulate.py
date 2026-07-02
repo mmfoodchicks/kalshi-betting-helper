@@ -165,7 +165,6 @@ def apply_grid(players, sport, date=None):
     # track-type form, DNFs and wet chaos). Fallback when a driver isn't in the
     # sim: salary rank (DK prices by car quality), sharpened with recent form.
     sim_prof = _sim_profile(sport)              # {normalized_name: {...}} or {}
-    sim_fin = {nm: s["avg_finish"] for nm, s in sim_prof.items()}
     order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
     deserved = [0.0] * n
     for rank, i in enumerate(order):
@@ -181,15 +180,36 @@ def apply_grid(players, sport, date=None):
         form = {}
     lam = 0.55                                  # partial mean-reversion of the grid
     matched, unmatched, form_hits, sim_hits = 0, [], 0, 0
+    dk_hits = 0
     for i, p in enumerate(players):
         start = racing.lookup(grid, p["name"])
         if start is None:
             unmatched.append(p["name"])
             continue
         matched += 1
-        sv = sim_fin.get(_norm_name(p["name"]))
-        if sv is not None:                      # the simulator knows this driver
-            deserved[i] = min(field, max(1.0, sv))
+        s = sim_prof.get(_norm_name(p["name"]))
+        p["base_proj"] = p["proj"]
+        p["start"] = start
+        # NASCAR with full sim DK components: build the projection FROM SCRATCH
+        # the way DraftKings actually scores it — expected finish points +
+        # expected dominator points (laps led x0.25 + fastest x0.45, sized to
+        # THIS race's laps and track type) + place differential off the real
+        # starting spot. The CSV's season FPPG stays as a 25% sanity anchor
+        # (it knows things the sim doesn't, like a new crew chief).
+        if sport == "nascar" and s and s.get("dk_mean") is not None:
+            pd = start - s["avg_finish"]        # expected places gained (+) / lost (-)
+            ours = s["dk_mean"] + pd
+            csv_anchor = p["proj"] if p["proj"] > 1 else ours
+            p["proj"] = max(0.0, 0.75 * ours + 0.25 * csv_anchor)
+            p["ceil_proj"] = round(max(p["proj"], s["dk_q90"] + pd), 1)
+            p["exp_finish"] = round(s["avg_finish"], 1)
+            p["pd_adj"] = round(pd, 1)
+            sim_hits += 1; dk_hits += 1
+            continue
+        # Fallback (F1, or a driver the sim doesn't know): season-FPPG + partial
+        # place-differential correction vs the deserved spot.
+        if s is not None:
+            deserved[i] = min(field, max(1.0, s["avg_finish"]))
             sim_hits += 1
         else:
             fv = racing._match_prob(form, None, p["name"]) if form else None
@@ -199,18 +219,19 @@ def apply_grid(players, sport, date=None):
         # delta < 0: starting better than deserved -> expected to lose spots.
         delta = start - deserved[i]
         adj = max(-15.0, min(15.0, lam * delta))
-        p["start"] = start
         p["exp_finish"] = round(deserved[i], 1)
         p["pd_adj"] = round(adj, 1)
-        p["base_proj"] = p["proj"]
         p["proj"] = max(0.0, p["proj"] + adj)
         # Per-driver GPP ceiling from the sim's finish distribution (so GPP tilts to
         # high-variance drivers rather than mirroring cash). cv=0.5 fallback for
         # drivers the sim doesn't cover.
-        p["ceil_proj"] = round(_driver_ceiling(p["proj"], sim_prof.get(_norm_name(p["name"])), 0.5), 1)
+        p["ceil_proj"] = round(_driver_ceiling(p["proj"], s, 0.5), 1)
     return {"available": True, "race": grid["race"], "series": grid["series"],
             "field": field, "matched": matched, "unmatched": unmatched[:25],
-            "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits}
+            "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits,
+            "dk_scored": dk_hits, "track_type": _sim_meta(sport).get("track_type"),
+            "laps": _sim_meta(sport).get("laps"),
+            "dominator_pool": _sim_meta(sport).get("dominator_pool")}
 
 
 def _norm_name(s):
@@ -219,17 +240,29 @@ def _norm_name(s):
     return "".join(c for c in s.lower() if c.isalnum() or c == " ").strip()
 
 
-def _sim_profile(sport):
-    """{normalized_name: {avg_finish, p_win, p_top5, p_top10, p_top20}} from the race
-    simulator's next-race profile, keyed by full AND last name for DK spellings."""
+def _sim_raw_profile(sport):
+    """The race simulator's raw next-race profile dict (or {})."""
     if sport not in ("f1", "nascar"):
         return {}
     try:
         import racing_sim
-        prof = racing_sim.next_race_profile(sport)
+        return racing_sim.next_race_profile(sport) or {}
     except Exception:
-        prof = None
-    if not prof or not prof.get("drivers"):
+        return {}
+
+
+def _sim_meta(sport):
+    """Race-level meta from the sim profile: track_type / laps / dominator_pool."""
+    prof = _sim_raw_profile(sport)
+    return {k: prof.get(k) for k in ("track_type", "laps", "dominator_pool")}
+
+
+def _sim_profile(sport):
+    """{normalized_name: {avg_finish, p_win, p_top5, p_top10, p_top20, dk_mean,
+    dk_q90}} from the race simulator's next-race profile, keyed by full AND last
+    name for DK spellings."""
+    prof = _sim_raw_profile(sport)
+    if not prof.get("drivers"):
         return {}
     out = {}
     for name, s in prof["drivers"].items():
@@ -329,18 +362,26 @@ def dfs_optimize(players, roster, cap, key="value", exclusive_group=None):
 
 def _set_values(players, objective, cv):
     """Set each player's optimizer value. 'projection' (cash) is the plain mean;
-    'ceiling' (GPP) rewards upside.
+    'ceiling' (GPP) rewards upside; 'leverage' rewards upside the FIELD ignores.
 
-    Critically, GPP must use each player's OWN ceiling -- a flat multiple of proj
+    GPP must use each player's OWN ceiling -- a flat multiple of proj
     (proj*(1+cv)) scales every player identically, so the knapsack picks the exact
-    same lineup and GPP looks no different from cash. UFC fighters carry a real
-    per-fighter simulated ceiling (`ceil_proj`, the 90th-pct DK night), so a
-    finisher with knockout power outranks a steady decision-grinder of equal mean.
-    Without a per-player ceiling we fall back to the flat boost (e.g. racing, where
-    we don't model per-driver variance), which leaves cash and GPP equivalent."""
+    same lineup and GPP looks no different from cash. UFC fighters and NASCAR
+    drivers carry real per-player simulated ceilings (`ceil_proj`, the 90th-pct DK
+    night), so a finisher with knockout power / a dominator candidate outranks a
+    steady points-scorer of equal mean.
+
+    'leverage' is the large-field GPP play: the same ceiling, discounted by
+    projected ownership (~-0.4% of value per ownership point). Beating a
+    100k-entry field requires being DIFFERENT and right -- a 25%-owned chalk
+    ceiling play wins you a shared prize; the 5%-owned one wins you the top."""
     for p in players:
-        if objective == "ceiling":
-            p["value"] = p.get("ceil_proj") or p["proj"] * (1 + cv)
+        ceil = p.get("ceil_proj") or p["proj"] * (1 + cv)
+        if objective == "leverage":
+            own = p.get("own") if p.get("own") is not None else 15.0
+            p["value"] = ceil * (1.0 - 0.004 * own)
+        elif objective == "ceiling":
+            p["value"] = ceil
         else:
             p["value"] = p["proj"]
 
@@ -430,13 +471,24 @@ def dfs_sim(lineup, n=20000, cv=0.55):
 
 
 # ---- Projected ownership + portfolio + large-field contest sim (generic) ----
-def _estimate_ownership(players, roster):
+def _estimate_ownership(players, roster, sport=None):
     """Rough projected FIELD ownership (% of lineups that roster a player) from
     points-per-$1k value: chalk (high value) gets rostered a lot. Softmax over
     value, scaled so total ownership ~ roster*100 (each lineup holds `roster`
-    players). Not an external feed, but a sound model of what the field will do."""
+    players). Sport-aware: the NASCAR field chases obvious place-differential
+    plays (fast car buried deep), the UFC field over-rosters favorites — the
+    exact behaviors leverage lineups fade. Not an external feed, but a sound
+    model of what the field will do."""
     for p in players:
         p["_val"] = (p.get("proj") or 0.0) / max(1.0, p["salary"] / 1000.0)
+        if sport in ("nascar", "f1"):
+            pd = p.get("pd_adj") or 0.0
+            if pd > 3:                      # visible PD play -> the field piles in
+                p["_val"] *= 1.0 + min(0.35, 0.03 * pd)
+        elif sport == "ufc":
+            wp = p.get("win_pct")
+            if wp is not None:              # favorites get over-rostered
+                p["_val"] *= 0.70 + 0.006 * wp
     mx = max((p["_val"] for p in players), default=1.0) or 1.0
     raw = {p["name"]: math.exp(2.4 * (p["_val"] / mx - 1.0)) for p in players}
     tot = sum(raw.values()) or 1.0
@@ -638,6 +690,9 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     exclusive = (lambda p: p.get("game")) if sport == "ufc" else None
     n_lineups = max(1, min(150, int(n_lineups)))
     captain_mode = sport in ("f1", "nascar") and any(p.get("roster_pos") == "CNSTR" for p in players)
+    # Projected field ownership BEFORE building: the leverage objective and the
+    # contest sim both need it.
+    _estimate_ownership(players, roster, sport)
 
     # ---- Build lineup(s) ----
     if captain_mode:
@@ -656,8 +711,6 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         lineups = [lu] if lu else []
     if not lineups or not lineups[0]:
         return {"error": "no valid lineup fits the salary cap"}
-
-    _estimate_ownership(players, roster)     # projected field ownership for the sim
 
     # ---- Contest simulation (win% / cash% / ROI at the real field size) ----
     contest_sim = None

@@ -500,7 +500,7 @@
         <div class="scan-controls ctl-row">
           <select id="dfsSport" title="Which sport's DFS slate this CSV is for"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option><option value="mlb">⚾ MLB (sim-driven)</option></select>
           <select id="dfsMode" title="Classic = a full roster from the whole slate. Showdown = one game, a 1.5× captain plus flex."><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
-          <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments)."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option></select>
+          <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments). Leverage = ceiling discounted by projected ownership — being different AND right, the way huge fields are actually won."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option><option value="leverage">GPP leverage (ceiling + low own)</option></select>
           <label class="small" title="How many players make up one lineup (DraftKings sets this per contest).">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
           <label class="small" title="The salary cap a lineup must fit under.">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>

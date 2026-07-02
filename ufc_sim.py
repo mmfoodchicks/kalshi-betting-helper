@@ -17,9 +17,15 @@ import ufc_data
 
 _LG_DEF = 0.55             # league-average striking defence (1 - opp accuracy)
 _SCALE = 3.6               # dominance -> win-prob logistic scale
-# DraftKings MMA scoring.
+# DraftKings MMA scoring (Classic): sig strikes +0.2, control time +0.03/sec,
+# takedown +5, reversal/sweep +5, knockdown +10, advance +3. Fight conclusion:
+# R1 win +90, R2 +70, R3 +45, R4/R5 +40, decision +30, quick win (<60s) +25.
+_SS_PTS = 0.2
+_CTRL_PTS = 0.03           # per second of control
+_ADV_PTS = 3
 _WIN_PTS = {1: 90, 2: 70, 3: 45, 4: 40, 5: 40}
 _DEC_PTS = 30
+_QUICK_PTS = 25
 
 
 def _landed_pm(att, opp):
@@ -77,7 +83,15 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
     for _ in range(n):
         win = a if rng.random() < pa else b
         finish = rng.random() < p_finish
-        rd = 1 + _pois(0.85, rng) if finish else rounds
+        # Finish round: heavy hitters end it EARLY — the round distribution
+        # tightens toward R1 as the winner's threat rises (~55% of real UFC
+        # finishes land in round 1). That's where the +90 DK bonus lives.
+        if finish:
+            ft_w = ft_a if win is a else ft_b
+            lam = max(0.45, 0.90 - 0.55 * min(1.2, ft_w))
+            rd = 1 + _pois(lam, rng)
+        else:
+            rd = rounds
         if finish and rd > rounds:
             finish = False              # the finish would land after the final bell
         if finish:
@@ -101,9 +115,17 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
                 kd = 1 + _pois(0.3, rng)
             else:
                 kd = _pois(f["kd_p15"] / 15.0 * end_min, rng)
-            pts = 0.5 * ss + 5 * td + 10 * kd
+            # Ground game: each takedown buys control time (+0.03/sec) and a
+            # chance of positional advances (+3 each) — the wrestler's DK floor.
+            ctrl = sum(rng.uniform(30, 110) for _ in range(td))
+            ctrl = min(ctrl, end_min * 60 * 0.7)
+            adv = _pois(0.6 * td, rng)
+            pts = (_SS_PTS * ss + 5 * td + 10 * kd
+                   + _CTRL_PTS * ctrl + _ADV_PTS * adv)
             if f is win:
                 pts += _WIN_PTS[rd] if (finish and method != "dec") else _DEC_PTS
+                if finish and end_min <= 1.0:
+                    pts += _QUICK_PTS        # sub-60-second win
             dk[f["id"]].append(pts)
 
     def fighter_out(f):

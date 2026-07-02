@@ -93,10 +93,15 @@ def _pitcher_dk_arr(sp, team_win_prob, n=3000):
     era, whip, k9 = sp.get("era"), sp.get("whip"), sp.get("k9")
     if not era or not whip or not k9:
         return None
-    # Per-start innings. We only have season totals (no GS), so estimate starts
-    # from IP at ~5.5 IP/start; falls back to a league-ish 5.7 when IP is absent.
+    # Per-start innings from his REAL workload: exp_ip rides along from the slate
+    # (the same per-pitcher number the K props use); else true IP/GS; else 5.7.
     ip_total = sp.get("ip") or 0
-    if ip_total > 0:
+    gs = sp.get("gs") or 0
+    if sp.get("exp_ip"):
+        exp_ip = sp["exp_ip"]
+    elif ip_total > 0 and gs:
+        exp_ip = max(3.0, min(7.2, ip_total / gs))
+    elif ip_total > 0:
         starts = max(1, round(ip_total / 5.5))
         exp_ip = max(4.5, min(6.7, ip_total / starts))
     else:
@@ -183,9 +188,19 @@ def _hitter_dk(l):
 
 def _pitcher_dk(l, won):
     """DraftKings pitcher points from a deep box line. Win goes to a starter whose
-    side won and who went 5+ (15 outs) — DK's rule, approximated."""
+    side won and who went 5+ (15 outs) — DK's rule, approximated. Complete-game
+    (+2.5), CG-shutout (+2.5) and no-hitter (+5) bonuses are rare, but the deep
+    engine actually produces them (it rides gems deep) and they're pure ceiling —
+    exactly what a GPP pitcher pick is for."""
     win = 4 if (won and l["outs"] >= 15) else 0
-    return 0.75 * l["outs"] + 2 * l["k"] - 2 * l["r"] - 0.6 * l["h"] - 0.6 * l["bb"] + win
+    pts = 0.75 * l["outs"] + 2 * l["k"] - 2 * l["r"] - 0.6 * l["h"] - 0.6 * l["bb"] + win
+    if l["outs"] >= 27:
+        pts += 2.5                                  # complete game
+        if l["r"] == 0:
+            pts += 2.5                              # CG shutout
+        if l["h"] == 0:
+            pts += 5.0                              # no-hitter
+    return pts
 
 
 def deep_projections(games, season, n=3000):
@@ -290,13 +305,29 @@ def deep_projections(games, season, n=3000):
             if d and d["proj"] > 1:
                 proj[_norm(nm)] = {"kind": "pit", "team": abbr or "",
                                    "game": g.get("game_pk"), "arr": arr, **d}
+        # Stolen bases: the deep engine doesn't model steals, but DK pays +5 per
+        # SB — a full point-plus per game for the true burners (Witt/De La Cruz
+        # class). Add each hitter's expected SB points from his season steal rate
+        # (props carries sbr = attempts per time on first; ~1.1 successful-steal
+        # opportunities convert per game of on-base traffic).
+        sb_bonus = {}
+        for side in ("batters_home", "batters_away"):
+            for bp in ((g.get("props") or {}).get(side) or []):
+                sbr = bp.get("sbr") or 0.0
+                if sbr > 0.02:
+                    sb_bonus[_norm(bp.get("name") or "")] = 5.0 * min(0.55, sbr * 1.1)
         for pid, arr in bat_acc.items():
             if not _is_starter_bat(pid):
                 continue
             _pnm, abbr = meta_bat.get(pid, (None, None))
             # Prefer the posted full name; fall back to the profile name pre-lineup.
             nm = (_posted_name(_pnm) if posted else None) or _pnm
-            d = _dist(arr) if nm else None
+            if not nm:
+                continue
+            sb = sb_bonus.get(_norm(nm), 0.0)
+            if sb:
+                arr = [x + sb for x in arr]     # mean AND quantiles shift together
+            d = _dist(arr)
             if d:
                 proj[_norm(nm)] = {"kind": "bat", "team": abbr or "",
                                    "game": g.get("game_pk"), "arr": arr, **d}
