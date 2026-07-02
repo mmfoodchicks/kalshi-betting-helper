@@ -9,6 +9,7 @@ wins / poles / podiums, and the constructors' championship — to compare agains
 Kalshi and Polymarket futures.
 """
 
+import math
 import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -485,24 +486,8 @@ def sim_f1(n=2000, seed=None):
 NASCAR_BASE = "https://cf.nascar.com/cacher"
 
 
-def _nascar_track_type(name):
-    """Classify a Cup track into a racing-skill category. Track type matters a
-    lot in NASCAR: superspeedways are drafting lotteries anyone can win, road
-    courses reward a different skset, short tracks are about track position. We
-    rate each driver per category so a road-course ace's edge shows up only at
-    road courses."""
-    t = (name or "").lower()
-    if any(k in t for k in ("daytona", "talladega", "atlanta")):
-        return "superspeedway"           # pack/draft racing -> high chaos
-    if any(k in t for k in ("sonoma", "watkins", "cota", "circuit of the americas",
-                            "road course", "roval", "street", "mexico")):
-        return "road"                    # NOT bare "chicago" — that hits Chicagoland
-                                         # Speedway (an oval); "street" = the Chicago
-                                         # street race
-    if any(k in t for k in ("martinsville", "richmond", "bristol", "phoenix",
-                            "new hampshire", "wilkesboro", "iowa")):
-        return "short"
-    return "intermediate"                # 1.5-mile ovals, the default
+# Canonical classifier lives in racing.py (the win model + DFS grid share it).
+_nascar_track_type = racing.nascar_track_type
 
 
 def nascar_type_skill(year=None, series=1, n_back=2):
@@ -550,7 +535,11 @@ def nascar_type_skill(year=None, series=1, n_back=2):
                         per[x["driver_id"]][yr]["type"][tt].append(fp)
                         per[x["driver_id"]][yr]["all"].append(fp)
         sw = {yr: i + 1 for i, yr in enumerate(seasons)}   # recency weight, current highest
-        _SK = 2.5
+        # Light regression: an elite specialist's delta is HUGE and consistent
+        # (SVG runs ~15 spots better on road courses); 2.5 pseudo-races shaved a
+        # third off it and made the master a mid-packer. 1.2 keeps small samples
+        # honest while letting a proven specialist keep his edge.
+        _SK = 1.2
         out = {}
         for did, byseason in per.items():
             acc = defaultdict(float); wsum = defaultdict(float); nsum = defaultdict(int)
@@ -661,6 +650,7 @@ def nascar_state(year=None, series=1):
                                                (r.get("race_date") or "")[:10]) or {}
             remaining.append({"name": r.get("race_name", ""), "track": r.get("track_name"),
                               "type": _nascar_track_type(r.get("track_name", "")),
+                              "laps": r.get("scheduled_laps"),
                               "wet_prob": clim.get("wet_prob", 0.10),
                               "avg_wind": clim.get("avg_wind")})
         return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
@@ -697,7 +687,7 @@ def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
     if ttype == "superspeedway":
         sigma *= 1.6; big_p = max(big_p, 0.32); compress = 0.45   # pack-racing lottery
     elif ttype == "road":
-        sigma *= 0.85                           # skill shows through, fewer wrecks
+        sigma *= 0.72                           # skill shows through, fewer wrecks
     elif ttype == "short":
         sigma *= 0.92
     big_one = set()
@@ -712,10 +702,15 @@ def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
             out.append(d["id"])
         else:
             pen = rng.randint(5, 14) if rng.random() < _TIME_PEN else 0   # penalty -> lose spots
-            pace = d["race_pace"] + d.get("pace_by_type", {}).get(ttype, 0.0)
+            tdel = d.get("pace_by_type", {}).get(ttype, 0.0)
+            pace = d["race_pace"] + tdel
             if compress < 1.0:                  # superspeedway: bunch the field toward the mean
                 pace = mean_pace + compress * (pace - mean_pace)
-            fin.append((pace + rng.gauss(0, sigma) + pen, d["id"]))
+            # A true type specialist isn't just faster — he's CONSISTENT on the
+            # surface he masters (fewer mistakes to make up). Trim his race noise
+            # so a dominant road ace converts pace into wins at a realistic rate.
+            sig_d = sigma * (0.85 if tdel <= -5.0 else 1.0)
+            fin.append((pace + rng.gauss(0, sig_d) + pen, d["id"]))
     fin.sort()
     rng.shuffle(out)
     return [did for _, did in fin] + out
@@ -885,17 +880,63 @@ def next_race_profile(sport):
     return None
 
 
+# DraftKings NASCAR Classic scoring: finishing points (1st=45, then 44−pos),
+# ±1 per place gained/lost, +0.25 per lap led, +0.45 per fastest lap. Dominator
+# points scale with race LENGTH — a 400-lap short track carries a 280-point
+# dominator pool, a 90-lap road course only ~63 — which is why "who leads laps"
+# is the whole GPP question at ovals and nearly irrelevant on streets.
+def _dk_nascar_fin(pos):
+    return 45.0 if pos <= 1 else max(1.0, 44.0 - pos)
+
+
+_DEFAULT_LAPS = {"road": 90, "superspeedway": 170, "short": 400, "intermediate": 300}
+# How many drivers realistically split the laps at each track type (front-biased):
+# short ovals are 2-3 car shows; superspeedways shuffle the lead constantly.
+_DOM_N = {"road": (2, 4), "superspeedway": (5, 8), "short": (2, 3), "intermediate": (3, 5)}
+
+
+def _alloc_dominators(order, laps, ttype, rng):
+    """Split a race's laps-led + fastest-laps among the finishing order for ONE
+    simulated race -> {driver_id: dominator DK points}. Leaders come mostly from
+    the front of the finishing order (you finish near where you dominated), with
+    occasional 'dominated then faded' randomness."""
+    lo, hi = _DOM_N.get(ttype, (3, 5))
+    k = rng.randint(lo, hi)
+    runners = order[:max(k + 6, 12)]
+    # Front-of-field bias with noise; a mid-pack finisher occasionally led early.
+    weights = [math.exp(-i / 2.6) * (0.5 + rng.random()) for i in range(len(runners))]
+    picks = sorted(range(len(runners)), key=lambda i: -weights[i])[:k]
+    shares = sorted((rng.expovariate(1.0) for _ in picks), reverse=True)
+    tot = sum(shares) or 1.0
+    led = {}
+    for idx, sh in zip(picks, shares):
+        led[runners[idx]] = laps * sh / tot
+    # Fastest laps: ~65% tracks laps led (clean air), the rest spreads over the
+    # top ~12 finishers (fast cars in traffic still ring fastest laps).
+    dom = {}
+    spread = runners[:12]
+    for did, L in led.items():
+        dom[did] = 0.25 * L + 0.45 * (L * 0.65)
+    for did in spread:
+        dom[did] = dom.get(did, 0.0) + 0.45 * (laps * 0.35 / len(spread))
+    return dom
+
+
 def next_race_sim(sport, n=2500, seed=None):
     """Simulate the NEXT race many times and return each driver's finish profile
-    {name: {avg_finish, p_win, p_top5, p_top10, p_top20}} -- the "where does each
-    racer end" signal the DFS optimizer feeds on (expected finish drives
-    DraftKings position points + place differential). Grid-independent: it runs
-    the sim's own qualifying, so it's a true expected finish, not a start-biased
-    one."""
+    {name: {avg_finish, p_win, p_top5, p_top10, p_top20, ...}} -- the signal the
+    DFS optimizer feeds on. For NASCAR it also returns REAL DraftKings scoring
+    components per driver: expected finish points, expected dominator points
+    (laps led x0.25 + fastest x0.45 for THIS race's length and track type), and
+    the 90th-percentile DK night (dk_q90) for true per-driver GPP ceilings.
+    Grid-independent: it runs the sim's own qualifying, so it's a true expected
+    finish, not a start-biased one."""
     rng = random.Random(seed)
     fin = defaultdict(float); win = defaultdict(int)
     t5 = defaultdict(int); t10 = defaultdict(int); t20 = defaultdict(int)
     name_of = {}
+    dk_samples = defaultdict(list)          # NASCAR: per-sim fin_pts + dominator
+    laps = None; ttype = None
 
     if sport == "f1":
         profs = f1_profiles(); rem = f1_remaining()
@@ -919,18 +960,34 @@ def next_race_sim(sport, n=2500, seed=None):
         name_of = {d["id"]: d["name"] for d in drivers}
         race = rem[0]
         ttype = race.get("type", "intermediate"); wet_p = race.get("wet_prob", 0.0)
+        laps = int(race.get("laps") or _DEFAULT_LAPS.get(ttype, 300))
         for _ in range(n):
             order = _sim_cup_race(drivers, rng, wet=rng.random() < wet_p, ttype=ttype)
             _tally_finish(order, fin, win, t5, t10, t20)
+            dom = _alloc_dominators(order, laps, ttype, rng)
+            for pos, did in enumerate(order, 1):
+                dk_samples[did].append(_dk_nascar_fin(pos) + dom.get(did, 0.0))
     else:
         return None
 
     out = {}
     for did, nm in name_of.items():
-        out[nm] = {"avg_finish": round(fin[did] / n, 2),
-                   "p_win": round(win[did] / n, 3), "p_top5": round(t5[did] / n, 3),
-                   "p_top10": round(t10[did] / n, 3), "p_top20": round(t20[did] / n, 3)}
-    return {"sport": sport, "race": race.get("name"), "n_sims": n, "drivers": out}
+        row = {"avg_finish": round(fin[did] / n, 2),
+               "p_win": round(win[did] / n, 3), "p_top5": round(t5[did] / n, 3),
+               "p_top10": round(t10[did] / n, 3), "p_top20": round(t20[did] / n, 3)}
+        smp = dk_samples.get(did)
+        if smp:
+            smp.sort()
+            m = len(smp)
+            row["dk_mean"] = round(sum(smp) / m, 1)           # fin pts + dominator
+            row["dk_q90"] = round(smp[min(m - 1, int(0.9 * m))], 1)
+        out[nm] = row
+    meta = {"sport": sport, "race": race.get("name"), "n_sims": n, "drivers": out}
+    if laps is not None:
+        meta["laps"] = laps
+        meta["track_type"] = ttype
+        meta["dominator_pool"] = round(0.7 * laps)            # 0.25+0.45 per lap
+    return meta
 
 
 def _tally_finish(order, fin, win, t5, t10, t20):

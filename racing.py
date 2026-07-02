@@ -67,12 +67,32 @@ def lookup(grid_info, name):
     return None
 
 
-def _finalize(grid, race, series, series_id=None):
+def _finalize(grid, race, series, series_id=None, track=None):
     if not grid:
         return None
     by_full, by_last = _index(grid)
     return {"grid": grid, "race": race, "series": series, "series_id": series_id,
-            "field": max(grid.values()), "_full": by_full, "_last": by_last}
+            "track": track, "field": max(grid.values()),
+            "_full": by_full, "_last": by_last}
+
+
+def nascar_track_type(name):
+    """Classify a Cup track by the skill set it rewards. This drives EVERYTHING
+    downstream: form lookups, win-model randomness, and DFS dominator modeling.
+    Road/street courses are a different sport from ovals — a road ace's oval
+    results say nothing about his street-race chances (and vice versa)."""
+    t = (name or "").lower()
+    if any(k in t for k in ("daytona", "talladega", "atlanta")):
+        return "superspeedway"           # pack/draft racing -> high chaos
+    if any(k in t for k in ("sonoma", "watkins", "cota", "circuit of the americas",
+                            "road course", "roval", "street", "mexico")):
+        return "road"                    # NOT bare "chicago" — that hits Chicagoland
+                                         # Speedway (an oval); "street" = the Chicago
+                                         # street race
+    if any(k in t for k in ("martinsville", "richmond", "bristol", "phoenix",
+                            "new hampshire", "wilkesboro", "iowa")):
+        return "short"
+    return "intermediate"                # 1.5-mile ovals, the default
 
 
 # --- NASCAR ------------------------------------------------------------------
@@ -124,7 +144,7 @@ def get_nascar_grid(race_name=None, date=None, year=None):
         grid = _grid_from_feed(feed)
         if grid:
             return _finalize(grid, race.get("race_name", "race"), SERIES[series],
-                             series_id=series)
+                             series_id=series, track=race.get("track_name"))
     return None
 
 
@@ -193,27 +213,63 @@ def _race_results(year, series, race_id):
     return out
 
 
-def get_nascar_form(year, today, series=1, n_races=5):
-    """Recency-weighted average finish per driver over recent completed races."""
-    def build():
-        races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
-        done = [r for r in races if (r.get("race_date") or "")[:10] < today and r.get("race_id")]
-        done.sort(key=lambda r: r["race_date"], reverse=True)
-        done = done[:n_races]
+def get_nascar_form(year, today, series=1, n_races=5, track_type=None):
+    """Recency-weighted average finish per driver over recent completed races.
+
+    When `track_type` is given, form comes from the last several races OF THAT
+    TYPE (reaching into the prior season — a year has only ~6 road races),
+    blended 65/35 with overall recent form. Without this, a road/street ace's
+    number gets poisoned by his oval results: SVG runs 25th on ovals and wins
+    road courses; season-wide form made him a mid-packer at street races."""
+    def _race_list(yr):
+        try:
+            return _get_json(f"https://cf.nascar.com/cacher/{yr}/{series}/race_list_basic.json")
+        except Exception:
+            return []
+
+    def _form_from(done, yr_of):
         if not done:
             return {}
         with ThreadPoolExecutor(max_workers=5) as ex:
-            results = list(ex.map(lambda r: _race_results(year, series, r["race_id"]), done))
-        # Most recent race weighted highest.
+            results = list(ex.map(lambda r: _race_results(yr_of[id(r)], series, r["race_id"]), done))
         acc, wsum = {}, {}
-        for w, res in zip(range(len(results), 0, -1), results):
+        for w, res in zip(range(len(results), 0, -1), results):   # most recent heaviest
             for nm, fp in (res or {}).items():
                 acc[nm] = acc.get(nm, 0.0) + w * fp
                 wsum[nm] = wsum.get(nm, 0.0) + w
-        # Regress lightly toward a mid-pack prior for small samples.
         prior, k = 20.0, 2.0
         return {nm: (acc[nm] + k * prior) / (wsum[nm] + k) for nm in acc}
-    return _cached(("nascar_form", year, series), 6 * 3600, build) or {}
+
+    def build():
+        races = _race_list(year)
+        yr_of = {}
+        done = []
+        for r in races:
+            if (r.get("race_date") or "")[:10] < today and r.get("race_id"):
+                done.append(r); yr_of[id(r)] = year
+        done.sort(key=lambda r: r["race_date"], reverse=True)
+        overall = _form_from(done[:n_races], yr_of)
+        if not track_type:
+            return overall
+        # Same-type races: this season first, then last season's, up to 8 total.
+        typed = [r for r in done if nascar_track_type(r.get("track_name", "")) == track_type]
+        if len(typed) < 8:
+            prev = _race_list(int(year) - 1)
+            pv = [r for r in prev
+                  if r.get("race_id") and nascar_track_type(r.get("track_name", "")) == track_type]
+            pv.sort(key=lambda r: r.get("race_date", ""), reverse=True)
+            for r in pv[:8 - len(typed)]:
+                typed.append(r); yr_of[id(r)] = int(year) - 1
+        for r in typed:
+            yr_of.setdefault(id(r), year)
+        tf = _form_from(typed[:8], yr_of)
+        # Blend: type form dominates where we have it; overall covers the rest.
+        out = dict(overall)
+        for nm, v in tf.items():
+            base = overall.get(nm, v)
+            out[nm] = 0.65 * v + 0.35 * base
+        return out
+    return _cached(("nascar_form", year, series, track_type), 6 * 3600, build) or {}
 
 
 def get_f1_form():
@@ -243,19 +299,32 @@ def get_f1_form():
 
 # Larger tau == flatter field (more random). Calibrated to rough pole win rates.
 _TAU = {"f1": 3.0, "nascar": 11.0, "motogp": 4.0}
+# NASCAR randomness varies hugely by track type: superspeedways are drafting
+# lotteries (anyone can win), road/street courses are skill-deterministic — the
+# ace converts. Grid/form weights shift too: road results are about the driver,
+# so form (same-type!) dominates the starting spot.
+_NASCAR_TAU = {"road": 6.0, "short": 9.5, "intermediate": 11.0, "superspeedway": 17.0}
+_NASCAR_FORM_W = {"road": 0.65, "short": 0.5, "intermediate": 0.5, "superspeedway": 0.5}
 
 
-def win_probs(grid_info, sport, form=None):
+def win_probs(grid_info, sport, form=None, track_type=None):
     """{normalized name: win probability} from the starting grid, optionally
-    blended with recent form (a position-scale quality estimate per driver)."""
+    blended with recent form (a position-scale quality estimate per driver).
+    For NASCAR, `track_type` steepens/flattens the field and re-weights form
+    vs grid to match how that kind of race actually behaves."""
     if not grid_info:
         return {}
-    tau = _TAU.get((sport or "").lower(), 8.0)
+    sp = (sport or "").lower()
+    tau = _TAU.get(sp, 8.0)
+    fw = 0.5
+    if sp == "nascar" and track_type:
+        tau = _NASCAR_TAU.get(track_type, tau)
+        fw = _NASCAR_FORM_W.get(track_type, fw)
     form = form or {}
     strengths = {}
     for nm, pos in grid_info["grid"].items():
         f = _match_prob(form, grid_info, nm) if form else None  # reuse name matcher
-        eff = 0.5 * pos + 0.5 * f if f is not None else pos     # blend grid + form
+        eff = (1 - fw) * pos + fw * f if f is not None else pos  # blend grid + form
         strengths[nm] = math.exp(-(eff - 1) / tau)
     total = sum(strengths.values())
     if total <= 0:
@@ -290,19 +359,22 @@ def race_board(sport, events, date=None):
     if not grid:
         return events, {"available": False,
                         "reason": "no qualifying grid posted yet"}
-    # Blend in recent form (driver/car quality) when we can fetch it.
+    # Blend in recent form (driver/car quality) when we can fetch it. NASCAR form
+    # is TRACK-TYPE aware: at a street race the road-course results carry the
+    # signal, not last week's oval.
     sp = (sport or "").lower()
-    form = None
+    form, ttype = None, None
     try:
         if sp == "nascar":
+            ttype = nascar_track_type(grid.get("track") or grid.get("race") or "")
             year = (date or datetime.date.today().isoformat())[:4]
             form = get_nascar_form(year, date or datetime.date.today().isoformat(),
-                                   series=grid.get("series_id") or 1)
+                                   series=grid.get("series_id") or 1, track_type=ttype)
         elif sp == "f1":
             form = get_f1_form()
     except Exception:
         form = None
-    probs = win_probs(grid, sport, form)
+    probs = win_probs(grid, sport, form, track_type=ttype)
     for e in events:
         best = None
         for o in e.get("outcomes", []):
@@ -320,5 +392,5 @@ def race_board(sport, events, date=None):
         e["model_pick"] = best if (best and best["edge_cents"] >= 2) else None
     return events, {"available": True, "race": grid["race"],
                     "series": grid["series"], "field": grid["field"],
-                    "form_used": bool(form)}
+                    "track_type": ttype, "form_used": bool(form)}
 
