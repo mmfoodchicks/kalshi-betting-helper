@@ -604,7 +604,8 @@ function spLine(sp) {
   const recent = sp.recent_era != null ? ` · last5 <b>${sp.recent_era}</b> ERA` : "";
   const fip = sp.fip != null ? `, <b>${sp.fip}</b> FIP` : "";
   const wl = sp.exp_ip != null ? ` · <span title="expected innings this start, from his workload history — sizes the K ladder">~${sp.exp_ip} IP tonight</span>` : "";
-  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${sp.ip} IP${recent}${wl}`;
+  const ip = sp.ip != null && isFinite(+sp.ip) ? Math.round(+sp.ip * 10) / 10 : sp.ip;
+  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}`;
 }
 
 // ---- Live game feedback feed (pitch counts, AB-by-AB, live model odds) -----
@@ -3694,6 +3695,11 @@ async function init() {
 
   // Baseball setup
   setupTabs();
+  // Best Bets is the landing tab — kick off its scan without waiting for a click.
+  if ($("tab-bestbets") && !$("tab-bestbets").classList.contains("hidden")) {
+    $("bbetsResults").dataset.loaded = "1";
+    loadBestBets();
+  }
   $("bbDate").value = new Date().toISOString().slice(0, 10);
   $("bbBtn").addEventListener("click", () => loadBaseball());
   $("bbRefresh").addEventListener("click", () => loadBaseball(true));

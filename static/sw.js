@@ -2,12 +2,9 @@
 // picked up immediately when online (the previous cache-first version could
 // serve a stale app.js after an update). The cache is only an offline fallback.
 // Live /api/ data is always network. Bumping SHELL purges every older cache.
-const SHELL = "vigil-shell-v4";
+const SHELL = "vigil-shell-v5";
 const PRECACHE = ["/", "/static/style.css", "/static/app.js",
-                  "/static/icon-192.png", "/static/manifest.json",
-                  "/static/img/action-1.jpg", "/static/img/action-2.jpg",
-                  "/static/img/action-3.jpg", "/static/img/action-4.jpg",
-                  "/static/img/action-5.jpg", "/static/img/action-6.jpg"];
+                  "/static/icon-192.png", "/static/manifest.json"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)).catch(() => {})

@@ -1,6 +1,6 @@
 /* =============================================================================
    Vigil — stylesheet
-   Sections: Tokens · Base · Hero · Layout · Nav · Forms & buttons · Cards
+   Sections: Tokens · Base · Layout · Nav · Forms & buttons · Cards
    · Stats & badges · Crypto · Baseball · Combos · DFS · Utilities · Responsive
    ============================================================================= */
 
@@ -68,9 +68,6 @@ h1, h2, .brand { font-family: "Inter", sans-serif; letter-spacing: -0.01em; }
 .settingsbar input, .settingsbar select { padding: 5px 8px; font-size: 0.82rem; border-radius: 8px; }
 .settingsbar .hint { font-size: 0.72rem; color: var(--faint); }
 
-/* legacy hero classes neutralized (no images) */
-.hero, .hero-bg, .hero-scrim, .hero-content { all: unset; }
-.hero-bg, .hero-scrim { display: none; }
 /* ------------------------------- Layout ---------------------------------- */
 main { max-width: 1080px; margin: 0 auto; padding: 18px 20px 56px; }
 footer { text-align: center; color: var(--faint); font-size: 0.75rem; padding: 8px 20px 36px; }
@@ -84,11 +81,7 @@ footer { text-align: center; color: var(--faint); font-size: 0.75rem; padding: 8
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
-.navgroup {
-  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--faint); font-weight: 600; padding: 0 4px 0 2px;
-}
-.navsep { width: 1px; height: 18px; background: var(--border2); margin: 0 4px; }
+.navsep { width: 1px; height: 18px; background: var(--border2); margin: 0 4px; flex: 0 0 auto; }
 .tab {
   background: transparent; border: 1px solid transparent; color: var(--muted);
   padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.86rem;
@@ -725,11 +718,6 @@ body.tier-locked .owner-only { display: none !important; }
 /* =============================================================================
    Responsive
    ============================================================================= */
-@media (prefers-reduced-motion: reduce) {
-  .hero-bg .slide { animation: none; opacity: 0; }
-  .hero-bg .slide:nth-child(1) { opacity: 1; }
-}
-
 /* Desktop: app shell — full-width header on top, sticky grouped nav rail at left. */
 @media (min-width: 1000px) {
   body {
@@ -750,9 +738,7 @@ body.tier-locked .owner-only { display: none !important; }
     background: var(--bg2); border-bottom: none; border-right: 1px solid var(--border);
   }
   nav.tabs .tab { text-align: left; width: 100%; padding: 8px 12px; font-size: 0.9rem; }
-  nav.tabs .navgroup { padding: 14px 6px 4px; }
-  nav.tabs .navgroup:first-child { padding-top: 2px; }
-  nav.tabs .navsep { display: none; }   /* groups already separated by their labels */
+  nav.tabs .navsep { width: auto; height: 1px; align-self: stretch; margin: 8px 6px; }
 }
 @media (min-width: 1400px) { main { padding-left: 48px; padding-right: 48px; } }
 

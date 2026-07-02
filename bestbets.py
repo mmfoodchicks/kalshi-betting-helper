@@ -151,9 +151,16 @@ def _arb_rows():
     return [r for r in rows if r["net_edge"] > 0]
 
 
+_memo = {"key": None, "at": 0.0, "out": None}
+_MEMO_TTL = 120  # Best Bets is the landing tab: re-opens within 2 min reuse the scan
+
+
 def board(date=None, season=None, sims=2500):
     date = date or _dt.date.today().isoformat()
     season = season or date[:4]
+    key = (date, season, sims)
+    if _memo["out"] is not None and _memo["key"] == key and time.time() - _memo["at"] < _MEMO_TTL:
+        return _memo["out"]
     rows, sources = [], {}
 
     def pull(name, fn, *a):
@@ -190,6 +197,8 @@ def board(date=None, season=None, sims=2500):
         per_sport[r["sport"]] = per_sport.get(r["sport"], 0) + 1
         if seen[k] <= 3 and per_sport[r["sport"]] <= 8:
             out.append(r)
-    return {"date": date, "rows": out[:30], "sources": sources,
-            "generated_at": time.time(),
-            "n_candidates": len(rows)}
+    result = {"date": date, "rows": out[:30], "sources": sources,
+              "generated_at": time.time(),
+              "n_candidates": len(rows)}
+    _memo.update(key=key, at=time.time(), out=result)
+    return result
