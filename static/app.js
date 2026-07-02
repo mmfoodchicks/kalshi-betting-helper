@@ -1973,14 +1973,24 @@ function _nflOut(t) {  // small note of who's out / rookies driving the roster m
   if (!outs.length) return "";
   return ` <span class="small" style="color:var(--neg)" title="${outs.map((o) => o.pos + " " + o.name + " (" + o.reason + ")").join(", ")}">▾${outs.length} out</span>`;
 }
+function _nflQB(t) {
+  const q = t.qb;
+  if (!q || !q.starter) return "";
+  const cls = q.adj >= 0.8 ? "ev pos" : q.adj <= -0.8 ? "ev neg" : "";
+  const tag = q.unproven ? " (unproven)" : q.changed ? " (new)" : "";
+  const tip = `Projected starter: ${q.starter}${tag} — last-season efficiency ${q.score} vs league ${q.lg_avg}` +
+    (q.changed ? `; replaces a ${q.prev_score} passer` : "") +
+    `. QB rating adjustment ${q.adj >= 0 ? "+" : ""}${q.adj} pts/gm.`;
+  return `<span class="small" style="display:block;color:var(--muted)" title="${tip}">QB ${q.starter}${tag}${q.adj ? ` <b class="${cls}">${q.adj >= 0 ? "+" : ""}${q.adj}</b>` : ""}</span>`;
+}
 function renderNFL() {
   const d = _nflData; if (!d) return;
   const age = d.age_sec != null ? `updated ${agoStr(d.age_sec)} · ` : "";
-  $("nflSummary").innerHTML = `Simulated <b>${(d.n_sims || 0).toLocaleString()}</b> seasons · prior-year point differential (regressed) + live roster availability from ESPN. <span style="color:var(--muted)">${age}refreshes weekly.</span> <button class="track-mini" onclick="rerunPro('nfl')">↻ rerun</button>`;
+  $("nflSummary").innerHTML = `Simulated <b>${(d.n_sims || 0).toLocaleString()}</b> seasons · prior-year point differential (regressed) + <b>projected-starter QB layer</b> (efficiency + QB-change swings) + live roster availability from ESPN. <span style="color:var(--muted)">${age}refreshes nightly. 🏆 = franchise Super Bowl titles ${d.titles_asof || ""} — shown for context, never used in the model (a 1975 ring predicts nothing).</span> <button class="track-mini" onclick="rerunPro('nfl')">↻ rerun</button>`;
   if (_nflSub === "wins") return renderNFLWins(d);
   const rows = d.teams.map((t, i) => `<div class="futrow nflrow">
       <span class="fr-rank">${i + 1}</span>
-      <span class="fr-team">${t.name} <span class="small" style="color:var(--muted)">${(t.division || "").replace(/^(AFC|NFC) /, "$1 ")}</span>${_nflOut(t)}</span>
+      <span class="fr-team">${t.name}${t.titles ? ` <span class="small" title="franchise Super Bowl titles ${d.titles_asof || ""} (display only)">🏆${t.titles}</span>` : ""} <span class="small" style="color:var(--muted)">${(t.division || "").replace(/^(AFC|NFC) /, "$1 ")}</span>${_nflOut(t)}${_nflQB(t)}</span>
       <span class="fr-num">${t.champ_pct}%</span>
       <span class="fr-num">${t.conf_pct}%</span>
       <span class="fr-num">${t.division_pct}%</span>

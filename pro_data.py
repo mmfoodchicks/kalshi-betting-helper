@@ -188,3 +188,141 @@ def schedule(league, season):
                 sched.append((h, a))
         return sched
     return racing._cached(("pro_sched", league, season), 24 * 3600, build) or []
+
+
+# ---- NFL quarterback layer ---------------------------------------------------
+# The single biggest thing last-season point differential misses is the
+# quarterback CHANGING: the differential embeds the old QB, and the regression
+# knob assumes everything reverts alike (elite QBs don't). We identify each
+# team's projected starter from the CURRENT roster, score his prior-season
+# passing efficiency (wherever he played), compare it to the passer whose
+# production is actually baked into the team's differential, and hand pro_sim a
+# margin adjustment.
+
+_CORE_NFL = "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
+
+
+def _nfl_passing_line(pid, season):
+    """{att, yds, td, int} for one athlete-season, or None."""
+    try:
+        s = _get(f"{_CORE_NFL}/seasons/{season}/types/2/athletes/{pid}/statistics?lang=en")
+    except Exception:
+        return None
+    want = {"passingAttempts": "att", "passingYards": "yds",
+            "passingTouchdowns": "td", "interceptions": "int"}
+    out = {}
+    for c in (s.get("splits", {}) or {}).get("categories", []):
+        if c.get("name") != "passing":
+            continue
+        for st in c.get("stats", []):
+            k = want.get(st.get("name"))
+            if k:
+                try:
+                    out[k] = float(st.get("value") or 0)
+                except (TypeError, ValueError):
+                    pass
+    return out if out.get("att") else None
+
+
+def _qb_score(line):
+    """ANY/A-lite: yards +20/TD −45/INT per attempt. League average ~6.2; elite
+    ~7.5+; replacement ~5. The scale pro_sim converts to margin points."""
+    att = line.get("att") or 0
+    if att < 1:
+        return None
+    return (line.get("yds", 0) + 20 * line.get("td", 0) - 45 * line.get("int", 0)) / att
+
+
+def nfl_qb_map(prior_season):
+    """{team_id: {starter, score, att, prev_name, prev_score, changed, adj}} for
+    every NFL team. `adj` is the margin-point QB adjustment pro_sim applies:
+    1.5x the (new starter − departed passer) swing + 0.5x the elite-persistence
+    term (new starter vs league average, restoring signal the differential
+    regression washed out). Self-normalizing: the league average comes from the
+    32 projected starters themselves. Best-effort per team; failures are 0-adj."""
+    cfg = LEAGUES["nfl"]
+
+    def build():
+        tids = [t["id"] for t in teams("nfl")]
+
+        def team_qbs(tid):
+            """Current-roster QB candidates (healthy) + last season's primary passer pid."""
+            qbs, prev_pid = [], None
+            try:
+                r = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}/roster")
+                for grp in r.get("athletes", []):
+                    if grp.get("position") in ("suspended", "injuredReserveOrOut"):
+                        continue
+                    for p in grp.get("items", []):
+                        pos = ((p.get("position") or {}).get("abbreviation") or "").upper()
+                        if pos == "QB" and p.get("id"):
+                            qbs.append({"pid": str(p["id"]), "name": p.get("displayName"),
+                                        "exp": (p.get("experience") or {}).get("years", 0)})
+            except Exception:
+                pass
+            try:
+                d = _get(f"{_CORE_NFL}/seasons/{prior_season}/types/2/teams/{tid}/leaders?lang=en")
+                for c in d.get("categories", []):
+                    if c.get("name") == "passingLeader":
+                        ref = (c.get("leaders") or [{}])[0].get("athlete", {}).get("$ref", "")
+                        if "/athletes/" in ref:
+                            prev_pid = ref.split("/athletes/")[-1].split("?")[0]
+                        break
+            except Exception:
+                pass
+            return tid, qbs, prev_pid
+
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+            rooms = list(ex.map(team_qbs, tids))
+
+        # Fetch prior-season passing lines for every candidate + previous passer.
+        pids = set()
+        for _tid, qbs, prev_pid in rooms:
+            pids.update(q["pid"] for q in qbs)
+            if prev_pid:
+                pids.add(prev_pid)
+        lines = {}
+        with _cf.ThreadPoolExecutor(max_workers=10) as ex:
+            for pid, ln in zip(pids, ex.map(lambda p: _nfl_passing_line(p, prior_season), pids)):
+                lines[pid] = ln
+
+        # Projected starter = the healthy QB with the most prior-season attempts
+        # (free agency/trades counted — his stats follow him). No 100+ attempt
+        # arm on the roster -> rookie/unproven starter.
+        raw = {}
+        for tid, qbs, prev_pid in rooms:
+            best, best_att = None, 0.0
+            for q in qbs:
+                ln = lines.get(q["pid"])
+                att = (ln or {}).get("att", 0)
+                if att > best_att:
+                    best, best_att = q, att
+            starter = best or (qbs[0] if qbs else None)
+            s_line = lines.get(starter["pid"]) if starter else None
+            prev_line = lines.get(prev_pid) if prev_pid else None
+            raw[tid] = {"starter": starter["name"] if starter else None,
+                        "starter_pid": starter["pid"] if starter else None,
+                        "att": best_att,
+                        "score": _qb_score(s_line) if s_line else None,
+                        "prev_pid": prev_pid,
+                        "prev_score": _qb_score(prev_line) if prev_line else None}
+
+        # Self-normalized league average over proven starters.
+        proven = [r["score"] for r in raw.values() if r["score"] is not None and r["att"] >= 150]
+        avg = sum(proven) / len(proven) if proven else 6.2
+
+        out = {}
+        for tid, r in raw.items():
+            now = r["score"] if (r["score"] is not None and r["att"] >= 100) else avg - 0.7
+            prev = r["prev_score"] if r["prev_score"] is not None else avg
+            changed = bool(r["starter_pid"] and r["prev_pid"]
+                           and r["starter_pid"] != r["prev_pid"])
+            swing = (now - prev) if changed else 0.0
+            adj = max(-5.0, min(5.0, 1.5 * swing + 0.5 * (now - avg)))
+            out[tid] = {"starter": r["starter"], "score": round(now, 2),
+                        "att": int(r["att"]), "prev_score": round(prev, 2),
+                        "changed": changed, "adj": round(adj, 2),
+                        "unproven": r["score"] is None or r["att"] < 100,
+                        "lg_avg": round(avg, 2)}
+        return out
+    return racing._cached(("nfl_qb_map", prior_season), 6 * 3600, build) or {}

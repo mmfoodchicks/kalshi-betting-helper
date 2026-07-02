@@ -40,12 +40,32 @@ PARAMS = {
 }
 
 
+# Franchise Super Bowl titles through SB LIX (Feb 2025) — DISPLAY ONLY. A ring
+# from 1975 predicts nothing about next season (that roster is long gone), so
+# titles never enter the rating; they're context on the board because a futures
+# bettor wants them in view. Keyed by ESPN abbreviation.
+SB_TITLES = {"PIT": 6, "NE": 6, "SF": 5, "DAL": 5, "GB": 4, "NYG": 4, "KC": 4,
+             "DEN": 3, "LV": 3, "WSH": 3, "IND": 2, "MIA": 2, "BAL": 2, "TB": 2,
+             "LAR": 2, "PHI": 2, "CHI": 1, "NYJ": 1, "NO": 1, "SEA": 1}
+SB_TITLES_ASOF = "through SB LIX"
+
+
 def ratings(league):
     """{team_id: {name, rating, base, mod, conf, division, avail}} for every team."""
     p = PARAMS[league]
     tm = {t["id"]: t for t in pro_data.teams(league)}
     grp = pro_data.groups(league)
     st = pro_data.standings(league, p["season"] - 1)
+    # NFL: the quarterback layer. Last season's differential embeds last season's
+    # QB; when the starter changed (trade / FA / retirement / rookie) the rating
+    # swings by the QB delta, and a proven elite keeps signal the regression
+    # would otherwise wash out.
+    qb_map = {}
+    if league == "nfl":
+        try:
+            qb_map = pro_data.nfl_qb_map(p["season"] - 1)
+        except Exception:
+            qb_map = {}
     out = {}
     for tid, t in tm.items():
         s = st.get(tid, {"diff_pg": 0.0, "wins": 0, "losses": 0})
@@ -54,11 +74,14 @@ def ratings(league):
         mod = -av["out_index"] * p["ros_pts"]
         if av["key_out"]:
             mod -= p["key_pen"]
+        qb = qb_map.get(tid)
+        if qb:
+            mod += qb["adj"]
         g = grp.get(tid, {"conf": "?", "division": "?"})
         out[tid] = {"id": tid, "name": t["name"], "abbrev": t.get("abbrev"),
                     "rating": round(base + mod, 2), "base": round(base, 2),
                     "mod": round(mod, 2), "conf": g["conf"], "division": g["division"],
-                    "prior": f"{s['wins']}-{s['losses']}", "avail": av}
+                    "prior": f"{s['wins']}-{s['losses']}", "avail": av, "qb": qb}
     return out
 
 
@@ -211,10 +234,13 @@ def project(league, n=4000, seed=None):
             "out_list": r["avail"]["out_list"],
             "key_out": r["avail"]["key_out"],
             "rookies": r["avail"]["rookies"],
+            "qb": r.get("qb"),
+            "titles": SB_TITLES.get(r.get("abbrev") or "", 0) if league == "nfl" else None,
         })
     teams.sort(key=lambda t: t["champ_pct"], reverse=True)
     return {"league": league, "n_sims": n, "season": p["season"],
-            "games": len(schedule), "teams": teams}
+            "games": len(schedule), "teams": teams,
+            "titles_asof": SB_TITLES_ASOF if league == "nfl" else None}
 
 
 def win_total_prob(team, line):
