@@ -311,9 +311,32 @@ def nfl_qb_map(prior_season):
         proven = [r["score"] for r in raw.values() if r["score"] is not None and r["att"] >= 150]
         avg = sum(proven) / len(proven) if proven else 6.2
 
+        def _unproven_prior(pid):
+            """Draft capital sets the prior for a starter with no NFL sample —
+            historical rookie efficiency tracks draft slot: a top-5 pick projects
+            near-average, a Day-3 flier well below."""
+            try:
+                d = _get(f"{_CORE_NFL}/seasons/{prior_season + 1}/athletes/{pid}?lang=en")
+                dr = d.get("draft") or {}
+                sel, rnd = dr.get("selection"), dr.get("round")
+            except Exception:
+                sel = rnd = None
+            if sel and sel <= 5:
+                return avg - 0.25
+            if sel and sel <= 15:
+                return avg - 0.45
+            if rnd == 1:
+                return avg - 0.60
+            if rnd in (2, 3):
+                return avg - 0.85
+            return avg - 1.10                    # Day 3 / undrafted / unknown
+
         out = {}
         for tid, r in raw.items():
-            now = r["score"] if (r["score"] is not None and r["att"] >= 100) else avg - 0.7
+            if r["score"] is not None and r["att"] >= 100:
+                now = r["score"]
+            else:
+                now = _unproven_prior(r["starter_pid"]) if r["starter_pid"] else avg - 0.9
             prev = r["prev_score"] if r["prev_score"] is not None else avg
             changed = bool(r["starter_pid"] and r["prev_pid"]
                            and r["starter_pid"] != r["prev_pid"])

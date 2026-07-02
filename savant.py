@@ -94,3 +94,54 @@ def quality_mults(xs):
     if slg and xslg and slg > 0:
         power = max(0.85, min(1.15, 1 + 0.5 * ((xslg - slg) / slg)))
     return contact, power
+
+
+def pitch_arsenals(season):
+    """Arsenal matchup data from the Statcast pitch-arsenal leaderboards:
+
+      {"pit": {pid: {pitch_type: usage_fraction}},
+       "bat": {pid: {pitch_type: {"k": whiff_mult, "w": woba_mult}}}}
+
+    Batter multipliers are RELATIVE TO HIS OWN overall line (usage-weighted
+    across every pitch he saw), shrunk by pitches seen — so vs a league-average
+    mix the expected multiplier is ~1 and the season stays calibrated, while a
+    breaking-ball-blind hitter facing a slider-heavy starter finally reads as
+    one. Everything degrades to {} (no adjustment) on failure."""
+    def build():
+        base = ("https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
+                "?type={t}&pitchType=&year={y}&team=&min=5&csv=true")
+        pit_rows = _get_csv(base.format(t="pitcher", y=season))
+        bat_rows = _get_csv(base.format(t="batter", y=season))
+
+        pit = {}
+        for r in pit_rows:
+            pid, pt = r.get("player_id"), r.get("pitch_type")
+            u = _f(r.get("pitch_usage"))
+            if pid and pt and u:
+                pit.setdefault(pid, {})[pt] = u / 100.0
+
+        # Batter: per-pitch whiff% and wOBA vs his own usage-weighted overall.
+        raw = {}
+        for r in bat_rows:
+            pid, pt = r.get("player_id"), r.get("pitch_type")
+            n = _f(r.get("pitches"))
+            wh, wo = _f(r.get("whiff_percent")), _f(r.get("woba"))
+            if pid and pt and n and wh is not None and wo is not None:
+                raw.setdefault(pid, []).append((pt, n, wh, wo))
+        bat = {}
+        _KN, _WN = 250.0, 350.0            # shrinkage in pitches seen (whiff / woba)
+        for pid, rows in raw.items():
+            tot = sum(n for _, n, _, _ in rows) or 1.0
+            o_wh = sum(n * wh for _, n, wh, _ in rows) / tot
+            o_wo = sum(n * wo for _, n, _, wo in rows) / tot
+            if o_wh <= 0 or o_wo <= 0:
+                continue
+            m = {}
+            for pt, n, wh, wo in rows:
+                km = (n * (wh / o_wh) + _KN) / (n + _KN)
+                wm = (n * (wo / o_wo) + _WN) / (n + _WN)
+                m[pt] = {"k": round(max(0.80, min(1.25, km)), 3),
+                         "w": round(max(0.85, min(1.18, wm)), 3)}
+            bat[pid] = m
+        return {"pit": pit, "bat": bat}
+    return _cached(("arsenal", season), 12 * 3600, build) or {"pit": {}, "bat": {}}

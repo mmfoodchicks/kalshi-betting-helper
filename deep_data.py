@@ -298,6 +298,22 @@ def team_profile(team_id, season=None):
             _attach_platoon(batters[:13], season)
         except Exception:
             pass
+        # Statcast pitch arsenals: each pitcher's mix + each batter's per-pitch
+        # strengths/weaknesses, so a breaking-ball-blind hitter facing a
+        # slider-heavy starter reads as the mismatch he is. Best-effort.
+        try:
+            import savant
+            ars = savant.pitch_arsenals(season)
+            for b in batters:
+                a = ars["bat"].get(str(b["id"]))
+                if a:
+                    b["ars"] = a
+            for p in pitchers + depth:
+                m = ars["pit"].get(str(p["id"]))
+                if m:
+                    p["mix"] = m
+        except Exception:
+            pass
         return {"rotation": starters or pitchers[:1], "bullpen": relievers,
                 "depth": depth[:6], "lineup": batters[:9], "bench": batters[9:]}
     return baseball._cached(("deep_profile3", team_id, season), 21600, build)

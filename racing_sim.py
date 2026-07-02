@@ -902,6 +902,57 @@ def next_race_profile(sport):
     return None
 
 
+def _f1_practice_gaps():
+    """{normalized driver name: gap-to-fastest in seconds} from the LATEST
+    completed practice session of the CURRENT GP weekend (OpenF1). Practice pace
+    at this circuit is the best pre-qualifying signal there is. None when the
+    freshest practice is stale (>4 days — i.e. from a finished weekend)."""
+    import datetime as _dt
+
+    def build():
+        year = _dt.date.today().year
+        sessions = racing._get_json(f"https://api.openf1.org/v1/sessions?year={year}")
+        now = _dt.datetime.now(_dt.timezone.utc)
+        done = []
+        for s in sessions:
+            if s.get("session_type") != "Practice":
+                continue
+            try:
+                t = _dt.datetime.fromisoformat(s["date_start"].replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if t < now:
+                done.append((t, s))
+        if not done:
+            return None
+        done.sort()
+        t, s = done[-1]
+        if (now - t).total_seconds() > 4 * 86400:
+            return None                        # last practice was a past weekend
+        key = s["session_key"]
+        drivers = racing._get_json(f"https://api.openf1.org/v1/drivers?session_key={key}")
+        name_of = {d["driver_number"]: d.get("full_name") or d.get("broadcast_name")
+                   for d in drivers}
+        laps = racing._get_json(f"https://api.openf1.org/v1/laps?session_key={key}")
+        best = {}
+        for l in laps:
+            dur = l.get("lap_duration")
+            dn = l.get("driver_number")
+            if dur and dn in name_of:
+                best[dn] = min(best.get(dn, 1e9), dur)
+        if len(best) < 10:
+            return None
+        fastest = min(best.values())
+        out = {}
+        for dn, t in best.items():
+            nm = racing.norm_name(name_of[dn])
+            out[nm] = round(t - fastest, 3)
+            if nm.split():
+                out.setdefault(nm.split()[-1], out[nm])   # last-name alias
+        return out
+    return racing._cached(("f1_practice",), 1800, build)
+
+
 # DraftKings F1 scoring: finishing points (1st 43, 2nd 40, 3rd 38, then 41−pos),
 # ±1 place differential, fastest lap +5, laps led +0.1, defeated teammate +5.
 # F1's dominator pool is tiny (57 laps x 0.1 ≈ 5.7 + the 5-pt fastest lap), so
@@ -1022,6 +1073,24 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         race = rem[0]
         ctype = race.get("type", "standard"); wet_p = race.get("wet_prob", 0.0)
         laps = _F1_LAPS
+        # Fresh practice pace from THIS weekend sharpens the simulated qualifying
+        # (pre-quali only — once the real grid is fixed, practice is moot).
+        if not fixed_grid:
+            try:
+                pg = _f1_practice_gaps()
+            except Exception:
+                pg = None
+            if pg:
+                blended, hits = [], 0
+                for d in drivers:
+                    nm = racing.norm_name(d["name"])
+                    g = pg.get(nm) or (pg.get(nm.split()[-1]) if nm.split() else None)
+                    if g is not None:
+                        d = dict(d, quali=0.65 * d["quali"] + 0.35 * min(3.0, g))
+                        hits += 1
+                    blended.append(d)
+                if hits >= 12:
+                    drivers = blended
         # Teammate pairs for the defeated-teammate bonus.
         by_con = defaultdict(list)
         for d in drivers:
@@ -1086,6 +1155,29 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         race = rem[0]
         ttype = race.get("type", "intermediate"); wet_p = race.get("wet_prob", 0.0)
         laps = int(race.get("laps") or _DEFAULT_LAPS.get(ttype, 300))
+        # Final-practice speed rank at THIS track nudges race pace: a car that
+        # unloaded fast usually races fast; one buried in practice rarely finds
+        # 15 spots by Sunday. Modest weight (trim levels vary), name-matched.
+        try:
+            pr = racing.get_nascar_practice(race.get("name"))
+        except Exception:
+            pr = None
+        if pr:
+            by_full, by_last = racing._index(pr)
+            ranked = sorted(drivers, key=lambda d: d["race_pace"]
+                            + (d.get("pace_by_type") or {}).get(ttype, 0.0))
+            mrank = {d["id"]: i + 1 for i, d in enumerate(ranked)}
+            adj, hits = [], 0
+            for d in drivers:
+                nm = racing.norm_name(d["name"])
+                p = by_full.get(nm) or (by_last.get(nm.split()[-1]) if nm.split() else None)
+                if p is not None:
+                    delta = max(-4.0, min(4.0, 0.30 * (p - mrank[d["id"]])))
+                    d = dict(d, race_pace=d["race_pace"] + delta)
+                    hits += 1
+                adj.append(d)
+            if hits >= 15:
+                drivers = adj
         # Real historical laps-led share per driver AT THIS TRACK TYPE.
         led_prop = {d["id"]: (d.get("led_by_type") or {}).get(ttype, 0.0) for d in drivers}
         for _ in range(n):

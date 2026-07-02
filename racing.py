@@ -148,6 +148,41 @@ def get_nascar_grid(race_name=None, date=None, year=None):
     return None
 
 
+def get_nascar_practice(race_name=None, date=None, year=None):
+    """{normalized driver name: practice speed rank} from the upcoming weekend's
+    FINAL practice run. Practice at THIS track in race trim is the freshest pace
+    signal there is — a car that hasn't unloaded fast doesn't suddenly find
+    speed on Sunday. None until practice runs."""
+    year = year or (date[:4] if date else str(datetime.date.today().year))
+    for series in (1, 2, 3):
+        try:
+            races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
+        except Exception:
+            continue
+        race = _pick_race(races, race_name, date)
+        if not race:
+            continue
+        try:
+            feed = _get_json(
+                f"https://cf.nascar.com/cacher/{year}/{series}/{race['race_id']}/weekend-feed.json")
+        except Exception:
+            continue
+        practices = [r for r in feed.get("weekend_runs", [])
+                     if r.get("run_type") == 1 and (r.get("results") or [])]
+        if not practices:
+            continue
+        run = practices[-1]                      # final practice = race trim
+        grid = {}
+        for res in run["results"]:
+            pos = res.get("finishing_position")
+            nm = norm_name(res.get("driver_name", ""))
+            if pos and nm:
+                grid[nm] = int(pos)
+        if grid:
+            return grid
+    return None
+
+
 # --- F1 ----------------------------------------------------------------------
 
 def get_f1_grid(race_name=None):

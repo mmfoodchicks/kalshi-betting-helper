@@ -157,14 +157,42 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
                              for r, c in sorted(rounds_hist.items())}}
 
 
+def _apply_bio(ra, rb):
+    """Age curve + reach matchup, from the ESPN bios. MUTATES the (copied)
+    rating dicts. Age >34: durability fades fastest (the chin goes first,
+    ~3.5%/yr), output and wrestling at half that rate. Reach: the longer
+    striker lands more and eats less, ~1% of volume per inch of advantage."""
+    for r in (ra, rb):
+        bio = ufc_data.fighter_bio(r["id"]) or {}
+        r["age"] = bio.get("age")
+        r["reach"] = bio.get("reach")
+        age = bio.get("age")
+        if age and age > 34:
+            fade = min(0.30, 0.035 * (age - 34))
+            r["durability"] = max(0.45, r["durability"] * (1 - fade))
+            r["ss_pm"] = r["ss_pm"] * (1 - 0.5 * fade)
+            r["td_p15"] = r["td_p15"] * (1 - 0.5 * fade)
+    a_r, b_r = ra.get("reach") or 0, rb.get("reach") or 0
+    if a_r and b_r:
+        diff = max(-8.0, min(8.0, a_r - b_r))
+        ra["ss_pm"] *= 1 + 0.010 * diff
+        rb["ss_pm"] *= 1 - 0.010 * diff
+
+
 def _compute_board(n):
     c = ufc_data.card()
     if not c or not c.get("bouts"):
         return None
     bouts = []
     for bt in c["bouts"]:
-        ra = ufc_data.fighter_rating(bt["a_id"], bt["a_name"])
-        rb = ufc_data.fighter_rating(bt["b_id"], bt["b_name"])
+        # dict() copies: the raw ratings are cached two weeks and must not
+        # carry one bout's bio adjustments into the next card.
+        ra = dict(ufc_data.fighter_rating(bt["a_id"], bt["a_name"]))
+        rb = dict(ufc_data.fighter_rating(bt["b_id"], bt["b_name"]))
+        try:
+            _apply_bio(ra, rb)
+        except Exception:
+            pass
         res = simulate_bout(ra, rb, rounds=bt.get("rounds", 3), n=n)
         res["weight"] = bt.get("weight")
         bouts.append(res)

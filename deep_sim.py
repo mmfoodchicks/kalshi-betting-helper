@@ -36,7 +36,31 @@ def _log5(b, p, l):
     return num / den if den > 0 else b
 
 
-def _pa_probs(bat, pit, env=1.0, tto_pen=0.0):
+def _ars_factor(bat, pit):
+    """Arsenal-matchup multipliers (k, hr, hit) for one batter vs one pitcher:
+    the batter's per-pitch-type strengths dotted with the pitcher's actual mix.
+    None when either side lacks Statcast coverage, or the batter has data on
+    under half the pitcher's arsenal. Computed once per pairing per game."""
+    mix = pit.get("mix")
+    ars = bat.get("ars")
+    if not mix or not ars:
+        return None
+    km = wm = 1.0
+    cov = 0.0
+    for pt, u in mix.items():
+        a = ars.get(pt)
+        if a:
+            km += u * (a["k"] - 1.0)
+            wm += u * (a["w"] - 1.0)
+            cov += u
+    if cov < 0.5:
+        return None
+    return (max(0.85, min(1.15, km)),
+            max(0.85, min(1.18, wm)),
+            max(0.92, min(1.08, 1.0 + 0.45 * (wm - 1.0))))
+
+
+def _pa_probs(bat, pit, env=1.0, tto_pen=0.0, ars=None):
     """Outcome probabilities for one plate appearance (sums to 1). `env` is a
     run-environment multiplier (>1 = hitter-friendly park/weather, <1 = pitcher-
     friendly) that scales power and balls-in-play hits; 1.0 leaves the season sim
@@ -53,6 +77,9 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0):
     bb = _log5(br["bb"], pit["bbpa"], LG["bb"]) * _BB_CAL
     hr = (_log5(br["hr"], pit["hrpa"], LG["hr"]) * env * (1.0 + 0.8 * tto_pen)
           * pl.get("hr", 1.0))
+    if ars:                                    # Statcast arsenal matchup (k, hr, hit)
+        k = min(0.55, k * ars[0])
+        hr *= ars[1]
     hbp = br["hbp"]
     # Remaining mass goes to balls in play (hits + outs), tilted by the pitcher's
     # run prevention (better ERA suppresses hits a touch).
@@ -60,6 +87,8 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0):
     qual = max(0.78, min(1.22, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
     s, d, t = br["1b"], br["2b"], br["3b"]
     hit = (s + d + t) / qual * _HIT_CAL * env * (1.0 + tto_pen) * pl.get("hit", 1.0)
+    if ars:
+        hit *= ars[2]
     bip = s + d + t + 0.0
     # batter's in-play out rate implied by his line (1 - all events)
     out_in_play = max(0.05, 1 - (br["k"] + br["bb"] + br["hbp"] + br["hr"] + bip))
@@ -253,6 +282,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
     used_ph = {"home": set(), "away": set()}
     bat_lines = {}
     score = {"home": 0, "away": 0}
+    ars_memo = {}                              # (batter_id, pitcher_id) -> arsenal factor
 
     def bline(p):
         return bat_lines.setdefault(p["id"], _new_bat_line())
@@ -285,7 +315,12 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 tto_pen = 0.0
                 if is_sp:
                     tto_pen = max(0.0, min(0.12, (st.outing_bf / 9.0 - 2.0) * 0.06))
-                probs = _pa_probs(bat, pit, env, tto_pen)
+                # Arsenal matchup, memoized per (batter, pitcher) pairing — the
+                # dot product runs once per pairing per game, not per PA.
+                akey = (bat["id"], pit["id"])
+                if akey not in ars_memo:
+                    ars_memo[akey] = _ars_factor(bat, pit)
+                probs = _pa_probs(bat, pit, env, tto_pen, ars_memo[akey])
                 r = rng.random()
                 cum = 0.0
                 for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):

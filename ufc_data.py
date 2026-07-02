@@ -290,3 +290,18 @@ def card():
                           "rounds": rounds})
         return {"event": ev.get("name"), "date": (ev.get("date") or "")[:10], "bouts": bouts}
     return racing._cached(("ufc_card",), 6 * 3600, build)
+
+
+def fighter_bio(fid):
+    """Age / reach / stance from the ESPN athlete record, cached a week. Age is
+    the most reliable decline signal in MMA (the chin goes first, then output);
+    reach shapes the striking exchanges."""
+    def build():
+        try:
+            d = _get(f"{ATH}/{fid}?lang=en")
+        except Exception:
+            return None
+        return {"age": d.get("age"), "reach": d.get("reach"),
+                "height": d.get("height"),
+                "stance": ((d.get("stance") or {}).get("text") or "").lower()}
+    return racing._cached(("ufc_bio", fid), 7 * 86400, build)
