@@ -156,16 +156,18 @@ def apply_grid(players, sport, date=None):
     """
     import racing
     race_name = next((p.get("game") for p in players if p.get("game")), None)
+    # The grid may not exist yet (qualifying hasn't run). That must NOT disable
+    # the race simulator — pre-qualifying we still project every driver from
+    # thousands of simulated races (finish points + dominators + wrecks/DNFs),
+    # just without the place-differential term, and note it honestly.
     grid = racing.get_grid(sport, race_name=race_name, date=date)
-    if not grid:
-        return {"available": False,
-                "reason": "no qualifying grid posted yet (check back after qualifying)"}
     n = len(players)
-    field = grid["field"]
+    field = grid["field"] if grid else n
     # Deserved finishing spot. Primary source = our race SIMULATOR's expected
     # finish for this driver (it simulates qualifying + the race with car pace,
-    # track-type form, DNFs and wet chaos). Fallback when a driver isn't in the
-    # sim: salary rank (DK prices by car quality), sharpened with recent form.
+    # track-type form, DNFs and wet chaos). wait=True: a cold cache computes the
+    # sim synchronously rather than silently building from raw CSV numbers.
+    _sim_raw_profile(sport, wait=True)
     sim_prof = _sim_profile(sport)              # {normalized_name: {...}} or {}
     order = sorted(range(n), key=lambda i: players[i]["salary"], reverse=True)
     deserved = [0.0] * n
@@ -173,7 +175,7 @@ def apply_grid(players, sport, date=None):
         deserved[i] = min(field, max(1.0, (rank + 0.5) / n * field))
     form = {}
     try:
-        if sport == "nascar":
+        if sport == "nascar" and grid:
             form = racing.get_nascar_form((date or "")[:4] or None,
                                           date or "", series=grid.get("series_id") or 1) or {}
         elif sport == "f1":
@@ -186,7 +188,7 @@ def apply_grid(players, sport, date=None):
     # race inside the DK samples (F1 leans hard on the grid — conditioning beats
     # any linear PD adjustment). Falls back to the marginal profile on failure.
     f1_prof, cond_meta = {}, {}
-    if sport == "f1":
+    if sport == "f1" and grid:
         try:
             import racing_sim
             cond = racing_sim.next_race_sim("f1", n=1500, fixed_grid=grid["grid"])
@@ -205,11 +207,12 @@ def apply_grid(players, sport, date=None):
     matched, unmatched, form_hits, sim_hits = 0, [], 0, 0
     dk_hits = 0
     for i, p in enumerate(players):
-        start = racing.lookup(grid, p["name"])
-        if start is None:
-            unmatched.append(p["name"])
+        start = racing.lookup(grid, p["name"]) if grid else None
+        if grid and start is None:
+            unmatched.append(p["name"])         # in the CSV but not the grid: withdrew
             continue
-        matched += 1
+        if start is not None:
+            matched += 1
         # F1 grid-conditioned DK projection (PD already inside the samples).
         if f1_prof:
             nm = _norm_name(p["name"])
@@ -222,28 +225,34 @@ def apply_grid(players, sport, date=None):
                 p["ceil_proj"] = round(max(p["proj"], s2["dk_q90"]), 1)
                 p["exp_finish"] = round(s2["avg_finish"], 1)
                 p["pd_adj"] = round(start - s2["avg_finish"], 1)   # display; PD is in-sim
+                if s2.get("dk_arr"):
+                    p["arr"] = s2["dk_arr"]     # joint samples: PD already inside
                 sim_hits += 1; dk_hits += 1
                 continue
         s = sim_prof.get(_norm_name(p["name"]))
         p["base_proj"] = p["proj"]
         p["start"] = start
-        # NASCAR with full sim DK components: build the projection FROM SCRATCH
-        # the way DraftKings actually scores it — expected finish points +
-        # expected dominator points (laps led x0.25 + fastest x0.45, sized to
-        # THIS race's laps and track type) + place differential off the real
-        # starting spot. The CSV's season FPPG stays as a 25% sanity anchor
-        # (it knows things the sim doesn't, like a new crew chief).
-        if sport == "nascar" and s and s.get("dk_mean") is not None:
-            pd = start - s["avg_finish"]        # expected places gained (+) / lost (-)
+        # Full sim DK components: the projection is built FROM SCRATCH the way
+        # DraftKings scores the sport — expected finish points + dominator points
+        # + place differential off the real starting spot (0 until qualifying
+        # runs). The CSV's season FPPG stays as a 25% sanity anchor, and the
+        # per-race joint samples ride along so lineups are scored on the SAME
+        # simulated races (crashes, DNFs and all), not independent bell curves.
+        if s and s.get("dk_mean") is not None:
+            pd = (start - s["avg_finish"]) if start is not None else 0.0
             ours = s["dk_mean"] + pd
             csv_anchor = p["proj"] if p["proj"] > 1 else ours
             p["proj"] = max(0.0, 0.75 * ours + 0.25 * csv_anchor)
             p["ceil_proj"] = round(max(p["proj"], s["dk_q90"] + pd), 1)
             p["exp_finish"] = round(s["avg_finish"], 1)
             p["pd_adj"] = round(pd, 1)
+            if s.get("dk_arr"):
+                p["arr"] = [x + pd for x in s["dk_arr"]]
             sim_hits += 1; dk_hits += 1
             continue
-        # Fallback (F1, or a driver the sim doesn't know): season-FPPG + partial
+        if start is None:
+            continue                            # no grid AND no sim: leave the CSV proj
+        # Fallback (a driver the sim doesn't know): season-FPPG + partial
         # place-differential correction vs the deserved spot.
         if s is not None:
             deserved[i] = min(field, max(1.0, s["avg_finish"]))
@@ -296,7 +305,14 @@ def apply_grid(players, sport, date=None):
     meta = _sim_meta(sport)
     if cond_meta:
         meta.update(cond_meta)
-    return {"available": True, "race": grid["race"], "series": grid["series"],
+    prof_race = _sim_raw_profile(sport).get("race")
+    return {"available": bool(grid),
+            "reason": None if grid else
+            ("no qualifying grid yet — projections come from the race simulator "
+             "(place differential applies after qualifying)" if dk_hits else
+             "no qualifying grid posted yet (check back after qualifying)"),
+            "race": grid["race"] if grid else prof_race,
+            "series": grid["series"] if grid else None,
             "field": field, "matched": matched, "unmatched": unmatched[:25],
             "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits,
             "dk_scored": dk_hits, "track_type": meta.get("track_type"),
@@ -310,13 +326,25 @@ def _norm_name(s):
     return "".join(c for c in s.lower() if c.isalnum() or c == " ").strip()
 
 
-def _sim_raw_profile(sport):
-    """The race simulator's raw next-race profile dict (or {})."""
+def _sim_raw_profile(sport, wait=False):
+    """The race simulator's raw next-race profile dict (or {}).
+
+    next_race_profile is non-blocking (background warm), which used to mean a
+    cold start silently built lineups from raw CSV numbers with no sim at all.
+    With `wait=True` we compute a bounded synchronous profile instead — the DFS
+    build takes longer once, then the cache serves everyone."""
     if sport not in ("f1", "nascar"):
         return {}
     try:
         import racing_sim
-        return racing_sim.next_race_profile(sport) or {}
+        prof = racing_sim.next_race_profile(sport)
+        if not prof and wait:
+            import time as _t
+            import racing as _r
+            prof = racing_sim.next_race_sim(sport, n=800)
+            if prof:
+                _r._form_cache[("next_race", sport)] = (_t.time(), prof)
+        return prof or {}
     except Exception:
         return {}
 
@@ -442,14 +470,14 @@ def _set_values(players, objective, cv):
     steady points-scorer of equal mean.
 
     'leverage' is the large-field GPP play: the same ceiling, discounted by
-    projected ownership (~-0.4% of value per ownership point). Beating a
+    projected ownership (~-0.7% of value per ownership point). Beating a
     100k-entry field requires being DIFFERENT and right -- a 25%-owned chalk
     ceiling play wins you a shared prize; the 5%-owned one wins you the top."""
     for p in players:
         ceil = p.get("ceil_proj") or p["proj"] * (1 + cv)
         if objective == "leverage":
             own = p.get("own") if p.get("own") is not None else 15.0
-            p["value"] = ceil * (1.0 - 0.004 * own)
+            p["value"] = ceil * (1.0 - 0.007 * own)
         elif objective == "ceiling":
             p["value"] = ceil
         else:
@@ -527,17 +555,43 @@ def _f1_showdown(players, cap, objective, cv):
 
 
 def dfs_sim(lineup, n=20000, cv=0.55):
-    """Monte Carlo a lineup's total DK points (per-player variance ~ cv)."""
+    """Monte Carlo a lineup's total DK points.
+
+    When players carry `arr` (per-sim DK samples from the race/fight simulator,
+    index-aligned so entry i is the SAME simulated race/card), the lineup is
+    scored by replaying those JOINT outcomes: only one driver wins any given
+    race, the big one wrecks several of your cars at once, and exactly one
+    fighter per bout banks the win bonus. Six players can no longer all hit
+    their 90th percentile in the same world — the old independent-gaussian draw
+    let them, which inflated every ceiling and win%. Players without samples
+    (e.g. a driver the sim doesn't know) keep an independent gaussian."""
+    arrs = [(p.get("arr"), p) for p in lineup]
+    have = [a for a, _ in arrs if a]
     totals = []
-    for _ in range(n):
-        t = 0.0
-        for p in lineup:
-            t += max(0.0, random.gauss(p["proj"], p["proj"] * cv))
-        totals.append(t)
+    if have:
+        L = min(len(a) for a in have)
+        iters = min(n, max(L, 1) * 4)             # resample the joint worlds
+        for _ in range(iters):
+            i = random.randrange(L)
+            t = 0.0
+            for a, p in arrs:
+                if a:
+                    t += a[i % len(a)]
+                else:
+                    t += max(0.0, random.gauss(p["proj"], p["proj"] * cv))
+            totals.append(t)
+    else:
+        for _ in range(n):
+            t = 0.0
+            for _a, p in arrs:
+                t += max(0.0, random.gauss(p["proj"], p["proj"] * cv))
+            totals.append(t)
     totals.sort()
-    def pct(q): return round(totals[min(n - 1, int(q * n))], 1)
+    m = len(totals)
+    def pct(q): return round(totals[min(m - 1, int(q * m))], 1)
     return {"floor": pct(0.1), "median": pct(0.5), "ceiling": pct(0.9),
-            "max": round(totals[-1], 1), "n": n}
+            "max": round(totals[-1], 1), "n": m,
+            "correlated": bool(have)}
 
 
 # ---- Projected ownership + portfolio + large-field contest sim (generic) ----
@@ -586,6 +640,27 @@ def _field_lineup(players, roster, cap, rng, exclusive_group=None, tries=12):
     return None
 
 
+def _leverage_lineup(players, roster, cap, cv, exclusive_group):
+    """The large-field GPP build: generate a spread of near-ceiling lineups
+    (value-jittered knapsack restarts), then pick the one with the best
+    ceiling x ownership-leverage tradeoff AT THE LINEUP LEVEL. A per-player
+    value discount often just re-picks the chalk (the chalk IS the ceiling);
+    choosing between whole builds is how you actually end up different-and-right
+    in a 100k field. Falls back to the straight ceiling lineup if nothing
+    lower-owned comes close."""
+    cands = _portfolio(players, roster, cap, "ceiling", cv,
+                       n_lineups=20, max_exposure=100.0, min_uniq=1,
+                       exclusive_group=exclusive_group)
+    if not cands:
+        return None
+
+    def score(ln):
+        ceil = sum(p.get("ceil_proj") or p["proj"] * (1 + cv) for p in ln)
+        avg_own = sum(p.get("own", 15.0) or 15.0 for p in ln) / max(1, len(ln))
+        return ceil * (1.0 - 0.009 * avg_own)
+    return max(cands, key=score)
+
+
 def _portfolio(players, roster, cap, objective, cv, n_lineups, max_exposure,
                min_uniq, exclusive_group):
     """Build up to `n_lineups` diverse lineups: value-perturbed knapsack restarts,
@@ -626,11 +701,25 @@ def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fe
     import statistics
     import mlb_dfs
     rng = random.Random(1234)
-    field = []
-    for _ in range(field_n):
+    # A real GPP field isn't dart throwers: most entrants optimize against the
+    # same public projections, so field lineups cluster near the optimum. Keep
+    # only sampled lineups projecting >= ~84% of YOUR best build — without this
+    # floor the model "beats" 14,000 random rosters and prints fantasy ROI.
+    ref = max(sum(p["proj"] for p in ln) for ln in your_lineups)
+    floor_q = 0.84 * ref
+    field, attempts = [], 0
+    while len(field) < field_n and attempts < field_n * 40:
+        attempts += 1
         fl = _field_lineup(players, roster, cap, rng, exclusive_group)
-        if fl:
+        if fl and sum(p["proj"] for p in fl) >= floor_q:
             field.append([p["name"] for p in fl])
+    if len(field) < 20:                      # thin pool -> relax the sharpness floor
+        for _ in range(field_n * 5):
+            fl = _field_lineup(players, roster, cap, rng, exclusive_group)
+            if fl:
+                field.append([p["name"] for p in fl])
+            if len(field) >= field_n:
+                break
     if len(field) < 20:
         return None
     by = {p["name"]: p for p in players}
@@ -647,8 +736,20 @@ def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fe
     ncdf, npdf = mlb_dfs._ncdf, mlb_dfs._npdf
     your = [[p["name"] for p in ln] for ln in your_lineups]
     stats = [{"win": 0.0, "cash": 0.0, "ret": 0.0} for _ in your]
+    # Shared joint-sample length (players with per-sim arrays from the race/fight
+    # simulator). Each contest iteration picks ONE simulated world and scores
+    # your lineups AND the whole field in it — the same crashes, the same winner.
+    arr_lens = [len(p["arr"]) for p in by.values() if p.get("arr")]
+    L = min(arr_lens) if arr_lens else 0
     for _ in range(n_iter):
-        sc = {nm: max(0.0, rng.gauss(p["proj"], (p["proj"] or 1.0) * cv)) for nm, p in by.items()}
+        i = rng.randrange(L) if L else 0
+        sc = {}
+        for nm, p in by.items():
+            a = p.get("arr")
+            if a:
+                sc[nm] = a[i % len(a)]
+            else:
+                sc[nm] = max(0.0, rng.gauss(p["proj"], (p["proj"] or 1.0) * cv))
         fs = [sum(sc.get(nm, 0.0) for nm in fl) for fl in field]
         mu = statistics.fmean(fs)
         sd = statistics.pstdev(fs) or 1.0
@@ -708,6 +809,8 @@ def apply_ufc(players):
             p["base_proj"] = p["proj"]
             p["proj"] = f["proj"]
             p["ceil_proj"] = f["ceil"]
+            if f.get("dk_arr"):
+                p["arr"] = f["dk_arr"]      # joint bout samples (winner/loser aligned)
             p["win_pct"] = f["win_pct"]
             p["rating"] = f.get("rating")
             p["record"] = f.get("record")
@@ -775,6 +878,11 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     elif n_lineups > 1:
         lineups = _portfolio(players, roster, cap, objective, cv, n_lineups,
                              max_exposure, min_uniq, exclusive)
+    elif objective == "leverage":
+        # Leverage is a LINEUP-level choice among near-ceiling builds, not a
+        # per-player discount (which usually just re-picks the chalk).
+        lu = _leverage_lineup(players, roster, cap, cv, exclusive)
+        lineups = [lu] if lu else []
     else:
         _set_values(players, objective, cv)
         lu = dfs_optimize(players, roster, cap, exclusive_group=exclusive)

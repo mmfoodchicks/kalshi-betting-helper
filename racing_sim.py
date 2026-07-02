@@ -1066,16 +1066,23 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         return None
 
     out = {}
+    # Keep an index-ALIGNED subsample of every driver's per-race DK points: entry
+    # i of every array is the SAME simulated race, so lineup scoring can replay
+    # joint outcomes (one winner per race, the big one wrecking several cars at
+    # once) instead of drawing independent bell curves per driver.
+    step = max(1, n // 1000)
+    keep = list(range(0, n, step))
     for did, nm in name_of.items():
         row = {"avg_finish": round(fin[did] / n, 2),
                "p_win": round(win[did] / n, 3), "p_top5": round(t5[did] / n, 3),
                "p_top10": round(t10[did] / n, 3), "p_top20": round(t20[did] / n, 3)}
         smp = dk_samples.get(did)
         if smp:
-            smp.sort()
-            m = len(smp)
-            row["dk_mean"] = round(sum(smp) / m, 1)           # fin pts + dominator
-            row["dk_q90"] = round(smp[min(m - 1, int(0.9 * m))], 1)
+            row["dk_arr"] = [round(smp[i], 1) for i in keep if i < len(smp)]
+            srt = sorted(smp)
+            m = len(srt)
+            row["dk_mean"] = round(sum(srt) / m, 1)           # fin pts + dominator
+            row["dk_q90"] = round(srt[min(m - 1, int(0.9 * m))], 1)
         out[nm] = row
     meta = {"sport": sport, "race": race.get("name"), "n_sims": n, "drivers": out}
     if laps is not None:

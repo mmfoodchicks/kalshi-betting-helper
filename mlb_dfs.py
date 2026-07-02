@@ -719,11 +719,26 @@ def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp
     own_w = {p["name"]: max(0.1, p.get("own", 1.0)) for p in players}
 
     rng = random.Random(12345)
-    field = []
-    for _ in range(sample_size):
+    # A real GPP field mostly optimizes against the same public projections, so
+    # its lineups cluster near the optimum. Keep sampled field lineups projecting
+    # >= ~84% of YOUR best build — an unfiltered random field is far too soft and
+    # prints fantasy win%/ROI numbers.
+    proj_of = {p["name"]: (p.get("proj") or 0.0) for p in players}
+    ref = max(sum(proj_of.get(p["name"], 0.0) for p in ln) for ln in your_lineups)
+    floor_q = 0.84 * ref
+    field, attempts = [], 0
+    while len(field) < sample_size and attempts < sample_size * 40:
+        attempts += 1
         fl = _field_lineup(by_pos, 50000, own_w, rng)
-        if fl:
+        if fl and sum(proj_of.get(nm, 0.0) for nm in fl) >= floor_q:
             field.append(fl)
+    if len(field) < 30:                     # thin slate -> relax the sharpness floor
+        for _ in range(sample_size * 5):
+            fl = _field_lineup(by_pos, 50000, own_w, rng)
+            if fl:
+                field.append(fl)
+            if len(field) >= sample_size:
+                break
     if len(field) < 30:
         return None
 

@@ -3326,7 +3326,7 @@ async function runDfsSim() {
       <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span><span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>` : ""}
       <div class="dfs-lineups" style="margin-top:8px">${lineupCards}</div>
       ${expHtml}
-      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-pct simulated totals — ceiling matters for GPP.${g && g.available ? " <b>PD</b> = place-differential adjustment." : ""} Ownership is a model estimate of what the field rosters.</div>
+      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-pct totals over the SAME simulated races/fights (correlated — one winner per race, wrecks take out several cars at once, one fighter per bout banks the win bonus).${g && g.available ? " <b>PD</b> = place-differential adjustment." : ""} Ownership is a model estimate of what the field rosters.</div>
     </div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }

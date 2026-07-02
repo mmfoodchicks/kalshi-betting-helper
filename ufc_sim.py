@@ -128,8 +128,15 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
                     pts += _QUICK_PTS        # sub-60-second win
             dk[f["id"]].append(pts)
 
+    # Index-aligned per-fighter DK samples: entry i of both arrays is the SAME
+    # simulated fight, so lineup/contest scoring sees the true joint outcome
+    # (exactly one of the two cashes the win bonus in any given sim).
+    step = max(1, n // 1000)
+    keep = list(range(0, n, step))
+
     def fighter_out(f):
         d = _dist(dk[f["id"]])
+        d["dk_arr"] = [round(dk[f["id"]][i], 1) for i in keep if i < len(dk[f["id"]])]
         nf = f.get("fights", 0)
         car = f.get("career")
         return {"id": f["id"], "name": f["name"], "fights": nf,
