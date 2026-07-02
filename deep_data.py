@@ -166,6 +166,71 @@ def _pitcher(per, st, career=None, avail=1.0):
             "era": era, "kpa": kpa, "bbpa": bbpa, "hrpa": hrpa, "avail": avail}
 
 
+def _platoon_one(pid, season):
+    """Per-side (vs LHP / vs RHP) hitting line for one batter, or None."""
+    def fetch():
+        try:
+            d = baseball._get(f"{STATS}/people/{pid}/stats?stats=statSplits"
+                              f"&sitCodes=vl,vr&group=hitting&season={season}")
+        except Exception:
+            return None
+        out = {}
+        for s in d.get("stats", []):
+            for sp in s.get("splits", []):
+                code = (sp.get("split") or {}).get("code")
+                st = sp.get("stat") or {}
+                pa = _f(st.get("plateAppearances"))
+                if code in ("vl", "vr") and pa > 0:
+                    out[code] = {"pa": pa, "k": _f(st.get("strikeOuts")),
+                                 "hit": _f(st.get("hits")), "hr": _f(st.get("homeRuns"))}
+        return out or None
+    return baseball._cached(("platoon", pid, season), 6 * 3600, fetch)
+
+
+# League share of plate appearances that come against left-handed pitching —
+# the exposure the season-long rates are already averaged over.
+_LHP_EXPOSURE = 0.28
+# Shrinkage (in side-PA): platoon splits are notoriously noisy; K rates
+# stabilize fastest, power slowest.
+_PLAT_K = {"k": 90.0, "hit": 130.0, "hr": 200.0}
+
+
+def _attach_platoon(batters, season):
+    """Attach per-batter platoon multipliers: bat["plat"] = {"L": {k,hit,hr},
+    "R": {...}} — how each rate shifts against that pitcher hand vs his overall
+    line. Multipliers are shrunk by side sample and NORMALIZED so the exposure-
+    weighted mean is exactly 1.0 (0.28 L / 0.72 R): a lefty-masher gets hot vs
+    southpaws and correspondingly cooler vs righties, and the season-long
+    engine calibration is untouched in expectation."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(b):
+        sp = _platoon_one(b["id"], season)
+        if not sp or "vl" not in sp or "vr" not in sp:
+            return
+        plat = {"L": {}, "R": {}}
+        for comp in ("k", "hit", "hr"):
+            tot_pa = sp["vl"]["pa"] + sp["vr"]["pa"]
+            tot_c = sp["vl"][comp] + sp["vr"][comp]
+            overall = tot_c / tot_pa if tot_pa else 0.0
+            if overall <= 0:
+                plat["L"][comp] = plat["R"][comp] = 1.0
+                continue
+            k_shrink = _PLAT_K[comp]
+            mults = {}
+            for code, hand in (("vl", "L"), ("vr", "R")):
+                side = sp[code]
+                raw = (side[comp] / side["pa"]) / overall if side["pa"] else 1.0
+                mults[hand] = (side["pa"] * raw + k_shrink) / (side["pa"] + k_shrink)
+            norm = _LHP_EXPOSURE * mults["L"] + (1 - _LHP_EXPOSURE) * mults["R"]
+            for hand in ("L", "R"):
+                plat[hand][comp] = round(max(0.75, min(1.30, mults[hand] / (norm or 1.0))), 3)
+        b["plat"] = plat
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(one, batters))
+
+
 def team_profile(team_id, season=None):
     """{rotation, bullpen, lineup, bench} of player dicts for one club."""
     season = season or str(__import__("datetime").date.today().year)
@@ -226,9 +291,16 @@ def team_profile(team_id, season=None):
         depth.sort(key=quality)                       # worst-first; real org arms
         # Lineup = nine regulars by plate appearances; bench = remaining bats.
         batters.sort(key=lambda b: b["pa"], reverse=True)
+        # Per-batter platoon splits (vs LHP / vs RHP) for the bats that actually
+        # play — the engine knows every pitcher's hand, so a lefty-masher facing
+        # a southpaw starter finally reads as one. Best-effort.
+        try:
+            _attach_platoon(batters[:13], season)
+        except Exception:
+            pass
         return {"rotation": starters or pitchers[:1], "bullpen": relievers,
                 "depth": depth[:6], "lineup": batters[:9], "bench": batters[9:]}
-    return baseball._cached(("deep_profile2", team_id, season), 21600, build)
+    return baseball._cached(("deep_profile3", team_id, season), 21600, build)
 
 
 def _bat_real(st):

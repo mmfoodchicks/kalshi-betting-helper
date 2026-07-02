@@ -509,6 +509,8 @@ def nascar_type_skill(year=None, series=1, n_back=2):
         today = datetime.date.today().isoformat()
         # per[did][season] = {"type": {tt: [finishes]}, "all": [finishes]}
         per = defaultdict(lambda: defaultdict(lambda: {"type": defaultdict(list), "all": []}))
+        # led[did][season][tt] = [race laps-led shares] — real dominator history
+        led = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for yr in seasons:
             try:
                 rl = racing._get_json(f"{NASCAR_BASE}/{yr}/{series}/race_list_basic.json")
@@ -528,7 +530,13 @@ def nascar_type_skill(year=None, series=1, n_back=2):
             with ThreadPoolExecutor(max_workers=6) as ex:
                 for r, res in ex.map(feed, done):
                     tt = _nascar_track_type(r.get("track_name", ""))
+                    # Laps-led share of THIS race (counts DNFs too — leading early
+                    # then crashing is still dominating): the raw dominator signal
+                    # the DFS cares about, straight from the timing data.
+                    race_led = sum((x.get("laps_led") or 0) for x in res) or 1
                     for x in res:
+                        frac = (x.get("laps_led") or 0) / race_led
+                        led[x["driver_id"]][yr][tt].append(frac)
                         if (x.get("finishing_status") or "Running") != "Running":
                             continue                       # DNFs handled by the base/reliability
                         fp = x.get("finishing_position", 35)
@@ -554,10 +562,22 @@ def nascar_type_skill(year=None, series=1, n_back=2):
                     acc[tt] += w * (type_avg - overall)     # delta-of-deltas (car-free)
                     wsum[tt] += w
                     nsum[tt] += len(fins)
-            out[did] = {tt: round((acc[tt] / wsum[tt]) * nsum[tt] / (nsum[tt] + _SK), 2)
-                        for tt in acc if wsum[tt]}
+            delta = {tt: round((acc[tt] / wsum[tt]) * nsum[tt] / (nsum[tt] + _SK), 2)
+                     for tt in acc if wsum[tt]}
+            # Real dominator propensity: recency-weighted average share of a
+            # race's laps this driver led, per track type, lightly regressed
+            # toward "leads nothing" by sample (3 pseudo-races).
+            lacc = defaultdict(float); lw = defaultdict(float); ln = defaultdict(int)
+            for yr, by_tt in led[did].items():
+                for tt, fracs in by_tt.items():
+                    w = sw[yr]
+                    for f in fracs:
+                        lacc[tt] += w * f; lw[tt] += w; ln[tt] += 1
+            led_share = {tt: round((lacc[tt] / lw[tt]) * ln[tt] / (ln[tt] + 3.0), 3)
+                         for tt in lacc if lw[tt]}
+            out[did] = {"delta": delta, "led": led_share}
         return out
-    return racing._cached(("nascar_type_skill", year, series, n_back), 7 * 86400, build) or {}
+    return racing._cached(("nascar_type_skill", year, series, n_back, 2), 7 * 86400, build) or {}
 
 
 # Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
@@ -631,7 +651,8 @@ def nascar_state(year=None, series=1):
             raw = s["fin_acc"] / s["fin_w"] if s["fin_w"] else prior
             n_eff = s["n_fin"]
             pace = (n_eff * raw + k * prior) / (n_eff + k)
-            by_type = dict(skill.get(did, {}))     # multi-year skill (delta to add to pace)
+            sk = skill.get(did) or {}
+            by_type = dict(sk.get("delta") or {})  # multi-year skill (delta to add to pace)
             for tt, acc in s["t_acc"].items():     # fill any gap from this season only
                 if tt in by_type:
                     continue
@@ -642,6 +663,7 @@ def nascar_state(year=None, series=1):
             out[did] = {"id": did, "name": s["name"], "points": s["points"],
                         "playoff_points": s["playoff_points"], "wins": s["wins"],
                         "race_pace": pace, "pace_by_type": by_type,
+                        "led_by_type": sk.get("led") or {},
                         "dnf": min(0.30, s["dnf"] / s["starts"]), "starts": s["starts"]}
         import race_weather
         remaining = []
@@ -931,16 +953,24 @@ _DEFAULT_LAPS = {"road": 90, "superspeedway": 170, "short": 400, "intermediate":
 _DOM_N = {"road": (2, 4), "superspeedway": (5, 8), "short": (2, 3), "intermediate": (3, 5)}
 
 
-def _alloc_dominators(order, laps, ttype, rng):
+def _alloc_dominators(order, laps, ttype, rng, led_prop=None):
     """Split a race's laps-led + fastest-laps among the finishing order for ONE
     simulated race -> {driver_id: dominator DK points}. Leaders come mostly from
-    the front of the finishing order (you finish near where you dominated), with
-    occasional 'dominated then faded' randomness."""
+    the front of the finishing order (you finish near where you dominated), and —
+    when `led_prop` carries each driver's REAL historical laps-led share at this
+    track type (straight from the timing data) — proven lap-hoarders dominate at
+    their actual rates instead of a position guess (SVG led 67% of Sonoma; a
+    steady top-5 points racer often leads almost nothing)."""
     lo, hi = _DOM_N.get(ttype, (3, 5))
     k = rng.randint(lo, hi)
     runners = order[:max(k + 6, 12)]
     # Front-of-field bias with noise; a mid-pack finisher occasionally led early.
     weights = [math.exp(-i / 2.6) * (0.5 + rng.random()) for i in range(len(runners))]
+    if led_prop:
+        # 0.35 floor keeps unknowns alive; ~4x scale means a 0.40-share hoarder
+        # carries ~5x the pull of a never-leads car at the same finishing spot.
+        weights = [w * (0.35 + 4.0 * (led_prop.get(runners[i]) or 0.0))
+                   for i, w in enumerate(weights)]
     picks = sorted(range(len(runners)), key=lambda i: -weights[i])[:k]
     shares = sorted((rng.expovariate(1.0) for _ in picks), reverse=True)
     tot = sum(shares) or 1.0
@@ -1056,10 +1086,12 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         race = rem[0]
         ttype = race.get("type", "intermediate"); wet_p = race.get("wet_prob", 0.0)
         laps = int(race.get("laps") or _DEFAULT_LAPS.get(ttype, 300))
+        # Real historical laps-led share per driver AT THIS TRACK TYPE.
+        led_prop = {d["id"]: (d.get("led_by_type") or {}).get(ttype, 0.0) for d in drivers}
         for _ in range(n):
             order = _sim_cup_race(drivers, rng, wet=rng.random() < wet_p, ttype=ttype)
             _tally_finish(order, fin, win, t5, t10, t20)
-            dom = _alloc_dominators(order, laps, ttype, rng)
+            dom = _alloc_dominators(order, laps, ttype, rng, led_prop)
             for pos, did in enumerate(order, 1):
                 dk_samples[did].append(_dk_nascar_fin(pos) + dom.get(did, 0.0))
     else:

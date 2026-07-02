@@ -44,16 +44,22 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0):
     starter faces the lineup a 3rd/4th time he loses strikeouts and gives up more
     contact and power (the well-documented TTO effect)."""
     br = bat["rates"]
-    k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL * (1.0 - tto_pen)
+    # Per-batter platoon splits vs THIS pitcher's hand (normalized multipliers,
+    # 1.0 = his overall rate). A lefty-masher facing a southpaw whiffs less and
+    # hits for more power; the exposure-weighted mean is 1 so season calibration
+    # is untouched.
+    pl = (bat.get("plat") or {}).get(pit.get("hand") or "R") or {}
+    k = _log5(br["k"], pit["kpa"], LG["k"]) * _K_CAL * (1.0 - tto_pen) * pl.get("k", 1.0)
     bb = _log5(br["bb"], pit["bbpa"], LG["bb"]) * _BB_CAL
-    hr = _log5(br["hr"], pit["hrpa"], LG["hr"]) * env * (1.0 + 0.8 * tto_pen)
+    hr = (_log5(br["hr"], pit["hrpa"], LG["hr"]) * env * (1.0 + 0.8 * tto_pen)
+          * pl.get("hr", 1.0))
     hbp = br["hbp"]
     # Remaining mass goes to balls in play (hits + outs), tilted by the pitcher's
     # run prevention (better ERA suppresses hits a touch).
     rest = max(0.0, 1.0 - k - bb - hr - hbp)
     qual = max(0.78, min(1.22, 4.30 / max(2.0, pit["era"])))  # >1 = pitcher worse
     s, d, t = br["1b"], br["2b"], br["3b"]
-    hit = (s + d + t) / qual * _HIT_CAL * env * (1.0 + tto_pen)  # park/weather + TTO
+    hit = (s + d + t) / qual * _HIT_CAL * env * (1.0 + tto_pen) * pl.get("hit", 1.0)
     bip = s + d + t + 0.0
     # batter's in-play out rate implied by his line (1 - all events)
     out_in_play = max(0.05, 1 - (br["k"] + br["bb"] + br["hbp"] + br["hr"] + bip))
