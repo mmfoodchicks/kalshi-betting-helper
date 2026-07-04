@@ -319,8 +319,9 @@ def _binom_hit_probs(pa, p):
     return round((1 - p0) * 100, 1), round(max(0.0, 1 - p0 - p1) * 100, 1)
 
 
-def hit_props(batters, opp_hit_factor, lg_hit_rate=LEAGUE_HIT_RATE, top=5):
-    """Per-batter 1+/2+ hit odds, plus a team total-hits over/under.
+def hit_props(batters, opp_hit_factor, lg_hit_rate=LEAGUE_HIT_RATE, top=9):
+    """Per-batter 1+/2+ hit odds (the whole posted lineup by default), plus a team
+    total-hits over/under.
 
     batters: ordered list of dicts with 'name', 'hits', 'pa' (season), 'ab'.
     opp_hit_factor: >1 = opposing pitching allows more hits than average.
