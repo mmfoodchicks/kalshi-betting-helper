@@ -1194,6 +1194,22 @@ def api_worldcup():
     return jsonify(data)
 
 
+@app.route("/api/lol")
+def api_lol():
+    """League of Legends esports board: the pro slate with each team's roster,
+    per-player projections (from Leaguepedia per-map history), and a DK Pick 6
+    board of More/Less kill/assist/CS picks. Cold build is slow (paced, rate-
+    limited wiki API); cached 15 min."""
+    try:
+        import lol
+        data = lol.board(max_matches=8)
+    except Exception as e:
+        return jsonify({"error": f"lol data failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no LoL data available yet (loading / rate-limited — retry shortly)"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/tennis")
 def api_tennis():
     """Tennis match board: per-match model win% vs the de-vig Kalshi price (with a
