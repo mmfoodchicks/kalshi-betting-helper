@@ -191,7 +191,10 @@ def apply_grid(players, sport, date=None):
     if sport == "f1" and grid:
         try:
             import racing_sim
-            cond = racing_sim.next_race_sim("f1", n=1500, fixed_grid=grid["grid"])
+            # Fixed seed so rerunning the DFS on the SAME grid reproduces the same
+            # projections (and lineups) instead of drifting on fresh Monte Carlo
+            # noise each build; output still changes when the grid or form does.
+            cond = racing_sim.next_race_sim("f1", n=1500, fixed_grid=grid["grid"], seed=1_000_003)
             if cond and cond.get("grid_conditioned"):
                 for nm2, s2 in (cond.get("drivers") or {}).items():
                     key = _norm_name(nm2)

@@ -24,8 +24,12 @@ SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1]              # sprint top 8
 # title race isn't a coin flip.
 _SIGMA_Q = 0.20     # qualifying variance, in SECONDS of lap time (quali is a
                     # gap-to-pole now); ~one-session spread for the same car
-_SIGMA_R = 3.1      # race variance, in finishing-position units
-_GRID_W = 0.40      # how much the race result leans on grid vs raw race pace
+# Track position is worth a LOT in modern F1 -- passing is hard, so the grid
+# largely locks the order. Calibrated (_GRID_W / _SIGMA_R) so the pole-sitter
+# wins ~40% and podiums ~70% of dry races, matching reality (the old 0.40 / 3.1
+# let fast cars slice through the field and gave the pole only a ~26% win rate).
+_SIGMA_R = 2.0      # race variance, in finishing-position units
+_GRID_W = 0.72      # how much the race result leans on grid vs raw race pace
 # Random-event rates (per driver, per race).
 _GRID_PEN = 0.045   # engine/gearbox grid penalty -> start from the back
 _TIME_PEN = 0.05    # in-race time penalty -> drop ~4-9 places
@@ -386,27 +390,61 @@ def _award(order, points_table):
     return {did: points_table[i] for i, did in enumerate(order) if i < len(points_table)}
 
 
-def _sim_one_season(profiles, remaining, rng):
+def _resolve_grid_order(fixed_grid, drivers):
+    """Resolve a real {normalized name: start pos} grid to a driver-id start
+    order (unmatched drivers start at the back). None if too few match to trust."""
+    if not fixed_grid:
+        return None
+    id_by_norm = {}
+    for d in drivers:
+        nm = racing.norm_name(d["name"])
+        id_by_norm[nm] = d["id"]
+        last = nm.split()[-1] if nm.split() else nm
+        id_by_norm.setdefault(last, d["id"])
+    pairs = []
+    for nm, pos in fixed_grid.items():
+        did = id_by_norm.get(nm) or (id_by_norm.get(nm.split()[-1]) if nm.split() else None)
+        if did is not None:
+            pairs.append((pos, did))
+    if len(pairs) < 8:
+        return None
+    pairs.sort()
+    seen, order = set(), []
+    for _pos, did in pairs:
+        if did not in seen:
+            order.append(did); seen.add(did)
+    for d in drivers:
+        if d["id"] not in seen:
+            order.append(d["id"])
+    return order
+
+
+def _sim_one_season(profiles, remaining, rng, first_grid=None):
     """Play out the remaining schedule once. Returns final driver points, the
     per-driver season tallies, AND per-race (round, pole, winner) so the futures
-    board can price each individual GP's pole + winner markets."""
+    board can price each individual GP's pole + winner markets. When `first_grid`
+    (a real driver-id start order) is given, the NEXT race starts from it instead
+    of a simulated qualifying -- real quali is done, so its pole is decided."""
     drivers = list(profiles.values())
     pts = {d["id"]: d["points"] for d in drivers}
     wins = defaultdict(int); poles = defaultdict(int); podiums = defaultdict(int)
     race_out = []
-    for race in remaining:
-        quali = _sim_quali(drivers, rng)
-        pole_id = quali[0]                    # pole = fastest in qualifying
-        poles[pole_id] += 1
+    for idx, race in enumerate(remaining):
         wet = rng.random() < race.get("wet_prob", 0.0)   # rain rolled from circuit climate
         ctype = race.get("type", "standard")
+        if idx == 0 and first_grid:
+            grid = list(first_grid); pole_id = grid[0]   # real qualifying result
+        else:
+            quali = _sim_quali(drivers, rng)
+            pole_id = quali[0]                            # pole = fastest in qualifying
+            grid = _apply_grid_penalties(quali, rng)      # engine penalties hit the start
+        poles[pole_id] += 1
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
             sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
             sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
-        grid = _apply_grid_penalties(quali, rng)   # engine penalties hit the start
         order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype)
         wins[order[0]] += 1
         for did in order[:3]:
@@ -435,8 +473,21 @@ def sim_f1(n=2000, seed=None):
     race_pole = defaultdict(lambda: defaultdict(int))
     race_win = defaultdict(lambda: defaultdict(int))
 
+    # Condition the NEXT race on the REAL grid when qualifying is already done
+    # (the last-quali race matches remaining[0]); otherwise re-sim qualifying.
+    first_grid = None
+    try:
+        if remaining:
+            g = racing.get_f1_grid()
+            if g and racing.norm_name(g.get("race", "")) == racing.norm_name(remaining[0]["name"]):
+                first_grid = _resolve_grid_order(g.get("grid"), list(profiles.values()))
+    except Exception:
+        first_grid = None
+    grid_conditioned = bool(first_grid)
+
     def one(_):
-        return _sim_one_season(profiles, remaining, random.Random(rng.random()))
+        return _sim_one_season(profiles, remaining, random.Random(rng.random()),
+                               first_grid=first_grid)
 
     with ThreadPoolExecutor(max_workers=8) as ex:
         results = ex.map(one, range(n))
@@ -460,8 +511,11 @@ def sim_f1(n=2000, seed=None):
     races = [{"round": r["round"], "name": r["name"], "sprint": r["sprint"],
               "circuit": r.get("circuit"), "wet_prob": r.get("wet_prob"),
               "avg_wind": r.get("avg_wind"),
+              # The first remaining race is conditioned on the real grid when
+              # qualifying is already done (its pole is then the actual pole).
+              "grid_set": bool(first_grid) and i == 0,
               "pole": field(race_pole[r["round"]]), "winner": field(race_win[r["round"]])}
-             for r in remaining]
+             for i, r in enumerate(remaining)]
 
     drivers = []
     for d in profiles.values():
@@ -479,6 +533,7 @@ def sim_f1(n=2000, seed=None):
                            for c, v in con_champ.items()),
                           key=lambda x: x["title_pct"], reverse=True)
     return {"sport": "f1", "n_sims": n, "races_left": len(remaining),
+            "next_grid_conditioned": grid_conditioned,
             "drivers": drivers, "constructors": constructors, "races": races}
 
 
