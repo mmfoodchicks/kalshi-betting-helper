@@ -235,6 +235,140 @@ def _norm_over(mean, std, line):
 _PICK6_PAYOUT = {"2": 3.0, "3": 6.0, "4": 10.0, "5": 20.0, "6": 25.0}
 
 
+# ---- Team ratings (Elo) -> match + tournament win probabilities --------------
+_ELO_BASE = 1500.0
+_ELO_K = 26.0            # per-match update
+
+
+def elo_map():
+    """{team: Elo} from recent match results across every league, in ONE Cargo
+    query. Powers both match win% and the tournament futures sim. Cached 6h."""
+    def build():
+        rows = _cargo(
+            "MatchSchedule", "Team1=t1,Team2=t2,Winner=w,DateTime_UTC=dt",
+            where='MatchSchedule.Winner != "" AND MatchSchedule.Team1 != "TBD" '
+                  'AND MatchSchedule.Team2 != "TBD"',
+            order_by="MatchSchedule.DateTime_UTC ASC", limit=800)
+        if rows is None:
+            return None
+        elo = {}
+        for r in rows:
+            t1, t2, w = (r.get("t1") or "").strip(), (r.get("t2") or "").strip(), r.get("w")
+            if not t1 or not t2 or w not in ("1", "2"):
+                continue
+            ra = elo.setdefault(t1, _ELO_BASE)
+            rb = elo.setdefault(t2, _ELO_BASE)
+            ea = 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
+            sa = 1.0 if w == "1" else 0.0
+            elo[t1] = ra + _ELO_K * (sa - ea)
+            elo[t2] = rb + _ELO_K * ((1 - sa) - (1 - ea))
+        return elo
+    return _cached(("lol_elo",), 6 * 3600, build) or {}
+
+
+def _game_wp(t1, t2, elo):
+    """P(t1 wins a single game) from Elo."""
+    ra, rb = elo.get(t1, _ELO_BASE), elo.get(t2, _ELO_BASE)
+    return 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
+
+
+def _series_p(p, need):
+    """P(a team with per-game win prob p takes a first-to-`need` series."""
+    total = 0.0
+    for losses in range(need):
+        total += _math.comb(need - 1 + losses, losses) * p ** need * (1 - p) ** losses
+    return total
+
+
+def match_winprob(t1, t2, bo, elo=None):
+    """P(t1 wins the bo series). Returns a percent."""
+    elo = elo if elo is not None else elo_map()
+    p = _game_wp(t1, t2, elo)
+    need = int(bo) // 2 + 1
+    return round(_series_p(p, need) * 100, 1)
+
+
+# ---- Tournament futures (who wins the split / MSI) --------------------------
+import random as _random
+from collections import defaultdict as _dd
+
+
+def tournament_matches(page):
+    """Every match for a tournament (OverviewPage): [{t1,t2,bo,winner}]. Cached 30m."""
+    def build():
+        safe = page.replace('"', '')
+        rows = _cargo(
+            "MatchSchedule", "Team1=t1,Team2=t2,BestOf=bo,Winner=w,N_MatchInPage=n",
+            where=f'MatchSchedule.OverviewPage="{safe}" AND MatchSchedule.Team1 != "TBD" '
+                  'AND MatchSchedule.Team2 != "TBD"',
+            order_by="MatchSchedule.N_MatchInPage ASC", limit=400)
+        if rows is None:
+            return None
+        out = []
+        for r in rows:
+            t1, t2 = (r.get("t1") or "").strip(), (r.get("t2") or "").strip()
+            if not t1 or not t2:
+                continue
+            out.append({"t1": t1, "t2": t2, "bo": int(_f(r.get("bo"), 1)) or 1,
+                        "winner": r.get("w") if r.get("w") in ("1", "2") else None})
+        return out
+    return _cached(("lol_tourn", page), 1800, build) or []
+
+
+def sim_tournament(page, n=4000, playoff_k=6):
+    """Monte Carlo a tournament to championship odds: play the remaining matches by
+    Elo, seed the top `playoff_k` by record, then a re-seeded single-elim (bo5)
+    bracket -> champion. A model estimate -- real playoff formats vary by league."""
+    matches = tournament_matches(page)
+    if not matches:
+        return None
+    elo = elo_map()
+    teams = sorted(set([m["t1"] for m in matches] + [m["t2"] for m in matches]))
+    if len(teams) < 2:
+        return None
+    base_wins, remaining = {t: 0 for t in teams}, []
+    for m in matches:
+        if m["winner"] == "1":
+            base_wins[m["t1"]] += 1
+        elif m["winner"] == "2":
+            base_wins[m["t2"]] += 1
+        else:
+            remaining.append(m)
+    made, champ = _dd(int), _dd(int)
+    rnd = _random.random
+    for _ in range(n):
+        wins = dict(base_wins)
+        for m in remaining:
+            p = _series_p(_game_wp(m["t1"], m["t2"], elo), int(m["bo"]) // 2 + 1)
+            wins[m["t1"] if rnd() < p else m["t2"]] += 1
+        seeds = sorted(teams, key=lambda t: (wins[t], rnd()), reverse=True)[:playoff_k]
+        for t in seeds:
+            made[t] += 1
+        bracket = list(seeds)
+        while len(bracket) > 1:                     # re-seeded single elim (1 vs last)
+            nxt, i, j = [], 0, len(bracket) - 1
+            while i < j:
+                a, b = bracket[i], bracket[j]
+                nxt.append(a if rnd() < _series_p(_game_wp(a, b, elo), 3) else b)
+                i, j = i + 1, j - 1
+            if i == j:
+                nxt.append(bracket[i])              # odd bracket -> bye
+            bracket = sorted(nxt, key=lambda t: (wins[t], rnd()), reverse=True)
+        if bracket:
+            champ[bracket[0]] += 1
+
+    def pct(c):
+        return round(100.0 * c / n, 1)
+    out = [{"team": t, "elo": round(elo.get(t, _ELO_BASE)),
+            "record": base_wins[t], "playoffs": pct(made[t]), "champion": pct(champ[t])}
+           for t in teams]
+    out.sort(key=lambda x: -x["champion"])
+    return {"tournament": page, "n_sims": n, "n_teams": len(teams),
+            "games_left": len(remaining), "teams": out,
+            "note": "Model estimate from Elo + a synthetic top-%d bracket; real playoff "
+                    "formats vary by league." % playoff_k}
+
+
 import threading as _threading
 _board_inflight = set()
 
@@ -269,6 +403,7 @@ def _build_board(max_matches):
     if not slate:
         return None
     matches, picks, seen_team = [], [], {}
+    elo = elo_map()
     if True:
 
         def roster(team):
@@ -308,11 +443,22 @@ def _build_board(max_matches):
                                       "matchup": f"{m['team1']} vs {m['team2']}",
                                       "league": m["league"]})
                 return out
+            w1 = match_winprob(m["team1"], m["team2"], m["bo"], elo)
             matches.append({"team1": m["team1"], "team2": m["team2"], "bo": m["bo"],
                             "league": m["league"], "date": m["date"], "dt": m["dt"],
+                            "win1": w1, "win2": round(100 - w1, 1),
                             "roster1": side(m["team1"], r1), "roster2": side(m["team2"], r2)})
         picks.sort(key=lambda x: -x["prob"])
         if not matches:
             return None                      # nothing loaded yet -> let it retry
+        # Distinct tournaments in the slate, for the futures (title-odds) picker.
+        tourns, seen_t = [], set()
+        for m in slate:
+            pg = m.get("tournament")
+            if pg and pg not in seen_t:
+                seen_t.add(pg)
+                tourns.append({"page": pg, "league": m.get("league"),
+                               "label": pg.replace("/", " · ")})
         return {"matches": matches, "picks": picks[:60], "payouts": _PICK6_PAYOUT,
+                "tournaments": tourns[:12],
                 "note": "Per-map projections. DK/PrizePicks lines govern — match ours to their board."}

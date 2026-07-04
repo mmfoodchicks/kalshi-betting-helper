@@ -1210,6 +1210,23 @@ def api_lol():
     return jsonify(data)
 
 
+@app.route("/api/lol/futures")
+def api_lol_futures():
+    """Championship odds (who wins the split / MSI) for one tournament, from an
+    Elo + bracket Monte Carlo. ?page=<OverviewPage>."""
+    page = request.args.get("page")
+    if not page:
+        return jsonify({"error": "missing tournament page"}), 400
+    try:
+        import lol
+        data = lol.sim_tournament(page)
+    except Exception as e:
+        return jsonify({"error": f"lol futures failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no data for that tournament yet (loading / rate-limited)"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/tennis")
 def api_tennis():
     """Tennis match board: per-match model win% vs the de-vig Kalshi price (with a

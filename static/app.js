@@ -2635,11 +2635,14 @@ function initLoL() {
     b.addEventListener("click", () => {
       document.querySelectorAll("#lolSubtabs .subtab").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
-      const p6 = b.dataset.lolsub === "pick6";
-      $("lolResults").classList.toggle("hidden", p6);
-      $("lolPick6").classList.toggle("hidden", !p6);
+      const s = b.dataset.lolsub;
+      $("lolResults").classList.toggle("hidden", s !== "matches");
+      $("lolPick6").classList.toggle("hidden", s !== "pick6");
+      $("lolFutures").classList.toggle("hidden", s !== "futures");
+      if (s === "futures") initLoLFutures();
     });
   });
+  $("lolFutBtn")?.addEventListener("click", loadLoLFutures);
 }
 
 async function loadLoL(attempt) {
@@ -2680,12 +2683,45 @@ function renderLoL() {
       <span class="lol-stat">A <b>${p.assists}</b></span>
       <span class="lol-stat">CS <b>${p.cs}</b></span>
     </div>`).join("");
-  box.innerHTML = ms.map((m) => `<div class="lol-match">
+  box.innerHTML = ms.map((m) => {
+    const wp = (m.win1 != null)
+      ? `<div class="lol-wp"><span class="lol-wpbar"><span style="width:${m.win1}%"></span></span>
+         <span class="small"><b>${m.team1}</b> ${m.win1}% — ${m.win2}% <b>${m.team2}</b> · win the bo${m.bo}</span></div>` : "";
+    return `<div class="lol-match">
       <div class="lol-mhead"><span class="legtag">${m.league}</span> <b>${m.team1}</b> <span class="small">vs</span> <b>${m.team2}</b> <span class="small">· bo${m.bo} · ${m.date}</span></div>
+      ${wp}
       <div class="lol-teams">
         <div class="lol-team"><div class="lol-thdr">${m.team1}</div>${side(m.roster1)}</div>
         <div class="lol-team"><div class="lol-thdr">${m.team2}</div>${side(m.roster2)}</div>
-      </div></div>`).join("");
+      </div></div>`;
+  }).join("");
+}
+
+let _lolFutWired = false;
+function initLoLFutures() {
+  const sel = $("lolFutSel");
+  const ts = (_lolData && _lolData.tournaments) || [];
+  if (!ts.length) { sel.innerHTML = `<option value="">— load the slate first —</option>`; return; }
+  if (sel.dataset.filled === "1") return;
+  sel.dataset.filled = "1";
+  sel.innerHTML = ts.map((t) => `<option value="${encodeURIComponent(t.page)}">${t.league} — ${t.label}</option>`).join("");
+}
+async function loadLoLFutures() {
+  const box = $("lolFutResults"), page = $("lolFutSel").value;
+  if (!page) { box.innerHTML = `<div class="empty">Load the slate first.</div>`; return; }
+  box.innerHTML = `<div class="empty">Simulating the tournament (Elo + bracket, thousands of runs)…</div>`;
+  try {
+    const d = await (await fetch(`/api/lol/futures?page=${page}`)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const rows = (d.teams || []).filter((t) => t.champion > 0 || t.playoffs > 1).map((t, i) => `
+      <div class="lol-frow">
+        <span class="lol-frank">${i + 1}</span>
+        <span class="lol-fteam">${t.team} <span class="small" style="color:var(--faint)">Elo ${t.elo}</span></span>
+        <span class="lol-fstat"><span class="small">playoffs</span> <b>${t.playoffs}%</b></span>
+        <span class="lol-fstat"><span class="small">champion</span> <b class="ev pos">${t.champion}%</b></span>
+      </div>`).join("");
+    box.innerHTML = `<div class="small" style="margin-bottom:6px">${d.n_teams} teams · ${d.games_left} games left · ${nf(d.n_sims)} sims. <i>${d.note}</i></div>${rows}`;
+  } catch (e) { box.innerHTML = `<div class="empty">Futures unavailable.</div>`; }
 }
 
 function toggleLoLPick6(i) {

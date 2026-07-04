@@ -440,12 +440,20 @@
         <div class="subtabs" id="lolSubtabs">
           <button class="subtab active" data-lolsub="matches">🧩 Matchups</button>
           <button class="subtab" data-lolsub="pick6">🎯 Pick 6</button>
+          <button class="subtab" data-lolsub="futures">🏆 Futures</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">Pro LoL from real per-map history (Leaguepedia): each team's roster with recent <b>K/D/A/CS</b> + champions, and a <b>DK/PrizePicks Pick 6</b> board of More/Less kill, assist &amp; CS picks from our projection. Per-map numbers — <b>match ours to the book's line</b>. Kalshi has no esports combos, so this is a pure prop tool. First load is slow (rate-limited wiki).</p>
+      <p class="sub" style="margin:4px 0 10px">Pro LoL from real per-map history (Leaguepedia): rosters with recent <b>K/D/A/CS</b> + champions, a <b>match win%</b> from team Elo, a <b>DK/PrizePicks Pick 6</b> board (More/Less kills/assists/CS), and <b>title-odds futures</b> — who wins the split. Per-map numbers: <b>match ours to the book's line</b>. First load is slow (rate-limited wiki).</p>
       <div id="lolSummary" class="small"></div>
       <div id="lolResults" class="markets"><div class="empty">Open the tab to load the slate…</div></div>
       <div id="lolPick6" class="hidden"></div>
+      <div id="lolFutures" class="hidden">
+        <div class="scan-controls" style="margin-bottom:10px">
+          <select id="lolFutSel"></select>
+          <button id="lolFutBtn" class="track-mini primary-mini">Simulate title odds</button>
+        </div>
+        <div id="lolFutResults" class="markets"><div class="empty">Pick a tournament and simulate.</div></div>
+      </div>
     </section>
    </div><!-- /tab-lol -->
 

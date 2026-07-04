@@ -579,6 +579,13 @@ button.danger { color: var(--no); }
 .lol-champs { display: block; font-size: 0.68rem; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lol-stat { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lol-stat b { color: var(--text); }
+.lol-wp { margin: 2px 0 10px; }
+.lol-wpbar { display: block; height: 6px; border-radius: 4px; background: var(--no); overflow: hidden; margin-bottom: 3px; }
+.lol-wpbar > span { display: block; height: 100%; background: var(--yes); }
+.lol-frow { display: grid; grid-template-columns: 28px 1fr auto auto; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; margin-bottom: 5px; background: rgba(255,255,255,0.02); }
+.lol-frank { color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
+.lol-fteam { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lol-fstat { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .lol-teams { grid-template-columns: 1fr; gap: 10px; }
   .lol-prow { grid-template-columns: 50px 1fr 38px 38px 50px; gap: 5px; font-size: 0.8rem; }
