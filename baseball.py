@@ -1265,85 +1265,141 @@ def _game_state(g):
     return (g.get("live") or {}).get("state") or ""
 
 
-def _candidate_legs(games, live_only=False, types=None):
-    """All bettable legs across the slate: moneyline + run line + totals + hits.
+# Shared game-sim depth. The edge finder, the combo maker AND the same-game
+# parlays all read this one 4000-run simulation per game (cached below), so every
+# surface agrees and each game is simulated once per cycle -- not separately by
+# each feature. Combos used to read a closed-form Poisson that ignored the
+# starter's early hook and so overstated high strikeout lines (6+ Ks 58% vs the
+# sim's 49%); sourcing them from the sim fixes that.
+_SIM_N = 4000
 
-    Skips games that are already Final (those results are decided). If
-    `live_only` is set, includes only games currently in progress. `types` (a set
-    of type names) restricts which prop kinds are produced. Each leg is tagged with
-    `live`. Combos enforce one leg per game so they stay independent.
-    """
+
+def _ml_margin(g):
+    """The model's projected winning margin for its pick (expected-runs diff)."""
+    if g.get("exp_runs_home") is None or g.get("exp_runs_away") is None:
+        return None
+    diff = g["exp_runs_home"] - g["exp_runs_away"]
+    return round(diff if g.get("pick_is_home") else -diff, 1)
+
+
+def _game_sim(g):
+    """The shared 4000-run game simulation + its candidate legs, cached per game
+    (~3 min). Everything that prices a leg reads this, so combos, edges and SGPs
+    are the SAME simulation."""
+    import mlb_sim
+    pk = g.get("game_pk")
+
+    def build():
+        sim = mlb_sim.simulate(g, _SIM_N)
+        return {"sim": sim, "cands": mlb_sim.build_candidates(g, sim)}
+    if pk is None:
+        return build()
+    return _cached(("game_sim", pk), 180, build)
+
+
+def _sim_pregame_legs(g, types=None):
+    """Combo legs for a PRE-GAME matchup, sourced from the shared game sim
+    (simulated probability + per-market average) and priced live off Kalshi."""
+    import kalshi_mlb
+    pk, mu = g["game_pk"], g["matchup"]
+    try:
+        idx = kalshi_mlb.index()
+    except Exception:
+        idx = {}
+    suffix = g.get("kalshi_suffix")
+
+    def price(kref):
+        if not (suffix and kref):
+            return None
+        try:
+            return kalshi_mlb.price_leg(idx, suffix, kref)
+        except Exception:
+            return None
+    out = []
+    # Moneyline (favorite) added explicitly, so a heavy-chalk leg the sim's
+    # marginal filter would drop is still available to the safest combos.
+    if g.get("pick_prob") is not None and g["pick_prob"] >= 0.5 and (not types or "ML" in types):
+        out.append({"game_pk": pk, "type": "ML", "label": f"{g['pick']} to win",
+                    "matchup": mu, "prob": g["pick_prob"],
+                    "price_cents": g.get("pick_price_cents"), "live": False,
+                    "sim_avg": _ml_margin(g), "avg_unit": "run margin", "group": "ML"})
+    for c in _game_sim(g)["cands"]:
+        if c["type"] == "ML":
+            continue                        # favorite handled above
+        if types and c["type"] not in types:
+            continue
+        out.append({"game_pk": pk, "type": c["type"], "label": c["label"], "matchup": mu,
+                    "prob": c["marg"], "price_cents": price(c.get("kref")), "live": False,
+                    "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit"),
+                    "group": c.get("group")})
+    return out
+
+
+def _curate_legs(legs):
+    """One best (highest-probability) leg per market group -- the small, varied
+    pool the suggested-combos assembler works from."""
+    best = {}
+    for l in legs:
+        k = l.get("group") or l["type"]
+        if k not in best or l["prob"] > best[k]["prob"]:
+            best[k] = l
+    return list(best.values())
+
+
+def _live_variants(g, types=None):
+    """Live games contribute only the live moneyline plus run line / totals
+    recomputed from the current score (pre-game props are stale once underway)."""
+    out = []
+    pk, mu = g["game_pk"], g["matchup"]
+
+    def add(typ, label, prob, price=None, avg=None, unit=None):
+        if types and typ not in types:
+            return
+        if 0.02 <= prob <= 0.995:
+            out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
+                        "prob": prob, "price_cents": price, "live": True,
+                        "sim_avg": avg, "avg_unit": unit})
+    if g.get("pick_prob") is not None:
+        add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"),
+            avg=_ml_margin(g), unit="run margin")
+    ig = g.get("in_game")
+    if ig and ig.get("exp_rem_home") is not None:
+        ktot = _ktotals(g)
+        lp = props_mod.live_game_props(
+            ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
+            g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
+        live_total = (ig.get("home_score", 0) + ig.get("away_score", 0)
+                      + ig["exp_rem_home"] + ig["exp_rem_away"])
+        _add_spread_legs(add, lp.get("run_line"))
+        for t in lp["totals_ladder"]:
+            mk = _tradeable_total(t["line"], ktot)
+            if mk is None:
+                continue
+            add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"),
+                avg=round(live_total, 1), unit="runs")
+            add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"),
+                avg=round(live_total, 1), unit="runs")
+    return out
+
+
+def _candidate_legs(games, live_only=False, types=None):
+    """Curated combo leg pool across the slate -- one best leg per market per game,
+    from the shared game sim. One leg per game keeps the combos independent."""
     legs = []
     for g in games:
         state = _game_state(g)
         if state == "Final":
-            continue  # game's over -- don't put settled games in suggested combos
+            continue
         if live_only and state != "Live":
             continue
-        live = state == "Live"
-        pk = g["game_pk"]; mu = g["matchup"]
-
-        def add(typ, label, prob, price=None, avg=None, unit=None):
-            if types and typ not in types:
-                return
-            legs.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
-                         "prob": prob, "price_cents": price, "live": live,
-                         "sim_avg": avg, "avg_unit": unit})
-
-        # Projected winning margin (expected runs: pick side minus opponent).
-        margin = None
-        if g.get("exp_runs_home") is not None and g.get("exp_runs_away") is not None:
-            diff = g["exp_runs_home"] - g["exp_runs_away"]
-            margin = round(diff if g.get("pick_is_home") else -diff, 1)
-        if g["pick_prob"] >= 0.5:
-            add("ML", f"{g['pick']} to win", g["pick_prob"], g["pick_price_cents"],
-                avg=margin, unit="run margin")
-        if live:
-            continue  # mid-game: props (totals/hits) are stale, so ML only
-        p = g.get("props") or {}
-        ktot = _ktotals(g)              # only Kalshi-bookable total lines
-        rl = p.get("run_line")
-        if rl:
-            hb = rl["home_by2_pct"] / 100.0
-            ab = rl["away_by2_pct"] / 100.0
-            if hb >= 0.55:
-                add("Run line", f"{rl['home']} win by 2+", hb, avg=margin, unit="run margin")
-            elif ab >= 0.55:
-                add("Run line", f"{rl['away']} win by 2+", ab, avg=margin, unit="run margin")
-        best_tot = None
-        for t in p.get("totals", []):
-            if _tradeable_total(t["line"], ktot) is None:
-                continue               # skip lines Kalshi won't book
-            over = t["over_pct"] / 100.0; under = t["under_pct"] / 100.0
-            side, pr = ("Over", over) if over >= under else ("Under", under)
-            if pr >= 0.58 and (best_tot is None or pr > best_tot[1]):
-                best_tot = (f"{side} {t['line']} runs", pr)
-        if best_tot:
-            add("Total", best_tot[0], best_tot[1], avg=g.get("exp_total"), unit="runs")
-        best_hit = None
-        for key in ("hits_away", "hits_home"):
-            h = p.get(key)
-            if h and h.get("batters"):
-                b = h["batters"][0]; pr = b["hit1_pct"] / 100.0
-                if pr >= 0.62 and (best_hit is None or pr > best_hit[1]):
-                    best_hit = (f"{b['name']} 1+ hit", pr, b.get("exp_hits"))
-        if best_hit:
-            add("Hit", best_hit[0], best_hit[1], avg=best_hit[2], unit="hits")
-        # Expanded props: home runs, total bases (from the exact prop math).
-        for key in ("batters_away", "batters_home"):
-            for b in (p.get(key) or [])[:6]:
-                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0, avg=b.get("exp_hr"), unit="HR")
-                add("Bases", f"{b['name']} 2+ total bases", b["tb2"] / 100.0,
-                    avg=b.get("exp_tb"), unit="bases")
-        # Starter strikeout props -- every line the model offers (high lines are
-        # the long odds); the "expected" key is the projected K count.
-        for key, nm in (("ks_home", p.get("home_sp_name")), ("ks_away", p.get("away_sp_name"))):
-            ks = p.get(key)
-            if ks and nm:
-                exp_k = ks.get("expected")
-                for line in sorted(int(k) for k in ks if k.isdigit()):
-                    if ks.get(str(line)):
-                        add("Ks", f"{nm} {line}+ Ks", ks[str(line)] / 100.0, avg=exp_k, unit="K")
+        if state == "Live":
+            if (not types or "ML" in types) and (g.get("pick_prob") or 0) >= 0.5:
+                legs.append({"game_pk": g["game_pk"], "type": "ML",
+                             "label": f"{g['pick']} to win", "matchup": g["matchup"],
+                             "prob": g["pick_prob"], "price_cents": g.get("pick_price_cents"),
+                             "live": True, "sim_avg": _ml_margin(g), "avg_unit": "run margin"})
+            continue
+        legs.extend(_curate_legs(_sim_pregame_legs(g, types=types)))
     return legs
 
 
@@ -1490,95 +1546,17 @@ def _validate_game_props(gp, g):
 
 
 def _game_variants(g, types=None):
-    """Every line variant for a game, so the combo maker can tune for confidence.
-    `types` (a set of type names) restricts which prop kinds are produced.
-
-    Includes moneyline, run line (±1.5), the full totals ladder (over/under at
-    each line), and the top hitters' 1+/2+ hit props. Returns leg dicts with a
-    probability so the builder can pick the line nearest a target confidence.
-    """
-    out = []
+    """Every priced line variant for a game (moneyline, run line, totals ladder,
+    hitter + pitcher props), each with the SIMULATED probability and its market
+    average, so the combo maker tunes on the same 4000-run sim the edge finder
+    uses. `types` restricts which prop kinds are produced. Live games fall back to
+    the live-recomputed moneyline + totals (pre-game props are stale mid-game)."""
     state = _game_state(g)
     if state == "Final":
-        return out
-    live = state == "Live"
-    pk, mu = g["game_pk"], g["matchup"]
-
-    def add(typ, label, prob, price=None, avg=None, unit=None):
-        if types and typ not in types:
-            return
-        if 0.02 <= prob <= 0.995:
-            out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
-                        "prob": prob, "price_cents": price, "live": live,
-                        "sim_avg": avg, "avg_unit": unit})
-
-    margin = None
-    if g.get("exp_runs_home") is not None and g.get("exp_runs_away") is not None:
-        diff = g["exp_runs_home"] - g["exp_runs_away"]
-        margin = round(diff if g.get("pick_is_home") else -diff, 1)
-    if g.get("pick_prob") is not None:
-        add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"),
-            avg=margin, unit="run margin")
-
-    # Live games: the pre-game totals/hit props are stale (they ignore runs
-    # already scored). Recompute the run line + totals LIVE from the current
-    # score + expected remaining runs; skip per-batter hit props (we don't track
-    # how many at-bats a hitter already has). The moneyline above is already
-    # the live in-game win probability.
-    ktot = _ktotals(g)                 # only surface Kalshi-bookable total lines
-    ig = g.get("in_game") if live else None
-    if live:
-        if ig and ig.get("exp_rem_home") is not None:
-            lp = props_mod.live_game_props(
-                ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
-                g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
-            live_total = (ig.get("home_score", 0) + ig.get("away_score", 0)
-                          + ig["exp_rem_home"] + ig["exp_rem_away"])
-            _add_spread_legs(add, lp.get("run_line"))
-            for t in lp["totals_ladder"]:
-                mk = _tradeable_total(t["line"], ktot)
-                if mk is None:
-                    continue
-                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"),
-                    avg=round(live_total, 1), unit="runs")
-                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"),
-                    avg=round(live_total, 1), unit="runs")
-        return out
-
-    p = g.get("props") or {}
-    exp_total = g.get("exp_total")
-    _add_spread_legs(add, p.get("run_line"), avg=margin, unit="run margin")
-    for t in p.get("totals_ladder", []):
-        mk = _tradeable_total(t["line"], ktot)
-        if mk is None:
-            continue
-        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"),
-            avg=exp_total, unit="runs")
-        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"),
-            avg=exp_total, unit="runs")
-    if p.get("rfi_pct") is not None:
-        add("RFI", "Run in the 1st inning", p["rfi_pct"] / 100.0)
-        add("RFI", "No run in the 1st inning", 1 - p["rfi_pct"] / 100.0)
-    # Per-batter ladders (Kalshi adjustable thresholds): hits, total bases, HR.
-    # Full thresholds, not just a +/-2 window -- the higher lines (4+ hits, 6+/7+
-    # total bases, 2+ HR) are long odds for payout-chasing combos; the variant
-    # filter drops any that are too unlikely to be useful.
-    for key in ("batters_away", "batters_home"):
-        for b in (p.get(key) or [])[:5]:
-            for m, hk in ((1, "hit1"), (2, "hit2"), (3, "hit3"), (4, "hit4")):
-                if b.get(hk) is not None:
-                    add("Hit", f"{b['name']} {m}+ hits", b[hk] / 100.0,
-                        avg=b.get("exp_hits"), unit="hits")
-            for m, tk in ((2, "tb2"), (3, "tb3"), (4, "tb4"), (5, "tb5"),
-                          (6, "tb6"), (7, "tb7")):
-                if b.get(tk) is not None:
-                    add("Bases", f"{b['name']} {m}+ total bases", b[tk] / 100.0,
-                        avg=b.get("exp_tb"), unit="bases")
-            for m, hk in ((1, "hr1"), (2, "hr2")):
-                if b.get(hk) is not None:
-                    add("HR", f"{b['name']} {m}+ HR", b[hk] / 100.0,
-                        avg=b.get("exp_hr"), unit="HR")
-    return out
+        return []
+    if state == "Live":
+        return _live_variants(g, types)
+    return _sim_pregame_legs(g, types=types)
 
 
 def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12, types=None):
@@ -1652,8 +1630,10 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
     for g in games:
         if _game_state(g) in ("Final", "Live"):
             continue  # settled games are decided; live in-game props are stale
-        sim = mlb_sim.simulate(g, n_sims)
-        cands = [c for c in mlb_sim.build_candidates(g, sim, types) if c["marg"] >= target]
+        gs = _game_sim(g)               # shared with the edge finder + combos
+        sim = gs["sim"]
+        cands = [c for c in gs["cands"]
+                 if (not types or c["type"] in types) and c["marg"] >= target]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
                                       target_payout, max_legs)
         if not item:
@@ -1667,7 +1647,7 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         out.append(item)
     out.sort(key=lambda x: x["combined_prob_pct"], reverse=True)
     return {"games": out[:top_n], "best": out[0] if out else None,
-            "n_sims": n_sims}
+            "n_sims": _SIM_N}
 
 
 # Below this many season innings, a starter's K/9 is too thin to trust a K
@@ -1697,7 +1677,6 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
     the model is right, so each row carries a confidence by market type and the
     UI flags that lines are often loosely quoted until close to game time.
     """
-    import mlb_sim
     import kalshi_mlb
     idx = kalshi_mlb.index()
     rows = []
@@ -1707,8 +1686,10 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
         suffix = g.get("kalshi_suffix")
         if not suffix or not idx.get(suffix):
             continue
-        sim = mlb_sim.simulate(g, n_sims)
-        for c in mlb_sim.build_candidates(g, sim, types):
+        # Shared per-game sim (same object the combo maker + SGPs read).
+        for c in _game_sim(g)["cands"]:
+            if types and c["type"] not in types:
+                continue
             kref = c.get("kref")
             if not kref:
                 continue
@@ -1764,7 +1745,7 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
     # Rank by the edge you can actually trade (net of Kalshi's fee), biggest first.
     filtered.sort(key=lambda r: abs(r.get("net_edge", r["edge"])), reverse=True)
     return {"edges": filtered[:top_n], "n_priced": len(rows),
-            "summary": summary, "n_sims": n_sims}
+            "summary": summary, "n_sims": _SIM_N}
 
 
 def _kalshi_payout(leg_suffix_pairs):
@@ -1878,10 +1859,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
             games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
             continue
-        sim = mlb_sim.simulate(g, n_sims)
+        gs = _game_sim(g)               # shared with the edge finder + combos
+        sim = gs["sim"]
         side = team_side(g)
-        cands = [c for c in mlb_sim.build_candidates(g, sim, types)
-                 if c["marg"] >= floor and (side is None or _cand_side(c, g) == side)]
+        cands = [c for c in gs["cands"]
+                 if (not types or c["type"] in types) and c["marg"] >= floor
+                 and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
@@ -1893,7 +1876,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                                   legs_mode=legs_mode, payout_mode=payout_mode,
                                   conn=conn, max_total_legs=max_total_legs)
     if item:
-        item["n_sims"] = n_sims
+        item["n_sims"] = _SIM_N
         # Price via each group's own game suffix (carried through the DP) so a
         # doubleheader's two games don't collide on an identical matchup string.
         pairs = [(leg, grp.get("suffix"))
@@ -1934,11 +1917,6 @@ def build_combos(games, max_legs=3, top_n=6, types=None):
     live_games = [g for g in games if _game_state(g) != "Final"]
 
     # Moneyline-only combos drive the EV-based highlights (those legs are priced).
-    def _ml_margin(g):
-        if g.get("exp_runs_home") is None or g.get("exp_runs_away") is None:
-            return None
-        diff = g["exp_runs_home"] - g["exp_runs_away"]
-        return round(diff if g.get("pick_is_home") else -diff, 1)
     ml_legs = [{"game_pk": g["game_pk"], "type": "ML", "label": f"{g['pick']} to win",
                 "matchup": g["matchup"], "prob": g["pick_prob"],
                 "price_cents": g["pick_price_cents"], "live": _game_state(g) == "Live",
