@@ -229,9 +229,17 @@
     </section>
 
     <section class="card">
-      <h2>🎲 Suggested combos (parlays)</h2>
-      <p class="sub" style="margin:4px 0 12px">All legs must win; combined odds = each leg's probability multiplied. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market.</p>
+      <div class="row-between">
+        <h2>🎲 Suggested combos (parlays)</h2>
+        <div class="subtabs" id="comboMode">
+          <button class="subtab active" data-cmode="kalshi">Kalshi</button>
+          <button class="subtab" data-cmode="pick6">🎯 DK Pick 6</button>
+        </div>
+      </div>
+      <p class="sub" id="comboKalshiSub" style="margin:4px 0 12px">All legs must win; combined odds = each leg's probability multiplied. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market.</p>
+      <p class="sub hidden" id="comboPick6Sub" style="margin:4px 0 12px">Our player-prop projections framed as DraftKings <b>Pick 6</b> More/Less picks, from the same 4000-run game sim. Pick <b>2–6</b> (all must hit) — we show the combined chance + the typical Power payout. <b>DK's live line governs</b>; match ours to their board.</p>
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to see combo suggestions.</div></div>
+      <div id="bbPick6" class="hidden"></div>
     </section>
     </div><!-- /bb-slate -->
 

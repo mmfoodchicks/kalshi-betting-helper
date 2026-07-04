@@ -1338,6 +1338,20 @@ def api_baseball_edges():
     return jsonify(res)
 
 
+@app.route("/api/baseball/pick6")
+def api_baseball_pick6():
+    """DraftKings Pick 6 board: our player-prop projections framed as More/Less at
+    DK-style lines, from the same shared game sim the combos use."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    return jsonify(baseball.pick6_board(games))
+
+
 @app.route("/api/baseball/sgp")
 def api_baseball_sgp():
     """Same-game parlays with correlation-aware (simulated) joint odds. Legs from

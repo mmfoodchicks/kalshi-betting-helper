@@ -1303,6 +1303,8 @@ async function loadBaseball(silent) {
     const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
     combosBox.innerHTML = html;
     if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
+    // Keep the Pick 6 board in sync with the loaded slate/date.
+    if ($("bbPick6") && $("bbPick6").dataset.loaded && !$("bbPick6").classList.contains("hidden")) loadPick6();
   } catch (e) {
     gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
     combosBox.innerHTML = "";
@@ -1402,9 +1404,9 @@ function initBaseballTab() {
   if (!$("bbGames").dataset.loaded) { $("bbGames").dataset.loaded = "1"; loadBaseball(); }
 }
 function setupBaseballSubtabs() {
-  document.querySelectorAll("#tab-baseball .subtab").forEach((b) => {
+  document.querySelectorAll("#tab-baseball .subtab[data-bbsub]").forEach((b) => {
     b.addEventListener("click", () => {
-      document.querySelectorAll("#tab-baseball .subtab").forEach((x) => x.classList.remove("active"));
+      document.querySelectorAll("#tab-baseball .subtab[data-bbsub]").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       const s = b.dataset.bbsub;
       document.querySelector("#tab-baseball .bb-slate").classList.toggle("hidden", s !== "slate");
@@ -1414,6 +1416,90 @@ function setupBaseballSubtabs() {
       if (s === "hits" && !$("hitsDate").dataset.loaded) { $("hitsDate").dataset.loaded = "1"; initHits(); }
     });
   });
+  // Combo maker mode: Kalshi combos vs DraftKings Pick 6.
+  document.querySelectorAll("#comboMode .subtab").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#comboMode .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      const p6 = b.dataset.cmode === "pick6";
+      $("bbCombos").classList.toggle("hidden", p6);
+      $("comboKalshiSub").classList.toggle("hidden", p6);
+      $("bbPick6").classList.toggle("hidden", !p6);
+      $("comboPick6Sub").classList.toggle("hidden", !p6);
+      if (p6 && !$("bbPick6").dataset.loaded) { $("bbPick6").dataset.loaded = "1"; loadPick6(); }
+    });
+  });
+}
+
+// ---- DraftKings Pick 6 builder -------------------------------------------
+let _pick6 = { picks: [], payouts: {}, sel: new Set() };
+async function loadPick6() {
+  const box = $("bbPick6");
+  const date = $("bbDate").value;
+  box.innerHTML = `<div class="empty">Simulating player props…</div>`;
+  try {
+    const d = await (await fetch(`/api/baseball/pick6?date=${date}`)).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    _pick6 = { picks: d.picks || [], payouts: d.payouts || {}, sel: new Set() };
+    renderPick6();
+  } catch (e) { box.innerHTML = `<div class="empty">Pick 6 unavailable.</div>`; }
+}
+function togglePick6(i) {
+  const inp = document.querySelectorAll("#bbPick6 .p6row input")[i];
+  if (_pick6.sel.has(i)) {
+    _pick6.sel.delete(i);
+  } else if (_pick6.sel.size < 6) {
+    _pick6.sel.add(i);
+  } else {
+    if (inp) inp.checked = false;   // at the 6-pick cap: bounce the extra check
+    return;
+  }
+  // Update just this row's highlight + the running tally (no full re-render, so
+  // scroll position and the other checkboxes are preserved).
+  const row = document.querySelectorAll("#bbPick6 .p6row")[i];
+  if (row) row.classList.toggle("on", _pick6.sel.has(i));
+  renderPick6Tally();
+}
+function renderPick6() {
+  const box = $("bbPick6");
+  if (!_pick6.picks.length) {
+    box.innerHTML = `<div class="empty">No Pick 6 leans yet — batter props post with lineups (a few hours pre-game); pitcher strikeout picks show as soon as the slate loads.</div>`;
+    return;
+  }
+  const rows = _pick6.picks.map((p, i) => {
+    const on = _pick6.sel.has(i);
+    return `<label class="p6row${on ? " on" : ""}">
+      <input type="checkbox" ${on ? "checked" : ""} onchange="togglePick6(${i})">
+      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
+      <span class="p6name">${p.player} <span class="p6stat">${p.stat}</span></span>
+      <span class="p6game">${abbrMatch(p.matchup)}</span>
+      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
+    </label>`;
+  }).join("");
+  box.innerHTML = `<div id="p6tally" class="p6tally"></div><div class="p6list">${rows}</div>`;
+  renderPick6Tally();
+}
+function renderPick6Tally() {
+  const t = $("p6tally");
+  if (!t) return;
+  const n = _pick6.sel.size;
+  if (n < 2) {
+    t.innerHTML = `<span class="small">Pick <b>2–6</b> player props (all must hit). ${n} selected.</span>`;
+    return;
+  }
+  let prob = 1;
+  const sameGame = {};
+  _pick6.sel.forEach((i) => { prob *= _pick6.picks[i].prob / 100; sameGame[_pick6.picks[i].matchup] = (sameGame[_pick6.picks[i].matchup] || 0) + 1; });
+  const pay = _pick6.payouts[String(n)] || null;
+  const ev = pay ? Math.round((prob * pay - 1) * 100) : null;
+  const corr = Object.values(sameGame).some((c) => c > 1)
+    ? ` <span class="small" style="color:var(--muted)">⚠ some picks share a game — real correlation makes the true chance differ from this independent estimate</span>` : "";
+  t.innerHTML = `<b>${n}-pick</b> · all-hit chance <b>${(prob * 100).toFixed(1)}%</b>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${ev >= 0 ? "ev pos" : "ev neg"}">${ev >= 0 ? "+" : ""}${ev}%</b>` : ""}${corr}`;
+}
+function abbrMatch(mu) {
+  if (!mu) return "";
+  if (mu.includes(" @ ")) return mu.split(" @ ").map((t) => t.split(" ").pop()).join("@");
+  return mu;
 }
 
 // ---- Predicted Hits / Risky Hits -----------------------------------------

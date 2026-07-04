@@ -1943,6 +1943,55 @@ def grade_picks():
                                     winner, actual_total=total)
 
 
+# DraftKings Pick 6 player-prop stats we can price, and the standard "Power play"
+# (all correct) payout multipliers by pick count. DK's live board is authoritative
+# -- these are the typical tiers so we can show an approximate payout/EV.
+_PICK6_STATS = {"Hit": "hits", "Bases": "total bases", "HR": "home runs",
+                "Ks": "strikeouts"}
+_PICK6_PAYOUT = {2: 3.0, 3: 6.0, 4: 10.0, 5: 20.0, 6: 25.0}
+
+
+def pick6_board(games, top_n=60):
+    """DraftKings Pick 6 board: our player-prop projections framed as More/Less at
+    DK-style half-lines, from the SAME shared game sim the combos use. Pick 6 is an
+    all-must-hit player-prop parlay, so we rank safest first and show each pick's
+    projected value + our probability. DK's actual line governs -- match ours to
+    the board."""
+    import math
+    picks = []
+    for g in games:
+        if _game_state(g) == "Final":
+            continue
+        ladders = {}   # (player, type) -> {"lines": {N: prob}, "avg": proj}
+        for c in _game_sim(g)["cands"]:
+            if c["type"] not in _PICK6_STATS:
+                continue
+            kref = c.get("kref") or {}
+            player, line_n = kref.get("player"), kref.get("line")
+            if not player or line_n is None:
+                continue
+            d = ladders.setdefault((player, c["type"]), {"lines": {}, "avg": c.get("sim_avg")})
+            d["lines"][line_n] = c["marg"]
+        for (player, typ), d in ladders.items():
+            proj, lines = d["avg"], d["lines"]
+            if proj is None or not lines:
+                continue
+            # DK sets the line near the projection; pick the nearest available
+            # threshold and lean More/Less by where our projection sits.
+            N = min(lines, key=lambda n: abs((n - 0.5) - proj))
+            line = N - 0.5
+            p_more = lines[N]
+            side, prob = ("More", p_more) if proj >= line else ("Less", 1 - p_more)
+            if not (0.5 <= prob <= 0.9):        # skip coin-flips and chalk
+                continue
+            picks.append({"player": player, "stat": _PICK6_STATS[typ], "type": typ,
+                          "line": line, "side": side, "prob": round(prob * 100, 1),
+                          "proj": proj, "matchup": g["matchup"], "game_pk": g["game_pk"]})
+    picks.sort(key=lambda x: -x["prob"])        # safest first (all must hit)
+    return {"picks": picks[:top_n],
+            "payouts": {str(k): v for k, v in _PICK6_PAYOUT.items()}}
+
+
 def build_combos(games, max_legs=3, top_n=6, types=None):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.

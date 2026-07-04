@@ -566,6 +566,29 @@ button.danger { color: var(--no); }
 /* "avg sim 9.1 runs" under a combo leg — the simulated expected value behind the line. */
 .legavg { display: block; font-size: 0.72rem; color: var(--faint); margin-top: 1px; }
 .legavg::before { content: "\1F4CA"; margin-right: 3px; opacity: 0.8; }
+
+/* DraftKings Pick 6 builder */
+.p6tally { position: sticky; top: 0; background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 0.9rem; z-index: 2; }
+.p6list { display: flex; flex-direction: column; gap: 4px; }
+.p6row { display: grid; grid-template-columns: 22px 76px 1fr auto auto; align-items: center; gap: 10px;
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 9px; cursor: pointer;
+  background: rgba(255,255,255,0.02); }
+.p6row.on { border-color: var(--accent); background: rgba(91,140,255,0.10); }
+.p6row input { width: auto; }
+.p6side { font-size: 0.72rem; font-weight: 700; text-align: center; border-radius: 5px; padding: 2px 4px;
+  white-space: nowrap; }
+.p6side.more { color: var(--yes); background: rgba(52,211,153,0.14); }
+.p6side.less { color: var(--no); background: rgba(248,113,113,0.14); }
+.p6name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p6stat { color: var(--muted); font-size: 0.78rem; }
+.p6game { font-size: 0.72rem; color: var(--accent); }
+.p6prob { text-align: right; font-variant-numeric: tabular-nums; }
+.p6prob .p6proj { display: block; font-size: 0.7rem; color: var(--faint); font-weight: 400; }
+@media (max-width: 640px) {
+  .p6row { grid-template-columns: 20px 66px 1fr auto; gap: 7px; }
+  .p6row .p6game { display: none; }
+}
 .legtag {
   display: inline-block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
   background: var(--card); border: 1px solid var(--border); color: var(--accent);
