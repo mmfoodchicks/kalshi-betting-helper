@@ -50,8 +50,8 @@ def _cargo(tables, fields, where=None, order_by=None, limit=200):
     or rate-limit after retries) so callers don't cache a bad result. Paced
     (>=2s between calls) with exponential backoff on the wiki's rate limit."""
     gap = time.time() - _last_call[0]
-    if gap < 2.0:
-        time.sleep(2.0 - gap)
+    if gap < 2.5:                    # gentle: the wiki rate-limits bursts hard
+        time.sleep(2.5 - gap)
     p = {"action": "cargoquery", "format": "json", "tables": tables,
          "fields": fields, "limit": str(limit)}
     if where:
@@ -235,15 +235,41 @@ def _norm_over(mean, std, line):
 _PICK6_PAYOUT = {"2": 3.0, "3": 6.0, "4": 10.0, "5": 20.0, "6": 25.0}
 
 
-def board(max_matches=8):
-    """The LoL slate with rosters + per-player projections, plus a DK Pick 6-style
-    board of More/Less picks (kills / assists / CS, per map) ranked safest first.
-    Esports has no Kalshi combos, so this is a pure prop tool. Cached 15 min."""
-    def build():
-        slate = upcoming(limit=max_matches)
-        if not slate:
-            return None
-        matches, picks, seen_team = [], [], {}
+import threading as _threading
+_board_inflight = set()
+
+
+def board(max_matches=6):
+    """The LoL slate with rosters + per-player projections + a DK Pick 6 board.
+    NON-BLOCKING: Leaguepedia's Cargo API is rate-limited, so a full slate can't be
+    assembled inside one request. We return the cached board if fresh, otherwise
+    kick a single paced background build (guarded so retries don't pile on) and
+    return None for now -- the frontend polls until it lands. Individual team pulls
+    are cached 6h, so successive builds converge fast."""
+    key = ("lol_board", max_matches)
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < 900:
+        return hit[1]
+    if max_matches not in _board_inflight:
+        _board_inflight.add(max_matches)
+
+        def _bg():
+            try:
+                val = _build_board(max_matches)
+                if val is not None:
+                    _cache[key] = (time.time(), val)
+            finally:
+                _board_inflight.discard(max_matches)
+        _threading.Thread(target=_bg, daemon=True).start()
+    return hit[1] if hit else None
+
+
+def _build_board(max_matches):
+    slate = upcoming(limit=max_matches)
+    if not slate:
+        return None
+    matches, picks, seen_team = [], [], {}
+    if True:
 
         def roster(team):
             if team not in seen_team:
@@ -286,6 +312,7 @@ def board(max_matches=8):
                             "league": m["league"], "date": m["date"], "dt": m["dt"],
                             "roster1": side(m["team1"], r1), "roster2": side(m["team2"], r2)})
         picks.sort(key=lambda x: -x["prob"])
+        if not matches:
+            return None                      # nothing loaded yet -> let it retry
         return {"matches": matches, "picks": picks[:60], "payouts": _PICK6_PAYOUT,
                 "note": "Per-map projections. DK/PrizePicks lines govern — match ours to their board."}
-    return _cached(("lol_board", max_matches), 900, build)

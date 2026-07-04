@@ -1327,6 +1327,7 @@ function setupTabs() {
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
       $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
+      $("tab-lol").classList.toggle("hidden", tab !== "lol");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
@@ -1348,6 +1349,7 @@ function setupTabs() {
       if (tab === "nfl") initNFL();
       if (tab === "ufc") initUFC();
       if (tab === "tennis") initTennis();
+      if (tab === "lol") initLoL();
       if (tab === "draft") initDraft();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
@@ -2621,6 +2623,111 @@ function renderTennis() {
 
 // ---- World Cup ----
 let _wcData = null, _wcSub = "futures";
+// ---- League of Legends (esports) ------------------------------------------
+let _lolData = null;
+let _lolp6 = { picks: [], payouts: {}, sel: new Set() };
+
+function initLoL() {
+  if (!$("lolResults").dataset.loaded) { $("lolResults").dataset.loaded = "1"; loadLoL(); }
+  document.querySelectorAll("#lolSubtabs .subtab").forEach((b) => {
+    if (b.dataset.wired) return;
+    b.dataset.wired = "1";
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#lolSubtabs .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      const p6 = b.dataset.lolsub === "pick6";
+      $("lolResults").classList.toggle("hidden", p6);
+      $("lolPick6").classList.toggle("hidden", !p6);
+    });
+  });
+}
+
+async function loadLoL(attempt) {
+  attempt = attempt || 0;
+  const box = $("lolResults");
+  if (!attempt) box.innerHTML = `<div class="empty">Building the pro slate + per-player history in the background — the Leaguepedia API is rate-limited, so the first load takes ~30–60s. This refreshes automatically.</div>`;
+  try {
+    const d = await (await fetch("/api/lol")).json();
+    if (d.error || !(d.matches && d.matches.length)) {
+      if (attempt < 9) {
+        if (attempt >= 1) box.innerHTML = `<div class="empty">Still assembling the slate… (the wiki API pages slowly) — auto-retrying.</div>`;
+        setTimeout(() => loadLoL(attempt + 1), 9000);
+        return;
+      }
+      box.innerHTML = `<div class="empty">${d.error || "No LoL data available."}</div>`;
+      return;
+    }
+    _lolData = d;
+    _lolp6 = { picks: d.picks || [], payouts: d.payouts || {}, sel: new Set() };
+    renderLoL();
+    renderLoLPick6();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadLoL(attempt + 1), 9000); return; }
+    box.innerHTML = `<div class="empty">LoL unavailable.</div>`;
+  }
+}
+
+function renderLoL() {
+  const box = $("lolResults");
+  const ms = (_lolData && _lolData.matches) || [];
+  $("lolSummary").innerHTML = ms.length
+    ? `<span class="leanchip">${ms.length} matches</span> <span class="leanchip">${(_lolp6.picks || []).length} Pick 6 leans</span>` : "";
+  if (!ms.length) { box.innerHTML = `<div class="empty">No matches loaded yet — retry in a moment (the wiki API rate-limits cold loads).</div>`; return; }
+  const side = (r) => (r || []).map((p) => `<div class="lol-prow">
+      <span class="lol-role">${p.role || "—"}</span>
+      <span class="lol-pname">${p.player}${p.champs && p.champs.length ? `<span class="lol-champs">${p.champs.slice(0, 3).join(" · ")}</span>` : ""}</span>
+      <span class="lol-stat">K <b>${p.kills}</b></span>
+      <span class="lol-stat">A <b>${p.assists}</b></span>
+      <span class="lol-stat">CS <b>${p.cs}</b></span>
+    </div>`).join("");
+  box.innerHTML = ms.map((m) => `<div class="lol-match">
+      <div class="lol-mhead"><span class="legtag">${m.league}</span> <b>${m.team1}</b> <span class="small">vs</span> <b>${m.team2}</b> <span class="small">· bo${m.bo} · ${m.date}</span></div>
+      <div class="lol-teams">
+        <div class="lol-team"><div class="lol-thdr">${m.team1}</div>${side(m.roster1)}</div>
+        <div class="lol-team"><div class="lol-thdr">${m.team2}</div>${side(m.roster2)}</div>
+      </div></div>`).join("");
+}
+
+function toggleLoLPick6(i) {
+  const inp = document.querySelectorAll("#lolPick6 .p6row input")[i];
+  if (_lolp6.sel.has(i)) _lolp6.sel.delete(i);
+  else if (_lolp6.sel.size < 6) _lolp6.sel.add(i);
+  else { if (inp) inp.checked = false; return; }
+  const row = document.querySelectorAll("#lolPick6 .p6row")[i];
+  if (row) row.classList.toggle("on", _lolp6.sel.has(i));
+  renderLoLP6Tally();
+}
+function renderLoLPick6() {
+  const box = $("lolPick6");
+  if (!_lolp6.picks.length) { box.innerHTML = `<div class="empty">No Pick 6 leans yet — load the slate first.</div>`; return; }
+  const rows = _lolp6.picks.map((p, i) => {
+    const on = _lolp6.sel.has(i);
+    return `<label class="p6row${on ? " on" : ""}">
+      <input type="checkbox" ${on ? "checked" : ""} onchange="toggleLoLPick6(${i})">
+      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
+      <span class="p6name">${p.player} <span class="p6stat">${p.stat} · ${p.role}</span></span>
+      <span class="p6game">${p.league}</span>
+      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
+    </label>`;
+  }).join("");
+  box.innerHTML = `<div id="lolP6tally" class="p6tally"></div><div class="small" style="margin:2px 0 8px">Per-map kills / assists / CS. DK &amp; PrizePicks set the line — take our More/Less where it clears theirs.</div><div class="p6list">${rows}</div>`;
+  renderLoLP6Tally();
+}
+function renderLoLP6Tally() {
+  const t = $("lolP6tally");
+  if (!t) return;
+  const n = _lolp6.sel.size;
+  if (n < 2) { t.innerHTML = `<span class="small">Pick <b>2–6</b> props (all must hit). ${n} selected.</span>`; return; }
+  let prob = 1;
+  const sameM = {};
+  _lolp6.sel.forEach((i) => { prob *= _lolp6.picks[i].prob / 100; sameM[_lolp6.picks[i].matchup] = (sameM[_lolp6.picks[i].matchup] || 0) + 1; });
+  const pay = _lolp6.payouts[String(n)] || null;
+  const ev = pay ? Math.round((prob * pay - 1) * 100) : null;
+  const corr = Object.values(sameM).some((c) => c > 1)
+    ? ` <span class="small" style="color:var(--muted)">⚠ picks share a match — correlation shifts the true chance</span>` : "";
+  t.innerHTML = `<b>${n}-pick</b> · all-hit chance <b>${(prob * 100).toFixed(1)}%</b>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${ev >= 0 ? "ev pos" : "ev neg"}">${ev >= 0 ? "+" : ""}${ev}%</b>` : ""}${corr}`;
+}
+
 function initWorldCup() {
   if (!$("wcResults").dataset.loaded) { $("wcResults").dataset.loaded = "1"; loadWorldCup(); }
   document.querySelectorAll("#wcSubtabs .subtab").forEach((b) => {

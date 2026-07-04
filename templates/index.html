@@ -54,6 +54,7 @@
     <button class="tab" data-tab="ufc">🥊 UFC</button>
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
     <button class="tab" data-tab="worldcup">⚽ World Cup</button>
+    <button class="tab" data-tab="lol">🎮 LoL</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="crypto">⚡ Crypto</button>
     <button class="tab" data-tab="commodities">🛢️ Commodities</button>
@@ -431,6 +432,22 @@
       <div id="wcResults" class="markets"><div class="empty">Loading the simulator…</div></div>
     </section>
    </div><!-- /tab-worldcup -->
+
+   <div id="tab-lol" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🎮 League of Legends</h2>
+        <div class="subtabs" id="lolSubtabs">
+          <button class="subtab active" data-lolsub="matches">🧩 Matchups</button>
+          <button class="subtab" data-lolsub="pick6">🎯 Pick 6</button>
+        </div>
+      </div>
+      <p class="sub" style="margin:4px 0 10px">Pro LoL from real per-map history (Leaguepedia): each team's roster with recent <b>K/D/A/CS</b> + champions, and a <b>DK/PrizePicks Pick 6</b> board of More/Less kill, assist &amp; CS picks from our projection. Per-map numbers — <b>match ours to the book's line</b>. Kalshi has no esports combos, so this is a pure prop tool. First load is slow (rate-limited wiki).</p>
+      <div id="lolSummary" class="small"></div>
+      <div id="lolResults" class="markets"><div class="empty">Open the tab to load the slate…</div></div>
+      <div id="lolPick6" class="hidden"></div>
+    </section>
+   </div><!-- /tab-lol -->
 
    <div id="tab-commodities" class="hidden">
     <section class="card">

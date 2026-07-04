@@ -1202,7 +1202,7 @@ def api_lol():
     limited wiki API); cached 15 min."""
     try:
         import lol
-        data = lol.board(max_matches=8)
+        data = lol.board(max_matches=6)
     except Exception as e:
         return jsonify({"error": f"lol data failed: {e}"}), 502
     if not data:

@@ -567,6 +567,23 @@ button.danger { color: var(--no); }
 .legavg { display: block; font-size: 0.72rem; color: var(--faint); margin-top: 1px; }
 .legavg::before { content: "\1F4CA"; margin-right: 3px; opacity: 0.8; }
 
+/* League of Legends esports */
+.lol-match { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: var(--card2); }
+.lol-mhead { margin-bottom: 10px; }
+.lol-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.lol-thdr { font-weight: 600; color: var(--accent); font-size: 0.86rem; margin-bottom: 4px; }
+.lol-prow { display: grid; grid-template-columns: 58px 1fr 44px 44px 58px; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.84rem; }
+.lol-prow:last-child { border-bottom: none; }
+.lol-role { font-size: 0.66rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+.lol-pname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lol-champs { display: block; font-size: 0.68rem; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lol-stat { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lol-stat b { color: var(--text); }
+@media (max-width: 640px) {
+  .lol-teams { grid-template-columns: 1fr; gap: 10px; }
+  .lol-prow { grid-template-columns: 50px 1fr 38px 38px 50px; gap: 5px; font-size: 0.8rem; }
+}
+
 /* DraftKings Pick 6 builder */
 .p6tally { position: sticky; top: 0; background: var(--card2); border: 1px solid var(--border);
   border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 0.9rem; z-index: 2; }
