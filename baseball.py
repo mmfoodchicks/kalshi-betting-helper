@@ -771,6 +771,31 @@ def _exp_ip_per_start(sp):
     return max(3.0, min(7.2, per))
 
 
+# Strikeout rate stabilizes fast but not instantly: a K/9 off a handful of
+# innings is mostly noise, so regress it toward a league-average starter K/9 by
+# innings pitched (K% reaches useful reliability around ~70 batters faced, ~16
+# IP). An established arm's rate barely moves; a one-start rookie's is pulled
+# most of the way to league, so his strikeout ladder stops printing phantom
+# edges off a 7-inning sample.
+LG_K9 = 8.4            # ~league-average MLB starter strikeouts per 9
+K9_REGRESS_IP = 16.0   # innings of league-average prior blended into every arm
+
+
+def _regressed_k9(season):
+    """Season K/9 regressed toward the league starter average by innings pitched,
+    so a tiny sample (e.g. one 7-IP start) can't drive an overconfident K ladder.
+    Returns None when there's no usable rate at all."""
+    if not season:
+        return None
+    k9 = season.get("k9")
+    if not k9 or k9 <= 0:
+        return None
+    ip = season.get("ip") or 0.0
+    if ip <= 0:
+        return LG_K9
+    return (ip * k9 + K9_REGRESS_IP * LG_K9) / (ip + K9_REGRESS_IP)
+
+
 def _opp_hit_factor(opp_sp, opp_bp, lg):
     """How many hits the opposing pitching tends to allow vs league (1.0 = avg).
 
@@ -1066,8 +1091,12 @@ def analyze_slate(date, season):
                         "recent_era": None, "recent_whip": None, "k9": None}
             s = st["season"]; r = st.get("recent") or {}
             fip = _fip(s)
+            # Model K/9 is regressed by sample size (so small-sample arms don't
+            # over-project); k9_raw keeps his true stat-line number for display.
+            k9_raw = round(s.get("k9", 0), 1)
+            k9_mod = _regressed_k9(s)
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
-                    "ip": s["ip"], "k9": round(s.get("k9", 0), 1),
+                    "ip": s["ip"], "k9": round(k9_mod, 1) if k9_mod else k9_raw, "k9_raw": k9_raw,
                     "exp_ip": round(_exp_ip_per_start(st), 1),
                     "fip": round(fip, 2) if fip is not None else None,
                     "recent_era": round(r["era"], 2) if r.get("ip") else None,
@@ -1105,9 +1134,9 @@ def analyze_slate(date, season):
             bat_away = bat_list(lu["away"], ohf_away)
         # Starter strikeout props, sized to THIS pitcher's expected workload
         # (season/recent IP per start), not a one-size 5.6-inning template.
-        ks_home = (props_mod.pitcher_k_props((h_sp or {}).get("season", {}).get("k9"),
+        ks_home = (props_mod.pitcher_k_props(_regressed_k9((h_sp or {}).get("season")),
                                              _exp_ip_per_start(h_sp)) if h_sp else None)
-        ks_away = (props_mod.pitcher_k_props((a_sp or {}).get("season", {}).get("k9"),
+        ks_away = (props_mod.pitcher_k_props(_regressed_k9((a_sp or {}).get("season")),
                                              _exp_ip_per_start(a_sp)) if a_sp else None)
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
@@ -1571,6 +1600,12 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
             "n_sims": n_sims}
 
 
+# Below this many season innings, a starter's K/9 is too thin to trust a K
+# ladder on -- the "edge" is really vs the league prior, not a real read -- so
+# those props drop to low confidence (and off the Best Bets board).
+K_TRUST_MIN_IP = 20.0
+
+
 def _edge_confidence(typ):
     """How much to trust a model-vs-market gap, by market. The model is best
     grounded where it leans on stable team/pitcher rates (moneyline, total, Ks);
@@ -1623,12 +1658,20 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
             net = round(edge - fee, 1) if edge >= 0 else round(edge + fee, 1)
             if edge * net < 0:                          # fee ate the whole edge
                 net = 0.0
+            conf = _edge_confidence(c["type"])
+            # A strikeout ladder is only as trustworthy as the K/9 behind it: a
+            # thin-sample starter (e.g. a rookie with one start) gets his K props
+            # knocked to low confidence, which also keeps them off Best Bets.
+            if c["type"] == "Ks":
+                spip = (c.get("kref") or {}).get("sp_ip")
+                if spip is not None and spip < K_TRUST_MIN_IP:
+                    conf = "low"
             rows.append({
                 "matchup": g["matchup"], "type": c["type"], "pick": c["label"],
                 "our_pct": sim_pct, "model_pct": model_pct,
                 "market_cents": cents, "market_payout_x": round(100.0 / cents, 2),
                 "edge": edge, "fee_cents": fee, "net_edge": net,
-                "confidence": _edge_confidence(c["type"]),
+                "confidence": conf,
             })
     # Per-market lean over ALL priced legs. If a whole market type is one-sided
     # (e.g. every starter's Ks read high vs the market), that's a systematic model

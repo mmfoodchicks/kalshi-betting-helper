@@ -692,17 +692,21 @@ def build_candidates(g, sim, types=None):
     # Poisson % lives in the ks_* dict (string keys).
     hk, ak = sim["home_k"], sim["away_k"]
     ks_h, ks_a = props.get("ks_home") or {}, props.get("ks_away") or {}
+    # Starter's season innings ride along so the edge finder can distrust a K
+    # ladder built off a tiny sample (a rookie's K/9 is mostly noise early).
+    hsp_ip = (g.get("home_sp") or {}).get("ip")
+    asp_ip = (g.get("away_sp") or {}).get("ip")
     K_LINES = (4, 5, 6, 7, 8, 9, 10)
     if ks_h and props.get("home_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['home_sp_name']} {line}+ Ks",
                 lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}", ks_h.get(str(line)),
-                {"t": "ks", "player": props["home_sp_name"], "line": line})
+                {"t": "ks", "player": props["home_sp_name"], "line": line, "sp_ip": hsp_ip})
     if ks_a and props.get("away_sp_name"):
         for line in K_LINES:
             add("Ks", f"{props['away_sp_name']} {line}+ Ks",
                 lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)),
-                {"t": "ks", "player": props["away_sp_name"], "line": line})
+                {"t": "ks", "player": props["away_sp_name"], "line": line, "sp_ip": asp_ip})
     return cands
 
 
