@@ -525,9 +525,9 @@ def _bullpen_fatigue(date, season):
             base = _dt.strptime(date, "%Y-%m-%d")
         except Exception:
             return {}
-        # day 1 = yesterday (heaviest weight), day 2 = the day before
-        days = {1: (base - _td(days=1)).strftime("%Y-%m-%d"),
-                2: (base - _td(days=2)).strftime("%Y-%m-%d")}
+        # day 1 = yesterday (heaviest weight) back through day 4, so we see a
+        # multi-day grind (pitched 3 of the last 4) not just a single back-to-back.
+        days = {d: (base - _td(days=d)).strftime("%Y-%m-%d") for d in (1, 2, 3, 4)}
         pks_by_day = {}
         for dnum, dstr in days.items():
             try:
@@ -538,7 +538,7 @@ def _bullpen_fatigue(date, season):
                                     if g.get("status", {}).get("abstractGameState") == "Final"]
             except Exception:
                 pks_by_day[dnum] = []
-        # usage[team][pid] = {"days": set(), "name": str, "pitches_y": int}
+        # usage[team][pid] = {"days": set(), "name": str, "pitches": {day: count}}
         usage = {}
         all_pks = [(d, pk) for d, pks in pks_by_day.items() for pk in pks if pk]
         boxes = {}
@@ -552,27 +552,48 @@ def _bullpen_fatigue(date, season):
             for tid, arms in box.items():
                 tu = usage.setdefault(tid, {})
                 for pid, nm, pitches in arms:
-                    a = tu.setdefault(pid, {"days": set(), "name": nm, "pitches_y": 0})
+                    a = tu.setdefault(pid, {"days": set(), "name": nm, "pitches": {}})
                     a["days"].add(dnum)
-                    if dnum == 1:
-                        a["pitches_y"] = max(a["pitches_y"], pitches)
+                    a["pitches"][dnum] = max(a["pitches"].get(dnum, 0), pitches)
         out = {}
         for tid, tu in usage.items():
             score = 0.0
             gassed = []
             for pid, a in tu.items():
-                back_to_back = a["days"] == {1, 2}
-                heavy_y = 1 in a["days"] and a["pitches_y"] >= 28
-                mod_y = 1 in a["days"] and 15 <= a["pitches_y"] < 28
-                if back_to_back or heavy_y:
+                p = a["pitches"]
+                py = p.get(1, 0)                        # pitches yesterday
+                p3 = py + p.get(2, 0) + p.get(3, 0)     # 3-day pitch load
+                back_to_back = {1, 2} <= a["days"]      # pitched both of the last 2 days
+                heavy_y = py >= 28                      # heavy single outing yesterday
+                multi = len(a["days"]) >= 3             # 3 of the last 4 days -> gassed
+                grind = p3 >= 45                        # heavy 3-day cumulative load
+                mod_y = 15 <= py < 28
+                if back_to_back or heavy_y or multi or grind:
                     score += 1.0
                     gassed.append(a["name"])
                 elif mod_y:
                     score += 0.4
-            factor = 1.0 + min(0.12, 0.025 * score)
+            factor = 1.0 + min(0.15, 0.025 * score)     # a touch more headroom for a truly gassed pen
             out[tid] = {"factor": round(factor, 3), "count": len(gassed), "arms": gassed[:4]}
         return out
     return _cached(("penfatigue", date, season), 1800, fetch)
+
+
+def _defense_map(season):
+    """{team_id(str): hit/run multiplier} from Statcast team OAA. A good defense
+    (high OAA) turns more balls in play into outs, so the OPPOSING offense hits and
+    scores a little less. Season OAA -> per-game factor (~4000 balls in play a
+    season, league BABIP ~.290, so each out saved trims hits by OAA/(BIP*BABIP)),
+    capped +/-3%. Neutral 1.0 on any fetch failure."""
+    def build():
+        try:
+            import savant
+            oaa = savant.team_defense(season)
+        except Exception:
+            oaa = {}
+        return {str(tid): round(max(0.97, min(1.03, 1 - v / 1160.0)), 4)
+                for tid, v in oaa.items()}
+    return _cached(("defense", season), 6 * 3600, build) or {}
 
 
 def _pitching_factor(sp, team_bp, lg, bp_fatigue=1.0):
@@ -975,6 +996,7 @@ def analyze_slate(date, season):
         pen_fatigue = _bullpen_fatigue(date, season)   # {team_id: {factor, count, arms}}
     except Exception:
         pen_fatigue = {}
+    def_map = _defense_map(season)                     # {team_id: hit/run multiplier}
     try:
         kalshi_index = get_kalshi_prices()
     except Exception:
@@ -1065,8 +1087,13 @@ def analyze_slate(date, season):
         if lf_away:
             off_a *= lf_away
 
-        er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT
-        er_away = lg["rpg"] * off_a * pit_h_factor
+        # Team defense (Statcast OAA): the FIELDING team suppresses the opposing
+        # offense's hits on balls in play, so each team's expected runs also ride
+        # on the OTHER team's glove.
+        def_h = def_map.get(str(g["home_id"]), 1.0)
+        def_a = def_map.get(str(g["away_id"]), 1.0)
+        er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT * def_a
+        er_away = lg["rpg"] * off_a * pit_h_factor * def_h
 
         # Park + weather scale BOTH teams' run environment. Baking them into the
         # expected runs (not just the headline total) keeps every downstream
@@ -1156,14 +1183,19 @@ def analyze_slate(date, season):
         # lifts runs ~28% but hits ~13%), so hitter props see env^0.55 on top of
         # the opposing pitching. Both lineups share the same park/weather.
         hit_env = env ** 0.55
-        ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env  # home bats vs away pitching
-        ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env  # away bats vs home pitching
+        # HR carry is steeper than contact: singles ride env^0.55, homers ~env^1.0.
+        # hr_env is the EXTRA multiplier (env^0.45) applied on top of the hit-scale
+        # already in ohf, so a hot/thin-air park lifts homers about twice as much.
+        hr_env = env ** 0.45
+        # home bats vs away pitching + away defense (and vice versa).
+        ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env * def_a
+        ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env * def_h
         def bat_list(lineup, ohf):
             out = []
             for i, b in enumerate(lineup):
                 pid = str(b.get("id"))
                 cm, pm = savant.quality_mults(xstats.get(pid))
-                bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid))
+                bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid), hr_env=hr_env)
                 if bp_:
                     out.append(bp_)
             return out

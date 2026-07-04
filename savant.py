@@ -65,6 +65,24 @@ def expected_stats(season):
     return _cached(("xstats", season), 6 * 3600, build) or {}
 
 
+def team_defense(season):
+    """{team_id: outs_above_average} for the season -- team fielding OAA from
+    Statcast. Positive = the defense turns more balls in play into outs than
+    average (fewer hits/runs allowed); negative = a leaky glove."""
+    def build():
+        url = ("https://baseballsavant.mlb.com/leaderboard/outs_above_average"
+               f"?type=Fielding_Team&startYear={season}&endYear={season}&split=no"
+               "&team=&range=year&min=q&pos=&roles=&viz=hide&csv=true")
+        out = {}
+        for r in _get_csv(url):
+            tid = r.get("team_id")
+            oaa = _f(r.get("outs_above_average"))
+            if tid and oaa is not None:
+                out[str(tid)] = oaa
+        return out
+    return _cached(("team_def", season), 6 * 3600, build) or {}
+
+
 def sprint_speed(season):
     """{player_id: sprint_speed_ft_per_sec} for the season."""
     def build():

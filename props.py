@@ -207,7 +207,8 @@ def _speed_inputs(b, sprint):
     return round(spd, 3), round(sbr, 4)
 
 
-def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, sprint=None):
+def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, sprint=None,
+                 hr_env=1.0):
     """Exact per-game prop probabilities for a hitter (the limit a simulation
     converges to). Returns 1+/2+ hits, 1+ HR, 2+ and 3+ total bases.
 
@@ -226,9 +227,13 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     # contact_mult scales the overall hit rate toward xBA (true talent).
     pm = max(0.7, min(1.3, power_mult))
     cm = max(0.7, min(1.3, contact_mult))
+    # Home runs are far more air-carry-sensitive than contact hits (a hot, thin-air
+    # night lifts HR much more than singles), so HR gets an extra environment
+    # multiplier on top of the hit-scale one already baked into `f`.
+    he = max(0.85, min(1.25, hr_env))
     r_2b = (b.get("doubles") or 0) / spa * f * pm
     r_3b = (b.get("triples") or 0) / spa * f * pm
-    r_hr = (b.get("hr") or 0) / spa * f * pm
+    r_hr = (b.get("hr") or 0) / spa * f * pm * he
     r_hit = (b.get("hits") or 0) / spa * f * cm
     r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
     r_bb = (b.get("bb") or 0) / spa
