@@ -1283,14 +1283,21 @@ def _candidate_legs(games, live_only=False, types=None):
         live = state == "Live"
         pk = g["game_pk"]; mu = g["matchup"]
 
-        def add(typ, label, prob, price=None):
+        def add(typ, label, prob, price=None, avg=None, unit=None):
             if types and typ not in types:
                 return
             legs.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
-                         "prob": prob, "price_cents": price, "live": live})
+                         "prob": prob, "price_cents": price, "live": live,
+                         "sim_avg": avg, "avg_unit": unit})
 
+        # Projected winning margin (expected runs: pick side minus opponent).
+        margin = None
+        if g.get("exp_runs_home") is not None and g.get("exp_runs_away") is not None:
+            diff = g["exp_runs_home"] - g["exp_runs_away"]
+            margin = round(diff if g.get("pick_is_home") else -diff, 1)
         if g["pick_prob"] >= 0.5:
-            add("ML", f"{g['pick']} to win", g["pick_prob"], g["pick_price_cents"])
+            add("ML", f"{g['pick']} to win", g["pick_prob"], g["pick_price_cents"],
+                avg=margin, unit="run margin")
         if live:
             continue  # mid-game: props (totals/hits) are stale, so ML only
         p = g.get("props") or {}
@@ -1300,9 +1307,9 @@ def _candidate_legs(games, live_only=False, types=None):
             hb = rl["home_by2_pct"] / 100.0
             ab = rl["away_by2_pct"] / 100.0
             if hb >= 0.55:
-                add("Run line", f"{rl['home']} win by 2+", hb)
+                add("Run line", f"{rl['home']} win by 2+", hb, avg=margin, unit="run margin")
             elif ab >= 0.55:
-                add("Run line", f"{rl['away']} win by 2+", ab)
+                add("Run line", f"{rl['away']} win by 2+", ab, avg=margin, unit="run margin")
         best_tot = None
         for t in p.get("totals", []):
             if _tradeable_total(t["line"], ktot) is None:
@@ -1312,29 +1319,31 @@ def _candidate_legs(games, live_only=False, types=None):
             if pr >= 0.58 and (best_tot is None or pr > best_tot[1]):
                 best_tot = (f"{side} {t['line']} runs", pr)
         if best_tot:
-            add("Total", best_tot[0], best_tot[1])
+            add("Total", best_tot[0], best_tot[1], avg=g.get("exp_total"), unit="runs")
         best_hit = None
         for key in ("hits_away", "hits_home"):
             h = p.get(key)
             if h and h.get("batters"):
                 b = h["batters"][0]; pr = b["hit1_pct"] / 100.0
                 if pr >= 0.62 and (best_hit is None or pr > best_hit[1]):
-                    best_hit = (f"{b['name']} 1+ hit", pr)
+                    best_hit = (f"{b['name']} 1+ hit", pr, b.get("exp_hits"))
         if best_hit:
-            add("Hit", best_hit[0], best_hit[1])
+            add("Hit", best_hit[0], best_hit[1], avg=best_hit[2], unit="hits")
         # Expanded props: home runs, total bases (from the exact prop math).
         for key in ("batters_away", "batters_home"):
             for b in (p.get(key) or [])[:6]:
-                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0)
-                add("Bases", f"{b['name']} 2+ total bases", b["tb2"] / 100.0)
+                add("HR", f"{b['name']} 1+ HR", b["hr1"] / 100.0, avg=b.get("exp_hr"), unit="HR")
+                add("Bases", f"{b['name']} 2+ total bases", b["tb2"] / 100.0,
+                    avg=b.get("exp_tb"), unit="bases")
         # Starter strikeout props -- every line the model offers (high lines are
-        # the long odds); skip the "expected" summary key.
+        # the long odds); the "expected" key is the projected K count.
         for key, nm in (("ks_home", p.get("home_sp_name")), ("ks_away", p.get("away_sp_name"))):
             ks = p.get(key)
             if ks and nm:
+                exp_k = ks.get("expected")
                 for line in sorted(int(k) for k in ks if k.isdigit()):
                     if ks.get(str(line)):
-                        add("Ks", f"{nm} {line}+ Ks", ks[str(line)] / 100.0)
+                        add("Ks", f"{nm} {line}+ Ks", ks[str(line)] / 100.0, avg=exp_k, unit="K")
     return legs
 
 
@@ -1350,6 +1359,7 @@ def _combo_item(combo):
     item = {
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l.get("type"),
                   "prob_pct": round(l["prob"] * 100, 1), "price_cents": l.get("price_cents"),
+                  "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit"),
                   "live": l.get("live", False)}
                  for l in combo],
         "n_legs": len(combo),
@@ -1411,14 +1421,14 @@ def _final_winners(date):
     return out
 
 
-def _add_spread_legs(add, rl):
+def _add_spread_legs(add, rl, avg=None, unit=None):
     """Offer Kalshi's adjustable spread for both teams: '<team> win by 2+/3+/4+/5+'
     (the 1.5/2.5/3.5/4.5 lines). `add` filters out near-0/near-1 lines."""
     if not rl:
         return
     for tm, key in ((rl.get("home"), "home_by"), (rl.get("away"), "away_by")):
         for m, pct in sorted((rl.get(key) or {}).items(), key=lambda x: int(x[0])):
-            add("Run line", f"{tm} win by {m}+", pct / 100.0)
+            add("Run line", f"{tm} win by {m}+", pct / 100.0, avg=avg, unit=unit)
 
 
 def _ktotals(g):
@@ -1494,15 +1504,21 @@ def _game_variants(g, types=None):
     live = state == "Live"
     pk, mu = g["game_pk"], g["matchup"]
 
-    def add(typ, label, prob, price=None):
+    def add(typ, label, prob, price=None, avg=None, unit=None):
         if types and typ not in types:
             return
         if 0.02 <= prob <= 0.995:
             out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
-                        "prob": prob, "price_cents": price, "live": live})
+                        "prob": prob, "price_cents": price, "live": live,
+                        "sim_avg": avg, "avg_unit": unit})
 
+    margin = None
+    if g.get("exp_runs_home") is not None and g.get("exp_runs_away") is not None:
+        diff = g["exp_runs_home"] - g["exp_runs_away"]
+        margin = round(diff if g.get("pick_is_home") else -diff, 1)
     if g.get("pick_prob") is not None:
-        add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"))
+        add("ML", f"{g['pick']} to win", g["pick_prob"], g.get("pick_price_cents"),
+            avg=margin, unit="run margin")
 
     # Live games: the pre-game totals/hit props are stale (they ignore runs
     # already scored). Recompute the run line + totals LIVE from the current
@@ -1516,23 +1532,30 @@ def _game_variants(g, types=None):
             lp = props_mod.live_game_props(
                 ig["home_score"], ig["away_score"], ig["exp_rem_home"], ig["exp_rem_away"],
                 g.get("home_abbr") or "HOME", g.get("away_abbr") or "AWAY")
+            live_total = (ig.get("home_score", 0) + ig.get("away_score", 0)
+                          + ig["exp_rem_home"] + ig["exp_rem_away"])
             _add_spread_legs(add, lp.get("run_line"))
             for t in lp["totals_ladder"]:
                 mk = _tradeable_total(t["line"], ktot)
                 if mk is None:
                     continue
-                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"))
-                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"))
+                add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"),
+                    avg=round(live_total, 1), unit="runs")
+                add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"),
+                    avg=round(live_total, 1), unit="runs")
         return out
 
     p = g.get("props") or {}
-    _add_spread_legs(add, p.get("run_line"))
+    exp_total = g.get("exp_total")
+    _add_spread_legs(add, p.get("run_line"), avg=margin, unit="run margin")
     for t in p.get("totals_ladder", []):
         mk = _tradeable_total(t["line"], ktot)
         if mk is None:
             continue
-        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"))
-        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"))
+        add("Total", f"Over {t['line']} runs", t["over_pct"] / 100.0, mk.get("over"),
+            avg=exp_total, unit="runs")
+        add("Total", f"Under {t['line']} runs", t["under_pct"] / 100.0, mk.get("under"),
+            avg=exp_total, unit="runs")
     if p.get("rfi_pct") is not None:
         add("RFI", "Run in the 1st inning", p["rfi_pct"] / 100.0)
         add("RFI", "No run in the 1st inning", 1 - p["rfi_pct"] / 100.0)
@@ -1544,14 +1567,17 @@ def _game_variants(g, types=None):
         for b in (p.get(key) or [])[:5]:
             for m, hk in ((1, "hit1"), (2, "hit2"), (3, "hit3"), (4, "hit4")):
                 if b.get(hk) is not None:
-                    add("Hit", f"{b['name']} {m}+ hits", b[hk] / 100.0)
+                    add("Hit", f"{b['name']} {m}+ hits", b[hk] / 100.0,
+                        avg=b.get("exp_hits"), unit="hits")
             for m, tk in ((2, "tb2"), (3, "tb3"), (4, "tb4"), (5, "tb5"),
                           (6, "tb6"), (7, "tb7")):
                 if b.get(tk) is not None:
-                    add("Bases", f"{b['name']} {m}+ total bases", b[tk] / 100.0)
+                    add("Bases", f"{b['name']} {m}+ total bases", b[tk] / 100.0,
+                        avg=b.get("exp_tb"), unit="bases")
             for m, hk in ((1, "hr1"), (2, "hr2")):
                 if b.get(hk) is not None:
-                    add("HR", f"{b['name']} {m}+ HR", b[hk] / 100.0)
+                    add("HR", f"{b['name']} {m}+ HR", b[hk] / 100.0,
+                        avg=b.get("exp_hr"), unit="HR")
     return out
 
 
@@ -1908,9 +1934,15 @@ def build_combos(games, max_legs=3, top_n=6, types=None):
     live_games = [g for g in games if _game_state(g) != "Final"]
 
     # Moneyline-only combos drive the EV-based highlights (those legs are priced).
+    def _ml_margin(g):
+        if g.get("exp_runs_home") is None or g.get("exp_runs_away") is None:
+            return None
+        diff = g["exp_runs_home"] - g["exp_runs_away"]
+        return round(diff if g.get("pick_is_home") else -diff, 1)
     ml_legs = [{"game_pk": g["game_pk"], "type": "ML", "label": f"{g['pick']} to win",
                 "matchup": g["matchup"], "prob": g["pick_prob"],
-                "price_cents": g["pick_price_cents"], "live": _game_state(g) == "Live"}
+                "price_cents": g["pick_price_cents"], "live": _game_state(g) == "Live",
+                "sim_avg": _ml_margin(g), "avg_unit": "run margin"}
                for g in live_games if g["pick_prob"] >= 0.5][:top_n]
     ml_combos = _assemble(ml_legs, max_legs)
     safest = max(ml_combos, key=lambda c: c["combined_prob_pct"], default=None)

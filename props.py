@@ -266,7 +266,13 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     tb6 = sum(p for tb, p in dist.items() if tb >= 6)
     tb7 = sum(p for tb, p in dist.items() if tb >= 7)
     spd, sbr = _speed_inputs(b, sprint)
+    # Expected per-game counts (the number a simulation converges to) so combos
+    # can show "avg sim X" under each leg.
+    exp_hits = round(pa * r_hit, 2)
+    exp_tb = round(pa * (r_1b + 2 * r_2b + 3 * r_3b + 4 * r_hr), 2)
+    exp_hr = round(pa * min(0.6, r_hr), 2)
     return {"name": b.get("name"), "slot": slot,
+            "exp_hits": exp_hits, "exp_tb": exp_tb, "exp_hr": exp_hr,
             "hit1": round(hit1 * 100, 1), "hit2": round(hit2 * 100, 1),
             "hit3": round(hit3 * 100, 1), "hit4": round(hit4 * 100, 1),
             "hr1": round(hr1 * 100, 1), "hr2": round(hr2 * 100, 1),
@@ -325,9 +331,10 @@ def hit_props(batters, opp_hit_factor, lg_hit_rate=LEAGUE_HIT_RATE, top=5):
         rate *= opp_hit_factor
         exp_pa = PA_BY_SLOT[i] if i < 9 else 3.8
         p1, p2 = _binom_hit_probs(exp_pa, rate)
-        expected_team_hits += exp_pa * min(0.45, max(0.05, rate))
+        exp_h = exp_pa * min(0.45, max(0.05, rate))
+        expected_team_hits += exp_h
         rows.append({"name": b.get("name"), "slot": i + 1,
-                     "hit1_pct": p1, "hit2_pct": p2})
+                     "hit1_pct": p1, "hit2_pct": p2, "exp_hits": round(exp_h, 2)})
 
     # Team total hits over/under from a Poisson on expected hits.
     hpmf = _poisson_pmf(expected_team_hits, kmax=25)

@@ -46,7 +46,8 @@ def _mlb_legs(date, season):
         for v in baseball._game_variants(g):
             legs.append({"category": "⚾ MLB", "event_id": f"mlb_{g['game_pk']}",
                          "label": v["label"], "matchup": v["matchup"], "prob": v["prob"],
-                         "price_cents": v.get("price_cents"), "type": v["type"]})
+                         "price_cents": v.get("price_cents"), "type": v["type"],
+                         "sim_avg": v.get("sim_avg"), "avg_unit": v.get("avg_unit")})
     return legs
 
 
@@ -99,15 +100,19 @@ def _worldcup_legs():
         w = mk.get("winner") or {}
         matchup = f"{m['home']} v {m['away']}"
 
-        def leg(label, prob_pct, cents, typ):
+        mg = m.get("mean_goals")
+
+        def leg(label, prob_pct, cents, typ, avg=None, unit=None):
             legs.append({"category": cat, "event_id": ev, "label": label,
                          "matchup": matchup, "prob": prob_pct / 100.0,
-                         "price_cents": cents, "type": typ})
+                         "price_cents": cents, "type": typ,
+                         "sim_avg": avg, "avg_unit": unit})
         leg(f"{m['home']} to win", m["p_home"], (w.get("home") or {}).get("cents"), "WC Result")
         leg("Draw", m["p_draw"], (w.get("draw") or {}).get("cents"), "WC Result")
         leg(f"{m['away']} to win", m["p_away"], (w.get("away") or {}).get("cents"), "WC Result")
-        leg("Over 2.5 goals", m["over25"], (mk.get("over25") or {}).get("cents"), "WC Total")
-        leg("Under 2.5 goals", round(100 - m["over25"], 1), None, "WC Total")
+        leg("Over 2.5 goals", m["over25"], (mk.get("over25") or {}).get("cents"), "WC Total",
+            avg=mg, unit="goals")
+        leg("Under 2.5 goals", round(100 - m["over25"], 1), None, "WC Total", avg=mg, unit="goals")
         leg("Both teams to score", m["btts_pct"], (mk.get("btts") or {}).get("cents"), "WC BTTS")
     for t in data.get("teams", []):
         if t["champion_pct"] < 1:
@@ -194,12 +199,13 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
         insights = m.get("insights") or []
         why = insights[0] if insights else None
 
-        def leg(label, prob_pct, cents, typ, why=None):
+        def leg(label, prob_pct, cents, typ, why=None, avg=None, unit=None):
             if prob_pct is None:
                 return
             d = {"category": cat, "event_id": ev, "label": label, "matchup": mu,
                  "prob": max(0.01, min(0.99, prob_pct / 100.0)),
-                 "price_cents": cents, "type": typ}
+                 "price_cents": cents, "type": typ,
+                 "sim_avg": avg, "avg_unit": unit}
             if why:
                 d["why"] = why
             legs.append(d)
@@ -221,13 +227,15 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
         if ladder and mean_g is not None:
             line = min(ladder.keys(), key=lambda s: abs(float(s) - mean_g))
             p_over = ladder[line]
-            leg(f"Over {line} games", p_over, None, "Games")
-            leg(f"Under {line} games", round(100 - p_over, 1), None, "Games")
+            leg(f"Over {line} games", p_over, None, "Games", avg=round(mean_g, 1), unit="games")
+            leg(f"Under {line} games", round(100 - p_over, 1), None, "Games",
+                avg=round(mean_g, 1), unit="games")
         # total aces over (Poisson around the model mean)
         ace_mean = m.get("aces_total")
         if ace_mean and ace_mean > 4:
             aline = round(ace_mean) - 0.5
-            leg(f"Over {aline} aces", round(100 * _poisson_over(ace_mean, aline), 1), None, "Aces")
+            leg(f"Over {aline} aces", round(100 * _poisson_over(ace_mean, aline), 1), None, "Aces",
+                avg=round(ace_mean, 1), unit="aces")
     return legs
 
 
@@ -292,7 +300,8 @@ def _item(combo):
     item = {
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l["type"],
                   "category": l["category"], "prob_pct": round(l["prob"] * 100, 1),
-                  "price_cents": l.get("price_cents"), "why": l.get("why")} for l in combo],
+                  "price_cents": l.get("price_cents"), "why": l.get("why"),
+                  "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit")} for l in combo],
         "n_legs": len(combo),
         "combined_prob_pct": round(prob * 100, 1),
         "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,

@@ -563,6 +563,9 @@ button.danger { color: var(--no); }
   .futrow .fr-count, .futhead .fr-count { display: none; }
 }
 .leggame { font-size: 0.72rem; color: var(--accent); background: var(--card); border-radius: 4px; padding: 0 4px; }
+/* "avg sim 9.1 runs" under a combo leg — the simulated expected value behind the line. */
+.legavg { display: block; font-size: 0.72rem; color: var(--faint); margin-top: 1px; }
+.legavg::before { content: "\1F4CA"; margin-right: 3px; opacity: 0.8; }
 .legtag {
   display: inline-block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
   background: var(--card); border: 1px solid var(--border); color: var(--accent);

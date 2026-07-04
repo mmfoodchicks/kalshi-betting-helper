@@ -1110,7 +1110,7 @@ function kalshiPayout(m) {
 function renderSGP(s) {
   const nsim = s.n_sims || 0;
   const legs = s.legs.map((l) =>
-    `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l, nsim)}</li>`).join("");
+    `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l, nsim)}${simAvgTag(l)}</li>`).join("");
   const corr = s.corr_delta_pct;
   const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
@@ -1155,7 +1155,7 @@ window.buildMixed = async () => {
 function renderMixed(m) {
   const groups = m.groups.map((g) => {
     const legs = g.legs.map((l) =>
-      `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l)}</li>`).join("");
+      `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
     const head = g.same_game
       ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
       : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
@@ -1191,6 +1191,14 @@ function renderMixed(m) {
   </div>`;
 }
 
+// Small "avg sim 9.1 runs" tag shown under a combo leg when we have a simulated
+// average for it (totals, Ks, hits, bases, HR, margins, goals, games, aces…).
+function simAvgTag(l) {
+  if (!l || l.sim_avg == null || !l.avg_unit) return "";
+  const v = (l.avg_unit === "run margin" && l.sim_avg > 0) ? `+${l.sim_avg}` : l.sim_avg;
+  return `<span class="legavg">avg sim ${v} ${l.avg_unit}</span>`;
+}
+
 function renderCombo(c, tag, extraCls) {
   const abbr = (mu) => {
     if (!mu) return "";
@@ -1201,7 +1209,8 @@ function renderCombo(c, tag, extraCls) {
     const typeTag = l.type ? `<span class="legtag">${l.type}</span> ` : "";
     const liveDot = l.live ? `🔴 ` : "";
     const game = l.matchup ? ` <span class="leggame">${abbr(l.matchup)}</span>` : "";
-    return `<li>${liveDot}${typeTag}${l.pick}${game} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span></li>`;
+    const avg = simAvgTag(l);
+    return `<li>${liveDot}${typeTag}${l.pick}${game} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span>${avg}</li>`;
   }).join("");
   let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
               <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
