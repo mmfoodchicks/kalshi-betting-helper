@@ -290,7 +290,7 @@ def match_winprob(t1, t2, bo, elo=None):
 
 # ---- Tournament futures (who wins the split / MSI) --------------------------
 import random as _random
-from collections import defaultdict as _dd
+from collections import defaultdict as _dd, Counter as _Counter
 
 
 def tournament_matches(page):
@@ -369,6 +369,125 @@ def sim_tournament(page, n=4000, playoff_k=6):
                     "formats vary by league." % playoff_k}
 
 
+# ---- Correlated per-map prop simulation -------------------------------------
+# Instead of treating each player's kills as an independent Poisson die, this
+# actually plays out a map: it draws a SHARED total-kill count for the game and
+# splits it between the two teams by the map outcome (a favourite -- and a stomp
+# -- takes the larger share), so one team's kills ARE the other's deaths
+# (zero-sum). Each team's kills/assists are then handed out among its five
+# players by their projected share, and CS rides a shared game-length factor
+# (stomps run short -> less farm). The upshot: teammates' stats move together,
+# the two teams' kills move opposite, and assists rise and fall with team kills
+# -- none of which the old independent model captured. Crucially the marginals
+# are centred on each player's regressed projection at a neutral 50/50 game, so
+# it stays anchored to the shrinkage model rather than inventing new means.
+_SIM_N = 2600            # Monte Carlo maps simulated per matchup
+_KILL_FLOOR = 0.3        # keep every player a non-zero share of the kill split
+
+
+def _alloc(res, names, weights, total, key):
+    """Multinomial: hand `total` events to players ~ their weights (C-level)."""
+    if total <= 0:
+        for x in names:
+            res[x][key].append(0)
+        return
+    c = _Counter(_random.choices(names, weights=weights, k=total))
+    for x in names:
+        res[x][key].append(c.get(x, 0))
+
+
+def _emp_over(arr, line):
+    """Empirical P(X > line) from a sample."""
+    return (sum(1 for x in arr if x > line) / len(arr)) if arr else 0.0
+
+
+def simulate_map(proj1, proj2, p1, n=_SIM_N):
+    """Play `n` maps between two projected rosters; return per-player K/A/CS samples.
+
+    proj1/proj2: {player: player_projection(...)}.  p1: team1's per-map win prob.
+    Returns (samples1, samples2), each {player: {"k":[...],"a":[...],"cs":[...]}}.
+    """
+    names1, names2 = list(proj1), list(proj2)
+    kw1 = [max(_KILL_FLOOR, proj1[x]["kills"]) for x in names1]
+    kw2 = [max(_KILL_FLOOR, proj2[x]["kills"]) for x in names2]
+    aw1 = [max(0.1, proj1[x]["assists"]) for x in names1]
+    aw2 = [max(0.1, proj2[x]["assists"]) for x in names2]
+    M1, M2 = sum(kw1), sum(kw2)
+    A1, A2 = sum(aw1), sum(aw2)
+    base_total = M1 + M2 or 1.0
+    neutral1 = M1 / base_total                    # kill share in an even game
+    apk1 = A1 / M1 if M1 else 1.6                 # this team's own assists-per-kill
+    apk2 = A2 / M2 if M2 else 1.6
+    edge = abs(p1 - 0.5) * 2.0                    # 0 even .. 1 lopsided
+    res1 = {x: {"k": [], "a": [], "cs": []} for x in names1}
+    res2 = {x: {"k": [], "a": [], "cs": []} for x in names2}
+    gauss, rnd = _random.gauss, _random.random
+    for _ in range(n):
+        total = max(6, int(round(gauss(base_total, base_total * 0.26))))
+        dom = min(0.55, max(0.02, gauss(0.15 + 0.12 * edge, 0.11)))   # map lopsidedness
+        share1 = neutral1 + (dom if rnd() < p1 else -dom)
+        share1 = min(0.92, max(0.08, share1))
+        k1 = int(round(total * share1))
+        k2 = max(0, total - k1)
+        a1t = int(round(k1 * apk1))               # team assists track team kills
+        a2t = int(round(k2 * apk2))
+        length = min(1.45, max(0.6, gauss(1.0 - 0.9 * (dom - 0.15), 0.10)))  # stomps short
+        _alloc(res1, names1, kw1, k1, "k")
+        _alloc(res2, names2, kw2, k2, "k")
+        _alloc(res1, names1, aw1, a1t, "a")
+        _alloc(res2, names2, aw2, a2t, "a")
+        for x in names1:
+            res1[x]["cs"].append(max(0.0, gauss(proj1[x]["cs"] * length,
+                                                proj1[x]["cs_std"] * 0.55)))
+        for x in names2:
+            res2[x]["cs"].append(max(0.0, gauss(proj2[x]["cs"] * length,
+                                                proj2[x]["cs_std"] * 0.55)))
+    return res1, res2
+
+
+def _pick_line(mean, kind):
+    """Half-integer prop line just under the projection (matches the DK board style)."""
+    if kind == "cs":
+        return round(mean / 5.0) * 5 - 0.5
+    return _math.floor(mean) + 0.5
+
+
+def _picks_from_samples(picks, samp, proj, team, m, method):
+    """Turn a roster's simulated K/A/CS samples into More/Less Pick 6 leans."""
+    for nm, pr in proj.items():
+        arr = samp[nm]
+        for stat, key, mean, kind in (("kills", "k", pr["kills"], "cnt"),
+                                      ("assists", "a", pr["assists"], "cnt"),
+                                      ("CS", "cs", pr["cs"], "cs")):
+            line = _pick_line(mean, kind)
+            p_over = _emp_over(arr[key], line)
+            s, prob = ("More", p_over) if mean >= line else ("Less", 1 - p_over)
+            if not (0.5 <= prob <= 0.9):
+                continue
+            picks.append({"player": nm, "team": team, "role": pr["role"],
+                          "stat": stat, "line": round(line, 1), "side": s,
+                          "prob": round(prob * 100, 1), "proj": mean, "method": method,
+                          "matchup": f"{m['team1']} vs {m['team2']}", "league": m["league"]})
+
+
+def _picks_from_poisson(picks, proj, team, m):
+    """Fallback for a one-sided matchup (only one roster known): independent
+    Poisson/Normal, the way the props were computed before the correlated sim."""
+    for nm, pr in proj.items():
+        for stat, key, mean, std, kind in (("kills", "k", pr["kills"], pr["kills_std"], "cnt"),
+                                           ("assists", "a", pr["assists"], pr["assists_std"], "cnt"),
+                                           ("CS", "cs", pr["cs"], pr["cs_std"], "cs")):
+            line = _pick_line(mean, kind)
+            p_over = _pois_over(mean, line) if kind == "cnt" else _norm_over(mean, std, line)
+            s, prob = ("More", p_over) if mean >= line else ("Less", 1 - p_over)
+            if not (0.5 <= prob <= 0.9):
+                continue
+            picks.append({"player": nm, "team": team, "role": pr["role"],
+                          "stat": stat, "line": round(line, 1), "side": s,
+                          "prob": round(prob * 100, 1), "proj": mean, "method": "independent",
+                          "matchup": f"{m['team1']} vs {m['team2']}", "league": m["league"]})
+
+
 import threading as _threading
 _board_inflight = set()
 
@@ -411,43 +530,35 @@ def _build_board(max_matches):
                 seen_team[team] = team_players(team)
             return seen_team[team]
 
+        def disp(proj):                          # display roster (regressed projection)
+            return [{"player": nm, "role": pr["role"], "n": pr["n"], "kills": pr["kills"],
+                     "assists": pr["assists"], "cs": pr["cs"], "champs": pr["champs"]}
+                    for nm, pr in proj.items()]
+
         for m in slate[:max_matches]:
             r1, r2 = roster(m["team1"]), roster(m["team2"])
             if not r1 and not r2:
                 continue
-
-            def side(team, rmap):
-                out = []
-                for nm, p in rmap.items():
-                    pr = player_projection(p)
-                    out.append({"player": nm, "role": pr["role"], "n": pr["n"],
-                                "kills": pr["kills"], "assists": pr["assists"], "cs": pr["cs"],
-                                "champs": pr["champs"]})
-                    # Pick 6 picks: kills/assists (Poisson), CS (normal)
-                    for stat, mean, std, kind in (
-                            ("kills", pr["kills"], pr["kills_std"], "p"),
-                            ("assists", pr["assists"], pr["assists_std"], "p"),
-                            ("CS", pr["cs"], pr["cs_std"], "n")):
-                        if kind == "p":
-                            line = _math.floor(mean) + 0.5
-                            p_over = _pois_over(mean, line)
-                        else:
-                            line = round(mean / 5.0) * 5 - 0.5
-                            p_over = _norm_over(mean, std, line)
-                        s, prob = ("More", p_over) if mean >= line else ("Less", 1 - p_over)
-                        if not (0.5 <= prob <= 0.9):
-                            continue
-                        picks.append({"player": nm, "team": team, "role": pr["role"],
-                                      "stat": stat, "line": round(line, 1), "side": s,
-                                      "prob": round(prob * 100, 1), "proj": mean,
-                                      "matchup": f"{m['team1']} vs {m['team2']}",
-                                      "league": m["league"]})
-                return out
+            proj1 = {nm: player_projection(p) for nm, p in r1.items()}
+            proj2 = {nm: player_projection(p) for nm, p in r2.items()}
+            # Props come from the correlated per-map sim when BOTH rosters are known
+            # (so kills can be zero-sum across the two teams); otherwise fall back to
+            # the independent model for whichever side we have.
+            if proj1 and proj2:
+                pmap = _game_wp(m["team1"], m["team2"], elo)   # team1's per-map win prob
+                s1, s2 = simulate_map(proj1, proj2, pmap)
+                _picks_from_samples(picks, s1, proj1, m["team1"], m, "correlated sim")
+                _picks_from_samples(picks, s2, proj2, m["team2"], m, "correlated sim")
+            else:
+                if proj1:
+                    _picks_from_poisson(picks, proj1, m["team1"], m)
+                if proj2:
+                    _picks_from_poisson(picks, proj2, m["team2"], m)
             w1 = match_winprob(m["team1"], m["team2"], m["bo"], elo)
             matches.append({"team1": m["team1"], "team2": m["team2"], "bo": m["bo"],
                             "league": m["league"], "date": m["date"], "dt": m["dt"],
                             "win1": w1, "win2": round(100 - w1, 1),
-                            "roster1": side(m["team1"], r1), "roster2": side(m["team2"], r2)})
+                            "roster1": disp(proj1), "roster2": disp(proj2)})
         picks.sort(key=lambda x: -x["prob"])
         if not matches:
             return None                      # nothing loaded yet -> let it retry
@@ -461,4 +572,5 @@ def _build_board(max_matches):
                                "label": pg.replace("/", " · ")})
         return {"matches": matches, "picks": picks[:60], "payouts": _PICK6_PAYOUT,
                 "tournaments": tourns[:12],
-                "note": "Per-map projections. DK/PrizePicks lines govern — match ours to their board."}
+                "note": "Correlated per-map sim (kills zero-sum across the two teams). "
+                        "DK/PrizePicks lines govern — match ours to their board."}

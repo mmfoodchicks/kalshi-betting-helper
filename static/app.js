@@ -2746,7 +2746,7 @@ function renderLoLPick6() {
       <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
     </label>`;
   }).join("");
-  box.innerHTML = `<div id="lolP6tally" class="p6tally"></div><div class="small" style="margin:2px 0 8px">Per-map kills / assists / CS. DK &amp; PrizePicks set the line — take our More/Less where it clears theirs.</div><div class="p6list">${rows}</div>`;
+  box.innerHTML = `<div id="lolP6tally" class="p6tally"></div><div class="small" style="margin:2px 0 8px">Kills / assists / CS from a correlated per-map sim (kills zero-sum across the two teams). DK &amp; PrizePicks set the line — take our More/Less where it clears theirs.</div><div class="p6list">${rows}</div>`;
   renderLoLP6Tally();
 }
 function renderLoLP6Tally() {
