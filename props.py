@@ -278,10 +278,11 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
             "spd": spd, "sbr": sbr}
 
 
-def pitcher_k_props(k9, exp_ip=5.3):
+def pitcher_k_props(k9, exp_ip=5.3, est_pitches=None):
     """Strikeout props for a starter: P(K >= line) via Poisson(expected Ks).
-    `exp_ip` is THIS pitcher's expected innings (from his workload history) --
-    a 6.3-IP workhorse and a 3.5-IP opener get very different ladders."""
+    `exp_ip` is THIS pitcher's expected innings (walk-aware -- a wild arm burns
+    his pitch budget faster and goes fewer innings), so a 6.3-IP workhorse and a
+    3.5-IP opener get very different ladders. `est_pitches` rides along for display."""
     if not k9 or k9 <= 0:
         return None
     lam = k9 / 9.0 * exp_ip
@@ -294,6 +295,8 @@ def pitcher_k_props(k9, exp_ip=5.3):
         out[str(line)] = round(sum(pmf[k] for k in range(line, len(pmf))) * 100, 1)
     out["expected"] = round(lam, 1)
     out["exp_ip"] = round(exp_ip, 1)
+    if est_pitches:
+        out["est_pitches"] = int(est_pitches)
     return out
 
 

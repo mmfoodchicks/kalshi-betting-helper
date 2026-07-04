@@ -93,11 +93,14 @@ def _pitcher_dk_arr(sp, team_win_prob, n=3000):
     era, whip, k9 = sp.get("era"), sp.get("whip"), sp.get("k9")
     if not era or not whip or not k9:
         return None
-    # Per-start innings from his REAL workload: exp_ip rides along from the slate
-    # (the same per-pitcher number the K props use); else true IP/GS; else 5.7.
+    # Per-start innings from his REAL workload: the walk-aware est_ip (a wild arm
+    # gets pulled sooner) rides along from the slate -- the same number the K props
+    # use; else his expected innings; else true IP/GS; else 5.7.
     ip_total = sp.get("ip") or 0
     gs = sp.get("gs") or 0
-    if sp.get("exp_ip"):
+    if sp.get("est_ip"):
+        exp_ip = sp["est_ip"]
+    elif sp.get("exp_ip"):
         exp_ip = sp["exp_ip"]
     elif ip_total > 0 and gs:
         exp_ip = max(3.0, min(7.2, ip_total / gs))

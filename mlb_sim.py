@@ -269,7 +269,7 @@ _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
 def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None,
-                  er_opp=None, pen_out=0):
+                  er_opp=None, pen_out=0, budget=None, sp_bb_pa=None):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -296,11 +296,15 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
         bullpen = bullpen[:-int(pen_out)] or bullpen[:1]   # best arms sit tonight
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
-    bb_pa = 0.078
-    # This start's pitch-count cap, centered on THE PITCHER's typical workload
-    # (~16.2 pitches per expected inning) -- an opener gets hooked in the 4th,
-    # a workhorse rides into the 7th. Falls back to a league-ish 88.
-    center = max(60.0, min(112.0, (exp_ip or 5.4) * 16.2))
+    # This starter's real walk rate: a wild arm issues more free passes, which
+    # cost pitches and baserunners -- so he burns his budget and gets pulled
+    # sooner (fewer innings, a lower strikeout ceiling). Falls back to league.
+    bb_pa = sp_bb_pa if sp_bb_pa is not None else 0.078
+    # This start's pitch-count cap: his stamina "budget" (walk-aware -- already
+    # reflects that a wild arm won't be trusted as deep), else derived from his
+    # expected innings at ~16.2 P/IP, else a league-ish 88.
+    center = budget if budget else max(60.0, min(112.0, (exp_ip or 5.4) * 16.2))
+    center = max(60.0, min(112.0, center))
     limit = max(52, min(120, random.gauss(center, 10)))
     pk, pbb, phit, pout = _PITCH
     sp_k = sp_outs = 0
@@ -391,6 +395,11 @@ def simulate(g, n=5000):
     ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
     home_k9 = hsp.get("k9") or (lam_h / ip_h * 9 if lam_h else None)
     away_k9 = asp.get("k9") or (lam_a / ip_a * 9 if lam_a else None)
+    # Walk-aware workload: each starter's own pitch budget + real walk rate, so a
+    # wild arm burns pitches faster and gets pulled sooner (fewer Ks).
+    bud_h = hsp.get("est_pitches") or (props.get("ks_home") or {}).get("est_pitches")
+    bud_a = asp.get("est_pitches") or (props.get("ks_away") or {}).get("est_pitches")
+    bbpa_h, bbpa_a = hsp.get("bb_pa"), asp.get("bb_pa")
     # Gassed relievers (back-to-back days / heavy count yesterday) sit tonight:
     # thin the best end of each named pen in the pitching sim.
     pen_h = int((ht.get("bullpen_fatigue") or {}).get("count") or 0)
@@ -454,14 +463,16 @@ def simulate(g, n=5000):
             sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),
                                                ht.get("bullpen_whip"), ra, rnd,
                                                bullpen=ht.get("bp_arms"), exp_ip=ip_h,
-                                               er_opp=er_a, pen_out=pen_h)
+                                               er_opp=er_a, pen_out=pen_h,
+                                               budget=bud_h, sp_bb_pa=bbpa_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(away_k9, at.get("bullpen_era"),
                                                at.get("bullpen_whip"), rh, rnd,
                                                bullpen=at.get("bp_arms"), exp_ip=ip_a,
-                                               er_opp=er_h, pen_out=pen_a)
+                                               er_opp=er_h, pen_out=pen_a,
+                                               budget=bud_a, sp_bb_pa=bbpa_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 

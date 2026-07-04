@@ -636,11 +636,20 @@ function renderLiveFeed(d) {
   const head = `<div class="lf-state"><b>${d.away}</b> ${s.away_runs ?? 0} – ${s.home_runs ?? 0} <b>${d.home}</b>
     · ${s.half || ""} ${s.inning || ""} · ${s.outs ?? 0} out · ${s.status || ""}</div>`;
   const pit = (d.pitchers || []).map((p) => {
-    const pace = p.model_k9 ? ` · model ${p.model_k9} K/9` : "";
+    // Our projected outing for the starter: expected innings + pitch budget
+    // (walk-aware — a wild arm gets pulled sooner) alongside the K/9 read.
+    const proj = (p.starter && (p.model_k9 || p.est_ip))
+      ? `<div class="small lf-proj">📊 proj: ${[
+          p.model_k9 ? `${p.model_k9} K/9` : null,
+          p.est_ip ? `est ${p.est_ip} IP` : null,
+          p.est_pitches ? `~${p.est_pitches} pit` : null,
+        ].filter(Boolean).join(" · ")}</div>`
+      : "";
     return `<div class="lf-pcard">
       <div class="lf-pname">${p.name} <span class="small">${p.team}</span></div>
       <div class="lf-pline"><b>${p.pitches}</b> pitches · ${p.ip} IP · <b>${p.k}</b> K · ${p.bb} BB · ${p.h} H · ${p.er} ER</div>
-      <div class="small">season ERA <b>${p.season_era ?? "—"}</b> · WHIP <b>${p.season_whip ?? "—"}</b>${pace}</div>
+      <div class="small">season ERA <b>${p.season_era ?? "—"}</b> · WHIP <b>${p.season_whip ?? "—"}</b></div>
+      ${proj}
     </div>`;
   }).join("");
   const abBadge = (ev) => {

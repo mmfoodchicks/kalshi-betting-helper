@@ -226,7 +226,8 @@ def live_game_feedback(game_pk):
                 k_now = int(ps.get("strikeOuts", 0))
                 is_starter = bool(ps.get("gamesStarted"))
                 # Our K projection is the STARTER's — don't show it against relievers.
-                model_k = sp_model.get(side, {}).get("k9") if is_starter else None
+                smod = sp_model.get(side, {}) if is_starter else {}
+                model_k = smod.get("k9") if is_starter else None
                 pitchers.append({
                     "name": nm, "side": side, "team": names[side],
                     "pitches": int(ps.get("numberOfPitches", 0)),
@@ -235,6 +236,7 @@ def live_game_feedback(game_pk):
                     "er": int(ps.get("earnedRuns", 0)),
                     "season_era": ss.get("era"), "season_whip": ss.get("whip"),
                     "model_k9": model_k, "starter": is_starter,
+                    "est_ip": smod.get("est_ip"), "est_pitches": smod.get("est_pitches"),
                 })
             order = p.get("battingOrder")
             if order:
@@ -796,6 +798,42 @@ def _regressed_k9(season):
     return (ip * k9 + K9_REGRESS_IP * LG_K9) / (ip + K9_REGRESS_IP)
 
 
+# A starter's outing length isn't just his historical innings -- it's how fast he
+# burns pitches. A wild arm throws more pitches per inning (deep counts + traffic),
+# hits the manager's pitch budget sooner, and goes fewer innings, which caps his
+# strikeouts. We model pitches/inning from walk (and, mildly, strikeout) rate,
+# hold a stamina "budget," and derive expected innings = budget / pitches-per-inning.
+LG_BB9 = 3.1           # ~league-average starter walks per 9
+REF_PIP = 15.8         # pitches per inning at league-average command
+PRIOR_BUDGET = 88.0    # default pitch budget a listed starter gets (rookie-safe)
+_BF_PER_9 = 38.0       # batters faced per 9 innings, to turn /9 rates into per-PA
+
+
+def _starter_workload(sp):
+    """Walk-aware outing shape for a starter. Returns pitches-per-inning, expected
+    innings, an expected pitch count, and a per-PA walk rate for the Monte Carlo.
+    Rates are regressed by innings so a tiny sample can't swing it, and expected
+    innings blends his empirical IP/start with a rookie-safe budget by sample."""
+    season = (sp or {}).get("season")
+    if not season:
+        return None
+    ip = season.get("ip") or 0.0
+    k9 = _regressed_k9(season) or LG_K9
+    bb = season.get("bb")
+    bb9_raw = (bb / ip * 9.0) if (bb is not None and ip > 0) else LG_BB9
+    bb9 = ((ip * bb9_raw + K9_REGRESS_IP * LG_BB9) / (ip + K9_REGRESS_IP)
+           if ip > 0 else LG_BB9)
+    pip = REF_PIP + 0.85 * (bb9 - LG_BB9) + 0.30 * (k9 - LG_K9)
+    pip = max(14.5, min(20.5, pip))
+    emp_ip = _exp_ip_per_start(sp) if ip > 0 else 5.3
+    w = ip / (ip + K9_REGRESS_IP) if ip > 0 else 0.0     # sample reliability
+    budget = w * (emp_ip * REF_PIP) + (1 - w) * PRIOR_BUDGET
+    est_ip = max(3.0, min(7.6, budget / pip))
+    return {"bb9": round(bb9, 2), "pip": round(pip, 1), "est_ip": round(est_ip, 2),
+            "est_pitches": int(round(est_ip * pip)),
+            "bb_pa": max(0.045, min(0.16, bb9 / _BF_PER_9))}
+
+
 def _opp_hit_factor(opp_sp, opp_bp, lg):
     """How many hits the opposing pitching tends to allow vs league (1.0 = avg).
 
@@ -1095,9 +1133,12 @@ def analyze_slate(date, season):
             # over-project); k9_raw keeps his true stat-line number for display.
             k9_raw = round(s.get("k9", 0), 1)
             k9_mod = _regressed_k9(s)
+            wl = _starter_workload(st) or {}
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
                     "ip": s["ip"], "k9": round(k9_mod, 1) if k9_mod else k9_raw, "k9_raw": k9_raw,
                     "exp_ip": round(_exp_ip_per_start(st), 1),
+                    "est_ip": wl.get("est_ip"), "est_pitches": wl.get("est_pitches"),
+                    "pip": wl.get("pip"), "bb9": wl.get("bb9"), "bb_pa": wl.get("bb_pa"),
                     "fip": round(fip, 2) if fip is not None else None,
                     "recent_era": round(r["era"], 2) if r.get("ip") else None,
                     "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
@@ -1134,10 +1175,13 @@ def analyze_slate(date, season):
             bat_away = bat_list(lu["away"], ohf_away)
         # Starter strikeout props, sized to THIS pitcher's expected workload
         # (season/recent IP per start), not a one-size 5.6-inning template.
+        wl_h, wl_a = _starter_workload(h_sp), _starter_workload(a_sp)
         ks_home = (props_mod.pitcher_k_props(_regressed_k9((h_sp or {}).get("season")),
-                                             _exp_ip_per_start(h_sp)) if h_sp else None)
+                                             (wl_h or {}).get("est_ip") or _exp_ip_per_start(h_sp),
+                                             est_pitches=(wl_h or {}).get("est_pitches")) if h_sp else None)
         ks_away = (props_mod.pitcher_k_props(_regressed_k9((a_sp or {}).get("season")),
-                                             _exp_ip_per_start(a_sp)) if a_sp else None)
+                                             (wl_a or {}).get("est_ip") or _exp_ip_per_start(a_sp),
+                                             est_pitches=(wl_a or {}).get("est_pitches")) if a_sp else None)
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
                       "model_total": gp["model_total"], "rfi_pct": gp.get("rfi_pct"),
