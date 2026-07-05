@@ -1068,9 +1068,9 @@ function legProb(l, nsim) {
 }
 
 // Deep per-pitcher / per-hitter simulated detail behind a same-game slip.
+function nf(v) { return (v == null ? 0 : v).toLocaleString(); }  // thousands formatter (global)
 function renderBreakdown(b, n) {
   if (!b) return "";
-  const nf = (v) => (v == null ? 0 : v).toLocaleString();
   const pit = (b.pitchers || []).map((p) => {
     const kd = p.k_dist || {};
     const dist = [3, 4, 5, 6, 7, 8, 9, 10].filter((L) => kd[L] != null)
@@ -2066,9 +2066,12 @@ function initNFL() {
       document.querySelectorAll("#nflSubtabs .subtab").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       const s = b.dataset.nflsub;
+      const simViews = ["sim", "best", "pick6"];
       $("nflWeekBox").classList.toggle("hidden", s !== "week");
-      $("nflFutBox").classList.toggle("hidden", s === "week");
+      $("nflSimBox").classList.toggle("hidden", !simViews.includes(s));
+      $("nflFutBox").classList.toggle("hidden", s === "week" || simViews.includes(s));
       if (s === "week") { initNFLWeek(); return; }
+      if (simViews.includes(s)) { _nflSimView = s; initNFLSim(); return; }
       _nflSub = s;                         // "futures" | "wins" share the projection load
       if (!$("nflResults").dataset.loaded) { $("nflResults").dataset.loaded = "1"; loadNFL(); }
       else renderNFL();
@@ -2142,6 +2145,88 @@ function renderNFLWeek() {
   const d = _nflWeekData; if (!d) return;
   $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
   $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
+}
+
+// ---- NFL Sleeper-seeded sim (Sim cards / Best ball / Pick 6) ---------------
+let _nflSimData = null, _nflSimView = "sim";
+function initNFLSim() {
+  const sel = $("nflSimWeek");
+  if (sel && !sel.dataset.filled) {
+    sel.dataset.filled = "1";
+    let opts = "";
+    for (let w = 1; w <= 18; w++) opts += `<option value="${w}">Week ${w}</option>`;
+    sel.innerHTML = opts;
+    sel.addEventListener("change", () => { _nflSimData = null; $("nflSimResults").dataset.loaded = ""; loadNFLSim(0); });
+  }
+  if (_nflSimData) { renderNFLSim(); return; }
+  if (!$("nflSimResults").dataset.loaded) { $("nflSimResults").dataset.loaded = "1"; loadNFLSim(0); }
+}
+async function loadNFLSim(attempt) {
+  attempt = attempt || 0;
+  const box = $("nflSimResults"), wk = ($("nflSimWeek") || {}).value || 1;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} in the background — Sleeper projections + 16 correlated game sims (~10s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/nfl/sim?week=${wk}`)).json();
+    if (d.error || !(d.games && d.games.length)) {
+      if (attempt < 9) { setTimeout(() => loadNFLSim(attempt + 1), 6000); return; }
+      box.innerHTML = `<div class="empty">${d.error || "No sim available."}</div>`;
+      return;
+    }
+    _nflSimData = d;
+    renderNFLSim();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadNFLSim(attempt + 1), 6000); return; }
+    box.innerHTML = `<div class="empty">NFL sim unavailable.</div>`;
+  }
+}
+function renderNFLSim() {
+  const d = _nflSimData; if (!d) return;
+  $("nflSimSummary").innerHTML = `Week ${d.week} · <b>${d.n_games}</b> games · ${nf(d.n_sims)} sims each. <i style="color:var(--muted)">${d.note}</i>`;
+  if (_nflSimView === "best") return renderNFLBest(d);
+  if (_nflSimView === "pick6") return renderNFLPick6(d);
+  renderNFLSimCards(d);
+}
+function renderNFLSimCards(d) {
+  $("nflSimResults").innerHTML = d.games.map((g) => {
+    const rows = g.players.slice(0, 12).map((p) => `<div class="nfl-simrow">
+      <span class="nfl-srpos">${p.pos}</span>
+      <span class="nfl-srname">${p.name} <span class="small" style="color:var(--faint)">${p.team}${p.opp ? " v " + p.opp : ""}</span></span>
+      <span class="nfl-srnum">proj <b>${p.proj_pts}</b></span>
+      <span class="nfl-srnum">floor ${p.floor}</span>
+      <span class="nfl-srnum">ceil <b class="ev pos">${p.ceiling}</b></span>
+      <span class="nfl-srnum">boom ${p.boom_pct}%</span></div>`).join("");
+    return `<div class="bbgame nflcard"><div class="matchup" style="margin-bottom:6px">${g.label} <span class="small" style="color:var(--muted)">${nf(g.n_sims)} sims</span></div>${rows}</div>`;
+  }).join("");
+}
+function renderNFLBest(d) {
+  const adp = (p) => p.adp != null ? `<span class="small" style="color:var(--faint)" title="Sleeper consensus draft rank">ADP ${p.adp}</span>` : "";
+  const rows = d.ceilings.slice(0, 40).map((p, i) => `<div class="futrow nflbestrow">
+      <span class="fr-rank">${i + 1}</span>
+      <span class="fr-team">${p.pos} ${p.name} <span class="small" style="color:var(--muted)">${p.team} · ${p.matchup}</span> ${adp(p)}</span>
+      <span class="fr-num">${p.proj_pts}</span>
+      <span class="fr-num"><b class="ev pos">${p.ceiling}</b></span>
+      <span class="fr-num">${p.boom_pct}%</span></div>`).join("");
+  const stacks = (d.stacks || []).slice(0, 8).map((s) => `<div class="nfl-stack">
+      <b>${s.team}</b> ${s.qb} <span style="color:var(--faint)">+</span> ${s.receivers.join(" + ")}
+      <span class="nfl-stnum">combined ceiling <b class="ev pos">${s.combined_ceiling}</b></span>
+      <span class="small" style="color:var(--muted)">QB↔WR corr ${s.qb_wr_corr}</span></div>`).join("");
+  $("nflSimResults").innerHTML =
+    `<div class="small" style="margin:2px 0 6px"><b>🥇 Ceiling board</b> — best-ball values the 90th-percentile game. ${d.has_adp ? "ADP = your Sleeper consensus rank." : ""}</div>
+     <div class="futrow nflbestrow rchead"><span class="fr-rank">#</span><span class="fr-team">Player</span><span class="fr-num">proj</span><span class="fr-num">ceil</span><span class="fr-num">boom</span></div>
+     ${rows}
+     <div class="small" style="margin:14px 0 6px"><b>🔗 Top stacks</b> — a QB + his two best pass-catchers, combined 90th-percentile ceiling (the correlation is why stacking wins best ball).</div>
+     ${stacks}`;
+}
+function renderNFLPick6(d) {
+  if (!d.props || !d.props.length) { $("nflSimResults").innerHTML = `<div class="empty">No prop leans this week.</div>`; return; }
+  const rows = d.props.slice(0, 50).map((p) => `<div class="p6row p6row-nfl" style="cursor:default">
+      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
+      <span class="p6name">${p.player} <span class="p6stat">${p.stat} · ${p.team}</span></span>
+      <span class="p6game">${p.matchup}</span>
+      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span></div>`).join("");
+  $("nflSimResults").innerHTML =
+    `<div class="small" style="margin:2px 0 8px">Correlation-aware prop More/Less from the game sim (yards &amp; receptions). DK &amp; PrizePicks set the line — take ours where it clears theirs. Same-game legs are correlated — the sim already knows.</div>
+     <div class="p6list">${rows}</div>`;
 }
 async function loadNFL() {
   try {

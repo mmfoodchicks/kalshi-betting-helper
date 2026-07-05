@@ -386,9 +386,20 @@
         <h2>🏈 NFL 2026</h2>
         <div class="subtabs" id="nflSubtabs">
           <button class="subtab active" data-nflsub="week">🗓️ Week board</button>
+          <button class="subtab" data-nflsub="sim">🎲 Sim</button>
+          <button class="subtab" data-nflsub="best">🥇 Best ball</button>
+          <button class="subtab" data-nflsub="pick6">🎯 Pick 6</button>
           <button class="subtab" data-nflsub="futures">🏆 Futures</button>
           <button class="subtab" data-nflsub="wins">📊 Win totals</button>
         </div>
+      </div>
+      <div id="nflSimBox" class="hidden">
+        <div class="row-between" style="margin:2px 0 8px">
+          <p class="sub" style="margin:0;max-width:74%">A <b>correlated per-game Monte Carlo</b> seeded by <b>Sleeper's weekly projections</b>. Player means are pinned to Sleeper; the sim adds <b>floor / median / ceiling / boom%</b> and same-game correlation (a QB and his WRs boom together). <b>Sim</b> = per-game cards · <b>Best ball</b> = ceilings + top QB→WR stacks (with your Sleeper ADP) · <b>Pick 6</b> = correlation-aware prop More/Less.</p>
+          <select id="nflSimWeek"></select>
+        </div>
+        <div id="nflSimSummary" class="small"></div>
+        <div id="nflSimResults" class="markets"><div class="empty">Simulating the week in the background (~10s)…</div></div>
       </div>
       <div id="nflWeekBox">
         <div class="row-between" style="margin:2px 0 8px">

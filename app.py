@@ -1247,6 +1247,26 @@ def api_nfl_week():
     return jsonify(data)
 
 
+@app.route("/api/nfl/sim")
+def api_nfl_sim():
+    """Correlated per-game Monte Carlo seeded by Sleeper weekly projections:
+    per-player floor/median/ceiling/boom (sim + best-ball), QB->WR stacks, and
+    same-game-correlated prop over/unders (Pick 6). Non-blocking; polls."""
+    try:
+        week = int(request.args.get("week", 1))
+    except ValueError:
+        week = 1
+    week = max(1, min(18, week))
+    try:
+        import nfl_dfs_sim
+        data = nfl_dfs_sim.board(week=week)
+    except Exception as e:
+        return jsonify({"error": f"nfl sim failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the week in the background — retry shortly"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/tennis")
 def api_tennis():
     """Tennis match board: per-match model win% vs the de-vig Kalshi price (with a

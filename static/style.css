@@ -601,6 +601,23 @@ button.danger { color: var(--no); }
   border-radius: 999px; background: rgba(255,255,255,0.02); white-space: nowrap; }
 .nfl-plrole { color: var(--faint); font-weight: 600; margin-right: 2px; }
 
+/* NFL sim — per-game player rows */
+.nfl-simrow { display: grid; grid-template-columns: 26px 1fr 74px 66px 70px 68px;
+  align-items: center; gap: 6px; padding: 4px 2px; border-top: 1px solid var(--border);
+  font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+.nfl-srpos { color: var(--faint); font-weight: 600; }
+.nfl-srname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nfl-srnum { text-align: right; color: var(--muted); }
+.nflbestrow { grid-template-columns: 28px 1fr 52px 52px 52px; }
+.nfl-stack { padding: 7px 10px; border: 1px solid var(--border); border-radius: 9px;
+  margin-bottom: 5px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap;
+  align-items: center; gap: 8px; font-size: 0.9rem; }
+.nfl-stnum { margin-left: auto; }
+@media (max-width: 640px) {
+  .nfl-simrow { grid-template-columns: 24px 1fr 60px 60px; font-size: 0.8rem; }
+  .nfl-simrow .nfl-srnum:nth-child(4), .nfl-simrow .nfl-srnum:nth-child(6) { display: none; }
+}
+
 /* DraftKings Pick 6 builder */
 .p6tally { position: sticky; top: 0; background: var(--card2); border: 1px solid var(--border);
   border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 0.9rem; z-index: 2; }
@@ -610,6 +627,7 @@ button.danger { color: var(--no); }
   background: rgba(255,255,255,0.02); }
 .p6row.on { border-color: var(--accent); background: rgba(91,140,255,0.10); }
 .p6row input { width: auto; }
+.p6row-nfl { grid-template-columns: 88px 1fr auto auto; }   /* NFL props: no checkbox slot */
 .p6side { font-size: 0.72rem; font-weight: 700; text-align: center; border-radius: 5px; padding: 2px 4px;
   white-space: nowrap; }
 .p6side.more { color: var(--yes); background: rgba(52,211,153,0.14); }
