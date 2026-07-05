@@ -383,14 +383,25 @@
    <div id="tab-nfl" class="hidden">
     <section class="card">
       <div class="row-between">
-        <h2>🏈 NFL 2026 — preseason projection</h2>
+        <h2>🏈 NFL 2026</h2>
         <div class="subtabs" id="nflSubtabs">
-          <button class="subtab active" data-nflsub="futures">🏆 Futures</button>
+          <button class="subtab active" data-nflsub="week">🗓️ Week board</button>
+          <button class="subtab" data-nflsub="futures">🏆 Futures</button>
           <button class="subtab" data-nflsub="wins">📊 Win totals</button>
         </div>
       </div>
-      <div id="nflSummary" class="small"></div>
-      <div id="nflResults" class="markets"><div class="empty">Loading the projection…</div></div>
+      <div id="nflWeekBox">
+        <div class="row-between" style="margin:2px 0 8px">
+          <p class="sub" style="margin:0;max-width:78%">The week's slate (preseason skipped) with a <b>modeled score</b> (expected points), a <b>win-probability bar</b>, matchup-adjusted <b>pass / rush yards + TDs</b>, and each team's <b>key players</b> (QB/RB/WR) with projected yards. Ratings from the last completed season. <b>Match ours to the book's line.</b></p>
+          <select id="nflWeek"></select>
+        </div>
+        <div id="nflWeekSummary" class="small"></div>
+        <div id="nflWeekResults" class="markets"><div class="empty">Building the week board in the background (~15s)…</div></div>
+      </div>
+      <div id="nflFutBox" class="hidden">
+        <div id="nflSummary" class="small"></div>
+        <div id="nflResults" class="markets"><div class="empty">Loading the projection…</div></div>
+      </div>
     </section>
    </div><!-- /tab-nfl -->
 

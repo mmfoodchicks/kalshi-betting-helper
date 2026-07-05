@@ -591,6 +591,16 @@ button.danger { color: var(--no); }
   .lol-prow { grid-template-columns: 50px 1fr 38px 38px 50px; gap: 5px; font-size: 0.8rem; }
 }
 
+/* NFL week board — modeled score card */
+.nflcard .nfl-score { display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 6px 0 8px; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.nfl-sc b { font-size: 1.5rem; }
+.nfl-scsep { color: var(--faint); }
+.nfl-pls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.nfl-pl { font-size: 0.8rem; padding: 2px 7px; border: 1px solid var(--border);
+  border-radius: 999px; background: rgba(255,255,255,0.02); white-space: nowrap; }
+.nfl-plrole { color: var(--faint); font-weight: 600; margin-right: 2px; }
+
 /* DraftKings Pick 6 builder */
 .p6tally { position: sticky; top: 0; background: var(--card2); border: 1px solid var(--border);
   border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 0.9rem; z-index: 2; }

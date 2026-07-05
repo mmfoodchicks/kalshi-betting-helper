@@ -2058,17 +2058,90 @@ function renderRacing(d) {
 // ---- NFL futures projection ----
 let _nflData = null, _nflSub = "futures", _nflPoll = null;
 function initNFL() {
-  if (!$("nflResults").dataset.loaded) { $("nflResults").dataset.loaded = "1"; loadNFL(); }
+  initNFLWeek();                          // week board is the default view
   document.querySelectorAll("#nflSubtabs .subtab").forEach((b) => {
     if (b.dataset.wired) return;
     b.dataset.wired = "1";
     b.addEventListener("click", () => {
       document.querySelectorAll("#nflSubtabs .subtab").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
-      _nflSub = b.dataset.nflsub;
-      renderNFL();
+      const s = b.dataset.nflsub;
+      $("nflWeekBox").classList.toggle("hidden", s !== "week");
+      $("nflFutBox").classList.toggle("hidden", s === "week");
+      if (s === "week") { initNFLWeek(); return; }
+      _nflSub = s;                         // "futures" | "wins" share the projection load
+      if (!$("nflResults").dataset.loaded) { $("nflResults").dataset.loaded = "1"; loadNFL(); }
+      else renderNFL();
     });
   });
+}
+
+// ---- NFL week board (modeled scores / yards / TDs) -------------------------
+let _nflWeekData = null;
+function initNFLWeek() {
+  const sel = $("nflWeek");
+  if (sel && !sel.dataset.filled) {
+    sel.dataset.filled = "1";
+    let opts = "";
+    for (let w = 1; w <= 18; w++) opts += `<option value="${w}">Week ${w}</option>`;
+    sel.innerHTML = opts;
+    sel.addEventListener("change", () => {
+      _nflWeekData = null;
+      $("nflWeekResults").dataset.loaded = "";
+      loadNFLWeek(0);
+    });
+  }
+  if (!$("nflWeekResults").dataset.loaded) { $("nflWeekResults").dataset.loaded = "1"; loadNFLWeek(0); }
+}
+async function loadNFLWeek(attempt) {
+  attempt = attempt || 0;
+  const box = $("nflWeekResults"), wk = ($("nflWeek") || {}).value || 1;
+  if (!attempt) box.innerHTML = `<div class="empty">Building the Week ${wk} board in the background — ESPN team ratings + per-team stats + key players (~15s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/nfl/week?week=${wk}`)).json();
+    if (d.error || !(d.games && d.games.length)) {
+      if (attempt < 9) { setTimeout(() => loadNFLWeek(attempt + 1), 6000); return; }
+      box.innerHTML = `<div class="empty">${d.error || "No games for this week."}</div>`;
+      return;
+    }
+    _nflWeekData = d;
+    renderNFLWeek();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadNFLWeek(attempt + 1), 6000); return; }
+    box.innerHTML = `<div class="empty">NFL week board unavailable.</div>`;
+  }
+}
+function _nflPlayers(v) {
+  return (v.players || []).map((p) =>
+    `<span class="nfl-pl"><span class="nfl-plrole">${p.role}</span> ${p.name} <b>${p.proj_yds}</b> yds</span>`).join("");
+}
+function nflGameCard(g) {
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${g.away_name} @ ${g.home_name} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}</span></div>
+      <div class="pick">Model: <b>${g.fav}</b> by ${g.spread} · total ${g.exp_total}</div>
+    </div></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.score_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.score_home}</b> ${g.home}</span></div>
+    <div class="winbar"><div class="fill" style="width:${g.p_home}%"></div>
+      <div class="lbl">${g.away} ${g.p_away}% — ${g.p_home}% ${g.home}</div></div>
+    <div class="matchgrid">
+      <div>
+        <div class="teamhdr">${g.away} ${g.away_rec} · away</div>
+        <div class="small">${g.away_view.pass_yds} pass · ${g.away_view.rush_yds} rush yds · <b>${g.away_view.tds}</b> TD <span style="color:var(--muted)">(${g.away_view.pass_td} pass / ${g.away_view.rush_td} rush)</span></div>
+        <div class="nfl-pls">${_nflPlayers(g.away_view)}</div>
+      </div>
+      <div>
+        <div class="teamhdr">${g.home} ${g.home_rec} · home</div>
+        <div class="small">${g.home_view.pass_yds} pass · ${g.home_view.rush_yds} rush yds · <b>${g.home_view.tds}</b> TD <span style="color:var(--muted)">(${g.home_view.pass_td} pass / ${g.home_view.rush_td} rush)</span></div>
+        <div class="nfl-pls">${_nflPlayers(g.home_view)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function renderNFLWeek() {
+  const d = _nflWeekData; if (!d) return;
+  $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
+  $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
 }
 async function loadNFL() {
   try {

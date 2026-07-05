@@ -1227,6 +1227,26 @@ def api_lol_futures():
     return jsonify(data)
 
 
+@app.route("/api/nfl/week")
+def api_nfl_week():
+    """NFL week board: modeled score, win%, yards/TDs + key players per game.
+    Non-blocking (heavy ESPN fan-out) -- returns 502 while the board builds; the
+    frontend polls. ?week=1 (regular season; preseason is skipped)."""
+    try:
+        week = int(request.args.get("week", 1))
+    except ValueError:
+        week = 1
+    week = max(1, min(18, week))
+    try:
+        import nfl_live
+        data = nfl_live.board(week=week)
+    except Exception as e:
+        return jsonify({"error": f"nfl data failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no NFL data yet (building in the background — retry shortly)"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/tennis")
 def api_tennis():
     """Tennis match board: per-match model win% vs the de-vig Kalshi price (with a
