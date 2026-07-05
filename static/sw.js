@@ -2,7 +2,7 @@
 // picked up immediately when online (the previous cache-first version could
 // serve a stale app.js after an update). The cache is only an offline fallback.
 // Live /api/ data is always network. Bumping SHELL purges every older cache.
-const SHELL = "vigil-shell-v15";
+const SHELL = "vigil-shell-v16";
 const PRECACHE = ["/", "/static/style.css", "/static/app.js",
                   "/static/icon-192.png", "/static/manifest.json"];
 

@@ -2935,9 +2935,43 @@ function initWorldCup() {
       document.querySelectorAll("#wcSubtabs .subtab").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       _wcSub = b.dataset.wcsub;
+      const p6 = _wcSub === "pick6";
+      $("wcResults").classList.toggle("hidden", p6);
+      $("wcPick6").classList.toggle("hidden", !p6);
+      if (p6) { initWCPick6(); return; }
       renderWorldCup();
     });
   });
+}
+let _wcP6 = null;
+function initWCPick6() {
+  if ($("wcPick6").dataset.loaded) return;
+  $("wcPick6").dataset.loaded = "1";
+  loadWCPick6();
+}
+async function loadWCPick6() {
+  const box = $("wcPick6");
+  box.innerHTML = `<div class="empty">Building the World Cup player prop board…</div>`;
+  try {
+    const d = await (await fetch("/api/worldcup/pick6")).json();
+    if (d.error || !(d.picks && d.picks.length)) { box.innerHTML = `<div class="empty">${d.error || "No player props yet."}</div>`; return; }
+    _wcP6 = d;
+    renderWCPick6();
+  } catch (e) { box.innerHTML = `<div class="empty">World Cup props unavailable.</div>`; }
+}
+function renderWCPick6() {
+  const d = _wcP6; if (!d) return;
+  const rows = d.picks.map((p) => `<div class="p6row p6row-nfl" style="cursor:default">
+      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
+      <span class="p6name">${p.player} <span class="p6stat">${p.stat} · ${p.team}</span></span>
+      <span class="p6game">${p.matchup}</span>
+      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
+    </div>`).join("");
+  const mchips = (d.matches || []).map((m) => `<span class="leanchip">${m.matchup}</span>`).join(" ");
+  $("wcPick6").innerHTML =
+    `<div class="small" style="margin:2px 0 6px">${mchips}</div>
+     <div class="small" style="margin:0 0 8px;color:var(--muted)">${d.note}</div>
+     <div class="p6list">${rows}</div>`;
 }
 async function loadWorldCup() {
   $("wcResults").innerHTML = `<div class="empty">Simulating the rest of the tournament…</div>`;

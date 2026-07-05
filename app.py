@@ -1250,6 +1250,20 @@ def api_lol_futures():
     return jsonify(data)
 
 
+@app.route("/api/worldcup/pick6")
+def api_worldcup_pick6():
+    """World Cup player Pick 6 board: More/Less props (shots, fouls, saves, goals,
+    assists, cards) from ESPN's squad stats."""
+    try:
+        import worldcup_pick6
+        data = worldcup_pick6.board()
+    except Exception as e:
+        return jsonify({"error": f"world cup pick6 failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "no World Cup player props available yet"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/nfl/week")
 def api_nfl_week():
     """NFL week board: modeled score, win%, yards/TDs + key players per game.
