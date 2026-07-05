@@ -596,6 +596,28 @@ def api_simulate_dfs():
         return jsonify({"error": "bad roster/cap"}), 400
     import datetime as _dt
     n = tiers.cap_sims(_tier(), d.get("sims", 20000))
+    if d.get("sport") == "nfl":
+        # NFL Classic DFS: positional optimizer + Sleeper-seeded correlated contest sim.
+        import nfl_dfs
+
+        def _ni(key, default, cast=float):
+            try:
+                return cast(d.get(key, default))
+            except (ValueError, TypeError):
+                return default
+        obj = d.get("objective")
+        obj = obj if obj in ("projection", "ceiling", "leverage") else "projection"
+        contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
+        try:
+            return jsonify(nfl_dfs.build(
+                text, week=max(1, min(18, int(_ni("week", 1, int)))), objective=obj,
+                stack=d.get("stack", True) is not False, contest=contest,
+                contest_size=(int(_ni("contest_size", 0, int)) or None),
+                entry_fee=max(0.01, _ni("entry_fee", 1.0)),
+                prize_pool=(_ni("prize_pool", 0.0) or None),
+                first_prize=(_ni("first_prize", 0.0) or None)))
+        except Exception as e:
+            return jsonify({"error": f"nfl dfs failed: {e}"}), 502
     if d.get("sport") == "mlb":
         # Baseball DFS is driven by the game simulator (correlated hitter ceilings
         # for stacking) -- a different path from the projection-based racing/UFC.

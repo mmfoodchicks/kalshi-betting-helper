@@ -3439,16 +3439,30 @@ async function initSim() {
   const dfsMlbToggle = () => {
     const sp = $("dfsSport").value;
     const isMlb = sp === "mlb";
-    // Portfolio + contest controls now apply to every DFS sport.
-    const dfs = ["mlb", "ufc", "f1", "nascar"].includes(sp);
+    const isNfl = sp === "nfl";
+    // Portfolio + contest controls apply to every DFS sport.
+    const dfs = ["mlb", "ufc", "f1", "nascar", "nfl"].includes(sp);
     if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", !dfs);
     if ($("dfsMlbHint")) $("dfsMlbHint").classList.toggle("hidden", !dfs);
-    // Stacking is MLB-only (correlated same-team hitters).
+    // Stacking is MLB-only here (NFL stacks QB+WR automatically for GPP).
     const stackLbl = $("dfsStack") ? $("dfsStack").closest("label") : null;
     if (stackLbl) stackLbl.classList.toggle("hidden", !isMlb);
     // Manual starting-grid override is racing-only (F1/NASCAR).
     const isRacing = sp === "f1" || sp === "nascar";
     if ($("dfsGridBox")) $("dfsGridBox").classList.toggle("hidden", !isRacing);
+    // NFL has a fixed positional roster (1QB/2RB/3WR/1TE/1FLEX/1DST) + a week picker.
+    const wk = $("dfsNflWeek");
+    if (wk) {
+      wk.classList.toggle("hidden", !isNfl);
+      if (isNfl && !wk.dataset.filled) {
+        wk.dataset.filled = "1";
+        let o = ""; for (let w = 1; w <= 18; w++) o += `<option value="${w}">Week ${w}</option>`;
+        wk.innerHTML = o;
+      }
+    }
+    const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
+    if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb);
+    if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb);
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
@@ -3636,6 +3650,46 @@ function renderMlbDfs(d) {
   </div>`;
 }
 
+function renderNflDfs(d) {
+  const money = (v) => "$" + Math.round(v).toLocaleString();
+  const cs = d.contest_sim;
+  const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[d.objective] || d.objective;
+  const csHead = cs
+    ? `<div class="dfs-note">🏆 ${nf(cs.entries)}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"} · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${cs.places_paid} paid · ${money(cs.entry_fee)} entry. <i>Modeled estimate.</i></div>
+       <div class="cnums" style="margin:6px 0">
+         <span>win <b>~1 in ${cs.win_pct > 0 ? Math.round(100 / cs.win_pct) : "∞"}</b></span>
+         <span>cash <b>${cs.cash_pct}%</b></span>
+         <span>top 1% <b>${cs.top1_pct}%</b></span>
+         <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span>
+       </div>` : "";
+  const rows = d.lineup.map((p) => {
+    const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
+    return `<div class="nfl-dfsrow">
+      <span class="nfl-dfsslot">${p.slot}</span>
+      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)">${p.pos}${p.team ? " · " + p.team : ""}</span></span>
+      <span class="nfl-dfsnum">$${nf(p.salary)}</span>
+      <span class="nfl-dfsnum">proj <b>${p.proj}</b></span>
+      <span class="nfl-dfsnum">ceil <b class="ev pos">${p.ceiling}</b>${own}</span>
+    </div>`;
+  }).join("");
+  const un = (d.unmatched && d.unmatched.length)
+    ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection — used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
+  return `<div class="combo hl prop">
+    <div class="chead"><span class="ctag">🏈 NFL lineup — ${objName}</span>
+      <span class="small">Week ${d.week} · ${d.stack ? "QB stack" : "no stack"}</span></div>
+    <div class="cnums" style="margin:4px 0">
+      <span>salary <b>$${nf(d.salary)}</b>/$${nf(d.cap)}</span>
+      <span>proj <b>${d.proj}</b></span>
+      <span>floor ${d.floor}</span><span>median ${d.median}</span>
+      <span>ceiling <b class="ev pos">${d.ceiling}</b></span>
+    </div>
+    ${csHead}
+    <div class="nfl-dfslist">${rows}</div>
+    ${un}
+    <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}</div>
+  </div>`;
+}
+
 async function runDfsSim() {
   const box = $("simResults");
   const csv = $("dfsCsv").value;
@@ -3657,11 +3711,13 @@ async function runDfsSim() {
         entry_fee: parseFloat(($("dfsEntry") || {}).value) || 1,
         prize_pool: parseFloat(($("dfsPool") || {}).value) || 0,
         first_prize: parseFloat(($("dfsFirst") || {}).value) || 0,
-        grid: (($("dfsGrid") || {}).value || "").trim() || null }),
+        grid: (($("dfsGrid") || {}).value || "").trim() || null,
+        week: parseInt(($("dfsNflWeek") || {}).value, 10) || 1 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (d.total_ceil != null) { box.innerHTML = renderMlbDfs(d); return; }   // sim-driven MLB
+    if (d.lineup && d.lineup[0] && d.lineup[0].slot) { box.innerHTML = renderNflDfs(d); return; }
     const dfsRow = (p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
       let pd = "";

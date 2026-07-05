@@ -137,9 +137,11 @@ def _prop_line(mean, step):
     return math.floor(mean) + 0.5          # receptions: X.5
 
 
-def simulate_game(game, n=4000):
+def simulate_game(game, n=4000, with_samples=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
-    correlation-aware component prop over/unders, and QB->receiver stacks."""
+    correlation-aware component prop over/unders, and QB->receiver stacks.
+    with_samples=True attaches each player's rescaled point array (`arr`) so a DFS
+    contest sim can score whole lineups with the within-game correlation intact."""
     players = game["players"]
     teams = game.get("teams") or []
     pts = {i: [] for i in range(len(players))}
@@ -184,12 +186,15 @@ def simulate_game(game, n=4000):
         f = proj / raw if raw > 0 else 1.0                   # pin points-mean to Sleeper
         arr = [x * f for x in arr]
         boom = proj * 1.5
-        out.append({"name": pl["name"], "pos": pl["pos"], "team": pl["team"], "opp": pl["opp"],
-                    "proj_pts": proj, "sim_mean": round(sum(arr) / len(arr), 1),
-                    "floor": round(pct(arr, 0.10), 1), "median": round(pct(arr, 0.50), 1),
-                    "ceiling": round(pct(arr, 0.90), 1),
-                    "boom_pct": round(100.0 * sum(1 for x in arr if x >= boom) / len(arr), 1),
-                    "bust_pct": round(100.0 * sum(1 for x in arr if x <= proj * 0.5) / len(arr), 1)})
+        row = {"name": pl["name"], "pos": pl["pos"], "team": pl["team"], "opp": pl["opp"],
+               "proj_pts": proj, "sim_mean": round(sum(arr) / len(arr), 1),
+               "floor": round(pct(arr, 0.10), 1), "median": round(pct(arr, 0.50), 1),
+               "ceiling": round(pct(arr, 0.90), 1),
+               "boom_pct": round(100.0 * sum(1 for x in arr if x >= boom) / len(arr), 1),
+               "bust_pct": round(100.0 * sum(1 for x in arr if x <= proj * 0.5) / len(arr), 1)}
+        if with_samples:
+            row["arr"] = [round(x, 2) for x in arr]
+        out.append(row)
         # Component props (correlation is already baked into the samples).
         for key, lab, step, floor_mean in _PROP_SPECS:
             cs = comp[i][key]
@@ -243,6 +248,59 @@ def _stacks(players, fp_raw, teams):
                     "combined_ceiling": round(ceil, 1),
                     "qb_wr_corr": round(corr, 2)})
     return out
+
+
+# ---- DST projections (Sleeper) + full DFS player pool ----------------------
+def dst_projections(season, week):
+    """{team_abbr: {nickname, proj}} for team defenses. Cached 1h."""
+    def build():
+        url = (f"{_PROJ.format(season=season, week=week)}?season_type=regular"
+               f"&position[]=DEF&order_by=pts_ppr")
+        try:
+            rows = _get(url)
+        except Exception:
+            return None
+        out = {}
+        for r in rows:
+            pts = (r.get("stats") or {}).get("pts_ppr")
+            if pts is None:
+                continue
+            p = r.get("player") or {}
+            out[r.get("team")] = {"nickname": p.get("last_name") or r.get("team"),
+                                  "proj": round(pts, 2)}
+        return out or None
+    return _cached(("nfl_dst", season, week), 3600, build)
+
+
+def player_pool(week, n=3000):
+    """Every DFS-relevant player for a week: skill players carry correlated point
+    arrays from the game sims; DSTs carry independent Normal-sampled arrays from
+    Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
+    Cached 30m (this is the heavy correlated sim over the whole slate)."""
+    season = _season()
+
+    def build():
+        games = weekly_games(str(season), week)
+        if not games:
+            return None
+        pool = {}
+        for gid, g in games.items():
+            sim = simulate_game(g, n=n, with_samples=True)
+            for p in sim["players"]:
+                pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
+                                   "proj": p["proj_pts"], "ceiling": p["ceiling"],
+                                   "floor": p["floor"], "arr": p["arr"]}
+        dst = dst_projections(str(season), week) or {}
+        for team, d in dst.items():
+            proj = d["proj"]
+            sd = 0.7 * proj + 4.0                        # DST scoring is high-variance
+            arr = [round(max(-4.0, _random.gauss(proj, sd)), 2) for _ in range(n)]
+            for key in {d["nickname"], team}:            # match DK by nickname or abbr
+                pool[key] = {"pos": "DST", "team": team, "opp": None, "proj": proj,
+                             "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
+                             "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
+        return pool or None
+    return _cached(("nfl_pool", season, week, n), 1800, build)
 
 
 # ---- Week board (all games simmed) -----------------------------------------
