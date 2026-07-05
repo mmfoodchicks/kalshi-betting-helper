@@ -67,6 +67,36 @@ def lookup(grid_info, name):
     return None
 
 
+def parse_grid_text(text, sport="f1"):
+    """Parse a hand-pasted starting grid into a grid dict, for when the feed hasn't
+    posted the real STARTING order yet (penalties, or an un-ingested race). Accepts
+    lines like '1st Kimi Antonelli', '1. Charles Leclerc', 'P4 George Russell', or
+    just one name per line (position = line order). Returns a finalized grid or None.
+    This is the STARTING grid, so it already reflects any grid penalties."""
+    if not text or not text.strip():
+        return None
+    grid, auto = {}, 0
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        m = re.match(r"^\s*(?:P|#)?\s*(\d+)\s*(?:st|nd|rd|th)?[\.\):]?\s+(.+)$", line, re.I)
+        if m:
+            pos, name = int(m.group(1)), m.group(2)
+        else:
+            auto += 1
+            pos, name = auto, line
+        # strip a trailing team/constructor in parens or after a dash
+        name = re.split(r"\s+[\-–—(]", name)[0].strip()
+        nm = norm_name(name)
+        if nm and pos and nm not in grid:
+            grid[nm] = pos
+            auto = max(auto, pos)
+    if len(grid) < 2:
+        return None
+    return _finalize(grid, "Pasted grid", "F1" if sport == "f1" else "NASCAR")
+
+
 def _finalize(grid, race, series, series_id=None, track=None):
     if not grid:
         return None

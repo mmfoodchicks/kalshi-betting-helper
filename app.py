@@ -646,7 +646,8 @@ def api_simulate_dfs():
         contest_size=(int(_num("contest_size", 0, int)) or None),
         entry_fee=max(0.01, _num("entry_fee", 1.0)),
         prize_pool=(_num("prize_pool", 0.0) or None),
-        first_prize=(_num("first_prize", 0.0) or None)))
+        first_prize=(_num("first_prize", 0.0) or None),
+        grid_text=(d.get("grid") or None)))
 
 
 def _prop_types():

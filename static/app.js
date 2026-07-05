@@ -3446,6 +3446,9 @@ async function initSim() {
     // Stacking is MLB-only (correlated same-team hitters).
     const stackLbl = $("dfsStack") ? $("dfsStack").closest("label") : null;
     if (stackLbl) stackLbl.classList.toggle("hidden", !isMlb);
+    // Manual starting-grid override is racing-only (F1/NASCAR).
+    const isRacing = sp === "f1" || sp === "nascar";
+    if ($("dfsGridBox")) $("dfsGridBox").classList.toggle("hidden", !isRacing);
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
@@ -3653,7 +3656,8 @@ async function runDfsSim() {
         contest_size: parseInt(($("dfsEntries") || {}).value, 10) || 0,
         entry_fee: parseFloat(($("dfsEntry") || {}).value) || 1,
         prize_pool: parseFloat(($("dfsPool") || {}).value) || 0,
-        first_prize: parseFloat(($("dfsFirst") || {}).value) || 0 }),
+        first_prize: parseFloat(($("dfsFirst") || {}).value) || 0,
+        grid: (($("dfsGrid") || {}).value || "").trim() || null }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -3692,7 +3696,8 @@ async function runDfsSim() {
       const basis = g.sim_used
         ? `expected finish from the <b>race simulator</b> (${g.sim_drivers} drivers)`
         : (g.form_used ? "recent form" : "salary-deserved finish");
-      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: <b>${g.race}</b> (${g.series}, ${g.field}-car field) — ${g.matched} drivers matched${un}. Place differential off the actual qualifying order, using ${basis}.${g.sim_used ? "" : " <span style=\"color:var(--muted)\">(simulator warming up — rerun in ~1 min for sim-driven finishes)</span>"}</div>`;
+      const gridName = g.manual ? `<b>your pasted starting grid</b>` : `<b>${g.race}</b> (${g.series}, ${g.field}-car field)`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: ${gridName} — ${g.matched} drivers matched${un}. Place differential off the ${g.manual ? "pasted starting order" : "actual qualifying order"}, using ${basis}.${g.sim_used ? "" : " <span style=\"color:var(--muted)\">(simulator warming up — rerun in ~1 min for sim-driven finishes)</span>"}</div>`;
     } else if (g && !g.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} — using season points only (no place-differential adjustment yet).</div>`;
     }

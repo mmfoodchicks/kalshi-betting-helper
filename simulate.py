@@ -143,7 +143,7 @@ def parse_dk_csv(text):
     return out
 
 
-def apply_grid(players, sport, date=None):
+def apply_grid(players, sport, date=None, grid_text=None):
     """For racing DFS, fetch the qualifying grid and adjust each driver's
     projection for an atypically good/bad starting spot via place differential.
 
@@ -153,14 +153,20 @@ def apply_grid(players, sport, date=None):
     (deserved spot proxied by salary rank). A pole-sitter in a mid car has almost
     no upside and big downside -> his projection drops; a fast car buried deep
     gets a boost. Returns a status dict; leaves projections untouched on failure.
+
+    `grid_text`: a hand-pasted starting grid. The feed only carries the last
+    INGESTED race's qualifying, which lags a round (and is quali order, not the
+    penalty-adjusted starting grid), so a pasted grid overrides it -- this is the
+    authoritative starting order for the race you're actually building.
     """
     import racing
     race_name = next((p.get("game") for p in players if p.get("game")), None)
+    manual = racing.parse_grid_text(grid_text, sport) if grid_text else None
     # The grid may not exist yet (qualifying hasn't run). That must NOT disable
     # the race simulator — pre-qualifying we still project every driver from
     # thousands of simulated races (finish points + dominators + wrecks/DNFs),
     # just without the place-differential term, and note it honestly.
-    grid = racing.get_grid(sport, race_name=race_name, date=date)
+    grid = manual or racing.get_grid(sport, race_name=race_name, date=date)
     n = len(players)
     field = grid["field"] if grid else n
     # Deserved finishing spot. Primary source = our race SIMULATOR's expected
@@ -309,12 +315,12 @@ def apply_grid(players, sport, date=None):
     if cond_meta:
         meta.update(cond_meta)
     prof_race = _sim_raw_profile(sport).get("race")
-    return {"available": bool(grid),
+    return {"available": bool(grid), "manual": bool(manual),
             "reason": None if grid else
             ("no qualifying grid yet — projections come from the race simulator "
              "(place differential applies after qualifying)" if dk_hits else
              "no qualifying grid posted yet (check back after qualifying)"),
-            "race": grid["race"] if grid else prof_race,
+            "race": ("Pasted grid" if manual else grid["race"]) if grid else prof_race,
             "series": grid["series"] if grid else None,
             "field": field, "matched": matched, "unmatched": unmatched[:25],
             "form_used": form_hits > 0, "sim_used": sim_hits > 0, "sim_drivers": sim_hits,
@@ -856,7 +862,8 @@ def _lineup_player(p):
 def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
               objective="projection", date=None, sims=20000,
               n_lineups=1, max_exposure=60.0, min_uniq=1, contest=None,
-              contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None):
+              contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
+              grid_text=None):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
@@ -865,7 +872,7 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     ufc_status = None
     if sport in ("nascar", "f1"):
         try:
-            grid_status = apply_grid(players, sport, date)
+            grid_status = apply_grid(players, sport, date, grid_text=grid_text)
         except Exception as e:
             grid_status = {"available": False, "reason": f"grid fetch failed: {e}"}
     elif sport == "ufc":
