@@ -1948,6 +1948,10 @@ def grade_picks():
 # -- these are the typical tiers so we can show an approximate payout/EV.
 _PICK6_STATS = {"Hit": "hits", "Bases": "total bases", "HR": "home runs",
                 "Ks": "strikeouts"}
+# DK Pick 6 only offers a Less side on pitcher strikeouts (and fantasy points,
+# which we don't board). Batter counting stats are More-only -- you lower the
+# line for a smaller multiplier, you never bet the under.
+_PICK6_LESS_OK = {"Ks"}
 _PICK6_PAYOUT = {2: 3.0, 3: 6.0, 4: 10.0, 5: 20.0, 6: 25.0}
 
 
@@ -1976,12 +1980,23 @@ def pick6_board(games, top_n=60):
             proj, lines = d["avg"], d["lines"]
             if proj is None or not lines:
                 continue
-            # DK sets the line near the projection; pick the nearest available
-            # threshold and lean More/Less by where our projection sits.
-            N = min(lines, key=lambda n: abs((n - 0.5) - proj))
-            line = N - 0.5
-            p_more = lines[N]
-            side, prob = ("More", p_more) if proj >= line else ("Less", 1 - p_more)
+            if typ in _PICK6_LESS_OK:
+                # DK offers More AND Less here (pitcher strikeouts): take the line
+                # nearest the projection and lean by where our number sits.
+                N = min(lines, key=lambda n: abs((n - 0.5) - proj))
+                line, p_more = N - 0.5, lines[N]
+                side, prob = ("More", p_more) if proj >= line else ("Less", 1 - p_more)
+            else:
+                # More-only on DK (hits, total bases, home runs) -- there is no Less;
+                # you just lower the line for a smaller multiplier. So always a More,
+                # at the HIGHEST line where we're still confident (most value). DK's
+                # default line falls out naturally: a 2+-hit bat lands on 1.5, a
+                # weaker one on 0.5.
+                cand = [(N, lines[N]) for N in lines if 0.5 <= lines[N] <= 0.9]
+                if not cand:
+                    continue
+                N, prob = max(cand, key=lambda x: x[0])
+                line, side = N - 0.5, "More"
             if not (0.5 <= prob <= 0.9):        # skip coin-flips and chalk
                 continue
             picks.append({"player": player, "stat": _PICK6_STATS[typ], "type": typ,
