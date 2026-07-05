@@ -1116,11 +1116,15 @@ function renderSGP(s) {
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
     : `<span style="color:var(--muted)">~independent (${corr >= 0 ? "+" : ""}${corr}%)</span>`;
   const cnt = s.combined_sims_hit != null ? ` <span style="color:var(--muted)">(${s.combined_sims_hit.toLocaleString()}/${nsim.toLocaleString()} sims)</span>` : "";
+  const warn = s.counteracting
+    ? `<div class="small" style="margin:4px 0;padding:5px 8px;border-radius:6px;background:rgba(224,86,106,.12);color:#e0566a"><b>⚠ Counteracting legs</b> — this slate couldn't field a clean parlay, so a pair here works against each other (worst pair corr ${s.worst_pair_corr}). For one leg to hit, another tends to miss. Prefer a different combo.</div>`
+    : "";
   return `<div class="combo hl prop">
     <div class="chead">
       <span class="ctag">🎰 ${s.matchup}</span>
       <span class="small">${s.n_legs} legs · ${nsim.toLocaleString()} sims</span>
     </div>
+    ${warn}
     <ul class="legs">${legs}</ul>
     <div class="cnums">
       <span>Joint chance <b>${s.combined_prob_pct}%</b>${cnt}</span>

@@ -755,6 +755,44 @@ def _redundant(masks):
     return False
 
 
+# Two legs "counteract" when the game states that make one hit tend to make the
+# other MISS -- e.g. "Wacha 5+ K" needs him dealing, but "Phillies (his
+# opponent) win" and "Over 6.5 runs" both want him hit. We read that straight off
+# the sim as the phi correlation between the two legs' hit-masks; a pair below
+# _COUNTER_PHI is treated as fighting itself and kept out of a combo when we can.
+_COUNTER_PHI = -0.12
+
+
+def _phi(ma, mb, pa, pb, n):
+    """phi (mean-square) correlation between two binary hit-masks, given each
+    mask's popcount (pa, pb) and the sim count n. Range -1..1; <0 = counteracting."""
+    n11 = _popcount(ma & mb)
+    da, db = pa * (n - pa), pb * (n - pb)
+    if da <= 0 or db <= 0:
+        return 0.0                              # a leg that always/never hits can't conflict
+    return (n * n11 - pa * pb) / (da * db) ** 0.5
+
+
+def _corr_matrix(cands, n):
+    """Pairwise phi for a pooled candidate list, keyed by (i, j) with i < j."""
+    pcs = [_popcount(c["mask"]) for c in cands]
+    phi = {}
+    for i in range(len(cands)):
+        for j in range(i + 1, len(cands)):
+            phi[(i, j)] = _phi(cands[i]["mask"], cands[j]["mask"], pcs[i], pcs[j], n)
+    return phi
+
+
+def _worst_pair(idxs, phi):
+    """Most-negative pairwise phi among a set of leg indices (0.0 if <2 legs)."""
+    worst = 0.0
+    for a in range(len(idxs)):
+        for b in range(a + 1, len(idxs)):
+            i, j = idxs[a], idxs[b]
+            worst = min(worst, phi.get((i, j) if i < j else (j, i), 0.0))
+    return worst
+
+
 def _market_conflict(combo):
     """True if a parlay stacks two legs from the same market group -- two game
     totals, two run-line margins, two moneylines, or two props on the SAME
@@ -793,14 +831,20 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
     cands = _pool(cands)
     if len(cands) < 2:
         return None
+    phi = _corr_matrix(cands, n)
     payout_mode = bool(target_payout and target_payout > 1)
     sizes = range(2, max_legs + 1) if payout_mode else [max(2, min(n_legs, max_legs))]
 
-    best = None  # (score, combo, joint)
+    # Track the best CLEAN combo (no counteracting pair) and, separately, the best
+    # of any combo -- so if a slate genuinely can't field a clean parlay we still
+    # return something (flagged) rather than nothing.
+    best_clean = None  # (score, idxs, joint, worst_phi)
+    best_any = None
     for sz in sizes:
         if sz > len(cands):
             break
-        for combo in itertools.combinations(cands, sz):
+        for idxs in itertools.combinations(range(len(cands)), sz):
+            combo = [cands[i] for i in idxs]
             masks = [c["mask"] for c in combo]
             if _redundant(masks) or _market_conflict(combo):
                 continue
@@ -818,12 +862,17 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
                     score = payout                # not reached -> chase max payout
             else:
                 score = (1000.0 + payout) if joint >= target else joint
-            if best is None or score > best[0]:
-                best = (score, combo, joint)
+            worst = _worst_pair(idxs, phi)
+            if best_any is None or score > best_any[0]:
+                best_any = (score, idxs, joint, worst)
+            if worst >= _COUNTER_PHI and (best_clean is None or score > best_clean[0]):
+                best_clean = (score, idxs, joint, worst)
 
+    best = best_clean or best_any
     if not best:
         return None
-    _, combo, joint = best
+    _, idxs, joint, worst_phi = best
+    combo = [cands[i] for i in idxs]
     indep = 1.0
     for c in combo:
         indep *= c["marg"]
@@ -840,6 +889,8 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
         "corr_delta_pct": round((joint - indep) * 100, 1),
         "fair_payout_x": round(1.0 / joint, 2) if joint > 0 else None,
         "indep_payout_x": round(1.0 / indep, 2) if indep > 0 else None,
+        "worst_pair_corr": round(worst_phi, 2),
+        "counteracting": worst_phi < _COUNTER_PHI,
         "n_sims": n,
     }
 
@@ -855,15 +906,18 @@ def game_bundles(cands, n, max_legs=3, per_size=6):
     simulated joint probability. Trimmed to the most useful per size: the safest
     few (high prob) and the longest-shot few (high payout, to reach a target)."""
     cs = _pool(cands, 14)
+    phi = _corr_matrix(cs, n)
     bundles = []
     for sz in range(1, max_legs + 1):
         if sz > len(cs):
             break
         sized = []
-        for combo in itertools.combinations(cs, sz):
+        for idxs in itertools.combinations(range(len(cs)), sz):
+            combo = [cs[i] for i in idxs]
             masks = [c["mask"] for c in combo]
-            if sz > 1 and (_redundant(masks) or _market_conflict(combo)):
-                continue
+            if sz > 1 and (_redundant(masks) or _market_conflict(combo)
+                           or _worst_pair(idxs, phi) < _COUNTER_PHI):
+                continue                          # keep counteracting legs out of a bundle
             jm = masks[0]
             for m in masks[1:]:
                 jm &= m
