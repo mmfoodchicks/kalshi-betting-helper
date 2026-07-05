@@ -3474,8 +3474,9 @@ async function initSim() {
     const sp = $("dfsSport").value;
     const isMlb = sp === "mlb";
     const isNfl = sp === "nfl";
+    const isLol = sp === "lol";
     // Portfolio + contest controls apply to every DFS sport.
-    const dfs = ["mlb", "ufc", "f1", "nascar", "nfl"].includes(sp);
+    const dfs = ["mlb", "ufc", "f1", "nascar", "nfl", "lol"].includes(sp);
     if ($("dfsMlbOpts")) $("dfsMlbOpts").classList.toggle("hidden", !dfs);
     if ($("dfsMlbHint")) $("dfsMlbHint").classList.toggle("hidden", !dfs);
     // Stacking is MLB-only here (NFL stacks QB+WR automatically for GPP).
@@ -3495,8 +3496,8 @@ async function initSim() {
       }
     }
     const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
-    if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb);
-    if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb);
+    if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb || isLol);
+    if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb || isLol);
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   // populate weather cities + baseball game list lazily
@@ -3684,6 +3685,44 @@ function renderMlbDfs(d) {
   </div>`;
 }
 
+function renderLolDfs(d) {
+  const money = (v) => "$" + Math.round(v).toLocaleString();
+  const cs = d.contest_sim;
+  const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[d.objective] || d.objective;
+  const winOdds = (cs && cs.win_pct) ? Math.round(Math.min(cs.entries, 100 / cs.win_pct)) : null;
+  const csHead = cs
+    ? `<div class="dfs-note">🏆 ${nf(cs.entries)}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"} · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${cs.places_paid} paid · ${money(cs.entry_fee)} entry. <i>Modeled estimate.</i></div>
+       <div class="cnums" style="margin:6px 0">
+         <span>win <b>~1 in ${winOdds}</b></span><span>cash <b>${cs.cash_pct}%</b></span>
+         <span>top 1% <b>${cs.top1_pct}%</b></span>
+         <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span>
+       </div>` : "";
+  const rows = d.lineup.map((p) => {
+    const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
+    const cptTag = p.slot === "CPT" ? ` <span class="small" style="color:var(--accent)">1.5×</span>` : "";
+    const base = p.slot === "CPT" ? `<span class="small" style="color:var(--muted)"> (${p.base_proj}×1.5)</span>` : "";
+    return `<div class="nfl-dfsrow">
+      <span class="nfl-dfsslot">${p.slot}${cptTag}</span>
+      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)">${p.role}${p.team ? " · " + p.team : ""}</span></span>
+      <span class="nfl-dfsnum">$${nf(p.salary)}</span>
+      <span class="nfl-dfsnum">proj <b>${p.proj}</b>${base}</span>
+      <span class="nfl-dfsnum">${own}</span>
+    </div>`;
+  }).join("");
+  return `<div class="combo hl prop">
+    <div class="chead"><span class="ctag">🎮 LoL lineup — ${objName}</span></div>
+    <div class="cnums" style="margin:4px 0">
+      <span>salary <b>$${nf(d.salary)}</b>/$${nf(d.cap)}</span>
+      <span>proj <b>${d.proj}</b></span>
+      <span>floor ${d.floor}</span><span>median ${d.median}</span>
+      <span>ceiling <b class="ev pos">${d.ceiling}</b></span>
+    </div>
+    ${csHead}
+    <div class="nfl-dfslist">${rows}</div>
+    <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}</div>
+  </div>`;
+}
+
 function renderNflDfs(d) {
   const money = (v) => "$" + Math.round(v).toLocaleString();
   const cs = d.contest_sim;
@@ -3751,6 +3790,7 @@ async function runDfsSim() {
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     if (d.total_ceil != null) { box.innerHTML = renderMlbDfs(d); return; }   // sim-driven MLB
+    if (d.is_lol) { box.innerHTML = renderLolDfs(d); return; }
     if (d.lineup && d.lineup[0] && d.lineup[0].slot) { box.innerHTML = renderNflDfs(d); return; }
     const dfsRow = (p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
