@@ -544,7 +544,20 @@ def _f1_showdown(players, cap, objective, cv):
             rem = cap - c["salary"] - k["salary"]
             if rem < 0:
                 continue
-            four = dfs_optimize(pool, 4, int(rem))    # best 4 drivers under what's left
+            # DK F1: a single team can contribute at most 2 roster spots, and you
+            # can't pair both of a team's drivers WITH that team's constructor
+            # (that's 3). So when we take constructor k, the driver pool may hold at
+            # most one driver from k's team once the captain is counted.
+            kteam = k.get("team")
+            kpool = pool
+            if kteam:
+                allow = 0 if c.get("team") == kteam else 1
+                kt = sorted((d for d in pool if d.get("team") == kteam),
+                            key=lambda d: -d["value"])
+                if len(kt) > allow:
+                    drop = {id(d) for d in kt[allow:]}
+                    kpool = [d for d in pool if id(d) not in drop]
+            four = dfs_optimize(kpool, 4, int(rem))   # best 4 drivers under what's left
             if not four:
                 continue
             score = cval + k["value"] + sum(d["value"] for d in four)
