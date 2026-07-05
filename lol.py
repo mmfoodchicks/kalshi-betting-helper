@@ -168,11 +168,11 @@ def team_players(team, min_maps=2):
 # Per-map role baselines (pro LoL): kills / assists / CS a role averages. Small
 # samples regress toward these so a 3-map call-up isn't taken at face value.
 _ROLE_BASE = {
-    "Top":     {"k": 2.8, "a": 5.5, "cs": 250.0},
-    "Jungle":  {"k": 3.2, "a": 7.5, "cs": 200.0},
-    "Mid":     {"k": 3.8, "a": 6.5, "cs": 270.0},
-    "Bot":     {"k": 4.2, "a": 6.0, "cs": 290.0},
-    "Support": {"k": 1.2, "a": 9.5, "cs": 40.0},
+    "Top":     {"k": 2.8, "a": 5.5, "cs": 250.0, "d": 2.5},
+    "Jungle":  {"k": 3.2, "a": 7.5, "cs": 200.0, "d": 2.8},
+    "Mid":     {"k": 3.8, "a": 6.5, "cs": 270.0, "d": 2.3},
+    "Bot":     {"k": 4.2, "a": 6.0, "cs": 290.0, "d": 2.2},
+    "Support": {"k": 1.2, "a": 9.5, "cs": 40.0, "d": 2.9},
 }
 _REG_MAPS = 6          # pseudo-maps of role prior blended into every projection
 
@@ -199,10 +199,12 @@ def player_projection(p):
     kf = [m["k"] for m in p["maps"]]
     af = [m["a"] for m in p["maps"]]
     cf = [m["cs"] for m in p["maps"]]
+    df = [m.get("d", b["d"]) for m in p["maps"]]
     return {"role": p.get("role"), "n": len(p["maps"]),
             "kills": round(_reg(kf, b["k"]), 2),
             "assists": round(_reg(af, b["a"]), 2),
             "cs": round(_reg(cf, b["cs"]), 1),
+            "deaths": round(_reg(df, b["d"]), 2),
             "kills_std": round(_std(kf) or (b["k"] ** 0.5), 2),
             "assists_std": round(_std(af) or (b["a"] ** 0.5), 2),
             "cs_std": round(_std(cf) or b["cs"] * 0.16, 1),

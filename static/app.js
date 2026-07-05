@@ -3700,7 +3700,10 @@ function renderLolDfs(d) {
   const rows = d.lineup.map((p) => {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     const cptTag = p.slot === "CPT" ? ` <span class="small" style="color:var(--accent)">1.5×</span>` : "";
-    const base = p.slot === "CPT" ? `<span class="small" style="color:var(--muted)"> (${p.base_proj}×1.5)</span>` : "";
+    // Show ours/DK when the model blended in; else just the (base×1.5) for CPT.
+    let base = "";
+    if (p.our_proj != null) base = `<span class="small" style="color:var(--muted)"> (ours ${p.our_proj} / DK ${p.dk_proj})</span>`;
+    else if (p.slot === "CPT") base = `<span class="small" style="color:var(--muted)"> (${p.base_proj}×1.5)</span>`;
     return `<div class="nfl-dfsrow">
       <span class="nfl-dfsslot">${p.slot}${cptTag}</span>
       <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)">${p.role}${p.team ? " · " + p.team : ""}</span></span>

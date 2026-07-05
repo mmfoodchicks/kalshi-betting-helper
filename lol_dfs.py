@@ -27,6 +27,74 @@ CPT_MULT = 1.5
 MAX_PER_TEAM = 4
 
 
+def _dk_player_points(pr, p_map, bo=3):
+    """Our projection of a player's DK LoL fantasy points for the series, from a
+    per-map K/D/A/CS projection + the per-map win prob. Kills +3 / assists +2 /
+    deaths -1 / CS +0.02 / 10+ K-or-A bonus +2, summed over the maps played, plus
+    the series-sweep GNP bonus (+20 per game not played)."""
+    import lol
+    k, a = pr["kills"], pr["assists"]
+    bonus = min(1.0, lol._pois_over(k, 9.5) + lol._pois_over(a, 9.5))
+    per_map = 3 * k + 2 * a - 1 * pr.get("deaths", 2.4) + 0.02 * pr["cs"] + 2 * bonus
+    need = bo // 2 + 1
+    p = max(0.05, min(0.95, p_map))
+    # E[maps played] and P(sweep) for a first-to-`need` series.
+    e_maps, p_sweep = 0.0, 0.0
+    for w in (True, False):                       # our team wins / loses
+        for losses in range(need):
+            import math
+            pr_ = math.comb(need - 1 + losses, losses) * (p if w else 1 - p) ** need * ((1 - p) if w else p) ** losses
+            e_maps += pr_ * (need + losses)
+            if w and losses == 0:
+                p_sweep += pr_
+    gnp = 20.0 * (bo - need) * p_sweep            # sweep -> (bo-need) games not played
+    return per_map * e_maps + gnp
+
+
+def _our_projections(entities, base):
+    """Best-effort {name: our_dk_projection} from the Leaguepedia model, using ONLY
+    already-cached data. The wiki is rate-limited (a cold pull can take minutes), so
+    we never trigger a fresh fetch inside a live DFS request -- if the LoL tab has
+    warmed the team rosters + Elo, the model blends in; otherwise we return {} and
+    fall back to DK's projection."""
+    try:
+        import lol
+        import time as _t
+
+        def warm(key, ttl=6 * 3600):
+            hit = lol._cache.get(key)
+            return hit[1] if (hit and _t.time() - hit[0] < ttl) else None
+
+        elo = warm(("lol_elo",))
+        if not elo:
+            return {}                                # Elo not warm -> skip (no blocking)
+        full = {e["team"]: e["name"] for e in entities if e["is_team"]}   # abbr -> full name
+        opp = {}
+        for e in entities:
+            g = e.get("game") or ""
+            if "@" in g:
+                away, home = g.split("@", 1)
+                opp[away.strip()], opp[home.strip()] = home.strip(), away.strip()
+        out = {}
+        for e in entities:
+            if e["is_team"] or e["name"] in out:
+                continue
+            tname = full.get(e["team"])
+            roster = warm(("lol_team", tname)) if tname else None
+            if not roster:
+                continue
+            match = next((v for nm, v in roster.items() if nm.lower() == e["name"].lower()), None)
+            if not match:
+                continue
+            pr = lol.player_projection(match)
+            oteam = full.get(opp.get(e["team"], ""), "")
+            p_map = lol._game_wp(tname, oteam, elo) if oteam else 0.5
+            out[e["name"]] = round(_dk_player_points(pr, p_map), 1)
+        return out
+    except Exception:
+        return {}
+
+
 def _parse(csv_text):
     """CPT pool + position pools + a per-name base projection, from the DK CSV."""
     rows = simulate.parse_dk_csv(csv_text)
@@ -238,6 +306,20 @@ def build(csv_text, objective="projection", contest=None, contest_size=None,
     if not cpt or any(not by_slot[s] for s in POS_SLOTS):
         return {"error": "CSV must include a CPT row and every position (TOP/JNG/MID/ADC/SUP/TEAM)"}
     all_ents = list(cpt) + [e for s in by_slot.values() for e in s]
+    # Blend an independent projection from our Leaguepedia K/D/A/CS model into DK's
+    # AvgPointsPerGame (light + DK-anchored -- our model is regressed, so it informs
+    # rather than overrides). Degrades to pure DK if the wiki is rate-limited.
+    ours = _our_projections(all_ents, base)
+    BLEND = 0.35
+    n_model = 0
+    for e in all_ents:
+        e["dk_proj"] = e["proj"]
+        op = ours.get(e["name"])
+        e["our_proj"] = op
+        if op is not None:
+            e["proj"] = round(BLEND * op + (1 - BLEND) * e["dk_proj"], 2)
+            base[e["name"]] = e["proj"]
+            n_model += 1
     arrays = _arrays(base, all_ents)
     for e in all_ents:                                  # precompute ceiling once (hot loop)
         e["ceil"] = _pct(arrays.get(e["name"], [e["proj"]]), 0.90)
@@ -261,12 +343,17 @@ def build(csv_text, objective="projection", contest=None, contest_size=None,
         pts = round(e["proj"] * (CPT_MULT if slot == "CPT" else 1.0), 1)
         rows.append({"slot": slot, "name": e["name"], "role": e["role"], "team": e["team"],
                      "salary": e["salary"], "proj": pts, "base_proj": round(e["proj"], 1),
+                     "dk_proj": round(e.get("dk_proj", e["proj"]), 1),
+                     "our_proj": (round(e["our_proj"], 1) if e.get("our_proj") is not None else None),
                      "own": e.get("own")})
-    return {"objective": objective, "salary": sal, "cap": CAP,
+    note = ("Projection = our Leaguepedia K/D/A/CS model (per-map, converted to DK scoring "
+            "incl. the series-sweep bonus) blended 35/65 with DK's AvgPointsPerGame."
+            if n_model else "Projections are DK's AvgPointsPerGame (our model was rate-limited "
+            "— open the LoL tab first to warm it).")
+    return {"objective": objective, "salary": sal, "cap": CAP, "n_model": n_model,
             "proj": round(sum(r["proj"] for r in rows), 1),
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),
             "ceiling": round(_pct(totals, 0.90), 1), "max": round(max(totals), 1),
             "lineup": rows, "contest_sim": csim, "is_lol": True,
-            "note": "Projections are DK's AvgPointsPerGame; the sim adds a team-correlated "
-                    "ceiling (a winning team's players boom together, incl. the series-sweep "
-                    "bonus). Captain scores 1.5x. Ownership is a model estimate."}
+            "note": note + " The sim adds a team-correlated ceiling (a winning team's players "
+                    "boom together). Captain scores 1.5x. Ownership is a model estimate."}
