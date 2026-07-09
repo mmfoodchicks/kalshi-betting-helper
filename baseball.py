@@ -1949,7 +1949,7 @@ def grade_picks():
 # (all correct) payout multipliers by pick count. DK's live board is authoritative
 # -- these are the typical tiers so we can show an approximate payout/EV.
 _PICK6_STATS = {"Hit": "hits", "Bases": "total bases", "HR": "home runs",
-                "Ks": "strikeouts"}
+                "SB": "stolen bases", "Ks": "strikeouts"}
 # DK Pick 6 only offers a Less side on pitcher strikeouts (and fantasy points,
 # which we don't board). Batter counting stats are More-only -- you lower the
 # line for a smaller multiplier, you never bet the under.
@@ -2010,7 +2010,7 @@ def pick6_board(games, top_n=60):
 
 
 _P6_SHEET_LABELS = {"hit": "hits", "tb": "total bases", "hrr": "H+R+RBI",
-                    "hr": "home runs", "ks": "strikeouts"}
+                    "hr": "home runs", "sb": "stolen bases", "ks": "strikeouts"}
 
 
 def pick6_game_sheet(games, pk=None):
@@ -2040,7 +2040,7 @@ def pick6_game_sheet(games, pk=None):
     for nm, stats in by.items():
         kind = "P" if "ks" in stats else "B"
         rows = []
-        for t in ("hit", "tb", "hrr", "hr", "ks"):
+        for t in ("hit", "tb", "hrr", "hr", "sb", "ks"):
             if t not in stats:
                 continue
             s = stats[t]

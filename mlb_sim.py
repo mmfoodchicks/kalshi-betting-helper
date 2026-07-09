@@ -713,6 +713,14 @@ def build_candidates(g, sim, types=None):
                 add("HRR", f"{nm} {m}+ H+R+RBI",
                     lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp,
                     None, {"t": "hrr", "player": nm, "line": m}, avg=a_hrr, unit="H+R+RBI")
+            # Stolen bases -- the base-out engine attempts steals off each runner's
+            # real speed/steal rate, so SB props read straight off the sim. The
+            # marginal filter naturally keeps this to players who actually run.
+            sb = st["sb"]
+            a_sb = round(_mean(sb), 2)
+            for m in (1, 2):
+                add("SB", f"{nm} {m}+ stolen bases", lambda i, a=sb, m=m: a[i] >= m, grp,
+                    None, {"t": "sb", "player": nm, "line": m}, avg=a_sb, unit="SB")
     # Starter strikeouts -- full ladder per starter (the high lines are the long
     # odds); the marginal filter drops any that are too unlikely. The closed-form
     # Poisson % lives in the ks_* dict (string keys).
