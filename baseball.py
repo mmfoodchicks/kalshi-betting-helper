@@ -1658,16 +1658,18 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
     """
     import mlb_sim
     target = max(0.05, min(0.97, target_pct / 100.0))
+    upcoming = [g for g in games if _game_state(g) not in ("Final", "Live")]
+    # Big leg counts make the per-game combinatorial search expensive; split a
+    # fixed budget across the slate so the request stays responsive.
+    budget = max(80_000, 700_000 // max(1, len(upcoming)))
     out = []
-    for g in games:
-        if _game_state(g) in ("Final", "Live"):
-            continue  # settled games are decided; live in-game props are stale
+    for g in upcoming:
         gs = _game_sim(g)               # shared with the edge finder + combos
         sim = gs["sim"]
         cands = [c for c in gs["cands"]
                  if (not types or c["type"] in types) and c["marg"] >= target]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
-                                      target_payout, max_legs)
+                                      target_payout, max_legs, budget=budget)
         if not item:
             continue
         item["matchup"] = g["matchup"]

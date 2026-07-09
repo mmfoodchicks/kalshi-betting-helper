@@ -1507,7 +1507,8 @@ def api_baseball_sgp():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     res = baseball.build_same_game_parlays(games, n_legs=legs, target_pct=target, types=_prop_types(),
-                                           target_payout=payout, n_sims=sims)
+                                           target_payout=payout, n_sims=sims,
+                                           max_legs=tiers.cap_legs(_tier(), 30))
     return jsonify(res)
 
 
@@ -1528,7 +1529,7 @@ def api_baseball_mixed():
         payout = request.args.get("payout")
         payout = float(payout) if payout not in (None, "", "0") else 0
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 5000))
-        max_total = tiers.cap_legs(_tier(), 12)
+        max_total = tiers.cap_legs(_tier(), 30)   # tier ceiling is the only cap
     except ValueError:
         return jsonify({"error": "bad legs/payout"}), 400
     # same_game off -> one leg per game (a plain cross-game combo, still simulated
@@ -1563,7 +1564,7 @@ def api_baseball_mixed():
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
                                        target_payout=payout, n_sims=sims,
-                                       max_legs_per_game=3 if same_game else 1,
+                                       max_legs_per_game=max_total if same_game else 1,
                                        max_total_legs=max_total,
                                        legs_mode=legs_mode, payout_mode=payout_mode,
                                        conn=conn, game_sel=sel or None,

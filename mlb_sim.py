@@ -821,7 +821,8 @@ def _pool(cands, k=22):
     return sorted(pool, key=lambda x: -x["marg"])[:k]
 
 
-def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
+def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
+                   budget=400_000):
     """Search same-game parlays and return the best item, or None.
 
     Payout mode (target_payout > 1): among combos whose fair payout reaches the
@@ -840,10 +841,25 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
     # return something (flagged) rather than nothing.
     best_clean = None  # (score, idxs, joint, worst_phi)
     best_any = None
+    # `budget` = total combos across every size we try (keeps big-slip searches
+    # responsive; the caller splits it across a multi-game slate).
+    reached_at = None                   # first size where the payout target was hit
     for sz in sizes:
-        if sz > len(cands):
+        if sz > len(cands) or budget < 5_000:
             break
-        for idxs in itertools.combinations(range(len(cands)), sz):
+        # In payout mode, once a combo reaches the target, a couple more sizes is
+        # enough -- extra legs only lower the joint probability from there.
+        if reached_at is not None and sz > reached_at + 2:
+            break
+        # Big slips would make C(pool, sz) explode (C(22,11) ~ 705k heavy-mask
+        # combos). The pool is sorted best-first, so shrink to a prefix that keeps
+        # the enumeration inside the budget -- large slips necessarily draw from
+        # the top candidates anyway.
+        k = len(cands)
+        while k > sz and math.comb(k, sz) > min(150_000, budget):
+            k -= 1
+        budget -= math.comb(k, sz)
+        for idxs in itertools.combinations(range(k), sz):
             combo = [cands[i] for i in idxs]
             masks = [c["mask"] for c in combo]
             if _redundant(masks) or _market_conflict(combo):
@@ -858,6 +874,8 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs):
             if payout_mode:
                 if payout >= target_payout:
                     score = 1000.0 + joint        # reached -> safest that still pays
+                    if reached_at is None:
+                        reached_at = sz
                 else:
                     score = payout                # not reached -> chase max payout
             else:
