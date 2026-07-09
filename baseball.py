@@ -2009,6 +2009,83 @@ def pick6_board(games, top_n=60):
             "payouts": {str(k): v for k, v in _PICK6_PAYOUT.items()}}
 
 
+_P6_SHEET_LABELS = {"hit": "hits", "tb": "total bases", "hrr": "H+R+RBI",
+                    "hr": "home runs", "ks": "strikeouts"}
+
+
+def pick6_game_sheet(games, pk=None):
+    """Full per-player simulated stat sheet for ONE game: every batter's hits /
+    total bases / H+R+RBI / HR and every starter's Ks, with the sim average and
+    the More probability at every line the sim tracked. This powers the Pick 6
+    browser -- the user picks the line (0.5 / 1.5 / 2.5...), we just report what
+    the 4000-run sim says about it."""
+    upcoming = [g for g in games if _game_state(g) != "Final"]
+    glist = [{"pk": g["game_pk"], "matchup": g["matchup"],
+              "live": _game_state(g) == "Live"} for g in upcoming]
+    g = next((x for x in upcoming if x["game_pk"] == pk),
+             upcoming[0] if upcoming else None)
+    if g is None:
+        return {"games": [], "error": "no upcoming games on this slate"}
+    gs = _game_sim(g)
+    by = {}
+    for c in gs["cands"]:
+        kref = c.get("kref") or {}
+        t, player, N = kref.get("t"), kref.get("player"), kref.get("line")
+        if t not in _P6_SHEET_LABELS or not player or N is None:
+            continue
+        s = by.setdefault(player, {}).setdefault(
+            t, {"avg": c.get("sim_avg"), "unit": c.get("avg_unit"), "lines": {}})
+        s["lines"][int(N)] = round(c["marg"] * 100, 1)
+    players = []
+    for nm, stats in by.items():
+        kind = "P" if "ks" in stats else "B"
+        rows = []
+        for t in ("hit", "tb", "hrr", "hr", "ks"):
+            if t not in stats:
+                continue
+            s = stats[t]
+            rows.append({"t": t, "label": _P6_SHEET_LABELS[t], "avg": s["avg"],
+                         "unit": s["unit"],
+                         "lines": [{"n": nn, "line": nn - 0.5, "more_pct": p}
+                                   for nn, p in sorted(s["lines"].items())]})
+        lead = next((r["avg"] for r in rows if r["avg"] is not None), 0)
+        players.append({"player": nm, "kind": kind, "stats": rows, "_s": lead or 0})
+    players.sort(key=lambda x: (x["kind"] != "P", -x["_s"]))
+    for p in players:
+        p.pop("_s")
+    return {"games": glist, "pk": g["game_pk"], "matchup": g["matchup"],
+            "players": players, "n_sims": gs["sim"]["n"],
+            "payouts": {str(k): v for k, v in _PICK6_PAYOUT.items()}}
+
+
+def pick6_eval(games, pk, legs):
+    """Exact joint odds for a hand-built Pick 6 slip, read off the shared game
+    sim: AND the legs' hit-masks (complement for a Less side) instead of
+    multiplying marginals -- same-game legs are correlated and the product lies."""
+    import mlb_sim
+    g = next((x for x in games if x["game_pk"] == pk), None)
+    if g is None:
+        return {"error": "game not found"}
+    gs = _game_sim(g)
+    n = gs["sim"]["n"]
+    full = (1 << n) - 1
+    jm, indep = full, 1.0
+    for leg in legs:
+        c = next((c for c in gs["cands"]
+                  if (c.get("kref") or {}).get("t") == leg.get("t")
+                  and c["kref"].get("player") == leg.get("player")
+                  and c["kref"].get("line") == leg.get("n")), None)
+        if c is None:
+            return {"error": f"leg not in the sim: {leg.get('player')} {leg.get('t')} {leg.get('n')}"}
+        m = c["mask"] if leg.get("side", "More") == "More" else (~c["mask"]) & full
+        indep *= mlb_sim._popcount(m) / n
+        jm &= m
+    joint = mlb_sim._popcount(jm) / n
+    return {"n_legs": len(legs), "n_sims": n,
+            "joint_pct": round(joint * 100, 1), "indep_pct": round(indep * 100, 1),
+            "sims_hit": mlb_sim._popcount(jm)}
+
+
 def build_combos(games, max_legs=3, top_n=6, types=None):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.

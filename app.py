@@ -1483,6 +1483,45 @@ def api_baseball_pick6():
     return jsonify(baseball.pick6_board(games))
 
 
+@app.route("/api/baseball/pick6/sheet")
+def api_baseball_pick6_sheet():
+    """Pick 6 game browser: one game's full per-player simulated stat sheet
+    (avg + More% at every line) plus the slate's game list. ?date=&pk=."""
+    import datetime as _dt
+    date = request.args.get("date") or _dt.date.today().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        pk = int(request.args.get("pk", 0)) or None
+    except ValueError:
+        pk = None
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    return jsonify(baseball.pick6_game_sheet(games, pk))
+
+
+@app.route("/api/baseball/pick6/eval", methods=["POST"])
+def api_baseball_pick6_eval():
+    """Exact joint odds for a hand-built same-game Pick 6 slip (masks ANDed on
+    the shared sim, not an independence product)."""
+    import datetime as _dt
+    d = request.get_json(force=True, silent=True) or {}
+    date = d.get("date") or _dt.date.today().isoformat()
+    legs = d.get("legs") or []
+    try:
+        pk = int(d.get("pk", 0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "bad pk"}), 400
+    if not (1 <= len(legs) <= 6):
+        return jsonify({"error": "1-6 legs"}), 400
+    try:
+        games = baseball.analyze_slate(date, date[:4])
+    except Exception as e:
+        return jsonify({"error": f"baseball data failed: {e}"}), 502
+    return jsonify(baseball.pick6_eval(games, pk, legs))
+
+
 @app.route("/api/baseball/sgp")
 def api_baseball_sgp():
     """Same-game parlays with correlation-aware (simulated) joint odds. Legs from

@@ -1438,69 +1438,95 @@ function setupBaseballSubtabs() {
 }
 
 // ---- DraftKings Pick 6 builder -------------------------------------------
-let _pick6 = { picks: [], payouts: {}, sel: new Set() };
-async function loadPick6() {
+// Pick 6 browser: pick a game -> every player's simulated averages + the More%
+// at every line -> click lines to build a slip. Joint odds come from the server
+// (masks ANDed on the shared sim), since same-game legs are correlated.
+let _p6b = { games: [], pk: null, players: [], payouts: {}, slip: [] };
+async function loadPick6(pk) {
+  pk = pk || _p6b.pk;
   const box = $("bbPick6");
   const date = $("bbDate").value;
-  box.innerHTML = `<div class="empty">Simulating player props…</div>`;
+  if (!_p6b.games.length) box.innerHTML = `<div class="empty">Simulating the game (4000 runs)…</div>`;
   try {
-    const d = await (await fetch(`/api/baseball/pick6?date=${date}`)).json();
+    const d = await (await fetch(`/api/baseball/pick6/sheet?date=${date}${pk ? `&pk=${pk}` : ""}`)).json();
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    _pick6 = { picks: d.picks || [], payouts: d.payouts || {}, sel: new Set() };
-    renderPick6();
+    const keepSlip = (_p6b.pk === d.pk) ? _p6b.slip : [];   // slip is per-game
+    _p6b = { ...d, slip: keepSlip };
+    renderP6Browser();
+    p6Eval();
   } catch (e) { box.innerHTML = `<div class="empty">Pick 6 unavailable.</div>`; }
 }
-function togglePick6(i) {
-  const inp = document.querySelectorAll("#bbPick6 .p6row input")[i];
-  if (_pick6.sel.has(i)) {
-    _pick6.sel.delete(i);
-  } else if (_pick6.sel.size < 6) {
-    _pick6.sel.add(i);
-  } else {
-    if (inp) inp.checked = false;   // at the 6-pick cap: bounce the extra check
-    return;
-  }
-  // Update just this row's highlight + the running tally (no full re-render, so
-  // scroll position and the other checkboxes are preserved).
-  const row = document.querySelectorAll("#bbPick6 .p6row")[i];
-  if (row) row.classList.toggle("on", _pick6.sel.has(i));
-  renderPick6Tally();
+function p6on(player, t, n, side) {
+  return _p6b.slip.some((l) => l.player === player && l.t === t && l.n === n && l.side === side);
 }
-function renderPick6() {
+function renderP6Browser() {
   const box = $("bbPick6");
-  if (!_pick6.picks.length) {
-    box.innerHTML = `<div class="empty">No Pick 6 leans yet — batter props post with lineups (a few hours pre-game); pitcher strikeout picks show as soon as the slate loads.</div>`;
-    return;
-  }
-  const rows = _pick6.picks.map((p, i) => {
-    const on = _pick6.sel.has(i);
-    return `<label class="p6row${on ? " on" : ""}">
-      <input type="checkbox" ${on ? "checked" : ""} onchange="togglePick6(${i})">
-      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
-      <span class="p6name">${p.player} <span class="p6stat">${p.stat}</span></span>
-      <span class="p6game">${abbrMatch(p.matchup)}</span>
-      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
-    </label>`;
+  const opts = _p6b.games.map((g) =>
+    `<option value="${g.pk}"${g.pk === _p6b.pk ? " selected" : ""}>${g.matchup}${g.live ? " · LIVE" : ""}</option>`).join("");
+  const rows = (_p6b.players || []).map((pl, pi) => {
+    const stats = pl.stats.map((st, si) => {
+      const chips = st.lines.map((ln, li) => {
+        let h = `<button class="p6chip${p6on(pl.player, st.t, ln.n, "More") ? " on" : ""}" onclick="p6add(${pi},${si},${li},'More')">${ln.line}+ <b>${ln.more_pct}%</b></button>`;
+        if (st.t === "ks")   // DK offers a Less side on pitcher Ks only
+          h += `<button class="p6chip lessc${p6on(pl.player, st.t, ln.n, "Less") ? " on" : ""}" onclick="p6add(${pi},${si},${li},'Less')">&lt;${ln.line} <b>${Math.round((100 - ln.more_pct) * 10) / 10}%</b></button>`;
+        return h;
+      }).join("");
+      return `<div class="p6statline"><span class="p6statlbl">${st.label} <b>${st.avg != null ? st.avg : "—"}</b><span class="small" style="color:var(--faint)"> avg</span></span><span class="p6chips">${chips}</span></div>`;
+    }).join("");
+    return `<div class="p6prow"><div class="p6pname">${pl.kind === "P" ? "🧢 " : ""}${pl.player}</div>${stats}</div>`;
   }).join("");
-  box.innerHTML = `<div id="p6tally" class="p6tally"></div><div class="p6list">${rows}</div>`;
-  renderPick6Tally();
+  box.innerHTML = `
+    <div class="scan-controls" style="margin-bottom:8px">
+      <select id="p6game" onchange="loadPick6(parseInt(this.value,10))">${opts}</select>
+      <span class="small" style="color:var(--muted)">${nf(_p6b.n_sims)} sims · avg = what the sim expects · click a line to add it to your slip</span>
+    </div>
+    <div id="p6slip" class="p6tally"></div>
+    <div class="p6sheet">${rows || `<div class="empty">No simmable players yet — batter props post with lineups (a few hours pre-game).</div>`}</div>`;
+  renderP6Slip();
 }
-function renderPick6Tally() {
-  const t = $("p6tally");
+function p6add(pi, si, li, side) {
+  const pl = _p6b.players[pi], st = pl.stats[si], ln = st.lines[li];
+  const prob = side === "More" ? ln.more_pct : Math.round((100 - ln.more_pct) * 10) / 10;
+  const leg = { player: pl.player, t: st.t, label: st.label, n: ln.n, line: ln.line, side, prob };
+  const i = _p6b.slip.findIndex((l) => l.player === pl.player && l.t === st.t);
+  if (i >= 0 && _p6b.slip[i].n === ln.n && _p6b.slip[i].side === side) _p6b.slip.splice(i, 1);  // toggle off
+  else if (i >= 0) _p6b.slip[i] = leg;              // same player+stat -> switch the line
+  else if (_p6b.slip.length < 6) _p6b.slip.push(leg);
+  else return;                                      // 6-leg cap (DK Pick 6)
+  renderP6Browser();
+  p6Eval();
+}
+function p6rm(i) { _p6b.slip.splice(i, 1); renderP6Browser(); p6Eval(); }
+function renderP6Slip(ev) {
+  const t = $("p6slip");
   if (!t) return;
-  const n = _pick6.sel.size;
-  if (n < 2) {
-    t.innerHTML = `<span class="small">Pick <b>2–6</b> player props (all must hit). ${n} selected.</span>`;
+  const n = _p6b.slip.length;
+  if (!n) {
+    t.innerHTML = `<span class="small">🎯 <b>Your slip</b> — click lines below (2–6 picks, all must hit). The % on each chip is the sim's chance at that exact line; DK's posted line governs.</span>`;
     return;
   }
-  let prob = 1;
-  const sameGame = {};
-  _pick6.sel.forEach((i) => { prob *= _pick6.picks[i].prob / 100; sameGame[_pick6.picks[i].matchup] = (sameGame[_pick6.picks[i].matchup] || 0) + 1; });
-  const pay = _pick6.payouts[String(n)] || null;
-  const ev = pay ? Math.round((prob * pay - 1) * 100) : null;
-  const corr = Object.values(sameGame).some((c) => c > 1)
-    ? ` <span class="small" style="color:var(--muted)">⚠ some picks share a game — real correlation makes the true chance differ from this independent estimate</span>` : "";
-  t.innerHTML = `<b>${n}-pick</b> · all-hit chance <b>${(prob * 100).toFixed(1)}%</b>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${ev >= 0 ? "ev pos" : "ev neg"}">${ev >= 0 ? "+" : ""}${ev}%</b>` : ""}${corr}`;
+  const legs = _p6b.slip.map((l, i) =>
+    `<span class="p6slipleg"><span class="p6side ${l.side === "More" ? "more" : "less"}">${l.side} ${l.line}</span> ${l.player} <span class="p6stat">${l.label}</span> <b>${l.prob}%</b><button class="p6x" onclick="p6rm(${i})" title="remove">×</button></span>`).join("");
+  let tally;
+  if (n >= 2) {
+    const pay = _p6b.payouts[String(n)];
+    if (ev && ev.joint_pct != null) {
+      const evPct = pay ? Math.round((ev.joint_pct / 100 * pay - 1) * 100) : null;
+      tally = ` · joint <b>${ev.joint_pct}%</b> <span class="small" style="color:var(--muted)" title="what independent multiplication would claim — same-game legs are correlated, the joint number is the real one">(indep ${ev.indep_pct}%)</span>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${evPct >= 0 ? "ev pos" : "ev neg"}">${evPct >= 0 ? "+" : ""}${evPct}%</b>` : ""}`;
+    } else tally = ` · <span class="small" style="color:var(--muted)">computing correlated joint odds…</span>`;
+  } else tally = ` · <span class="small">add ${2 - n} more for a payable slip</span>`;
+  t.innerHTML = `<b>${n}-pick</b>${tally}<div class="p6sliplegs">${legs}</div>`;
+}
+async function p6Eval() {
+  renderP6Slip();
+  if (_p6b.slip.length < 2) return;
+  try {
+    const body = { date: $("bbDate").value, pk: _p6b.pk,
+                   legs: _p6b.slip.map((l) => ({ t: l.t, player: l.player, n: l.n, side: l.side })) };
+    const d = await (await fetch("/api/baseball/pick6/eval", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
+    renderP6Slip(d.error ? null : d);
+  } catch (e) { /* leave the independent view */ }
 }
 function abbrMatch(mu) {
   if (!mu) return "";

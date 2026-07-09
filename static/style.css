@@ -618,6 +618,28 @@ button.danger { color: var(--no); }
   .nfl-simrow .nfl-srnum:nth-child(4), .nfl-simrow .nfl-srnum:nth-child(6) { display: none; }
 }
 
+/* Pick 6 game browser: per-player stat sheet + clickable line chips */
+.p6sheet { display: flex; flex-direction: column; gap: 6px; }
+.p6prow { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+  background: rgba(255,255,255,0.02); }
+.p6pname { font-weight: 700; margin-bottom: 4px; }
+.p6statline { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 2px 0; }
+.p6statlbl { min-width: 128px; font-size: 0.82rem; color: var(--muted); }
+.p6statlbl b { color: var(--text); font-size: 0.92rem; }
+.p6chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.p6chip { font-size: 0.74rem; padding: 2px 7px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: rgba(52,211,153,0.07); color: var(--text);
+  font-variant-numeric: tabular-nums; }
+.p6chip.lessc { background: rgba(248,113,113,0.07); }
+.p6chip:hover { border-color: var(--accent); }
+.p6chip.on { border-color: var(--accent); background: rgba(91,140,255,0.18); }
+.p6sliplegs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.p6slipleg { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem;
+  border: 1px solid var(--border); border-radius: 999px; padding: 2px 4px 2px 4px;
+  background: rgba(255,255,255,0.03); }
+.p6x { border: none; background: none; color: var(--no); cursor: pointer;
+  font-size: 0.9rem; padding: 0 4px; line-height: 1; }
+
 /* DraftKings Pick 6 builder */
 .p6tally { position: sticky; top: 0; background: var(--card2); border: 1px solid var(--border);
   border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 0.9rem; z-index: 2; }
