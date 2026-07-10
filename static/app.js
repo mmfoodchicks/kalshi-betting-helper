@@ -3284,8 +3284,8 @@ function renderTeamDetail(d) {
     <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls">
-      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
-      <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
+      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
+      <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
     </div>
   </div>`;
 }

@@ -219,35 +219,59 @@ def team_detail(agg, season, tid):
     except Exception:
         real = {}
 
+    # The deep run simulates the REMAINING schedule, so the per-player sim
+    # totals are rest-of-season only. The futures view promises "where does he
+    # finish the season" — the headline must be CURRENT + simulated remainder
+    # (a projection can never sit below what's already banked: showing 47 Ks
+    # against a real 66 reads as nonsense). The real line stays in `real` for
+    # the parenthetical, untouched.
     def bat_line(p, role="starter"):
         s = agg["bat"].get(p["id"])
         if not s or s["pa"] < 1:
             return None
-        ab = s["ab"] / n
         r = real.get(p["id"], {})
+        rb = r.get("bat") or {}
+        def tot(key):
+            return round((rb.get(key) or 0) + s.get(key, 0) / n)
+        ab_t = (rb.get("ab") or 0) + s["ab"] / n
+        h_t = (rb.get("h") or 0) + s["h"] / n
         return {"name": p["name"], "side": p["side"], "id": p["id"], "role": role,
                 "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
-                "pa": round(s["pa"] / n), "ab": round(ab),
-                "h": round(s["h"] / n), "hr": round(s["hr"] / n),
-                "2b": round(s["2b"] / n), "3b": round(s["3b"] / n),
-                "bb": round(s["bb"] / n), "k": round(s["k"] / n),
-                "r": round(s["r"] / n), "rbi": round(s["rbi"] / n),
-                "sb": round(s.get("sb", 0) / n),
+                "pa": tot("pa"), "ab": round(ab_t),
+                "h": round(h_t), "hr": tot("hr"),
+                "2b": tot("2b"), "3b": tot("3b"),
+                "bb": tot("bb"), "k": tot("k"),
+                "r": tot("r"), "rbi": tot("rbi"),
+                "sb": tot("sb"),
                 "ph_g": round(s.get("ph", 0) / n, 1),
-                "avg": round(s["h"] / s["ab"], 3) if s["ab"] else 0,
+                "avg": round(h_t / ab_t, 3) if ab_t else 0,
                 "real": r.get("bat")}
 
     def pit_line(p):
         s = agg["pit"].get(p["id"])
         if not s or s["outs"] < 1:
             return None
-        ip = s["outs"] / 3 / n
         r = real.get(p["id"], {})
+        rp = r.get("pit") or {}
+        # Real IP arrives as MLB's "101.2" (innings.outs) string.
+        try:
+            whole, _, thirds = str(rp.get("ip") or "0").partition(".")
+            rip = float(whole) + (float(thirds) / 3 if thirds else 0)
+        except Exception:
+            rip = 0.0
+        sim_ip = s["outs"] / 3 / n
+        ip_t = rip + sim_ip
+        # Season-end ERA: real earned runs (era*ip/9) + the sim's runs (the
+        # sim already reports runs-as-earned; same approximation as before).
+        rer = (rp.get("era") or 0) * rip / 9.0
+        er_t = rer + s["r"] / n
+        def tot(key):
+            return round((rp.get(key) or 0) + s.get(key, 0) / n)
         return {"name": p["name"], "hand": p["hand"], "id": p["id"],
                 "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
-                "ip": round(ip, 1), "k": round(s["k"] / n), "bb": round(s["bb"] / n),
-                "h": round(s["h"] / n), "hr": round(s["hr"] / n), "r": round(s["r"] / n),
-                "era": round(9 * (s["r"] / n) / ip, 2) if ip else None,
+                "ip": round(ip_t, 1), "k": tot("k"), "bb": tot("bb"),
+                "h": tot("h"), "hr": tot("hr"), "r": tot("r"),
+                "era": round(9 * er_t / ip_t, 2) if ip_t else None,
                 "role": "SP" if p in prof["rotation"] else "RP",
                 "real": r.get("pit")}
 
