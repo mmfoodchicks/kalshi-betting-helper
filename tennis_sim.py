@@ -39,7 +39,11 @@ def point_probs(ra, rb, lg):
     spw, rpw = lg["spw"], lg["rpw"]
     pa = spw + (ra["spw"] - spw) - (rb["rpw"] - rpw)
     pb = spw + (rb["spw"] - spw) - (ra["rpw"] - rpw)
-    return min(0.90, max(0.50, pa)), min(0.90, max(0.50, pb))
+    # Floor at 0.40, not 0.50: a weak server vs an elite returner genuinely
+    # wins under half their service points (common in the women's game, where
+    # the tour serve average is only ~0.56). Clamping at 0.50 quietly biased
+    # every weak server up; the hold formula is exact below 0.5 too.
+    return min(0.90, max(0.40, pa)), min(0.90, max(0.40, pb))
 
 
 def _tiebreak(rng, pa, pb, a_first):
@@ -98,8 +102,8 @@ def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None):
     if fatigue:
         # differential only -- if both are equally tired it washes out
         shift = max(-0.025, min(0.025, (fatigue[0] - fatigue[1]) * 0.004))
-        pa = min(0.90, max(0.50, pa - shift))
-        pb = min(0.90, max(0.50, pb + shift))
+        pa = min(0.90, max(0.40, pa - shift))
+        pb = min(0.90, max(0.40, pb + shift))
     holdA, holdB = _hold(pa), _hold(pb)
     need = best_of // 2 + 1
     max_sets = best_of

@@ -190,12 +190,20 @@ def _insights(a, b, sim, surface):
     return out[:6]
 
 
-def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
+def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
+                 slam_names=None):
     if len(players) != 2:
         return None
     date = _event_date(ev)
     surface = _surface_for(date)
-    best_of = 5 if (tour_label == "ATP" and _is_slam(ev)) else 3
+    # Best-of-5 only for men's Grand Slam matches. The ticker carries NO
+    # tournament (just [date][3 letters per player] — "NARdi GUErrieri"
+    # contains "RG" and used to price as a five-setter), so slam status comes
+    # from the ESPN schedule: is either player in a slam singles draw?
+    best_of = 3
+    if tour_label == "ATP" and slam_names:
+        if _norm(players[0]["name"]) in slam_names or _norm(players[1]["name"]) in slam_names:
+            best_of = 5
     # ITF: exact-name match only (no last-name fuzzy) so we never attach a charted
     # ATP/WTA player to an unrelated lower-tier player and invent an edge.
     fuzzy = not tour_label.startswith("ITF")
@@ -326,22 +334,20 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m"):
     return match
 
 
-_SLAM_HINTS = ("WIM", "USO", "RG", "FREN", "AUS", "AO", "ROLAND", "OPEN")
-
-
-def _is_slam(ev):
-    e = (ev or "").upper()
-    return any(h in e for h in _SLAM_HINTS)
-
-
 def _compute(n_sims=12000):
     fatigue_idx = _fatigue_index()
+    try:
+        import tennis_live
+        slam_names = tennis_live.slam_singles_names()
+    except Exception:
+        slam_names = set()
     matches = []
     for label, series, tcode in _TOURS:
         evs = _match_markets(series)
         for ev, players in evs.items():
             try:
-                m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode)
+                m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode,
+                                 slam_names=slam_names)
             except Exception:
                 m = None
             if m:
@@ -353,7 +359,7 @@ def _compute(n_sims=12000):
     # trustworthy plays top the board -- thin-data mirages sink.
     matches.sort(key=lambda m: (m.get("play_strength", 0),
                                 m["a"].get("confidence", 0)), reverse=True)
-    return {"sport": "tennis", "generated": datetime.datetime.utcnow().isoformat() + "Z",
+    return {"sport": "tennis", "generated": clock.now_et().isoformat(timespec="seconds"),
             "n_matches": len(matches), "matches": matches}
 
 

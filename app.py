@@ -1341,6 +1341,13 @@ def api_tennis():
     if not board:
         return jsonify({"status": "computing",
                         "message": "rating players from their charted matches…"}), 202
+    # Live merge happens per-request (60s ESPN snapshot), NOT inside the 20-min
+    # board cache: scores move fast and the upset radar is only useful live.
+    try:
+        import tennis_live
+        board = tennis_live.attach(board)
+    except Exception:
+        pass
     return jsonify(board)
 
 

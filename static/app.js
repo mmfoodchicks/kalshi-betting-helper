@@ -2719,17 +2719,20 @@ function renderUFC() {
 }
 
 // ---- Tennis ----
-let _tnData = null, _tnPoll = null, _tnSub = "all";
+let _tnData = null, _tnLivePoll = null, _tnPoll = null, _tnSub = "all";
 function initTennis() {
   if (!$("tnResults").dataset.loaded) {
     $("tnResults").dataset.loaded = "1";
     loadTennis();
+    $("tnSearch")?.addEventListener("input", () => renderTennis());
     document.querySelectorAll("#tnSubtabs .subtab").forEach((b) => {
       b.addEventListener("click", () => {
         document.querySelectorAll("#tnSubtabs .subtab").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         _tnSub = b.dataset.tnsub;
         renderTennis();
+        clearInterval(_tnLivePoll); _tnLivePoll = null;
+        if (_tnSub === "live" || _tnSub === "upsets") _tnLivePoll = setInterval(loadTennis, 60000);
       });
     });
   }
@@ -2776,8 +2779,26 @@ function renderTennis() {
   else if (_tnSub === "itf") matches = matches.filter((m) => (m.tour || "").startsWith("ITF"));
   else if (_tnSub === "edges") matches = matches.filter((m) =>
     [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
-  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>, sorted best play first. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b> built from settled results. For ITF / uncharted players we rate them from Elo alone (📊), and where there's no data we show the market (⚪). The green <b>✅ Lean</b> is the side to look at; Elo defers to liquid markets, so no longshot traps. Edge = fair win% − Kalshi ask.`;
-  if (!matches.length) { $("tnResults").innerHTML = `<div class="empty">No matches in this view.</div>`; return; }
+  else if (_tnSub === "live") {
+    matches = matches.filter((m) => m.live);
+    matches.sort((x, y) => (y.upset_score || 0) - (x.upset_score || 0));
+  } else if (_tnSub === "upsets") {
+    matches = matches.filter((m) => m.upset);
+    matches.sort((x, y) => (y.upset_score || 0) - (x.upset_score || 0));
+  }
+  const q = ($("tnSearch")?.value || "").trim().toLowerCase();
+  if (q) matches = matches.filter((m) =>
+    (m.a.name + " " + m.b.name + " " + (m.tour || "") + " " + ((m.live || {}).tournament || ""))
+      .toLowerCase().includes(q));
+  const liveBit = d.n_live ? ` · <b style="color:#e5484d">🔴 ${d.n_live} live</b>` : "";
+  const upBit = d.n_upsets ? ` · <b style="color:#e5484d">🚨 ${d.n_upsets} favorite${d.n_upsets > 1 ? "s" : ""} trailing</b>` : "";
+  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>${liveBit}${upBit}, sorted best play first. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b> built from settled results. For ITF / uncharted players we rate them from Elo alone (📊), and where there's no data we show the market (⚪). The green <b>✅ Lean</b> is the side to look at; Elo defers to liquid markets, so no longshot traps. Edge = fair win% − Kalshi ask.`;
+  if (!matches.length) {
+    const msg = _tnSub === "live" ? "No tracked matches on court right now."
+      : _tnSub === "upsets" ? "No big favorites trailing right now — check back during play."
+      : q ? `No matches for “${q}”.` : "No matches in this view.";
+    $("tnResults").innerHTML = `<div class="empty">${msg}</div>`; return;
+  }
   const tierTag = { high: ['🟢', 'High confidence'], medium: ['🟡', 'Medium confidence'], thin: ['🔴', 'Thin data'], elo: ['📊', 'Elo (recent results)'], market: ['⚪', 'Market only'] };
   $("tnResults").innerHTML = matches.map((m) => {
     const a = m.a, b = m.b;
@@ -2799,9 +2820,16 @@ function renderTennis() {
       : (m.modeled === false
         ? `<div class="tn-lean none">Market-priced — no charting data on these players, so we defer to Kalshi's odds</div>`
         : `<div class="tn-lean none">No edge — model agrees with the market</div>`);
-    return `<div class="tn-match">
-        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of}
+    const lv = m.live;
+    const liveChip = lv
+      ? `<span class="tn-livechip">🔴 LIVE ${lv.sets_a}–${lv.sets_b}${lv.cur ? ` (${lv.cur[0]}-${lv.cur[1]})` : ""} · ${lv.detail || lv.score}</span>` : "";
+    const up = m.upset;
+    const upBanner = up
+      ? `<div class="tn-upset">🚨 <b>${up.fav}</b> (Elo edge ${up.gap}) is ${up.note} — sets ${up.sets}${up.fav_cents != null ? ` · now ${up.fav_cents}¢` : ""}. Sentiment window: the market overshoots on a big name dropping a set.</div>` : "";
+    return `<div class="tn-match${up ? " upsetcard" : ""}">
+        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
+        ${upBanner}
         ${_tnPlayer(a)}${_tnPlayer(b)}
         ${lean}
         <div class="tn-derived">${games}${distance}${aces}${setsLine ? `<span class="tn-chip">${setsLine}</span>` : ""}</div>

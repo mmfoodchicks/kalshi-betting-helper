@@ -79,4 +79,11 @@ def confirmed_live():
     with _cf.ThreadPoolExecutor(max_workers=len(_LEAGUES)) as ex:
         for r in ex.map(one, _LEAGUES):
             games.extend(r)
+    # Tennis uses a different (groupings) scoreboard shape, so it has its own
+    # parser — it was missing from this tab entirely before.
+    try:
+        import tennis_live
+        games.extend(tennis_live.live_rows())
+    except Exception:
+        pass
     return games

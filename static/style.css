@@ -915,3 +915,11 @@ body.tier-locked .owner-only { display: none !important; }
   .dr-prow .dr-pboom { display: none; }
   .dr-cols { grid-template-columns: 1fr; }
 }
+
+/* Tennis live + upset radar */
+.tn-livechip { color: #e5484d; font-weight: 700; text-transform: none; letter-spacing: 0;
+  background: rgba(229,72,77,0.12); border: 1px solid rgba(229,72,77,0.45);
+  border-radius: 6px; padding: 1px 7px; margin-left: 6px; font-size: 0.72rem; }
+.tn-upset { margin: 5px 0 2px; font-size: 0.85rem; padding: 6px 9px; border-radius: 8px;
+  background: rgba(229,72,77,0.12); border: 1px solid rgba(229,72,77,0.55); }
+.tn-match.upsetcard { border-color: rgba(229,72,77,0.55); }
