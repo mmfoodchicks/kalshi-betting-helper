@@ -139,6 +139,7 @@ def live_rows():
             "title": f"{r['a']} vs {r['b']}",
             "score": f"{r['sets_a']}–{r['sets_b']} sets{cur}",
             "detail": f"{r['tournament']} · {r['detail']}".strip(" ·"),
+            "nav": {"tab": "tennis", "q": r["a"]},
         })
     return out
 

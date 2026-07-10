@@ -858,6 +858,7 @@ def api_sports_live():
                     "title": f"{g['away_name']} @ {g['home_name']}",
                     "detail": f"{lv.get('inning_state', '')} {lv.get('inning', '')}".strip(),
                     "score": f"{lv.get('away_runs', 0)}–{lv.get('home_runs', 0)}",
+                    "nav": {"tab": "baseball", "pk": g["game_pk"]},
                 })
     except Exception:
         pass

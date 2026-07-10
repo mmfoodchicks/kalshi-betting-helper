@@ -217,6 +217,15 @@ def inject(rows):
         depth[pos] = k + 1
         if nm in have or rank > _INJECT_MAX_RANK:
             continue
+        # Synthesized rows need a real, rostered, active player behind them.
+        # Sleeper's search_rank keeps famous RETIRED names high (people still
+        # search them), so without this gate Todd Gurley materializes at a
+        # top-50 board spot with a projection invented from thin air. A
+        # production-pool player who's merely unsigned keeps his row (his
+        # stats are real and the FA badge shows); a consensus-only ghost with
+        # no team or non-Active status must not.
+        if c.get("fa") or (c.get("status") or "Active") != "Active":
+            continue
         curve = by_pos.get(pos) or [80.0]
         season = curve[min(len(curve) - 1, k)]
         fppg = season / _GAMES

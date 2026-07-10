@@ -57,12 +57,17 @@ def _parse(label, d):
             return t.get("shortDisplayName") or t.get("displayName") or t.get("name") or "?"
         detail = (((e.get("status") or comp.get("status") or {}).get("type") or {})
                   .get("shortDetail")) or "Live"
-        out.append({
+        row = {
             "sport": label, "confirmed": True,
             "title": f"{nm(away)} @ {nm(home)}",
             "score": f"{away.get('score', 0)}–{home.get('score', 0)}",
             "detail": detail,
-        })
+        }
+        # Click-through: NFL games have a dedicated tab; the frontend finds the
+        # game card by matching both team nicknames in the board text.
+        if "NFL" in label:
+            row["nav"] = {"tab": "nfl", "q": f"{nm(away)}|{nm(home)}"}
+        out.append(row)
     return out
 
 

@@ -1986,11 +1986,13 @@ async function loadLive() {
     }
     const conf = d.games.filter((g) => g.confirmed);
     const inf = d.games.filter((g) => !g.confirmed);
+    _liveNavs = d.games.map((g) => g.nav || null);
+    const navi = (g) => { const i = d.games.indexOf(g); return _liveNavs[i] ? ` golive" data-navi="${i}` : ""; };
     let h = "";
     if (conf.length) {
       h += `<div class="teamhdr">🔴 Confirmed live</div>`;
-      h += conf.map((g) => `<div class="liverow"><b>${g.sport}</b> ${g.title}
-        <span class="livescore">${g.score || ""}</span> <span class="small">${g.detail || ""}</span></div>`).join("");
+      h += conf.map((g) => `<div class="liverow${navi(g)}"><b>${g.sport}</b> ${g.title}
+        <span class="livescore">${g.score || ""}</span> <span class="small">${g.detail || ""}</span>${_liveNavs[d.games.indexOf(g)] ? '<span class="small" style="color:var(--muted)"> · tap to open ➜</span>' : ""}</div>`).join("");
     }
     if (inf.length) {
       h += `<div class="teamhdr" style="margin-top:12px">⏳ Likely in-play <span class="small">(inferred from Kalshi market timing — approximate)</span></div>`;
@@ -1998,9 +2000,48 @@ async function loadLive() {
         <span class="small">${g.detail || ""}</span>${g.fav ? ` · lean <b>${g.fav.name}</b> ${g.fav.fair}%` : ""}</div>`).join("");
     }
     box.innerHTML = h;
+    box.querySelectorAll("[data-navi]").forEach((el) =>
+      el.addEventListener("click", () => liveNavGo(_liveNavs[+el.dataset.navi])));
   } catch (e) {
     box.innerHTML = `<div class="empty">Couldn't load live games.</div>`;
   }
+}
+
+let _liveNavs = [];
+// Jump from a live row to its game: switch to the right tab, wait for that
+// board to render, then scroll the matching card into view and flash it.
+function liveNavGo(nav) {
+  if (!nav) return;
+  const btn = document.querySelector(`.tab[data-tab="${nav.tab}"]`);
+  if (!btn) return;
+  btn.click();
+  if (nav.tab === "tennis") {
+    const s = $("tnSearch");
+    if (s) { s.value = nav.q || ""; }
+  }
+  const t0 = Date.now();
+  const find = () => {
+    let el = null;
+    if (nav.pk) el = document.querySelector(`.bbgame[data-pk="${nav.pk}"]`);
+    else if (nav.tab === "tennis") {
+      if (_tnData) renderTennis();
+      el = document.querySelector("#tnResults .tn-match");
+    } else if (nav.q) {
+      const root = $("tab-" + nav.tab);
+      const words = nav.q.toLowerCase().split("|");
+      el = Array.from(root ? root.querySelectorAll("div") : []).find((x) =>
+        x.offsetHeight > 0 && x.offsetHeight < 500 && x.children.length &&
+        words.every((w) => (x.textContent || "").toLowerCase().includes(w)));
+    }
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("nav-flash");
+      setTimeout(() => el.classList.remove("nav-flash"), 3000);
+    } else if (Date.now() - t0 < 15000) {
+      setTimeout(find, 700);      // board may still be loading — retry
+    }
+  };
+  setTimeout(find, 450);
 }
 
 let _boardData = null, _featMarket = null, _featSport = "mlb";
@@ -2226,7 +2267,7 @@ function renderNFLSimCards(d) {
   }).join("");
 }
 function renderNFLBest(d) {
-  const adp = (p) => p.adp != null ? `<span class="small" style="color:var(--faint)" title="Sleeper consensus draft rank">ADP ${p.adp}</span>` : "";
+  const adp = (p) => p.adp != null ? `<span class="small" style="color:var(--faint)" title="our draft-board rank (model value blended toward Sleeper consensus)">#${p.adp}</span>` : "";
   const rows = d.ceilings.slice(0, 40).map((p, i) => `<div class="futrow nflbestrow">
       <span class="fr-rank">${i + 1}</span>
       <span class="fr-team">${p.pos} ${p.name} <span class="small" style="color:var(--muted)">${p.team} · ${p.matchup}</span> ${adp(p)}</span>
@@ -2473,7 +2514,7 @@ function renderDraftPool() {
   if (_drPos !== "ALL") avail = avail.filter((p) => p.pos === _drPos);
   if (q) avail = avail.filter((p) => (p.name || "").toLowerCase().includes(q));
   const rows = avail.slice(0, 80).map((p) => `<div class="dr-prow" onclick="draftPlayer('${p.id}')">
-    <span class="dr-padp">${p.adp}</span>
+    <span class="dr-padp" title="our board rank — the pool is sorted by blended value">${p.adp}</span>
     <span class="dr-pname">${p.name}${p.rookie ? ' <span class="dr-rk">R</span>' : ""}${_drFlags(p)}${_drCons(p)}</span>
     <span class="legtag">${p.pos}</span><span class="dr-team">${p.team || ""}</span>
     <span class="dr-pvor">VOR ${p.value}</span><span class="dr-pboom">${p.boom}</span></div>`).join("");

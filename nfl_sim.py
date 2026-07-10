@@ -751,13 +751,32 @@ def _resolver(pool):
         if lk:
             loose.setdefault(lk, []).append(p)
 
+    def _first_tok(name):
+        import unicodedata
+        s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode().lower()
+        toks = [t for t in "".join(c if c.isalnum() else " " for c in s).split()
+                if t not in _NAME_SUFFIX]
+        return toks[0] if len(toks) > 1 else ""
+
     def resolve(name):
         p = exact.get(_gkey(name))
         if p:
             return p
         lk = _gkey_loose(name)
         cands = loose.get(lk) if lk else None
-        return cands[0] if cands and len(cands) == 1 else None
+        if not cands or len(cands) != 1:
+            return None
+        # The loose key is (surname, first initial) — meant for nicknames
+        # (Nick/Nicholas) and small typos, NOT any same-initial namesake:
+        # it once silently turned "Roman Wilson" (WR, not in the pool) into
+        # Russell Wilson (QB) and graded the wrong roster. Require the first
+        # names to genuinely resemble each other before trusting it.
+        import difflib
+        qf, cf = _first_tok(name), _first_tok(cands[0].get("name"))
+        if qf and cf and not (qf.startswith(cf) or cf.startswith(qf)
+                              or difflib.SequenceMatcher(None, qf, cf).ratio() >= 0.72):
+            return None
+        return cands[0]
     return resolve
 
 

@@ -923,3 +923,10 @@ body.tier-locked .owner-only { display: none !important; }
 .tn-upset { margin: 5px 0 2px; font-size: 0.85rem; padding: 6px 9px; border-radius: 8px;
   background: rgba(229,72,77,0.12); border: 1px solid rgba(229,72,77,0.55); }
 .tn-match.upsetcard { border-color: rgba(229,72,77,0.55); }
+
+/* Live tab click-through */
+.liverow.golive { cursor: pointer; }
+.liverow.golive:hover { background: rgba(255,255,255,0.05); border-radius: 8px; }
+@keyframes navflash { 0%, 60% { box-shadow: 0 0 0 3px rgba(88,166,255,0.7); }
+  100% { box-shadow: 0 0 0 3px rgba(88,166,255,0); } }
+.nav-flash { animation: navflash 3s ease-out; border-radius: 10px; }
