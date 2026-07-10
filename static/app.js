@@ -3269,6 +3269,17 @@ function renderFeatured(d) {
   renderFeaturedTable();
 }
 
+// MLB statsapi ids -> labels (stable ids; lets the cached board show them
+// without waiting for a season-sim rerun).
+const _MLB_DIV = { 200: "AL West", 201: "AL East", 202: "AL Central",
+                   203: "NL West", 204: "NL East", 205: "NL Central" };
+const _MLB_LG = { 103: "AL", 104: "NL" };
+function _divChip(r) {
+  const dv = _MLB_DIV[r.division];
+  if (!dv) return "";
+  const al = r.league === 103 || dv.startsWith("AL");
+  return ` <span class="divchip ${al ? "al" : "nl"}" title="division — only ONE team per division can win it, so never put two same-division teams in the same division-winner slip">${dv}</span>`;
+}
 function renderFeaturedTable() {
   const d = _boardData; if (!d) return;
   const m = d.markets[_featMarket]; if (!m) return;
@@ -3293,7 +3304,7 @@ function renderFeaturedTable() {
     const click = deep && r.abbr ? ` futrow-click" onclick="openTeamDetail('${r.abbr}')` : "";
     return `<div class="futrow${click}">
       <span class="fr-rank">${i + 1}</span>
-      <span class="fr-team"><b>${r.team}</b><span class="small"> ${r.wins}-${r.losses} · proj ${r.proj_wins}</span></span>
+      <span class="fr-team"><b>${r.team}</b>${_divChip(r)}<span class="small"> ${r.wins}-${r.losses} · proj ${r.proj_wins}</span></span>
       <span class="fr-count"><span class="fr-bar" style="width:${w}%"></span><span class="fr-ct">${r.count.toLocaleString()} <span class="small">(${r.model_pct}%)</span></span></span>
       <span class="fr-num"><b>${r.model_pct}%</b></span>
       <span class="fr-num">${bk(r, "Kalshi")}</span>
@@ -3301,7 +3312,12 @@ function renderFeaturedTable() {
       <span class="fr-num ${ecls}">${r.edge == null ? "—" : (r.edge >= 0 ? "+" : "") + r.edge}</span>
     </div>`;
   }).join("");
-  $("futTable").innerHTML = head + (body || `<div class="empty">No team matches “${q}”.</div>`);
+  const mx = _featMarket === "division"
+    ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One winner per division — two teams with the <b>same division chip</b> can never both hit. Don't pair them in a slip.</div>`
+    : _featMarket === "pennant"
+      ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One pennant per league — two <b>AL</b> (or two <b>NL</b>) teams can never both hit. Don't pair them in a slip.</div>`
+      : "";
+  $("futTable").innerHTML = mx + head + (body || `<div class="empty">No team matches “${q}”.</div>`);
 }
 
 async function openTeamDetail(abbr) {
