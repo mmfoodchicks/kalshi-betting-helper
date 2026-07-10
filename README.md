@@ -234,6 +234,17 @@ python app.py
 
 Then open <http://localhost:5000>. (Set `PORT` to change the port.)
 
+### Smoke suite (run before shipping model/sim changes)
+
+```bash
+python3 tests/run_smoke.py            # fast, offline: grading, DFS rules, fees, clock
+python3 tests/run_smoke.py --online   # + brute-force audit of the combo math on today's slate
+```
+
+Each test encodes a bug class that actually shipped once (accumulator key
+drift, over-cap lineups, DNP graded as a loss, remainder shown as season-end).
+Runs against a throwaway database — it never touches your real record.
+
 ### Two ways to use it
 
 **A) Kalshi live scanner (easiest).** In the scanner card, pick a coin and
