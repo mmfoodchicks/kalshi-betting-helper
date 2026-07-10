@@ -982,6 +982,59 @@ def _schedule(date, season):
     return out
 
 
+_DEEP_WP_CACHE = {}
+
+
+def _deep_game_wp(g, season, n=800):
+    """Deep-engine win probability for TODAY'S exact matchup: the per-player
+    engine (regressed + Statcast rates, arsenal matchups, batter platoon splits,
+    TTO, real bullpen chains, pinch hitters, steals, real end-game rules) plays
+    the two rosters n times with today's probable starters. This is the second
+    opinion blended into the factor model's Pythagorean number -- it carries all
+    the player-level data the factor model can't see. Returns None (honest skip)
+    when a probable starter isn't identified or profiles aren't available.
+    Seeded per game so the number is stable across page loads; cached 6h."""
+    import time as _t
+    key = (g["game_pk"], g.get("home_sp_id"), g.get("away_sp_id"))
+    hit = _DEEP_WP_CACHE.get(key)
+    if hit and _t.time() - hit[0] < 6 * 3600:
+        return hit[1]
+    try:
+        import deep_data
+        import deep_sim
+        import random as _r
+        ph = deep_data.team_profile(g["home_id"], season)
+        pa = deep_data.team_profile(g["away_id"], season)
+        if not ph or not pa or not ph.get("lineup") or not pa.get("lineup"):
+            return None
+
+        def find_sp(prof, pid):
+            if not pid:
+                return None
+            return next((p for p in prof.get("rotation", []) + prof.get("bullpen", [])
+                         if p.get("id") == pid), None)
+        sp_h = find_sp(ph, g.get("home_sp_id"))
+        sp_a = find_sp(pa, g.get("away_sp_id"))
+        if sp_h is None or sp_a is None:
+            return None
+        rng = _r.Random((g["game_pk"] * 2654435761) & 0xFFFFFFFF)
+        hw = 0
+        for _ in range(n):
+            hw += 1 if deep_sim.play_game(ph, pa, sp_home=sp_h, sp_away=sp_a,
+                                          rng=rng)["home_win"] else 0
+        wp = max(0.05, min(0.95, hw / n))
+        _DEEP_WP_CACHE[key] = (_t.time(), wp)
+        return wp
+    except Exception:
+        return None
+
+
+# Blend weight: the factor model keeps the majority (it carries the graded ~55%
+# track record); the deep engine's player-level read gets a meaningful minority
+# vote until the recorder grades it on its own.
+_DEEP_WP_WEIGHT = 0.35
+
+
 def analyze_slate(date, season):
     schedule = _schedule(date, season)
     hit = _hitting_map(season); pit = _pitching_map(season)
@@ -1112,6 +1165,18 @@ def analyze_slate(date, season):
 
         p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
         p_home = max(0.04, min(0.96, p_home))
+        # Deep-engine second opinion (pre-game only): blend the per-player game
+        # sim's win prob into the factor model so the daily winner sees ALL the
+        # player-level data (xStats, arsenals, platoon splits, TTO, bullpen
+        # chains, PH, steals). Both numbers ride along in the payload.
+        p_home_model = p_home
+        p_home_deep = None
+        if (g.get("live") or {}).get("state") == "Preview":
+            p_home_deep = _deep_game_wp(g, season)
+            if p_home_deep is not None:
+                p_home = ((1 - _DEEP_WP_WEIGHT) * p_home
+                          + _DEEP_WP_WEIGHT * p_home_deep)
+                p_home = max(0.04, min(0.96, p_home))
         p_away = 1 - p_home
         exp_total = round(er_home + er_away, 1)
 
@@ -1264,6 +1329,8 @@ def analyze_slate(date, season):
             "start": g["start"], "status": g["status"],
             "confirm": confirm,
             "p_home": round(p_home, 4), "p_away": round(p_away, 4),
+            "p_home_model": round(p_home_model, 4),
+            "p_home_deep": round(p_home_deep, 4) if p_home_deep is not None else None,
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
             "exp_total": exp_total, "park_factor": park,
             "weather": _weather_block(winfo),

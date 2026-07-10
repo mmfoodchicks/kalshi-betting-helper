@@ -762,6 +762,7 @@ function renderGame(g) {
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
       <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
+    ${g.p_home_deep != null ? `<div class="small" style="color:var(--muted)" title="The win% above blends two models: the factor model (team OPS/pitching/platoon/defense/bullpen-fatigue Pythagorean) and the deep player engine (per-player Statcast rates, arsenal matchups, platoon splits, TTO, real bullpen chains, pinch hitters, steals) at 65/35.">🧬 factor model ${Math.round(g.p_home_model*100)}% · deep player engine ${Math.round(g.p_home_deep*100)}% home</div>` : ""}
     ${confirmBadge(g)}
     ${g.in_game ? `<div class="small" style="color:var(--no)">📈 Live in-game win probability — ${g.in_game.state} ${g.in_game.inning}, ${g.in_game.outs} out${g.in_game.on_base.length ? `, runners on ${g.in_game.on_base.join("/")}` : ", bases empty"}</div>
     <button class="track-mini" style="margin-top:6px" onclick="toggleLiveFeed(${g.game_pk})">📡 Live feed — pitches · AB results · model odds</button>
