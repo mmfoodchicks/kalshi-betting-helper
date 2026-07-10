@@ -8,6 +8,7 @@ wrong-tyre-call fiasco) that can scramble the order.
 """
 
 import datetime
+import clock
 import urllib.request
 import json
 
@@ -66,7 +67,7 @@ def climate(lat, lon, race_date, window=7):
     key = (round(lat, 1), round(lon, 1), md)
 
     def build():
-        end = datetime.date.today().year - 1
+        end = clock.today_et().year - 1
         url = (f"{ARCHIVE}?latitude={lat}&longitude={lon}"
                f"&start_date={end-5}-01-01&end_date={end}-12-31"
                "&daily=precipitation_sum,wind_speed_10m_max&timezone=auto")

@@ -17,6 +17,7 @@ Pipeline:
 """
 
 import datetime
+import clock
 import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -61,7 +62,7 @@ def _standings(season):
 
 def _remaining_games(season):
     """List of (home_id, away_id) for every not-yet-final game from today on."""
-    start = datetime.date.today().isoformat()
+    start = clock.today_et().isoformat()
     end = f"{season}-10-05"
     flds = "dates,games,status,abstractGameState,teams,home,away,team,id"
     data = baseball._get(
@@ -116,7 +117,7 @@ def _series_p(p, need):
 
 
 def simulate(season=None, n=4000):
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     stand = _standings(season)
     teams, lg = _strength(season)
     games = _remaining_games(season)
@@ -278,7 +279,7 @@ def futures_edges(season=None, sim=None, n=4000):
     Series, pennants, divisions, playoff berths, and per-team win totals. Rows are
     model-driven, so a future shows even when only one book lists it. Edge is vs
     the cheaper book; returns rows sorted by absolute edge + a lean summary."""
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     sim = sim or cached(season, n)
     teams = sim["teams"]
     sample = {t["abbr"]: t.get("_wins_sample") or [] for t in teams}
@@ -363,7 +364,7 @@ def futures_board(season=None, sim=None, n=4000):
     Polymarket. Markets are selectable (World Series / pennant / division /
     playoffs / win-total lines); every team is listed (priced or not) so you can
     search any of them. Reuses futures_edges purely as the book-price source."""
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     sim = sim or cached(season, n)
     fe = futures_edges(season, sim=sim)
     ns = sim["n_sims"]
@@ -435,7 +436,7 @@ def futures_board(season=None, sim=None, n=4000):
 
 
 def board_cached(season=None, n=4000, ttl=600):
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     return baseball._cached(("futures_board", season, n), ttl,
                             lambda: futures_board(season, n=n))
 
@@ -444,7 +445,7 @@ def deep_board(agg, season=None):
     """Same board contract as futures_board, but counts come from the deep
     pitch-by-pitch season run (deep_season.run_deep). Book prices are reused from
     the fast-sim futures_edges (prices don't depend on our engine)."""
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     n = agg.get("n") or 1
     meta = agg["meta"]
     abbr = {}
@@ -521,5 +522,5 @@ def _winner_markets_winstotal(abbr):
 
 def cached(season=None, n=4000, ttl=21600):
     """Daily-ish cached season sim (heavy: ~1,200 games x n sims)."""
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     return baseball._cached(("season_sim", season, n), ttl, lambda: simulate(season, n))

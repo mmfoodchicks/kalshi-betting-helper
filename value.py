@@ -12,6 +12,7 @@ warn when recent form and the model disagree (it may just be a hot/cold streak).
 """
 
 import datetime
+import clock
 import re
 import time
 import unicodedata
@@ -92,7 +93,7 @@ def _markets(series):
 
 def find_value(season=None, n_games=15, min_edge=10.0):
     """Player props where Kalshi's price diverges from recent form, sorted by edge."""
-    season = season or str(datetime.date.today().year)
+    season = season or str(clock.today_et().year)
     idx = player_index(season)
     raw = []
     for series, stat in (("KXMLBHIT", "hits"), ("KXMLBHR", "hr")):

@@ -293,6 +293,14 @@ def grade_prop(prop_id, actual):
         c.execute("UPDATE prop_log SET graded=1, actual=? WHERE id=?", (actual, prop_id))
 
 
+def grade_prop_void(prop_id):
+    """Scratched / didn't play: Kalshi and DK both void the leg, so it must not
+    count as a loss. graded=2 removes it from the pending queue AND from the
+    accuracy math (every report filters on graded=1)."""
+    with _lock, _conn() as c:
+        c.execute("UPDATE prop_log SET graded=2 WHERE id=?", (prop_id,))
+
+
 def prop_report(min_edge=8.0):
     """Aggregate accuracy of the prop model, recent-form, and Kalshi's price, plus
     the realized ROI of betting the edges each flags. One night is noise; this is

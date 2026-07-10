@@ -13,6 +13,7 @@ This is a decision-support tool. The odds are model estimates, not guarantees.
 """
 
 import os
+import clock
 import time
 import threading
 
@@ -158,7 +159,7 @@ def _init_deep_sims():
 
     def run_mlb():
         import deep_season
-        season = str(_dt.date.today().year)
+        season = str(clock.today_et().year)
         agg = deep_season.run_deep(season, n_seasons=4000)
         _deep["agg"] = agg
         _deep["season"] = season
@@ -527,7 +528,7 @@ def api_simulate_price():
 def api_simulate_game():
     """Simulate a baseball game many times -> win %, totals, blowout/shutout."""
     import simulate, datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     try:
         game_pk = int(request.args["game_pk"])
     except (KeyError, ValueError):
@@ -643,7 +644,7 @@ def api_simulate_dfs():
         # Baseball DFS is driven by the game simulator (correlated hitter ceilings
         # for stacking) -- a different path from the projection-based racing/UFC.
         import mlb_dfs
-        date = d.get("date") or _dt.date.today().isoformat()
+        date = d.get("date") or clock.today_et().isoformat()
         objective = "ceiling" if d.get("objective") == "ceiling" else "median"
 
         def _i(key, default, lo, hi):
@@ -681,7 +682,7 @@ def api_simulate_dfs():
     return jsonify(simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
-        date=d.get("date") or _dt.date.today().isoformat(), sims=n,
+        date=d.get("date") or clock.today_et().isoformat(), sims=n,
         n_lineups=max(1, min(150, _num("lineups", 1, int))),
         max_exposure=max(5.0, min(100.0, _num("max_exposure", 60.0))),
         min_uniq=max(1, min(6, _num("min_uniq", 1, int))),
@@ -706,7 +707,7 @@ def _prop_types():
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""
     import datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         games = baseball.analyze_slate(date, season)
@@ -823,7 +824,7 @@ def api_sports(sport_key):
             import racing
             import datetime as _dt
             events, grid = racing.race_board(sport_key, events,
-                                             date=_dt.date.today().isoformat())
+                                             date=clock.today_et().isoformat())
         except Exception:
             grid = None
     return jsonify({"sport": sport_key, "events": events, "grid": grid,
@@ -848,7 +849,7 @@ def api_sports_live():
     out = []
     # MLB: richer dedicated feed (inning + score).
     try:
-        today = _dt.date.today().isoformat()
+        today = clock.today_et().isoformat()
         for g in baseball._schedule(today, today[:4]):
             lv = g.get("live") or {}
             if lv.get("state") == "Live":
@@ -900,7 +901,7 @@ def api_combine():
     tuned to a target per-leg confidence."""
     import datetime as _dt
     import combine
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = date[:4]
     cats = [c for c in (request.args.get("cats", "") or "").split(",") if c]
     if not cats:
@@ -935,7 +936,7 @@ def api_combine_recommended():
     """Auto-built safest / best-value / best parlays from the checked sports."""
     import datetime as _dt
     import combine
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = date[:4]
     cats = [c for c in (request.args.get("cats", "") or "").split(",") if c]
     if not cats:
@@ -952,7 +953,7 @@ def api_baseball_parlay():
     """Build an N-leg parlay tuned to a target per-leg confidence, picking the
     optimal line (hits 1+/2+, run total, moneyline/spread) for each leg."""
     import datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
@@ -976,7 +977,7 @@ def api_baseball_season():
     the resulting edges vs Kalshi futures markets."""
     import datetime as _dt
     import season_sim
-    season = request.args.get("season") or str(_dt.date.today().year)
+    season = request.args.get("season") or str(clock.today_et().year)
     try:
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
     except ValueError:
@@ -1001,7 +1002,7 @@ def api_baseball_futures():
     search UI."""
     import datetime as _dt
     import season_sim
-    season = request.args.get("season") or str(_dt.date.today().year)
+    season = request.args.get("season") or str(clock.today_et().year)
     try:
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 4000))
     except ValueError:
@@ -1379,7 +1380,7 @@ def api_baseball_deep_start():
                         "progress": deep_season.PROGRESS})
     # Force a fresh run; result is persisted to disk and reused for everyone.
     started = deep_cache.run_job("mlb_deep", force=True)
-    return jsonify({"started": started, "season": str(_dt.date.today().year)})
+    return jsonify({"started": started, "season": str(clock.today_et().year)})
 
 
 @app.route("/api/baseball/live/<int:game_pk>")
@@ -1398,7 +1399,7 @@ def api_baseball_team():
     run (hits/HR/BB/K/R for bats, IP/K/BB/ERA for arms). Needs ?abbr=NYY."""
     import datetime as _dt
     import deep_season
-    season = request.args.get("season") or str(_dt.date.today().year)
+    season = request.args.get("season") or str(clock.today_et().year)
     abbr = (request.args.get("abbr") or "").upper()
     agg = _deep.get("agg")
     if not agg or _deep.get("season") != season:
@@ -1417,7 +1418,7 @@ def api_baseball_team():
 def api_baseball_deep_status():
     import datetime as _dt
     import deep_season
-    season = request.args.get("season") or str(_dt.date.today().year)
+    season = request.args.get("season") or str(clock.today_et().year)
     p = dict(deep_season.PROGRESS)
     if p.get("running") and p.get("started"):
         import time as _t
@@ -1438,7 +1439,7 @@ def api_bestbets():
     ranked by the edge you'd actually bank. Sources degrade independently."""
     import datetime as _dt
     import bestbets
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     try:
         sims = tiers.cap_sims(_tier(), request.args.get("sims", 2500))
     except ValueError:
@@ -1455,7 +1456,7 @@ def api_baseball_edges():
     For each leg we can price live, edge = our simulated probability minus
     Kalshi's implied price. A disagreement finder, flagged by confidence."""
     import datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         min_edge = float(request.args.get("min_edge", 4))
@@ -1476,7 +1477,7 @@ def api_baseball_pick6():
     """DraftKings Pick 6 board: our player-prop projections framed as More/Less at
     DK-style lines, from the same shared game sim the combos use."""
     import datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         games = baseball.analyze_slate(date, season)
@@ -1490,7 +1491,7 @@ def api_baseball_pick6_sheet():
     """Pick 6 game browser: one game's full per-player simulated stat sheet
     (avg + More% at every line) plus the slate's game list. ?date=&pk=."""
     import datetime as _dt
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         pk = int(request.args.get("pk", 0)) or None
@@ -1509,7 +1510,7 @@ def api_baseball_pick6_eval():
     the shared sim, not an independence product)."""
     import datetime as _dt
     d = request.get_json(force=True, silent=True) or {}
-    date = d.get("date") or _dt.date.today().isoformat()
+    date = d.get("date") or clock.today_et().isoformat()
     legs = d.get("legs") or []
     try:
         pk = int(d.get("pk", 0))
@@ -1533,7 +1534,7 @@ def api_baseball_sgp():
     locked = _locked("same_game_parlay")
     if locked:
         return locked
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
@@ -1562,7 +1563,7 @@ def api_baseball_mixed():
     locked = _locked("mixed_parlay")
     if locked:
         return locked
-    date = request.args.get("date") or _dt.date.today().isoformat()
+    date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
         legs = tiers.cap_legs(_tier(), request.args.get("legs", 4))
@@ -1621,7 +1622,7 @@ def api_baseball_value():
         return locked
     import value
     import datetime as _dt
-    season = request.args.get("season") or _dt.date.today().isoformat()[:4]
+    season = request.args.get("season") or clock.today_et().isoformat()[:4]
     try:
         n = max(5, min(40, int(request.args.get("games", 15))))
         edge = max(3.0, float(request.args.get("edge", 10)))
@@ -1668,7 +1669,7 @@ def api_baseball_hits():
     import datetime as _dt
     date = request.args.get("date")
     if date == "today":
-        date = _dt.date.today().isoformat()
+        date = clock.today_et().isoformat()
     try:
         mlb_recorder.grade_due()   # grade any games that just went final
     except Exception:

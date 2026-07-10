@@ -14,6 +14,7 @@ run completes.
 """
 
 import multiprocessing as mp
+import clock
 import random
 import time
 from collections import defaultdict
@@ -355,7 +356,7 @@ PROGRESS = {"running": False, "done": 0, "total": 0, "started": 0.0, "season": N
 def run_deep(season=None, n_seasons=600, workers=None):
     """Run the deep season Monte Carlo across processes; return aggregates keyed by
     team id (counts) and player id (summed season lines)."""
-    season = season or str(__import__("datetime").date.today().year)
+    season = season or str(clock.today_et().year)
     # Flag running immediately so the loading bar appears during the (network)
     # roster/standings prep, not only once the sim chunks start.
     PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)

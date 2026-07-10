@@ -10,6 +10,7 @@ Kalshi and Polymarket futures.
 """
 
 import math
+import clock
 import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -129,7 +130,7 @@ def f1_type_skill(year=None, n_back=2):
     so a street/wet specialist keeps that skill even through a team change — and it
     gives a real sample where the current 5-race season has almost none."""
     import datetime
-    year = year or datetime.date.today().year
+    year = year or clock.today_et().year
     base = ERGAST.rsplit("/", 1)[0]                  # .../ergast/f1
 
     def build():
@@ -307,7 +308,7 @@ def f1_remaining():
     import race_weather
     def build():
         d = racing._get_json(f"{ERGAST}.json")
-        today = datetime.date.today().isoformat()
+        today = clock.today_et().isoformat()
         out = []
         for r in d["MRData"]["RaceTable"]["Races"]:
             if r.get("date", "") >= today:
@@ -557,11 +558,11 @@ def nascar_type_skill(year=None, series=1, n_back=2):
     baseline on that track type — then recency-weight across seasons and regress by
     the total in-type sample. The result is applied to the CURRENT base pace."""
     import datetime
-    year = year or datetime.date.today().year
+    year = year or clock.today_et().year
 
     def build():
         seasons = list(range(year - n_back, year + 1))
-        today = datetime.date.today().isoformat()
+        today = clock.today_et().isoformat()
         # per[did][season] = {"type": {tt: [finishes]}, "all": [finishes]}
         per = defaultdict(lambda: defaultdict(lambda: {"type": defaultdict(list), "all": []}))
         # led[did][season][tt] = [race laps-led shares] — real dominator history
@@ -647,10 +648,10 @@ def nascar_state(year=None, series=1):
     """Current Cup standings + pace from this season's completed points races:
     {driver_id: {name, points, playoff_points, wins, race_pace, dnf, starts}}."""
     import datetime
-    year = year or datetime.date.today().year
+    year = year or clock.today_et().year
 
     def build():
-        today = datetime.date.today().isoformat()
+        today = clock.today_et().isoformat()
         rl = racing._get_json(f"{NASCAR_BASE}/{year}/{series}/race_list_basic.json")
         pts_races = sorted((r for r in rl if r.get("race_type_id") == 1),
                            key=lambda r: r.get("race_date", ""))
@@ -965,7 +966,7 @@ def _f1_practice_gaps():
     import datetime as _dt
 
     def build():
-        year = _dt.date.today().year
+        year = clock.today_et().year
         sessions = racing._get_json(f"https://api.openf1.org/v1/sessions?year={year}")
         now = _dt.datetime.now(_dt.timezone.utc)
         done = []

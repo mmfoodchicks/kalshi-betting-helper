@@ -15,6 +15,7 @@ back to the plain FPPR model.
 """
 
 import datetime
+import clock
 import json
 import math
 import re
@@ -157,7 +158,7 @@ def _grid_from_feed(feed):
 
 
 def get_nascar_grid(race_name=None, date=None, year=None):
-    year = year or (date[:4] if date else str(datetime.date.today().year))
+    year = year or (date[:4] if date else str(clock.today_et().year))
     for series in (1, 2, 3):
         try:
             races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
@@ -183,7 +184,7 @@ def get_nascar_practice(race_name=None, date=None, year=None):
     FINAL practice run. Practice at THIS track in race trim is the freshest pace
     signal there is — a car that hasn't unloaded fast doesn't suddenly find
     speed on Sunday. None until practice runs."""
-    year = year or (date[:4] if date else str(datetime.date.today().year))
+    year = year or (date[:4] if date else str(clock.today_et().year))
     for series in (1, 2, 3):
         try:
             races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
@@ -229,7 +230,7 @@ def get_f1_grid(race_name=None):
     # grid whose race hasn't run yet may condition the board; otherwise report
     # no grid (like NASCAR does) and let the form-only model carry the read.
     rd = r.get("date")
-    if rd and rd < datetime.date.today().isoformat():
+    if rd and rd < clock.today_et().isoformat():
         return None
     grid = {}
     for q in r.get("QualifyingResults", []):
@@ -439,8 +440,8 @@ def race_board(sport, events, date=None):
     try:
         if sp == "nascar":
             ttype = nascar_track_type(grid.get("track") or grid.get("race") or "")
-            year = (date or datetime.date.today().isoformat())[:4]
-            form = get_nascar_form(year, date or datetime.date.today().isoformat(),
+            year = (date or clock.today_et().isoformat())[:4]
+            form = get_nascar_form(year, date or clock.today_et().isoformat(),
                                    series=grid.get("series_id") or 1, track_type=ttype)
         elif sp == "f1":
             form = get_f1_form()

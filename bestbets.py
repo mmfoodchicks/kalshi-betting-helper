@@ -12,6 +12,7 @@ edge you'd actually bank. Sources are best-effort and independently degradable;
 """
 
 import time
+import clock
 import datetime as _dt
 
 
@@ -156,7 +157,7 @@ _MEMO_TTL = 120  # Best Bets is the landing tab: re-opens within 2 min reuse the
 
 
 def board(date=None, season=None, sims=2500):
-    date = date or _dt.date.today().isoformat()
+    date = date or clock.today_et().isoformat()
     season = season or date[:4]
     key = (date, season, sims)
     if _memo["out"] is not None and _memo["key"] == key and time.time() - _memo["at"] < _MEMO_TTL:

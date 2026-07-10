@@ -14,6 +14,7 @@ and the regulars play — the "assumed rotations" path the design calls for.
 """
 
 import baseball
+import clock
 
 STATS = "https://statsapi.mlb.com/api/v1"
 # League-average per-PA outcome rates — fallback for thin samples + the baseline
@@ -241,7 +242,7 @@ def _attach_platoon(batters, season):
 
 def team_profile(team_id, season=None):
     """{rotation, bullpen, lineup, bench} of player dicts for one club."""
-    season = season or str(__import__("datetime").date.today().year)
+    season = season or str(clock.today_et().year)
 
     def build():
         hit = _roster_stats(team_id, season, "hitting")
@@ -355,7 +356,7 @@ def roster_lines(team_id, season=None):
     player id: {pid: {name, pos, status, il, bat?, pit?}}. Lets the team view show
     each player's actual numbers beside the simulated ones, and surfaces injured
     players the season sim leaves out entirely (they sit at the bottom until active)."""
-    season = season or str(__import__("datetime").date.today().year)
+    season = season or str(clock.today_et().year)
 
     def build():
         hit = _roster_stats(team_id, season, "hitting")

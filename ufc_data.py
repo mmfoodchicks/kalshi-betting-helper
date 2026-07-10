@@ -13,6 +13,7 @@ two weeks -- a fighter's history only changes when they next compete.
 """
 
 import concurrent.futures as _cf
+import clock
 import datetime
 
 import racing
@@ -74,7 +75,7 @@ def fighter_rating(fid, name=None):
         except Exception:
             return None
         items = (el.get("events") or {}).get("items", [])[-14:]  # recent slice
-        today = datetime.date.today().isoformat()
+        today = clock.today_et().isoformat()
 
         def fetch_comp(it):
             ref = (it.get("competition") or {}).get("$ref") or it.get("$ref")

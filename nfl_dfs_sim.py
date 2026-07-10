@@ -15,6 +15,7 @@ mean-0), so the sim only adds shape + correlation, it doesn't invent new means.
 """
 
 import urllib.request
+import clock
 import json as _json
 import gzip as _gzip
 import random as _random
@@ -305,7 +306,7 @@ def player_pool(week, n=3000):
 
 # ---- Week board (all games simmed) -----------------------------------------
 def _season():
-    t = _dt.date.today()
+    t = clock.today_et()
     return t.year if t.month >= 3 else t.year - 1
 
 

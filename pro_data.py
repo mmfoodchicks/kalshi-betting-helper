@@ -17,6 +17,7 @@ and injuries flow through as soon as ESPN reflects them on the roster.
 """
 
 import concurrent.futures as _cf
+import clock
 
 import racing                     # reuse its disk-cache + JSON GET helpers
 
@@ -110,7 +111,7 @@ def groups(league):
 
 def _recent_season(league):
     import datetime
-    return datetime.date.today().year - 1
+    return clock.today_et().year - 1
 
 
 def roster_avail(league, team_id):

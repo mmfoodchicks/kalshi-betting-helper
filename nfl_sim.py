@@ -12,6 +12,7 @@ best-ball drafts in the meantime.
 """
 
 import math
+import clock
 import random
 
 import nfl_awards
@@ -125,7 +126,7 @@ def rookies(season):
 def project(prior_season=None, n_seasons=4000, seed=None):
     """Per-player fantasy projection board from the season Monte Carlo."""
     import datetime
-    prior_season = prior_season or datetime.date.today().year - 1
+    prior_season = prior_season or clock.today_et().year - 1
     cands = nfl_awards.candidates(prior_season)
     if not cands:
         return None

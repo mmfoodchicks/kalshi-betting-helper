@@ -14,6 +14,7 @@ run the hierarchical sim (tennis_sim) on their charted serve/return profiles, an
 """
 
 import datetime
+import clock
 import threading
 import time
 import unicodedata
@@ -57,7 +58,7 @@ def _fatigue_index():
     player's last match. Together these are the differential fatigue signal the sim
     uses -- tennis is brutal on tired legs, especially in deciding sets."""
     def build():
-        today = datetime.date.today()
+        today = clock.today_et()
         wmap = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.42, 4: 0.28, 5: 0.18, 6: 0.1}
         agg = {}
         for tour in ("atp", "wta"):
@@ -96,7 +97,7 @@ def _surface_for(date):
     try:
         d = datetime.date(int(date[:4]), int(date[4:6]), int(date[6:8]))
     except Exception:
-        d = datetime.date.today()
+        d = clock.today_et()
     md = (d.month, d.day)
     if (4, 1) <= md < (6, 9):
         return "Clay"
@@ -136,7 +137,7 @@ def _event_date(ev):
     import re
     m = re.search(r"-(\d{2})([A-Z]{3})(\d{2})", ev or "")
     if not m:
-        return datetime.date.today().strftime("%Y%m%d")
+        return clock.today_et().strftime("%Y%m%d")
     yy, mon, dd = m.groups()
     months = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
               "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}

@@ -16,6 +16,7 @@ matches land. Re-run and the board moves with the most recent results.
 """
 
 import datetime
+import clock
 import gzip
 import io
 import urllib.request
@@ -86,7 +87,7 @@ def _build(tour):
     for m in matches:
         meta[m["match_id"]] = {"date": (m.get("Date") or "").strip(),
                                "surface": _surface_of(m.get("Surface"))}
-    today = datetime.date.today()
+    today = clock.today_et()
 
     def age_w(datestr):
         try:

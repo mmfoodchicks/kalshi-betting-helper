@@ -9,6 +9,7 @@ week, and approximate schedule difficulty from opponents' projected wins.
 """
 
 import datetime
+import clock
 
 import nfl_awards          # racing cache + _team_wins
 import pro_data
@@ -75,7 +76,7 @@ def _build(season):
 
 def schedule(season=None):
     """{ESPN_abbr: {bye, opps{week:opp}, sos, playoff_sos}}, cached a week."""
-    season = season or datetime.date.today().year
+    season = season or clock.today_et().year
     return _racing._cached(("nfl_schedule", season), 7 * 86400, lambda: _build(season)) or {}
 
 

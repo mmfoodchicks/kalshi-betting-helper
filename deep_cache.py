@@ -30,8 +30,8 @@ _lock = threading.Lock()
 def _last_midnight_epoch():
     """Epoch of the most recent LOCAL midnight — the boundary a nightly job must
     have run after to count as fresh for today."""
-    now = _dt.datetime.now()
-    return now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    import clock
+    return clock.midnight_et_epoch()
 
 
 def _path(key):

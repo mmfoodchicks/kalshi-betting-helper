@@ -16,6 +16,7 @@ background thread (like the LoL board) and the frontend polls until it lands.
 """
 
 import math as _math
+import clock
 import threading as _threading
 import time as _time
 import concurrent.futures as _cf
@@ -59,7 +60,7 @@ def _norm_cdf(z):
 def _season():
     """Upcoming NFL season year (a new season is 'current' from March on)."""
     import datetime as _dt
-    t = _dt.date.today()
+    t = clock.today_et()
     return t.year if t.month >= 3 else t.year - 1
 
 

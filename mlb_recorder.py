@@ -14,6 +14,7 @@ noise; the point is the long-run honest read (store.prop_report).
 """
 
 import datetime
+import clock
 import threading
 import time
 
@@ -28,7 +29,7 @@ _STAT_MARKETS = {"hits": ("hit1", "hit2", "hit3"), "hr": ("hr1",)}
 
 
 def _season():
-    return str(datetime.date.today().year)
+    return str(clock.today_et().year)
 
 
 def _kalshi_prop_prices():
@@ -55,7 +56,7 @@ def _market_key(stat, line):
 def record_once():
     """Log every Kalshi batter prop we can attach to a player, with model %,
     price, and recent form. Returns the number of props (re)logged."""
-    season, date = _season(), datetime.date.today().isoformat()
+    season, date = _season(), clock.today_et().isoformat()
 
     prices = _kalshi_prop_prices()
     if not prices:
@@ -171,8 +172,12 @@ def grade_due():
             if not ga:                       # box not available yet -> leave pending
                 continue
             line_stat = ga.get(p["player_id"])
-            # Played -> real total; in the final box but not batting -> 0 (DNP).
-            got = line_stat.get(p["stat"], 0) if line_stat else 0
+            if line_stat is None:
+                # Scratched / didn't bat: the books VOID the leg, so grading it
+                # as a loss would bias the recorded accuracy pessimistically.
+                store.grade_prop_void(p["id"])
+                continue
+            got = line_stat.get(p["stat"], 0)
             store.grade_prop(p["id"], 1 if got >= p["line"] else 0)
 
 
