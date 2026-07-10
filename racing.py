@@ -224,6 +224,13 @@ def get_f1_grid(race_name=None):
     if not races:
         return None
     r = races[0]
+    # `current/last` is the most recent COMPLETED qualifying — after Sunday's
+    # race (and all the following week) that's the PREVIOUS Grand Prix. Only a
+    # grid whose race hasn't run yet may condition the board; otherwise report
+    # no grid (like NASCAR does) and let the form-only model carry the read.
+    rd = r.get("date")
+    if rd and rd < datetime.date.today().isoformat():
+        return None
     grid = {}
     for q in r.get("QualifyingResults", []):
         nm = norm_name(f"{q['Driver'].get('givenName','')} {q['Driver'].get('familyName','')}")

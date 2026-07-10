@@ -167,6 +167,17 @@ def apply_grid(players, sport, date=None, grid_text=None):
     # thousands of simulated races (finish points + dominators + wrecks/DNFs),
     # just without the place-differential term, and note it honestly.
     grid = manual or racing.get_grid(sport, race_name=race_name, date=date)
+    # The feed hands back whichever race in ANY series has a grid — on a Cup
+    # weekend where only the Trucks race has qualified, a Cup slate "matches"
+    # a handful of crossover drivers and everyone else gets treated as
+    # withdrawn (losing their sim projections). A grid that doesn't cover
+    # most of the slate is the wrong race: ignore it and let the race
+    # simulator carry the projections, same as pre-qualifying.
+    if grid and not manual:
+        hits = sum(1 for p in players
+                   if racing.lookup(grid, p["name"]) is not None)
+        if hits < max(3, len(players) * 0.5):
+            grid = None
     n = len(players)
     field = grid["field"] if grid else n
     # Deserved finishing spot. Primary source = our race SIMULATOR's expected
@@ -443,7 +454,10 @@ def dfs_optimize(players, roster, cap, key="value", exclusive_group=None):
         new_dp = [row[:] for row in dp]
         for idx in members:
             pl = players[idx]
-            su = int(round(pl["salary"] / 100))
+            # Ceil, never round: rounding $4,740 to 47 units understates the
+            # real cost and can return a lineup a few dollars OVER the cap
+            # (DK rejects it). Real DK salaries are even $100s, so exact there.
+            su = -(-int(pl["salary"]) // 100)
             if su > U or su <= 0:
                 continue
             pr = pl.get(key, pl["proj"])
