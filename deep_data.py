@@ -124,9 +124,17 @@ def _batter(per, st, career=None, avail=1.0, mults=(1.0, 1.0)):
     d2 *= power; t3 *= power; hr *= power; hit *= contact
     singles = max(0.0, hit - d2 - t3 - hr)
     rates = {"k": k, "bb": bb, "hbp": hbp, "hr": hr, "1b": singles, "2b": d2, "3b": t3}
+    # Stolen bases: attempt rate per time-on-first + real success rate, so the
+    # season engine can run the bases with each player's actual tendencies.
+    sb = _f(st.get("stolenBases"))
+    cs = _f(st.get("caughtStealing"))
+    on1 = (_f(st.get("hits")) - _f(st.get("doubles")) - _f(st.get("triples"))
+           - _f(st.get("homeRuns")) + _f(st.get("baseOnBalls")) + _f(st.get("hitByPitch")))
+    sbr = min(0.4, sb / on1) if on1 > 0 else 0.0
+    sbs = max(0.55, min(0.92, sb / (sb + cs))) if (sb + cs) >= 3 else 0.72
     return {"id": per["id"], "name": per.get("boxscoreName") or per["fullName"],
             "side": per.get("batSide", {}).get("code", "R"), "pa": pa, "rates": rates,
-            "avail": avail}
+            "avail": avail, "sbr": round(sbr, 4), "sbs": round(sbs, 3)}
 
 
 def _pit_rates_from(st, ip):
@@ -327,6 +335,7 @@ def _bat_real(st):
             "2b": round(_f(st.get("doubles"))), "3b": round(_f(st.get("triples"))),
             "bb": round(_f(st.get("baseOnBalls"))), "k": round(_f(st.get("strikeOuts"))),
             "r": round(_f(st.get("runs"))), "rbi": round(_f(st.get("rbi"))),
+            "sb": round(_f(st.get("stolenBases"))),
             "avg": _f(st.get("avg")) or (_f(st.get("hits")) / ab if ab else 0.0)}
 
 

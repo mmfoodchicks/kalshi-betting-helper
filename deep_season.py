@@ -63,7 +63,7 @@ def _accum_box(res):
     bt, pt = _G["season_bat"], _G["season_pit"]
     for pid, l in res["batting"].items():
         s = bt[pid]
-        for k in ("pa", "ab", "h", "2b", "3b", "hr", "bb", "k", "r", "rbi"):
+        for k in ("pa", "ab", "h", "2b", "3b", "hr", "bb", "k", "r", "rbi", "sb", "ph"):
             s[k] += l[k]
     for pid, l in res["pitching"].items():
         s = pt[pid]
@@ -219,19 +219,21 @@ def team_detail(agg, season, tid):
     except Exception:
         real = {}
 
-    def bat_line(p):
+    def bat_line(p, role="starter"):
         s = agg["bat"].get(p["id"])
         if not s or s["pa"] < 1:
             return None
         ab = s["ab"] / n
         r = real.get(p["id"], {})
-        return {"name": p["name"], "side": p["side"], "id": p["id"],
+        return {"name": p["name"], "side": p["side"], "id": p["id"], "role": role,
                 "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
                 "pa": round(s["pa"] / n), "ab": round(ab),
                 "h": round(s["h"] / n), "hr": round(s["hr"] / n),
                 "2b": round(s["2b"] / n), "3b": round(s["3b"] / n),
                 "bb": round(s["bb"] / n), "k": round(s["k"] / n),
                 "r": round(s["r"] / n), "rbi": round(s["rbi"] / n),
+                "sb": round(s.get("sb", 0) / n),
+                "ph_g": round(s.get("ph", 0) / n, 1),
                 "avg": round(s["h"] / s["ab"], 3) if s["ab"] else 0,
                 "real": r.get("bat")}
 
@@ -249,7 +251,8 @@ def team_detail(agg, season, tid):
                 "role": "SP" if p in prof["rotation"] else "RP",
                 "real": r.get("pit")}
 
-    batting = [b for b in (bat_line(p) for p in prof["lineup"] + prof["bench"]) if b]
+    batting = [b for b in (bat_line(p) for p in prof["lineup"]) if b]
+    batting += [b for b in (bat_line(p, "bench") for p in prof["bench"]) if b]
     pitching = [p for p in (pit_line(x) for x in prof["rotation"] + prof["bullpen"]) if p]
 
     # Injured players the sim dropped entirely (e.g. 60-day IL) — show them at the
@@ -269,7 +272,12 @@ def team_detail(agg, season, tid):
     # Active players first (by playing time), injured players sink to the bottom.
     batting.sort(key=lambda r: (r["il"], -(r.get("pa") or (r.get("real") or {}).get("pa", 0))))
     pitching.sort(key=lambda r: (r["il"], -_ip_num(r)))
+    # The measurable pinch hitter: the bench bat the sim actually sends up the
+    # most (simulated PH appearances per season).
+    ph = max((b for b in batting if b.get("role") == "bench" and (b.get("ph_g") or 0) > 0.5),
+             key=lambda b: b["ph_g"], default=None)
     return {"team": meta.get("name"), "n_sims": n,
+            "ph_primary": ({"name": ph["name"], "ph_g": ph["ph_g"]} if ph else None),
             "batting": batting, "pitching": pitching}
 
 

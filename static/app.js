@@ -3253,16 +3253,18 @@ function renderTeamDetail(d) {
   const av = (x) => (x == null ? "—" : x.toFixed(3).replace(/^0/, ""));
   const rp = (v) => (v == null ? "" : ` <span class="rp">(${v})</span>`);   // real in parens
   const ilTag = (r) => r.il ? ` <span class="iltag" title="On the injured list${r.status ? " (" + r.status + ")" : ""}">🏥 IL</span>` : "";
+  const bnTag = (b) => b.role === "bench"
+    ? ` <span class="small" style="color:var(--faint)" title="bench — enters as a pinch hitter or fill-in starter${b.ph_g ? ` (~${b.ph_g} simulated PH appearances/season)` : ""}">BN</span>` : "";
   const bat = d.batting.map((b) => {
     const r = b.real || {};
     if (!b.has_sim) {   // injured, no simulated line — real stats only
       return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.h ?? "—"}</td>
-        <td>${r.hr ?? "—"}</td><td>${r.r ?? "—"}</td><td>${r.rbi ?? "—"}</td><td>${r.bb ?? "—"}</td><td>${r.k ?? "—"}</td></tr>`;
+        <td>${r.hr ?? "—"}</td><td>${r.r ?? "—"}</td><td>${r.rbi ?? "—"}</td><td>${r.sb ?? "—"}</td><td>${r.bb ?? "—"}</td><td>${r.k ?? "—"}</td></tr>`;
     }
-    return `<tr${b.il ? ' class="ilrow"' : ""}><td>${b.name}${ilTag(b)}</td>
+    return `<tr${b.il ? ' class="ilrow"' : ""}><td>${b.name}${bnTag(b)}${ilTag(b)}</td>
       <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.h}${rp(r.h)}</td>
       <td>${b.hr}${rp(r.hr)}</td><td>${b.r}${rp(r.r)}</td><td>${b.rbi}${rp(r.rbi)}</td>
-      <td>${b.bb}${rp(r.bb)}</td><td>${b.k}${rp(r.k)}</td></tr>`;
+      <td>${b.sb ?? 0}${rp(r.sb)}</td><td>${b.bb}${rp(r.bb)}</td><td>${b.k}${rp(r.k)}</td></tr>`;
   }).join("");
   const pit = d.pitching.map((p) => {
     const r = p.real || {};
@@ -3275,11 +3277,13 @@ function renderTeamDetail(d) {
       <td>${p.ip}${rp(r.ip)}</td><td>${p.era != null ? p.era : "—"}${p.real && r.era != null ? rp(r.era) : ""}</td>
       <td>${p.k}${rp(r.k)}</td><td>${p.bb}${rp(r.bb)}</td><td>${p.h}${rp(r.h)}</td><td>${p.hr}${rp(r.hr)}</td></tr>`;
   }).join("");
+  const phNote = d.ph_primary
+    ? ` · primary pinch hitter (simmed): <b>${d.ph_primary.name}</b> ~${d.ph_primary.ph_g} PH apps/season` : "";
   return `<div class="teamdetail">
-    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom</span>
+    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls">
-      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
+      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
       <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">sim (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
     </div>
   </div>`;

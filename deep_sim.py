@@ -109,7 +109,8 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0, ars=None):
 
 
 def _new_bat_line():
-    return {"pa": 0, "ab": 0, "h": 0, "2b": 0, "3b": 0, "hr": 0, "bb": 0, "k": 0, "r": 0, "rbi": 0}
+    return {"pa": 0, "ab": 0, "h": 0, "2b": 0, "3b": 0, "hr": 0, "bb": 0, "k": 0,
+            "r": 0, "rbi": 0, "sb": 0, "ph": 0}
 
 
 def _new_pit_line():
@@ -242,7 +243,9 @@ def _pick_ph(bench, due, pitcher_hand, used):
         val = (b["rates"]["1b"] + 2 * b["rates"]["2b"] + 4 * b["rates"]["hr"] + b["rates"]["bb"]) * plat
         if val - due_val > best_gain:
             best, best_gain = b, val - due_val
-    return best if best_gain > 0.03 else None
+    # Managers pinch-hit far less in the universal-DH era (~0.5/game): require a
+    # real talent gap AND a tendency roll, not every marginal edge.
+    return best if best_gain > 0.06 and random.random() < 0.15 else None
 
 
 def _avail_sp(sp, prof, rng):
@@ -298,6 +301,29 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 lead = score[opp] - score[half]
                 st.maybe_hook(inning, lead)
                 pit = st.cur
+                # Steal attempts off each runner's real rate + success (the same
+                # gate-adjustment factor measured for the game engine); steals of
+                # 3rd run at their real ~12% share.
+                if outs < 2:
+                    r1b, r2b = bases[0], bases[1]
+                    if r1b is not None and r2b is None and r1b.get("sbr"):
+                        if rng.random() < min(0.6, r1b["sbr"] * 1.85):
+                            if rng.random() < r1b.get("sbs", 0.72):
+                                bases[1] = r1b; bases[0] = None
+                                bline(r1b)["sb"] += 1
+                            else:
+                                bases[0] = None; outs += 1
+                                if outs >= 3:
+                                    break
+                    elif r2b is not None and bases[2] is None and r2b.get("sbr"):
+                        if rng.random() < min(0.6, r2b["sbr"] * 1.85) * 0.12:
+                            if rng.random() < min(0.92, r2b.get("sbs", 0.72) + 0.05):
+                                bases[2] = r2b; bases[1] = None
+                                bline(r2b)["sb"] += 1
+                            else:
+                                bases[1] = None; outs += 1
+                                if outs >= 3:
+                                    break
                 slot = idx[half] % len(lineup[half])
                 bat = lineup[half][slot]
                 # Pinch-hit: late, close, weak spot due, better bench bat available.
@@ -306,6 +332,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                     if ph:
                         lineup[half][slot] = ph
                         used_ph[half].add(ph["id"])
+                        bline(ph)["ph"] += 1          # measurable PH appearance
                         bench[half] = [b for b in bench[half] if b["id"] != ph["id"]]
                         bat = ph
                 # Times-through-the-order penalty: only a starter working deep
