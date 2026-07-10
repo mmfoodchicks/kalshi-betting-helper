@@ -719,7 +719,9 @@ def api_baseball_today():
             store.record_mlb_pick(g["game_pk"], date,
                                   "home" if g["pick_is_home"] else "away",
                                   g["pick"], g["pick_prob"], g.get("pick_price_cents"),
-                                  pred_total=g.get("exp_total"))
+                                  pred_total=g.get("exp_total"),
+                                  p_home_model=g.get("p_home_model"),
+                                  p_home_deep=g.get("p_home_deep"))
             # Track the latest pre-game price of our side for closing-line value.
             store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
     combos = baseball.build_combos(games, types=_prop_types())

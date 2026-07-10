@@ -71,7 +71,8 @@ def init_db():
             )""")
         # close_price (CLV) + predicted/actual total runs (sim accuracy).
         mcols = {r["name"] for r in c.execute("PRAGMA table_info(mlb_picks)")}
-        for col in ("close_price", "pred_total", "actual_total"):
+        for col in ("close_price", "pred_total", "actual_total",
+                    "p_home_model", "p_home_deep", "home_won"):
             if col not in mcols:
                 c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
 
@@ -118,14 +119,19 @@ def init_db():
 
 
 # ---- MLB model track record -----------------------------------------------
-def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None):
-    """Store the model's pre-game pick (first time we see the game)."""
+def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None,
+                    p_home_model=None, p_home_deep=None):
+    """Store the model's pre-game pick (first time we see the game), including the
+    two blend components (factor model / deep player engine, home-perspective) so
+    each can be graded on its own."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
-               (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total)
-               VALUES (?,?,?,?,?,?,?,?)""",
-            (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total),
+               (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total,
+                p_home_model, p_home_deep)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total,
+             p_home_model, p_home_deep),
         )
 
 
@@ -145,10 +151,22 @@ def ungraded_mlb_picks():
             "SELECT * FROM mlb_picks WHERE graded=0").fetchall()]
 
 
-def set_mlb_grade(game_pk, won, winner_name, actual_total=None):
+def set_mlb_grade(game_pk, won, winner_name, actual_total=None, home_won=None):
     with _lock, _conn() as c:
-        c.execute("UPDATE mlb_picks SET graded=1, won=?, winner_name=?, actual_total=? WHERE game_pk=?",
-                  (won, winner_name, actual_total, game_pk))
+        c.execute("UPDATE mlb_picks SET graded=1, won=?, winner_name=?, actual_total=?, home_won=? "
+                  "WHERE game_pk=?",
+                  (won, winner_name, actual_total, home_won, game_pk))
+
+
+def deep_grades():
+    """Graded games carrying BOTH blend components (home-perspective probs +
+    whether home actually won) -- the evidence the blend-weight tuner runs on."""
+    with _lock, _conn() as c:
+        return [(r["p_home_model"], r["p_home_deep"], r["home_won"])
+                for r in c.execute(
+                    "SELECT p_home_model, p_home_deep, home_won FROM mlb_picks "
+                    "WHERE graded=1 AND p_home_model IS NOT NULL "
+                    "AND p_home_deep IS NOT NULL AND home_won IS NOT NULL").fetchall()]
 
 
 def mlb_record():
@@ -204,8 +222,27 @@ def mlb_record():
                       "mean_abs_error": round(tot_mae, 2)}
     else:
         totals_acc = None
+    # Model split: grade the two blend components (and the blend) separately on
+    # home-perspective probabilities, so the deep engine earns its weight on
+    # evidence rather than assumption.
+    def _mstats(rows, key):
+        rows = [r for r in rows if r.get(key) is not None and r.get("home_won") is not None]
+        if not rows:
+            return None
+        acc = sum(1 for r in rows if (r[key] >= 0.5) == (r["home_won"] >= 0.5)) / len(rows)
+        br = sum((r[key] - r["home_won"]) ** 2 for r in rows) / len(rows)
+        return {"n": len(rows), "acc_pct": round(100 * acc, 1), "brier": round(br, 4)}
+    blended = []
+    for p in graded:
+        if p.get("home_won") is not None and p.get("prob") is not None:
+            ph = p["prob"] if p.get("pick_side") == "home" else 1 - p["prob"]
+            blended.append({"p": ph, "home_won": p["home_won"]})
+    model_split = {"factor": _mstats(graded, "p_home_model"),
+                   "deep": _mstats(graded, "p_home_deep"),
+                   "blend": _mstats(blended, "p")}
     return {
         "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
+        "model_split": model_split,
         "accuracy_pct": round(100 * wins / n, 1) if n else None,
         "roi_pct": roi_pct, "roi_bets": len(priced),
         "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets, "edge_threshold": EDGE,

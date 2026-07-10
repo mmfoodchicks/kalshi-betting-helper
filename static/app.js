@@ -4160,6 +4160,12 @@ async function loadBaseballRecord() {
     if (r.calibration && r.calibration.length)
       extra.push("Calibration " + r.calibration.map((b) =>
         `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · "));
+    // Blend components graded separately: does the deep engine earn its weight?
+    const ms = r.model_split;
+    if (ms && (ms.factor || ms.deep)) {
+      const f = (x, nm) => x ? `${nm} <b>${x.acc_pct}%</b> <span style="color:var(--muted)">(Brier ${x.brier}, ${x.n})</span>` : `${nm} —`;
+      extra.push(`🧬 Split: ${f(ms.factor, "factor")} · ${f(ms.deep, "deep")} · ${f(ms.blend, "blend")} — the blend weight auto-tunes on this once 40+ games carry both.`);
+    }
     if (extra.length)
       html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
     if (r.graded < 50)

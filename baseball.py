@@ -1033,6 +1033,34 @@ def _deep_game_wp(g, season, n=800):
 # track record); the deep engine's player-level read gets a meaningful minority
 # vote until the recorder grades it on its own.
 _DEEP_WP_WEIGHT = 0.35
+_DEEP_W_CACHE = {"t": 0.0, "w": None}
+
+
+def _deep_wp_weight():
+    """Evidence-tuned blend weight: once >=40 graded games carry BOTH components,
+    grid-search the weight that minimizes the blend's Brier score on the actual
+    results, capped at 0.65 so the graded factor model always keeps a real vote.
+    Below the sample floor it's the 0.35 default. Cached 6h."""
+    import time as _t
+    if _DEEP_W_CACHE["w"] is not None and _t.time() - _DEEP_W_CACHE["t"] < 6 * 3600:
+        return _DEEP_W_CACHE["w"]
+    w = _DEEP_WP_WEIGHT
+    try:
+        import store
+        rows = store.deep_grades()
+        if len(rows) >= 40:
+            best = None
+            for cand in (0.0, 0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.65):
+                b = sum(((1 - cand) * m + cand * d - hw) ** 2
+                        for m, d, hw in rows) / len(rows)
+                if best is None or b < best[0]:
+                    best = (b, cand)
+            w = best[1]
+    except Exception:
+        pass
+    _DEEP_W_CACHE["t"] = _t.time()
+    _DEEP_W_CACHE["w"] = w
+    return w
 
 
 def analyze_slate(date, season):
@@ -1174,8 +1202,8 @@ def analyze_slate(date, season):
         if (g.get("live") or {}).get("state") == "Preview":
             p_home_deep = _deep_game_wp(g, season)
             if p_home_deep is not None:
-                p_home = ((1 - _DEEP_WP_WEIGHT) * p_home
-                          + _DEEP_WP_WEIGHT * p_home_deep)
+                w_deep = _deep_wp_weight()
+                p_home = (1 - w_deep) * p_home + w_deep * p_home_deep
                 p_home = max(0.04, min(0.96, p_home))
         p_away = 1 - p_home
         exp_total = round(er_home + er_away, 1)
@@ -2010,8 +2038,12 @@ def grade_picks():
             res = results.get(p["game_pk"])
             if res:
                 winner, total = res
-                store.set_mlb_grade(p["game_pk"], 1 if winner == p["pick_name"] else 0,
-                                    winner, actual_total=total)
+                pick_won = 1 if winner == p["pick_name"] else 0
+                # home_won: the pick was either the home or away side, so the
+                # pick result + side pins down the home result.
+                home_won = pick_won if p.get("pick_side") == "home" else 1 - pick_won
+                store.set_mlb_grade(p["game_pk"], pick_won, winner,
+                                    actual_total=total, home_won=home_won)
 
 
 # DraftKings Pick 6 player-prop stats we can price, and the standard "Power play"
