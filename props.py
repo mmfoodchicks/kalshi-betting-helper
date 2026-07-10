@@ -236,7 +236,9 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     r_hr = (b.get("hr") or 0) / spa * f * pm * he
     r_hit = (b.get("hits") or 0) / spa * f * cm
     r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
-    r_bb = (b.get("bb") or 0) / spa
+    # Walks + HBP together: both put the batter on 1st the same way, and DK
+    # scores them identically (+2), so HBP rides the walk outcome code.
+    r_bb = ((b.get("bb") or 0) + (b.get("hbp") or 0)) / spa
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
     # Exact hit-count distribution (binomial) -> 1+/2+/3+/4+ hits.

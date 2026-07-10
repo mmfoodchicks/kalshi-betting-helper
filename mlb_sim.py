@@ -70,6 +70,13 @@ def _rates(batters):
     return rows
 
 
+# `sbr` is a runner's season steals per time-on-first, but the engine only rolls
+# an attempt when the gate is open (next base free, < 2 outs) -- so raw rates
+# under-produce steals. This measured factor recenters simulated SB/game on each
+# runner's real rate (see the engine calibration test).
+_SBR_ADJ = 1.85
+
+
 def _build_setup(rows, mult):
     """Cumulative outcome thresholds with on-base rates scaled by `mult`,
     carrying each batter's speed factor + steal rate for baserunning."""
@@ -84,7 +91,8 @@ def _build_setup(rows, mult):
             if p > 0:
                 acc += p
                 thresh.append((acc, code))
-        setup.append({"name": name, "thresh": thresh, "spd": spd, "sbr": sbr})
+        setup.append({"name": name, "thresh": thresh, "spd": spd,
+                      "sbr": min(0.6, sbr * _SBR_ADJ)})
     return setup
 
 
@@ -143,112 +151,214 @@ _RFI_K = 0.73
 _DK_HIT = {1: 3, 2: 5, 3: 8, 4: 10}   # DraftKings hitter points by hit type
 
 
+# Steals of 3rd run at this fraction of a runner's steal-of-2nd attempt rate
+# (they're ~10-13% of real MLB steals).
+_SB3_FRAC = 0.12
+# Structural calibration for the real-rules matchup engine (measured): a lineup
+# calibrated to er over a solo 9-inning game realizes less as the HOME side
+# (bottom-9 skip + walk-off truncation, minus the extras bump) and a touch more
+# as the AWAY side (extras bump only).
+_CAL_HOME = 1.02
+_CAL_AWAY = 0.962
+
+
+def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0):
+    """One half-inning of base-out simulation for a lineup. Returns
+    (runs, next_batter_idx, walkoff).
+
+    ghost: extra-innings placed runner -- the previous batter starts on 2nd.
+    lead_target/base_runs: the walk-off rule for the home half of the 9th and
+    extras -- the half ENDS the moment base_runs+runs exceeds lead_target. Per
+    MLB rules only the winning run scores on a non-HR (trailing runners don't),
+    while a walk-off HR counts in full."""
+    L = len(setup)
+    outs, runs = 0, 0
+    bases = [None, None, None]                # batter index on 1st/2nd/3rd
+    if ghost:
+        bases[1] = (idx - 1) % L
+    wo = lead_target is not None
+
+    def won():
+        return wo and base_runs + runs > lead_target
+
+    while outs < 3:
+        # Steal of 2nd: runner on 1st, 2nd open, < 2 outs.
+        if bases[0] is not None and bases[1] is None and outs < 2:
+            rr = bases[0]
+            if rnd() < setup[rr]["sbr"]:
+                if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
+                    bases[1] = rr; bases[0] = None
+                    stats[rr][5] += 1; stats[rr][6] += 5            # SB +5
+                else:
+                    bases[0] = None; outs += 1                      # caught stealing
+                    if outs >= 3:
+                        break
+        # Steal of 3rd: runner on 2nd, 3rd open, < 2 outs (rarer, higher success).
+        elif bases[1] is not None and bases[2] is None and outs < 2:
+            rr = bases[1]
+            if rnd() < setup[rr]["sbr"] * _SB3_FRAC:
+                if rnd() < max(0.6, min(0.92, 0.72 + (setup[rr]["spd"] - 1.0) * 0.7)):
+                    bases[2] = rr; bases[1] = None
+                    stats[rr][5] += 1; stats[rr][6] += 5
+                else:
+                    bases[1] = None; outs += 1
+                    if outs >= 3:
+                        break
+        bi = idx % L
+        idx += 1
+        u = rnd()
+        code = 0
+        for acc, c in setup[bi]["thresh"]:
+            if u < acc:
+                code = c
+                break
+        s = stats[bi]
+        if code == 0:                         # out
+            # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
+            if bases[0] is not None and outs < 2 and rnd() < 0.13:
+                outs += 2
+                bases[0] = None
+            else:
+                # Sac fly / productive out: runner on 3rd, < 2 outs scores ~16%.
+                if bases[2] is not None and outs < 2 and rnd() < 0.16:
+                    rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                    s[4] += 1; s[6] += 2; bases[2] = None
+                    if won():
+                        return runs, idx, True
+                outs += 1
+        elif code == 5:                       # walk (force advances only)
+            s[6] += 2
+            if bases[0] is None:
+                bases[0] = bi
+            elif bases[1] is None:
+                bases[1] = bases[0]; bases[0] = bi
+            elif bases[2] is None:
+                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+            else:                             # bases loaded -> forced run
+                rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                s[4] += 1; s[6] += 2
+                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+                if won():
+                    return runs, idx, True
+        else:                                 # a hit
+            s[0] += 1; s[1] += code; s[6] += _DK_HIT[code]
+            r3, r2, r1 = bases
+            scored = 0
+            if code == 4:                     # HR: everyone (incl. batter) scores
+                s[2] += 1
+                for r in (r1, r2, r3):
+                    if r is not None:
+                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                runs += 1; s[3] += 1; s[6] += 2                     # batter run
+                s[4] += 1 + scored; s[6] += 2 * (1 + scored)       # RBI
+                bases = [None, None, None]
+                if won():                     # walk-off HR counts in full
+                    return runs, idx, True
+            elif code == 3:                   # triple: all runners score
+                for r in (r3, r2, r1):        # lead runner crosses first
+                    if r is not None:
+                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        if won():             # winning run ends it; rest don't score
+                            s[4] += scored; s[6] += 2 * scored
+                            return runs, idx, True
+                s[4] += scored; s[6] += 2 * scored
+                bases = [None, None, bi]
+            elif code == 2:                   # double
+                nb = [None, bi, None]         # batter to 2nd
+                for r in (r3, r2):
+                    if r is not None:
+                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        if won():
+                            s[4] += scored; s[6] += 2 * scored
+                            return runs, idx, True
+                if r1 is not None:            # from 1st: faster runners score more
+                    if rnd() < max(0.25, min(0.7, 0.45 * setup[r1]["spd"])):
+                        rs = stats[r1]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        if won():
+                            s[4] += scored; s[6] += 2 * scored
+                            return runs, idx, True
+                    else:
+                        nb[2] = r1
+                bases = nb
+                s[4] += scored; s[6] += 2 * scored
+            else:                             # single
+                nb = [bi, None, None]         # batter to 1st
+                if r3 is not None:
+                    rs = stats[r3]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    if won():
+                        s[4] += scored; s[6] += 2 * scored
+                        return runs, idx, True
+                if r2 is not None:            # from 2nd: ~60%, speed-scaled
+                    if rnd() < max(0.4, min(0.85, 0.60 * setup[r2]["spd"])):
+                        rs = stats[r2]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        if won():
+                            s[4] += scored; s[6] += 2 * scored
+                            return runs, idx, True
+                    else:
+                        nb[2] = r2
+                if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
+                    if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * setup[r1]["spd"])):
+                        nb[2] = r1
+                    else:
+                        nb[1] = r1
+                bases = nb
+                s[4] += scored; s[6] += 2 * scored
+    return runs, idx, False
+
+
 def _play_game(setup, rnd):
-    """One full game for a lineup via base-out simulation, with speed-driven
-    baserunning + stolen bases. Returns (runs, per-batter
+    """One SOLO 9-inning game for a lineup (no opponent interaction) -- the
+    calibration reference `_team` converges against. Returns (runs, per-batter
     [hits, tb, hr, runs_scored, rbi, sb, dk_points]). dk_points is the batter's
     DraftKings fantasy total (1B+3 2B+5 3B+8 HR+10 R+2 RBI+2 BB+2 SB+5)."""
     L = len(setup)
     stats = [[0, 0, 0, 0, 0, 0, 0] for _ in range(L)]   # H,TB,HR,R,RBI,SB,DK
-    runs = 0
-    first_inning = 0                                     # runs scored in the 1st (for RFI)
-    idx = 0
+    runs, idx, first_inning = 0, 0, 0
     for _inn in range(_N_INNINGS):
-        outs = 0
-        bases = [None, None, None]                # batter index on 1st/2nd/3rd
-        while outs < 3:
-            # Steal attempt: runner on 1st, 2nd open, < 2 outs.
-            if bases[0] is not None and bases[1] is None and outs < 2:
-                rr = bases[0]
-                if rnd() < setup[rr]["sbr"]:
-                    if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
-                        bases[1] = rr; bases[0] = None
-                        stats[rr][5] += 1; stats[rr][6] += 5            # SB +5
-                    else:
-                        bases[0] = None; outs += 1                      # caught stealing
-                        if outs >= 3:
-                            break
-            bi = idx % L
-            idx += 1
-            u = rnd()
-            code = 0
-            for acc, c in setup[bi]["thresh"]:
-                if u < acc:
-                    code = c
-                    break
-            s = stats[bi]
-            if code == 0:                         # out
-                # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
-                if bases[0] is not None and outs < 2 and rnd() < 0.13:
-                    outs += 2
-                    bases[0] = None
-                else:
-                    # Sac fly / productive out: runner on 3rd, < 2 outs scores ~16%.
-                    if bases[2] is not None and outs < 2 and rnd() < 0.16:
-                        rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
-                        s[4] += 1; s[6] += 2; bases[2] = None
-                    outs += 1
-            elif code == 5:                       # walk (force advances only)
-                s[6] += 2
-                if bases[0] is None:
-                    bases[0] = bi
-                elif bases[1] is None:
-                    bases[1] = bases[0]; bases[0] = bi
-                elif bases[2] is None:
-                    bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
-                else:                             # bases loaded -> forced run
-                    rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
-                    s[4] += 1; s[6] += 2
-                    bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
-            else:                                 # a hit
-                s[0] += 1; s[1] += code; s[6] += _DK_HIT[code]
-                r3, r2, r1 = bases
-                scored = 0
-                if code == 4:                     # HR: everyone (incl. batter) scores
-                    s[2] += 1
-                    for r in (r1, r2, r3):
-                        if r is not None:
-                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                    runs += 1; s[3] += 1; s[6] += 2                     # batter run
-                    s[4] += 1 + scored; s[6] += 2 * (1 + scored)       # RBI
-                    bases = [None, None, None]
-                elif code == 3:                   # triple: all runners score
-                    for r in (r1, r2, r3):
-                        if r is not None:
-                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                    s[4] += scored; s[6] += 2 * scored
-                    bases = [None, None, bi]
-                elif code == 2:                   # double
-                    nb = [None, bi, None]         # batter to 2nd
-                    for r in (r3, r2):
-                        if r is not None:
-                            rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                    if r1 is not None:            # from 1st: faster runners score more
-                        if rnd() < max(0.25, min(0.7, 0.45 * setup[r1]["spd"])):
-                            rs = stats[r1]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                        else:
-                            nb[2] = r1
-                    bases = nb
-                    s[4] += scored; s[6] += 2 * scored
-                else:                             # single
-                    nb = [bi, None, None]         # batter to 1st
-                    if r3 is not None:
-                        rs = stats[r3]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                    if r2 is not None:            # from 2nd: ~60%, speed-scaled
-                        if rnd() < max(0.4, min(0.85, 0.60 * setup[r2]["spd"])):
-                            rs = stats[r2]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
-                        else:
-                            nb[2] = r2
-                    if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
-                        if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * setup[r1]["spd"])):
-                            nb[2] = r1
-                        else:
-                            nb[1] = r1
-                    bases = nb
-                    s[4] += scored; s[6] += 2 * scored
+        r, idx, _ = _half_inning(setup, stats, idx, rnd)
+        runs += r
         if _inn == 0:
-            first_inning = runs
+            first_inning = r
     return runs, stats, first_inning
+
+
+def _play_matchup(setup_a, setup_h, rnd):
+    """A full REAL-RULES game between two lineups: interleaved half-innings, the
+    home team skips the bottom of the 9th when already leading, a walk-off ends
+    the game the moment home takes the lead in the bottom 9th or extras, and
+    ties go to ghost-runner extra innings. Returns
+    (away_runs, home_runs, stats_a, stats_h, first_inning_run, extra_innings)."""
+    stats_a = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_a))]
+    stats_h = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_h))]
+    ia = ih = ra = rh = f1 = 0
+    for inn in range(9):
+        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd)
+        ra += r
+        if inn == 0:
+            f1 += r
+        if inn < 8:
+            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd)
+            rh += r
+            if inn == 0:
+                f1 += r
+        elif rh <= ra:                      # bottom 9 only if home isn't ahead
+            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd,
+                                    lead_target=ra, base_runs=rh)
+            rh += r
+    extra = 0
+    while ra == rh and extra < 12:          # ghost-runner extras until decided
+        extra += 1
+        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, ghost=True)
+        ra += r
+        r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, ghost=True,
+                                lead_target=ra, base_runs=rh)
+        rh += r
+    if ra == rh:                            # 21-inning marathon failsafe (~never)
+        if rnd() < 0.52:
+            rh += 1
+        else:
+            ra += 1
+    return ra, rh, stats_a, stats_h, f1, extra
 
 
 _PA_PER_9 = 38.5   # plate appearances a staff faces over a 9-inning game
@@ -382,8 +492,13 @@ def simulate(g, n=5000):
     er_h = g.get("exp_runs_home") or 4.3
     er_a = g.get("exp_runs_away") or 4.3
     rnd = random.random
-    setup_h = _team(props.get("batters_home"), er_h, rnd)
-    setup_a = _team(props.get("batters_away"), er_a, rnd)
+    # `_team` calibrates a lineup to `er` over a SOLO 9-inning game, but the
+    # real-rules matchup shifts realized scoring: the home team loses the bottom
+    # of the 9th when leading (and gets walk-off-truncated), while extras add a
+    # little to both sides. These measured factors recenter each side's realized
+    # matchup mean back onto its er (see the engine calibration test).
+    setup_h = _team(props.get("batters_home"), er_h * _CAL_HOME, rnd)
+    setup_a = _team(props.get("batters_away"), er_a * _CAL_AWAY, rnd)
     lam_h = (props.get("ks_home") or {}).get("expected")   # home starter, faces away
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 
@@ -443,21 +558,31 @@ def simulate(g, n=5000):
     p_target = 1 - (1 - p1a) * (1 - p1h)      # P(either team scores in the 1st)
     f1_raw = [False] * n                      # simulated 1st-inning run (either team)
     for i in range(n):
-        if setup_a:
-            ra, sa, f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
+        if setup_a and setup_h:
+            # Real-rules matchup: bottom-9 skip, walk-off, ghost-runner extras.
+            ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd)
+            store(sa, idx_a, i); store(sh, idx_h, i)
+            home_runs[i] = rh
+            away_runs[i] = ra
+            f1_raw[i] = f1 > 0
+            home_win[i] = rh > ra
         else:
-            ra = _poisson(er_a); f1a = 1 if rnd() < p1a else 0
-        if setup_h:
-            rh, sh, f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
-        else:
-            rh = _poisson(er_h); f1h = 1 if rnd() < p1h else 0
-        home_runs[i] = rh
-        away_runs[i] = ra
-        f1_raw[i] = bool(f1a) or bool(f1h)
-        if rh > ra:
-            home_win[i] = True
-        elif rh == ra:
-            home_win[i] = rnd() < 0.52
+            # Legacy independent fallback when a lineup isn't posted yet.
+            if setup_a:
+                ra, sa, f1a = _play_game(setup_a, rnd); store(sa, idx_a, i)
+            else:
+                ra = _poisson(er_a); f1a = 1 if rnd() < p1a else 0
+            if setup_h:
+                rh, sh, f1h = _play_game(setup_h, rnd); store(sh, idx_h, i)
+            else:
+                rh = _poisson(er_h); f1h = 1 if rnd() < p1h else 0
+            home_runs[i] = rh
+            away_runs[i] = ra
+            f1_raw[i] = bool(f1a) or bool(f1h)
+            if rh > ra:
+                home_win[i] = True
+            elif rh == ra:
+                home_win[i] = rnd() < 0.52
         # Home staff faces the away offense (so its workload scales with away_runs).
         if do_home_pitch:
             sk, sp_p, sp_o, bk = _sim_pitching(home_k9, ht.get("bullpen_era"),

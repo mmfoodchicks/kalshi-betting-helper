@@ -689,6 +689,7 @@ def _boxscore_lineup(game_pk):
                         "hits": _f(bs.get("hits")), "pa": _f(bs.get("plateAppearances")),
                         "doubles": _f(bs.get("doubles")), "triples": _f(bs.get("triples")),
                         "hr": _f(bs.get("homeRuns")), "bb": _f(bs.get("baseOnBalls")),
+                        "hbp": _f(bs.get("hitByPitch")),
                         "strikeouts": _f(bs.get("strikeOuts")),
                         "sb": _f(bs.get("stolenBases")), "cs": _f(bs.get("caughtStealing")),
                     })
