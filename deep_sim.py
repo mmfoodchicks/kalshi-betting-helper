@@ -245,7 +245,7 @@ def _pick_ph(bench, due, pitcher_hand, used):
             best, best_gain = b, val - due_val
     # Managers pinch-hit far less in the universal-DH era (~0.5/game): require a
     # real talent gap AND a tendency roll, not every marginal edge.
-    return best if best_gain > 0.06 and random.random() < 0.15 else None
+    return best if best_gain > 0.06 and random.random() < 0.21 else None
 
 
 def _avail_sp(sp, prof, rng):
@@ -293,11 +293,21 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
     inning = 1
     while True:
         for half in ("away", "home"):          # away bats first
+            # Real rules: the home team doesn't bat the bottom of the 9th (or an
+            # extra inning) when already ahead.
+            if half == "home" and inning >= 9 and score["home"] > score["away"]:
+                continue
             opp = "home" if half == "away" else "away"
             st = staff[opp]
             bases = [None, None, None]
+            # Ghost runner in extras: the previous batter starts on 2nd.
+            if inning >= 10:
+                bases[1] = lineup[half][(idx[half] - 1) % len(lineup[half])]
             outs = 0
             while outs < 3:
+                # Walk-off: the game ends the moment home takes the lead late.
+                if half == "home" and inning >= 9 and score["home"] > score["away"]:
+                    break
                 lead = score[opp] - score[half]
                 st.maybe_hook(inning, lead)
                 pit = st.cur
@@ -307,7 +317,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 if outs < 2:
                     r1b, r2b = bases[0], bases[1]
                     if r1b is not None and r2b is None and r1b.get("sbr"):
-                        if rng.random() < min(0.6, r1b["sbr"] * 1.85):
+                        if rng.random() < min(0.6, r1b["sbr"] * 2.1):
                             if rng.random() < r1b.get("sbs", 0.72):
                                 bases[1] = r1b; bases[0] = None
                                 bline(r1b)["sb"] += 1
@@ -316,7 +326,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                                 if outs >= 3:
                                     break
                     elif r2b is not None and bases[2] is None and r2b.get("sbr"):
-                        if rng.random() < min(0.6, r2b["sbr"] * 1.85) * 0.12:
+                        if rng.random() < min(0.6, r2b["sbr"] * 2.1) * 0.12:
                             if rng.random() < min(0.92, r2b.get("sbs", 0.72) + 0.05):
                                 bases[2] = r2b; bases[1] = None
                                 bline(r2b)["sb"] += 1
@@ -411,7 +421,11 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 idx[half] += 1
         if inning >= 9 and score["home"] != score["away"]:
             break
-        if inning >= 18:                       # safety cap on extra innings
+        if inning >= 25:                       # marathon failsafe: never end tied
+            if rng.random() < 0.52:
+                score["home"] += 1
+            else:
+                score["away"] += 1
             break
         inning += 1
 
