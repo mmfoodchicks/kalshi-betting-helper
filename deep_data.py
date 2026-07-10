@@ -336,7 +336,8 @@ def _bat_real(st):
             "bb": round(_f(st.get("baseOnBalls"))), "k": round(_f(st.get("strikeOuts"))),
             "r": round(_f(st.get("runs"))), "rbi": round(_f(st.get("rbi"))),
             "sb": round(_f(st.get("stolenBases"))),
-            "avg": _f(st.get("avg")) or (_f(st.get("hits")) / ab if ab else 0.0)}
+            "avg": _f(st.get("avg")) or (_f(st.get("hits")) / ab if ab else 0.0),
+            "ops": _f(st.get("ops"))}
 
 
 def _pit_real(st):
@@ -345,6 +346,7 @@ def _pit_real(st):
             "k": round(_f(st.get("strikeOuts"))), "bb": round(_f(st.get("baseOnBalls"))),
             "h": round(_f(st.get("hits"))), "hr": round(_f(st.get("homeRuns"))),
             "r": round(_f(st.get("runs"))), "era": _f(st.get("era")),
+            "whip": _f(st.get("whip")),
             "gs": round(_f(st.get("gamesStarted")))}
 
 

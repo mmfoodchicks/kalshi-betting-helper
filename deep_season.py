@@ -235,16 +235,30 @@ def team_detail(agg, season, tid):
             return round((rb.get(key) or 0) + s.get(key, 0) / n)
         ab_t = (rb.get("ab") or 0) + s["ab"] / n
         h_t = (rb.get("h") or 0) + s["h"] / n
+        # Rate stats are recomputed from the MERGED counting line, so they move
+        # in BOTH directions: a hot sim stretch pulls season-end AVG/OPS above
+        # current, a cold one drags it below. Merged OPS is built from TB +
+        # walks only (the sim lines carry no HBP/SF), so it reads a few points
+        # shy of the official OPS shown in the parenthetical.
+        def _tb(d, div=1.0):
+            h = d.get("h", 0) / div; d2 = d.get("2b", 0) / div
+            d3 = d.get("3b", 0) / div; hr = d.get("hr", 0) / div
+            return (h - d2 - d3 - hr) + 2 * d2 + 3 * d3 + 4 * hr
+        tb_t = _tb(rb) + _tb(s, n)
+        bb_t = (rb.get("bb") or 0) + s["bb"] / n
+        obp_t = (h_t + bb_t) / (ab_t + bb_t) if (ab_t + bb_t) else 0
+        slg_t = tb_t / ab_t if ab_t else 0
         return {"name": p["name"], "side": p["side"], "id": p["id"], "role": role,
                 "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
                 "pa": tot("pa"), "ab": round(ab_t),
                 "h": round(h_t), "hr": tot("hr"),
                 "2b": tot("2b"), "3b": tot("3b"),
-                "bb": tot("bb"), "k": tot("k"),
+                "bb": round(bb_t), "k": tot("k"),
                 "r": tot("r"), "rbi": tot("rbi"),
                 "sb": tot("sb"),
                 "ph_g": round(s.get("ph", 0) / n, 1),
                 "avg": round(h_t / ab_t, 3) if ab_t else 0,
+                "ops": round(obp_t + slg_t, 3),
                 "real": r.get("bat")}
 
     def pit_line(p):
@@ -267,13 +281,29 @@ def team_detail(agg, season, tid):
         er_t = rer + s["r"] / n
         def tot(key):
             return round((rp.get(key) or 0) + s.get(key, 0) / n)
+        # WHIP / FIP from the merged line — free to land above OR below the
+        # current number depending on how the sim sees the rest of his season.
+        # FIP constant 3.15 (league-typical); no HBP in the sim lines, so both
+        # our season-end FIP and the real-side FIP shown beside it skip it.
+        h_t = (rp.get("h") or 0) + s["h"] / n
+        bb_t = (rp.get("bb") or 0) + s["bb"] / n
+        k_t = (rp.get("k") or 0) + s["k"] / n
+        hr_t = (rp.get("hr") or 0) + s["hr"] / n
+        real_out = dict(rp) if rp else None
+        if real_out and rip:
+            if not real_out.get("whip"):
+                real_out["whip"] = round(((rp.get("bb") or 0) + (rp.get("h") or 0)) / rip, 2)
+            real_out["fip"] = round((13 * (rp.get("hr") or 0) + 3 * (rp.get("bb") or 0)
+                                     - 2 * (rp.get("k") or 0)) / rip + 3.15, 2)
         return {"name": p["name"], "hand": p["hand"], "id": p["id"],
                 "il": bool(r.get("il")), "status": r.get("status"), "has_sim": True,
                 "ip": round(ip_t, 1), "k": tot("k"), "bb": tot("bb"),
                 "h": tot("h"), "hr": tot("hr"), "r": tot("r"),
                 "era": round(9 * er_t / ip_t, 2) if ip_t else None,
+                "whip": round((bb_t + h_t) / ip_t, 2) if ip_t else None,
+                "fip": round((13 * hr_t + 3 * bb_t - 2 * k_t) / ip_t + 3.15, 2) if ip_t else None,
                 "role": "SP" if p in prof["rotation"] else "RP",
-                "real": r.get("pit")}
+                "real": real_out}
 
     batting = [b for b in (bat_line(p) for p in prof["lineup"]) if b]
     batting += [b for b in (bat_line(p, "bench") for p in prof["bench"]) if b]

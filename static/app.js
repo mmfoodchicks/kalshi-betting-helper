@@ -3259,11 +3259,11 @@ function renderTeamDetail(d) {
   const bat = d.batting.map((b) => {
     const r = b.real || {};
     if (!b.has_sim) {   // injured, no simulated line — real stats only
-      return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.h ?? "—"}</td>
+      return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.ops ? av(r.ops) : "—"}</td><td>${r.h ?? "—"}</td>
         <td>${r.hr ?? "—"}</td><td>${r.r ?? "—"}</td><td>${r.rbi ?? "—"}</td><td>${r.sb ?? "—"}</td><td>${r.bb ?? "—"}</td><td>${r.k ?? "—"}</td></tr>`;
     }
     return `<tr${b.il ? ' class="ilrow"' : ""}><td>${b.name}${bnTag(b)}${ilTag(b)}</td>
-      <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.h}${rp(r.h)}</td>
+      <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.ops != null ? av(b.ops) : "—"}${r.ops ? rp(av(r.ops)) : ""}</td><td>${b.h}${rp(r.h)}</td>
       <td>${b.hr}${rp(r.hr)}</td><td>${b.r}${rp(r.r)}</td><td>${b.rbi}${rp(r.rbi)}</td>
       <td>${b.sb ?? 0}${rp(r.sb)}</td><td>${b.bb}${rp(r.bb)}</td><td>${b.k}${rp(r.k)}</td></tr>`;
   }).join("");
@@ -3271,21 +3271,22 @@ function renderTeamDetail(d) {
     const r = p.real || {};
     if (!p.has_sim) {
       return `<tr class="ilrow"><td>${p.name} <span class="small">${p.role || "P"}</span>${ilTag(p)}</td>
-        <td>${r.ip ?? "—"}</td><td>${r.era != null ? r.era : "—"}</td><td>${r.k ?? "—"}</td>
+        <td>${r.ip ?? "—"}</td><td>${r.era != null ? r.era : "—"}</td><td>${r.whip ?? "—"}</td><td>${r.fip ?? "—"}</td><td>${r.k ?? "—"}</td>
         <td>${r.bb ?? "—"}</td><td>${r.h ?? "—"}</td><td>${r.hr ?? "—"}</td></tr>`;
     }
     return `<tr${p.il ? ' class="ilrow"' : ""}><td>${p.name} <span class="small">${p.role}</span>${ilTag(p)}</td>
       <td>${p.ip}${rp(r.ip)}</td><td>${p.era != null ? p.era : "—"}${p.real && r.era != null ? rp(r.era) : ""}</td>
+      <td>${p.whip != null ? p.whip : "—"}${r.whip ? rp(r.whip) : ""}</td><td>${p.fip != null ? p.fip : "—"}${r.fip ? rp(r.fip) : ""}</td>
       <td>${p.k}${rp(r.k)}</td><td>${p.bb}${rp(r.bb)}</td><td>${p.h}${rp(r.h)}</td><td>${p.hr}${rp(r.hr)}</td></tr>`;
   }).join("");
   const phNote = d.ph_primary
     ? ` · primary pinch hitter (simmed): <b>${d.ph_primary.name}</b> ~${d.ph_primary.ph_g} PH apps/season` : "";
   return `<div class="teamdetail">
-    <div class="teamdetailhead"><b>${d.team}</b> — simulated <b>rest-of-season</b> totals, averaged over ${d.n_sims.toLocaleString()} deep seasons <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
+    <div class="teamdetailhead"><b>${d.team}</b> — projected <b>season-end</b> totals (current + simulated remainder, averaged over ${d.n_sims.toLocaleString()} deep seasons) <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls">
-      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
-      <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
+      <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>OPS</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
+      <div><div class="tdcap">🥎 Pitching <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Pitcher</th><th>IP</th><th>ERA</th><th>WHIP</th><th>FIP</th><th>K</th><th>BB</th><th>H</th><th>HR</th></tr></thead><tbody>${pit}</tbody></table></div>
     </div>
   </div>`;
 }
