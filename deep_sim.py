@@ -24,7 +24,13 @@ _OUT_KEYS = ("k", "bb", "hbp", "hr", "1b", "2b", "3b")
 # Global calibration factors (tuned so a balanced league sample matches MLB
 # per-game R/K/BB/H): trim the slightly-hot three-true-outcomes, lift balls in
 # play so runs land near 4.4/game.
-_K_CAL, _BB_CAL, _HIT_CAL = 0.95, 0.89, 1.10
+_K_CAL, _BB_CAL, _HIT_CAL = 1.0, 0.89, 0.99
+# Reached-on-error (per in-play out) and wild-pitch/passed-ball (per PA with
+# runners on) -- the advancement events real baseball has that a pure outcome
+# model misses. Their run value lets _HIT_CAL/_K_CAL sit near honest values
+# instead of inflating hits to compensate (see the engine calibration audit).
+_ROE = 0.028
+_WP_PA = 0.032
 
 
 def _log5(b, p, l):
@@ -352,6 +358,16 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 tto_pen = 0.0
                 if is_sp:
                     tto_pen = max(0.0, min(0.12, (st.outing_bf / 9.0 - 2.0) * 0.06))
+                # Wild pitch / passed ball: with runners on, everyone moves up a
+                # base (a run from 3rd scores unearned-style: no hit, no RBI).
+                if (bases[0] or bases[1] or bases[2]) and rng.random() < _WP_PA:
+                    plw = st.lines[pit["id"]]
+                    if bases[2]:
+                        score[half] += 1; plw["r"] += 1; st.outing_runs += 1
+                        bline(bases[2])["r"] += 1
+                    bases[2], bases[1], bases[0] = bases[1], bases[0], None
+                    if half == "home" and inning >= 9 and score["home"] > score["away"]:
+                        break                       # walk-off wild pitch
                 # Arsenal matchup, memoized per (batter, pitcher) pairing — the
                 # dot product runs once per pairing per game, not per PA.
                 akey = (bat["id"], pit["id"])
@@ -380,6 +396,19 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                     for s in scorers:
                         bline(s)["r"] += 1
                 elif oc == "out":
+                    if rng.random() < _ROE:
+                        # Reached on error: batter takes 1st like a single, runners
+                        # advance -- an AB with no hit, runs score with no RBI.
+                        bl["ab"] += 1
+                        runs, scorers = _advance(bases, "1b", bat, rng)
+                        score[half] += runs
+                        pl["r"] += runs; st.outing_runs += runs
+                        for s in scorers:
+                            bline(s)["r"] += 1
+                        if bvp is not None and pit["id"] == sp_ids[opp]:
+                            bvp.setdefault(bat["id"], _new_bat_line())["pa"] += 1
+                        idx[half] += 1
+                        continue
                     pl["outs"] += 1
                     # Productive out: with <2 outs, a runner on 3rd scores on a sac
                     # fly / grounder ~50% (not an at-bat), else a runner advances.
