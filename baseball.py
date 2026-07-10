@@ -709,6 +709,37 @@ def _boxscore_lineup(game_pk):
     return _cached(("box", game_pk), 300, fetch)
 
 
+def _last_posted_lineup(team_id, date):
+    """The team's most recent POSTED batting order (their regulars) — the
+    per-batter prop fallback for the hours before today's card is out. Without
+    it the whole morning slate has zero batter props (no hits/TB/HR/SB legs in
+    combos, pitcher-only Pick 6 sheets) until lineups post in the afternoon.
+    The confirm flag stays 'projected', so the honesty labeling is unchanged."""
+    def fetch():
+        try:
+            import datetime as _dt
+            end = _dt.date.fromisoformat(date) - _dt.timedelta(days=1)
+            start = end - _dt.timedelta(days=6)
+            d = _get(f"{STATS_BASE}/schedule?sportId=1&teamId={team_id}"
+                     f"&startDate={start.isoformat()}&endDate={end.isoformat()}")
+            last = None
+            for day in d.get("dates") or []:
+                for gm in day.get("games") or []:
+                    if (gm.get("status") or {}).get("abstractGameState") == "Final":
+                        side = ("home" if (gm["teams"]["home"]["team"]["id"] == team_id)
+                                else "away")
+                        last = (gm["gamePk"], side)
+            if not last:
+                return None
+            lu = _boxscore_lineup(last[0]) or {}
+            bats = lu.get(last[1]) or None
+            # 9 order spots only — the boxscore order can include mid-game subs.
+            return bats[:9] if bats else None
+        except Exception:
+            return None
+    return _cached(("lastlu", team_id, date), 6 * 3600, fetch)
+
+
 def _confirm_status(g, lu):
     """Scratch / confirmation guard for one game: is our read built on posted
     lineups and the listed starters, or is it still provisional (and liable to
@@ -1294,12 +1325,17 @@ def analyze_slate(date, season):
                 if bp_:
                     out.append(bp_)
             return out
-        if lu.get("home"):
-            hit_home = props_mod.hit_props(lu["home"], ohf_home)
-            bat_home = bat_list(lu["home"], ohf_home)
-        if lu.get("away"):
-            hit_away = props_mod.hit_props(lu["away"], ohf_away)
-            bat_away = bat_list(lu["away"], ohf_away)
+        # Posted lineup when it's out; otherwise the team's last posted order
+        # (their regulars) so batter props exist all morning. Confirm status
+        # still says 'projected' either way until the real card posts.
+        lu_home = lu.get("home") or _last_posted_lineup(g["home_id"], date)
+        lu_away = lu.get("away") or _last_posted_lineup(g["away_id"], date)
+        if lu_home:
+            hit_home = props_mod.hit_props(lu_home, ohf_home)
+            bat_home = bat_list(lu_home, ohf_home)
+        if lu_away:
+            hit_away = props_mod.hit_props(lu_away, ohf_away)
+            bat_away = bat_list(lu_away, ohf_away)
         # Starter strikeout props, sized to THIS pitcher's expected workload
         # (season/recent IP per start), not a one-size 5.6-inning template.
         wl_h, wl_a = _starter_workload(h_sp), _starter_workload(a_sp)

@@ -79,7 +79,7 @@ def _sim_one_season(seed):
     # Reset this season's per-player accumulators (kept on the worker between
     # seasons for the cross-season fold in run_deep's merge step).
     _G["season_bat"] = defaultdict(lambda: dict.fromkeys(
-        ("pa", "ab", "h", "2b", "3b", "hr", "bb", "k", "r", "rbi"), 0))
+        ("pa", "ab", "h", "2b", "3b", "hr", "bb", "k", "r", "rbi", "sb", "ph"), 0))
     _G["season_pit"] = defaultdict(lambda: dict.fromkeys(
         ("bf", "outs", "k", "bb", "h", "hr", "r"), 0))
 
