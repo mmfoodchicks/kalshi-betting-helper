@@ -222,6 +222,16 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
         return None
     pa = PA_BY_SLOT[slot] if slot < 9 else 3.8
     k = max(1, int(round(pa)))
+    # Substitution retention: a batter whose season PA-per-game runs below even a
+    # full-retention #9 hitter (3.8) is getting pinch-hit for / lifted late, and
+    # today's slot won't change that. Only that unambiguous deficit is penalized
+    # (a low PA/G that could just mean "bats 9th" is NOT), shrunk toward 1.0 on
+    # small samples. The game sim uses this to sub him out late; stars stay 1.0.
+    g = b.get("g") or 0
+    ret = 1.0
+    if g >= 10 and spa / g < 3.55:
+        ret = max(0.80, (spa / g) / 3.8)
+        ret = 1.0 + (ret - 1.0) * min(1.0, g / 40.0)
     f = max(0.7, min(1.3, opp_hit_factor))
     # Statcast luck adjustment: power_mult scales extra-base rates toward xSLG,
     # contact_mult scales the overall hit rate toward xBA (true talent).
@@ -288,7 +298,7 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
             "tb6": round(tb6 * 100, 1), "tb7": round(tb7 * 100, 1),
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
             "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4),
-            "spd": spd, "sbr": sbr}
+            "spd": spd, "sbr": sbr, "ret": round(ret, 3)}
 
 
 def pitcher_k_props(k9, exp_ip=5.3, est_pitches=None):

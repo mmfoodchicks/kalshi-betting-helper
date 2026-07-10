@@ -686,6 +686,7 @@ def _boxscore_lineup(game_pk):
                         "id": pid,
                         "name": pl.get("person", {}).get("fullName", ""),
                         "ops": _f(bs.get("ops")), "ab": _f(bs.get("atBats")),
+                        "g": _f(bs.get("gamesPlayed")),
                         "hits": _f(bs.get("hits")), "pa": _f(bs.get("plateAppearances")),
                         "doubles": _f(bs.get("doubles")), "triples": _f(bs.get("triples")),
                         "hr": _f(bs.get("homeRuns")), "bb": _f(bs.get("baseOnBalls")),

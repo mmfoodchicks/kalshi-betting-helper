@@ -61,12 +61,12 @@ def _poisson(lam):
 
 
 def _rates(batters):
-    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb], spd, sbr)]."""
+    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb], spd, sbr, ret)]."""
     rows = []
     for b in batters or []:
         rows.append([b.get("name"),
                      [max(0.0, b.get(k) or 0.0) for k in ("r1", "r2", "r3", "rhr", "rbb")],
-                     b.get("spd") or 1.0, b.get("sbr") or 0.0])
+                     b.get("spd") or 1.0, b.get("sbr") or 0.0, b.get("ret") or 1.0])
     return rows
 
 
@@ -77,11 +77,16 @@ def _rates(batters):
 _SBR_ADJ = 1.85
 
 
+_PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineup spot
+
+
 def _build_setup(rows, mult):
     """Cumulative outcome thresholds with on-base rates scaled by `mult`,
-    carrying each batter's speed factor + steal rate for baserunning."""
+    carrying each batter's speed factor, steal rate, and late-sub probability
+    (`psub`: chance per late-inning PA of being lifted for a pinch hitter, sized
+    so his expected lost PAs match his measured substitution retention)."""
     setup = []
-    for name, rates, spd, sbr in rows:
+    for i, (name, rates, spd, sbr, ret) in enumerate(rows):
         sr = [x * mult for x in rates]
         tot = sum(sr)
         if tot > 0.95:
@@ -91,8 +96,11 @@ def _build_setup(rows, mult):
             if p > 0:
                 acc += p
                 thresh.append((acc, code))
+        slot_pa = _PA_SLOT[i] if i < 9 else 3.8
+        lost = slot_pa * (1.0 - min(1.0, ret))
         setup.append({"name": name, "thresh": thresh, "spd": spd,
-                      "sbr": min(0.6, sbr * _SBR_ADJ)})
+                      "sbr": min(0.6, sbr * _SBR_ADJ),
+                      "psub": min(0.45, lost / 1.75) if lost > 0 else 0.0})
     return setup
 
 
@@ -162,7 +170,8 @@ _CAL_HOME = 1.02
 _CAL_AWAY = 0.962
 
 
-def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0):
+def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0,
+                 late=False, subbed=None):
     """One half-inning of base-out simulation for a lineup. Returns
     (runs, next_batter_idx, walkoff).
 
@@ -170,20 +179,31 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
     lead_target/base_runs: the walk-off rule for the home half of the 9th and
     extras -- the half ENDS the moment base_runs+runs exceeds lead_target. Per
     MLB rules only the winning run scores on a non-HR (trailing runners don't),
-    while a walk-off HR counts in full."""
+    while a walk-off HR counts in full.
+    late/subbed: the pinch-hitter model. In late innings a batter with a measured
+    substitution deficit can be lifted (added to `subbed`); a PHANTOM bench bat
+    (base index -1) takes his PAs from then on -- same outcome rates so team
+    offense stays calibrated, but nothing credits to the starter's stat line."""
     L = len(setup)
     outs, runs = 0, 0
-    bases = [None, None, None]                # batter index on 1st/2nd/3rd
+    bases = [None, None, None]                # batter index on 1st/2nd/3rd (-1 = bench)
     if ghost:
-        bases[1] = (idx - 1) % L
+        gi = (idx - 1) % L
+        bases[1] = -1 if (subbed and gi in subbed) else gi
     wo = lead_target is not None
 
     def won():
         return wo and base_runs + runs > lead_target
 
+    def credit_run(r):                        # a runner crosses the plate
+        nonlocal runs
+        runs += 1
+        if r >= 0:
+            rs = stats[r]; rs[3] += 1; rs[6] += 2
+
     while outs < 3:
-        # Steal of 2nd: runner on 1st, 2nd open, < 2 outs.
-        if bases[0] is not None and bases[1] is None and outs < 2:
+        # Steal of 2nd: runner on 1st, 2nd open, < 2 outs (bench runners don't run).
+        if bases[0] is not None and bases[0] >= 0 and bases[1] is None and outs < 2:
             rr = bases[0]
             if rnd() < setup[rr]["sbr"]:
                 if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
@@ -194,7 +214,7 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                     if outs >= 3:
                         break
         # Steal of 3rd: runner on 2nd, 3rd open, < 2 outs (rarer, higher success).
-        elif bases[1] is not None and bases[2] is None and outs < 2:
+        elif bases[1] is not None and bases[1] >= 0 and bases[2] is None and outs < 2:
             rr = bases[1]
             if rnd() < setup[rr]["sbr"] * _SB3_FRAC:
                 if rnd() < max(0.6, min(0.92, 0.72 + (setup[rr]["spd"] - 1.0) * 0.7)):
@@ -206,13 +226,20 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                         break
         bi = idx % L
         idx += 1
+        phantom = False
+        if late and subbed is not None:
+            if bi in subbed:
+                phantom = True
+            elif setup[bi]["psub"] and rnd() < setup[bi]["psub"]:
+                subbed.add(bi); phantom = True                     # lifted right now
         u = rnd()
         code = 0
         for acc, c in setup[bi]["thresh"]:
             if u < acc:
                 code = c
                 break
-        s = stats[bi]
+        s = [0, 0, 0, 0, 0, 0, 0] if phantom else stats[bi]        # discard row for PH
+        onb = -1 if phantom else bi                                # what goes on base
         if code == 0:                         # out
             # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
             if bases[0] is not None and outs < 2 and rnd() < 0.13:
@@ -221,7 +248,7 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
             else:
                 # Sac fly / productive out: runner on 3rd, < 2 outs scores ~16%.
                 if bases[2] is not None and outs < 2 and rnd() < 0.16:
-                    rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                    credit_run(bases[2])
                     s[4] += 1; s[6] += 2; bases[2] = None
                     if won():
                         return runs, idx, True
@@ -229,15 +256,15 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         elif code == 5:                       # walk (force advances only)
             s[6] += 2
             if bases[0] is None:
-                bases[0] = bi
+                bases[0] = onb
             elif bases[1] is None:
-                bases[1] = bases[0]; bases[0] = bi
+                bases[1] = bases[0]; bases[0] = onb
             elif bases[2] is None:
-                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = onb
             else:                             # bases loaded -> forced run
-                rs = stats[bases[2]]; runs += 1; rs[3] += 1; rs[6] += 2
+                credit_run(bases[2])
                 s[4] += 1; s[6] += 2
-                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = bi
+                bases[2] = bases[1]; bases[1] = bases[0]; bases[0] = onb
                 if won():
                     return runs, idx, True
         else:                                 # a hit
@@ -248,7 +275,7 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 s[2] += 1
                 for r in (r1, r2, r3):
                     if r is not None:
-                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        credit_run(r); scored += 1
                 runs += 1; s[3] += 1; s[6] += 2                     # batter run
                 s[4] += 1 + scored; s[6] += 2 * (1 + scored)       # RBI
                 bases = [None, None, None]
@@ -257,23 +284,23 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
             elif code == 3:                   # triple: all runners score
                 for r in (r3, r2, r1):        # lead runner crosses first
                     if r is not None:
-                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        credit_run(r); scored += 1
                         if won():             # winning run ends it; rest don't score
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
                 s[4] += scored; s[6] += 2 * scored
-                bases = [None, None, bi]
+                bases = [None, None, onb]
             elif code == 2:                   # double
-                nb = [None, bi, None]         # batter to 2nd
+                nb = [None, onb, None]        # batter to 2nd
                 for r in (r3, r2):
                     if r is not None:
-                        rs = stats[r]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                        credit_run(r); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
                 if r1 is not None:            # from 1st: faster runners score more
-                    if rnd() < max(0.25, min(0.7, 0.45 * setup[r1]["spd"])):
-                        rs = stats[r1]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    if rnd() < max(0.25, min(0.7, 0.45 * (setup[r1]["spd"] if r1 >= 0 else 1.0))):
+                        credit_run(r1); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
@@ -282,22 +309,22 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 bases = nb
                 s[4] += scored; s[6] += 2 * scored
             else:                             # single
-                nb = [bi, None, None]         # batter to 1st
+                nb = [onb, None, None]        # batter to 1st
                 if r3 is not None:
-                    rs = stats[r3]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    credit_run(r3); scored += 1
                     if won():
                         s[4] += scored; s[6] += 2 * scored
                         return runs, idx, True
                 if r2 is not None:            # from 2nd: ~60%, speed-scaled
-                    if rnd() < max(0.4, min(0.85, 0.60 * setup[r2]["spd"])):
-                        rs = stats[r2]; runs += 1; rs[3] += 1; rs[6] += 2; scored += 1
+                    if rnd() < max(0.4, min(0.85, 0.60 * (setup[r2]["spd"] if r2 >= 0 else 1.0))):
+                        credit_run(r2); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
                     else:
                         nb[2] = r2
                 if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
-                    if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * setup[r1]["spd"])):
+                    if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * (setup[r1]["spd"] if r1 >= 0 else 1.0))):
                         nb[2] = r1
                     else:
                         nb[1] = r1
@@ -314,8 +341,10 @@ def _play_game(setup, rnd):
     L = len(setup)
     stats = [[0, 0, 0, 0, 0, 0, 0] for _ in range(L)]   # H,TB,HR,R,RBI,SB,DK
     runs, idx, first_inning = 0, 0, 0
+    subbed = set()
     for _inn in range(_N_INNINGS):
-        r, idx, _ = _half_inning(setup, stats, idx, rnd)
+        r, idx, _ = _half_inning(setup, stats, idx, rnd,
+                                 late=_inn >= 6, subbed=subbed)
         runs += r
         if _inn == 0:
             first_inning = r
@@ -331,27 +360,32 @@ def _play_matchup(setup_a, setup_h, rnd):
     stats_a = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_a))]
     stats_h = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_h))]
     ia = ih = ra = rh = f1 = 0
+    sub_a, sub_h = set(), set()
     for inn in range(9):
-        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd)
+        late = inn >= 6
+        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, late=late, subbed=sub_a)
         ra += r
         if inn == 0:
             f1 += r
         if inn < 8:
-            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd)
+            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, late=late, subbed=sub_h)
             rh += r
             if inn == 0:
                 f1 += r
         elif rh <= ra:                      # bottom 9 only if home isn't ahead
             r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd,
-                                    lead_target=ra, base_runs=rh)
+                                    lead_target=ra, base_runs=rh,
+                                    late=True, subbed=sub_h)
             rh += r
     extra = 0
     while ra == rh and extra < 12:          # ghost-runner extras until decided
         extra += 1
-        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, ghost=True)
+        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, ghost=True,
+                                late=True, subbed=sub_a)
         ra += r
         r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, ghost=True,
-                                lead_target=ra, base_runs=rh)
+                                lead_target=ra, base_runs=rh,
+                                late=True, subbed=sub_h)
         rh += r
     if ra == rh:                            # 21-inning marathon failsafe (~never)
         if rnd() < 0.52:
