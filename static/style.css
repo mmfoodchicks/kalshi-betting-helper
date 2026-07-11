@@ -937,3 +937,7 @@ body.tier-locked .owner-only { display: none !important; }
   white-space: nowrap; display: inline-block; }
 .divchip.al { color: #6cb0ff; background: rgba(88,166,255,0.13); border: 1px solid rgba(88,166,255,0.35); }
 .divchip.nl { color: #ffb46c; background: rgba(255,150,60,0.12); border: 1px solid rgba(255,150,60,0.35); }
+
+/* Featured "Refresh" button: pushed to the right, distinct from sport pills */
+.sportbtn.refreshall { margin-left: auto; opacity: 0.85; }
+.sportbtn.refreshall:hover { opacity: 1; }

@@ -2060,27 +2060,41 @@ function setFeatSport(s) {
   loadFeatured();
 }
 
-async function loadFeatured() {
+let _featReq = 0;   // increments on every load; a stale fetch can't paint over a newer sport
+async function loadFeatured(force) {
   const box = $("featuredResults");
+  const sport = _featSport;                 // pin the sport this request is for
+  const my = ++_featReq;                    // this request's token
+  // `force` (Refresh button) appends a cache-buster so the browser re-fetches
+  // from the server instead of serving a stale HTTP-cached response. The server
+  // board itself is still its normal cached run (fast) — this fixes a wrong/
+  // stale board on screen without kicking a slow recompute.
+  const bust = force ? `_=${Date.now()}` : "";
   box.innerHTML = `<div class="empty">Simulating the season…</div>`;
   $("featuredSummary").innerHTML = "";
+  // A stale render finished for a DIFFERENT sport (or a newer request superseded
+  // this one) -> drop it on the floor instead of painting the wrong board.
+  const stale = () => my !== _featReq || sport !== _featSport;
   try {
-    if (_featSport === "mlb") {
-      const d = await (await fetch("/api/baseball/futures")).json();
+    if (sport === "mlb") {
+      const d = await (await fetch("/api/baseball/futures" + (bust ? "?" + bust : ""))).json();
+      if (stale()) return;
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
       _boardData = d; _featGenTime = _genTime(d.age_sec); renderFeatured(d);
-    } else if (_featSport === "nfl") {
-      const d = await (await fetch("/api/nfl/futures")).json();
+    } else if (sport === "nfl") {
+      const d = await (await fetch("/api/nfl/futures" + (bust ? "?" + bust : ""))).json();
+      if (stale()) return;
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
       _boardData = d; renderFeatured(d);
     } else {
-      const d = await (await fetch(`/api/racing/${_featSport}`)).json();
+      const d = await (await fetch(`/api/racing/${sport}` + (bust ? "?" + bust : ""))).json();
+      if (stale()) return;
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
       _featGenTime = _genTime(d.age_sec); renderRacing(d);
     }
     watchFeatured();   // drive the progress bar + auto-reload when a newer run lands
   } catch (e) {
-    box.innerHTML = `<div class="empty">Season sim failed.</div>`;
+    if (!stale()) box.innerHTML = `<div class="empty">Season sim failed.</div>`;
   }
 }
 
