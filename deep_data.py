@@ -255,7 +255,7 @@ def team_profile(team_id, season=None):
             xstats = savant.expected_stats(season) or {}
         except Exception:
             pass
-        batters, pitchers, depth = [], [], []
+        batters, pitchers, depth, depth_bats = [], [], [], []
         for pid in set(hit) | set(pit):
             h, p = hit.get(pid), pit.get(pid)
             per, pos, code = (p or h)[0], (p or h)[1], (p or h)[4]
@@ -277,16 +277,18 @@ def team_profile(team_id, season=None):
             if is_pitcher_pos and pst:
                 arm = _pitcher(per, pst, pcar, avail)
                 (depth if is_depth else pitchers).append(arm)
-            # Batting side: position players + two-way (never pure pitchers, never
-            # taxi-squad depth — those only matter as call-up arms).
-            if (not is_pitcher_pos or two_way) and hst and not is_depth:
+            # Batting side: position players + two-way. RM (optioned) bats become
+            # the position-player taxi squad — the call-up pool the engine reaches
+            # for when injuries drain the MLB bench, mirroring the depth arms.
+            if (not is_pitcher_pos or two_way) and hst:
                 mults = (1.0, 1.0)
                 try:
                     import savant
                     mults = savant.quality_mults(xstats.get(pid))
                 except Exception:
                     pass
-                batters.append(_batter(per, hst, hcar, avail, mults))
+                b = _batter(per, hst, hcar, avail, mults)
+                (depth_bats if is_depth else batters).append(b)
         # Rotation = top starters by games started; bullpen = the rest with innings.
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
                           key=lambda p: (p["gs"], p["ip"]), reverse=True)[:6]
@@ -323,9 +325,25 @@ def team_profile(team_id, season=None):
                     p["mix"] = m
         except Exception:
             pass
+        # Taxi bats: BEST ready bat first — when a club loses a starter, the
+        # call-up is their best available bat, not the shuttle guy (the depth
+        # ARMS pop worst-first because that's how bullpen call-ups work).
+        def bat_q(b):
+            r = b["rates"]
+            return (r["1b"] + 2 * r["2b"] + 3 * r["3b"] + 4 * r["hr"]
+                    + 0.7 * (r["bb"] + r["hbp"]))
+        depth_bats.sort(key=bat_q, reverse=True)
+        lineup, bench = batters[:9], batters[9:]
+        taxi = depth_bats[:6]
+        # A chronically thin bench (long-IL absences shrank the active group)
+        # gets topped back up from the taxi squad — real clubs carry 26, they
+        # don't play a man short for months.
+        while len(bench) < 4 and taxi:
+            bench.append(taxi.pop(0))
         return {"rotation": starters or pitchers[:1], "bullpen": relievers,
-                "depth": depth[:6], "lineup": batters[:9], "bench": batters[9:]}
-    return baseball._cached(("deep_profile3", team_id, season), 21600, build)
+                "depth": depth[:6], "lineup": lineup, "bench": bench,
+                "depth_bats": taxi}
+    return baseball._cached(("deep_profile4", team_id, season), 21600, build)
 
 
 def _bat_real(st):

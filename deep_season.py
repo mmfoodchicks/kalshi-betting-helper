@@ -308,6 +308,9 @@ def team_detail(agg, season, tid):
 
     batting = [b for b in (bat_line(p) for p in prof["lineup"]) if b]
     batting += [b for b in (bat_line(p, "bench") for p in prof["bench"]) if b]
+    # Taxi-squad bats (optioned to the minors) appear only when the sim actually
+    # called them up — bat_line returns None for anyone with no simulated PA.
+    batting += [b for b in (bat_line(p, "taxi") for p in prof.get("depth_bats", [])) if b]
     pitching = [p for p in (pit_line(x) for x in prof["rotation"] + prof["bullpen"]) if p]
 
     # Injured players the sim dropped entirely (e.g. 60-day IL) — show them at the

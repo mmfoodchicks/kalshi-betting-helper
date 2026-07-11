@@ -283,9 +283,19 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
     lineup, bench = {}, {}
     for side, prof in (("home", home), ("away", away)):
         lu, bn = list(prof["lineup"]), list(prof["bench"])
+        taxi = list(prof.get("depth_bats", []))
         for i, p in enumerate(lu):
-            if p.get("avail", 1.0) < 1.0 and rng.random() > p["avail"] and bn:
-                lu[i] = bn.pop(0)
+            if p.get("avail", 1.0) < 1.0 and rng.random() > p["avail"]:
+                if bn:
+                    lu[i] = bn.pop(0)
+                    # The club backfills the roster: promoting a bench bat into
+                    # the lineup triggers a call-up who takes the open bench
+                    # seat (and can pinch-hit later like anyone else there).
+                    if taxi:
+                        bn.append(taxi.pop(0))
+                elif taxi:
+                    # Bench exhausted -> the call-up starts directly.
+                    lu[i] = taxi.pop(0)
         lineup[side], bench[side] = lu, bn
     idx = {"home": 0, "away": 0}
     used_ph = {"home": set(), "away": set()}

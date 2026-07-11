@@ -3340,7 +3340,9 @@ function renderTeamDetail(d) {
   const rp = (v) => (v == null ? "" : ` <span class="rp">(${v})</span>`);   // real in parens
   const ilTag = (r) => r.il ? ` <span class="iltag" title="On the injured list${r.status ? " (" + r.status + ")" : ""}">🏥 IL</span>` : "";
   const bnTag = (b) => b.role === "bench"
-    ? ` <span class="small" style="color:var(--faint)" title="bench — enters as a pinch hitter or fill-in starter${b.ph_g ? ` (~${b.ph_g} simulated PH appearances/season)` : ""}">BN</span>` : "";
+    ? ` <span class="small" style="color:var(--faint)" title="bench — enters as a pinch hitter or fill-in starter${b.ph_g ? ` (~${b.ph_g} simulated PH appearances/season)` : ""}">BN</span>`
+    : b.role === "taxi"
+      ? ` <span class="small" style="color:var(--faint)" title="taxi squad (optioned to the minors) — the sim called him up when injuries drained the MLB bench">AAA</span>` : "";
   const bat = d.batting.map((b) => {
     const r = b.real || {};
     if (!b.has_sim) {   // injured, no simulated line — real stats only
