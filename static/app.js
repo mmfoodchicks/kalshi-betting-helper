@@ -3825,7 +3825,7 @@ function renderMlbDfs(d) {
   if (d.contest_sim && !d.contest_sim.error) {
     const c = d.contest_sim;
     const money = (v) => "$" + Math.round(v).toLocaleString();
-    csHead = `<div class="dfs-note">🏆 ${c.entries.toLocaleString()}-entry ${c.contest === "double_up" ? "double-up" : "GPP"}${c.prize_pool ? ` · ${money(c.prize_pool)} pool · ${money(c.first_prize)} to 1st · ${(c.places_paid || 0).toLocaleString()} paid` : ""} · ${money(c.entry_fee)} entry. Your strength is gauged on a ${c.sample_size}-lineup sample, then scaled to the full field. <i>Field, score-fit &amp; payout curve are modeled estimates.</i></div>`;
+    csHead = `<div class="dfs-note">🏆 ${c.entries.toLocaleString()}-entry ${c.contest === "double_up" ? "double-up" : "GPP"}${c.prize_pool ? ` · ${money(c.prize_pool)} pool · ${money(c.first_prize)} to 1st · ${(c.places_paid || 0).toLocaleString()} paid` : ""} · ${money(c.entry_fee)} entry. Your lineups are scored by your <b>sims</b> setting; contest strength is gauged against a <b>${c.sample_size}</b>-lineup opponent field (${(c.iterations || 0).toLocaleString()} contest runs, scales with sims), then extrapolated to the full entry count. <i>Field, score-fit &amp; payout curve are modeled estimates.</i></div>`;
   } else if (d.contest_sim && d.contest_sim.error) {
     csHead = `<div class="dfs-note">${d.contest_sim.error}</div>`;
   }
@@ -4013,7 +4013,7 @@ async function runDfsSim() {
     const cs = d.contest_sim;
     if (cs && !cs.error) {
       const money = (v) => "$" + Math.round(v).toLocaleString();
-      csBanner = `<div class="dfs-note" style="margin-top:6px">🏆 ${cs.entries.toLocaleString()}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"}${cs.prize_pool ? ` · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${(cs.places_paid || 0).toLocaleString()} paid` : ""} · ${money(cs.entry_fee)} entry. Strength gauged on a ${cs.sample_size}-lineup field, scaled to the full contest. <i>Modeled estimate.</i></div>`;
+      csBanner = `<div class="dfs-note" style="margin-top:6px">🏆 ${cs.entries.toLocaleString()}-entry ${cs.contest === "double_up" ? "double-up" : "GPP"}${cs.prize_pool ? ` · ${money(cs.prize_pool)} pool · ${money(cs.first_prize)} to 1st · ${(cs.places_paid || 0).toLocaleString()} paid` : ""} · ${money(cs.entry_fee)} entry. Strength gauged vs a ${cs.sample_size}-lineup opponent field (scales with your sims setting), extrapolated to the full contest. <i>Modeled estimate.</i></div>`;
     } else if (cs && cs.error) {
       csBanner = `<div class="dfs-note" style="margin-top:6px">${cs.error}</div>`;
     }

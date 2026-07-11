@@ -931,10 +931,16 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     contest_sim = None
     if contest in ("gpp", "double_up"):
         try:
+            # The opponent-field sample scales with the user's sims knob (it was
+            # a fixed 500, which read as the "sims" setting being ignored —
+            # they're different things: `sims` scores YOUR lineups, this builds
+            # the field you're up against).
             contest_sim = _contest_sim(lineups, players, roster, cap, cv, contest=contest,
                                        entry_fee=entry_fee, contest_size=contest_size,
                                        prize_pool=prize_pool, first_prize=first_prize,
-                                       exclusive_group=exclusive)
+                                       exclusive_group=exclusive,
+                                       n_iter=min(1200, max(300, sims // 40)),
+                                       field_n=min(1500, max(400, sims // 30)))
         except Exception as e:
             contest_sim = {"error": f"contest sim failed: {e}"}
 
