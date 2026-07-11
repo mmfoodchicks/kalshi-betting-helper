@@ -179,9 +179,14 @@ def _init_deep_sims():
             return pro_sim.project(league, 4000)
         return run
 
+    def run_nfl_season():
+        import nfl_season
+        return nfl_season.run_season(n=4000)
+
     deep_cache.register("mlb_deep", run_mlb)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
+    deep_cache.register("nfl_season", run_nfl_season)
     # Pro-league preseason projections. NFL is live now; NBA/NHL light up once
     # their upcoming-season schedules publish (their run returns None until then).
     for _lg in ("nfl", "nba", "nhl"):
@@ -1086,6 +1091,36 @@ def api_pro_league(league):
     except Exception:
         pass
     return jsonify(data)
+
+
+@app.route("/api/nfl/futures")
+def api_nfl_futures():
+    """NFL futures board (Featured tab): Super Bowl / conference / division /
+    playoffs / win-total lines from a 4,000-season Monte Carlo, priced vs the
+    live Kalshi futures series. Mirrors /api/baseball/futures exactly."""
+    try:
+        import nfl_season
+        b = nfl_season.futures_board(n=tiers.cap_sims(_tier(), request.args.get("sims", 4000)))
+    except Exception as e:
+        return jsonify({"error": f"nfl season sim failed: {e}"}), 502
+    if not b:
+        return jsonify({"error": "NFL schedule not available yet"}), 502
+    return jsonify(b)
+
+
+@app.route("/api/nfl/team")
+def api_nfl_team():
+    """Per-player projected season stat lines for one NFL team — Sleeper's
+    projections preseason, blending in real weekly stats once games are played.
+    Needs ?abbr=KC."""
+    abbr = (request.args.get("abbr") or "").upper()
+    if not abbr:
+        return jsonify({"error": "abbr required"}), 400
+    try:
+        import nfl_season
+        return jsonify(nfl_season.team_detail(abbr))
+    except Exception as e:
+        return jsonify({"error": f"team detail failed: {e}"}), 502
 
 
 @app.route("/api/nfl/fantasy")

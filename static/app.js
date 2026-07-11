@@ -2049,6 +2049,7 @@ let _deepTimer = null, _featGenTime = 0;   // generation time of the board on sc
 const _featIntro = {
   mlb: `Our season Monte Carlo vs the market — division / playoff / pennant / World Series odds and win totals, vs Kalshi & Polymarket. Click "Run deep sim" for the pitch-by-pitch engine.`,
   f1: `Deep F1 season sim — every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
+  nfl: `NFL season Monte Carlo — every remaining game simulated 4,000 times off roster-aware team projections → Super Bowl / conference / division / playoff odds and win totals vs Kalshi's futures. Click a team for its Sleeper-projected player stat lines (real stats blend in as the season plays).`,
   nascar: `Deep NASCAR Cup sim — pace + points from this season's races, then the full playoff bracket (Round of 16 → 12 → 8 → Championship 4). The winner-take-all finale keeps title odds flat, as in real NASCAR.`,
 };
 function setFeatSport(s) {
@@ -2068,6 +2069,10 @@ async function loadFeatured() {
       const d = await (await fetch("/api/baseball/futures")).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
       _boardData = d; _featGenTime = _genTime(d.age_sec); renderFeatured(d);
+    } else if (_featSport === "nfl") {
+      const d = await (await fetch("/api/nfl/futures")).json();
+      if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+      _boardData = d; renderFeatured(d);
     } else {
       const d = await (await fetch(`/api/racing/${_featSport}`)).json();
       if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
@@ -3237,6 +3242,28 @@ async function watchFeatured() {
 }
 
 function renderFeatured(d) {
+  if (d.sport === "nfl") {
+    $("featuredSummary").innerHTML =
+      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>roster-aware model</b> (projected wins → game-by-game season + full playoff bracket). Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
+    const groupsN = {};
+    d.order.forEach((k) => { const m = d.markets[k]; (groupsN[m.group] = groupsN[m.group] || []).push([k, m.label]); });
+    const ogN = Object.entries(groupsN).map(([g, items]) =>
+      `<optgroup label="${g}">${items.map(([k, lbl]) => `<option value="${k}">${lbl}</option>`).join("")}</optgroup>`).join("");
+    const curN = (_featMarket && d.markets[_featMarket]) ? _featMarket : d.order[0];
+    _featMarket = curN;
+    $("featuredResults").innerHTML = `
+      <div class="futctl">
+        <label class="small">Market</label>
+        <select id="futMarket" onchange="_featMarket=this.value;renderFeaturedTable()">${ogN}</select>
+        <input id="futSearch" placeholder="🔍 search team…" oninput="renderFeaturedTable()" autocomplete="off"/>
+      </div>
+      <div class="small" style="margin:2px 0 6px;color:var(--muted)">Click a team for its projected player stat lines (Sleeper projections; real stats blend in during the season).</div>
+      <div id="futTeamDetail"></div>
+      <div id="futTable"></div>`;
+    $("futMarket").value = curN;
+    renderFeaturedTable();
+    return;
+  }
   const engineNote = d.engine === "deep"
     ? `<b>deep pitch-by-pitch engine</b> — game-by-game, run-by-run`
     : `fast model (expected runs → Pythagorean)`;
@@ -3275,9 +3302,9 @@ const _MLB_DIV = { 200: "AL West", 201: "AL East", 202: "AL Central",
                    203: "NL West", 204: "NL East", 205: "NL Central" };
 const _MLB_LG = { 103: "AL", 104: "NL" };
 function _divChip(r) {
-  const dv = _MLB_DIV[r.division];
+  const dv = _MLB_DIV[r.division] || (typeof r.division === "string" ? r.division : null);
   if (!dv) return "";
-  const al = r.league === 103 || dv.startsWith("AL");
+  const al = r.league === 103 || dv.startsWith("AL") || dv.startsWith("AFC");
   return ` <span class="divchip ${al ? "al" : "nl"}" title="division — only ONE team per division can win it, so never put two same-division teams in the same division-winner slip">${dv}</span>`;
 }
 function renderFeaturedTable() {
@@ -3301,7 +3328,7 @@ function renderFeaturedTable() {
   const body = rows.map((r, i) => {
     const w = Math.round(100 * r.count / maxc);
     const ecls = r.edge == null ? "" : r.edge >= 0 ? "ev pos" : "ev neg";
-    const click = deep && r.abbr ? ` futrow-click" onclick="openTeamDetail('${r.abbr}')` : "";
+    const click = (deep || d.sport === "nfl") && r.abbr ? ` futrow-click" onclick="openTeamDetail('${r.abbr}')` : "";
     return `<div class="futrow${click}">
       <span class="fr-rank">${i + 1}</span>
       <span class="fr-team"><b>${r.team}</b>${_divChip(r)}<span class="small"> ${r.wins}-${r.losses} · proj ${r.proj_wins}</span></span>
@@ -3312,10 +3339,11 @@ function renderFeaturedTable() {
       <span class="fr-num ${ecls}">${r.edge == null ? "—" : (r.edge >= 0 ? "+" : "") + r.edge}</span>
     </div>`;
   }).join("");
+  const nflB = d.sport === "nfl";
   const mx = _featMarket === "division"
     ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One winner per division — two teams with the <b>same division chip</b> can never both hit. Don't pair them in a slip.</div>`
     : _featMarket === "pennant"
-      ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One pennant per league — two <b>AL</b> (or two <b>NL</b>) teams can never both hit. Don't pair them in a slip.</div>`
+      ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ ${nflB ? "One champion per conference — two <b>AFC</b> (or two <b>NFC</b>) teams can never both hit." : "One pennant per league — two <b>AL</b> (or two <b>NL</b>) teams can never both hit."} Don't pair them in a slip.</div>`
       : "";
   $("futTable").innerHTML = mx + head + (body || `<div class="empty">No team matches “${q}”.</div>`);
 }
@@ -3323,14 +3351,32 @@ function renderFeaturedTable() {
 async function openTeamDetail(abbr) {
   const box = $("futTeamDetail");
   if (!box) return;
-  box.innerHTML = `<div class="small" style="padding:8px">Loading ${abbr} simulated season…</div>`;
+  const nfl = _boardData && _boardData.sport === "nfl";
+  box.innerHTML = `<div class="small" style="padding:8px">Loading ${abbr} ${nfl ? "player projections" : "simulated season"}…</div>`;
   box.scrollIntoView({ behavior: "smooth", block: "nearest" });
   try {
-    const d = await (await fetch(`/api/baseball/team?abbr=${abbr}`)).json();
-    box.innerHTML = d.error ? `<div class="small" style="padding:8px">${d.error}</div>` : renderTeamDetail(d);
+    const d = await (await fetch(nfl ? `/api/nfl/team?abbr=${abbr}` : `/api/baseball/team?abbr=${abbr}`)).json();
+    box.innerHTML = d.error ? `<div class="small" style="padding:8px">${d.error}</div>`
+      : (nfl ? renderNflSeasonTeam(d) : renderTeamDetail(d));
   } catch (e) {
     box.innerHTML = `<div class="small" style="padding:8px">Failed to load team.</div>`;
   }
+}
+
+function renderNflSeasonTeam(d) {
+  const rp = (v) => (v == null ? "" : ` <span class="rp">(${v})</span>`);
+  const cell = (p, k) => `${p[k] ?? 0}${p.real ? rp(p.real[k]) : ""}`;
+  const rows = (d.players || []).map((p) => `<tr>
+      <td>${p.name} <span class="small">${p.pos}</span></td><td><b>${p.fpts}</b></td>
+      <td>${cell(p, "pass_yd")}</td><td>${cell(p, "pass_td")}</td><td>${cell(p, "pass_int")}</td>
+      <td>${cell(p, "rush_yd")}</td><td>${cell(p, "rush_td")}</td>
+      <td>${cell(p, "rec")}</td><td>${cell(p, "rec_yd")}</td><td>${cell(p, "rec_td")}</td></tr>`).join("");
+  return `<div class="teamdetail">
+    <div class="teamdetailhead"><b>${d.team}</b> — projected <b>season-end</b> player stat lines <span class="small" style="color:var(--muted)">· ${d.source}${d.weeks_played ? ` · real stats through week ${d.weeks_played} in <span class="rp">(parentheses)</span>` : ""}</span>
+      <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
+    <div class="tdtbls"><div><table class="seasontbl"><thead><tr><th>Player</th><th>FPTS</th>
+      <th>PaYd</th><th>PaTD</th><th>INT</th><th>RuYd</th><th>RuTD</th><th>Rec</th><th>ReYd</th><th>ReTD</th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div></div>`;
 }
 window.openTeamDetail = openTeamDetail;
 window.closeTeamDetail = () => { const b = $("futTeamDetail"); if (b) b.innerHTML = ""; };
