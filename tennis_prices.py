@@ -168,31 +168,42 @@ def _event_date(ev):
     return f"20{yy}{months.get(mon, 1):02d}{dd}"
 
 
-def _insights(a, b, sim, surface):
-    """Plain-English angles from the model numbers."""
+def _insights(a, b, sim, surface, trusted=True):
+    """Plain-English angles. Favorite + the 'strong favorite / coin-flip' framing
+    key off `fair_win` — the confidence-blended number we actually believe — NOT
+    the raw serve sim, which on thin data can wildly favor the wrong player. The
+    serve-model narrative (serves bigger / straight sets) is only emitted when the
+    charting is trustworthy (`trusted`); on thin data it's noise and is suppressed
+    so the story never contradicts the fair number."""
     out = []
-    fav, dog = (a, b) if a["model_win"] >= b["model_win"] else (b, a)
-    # serve dominance
-    if abs(sim["holdA"] - sim["holdB"]) >= 6:
-        s = a if sim["holdA"] > sim["holdB"] else b
-        out.append(f"🎾 {s['name'].split()[-1]} serves bigger (holds {max(sim['holdA'], sim['holdB'])}% vs {min(sim['holdA'], sim['holdB'])}%)")
-    # surface edge: player's surface serve rate well above their overall
-    for p in (a, b):
-        prof = p.get("prof")
-        if not prof:
-            continue
-        ov = prof["overall"]["spw"]
-        sv = (prof.get("surf") or {}).get(surface, {}).get("spw", ov)
-        if sv - ov >= 0.02 and (prof.get("surf") or {}).get(surface, {}).get("w", 0) >= 5:
-            out.append(f"📈 {p['name'].split()[-1]} is stronger on {surface.lower()}")
-    # straight-set likelihood (only meaningful for the favorite)
-    if a["model_win"] >= b["model_win"] and sim["a_straight"] >= 52:
-        out.append(f"🧹 {a['name'].split()[-1]} often in straight sets ({sim['a_straight']}%)")
-    # tight match -> over games
-    if 42 <= fav["model_win"] <= 58:
+    fw = lambda p: p.get("fair_win") if p.get("fair_win") is not None else p.get("model_win") or 0
+    fav, dog = (a, b) if fw(a) >= fw(b) else (b, a)
+    # Serve-model narrative only when we trust the charting (else it's a
+    # small-sample artifact that can contradict the fair read).
+    if trusted:
+        # serve dominance
+        if abs(sim["holdA"] - sim["holdB"]) >= 6:
+            s = a if sim["holdA"] > sim["holdB"] else b
+            out.append(f"🎾 {s['name'].split()[-1]} serves bigger (holds {max(sim['holdA'], sim['holdB'])}% vs {min(sim['holdA'], sim['holdB'])}%)")
+        # surface edge: player's surface serve rate well above their overall
+        for p in (a, b):
+            prof = p.get("prof")
+            if not prof:
+                continue
+            ov = prof["overall"]["spw"]
+            sv = (prof.get("surf") or {}).get(surface, {}).get("spw", ov)
+            if sv - ov >= 0.02 and (prof.get("surf") or {}).get(surface, {}).get("w", 0) >= 5:
+                out.append(f"📈 {p['name'].split()[-1]} is stronger on {surface.lower()}")
+        # straight-set likelihood (only meaningful when A is the fair favorite)
+        if fw(a) >= fw(b) and sim["a_straight"] >= 52:
+            out.append(f"🧹 {a['name'].split()[-1]} often in straight sets ({sim['a_straight']}%)")
+    # Favorite framing — always from fair_win, so it matches the headline + lean.
+    if 42 <= fw(fav) <= 58:
         out.append(f"⚖️ Coin-flip — lean Over {sim['mean_games']:.0f} games / 3 sets")
-    elif fav["model_win"] >= 72:
-        out.append(f"💪 {fav['name'].split()[-1]} a strong favorite ({fav['model_win']}%)")
+    elif fw(fav) >= 72:
+        out.append(f"💪 {fav['name'].split()[-1]} the favorite ({round(fw(fav))}%)")
+    if not trusted:
+        out.append("🔴 Thin charting on these players — deferring to the market, so the win% is the market's read, not a strong model edge.")
     # model vs market value
     for p in (a, b):
         if p.get("edge") is not None and p["edge"] >= 6:
@@ -361,7 +372,8 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
              "tournament": tournament, "kalshi_series": kalshi_series,
              "live_rates": live_rates,
              "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
-    insights = _insights(a, b, sim, surface) if sim else []
+    insights = _insights(a, b, sim, surface,
+                         trusted=tier in ("high", "medium")) if sim else []
     # Elo angle (works with or without the serve sim)
     if "elo" in source and a.get("elo") and b.get("elo"):
         hi, lo = (a, b) if a["elo"] >= b["elo"] else (b, a)

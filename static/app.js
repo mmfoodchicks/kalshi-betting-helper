@@ -2823,22 +2823,29 @@ function _tnEdge(e) {
 }
 function _tnPlayer(p, served) {
   const px = p.cents != null ? `${p.cents}¢` : "—";
-  // model win% when we have it; otherwise the de-vig Kalshi win% (ITF / no charting)
-  const mdl = p.model_win != null ? `${p.model_win}%`
-    : (p.mkt_win != null ? `${p.mkt_win}%<span class="small" style="color:var(--muted)"> mkt</span>` : "—");
-  const fair = (p.model_win != null && p.fair_win != null && p.fair_win !== p.model_win)
-    ? ` <span class="small" style="color:var(--muted)" title="confidence-blended toward the market">→${p.fair_win}%</span>` : "";
-  // Variance reality check on a strong favorite: 95% still loses ~1 in 20.
-  // Tennis is high-variance in a single match — this is the intuition the
-  // "my 95% guy lost" moment needs.
-  const wp = p.fair_win != null ? p.fair_win : p.model_win;
-  const risk = (wp != null && wp >= 70 && wp < 100)
-    ? ` <span class="tn-risk" title="even a heavy favorite loses this often — single tennis matches are high-variance">1 in ${Math.round(100 / (100 - wp))} loses</span>` : "";
+  // HEADLINE = fair_win: the confidence-blended number we actually believe and
+  // that the Lean uses. (fair_win already equals the market when we have no
+  // model, or the model when there's no market.) Leading with the raw serve
+  // sim was the bug — on thin data it can wildly favor the wrong player.
+  const believe = p.fair_win != null ? p.fair_win
+    : (p.model_win != null ? p.model_win : p.mkt_win);
+  const mktTag = (p.model_win == null && p.mkt_win != null)
+    ? `<span class="small" style="color:var(--muted)"> mkt</span>` : "";
+  const headline = believe != null ? `${believe}%${mktTag}` : "—";
+  // Secondary: the raw serve-model read, shown ONLY when it meaningfully
+  // differs from the fair number (i.e. thin data pulled us to the market), so
+  // the number and the story never silently contradict each other.
+  const raw = (p.model_win != null && p.fair_win != null
+    && Math.abs(p.model_win - p.fair_win) > 3)
+    ? ` <span class="small" style="color:var(--faint)" title="raw serve-model read before blending toward the market — differs when charting is thin, so we trust the blended number above">serve ${p.model_win}%</span>` : "";
+  // Variance reality check on a strong favorite (from the number we believe).
+  const risk = (believe != null && believe >= 70 && believe < 100)
+    ? ` <span class="tn-risk" title="even a heavy favorite loses this often — single tennis matches are high-variance">1 in ${Math.round(100 / (100 - believe))} loses</span>` : "";
   const hold = p.hold != null ? `<span class="tn-hold" title="probability of holding serve">hold ${p.hold}%</span>` : "";
   const elo = p.elo != null ? `<span class="tn-hold" title="our Elo rating from recent match results (${p.elo_n} matches)">Elo ${p.elo}</span>` : "";
   return `<div class="tn-player">
       <div class="tn-pname"><b>${p.name}</b> ${hold}${elo}${risk}</div>
-      <div class="tn-pnums"><span class="tn-win">${mdl}${fair}</span>
+      <div class="tn-pnums"><span class="tn-win">${headline}${raw}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_tnEdge(p.edge)}</span></div>
     </div>`;
 }
