@@ -106,8 +106,26 @@ def _surface_for(date):
     return "Hard"
 
 
+def _tourney_from_title(title):
+    """'Will X win the A vs B: M15 Villa Constitucion Round of 32 match?' ->
+    'M15 Villa Constitucion' (the Kalshi event's tournament — how the user finds
+    it among the dozens of tennis tabs). Strips the trailing round descriptor."""
+    import re
+    m = re.search(r":\s*(.+?)\s+match\??\s*$", title or "", re.I)
+    if not m:
+        return None
+    t = m.group(1).strip()
+    # Drop a trailing round descriptor ("Round Of 32", "Quarterfinal", "R16",
+    # "Final") whether it trails a tournament or IS the whole string (ATP/WTA
+    # main-tour titles carry only the round, no tournament name).
+    t = re.sub(r"(^|\s+)(round\s+of\s+\d+|r\d+|quarterfinals?|semifinals?|"
+               r"finals?|round\s+robin)\s*$", "", t, flags=re.I).strip()
+    return t or None
+
+
 def _match_markets(series):
-    """Open winner markets grouped by event -> {event: [{name, cents, ticker}]}."""
+    """Open winner markets grouped by event ->
+    {event: {'players': [...], 'tournament': str|None}}."""
     out, cursor = {}, ""
     for _ in range(8):
         url = f"{kalshi.BASE}/markets?series_ticker={series}&status=open&limit=1000"
@@ -123,9 +141,12 @@ def _match_markets(series):
             nm = m.get("yes_sub_title")
             if not nm:
                 continue
-            out.setdefault(ev, []).append({
+            rec = out.setdefault(ev, {"players": [], "tournament": None})
+            rec["players"].append({
                 "name": nm, "ticker": tk,
                 "cents": kalshi._cents(m.get("yes_ask_dollars"))})
+            if not rec["tournament"]:
+                rec["tournament"] = _tourney_from_title(m.get("title"))
         cursor = d.get("cursor") or ""
         if not cursor:
             break
@@ -191,7 +212,7 @@ def _insights(a, b, sim, surface):
 
 
 def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
-                 slam_names=None):
+                 slam_names=None, tournament=None):
     if len(players) != 2:
         return None
     date = _event_date(ev)
@@ -311,9 +332,14 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         lean = {"pick": best_p["name"], "fair_win": best_p["fair_win"],
                 "cents": best_p["cents"], "edge": best_p["edge"], "strength": strength}
 
+    # Where to find it on Kalshi: the series is the "tab" (ATP Match / WTA Match
+    # / ITF Match), the tournament (parsed from the market title) is the event.
+    kalshi_series = {"ATP": "ATP Match", "WTA": "WTA Match",
+                     "ITF": "ITF Match", "ITF-W": "ITF Women Match"}.get(tour_label, "Tennis")
     match = {"event": ev, "tour": tour_label, "date": date, "surface": surface,
              "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
              "model_source": source, "tradeable": tradeable, "overround": overround,
+             "tournament": tournament, "kalshi_series": kalshi_series,
              "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
     insights = _insights(a, b, sim, surface) if sim else []
     # Elo angle (works with or without the serve sim)
@@ -344,23 +370,34 @@ def _compute(n_sims=12000):
     matches = []
     for label, series, tcode in _TOURS:
         evs = _match_markets(series)
-        for ev, players in evs.items():
+        for ev, rec in evs.items():
+            players = rec["players"] if isinstance(rec, dict) else rec
+            tournament = rec.get("tournament") if isinstance(rec, dict) else None
             try:
                 m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode,
-                                 slam_names=slam_names)
+                                 slam_names=slam_names, tournament=tournament)
             except Exception:
                 m = None
             if m:
                 matches.append(m)
-    # Keep modeled matches (we have a real read) and tradeable ones (a genuine
-    # two-sided market); drop no-liquidity pre-match ITF noise.
-    matches = [m for m in matches if m.get("modeled") or m.get("tradeable")]
-    # Sort by play strength (edge discounted by charting confidence) so the most
-    # trustworthy plays top the board -- thin-data mirages sink.
-    matches.sort(key=lambda m: (m.get("play_strength", 0),
-                                m["a"].get("confidence", 0)), reverse=True)
+    # Show EVERY match on Kalshi, not just the ones we model — the user needs to
+    # find them all. A match is "live" (real two-sided market) or "unopened" (a
+    # wide pre-match book: both sides quoted high, no liquidity yet). The tier
+    # flag lets the UI keep unopened matches visible but clearly labeled and
+    # sorted below the ones with a real read.
+    for m in matches:
+        m["tier"] = ("play" if (m.get("modeled") or m.get("tradeable"))
+                     else "unopened")
+    # Sort: real reads first (by play strength), unopened at the bottom
+    # (alphabetical by tournament so they're findable).
+    matches.sort(key=lambda m: (
+        0 if m["tier"] == "play" else 1,
+        -(m.get("play_strength", 0)) if m["tier"] == "play" else 0,
+        (m.get("tournament") or "zzz"), m["a"]["name"]))
     return {"sport": "tennis", "generated": clock.now_et().isoformat(timespec="seconds"),
-            "n_matches": len(matches), "matches": matches}
+            "n_matches": len(matches),
+            "n_play": sum(1 for m in matches if m["tier"] == "play"),
+            "matches": matches}
 
 
 def board():

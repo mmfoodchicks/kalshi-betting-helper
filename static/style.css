@@ -941,3 +941,12 @@ body.tier-locked .owner-only { display: none !important; }
 /* Featured "Refresh" button: pushed to the right, distinct from sport pills */
 .sportbtn.refreshall { margin-left: auto; opacity: 0.85; }
 .sportbtn.refreshall:hover { opacity: 1; }
+
+/* Tennis: "where on Kalshi" + variance tag + unopened matches */
+.tn-where { font-size: 0.78rem; color: var(--muted); margin: 3px 0 5px; }
+.tn-where b { color: var(--text); }
+.tn-risk { font-size: 0.68rem; color: #e0a44d; background: rgba(224,164,77,0.12);
+  border-radius: 5px; padding: 1px 6px; margin-left: 4px; white-space: nowrap; }
+.tn-match.tn-unopened { opacity: 0.62; }
+.tn-match.tn-unopened:hover { opacity: 1; }
+.legwhere { font-size: 0.72rem; color: var(--muted); }

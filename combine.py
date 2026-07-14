@@ -30,8 +30,7 @@ CATEGORIES = {
     "soccer": "⚽ World Cup",
     "wnba": "🏀 WNBA",
     "golf": "⛳ PGA",
-    "tennis": "🎾 Tennis (ATP)",
-    "wta": "🎾 Tennis (WTA)",
+    "tennis": "🎾 Tennis (all)",   # one box: ATP + WTA + ITF (men & women)
     "ufc": "🥊 UFC",
 }
 
@@ -195,6 +194,9 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
         ev = f"tennis_{m['event']}"
         cat = _TENNIS_CAT.get(m["tour"], "🎾 Tennis")
         mu = f"{a['name']} vs {b['name']}"
+        # Where to find it on Kalshi (series + tournament), so a combo leg isn't
+        # a mystery match buried in one of the dozens of tennis tabs.
+        where = " · ".join(x for x in (m.get("kalshi_series"), m.get("tournament")) if x)
         # one short reason for the match -> the favoured side's winner leg
         insights = m.get("insights") or []
         why = insights[0] if insights else None
@@ -205,7 +207,7 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
             d = {"category": cat, "event_id": ev, "label": label, "matchup": mu,
                  "prob": max(0.01, min(0.99, prob_pct / 100.0)),
                  "price_cents": cents, "type": typ,
-                 "sim_avg": avg, "avg_unit": unit}
+                 "sim_avg": avg, "avg_unit": unit, "where": where or None}
             if why:
                 d["why"] = why
             legs.append(d)
@@ -267,13 +269,8 @@ def gather(cats, date, season):
         legs += _worldcup_legs()                 # our World Cup model, not de-vig
     if "ufc" in cats:
         legs += _ufc_legs()                      # our UFC fight model, not de-vig
-    if "tennis" in cats or "wta" in cats:        # our tennis match model, not de-vig
-        tours = []
-        if "tennis" in cats:                      # men: charted ATP + live ITF men
-            tours += ["ATP", "ITF"]
-        if "wta" in cats:                         # women: charted WTA + live ITF women
-            tours += ["WTA", "ITF-W"]
-        legs += _tennis_legs(tuple(tours))
+    if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
+        legs += _tennis_legs(("ATP", "WTA", "ITF", "ITF-W"))
     for k in SPORT_KEYS:
         if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
             continue
@@ -301,7 +298,8 @@ def _item(combo):
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l["type"],
                   "category": l["category"], "prob_pct": round(l["prob"] * 100, 1),
                   "price_cents": l.get("price_cents"), "why": l.get("why"),
-                  "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit")} for l in combo],
+                  "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit"),
+                  "where": l.get("where")} for l in combo],
         "n_legs": len(combo),
         "combined_prob_pct": round(prob * 100, 1),
         "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
