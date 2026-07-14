@@ -2901,9 +2901,18 @@ function renderTennis() {
     const lv = m.live;
     const liveChip = lv
       ? `<span class="tn-livechip">🔴 LIVE ${lv.sets_a}–${lv.sets_b}${lv.cur ? ` (${lv.cur[0]}-${lv.cur[1]})` : ""} · ${lv.detail || lv.score}</span>` : "";
+    // Live in-match win probability from the current score (the point-by-point
+    // sim re-run from here) + the live edge vs Kalshi's current ask.
+    const liveWin = (lv && lv.p_a != null)
+      ? `<div class="tn-liveprob" title="win probability from the CURRENT score — the sim re-run live">⏱️ Live: <b>${a.name.split(" ").pop()} ${lv.p_a}%</b> · <b>${b.name.split(" ").pop()} ${lv.p_b}%</b>${
+          (lv.edge_a != null && Math.abs(lv.edge_a) >= 5) ? ` <span class="ev ${lv.edge_a >= 0 ? "pos" : "neg"}">${a.name.split(" ").pop()} ${lv.edge_a >= 0 ? "+" : ""}${lv.edge_a}</span>` : ""}${
+          (lv.edge_b != null && Math.abs(lv.edge_b) >= 5) ? ` <span class="ev ${lv.edge_b >= 0 ? "pos" : "neg"}">${b.name.split(" ").pop()} ${lv.edge_b >= 0 ? "+" : ""}${lv.edge_b}</span>` : ""}</div>` : "";
     const up = m.upset;
+    const liveNote = up && up.fav_live_pct != null
+      ? `still <b>${up.fav_live_pct}% live</b> vs ${up.fav_cents}¢ — market overshot`
+      : `the market overshoots on a big name dropping a set`;
     const upBanner = up
-      ? `<div class="tn-upset">🚨 <b>${up.fav}</b> (Elo edge ${up.gap}) is ${up.note} — sets ${up.sets}${up.fav_cents != null ? ` · now ${up.fav_cents}¢` : ""}. Sentiment window: the market overshoots on a big name dropping a set.</div>` : "";
+      ? `<div class="tn-upset">🚨 <b>${up.fav}</b> is ${up.note} (sets ${up.sets}${up.fav_cents != null ? ` · ${up.fav_cents}¢` : ""}) but ${liveNote}.</div>` : "";
     const unopened = m.tier === "unopened";
     const leanBlock = unopened
       ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet — both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
@@ -2912,6 +2921,7 @@ function renderTennis() {
         <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${kalshiWhere(m)}
+        ${liveWin}
         ${upBanner}
         ${_tnPlayer(a)}${_tnPlayer(b)}
         ${leanBlock}

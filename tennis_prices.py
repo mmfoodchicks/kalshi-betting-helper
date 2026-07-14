@@ -92,17 +92,20 @@ def _fatigue_index():
 
 
 def _surface_for(date):
-    """Infer court surface from the tennis calendar (the match markets don't carry
-    it). Clay spring, grass for the ~5 weeks into mid-July, hard the rest."""
+    """Calendar FALLBACK surface, used only when the tournament couldn't be
+    identified (tennis_live.surface_map is the real source). Never returns Grass:
+    grass is a tiny ~5-week window and low-level ITF events — the bulk of the
+    unidentified pool — are essentially never on grass, so a blind grass default
+    is almost always wrong. Grass comes exclusively from the keyword map. This
+    leaves Clay (the European spring swing) vs Hard (everything else)."""
     try:
         d = datetime.date(int(date[:4]), int(date[4:6]), int(date[6:8]))
     except Exception:
         d = clock.today_et()
     md = (d.month, d.day)
-    if (4, 1) <= md < (6, 9):
+    # European clay season: mid-April through Roland Garros (early June).
+    if (4, 15) <= md < (6, 9):
         return "Clay"
-    if (6, 9) <= md < (7, 20):
-        return "Grass"
     return "Hard"
 
 
@@ -212,11 +215,17 @@ def _insights(a, b, sim, surface):
 
 
 def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
-                 slam_names=None, tournament=None):
+                 slam_names=None, tournament=None, surface_map=None):
     if len(players) != 2:
         return None
     date = _event_date(ev)
-    surface = _surface_for(date)
+    # Real surface from the tournament (ESPN) when we can identify it; the
+    # calendar heuristic is only the fallback. Surface is a top driver in tennis,
+    # and the calendar can't tell post-Wimbledon clay from the concurrent US hard
+    # swing, so a correct surface here is a genuine accuracy win.
+    smap = surface_map or {}
+    surface = (smap.get(_norm(players[0]["name"])) or smap.get(_norm(players[1]["name"]))
+               or _surface_for(date))
     # Best-of-5 only for men's Grand Slam matches. The ticker carries NO
     # tournament (just [date][3 letters per player] — "NARdi GUErrieri"
     # contains "RG" and used to price as a five-setter), so slam status comes
@@ -255,10 +264,13 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     sim = None
     source = "market"
     conf = 0
+    live_rates = None
     if ra and rb:
         da = {"spw": ra[0], "rpw": ra[1], "ace": ra[2], "df": ra[3]}
         db = {"spw": rb[0], "rpw": rb[1], "ace": rb[2], "df": rb[3]}
         fpair = ((fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)) if (fa or fb) else None
+        # Kept so the live board can compute an in-match win prob from the score.
+        live_rates = {"da": da, "db": db, "lg": lg, "best_of": best_of, "fatigue": fpair}
         sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims, fatigue=fpair)
         a["hold"], b["hold"] = sim["holdA"], sim["holdB"]
         a["prof"], b["prof"] = ra[4], rb[4]
@@ -340,6 +352,7 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
              "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
              "model_source": source, "tradeable": tradeable, "overround": overround,
              "tournament": tournament, "kalshi_series": kalshi_series,
+             "live_rates": live_rates,
              "lean": lean, "play_strength": (lean or {}).get("strength", 0)}
     insights = _insights(a, b, sim, surface) if sim else []
     # Elo angle (works with or without the serve sim)
@@ -365,8 +378,10 @@ def _compute(n_sims=12000):
     try:
         import tennis_live
         slam_names = tennis_live.slam_singles_names()
+        surface_map = tennis_live.surface_map()
     except Exception:
         slam_names = set()
+        surface_map = {}
     matches = []
     for label, series, tcode in _TOURS:
         evs = _match_markets(series)
@@ -375,7 +390,8 @@ def _compute(n_sims=12000):
             tournament = rec.get("tournament") if isinstance(rec, dict) else None
             try:
                 m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode,
-                                 slam_names=slam_names, tournament=tournament)
+                                 slam_names=slam_names, tournament=tournament,
+                                 surface_map=surface_map)
             except Exception:
                 m = None
             if m:

@@ -91,6 +91,59 @@ def _set(rng, holdA, holdB, pa, pb, a_serving):
             return gA > gB, gA, gB, (not a_first), asg, bsg
 
 
+def _finish_set(rng, gA, gB, holdA, holdB, pa, pb, a_serving):
+    """Continue an in-progress set from the current game score (gA, gB) to its
+    end. Same rules as _set; returns (a_won, a_serving_next)."""
+    while True:
+        if (gA >= 6 or gB >= 6) and abs(gA - gB) >= 2:
+            return gA > gB, a_serving
+        if gA == 6 and gB == 6:
+            a_first = a_serving
+            a_won = _tiebreak(rng, pa, pb, a_first)
+            return a_won, (not a_first)
+        if a_serving:
+            a_won_game = rng.random() < holdA
+        else:
+            a_won_game = rng.random() >= holdB
+        gA, gB = (gA + 1, gB) if a_won_game else (gA, gB + 1)
+        a_serving = not a_serving
+
+
+def live_winprob(rates_a, rates_b, lg, best_of, sets_a, sets_b,
+                 games_a=0, games_b=0, n=4000, fatigue=None, seed=None):
+    """P(player A wins the match) FROM the current live score. `sets_*` are sets
+    already won; `games_*` the game score in the set in progress. We don't know
+    who's serving the current game, so we marginalize over both. Point-level state
+    inside the current game is ignored (minor). Returns A's win % (0-100)."""
+    rng = random.Random(seed)
+    pa, pb = point_probs(rates_a, rates_b, lg)
+    if fatigue:
+        shift = max(-0.025, min(0.025, (fatigue[0] - fatigue[1]) * 0.004))
+        pa = min(0.90, max(0.40, pa - shift))
+        pb = min(0.90, max(0.40, pb + shift))
+    holdA, holdB = _hold(pa), _hold(pb)
+    need = best_of // 2 + 1
+    if sets_a >= need:
+        return 100.0
+    if sets_b >= need:
+        return 0.0
+    a_wins = 0
+    mid_set = (games_a or games_b)          # a set is actually in progress
+    for i in range(n):
+        sa, sb = sets_a, sets_b
+        a_serving = (i % 2 == 0)            # marginalize over who serves now
+        if mid_set:
+            a_won, a_serving = _finish_set(rng, games_a, games_b,
+                                           holdA, holdB, pa, pb, a_serving)
+            sa, sb = (sa + 1, sb) if a_won else (sa, sb + 1)
+        while sa < need and sb < need:
+            a_won, gA, gB, a_serving, _, _ = _set(rng, holdA, holdB, pa, pb, a_serving)
+            sa, sb = (sa + 1, sb) if a_won else (sa, sb + 1)
+        if sa >= need:
+            a_wins += 1
+    return round(100.0 * a_wins / n, 1)
+
+
 def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None):
     """Monte-Carlo the match. rates_* are {spw,rpw,ace,df}. `fatigue` is an optional
     (tired_a, tired_b) pair of recent-load scores: the more-fatigued player serves

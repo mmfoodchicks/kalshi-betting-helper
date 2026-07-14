@@ -950,3 +950,8 @@ body.tier-locked .owner-only { display: none !important; }
 .tn-match.tn-unopened { opacity: 0.62; }
 .tn-match.tn-unopened:hover { opacity: 1; }
 .legwhere { font-size: 0.72rem; color: var(--muted); }
+
+/* Tennis live in-match win probability */
+.tn-liveprob { font-size: 0.82rem; margin: 4px 0 5px; padding: 5px 9px;
+  border-radius: 8px; background: rgba(229,72,77,0.10); border: 1px solid rgba(229,72,77,0.35); }
+.tn-liveprob b { color: var(--text); }

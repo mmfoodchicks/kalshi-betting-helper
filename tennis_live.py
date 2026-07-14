@@ -20,10 +20,40 @@ import racing
 
 _SLAMS = ("wimbledon", "us open", "australian open", "french open", "roland garros")
 
+# Court surface by tournament/city keyword. Surface is a STABLE property of each
+# stop, so a keyword map beats guessing from the calendar — which can't tell
+# post-Wimbledon clay (Bastad/Gstaad/Umag/Hamburg) from the concurrent US hard
+# swing, since they run at the same time. Everything unmatched defaults to Hard
+# (the tour's most common surface); the calendar heuristic is the final fallback.
+_GRASS_KW = ("wimbledon", "halle", "queen", "queens", "eastbourne", "newport",
+             "mallorca", "stuttgart", "hertogenbosch", "bois-le-duc", "libema",
+             "nottingham", "birmingham", "berlin", "bad homburg")
+_CLAY_KW = ("roland garros", "french open", "monte carlo", "monte-carlo", "madrid",
+            "rome", "roma", "barcelona", "hamburg", "bastad", "gstaad", "umag",
+            "kitzbuhel", "bucharest", "palermo", "estoril", "munich", "munchen",
+            "geneva", "geneve", "lyon", "houston", "marrakech", "cordoba",
+            "buenos aires", "rio", "santiago", "iasi", "prague", "warsaw",
+            "bogota", "parma", "cagliari", "belgrade", "sardegna", "olomouc",
+            "porto", "nordea", "swiss open", "croatia open",
+            # ITF clay events commonly carry these host towns
+            "villa constitucion", "castelo branco")
+# US/indoor/AO hard swings are the default, so no explicit HARD list is needed.
+
 
 def _norm(s):
     s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
     return " ".join("".join(c for c in s.lower() if c.isalnum() or c == " ").split())
+
+
+def surface_of(tournament, venue_city=None):
+    """Court surface ('Clay'|'Grass'|'Hard'|None) from the tournament name / host
+    city keyword. None when nothing matches (caller falls back to the calendar)."""
+    hay = f"{tournament or ''} {venue_city or ''}".lower()
+    if any(k in hay for k in _GRASS_KW):
+        return "Grass"
+    if any(k in hay for k in _CLAY_KW):
+        return "Clay"
+    return None
 
 
 def _board(tour, ds):
@@ -51,6 +81,9 @@ def _parse_day(d, singles_only=True):
     for e in (d or {}).get("events", []):
         tourn = e.get("name") or ""
         slam = any(s in tourn.lower() for s in _SLAMS)
+        venue = (((e.get("competitions") or [{}])[0].get("venue") or {}).get("fullName")
+                 or (e.get("venue") or {}).get("fullName") or "")
+        surface = surface_of(tourn, venue)
         for g in (e.get("groupings") or []):
             draw = ((g.get("grouping") or {}).get("displayName") or "")
             if singles_only and "singles" not in draw.lower():
@@ -82,6 +115,7 @@ def _parse_day(d, singles_only=True):
                         cur = (ga, gb)
                 out.append({
                     "tournament": tourn, "slam": slam, "draw": draw,
+                    "surface": surface,
                     "state": st.get("state"), "detail": st.get("shortDetail") or "",
                     "a": names[0], "b": names[1],
                     "na": _norm(names[0]), "nb": _norm(names[1]),
@@ -127,6 +161,25 @@ def slam_singles_names():
     return racing._cached(("tennis_slam_names",), 3600, build) or set()
 
 
+def surface_map():
+    """{normalized player name: 'Clay'|'Grass'|'Hard'} for every singles player
+    with a match today or tomorrow, from the real tournament (not the calendar).
+    Cached an hour. Only players whose tournament matched a surface keyword are
+    included — the board falls back to the calendar for anyone absent."""
+    def build():
+        out = {}
+        today = clock.today_et()
+        for off in (0, 1):
+            ds = (today + datetime.timedelta(days=off)).strftime("%Y%m%d")
+            for tour in ("atp", "wta"):
+                for r in _parse_day(_board(tour, ds)):
+                    if r.get("surface"):
+                        out[r["na"]] = r["surface"]
+                        out[r["nb"]] = r["surface"]
+        return out
+    return racing._cached(("tennis_surface_map",), 3600, build) or {}
+
+
 def live_rows():
     """Matches in progress right now, shaped for the Sports → Live tab."""
     out = []
@@ -167,6 +220,26 @@ def attach(board):
             m["live"] = {"detail": r["detail"], "tournament": r["tournament"],
                          "score": r["score"], "sets_a": sa, "sets_b": sb,
                          "cur": list(cur) if cur else None}
+            # Live in-match win probability from the CURRENT score: re-run the
+            # point-by-point sim from here. This is the real number behind the
+            # upset radar — is the favorite still 85% after dropping a set, or has
+            # it genuinely swung? Only when we have the serve model (live_rates).
+            lr = m.get("live_rates")
+            if lr:
+                try:
+                    import tennis_sim as _ts
+                    ga, gb = (cur if cur else (0, 0))
+                    pa_live = _ts.live_winprob(
+                        lr["da"], lr["db"], lr["lg"], lr["best_of"],
+                        sa, sb, ga, gb, n=3000, fatigue=lr.get("fatigue"))
+                    m["live"]["p_a"] = pa_live
+                    m["live"]["p_b"] = round(100.0 - pa_live, 1)
+                    # Live edge vs the current Kalshi ask, per player.
+                    for side, plive in (("a", pa_live), ("b", 100.0 - pa_live)):
+                        c = m[side].get("cents")
+                        m["live"][f"edge_{side}"] = round(plive - c, 1) if c is not None else None
+                except Exception:
+                    pass
             # Lopsided radar: the higher-Elo (fallback: higher fair-win) player
             # is behind. Kalshi over-reacts to a dropped set on a big name —
             # that's the moment the favorite's price is cheapest.
@@ -189,10 +262,23 @@ def attach(board):
             if (behind_sets or behind_cur) and gap >= 40:
                 note = ("down a set" if behind_sets else
                         f"behind {fg}-{dg} in this set")
+                # Prefer the real live win prob for the favorite when we have it —
+                # "was 90% pre-match, still 71% live" is far better than a gap
+                # heuristic, and it directly frames the value vs the live price.
+                fav_live = None
+                lp = m.get("live") or {}
+                if lp.get("p_a") is not None:
+                    fav_live = lp["p_a"] if fav is m["a"] else lp["p_b"]
                 m["upset"] = {"fav": fav["name"], "fav_cents": fav.get("cents"),
                               "gap": gap, "note": note,
-                              "sets": f"{fav_sets}–{dog_sets}"}
-                m["upset_score"] = gap
+                              "sets": f"{fav_sets}–{dog_sets}",
+                              "fav_live_pct": fav_live}
+                # Rank alarms by how underpriced the favorite is live (live% minus
+                # ask), falling back to the Elo gap when unpriced.
+                m["upset_score"] = (round(fav_live - (fav.get("cents") or fav_live))
+                                    if fav_live is not None and fav.get("cents") is not None
+                                    else gap)
+        m.pop("live_rates", None)       # heavy; never ship to the client
         matches.append(m)
     out = dict(board)
     out["matches"] = matches
