@@ -183,6 +183,24 @@ The repo ships with deploy config. Easiest path — **Render** (free):
 
 That URL is HTTPS, so the full installable app + APK work with zero tunneling.
 
+### Push → live with nothing to do but refresh
+
+Two mechanisms make a `git push` reach your phone hands-free:
+
+- **On Render:** `render.yaml` sets `autoDeploy: true`, so a push to the branch
+  your service watches rebuilds and redeploys automatically (~1–2 min). Make
+  sure the dashboard's deploy branch matches the branch that gets pushed.
+- **On a home machine / VPS** (`python app.py` or `start_remote.py`): set
+  `VIGIL_SELFUPDATE=1` and the server polls its branch every ~2 min, pulls new
+  commits, and restarts itself — no manual `git pull`. (Optional:
+  `VIGIL_SELFUPDATE_BRANCH`, `VIGIL_SELFUPDATE_INTERVAL`.) It safely no-ops
+  where it can't apply (Render's container has no git checkout).
+
+Either way, any open page checks `/api/version` once a minute and pops a
+**"🔄 New version available — Refresh"** banner the moment the new code is live,
+so you just tap it (or reload). The service worker is network-first, so the
+refresh always pulls the fresh UI.
+
 Also included for other hosts: a **`Procfile`** (Railway/Heroku-style) and a
 **`Dockerfile`** (Fly.io, or any container host). Run command is always
 `gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app:app`.

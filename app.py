@@ -53,6 +53,15 @@ def _asset_version():
 app.json.sort_keys = False
 store.init_db()
 
+# Optional: auto-pull the branch + restart when new commits land, so a push goes
+# live with no manual step (set VIGIL_SELFUPDATE=1). No-ops on Render / anywhere
+# without a git checkout — that path uses the platform's own autoDeploy.
+try:
+    import selfupdate
+    selfupdate.start()
+except Exception:
+    pass
+
 
 @app.after_request
 def _security_headers(resp):
@@ -71,6 +80,14 @@ def _security_headers(resp):
 @app.route("/healthz")
 def _healthz():
     return Response("ok", mimetype="text/plain")
+
+
+@app.route("/api/version")
+def _api_version():
+    """Current build token so an open page can detect a deploy and offer a
+    one-tap refresh. Changes whenever the front-end files change on disk (after a
+    pull/redeploy)."""
+    return jsonify({"v": _asset_version()})
 
 
 @app.route("/robots.txt")

@@ -4532,6 +4532,29 @@ async function init() {
 
 init();
 
+// ---- Auto-update watcher --------------------------------------------------
+// Poll the server's build token; when it changes (a push went live), show a
+// one-tap "refresh for the update" banner. Combined with the server-side
+// self-updater, a push reaches the phone with nothing to do but tap.
+let _buildToken = null;
+async function _checkForUpdate() {
+  try {
+    const d = await (await fetch("/api/version", { cache: "no-store" })).json();
+    if (!d || !d.v) return;
+    if (_buildToken == null) { _buildToken = d.v; return; }   // first read = baseline
+    if (d.v !== _buildToken && !$("updateBanner")) _showUpdateBanner();
+  } catch (e) { /* offline / server restarting — ignore */ }
+}
+function _showUpdateBanner() {
+  const bar = document.createElement("div");
+  bar.id = "updateBanner";
+  bar.innerHTML = `🔄 <b>New version available</b> <button id="updateBtn">Refresh</button>`;
+  document.body.appendChild(bar);
+  $("updateBtn").addEventListener("click", () => location.reload(true));
+}
+setInterval(_checkForUpdate, 60000);   // check every minute
+_checkForUpdate();
+
 // Register the service worker (PWA / installable). Only works on a secure
 // context (https or localhost); silently skips otherwise.
 if ("serviceWorker" in navigator) {
