@@ -81,9 +81,19 @@ def _parse_day(d, singles_only=True):
     for e in (d or {}).get("events", []):
         tourn = e.get("name") or ""
         slam = any(s in tourn.lower() for s in _SLAMS)
-        venue = (((e.get("competitions") or [{}])[0].get("venue") or {}).get("fullName")
-                 or (e.get("venue") or {}).get("fullName") or "")
+        ev_venue = e.get("venue") or {}
+        g_venue = (((e.get("groupings") or [{}])[0].get("competitions") or [{}])[0]
+                   .get("venue") or {})
+        venue = (ev_venue.get("displayName") or ev_venue.get("fullName")
+                 or g_venue.get("fullName") or g_venue.get("displayName") or "")
         surface = surface_of(tourn, venue)
+        # Kalshi labels tennis tabs by CITY (ATP Bastad, WTA Athens), not the
+        # sponsor name (Nordea Open). The ESPN venue is "City, Country" — take
+        # the city (ASCII, as Kalshi writes it: Bastad not Båstad) so a combo
+        # pin points at the exact Kalshi tab.
+        raw_city = venue.split(",")[0].strip() if venue else ""
+        city = (unicodedata.normalize("NFKD", raw_city).encode("ascii", "ignore")
+                .decode().strip() or None) if raw_city else None
         for g in (e.get("groupings") or []):
             draw = ((g.get("grouping") or {}).get("displayName") or "")
             if singles_only and "singles" not in draw.lower():
@@ -115,7 +125,7 @@ def _parse_day(d, singles_only=True):
                         cur = (ga, gb)
                 out.append({
                     "tournament": tourn, "slam": slam, "draw": draw,
-                    "surface": surface,
+                    "surface": surface, "city": city,
                     "state": st.get("state"), "detail": st.get("shortDetail") or "",
                     "a": names[0], "b": names[1],
                     "na": _norm(names[0]), "nb": _norm(names[1]),
@@ -178,6 +188,25 @@ def surface_map():
                         out[r["nb"]] = r["surface"]
         return out
     return racing._cached(("tennis_surface_map",), 3600, build) or {}
+
+
+def tournament_map():
+    """{normalized player name: host city} for singles players today/tomorrow —
+    the Kalshi tab label (ATP Bastad, WTA Athens). Fills the tournament for
+    main-tour matches whose Kalshi title carries only the round, so a combo pin
+    can point at the exact Kalshi location. Cached an hour."""
+    def build():
+        out = {}
+        today = clock.today_et()
+        for off in (0, 1):
+            ds = (today + datetime.timedelta(days=off)).strftime("%Y%m%d")
+            for tour in ("atp", "wta"):
+                for r in _parse_day(_board(tour, ds)):
+                    if r.get("city"):
+                        out.setdefault(r["na"], r["city"])
+                        out.setdefault(r["nb"], r["city"])
+        return out
+    return racing._cached(("tennis_tourn_map",), 3600, build) or {}
 
 
 def live_rows():

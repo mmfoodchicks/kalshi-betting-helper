@@ -215,10 +215,16 @@ def _insights(a, b, sim, surface):
 
 
 def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
-                 slam_names=None, tournament=None, surface_map=None):
+                 slam_names=None, tournament=None, surface_map=None, tourn_map=None):
     if len(players) != 2:
         return None
     date = _event_date(ev)
+    # Main-tour (ATP/WTA) Kalshi titles carry only the round, so `tournament`
+    # is often None there. Fill the host city from the ESPN schedule — that's
+    # exactly how Kalshi labels the tab (ATP Bastad, WTA Athens).
+    if not tournament and tourn_map:
+        tournament = (tourn_map.get(_norm(players[0]["name"]))
+                      or tourn_map.get(_norm(players[1]["name"])))
     # Real surface from the tournament (ESPN) when we can identify it; the
     # calendar heuristic is only the fallback. Surface is a top driver in tennis,
     # and the calendar can't tell post-Wimbledon clay from the concurrent US hard
@@ -344,10 +350,11 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         lean = {"pick": best_p["name"], "fair_win": best_p["fair_win"],
                 "cents": best_p["cents"], "edge": best_p["edge"], "strength": strength}
 
-    # Where to find it on Kalshi: the series is the "tab" (ATP Match / WTA Match
-    # / ITF Match), the tournament (parsed from the market title) is the event.
-    kalshi_series = {"ATP": "ATP Match", "WTA": "WTA Match",
-                     "ITF": "ITF Match", "ITF-W": "ITF Women Match"}.get(tour_label, "Tennis")
+    # Where to find it on Kalshi: the tour is the tab (ATP / WTA / ITF), the
+    # tournament (host city, or the ITF tier-city from the title) is the
+    # sub-tab — exactly how Kalshi navigates (ATP → Gstaad, WTA → Athens).
+    kalshi_series = {"ATP": "ATP", "WTA": "WTA",
+                     "ITF": "ITF", "ITF-W": "ITF Women"}.get(tour_label, "Tennis")
     match = {"event": ev, "tour": tour_label, "date": date, "surface": surface,
              "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
              "model_source": source, "tradeable": tradeable, "overround": overround,
@@ -379,9 +386,11 @@ def _compute(n_sims=12000):
         import tennis_live
         slam_names = tennis_live.slam_singles_names()
         surface_map = tennis_live.surface_map()
+        tourn_map = tennis_live.tournament_map()
     except Exception:
         slam_names = set()
         surface_map = {}
+        tourn_map = {}
     matches = []
     for label, series, tcode in _TOURS:
         evs = _match_markets(series)
@@ -391,7 +400,7 @@ def _compute(n_sims=12000):
             try:
                 m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode,
                                  slam_names=slam_names, tournament=tournament,
-                                 surface_map=surface_map)
+                                 surface_map=surface_map, tourn_map=tourn_map)
             except Exception:
                 m = None
             if m:
