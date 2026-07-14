@@ -20,7 +20,7 @@ import odds
 import prices
 import sports
 
-CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE"]
+CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
 # Only the categories Kalshi actually allows in multi-leg parlays.
 SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "soccer", "wnba"}
 
@@ -50,32 +50,58 @@ def _mlb_legs(date, season):
     return legs
 
 
+# Timeframes pulled for crypto edges. Daily is the steadiest read; hourly adds
+# the fast intraday opportunities (the ones the scanner surfaces). 15-min is too
+# noisy for a "best bets" board, so it's left to the live scanner.
+_CRYPTO_TIMEFRAMES = ("hourly", "daily")
+# Minimum minutes-to-close so we don't price a near-settled hourly market (thin,
+# whippy books in the last few minutes give false edges).
+_CRYPTO_MIN_MINS = {"hourly": 8.0, "daily": 30.0}
+_TF_LABEL = {"hourly": "hourly", "daily": "daily", "15M": "15-min"}
+
+
 def _crypto_legs():
     legs = []
     for coin in CRYPTO_COINS:
-        try:
-            ms = kalshi.get_open_markets(coin, "daily")
+        now = _t.time()
+        ctx = {}   # lazily-fetched {spot, candles}, only when a market exists
+
+        def _price():
+            if not ctx:
+                ctx["spot"] = prices.get_spot(coin)
+                ctx["candles"] = prices.get_candles(coin, granularity=60)
+            return ctx["spot"], ctx["candles"]
+
+        for tf in _CRYPTO_TIMEFRAMES:
+            try:
+                ms = kalshi.get_open_markets(coin, tf)
+            except Exception:
+                continue
             if not ms:
                 continue
-            spot = prices.get_spot(coin)
-            candles = prices.get_candles(coin, granularity=60)
-        except Exception:
-            continue
-        now = _t.time()
-        for m in ms:
-            if not m.get("yes_ask") or m["yes_ask"] >= 100 or not m.get("yes_bid"):
-                continue
-            mins = max(0.0, (m["close_time"] - now) / 60.0) if m["close_time"] else 0.0
-            sig = odds.kalshi_signal(spot, candles, m, mins)
-            if sig["fair_yes_cents"] >= sig["fair_no_cents"]:
-                side, prob, price = "YES", sig["fair_yes_cents"] / 100.0, m["yes_ask"]
-            else:
-                side, prob, price = "NO", sig["fair_no_cents"] / 100.0, m["no_ask"]
-            # One leg per coin: group by coin so the target-tuner picks the
-            # single strike nearest your target (not five deep-ITM ~100% ones).
-            legs.append({"category": "⚡ Crypto", "event_id": f"crypto_{coin}",
-                         "label": f"{coin} {side}: {m.get('subtitle') or m['ticker']}",
-                         "matchup": coin, "prob": prob, "price_cents": price, "type": "Crypto"})
+            try:
+                spot, candles = _price()
+            except Exception:
+                break                              # no price feed for this coin
+            for m in ms or []:
+                if not m.get("yes_ask") or m["yes_ask"] >= 100 or not m.get("yes_bid"):
+                    continue
+                mins = max(0.0, (m["close_time"] - now) / 60.0) if m["close_time"] else 0.0
+                if mins < _CRYPTO_MIN_MINS.get(tf, 0.0):
+                    continue                      # too close to settlement -> noise
+                sig = odds.kalshi_signal(spot, candles, m, mins)
+                if sig["fair_yes_cents"] >= sig["fair_no_cents"]:
+                    side, prob, price = "YES", sig["fair_yes_cents"] / 100.0, m["yes_ask"]
+                else:
+                    side, prob, price = "NO", sig["fair_no_cents"] / 100.0, m["no_ask"]
+                # One leg per (coin, timeframe): grouped so the combo tuner treats
+                # a coin's hourly and daily reads as separate events (both eligible)
+                # rather than collapsing them.
+                legs.append({
+                    "category": "⚡ Crypto", "event_id": f"crypto_{coin}_{tf}",
+                    "label": f"{coin} {_TF_LABEL.get(tf, tf)} {side}: {m.get('subtitle') or m['ticker']}",
+                    "matchup": coin, "prob": prob, "price_cents": price,
+                    "type": "Crypto", "timeframe": tf})
     return legs
 
 

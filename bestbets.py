@@ -122,12 +122,13 @@ def _crypto_rows():
     import combine
     rows = []
     for l in combine._crypto_legs():
-        row = _row("⚡ Crypto", "Daily", l["label"], l["matchup"],
+        kind = (l.get("timeframe") or "daily").capitalize()   # Hourly / Daily
+        row = _row("⚡ Crypto", kind, l["label"], l["matchup"],
                    l["prob"] * 100.0, l.get("price_cents"), "med")
         if row:
             rows.append(row)
     rows.sort(key=lambda x: -x["net_edge"])
-    return rows[:5]
+    return rows[:8]
 
 
 def _arb_rows():

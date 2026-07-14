@@ -505,7 +505,23 @@ async function runScan() {
       box.innerHTML = `<div class="empty">No open ${coin} ${timeframe} contracts on Kalshi right now.</div>`;
       return;
     }
-    box.innerHTML = renderVol(d.vol) + d.markets.map(renderScanRow).join("");
+    // "Buys only" (default on): keep just the actionable BUY YES / BUY NO rows,
+    // and show how many flat HOLD contracts were hidden.
+    const buysOnly = $("scanBuysOnly") ? $("scanBuysOnly").checked : true;
+    const isBuy = (m) => m.signal && m.signal.recommendation && m.signal.recommendation !== "HOLD";
+    const shown = buysOnly ? d.markets.filter(isBuy) : d.markets;
+    const hidden = d.markets.length - shown.length;
+    let head = renderVol(d.vol);
+    if (buysOnly) {
+      head += shown.length
+        ? `<div class="small" style="color:var(--muted);margin:2px 0 8px">Showing <b>${shown.length}</b> buy${shown.length > 1 ? "s" : ""}${hidden ? ` · ${hidden} HOLD hidden` : ""}. <a href="#" id="scanShowAll">show all</a></div>`
+        : `<div class="empty">No edges right now — all ${d.markets.length} ${coin} ${timeframe} contracts are a HOLD. <a href="#" id="scanShowAll">show them anyway</a></div>`;
+    }
+    box.innerHTML = head + shown.map(renderScanRow).join("");
+    const showAll = $("scanShowAll");
+    if (showAll) showAll.addEventListener("click", (e) => {
+      e.preventDefault(); if ($("scanBuysOnly")) $("scanBuysOnly").checked = false; runScan();
+    });
   } catch (e) {
     box.innerHTML = `<div class="empty">Scan failed — retrying on next refresh.</div>`;
   }
@@ -4442,6 +4458,7 @@ async function init() {
   $("scanBtn").addEventListener("click", runScan);
   $("scanCoin").addEventListener("change", runScan);
   $("scanTimeframe").addEventListener("change", runScan);
+  if ($("scanBuysOnly")) $("scanBuysOnly").addEventListener("change", runScan);
 
   // Bankroll / Kelly settings (persisted locally).
   $("bankroll").value = localStorage.getItem("bankroll") || "";
