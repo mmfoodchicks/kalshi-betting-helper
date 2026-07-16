@@ -1285,8 +1285,14 @@ async function loadBaseball(silent) {
     // Unified combo maker: a game-selection grid + the targets, all persisted
     // across the auto-refresh so an in-progress build is never clobbered.
     const maxN = c.max_legs_available || 0;
-    if (maxN >= 2) {
-      const def = Math.min(parlayLegs, maxN);
+    // Single-game slates (e.g. the day back from the All-Star break) can't form
+    // cross-game combos, so the backend falls back to same-game parlays and flags
+    // same_game_only. Show the maker in that case too — defaulted to same-game.
+    if (maxN >= 2 || c.same_game_only) {
+      const bsKeys = Object.keys(c.by_size || {}).map(Number);
+      const effMax = c.same_game_only ? (bsKeys.length ? Math.max(...bsKeys) : 4) : maxN;
+      const sgOnly = !!c.same_game_only;
+      const def = Math.min(parlayLegs, effMax);
       const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
         + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
       html += `<div class="combomaker">
@@ -1302,7 +1308,7 @@ async function loadBaseball(silent) {
           ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], comboPayoutModePref)}
           reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
         </div>
-        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${comboSameGamePref ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${(comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today — combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
         &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked"/> include live games (win legs only)</label>
         ${mlbTypeChipRow()}
         <button class="track-mini primary-mini" style="margin-top:6px" onclick="buildCombo()">Build</button>
@@ -1321,7 +1327,10 @@ async function loadBaseball(silent) {
       html += c.live.map((x) => renderCombo(x)).join("");
     }
     if (c.mixed && c.mixed.length) {
-      html += `<div class="small" style="margin:14px 0 4px"><b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:</div>`;
+      const mlabel = c.same_game_only
+        ? `<b>🎲 Same-game combos</b> — one game on the slate, so these stack correlated legs (moneyline, totals &amp; props) from that game, priced with the correlation-aware sim:`
+        : `<b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:`;
+      html += `<div class="small" style="margin:14px 0 4px">${mlabel}</div>`;
       html += c.mixed.map((x) => renderCombo(x)).join("");
     }
     // Preserve a built combo slip across the auto-refresh so it isn't wiped while
@@ -4230,6 +4239,8 @@ async function buildRecommended() {
     let html = "";
     if (d.counts && Object.keys(d.counts).length)
       html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
+    if (d.same_game_only)
+      html += `<div class="small" style="margin-bottom:8px;color:var(--muted)">Only one game on the slate today, so these are <b>same-game</b> parlays — legs from that game are correlated, priced with the correlation-aware sim (not a naive product).</div>`;
     const seen = new Set();
     const blocks = [
       ["best", "⭐ Best (all-around)", "hl value"],

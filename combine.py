@@ -493,7 +493,59 @@ def recommended(cats, date, season, max_legs=12):
     pool.sort(key=lambda v: ((_leg_edge(v) or 0), v["prob"]), reverse=True)
     best = pack(pool[:min(4, len(pool))])
 
-    return {"safest": safest, "best": best, "best_value": best_value, "counts": counts}
+    # Same-game fallback: on a thin slate the checked sports may only offer legs
+    # from a single event (e.g. the one MLB game the day back from the All-Star
+    # break). Cross-event packing needs ≥2 events, so nothing forms — but a
+    # same-game parlay is the right tool there. Build one for that lone MLB game,
+    # priced with the correlation-aware sim (not a naive product).
+    same_game_only = False
+    if not (safest or best or best_value) and len(by_event) < 2:
+        sg = _mlb_same_game_items(date, season)
+        if sg:
+            safest = sg[0]
+            best = sg[0]
+            best_value = next((s for s in sg if (s.get("ev_pct") or 0) > 0), None)
+            same_game_only = True
+
+    return {"safest": safest, "best": best, "best_value": best_value,
+            "counts": counts, "same_game_only": same_game_only}
+
+
+def _mlb_same_game_items(date, season):
+    """Correlation-aware same-game parlays for a single MLB game, mapped into the
+    combine item shape (so renderCombo displays them like any other combo)."""
+    try:
+        games = baseball.analyze_slate(date, season)
+    except Exception:
+        return []
+    live = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
+    if len(live) != 1:
+        return []
+    out, seen = [], set()
+    for nl in (3, 2, 4):
+        try:
+            res = baseball.build_same_game_parlays(live, n_legs=nl, target_pct=45,
+                                                   max_legs=nl, top_n=4)
+        except Exception:
+            continue
+        for it in (res.get("games") or []):
+            legs = []
+            for lg in it.get("legs", []):
+                legs.append({"pick": lg.get("pick"), "matchup": it.get("matchup"),
+                             "type": lg.get("type"), "category": "⚾ MLB",
+                             "prob_pct": lg.get("prob_pct"),
+                             "price_cents": lg.get("market_cents"),
+                             "sim_avg": lg.get("sim_avg"), "avg_unit": lg.get("avg_unit")})
+            key = tuple(sorted(l["pick"] or "" for l in legs))
+            if key in seen or len(legs) < 2:
+                continue
+            seen.add(key)
+            out.append({"legs": legs, "n_legs": it.get("n_legs") or len(legs),
+                        "combined_prob_pct": it.get("combined_prob_pct"),
+                        "fair_payout_x": it.get("fair_payout_x"),
+                        "same_game": True, "reasons": ["Same-game parlay — one game on the slate today; legs are correlated, so this is priced with the correlation-aware sim, not a naive product."]})
+    out.sort(key=lambda c: -(c.get("combined_prob_pct") or 0))
+    return out
 
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,

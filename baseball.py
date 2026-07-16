@@ -2284,7 +2284,39 @@ def build_combos(games, max_legs=3, top_n=6, types=None):
     live_combos = live_combos[:n_live_show]
     live_combos.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
 
+    # Thin slate (typically a single game — e.g. the day back from the All-Star
+    # break): cross-game combos need legs from different games, so nothing forms.
+    # Fall back to SAME-GAME parlays, which are the right tool anyway — legs from
+    # one game are correlated, so these use the correlation-aware sim (not a naive
+    # independent product) to price the slip honestly.
+    if not mixed and max_games < 2:
+        sg = []
+        for nl in (2, 3, 4):
+            res = build_same_game_parlays(live_games, n_legs=nl, target_pct=45,
+                                          max_legs=nl, top_n=4, types=types)
+            for it in (res.get("games") or []):
+                it = dict(it)
+                for lg in it.get("legs", []):
+                    lg.setdefault("price_cents", lg.get("market_cents"))
+                    lg.setdefault("matchup", it.get("matchup"))
+                it["same_game"] = True
+                sg.append(it)
+        # De-dup identical slips and keep the best per leg count for by_size.
+        seen_leg = set()
+        uniq = []
+        for it in sorted(sg, key=lambda c: -c.get("combined_prob_pct", 0)):
+            key = tuple(sorted(l.get("pick", "") for l in it.get("legs", [])))
+            if key in seen_leg:
+                continue
+            seen_leg.add(key)
+            uniq.append(it)
+            by_size.setdefault(str(it.get("n_legs")), it)
+        if uniq:
+            mixed = uniq
+            safest = safest or uniq[0]
+
     return {"safest": safest, "best_value": best_value,
             "all": sorted(ml_combos, key=lambda c: c["combined_prob_pct"], reverse=True)[:12],
             "mixed": mixed[:12], "live": live_combos,
-            "by_size": by_size, "max_legs_available": max_games}
+            "by_size": by_size, "max_legs_available": max_games,
+            "same_game_only": (not ml_combos and bool(mixed))}
