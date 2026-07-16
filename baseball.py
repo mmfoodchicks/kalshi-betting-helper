@@ -980,6 +980,13 @@ def _schedule(date, season):
     games = dates[0]["games"] if dates else []
     out = []
     for g in games:
+        # Only games our roster-based engine can actually model: regular season
+        # and the postseason (Wild Card / DS / LCS / WS). Skip the All-Star Game
+        # (gameType "A" — cross-league all-star squads with no season roster, so
+        # no team profile to sim), spring training ("S") and exhibitions ("E").
+        # These otherwise appear in the slate with no props, which is confusing.
+        if g.get("gameType", "R") not in ("R", "F", "D", "L", "W"):
+            continue
         home = g["teams"]["home"]; away = g["teams"]["away"]
         hp = home.get("probablePitcher"); ap = away.get("probablePitcher")
         st = g.get("status", {})
