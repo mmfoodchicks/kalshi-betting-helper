@@ -126,6 +126,8 @@ def _parse_day(d, singles_only=True):
                 out.append({
                     "tournament": tourn, "slam": slam, "draw": draw,
                     "surface": surface, "city": city,
+                    # ISO start time (per-match if ESPN gives one, else the event's).
+                    "start": c.get("date") or e.get("date"),
                     "state": st.get("state"), "detail": st.get("shortDetail") or "",
                     "a": names[0], "b": names[1],
                     "na": _norm(names[0]), "nb": _norm(names[1]),

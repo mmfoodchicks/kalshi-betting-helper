@@ -1346,14 +1346,59 @@ async function loadBaseball(silent) {
   }
 }
 
+// ---- Schedule: unified start-times board across every sport ---------------
+const _SCHED_SRC = { mlb: "⚾ MLB", tennis: "🎾 Tennis", f1: "🏎️ F1",
+                     nascar: "🏁 NASCAR", ufc: "🥊 UFC", nfl: "🏈 NFL" };
+async function loadSchedule() {
+  const box = $("schedResults"), src = $("schedSources");
+  if (!box) return;
+  box.innerHTML = `<div class="empty">Loading today's start times…</div>`;
+  if (src) src.innerHTML = "";
+  try {
+    const d = await (await fetch("/api/schedule")).json();
+    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    if (src) src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) =>
+      `<span class="leanchip${s.ok ? "" : " warn"}" title="${s.ok ? "" : (s.error || "unavailable")}">${_SCHED_SRC[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : "✗"}</span>`).join(" ");
+    if (!d.groups || !d.groups.length) {
+      box.innerHTML = `<div class="empty">Nothing left to start today — every event we cover is finished or there's nothing scheduled. Check back after midnight ET for tomorrow's board.</div>`;
+      return;
+    }
+    // Local time from the epoch (the user's device zone) + the ET string from
+    // the server, so it's unambiguous whether you're home or travelling.
+    const localT = (ep) => ep == null ? null
+      : new Date(ep * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    let html = "";
+    for (const g of d.groups) {
+      html += `<div class="sched-group"><div class="sched-head">${g.icon} <b>${g.sport}</b> <span class="small" style="color:var(--muted)">· ${g.count} event${g.count === 1 ? "" : "s"}</span></div>`;
+      for (const e of g.events) {
+        const lt = localT(e.epoch);
+        const dayTag = e.day ? `<span class="sched-day">${e.day}</span>` : "";
+        const timeCell = e.epoch == null
+          ? `<span class="sched-time tba">TBA${dayTag}</span>`
+          : `<span class="sched-time"><b>${lt}</b>${e.et ? `<span class="sched-et">${e.et}</span>` : ""}${dayTag}</span>`;
+        const live = e.status === "live" ? ` <span class="sched-live">🔴 LIVE</span>` : "";
+        const where = e.where ? ` <span class="legwhere" title="find this on Kalshi">📍${e.where}</span>` : "";
+        const note = e.note ? ` <span class="small" style="color:var(--muted)">· ${e.note}</span>` : "";
+        html += `<div class="sched-row">${timeCell}<span class="sched-match">${e.matchup || ""}${live}${where}${note}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load the schedule — try Refresh.</div>`;
+  }
+}
+
 function setupTabs() {
   $("bbetsBtn")?.addEventListener("click", loadBestBets);
+  $("schedBtn")?.addEventListener("click", loadSchedule);
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const tab = btn.dataset.tab;
       $("tab-bestbets").classList.toggle("hidden", tab !== "bestbets");
+      $("tab-schedule").classList.toggle("hidden", tab !== "schedule");
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
@@ -1371,6 +1416,10 @@ function setupTabs() {
       if (tab === "bestbets" && !$("bbetsResults").dataset.loaded) {
         $("bbetsResults").dataset.loaded = "1";
         loadBestBets();
+      }
+      if (tab === "schedule" && !$("schedResults").dataset.loaded) {
+        $("schedResults").dataset.loaded = "1";
+        loadSchedule();
       }
       if (tab === "combine") loadCombineCats();
       if (tab === "sim") initSim();
