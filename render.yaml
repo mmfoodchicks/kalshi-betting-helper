@@ -8,6 +8,10 @@ services:
     name: vigil
     runtime: docker
     plan: free
+    # Track the branch our work is pushed to, so every push auto-deploys and the
+    # live site updates with nothing to do but refresh. Change this (or the
+    # dashboard's Settings → Branch) if the work ever moves to main.
+    branch: claude/kalshi-crypto-predictor-ckutwm
     healthCheckPath: /healthz
     autoDeploy: true
     envVars:
