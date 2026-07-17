@@ -559,6 +559,22 @@ async function trackMarket() {
 }
 
 // ---- Baseball insights ----------------------------------------------------
+// Format an ISO start time for a tile: the viewer's LOCAL device time, with the
+// ET time alongside (in parens if it differs, "… ET" if the device already is
+// ET) so it's unambiguous whether you're home or travelling. "" if no time.
+function fmtStartTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const opt = { hour: "numeric", minute: "2-digit" };
+  const local = d.toLocaleTimeString([], opt);
+  let et;
+  try { et = d.toLocaleTimeString("en-US", { ...opt, timeZone: "America/New_York" }); }
+  catch (e) { et = null; }
+  if (!et || local === et) return `${local}${et ? " ET" : ""}`;
+  return `${local} (${et} ET)`;
+}
+
 function liveHeader(g) {
   const lv = g.live || {};
   const aR = lv.away_runs, hR = lv.home_runs;
@@ -569,7 +585,8 @@ function liveHeader(g) {
   if (lv.is_final) {
     return `<div class="livebox final">FINAL<span class="score">${g.away_abbr} ${aR ?? 0} – ${hR ?? 0} ${g.home_abbr}</span></div>`;
   }
-  return `<div class="livebox sched">${g.status || "Scheduled"}</div>`;
+  const t = fmtStartTime(g.start);
+  return `<div class="livebox sched">${t ? `🕒 ${t}` : (g.status || "Scheduled")}</div>`;
 }
 
 function renderProps(g) {
@@ -1346,59 +1363,14 @@ async function loadBaseball(silent) {
   }
 }
 
-// ---- Schedule: unified start-times board across every sport ---------------
-const _SCHED_SRC = { mlb: "⚾ MLB", tennis: "🎾 Tennis", f1: "🏎️ F1",
-                     nascar: "🏁 NASCAR", ufc: "🥊 UFC", nfl: "🏈 NFL" };
-async function loadSchedule() {
-  const box = $("schedResults"), src = $("schedSources");
-  if (!box) return;
-  box.innerHTML = `<div class="empty">Loading today's start times…</div>`;
-  if (src) src.innerHTML = "";
-  try {
-    const d = await (await fetch("/api/schedule")).json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    if (src) src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) =>
-      `<span class="leanchip${s.ok ? "" : " warn"}" title="${s.ok ? "" : (s.error || "unavailable")}">${_SCHED_SRC[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : "✗"}</span>`).join(" ");
-    if (!d.groups || !d.groups.length) {
-      box.innerHTML = `<div class="empty">Nothing left to start today — every event we cover is finished or there's nothing scheduled. Check back after midnight ET for tomorrow's board.</div>`;
-      return;
-    }
-    // Local time from the epoch (the user's device zone) + the ET string from
-    // the server, so it's unambiguous whether you're home or travelling.
-    const localT = (ep) => ep == null ? null
-      : new Date(ep * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-    let html = "";
-    for (const g of d.groups) {
-      html += `<div class="sched-group"><div class="sched-head">${g.icon} <b>${g.sport}</b> <span class="small" style="color:var(--muted)">· ${g.count} event${g.count === 1 ? "" : "s"}</span></div>`;
-      for (const e of g.events) {
-        const lt = localT(e.epoch);
-        const dayTag = e.day ? `<span class="sched-day">${e.day}</span>` : "";
-        const timeCell = e.epoch == null
-          ? `<span class="sched-time tba">TBA${dayTag}</span>`
-          : `<span class="sched-time"><b>${lt}</b>${e.et ? `<span class="sched-et">${e.et}</span>` : ""}${dayTag}</span>`;
-        const live = e.status === "live" ? ` <span class="sched-live">🔴 LIVE</span>` : "";
-        const where = e.where ? ` <span class="legwhere" title="find this on Kalshi">📍${e.where}</span>` : "";
-        const note = e.note ? ` <span class="small" style="color:var(--muted)">· ${e.note}</span>` : "";
-        html += `<div class="sched-row">${timeCell}<span class="sched-match">${e.matchup || ""}${live}${where}${note}</span></div>`;
-      }
-      html += `</div>`;
-    }
-    box.innerHTML = html;
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Couldn't load the schedule — try Refresh.</div>`;
-  }
-}
-
 function setupTabs() {
   $("bbetsBtn")?.addEventListener("click", loadBestBets);
-  $("schedBtn")?.addEventListener("click", loadSchedule);
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const tab = btn.dataset.tab;
       $("tab-bestbets").classList.toggle("hidden", tab !== "bestbets");
-      $("tab-schedule").classList.toggle("hidden", tab !== "schedule");
       $("tab-crypto").classList.toggle("hidden", tab !== "crypto");
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
@@ -1416,10 +1388,6 @@ function setupTabs() {
       if (tab === "bestbets" && !$("bbetsResults").dataset.loaded) {
         $("bbetsResults").dataset.loaded = "1";
         loadBestBets();
-      }
-      if (tab === "schedule" && !$("schedResults").dataset.loaded) {
-        $("schedResults").dataset.loaded = "1";
-        loadSchedule();
       }
       if (tab === "combine") loadCombineCats();
       if (tab === "sim") initSim();
@@ -2998,8 +2966,10 @@ function renderTennis() {
     const leanBlock = unopened
       ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet — both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
       : lean;
+    const startTag = (!m.live && m.start && fmtStartTime(m.start))
+      ? `<span class="starttime" title="scheduled start (your local time · ET)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
     return `<div class="tn-match${up ? " upsetcard" : ""}${unopened ? " tn-unopened" : ""}">
-        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${liveChip}
+        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${startTag}${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${kalshiWhere(m)}
         ${liveWin}
@@ -3293,7 +3263,9 @@ function renderRaceMarket() {
     const note = race.priced ? "" : ` <span class="small" style="color:var(--muted)">— model only; Kalshi prices appear once it's the next race</span>`;
     const wx = race.wet_prob != null
       ? `<div class="small" style="color:var(--muted);margin:-2px 0 6px">🌧️ ${Math.round(race.wet_prob * 100)}% wet-race risk${race.avg_wind ? ` · 💨 ${race.avg_wind} km/h avg` : ""}${race.circuit ? ` · ${race.circuit}` : ""} <span style="color:var(--faint)">(historical race-day climate; wet races scramble the order)</span></div>` : "";
-    html = `<div class="teamhdr" style="margin:0 0 2px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>${wx}`
+    const rt = fmtStartTime(race.start);
+    const startLine = rt ? `<div class="starttime" style="margin:0 0 5px">🕒 Green flag ${rt}</div>` : "";
+    html = `<div class="teamhdr" style="margin:0 0 2px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>${startLine}${wx}`
       + `<div class="futrow rcrowR rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span></div>`
       + list.map((x, i) => `<div class="futrow rcrowR"><span class="fr-rank">${i + 1}</span>
           <span class="fr-team"><b>${x.name}</b>${x.team ? `<span class="small"> ${x.team}</span>` : ""}</span>

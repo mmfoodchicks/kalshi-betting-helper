@@ -951,26 +951,9 @@ body.tier-locked .owner-only { display: none !important; }
 .tn-match.tn-unopened:hover { opacity: 1; }
 .legwhere { font-size: 0.72rem; color: var(--muted); }
 
-/* Schedule (start-times) board */
-.sched-group { margin: 0 0 14px; }
-.sched-head { font-size: 0.98rem; margin: 0 0 4px; padding-bottom: 3px;
-  border-bottom: 1px solid var(--border); }
-.sched-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 2px;
-  border-bottom: 1px solid rgba(127,127,127,0.10); }
-.sched-time { flex: 0 0 auto; min-width: 86px; display: flex; flex-direction: column;
-  line-height: 1.15; }
-.sched-time b { font-variant-numeric: tabular-nums; }
-.sched-et { font-size: 0.68rem; color: var(--muted); }
-.sched-day { font-size: 0.66rem; color: #e0a44d; background: rgba(224,164,77,0.12);
-  border-radius: 5px; padding: 0 5px; margin-top: 2px; width: max-content; white-space: nowrap; }
-.sched-time.tba { color: var(--muted); font-style: italic; min-width: 86px; }
-.sched-match { flex: 1 1 auto; }
-.sched-live { font-size: 0.7rem; color: #e5484d; font-weight: 700; margin-left: 4px;
-  white-space: nowrap; }
-@media (max-width: 520px) {
-  .sched-time { min-width: 74px; }
-  .sched-row { gap: 8px; }
-}
+/* Start time shown on a game/match/race tile */
+.starttime { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.starttime b { color: var(--text); font-variant-numeric: tabular-nums; }
 
 /* Tennis live in-match win probability */
 .tn-liveprob { font-size: 0.82rem; margin: 4px 0 5px; padding: 5px 9px;

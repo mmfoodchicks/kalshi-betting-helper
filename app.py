@@ -725,18 +725,6 @@ def _prop_types():
     return got or None
 
 
-@app.route("/api/schedule")
-def api_schedule():
-    """Unified start-times board across every sport we cover (MLB, tennis, F1,
-    NASCAR, UFC, NFL), grouped by sport and sorted by time. Cached 3 min."""
-    import schedule
-    date = request.args.get("date") or clock.today_et().isoformat()
-    try:
-        return jsonify(schedule.board(date))
-    except Exception as e:
-        return jsonify({"error": f"schedule failed: {e}"}), 502
-
-
 @app.route("/api/baseball/today")
 def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions."""

@@ -18,6 +18,22 @@ from concurrent.futures import ThreadPoolExecutor
 import racing
 
 ERGAST = "https://api.jolpi.ca/ergast/f1/current"
+
+
+def _et_wallclock_to_utc(iso):
+    """NASCAR's feed gives race times as an ET wall-clock ISO with no zone
+    ('2026-07-20T18:00:00'). Convert to a UTC ISO (…Z) so the frontend renders
+    the right local + ET times. Returns None if there's no usable time."""
+    if not iso or len(iso) <= 10:
+        return None
+    try:
+        import datetime as _dt
+        from zoneinfo import ZoneInfo
+        d = _dt.datetime.strptime(iso[:19], "%Y-%m-%dT%H:%M:%S")
+        u = d.replace(tzinfo=ZoneInfo("America/New_York")).astimezone(_dt.timezone.utc)
+        return u.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        return None
 F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]       # race top 10
 SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1]              # sprint top 8
 
@@ -318,6 +334,8 @@ def f1_remaining():
                 out.append({"round": int(r["round"]), "name": r["raceName"],
                             "sprint": "Sprint" in r, "circuit": cir,
                             "type": _f1_circuit_type(cir or r["raceName"]),
+                            # Ergast gives race date + optional UTC start time.
+                            "start": (f"{r['date']}T{r['time']}" if r.get("time") else None),
                             "wet_prob": clim.get("wet_prob", 0.12),
                             "avg_wind": clim.get("avg_wind")})
         return out
@@ -511,7 +529,7 @@ def sim_f1(n=2000, seed=None):
                 for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:14]
     races = [{"round": r["round"], "name": r["name"], "sprint": r["sprint"],
               "circuit": r.get("circuit"), "wet_prob": r.get("wet_prob"),
-              "avg_wind": r.get("avg_wind"),
+              "avg_wind": r.get("avg_wind"), "start": r.get("start"),
               # The first remaining race is conditioned on the real grid when
               # qualifying is already done (its pole is then the actual pole).
               "grid_set": bool(first_grid) and i == 0,
@@ -729,6 +747,7 @@ def nascar_state(year=None, series=1):
             remaining.append({"name": r.get("race_name", ""), "track": r.get("track_name"),
                               "type": _nascar_track_type(r.get("track_name", "")),
                               "laps": r.get("scheduled_laps"),
+                              "start": _et_wallclock_to_utc(r.get("race_date")),
                               "wet_prob": clim.get("wet_prob", 0.10),
                               "avg_wind": clim.get("avg_wind")})
         return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
@@ -923,6 +942,7 @@ def sim_nascar(n=2000, year=None, seed=None):
         return [{"name": name_of[did], "pct": round(100 * c / n, 1)}
                 for did, c in sorted(counter.items(), key=lambda kv: -kv[1]) if c][:16]
     races = [{"name": r["name"], "wet_prob": r.get("wet_prob"), "avg_wind": r.get("avg_wind"),
+              "start": r.get("start"),
               "pole": field(race_pole[r["name"]]), "winner": field(race_win[r["name"]])}
              for r in schedule]
     return {"sport": "nascar", "n_sims": n,

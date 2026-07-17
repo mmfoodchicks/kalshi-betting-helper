@@ -211,6 +211,24 @@ def tournament_map():
     return racing._cached(("tennis_tourn_map",), 3600, build) or {}
 
 
+def start_map():
+    """{normalized player name: ISO start time} for singles players today/
+    tomorrow, so a match tile can show when it's scheduled to begin. Only
+    not-yet-final matches carry a meaningful start. Cached 5 min."""
+    def build():
+        out = {}
+        today = clock.today_et()
+        for off in (0, 1):
+            ds = (today + datetime.timedelta(days=off)).strftime("%Y%m%d")
+            for tour in ("atp", "wta"):
+                for r in _parse_day(_board(tour, ds)):
+                    if r.get("start") and r.get("state") != "post":
+                        out.setdefault(r["na"], r["start"])
+                        out.setdefault(r["nb"], r["start"])
+        return out
+    return racing._cached(("tennis_start_map",), 300, build) or {}
+
+
 def live_rows():
     """Matches in progress right now, shaped for the Sports → Live tab."""
     out = []
