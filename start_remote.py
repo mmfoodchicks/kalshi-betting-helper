@@ -25,6 +25,66 @@ import sys
 import time
 
 PORT = os.environ.get("PORT", "5000")
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def _git(*args):
+    try:
+        return subprocess.run(["git", "-C", _ROOT, *args],
+                              capture_output=True, text=True, timeout=60)
+    except Exception:
+        return None
+
+
+def _sync_latest():
+    """Pull the latest of the CURRENT branch before starting, so 'run
+    start_remote.py' always serves the newest code — no more 'I refreshed but
+    nothing changed'. Prints the branch + commit so it's obvious what's live.
+    Skips quietly if this isn't a git checkout or there's no network."""
+    if not os.path.isdir(os.path.join(_ROOT, ".git")):
+        return
+    br = _git("rev-parse", "--abbrev-ref", "HEAD")
+    branch = br.stdout.strip() if br and br.returncode == 0 else None
+    if not branch or branch == "HEAD":
+        return
+    print(f"\n  ⟳ Updating code on branch '{branch}' …")
+    fetched = _git("fetch", "--quiet", "origin", branch)
+    if fetched and fetched.returncode == 0:
+        local = (_git("rev-parse", "HEAD") or _R()).stdout.strip()
+        remote = (_git("rev-parse", f"origin/{branch}") or _R()).stdout.strip()
+        if remote and local and local != remote:
+            # Match the self-updater: hard-reset to origin (DB/caches are
+            # gitignored, so only tracked source advances — nothing is lost).
+            reset = _git("reset", "--hard", f"origin/{branch}")
+            if reset and reset.returncode == 0:
+                print("  ✓ Pulled the latest changes.")
+            else:
+                print("  ⚠ Couldn't fast-forward (local edits?). Running current files.")
+        else:
+            print("  ✓ Already up to date.")
+    else:
+        print("  ⚠ Couldn't reach GitHub — running the code already on disk.")
+    head = _git("log", "-1", "--format=%h  %s")
+    if head and head.returncode == 0:
+        print(f"  build: {_build_token()}   commit: {head.stdout.strip()}")
+    print(f"  ⚠ NOTE: updates only land if THIS branch ('{branch}') is the one they were pushed to.\n")
+
+
+class _R:
+    """Null result so _sync_latest stays simple when a git call returns None."""
+    stdout = ""
+    returncode = 1
+
+
+def _build_token():
+    """Same cache-busting token app.py serves and the footer shows, so the
+    terminal and the phone agree on which build is live."""
+    try:
+        sd = os.path.join(_ROOT, "static")
+        return str(int(max(os.path.getmtime(os.path.join(sd, f))
+                           for f in ("app.js", "style.css", "sw.js"))))
+    except Exception:
+        return "?"
 
 
 def _lan_ip():
@@ -61,6 +121,7 @@ def _banner(title, url):
 
 
 def main():
+    _sync_latest()
     env = {**os.environ, "PORT": PORT}
     app_proc = subprocess.Popen([sys.executable, "app.py", "--port", PORT], env=env)
     time.sleep(2)
