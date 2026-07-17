@@ -559,20 +559,18 @@ async function trackMarket() {
 }
 
 // ---- Baseball insights ----------------------------------------------------
-// Format an ISO start time for a tile: the viewer's LOCAL device time, with the
-// ET time alongside (in parens if it differs, "… ET" if the device already is
-// ET) so it's unambiguous whether you're home or travelling. "" if no time.
+// Format an ISO start time for a tile in MOUNTAIN TIME, regardless of the
+// viewer's device zone (e.g. "5:15 PM MT"). "" if there's no usable time.
 function fmtStartTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   const opt = { hour: "numeric", minute: "2-digit" };
-  const local = d.toLocaleTimeString([], opt);
-  let et;
-  try { et = d.toLocaleTimeString("en-US", { ...opt, timeZone: "America/New_York" }); }
-  catch (e) { et = null; }
-  if (!et || local === et) return `${local}${et ? " ET" : ""}`;
-  return `${local} (${et} ET)`;
+  try {
+    return `${d.toLocaleTimeString("en-US", { ...opt, timeZone: "America/Denver" })} MT`;
+  } catch (e) {
+    return d.toLocaleTimeString([], opt);
+  }
 }
 
 function liveHeader(g) {
@@ -2967,7 +2965,7 @@ function renderTennis() {
       ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet — both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
       : lean;
     const startTag = (!m.live && m.start && fmtStartTime(m.start))
-      ? `<span class="starttime" title="scheduled start (your local time · ET)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
+      ? `<span class="starttime" title="scheduled start (Mountain Time)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
     return `<div class="tn-match${up ? " upsetcard" : ""}${unopened ? " tn-unopened" : ""}">
         <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${startTag}${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
