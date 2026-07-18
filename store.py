@@ -169,6 +169,24 @@ def deep_grades():
                     "AND p_home_deep IS NOT NULL AND home_won IS NOT NULL").fetchall()]
 
 
+def win_grade_pairs():
+    """(pick probability, won 0/1) for every graded game pick — the evidence the
+    win-model calibrator fits its temperature on."""
+    with _lock, _conn() as c:
+        return [(r["prob"], r["won"]) for r in c.execute(
+            "SELECT prob, won FROM mlb_picks "
+            "WHERE graded=1 AND prob IS NOT NULL AND won IS NOT NULL").fetchall()]
+
+
+def prop_grade_pairs():
+    """(model probability 0-1, hit 0/1) for every graded batter prop — the
+    evidence the prop calibrator fits its temperature on."""
+    with _lock, _conn() as c:
+        return [(r["model_pct"] / 100.0, r["actual"]) for r in c.execute(
+            "SELECT model_pct, actual FROM prop_log "
+            "WHERE graded=1 AND model_pct IS NOT NULL AND actual IS NOT NULL").fetchall()]
+
+
 def mlb_record():
     with _lock, _conn() as c:
         graded = [dict(r) for r in c.execute(
@@ -240,9 +258,14 @@ def mlb_record():
     model_split = {"factor": _mstats(graded, "p_home_model"),
                    "deep": _mstats(graded, "p_home_deep"),
                    "blend": _mstats(blended, "p")}
+    try:
+        import calibrate
+        cal_temps = calibrate.temps()
+    except Exception:
+        cal_temps = None
     return {
         "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
-        "model_split": model_split,
+        "model_split": model_split, "calibration_temps": cal_temps,
         "accuracy_pct": round(100 * wins / n, 1) if n else None,
         "roi_pct": roi_pct, "roi_bets": len(priced),
         "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets, "edge_threshold": EDGE,

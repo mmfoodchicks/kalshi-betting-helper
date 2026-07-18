@@ -29,6 +29,8 @@ import itertools
 import math
 import random
 
+import calibrate as _calibrate
+
 # Linear-weight run values per offensive event (relative to an out). The
 # lineup's raw run-units are rescaled each game so the mean matches the model's
 # expected runs, which keeps the run marginal calibrated to the rest of the app.
@@ -784,6 +786,15 @@ def build_candidates(g, sim, types=None):
         # `unit` are the simulated average for this market (runs, K, hits, …).
         m = _mask(pred, n)
         marg = _popcount(m) / n
+        # Reality-calibrate the leg's marginal against our graded track record —
+        # the win model and batter props both run overconfident on the high end,
+        # so temperature scaling reins the tails toward what actually happens
+        # (self-tuning; a no-op until enough games have graded). Totals / run line
+        # / RFI / starter Ks are left as the raw sim marginal.
+        if typ == "ML":
+            marg = _calibrate.win_prob(marg)
+        elif typ in ("Hit", "Bases", "HR", "HRR", "SB"):
+            marg = _calibrate.batter_prop(marg)
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
                           "group": group or typ, "model_pct": model, "kref": kref,

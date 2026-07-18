@@ -1243,6 +1243,13 @@ def analyze_slate(date, season):
                 w_deep = _deep_wp_weight()
                 p_home = (1 - w_deep) * p_home + w_deep * p_home_deep
                 p_home = max(0.04, min(0.96, p_home))
+        # Reality-calibrate the pre-game win prob against our graded record — the
+        # model runs overconfident on the high end, so temperature scaling reins
+        # the tails toward what actually happens (self-tuning; a no-op until enough
+        # games grade). The in-game prob below is its own live calc, left alone.
+        if (g.get("live") or {}).get("state") == "Preview":
+            import calibrate
+            p_home = max(0.04, min(0.96, calibrate.win_prob(p_home)))
         p_away = 1 - p_home
         exp_total = round(er_home + er_away, 1)
 

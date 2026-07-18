@@ -4400,6 +4400,13 @@ async function loadBaseballRecord() {
       const f = (x, nm) => x ? `${nm} <b>${x.acc_pct}%</b> <span style="color:var(--muted)">(Brier ${x.brier}, ${x.n})</span>` : `${nm} —`;
       extra.push(`🧬 Split: ${f(ms.factor, "factor")} · ${f(ms.deep, "deep")} · ${f(ms.blend, "blend")} — the blend weight auto-tunes on this once 40+ games carry both.`);
     }
+    // Live calibration: temperature reining in high-end overconfidence, fit on
+    // this record. T=1.00 = no correction yet (too little data); >1 = active.
+    const ct = r.calibration_temps;
+    if (ct && (ct.win_t > 1.001 || ct.prop_t > 1.001)) {
+      const tt = (t, n) => `<b>${(+t).toFixed(2)}×</b> <span style="color:var(--muted)">(${n})</span>`;
+      extra.push(`🎯 Calibrating overconfidence: win ${tt(ct.win_t, ct.win_n)} · props ${tt(ct.prop_t, ct.prop_n)} — high-confidence picks pulled toward their real hit-rate (auto-fit on this record).`);
+    }
     if (extra.length)
       html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
     if (r.graded < 50)
