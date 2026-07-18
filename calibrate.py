@@ -93,10 +93,17 @@ def _crypto_pairs():
     return recorder.calibration_pairs()
 
 
+def _predlog_pairs(model):
+    import predlog
+    return predlog.pairs(model)
+
+
 _MODELS = {
-    "win":    (_win_pairs,    200),
-    "prop":   (_prop_pairs,   800),
-    "crypto": (_crypto_pairs, 400),
+    "win":    (_win_pairs,                        200),
+    "prop":   (_prop_pairs,                       800),
+    "crypto": (_crypto_pairs,                     400),
+    "tennis": (lambda: _predlog_pairs("tennis"), 150),
+    "ufc":    (lambda: _predlog_pairs("ufc"),    120),
 }
 
 _cache = {}          # model -> (temperature, fitted_at, n)
@@ -136,6 +143,14 @@ def crypto(p):
     return apply("crypto", p)
 
 
+def tennis(p):
+    return apply("tennis", p)
+
+
+def ufc(p):
+    return apply("ufc", p)
+
+
 def temps():
     """Back-compat: win/prop temperatures + sample sizes for the MLB record header."""
     temperature("win")
@@ -146,19 +161,28 @@ def temps():
 
 
 def report():
-    """Per-model calibration audit for the UI: temperature, sample size, and a
-    plain-English read of the direction (over/under/well-calibrated/no-data)."""
+    """Per-model calibration audit for the UI: temperature, graded sample size,
+    how many predictions are logged-but-not-yet-settled, and a plain-English read
+    of the direction (over/under/well-calibrated/accruing/no-data)."""
+    try:
+        import predlog
+        logged = predlog.status()
+    except Exception:
+        logged = {}
     out = {}
     for m in _MODELS:
         temperature(m)                       # ensure fitted + cached
         t, _at, n = _cache.get(m, (1.0, 0.0, 0))
         if n < 40:
-            direction = "accruing" if n else "no data"
+            direction = "accruing" if (n or logged.get(m, {}).get("logged")) else "no data"
         elif t > 1.03:
             direction = "reined in (was overconfident)"
         elif t < 0.97:
             direction = "sharpened (was underconfident)"
         else:
             direction = "well-calibrated"
-        out[m] = {"t": t, "n": n, "direction": direction}
+        row = {"t": t, "n": n, "direction": direction}
+        if m in logged:
+            row["logged"] = logged[m]["logged"]
+        out[m] = row
     return out

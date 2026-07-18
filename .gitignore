@@ -6,6 +6,8 @@ venv/
 
 # Local data
 markets.db
+predlog.db
+*.db
 *.sqlite3
 
 # Secrets / env

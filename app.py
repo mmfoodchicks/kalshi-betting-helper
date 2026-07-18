@@ -62,6 +62,15 @@ try:
 except Exception:
     pass
 
+# Prediction logger: capture each sim's Kalshi predictions and grade them when the
+# market settles, so tennis/UFC (and more as they're wired) accrue the graded
+# history the calibrator needs. Background, cheap (boards are cached).
+try:
+    import predlog
+    predlog.start()
+except Exception:
+    pass
+
 
 @app.after_request
 def _security_headers(resp):

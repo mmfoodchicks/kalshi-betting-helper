@@ -392,9 +392,14 @@ async function calNote(model, label) {
   try {
     if (_calReport === null) _calReport = await (await fetch("/api/calibration")).json();
     const c = _calReport && _calReport[model];
-    if (!c || c.n < 40 || Math.abs(c.t - 1) < 0.03) return "";
-    const verb = c.t > 1 ? "reining in overconfidence" : "sharpening (was underconfident)";
-    return `<div class="small" style="color:var(--muted);margin:2px 0 8px">🎯 Calibrated ${label}: <b>${(+c.t).toFixed(2)}×</b> — ${verb}, fit on ${c.n} settled markets.</div>`;
+    if (!c) return "";
+    if (c.n >= 40 && Math.abs(c.t - 1) >= 0.03) {
+      const verb = c.t > 1 ? "reining in overconfidence" : "sharpening (was underconfident)";
+      return `<div class="small" style="color:var(--muted);margin:2px 0 8px">🎯 Calibrated ${label}: <b>${(+c.t).toFixed(2)}×</b> — ${verb}, fit on ${c.n} settled markets.</div>`;
+    }
+    if ((c.logged || 0) > 0)
+      return `<div class="small" style="color:var(--muted);margin:2px 0 8px">🎯 Calibration for ${label}: <b>accruing</b> — ${c.logged} prediction${c.logged > 1 ? "s" : ""} logged, ${c.n} graded so far. Auto-activates once enough markets settle.</div>`;
+    return "";
   } catch (e) { return ""; }
 }
 
@@ -2823,6 +2828,7 @@ function _fighterRow(f) {
 function renderUFC() {
   const d = _ufcData; if (!d) return;
   $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · model = ratings from each fighter's past fights → win prob, method/round & DK points. <span class="ufc-rating" style="border-color:var(--muted);color:var(--muted)">⚡</span> = our 0-100 power rating (league avg 50; hover for the striking/grappling/finishing breakdown). ⚠️ flags fighters with no/thin UFC history running on a league-average baseline. Edge = our fair win% (blended toward the market when history is thin) − Kalshi ask.`;
+  calNote("ufc", "UFC").then((h) => { if (h && $("ufcSummary")) $("ufcSummary").insertAdjacentHTML("beforeend", h); });
   const bouts = d.bouts.map((bt) => {
     const m = bt.method || {};
     const methodBar = `<div class="ufc-method">
@@ -2926,6 +2932,7 @@ function renderTennis() {
   const upBit = d.n_upsets ? ` · <b style="color:#e5484d">🚨 ${d.n_upsets} favorite${d.n_upsets > 1 ? "s" : ""} trailing</b>` : "";
   const playBit = d.n_play != null && d.n_play < d.n_matches ? ` <span class="small" style="color:var(--muted)">(${d.n_play} with a model read, rest are markets not open yet)</span>` : "";
   $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>${liveBit}${upBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
+  calNote("tennis", "tennis").then((h) => { if (h && $("tnSummary")) $("tnSummary").insertAdjacentHTML("beforeend", h); });
   if (!matches.length) {
     const msg = _tnSub === "live" ? "No tracked matches on court right now."
       : _tnSub === "upsets" ? "No big favorites trailing right now — check back during play."

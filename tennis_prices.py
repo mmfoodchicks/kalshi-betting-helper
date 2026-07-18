@@ -341,6 +341,25 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
             if source == "elo" and p["cents"] is not None and not (12 <= p["cents"] <= 88):
                 p["edge"] = None
 
+    # Reality-calibrate fair_win against graded tennis outcomes (the prediction
+    # logger). We keep the RAW value for the logger (calibration is fit on raw, so
+    # calibrating what we log would double-count), overwrite fair_win with the
+    # corrected number for display/edges, and recompute the edge from it. No-op
+    # (T=1.0) until enough tennis markets have settled.
+    try:
+        import calibrate
+        for p in (a, b):
+            fw = p.get("fair_win")
+            if fw is None:
+                continue
+            p["fair_win_raw"] = fw
+            cal = round(100 * calibrate.tennis(fw / 100.0), 1)
+            p["fair_win"] = cal
+            if p.get("edge") is not None and p.get("cents") is not None:
+                p["edge"] = round(cal - p["cents"], 1)
+    except Exception:
+        pass
+
     # Confidence tier (how much backs the read) so the user knows what to trust.
     # serve charting -> high/medium/thin; Elo-only -> "elo"; nothing -> "market".
     modeled = a["model_win"] is not None

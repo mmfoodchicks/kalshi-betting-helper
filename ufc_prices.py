@@ -16,7 +16,9 @@ def _norm(s):
 
 
 def _market_map():
-    """{normalized fighter name: yes_ask_cents} across all open KXUFCFIGHT markets."""
+    """{normalized fighter name: {cents, ticker, close_time}} across all open
+    KXUFCFIGHT markets. Ticker + close_time ride along so the prediction logger
+    can grade the pick when the fight settles."""
     out, cursor = {}, ""
     for _ in range(6):
         url = f"{kalshi.BASE}/markets?series_ticker=KXUFCFIGHT&status=open&limit=1000"
@@ -30,8 +32,10 @@ def _market_map():
             nm = _norm(m.get("yes_sub_title"))
             cents = kalshi._cents(m.get("yes_ask_dollars"))
             if nm and cents is not None:
-                out[nm] = cents
-                out.setdefault(nm.split()[-1], cents)   # last-name fallback
+                rec = {"cents": cents, "ticker": m.get("ticker"),
+                       "close_time": kalshi._parse_time(m.get("close_time"))}
+                out[nm] = rec
+                out.setdefault(nm.split()[-1], rec)   # last-name fallback
         cursor = d.get("cursor") or ""
         if not cursor:
             break
@@ -53,8 +57,10 @@ def attach(board):
     priced = False
     for bt in board["bouts"]:
         fa, fb = bt["a"], bt["b"]
-        ca = mkt.get(_norm(fa["name"])) or mkt.get(_norm(fa["name"]).split()[-1])
-        cb = mkt.get(_norm(fb["name"])) or mkt.get(_norm(fb["name"]).split()[-1])
+        ra = mkt.get(_norm(fa["name"])) or mkt.get(_norm(fa["name"]).split()[-1])
+        rb = mkt.get(_norm(fb["name"])) or mkt.get(_norm(fb["name"]).split()[-1])
+        ca = ra["cents"] if ra else None
+        cb = rb["cents"] if rb else None
         # de-vig market win % per fighter (the two asks sum to >100 — the vig)
         mkt_a = mkt_b = None
         if ca is not None and cb is not None and (ca + cb) > 0:
@@ -62,14 +68,26 @@ def attach(board):
             mkt_b = 100.0 * cb / (ca + cb)
         conf = min(fa.get("fights", 0), fb.get("fights", 0))
         w = conf / (conf + 4.0)                     # 0 fights -> all market, lots -> all model
-        for f, c, mk in ((fa, ca, mkt_a), (fb, cb, mkt_b)):
+        for f, c, mk, rec in ((fa, ca, mkt_a, ra), (fb, cb, mkt_b, rb)):
             f["kalshi_cents"] = c
             f["confidence"] = round(w, 2)
+            if rec:
+                f["ticker"] = rec.get("ticker")
+                f["close_time"] = rec.get("close_time")
             if c is None:
                 f["fair_win"], f["edge"] = f["win_pct"], None
                 continue
-            fair = w * f["win_pct"] + (1 - w) * (mk if mk is not None else f["win_pct"])
-            f["fair_win"] = round(fair, 1)
+            fair = round(w * f["win_pct"] + (1 - w) * (mk if mk is not None else f["win_pct"]), 1)
+            f["fair_win_raw"] = fair
+            # Reality-calibrate against graded UFC outcomes (prediction logger).
+            # Log the RAW value; display/edge use the corrected one. No-op until
+            # enough fights have settled.
+            try:
+                import calibrate
+                fair = round(100 * calibrate.ufc(fair / 100.0), 1)
+            except Exception:
+                pass
+            f["fair_win"] = fair
             f["edge"] = round(fair - c, 1)
             priced = True
     board["priced"] = priced

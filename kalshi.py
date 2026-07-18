@@ -108,6 +108,7 @@ def get_market(ticker):
     return {
         "ticker": m.get("ticker"),
         "status": m.get("status"),
+        "result": (m.get("result") or "").lower(),   # 'yes'/'no'/'' once settled
         "close_time": _parse_time(m.get("close_time")),
         "yes_bid": _cents(m.get("yes_bid_dollars")),
         "yes_ask": _cents(m.get("yes_ask_dollars")),
