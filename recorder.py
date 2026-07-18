@@ -90,6 +90,29 @@ def sample_once():
     return n
 
 
+def calibration_pairs(coin=None, timeframe=None):
+    """(model fair-YES prob 0-1, actual 0/1) for every resolved crypto market —
+    one pair per ticker (its first recorded fair value). Feeds the crypto
+    temperature calibrator."""
+    with _lock, _conn() as c:
+        resolved = {r["ticker"]: (r["outcome"]) for r in
+                    c.execute("SELECT ticker, outcome FROM resolved_markets").fetchall()}
+        rows = c.execute(
+            "SELECT ticker, coin, timeframe, fair_yes FROM quote_samples ORDER BY ts ASC").fetchall()
+    seen, out = set(), []
+    for s in rows:
+        tk = s["ticker"]
+        if tk in seen or tk not in resolved or s["fair_yes"] is None:
+            continue
+        if coin and s["coin"] != coin:
+            continue
+        if timeframe and s["timeframe"] != timeframe:
+            continue
+        seen.add(tk)
+        out.append((s["fair_yes"] / 100.0, 1.0 if resolved[tk] == "YES" else 0.0))
+    return out
+
+
 def _outcome(strike_type, floor, cap, price):
     st = (strike_type or "").lower()
     if st in ("greater", "greater_or_equal"):

@@ -520,7 +520,7 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
     }
 
 
-def kalshi_signal(spot, candles, market, minutes_to_close):
+def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
     """Edge signal for a live Kalshi market (from kalshi.get_open_markets).
 
     Compares the model's fair value to the market's live YES/NO ask prices and
@@ -530,6 +530,17 @@ def kalshi_signal(spot, candles, market, minutes_to_close):
     prob_yes = max(0.0, min(1.0, probability_yes_for_strike(
         spot, market["strike_type"], market["floor"], market["cap"],
         minutes_to_close, mu, sigma)))
+    # Reality-calibrate the GBM fair value against resolved crypto markets — but
+    # ONLY when asked (calibrated=True). The recorder logs the RAW fair value (it
+    # IS the calibration evidence, so calibrating it would double-count and, since
+    # it runs inside the recorder's lock, re-enter it). Betting/display callers
+    # pass calibrated=True to get the corrected number. No-op until data accrues.
+    if calibrated:
+        try:
+            import calibrate
+            prob_yes = max(0.0, min(1.0, calibrate.crypto(prob_yes)))
+        except Exception:
+            pass
     fair_yes = round(prob_yes * 100, 1)
     fair_no = round((1 - prob_yes) * 100, 1)
 

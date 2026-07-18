@@ -421,7 +421,7 @@ def api_kalshi_scan():
     enriched = []
     for m in markets:
         mins = _minutes_to_close(m["close_time"]) if m["close_time"] else 0.0
-        sig = odds.kalshi_signal(spot, candles, m, mins)
+        sig = odds.kalshi_signal(spot, candles, m, mins, calibrated=True)
         item = dict(m)
         item["minutes_to_close"] = round(mins, 2)
         item["signal"] = sig
@@ -496,7 +496,7 @@ def api_commodities_scan():
         if not m.get("yes_ask"):
             continue
         days = max(0.0, (m["close_time"] - now) / 86400.0) if m["close_time"] else 0.0
-        sig = odds.kalshi_signal(spot, candles, m, days)  # day-based units
+        sig = odds.kalshi_signal(spot, candles, m, days, calibrated=True)  # day-based units
         item = dict(m)
         item["days_to_close"] = round(days, 1)
         item["signal"] = sig
@@ -723,6 +723,17 @@ def _prop_types():
         return None
     got = {t.strip() for t in raw.split(",") if t.strip()}
     return got or None
+
+
+@app.route("/api/calibration")
+def api_calibration():
+    """Site-wide calibration audit: per-model temperature, sample size, and
+    direction (reined in / sharpened / well-calibrated / accruing / no data)."""
+    import calibrate
+    try:
+        return jsonify(calibrate.report())
+    except Exception as e:
+        return jsonify({"error": f"calibration report failed: {e}"}), 502
 
 
 @app.route("/api/baseball/today")

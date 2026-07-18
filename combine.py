@@ -89,7 +89,7 @@ def _crypto_legs():
                 mins = max(0.0, (m["close_time"] - now) / 60.0) if m["close_time"] else 0.0
                 if mins < _CRYPTO_MIN_MINS.get(tf, 0.0):
                     continue                      # too close to settlement -> noise
-                sig = odds.kalshi_signal(spot, candles, m, mins)
+                sig = odds.kalshi_signal(spot, candles, m, mins, calibrated=True)
                 if sig["fair_yes_cents"] >= sig["fair_no_cents"]:
                     side, prob, price = "YES", sig["fair_yes_cents"] / 100.0, m["yes_ask"]
                 else:

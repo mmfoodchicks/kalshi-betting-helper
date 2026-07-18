@@ -385,6 +385,19 @@ function recSide(sig) {
   return null;
 }
 
+// Site-wide calibration audit, fetched once and cached. Returns a small note for
+// a given model, or "" when it's a no-op / no data.
+let _calReport = null;
+async function calNote(model, label) {
+  try {
+    if (_calReport === null) _calReport = await (await fetch("/api/calibration")).json();
+    const c = _calReport && _calReport[model];
+    if (!c || c.n < 40 || Math.abs(c.t - 1) < 0.03) return "";
+    const verb = c.t > 1 ? "reining in overconfidence" : "sharpening (was underconfident)";
+    return `<div class="small" style="color:var(--muted);margin:2px 0 8px">🎯 Calibrated ${label}: <b>${(+c.t).toFixed(2)}×</b> — ${verb}, fit on ${c.n} settled markets.</div>`;
+  } catch (e) { return ""; }
+}
+
 function renderScanRow(m) {
   const sig = m.signal;
   const secs = m.close_time ? m.close_time - Math.floor(Date.now() / 1000) : 0;
@@ -511,7 +524,7 @@ async function runScan() {
     const isBuy = (m) => m.signal && m.signal.recommendation && m.signal.recommendation !== "HOLD";
     const shown = buysOnly ? d.markets.filter(isBuy) : d.markets;
     const hidden = d.markets.length - shown.length;
-    let head = renderVol(d.vol);
+    let head = renderVol(d.vol) + await calNote("crypto", "crypto fair value");
     if (buysOnly) {
       head += shown.length
         ? `<div class="small" style="color:var(--muted);margin:2px 0 8px">Showing <b>${shown.length}</b> buy${shown.length > 1 ? "s" : ""}${hidden ? ` · ${hidden} HOLD hidden` : ""}. <a href="#" id="scanShowAll">show all</a></div>`
