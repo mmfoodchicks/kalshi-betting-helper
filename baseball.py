@@ -38,6 +38,10 @@ import props as props_mod
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
 PYTH_EXP = 1.83
+# Home-plate umpire zone -> run-environment multiplier (net of ABS-challenge
+# corrections). cs_bias 0.03 (a notably big zone) => ~3% fewer runs; hits both
+# offenses so it moves the total but cancels in the moneyline. 0.0 = no ump data.
+_UMP_RUN = 1.0
 SP_INNINGS_WEIGHT = 0.60   # share of game the starter is responsible for
 HOME_RUNS_MULT = 1.08      # home-field edge on home expected runs (~54%)
 SP_IP_REGRESS = 50.0       # innings constant for regressing a starter's season ERA
@@ -1023,7 +1027,7 @@ def _schedule(date, season):
 _DEEP_WP_CACHE = {}
 
 
-def _deep_game_wp(g, season, n=800):
+def _deep_game_wp(g, season, n=800, ump=0.0):
     """Deep-engine win probability for TODAY'S exact matchup: the per-player
     engine (regressed + Statcast rates, arsenal matchups, batter platoon splits,
     TTO, real bullpen chains, pinch hitters, steals, real end-game rules) plays
@@ -1033,7 +1037,7 @@ def _deep_game_wp(g, season, n=800):
     when a probable starter isn't identified or profiles aren't available.
     Seeded per game so the number is stable across page loads; cached 6h."""
     import time as _t
-    key = (g["game_pk"], g.get("home_sp_id"), g.get("away_sp_id"))
+    key = (g["game_pk"], g.get("home_sp_id"), g.get("away_sp_id"), round(ump, 3))
     hit = _DEEP_WP_CACHE.get(key)
     if hit and _t.time() - hit[0] < 6 * 3600:
         return hit[1]
@@ -1059,7 +1063,7 @@ def _deep_game_wp(g, season, n=800):
         hw = 0
         for _ in range(n):
             hw += 1 if deep_sim.play_game(ph, pa, sp_home=sp_h, sp_away=sp_a,
-                                          rng=rng)["home_win"] else 0
+                                          rng=rng, ump=ump)["home_win"] else 0
         wp = max(0.05, min(0.95, hw / n))
         _DEEP_WP_CACHE[key] = (_t.time(), wp)
         return wp
@@ -1229,6 +1233,24 @@ def analyze_slate(date, season):
         er_home *= env
         er_away *= env
 
+        # Home-plate umpire zone (ABS-challenge-damped net effect). Applied to the
+        # run total only — NOT to `env` above, which is a ball-flight scale for hit
+        # props; an ump moves runs through Ks/walks, not BABIP. Hits both offenses,
+        # so it cancels in the Pythagorean moneyline but shifts the total + run
+        # props. 0.0 (no ump posted / no tendency on file) is a no-op. The deep sim
+        # gets the full per-PA challenge mechanic; here we use the net run effect.
+        ump_bias = 0.0
+        if (g.get("live") or {}).get("state") == "Preview":
+            try:
+                import umpires
+                ump_bias = umpires.cs_bias(g["game_pk"])
+            except Exception:
+                ump_bias = 0.0
+        if ump_bias:
+            umpf = max(0.90, min(1.10, 1.0 - _UMP_RUN * ump_bias))
+            er_home *= umpf
+            er_away *= umpf
+
         p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
         p_home = max(0.04, min(0.96, p_home))
         # Deep-engine second opinion (pre-game only): blend the per-player game
@@ -1238,7 +1260,7 @@ def analyze_slate(date, season):
         p_home_model = p_home
         p_home_deep = None
         if (g.get("live") or {}).get("state") == "Preview":
-            p_home_deep = _deep_game_wp(g, season)
+            p_home_deep = _deep_game_wp(g, season, ump=ump_bias)
             if p_home_deep is not None:
                 w_deep = _deep_wp_weight()
                 p_home = (1 - w_deep) * p_home + w_deep * p_home_deep

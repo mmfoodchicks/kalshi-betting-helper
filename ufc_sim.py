@@ -172,6 +172,7 @@ def _apply_bio(ra, rb):
         bio = ufc_data.fighter_bio(r["id"]) or {}
         r["age"] = bio.get("age")
         r["reach"] = bio.get("reach")
+        r["stance"] = bio.get("stance")
         age = bio.get("age")
         if age and age > 34:
             fade = min(0.30, 0.035 * (age - 34))
@@ -183,6 +184,15 @@ def _apply_bio(ra, rb):
         diff = max(-8.0, min(8.0, a_r - b_r))
         ra["ss_pm"] *= 1 + 0.010 * diff
         rb["ss_pm"] *= 1 - 0.010 * diff
+    # Southpaw vs orthodox: the southpaw carries a small, well-documented edge —
+    # orthodox fighters face far fewer lefties, so their timing and defense lag.
+    # Switch or same-stance is a wash. Nudges striking output (-> strike edge).
+    sp = lambda s: "southpaw" in (s or "")
+    orth = lambda s: "orthodox" in (s or "")
+    if sp(ra.get("stance")) and orth(rb.get("stance")):
+        ra["ss_pm"] *= 1.05; rb["ss_pm"] *= 0.98
+    elif sp(rb.get("stance")) and orth(ra.get("stance")):
+        rb["ss_pm"] *= 1.05; ra["ss_pm"] *= 0.98
 
 
 def _compute_board(n):

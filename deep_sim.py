@@ -32,6 +32,31 @@ _K_CAL, _BB_CAL, _HIT_CAL = 1.0, 0.89, 0.99
 _ROE = 0.028
 _WP_PA = 0.032
 
+# ABS challenge system (2026): the human ump calls the zone, but each team gets
+# _ABS_CHALLENGES challenges, kept on a successful overturn. On a decisive
+# borderline call -- a walk the ump's zone would ring up, or a strikeout he'd wave
+# off as ball four -- the wronged side challenges with prob _ABS_CHAL_P if it has
+# one left; Hawk-Eye overturns it with prob _ABS_OVERTURN (correct call restored,
+# challenge KEPT), otherwise the ump's call stands and a challenge is burned. Out
+# of challenges, the ump's tendency applies in full. _UMP_FLIP scales the ump's
+# cs_bias into the per-PA chance that a terminal ball/strike is the borderline one.
+_ABS_CHALLENGES = 2
+_ABS_CHAL_P = 0.55
+_ABS_OVERTURN = 0.50
+_UMP_FLIP = 6.0
+
+
+def _challenge(chal, side, rng):
+    """The wronged `side` challenges a borderline call if it has one left. Returns
+    True if the call is OVERTURNED (corrected; the challenge is kept), False if it
+    stands -- either not challenged, or challenged and lost, which burns one."""
+    if chal[side] <= 0 or rng.random() >= _ABS_CHAL_P:
+        return False                        # no challenge left, or chose not to
+    if rng.random() < _ABS_OVERTURN:
+        return True                         # overturned -> correct call restored, kept
+    chal[side] -= 1                         # challenge upheld the ump -> burned
+    return False
+
 
 def _log5(b, p, l):
     """Odds-ratio combination of a batter rate b and pitcher rate p vs league l."""
@@ -264,7 +289,7 @@ def _avail_sp(sp, prof, rng):
     return sp
 
 
-def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None):
+def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None, ump=0.0):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
     `env` scales the run environment (park + weather) for DFS slate sims; it
     defaults to 1.0 so the season engine is unchanged. When `bvp` is a dict, every
@@ -301,6 +326,10 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
     used_ph = {"home": set(), "away": set()}
     bat_lines = {}
     score = {"home": 0, "away": 0}
+    # ABS challenges remaining this game (depletes as failed challenges burn them;
+    # late-game borderline calls then stand -- see _challenge). Neutral ump (0.0)
+    # never triggers the mechanic, so this is a no-op unless a real zone is passed.
+    chal = {"home": _ABS_CHALLENGES, "away": _ABS_CHALLENGES}
     ars_memo = {}                              # (batter_id, pitcher_id) -> arsenal factor
 
     def bline(p):
@@ -393,6 +422,19 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                         break
                 else:
                     oc = "out"
+                # Umpire zone + ABS challenge. On a decisive borderline call the
+                # ump's lean flips a walk<->strikeout, but the wronged side (the
+                # batting team on a rung-up ball four; the pitching team on a stolen
+                # strike three) can challenge Hawk-Eye while it still has one. Out of
+                # challenges, the ump's tendency stands. (`half` bats, `opp` pitches.)
+                if ump and oc in ("bb", "k"):
+                    pf = min(0.9, _UMP_FLIP * abs(ump))
+                    if ump > 0 and oc == "bb" and rng.random() < pf:
+                        if not _challenge(chal, half, rng):
+                            oc = "k"               # big zone: ball four -> strikeout
+                    elif ump < 0 and oc == "k" and rng.random() < pf:
+                        if not _challenge(chal, opp, rng):
+                            oc = "bb"              # tight zone: strike three -> walk
                 bl = bline(bat); pl = st.lines[pit["id"]]
                 bl["pa"] += 1; pl["bf"] += 1; st.outing_bf += 1
                 if oc == "k":
