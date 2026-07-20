@@ -139,6 +139,47 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0, ars=None):
             "out": p_out}
 
 
+# --- Pitcher command ("aim"), pitch-around, and fatigue ----------------------
+# There's no clean public "aim" stat, so command is derived from walk rate: a
+# pinpoint arm walks few, holds his zone deep into an outing, and can nibble a
+# masher without grooving one. _LG_BB_PA is the league walk rate it centers on.
+_LG_BB_PA = 0.083
+# Pitching AROUND a dangerous hitter: more walks, far fewer meatballs (HR) and a
+# few fewer clean hits -- the "we're not giving him anything to hit" plate.
+_PA_WALK, _PA_HR, _PA_HIT = 0.16, 0.55, 0.18
+# Command FATIGUE: deep in the outing a starter's aim slips -> more walks AND more
+# mistakes left over the heart (HR). Scaled by 1/command, so wild arms unravel first.
+_FAT_WALK, _FAT_HR = 0.55, 0.85
+
+
+def _command(pit):
+    """A pitcher's aim score from his walk rate: 1.0 = league-average control, >1 =
+    pinpoint (nibbles effectively, holds up when tired), <1 = wild."""
+    bb = pit.get("bbpa") or _LG_BB_PA
+    return max(0.5, min(1.7, _LG_BB_PA / max(0.02, bb)))
+
+
+def _adjust_pa(probs, pa_intent, fatigue):
+    """Reshape a PA's outcome probs for pitch-around intent (0..1) and command
+    fatigue (0..~0.6). Walks rise with both; homers/hits fall when nibbling, but
+    homers rise when gassed. Renormalized so it stays a valid distribution."""
+    if pa_intent <= 0 and fatigue <= 0:
+        return probs
+    p = dict(probs)
+    p["bb"] *= 1 + _PA_WALK * pa_intent + _FAT_WALK * fatigue
+    p["hr"] *= (1 - _PA_HR * pa_intent) * (1 + _FAT_HR * fatigue)
+    for k in ("1b", "2b", "3b"):
+        p[k] *= 1 - _PA_HIT * pa_intent
+    tot = p["k"] + p["bb"] + p["hbp"] + p["hr"] + p["1b"] + p["2b"] + p["3b"]
+    if tot > 0.99:                              # keep the on-base mass under 1
+        s = 0.99 / tot
+        for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):
+            p[k] *= s
+        tot = 0.99
+    p["out"] = 1 - tot
+    return p
+
+
 def _new_bat_line():
     return {"pa": 0, "ab": 0, "h": 0, "2b": 0, "3b": 0, "hr": 0, "bb": 0, "k": 0,
             "r": 0, "rbi": 0, "sb": 0, "ph": 0}
@@ -413,6 +454,24 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 if akey not in ars_memo:
                     ars_memo[akey] = _ars_factor(bat, pit)
                 probs = _pa_probs(bat, pit, env, tto_pen, ars_memo[akey])
+                # Pitch AROUND a masher + command fatigue. Nobody grooves one to a
+                # dangerous hitter with a base open and a weaker bat on deck; and a
+                # tiring starter's aim slips (more walks, more meatballs). A pinpoint
+                # arm (high command) nibbles cleanly and fades slower.
+                cmd = _command(pit)
+                fatigue = 0.0
+                if is_sp and st.outing_bf > 12:
+                    fatigue = min(0.6, (st.outing_bf - 12) / 22.0) / cmd
+                pa_intent = 0.0
+                danger = bat.get("danger") or 1.0
+                if danger > 1.12 and bases[0] is None:       # a masher, first base open
+                    on_deck = lineup[half][(slot + 1) % len(lineup[half])]
+                    risp = bases[1] is not None or bases[2] is not None
+                    weaker = (on_deck.get("danger") or 1.0) < danger - 0.05
+                    if risp or weaker or outs == 2:
+                        pa_intent = min(0.9, (danger - 1.0) * (1.4 if risp else 1.0))
+                        pa_intent *= 0.55 + 0.45 * min(1.5, cmd)   # command -> cleaner
+                probs = _adjust_pa(probs, pa_intent, fatigue)
                 r = rng.random()
                 cum = 0.0
                 for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):
