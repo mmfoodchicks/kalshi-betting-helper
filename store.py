@@ -72,7 +72,12 @@ def init_db():
         # close_price (CLV) + predicted/actual total runs (sim accuracy).
         mcols = {r["name"] for r in c.execute("PRAGMA table_info(mlb_picks)")}
         for col in ("close_price", "pred_total", "actual_total",
-                    "p_home_model", "p_home_deep", "home_won"):
+                    "p_home_model", "p_home_deep", "home_won",
+                    # prob_raw: the model's UNCALIBRATED win prob for the pick. `prob`
+                    # is the calibrated number we display/bet; the temperature must be
+                    # fit on the raw one, or the calibrator trains on its own output
+                    # (a feedback loop). Legacy rows have it NULL -> fall back to prob.
+                    "prob_raw"):
             if col not in mcols:
                 c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
 
@@ -120,18 +125,22 @@ def init_db():
 
 # ---- MLB model track record -----------------------------------------------
 def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None,
-                    p_home_model=None, p_home_deep=None):
+                    p_home_model=None, p_home_deep=None, prob_raw=None):
     """Store the model's pre-game pick (first time we see the game), including the
     two blend components (factor model / deep player engine, home-perspective) so
-    each can be graded on its own."""
+    each can be graded on its own.
+
+    `prob` is the calibrated probability we show and bet; `prob_raw` is the same
+    pick's UNCALIBRATED probability, kept so the calibrator fits its temperature on
+    the raw model rather than on its own already-calibrated output."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
                (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total,
-                p_home_model, p_home_deep)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                p_home_model, p_home_deep, prob_raw)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total,
-             p_home_model, p_home_deep),
+             p_home_model, p_home_deep, prob_raw if prob_raw is not None else prob),
         )
 
 
@@ -170,12 +179,14 @@ def deep_grades():
 
 
 def win_grade_pairs():
-    """(pick probability, won 0/1) for every graded game pick — the evidence the
-    win-model calibrator fits its temperature on."""
+    """(RAW pick probability, won 0/1) for every graded game pick — the evidence the
+    win-model calibrator fits its temperature on. Uses the uncalibrated prob so the
+    fit isn't trained on its own calibrated output; legacy rows (prob_raw NULL) fall
+    back to prob, which for pre-calibration history already IS the raw number."""
     with _lock, _conn() as c:
-        return [(r["prob"], r["won"]) for r in c.execute(
-            "SELECT prob, won FROM mlb_picks "
-            "WHERE graded=1 AND prob IS NOT NULL AND won IS NOT NULL").fetchall()]
+        return [(r["p"], r["won"]) for r in c.execute(
+            "SELECT COALESCE(prob_raw, prob) AS p, won FROM mlb_picks "
+            "WHERE graded=1 AND won IS NOT NULL AND COALESCE(prob_raw, prob) IS NOT NULL").fetchall()]
 
 
 def prop_grade_pairs():

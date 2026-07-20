@@ -99,7 +99,12 @@ def _predlog_pairs(model):
 
 
 _MODELS = {
-    "win":    (_win_pairs,                        200),
+    # Floor = how many graded outcomes earn a FULL-strength correction; below it the
+    # fit is damped toward no-op (1.0). MLB game outcomes are the noisiest signal in
+    # the app (one baseball game is nearly a coin flip), so the win model needs as
+    # much evidence as the props before it trusts a big temperature — a few hundred
+    # games shouldn't earn a 2.5x squash that then over-shrinks moderate favorites.
+    "win":    (_win_pairs,                        800),
     "prop":   (_prop_pairs,                       800),
     "crypto": (_crypto_pairs,                     400),
     "tennis": (lambda: _predlog_pairs("tennis"), 150),

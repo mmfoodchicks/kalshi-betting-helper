@@ -1243,6 +1243,10 @@ def analyze_slate(date, season):
                 w_deep = _deep_wp_weight()
                 p_home = (1 - w_deep) * p_home + w_deep * p_home_deep
                 p_home = max(0.04, min(0.96, p_home))
+        # The RAW (pre-calibration) blended prob. Recorded alongside the calibrated
+        # one so the calibrator fits its temperature on the model's own raw output,
+        # not on the number it already corrected (which would be a feedback loop).
+        p_home_raw = p_home
         # Reality-calibrate the pre-game win prob against our graded record — the
         # model runs overconfident on the high end, so temperature scaling reins
         # the tails toward what actually happens (self-tuning; a no-op until enough
@@ -1268,6 +1272,7 @@ def analyze_slate(date, season):
             p_home = props_mod.in_game_win_prob(ls["home_runs"], ls["away_runs"], exp_rem_h, exp_rem_a)
             p_home = max(0.01, min(0.99, p_home))
             p_away = 1 - p_home
+            p_home_raw = p_home   # live prob is uncalibrated: raw == shown
             in_game = {"home_score": ls["home_runs"], "away_score": ls["away_runs"],
                        "inning": ls["inning"], "state": ls["state"], "outs": ls["outs"],
                        "exp_rem_home": round(exp_rem_h, 2), "exp_rem_away": round(exp_rem_a, 2),
@@ -1277,6 +1282,8 @@ def analyze_slate(date, season):
         pick_home = p_home >= p_away
         pick_name = g["home_name"] if pick_home else g["away_name"]
         pick_prob = p_home if pick_home else p_away
+        # Same pick, before calibration — the honest training signal for the fit.
+        pick_prob_raw = p_home_raw if pick_home else (1 - p_home_raw)
 
         price_entry, home_abbr, away_abbr = _match_price(
             kalshi_index, abbr_map, g["home_id"], g["away_id"], g["start_epoch"])
@@ -1432,6 +1439,7 @@ def analyze_slate(date, season):
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},
             "pick": pick_name, "pick_is_home": pick_home,
             "pick_prob": round(pick_prob, 4), "pick_pct": round(pick_prob * 100, 1),
+            "pick_prob_raw": round(pick_prob_raw, 4),
             "confidence": round(abs(pick_prob - 0.5) * 200),
             "pick_price_cents": pick_price, "market_prob": market_prob, "edge_cents": edge,
             "fee_cents": fee_cents, "net_edge_cents": net_edge,
