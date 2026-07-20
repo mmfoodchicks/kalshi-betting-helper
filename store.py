@@ -21,8 +21,15 @@ _lock = threading.Lock()
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH)
+    # timeout = SQLite's busy timeout: wait for a competing writer instead of
+    # failing with "database is locked". The recorder and the request threads use
+    # separate Python locks on this same file, so they rely on this to serialize.
+    c = sqlite3.connect(DB_PATH, timeout=10)
     c.row_factory = sqlite3.Row
+    # WAL lets readers proceed while the recorder writes (and vice-versa); it's a
+    # persistent per-file setting, so re-issuing it each connect is a cheap no-op.
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("PRAGMA busy_timeout=10000")
     return c
 
 

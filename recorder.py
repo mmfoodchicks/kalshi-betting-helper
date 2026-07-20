@@ -12,7 +12,6 @@ the only question that matters: if you had bet every time the model flagged an
 edge, at the real Kalshi price, would you have made money?
 """
 
-import sqlite3
 import threading
 import time
 
@@ -30,9 +29,9 @@ _lock = threading.Lock()
 
 
 def _conn():
-    c = sqlite3.connect(store.DB_PATH)
-    c.row_factory = sqlite3.Row
-    return c
+    # Share store's tuned connection (WAL + busy timeout) so the recorder's writes
+    # and the request threads' writes to the same markets.db don't collide.
+    return store._conn()
 
 
 def init_db():

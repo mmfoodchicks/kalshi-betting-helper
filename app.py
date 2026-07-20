@@ -14,6 +14,7 @@ This is a decision-support tool. The odds are model estimates, not guarantees.
 
 import os
 import clock
+import hmac
 import time
 import threading
 
@@ -117,7 +118,10 @@ def _auth():
     if request.path in ("/healthz", "/robots.txt"):   # platform probes, no creds
         return
     a = request.authorization
-    if not a or a.username != APP_USER or a.password != APP_PASSWORD:
+    # Constant-time compare so a wrong password can't be teased out by timing.
+    ok = a and hmac.compare_digest(str(a.username or ""), APP_USER) \
+           and hmac.compare_digest(str(a.password or ""), APP_PASSWORD)
+    if not ok:
         return Response("Login required", 401,
                         {"WWW-Authenticate": 'Basic realm="Vigil"'})
 

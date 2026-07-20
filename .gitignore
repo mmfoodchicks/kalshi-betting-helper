@@ -8,6 +8,8 @@ venv/
 markets.db
 predlog.db
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 
 # Secrets / env
