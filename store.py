@@ -228,16 +228,24 @@ def mlb_record():
     clv_avg = round(sum(clv) / len(clv), 2) if clv else None
     clv_pos_pct = round(100 * sum(1 for x in clv if x > 0) / len(clv), 1) if clv else None
 
-    # Brier (lower=better; 0.25=coin flip) + calibration buckets.
+    # Brier (lower=better; 0.25=coin flip) — on the CALIBRATED prob, i.e. how good
+    # the numbers we actually show and bet are.
     bp = [p for p in graded if p["prob"] is not None]
     brier = round(sum((p["prob"] - (1 if p["won"] else 0)) ** 2 for p in bp) / len(bp), 4) if bp else None
+    # Calibration buckets on the RAW (pre-calibration) prob — this is the overconfidence
+    # the temperature is fit on and corrects, so the audit shows what's being fixed
+    # (not the already-corrected output). Legacy rows fall back to prob.
+    def _raw(p):
+        pr = p.get("prob_raw")
+        return pr if pr is not None else p.get("prob")
+    braw = [p for p in graded if _raw(p) is not None]
     bins = []
     for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):
-        b = [p for p in bp if lo <= p["prob"] < hi]
+        b = [p for p in braw if lo <= _raw(p) < hi]
         if b:
             bins.append({"range": f"{int(lo*100)}-{int(min(hi,1)*100)}%",
                          "n": len(b),
-                         "predicted": round(100 * sum(p["prob"] for p in b) / len(b), 1),
+                         "predicted": round(100 * sum(_raw(p) for p in b) / len(b), 1),
                          "actual": round(100 * sum(1 for p in b if p["won"]) / len(b), 1)})
     # Total-runs accuracy: predicted vs actual, aggregated (a single game is
     # noise; over many it shows whether the run model is calibrated/biased).
