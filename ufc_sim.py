@@ -50,7 +50,13 @@ def win_prob(a, b):
 def _pois(lam, rng):
     if lam <= 0:
         return 0
-    L = math.exp(-min(30, lam)); k = 0; p = 1.0
+    # Normal approximation in the large tail. Significant strikes over a full fight
+    # (landed/min x up to 25 min) routinely run 50-120, so the old exp(-min(30,lam))
+    # cap silently sampled ~Poisson(30) and undercounted high-volume strikers' DFS
+    # points. Match mlb_sim._poisson: gauss(lam, sqrt(lam)) preserves mean AND var.
+    if lam > 30:
+        return max(0, int(round(rng.gauss(lam, math.sqrt(lam)))))
+    L = math.exp(-lam); k = 0; p = 1.0
     while True:
         k += 1; p *= rng.random()
         if p <= L:
