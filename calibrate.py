@@ -100,15 +100,20 @@ def _predlog_pairs(model):
 
 _MODELS = {
     # Floor = how many graded outcomes earn a FULL-strength correction; below it the
-    # fit is damped toward no-op (1.0). MLB game outcomes are the noisiest signal in
-    # the app (one baseball game is nearly a coin flip), so the win model needs as
-    # much evidence as the props before it trusts a big temperature — a few hundred
-    # games shouldn't earn a 2.5x squash that then over-shrinks moderate favorites.
+    # fit is damped toward no-op (1.0). The floor must scale with how NOISY a single
+    # outcome is: one binary sports result (game/match/fight) is nearly a coin flip,
+    # so its calibration buckets are noisy and a thin sample must NOT earn a big
+    # temperature — that over-shrinks the moderate favorites and manufactures edges
+    # against the market. Win/prop have deep history, so they carry the full 800.
+    # Tennis/UFC are the same noisy-binary shape but accrue graded markets far more
+    # slowly, so they sit lower (enough to require a season+ of settled markets for a
+    # full correction, without stalling activation forever). Crypto's GBM fair value
+    # is a smooth continuous number that settles by the thousands, so 400 is ample.
     "win":    (_win_pairs,                        800),
     "prop":   (_prop_pairs,                       800),
     "crypto": (_crypto_pairs,                     400),
-    "tennis": (lambda: _predlog_pairs("tennis"), 150),
-    "ufc":    (lambda: _predlog_pairs("ufc"),    120),
+    "tennis": (lambda: _predlog_pairs("tennis"), 400),
+    "ufc":    (lambda: _predlog_pairs("ufc"),    300),
 }
 
 _cache = {}          # model -> (temperature, fitted_at, n)
