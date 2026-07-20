@@ -767,6 +767,14 @@ function renderGame(g) {
   let market = g.pick_price_cents != null
     ? `Kalshi ${g.pick_price_cents}¢ · <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}¢ edge</b>${netTxt}`
     : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
+  // De-vig: the ask you pay includes the overround (both teams' asks sum to >100).
+  // edge-vs-fair strips it out, so you can tell a genuine model disagreement from
+  // just the vig — a small negative vs the ASK but ~0 vs FAIR means the model
+  // agrees with Kalshi and you're only seeing the house margin.
+  if (g.fair_prob != null && g.edge_vs_fair != null) {
+    const ef = g.edge_vs_fair;
+    market += ` <span class="small" style="color:var(--muted)" title="Kalshi's two team asks sum to ${(100 + (g.vig_cents || 0)).toFixed(0)}¢ — the ${g.vig_cents}¢ over 100 is the vig. Fair strips it out.">· vs fair ${g.fair_prob}¢ <b class="${ef >= 0 ? "ev pos" : "ev neg"}">${ef >= 0 ? "+" : ""}${ef}</b> <span style="opacity:.7">(vig ${g.vig_cents}¢)</span></span>`;
+  }
   if (g.pick_price_cents != null) {
     const st = stakeText(g.pick_prob, g.pick_price_cents);
     if (st) market += ` · ${st}`;
@@ -4423,9 +4431,11 @@ async function loadBaseballRecord() {
     // Live calibration: temperature reining in high-end overconfidence, fit on
     // this record. T=1.00 = no correction yet (too little data); >1 = active.
     const ct = r.calibration_temps;
-    if (ct && (ct.win_t > 1.001 || ct.prop_t > 1.001)) {
-      const tt = (t, n) => `<b>${(+t).toFixed(2)}×</b> <span style="color:var(--muted)">(${n})</span>`;
-      extra.push(`🎯 Calibrating overconfidence: win ${tt(ct.win_t, ct.win_n)} · props ${tt(ct.prop_t, ct.prop_n)} — high-confidence picks pulled toward their real hit-rate (auto-fit on this record).`);
+    if (ct && (ct.win_t > 1.03 || ct.prop_t > 1.03)) {
+      const bits = [];
+      if (ct.win_t > 1.03) bits.push(`win 80%→<b>${ct.win_ex80}%</b> <span style="color:var(--muted)">(${ct.win_n})</span>`);
+      if (ct.prop_t > 1.03) bits.push(`props 80%→<b>${ct.prop_ex80}%</b> <span style="color:var(--muted)">(${ct.prop_n})</span>`);
+      extra.push(`🎯 Calibrating overconfidence: ${bits.join(" · ")} — <b>only</b> high-confidence picks are pulled toward their real hit-rate; moderate favorites (≤~60%) are left as-is, so the correction never manufactures a fake negative edge (auto-fit on this record).`);
     }
     if (extra.length)
       html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;

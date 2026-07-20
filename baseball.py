@@ -1281,14 +1281,24 @@ def analyze_slate(date, season):
         price_entry, home_abbr, away_abbr = _match_price(
             kalshi_index, abbr_map, g["home_id"], g["away_id"], g["start_epoch"])
         edge = market_prob = pick_price = fee_cents = net_edge = None
+        fair_prob = edge_vs_fair = vig_cents = None
         if price_entry:
             pick_abbr = home_abbr if pick_home else away_abbr
+            opp_abbr = away_abbr if pick_home else home_abbr
             pick_price = price_entry["prices"].get(pick_abbr)
+            opp_price = price_entry["prices"].get(opp_abbr)
             if pick_price is not None:
                 market_prob = round(pick_price, 1)
                 edge = round(pick_prob * 100 - pick_price, 1)
                 fee_cents = _kalshi_fee(pick_price)
                 net_edge = round(edge - fee_cents, 1)
+                # De-vig: both team asks sum to >100 (the overround). The fair price
+                # strips it out, so `edge_vs_fair` is the model's genuine
+                # disagreement with the market — NOT the vig you pay on any bet.
+                if opp_price is not None and (pick_price + opp_price) > 0:
+                    fair_prob = round(100.0 * pick_price / (pick_price + opp_price), 1)
+                    edge_vs_fair = round(pick_prob * 100 - fair_prob, 1)
+                    vig_cents = round(pick_price + opp_price - 100, 1)
 
         def sp_block(name, st, h):
             if not st or "season" not in st:
@@ -1435,6 +1445,7 @@ def analyze_slate(date, season):
             "confidence": round(abs(pick_prob - 0.5) * 200),
             "pick_price_cents": pick_price, "market_prob": market_prob, "edge_cents": edge,
             "fee_cents": fee_cents, "net_edge_cents": net_edge,
+            "fair_prob": fair_prob, "edge_vs_fair": edge_vs_fair, "vig_cents": vig_cents,
         })
     games.sort(key=lambda x: x["pick_prob"], reverse=True)
     return games
