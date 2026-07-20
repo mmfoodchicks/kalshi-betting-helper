@@ -93,6 +93,29 @@ def _f1_grid_weight(name):
     return _GRID_W
 
 
+# Safety-car likelihood by circuit. Street/tight tracks (walls close, no run-off)
+# throw a full SC far more often than fast, wide permanent circuits with gravel and
+# tarmac run-off. A SC bunches the field and swings pit strategy -> a big shuffle,
+# and it's one of the largest sources of real F1 variance and underdog results.
+_F1_SC_HIGH = ("monaco", "monte carlo", "singapore", "marina bay", "baku",
+               "azerbaijan", "jeddah", "saudi", "melbourne", "albert park",
+               "las vegas", "vegas", "zandvoort", "dutch", "miami")
+_F1_SC_LOW = ("bahrain", "sakhir", "barcelona", "catalunya", "spanish",
+              "paul ricard", "france", "suzuka", "japan", "silverstone",
+              "british", "americas", "cota", "austin", "mugello", "portimao")
+
+
+def _f1_sc_prob(name):
+    """Per-race probability of a full safety car. Street circuits ~0.72, fast open
+    tracks ~0.22, ~0.42 elsewhere."""
+    t = (name or "").lower()
+    if any(k in t for k in _F1_SC_HIGH):
+        return 0.72
+    if any(k in t for k in _F1_SC_LOW):
+        return 0.22
+    return 0.42
+
+
 def _f1_results():
     """Per-driver season form: avg grid, avg finish, DNF rate, starts."""
     def build():
@@ -400,7 +423,7 @@ def _apply_grid_penalties(grid, rng):
     return clean + penalized
 
 
-def _sim_race(drivers, grid, rng, wet=False, ctype="standard", grid_w=_GRID_W):
+def _sim_race(drivers, grid, rng, wet=False, ctype="standard", grid_w=_GRID_W, sc_prob=0.0):
     """Finishing order (list of ids). Blends grid + race pace with variance, plus
     random events: DNFs (crash/mechanical + a flat incident chance) drop to the
     back, and time penalties cost positions. Circuit type nudges each driver by
@@ -425,6 +448,20 @@ def _sim_race(drivers, grid, rng, wet=False, ctype="standard", grid_w=_GRID_W):
         race_pace = d["race"] + d.get("race_by_type", {}).get(ctype, 0.0)
         score = grid_w * pos[did] + (1 - grid_w) * race_pace + rng.gauss(0, sigma) + pen + gamble
         finishers.append((score, did))
+    # Safety car: the field bunches up (gaps erased) and pit-strategy luck under the
+    # SC shuffles track position — a lucky window vaults a midfielder, an unlucky
+    # just-pitted leader drops back. Widens the result: the front row keeps a smaller
+    # edge and underdogs get a real shot, matching how street-circuit races behave.
+    if finishers and rng.random() < sc_prob:
+        sm = sum(s for s, _ in finishers) / len(finishers)
+        shuffled = []
+        for s, did in finishers:
+            s = sm + 0.62 * (s - sm)               # bunched behind the safety car
+            s += rng.gauss(0, sigma * 0.9)          # restart chaos
+            if rng.random() < 0.35:                 # pit-window luck (good or bad)
+                s += rng.uniform(-7, 7)
+            shuffled.append((s, did))
+        finishers = shuffled
     finishers.sort()
     rng.shuffle(retired)
     return [did for _, did in finishers] + retired
@@ -477,6 +514,7 @@ def _sim_one_season(profiles, remaining, rng, first_grid=None):
         wet = rng.random() < race.get("wet_prob", 0.0)   # rain rolled from circuit climate
         ctype = race.get("type", "standard")
         gw = _f1_grid_weight(race.get("name", ""))        # how grid-locked this track is
+        sc_p = _f1_sc_prob(race.get("name", ""))          # safety-car likelihood
         if idx == 0 and first_grid:
             grid = list(first_grid); pole_id = grid[0]   # real qualifying result
         else:
@@ -487,10 +525,10 @@ def _sim_one_season(profiles, remaining, rng, first_grid=None):
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
             sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
-            sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype, grid_w=gw)
+            sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype, grid_w=gw, sc_prob=sc_p)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
-        order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype, grid_w=gw)
+        order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype, grid_w=gw, sc_prob=sc_p)
         wins[order[0]] += 1
         for did in order[:3]:
             podiums[did] += 1
@@ -814,9 +852,14 @@ def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
     elif ttype == "short":
         sigma *= 0.92
     big_one = set()
-    if rng.random() < big_p:                   # multi-car wreck (more likely in the wet)
-        big_one = set(rng.sample([d["id"] for d in drivers],
-                                 min(len(drivers), rng.randint(3, 7))))
+    # 'The big one' — a superspeedway can have several in one race (Daytona/Talladega
+    # routinely see 2-3 multi-car wrecks), so roll it multiple times there; elsewhere
+    # a wreck is a single event. Each collects a random pack of cars.
+    n_wrecks = rng.choice((1, 1, 2, 2, 3)) if ttype == "superspeedway" else 1
+    ids = [d["id"] for d in drivers]
+    for _ in range(n_wrecks):
+        if rng.random() < big_p:               # multi-car wreck (more likely in the wet)
+            big_one |= set(rng.sample(ids, min(len(ids), rng.randint(3, 7))))
     dnf_extra = 0.05 if wet else 0.0
     mean_pace = sum(d["race_pace"] for d in drivers) / len(drivers)
     fin, out = [], []
