@@ -32,6 +32,48 @@ _K_CAL, _BB_CAL, _HIT_CAL = 1.0, 0.89, 0.99
 _ROE = 0.028
 _WP_PA = 0.032
 
+# Geometric umpire zone + ABS challenge system (2026). Each team gets
+# _ABS_CHALLENGES challenges, kept on a successful overturn. On a decisive taken
+# pitch -- a walk's ball four or a strikeout's called third strike -- we sample the
+# pitch's distance from the RULEBOOK edge (inches, + = inside/strike); this game's
+# umpire widens or tightens the zone by his cs_bias (via _UMP_IN) and the catcher's
+# framing adds to it. If the ump's zone flips the call (rings up a ball, or waves
+# off a strike), the wronged side challenges the high-leverage terminal call, and
+# Hawk-Eye overturns from the TRUE location -- deterministic, not a coin flip. A
+# lost challenge (the ump was right) burns one; out of challenges, the call stands.
+# Ball fours cluster just outside the edge, called third strikes just inside.
+_ABS_CHALLENGES = 2
+_UMP_IN = 45.0           # cs_bias -> inches of zone shift vs the average ump (0.03 -> ~1.35")
+_LOC_SIGMA = 5.0         # inches; how far a decisive taken pitch sits off the edge
+_CHAL_BASE = 0.6         # chance the wronged side challenges a decisive miss
+_CHAL_WASTE = 0.016      # per-PA chance a side spends a challenge on an earlier-count call
+
+
+def _geo_challenge(chal, side, rng):
+    """Wronged `side` challenges a decisive miss if it has one. The flipped call is
+    a true location error (a ball rung up, or a strike waved off), so Hawk-Eye
+    OVERTURNS it and the challenge is kept. Returns True iff overturned."""
+    if chal[side] <= 0 or rng.random() >= _CHAL_BASE:
+        return False                        # no challenge left, or chose not to
+    return True                             # true miss -> ABS overturns, challenge kept
+
+
+def _pitch_call(oc, edge, chal, bat_side, pit_side, rng):
+    """Geometric ump + ABS challenge on a terminal called pitch. `edge` is this
+    game's zone shift in inches vs an average ump (cs_bias*_UMP_IN + framing); the
+    calibrated outcome already embeds the average ump, so only the DEVIATION flips
+    a call. Ball fours sit outside the zone, called third strikes inside -- a flip
+    is a genuine miss, so a challenge (if available) overturns it."""
+    if oc == "bb":
+        d = -abs(rng.gauss(0, _LOC_SIGMA))      # ball four sits just off the plate
+        if d >= -edge and not _geo_challenge(chal, bat_side, rng):
+            return "k"                          # bigger zone rings it up, un-challenged
+    elif oc == "k":
+        d = abs(rng.gauss(0, _LOC_SIGMA))       # called third strike painted the corner
+        if d < -edge and not _geo_challenge(chal, pit_side, rng):
+            return "bb"                         # tighter zone waves it off, un-challenged
+    return oc
+
 
 def _log5(b, p, l):
     """Odds-ratio combination of a batter rate b and pitcher rate p vs league l."""
@@ -112,6 +154,47 @@ def _pa_probs(bat, pit, env=1.0, tto_pen=0.0, ars=None):
     return {"k": k, "bb": bb, "hbp": hbp, "hr": hr,
             "1b": p_hit * s / hsum, "2b": p_hit * d / hsum, "3b": p_hit * t / hsum,
             "out": p_out}
+
+
+# --- Pitcher command ("aim"), pitch-around, and fatigue ----------------------
+# There's no clean public "aim" stat, so command is derived from walk rate: a
+# pinpoint arm walks few, holds his zone deep into an outing, and can nibble a
+# masher without grooving one. _LG_BB_PA is the league walk rate it centers on.
+_LG_BB_PA = 0.083
+# Pitching AROUND a dangerous hitter: more walks, far fewer meatballs (HR) and a
+# few fewer clean hits -- the "we're not giving him anything to hit" plate.
+_PA_WALK, _PA_HR, _PA_HIT = 0.16, 0.55, 0.18
+# Command FATIGUE: deep in the outing a starter's aim slips -> more walks AND more
+# mistakes left over the heart (HR). Scaled by 1/command, so wild arms unravel first.
+_FAT_WALK, _FAT_HR = 0.55, 0.85
+
+
+def _command(pit):
+    """A pitcher's aim score from his walk rate: 1.0 = league-average control, >1 =
+    pinpoint (nibbles effectively, holds up when tired), <1 = wild."""
+    bb = pit.get("bbpa") or _LG_BB_PA
+    return max(0.5, min(1.7, _LG_BB_PA / max(0.02, bb)))
+
+
+def _adjust_pa(probs, pa_intent, fatigue):
+    """Reshape a PA's outcome probs for pitch-around intent (0..1) and command
+    fatigue (0..~0.6). Walks rise with both; homers/hits fall when nibbling, but
+    homers rise when gassed. Renormalized so it stays a valid distribution."""
+    if pa_intent <= 0 and fatigue <= 0:
+        return probs
+    p = dict(probs)
+    p["bb"] *= 1 + _PA_WALK * pa_intent + _FAT_WALK * fatigue
+    p["hr"] *= (1 - _PA_HR * pa_intent) * (1 + _FAT_HR * fatigue)
+    for k in ("1b", "2b", "3b"):
+        p[k] *= 1 - _PA_HIT * pa_intent
+    tot = p["k"] + p["bb"] + p["hbp"] + p["hr"] + p["1b"] + p["2b"] + p["3b"]
+    if tot > 0.99:                              # keep the on-base mass under 1
+        s = 0.99 / tot
+        for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):
+            p[k] *= s
+        tot = 0.99
+    p["out"] = 1 - tot
+    return p
 
 
 def _new_bat_line():
@@ -264,7 +347,8 @@ def _avail_sp(sp, prof, rng):
     return sp
 
 
-def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None):
+def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None,
+              ump=0.0, frame=0.0):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
     `env` scales the run environment (park + weather) for DFS slate sims; it
     defaults to 1.0 so the season engine is unchanged. When `bvp` is a dict, every
@@ -301,6 +385,10 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
     used_ph = {"home": set(), "away": set()}
     bat_lines = {}
     score = {"home": 0, "away": 0}
+    # ABS challenges remaining this game (depletes as failed challenges burn them;
+    # late-game borderline calls then stand -- see _challenge). Neutral ump (0.0)
+    # never triggers the mechanic, so this is a no-op unless a real zone is passed.
+    chal = {"home": _ABS_CHALLENGES, "away": _ABS_CHALLENGES}
     ars_memo = {}                              # (batter_id, pitcher_id) -> arsenal factor
 
     def bline(p):
@@ -384,6 +472,24 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 if akey not in ars_memo:
                     ars_memo[akey] = _ars_factor(bat, pit)
                 probs = _pa_probs(bat, pit, env, tto_pen, ars_memo[akey])
+                # Pitch AROUND a masher + command fatigue. Nobody grooves one to a
+                # dangerous hitter with a base open and a weaker bat on deck; and a
+                # tiring starter's aim slips (more walks, more meatballs). A pinpoint
+                # arm (high command) nibbles cleanly and fades slower.
+                cmd = _command(pit)
+                fatigue = 0.0
+                if is_sp and st.outing_bf > 12:
+                    fatigue = min(0.6, (st.outing_bf - 12) / 22.0) / cmd
+                pa_intent = 0.0
+                danger = bat.get("danger") or 1.0
+                if danger > 1.12 and bases[0] is None:       # a masher, first base open
+                    on_deck = lineup[half][(slot + 1) % len(lineup[half])]
+                    risp = bases[1] is not None or bases[2] is not None
+                    weaker = (on_deck.get("danger") or 1.0) < danger - 0.05
+                    if risp or weaker or outs == 2:
+                        pa_intent = min(0.9, (danger - 1.0) * (1.4 if risp else 1.0))
+                        pa_intent *= 0.55 + 0.45 * min(1.5, cmd)   # command -> cleaner
+                probs = _adjust_pa(probs, pa_intent, fatigue)
                 r = rng.random()
                 cum = 0.0
                 for k in ("k", "bb", "hbp", "hr", "1b", "2b", "3b"):
@@ -393,6 +499,21 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                         break
                 else:
                     oc = "out"
+                # Umpire zone + ABS challenge. On a decisive borderline call the
+                # ump's lean flips a walk<->strikeout, but the wronged side (the
+                # batting team on a rung-up ball four; the pitching team on a stolen
+                # strike three) can challenge Hawk-Eye while it still has one. Out of
+                # challenges, the ump's tendency stands. (`half` bats, `opp` pitches.)
+                if ump or frame:
+                    if oc in ("bb", "k"):
+                        edge = ump * _UMP_IN + frame      # zone shift this game (inches)
+                        oc = _pitch_call(oc, edge, chal, half, opp, rng)
+                    # A challenge is occasionally spent on an earlier-count call, so a
+                    # side can run out late and then eat the ump's zone in full.
+                    if rng.random() < _CHAL_WASTE:
+                        ws = half if rng.random() < 0.5 else opp
+                        if chal[ws] > 0:
+                            chal[ws] -= 1
                 bl = bline(bat); pl = st.lines[pit["id"]]
                 bl["pa"] += 1; pl["bf"] += 1; st.outing_bf += 1
                 if oc == "k":

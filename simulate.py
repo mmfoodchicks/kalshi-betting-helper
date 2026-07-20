@@ -15,8 +15,14 @@ import odds
 
 
 def _pois(lam):
-    """Knuth Poisson sampler (fine for the small means in a baseball game)."""
-    L = math.exp(-min(lam, 30))
+    """Knuth Poisson sampler (fine for the small means in a baseball game).
+
+    Normal approx above lam=30 keeps it correct if ever handed a large mean; the
+    old min(lam, 30) cap silently sampled ~Poisson(30) there. Baseball run counts
+    never approach 30, so this branch doesn't change any current output."""
+    if lam > 30:
+        return max(0, int(round(random.gauss(lam, math.sqrt(lam)))))
+    L = math.exp(-lam)
     k, p = 0, 1.0
     while True:
         k += 1

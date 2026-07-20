@@ -21,8 +21,15 @@ _lock = threading.Lock()
 
 
 def _conn():
-    c = sqlite3.connect(DB_PATH)
+    # timeout = SQLite's busy timeout: wait for a competing writer instead of
+    # failing with "database is locked". The recorder and the request threads use
+    # separate Python locks on this same file, so they rely on this to serialize.
+    c = sqlite3.connect(DB_PATH, timeout=10)
     c.row_factory = sqlite3.Row
+    # WAL lets readers proceed while the recorder writes (and vice-versa); it's a
+    # persistent per-file setting, so re-issuing it each connect is a cheap no-op.
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("PRAGMA busy_timeout=10000")
     return c
 
 
@@ -72,7 +79,12 @@ def init_db():
         # close_price (CLV) + predicted/actual total runs (sim accuracy).
         mcols = {r["name"] for r in c.execute("PRAGMA table_info(mlb_picks)")}
         for col in ("close_price", "pred_total", "actual_total",
-                    "p_home_model", "p_home_deep", "home_won"):
+                    "p_home_model", "p_home_deep", "home_won",
+                    # prob_raw: the model's UNCALIBRATED win prob for the pick. `prob`
+                    # is the calibrated number we display/bet; the temperature must be
+                    # fit on the raw one, or the calibrator trains on its own output
+                    # (a feedback loop). Legacy rows have it NULL -> fall back to prob.
+                    "prob_raw"):
             if col not in mcols:
                 c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
 
@@ -120,18 +132,22 @@ def init_db():
 
 # ---- MLB model track record -----------------------------------------------
 def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None,
-                    p_home_model=None, p_home_deep=None):
+                    p_home_model=None, p_home_deep=None, prob_raw=None):
     """Store the model's pre-game pick (first time we see the game), including the
     two blend components (factor model / deep player engine, home-perspective) so
-    each can be graded on its own."""
+    each can be graded on its own.
+
+    `prob` is the calibrated probability we show and bet; `prob_raw` is the same
+    pick's UNCALIBRATED probability, kept so the calibrator fits its temperature on
+    the raw model rather than on its own already-calibrated output."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
                (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total,
-                p_home_model, p_home_deep)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                p_home_model, p_home_deep, prob_raw)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total,
-             p_home_model, p_home_deep),
+             p_home_model, p_home_deep, prob_raw if prob_raw is not None else prob),
         )
 
 
@@ -170,12 +186,14 @@ def deep_grades():
 
 
 def win_grade_pairs():
-    """(pick probability, won 0/1) for every graded game pick — the evidence the
-    win-model calibrator fits its temperature on."""
+    """(RAW pick probability, won 0/1) for every graded game pick — the evidence the
+    win-model calibrator fits its temperature on. Uses the uncalibrated prob so the
+    fit isn't trained on its own calibrated output; legacy rows (prob_raw NULL) fall
+    back to prob, which for pre-calibration history already IS the raw number."""
     with _lock, _conn() as c:
-        return [(r["prob"], r["won"]) for r in c.execute(
-            "SELECT prob, won FROM mlb_picks "
-            "WHERE graded=1 AND prob IS NOT NULL AND won IS NOT NULL").fetchall()]
+        return [(r["p"], r["won"]) for r in c.execute(
+            "SELECT COALESCE(prob_raw, prob) AS p, won FROM mlb_picks "
+            "WHERE graded=1 AND won IS NOT NULL AND COALESCE(prob_raw, prob) IS NOT NULL").fetchall()]
 
 
 def prop_grade_pairs():
@@ -217,16 +235,24 @@ def mlb_record():
     clv_avg = round(sum(clv) / len(clv), 2) if clv else None
     clv_pos_pct = round(100 * sum(1 for x in clv if x > 0) / len(clv), 1) if clv else None
 
-    # Brier (lower=better; 0.25=coin flip) + calibration buckets.
+    # Brier (lower=better; 0.25=coin flip) — on the CALIBRATED prob, i.e. how good
+    # the numbers we actually show and bet are.
     bp = [p for p in graded if p["prob"] is not None]
     brier = round(sum((p["prob"] - (1 if p["won"] else 0)) ** 2 for p in bp) / len(bp), 4) if bp else None
+    # Calibration buckets on the RAW (pre-calibration) prob — this is the overconfidence
+    # the temperature is fit on and corrects, so the audit shows what's being fixed
+    # (not the already-corrected output). Legacy rows fall back to prob.
+    def _raw(p):
+        pr = p.get("prob_raw")
+        return pr if pr is not None else p.get("prob")
+    braw = [p for p in graded if _raw(p) is not None]
     bins = []
     for lo, hi in ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)):
-        b = [p for p in bp if lo <= p["prob"] < hi]
+        b = [p for p in braw if lo <= _raw(p) < hi]
         if b:
             bins.append({"range": f"{int(lo*100)}-{int(min(hi,1)*100)}%",
                          "n": len(b),
-                         "predicted": round(100 * sum(p["prob"] for p in b) / len(b), 1),
+                         "predicted": round(100 * sum(_raw(p) for p in b) / len(b), 1),
                          "actual": round(100 * sum(1 for p in b if p["won"]) / len(b), 1)})
     # Total-runs accuracy: predicted vs actual, aggregated (a single game is
     # noise; over many it shows whether the run model is calibrated/biased).

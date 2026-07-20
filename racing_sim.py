@@ -68,6 +68,31 @@ def _f1_circuit_type(name):
     return "standard"
 
 
+# How locked a race is to the grid, by how hard the circuit is to OVERTAKE on --
+# a different axis from circuit "type" above. Baku and Vegas are street circuits
+# but overtake-heavy (long straights + DRS), while Monaco and Hungary are the truly
+# grid-locked ones. Track position is worth far more at the processional tracks, so
+# the pole-sitter/front row should convert much more often there than at pass-fests.
+_F1_HARD_PASS = ("monaco", "monte carlo", "singapore", "marina bay",
+                 "hungar", "zandvoort", "dutch", "imola", "emilia")
+_F1_EASY_PASS = ("monza", "italian", "spa", "belgian", "baku", "azerbaijan",
+                 "jeddah", "saudi", "las vegas", "vegas", "shanghai", "chinese",
+                 "china", "bahrain", "sakhir", "red bull ring", "austria",
+                 "spielberg", "interlagos", "brazil", "sao paulo", "americas",
+                 "cota", "austin", "mexico", "hermanos")
+
+
+def _f1_grid_weight(name):
+    """Per-track grid dominance: ~0.84 where passing is near-impossible (Monaco),
+    ~0.60 at the pass-fests (Monza/Baku), the calibrated 0.72 baseline elsewhere."""
+    t = (name or "").lower()
+    if any(k in t for k in _F1_HARD_PASS):
+        return 0.84
+    if any(k in t for k in _F1_EASY_PASS):
+        return 0.60
+    return _GRID_W
+
+
 def _f1_results():
     """Per-driver season form: avg grid, avg finish, DNF rate, starts."""
     def build():
@@ -375,7 +400,7 @@ def _apply_grid_penalties(grid, rng):
     return clean + penalized
 
 
-def _sim_race(drivers, grid, rng, wet=False, ctype="standard"):
+def _sim_race(drivers, grid, rng, wet=False, ctype="standard", grid_w=_GRID_W):
     """Finishing order (list of ids). Blends grid + race pace with variance, plus
     random events: DNFs (crash/mechanical + a flat incident chance) drop to the
     back, and time penalties cost positions. Circuit type nudges each driver by
@@ -398,7 +423,7 @@ def _sim_race(drivers, grid, rng, wet=False, ctype="standard"):
         if wet and rng.random() < 0.12:       # tyre-call gamble: usually wrong, sometimes genius
             gamble = rng.randint(3, 10) if rng.random() < 0.6 else -rng.randint(3, 8)
         race_pace = d["race"] + d.get("race_by_type", {}).get(ctype, 0.0)
-        score = _GRID_W * pos[did] + (1 - _GRID_W) * race_pace + rng.gauss(0, sigma) + pen + gamble
+        score = grid_w * pos[did] + (1 - grid_w) * race_pace + rng.gauss(0, sigma) + pen + gamble
         finishers.append((score, did))
     finishers.sort()
     rng.shuffle(retired)
@@ -451,6 +476,7 @@ def _sim_one_season(profiles, remaining, rng, first_grid=None):
     for idx, race in enumerate(remaining):
         wet = rng.random() < race.get("wet_prob", 0.0)   # rain rolled from circuit climate
         ctype = race.get("type", "standard")
+        gw = _f1_grid_weight(race.get("name", ""))        # how grid-locked this track is
         if idx == 0 and first_grid:
             grid = list(first_grid); pole_id = grid[0]   # real qualifying result
         else:
@@ -461,10 +487,10 @@ def _sim_one_season(profiles, remaining, rng, first_grid=None):
         if race["sprint"]:
             # Sprint: a second (noisier) shootout off the same quali pace.
             sgrid = _apply_grid_penalties(_sim_quali(drivers, rng), rng)
-            sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype)
+            sorder = _sim_race(drivers, sgrid, rng, wet=wet, ctype=ctype, grid_w=gw)
             for did, p in _award(sorder, SPRINT_POINTS).items():
                 pts[did] += p
-        order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype)
+        order = _sim_race(drivers, grid, rng, wet=wet, ctype=ctype, grid_w=gw)
         wins[order[0]] += 1
         for did in order[:3]:
             podiums[did] += 1

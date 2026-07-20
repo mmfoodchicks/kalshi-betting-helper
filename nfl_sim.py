@@ -36,7 +36,12 @@ def _dk(pass_yds, pass_td, ints, rush_yds, rush_td, rec, rec_yds, rec_td):
 def _pois(lam, rng):
     if lam <= 0:
         return 0
-    L = math.exp(-min(30, lam)); k = 0; p = 1.0
+    # Normal approx in the large tail (today's callers pass small TD/INT means, so
+    # this never triggers — it just keeps the sampler correct if reused for a
+    # higher-count stat, instead of silently capping at ~Poisson(30)).
+    if lam > 30:
+        return max(0, int(round(rng.gauss(lam, math.sqrt(lam)))))
+    L = math.exp(-lam); k = 0; p = 1.0
     while True:
         k += 1; p *= rng.random()
         if p <= L:

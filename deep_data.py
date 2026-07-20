@@ -325,6 +325,20 @@ def team_profile(team_id, season=None):
                     p["mix"] = m
         except Exception:
             pass
+        # Batter danger: how hard each hitter punishes a mistake over the heart of
+        # the plate (MLB hot/cold zone slugging). Drives the sim's pitch-around
+        # logic. Lineup only (the bats that'll actually hit), fetched concurrently.
+        try:
+            import zones
+            from concurrent.futures import ThreadPoolExecutor
+            lineup9 = batters[:9]
+            with ThreadPoolExecutor(max_workers=6) as ex:
+                dv = list(ex.map(lambda b: zones.batter_danger(b["id"], season), lineup9))
+            for b, d in zip(lineup9, dv):
+                if d is not None:
+                    b["danger"] = d
+        except Exception:
+            pass
         # Taxi bats: BEST ready bat first — when a club loses a starter, the
         # call-up is their best available bat, not the shuttle guy (the depth
         # ARMS pop worst-first because that's how bullpen call-ups work).
