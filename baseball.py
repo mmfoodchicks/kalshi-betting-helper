@@ -1027,7 +1027,7 @@ def _schedule(date, season):
 _DEEP_WP_CACHE = {}
 
 
-def _deep_game_wp(g, season, n=800, ump=0.0):
+def _deep_game_wp(g, season, n=800, ump=0.0, frame=0.0):
     """Deep-engine win probability for TODAY'S exact matchup: the per-player
     engine (regressed + Statcast rates, arsenal matchups, batter platoon splits,
     TTO, real bullpen chains, pinch hitters, steals, real end-game rules) plays
@@ -1037,7 +1037,7 @@ def _deep_game_wp(g, season, n=800, ump=0.0):
     when a probable starter isn't identified or profiles aren't available.
     Seeded per game so the number is stable across page loads; cached 6h."""
     import time as _t
-    key = (g["game_pk"], g.get("home_sp_id"), g.get("away_sp_id"), round(ump, 3))
+    key = (g["game_pk"], g.get("home_sp_id"), g.get("away_sp_id"), round(ump, 3), round(frame, 2))
     hit = _DEEP_WP_CACHE.get(key)
     if hit and _t.time() - hit[0] < 6 * 3600:
         return hit[1]
@@ -1063,7 +1063,7 @@ def _deep_game_wp(g, season, n=800, ump=0.0):
         hw = 0
         for _ in range(n):
             hw += 1 if deep_sim.play_game(ph, pa, sp_home=sp_h, sp_away=sp_a,
-                                          rng=rng, ump=ump)["home_win"] else 0
+                                          rng=rng, ump=ump, frame=frame)["home_win"] else 0
         wp = max(0.05, min(0.95, hw / n))
         _DEEP_WP_CACHE[key] = (_t.time(), wp)
         return wp

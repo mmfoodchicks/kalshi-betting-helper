@@ -32,30 +32,47 @@ _K_CAL, _BB_CAL, _HIT_CAL = 1.0, 0.89, 0.99
 _ROE = 0.028
 _WP_PA = 0.032
 
-# ABS challenge system (2026): the human ump calls the zone, but each team gets
-# _ABS_CHALLENGES challenges, kept on a successful overturn. On a decisive
-# borderline call -- a walk the ump's zone would ring up, or a strikeout he'd wave
-# off as ball four -- the wronged side challenges with prob _ABS_CHAL_P if it has
-# one left; Hawk-Eye overturns it with prob _ABS_OVERTURN (correct call restored,
-# challenge KEPT), otherwise the ump's call stands and a challenge is burned. Out
-# of challenges, the ump's tendency applies in full. _UMP_FLIP scales the ump's
-# cs_bias into the per-PA chance that a terminal ball/strike is the borderline one.
+# Geometric umpire zone + ABS challenge system (2026). Each team gets
+# _ABS_CHALLENGES challenges, kept on a successful overturn. On a decisive taken
+# pitch -- a walk's ball four or a strikeout's called third strike -- we sample the
+# pitch's distance from the RULEBOOK edge (inches, + = inside/strike); this game's
+# umpire widens or tightens the zone by his cs_bias (via _UMP_IN) and the catcher's
+# framing adds to it. If the ump's zone flips the call (rings up a ball, or waves
+# off a strike), the wronged side challenges the high-leverage terminal call, and
+# Hawk-Eye overturns from the TRUE location -- deterministic, not a coin flip. A
+# lost challenge (the ump was right) burns one; out of challenges, the call stands.
+# Ball fours cluster just outside the edge, called third strikes just inside.
 _ABS_CHALLENGES = 2
-_ABS_CHAL_P = 0.55
-_ABS_OVERTURN = 0.50
-_UMP_FLIP = 6.0
+_UMP_IN = 45.0           # cs_bias -> inches of zone shift vs the average ump (0.03 -> ~1.35")
+_LOC_SIGMA = 5.0         # inches; how far a decisive taken pitch sits off the edge
+_CHAL_BASE = 0.6         # chance the wronged side challenges a decisive miss
+_CHAL_WASTE = 0.016      # per-PA chance a side spends a challenge on an earlier-count call
 
 
-def _challenge(chal, side, rng):
-    """The wronged `side` challenges a borderline call if it has one left. Returns
-    True if the call is OVERTURNED (corrected; the challenge is kept), False if it
-    stands -- either not challenged, or challenged and lost, which burns one."""
-    if chal[side] <= 0 or rng.random() >= _ABS_CHAL_P:
+def _geo_challenge(chal, side, rng):
+    """Wronged `side` challenges a decisive miss if it has one. The flipped call is
+    a true location error (a ball rung up, or a strike waved off), so Hawk-Eye
+    OVERTURNS it and the challenge is kept. Returns True iff overturned."""
+    if chal[side] <= 0 or rng.random() >= _CHAL_BASE:
         return False                        # no challenge left, or chose not to
-    if rng.random() < _ABS_OVERTURN:
-        return True                         # overturned -> correct call restored, kept
-    chal[side] -= 1                         # challenge upheld the ump -> burned
-    return False
+    return True                             # true miss -> ABS overturns, challenge kept
+
+
+def _pitch_call(oc, edge, chal, bat_side, pit_side, rng):
+    """Geometric ump + ABS challenge on a terminal called pitch. `edge` is this
+    game's zone shift in inches vs an average ump (cs_bias*_UMP_IN + framing); the
+    calibrated outcome already embeds the average ump, so only the DEVIATION flips
+    a call. Ball fours sit outside the zone, called third strikes inside -- a flip
+    is a genuine miss, so a challenge (if available) overturns it."""
+    if oc == "bb":
+        d = -abs(rng.gauss(0, _LOC_SIGMA))      # ball four sits just off the plate
+        if d >= -edge and not _geo_challenge(chal, bat_side, rng):
+            return "k"                          # bigger zone rings it up, un-challenged
+    elif oc == "k":
+        d = abs(rng.gauss(0, _LOC_SIGMA))       # called third strike painted the corner
+        if d < -edge and not _geo_challenge(chal, pit_side, rng):
+            return "bb"                         # tighter zone waves it off, un-challenged
+    return oc
 
 
 def _log5(b, p, l):
@@ -330,7 +347,8 @@ def _avail_sp(sp, prof, rng):
     return sp
 
 
-def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None, ump=0.0):
+def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=None,
+              ump=0.0, frame=0.0):
     """Play one game. `home`/`away` are team_profiles; SPs default to rotation[0].
     `env` scales the run environment (park + weather) for DFS slate sims; it
     defaults to 1.0 so the season engine is unchanged. When `bvp` is a dict, every
@@ -486,14 +504,16 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 # batting team on a rung-up ball four; the pitching team on a stolen
                 # strike three) can challenge Hawk-Eye while it still has one. Out of
                 # challenges, the ump's tendency stands. (`half` bats, `opp` pitches.)
-                if ump and oc in ("bb", "k"):
-                    pf = min(0.9, _UMP_FLIP * abs(ump))
-                    if ump > 0 and oc == "bb" and rng.random() < pf:
-                        if not _challenge(chal, half, rng):
-                            oc = "k"               # big zone: ball four -> strikeout
-                    elif ump < 0 and oc == "k" and rng.random() < pf:
-                        if not _challenge(chal, opp, rng):
-                            oc = "bb"              # tight zone: strike three -> walk
+                if ump or frame:
+                    if oc in ("bb", "k"):
+                        edge = ump * _UMP_IN + frame      # zone shift this game (inches)
+                        oc = _pitch_call(oc, edge, chal, half, opp, rng)
+                    # A challenge is occasionally spent on an earlier-count call, so a
+                    # side can run out late and then eat the ump's zone in full.
+                    if rng.random() < _CHAL_WASTE:
+                        ws = half if rng.random() < 0.5 else opp
+                        if chal[ws] > 0:
+                            chal[ws] -= 1
                 bl = bline(bat); pl = st.lines[pit["id"]]
                 bl["pa"] += 1; pl["bf"] += 1; st.outing_bf += 1
                 if oc == "k":
