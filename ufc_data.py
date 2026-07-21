@@ -15,6 +15,7 @@ two weeks -- a fighter's history only changes when they next compete.
 import concurrent.futures as _cf
 import clock
 import datetime
+import re
 
 import racing
 
@@ -23,6 +24,11 @@ ATH = "http://sports.core.api.espn.com/v2/sports/mma/athletes"
 _MAX_FIGHTS = 8            # recent fights to aggregate per fighter
 _LG = {"ss_pm": 4.0, "ss_absorbed_pm": 4.0, "td_p15": 1.3, "kd_p15": 0.25,
        "str_def": 0.55, "td_def": 0.65, "finish_rate": 0.45, "durability": 0.75}
+# Strength of schedule: opponents' average career win rate, and how hard it swings
+# the box-score OUTPUT rates. Beating up on winning fighters is real; padding stats
+# on cans is not, so numbers built vs a weak schedule regress toward league.
+_LG_OPP_WR = 0.50
+_SOS_K = 0.7
 
 
 def _get(u):
@@ -105,13 +111,14 @@ def fighter_rating(fid, name=None):
             except Exception:
                 return None
             mins = _minutes(stt.get("period"), stt.get("displayClock"), fmt)
+            om = re.search(r"/athletes/(\d+)", (opp.get("athlete") or {}).get("$ref") or "")
             return {"win": bool(me.get("winner")), "mins": mins,
                     "method": _method(stt.get("result")),
                     "ssl": ms.get("SSL", 0), "ssa": ms.get("SSA", 0),
                     "opp_ssl": os_.get("SSL", 0), "opp_ssa": os_.get("SSA", 0),
                     "tdl": ms.get("TDL", 0), "tda": ms.get("TDA", 0),
                     "opp_tdl": os_.get("TDL", 0), "opp_tda": os_.get("TDA", 0),
-                    "kd": ms.get("KD", 0)}
+                    "kd": ms.get("KD", 0), "opp_id": om.group(1) if om else None}
         with _cf.ThreadPoolExecutor(max_workers=6) as ex:
             fights = [f for f in ex.map(detail, done) if f]
         if not fights:
@@ -127,6 +134,25 @@ def fighter_rating(fid, name=None):
         fin_for = sum(1 for f in fights if f["win"] and f["method"] in ("ko", "sub"))
         fin_against = sum(1 for f in fights if not f["win"] and f["method"] in ("ko", "sub"))
         nf = len(fights)
+        # Strength of schedule: each recent opponent's career win rate (cached), a
+        # level-of-competition proxy. A tough schedule earns the output rates trust
+        # (and a small boost); a weak one regresses them toward league.
+        def _opp_wr(f):
+            oid = f.get("opp_id")
+            if not oid:
+                return None
+            try:
+                p = career_profile(oid)
+                return p.get("win_rate") if p else None
+            except Exception:
+                return None
+        try:
+            with _cf.ThreadPoolExecutor(max_workers=6) as ex:
+                oqs = [q for q in ex.map(_opp_wr, fights) if q is not None]
+        except Exception:
+            oqs = []
+        sos = sum(oqs) / len(oqs) if oqs else _LG_OPP_WR
+        sos_mult = max(0.88, min(1.12, 1 + _SOS_K * (sos - _LG_OPP_WR)))
         prof = career_profile(fid)
         # Finish rate & durability: the career record (incl. pre-UFC fights) is a far
         # bigger, more stable sample than the few UFC bouts we box-score, so prefer it
@@ -139,14 +165,17 @@ def fighter_rating(fid, name=None):
             du_obs, du_n = (1 - fin_against / nf), nf
         return {
             "id": fid, "name": name, "fights": nf, "record_w": wins, "record_l": nf - wins,
-            "ss_pm": round(_shrink(ssl / tot_min, _LG["ss_pm"], nf), 2),
+            # Output rates get the strength-of-schedule multiplier; defense and the
+            # career-based finish/durability are left on their own (cleaner signal).
+            "ss_pm": round(_shrink(ssl / tot_min, _LG["ss_pm"], nf) * sos_mult, 2),
             "ss_absorbed_pm": round(_shrink(opp_ssl / tot_min, _LG["ss_absorbed_pm"], nf), 2),
             "str_def": round(_shrink(1 - (opp_ssl / opp_ssa) if opp_ssa else _LG["str_def"], _LG["str_def"], nf), 3),
-            "td_p15": round(_shrink(tdl / tot_min * 15, _LG["td_p15"], nf), 2),
+            "td_p15": round(_shrink(tdl / tot_min * 15, _LG["td_p15"], nf) * sos_mult, 2),
             "td_def": round(_shrink(1 - (opp_tdl / opp_tda) if opp_tda else _LG["td_def"], _LG["td_def"], nf), 3),
-            "kd_p15": round(_shrink(kd / tot_min * 15, _LG["kd_p15"], nf), 3),
+            "kd_p15": round(_shrink(kd / tot_min * 15, _LG["kd_p15"], nf) * sos_mult, 3),
             "finish_rate": round(_shrink(fr_obs, _LG["finish_rate"], fr_n), 3),
             "durability": round(_shrink(du_obs, _LG["durability"], du_n), 3),
+            "sos": round(sos, 3),
             "career": prof,
         }
     return racing._cached(("ufc_fighter", fid), 14 * 86400, build) or _default(fid, name, 0)
