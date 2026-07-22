@@ -141,6 +141,9 @@ _MODELS = {
     # NFL moneylines (drive engine): same noisy-binary shape as tennis/UFC, and a
     # week only settles ~16 games, so a full correction takes about a season.
     "nfl":    (lambda: _predlog_pairs("nfl"),    250),
+    # WNBA moneylines (possession engine): ~2-6 games/day settle, so history
+    # accrues fast; still a noisy binary, so a real floor before full trust.
+    "wnba":   (lambda: _predlog_pairs("wnba"),   300),
 }
 
 _cache = {}          # model -> (t, q0, fitted_at, n)

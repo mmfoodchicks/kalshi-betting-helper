@@ -50,6 +50,7 @@
     <button class="tab" data-tab="sim">🎲 Sim &amp; DFS</button>
     <button class="tab" data-tab="sports">🔴 Live &amp; Futures</button>
     <button class="tab" data-tab="nfl">🏈 NFL</button>
+    <button class="tab" data-tab="wnba">🏀 WNBA</button>
     <button class="tab" data-tab="draft">📋 Draft</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
@@ -418,6 +419,18 @@
       </div>
     </section>
    </div><!-- /tab-nfl -->
+
+   <div id="tab-wnba" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏀 WNBA</h2>
+        <input id="wnbaDate" type="date" style="width:auto"/>
+      </div>
+      <p class="sub" style="margin:2px 0 8px">A <b>possession-level Monte Carlo</b>: each side's points-per-possession vs the opponent's defense at the game's blended pace, with garbage time and OT. <b>Win probabilities, spreads and totals are priced against Kalshi's exact listed lines</b> for real edges; player points/rebounds/assists are dealt from the simulated team game, so props and the <b>same-game parlay</b> carry real correlation. Model picks feed the 🎯 Best Bets screen and the 🎰 combo builder.</p>
+      <div id="wnbaSummary" class="small"></div>
+      <div id="wnbaResults" class="markets"><div class="empty">Simulating the slate in the background (~5s)…</div></div>
+    </section>
+   </div><!-- /tab-wnba -->
 
    <div id="tab-ufc" class="hidden">
     <section class="card">

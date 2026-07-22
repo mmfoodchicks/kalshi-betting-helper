@@ -1386,6 +1386,22 @@ def api_nfl_week():
     return jsonify(data)
 
 
+@app.route("/api/wnba/slate")
+def api_wnba_slate():
+    """WNBA daily slate: possession-engine win probs vs Kalshi ML/spread/total
+    at the exact listed lines, correlated player props and same-game parlays.
+    Non-blocking; the frontend polls while the board builds."""
+    date = request.args.get("date") or None
+    try:
+        import wnba
+        data = wnba.board(date)
+    except Exception as e:
+        return jsonify({"error": f"wnba slate failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/nfl/slate")
 def api_nfl_slate():
     """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines

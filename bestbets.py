@@ -131,6 +131,38 @@ def _crypto_rows():
     return rows[:8]
 
 
+def _wnba_rows():
+    """Model edges from the WNBA possession engine: moneylines plus Kalshi's
+    exact-line spreads and totals. Non-blocking — reads the cached board (a cold
+    call kicks the background build; rows appear on the next refresh)."""
+    import wnba
+    b = wnba.board()
+    rows = []
+    for g in (b or {}).get("games") or []:
+        if g.get("state") == "post":
+            continue
+        mu = f"{g.get('away_name') or g['away']} @ {g.get('home_name') or g['home']}"
+        kx = g.get("kalshi") or {}
+        for side in ("home", "away"):
+            nm = g.get(side + "_name") or g[side]
+            row = _row("🏀 WNBA", "ML", f"{nm} to win", mu,
+                       g[f"p_{side}"] * 100.0, kx.get(side + "_cents"), "med")
+            if row:
+                rows.append(row)
+        for s in (g.get("spread_edges") or [])[:3]:
+            row = _row("🏀 WNBA", "Spread", f"{s['team']} wins by {s['line']}+", mu,
+                       s["model_pct"], s["cents"], "med")
+            if row:
+                rows.append(row)
+        for t in (g.get("total_edges") or [])[:3]:
+            row = _row("🏀 WNBA", "Total", f"Over {t['line']} points", mu,
+                       t["model_pct"], t["cents"], "med")
+            if row:
+                rows.append(row)
+    rows.sort(key=lambda x: -x["net_edge"])
+    return rows[:10]
+
+
 def _arb_rows():
     """Outright arbitrage on the Kalshi sports books: outcome asks summing under
     100¢ mean buying every outcome locks a profit. Rare, small, real."""
@@ -179,6 +211,7 @@ def board(date=None, season=None, sims=2500):
 
     pull("mlb", _mlb_rows, date, season, sims)
     pull("mlb_futures", _mlb_futures_rows, season)
+    pull("wnba", _wnba_rows)
     pull("ufc", _ufc_rows)
     pull("tennis", _tennis_rows)
     pull("crypto", _crypto_rows)

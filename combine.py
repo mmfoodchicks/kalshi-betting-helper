@@ -267,6 +267,41 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
     return legs
 
 
+def _wnba_legs():
+    """Model legs from the WNBA possession engine (cached board): moneylines,
+    Kalshi's exact-line spreads/totals, and the top player props — all with the
+    SIM's probability, not the de-vig market read. Empty when no board yet
+    (gather falls back to the de-vig browse legs)."""
+    import wnba
+    b = wnba.board()
+    legs = []
+    for g in (b or {}).get("games") or []:
+        if g.get("state") == "post":
+            continue
+        mu = f"{g.get('away_name') or g['away']} @ {g.get('home_name') or g['home']}"
+        eid = f"wnba-{g['away']}-{g['home']}"
+        kx = g.get("kalshi") or {}
+
+        def leg(label, prob_pct, cents, typ, avg=None, unit=None):
+            legs.append({"category": "🏀 WNBA", "event_id": eid, "label": label,
+                         "matchup": mu, "prob": max(0.01, min(0.99, prob_pct / 100.0)),
+                         "price_cents": cents, "type": typ,
+                         "sim_avg": avg, "avg_unit": unit})
+        for side in ("home", "away"):
+            nm = g.get(side + "_name") or g[side]
+            leg(f"{nm} to win", g[f"p_{side}"] * 100.0, kx.get(side + "_cents"), "ML",
+                avg=g.get("mean_margin") if side == "home" else None, unit="pt margin")
+        for s in (g.get("spread_edges") or [])[:2]:
+            leg(f"{s['team']} wins by {s['line']}+", s["model_pct"], s["cents"], "Spread")
+        for t in (g.get("total_edges") or [])[:2]:
+            leg(f"Over {t['line']} points", t["model_pct"], t["cents"], "Total",
+                avg=g.get("exp_total"), unit="points")
+        for p in (g.get("props") or [])[:3]:
+            leg(f"{p['player']} {p['line']}+ {p['stat']}", p["over_pct"], None,
+                p["stat"].title())
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -299,6 +334,14 @@ def gather(cats, date, season):
         legs += _tennis_legs(("ATP", "WTA", "ITF", "ITF-W"))
     for k in SPORT_KEYS:
         if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
+            continue
+        if k == "wnba":
+            model = []
+            try:
+                model = _wnba_legs()             # possession-engine legs
+            except Exception:
+                model = []
+            legs += model or _sport_legs(k)      # de-vig browse as the fallback
             continue
         legs += _sport_legs(k)
     return legs

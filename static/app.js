@@ -1399,6 +1399,7 @@ function setupTabs() {
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
+      $("tab-wnba").classList.toggle("hidden", tab !== "wnba");
       $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
@@ -1423,6 +1424,7 @@ function setupTabs() {
       if (tab === "sports") initSportsTab();
       if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
+      if (tab === "wnba") initWNBA();
       if (tab === "ufc") initUFC();
       if (tab === "tennis") initTennis();
       if (tab === "lol") initLoL();
@@ -2355,6 +2357,87 @@ function renderNFLWeek() {
   }
   $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
   $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
+}
+
+// ---- WNBA possession-engine slate ------------------------------------------
+let _wnbaData = null;
+function initWNBA() {
+  const dt = $("wnbaDate");
+  if (dt && !dt.dataset.wired) {
+    dt.dataset.wired = "1";
+    dt.value = new Date().toISOString().slice(0, 10);
+    dt.addEventListener("change", () => { _wnbaData = null; $("wnbaResults").dataset.loaded = ""; loadWNBA(0); });
+  }
+  if (!$("wnbaResults").dataset.loaded) { $("wnbaResults").dataset.loaded = "1"; loadWNBA(0); }
+}
+async function loadWNBA(attempt) {
+  attempt = attempt || 0;
+  const box = $("wnbaResults"), dt = ($("wnbaDate") || {}).value || "";
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — possession engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/wnba/slate${dt ? `?date=${dt}` : ""}`)).json();
+    if (d.error) {
+      if (attempt < 9) { setTimeout(() => loadWNBA(attempt + 1), 5000); return; }
+      box.innerHTML = `<div class="empty">${d.error}</div>`;
+      return;
+    }
+    _wnbaData = d;
+    renderWNBA();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadWNBA(attempt + 1), 5000); return; }
+    box.innerHTML = `<div class="empty">WNBA slate unavailable.</div>`;
+  }
+}
+function _wnbaEdges(rows, kind) {
+  if (!rows || !rows.length) return "";
+  const chips = rows.slice(0, 4).map((r) => {
+    const lbl = kind === "total" ? `O${r.line}` : `${r.team} −${r.line}`;
+    return `<span class="chip">${lbl} <b>${r.model_pct}%</b> vs ${r.cents}¢ <b class="${r.edge >= 0 ? "ev pos" : "ev neg"}">${r.edge >= 0 ? "+" : ""}${r.edge}</b></span>`;
+  }).join(" ");
+  return `<div class="small" style="margin:3px 0">${kind === "total" ? "Totals" : "Spreads"} (Kalshi lines): ${chips}</div>`;
+}
+function wnbaGameCard(g) {
+  const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
+  const kx = g.kalshi || {};
+  const live = g.state === "in" ? `<span style="color:#e0566a">🔴 ${g.detail || "live"} · ${g.away} ${g.away_score}–${g.home_score} ${g.home}</span> · ` : "";
+  const done = g.state === "post" ? `<b>Final: ${g.away} ${g.away_score}–${g.home_score} ${g.home}</b> · ` : "";
+  const players = (g.players || []).slice(0, 6).map((p) => {
+    const bits = [`${p.pts} pts`];
+    if (p.reb != null) bits.push(`${p.reb} reb`);
+    if (p.ast != null) bits.push(`${p.ast} ast`);
+    return `<span class="nfl-pl"><span class="nfl-plrole">${p.team}</span> ${p.name} <b>${bits.join(" · ")}</b></span>`;
+  }).join("");
+  const props = (g.props || []).slice(0, 6).map((p) =>
+    `<li><span class="legtag">${p.stat}</span> ${p.player} ${p.line}+ <span style="color:var(--muted)">(${p.over_pct}%)</span></li>`).join("");
+  let sgp = "";
+  if (g.sgp && g.sgp.legs) {
+    const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+  }
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(11, 16)}Z</span></div>
+      <div class="pick">${done}${live}Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total <b>${g.exp_total}</b> · recs ${g.away_rec} / ${g.home_rec}</div>
+    </div></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="winbar"><div class="fill" style="width:${ph}%"></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    ${_wnbaEdges(g.spread_edges, "spread")}
+    ${_wnbaEdges(g.total_edges, "total")}
+    <div class="nfl-pls">${players}</div>
+    ${props ? `<details class="simdetail"><summary>📊 Top props (points / rebounds / assists)</summary><ul class="legs">${props}</ul></details>` : ""}
+    ${sgp}
+  </div>`;
+}
+function renderWNBA() {
+  const d = _wnbaData; if (!d) return;
+  if (!d.games || !d.games.length) {
+    $("wnbaSummary").innerHTML = "";
+    $("wnbaResults").innerHTML = `<div class="empty">${d.note || "No WNBA games for this date."}</div>`;
+    return;
+  }
+  $("wnbaSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
+  $("wnbaResults").innerHTML = d.games.map(wnbaGameCard).join("");
 }
 
 // ---- NFL Sleeper-seeded sim (Sim cards / Best ball / Pick 6) ---------------
