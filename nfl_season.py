@@ -183,8 +183,17 @@ def _play(rh, ra, rng):
 
 
 # ---- Season Monte Carlo -------------------------------------------------------
-def run_season(season=None, n=4000, seed=None):
+def run_season(season=None, n=4000, seed=None, workers=None):
     season = str(season or _season())
+    # Play the seasons across cores; each worker runs its slice single-process.
+    import mp_season
+    par = mp_season.run("nfl_season", "run_season", {"season": season}, n, seed,
+                        team_key="abbr",
+                        avg_fields=["proj_wins", "p_playoffs", "p_division",
+                                    "p_pennant", "p_ws"],
+                        sum_fields=["_wins_hist"], workers=workers)
+    if par is not None:
+        return par
     games = full_schedule(season)
     if not games:
         return None

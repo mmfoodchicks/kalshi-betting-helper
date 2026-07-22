@@ -92,13 +92,21 @@ def schedule(season=None):
     fbs = set(teams(season))
 
     def build():
-        seen = {}
-        for wk in range(1, _REG_WEEKS + 1):
+        import concurrent.futures as _cf
+
+        def week(wk):
             try:
-                d = racing._get_json(
+                return racing._get_json(
                     f"{_SITE}/scoreboard?seasontype=2&week={wk}&dates={season}"
                     "&groups=80&limit=400", timeout=25)
             except Exception:
+                return None
+
+        seen = {}
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+            weeks = list(ex.map(week, range(1, _REG_WEEKS + 1)))
+        for d in weeks:
+            if not d:
                 continue
             for e in d.get("events", []):
                 comp = (e.get("competitions") or [{}])[0]
@@ -186,8 +194,17 @@ def _cfp_bracket(seeds, R, rng):
     return game(s[0], s[1], False)
 
 
-def run_season(season=None, n=4000, seed=None):
+def run_season(season=None, n=4000, seed=None, workers=None):
     season = season or _season()
+    # Split the seasons across cores when there are enough to be worth it.
+    import mp_season
+    par = mp_season.run("cfb", "run_season", {"season": season}, n, seed,
+                        team_key="team_id",
+                        avg_fields=["proj_wins", "champ_pct", "playoff_pct"],
+                        sum_fields=["_wins_hist"], workers=workers)
+    if par is not None:
+        par["teams"].sort(key=lambda r: r["champ_pct"], reverse=True)
+        return par
     tm = teams(season)
     R = ratings(season)
     sched = schedule(season)

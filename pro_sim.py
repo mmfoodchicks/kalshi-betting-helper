@@ -288,11 +288,21 @@ def _one_season(rate, schedule, conf_ids, p, rng, game_p=None, resolver=None,
     return wins, champ, conf_champs, div_winners, made
 
 
-def project(league, n=4000, seed=None):
+def project(league, n=4000, seed=None, workers=None):
     """Monte-Carlo the season one game at a time with the sport's engine; return
     the futures board. Completed games are locked to their real result and only
     the remainder is played, so the same call serves preseason (full schedule)
     and mid-season (banked wins + remaining games)."""
+    # Fan the seasons out across cores (each worker runs its slice single-process).
+    import mp_season
+    par = mp_season.run("pro_sim", "project", {"league": league}, n, seed,
+                        team_key="id",
+                        avg_fields=["champ_pct", "conf_pct", "division_pct",
+                                    "playoff_pct", "proj_wins"],
+                        sum_fields=["win_dist"], workers=workers)
+    if par is not None:
+        par["teams"].sort(key=lambda t: t["champ_pct"], reverse=True)
+        return par
     p = PARAMS[league]
     rate = ratings(league)
     if not rate:
