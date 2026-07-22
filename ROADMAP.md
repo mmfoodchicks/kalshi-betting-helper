@@ -7,6 +7,16 @@ same props, same combo maker, same value finder, same recorder. No conceptual
 difference; just a new sport's data layer and outcome model plugged into the
 existing, sport-agnostic plumbing.
 
+**Status: core delivered.** `nfl_data.py` (Sleeper matchup-adjusted team/player
+layer) + `nfl_game_sim.py` (drive-level correlated engine: game script, short
+fields, OT; player lines dealt from the simulated team game) + `kalshi_nfl.py`
+(KXNFLGAME moneyline edges, spread/total series auto-light-up) feed
+`/api/nfl/slate` and the Week tab: win probs vs Kalshi, total/spread ladders,
+correlated props, same-game parlays via the shared MLB bitmask machinery, and
+NFL predictions logged/graded for the site-wide calibrator. Still open below:
+deeper alternate-line ladders on Kalshi props once they list them, and folding
+the slate legs into the cross-sport combo maker.
+
 ### What carries over unchanged (already generalized)
 - `parlay.py` — payout-governed combo selection with the confidence floor.
 - Same-game correlation engine — bitmask joint-probability over simulated games.

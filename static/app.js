@@ -2257,12 +2257,17 @@ function initNFLWeek() {
 async function loadNFLWeek(attempt) {
   attempt = attempt || 0;
   const box = $("nflWeekResults"), wk = ($("nflWeek") || {}).value || 1;
-  if (!attempt) box.innerHTML = `<div class="empty">Building the Week ${wk} board in the background — ESPN team ratings + per-team stats + key players (~15s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} — drive-level engine off Sleeper's matchup projections, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
   try {
-    const d = await (await fetch(`/api/nfl/week?week=${wk}`)).json();
-    if (d.error || !(d.games && d.games.length)) {
+    // Drive-engine slate first; the older ESPN closed-form board is the fallback
+    // (deep offseason, Sleeper gap). Slate payloads carry engine:"drive".
+    let d = null;
+    try { d = await (await fetch(`/api/nfl/slate?week=${wk}`)).json(); } catch (e) { d = null; }
+    if (!d || d.error || !(d.games && d.games.length)) {
+      const f = await (await fetch(`/api/nfl/week?week=${wk}`)).json();
+      if (!(f.error) && f.games && f.games.length) { _nflWeekData = f; renderNFLWeek(); return; }
       if (attempt < 9) { setTimeout(() => loadNFLWeek(attempt + 1), 6000); return; }
-      box.innerHTML = `<div class="empty">${d.error || "No games for this week."}</div>`;
+      box.innerHTML = `<div class="empty">${(d && d.error) || (f && f.error) || "No games for this week."}</div>`;
       return;
     }
     _nflWeekData = d;
@@ -2299,8 +2304,55 @@ function nflGameCard(g) {
     </div>
   </div>`;
 }
+function _nflEdgeChip(cents, edge) {
+  if (cents == null) return "";
+  const e = edge != null ? ` <b class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</b>` : "";
+  return `<span class="kmkt">Kalshi <b>${cents}¢</b>${e}</span>`;
+}
+function nflSlateCard(g) {
+  const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
+  const kx = g.kalshi || {};
+  const ladder = (g.total_ladder || []).slice(0, 4).map((r) =>
+    `<span class="chip">O${r.line} <b>${r.over_pct}%</b></span>`).join(" ");
+  const sh = g.spread_ladder || {};
+  const spreads = ["3", "7", "10"].map((m) =>
+    `<span class="chip">${g.home} −${m === "3" ? "2.5" : m === "7" ? "6.5" : "9.5"} <b>${(sh.home || {})[m] ?? "—"}%</b></span>`).join(" ");
+  const props = (g.props || []).slice(0, 6).map((p) =>
+    `<li><span class="legtag">${p.stat}</span> ${p.player} ${p.stat === "anytime TD" ? "" : `${p.line}+`} <span style="color:var(--muted)">(${p.over_pct}%)</span></li>`).join("");
+  let sgp = "";
+  if (g.sgp && g.sgp.legs) {
+    const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+  }
+  const players = (g.players || []).slice(0, 6).map((p) => {
+    const bits = [];
+    if (p.pass_yd != null) bits.push(`${p.pass_yd} pass`);
+    if (p.rush_yd != null) bits.push(`${p.rush_yd} rush`);
+    if (p.rec_yd != null) bits.push(`${p.rec_yd} rec`);
+    if (p.td1_pct != null) bits.push(`TD ${p.td1_pct}%`);
+    return `<span class="nfl-pl"><span class="nfl-plrole">${p.pos}</span> ${p.name} <b>${bits.join(" · ")}</b></span>`;
+  }).join("");
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}</span></div>
+      <div class="pick">Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total <b>${g.exp_total}</b></div>
+    </div></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="winbar"><div class="fill" style="width:${ph}%"></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    <div class="small" style="margin:4px 0">${ladder} ${spreads}</div>
+    <div class="nfl-pls">${players}</div>
+    ${props ? `<details class="simdetail"><summary>📊 Top props</summary><ul class="legs">${props}</ul></details>` : ""}
+    ${sgp}
+  </div>`;
+}
 function renderNFLWeek() {
   const d = _nflWeekData; if (!d) return;
+  if (d.engine === "drive") {
+    $("nflWeekSummary").innerHTML = `<b>${d.n_games}</b> games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
+    $("nflWeekResults").innerHTML = d.games.map(nflSlateCard).join("");
+    return;
+  }
   $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
   $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
 }

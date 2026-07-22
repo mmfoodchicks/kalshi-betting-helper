@@ -138,6 +138,9 @@ _MODELS = {
     "crypto": (_crypto_pairs,                     400),
     "tennis": (lambda: _predlog_pairs("tennis"), 400),
     "ufc":    (lambda: _predlog_pairs("ufc"),    300),
+    # NFL moneylines (drive engine): same noisy-binary shape as tennis/UFC, and a
+    # week only settles ~16 games, so a full correction takes about a season.
+    "nfl":    (lambda: _predlog_pairs("nfl"),    250),
 }
 
 _cache = {}          # model -> (t, q0, fitted_at, n)

@@ -1386,6 +1386,26 @@ def api_nfl_week():
     return jsonify(data)
 
 
+@app.route("/api/nfl/slate")
+def api_nfl_slate():
+    """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines
+    (edges), score/total/spread distributions, correlated player props and a
+    default same-game parlay per game. Non-blocking; the frontend polls."""
+    try:
+        week = int(request.args.get("week", 1))
+    except ValueError:
+        week = 1
+    week = max(1, min(18, week))
+    try:
+        import nfl_game_sim
+        data = nfl_game_sim.board(week=week)
+    except Exception as e:
+        return jsonify({"error": f"nfl slate failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/nfl/sim")
 def api_nfl_sim():
     """Correlated per-game Monte Carlo seeded by Sleeper weekly projections:
