@@ -77,6 +77,57 @@ def _mlb_futures_rows(season):
     return rows[:8]
 
 
+def _cfb_futures_rows():
+    """Positive-edge national-title / make-Playoff rows from the CFB deep season."""
+    import cfb
+    b = cfb.futures_board()
+    if not b:
+        return []
+    rows = []
+    for key, kind in (("champ", "Nat'l title"), ("cfp", "Make CFP")):
+        for r in (b.get("markets", {}).get(key) or {}).get("teams", []):
+            if r.get("thin") or r.get("edge") is None or r["edge"] <= 0:
+                continue
+            trust = "low" if r["edge"] >= 15 else "med"
+            note = ("edge this large on a futures book is usually a stale quote or "
+                    "fat model tails — check the live ask") if trust == "low" else None
+            row = _row("🏈 CFB futures", kind, r["team"], f"{r['conf']} · {r['prior']}",
+                       r["model_pct"], r.get("kalshi_cents"), trust, note)
+            if row:
+                rows.append(row)
+    rows.sort(key=lambda x: -x["net_edge"])
+    return rows[:8]
+
+
+def _pro_futures_rows(league, label):
+    """Positive-edge championship rows from a pro-league deep season (WNBA now;
+    NBA/NHL once their season markets open)."""
+    import deep_cache
+    import pro_prices
+    data, _ts = deep_cache.load(league)
+    if not data or not data.get("teams"):
+        return []
+    data = dict(data)
+    try:
+        pro_prices.attach(league, data)
+    except Exception:
+        return []
+    rows = []
+    for t in data["teams"]:
+        m = (t.get("markets") or {}).get("champ")
+        if not m or m.get("cents") is None or (m.get("edge") or 0) <= 0:
+            continue
+        trust = "low" if m["edge"] >= 15 else "med"
+        note = ("large futures edge — usually a stale/wide quote or fat model tails"
+                if trust == "low" else None)
+        row = _row(label, "Champion", t["name"], f"{t.get('conf', '')} · {t.get('prior', '')}",
+                   m["model"], m["cents"], trust, note)
+        if row:
+            rows.append(row)
+    rows.sort(key=lambda x: -x["net_edge"])
+    return rows[:6]
+
+
 def _ufc_rows():
     import ufc_sim
     import ufc_prices
@@ -226,6 +277,8 @@ def board(date=None, season=None, sims=2500):
     pull("wnba", _wnba_rows)
     pull("nba", _nba_rows)
     pull("nhl", _nhl_rows)
+    pull("cfb_futures", _cfb_futures_rows)
+    pull("wnba_futures", _pro_futures_rows, "wnba", "🏀 WNBA futures")
     pull("ufc", _ufc_rows)
     pull("tennis", _tennis_rows)
     pull("crypto", _crypto_rows)

@@ -39,6 +39,8 @@ LEAGUES = {
             "games": 82, "pos_w": _NBA_POS_W, "key_pos": None},
     "nhl": {"sport": "hockey", "league": "nhl", "label": "🏒 NHL",
             "games": 82, "pos_w": _NHL_POS_W, "key_pos": "G"},
+    "wnba": {"sport": "basketball", "league": "wnba", "label": "🏀 WNBA",
+             "games": 44, "pos_w": _NBA_POS_W, "key_pos": None},
 }
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports"
@@ -165,6 +167,8 @@ def schedule(league, season):
                 return []
             games = []
             for ev in d.get("events", []):
+                if (ev.get("seasonType") or {}).get("type") != 2:   # regular season only
+                    continue
                 comp = (ev.get("competitions") or [{}])[0]
                 home = away = None
                 for c in comp.get("competitors", []):
@@ -189,6 +193,87 @@ def schedule(league, season):
                 sched.append((h, a))
         return sched
     return racing._cached(("pro_sched", league, season), 24 * 3600, build) or []
+
+
+def season_state(league, season):
+    """In-season snapshot for the deep play-by-play season sim:
+
+        {"remaining": [(home_id, away_id), ...],   # games not yet played
+         "base_wins": {team_id: wins},             # games already won (locked)
+         "base_otl":  {team_id: ot/so losses},     # NHL points: OTL = 1 point
+         "played":    n_completed}
+
+    Every scheduled game is read from ESPN with its live status and score, so a
+    completed game is LOCKED to its real winner (it never gets re-simulated) and
+    only the unplayed remainder feeds the Monte Carlo — exactly how the MLB deep
+    engine treats the season. Preseason (nothing final yet) this returns the full
+    schedule as `remaining` with empty base tallies."""
+    cfg = LEAGUES[league]
+
+    def build():
+        tids = [t["id"] for t in teams(league)]
+
+        def one(tid):
+            try:
+                d = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}/schedule?season={season}")
+            except Exception:
+                return []
+            out = []
+            for ev in d.get("events", []):
+                if (ev.get("seasonType") or {}).get("type") != 2:   # regular season only
+                    continue
+                comp = (ev.get("competitions") or [{}])[0]
+                state = (((comp.get("status") or {}).get("type")) or {}).get("state")
+                home = away = None
+                hs = as_ = None
+                ot = False
+                for c in comp.get("competitors", []):
+                    tid2 = c.get("id") or (c.get("team") or {}).get("id")
+                    try:
+                        sc = float((c.get("score") or {}).get("value")
+                                   if isinstance(c.get("score"), dict) else c.get("score"))
+                    except (TypeError, ValueError):
+                        sc = None
+                    if c.get("homeAway") == "home":
+                        home, hs = tid2, sc
+                    else:
+                        away, as_ = tid2, sc
+                # OT/SO flag for hockey standings points (period > 3).
+                try:
+                    per = int(((comp.get("status") or {}).get("period")) or 0)
+                    ot = per > 3
+                except (TypeError, ValueError):
+                    ot = False
+                if home and away:
+                    out.append({"id": ev.get("id"), "home": home, "away": away,
+                                "final": state == "post", "hs": hs, "as": as_, "ot": ot})
+            return out
+
+        seen = {}
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+            for games in ex.map(one, tids):
+                for g in games:
+                    if g["id"]:
+                        seen[g["id"]] = g          # event id de-dups the two listings
+        remaining, base_wins, base_otl, played = [], {}, {}, 0
+        tset = set(tids)
+        for g in seen.values():
+            h, a = g["home"], g["away"]
+            if h not in tset or a not in tset:
+                continue
+            if g["final"] and g["hs"] is not None and g["as"] is not None:
+                played += 1
+                w, l = (h, a) if g["hs"] > g["as"] else (a, h)
+                base_wins[w] = base_wins.get(w, 0) + 1
+                if g["ot"]:                          # loser banks an OT/SO point
+                    base_otl[l] = base_otl.get(l, 0) + 1
+            elif not g["final"]:
+                remaining.append((h, a))
+        return {"remaining": remaining, "base_wins": base_wins,
+                "base_otl": base_otl, "played": played}
+    # In-season this must refresh often enough to lock last night's finals.
+    return racing._cached(("pro_state", league, season), 3 * 3600, build) or \
+        {"remaining": [], "base_wins": {}, "base_otl": {}, "played": 0}
 
 
 # ---- NFL quarterback layer ---------------------------------------------------

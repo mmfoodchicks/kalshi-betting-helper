@@ -213,13 +213,20 @@ def _init_deep_sims():
         import nfl_season
         return nfl_season.run_season(n=4000)
 
+    def run_cfb():
+        import cfb
+        return cfb.run_season(n=4000)
+
     deep_cache.register("mlb_deep", run_mlb)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
-    # Pro-league preseason projections. NFL is live now; NBA/NHL light up once
-    # their upcoming-season schedules publish (their run returns None until then).
-    for _lg in ("nfl", "nba", "nhl"):
+    deep_cache.register("cfb", run_cfb)
+    # Every pro-league season is now played out game by game with its own engine
+    # (drive-level football, possession basketball, shot-event hockey). WNBA runs
+    # in-season; NBA/NHL light up once their upcoming-season schedules publish
+    # (their run returns None until then).
+    for _lg in ("nfl", "nba", "nhl", "wnba"):
         deep_cache.register(_lg, run_pro(_lg))
     # Restore the MLB deep run from disk so a restart doesn't lose it.
     payload, _ts = deep_cache.load("mlb_deep")
@@ -227,12 +234,13 @@ def _init_deep_sims():
         _deep["agg"] = payload.get("agg")
         _deep["season"] = payload.get("season")
     deep_cache.start_scheduler()
-    # Warm the NFL projection in the background if we don't have one cached.
-    try:
-        if deep_cache.load("nfl")[0] is None:
-            deep_cache.run_job("nfl")
-    except Exception:
-        pass
+    # Warm the in-season / preseason deep runs in the background if not cached.
+    for _k in ("nfl", "nfl_season", "wnba", "cfb"):
+        try:
+            if deep_cache.load(_k)[0] is None:
+                deep_cache.run_job(_k)
+        except Exception:
+            pass
 
 
 @app.before_request
@@ -1116,7 +1124,7 @@ def api_pro_league(league):
     import deep_cache
     import time as _t
     league = (league or "").lower()
-    if league not in ("nfl", "nba", "nhl"):
+    if league not in ("nfl", "nba", "nhl", "wnba"):
         return jsonify({"error": "unknown league"}), 404
     data, ts = deep_cache.load(league)
     if data is None:
@@ -1147,6 +1155,22 @@ def api_nfl_futures():
         return jsonify({"error": f"nfl season sim failed: {e}"}), 502
     if not b:
         return jsonify({"error": "NFL schedule not available yet"}), 502
+    return jsonify(b)
+
+
+@app.route("/api/cfb/futures")
+def api_cfb_futures():
+    """College Football Playoff board: national-championship + make-the-Playoff
+    odds from a 4,000-season drive-engine Monte Carlo with the 12-team CFP,
+    priced vs Kalshi's college futures. Served from the nightly deep-season
+    cache; a cold hit computes a smaller run in-line."""
+    try:
+        import cfb
+        b = cfb.futures_board()
+    except Exception as e:
+        return jsonify({"error": f"cfb season sim failed: {e}"}), 502
+    if not b:
+        return jsonify({"error": "CFB schedule not available yet"}), 502
     return jsonify(b)
 
 

@@ -95,15 +95,33 @@ def full_schedule(season):
 
 # ---- Ratings -----------------------------------------------------------------
 def _ratings(season):
-    """{abbr: projected-wins-scale rating}. Preseason = the roster-aware
-    projection board; in-season it blends toward actual point differential."""
-    import nfl_awards
-    proj = {}
+    """{abbr: projected-wins-scale rating}. Preseason backbone = last season's
+    point differential regressed + the QB layer (pro_sim), mapped to a wins
+    scale; in-season it blends toward actual point differential."""
+    out = {ab: 8.5 for ab in _DIV_OF}
+    # Primary signal: pro_sim's roster-aware rating (margin units) -> wins scale.
     try:
-        proj = {_canon(k): v for k, v in (nfl_awards._team_wins() or {}).items()}
+        import pro_sim
+        import pro_data
+        pr = pro_sim.ratings("nfl")
+        id2ab = {t["id"]: _canon(t.get("abbrev") or "") for t in pro_data.teams("nfl")}
+        for tid, v in pr.items():
+            ab = id2ab.get(tid)
+            if ab in out and v.get("rating") is not None:
+                out[ab] = 8.5 + v["rating"] * 0.8
     except Exception:
         pass
-    out = {ab: proj.get(ab, 8.5) for ab in _DIV_OF}
+    # Override with an explicit win-projection source only when it actually
+    # varies (a flat/empty source would erase the differential signal above).
+    try:
+        import nfl_awards
+        proj = {_canon(k): v for k, v in (nfl_awards._team_wins() or {}).items()}
+        if len({round(v, 1) for v in proj.values()}) > 3:
+            for ab, v in proj.items():
+                if ab in out:
+                    out[ab] = v
+    except Exception:
+        pass
     try:
         import nfl_live
         rt = nfl_live.team_ratings(season) or {}
@@ -129,6 +147,41 @@ def _wp(ra, rb, home_edge=2.1):
     return _phi(margin / 13.2)
 
 
+# ---- Drive-engine game resolution -------------------------------------------
+# The season is played out DRIVE BY DRIVE with the same engine the weekly slate
+# uses (nfl_game_sim), not a normal-margin coin flip. Each team's wins-scale
+# rating maps to an expected points-for in the matchup; that seeds per-drive
+# TD/FG/turnover rates, and nfl_game_sim._play_game walks the possessions with
+# game script and OT so blowouts, upsets and one-score finishes emerge naturally.
+_BASE_PPG = 22.5          # league average points/game
+_HFA_MARGIN = 2.2         # home-field edge in points of margin
+
+
+def _matchup_pts(ra, rb, host_edge):
+    """(exp_pts_a, exp_pts_b) for a rated pair; host_edge in {+1,0,-1}."""
+    margin = (ra - rb) * 0.9 + _HFA_MARGIN * host_edge
+    return _BASE_PPG + margin / 2.0, _BASE_PPG - margin / 2.0
+
+
+def _drive_rates(exp_pts):
+    """Expected points -> (p_td, p_fg, p_to) per-drive rates for the engine."""
+    import nfl_game_sim
+    exp_pts = max(9.0, min(38.0, exp_pts))
+    tds = exp_pts * 0.72 / 6.95            # ~72% of points off touchdowns
+    fgm = exp_pts * 0.28 / 3.0
+    d = nfl_game_sim._DRIVES
+    return (max(0.04, min(0.55, tds / d)),
+            max(0.02, min(0.40, fgm / d)),
+            0.14)                          # ~1.5 giveaways / game
+
+
+def _play(rh, ra, rng):
+    """One drive-engine game -> (home_pts, away_pts)."""
+    import nfl_game_sim
+    g = nfl_game_sim._play_game(rh, ra, rng)
+    return g[0]["pts"], g[1]["pts"]
+
+
 # ---- Season Monte Carlo -------------------------------------------------------
 def run_season(season=None, n=4000, seed=None):
     season = str(season or _season())
@@ -137,10 +190,13 @@ def run_season(season=None, n=4000, seed=None):
         return None
     R = _ratings(season)
     rng = random.Random(seed)
-    # Pre-draw per-game win probs once.
-    remaining = [(g["home"], g["away"], _wp(R[g["home"]], R[g["away"]]))
-                 for g in games if not g.get("final")
-                 and g["home"] in _DIV_OF and g["away"] in _DIV_OF]
+    # Pre-build each remaining game's per-drive rate tuples once (home/away).
+    remaining = []
+    for g in games:
+        if g.get("final") or g["home"] not in _DIV_OF or g["away"] not in _DIV_OF:
+            continue
+        eh, ea = _matchup_pts(R[g["home"]], R[g["away"]], +1)
+        remaining.append((g["home"], g["away"], _drive_rates(eh), _drive_rates(ea)))
     base_w = defaultdict(int)
     base_g = defaultdict(int)
     for g in games:
@@ -159,14 +215,18 @@ def run_season(season=None, n=4000, seed=None):
     rnd = rng.random
 
     def series(a, b, host):
-        """One playoff game; host None = neutral (Super Bowl)."""
-        p = _wp(R[a], R[b], 2.1 if host == a else (-2.1 if host == b else 0.0))
-        return a if rnd() < p else b
+        """One playoff game resolved by the drive engine; host None = neutral SB.
+        `a` is the higher seed (home when host==a)."""
+        edge = 1 if host == a else (-1 if host == b else 0)
+        ea, eb = _matchup_pts(R[a], R[b], edge)
+        pa, pb = _play(_drive_rates(ea), _drive_rates(eb), rng)
+        return a if pa > pb else b
 
     for _ in range(n):
         wins = dict(base_w)
-        for home, away, p in remaining:
-            w = home if rnd() < p else away
+        for home, away, rh, ra in remaining:
+            ph, pa = _play(rh, ra, rng)
+            w = home if ph > pa else away
             wins[w] = wins.get(w, 0) + 1
         for ab in _DIV_OF:
             win_hist[ab][wins.get(ab, 0)] += 1
@@ -329,7 +389,7 @@ def futures_board(season=None, n=4000):
         order.append(key)
 
     return {"season": sim["season"], "n_sims": ns, "n_games_left": sim["n_games_left"],
-            "engine": "roster", "sport": "nfl", "markets": markets, "order": order}
+            "engine": "drive", "sport": "nfl", "markets": markets, "order": order}
 
 
 _SIM_CACHE = {"key": None, "t": 0.0, "sim": None}
@@ -355,7 +415,10 @@ def _cached_sim(season, n):
             return payload
     except Exception:
         pass
-    sim = run_season(season, n)
+    # Cold path (before the nightly 4,000-season run has cached): cap the
+    # synchronous drive-engine compute so a first request can't hang; the
+    # nightly scheduler replaces this with the full run on its next pass.
+    sim = run_season(season, min(n, 1500))
     with _LOCK:
         if sim:
             _SIM_CACHE.update(key=(season, n), t=time.time(), sim=sim)

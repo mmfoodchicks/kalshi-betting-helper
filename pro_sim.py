@@ -32,11 +32,16 @@ import pro_data
 #   best_of   - playoff series length (1 = single game, NFL).
 PARAMS = {
     "nfl": {"reg": 0.58, "home": 2.0, "k": 10.5, "ros_pts": 5.0, "key_pen": 2.5,
-            "seeds": 7, "best_of": 1, "season": 2026},
+            "seeds": 7, "best_of": 1, "season": 2026, "family": "football"},
     "nba": {"reg": 0.35, "home": 2.8, "k": 11.0, "ros_pts": 4.0, "key_pen": 0.0,
-            "seeds": 8, "best_of": 7, "season": 2026},
+            "seeds": 8, "best_of": 7, "season": 2026, "family": "basketball",
+            "path": "nba"},
     "nhl": {"reg": 0.30, "home": 0.30, "k": 0.95, "ros_pts": 0.55, "key_pen": 0.5,
-            "seeds": 8, "best_of": 7, "season": 2026},
+            "seeds": 8, "best_of": 7, "season": 2026, "family": "hockey",
+            "ot_points": True},
+    "wnba": {"reg": 0.35, "home": 2.6, "k": 10.5, "ros_pts": 4.0, "key_pen": 0.0,
+             "seeds": 8, "best_of": 5, "season": 2026, "family": "basketball",
+             "path": "wnba", "flat_playoff": True},
 }
 
 
@@ -117,8 +122,90 @@ def _seed_conference(team_ids, wins, rate):
     return div_winners + rest
 
 
-def _bracket(seeds, rate, k, best_of, rng):
-    """Run a single conference bracket from an ordered seed list; return winner."""
+# ---- Play-by-play resolver -------------------------------------------------
+# The season is played out one GAME at a time with each sport's real engine
+# (possession-level basketball, shot-event hockey), not a normal-margin draw:
+# every simulated game is resolved by scoring it, so upsets, blowouts and (in
+# hockey) overtime points emerge from the same dynamics the slate cards use.
+
+def _engine(league, rate):
+    """Return a resolver `game(h_id, a_id, rng, hca)` for the league's engine, or
+    None to fall back to the closed-form win probability. hca: +1 home hosts,
+    0 neutral, -1 away hosts. Returns (winner_id, ot_loser_bool)."""
+    p = PARAMS[league]
+    fam = p.get("family")
+    tmap = {t["id"]: t for t in pro_data.teams(league)}
+    ab = {tid: (tmap.get(tid, {}).get("abbrev") or "") for tid in rate}
+    try:
+        if fam == "basketball":
+            import basket
+            R = basket.ratings(p["path"])
+            cfg = basket.LEAGUES[p["path"]]
+            lgp = (next(iter(R.values()))["lg_ppp"] if R else cfg["lg_ppp"])
+            hcae = cfg["hca_eff"]
+            eng = {tid: R.get(ab[tid]) for tid in rate}
+            if sum(1 for v in eng.values() if v) < len(rate) * 0.6:
+                return None
+
+            def game(h, a, rng, hca):
+                rh, ra = eng.get(h), eng.get(a)
+                if not rh or not ra:
+                    return (h if rng.random() < 0.5 else a), False
+                adj = hcae if hca > 0 else (1.0 / hcae if hca < 0 else 1.0)
+                eff_h = rh["off_ppp"] * (ra["def_ppp"] / lgp) * adj
+                eff_a = ra["off_ppp"] * (rh["def_ppp"] / lgp) / adj
+                pace = (rh["pace"] + ra["pace"]) / 2.0
+                hh, aa = basket.quick_game(eff_h, eff_a, pace, rng)
+                return (h if hh > aa else a), False
+            return game
+        if fam == "hockey":
+            import hockey
+            R = hockey.ratings()
+            lg = hockey._LG_GOALS
+            hcae = hockey._HCA_G
+            eng = {tid: R.get(ab[tid]) for tid in rate}
+            if sum(1 for v in eng.values() if v) < len(rate) * 0.6:
+                return None
+
+            def game(h, a, rng, hca):
+                rh, ra = eng.get(h), eng.get(a)
+                if not rh or not ra:
+                    return (h if rng.random() < 0.5 else a), False
+                adj = hcae if hca > 0 else (1.0 / hcae if hca < 0 else 1.0)
+                lgg = rh.get("lg_g") or lg
+                exp_h = rh["gf"] * (ra["ga"] / lgg) * adj
+                exp_a = ra["gf"] * (rh["ga"] / lgg) / adj
+                hh, aa, ot = hockey.quick_game(exp_h, exp_a, rng)
+                return (h if hh > aa else a), bool(ot)
+            return game
+    except Exception:
+        return None
+    return None
+
+
+def _play_series(hi, lo, best_of, resolver, rng):
+    """Best-of-N series; higher seed `hi` hosts games 1,2,5,7 (2-2-1-1-1).
+    Returns the winning team id."""
+    if best_of <= 1:
+        w, _ = resolver(hi, lo, rng, 1)
+        return w
+    need = best_of // 2 + 1
+    wins = {hi: 0, lo: 0}
+    hosts = (1, 1, -1, -1, 1, -1, 1)          # +1 => hi hosts, -1 => lo hosts
+    g = 0
+    while wins[hi] < need and wins[lo] < need:
+        hca = hosts[g] if g < len(hosts) else 1
+        h, a = (hi, lo) if hca > 0 else (lo, hi)
+        w, _ = resolver(h, a, rng, 1)         # host always has home ice/court
+        wins[w] += 1
+        g += 1
+    return hi if wins[hi] > wins[lo] else lo
+
+
+def _bracket(seeds, rate, k, best_of, rng, resolver=None):
+    """Run a single conference bracket from an ordered seed list; return winner.
+    When a play-by-play resolver is given, each round is a real series; otherwise
+    it collapses to the closed-form series probability."""
     field = list(seeds)
     # Bye for the #1 seed when the field is odd-shaped (NFL 7-seed format).
     bye = [field.pop(0)] if len(field) == 7 else []
@@ -130,8 +217,11 @@ def _bracket(seeds, rate, k, best_of, rng):
         while len(field) >= 2:
             hi = field.pop(0)
             lo = field.pop(-1)
-            pg = _wp(rate[hi]["rating"], rate[lo]["rating"], k, rate[hi]["home"])
-            win = hi if rng.random() < _series_wp(pg, best_of) else lo
+            if resolver is not None:
+                win = _play_series(hi, lo, best_of, resolver, rng)
+            else:
+                pg = _wp(rate[hi]["rating"], rate[lo]["rating"], k, rate[hi]["home"])
+                win = hi if rng.random() < _series_wp(pg, best_of) else lo
             nxt.append(win)
         if field:
             nxt.append(field.pop())
@@ -140,24 +230,37 @@ def _bracket(seeds, rate, k, best_of, rng):
     return field[0] if field else (bye[0] if bye else None)
 
 
-def _one_season(rate, schedule, conf_ids, p, rng, game_p=None):
+def _one_season(rate, schedule, conf_ids, p, rng, game_p=None, resolver=None,
+                base_wins=None, base_pts=None):
     k, home = p["k"], p["home"]
-    wins = defaultdict(int)
-    # Regular-season win probs are fixed across sims, so they're precomputed once
-    # in project() and passed in as game_p (avoids ~1M exp() calls per run).
+    ot_points = p.get("ot_points")
+    wins = defaultdict(int, base_wins or {})
+    # Points = seeding metric. Hockey: 2 per win + 1 per OT/SO loss; elsewhere it
+    # tracks wins so the same seeding code serves every league.
+    pts = defaultdict(int, base_pts or {})
     rnd = rng.random
     for i, (h, a) in enumerate(schedule):
-        if rnd() < game_p[i]:
-            wins[h] += 1
+        if resolver is not None:
+            w, ot = resolver(h, a, rng, 1)
+            l = a if w == h else h
         else:
-            wins[a] += 1
+            w = h if rnd() < game_p[i] else a
+            l, ot = (a if w == h else h), False
+        wins[w] += 1
+        if ot_points:
+            pts[w] += 2
+            if ot:
+                pts[l] += 1
+        else:
+            pts[w] += 1
+    seed_metric = pts if ot_points else wins
     champ = None
     conf_champs = []
     div_winners = set()
     made = set()
     finalists = []
     for conf, ids in conf_ids.items():
-        seeds = _seed_conference(ids, wins, rate)[:p["seeds"]]
+        seeds = _seed_conference(ids, seed_metric, rate)[:p["seeds"]]
         made.update(seeds)
         # division winner = top seed of each division within the conference field
         seen_div = set()
@@ -169,42 +272,72 @@ def _one_season(rate, schedule, conf_ids, p, rng, game_p=None):
         for rank, tid in enumerate(seeds):
             rate[tid]["seed_rank"] = rank
             rate[tid]["home"] = home               # higher seed hosts (folded per matchup)
-        w = _bracket(seeds, rate, k, p["best_of"], rng)
+        w = _bracket(seeds, rate, k, p["best_of"], rng, resolver)
         conf_champs.append(w)
         finalists.append(w)
     # championship game / series between conference champs
     if len(finalists) >= 2:
         a, b = finalists[0], finalists[1]
-        pg = _wp(rate[a]["rating"], rate[b]["rating"], k, 0.0)   # neutral site
-        champ = a if rng.random() < _series_wp(pg, p["best_of"]) else b
+        if resolver is not None:
+            champ = _play_series(a, b, p["best_of"], resolver, rng)   # 1-seed of each hosts
+        else:
+            pg = _wp(rate[a]["rating"], rate[b]["rating"], k, 0.0)    # neutral site
+            champ = a if rng.random() < _series_wp(pg, p["best_of"]) else b
     elif finalists:
         champ = finalists[0]
     return wins, champ, conf_champs, div_winners, made
 
 
 def project(league, n=4000, seed=None):
-    """Monte-Carlo the upcoming season; return the futures board."""
+    """Monte-Carlo the season one game at a time with the sport's engine; return
+    the futures board. Completed games are locked to their real result and only
+    the remainder is played, so the same call serves preseason (full schedule)
+    and mid-season (banked wins + remaining games)."""
     p = PARAMS[league]
     rate = ratings(league)
     if not rate:
         return None
-    schedule = pro_data.schedule(league, p["season"])
+    # In-season snapshot (locked finals + remaining games); preseason this is the
+    # full schedule with empty base tallies.
+    state = {}
+    try:
+        state = pro_data.season_state(league, p["season"])
+    except Exception:
+        state = {}
+    schedule = state.get("remaining")
+    if not schedule:
+        schedule = pro_data.schedule(league, p["season"])
     if not schedule:
         return None
+    schedule = [(h, a) for (h, a) in schedule if h in rate and a in rate]
+    base_wins = {tid: w for tid, w in (state.get("base_wins") or {}).items() if tid in rate}
+    base_otl = state.get("base_otl") or {}
+    ot_points = p.get("ot_points")
+    base_pts = ({tid: base_wins.get(tid, 0) * 2 + base_otl.get(tid, 0)
+                 for tid in rate} if ot_points else None)
+
+    # Flat-playoff leagues (WNBA) seed league-wide, not by conference.
     conf_ids = defaultdict(list)
-    for tid, r in rate.items():
-        conf_ids[r["conf"]].append(tid)
+    if p.get("flat_playoff"):
+        conf_ids["League"] = list(rate)
+    else:
+        for tid, r in rate.items():
+            conf_ids[r["conf"]].append(tid)
+
+    resolver = _engine(league, rate)
     rng = random.Random(seed)
-    # Precompute each scheduled game's home-win probability once.
     k, home = p["k"], p["home"]
-    game_p = [_wp(rate[h]["rating"], rate[a]["rating"], k, home) for h, a in schedule]
+    # Closed-form fallback probs (only used when the engine is unavailable).
+    game_p = (None if resolver is not None
+              else [_wp(rate[h]["rating"], rate[a]["rating"], k, home) for h, a in schedule])
 
     champ = defaultdict(int); conf_w = defaultdict(int)
     div_w = defaultdict(int); playoff = defaultdict(int)
     win_sum = defaultdict(float)
     win_hist = defaultdict(lambda: defaultdict(int))     # tid -> wins -> count
     for _ in range(n):
-        wins, c, ccs, dws, made = _one_season(rate, schedule, conf_ids, p, rng, game_p)
+        wins, c, ccs, dws, made = _one_season(
+            rate, schedule, conf_ids, p, rng, game_p, resolver, base_wins, base_pts)
         if c is not None:
             champ[c] += 1
         for cc in ccs:
@@ -218,6 +351,7 @@ def project(league, n=4000, seed=None):
             win_sum[tid] += w
             win_hist[tid][w] += 1
 
+    flat = bool(p.get("flat_playoff"))
     teams = []
     for tid, r in rate.items():
         wh = win_hist[tid]
@@ -226,8 +360,8 @@ def project(league, n=4000, seed=None):
             "conf": r["conf"], "division": r["division"], "prior": r["prior"],
             "rating": r["rating"], "base": r["base"], "roster_mod": r["mod"],
             "champ_pct": round(100 * champ[tid] / n, 1),
-            "conf_pct": round(100 * conf_w[tid] / n, 1),
-            "division_pct": round(100 * div_w[tid] / n, 1),
+            "conf_pct": None if flat else round(100 * conf_w[tid] / n, 1),
+            "division_pct": None if flat else round(100 * div_w[tid] / n, 1),
             "playoff_pct": round(100 * playoff[tid] / n, 1),
             "proj_wins": round(win_sum[tid] / n, 1),
             "win_dist": {str(w): c for w, c in sorted(wh.items())},
@@ -239,7 +373,9 @@ def project(league, n=4000, seed=None):
         })
     teams.sort(key=lambda t: t["champ_pct"], reverse=True)
     return {"league": league, "n_sims": n, "season": p["season"],
-            "games": len(schedule), "teams": teams,
+            "engine": "pbp" if resolver is not None else "rating",
+            "games": len(schedule), "games_played": state.get("played", 0),
+            "teams": teams,
             "titles_asof": SB_TITLES_ASOF if league == "nfl" else None}
 
 
