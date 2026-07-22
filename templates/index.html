@@ -51,6 +51,8 @@
     <button class="tab" data-tab="sports">🔴 Live &amp; Futures</button>
     <button class="tab" data-tab="nfl">🏈 NFL</button>
     <button class="tab" data-tab="wnba">🏀 WNBA</button>
+    <button class="tab" data-tab="nba">🏀 NBA</button>
+    <button class="tab" data-tab="nhl">🏒 NHL</button>
     <button class="tab" data-tab="draft">📋 Draft</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
@@ -431,6 +433,30 @@
       <div id="wnbaResults" class="markets"><div class="empty">Simulating the slate in the background (~5s)…</div></div>
     </section>
    </div><!-- /tab-wnba -->
+
+   <div id="tab-nba" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏀 NBA</h2>
+        <input id="nbaDate" type="date" style="width:auto"/>
+      </div>
+      <p class="sub" style="margin:2px 0 8px">The same <b>possession-level engine</b> as the WNBA slate, tuned to NBA pace and efficiency. Lights up when the season tips off in October — Kalshi's NBA game/spread/total markets price automatically the moment they list. Model picks feed 🎯 Best Bets and the 🎰 combo builder.</p>
+      <div id="nbaSummary" class="small"></div>
+      <div id="nbaResults" class="markets"><div class="empty">Loading…</div></div>
+    </section>
+   </div><!-- /tab-nba -->
+
+   <div id="tab-nhl" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏒 NHL</h2>
+        <input id="nhlDate" type="date" style="width:auto"/>
+      </div>
+      <p class="sub" style="margin:2px 0 8px">A <b>shot-event Monte Carlo</b>: expected goals vs the opponent's defense with home ice, empty-net endgames, 3-on-3 OT and the shootout. Skater goal/point props are dealt from the simulated team goals. Lights up when the season starts in October; Kalshi markets price automatically when listed. Feeds 🎯 Best Bets and the 🎰 combo builder.</p>
+      <div id="nhlSummary" class="small"></div>
+      <div id="nhlResults" class="markets"><div class="empty">Loading…</div></div>
+    </section>
+   </div><!-- /tab-nhl -->
 
    <div id="tab-ufc" class="hidden">
     <section class="card">

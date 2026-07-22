@@ -144,6 +144,11 @@ _MODELS = {
     # WNBA moneylines (possession engine): ~2-6 games/day settle, so history
     # accrues fast; still a noisy binary, so a real floor before full trust.
     "wnba":   (lambda: _predlog_pairs("wnba"),   300),
+    # NBA / NHL (possession & shot engines) — dense schedules settle fast.
+    "nba":    (lambda: _predlog_pairs("nba"),    400),
+    "nhl":    (lambda: _predlog_pairs("nhl"),    400),
+    # College football (drive engine): one Saturday settles ~60 games.
+    "cfb":    (lambda: _predlog_pairs("cfb"),    300),
 }
 
 _cache = {}          # model -> (t, q0, fitted_at, n)

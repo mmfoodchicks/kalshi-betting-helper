@@ -1400,6 +1400,8 @@ function setupTabs() {
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
       $("tab-wnba").classList.toggle("hidden", tab !== "wnba");
+      $("tab-nba").classList.toggle("hidden", tab !== "nba");
+      $("tab-nhl").classList.toggle("hidden", tab !== "nhl");
       $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
@@ -1425,6 +1427,8 @@ function setupTabs() {
       if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
       if (tab === "wnba") initWNBA();
+      if (tab === "nba") initNBA();
+      if (tab === "nhl") initNHL();
       if (tab === "ufc") initUFC();
       if (tab === "tennis") initTennis();
       if (tab === "lol") initLoL();
@@ -2438,6 +2442,119 @@ function renderWNBA() {
   }
   $("wnbaSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
   $("wnbaResults").innerHTML = d.games.map(wnbaGameCard).join("");
+}
+
+// ---- NBA possession-engine slate (shares the basketball card renderer) ------
+let _nbaData = null;
+function initNBA() {
+  const dt = $("nbaDate");
+  if (dt && !dt.dataset.wired) {
+    dt.dataset.wired = "1";
+    dt.value = new Date().toISOString().slice(0, 10);
+    dt.addEventListener("change", () => { _nbaData = null; $("nbaResults").dataset.loaded = ""; loadNBA(0); });
+  }
+  if (!$("nbaResults").dataset.loaded) { $("nbaResults").dataset.loaded = "1"; loadNBA(0); }
+}
+async function loadNBA(attempt) {
+  attempt = attempt || 0;
+  const box = $("nbaResults"), dt = ($("nbaDate") || {}).value || "";
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — possession engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/nba/slate${dt ? `?date=${dt}` : ""}`)).json();
+    if (d.error) {
+      if (attempt < 9) { setTimeout(() => loadNBA(attempt + 1), 5000); return; }
+      box.innerHTML = `<div class="empty">${d.error}</div>`;
+      return;
+    }
+    _nbaData = d;
+    renderNBA();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadNBA(attempt + 1), 5000); return; }
+    box.innerHTML = `<div class="empty">NBA slate unavailable.</div>`;
+  }
+}
+function renderNBA() {
+  const d = _nbaData; if (!d) return;
+  if (!d.games || !d.games.length) {
+    $("nbaSummary").innerHTML = "";
+    $("nbaResults").innerHTML = `<div class="empty">${d.note || "No NBA games for this date."}</div>`;
+    return;
+  }
+  $("nbaSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
+  $("nbaResults").innerHTML = d.games.map(wnbaGameCard).join("");
+}
+
+// ---- NHL shot-event slate --------------------------------------------------
+let _nhlData = null;
+function initNHL() {
+  const dt = $("nhlDate");
+  if (dt && !dt.dataset.wired) {
+    dt.dataset.wired = "1";
+    dt.value = new Date().toISOString().slice(0, 10);
+    dt.addEventListener("change", () => { _nhlData = null; $("nhlResults").dataset.loaded = ""; loadNHL(0); });
+  }
+  if (!$("nhlResults").dataset.loaded) { $("nhlResults").dataset.loaded = "1"; loadNHL(0); }
+}
+async function loadNHL(attempt) {
+  attempt = attempt || 0;
+  const box = $("nhlResults"), dt = ($("nhlDate") || {}).value || "";
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — shot-event engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/nhl/slate${dt ? `?date=${dt}` : ""}`)).json();
+    if (d.error) {
+      if (attempt < 9) { setTimeout(() => loadNHL(attempt + 1), 5000); return; }
+      box.innerHTML = `<div class="empty">${d.error}</div>`;
+      return;
+    }
+    _nhlData = d;
+    renderNHL();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadNHL(attempt + 1), 5000); return; }
+    box.innerHTML = `<div class="empty">NHL slate unavailable.</div>`;
+  }
+}
+function nhlGameCard(g) {
+  const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
+  const kx = g.kalshi || {};
+  const live = g.state === "in" ? `<span style="color:#e0566a">🔴 ${g.detail || "live"} · ${g.away} ${g.away_score}–${g.home_score} ${g.home}</span> · ` : "";
+  const done = g.state === "post" ? `<b>Final: ${g.away} ${g.away_score}–${g.home_score} ${g.home}</b> · ` : "";
+  const players = (g.players || []).slice(0, 6).map((p) => {
+    const bits = [];
+    if (p.goals != null) bits.push(`${p.goals} G`);
+    if (p.pts != null) bits.push(`${p.pts} P`);
+    return `<span class="nfl-pl"><span class="nfl-plrole">${p.team}</span> ${p.name} <b>${bits.join(" · ")}</b></span>`;
+  }).join("");
+  const props = (g.props || []).slice(0, 6).map((p) =>
+    `<li><span class="legtag">${p.stat}</span> ${p.player} <span style="color:var(--muted)">(${p.over_pct}%)</span></li>`).join("");
+  let sgp = "";
+  if (g.sgp && g.sgp.legs) {
+    const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+  }
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(11, 16)}Z</span></div>
+      <div class="pick">${done}${live}Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total goals <b>${g.exp_total}</b></div>
+    </div></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="winbar"><div class="fill" style="width:${ph}%"></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    ${_wnbaEdges(g.spread_edges, "spread")}
+    ${_wnbaEdges(g.total_edges, "total")}
+    <div class="nfl-pls">${players}</div>
+    ${props ? `<details class="simdetail"><summary>📊 Top props (anytime goal / 1+ point)</summary><ul class="legs">${props}</ul></details>` : ""}
+    ${sgp}
+  </div>`;
+}
+function renderNHL() {
+  const d = _nhlData; if (!d) return;
+  if (!d.games || !d.games.length) {
+    $("nhlSummary").innerHTML = "";
+    $("nhlResults").innerHTML = `<div class="empty">${d.note || "No NHL games for this date."}</div>`;
+    return;
+  }
+  $("nhlSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
+  $("nhlResults").innerHTML = d.games.map(nhlGameCard).join("");
 }
 
 // ---- NFL Sleeper-seeded sim (Sim cards / Best ball / Pick 6) ---------------

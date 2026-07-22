@@ -1402,6 +1402,34 @@ def api_wnba_slate():
     return jsonify(data)
 
 
+@app.route("/api/nba/slate")
+def api_nba_slate():
+    """NBA daily slate (possession engine; lights up when the season tips off)."""
+    date = request.args.get("date") or None
+    try:
+        import basket
+        data = basket.board("nba", date)
+    except Exception as e:
+        return jsonify({"error": f"nba slate failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+    return jsonify(data)
+
+
+@app.route("/api/nhl/slate")
+def api_nhl_slate():
+    """NHL daily slate (shot-event engine; lights up when the season starts)."""
+    date = request.args.get("date") or None
+    try:
+        import hockey
+        data = hockey.board(date)
+    except Exception as e:
+        return jsonify({"error": f"nhl slate failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+    return jsonify(data)
+
+
 @app.route("/api/nfl/slate")
 def api_nfl_slate():
     """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines

@@ -29,6 +29,8 @@ CATEGORIES = {
     "crypto": "⚡ Crypto (daily)",
     "soccer": "⚽ World Cup",
     "wnba": "🏀 WNBA",
+    "nba": "🏀 NBA",
+    "nhl": "🏒 NHL",
     "golf": "⛳ PGA",
     "tennis": "🎾 Tennis (all)",   # one box: ATP + WTA + ITF (men & women)
     "ufc": "🥊 UFC",
@@ -267,39 +269,52 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
     return legs
 
 
-def _wnba_legs():
-    """Model legs from the WNBA possession engine (cached board): moneylines,
-    Kalshi's exact-line spreads/totals, and the top player props — all with the
-    SIM's probability, not the de-vig market read. Empty when no board yet
-    (gather falls back to the de-vig browse legs)."""
-    import wnba
-    b = wnba.board()
+def _board_legs(b, category, prefix):
+    """Model legs from any engine board with the shared game shape (basketball /
+    hockey): moneylines, Kalshi exact-line spreads/totals, top player props —
+    all at the SIM's probability, not the de-vig market read."""
     legs = []
     for g in (b or {}).get("games") or []:
         if g.get("state") == "post":
             continue
         mu = f"{g.get('away_name') or g['away']} @ {g.get('home_name') or g['home']}"
-        eid = f"wnba-{g['away']}-{g['home']}"
+        eid = f"{prefix}-{g['away']}-{g['home']}"
         kx = g.get("kalshi") or {}
 
         def leg(label, prob_pct, cents, typ, avg=None, unit=None):
-            legs.append({"category": "🏀 WNBA", "event_id": eid, "label": label,
+            legs.append({"category": category, "event_id": eid, "label": label,
                          "matchup": mu, "prob": max(0.01, min(0.99, prob_pct / 100.0)),
                          "price_cents": cents, "type": typ,
                          "sim_avg": avg, "avg_unit": unit})
         for side in ("home", "away"):
             nm = g.get(side + "_name") or g[side]
             leg(f"{nm} to win", g[f"p_{side}"] * 100.0, kx.get(side + "_cents"), "ML",
-                avg=g.get("mean_margin") if side == "home" else None, unit="pt margin")
+                avg=g.get("mean_margin") if side == "home" else None, unit="margin")
         for s in (g.get("spread_edges") or [])[:2]:
             leg(f"{s['team']} wins by {s['line']}+", s["model_pct"], s["cents"], "Spread")
         for t in (g.get("total_edges") or [])[:2]:
-            leg(f"Over {t['line']} points", t["model_pct"], t["cents"], "Total",
+            leg(f"Over {t['line']}", t["model_pct"], t["cents"], "Total",
                 avg=g.get("exp_total"), unit="points")
         for p in (g.get("props") or [])[:3]:
-            leg(f"{p['player']} {p['line']}+ {p['stat']}", p["over_pct"], None,
+            line_txt = "" if p["line"] == 0.5 else f"{p['line']}+ "
+            leg(f"{p['player']} {line_txt}{p['stat']}", p["over_pct"], None,
                 p["stat"].title())
     return legs
+
+
+def _wnba_legs():
+    import wnba
+    return _board_legs(wnba.board(), "🏀 WNBA", "wnba")
+
+
+def _nba_legs():
+    import basket
+    return _board_legs(basket.board("nba"), "🏀 NBA", "nba")
+
+
+def _nhl_legs():
+    import hockey
+    return _board_legs(hockey.board(), "🏒 NHL", "nhl")
 
 
 def _sport_legs(key):
@@ -332,6 +347,16 @@ def gather(cats, date, season):
         legs += _ufc_legs()                      # our UFC fight model, not de-vig
     if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
         legs += _tennis_legs(("ATP", "WTA", "ITF", "ITF-W"))
+    if "nba" in cats:
+        try:
+            legs += _nba_legs()
+        except Exception:
+            pass
+    if "nhl" in cats:
+        try:
+            legs += _nhl_legs()
+        except Exception:
+            pass
     for k in SPORT_KEYS:
         if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
             continue
