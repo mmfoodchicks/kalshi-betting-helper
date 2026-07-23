@@ -58,7 +58,8 @@ CATEGORY_TYPES = {
             ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
     "nhl": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
             ["Anytime Goal", "Anytime goal"], ["1+ Point", "1+ point"]],
-    "golf": [["⛳ Golf (PGA H2H)", "Head-to-head"]],
+    "golf": [["Make Cut", "Make the cut"], ["Matchup", "Matchups (H2H)"],
+             ["Top 10", "Top 10"], ["Outright", "Outright win"]],
     "tennis": [["Match", "Match winner"], ["Sets", "Sets / straight-sets"],
                ["Games", "Total games"], ["Aces", "Total aces"]],
     "ufc": [["UFC ML", "Moneyline"], ["KO/TKO", "KO/TKO"],
@@ -419,6 +420,43 @@ def _nfl_legs():
     return legs
 
 
+def _golf_legs():
+    """Golf legs from OUR tournament simulator (model probabilities, not de-vig):
+    make-the-cut and head-to-head matchups priced against Kalshi, plus top-10 and
+    outright as model-only legs. Make-cut and matchups are independent events;
+    outright (mutually exclusive) and top-10 (correlated) each share one event so
+    a combo never stacks contradictory golf legs."""
+    legs = []
+    try:
+        import golf
+        b = golf.board()
+    except Exception:
+        return legs
+    if not b:
+        return legs
+    ev = b.get("event") or "Golf"
+    cat = "⛳ Golf"
+
+    def leg(eid, label, prob_pct, cents, typ, matchup=None):
+        legs.append({"category": cat, "event_id": eid, "label": label,
+                     "matchup": matchup or ev,
+                     "prob": max(0.01, min(0.99, prob_pct / 100.0)),
+                     "price_cents": cents, "type": typ})
+    for r in b.get("make_cut", []):
+        leg(f"golf_mc_{r['player']}", f"{r['player']} to make the cut",
+            r["model_pct"], r.get("cents"), "Make Cut")
+    for r in b.get("h2h", []):
+        leg(f"golf_h2h_{r['a']}_{r['b']}", f"{r['a']} to beat {r['b']}",
+            r["model_pct"], r.get("cents"), "Matchup", f"{r['a']} vs {r['b']}")
+    for p in b.get("players", [])[:25]:
+        if (p.get("top10_pct") or 0) >= 5:
+            leg("golf_top10", f"{p['name']} top-10", p["top10_pct"], None, "Top 10")
+    for p in b.get("players", [])[:15]:
+        if (p.get("win_pct") or 0) >= 1:
+            leg("golf_win", f"{p['name']} to win", p["win_pct"], None, "Outright")
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -471,6 +509,14 @@ def gather(cats, date, season):
             model = []
             try:
                 model = _wnba_legs()             # possession-engine legs
+            except Exception:
+                model = []
+            legs += model or _sport_legs(k)      # de-vig browse as the fallback
+            continue
+        if k == "golf":
+            model = []
+            try:
+                model = _golf_legs()             # tournament-simulator legs
             except Exception:
                 model = []
             legs += model or _sport_legs(k)      # de-vig browse as the fallback

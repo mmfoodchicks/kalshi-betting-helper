@@ -1525,6 +1525,23 @@ def api_tennis():
     return jsonify(board)
 
 
+@app.route("/api/golf")
+def api_golf():
+    """Golf tournament simulator: win / top-5/10/20 / make-the-cut and every
+    head-to-head from a strokes model (season scoring average + course length +
+    wind/temp/altitude), simulating the remaining rounds through the cut and
+    priced vs Kalshi (make-cut, H2H). Non-blocking: 202 while the board warms."""
+    try:
+        import golf
+        b = golf.board(request.args.get("tour", "pga"))
+    except Exception as e:
+        return jsonify({"error": f"golf sim failed: {e}"}), 502
+    if not b:
+        return jsonify({"status": "computing",
+                        "message": "simulating the field through the cut…"}), 202
+    return jsonify(b)
+
+
 @app.route("/api/sim/status")
 def api_sim_status():
     """Freshness + run state of each cached season sim."""

@@ -226,6 +226,36 @@ def _nhl_rows():
     return _board_rows(hockey.board(), "🏒 NHL")
 
 
+def _golf_rows():
+    """Model edges from the golf simulator: make-the-cut and head-to-head vs
+    Kalshi's live golf markets."""
+    import golf
+    b = golf.board()
+    if not b:
+        return []
+    ev = b.get("event", "")
+    rows = []
+    for r in b.get("make_cut", []):
+        if r.get("cents") is None or r.get("edge") is None:
+            continue
+        trust = "low" if r["edge"] >= 20 else "med"
+        note = ("big make-cut edge — often a longshot the model has thin data on; "
+                "it self-calibrates as rounds post") if trust == "low" else None
+        row = _row("⛳ Golf", "Make cut", f"{r['player']} makes the cut", ev,
+                   r["model_pct"], r["cents"], trust, note)
+        if row:
+            rows.append(row)
+    for r in b.get("h2h", []):
+        if r.get("cents") is None:
+            continue
+        row = _row("⛳ Golf", "Matchup", f"{r['a']} over {r['b']}",
+                   f"{r['a']} vs {r['b']}", r["model_pct"], r["cents"], "med")
+        if row:
+            rows.append(row)
+    rows.sort(key=lambda x: -x["net_edge"])
+    return rows[:8]
+
+
 def _arb_rows():
     """Outright arbitrage on the Kalshi sports books: outcome asks summing under
     100¢ mean buying every outcome locks a profit. Rare, small, real."""
@@ -280,6 +310,7 @@ def board(date=None, season=None, sims=2500):
     pull("cfb_futures", _cfb_futures_rows)
     pull("wnba_futures", _pro_futures_rows, "wnba", "🏀 WNBA futures")
     pull("ufc", _ufc_rows)
+    pull("golf", _golf_rows)
     pull("tennis", _tennis_rows)
     pull("crypto", _crypto_rows)
     pull("arbitrage", _arb_rows)
