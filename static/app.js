@@ -4527,14 +4527,59 @@ window.runComboSim = () => {
 
 // ---- Mega combo maker (cross-category) ------------------------------------
 let combineCatsLoaded = false;
+let _cmbCatTypes = {};          // category -> [[type_value, chip_label], ...]
+const _cmbTypeOff = new Set();  // type_values the user has turned OFF
 async function loadCombineCats() {
   if (combineCatsLoaded) return;
   const meta = await (await fetch("/api/combine/meta")).json();
+  // Back-compat: meta used to be a flat {key: label}; now {categories, types}.
+  const cats = meta.categories || meta;
+  _cmbCatTypes = meta.types || {};
   // Default: nothing checked -- the user picks which sports to combine.
-  $("combineCats").innerHTML = Object.entries(meta).map(([k, v]) =>
-    `<label><input type="checkbox" value="${k}"/> ${v}</label>`
+  $("combineCats").innerHTML = Object.entries(cats).map(([k, v]) =>
+    `<label><input type="checkbox" value="${k}" onchange="renderCmbTypeChips()"/> ${v}</label>`
   ).join("");
   combineCatsLoaded = true;
+  renderCmbTypeChips();
+}
+function _checkedCats() {
+  return [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
+}
+// The type chips are the UNION of the checked sports' leg types. Deselecting a
+// sport removes its exclusive types; a chip turned off excludes that leg type
+// from the build. Shared types (e.g. Moneyline) persist while any sport that
+// offers them stays checked.
+function _cmbVisibleTypes() {
+  const seen = new Map();       // type_value -> label (first sport wins)
+  _checkedCats().forEach((c) => (_cmbCatTypes[c] || []).forEach(([tv, lbl]) => {
+    if (!seen.has(tv)) seen.set(tv, lbl);
+  }));
+  return seen;
+}
+function renderCmbTypeChips() {
+  const el = $("cmbTypeChips");
+  if (!el) return;
+  const seen = _cmbVisibleTypes();
+  // Forget off-toggles for types no longer visible, so re-checking a sport
+  // brings its types back ON.
+  [..._cmbTypeOff].forEach((tv) => { if (!seen.has(tv)) _cmbTypeOff.delete(tv); });
+  if (!seen.size) { el.innerHTML = ""; return; }
+  const chips = [...seen].map(([tv, lbl]) =>
+    `<span class="ptchip${_cmbTypeOff.has(tv) ? "" : " on"}" onclick="toggleCmbType(this,'${tv.replace(/'/g, "\\'")}')">${lbl}</span>`).join("");
+  el.innerHTML = `Leg types <span style="color:var(--muted)">(click to exclude)</span>: <span class="ptchips">${chips}</span>`;
+}
+window.toggleCmbType = (el, tv) => {
+  if (_cmbTypeOff.has(tv)) { _cmbTypeOff.delete(tv); el.classList.add("on"); }
+  else { _cmbTypeOff.add(tv); el.classList.remove("on"); }
+};
+// &types= param: the ON subset of the visible types. Omitted when everything is
+// on (= no filter); sent empty when everything is off (= no legs).
+function cmbTypesParam() {
+  const seen = _cmbVisibleTypes();
+  if (!seen.size) return "";
+  const on = [...seen.keys()].filter((tv) => !_cmbTypeOff.has(tv));
+  if (on.length === seen.size) return "";                 // all on -> no filter
+  return "&types=" + on.map(encodeURIComponent).join(",");
 }
 async function buildRecommended() {
   const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
@@ -4543,7 +4588,7 @@ async function buildRecommended() {
   const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
   out.innerHTML = `<div class="empty">Building the best combos across ${cats.length} sport${cats.length > 1 ? "s" : ""}…</div>`;
   try {
-    const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}`)).json();
+    const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}${cmbTypesParam()}`)).json();
     if (d.error === "no_cats") { out.innerHTML = `<div class="empty">Check one or more sports above first.</div>`; return; }
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
@@ -4592,7 +4637,7 @@ async function buildCombine() {
   out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
   try {
     const q = `cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`
-      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`;
+      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}` + cmbTypesParam();
     const d = await (await fetch(`/api/combine?${q}`)).json();
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";

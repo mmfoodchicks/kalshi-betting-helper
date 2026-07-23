@@ -26,6 +26,7 @@ SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "soccer", "wnba"}
 
 CATEGORIES = {
     "mlb": "⚾ Baseball",
+    "nfl": "🏈 NFL",
     "crypto": "⚡ Crypto (daily)",
     "soccer": "⚽ World Cup",
     "wnba": "🏀 WNBA",
@@ -35,6 +36,46 @@ CATEGORIES = {
     "tennis": "🎾 Tennis (all)",   # one box: ATP + WTA + ITF (men & women)
     "ufc": "🥊 UFC",
 }
+
+# The leg TYPES each category can contribute, as [type_value, chip_label]. The
+# type_value must match exactly what that category's leg builder stamps on
+# `leg["type"]`; the UI shows a chip per type only while its sport is checked, so
+# you can't pick a type a selected sport doesn't offer (e.g. "KO/TKO" only when
+# UFC is checked). Keep this in lockstep with the _*_legs builders above.
+CATEGORY_TYPES = {
+    "mlb": [["ML", "Moneyline"], ["Total", "Totals"], ["Run line", "Run line"],
+            ["Hit", "Hits"], ["HR", "Home runs"], ["Bases", "Total bases"],
+            ["Ks", "Strikeouts"], ["RFI", "1st-inning run"], ["HRR", "H+R+RBI"]],
+    "nfl": [["ML", "Moneyline"], ["Total", "Totals"], ["Pass Yds", "Passing yds"],
+            ["Rush Yds", "Rushing yds"], ["Rec Yds", "Receiving yds"],
+            ["Receptions", "Receptions"], ["Anytime Td", "Anytime TD"]],
+    "crypto": [["Crypto", "Price up/down"]],
+    "soccer": [["WC Result", "Result (1X2)"], ["WC Total", "Over/Under 2.5"],
+               ["WC BTTS", "Both teams score"], ["WC Champion", "Champion"]],
+    "wnba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
+             ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
+    "nba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
+            ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
+    "nhl": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
+            ["Anytime Goal", "Anytime goal"], ["1+ Point", "1+ point"]],
+    "golf": [["⛳ Golf (PGA H2H)", "Head-to-head"]],
+    "tennis": [["Match", "Match winner"], ["Sets", "Sets / straight-sets"],
+               ["Games", "Total games"], ["Aces", "Total aces"]],
+    "ufc": [["UFC ML", "Moneyline"], ["KO/TKO", "KO/TKO"],
+            ["Submission", "Submission"], ["Decision", "Decision"]],
+}
+# Every type the catalog knows about — a leg whose type isn't here is never
+# filtered out (so an unmapped type can't silently vanish from a build).
+_ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
+
+
+def _filter_types(legs, types):
+    """Drop legs whose (catalogued) type the user turned off. `types` is the
+    allowed set; None means no filtering, [] means everything catalogued is off."""
+    if types is None:
+        return legs
+    allow = set(types)
+    return [l for l in legs if l.get("type") not in _ALL_TYPES or l.get("type") in allow]
 
 
 def _mlb_legs(date, season):
@@ -176,6 +217,19 @@ def _ufc_legs():
                          "label": f"{f['name']} to win", "matchup": matchup,
                          "prob": prob, "price_cents": f.get("kalshi_cents"),
                          "type": "UFC ML"})
+        # Method-of-victory legs from the sim's method distribution (model-only).
+        # One per bout event, so the combo tuner never stacks a fighter's ML with
+        # the same fight's method as if independent.
+        meth = bt.get("method") or {}
+        for mk, typ, how in (("ko", "KO/TKO", "by KO/TKO"),
+                             ("sub", "Submission", "by submission"),
+                             ("dec", "Decision", "by decision")):
+            pct = meth.get(mk)
+            if pct:
+                legs.append({"category": "🥊 UFC", "event_id": ev,
+                             "label": f"Fight ends {how}", "matchup": matchup,
+                             "prob": max(0.01, min(0.99, pct / 100.0)),
+                             "price_cents": None, "type": typ})
     return legs
 
 
@@ -317,6 +371,54 @@ def _nhl_legs():
     return _board_legs(hockey.board(), "🏒 NHL", "nhl")
 
 
+def _nfl_week():
+    """Best-effort current NFL regular-season week from the calendar (Week 1 ≈ the
+    week of Sept 8). Clamps to 1–18; preseason falls back to Week 1 (empty slate)."""
+    import datetime
+    import clock
+    t = clock.today_et()
+    season = t.year if t.month >= 3 else t.year - 1
+    kickoff = datetime.date(season, 9, 8)
+    return max(1, min(18, 1 + max(0, (t - kickoff).days // 7)))
+
+
+def _nfl_legs():
+    """NFL legs from the drive-engine slate board: moneylines (+ live Kalshi
+    price), the total at the sim's line, and top correlated player props."""
+    legs = []
+    try:
+        import nfl_game_sim
+        b = nfl_game_sim.board(_nfl_week())
+    except Exception:
+        return legs
+    for g in (b or {}).get("games") or []:
+        if g.get("state") == "post":
+            continue
+        mu = f"{g.get('away_name') or g['away']} @ {g.get('home_name') or g['home']}"
+        eid = f"nfl-{g['away']}-{g['home']}"
+        kx = g.get("kalshi") or {}
+
+        def leg(label, prob_pct, cents, typ, avg=None, unit=None):
+            legs.append({"category": "🏈 NFL", "event_id": eid, "label": label,
+                         "matchup": mu, "prob": max(0.01, min(0.99, prob_pct / 100.0)),
+                         "price_cents": cents, "type": typ,
+                         "sim_avg": avg, "avg_unit": unit})
+        for side in ("home", "away"):
+            nm = g.get(side + "_name") or g[side]
+            leg(f"{nm} to win", g[f"p_{side}"] * 100.0, kx.get(side + "_cents"), "ML",
+                avg=g.get("mean_margin") if side == "home" else None, unit="margin")
+        tl = g.get("total_ladder") or []
+        if tl:
+            mid = tl[len(tl) // 2]
+            leg(f"Over {mid['line']}", mid["over_pct"], None, "Total",
+                avg=g.get("exp_total"), unit="points")
+        for p in (g.get("props") or [])[:4]:
+            line_txt = "" if p.get("line") == 0.5 else f"{p['line']}+ "
+            leg(f"{p['player']} {line_txt}{p['stat']}", p["over_pct"], None,
+                p["stat"].title(), avg=p.get("line"), unit=p["stat"])
+    return legs
+
+
 def _sport_legs(key):
     legs = []
     try:
@@ -347,6 +449,11 @@ def gather(cats, date, season):
         legs += _ufc_legs()                      # our UFC fight model, not de-vig
     if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
         legs += _tennis_legs(("ATP", "WTA", "ITF", "ITF-W"))
+    if "nfl" in cats:
+        try:
+            legs += _nfl_legs()
+        except Exception:
+            pass
     if "nba" in cats:
         try:
             legs += _nba_legs()
@@ -501,7 +608,7 @@ def _leg_edge(l):
     return (l["prob"] * 100 - l["price_cents"]) if l.get("price_cents") else None
 
 
-def recommended(cats, date, season, max_legs=12):
+def recommended(cats, date, season, max_legs=12, types=None):
     """Auto-built recommended parlays from the checked sports -- the same idea as
     the baseball tab's safest / best-value / best combos, across categories:
 
@@ -510,8 +617,11 @@ def recommended(cats, date, season, max_legs=12):
                     descending edge -- the parlay the market is mispricing.
       - best:       the all-arounder -- best-edge legs among reasonably likely
                     ones (>= 55%), balancing payout and hit rate.
+
+    `types`, when given, restricts which leg types are eligible (the UI's per-
+    sport type chips).
     """
-    legs = gather(cats, date, season)
+    legs = _filter_types(gather(cats, date, season), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1
@@ -617,8 +727,8 @@ def _mlb_same_game_items(date, season):
 
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
-          legs_mode="prefer", payout_mode=None, conn="or"):
-    legs = gather(cats, date, season)
+          legs_mode="prefer", payout_mode=None, conn="or", types=None):
+    legs = _filter_types(gather(cats, date, season), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1

@@ -948,7 +948,7 @@ def api_weather_city(city):
 @app.route("/api/combine/meta")
 def api_combine_meta():
     import combine
-    return jsonify(combine.CATEGORIES)
+    return jsonify({"categories": combine.CATEGORIES, "types": combine.CATEGORY_TYPES})
 
 
 @app.route("/api/combine")
@@ -979,10 +979,15 @@ def api_combine():
         legs_mode = "prefer"
     if payout_mode is not None and payout_mode not in modes:
         payout_mode = None
+    # Per-sport leg-type filter (the maker's type chips). Present-but-empty means
+    # every catalogued type is turned off; absent means no filtering.
+    types = ([t for t in request.args.get("types", "").split(",") if t]
+             if "types" in request.args else None)
     try:
         return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout,
                                      max_legs=tiers.cap_legs(_tier(), 30),
-                                     legs_mode=legs_mode, payout_mode=payout_mode, conn=conn))
+                                     legs_mode=legs_mode, payout_mode=payout_mode, conn=conn,
+                                     types=types))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -997,9 +1002,12 @@ def api_combine_recommended():
     cats = [c for c in (request.args.get("cats", "") or "").split(",") if c]
     if not cats:
         return jsonify({"error": "no_cats", "counts": {}})
+    types = ([t for t in request.args.get("types", "").split(",") if t]
+             if "types" in request.args else None)
     try:
         return jsonify(combine.recommended(cats, date, season,
-                                           max_legs=tiers.cap_legs(_tier(), 30)))
+                                           max_legs=tiers.cap_legs(_tier(), 30),
+                                           types=types))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
