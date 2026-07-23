@@ -84,10 +84,20 @@ def pairs(model):
             "WHERE model=? AND graded=1 AND outcome IS NOT NULL", (model,)).fetchall()]
 
 
-def resolve_due(limit=80):
-    """Grade ungraded predictions whose market has settled. Reads each ticker's
-    real result from Kalshi (cheap: only past-close tickers, capped per cycle)."""
+def _mark(ticker, graded, outcome=None, resolved_ts=None):
+    with _lock, _conn() as c:
+        c.execute("UPDATE predictions SET graded=?, outcome=?, resolved_ts=? WHERE ticker=?",
+                  (graded, outcome, resolved_ts, ticker))
+
+
+def resolve_due(limit=150):
+    """Grade ungraded predictions whose market has settled. A settled Kalshi
+    market carries a decided `result` ('yes'/'no') — that, not its status string,
+    is the grade (Kalshi reports settled markets as 'finalized', not 'settled').
+    Tickers Kalshi no longer serves (404) or that settle void are marked dead
+    (graded=2) so they can't wedge the front of the capped queue forever."""
     import kalshi
+    import urllib.error
     now = int(time.time())
     with _lock, _conn() as c:
         due = [r["ticker"] for r in c.execute(
@@ -98,24 +108,33 @@ def resolve_due(limit=80):
     for tk in due:
         try:
             m = kalshi.get_market(tk)
+        except urllib.error.HTTPError as e:
+            if getattr(e, "code", None) == 404:      # market delisted -> never gradable
+                _mark(tk, 2)
+            continue                                 # other HTTP errors: retry later
         except Exception:
-            continue
-        if (m.get("status") or "").lower() != "settled" or m.get("result") not in ("yes", "no"):
-            continue
-        outcome = 1 if m["result"] == "yes" else 0
-        with _lock, _conn() as c:
-            c.execute("UPDATE predictions SET graded=1, outcome=?, resolved_ts=? WHERE ticker=?",
-                      (outcome, now, tk))
-        graded += 1
+            continue                                 # transient (network) -> retry
+        status = (m.get("status") or "").lower()
+        result = (m.get("result") or "").lower()     # get_market already lower-cases
+        if result in ("yes", "no"):
+            _mark(tk, 1, 1 if result == "yes" else 0, now)
+            graded += 1
+        elif status in ("finalized", "settled", "determined", "closed") and result not in ("yes", "no"):
+            _mark(tk, 2)                             # settled void / scratched -> abandon
     return graded
 
 
 def status():
     with _lock, _conn() as c:
         rows = c.execute(
-            "SELECT model, COUNT(*) n, COALESCE(SUM(graded),0) g FROM predictions "
-            "GROUP BY model").fetchall()
-    return {r["model"]: {"logged": r["n"], "graded": r["g"]} for r in rows}
+            "SELECT model, COUNT(*) n, "
+            "COALESCE(SUM(CASE WHEN graded=1 THEN 1 ELSE 0 END),0) g, "
+            "COALESCE(SUM(CASE WHEN graded=2 THEN 1 ELSE 0 END),0) dead "
+            "FROM predictions GROUP BY model").fetchall()
+    # "logged" excludes abandoned (delisted/void) markets so the count reflects
+    # predictions that can actually graduate to a grade.
+    return {r["model"]: {"logged": r["n"] - r["dead"], "graded": r["g"],
+                         "abandoned": r["dead"]} for r in rows}
 
 
 # ---- Harvest: piggyback on the sims' (cached) boards -----------------------
