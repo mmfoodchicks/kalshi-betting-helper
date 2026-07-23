@@ -4559,7 +4559,7 @@ function renderCmbCatCounts() {
   const boxes = cats.map((c) => {
     const v = _cmbCounts[c] == null ? "" : _cmbCounts[c];
     return `<label class="cmbcount">${_cmbCatLabels[c] || c}
-      <input type="number" min="0" max="40" value="${v}" placeholder="—" style="width:46px"
+      <input type="number" min="0" max="40" value="${v}" placeholder="—"
         title="legs from this sport (blank = use the % floor, 0 = all, N = top N)"
         oninput="setCmbCount('${c}', this.value)"/></label>`;
   }).join(" ");
@@ -4693,6 +4693,10 @@ async function buildCombine() {
         title = `🎰 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (${breakdown})`;
         if (c.capped)
           note += `<div class="small">⚠️ Capped at ${c.legs_used} legs — the highest-probability legs were kept.</div>`;
+        if (c.target_payout_x && c.payout_reached === false)
+          note += `<div class="small">⚠️ Couldn't reach ${c.target_payout_x}× — with these sports/counts and the ${t}% floor the most is <b>${c.fair_payout_x}×</b>. Raise a count, lower the floor, or add a sport.</div>`;
+        else if (c.target_payout_x)
+          note += `<div class="small">🎯 Reached your ${c.target_payout_x}× target (steered the free-to-choose sports toward it while keeping the safest legs that get there).</div>`;
         note += `<div class="small">Built from your per-sport counts (${breakdown}). At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}).</div>`;
       } else {
         title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;

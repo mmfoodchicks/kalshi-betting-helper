@@ -760,23 +760,99 @@ def _mlb_same_game_items(date, season):
     return out
 
 
-def _assemble_by_cat(legs, per_cat, target, max_legs):
-    """Per-sport budget: take N legs (0 = all) from each named sport — its most
-    likely leg per event, best first — ignoring the global confidence floor, so
-    'all the baseball moneylines + 2 easy tennis' comes out exactly as asked.
-    Legs are tagged with cat_key in gather(); per_cat maps that key -> count."""
+def _pick_k_for_payout(elig, k, target_log):
+    """Choose exactly k legs (one per event, from `elig` sorted by prob) whose
+    combined payout best reaches the target. Because payout = 1/prob, the safest
+    combo that still reaches the target is the one whose total −log(prob) is the
+    SMALLEST value at or above target_log. A small DP over (count, payout bucket)
+    finds it and remembers the legs. Returns the chosen leg list."""
+    import math
+    RES = 0.05
+    pool = elig[:250]                                   # bound the DP; plenty of spread
+    # dp[(cnt, bucket)] = (sum_logp, chosen_legs) — best (highest prob) per state.
+    dp = {(0, 0): (0.0, ())}
+    for l in pool:
+        lp = math.log(max(0.01, min(0.99, l["prob"])))
+        cb = int(round(-lp / RES))
+        nd = dict(dp)
+        for (cnt, bk), (s, sel) in dp.items():
+            if cnt + 1 > k:
+                continue
+            key = (cnt + 1, bk + cb)
+            cand = (s + lp, sel + (l,))
+            if key not in nd or cand[0] > nd[key][0]:
+                nd[key] = cand
+        dp = nd
+    states = [(bk, s, sel) for (cnt, bk), (s, sel) in dp.items() if cnt == k]
+    if not states:
+        return list(elig[:k])
+    tb = target_log / RES
+    reaching = [st for st in states if st[0] >= tb]
+    if reaching:
+        best = min(reaching, key=lambda st: st[0])      # smallest payout ≥ target = safest
+    else:
+        best = max(states, key=lambda st: st[0])        # can't reach -> most payout
+    return list(best[2])
+
+
+def _logpay(l):
+    import math
+    return -math.log(max(0.01, min(0.99, l["prob"])))
+
+
+def _assemble_by_cat(legs, per_cat, target, max_legs, payout_target=None, payout_mode="off"):
+    """Per-sport budget: take N legs (0 = all) from each named sport, one per
+    event, clearing the per-leg floor. With no payout target it takes each sport's
+    most likely legs ('all the baseball moneylines + 2 easy tennis'); with a
+    payout target it aims the whole slip at that payout as safely as possible —
+    sports whose count leaves no choice (e.g. all four baseball moneylines) are
+    LOCKED first, and only the sports with room to choose (the tennis 'supplement')
+    are steered toward the payout still needed. Legs are tagged in gather()."""
+    import math
     from collections import defaultdict
     by = defaultdict(lambda: defaultdict(list))       # cat_key -> event -> [legs]
     for l in legs:
         by[l.get("cat_key")][l["event_id"]].append(l)
-    chosen, per_used = [], {}
+    want_payout = (payout_mode in ("require", "prefer")
+                   and payout_target and payout_target > 1)
+    # Eligible pool + requested count per sport (floor-cleared, best per event).
+    pools = {}
     for cat, n in per_cat.items():
         events = by.get(cat) or {}
         best = [max(vs, key=lambda v: v["prob"]) for vs in events.values()]
-        best.sort(key=lambda v: -v["prob"])
-        take = best if not n else best[:max(0, n)]     # n==0 -> all eligible
-        per_used[cat] = len(take)
-        chosen.extend(take)
+        elig = [l for l in best if l["prob"] >= target] or best   # honor the floor
+        elig.sort(key=lambda v: -v["prob"])
+        k = len(elig) if not n else min(max(0, n), len(elig))     # n==0 -> all
+        pools[cat] = (elig, k)
+
+    chosen, per_used = [], {}
+    if not want_payout:
+        for cat, (elig, k) in pools.items():
+            take = elig[:k]
+            per_used[cat] = len(take)
+            chosen.extend(take)
+    else:
+        # Lock the sports with no choice; they contribute a fixed payout.
+        fixed_log, flex = 0.0, []
+        for cat, (elig, k) in pools.items():
+            if k >= len(elig):                          # forced -> take them all
+                per_used[cat] = k
+                chosen.extend(elig[:k])
+                fixed_log += sum(_logpay(l) for l in elig[:k])
+            else:
+                flex.append(cat)
+        # Aim the flexible sports at the REMAINING payout, sequentially so each
+        # adapts to what the previous ones actually contributed.
+        remaining = max(0.0, math.log(payout_target) - fixed_log)
+        left = len(flex)
+        for cat in flex:
+            elig, k = pools[cat]
+            take = _pick_k_for_payout(elig, k, remaining / max(1, left))
+            got = sum(_logpay(l) for l in take)
+            remaining = max(0.0, remaining - got)
+            left -= 1
+            per_used[cat] = len(take)
+            chosen.extend(take)
     chosen.sort(key=lambda v: -v["prob"])
     if len(chosen) > max_legs:                          # safety cap: keep the best
         chosen = chosen[:max_legs]
@@ -797,7 +873,10 @@ def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=1
     # per sport (a sport with no count contributes nothing), so leg counts differ
     # by sport instead of one global floor deciding everything.
     if per_cat:
-        chosen, per_used = _assemble_by_cat(legs, per_cat, target, max_legs)
+        pmode = payout_mode if payout_mode in ("require", "prefer") else (
+            "require" if (target_payout and target_payout > 1) else "off")
+        chosen, per_used = _assemble_by_cat(legs, per_cat, target, max_legs,
+                                            payout_target=target_payout, payout_mode=pmode)
         if len(chosen) < 2:
             return {"combo": None, "counts": counts, "per_cat_used": per_used}
         item = _item(chosen)
@@ -807,6 +886,9 @@ def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=1
         item["per_cat"] = True
         item["per_cat_used"] = per_used
         item["capped"] = len(chosen) >= max_legs
+        if target_payout and target_payout > 1 and pmode != "off":
+            item["target_payout_x"] = target_payout
+            item["payout_reached"] = (item.get("fair_payout_x") or 0) >= target_payout
         return {"combo": item, "counts": counts, "per_cat_used": per_used}
     # Back-compat default: a payout target with no explicit mode means "require it"
     # (the old behavior was payout-governed when payout > 1).

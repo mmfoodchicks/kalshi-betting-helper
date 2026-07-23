@@ -968,3 +968,15 @@ body.tier-locked .owner-only { display: none !important; }
   display: flex; align-items: center; gap: 10px; max-width: 92vw; }
 #updateBanner button { background: #fff; color: #1a1a1a; border: 0; border-radius: 8px;
   padding: 5px 12px; font-weight: 700; cursor: pointer; }
+
+/* Combo maker: larger, readable number inputs (target %, legs, payout, and the
+   per-sport leg-count boxes). Inline widths in the markup set the box width;
+   these rules make the digits you type actually legible. */
+#cmbMakerView input[type="number"],
+#cmbCatCounts input[type="number"],
+.combomaker input[type="number"] {
+  font-size: 15px; padding: 5px 8px; height: auto; line-height: 1.3;
+  border-radius: 8px; text-align: center;
+}
+#cmbCatCounts .cmbcount { display: inline-block; margin: 3px 10px 3px 0; }
+#cmbCatCounts .cmbcount input { width: 64px; }
