@@ -4528,6 +4528,8 @@ window.runComboSim = () => {
 // ---- Mega combo maker (cross-category) ------------------------------------
 let combineCatsLoaded = false;
 let _cmbCatTypes = {};          // category -> [[type_value, chip_label], ...]
+let _cmbCatLabels = {};         // category -> display label
+const _cmbCounts = {};          // category -> per-sport leg count (string)
 const _cmbTypeOff = new Set();  // type_values the user has turned OFF
 async function loadCombineCats() {
   if (combineCatsLoaded) return;
@@ -4535,12 +4537,46 @@ async function loadCombineCats() {
   // Back-compat: meta used to be a flat {key: label}; now {categories, types}.
   const cats = meta.categories || meta;
   _cmbCatTypes = meta.types || {};
+  _cmbCatLabels = cats;
   // Default: nothing checked -- the user picks which sports to combine.
   $("combineCats").innerHTML = Object.entries(cats).map(([k, v]) =>
-    `<label><input type="checkbox" value="${k}" onchange="renderCmbTypeChips()"/> ${v}</label>`
+    `<label><input type="checkbox" value="${k}" onchange="onCmbCatToggle()"/> ${v}</label>`
   ).join("");
   combineCatsLoaded = true;
-  renderCmbTypeChips();
+  onCmbCatToggle();
+}
+function onCmbCatToggle() { renderCmbTypeChips(); renderCmbCatCounts(); }
+// Per-sport leg counts: for each checked sport, a small "how many legs" box.
+// Blank = use the % floor (global mode); a number switches the maker to per-sport
+// counts (0 = all that sport's legs, N = its N most likely). This is what lets
+// "every baseball moneyline + 2 easy tennis" come out as asked instead of one
+// floor picking whatever's highest.
+function renderCmbCatCounts() {
+  const el = $("cmbCatCounts");
+  if (!el) return;
+  const cats = _checkedCats();
+  if (!cats.length) { el.innerHTML = ""; return; }
+  const boxes = cats.map((c) => {
+    const v = _cmbCounts[c] == null ? "" : _cmbCounts[c];
+    return `<label class="cmbcount">${_cmbCatLabels[c] || c}
+      <input type="number" min="0" max="40" value="${v}" placeholder="—" style="width:46px"
+        title="legs from this sport (blank = use the % floor, 0 = all, N = top N)"
+        oninput="setCmbCount('${c}', this.value)"/></label>`;
+  }).join(" ");
+  el.innerHTML = `<div style="margin-top:4px">Legs per sport <span style="color:var(--muted)">(blank = use % floor · 0 = all · N = top N)</span>: ${boxes}</div>`;
+}
+window.setCmbCount = (cat, val) => {
+  if (val === "" || val == null) delete _cmbCounts[cat];
+  else _cmbCounts[cat] = String(Math.max(0, Math.min(40, parseInt(val, 10) || 0)));
+};
+// &per_cat= param: "mlb:0,tennis:2" from the filled-in count boxes of checked
+// sports. Empty when none are filled (the maker stays in % floor mode).
+function cmbPerCatParam() {
+  const cats = new Set(_checkedCats());
+  const parts = Object.entries(_cmbCounts)
+    .filter(([c, v]) => cats.has(c) && v !== "" && v != null)
+    .map(([c, v]) => `${c}:${v}`);
+  return parts.length ? "&per_cat=" + encodeURIComponent(parts.join(",")) : "";
 }
 function _checkedCats() {
   return [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
@@ -4637,7 +4673,8 @@ async function buildCombine() {
   out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
   try {
     const q = `cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`
-      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}` + cmbTypesParam();
+      + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`
+      + cmbTypesParam() + cmbPerCatParam();
     const d = await (await fetch(`/api/combine?${q}`)).json();
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
@@ -4646,17 +4683,29 @@ async function buildCombine() {
     if (d.combo) {
       const c = d.combo;
       const wantPayout = payoutMode !== "off" && p > 1;
-      const title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
-      let note = "";
-      if (c.expanded && c.legs_used !== c.requested_legs)
-        note += `<div class="small">Used <b>${c.legs_used}</b> legs (you set ${c.requested_legs}) to best fit your targets while keeping every leg ≥ ${t}%.</div>`;
-      if (c.legs_met === false && legsMode === "require")
-        note += `<div class="small">⚠️ Couldn't field exactly ${c.legs_target} legs ≥ ${t}% — showing the closest (${c.legs_used}).</div>`;
-      if (wantPayout && c.payout_reached === false)
-        note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the best at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor, drop the leg-count requirement, or add categories.</div>`;
-      if (c.hard_ok === false)
-        note += `<div class="small" style="color:#e0566a">⚠️ Your required target(s) couldn't both be met${conn === "and" ? " (AND)" : ""} — showing the closest parlay. Try switching AND→OR or relaxing one target to <b>recommend</b>.</div>`;
-      note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). ${c.legs_meeting_target}/${c.legs_used} legs meet the ${t}% target.</div>`;
+      let title, note = "";
+      if (c.per_cat) {
+        // Per-sport budget mode: leg counts came from the per-sport boxes, not
+        // one % floor, so describe it that way.
+        const used = c.per_cat_used || {};
+        const breakdown = Object.entries(used).map(([k, v]) =>
+          `${(_cmbCatLabels[k] || k)} ${v}`).join(" + ");
+        title = `🎰 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (${breakdown})`;
+        if (c.capped)
+          note += `<div class="small">⚠️ Capped at ${c.legs_used} legs — the highest-probability legs were kept.</div>`;
+        note += `<div class="small">Built from your per-sport counts (${breakdown}). At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}).</div>`;
+      } else {
+        title = `🎰 ${c.legs_used || c.n_legs}-leg mega parlay → ${c.fair_payout_x}× (every leg ≥ ${t}%)`;
+        if (c.expanded && c.legs_used !== c.requested_legs)
+          note += `<div class="small">Used <b>${c.legs_used}</b> legs (you set ${c.requested_legs}) to best fit your targets while keeping every leg ≥ ${t}%.</div>`;
+        if (c.legs_met === false && legsMode === "require")
+          note += `<div class="small">⚠️ Couldn't field exactly ${c.legs_target} legs ≥ ${t}% — showing the closest (${c.legs_used}).</div>`;
+        if (wantPayout && c.payout_reached === false)
+          note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the best at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor, drop the leg-count requirement, or add categories.</div>`;
+        if (c.hard_ok === false)
+          note += `<div class="small" style="color:#e0566a">⚠️ Your required target(s) couldn't both be met${conn === "and" ? " (AND)" : ""} — showing the closest parlay. Try switching AND→OR or relaxing one target to <b>recommend</b>.</div>`;
+        note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). ${c.legs_meeting_target}/${c.legs_used} legs meet the ${t}% target.</div>`;
+      }
       html += renderCombo(c, title, "hl prop") + note;
       html += comboSimControl(c);
     } else {

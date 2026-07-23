@@ -476,52 +476,40 @@ def _sport_legs(key):
 
 
 def gather(cats, date, season):
+    """All legs for the checked categories. Each leg is tagged with its source
+    category KEY (`cat_key`) so the maker can budget legs per sport, independent
+    of the display label (tennis, for instance, spans several tour labels)."""
     legs = []
+
+    def add(key, fn):
+        try:
+            new = fn() or []
+        except Exception:
+            new = []
+        for l in new:
+            l.setdefault("cat_key", key)
+        legs.extend(new)
+
     if "mlb" in cats:
-        legs += _mlb_legs(date, season)
-    if "crypto" in cats:
-        legs += _crypto_legs()
-    if "soccer" in cats:
-        legs += _worldcup_legs()                 # our World Cup model, not de-vig
-    if "ufc" in cats:
-        legs += _ufc_legs()                      # our UFC fight model, not de-vig
-    if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
-        legs += _tennis_legs(("ATP", "WTA", "ITF", "ITF-W"))
+        add("mlb", lambda: _mlb_legs(date, season))
     if "nfl" in cats:
-        try:
-            legs += _nfl_legs()
-        except Exception:
-            pass
+        add("nfl", _nfl_legs)
+    if "crypto" in cats:
+        add("crypto", _crypto_legs)
+    if "soccer" in cats:
+        add("soccer", _worldcup_legs)            # our World Cup model, not de-vig
+    if "ufc" in cats:
+        add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
+    if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
+        add("tennis", lambda: _tennis_legs(("ATP", "WTA", "ITF", "ITF-W")))
     if "nba" in cats:
-        try:
-            legs += _nba_legs()
-        except Exception:
-            pass
+        add("nba", _nba_legs)
     if "nhl" in cats:
-        try:
-            legs += _nhl_legs()
-        except Exception:
-            pass
-    for k in SPORT_KEYS:
-        if k in ("soccer", "ufc", "tennis", "wta") or k not in cats:
-            continue
-        if k == "wnba":
-            model = []
-            try:
-                model = _wnba_legs()             # possession-engine legs
-            except Exception:
-                model = []
-            legs += model or _sport_legs(k)      # de-vig browse as the fallback
-            continue
-        if k == "golf":
-            model = []
-            try:
-                model = _golf_legs()             # tournament-simulator legs
-            except Exception:
-                model = []
-            legs += model or _sport_legs(k)      # de-vig browse as the fallback
-            continue
-        legs += _sport_legs(k)
+        add("nhl", _nhl_legs)
+    if "wnba" in cats:          # possession-engine legs, de-vig browse as fallback
+        add("wnba", lambda: _wnba_legs() or _sport_legs("wnba"))
+    if "golf" in cats:          # tournament-simulator legs, de-vig browse fallback
+        add("golf", lambda: _golf_legs() or _sport_legs("golf"))
     return legs
 
 
@@ -772,19 +760,58 @@ def _mlb_same_game_items(date, season):
     return out
 
 
+def _assemble_by_cat(legs, per_cat, target, max_legs):
+    """Per-sport budget: take N legs (0 = all) from each named sport — its most
+    likely leg per event, best first — ignoring the global confidence floor, so
+    'all the baseball moneylines + 2 easy tennis' comes out exactly as asked.
+    Legs are tagged with cat_key in gather(); per_cat maps that key -> count."""
+    from collections import defaultdict
+    by = defaultdict(lambda: defaultdict(list))       # cat_key -> event -> [legs]
+    for l in legs:
+        by[l.get("cat_key")][l["event_id"]].append(l)
+    chosen, per_used = [], {}
+    for cat, n in per_cat.items():
+        events = by.get(cat) or {}
+        best = [max(vs, key=lambda v: v["prob"]) for vs in events.values()]
+        best.sort(key=lambda v: -v["prob"])
+        take = best if not n else best[:max(0, n)]     # n==0 -> all eligible
+        per_used[cat] = len(take)
+        chosen.extend(take)
+    chosen.sort(key=lambda v: -v["prob"])
+    if len(chosen) > max_legs:                          # safety cap: keep the best
+        chosen = chosen[:max_legs]
+    chosen = [dict(l, meets=(l["prob"] >= target)) for l in chosen]
+    return chosen, per_used
+
+
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
-          legs_mode="prefer", payout_mode=None, conn="or", types=None):
+          legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None):
     legs = _filter_types(gather(cats, date, season), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1
     if not legs:
         return {"combo": None, "counts": counts}
+    target = max(0.05, min(0.97, target_pct / 100.0))
+    # Per-sport budget mode: the combo is built entirely from the requested count
+    # per sport (a sport with no count contributes nothing), so leg counts differ
+    # by sport instead of one global floor deciding everything.
+    if per_cat:
+        chosen, per_used = _assemble_by_cat(legs, per_cat, target, max_legs)
+        if len(chosen) < 2:
+            return {"combo": None, "counts": counts, "per_cat_used": per_used}
+        item = _item(chosen)
+        item["target_pct"] = round(target * 100, 1)
+        item["legs_meeting_target"] = sum(1 for v in chosen if v.get("meets"))
+        item["legs_used"] = len(chosen)
+        item["per_cat"] = True
+        item["per_cat_used"] = per_used
+        item["capped"] = len(chosen) >= max_legs
+        return {"combo": item, "counts": counts, "per_cat_used": per_used}
     # Back-compat default: a payout target with no explicit mode means "require it"
     # (the old behavior was payout-governed when payout > 1).
     if payout_mode is None:
         payout_mode = "require" if (target_payout and target_payout > 1) else "off"
-    target = max(0.05, min(0.97, target_pct / 100.0))
     by_event = {}
     for l in legs:
         by_event.setdefault(l["event_id"], []).append(l)

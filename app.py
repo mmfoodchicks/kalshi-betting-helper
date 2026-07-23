@@ -983,11 +983,22 @@ def api_combine():
     # every catalogued type is turned off; absent means no filtering.
     types = ([t for t in request.args.get("types", "").split(",") if t]
              if "types" in request.args else None)
+    # Per-sport leg budget: "mlb:0,tennis:2" -> {mlb: 0 (all), tennis: 2}. When
+    # present, the combo is built from these counts per sport instead of one floor.
+    per_cat = {}
+    for pair in (request.args.get("per_cat", "") or "").split(","):
+        if ":" in pair:
+            k, _, v = pair.partition(":")
+            try:
+                if k.strip():
+                    per_cat[k.strip()] = max(0, min(40, int(v)))
+            except ValueError:
+                continue
     try:
         return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout,
                                      max_legs=tiers.cap_legs(_tier(), 30),
                                      legs_mode=legs_mode, payout_mode=payout_mode, conn=conn,
-                                     types=types))
+                                     types=types, per_cat=(per_cat or None)))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
