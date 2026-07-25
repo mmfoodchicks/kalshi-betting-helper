@@ -73,15 +73,27 @@ def _method(result):
     return "dec"
 
 
-def fighter_rating(fid, name=None):
-    """Aggregated rating dict for one fighter, cached two weeks."""
+def fighter_rating(fid, name=None, as_of=None):
+    """Aggregated rating dict for one fighter, cached two weeks.
+
+    `as_of` (YYYY-MM-DD) makes the rating POINT-IN-TIME: only fights that had
+    already happened before that date are used. That's what lets us replay a past
+    card honestly — rating a fighter for a 2025 bout must not see the 2025 bout
+    itself, or anything after it, or a backtest just measures hindsight. Default
+    (None) = today, i.e. the normal live rating."""
     def build():
         try:
             el = _get(f"{ATH}/{fid}/eventlog?lang=en")
         except Exception:
             return None
-        items = (el.get("events") or {}).get("items", [])[-14:]  # recent slice
-        today = clock.today_et().isoformat()
+        # ESPN's eventlog is NOT reliably chronological — the newest bout can sit
+        # at index 0 with the rest descending, so slicing the tail (the old
+        # items[-14:]) silently rated fighters on their OLDEST fights and ignored
+        # the last decade. Take a generous window and let the date sort below pick
+        # the genuinely most recent fights. Replaying the past needs the wider
+        # window anyway, since recent bouts are filtered out by the cutoff.
+        items = (el.get("events") or {}).get("items", [])[-60:]
+        today = as_of or clock.today_et().isoformat()
 
         def fetch_comp(it):
             ref = (it.get("competition") or {}).get("$ref") or it.get("$ref")
@@ -178,7 +190,10 @@ def fighter_rating(fid, name=None):
             "sos": round(sos, 3),
             "career": prof,
         }
-    return racing._cached(("ufc_fighter", fid), 14 * 86400, build) or _default(fid, name, 0)
+    # as_of is part of the key: a point-in-time rating must never be served from
+    # (or overwrite) the live one.
+    return racing._cached(("ufc_fighter", fid, as_of or ""), 14 * 86400, build) \
+        or _default(fid, name, 0)
 
 
 _K = 4.5   # pseudo-fights of shrinkage toward the prior (a thin sample regresses hard)
