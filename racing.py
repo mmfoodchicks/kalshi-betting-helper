@@ -216,7 +216,70 @@ def get_nascar_practice(race_name=None, date=None, year=None):
 
 # --- F1 ----------------------------------------------------------------------
 
+def _openf1_f1_grid():
+    """The CURRENT weekend's real starting grid from OpenF1 (live timing), or None.
+
+    This is the fix for the lagging Ergast/Jolpica feed: OpenF1 posts qualifying
+    within minutes, so we take the latest completed Qualifying session, but only
+    when it belongs to THIS weekend and its race HASN'T RUN YET — i.e. exactly the
+    window where the grid should condition the sim. Once the race runs (or the
+    quali is more than a few days old) it returns None, so a spent grid can never
+    leak onto the next event. Prefers /starting_grid (penalty-adjusted) and falls
+    back to /session_result (raw qualifying order)."""
+    import datetime as _dt
+
+    def build():
+        now = _dt.datetime.now(_dt.timezone.utc)
+        year = clock.today_et().year
+        sessions = _get_json(f"https://api.openf1.org/v1/sessions?year={year}")
+
+        def when(s):
+            try:
+                return _dt.datetime.fromisoformat(s["date_start"].replace("Z", "+00:00"))
+            except Exception:
+                return None
+        qualis, races_by_meeting = [], {}
+        for s in sessions:
+            t = when(s)
+            if not t:
+                continue
+            if s.get("session_name") == "Qualifying" and t < now:
+                qualis.append((t, s))
+            elif s.get("session_name") == "Race":
+                races_by_meeting[s.get("meeting_key")] = t
+        if not qualis:
+            return None
+        qualis.sort()
+        t, s = qualis[-1]
+        if (now - t).total_seconds() > 4 * 86400:
+            return None                              # previous weekend -> pre-quali
+        race_t = races_by_meeting.get(s.get("meeting_key"))
+        if race_t and race_t < now:
+            return None                              # race already ran -> grid spent
+        key = s["session_key"]
+        drivers = _get_json(f"https://api.openf1.org/v1/drivers?session_key={key}")
+        name_of = {d["driver_number"]: (d.get("full_name") or d.get("broadcast_name"))
+                   for d in drivers}
+        rows = _get_json(f"https://api.openf1.org/v1/starting_grid?session_key={key}") or []
+        if len(rows) < 8:
+            rows = _get_json(f"https://api.openf1.org/v1/session_result?session_key={key}") or []
+        grid = {}
+        for r in rows:
+            dn, pos = r.get("driver_number"), r.get("position")
+            if dn in name_of and pos and not r.get("dsq") and not r.get("dns"):
+                grid[norm_name(name_of[dn])] = int(pos)
+        if len(grid) < 8:
+            return None
+        return _finalize(grid, f"{s.get('circuit_short_name') or 'Grand Prix'} GP", "F1")
+    return _cached(("f1_openf1_grid",), 900, build)
+
+
 def get_f1_grid(race_name=None):
+    # Live OpenF1 grid for the current weekend first (no feed lag); the Ergast
+    # feed is the fallback when OpenF1 hasn't posted the classification yet.
+    g = _openf1_f1_grid()
+    if g:
+        return g
     try:
         d = _get_json("https://api.jolpi.ca/ergast/f1/current/last/qualifying.json")
     except Exception:
