@@ -53,6 +53,57 @@ def nascar_climate(track_name, race_date):
     return None
 
 
+FORECAST = "https://api.open-meteo.com/v1/forecast"
+
+
+def forecast(lat, lon, race_date):
+    """{wet_prob, avg_wind, max_wind, source:'forecast'} from the ACTUAL race-day
+    forecast when the race is inside Open-Meteo's ~16-day window, else None (the
+    caller falls back to the climate average). Sharper than climatology for the
+    upcoming race — a genuinely wet or bone-dry weekend is knowable days out."""
+    try:
+        lat, lon = float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None
+    try:
+        rd = datetime.date.fromisoformat(race_date[:10])
+    except (ValueError, TypeError):
+        return None
+    days_out = (rd - clock.today_et()).days
+    if days_out < 0 or days_out > 15:
+        return None
+
+    def build():
+        url = (f"{FORECAST}?latitude={lat}&longitude={lon}"
+               "&daily=precipitation_probability_max,precipitation_sum,wind_speed_10m_max"
+               "&forecast_days=16&timezone=auto")
+        try:
+            d = _get(url)["daily"]
+        except Exception:
+            return None
+        for i, day in enumerate(d.get("time", [])):
+            if day != rd.isoformat():
+                continue
+            pp = d["precipitation_probability_max"][i]
+            ps = d["precipitation_sum"][i]
+            w = d["wind_speed_10m_max"][i]
+            if pp is None:
+                return None
+            # Daily max hourly prob -> race-window (~2h) wet prob; a trace of
+            # forecast rain (<0.5mm total) rarely means an actually wet race.
+            wet = (pp / 100.0) * 0.6
+            if (ps or 0) < 0.5:
+                wet *= 0.5
+            return {"wet_prob": round(min(0.9, wet), 3),
+                    "avg_wind": round(w, 1) if w is not None else None,
+                    "max_wind": round(w, 0) if w is not None else None,
+                    "source": "forecast"}
+        return None
+    # Forecasts update through the week -> refresh a few times a day.
+    return racing._cached(("race_forecast", round(lat, 1), round(lon, 1), rd.isoformat()),
+                          6 * 3600, build)
+
+
 def climate(lat, lon, race_date, window=7):
     """{wet_prob, avg_wind, max_wind} for the race date at (lat, lon).
 

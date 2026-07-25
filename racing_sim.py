@@ -377,7 +377,11 @@ def f1_remaining():
         for r in d["MRData"]["RaceTable"]["Races"]:
             if r.get("date", "") >= today:
                 loc = (r.get("Circuit") or {}).get("Location") or {}
-                clim = race_weather.climate(loc.get("lat"), loc.get("long"), r["date"]) or {}
+                # Actual forecast for near-term races (within ~16 days), climate
+                # average otherwise — sharper wet-race odds for the DFS.
+                clim = (race_weather.forecast(loc.get("lat"), loc.get("long"), r["date"])
+                        or race_weather.climate(loc.get("lat"), loc.get("long"), r["date"])
+                        or {})
                 cir = (r.get("Circuit") or {}).get("circuitName")
                 out.append({"round": int(r["round"]), "name": r["raceName"],
                             "sprint": "Sprint" in r, "circuit": cir,
@@ -385,6 +389,7 @@ def f1_remaining():
                             # Ergast gives race date + optional UTC start time.
                             "start": (f"{r['date']}T{r['time']}" if r.get("time") else None),
                             "wet_prob": clim.get("wet_prob", 0.12),
+                            "wet_source": clim.get("source", "climate"),
                             "avg_wind": clim.get("avg_wind")})
         return out
     return racing._cached(("f1_remaining",), 6 * 3600, build) or []
@@ -1145,6 +1150,71 @@ def _longrun_from_session(key):
     return out
 
 
+def _f1_pit_pace():
+    """{normalized driver name: pit-crew gap to the fastest crew (s)} from the last
+    few completed races (OpenF1). A fast crew gains track position on every stop, a
+    slow one loses it — a small but real edge the pace models miss. Pooled by TEAM
+    (both cars share the crew), then mapped back to the current drivers by name."""
+    import datetime as _dt
+    import statistics
+
+    def build():
+        now = _dt.datetime.now(_dt.timezone.utc)
+        year = clock.today_et().year
+        try:
+            sessions = racing._get_json(f"https://api.openf1.org/v1/sessions?year={year}")
+        except Exception:
+            return None
+        races = []
+        for s in sessions:
+            if s.get("session_name") != "Race":
+                continue
+            try:
+                t = _dt.datetime.fromisoformat(s["date_start"].replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if t < now:
+                races.append((t, s))
+        races.sort()
+        recent = [s for _t, s in races[-4:]]
+        if not recent:
+            return None
+        team_stops = defaultdict(list)
+        latest = {}                                    # driver_number -> (name, team)
+        for idx, s in enumerate(recent):
+            key = s["session_key"]
+            try:
+                drv = racing._get_json(f"https://api.openf1.org/v1/drivers?session_key={key}")
+                pit = racing._get_json(f"https://api.openf1.org/v1/pit?session_key={key}")
+            except Exception:
+                continue
+            team_of = {d["driver_number"]: d.get("team_name") for d in drv}
+            name_of = {d["driver_number"]: (d.get("full_name") or d.get("broadcast_name"))
+                       for d in drv}
+            for p in pit:
+                dur = p.get("stop_duration")
+                tm = team_of.get(p.get("driver_number"))
+                if dur and tm and 1.5 < dur < 6.0:     # a real crew stop, not a lane transit
+                    team_stops[tm].append(dur)
+            if idx == len(recent) - 1:                 # newest race = current lineup
+                for dn, nm in name_of.items():
+                    latest[dn] = (nm, team_of.get(dn))
+        team_med = {tm: statistics.median(v) for tm, v in team_stops.items() if len(v) >= 3}
+        if len(team_med) < 6:
+            return None
+        fastest = min(team_med.values())
+        out = {}
+        for _dn, (nm, tm) in latest.items():
+            if nm and tm in team_med:
+                gap = round(team_med[tm] - fastest, 3)
+                k = racing.norm_name(nm)
+                out[k] = gap
+                if k.split():
+                    out.setdefault(k.split()[-1], gap)
+        return out or None
+    return racing._cached(("f1_pit",), 12 * 3600, build)
+
+
 def _f1_longrun_pace():
     """This weekend's RACE pace from practice long runs (OpenF1). Prefers FP2 (the
     traditional race-sim session), then the latest completed practice of the
@@ -1300,6 +1370,11 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         name_of = {d["id"]: d["name"] for d in drivers}
         race = rem[0]
         ctype = race.get("type", "standard"); wet_p = race.get("wet_prob", 0.0)
+        # Per-circuit dynamics the DFS sim was ignoring: how grid-locked the track
+        # is (pole converts far more at Monaco than Monza) and its safety-car rate
+        # (a SC bunches the field and shuffles strategy — the GPP upside).
+        gw = _f1_grid_weight(race.get("name", ""))
+        sc_p = _f1_sc_prob(race.get("name", ""))
         laps = _F1_LAPS
         # Fresh practice pace from THIS weekend sharpens the simulated qualifying
         # (pre-quali only — once the real grid is fixed, practice is moot).
@@ -1341,6 +1416,21 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
                 drivers = [dict(d, race=(1 - _LRW) * d["race"] + _LRW * rank[d["id"]])
                            if d["id"] in rank else d for d in drivers]
                 longrun_used = True
+        # Pit-crew speed: a slow crew quietly costs track position on every stop.
+        # Small, bounded nudge to race pace (positions), relative to the best crew.
+        try:
+            pit = _f1_pit_pace()
+        except Exception:
+            pit = None
+        if pit:
+            adj = []
+            for d in drivers:
+                nm = racing.norm_name(d["name"])
+                g = pit.get(nm) or (pit.get(nm.split()[-1]) if nm.split() else None)
+                if g is not None:
+                    d = dict(d, race=d["race"] + min(0.8, g * 0.35))
+                adj.append(d)
+            drivers = adj
         # Teammate pairs for the defeated-teammate bonus.
         by_con = defaultdict(list)
         for d in drivers:
@@ -1382,7 +1472,8 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
             grid = list(fg_order) if fg_order else \
                 _apply_grid_penalties(_sim_quali(drivers, rng), rng)
             start_of = {did: i + 1 for i, did in enumerate(grid)}
-            order = _sim_race(drivers, grid, rng, wet=rng.random() < wet_p, ctype=ctype)
+            order = _sim_race(drivers, grid, rng, wet=rng.random() < wet_p, ctype=ctype,
+                              grid_w=gw, sc_prob=sc_p)
             _tally_finish(order, fin, win, t5, t10, t20)
             dom = _f1_dk_race(order, laps, rng)
             pos_of = {did: i + 1 for i, did in enumerate(order)}
