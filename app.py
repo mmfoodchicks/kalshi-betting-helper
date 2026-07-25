@@ -622,6 +622,31 @@ def api_simulate_weather():
     return jsonify(res)
 
 
+@app.route("/api/dfs/slate")
+def api_dfs_slate():
+    """Tonight's DraftKings slate for a sport, straight from DK's public lobby —
+    salaries, roster slots and the game/bout key, plus the posted contests (entry
+    fee, field size, prize pool) so the contest sim's parameters match the contest
+    you're entering. Removes the hand-pasted CSV step entirely.
+
+    ?sport=ufc|mlb|nfl|nba|nhl|golf|nascar|f1|soccer|lol
+    ?dg=<draft_group_id>   pick a specific slate (default: the soonest, biggest)
+    ?exclude=Dulatov vs Turman,...  drop a postponed game/bout DK hasn't pulled"""
+    import dk
+    sport = (request.args.get("sport") or "ufc").lower()
+    if sport not in dk.SPORTS:
+        return jsonify({"error": f"unknown sport (have: {', '.join(sorted(dk.SPORTS))})"}), 400
+    dg = request.args.get("dg")
+    excl = [s.strip() for s in (request.args.get("exclude") or "").split(",") if s.strip()]
+    try:
+        s = dk.slate_for(sport, draft_group_id=(int(dg) if dg else None), exclude_games=excl)
+    except Exception as e:
+        return jsonify({"error": f"dk slate failed: {e}"}), 502
+    if not s:
+        return jsonify({"error": f"no DraftKings slate posted for {sport} right now"}), 404
+    return jsonify(s)
+
+
 @app.route("/api/simulate/dfs", methods=["POST"])
 def api_simulate_dfs():
     """Optimize + simulate a DraftKings DFS lineup from a pasted DKSalaries.csv."""
@@ -631,8 +656,29 @@ def api_simulate_dfs():
         return locked
     d = request.get_json(force=True, silent=True) or {}
     text = d.get("csv", "")
+    # No CSV pasted? Pull the live slate from DK's public lobby instead, so the
+    # builder works straight from the sport (and auto-drops anyone DK has marked
+    # unavailable — a scratched player or a postponed fight).
+    auto_slate = None
     if not text.strip():
-        return jsonify({"error": "paste your DraftKings salaries CSV"}), 400
+        try:
+            import dk
+            sp = (d.get("sport") or "ufc").lower()
+            if sp in dk.SPORTS:
+                excl = d.get("exclude") or []
+                if isinstance(excl, str):
+                    excl = [x.strip() for x in excl.split(",") if x.strip()]
+                got = dk.slate_for(sp, draft_group_id=d.get("draft_group_id"),
+                                   exclude_games=excl)
+                if got:
+                    text = got["csv"]
+                    auto_slate = {k: got[k] for k in
+                                  ("draft_group_id", "n_players", "n_dropped", "dropped")}
+        except Exception:
+            auto_slate = None
+    if not text.strip():
+        return jsonify({"error": "paste your DraftKings salaries CSV "
+                                 "(or pass a sport to auto-load tonight's slate)"}), 400
     try:
         roster = int(d.get("roster", 6))
         cap = int(d.get("cap", 50000))
@@ -722,7 +768,7 @@ def api_simulate_dfs():
         except (ValueError, TypeError):
             return default
     contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
-    return jsonify(simulate.dfs_build(
+    built = simulate.dfs_build(
         text, roster=roster, cap=cap, sport=d.get("sport", "ufc"),
         mode=d.get("mode", "classic"), objective=d.get("objective", "projection"),
         date=d.get("date") or clock.today_et().isoformat(), sims=n,
@@ -734,7 +780,10 @@ def api_simulate_dfs():
         entry_fee=max(0.01, _num("entry_fee", 1.0)),
         prize_pool=(_num("prize_pool", 0.0) or None),
         first_prize=(_num("first_prize", 0.0) or None),
-        grid_text=(d.get("grid") or None)))
+        grid_text=(d.get("grid") or None))
+    if auto_slate and isinstance(built, dict):
+        built["dk_slate"] = auto_slate          # what was auto-loaded, and who DK dropped
+    return jsonify(built)
 
 
 def _prop_types():
