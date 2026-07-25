@@ -145,6 +145,12 @@ def _ufc_rows():
                 continue
             trust = "low" if (f.get("debut") or f.get("thin")) else "med"
             note = "sparse UFC history — rating heavily shrunk" if trust == "low" else None
+            # Fading a liquid market is where an unvalidated model gets punished
+            # first; rank those below the picks the book agrees with.
+            if f.get("fades_market"):
+                trust = "low"
+                note = ("our model has this fighter ahead but the book has him an "
+                        "underdog — a disagreement flag, not a proven edge")
             row = _row("🥊 UFC", "ML", f"{f['name']} to win",
                        f"{bt['a']['name']} vs {bt['b']['name']}",
                        fair, cents, trust, note)

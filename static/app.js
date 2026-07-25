@@ -3089,8 +3089,12 @@ function _fighterRow(f) {
   const recTxt = f.fights > 0
     ? `${f.record} · ${f.fights}f`
     : (f.career_record ? `pro ${f.career_record}` : `${f.record} · ${f.fights}f`);
+  // Our pick disagrees with the book on who wins — the picks most likely to be
+  // model error rather than edge, so say so on the card instead of hiding it.
+  const fade = f.fades_market
+    ? ` <span class="ufc-debut" title="Our model favours this fighter but the market has him as the underdog. Disagreeing with a liquid market is where model error shows up first — treat as a flag, not an edge, until the model has graded results behind it.">⚠️ fades the book</span>` : "";
   return `<div class="ufc-fighter">
-      <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)} <span class="small" style="color:var(--muted)">${recTxt}</span></div>
+      <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)}${fade} <span class="small" style="color:var(--muted)">${recTxt}</span></div>
       <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_ufcEdge(f.edge)}</span>
         <span class="fr-num" title="DraftKings projection / ceiling">DK ${f.proj}<span style="color:var(--muted)">/${f.ceil}</span></span></div>

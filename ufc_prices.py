@@ -42,6 +42,28 @@ def _market_map():
     return out
 
 
+def _model_weight_cap():
+    """How much weight our fighter model may take over the market, given how much
+    it has actually PROVEN on graded outcomes.
+
+    Fight history alone used to buy self-trust: with 20 logged fights the blend
+    handed the model ~83% weight against a liquid market, even though it had never
+    been scored against a single result. Sample size measures how much we know
+    about the FIGHTERS, not whether our rating of them beats the book — those are
+    different things, and only the second justifies fading a price.
+
+    So the ceiling starts at 50/50 with no graded history and rises toward 0.85
+    as real settled outcomes accrue (the same predlog/calibrate evidence that
+    fits the temperature). Nothing here changes a model number; it only decides
+    how far we're willing to depart from the market before we've earned it."""
+    try:
+        import calibrate
+        _t_, _q0_, n = calibrate._params("ufc")
+    except Exception:
+        n = 0
+    return 0.50 + 0.35 * min(1.0, (n or 0) / 300.0)
+
+
 def attach(board):
     """Mutate the board: add kalshi_cents, a confidence-blended fair win % and the
     edge to each fighter; return it.
@@ -50,7 +72,12 @@ def attach(board):
     would show large *false* edges against a market that knows the fighters. So the
     'fair' win % blends our model toward the de-vig'd market price by confidence
     (how many fights we actually have) — a debut bout defers to the market (≈no
-    edge), a data-rich bout keeps our independent read."""
+    edge), a data-rich bout keeps our independent read — and that weight is capped
+    by how much the model has proven on graded results (_model_weight_cap).
+
+    Each fighter is also flagged when our pick FADES the market (we favour the
+    side the book has as the underdog): `fades_market`. Those are the picks that
+    need the most evidence, so they're surfaced rather than buried."""
     if not board or not board.get("bouts"):
         return board
     mkt = _market_map()
@@ -68,9 +95,19 @@ def attach(board):
             mkt_b = 100.0 * cb / (ca + cb)
         conf = min(fa.get("fights", 0), fb.get("fights", 0))
         w = conf / (conf + 4.0)                     # 0 fights -> all market, lots -> all model
-        for f, c, mk, rec in ((fa, ca, mkt_a, ra), (fb, cb, mkt_b, rb)):
+        w = min(w, _model_weight_cap())             # ...but only as far as we've earned
+        # Does our read disagree with the book on WHO WINS? Those picks are the
+        # ones actually at risk, so mark them explicitly.
+        fade_a = fade_b = False
+        if mkt_a is not None and mkt_b is not None:
+            model_a_fav = fa["win_pct"] >= fb["win_pct"]
+            mkt_a_fav = mkt_a >= mkt_b
+            if model_a_fav != mkt_a_fav:
+                fade_a, fade_b = model_a_fav, not model_a_fav
+        for f, c, mk, rec, fade in ((fa, ca, mkt_a, ra, fade_a), (fb, cb, mkt_b, rb, fade_b)):
             f["kalshi_cents"] = c
             f["confidence"] = round(w, 2)
+            f["fades_market"] = bool(fade)
             if rec:
                 f["ticker"] = rec.get("ticker")
                 f["close_time"] = rec.get("close_time")
