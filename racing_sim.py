@@ -1098,6 +1098,88 @@ def _f1_practice_gaps():
     return racing._cached(("f1_practice",), 1800, build)
 
 
+def _longrun_from_session(key):
+    """{normalized name: race-pace gap-to-fastest (s)} from ONE practice session's
+    long runs. For each driver we take their best sustained stint (>=5 laps on one
+    set of tyres), drop the out-lap/warm-up lap and traffic-spoiled laps (>4% off
+    the run median), and average the rest — the closest public read on real race
+    pace, which single-lap qualifying pace completely misses. None if too sparse."""
+    import statistics
+    try:
+        drivers = racing._get_json(f"https://api.openf1.org/v1/drivers?session_key={key}")
+        stints = racing._get_json(f"https://api.openf1.org/v1/stints?session_key={key}")
+        laps = racing._get_json(f"https://api.openf1.org/v1/laps?session_key={key}")
+    except Exception:
+        return None
+    name_of = {d["driver_number"]: (d.get("full_name") or d.get("broadcast_name"))
+               for d in drivers}
+    lap_t = {}
+    for l in laps:
+        if l.get("lap_duration") and not l.get("is_pit_out_lap"):
+            lap_t[(l.get("driver_number"), l.get("lap_number"))] = l["lap_duration"]
+    best = {}
+    for s in stints:
+        dn, a, b = s.get("driver_number"), s.get("lap_start"), s.get("lap_end")
+        if not (dn and a and b) or b - a + 1 < 5:
+            continue
+        ts = [lap_t[(dn, ln)] for ln in range(a + 1, b + 1) if (dn, ln) in lap_t]  # skip warm-up
+        if len(ts) < 4:
+            continue
+        med = statistics.median(ts)
+        clean = [t for t in ts if t <= med * 1.04]        # drop traffic/lift laps
+        if len(clean) < 4:
+            continue
+        m = sum(clean) / len(clean)
+        if dn not in best or m < best[dn]:
+            best[dn] = m
+    if len(best) < 10:
+        return None
+    fastest = min(best.values())
+    out = {}
+    for dn, v in best.items():
+        nm = racing.norm_name(name_of.get(dn, ""))
+        if nm:
+            out[nm] = round(v - fastest, 3)
+            if nm.split():
+                out.setdefault(nm.split()[-1], out[nm])
+    return out
+
+
+def _f1_longrun_pace():
+    """This weekend's RACE pace from practice long runs (OpenF1). Prefers FP2 (the
+    traditional race-sim session), then the latest completed practice of the
+    current weekend; None once the freshest is stale (a finished weekend)."""
+    import datetime as _dt
+
+    def build():
+        now = _dt.datetime.now(_dt.timezone.utc)
+        year = clock.today_et().year
+        try:
+            sessions = racing._get_json(f"https://api.openf1.org/v1/sessions?year={year}")
+        except Exception:
+            return None
+        cand = []
+        for s in sessions:
+            if s.get("session_type") != "Practice":
+                continue
+            try:
+                t = _dt.datetime.fromisoformat(s["date_start"].replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if t < now and (now - t).total_seconds() <= 4 * 86400:
+                cand.append((s.get("session_name"), t, s))
+        if not cand:
+            return None
+        # FP2 first (longest runs), then the most recent practice.
+        cand.sort(key=lambda c: (0 if c[0] == "Practice 2" else 1, -c[1].timestamp()))
+        for _nm, _t, s in cand:
+            res = _longrun_from_session(s["session_key"])
+            if res:
+                return res
+        return None
+    return racing._cached(("f1_longrun",), 1800, build)
+
+
 # DraftKings F1 scoring: finishing points (1st 43, 2nd 40, 3rd 38, then 41−pos),
 # ±1 place differential, fastest lap +5, laps led +0.1, defeated teammate +5.
 # F1's dominator pool is tiny (57 laps x 0.1 ≈ 5.7 + the 5-pt fastest lap), so
@@ -1208,6 +1290,7 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
     dk_samples = defaultdict(list)          # per-sim DK points (scoring components)
     laps = None; ttype = None
     grid_conditioned = False
+    longrun_used = False
 
     if sport == "f1":
         profs = f1_profiles(); rem = f1_remaining()
@@ -1236,6 +1319,28 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
                     blended.append(d)
                 if hits >= 12:
                     drivers = blended
+        # THIS weekend's long-run (race) pace sharpens each driver's race pace at
+        # THIS circuit — the strongest race-pace read there is, and one the
+        # season-average finish misses. Grid-independent, so it applies whether or
+        # not the real grid is set. Blended as a pace RANK into the race score.
+        try:
+            lr = _f1_longrun_pace()
+        except Exception:
+            lr = None
+        if lr:
+            gaps = {}
+            for d in drivers:
+                nm = racing.norm_name(d["name"])
+                g = lr.get(nm) or (lr.get(nm.split()[-1]) if nm.split() else None)
+                if g is not None:
+                    gaps[d["id"]] = g
+            if len(gaps) >= 12:
+                ranked = sorted(gaps, key=lambda did: gaps[did])
+                rank = {did: i + 1 for i, did in enumerate(ranked)}
+                _LRW = 0.35                          # weight on this-weekend race pace
+                drivers = [dict(d, race=(1 - _LRW) * d["race"] + _LRW * rank[d["id"]])
+                           if d["id"] in rank else d for d in drivers]
+                longrun_used = True
         # Teammate pairs for the defeated-teammate bonus.
         by_con = defaultdict(list)
         for d in drivers:
@@ -1361,6 +1466,8 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         meta["dominator_pool"] = round(0.7 * laps) if sport == "nascar" \
             else round(0.1 * laps + 5)
         meta["grid_conditioned"] = grid_conditioned
+        if sport == "f1":
+            meta["longrun_used"] = longrun_used
     return meta
 
 
