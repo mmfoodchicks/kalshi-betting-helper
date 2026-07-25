@@ -92,10 +92,16 @@ def parse_dk_csv(text):
             name = (r.get("Name") or r.get("name") or "").strip()
             try:
                 salary = float((r.get("Salary") or r.get("salary") or 0))
+            except ValueError:
+                continue
+            # A debut/returning player has no DK average — the cell is "-" or
+            # blank. That's not a reason to drop him from the pool (our own sim
+            # projects him); treat an unparseable average as 0.
+            try:
                 proj = float(r.get("AvgPointsPerGame") or r.get("Projection")
                              or r.get("proj") or r.get("AvgPoints") or 0)
             except ValueError:
-                continue
+                proj = 0.0
             if name and salary > 0:
                 out.append({"name": name, "salary": salary, "proj": proj,
                             "pos": (r.get("Position") or r.get("Roster Position") or "").strip(),
