@@ -47,72 +47,104 @@ def _american_to_prob(ml):
     return (-ml) / ((-ml) + 100.0) if ml < 0 else 100.0 / (ml + 100.0)
 
 
-def games(key, year):
-    """[{date, home, away, hs, as_, mkt_home}] for a season, chronological.
-    mkt_home is the de-vigged closing probability that the HOME side wins."""
+_SITE = "https://site.api.espn.com/apis/site/v2/sports"
+# Rough season windows (start year, months) so the scoreboard sweep covers the
+# whole schedule without probing empty dates.
+_WINDOWS = {"nhl": (-1, 10, 4), "nba": (-1, 10, 4), "nfl": (-1, 9, 2),
+            "wnba": (0, 5, 10), "mlb": (0, 3, 10)}
+
+
+def season_games(key, year):
+    """EVERY game of a season with its final score — cheap. The scoreboard takes
+    a DATE RANGE, so a full schedule is ~20 calls instead of one per game. Teams
+    are keyed by abbreviation. Odds are NOT here (ESPN drops them from the site
+    feed once a game is final); they're fetched per game in `odds_for`."""
     cfg = LEAGUES[key]
-    base = (f"http://sports.core.api.espn.com/v2/sports/{cfg['sport']}"
-            f"/leagues/{cfg['league']}")
+    off, m0, m1 = _WINDOWS.get(key, (0, 1, 12))
 
     def build():
         import concurrent.futures as cf
-        try:
-            d = racing._get_json(f"{base}/events?limit=1000&dates={year}", timeout=30)
-        except Exception:
-            return None
-        refs = [i["$ref"] for i in (d.get("items") or []) if i.get("$ref")]
+        import datetime as _dt
+        spans = []
+        y0 = year + off
+        cur = _dt.date(y0, m0, 1)
+        end_y = year if off else year
+        end = _dt.date(end_y, m1, 28)
+        while cur < end:
+            nxt = min(cur + _dt.timedelta(days=10), end)
+            spans.append((cur.strftime("%Y%m%d"), nxt.strftime("%Y%m%d")))
+            cur = nxt + _dt.timedelta(days=1)
 
-        def one(ref):
+        def one(span):
+            a, b = span
             try:
-                ev = racing._get_json(ref, timeout=20)
+                d = racing._get_json(
+                    f"{_SITE}/{cfg['sport']}/{cfg['league']}/scoreboard"
+                    f"?dates={a}-{b}&limit=1000", timeout=25)
             except Exception:
-                return None
-            c = (ev.get("competitions") or [{}])[0]
-            date = (c.get("date") or ev.get("date") or "")[:10]
-            cs = c.get("competitors") or []
-            if len(cs) != 2 or not date:
-                return None
-            home = away = None
-            hs = as_ = None
-            for x in cs:
-                tid = str((x.get("team") or {}).get("$ref", "")).split("/teams/")[-1].split("?")[0]
-                sc = x.get("score")
-                if isinstance(sc, dict) and sc.get("$ref"):
+                return []
+            out = []
+            for e in d.get("events") or []:
+                c = (e.get("competitions") or [{}])[0]
+                st = (((c.get("status") or {}).get("type")) or {}).get("state")
+                if st != "post":
+                    continue
+                cs = c.get("competitors") or []
+                if len(cs) != 2:
+                    continue
+                home = away = None
+                hs = as_ = None
+                for x in cs:
+                    ab = (x.get("team") or {}).get("abbreviation")
                     try:
-                        sc = racing._get_json(sc["$ref"], timeout=15).get("value")
-                    except Exception:
+                        sc = float(x.get("score"))
+                    except (TypeError, ValueError):
                         sc = None
-                elif isinstance(sc, dict):
-                    sc = sc.get("value")
-                if x.get("homeAway") == "home":
-                    home, hs = tid, sc
-                else:
-                    away, as_ = tid, sc
-            if not home or not away or hs is None or as_ is None:
-                return None
-            mkt_home = None
-            try:
-                o = racing._get_json(c["$ref"].split("?")[0] + "/odds", timeout=15)
-                items = o.get("items") or []
-                if items:
-                    rec = racing._get_json(items[0]["$ref"], timeout=15)
-                    ph = _american_to_prob((rec.get("homeTeamOdds") or {}).get("moneyLine"))
-                    pa = _american_to_prob((rec.get("awayTeamOdds") or {}).get("moneyLine"))
-                    if ph and pa and (ph + pa) > 0:
-                        mkt_home = ph / (ph + pa)
-            except Exception:
-                pass
-            return {"date": date, "home": home, "away": away,
-                    "hs": float(hs), "as_": float(as_), "mkt_home": mkt_home}
+                    if x.get("homeAway") == "home":
+                        home, hs = ab, sc
+                    else:
+                        away, as_ = ab, sc
+                if home and away and hs is not None and as_ is not None:
+                    out.append({"id": e.get("id"), "date": (e.get("date") or "")[:10],
+                                "home": home, "away": away, "hs": hs, "as_": as_})
+            return out
 
         rows = []
-        with cf.ThreadPoolExecutor(max_workers=8) as ex:
-            for g in ex.map(one, refs):
-                if g:
-                    rows.append(g)
-        rows.sort(key=lambda r: r["date"])
-        return rows
-    return racing._cached(("btg", key, year), 30 * 86400, build) or []
+        with cf.ThreadPoolExecutor(max_workers=6) as ex:
+            for got in ex.map(one, spans):
+                rows.extend(got)
+        seen, uniq = set(), []
+        for r in sorted(rows, key=lambda r: r["date"]):
+            if r["id"] not in seen:
+                seen.add(r["id"])
+                uniq.append(r)
+        return uniq
+    return racing._cached(("btg_season", key, year), 30 * 86400, build) or []
+
+
+def odds_for(key, event_id):
+    """De-vigged closing P(home win) for one game, or None."""
+    cfg = LEAGUES[key]
+    base = (f"http://sports.core.api.espn.com/v2/sports/{cfg['sport']}"
+            f"/leagues/{cfg['league']}/events/{event_id}")
+
+    def build():
+        try:
+            ev = racing._get_json(base, timeout=15)
+            comp = (ev.get("competitions") or [{}])[0]
+            o = racing._get_json(comp["$ref"].split("?")[0] + "/odds", timeout=15)
+            items = o.get("items") or []
+            if not items:
+                return None
+            rec = racing._get_json(items[0]["$ref"], timeout=15)
+            ph = _american_to_prob((rec.get("homeTeamOdds") or {}).get("moneyLine"))
+            pa = _american_to_prob((rec.get("awayTeamOdds") or {}).get("moneyLine"))
+            if ph and pa and (ph + pa) > 0:
+                return ph / (ph + pa)
+        except Exception:
+            return None
+        return None
+    return racing._cached(("btg_odds", key, event_id), 30 * 86400, build)
 
 
 def _predict(key, rh, ra, rng, n=300):
@@ -157,33 +189,38 @@ def _metrics(pairs):
     return n, round(acc, 4), round(brier, 4), round(ll, 4)
 
 
-def run(key, year, min_games=8, limit=None, sims=300):
+def run(key, year, min_games=8, eval_n=300, sims=300):
     """Walk a season point-in-time and score the model against the market."""
-    rows = [g for g in games(key, year) if g["mkt_home"] is not None]
+    rows = season_games(key, year)
     if not rows:
-        return {"error": f"no games with closing odds for {key} {year}"}
-    if limit:
-        rows = rows[:limit]
+        return {"error": f"no completed games for {key} {year}"}
+    # Ratings are built from EVERY game of the season, but only an evenly spaced
+    # sample is scored — fetching a closing line costs a request per game, while
+    # the scores are nearly free. Sampling the evaluation keeps the run tractable
+    # WITHOUT starving the model's inputs, which sampling the schedule would.
+    step = max(1, len(rows) // max(1, eval_n))
     gf, ga, gp = defaultdict(float), defaultdict(float), defaultdict(int)
     rng = random.Random(7)
     model, market, both = [], [], []
     _K = 4.0                                    # pseudo-games of regression
-    for g in rows:
+    for i, g in enumerate(rows):
         h, a = g["home"], g["away"]
-        if gp[h] >= min_games and gp[a] >= min_games:
-            tot_g = sum(gp.values()) or 1
-            lg_for = sum(gf.values()) / tot_g or 1.0
+        if i % step == 0 and gp[h] >= min_games and gp[a] >= min_games:
+            mkt = odds_for(key, g["id"])
+            if mkt is not None:
+                tot_g = sum(gp.values()) or 1
+                lg_for = sum(gf.values()) / tot_g or 1.0
 
-            def rate(t):
-                nn = gp[t]
-                return {"gf": (gf[t] + _K * lg_for) / (nn + _K),
-                        "ga": (ga[t] + _K * lg_for) / (nn + _K),
-                        "lg_for": lg_for}
-            p = max(0.02, min(0.98, _predict(key, rate(h), rate(a), rng, sims)))
-            y = 1 if g["hs"] > g["as_"] else 0
-            model.append((p, y))
-            market.append((g["mkt_home"], y))
-            both.append((p, g["mkt_home"], y))
+                def rate(t):
+                    nn = gp[t]
+                    return {"gf": (gf[t] + _K * lg_for) / (nn + _K),
+                            "ga": (ga[t] + _K * lg_for) / (nn + _K),
+                            "lg_for": lg_for}
+                p = max(0.02, min(0.98, _predict(key, rate(h), rate(a), rng, sims)))
+                y = 1 if g["hs"] > g["as_"] else 0
+                model.append((p, y))
+                market.append((mkt, y))
+                both.append((p, mkt, y))
         gf[h] += g["hs"]; ga[h] += g["as_"]; gp[h] += 1
         gf[a] += g["as_"]; ga[a] += g["hs"]; gp[a] += 1
     out = {"league": key, "year": year, "games_scored": len(model),
