@@ -120,6 +120,41 @@ def _sp_quality(line):
     return (ip * era + _SP_K * _LG_ERA) / (ip + _SP_K)
 
 
+def _espn_abbr_map():
+    """{normalized full team name: ESPN abbreviation}. StatsAPI says 'Cleveland
+    Guardians', the ESPN odds index keys on 'CLE', so the two feeds can't be
+    joined without this. Built from ESPN's own team list so it stays current
+    through relocations and rebrands instead of being hardcoded."""
+    def build():
+        try:
+            d = racing._get_json(
+                "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams",
+                timeout=25)
+        except Exception:
+            return None
+        out = {}
+        for t in (d.get("sports") or [{}])[0].get("leagues", [{}])[0].get("teams", []):
+            tm = t.get("team") or {}
+            ab = tm.get("abbreviation")
+            if not ab:
+                continue
+            for key in (tm.get("displayName"), tm.get("name"), tm.get("shortDisplayName")):
+                if key:
+                    out[key.strip().lower()] = ab
+        return out or None
+    return racing._cached(("mlbbt_abbr",), 7 * 86400, build) or {}
+
+
+def _abbr(name):
+    m = _espn_abbr_map()
+    n = (name or "").strip().lower()
+    if n in m:
+        return m[n]
+    # fall back to the nickname (last word), which is unique across MLB
+    tail = n.split()[-1] if n.split() else ""
+    return m.get(tail)
+
+
 def _metrics(pairs):
     n = len(pairs)
     if not n:
@@ -148,7 +183,7 @@ def run(start, end, limit=None, with_market=True):
         try:
             import team_backtest as tb
             for g in tb.season_games("mlb", int(start[:4])):
-                mkt_map[(g["date"], g["home"], g["away"])] = g["id"]
+                mkt_map[(g["date"], g["home"], g["away"])] = g["id"]  # ESPN abbrevs
         except Exception:
             mkt_map = {}
     scored = 0
@@ -173,7 +208,7 @@ def run(start, end, limit=None, with_market=True):
                 p = max(0.05, min(0.95, p))
                 y = 1 if g["hs"] > g["as_"] else 0
                 model.append((p, y)); graded.append((p, y)); scored += 1
-                eid = mkt_map.get((date, h, a))
+                eid = mkt_map.get((date, _abbr(h), _abbr(a)))
                 if eid:
                     try:
                         import team_backtest as tb
