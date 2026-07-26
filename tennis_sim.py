@@ -19,6 +19,10 @@ games + match goes 3 sets" off one coherent model instead of three guesses.
 
 import random
 
+# Empirically measured on this engine: a per-point edge shows up ~4x larger at
+# match level (best-of-3), because it compounds through hold -> set -> match.
+_MATCH_AMPLIFICATION = 4.0
+
 
 def _hold(p):
     """Probability the server wins a game, given per-point serve-win prob p
@@ -32,13 +36,25 @@ def _hold(p):
     return pre + deuce * d_win
 
 
-def point_probs(ra, rb, lg):
+def point_probs(ra, rb, lg, edge=0.0):
     """(pa, pb): A's and B's per-point serve-win prob in the matchup. A's serve
     strength above tour average, minus B's return strength above tour average,
-    anchored at the tour serve level."""
+    anchored at the tour serve level.
+
+    `edge` is the intended MATCH-level win-probability nudge for A (handedness
+    matchup + shrunk head-to-head). A per-point edge compounds violently up the
+    point -> game -> set -> match hierarchy: measured on this engine, pushing the
+    raw value in per point turned an intended +1.2% into +4.8% at match level,
+    and a +5% into +23%. So the requested match edge is divided by that measured
+    amplification before being applied per point, which keeps the knob meaning
+    what it says."""
     spw, rpw = lg["spw"], lg["rpw"]
     pa = spw + (ra["spw"] - spw) - (rb["rpw"] - rpw)
     pb = spw + (rb["spw"] - spw) - (ra["rpw"] - rpw)
+    if edge:
+        per_point = (edge / _MATCH_AMPLIFICATION) * 0.5
+        pa += per_point
+        pb -= per_point
     # Floor at 0.40, not 0.50: a weak server vs an elite returner genuinely
     # wins under half their service points (common in the women's game, where
     # the tour serve average is only ~0.56). Clamping at 0.50 quietly biased
@@ -110,13 +126,13 @@ def _finish_set(rng, gA, gB, holdA, holdB, pa, pb, a_serving):
 
 
 def live_winprob(rates_a, rates_b, lg, best_of, sets_a, sets_b,
-                 games_a=0, games_b=0, n=4000, fatigue=None, seed=None):
+                 games_a=0, games_b=0, n=4000, fatigue=None, seed=None, edge=0.0):
     """P(player A wins the match) FROM the current live score. `sets_*` are sets
     already won; `games_*` the game score in the set in progress. We don't know
     who's serving the current game, so we marginalize over both. Point-level state
     inside the current game is ignored (minor). Returns A's win % (0-100)."""
     rng = random.Random(seed)
-    pa, pb = point_probs(rates_a, rates_b, lg)
+    pa, pb = point_probs(rates_a, rates_b, lg, edge)
     if fatigue:
         shift = max(-0.025, min(0.025, (fatigue[0] - fatigue[1]) * 0.004))
         pa = min(0.90, max(0.40, pa - shift))
@@ -144,14 +160,15 @@ def live_winprob(rates_a, rates_b, lg, best_of, sets_a, sets_b,
     return round(100.0 * a_wins / n, 1)
 
 
-def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None):
+def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None,
+             edge=0.0):
     """Monte-Carlo the match. rates_* are {spw,rpw,ace,df}. `fatigue` is an optional
     (tired_a, tired_b) pair of recent-load scores: the more-fatigued player serves
     slightly worse (capped ~2.5% of a point), which compounds through the hold and
     deciding-set math the way tired legs actually cost matches. Returns a board of
     coherent market probabilities for both players."""
     rng = random.Random(seed)
-    pa, pb = point_probs(rates_a, rates_b, lg)
+    pa, pb = point_probs(rates_a, rates_b, lg, edge)
     if fatigue:
         # differential only -- if both are equally tired it washes out
         shift = max(-0.025, min(0.025, (fatigue[0] - fatigue[1]) * 0.004))

@@ -84,9 +84,28 @@ def _build(tour):
     except Exception:
         return {}
     meta = {}
+    # Handedness and head-to-head both fall out of the same matches file we
+    # already download, so neither costs an extra fetch.
+    hands = {}          # norm name -> 'L' / 'R' (majority across charted matches)
+    h2h = {}            # (norm a, norm b) sorted -> {a_wins, b_wins, n}
     for m in matches:
         meta[m["match_id"]] = {"date": (m.get("Date") or "").strip(),
                                "surface": _surface_of(m.get("Surface"))}
+        for pl, hd in (("Player 1", "Pl 1 hand"), ("Player 2", "Pl 2 hand")):
+            nm = _norm(m.get(pl) or "")
+            h = (m.get(hd) or "").strip().upper()[:1]
+            if nm and h in ("L", "R"):
+                d = hands.setdefault(nm, {"L": 0, "R": 0})
+                d[h] += 1
+        # The charting project names the WINNER first in the match_id, so
+        # Player 1 is the winner of that meeting.
+        a, b = _norm(m.get("Player 1") or ""), _norm(m.get("Player 2") or "")
+        if a and b and a != b:
+            key = (a, b) if a < b else (b, a)
+            rec = h2h.setdefault(key, {"n": 0, key[0]: 0, key[1]: 0})
+            rec["n"] += 1
+            rec[a] = rec.get(a, 0) + 1
+    hand_of = {nm: ("L" if d["L"] > d["R"] else "R") for nm, d in hands.items()}
     today = clock.today_et()
 
     def age_w(datestr):
@@ -166,11 +185,50 @@ def _build(tour):
                 surf[s] = {"spw": round(o_spw, 4), "rpw": round(o_rpw, 4),
                            "ace": round(o_ace, 4), "df": round(o_df, 4), "w": 0.0}
         out[nm] = {"name": names.get(nm, nm), "n": round(ov["w"], 1), "lg": league,
+                   "hand": hand_of.get(nm),
                    "overall": {"spw": round(o_spw, 4), "rpw": round(o_rpw, 4),
                                "ace": round(o_ace, 4), "df": round(o_df, 4)},
                    "surf": surf}
-    out["__league__"] = {"name": "__league__", "lg": league}
+    out["__league__"] = {"name": "__league__", "lg": league, "h2h": h2h}
     return out
+
+
+# ---- Handedness + head-to-head adjustments ---------------------------------
+# A left-hander's edge in tennis is real but MUCH smaller than a baseball platoon
+# split. Baseball's is physical — the breaking ball moves away from a same-side
+# hitter on every pitch. Tennis is a familiarity effect: lefties are ~11% of the
+# tour, so righties face the lefty serve pattern (slice out wide to the ad court,
+# into the backhand) far less often. Worth a point or two of win probability,
+# not twenty.
+_LEFTY_EDGE = 0.012          # win-prob edge for L facing R (halved on serve pts)
+# Head-to-head is shrunk hard: most of an apparent H2H "hoodoo" is just ranking
+# and surface, which the ratings already capture. Only a real, repeated edge
+# survives this prior.
+_H2H_K = 6.0                 # pseudo-meetings of shrinkage
+_H2H_MAX = 0.04              # cap the adjustment at +/-4 win-prob points
+
+
+def hand_edge(hand_a, hand_b):
+    """Win-prob nudge for player A from the handedness matchup (0 when equal or
+    unknown). Only L-vs-R is asymmetric; L-vs-L is as familiar as R-vs-R."""
+    if not hand_a or not hand_b or hand_a == hand_b:
+        return 0.0
+    return _LEFTY_EDGE if hand_a == "L" else -_LEFTY_EDGE
+
+
+def h2h_edge(profiles, name_a, name_b):
+    """Win-prob nudge for A from their head-to-head record, shrunk toward no
+    effect by meeting count. Returns 0.0 when they've never met."""
+    rec = ((profiles or {}).get("__league__") or {}).get("h2h") or {}
+    a, b = _norm(name_a), _norm(name_b)
+    key = (a, b) if a < b else (b, a)
+    r = rec.get(key)
+    if not r or not r.get("n"):
+        return 0.0
+    n = r["n"]
+    share = r.get(a, 0) / float(n)                  # A's historical win share
+    shrunk = (n * share + _H2H_K * 0.5) / (n + _H2H_K)
+    return round(max(-_H2H_MAX, min(_H2H_MAX, (shrunk - 0.5) * 0.5)), 4)
 
 
 def profiles(tour="m"):

@@ -290,9 +290,24 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         da = {"spw": ra[0], "rpw": ra[1], "ace": ra[2], "df": ra[3]}
         db = {"spw": rb[0], "rpw": rb[1], "ace": rb[2], "df": rb[3]}
         fpair = ((fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)) if (fa or fb) else None
+        # Matchup nudges the serve/return rates can't see: the lefty-vs-righty
+        # familiarity edge, and a hard-shrunk head-to-head. Both are small by
+        # design — see tennis_data for why neither is a baseball-sized platoon.
+        edge = 0.0
+        try:
+            profs = ra[4].get("_all") if isinstance(ra[4], dict) else None
+            profs = profs or td.profiles(tcode)
+            edge = (td.hand_edge((ra[4] or {}).get("hand"), (rb[4] or {}).get("hand"))
+                    + td.h2h_edge(profs, a["name"], b["name"]))
+        except Exception:
+            edge = 0.0
+        a["hand"], b["hand"] = (ra[4] or {}).get("hand"), (rb[4] or {}).get("hand")
+        a["matchup_edge"] = round(edge * 100, 2)
+        b["matchup_edge"] = round(-edge * 100, 2)
         # Kept so the live board can compute an in-match win prob from the score.
-        live_rates = {"da": da, "db": db, "lg": lg, "best_of": best_of, "fatigue": fpair}
-        sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims, fatigue=fpair)
+        live_rates = {"da": da, "db": db, "lg": lg, "best_of": best_of,
+                      "fatigue": fpair, "edge": edge}
+        sim = ts.simulate(da, db, lg, best_of=best_of, n=n_sims, fatigue=fpair, edge=edge)
         a["hold"], b["hold"] = sim["holdA"], sim["holdB"]
         a["prof"], b["prof"] = ra[4], rb[4]
         if elo_ok:                              # ensemble the two independent reads
