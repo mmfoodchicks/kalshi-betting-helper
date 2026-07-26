@@ -978,6 +978,33 @@ def _weather_block(winfo):
     }
 
 
+# Detailed states MLB reports while the teams are still warming up. The abstract
+# state is already "Live" here, but no pitch has been thrown.
+# "Delayed Start" belongs here but a plain "Delayed"/"Suspended" does not — those
+# halt a game that is already in progress, and its pre-game props are stale.
+_PREGAME_DETAILED = ("scheduled", "pre-game", "pregame", "warmup", "warm up",
+                     "delayed start")
+
+
+def _really_started(live, start_epoch=None):
+    """True only if the game is genuinely under way. MLB's abstract state alone
+    says Live from warmups onward, so: a first pitch still in the future settles
+    it outright, then trust the detailed state when it is one we recognise, and
+    otherwise fall back to whether anything has actually happened on the field
+    (past the 1st, an out recorded, or a run in)."""
+    if start_epoch and start_epoch > _time.time():
+        return False                    # scheduled start hasn't arrived yet
+    det = (live.get("detailed") or "").strip().lower()
+    if any(det.startswith(x) for x in _PREGAME_DETAILED):
+        return False
+    if det.startswith("in progress") or det.startswith("manager challenge"):
+        return True
+    inning = live.get("inning") or 0
+    outs = live.get("outs") or 0
+    runs = (live.get("away_runs") or 0) + (live.get("home_runs") or 0)
+    return bool(inning > 1 or outs or runs)
+
+
 def _schedule(date, season):
     data = _get(f"{STATS_BASE}/schedule?sportId=1&date={date}&hydrate=probablePitcher,linescore")
     dates = data.get("dates", [])
@@ -1004,11 +1031,24 @@ def _schedule(date, season):
             "is_final": state == "Final",
             "inning": ls.get("currentInning"),
             "inning_state": ls.get("inningState"),
+            "outs": ls.get("outs"),
             "away_runs": lt.get("away", {}).get("runs"),
             "home_runs": lt.get("home", {}).get("runs"),
             "away_hits": lt.get("away", {}).get("hits"),
             "home_hits": lt.get("home", {}).get("hits"),
         }
+        # MLB flips abstractGameState to "Live" during warmups, and the linescore
+        # already reads "Top 1st, 0-0" — an hour before first pitch. Every reader
+        # (combo makers, the slate UI, the live banner) then treats a game that
+        # hasn't started as under way: it gets dropped from combos and shown the
+        # thin live leg set instead of its full pre-game props. Correct the state
+        # here, at the one place the payload is built, so nothing downstream has
+        # to know about the quirk.
+        if state == "Live" and not _really_started(live, kalshi._parse_time(g.get("gameDate"))):
+            state = "Preview"
+            live["state"] = "Preview"
+            live["is_live"] = False
+            live["not_started"] = True
         out.append({
             "game_pk": g.get("gamePk"),
             "home_id": home["team"]["id"], "home_name": home["team"]["name"],
@@ -1808,6 +1848,36 @@ def _game_variants(g, types=None):
     return _mirror_no(_sim_pregame_legs(g, types=types))
 
 
+def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, types):
+    """A one-game slate can't field a cross-game parlay (one leg per game), which
+    used to surface as a bare "no combo". The legs are all correlated here, so
+    hand it to the same-game builder, which reads the joint probability straight
+    off the sim instead of multiplying legs that aren't independent."""
+    try:
+        res = build_same_game_parlays(games, n_legs=n_legs, target_pct=target_pct,
+                                      target_payout=target_payout or 0,
+                                      max_legs=max_legs, top_n=1, types=types)
+    except Exception:
+        return None
+    item = (res or {}).get("best")
+    if not item:
+        return None
+    matchup = item.get("matchup")
+    for l in item.get("legs", []):
+        l.setdefault("matchup", matchup)
+        l.setdefault("side", "yes")
+        l.setdefault("live", False)
+    item["same_game"] = True
+    item["target_pct"] = round(max(0.05, min(0.97, target_pct / 100.0)) * 100, 1)
+    if target_payout:
+        item["target_payout_x"] = target_payout
+        item["payout_reached"] = bool((item.get("fair_payout_x") or 0) >= target_payout)
+    item["note"] = ("Only one game left on the slate, so this is a same-game "
+                    "parlay — the legs are correlated, and the combined odds come "
+                    "from the simulation rather than multiplying the legs.")
+    return item
+
+
 def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12, types=None):
     """Build a parlay.
 
@@ -1817,8 +1887,18 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
     (never forcing in a near-zero "punt" leg). See parlay.payout_combo.
 
     Confidence mode: each leg tuned to ~the target confidence; take n_legs safest.
+
+    Both modes take at most one leg per game, so a slate with a single game left
+    can't build anything across games. Rather than return nothing, fall back to
+    the correlation-aware same-game parlay for that one game.
     """
     target = max(0.05, min(0.97, target_pct / 100.0))
+
+    if len([g for g in games if _game_state(g) not in ("Final", "Live")]) < 2:
+        sgp = _single_game_fallback(games, n_legs, target_pct, target_payout,
+                                    max_legs, types)
+        if sgp:
+            return sgp
 
     if target_payout and target_payout > 1:
         import parlay
