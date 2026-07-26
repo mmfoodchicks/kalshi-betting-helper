@@ -52,10 +52,23 @@ def _model_weight_cap():
     about the FIGHTERS, not whether our rating of them beats the book — those are
     different things, and only the second justifies fading a price.
 
-    So the ceiling starts at 50/50 with no graded history and rises toward 0.85
-    as real settled outcomes accrue (the same predlog/calibrate evidence that
-    fits the temperature). Nothing here changes a model number; it only decides
-    how far we're willing to depart from the market before we've earned it."""
+    The number is MEASURED, not guessed: ufc_backtest replays past cards
+    point-in-time and fits the model/market blend that minimises log-loss;
+    model_trust persists it and shrinks it toward a cautious default until the
+    sample earns it. Using the fitted weight (rather than "more history -> more
+    trust") is the whole point — UFC has plenty of history and the fit came back
+    at 0.05, because the model loses to the close.
+
+    Falls back to accruing graded outcomes when nothing has been measured yet.
+    Nothing here changes a model number; it only decides how far we're willing to
+    depart from the market before we've earned it."""
+    try:
+        import model_trust
+        measured = (model_trust.load().get("weights") or {}).get("ufc")
+        if measured:
+            return model_trust.weight("ufc")
+    except Exception:
+        pass
     try:
         import calibrate
         _t_, _q0_, n = calibrate._params("ufc")

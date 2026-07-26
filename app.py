@@ -217,11 +217,19 @@ def _init_deep_sims():
         import cfb
         return cfb.run_season(n=4000)
 
+    def run_model_trust():
+        """Re-measure how far each sport's model may depart from the market, by
+        replaying point-in-time history. Stores the fitted blend weights."""
+        import model_trust
+        model_trust.refresh()
+        return model_trust.load()
+
     deep_cache.register("mlb_deep", run_mlb)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
     deep_cache.register("cfb", run_cfb)
+    deep_cache.register("model_trust", run_model_trust)
     # Every pro-league season is now played out game by game with its own engine
     # (drive-level football, possession basketball, shot-event hockey). WNBA runs
     # in-season; NBA/NHL light up once their upcoming-season schedules publish
@@ -1600,6 +1608,19 @@ def api_golf():
         return jsonify({"status": "computing",
                         "message": "simulating the field through the cut…"}), 202
     return jsonify(b)
+
+
+@app.route("/api/model-trust")
+def api_model_trust():
+    """How far each sport's model is allowed to depart from the market price, and
+    why — the blend weight fitted on point-in-time backtests, the sample behind
+    it, and our model's log-loss against the market's. Sports with no measurement
+    show the cautious default."""
+    try:
+        import model_trust
+        return jsonify(model_trust.report())
+    except Exception as e:
+        return jsonify({"error": f"model trust unavailable: {e}"}), 502
 
 
 @app.route("/api/sim/status")
