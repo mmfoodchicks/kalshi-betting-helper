@@ -33,7 +33,7 @@ CATEGORIES = {
     "nba": "🏀 NBA",
     "nhl": "🏒 NHL",
     "golf": "⛳ PGA",
-    "tennis": "🎾 Tennis (all)",   # one box: ATP + WTA + ITF (men & women)
+    "tennis": "🎾 Tennis (ATP/WTA)",   # combos: main tours only — see COMBO_TOURS
     "ufc": "🥊 UFC",
 }
 
@@ -68,6 +68,12 @@ CATEGORY_TYPES = {
 # Every type the catalog knows about — a leg whose type isn't here is never
 # filtered out (so an unmapped type can't silently vanish from a build).
 _ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
+
+# Kalshi does not allow ITF matches as parlay legs — only the main tours combine.
+# The tennis BOARD still prices ITF (it's fine as a single bet); this restriction
+# applies to multi-leg combos only, so the maker can't build a slip that Kalshi
+# will refuse to accept.
+COMBO_TOURS = ("ATP", "WTA")
 
 
 def _filter_types(legs, types):
@@ -500,8 +506,8 @@ def gather(cats, date, season):
         add("soccer", _worldcup_legs)            # our World Cup model, not de-vig
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
-    if "tennis" in cats:        # one box = every tour: ATP, WTA, and ITF men+women
-        add("tennis", lambda: _tennis_legs(("ATP", "WTA", "ITF", "ITF-W")))
+    if "tennis" in cats:
+        add("tennis", lambda: _tennis_legs(COMBO_TOURS))
     if "nba" in cats:
         add("nba", _nba_legs)
     if "nhl" in cats:
