@@ -136,11 +136,22 @@ def odds_for(key, event_id):
             items = o.get("items") or []
             if not items:
                 return None
-            rec = racing._get_json(items[0]["$ref"], timeout=15)
-            ph = _american_to_prob((rec.get("homeTeamOdds") or {}).get("moneyLine"))
-            pa = _american_to_prob((rec.get("awayTeamOdds") or {}).get("moneyLine"))
-            if ph and pa and (ph + pa) > 0:
-                return ph / (ph + pa)
+            # Some leagues return the odds INLINE in the item; others return a
+            # $ref to fetch. Blindly dereferencing raised KeyError on the inline
+            # form, which the except swallowed — every MLB game came back
+            # unpriced and the market column read n=0. Handle both shapes, and
+            # try each provider rather than only the first.
+            for it in items:
+                rec = it
+                if "homeTeamOdds" not in rec and it.get("$ref"):
+                    try:
+                        rec = racing._get_json(it["$ref"], timeout=15)
+                    except Exception:
+                        continue
+                ph = _american_to_prob((rec.get("homeTeamOdds") or {}).get("moneyLine"))
+                pa = _american_to_prob((rec.get("awayTeamOdds") or {}).get("moneyLine"))
+                if ph and pa and (ph + pa) > 0:
+                    return ph / (ph + pa)
         except Exception:
             return None
         return None
