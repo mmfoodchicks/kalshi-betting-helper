@@ -45,7 +45,8 @@ CATEGORIES = {
 CATEGORY_TYPES = {
     "mlb": [["ML", "Moneyline"], ["Total", "Totals"], ["Run line", "Run line"],
             ["Hit", "Hits"], ["HR", "Home runs"], ["Bases", "Total bases"],
-            ["Ks", "Strikeouts"], ["RFI", "1st-inning run"], ["HRR", "H+R+RBI"]],
+            ["Ks", "Strikeouts"], ["RFI", "1st-inning run"], ["HRR", "H+R+RBI"],
+            ["SB", "Stolen bases"]],
     "nfl": [["ML", "Moneyline"], ["Total", "Totals"], ["Pass Yds", "Passing yds"],
             ["Rush Yds", "Rushing yds"], ["Rec Yds", "Receiving yds"],
             ["Receptions", "Receptions"], ["Anytime Td", "Anytime TD"]],
@@ -76,13 +77,67 @@ _ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
 COMBO_TOURS = ("ATP", "WTA")
 
 
+
+# Types whose NO side is either meaningless or already covered by a sibling leg.
+# ML pairs both teams already; Under is the NO of Over; RFI has no NO market on
+# Kalshi (the user confirmed there's no yes/no slot on run-in-first-inning).
+_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "WC Result", "Crypto", "Outright"}
+_NO_SKIP_WORDS = ("under ", "not ", " no ", "does not")
+
+
+def _no_legs(legs):
+    """Mirror each YES leg into its NO side.
+
+    We were only ever offering the YES half of a market. If the model says a
+    batter hits 1+ only 36% of the time, then "NO hit" is a 64% leg sitting
+    right there on the same Kalshi market — a better parlay leg than most of the
+    YES side, and previously invisible to the maker.
+
+    The NO leg keeps the SAME event_id, so the assembler (one leg per event) can
+    never put a YES and its own NO in the same slip — they're mutually exclusive
+    and would guarantee a loss.
+
+    Price: Kalshi quotes a separate no_ask, which the leg builders don't carry
+    through yet. Rather than fake it as 100 - yes_ask (that ignores the spread
+    and would overstate EV), an un-plumbed NO leg is priced None — model-only.
+    It still contributes its probability to the combo; it just can't claim an
+    edge it hasn't verified.
+    """
+    out = []
+    for l in legs:
+        typ = l.get("type") or ""
+        if typ in _NO_SKIP_TYPES:
+            continue
+        lab = (l.get("label") or "").lower()
+        if any(w in lab for w in _NO_SKIP_WORDS):
+            continue
+        p = l.get("prob")
+        if p is None or not (0.02 < p < 0.98):
+            continue
+        out.append({**l,
+                    "label": f"NO — {l.get('label')}",
+                    "prob": 1.0 - p,
+                    "price_cents": l.get("no_cents"),
+                    "type": f"{typ} (NO)",
+                    "side": "no",
+                    "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit")})
+    return out
+
+
 def _filter_types(legs, types):
     """Drop legs whose (catalogued) type the user turned off. `types` is the
     allowed set; None means no filtering, [] means everything catalogued is off."""
     if types is None:
         return legs
     allow = set(types)
-    return [l for l in legs if l.get("type") not in _ALL_TYPES or l.get("type") in allow]
+
+    def base(t):
+        # A NO leg follows its parent's chip: turning off "Hits" must also drop
+        # "Hit (NO)", or the filter silently leaks the side you excluded.
+        return t[:-5] if t.endswith(" (NO)") else t
+    return [l for l in legs
+            if base(l.get("type") or "") not in _ALL_TYPES
+            or base(l.get("type") or "") in allow]
 
 
 def _mlb_legs(date, season):
@@ -516,6 +571,9 @@ def gather(cats, date, season):
         add("wnba", lambda: _wnba_legs() or _sport_legs("wnba"))
     if "golf" in cats:          # tournament-simulator legs, de-vig browse fallback
         add("golf", lambda: _golf_legs() or _sport_legs("golf"))
+    # Every market has two sides; offer both. NO legs share their YES leg's
+    # event_id, so the two can never land in the same slip.
+    legs += _no_legs(legs)
     return legs
 
 
