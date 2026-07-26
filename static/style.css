@@ -980,3 +980,12 @@ body.tier-locked .owner-only { display: none !important; }
 }
 #cmbCatCounts .cmbcount { display: inline-block; margin: 3px 10px 3px 0; }
 #cmbCatCounts .cmbcount input { width: 64px; }
+
+/* YES/NO side badge on combo legs — Kalshi settles yes/no contracts, so a slip
+   should say which side it is buying, not just the market. */
+.sidetag { display: inline-block; font-size: 0.66rem; font-weight: 800; letter-spacing: .04em;
+  padding: 1px 5px; border-radius: 5px; vertical-align: 1px; }
+.sidetag.yes { background: rgba(47, 209, 122, 0.16); color: var(--yes, #2fd17a);
+  border: 1px solid rgba(47, 209, 122, 0.45); }
+.sidetag.no { background: rgba(224, 86, 106, 0.16); color: var(--no, #e0566a);
+  border: 1px solid rgba(224, 86, 106, 0.45); }

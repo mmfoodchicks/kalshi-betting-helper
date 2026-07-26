@@ -1636,7 +1636,7 @@ def _combo_item(combo):
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l.get("type"),
                   "prob_pct": round(l["prob"] * 100, 1), "price_cents": l.get("price_cents"),
                   "sim_avg": l.get("sim_avg"), "avg_unit": l.get("avg_unit"),
-                  "live": l.get("live", False)}
+                  "side": l.get("side", "yes"), "live": l.get("live", False)}
                  for l in combo],
         "n_legs": len(combo),
         "any_live": any(l.get("live") for l in combo),
@@ -1765,6 +1765,35 @@ def _validate_game_props(gp, g):
     return gp
 
 
+
+# The NO side of a market is a real, bookable leg we were ignoring. If the sim
+# says a batter gets 1+ hits 36% of the time, "NO hit" is a 64% leg on that same
+# Kalshi contract. Skipped where a NO is meaningless or already emitted: the
+# moneyline pairs both teams, Under is already the NO of Over, and RFI has no
+# yes/no split on Kalshi.
+_NO_SKIP = {"RFI", "ML"}
+
+
+def _mirror_no(variants):
+    """Add the NO side of each eligible variant, sharing its game_pk so a leg and
+    its own negation can never be picked into the same parlay."""
+    out = []
+    for v in variants:
+        t = v.get("type") or ""
+        lab = (v.get("label") or "").lower()
+        p = v.get("prob")
+        if t in _NO_SKIP or p is None or not (0.02 < p < 0.98):
+            continue
+        if lab.startswith("under ") or lab.startswith("no "):
+            continue
+        out.append({**v, "label": f"NO — {v.get('label')}", "prob": 1.0 - p,
+                    # Kalshi quotes a separate no_ask the sim layer doesn't carry
+                    # yet; better model-only than a faked 100-yes_ask that would
+                    # ignore the spread and overstate EV.
+                    "price_cents": v.get("no_cents"), "type": t, "side": "no"})
+    return variants + out
+
+
 def _game_variants(g, types=None):
     """Every priced line variant for a game (moneyline, run line, totals ladder,
     hitter + pitcher props), each with the SIMULATED probability and its market
@@ -1775,8 +1804,8 @@ def _game_variants(g, types=None):
     if state == "Final":
         return []
     if state == "Live":
-        return _live_variants(g, types)
-    return _sim_pregame_legs(g, types=types)
+        return _mirror_no(_live_variants(g, types))
+    return _mirror_no(_sim_pregame_legs(g, types=types))
 
 
 def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12, types=None):

@@ -1179,7 +1179,7 @@ function kalshiPayout(m) {
 function renderSGP(s) {
   const nsim = s.n_sims || 0;
   const legs = s.legs.map((l) =>
-    `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l, nsim)}${simAvgTag(l)}</li>`).join("");
+    `<li><span class="legtag">${l.type}</span> ${sideTag(l)}${l.pick} ${legProb(l, nsim)}${simAvgTag(l)}</li>`).join("");
   const corr = s.corr_delta_pct;
   const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
@@ -1228,7 +1228,7 @@ window.buildMixed = async () => {
 function renderMixed(m) {
   const groups = m.groups.map((g) => {
     const legs = g.legs.map((l) =>
-      `<li><span class="legtag">${l.type}</span> ${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
+      `<li><span class="legtag">${l.type}</span> ${sideTag(l)}${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
     const head = g.same_game
       ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
       : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
@@ -1272,6 +1272,18 @@ function simAvgTag(l) {
   return `<span class="legavg">avg sim ${v} ${l.avg_unit}</span>`;
 }
 
+// YES/NO badge for a combo leg. Kalshi settles almost every market as a yes/no
+// contract, so a slip should say which side it's actually buying — an "Under"
+// or a "NO —" leg is the NO contract, everything else is YES. RFI is the one
+// exception the book doesn't split into sides, so it gets no badge.
+function sideTag(l) {
+  const t = (l.type || "");
+  if (t === "RFI" || /1st-inn/i.test(t)) return "";
+  const lab = (l.pick || "");
+  const isNo = /\(NO\)\s*$/.test(t) || /^NO\s*[—-]/i.test(lab) || /\bunder\b/i.test(lab);
+  return `<span class="sidetag ${isNo ? "no" : "yes"}">${isNo ? "NO" : "YES"}</span> `;
+}
+
 function renderCombo(c, tag, extraCls) {
   const abbr = (mu) => {
     if (!mu) return "";
@@ -1288,7 +1300,7 @@ function renderCombo(c, tag, extraCls) {
     // "where on Kalshi" (tennis series + tournament) so the leg is findable.
     const where = l.where ? ` <span class="legwhere" title="find this on Kalshi">📍${l.where}</span>` : "";
     const avg = simAvgTag(l);
-    return `<li>${liveDot}${typeTag}${l.pick}${game}${where} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span>${avg}</li>`;
+    return `<li>${liveDot}${typeTag}${sideTag(l)}${l.pick}${game}${where} <span style="color:var(--muted)">(${l.prob_pct}%${l.price_cents != null ? `, ${l.price_cents}¢` : ""})</span>${avg}</li>`;
   }).join("");
   let nums = `<span>Combined chance <b>${c.combined_prob_pct}%</b></span>
               <span>Fair payout <b>${c.fair_payout_x}×</b></span>`;
