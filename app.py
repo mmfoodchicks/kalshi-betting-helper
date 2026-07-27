@@ -837,7 +837,7 @@ def api_baseball_today():
                                   prob_raw=g.get("pick_prob_raw"))
             # Track the latest pre-game price of our side for closing-line value.
             store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
-    combos = baseball.build_combos(games, types=_prop_types())
+    combos = baseball.build_combos(games, types=_prop_types(), allow_live=_allow_live())
     return jsonify({"date": date, "games": games, "combos": combos})
 
 
@@ -1002,6 +1002,14 @@ def api_weather_city(city):
         return jsonify({"error": f"fetch failed: {e}"}), 502
 
 
+def _allow_live():
+    """Whether the caller opted in to betting games already under way. Off unless
+    explicitly ticked -- a live board is priced from a snapshot that is seconds
+    old, so it must never be the silent default."""
+    v = (request.args.get("live") or "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
 @app.route("/api/combine/meta")
 def api_combine_meta():
     import combine
@@ -1055,7 +1063,8 @@ def api_combine():
         return jsonify(combine.build(cats, legs, target, date, season, target_payout=payout,
                                      max_legs=tiers.cap_legs(_tier(), 30),
                                      legs_mode=legs_mode, payout_mode=payout_mode, conn=conn,
-                                     types=types, per_cat=(per_cat or None)))
+                                     types=types, per_cat=(per_cat or None),
+                                     allow_live=_allow_live()))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -1075,7 +1084,7 @@ def api_combine_recommended():
     try:
         return jsonify(combine.recommended(cats, date, season,
                                            max_legs=tiers.cap_legs(_tier(), 30),
-                                           types=types))
+                                           types=types, allow_live=_allow_live()))
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -1099,7 +1108,8 @@ def api_baseball_parlay():
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     combo = baseball.build_target_parlay(games, legs, target, target_payout=payout,
-                                         max_legs=tiers.cap_legs(_tier(), 30), types=_prop_types())
+                                         max_legs=tiers.cap_legs(_tier(), 30), types=_prop_types(),
+                                         allow_live=_allow_live())
     return jsonify({"combo": combo})
 
 
@@ -1829,7 +1839,8 @@ def api_baseball_sgp():
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     res = baseball.build_same_game_parlays(games, n_legs=legs, target_pct=target, types=_prop_types(),
                                            target_payout=payout, n_sims=sims,
-                                           max_legs=tiers.cap_legs(_tier(), 30))
+                                           max_legs=tiers.cap_legs(_tier(), 30),
+                                           allow_live=_allow_live())
     return jsonify(res)
 
 

@@ -989,3 +989,15 @@ body.tier-locked .owner-only { display: none !important; }
   border: 1px solid rgba(47, 209, 122, 0.45); }
 .sidetag.no { background: rgba(224, 86, 106, 0.16); color: var(--no, #e0566a);
   border: 1px solid rgba(224, 86, 106, 0.45); }
+
+/* Live (in-progress) betting: the opt-in warning and the per-leg marker. Both
+   deliberately loud — a live board is priced from a snapshot that one pitch can
+   invalidate, so it should never be mistaken for a settled pre-game board. */
+.livewarn { margin: 6px 0 2px; padding: 8px 10px; border-radius: 8px;
+  background: rgba(224, 86, 106, 0.10); border: 1px solid rgba(224, 86, 106, 0.35);
+  color: var(--text); font-size: 0.78rem; line-height: 1.45; }
+.livewarn b { color: #e0566a; }
+.livetag { display: inline-block; font-size: 0.66rem; font-weight: 800;
+  letter-spacing: .04em; padding: 1px 5px; border-radius: 5px; vertical-align: 1px;
+  margin-right: 4px; background: rgba(224, 86, 106, 0.16); color: #e0566a;
+  border: 1px solid rgba(224, 86, 106, 0.45); }

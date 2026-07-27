@@ -173,7 +173,7 @@ _CAL_AWAY = 0.962
 
 
 def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0,
-                 late=False, subbed=None):
+                 late=False, subbed=None, start_outs=0, start_bases=None):
     """One half-inning of base-out simulation for a lineup. Returns
     (runs, next_batter_idx, walkoff).
 
@@ -185,10 +185,14 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
     late/subbed: the pinch-hitter model. In late innings a batter with a measured
     substitution deficit can be lifted (added to `subbed`); a PHANTOM bench bat
     (base index -1) takes his PAs from then on -- same outcome rates so team
-    offense stays calibrated, but nothing credits to the starter's stat line."""
+    offense stays calibrated, but nothing credits to the starter's stat line.
+    start_outs/start_bases: resume a half already in progress (live games), with
+    the outs already recorded and the runners already aboard."""
     L = len(setup)
-    outs, runs = 0, 0
+    outs, runs = start_outs, 0
     bases = [None, None, None]                # batter index on 1st/2nd/3rd (-1 = bench)
+    if start_bases:
+        bases = list(start_bases)
     if ghost:
         gi = (idx - 1) % L
         bases[1] = -1 if (subbed and gi in subbed) else gi
@@ -353,31 +357,57 @@ def _play_game(setup, rnd):
     return runs, stats, first_inning
 
 
-def _play_matchup(setup_a, setup_h, rnd):
+def _play_matchup(setup_a, setup_h, rnd, state=None):
     """A full REAL-RULES game between two lineups: interleaved half-innings, the
     home team skips the bottom of the 9th when already leading, a walk-off ends
     the game the moment home takes the lead in the bottom 9th or extras, and
     ties go to ghost-runner extra innings. Returns
-    (away_runs, home_runs, stats_a, stats_h, first_inning_run, extra_innings)."""
+    (away_runs, home_runs, stats_a, stats_h, first_inning_run, extra_innings).
+
+    `state` resumes a game already under way: the score, the half and base-out
+    situation to pick up from, each side's spot in the order, and the stat lines
+    already banked. Everything downstream then reads a full-game total (what has
+    happened plus what is simulated), which is what a prop settles on."""
     stats_a = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_a))]
     stats_h = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_h))]
     ia = ih = ra = rh = f1 = 0
     sub_a, sub_h = set(), set()
-    for inn in range(9):
+    start_inn, start_top, s_outs, s_bases = 0, True, 0, None
+    if state:
+        ia, ih = state.get("ia", 0), state.get("ih", 0)
+        ra, rh = state.get("ra", 0), state.get("rh", 0)
+        start_inn = max(0, (state.get("inning") or 1) - 1)
+        start_top = state.get("is_top", True)
+        s_outs = state.get("outs", 0)
+        s_bases = state.get("bases")
+        for dst, src in ((stats_a, state.get("stats_a")), (stats_h, state.get("stats_h"))):
+            for i, row in enumerate(src or []):
+                if i < len(dst):
+                    dst[i] = list(row)
+    for inn in range(start_inn, 9):
         late = inn >= 6
-        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, late=late, subbed=sub_a)
-        ra += r
-        if inn == 0:
-            f1 += r
+        first = inn == start_inn                # the half we resume into
+        if not (first and not start_top):       # already past the top of this inning?
+            r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, late=late, subbed=sub_a,
+                                    start_outs=s_outs if (first and start_top) else 0,
+                                    start_bases=s_bases if (first and start_top) else None)
+            ra += r
+            if inn == 0:
+                f1 += r
+        resume_bot = first and not start_top
         if inn < 8:
-            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, late=late, subbed=sub_h)
+            r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, late=late, subbed=sub_h,
+                                    start_outs=s_outs if resume_bot else 0,
+                                    start_bases=s_bases if resume_bot else None)
             rh += r
             if inn == 0:
                 f1 += r
         elif rh <= ra:                      # bottom 9 only if home isn't ahead
             r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd,
                                     lead_target=ra, base_runs=rh,
-                                    late=True, subbed=sub_h)
+                                    late=True, subbed=sub_h,
+                                    start_outs=s_outs if resume_bot else 0,
+                                    start_bases=s_bases if resume_bot else None)
             rh += r
     extra = 0
     while ra == rh and extra < 12:          # ghost-runner extras until decided
@@ -415,7 +445,7 @@ _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
 def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None,
-                  er_opp=None, pen_out=0, budget=None, sp_bb_pa=None):
+                  er_opp=None, pen_out=0, budget=None, sp_bb_pa=None, resume=None):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -471,6 +501,26 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
             pen_i[0] += 1
             return max(0.12, min(0.45, arm["kpa"]))
         return _rel_kpa(bp_era, rnd)
+    if resume:
+        # Pick the staff up where it stands: the starter's line is already in the
+        # book, and if he has been pulled his K total is FINAL -- only the pen
+        # adds from here. Seeding sp_pitches/sp_br means the same hook logic that
+        # governs a simulated start decides how much longer this real one lasts.
+        sp_k = resume.get("sp_k", 0) or 0
+        sp_outs = resume.get("sp_outs", 0) or 0
+        sp_pitches = float(resume.get("sp_pitches", 0) or 0)
+        sp_br = resume.get("sp_br", 0) or 0
+        bull_k = resume.get("bull_k", 0) or 0
+        outs = resume.get("outs", 0) or 0
+        starter_in = bool(resume.get("sp_in", True))
+        if not starter_in:
+            rel_kpa = next_reliever()
+        elif sp_pitches >= limit:
+            # He is past the budget we projected and the manager still has him out
+            # there -- that is information the pre-game estimate didn't have. Give
+            # him the leash his manager is visibly giving him instead of pulling
+            # him on the very next batter.
+            limit = sp_pitches + max(0.0, random.gauss(14, 7))
     while outs < 27 and pa < 70:
         pa += 1
         kpa = sp_kpa if starter_in else rel_kpa
@@ -520,10 +570,64 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
     return sp_k, int(round(sp_pitches)), sp_outs, bull_k
 
 
-def simulate(g, n=5000):
+def _live_state(snap, setup_a, setup_h):
+    """Translate a live snapshot into the resume state `_play_matchup` takes.
+
+    The snapshot speaks in player NAMES (from the boxscore); the engine speaks in
+    lineup indices. Anyone it can't place -- a pinch runner off the bench, say --
+    goes on base as a phantom (-1), so he still occupies the bag and can score
+    without crediting a run to a batter who isn't there.
+    """
+    idx_of = ({b["name"]: i for i, b in enumerate(setup_a)},
+              {b["name"]: i for i, b in enumerate(setup_h)})
+
+    def rows(setup, banked):
+        # [hits, tb, hr, runs, rbi, sb, dk] per lineup spot, already in the book.
+        out = []
+        for b in setup:
+            k = banked.get(b["name"]) or {}
+            out.append([k.get("hit", 0), k.get("tb", 0), k.get("hr", 0),
+                        k.get("r", 0), k.get("rbi", 0), k.get("sb", 0), 0])
+        return out
+
+    bat_idx = idx_of[0] if snap["is_top"] else idx_of[1]
+    bases = [None, None, None]
+    for i, nm in enumerate(snap.get("bases") or []):
+        if nm:
+            bases[i] = bat_idx.get(nm, -1)
+    # Resume with the man actually due up. His order slot is the reliable signal;
+    # the name is used when the posted lineup and the live one line up, which
+    # keeps things right through a substitution that shifts the order.
+    def due(side, setup, ids):
+        i = snap["order_idx"][side]
+        lu = snap["lineup"][side]
+        if i < len(lu):
+            nm = lu[i][1]
+            if nm in ids:
+                return ids[nm]
+        return i
+    return {
+        "ia": due("away", setup_a, idx_of[0]),
+        "ih": due("home", setup_h, idx_of[1]),
+        "ra": snap["away_runs"], "rh": snap["home_runs"],
+        "inning": snap["inning"], "is_top": snap["is_top"],
+        "outs": snap["outs"], "bases": bases,
+        "stats_a": rows(setup_a, snap["banked"]["away"]),
+        "stats_h": rows(setup_h, snap["banked"]["home"]),
+    }
+
+
+def simulate(g, n=5000, live=None):
     """Simulate game `g` n times via base-running. Returns shared per-sim arrays,
     including per-batter hits/total-bases/HR/runs/RBI for player props (HRR) and
-    a full pitching sim (starter Ks/pitches/IP + bullpen Ks)."""
+    a full pitching sim (starter Ks/pitches/IP + bullpen Ks).
+
+    `live` (an mlb_live snapshot) resumes an in-progress game from its current
+    base-out state instead of starting at 0-0: every batter begins with what he
+    has already banked and every staff with the line it has already thrown, so
+    the arrays still describe FULL-GAME totals -- the thing a prop settles on --
+    while only the unplayed remainder is actually random.
+    """
     props = g.get("props") or {}
     er_h = g.get("exp_runs_home") or 4.3
     er_a = g.get("exp_runs_away") or 4.3
@@ -593,10 +697,18 @@ def simulate(g, n=5000):
     p1h = 1 - math.exp(-_RFI_K * er_h / 9.0)
     p_target = 1 - (1 - p1a) * (1 - p1h)      # P(either team scores in the 1st)
     f1_raw = [False] * n                      # simulated 1st-inning run (either team)
+    # A live game resumes from its own base-out state, and its staffs from the
+    # lines they have already thrown.
+    state = None
+    res_h = res_a = None
+    if live and setup_a and setup_h:
+        state = _live_state(live, setup_a, setup_h)
+        res_h = (live.get("pitching") or {}).get("home")
+        res_a = (live.get("pitching") or {}).get("away")
     for i in range(n):
         if setup_a and setup_h:
             # Real-rules matchup: bottom-9 skip, walk-off, ghost-runner extras.
-            ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd)
+            ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd, state=state)
             store(sa, idx_a, i); store(sh, idx_h, i)
             home_runs[i] = rh
             away_runs[i] = ra
@@ -625,7 +737,8 @@ def simulate(g, n=5000):
                                                ht.get("bullpen_whip"), ra, rnd,
                                                bullpen=ht.get("bp_arms"), exp_ip=ip_h,
                                                er_opp=er_a, pen_out=pen_h,
-                                               budget=bud_h, sp_bb_pa=bbpa_h)
+                                               budget=bud_h, sp_bb_pa=bbpa_h,
+                                               resume=res_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
@@ -633,7 +746,8 @@ def simulate(g, n=5000):
                                                at.get("bullpen_whip"), rh, rnd,
                                                bullpen=at.get("bp_arms"), exp_ip=ip_a,
                                                er_opp=er_h, pen_out=pen_a,
-                                               budget=bud_a, sp_bb_pa=bbpa_a)
+                                               budget=bud_a, sp_bb_pa=bbpa_a,
+                                               resume=res_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 
@@ -642,6 +756,13 @@ def simulate(g, n=5000):
     # or promote a few independent no's if it somehow runs cold. Thinning keeps
     # every retained yes tied to its simulated game, so RFI x Over / RFI x ML
     # correlations survive into the SGP masks.
+    if live and live.get("rfi_settled"):
+        # The 1st is already in the book -- there is nothing left to simulate and
+        # nothing to calibrate. The market is decided at 0% or 100%.
+        done = bool(live.get("rfi_runs"))
+        return _pack(n, home_runs, away_runs, home_k, away_k, home_win,
+                     home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
+                     home_bull_k, away_bull_k, [done] * n, bat_h, bat_a)
     p_sim = sum(f1_raw) / n if n else 0.0
     if p_sim > p_target > 0:
         keep = p_target / p_sim
@@ -654,6 +775,15 @@ def simulate(g, n=5000):
     else:
         rfi = f1_raw
 
+    return _pack(n, home_runs, away_runs, home_k, away_k, home_win,
+                 home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
+                 home_bull_k, away_bull_k, rfi, bat_h, bat_a)
+
+
+def _pack(n, home_runs, away_runs, home_k, away_k, home_win, home_sp_pitch,
+          away_sp_pitch, home_sp_outs, away_sp_outs, home_bull_k, away_bull_k,
+          rfi, bat_h, bat_a):
+    """The shared per-sim arrays every consumer reads."""
     return {"n": n, "home_runs": home_runs, "away_runs": away_runs,
             "home_k": home_k, "away_k": away_k, "home_win": home_win,
             "home_sp_pitch": home_sp_pitch, "away_sp_pitch": away_sp_pitch,

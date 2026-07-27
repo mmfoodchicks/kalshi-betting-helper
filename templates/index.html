@@ -669,6 +669,8 @@
           </select>
           reach <input id="cmbPayout" type="number" min="0" step="any" value="0" style="width:76px"/>× payout
         </div>
+        <label class="small" style="display:inline-block;margin-top:8px"><input type="checkbox" id="cmbLive" style="width:auto" onchange="renderCmbLiveWarn()"/> 🔴 include games in progress</label>
+        <div id="cmbLiveWarn"></div>
         <button id="cmbBtn" class="track-mini primary-mini" style="margin-top:8px">Build</button>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. One leg per event keeps the legs ~independent.</div>
       </div>

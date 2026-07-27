@@ -149,18 +149,18 @@ def _filter_types(legs, types):
             or base(l.get("type") or "") in allow]
 
 
-def _mlb_legs(date, season):
+def _mlb_legs(date, season, allow_live=False):
     legs = []
     try:
         games = baseball.analyze_slate(date, season)
     except Exception:
         return legs
     for g in games:
-        for v in baseball._game_variants(g):
+        for v in baseball._game_variants(g, allow_live=allow_live):
             legs.append({"category": "⚾ MLB", "event_id": f"mlb_{g['game_pk']}",
                          "label": v["label"], "matchup": v["matchup"], "prob": v["prob"],
                          "price_cents": v.get("price_cents"), "type": v["type"],
-                         "side": v.get("side", "yes"),
+                         "side": v.get("side", "yes"), "live": bool(v.get("live")),
                          "sim_avg": v.get("sim_avg"), "avg_unit": v.get("avg_unit")})
     return legs
 
@@ -546,7 +546,7 @@ def _sport_legs(key):
     return legs
 
 
-def gather(cats, date, season):
+def gather(cats, date, season, allow_live=False):
     """All legs for the checked categories. Each leg is tagged with its source
     category KEY (`cat_key`) so the maker can budget legs per sport, independent
     of the display label (tennis, for instance, spans several tour labels)."""
@@ -562,7 +562,7 @@ def gather(cats, date, season):
         legs.extend(new)
 
     if "mlb" in cats:
-        add("mlb", lambda: _mlb_legs(date, season))
+        add("mlb", lambda: _mlb_legs(date, season, allow_live=allow_live))
     if "nfl" in cats:
         add("nfl", _nfl_legs)
     if "crypto" in cats:
@@ -716,7 +716,7 @@ def _leg_edge(l):
     return (l["prob"] * 100 - l["price_cents"]) if l.get("price_cents") else None
 
 
-def recommended(cats, date, season, max_legs=12, types=None):
+def recommended(cats, date, season, max_legs=12, types=None, allow_live=False):
     """Auto-built recommended parlays from the checked sports -- the same idea as
     the baseball tab's safest / best-value / best combos, across categories:
 
@@ -729,7 +729,7 @@ def recommended(cats, date, season, max_legs=12, types=None):
     `types`, when given, restricts which leg types are eligible (the UI's per-
     sport type chips).
     """
-    legs = _filter_types(gather(cats, date, season), types)
+    legs = _filter_types(gather(cats, date, season, allow_live), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1
@@ -935,8 +935,9 @@ def _assemble_by_cat(legs, per_cat, target, max_legs, payout_target=None, payout
 
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
-          legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None):
-    legs = _filter_types(gather(cats, date, season), types)
+          legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None,
+          allow_live=False):
+    legs = _filter_types(gather(cats, date, season, allow_live), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1

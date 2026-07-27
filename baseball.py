@@ -1557,9 +1557,66 @@ def _game_sim(g):
     return _cached(("game_sim", pk), 180, build)
 
 
-def _sim_pregame_legs(g, types=None):
+def _live_state_sig(snap):
+    """A signature that changes whenever anything bettable has changed. Cheaper
+    and safer than a plain timer: a cached live board must never outlive the
+    situation it was priced from."""
+    banked = sum(v.get("hit", 0) + v.get("k", 0)
+                 for side in ("home", "away")
+                 for v in (snap["banked"].get(side) or {}).values())
+    pit = snap.get("pitching") or {}
+    return (snap["inning"], snap["is_top"], snap["outs"], snap["away_runs"],
+            snap["home_runs"], tuple(snap.get("bases") or ()), banked,
+            (pit.get("home") or {}).get("sp_k"), (pit.get("away") or {}).get("sp_k"),
+            (pit.get("home") or {}).get("sp_in"), (pit.get("away") or {}).get("sp_in"))
+
+
+def _live_game_sim(g):
+    """Sim + candidates for a game ALREADY UNDER WAY, resumed from where it
+    stands. Returns None when the live feed can't be read, so callers can fall
+    back to the thin score-derived legs rather than showing nothing."""
+    import mlb_sim, mlb_live
+    pk = g.get("game_pk")
+    if pk is None:
+        return None
+    try:
+        snap = mlb_live.snapshot(pk)
+    except Exception:
+        return None
+    if not snap:
+        return None
+
+    def build():
+        sim = mlb_sim.simulate(g, _SIM_N, live=snap)
+        return {"sim": sim, "cands": mlb_sim.build_candidates(g, sim), "snap": snap}
+    # Keyed on the situation itself, and short-lived on top of that.
+    return _cached(("game_sim_live", pk, _live_state_sig(snap)), 45, build)
+
+
+def _sim_live_legs(g, types=None):
+    """Full sim-backed legs for a game IN PROGRESS.
+
+    Same shape and same markets as the pre-game legs -- hits, total bases, Ks,
+    HR, H+R+RBI, steals, run line, totals -- but every probability comes from a
+    sim resumed at the current base-out state, with what each player has already
+    banked counted toward his line. A prop the game has already decided reads
+    100% (or 0%) instead of being re-guessed, and prices come from the live
+    Kalshi market, which is the whole point of betting one mid-game.
+
+    Returns [] when the live feed can't be read, so the caller can fall back.
+    """
+    gs = _live_game_sim(g)
+    if not gs:
+        return []
+    return _sim_pregame_legs(g, types=types, _gs=gs, _live=True)
+
+
+def _sim_pregame_legs(g, types=None, _gs=None, _live=False):
     """Combo legs for a PRE-GAME matchup, sourced from the shared game sim
-    (simulated probability + per-market average) and priced live off Kalshi."""
+    (simulated probability + per-market average) and priced live off Kalshi.
+
+    `_gs`/`_live` let the in-progress builder reuse this exact body against a
+    resumed sim, so a live board can never drift from the pre-game one."""
     import kalshi_mlb
     pk, mu = g["game_pk"], g["matchup"]
     try:
@@ -1577,19 +1634,23 @@ def _sim_pregame_legs(g, types=None):
             return None
     out = []
     # Moneyline (favorite) added explicitly, so a heavy-chalk leg the sim's
-    # marginal filter would drop is still available to the safest combos.
-    if g.get("pick_prob") is not None and g["pick_prob"] >= 0.5 and (not types or "ML" in types):
+    # marginal filter would drop is still available to the safest combos. Skipped
+    # for a live game: `pick_prob` is the PRE-GAME number and a team down 6 in the
+    # 7th is not still a 55% favourite -- there, both moneylines come off the
+    # resumed sim below, like every other leg.
+    if (not _live and g.get("pick_prob") is not None and g["pick_prob"] >= 0.5
+            and (not types or "ML" in types)):
         out.append({"game_pk": pk, "type": "ML", "label": f"{g['pick']} to win",
                     "matchup": mu, "prob": g["pick_prob"],
                     "price_cents": g.get("pick_price_cents"), "live": False,
                     "sim_avg": _ml_margin(g), "avg_unit": "run margin", "group": "ML"})
-    for c in _game_sim(g)["cands"]:
-        if c["type"] == "ML":
+    for c in (_gs or _game_sim(g))["cands"]:
+        if c["type"] == "ML" and not _live:
             continue                        # favorite handled above
         if types and c["type"] not in types:
             continue
         out.append({"game_pk": pk, "type": c["type"], "label": c["label"], "matchup": mu,
-                    "prob": c["marg"], "price_cents": price(c.get("kref")), "live": False,
+                    "prob": c["marg"], "price_cents": price(c.get("kref")), "live": _live,
                     "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit"),
                     "group": c.get("group"), "side": c.get("side", "yes")})
     return out
@@ -1644,7 +1705,7 @@ def _live_variants(g, types=None):
     return out
 
 
-def _candidate_legs(games, live_only=False, types=None):
+def _candidate_legs(games, live_only=False, types=None, allow_live=False):
     """Curated combo leg pool across the slate -- one best leg per market per game,
     from the shared game sim. One leg per game keeps the combos independent."""
     legs = []
@@ -1655,6 +1716,13 @@ def _candidate_legs(games, live_only=False, types=None):
         if live_only and state != "Live":
             continue
         if state == "Live":
+            if allow_live:
+                # Opted in: the full sim-backed board, resumed from the current
+                # base-out state, same as any pre-game matchup.
+                lv = _sim_live_legs(g, types)
+                if lv:
+                    legs.extend(_curate_legs(lv))
+                    continue
             if (not types or "ML" in types) and (g.get("pick_prob") or 0) >= 0.5:
                 legs.append({"game_pk": g["game_pk"], "type": "ML",
                              "label": f"{g['pick']} to win", "matchup": g["matchup"],
@@ -1836,7 +1904,35 @@ def _mirror_no(variants):
     return variants + out
 
 
-def _game_variants(g, types=None):
+def _sim_for(g, allow_live=False):
+    """The right simulation for this game: resumed from the current base-out
+    state when it's under way, otherwise the pre-game one. None if a live game
+    can't be read."""
+    if _game_state(g) == "Live":
+        return _live_game_sim(g) if allow_live else None
+    return _game_sim(g)
+
+
+def _live_desc(g):
+    """'Top 3rd, 2 out, 0-2' for a game in progress, so a slip can say what the
+    situation was when it was priced."""
+    try:
+        import mlb_live
+        return mlb_live.describe(mlb_live.snapshot(g.get("game_pk")))
+    except Exception:
+        return ""
+
+
+def _playable(g, allow_live=False):
+    """Can this game still be bet into a combo? Finished games never; in-progress
+    games only when the user has opted in to live pricing."""
+    state = _game_state(g)
+    if state == "Final":
+        return False
+    return allow_live or state != "Live"
+
+
+def _game_variants(g, types=None, allow_live=False):
     """Every priced line variant for a game (moneyline, run line, totals ladder,
     hitter + pitcher props), each with the SIMULATED probability and its market
     average, so the combo maker tunes on the same 4000-run sim the edge finder
@@ -1846,15 +1942,22 @@ def _game_variants(g, types=None):
     if state == "Final":
         return []
     if state == "Live":
-        # The live path is recomputed from the score, not from the sim, so it has
-        # no NO side of its own and still needs mirroring.
+        if not allow_live:
+            return []               # in-progress games are opt-in only
+        legs = _sim_live_legs(g, types)
+        if legs:
+            return legs             # full board, resumed from the current state
+        # Opted in but the live feed is unreadable: fall back to the thin path,
+        # recomputed from the score rather than the sim, so it has no NO side of
+        # its own and still needs mirroring.
         return _mirror_no(_live_variants(g, types))
     # Pre-game legs come from the shared sim, whose candidates already carry their
     # own NO side -- priced off Kalshi's real no_ask. Mirroring here would double them.
     return _sim_pregame_legs(g, types=types)
 
 
-def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, types):
+def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, types,
+                          allow_live=False):
     """A one-game slate can't field a cross-game parlay (one leg per game), which
     used to surface as a bare "no combo". The legs are all correlated here, so
     hand it to the same-game builder, which reads the joint probability straight
@@ -1862,7 +1965,8 @@ def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, ty
     try:
         res = build_same_game_parlays(games, n_legs=n_legs, target_pct=target_pct,
                                       target_payout=target_payout or 0,
-                                      max_legs=max_legs, top_n=1, types=types)
+                                      max_legs=max_legs, top_n=1, types=types,
+                                      allow_live=allow_live)
     except Exception:
         return None
     item = (res or {}).get("best")
@@ -1884,7 +1988,8 @@ def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, ty
     return item
 
 
-def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12, types=None):
+def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=12,
+                        types=None, allow_live=False):
     """Build a parlay.
 
     Payout mode (target_payout given): the target multiplier governs. We pick the
@@ -1900,9 +2005,9 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
     """
     target = max(0.05, min(0.97, target_pct / 100.0))
 
-    if len([g for g in games if _game_state(g) not in ("Final", "Live")]) < 2:
+    if len([g for g in games if _playable(g, allow_live)]) < 2:
         sgp = _single_game_fallback(games, n_legs, target_pct, target_payout,
-                                    max_legs, types)
+                                    max_legs, types, allow_live)
         if sgp:
             return sgp
 
@@ -1913,7 +2018,7 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
         # reach the payout (expanding the count), never dropping below the floor.
         groups = []
         for g in games:
-            vs = [v for v in _game_variants(g, types) if v["prob"] >= target]
+            vs = [v for v in _game_variants(g, types, allow_live) if v["prob"] >= target]
             if vs:
                 groups.append(vs)
         res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
@@ -1932,7 +2037,7 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
     chosen = []  # one best variant per game, tuned near the target confidence
     for g in games:
-        variants = _game_variants(g, types)
+        variants = _game_variants(g, types, allow_live)
         if not variants:
             continue
         meeting = [v for v in variants if v["prob"] >= target]
@@ -1951,7 +2056,8 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
 
 def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
-                            n_sims=5000, max_legs=4, top_n=8, types=None):
+                            n_sims=5000, max_legs=4, top_n=8, types=None,
+                            allow_live=False):
     """Same-game parlays with honest, correlation-aware joint odds.
 
     Unlike the cross-game combos (independent games -> exact product), legs from
@@ -1961,13 +2067,15 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
     """
     import mlb_sim
     target = max(0.05, min(0.97, target_pct / 100.0))
-    upcoming = [g for g in games if _game_state(g) not in ("Final", "Live")]
+    upcoming = [g for g in games if _playable(g, allow_live)]
     # Big leg counts make the per-game combinatorial search expensive; split a
     # fixed budget across the slate so the request stays responsive.
     budget = max(80_000, 700_000 // max(1, len(upcoming)))
     out = []
     for g in upcoming:
-        gs = _game_sim(g)               # shared with the edge finder + combos
+        gs = _sim_for(g, allow_live)    # shared with the edge finder + combos
+        if not gs:
+            continue
         sim = gs["sim"]
         cands = [c for c in gs["cands"]
                  if (not types or c["type"] in types) and c["marg"] >= target]
@@ -1976,6 +2084,11 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         if not item:
             continue
         item["matchup"] = g["matchup"]
+        if _game_state(g) == "Live":
+            item["live"] = True
+            item["live_state"] = _live_desc(g)
+            for leg in item.get("legs", []):
+                leg["live"] = True          # so each leg renders its LIVE marker
         item["has_props"] = bool((g.get("props") or {}).get("batters_home")
                                  or (g.get("props") or {}).get("batters_away"))
         # Deep per-player / per-pitcher simulated detail behind this slip.
@@ -2187,26 +2300,32 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             continue
         if game_sel and g["game_pk"] not in game_sel:
             continue
+        live_gs = None
         if state == "Live":
-            # In-progress games: props are stale, so only the live win leg is
-            # sound. Offer it (model's favored side) as a single-leg bundle.
-            if not include_live or not g.get("pick_prob") or g["pick_prob"] < floor:
+            if not include_live:
                 continue
-            side = team_side(g)
-            pick = g.get("pick")
-            pick_side = "home" if pick == g.get("home_name") else "away"
-            if side and side != pick_side:
-                continue  # selected the team that isn't the live favorite
-            ha = g.get("home_abbr") or g.get("home_name")
-            aa = g.get("away_abbr") or g.get("away_name")
-            leg = {"type": "ML", "label": f"{pick} to win",
-                   "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
-                   "group": "ML", "live": True,
-                   "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
-            bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
-            games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
-            continue
-        gs = _game_sim(g)               # shared with the edge finder + combos
+            # Resume the game from where it stands: every market is live again,
+            # not just the moneyline, because the sim now knows what has already
+            # been banked. Falls back to the win leg alone if the feed is down.
+            live_gs = _live_game_sim(g)
+            if live_gs is None:
+                if not g.get("pick_prob") or g["pick_prob"] < floor:
+                    continue
+                side = team_side(g)
+                pick = g.get("pick")
+                pick_side = "home" if pick == g.get("home_name") else "away"
+                if side and side != pick_side:
+                    continue  # selected the team that isn't the live favorite
+                ha = g.get("home_abbr") or g.get("home_name")
+                aa = g.get("away_abbr") or g.get("away_name")
+                leg = {"type": "ML", "label": f"{pick} to win",
+                       "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
+                       "group": "ML", "live": True,
+                       "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
+                bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
+                games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
+                continue
+        gs = live_gs or _game_sim(g)    # shared with the edge finder + combos
         sim = gs["sim"]
         side = team_side(g)
         cands = [c for c in gs["cands"]
@@ -2216,7 +2335,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
         if bundles:
-            games_bundles.append((g["matchup"], bundles, g.get("kalshi_suffix")))
+            label = g["matchup"] + (" 🔴" if live_gs else "")
+            games_bundles.append((label, bundles, g.get("kalshi_suffix")))
     if not games_bundles:
         return None
     item = mlb_sim.assemble_mixed(games_bundles, n_legs, target_payout,
@@ -2407,10 +2527,10 @@ def pick6_eval(games, pk, legs):
             "sims_hit": mlb_sim._popcount(jm)}
 
 
-def build_combos(games, max_legs=3, top_n=6, types=None):
+def build_combos(games, max_legs=3, top_n=6, types=None, allow_live=False):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.
-    live_games = [g for g in games if _game_state(g) != "Final"]
+    live_games = [g for g in games if _playable(g, allow_live)]
 
     # Moneyline-only combos drive the EV-based highlights (those legs are priced).
     ml_legs = [{"game_pk": g["game_pk"], "type": "ML", "label": f"{g['pick']} to win",
@@ -2424,7 +2544,7 @@ def build_combos(games, max_legs=3, top_n=6, types=None):
     best_value = max(priced, key=lambda c: c["ev_pct"], default=None)
 
     # Mixed combos draw from every bet type (moneyline + props).
-    all_legs = _candidate_legs(live_games, types=types)
+    all_legs = _candidate_legs(live_games, types=types, allow_live=allow_live)
     # Taking the 10 likeliest legs outright would make a NO leg structurally
     # ineligible here: NO tops out around 90% by design, and a slate always
     # fields ten 95%+ Overs. Give the NO side its own few slots so it can be

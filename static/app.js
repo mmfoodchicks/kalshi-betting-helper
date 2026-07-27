@@ -924,6 +924,33 @@ function mlbTypesParam() {
   return _mlbTypes.size ? "&types=" + [..._mlbTypes].map(encodeURIComponent).join(",") : "";
 }
 
+// How many games on the loaded slate are actually under way right now.
+function liveGameCount() {
+  const gs = (bbCombosData && bbCombosData.games) || [];
+  return gs.filter((g) => g.live).length;
+}
+
+// Shown whenever live pricing is switched on. Two separate cautions: the board
+// is a snapshot that can be stale within a pitch, and a live leg inside a
+// multi-game slip drags the whole slip's timing with it.
+function liveWarnHtml() {
+  if (!comboIncludeLive) return "";
+  const n = liveGameCount();
+  const multi = (bbCombosData && bbCombosData.games || []).length > 1;
+  return `<div class="livewarn">
+    <b>⚠️ Live pricing is on</b> — ${n ? `${n} game${n === 1 ? " is" : "s are"}` : "games"} in progress will be
+    simulated forward from the current score, count and base-out state, with whatever each
+    player has already banked counted toward his line. Prices come from the live Kalshi market.
+    <div style="margin-top:4px">This board is a <b>snapshot</b>: one pitch can move it. Re-build right before you place.</div>
+    ${multi ? `<div style="margin-top:4px">In a <b>multi-game parlay</b>, a live leg can settle long before the rest — the slip is only decided when every game finishes.</div>` : ""}
+  </div>`;
+}
+
+window.renderLiveWarn = () => {
+  const el = $("liveWarn");
+  if (el) el.innerHTML = liveWarnHtml();
+};
+
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
 window.buildCombo = async () => {
@@ -1035,7 +1062,8 @@ window.buildParlay = async () => {
   const date = $("bbDate").value;
   out.innerHTML = `<div class="small">Tuning lines…</div>`;
   try {
-    const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
+    const liveQ = comboIncludeLive ? "&live=1" : "";
+    const d = await (await fetch(`/api/baseball/parlay?date=${date}&legs=${n}&target=${t}&payout=${p}${liveQ}`)).json();
     if (!d.combo) { out.innerHTML = `<div class="small">Couldn't build a parlay at ${t}%.</div>`; return; }
     const c = d.combo;
     let title, note = "";
@@ -1179,7 +1207,7 @@ function kalshiPayout(m) {
 function renderSGP(s) {
   const nsim = s.n_sims || 0;
   const legs = s.legs.map((l) =>
-    `<li><span class="legtag">${l.type}</span> ${sideTag(l)}${l.pick} ${legProb(l, nsim)}${simAvgTag(l)}</li>`).join("");
+    `<li><span class="legtag">${l.type}</span> ${liveTag(l)}${sideTag(l)}${l.pick} ${legProb(l, nsim)}${simAvgTag(l)}</li>`).join("");
   const corr = s.corr_delta_pct;
   const corrTxt = corr > 0.4 ? `<b style="color:#3ad17a">legs reinforce (+${corr}% vs independent)</b>`
     : corr < -0.4 ? `<b style="color:#e0566a">legs fight each other (${corr}% vs independent)</b>`
@@ -1228,7 +1256,7 @@ window.buildMixed = async () => {
 function renderMixed(m) {
   const groups = m.groups.map((g) => {
     const legs = g.legs.map((l) =>
-      `<li><span class="legtag">${l.type}</span> ${sideTag(l)}${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
+      `<li><span class="legtag">${l.type}</span> ${liveTag(l)}${sideTag(l)}${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
     const head = g.same_game
       ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
       : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
@@ -1276,6 +1304,11 @@ function simAvgTag(l) {
 // contract, so a slip should say which side it's actually buying — an "Under"
 // or a "NO —" leg is the NO contract, everything else is YES. RFI is the one
 // exception the book doesn't split into sides, so it gets no badge.
+// Marks a leg priced off a game already under way.
+function liveTag(l) {
+  return l.live ? `<span class="livetag" title="priced from the current game state">LIVE</span>` : "";
+}
+
 function sideTag(l) {
   const t = (l.type || "");
   if (t === "RFI" || /1st-inn/i.test(t)) return "";
@@ -1376,7 +1409,8 @@ async function loadBaseball(silent) {
           reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
         </div>
         <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${(comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today — combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
-        &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked"/> include live games (win legs only)</label>
+        &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked;renderLiveWarn()"/> 🔴 include games in progress</label>
+        <div id="liveWarn">${liveWarnHtml()}</div>
         ${mlbTypeChipRow()}
         <button class="track-mini primary-mini" style="margin-top:6px" onclick="buildCombo()">Build</button>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
@@ -4643,7 +4677,7 @@ async function buildRecommended() {
   const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
   out.innerHTML = `<div class="empty">Building the best combos across ${cats.length} sport${cats.length > 1 ? "s" : ""}…</div>`;
   try {
-    const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}${cmbTypesParam()}`)).json();
+    const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}${cmbTypesParam()}${cmbLiveParam()}`)).json();
     if (d.error === "no_cats") { out.innerHTML = `<div class="empty">Check one or more sports above first.</div>`; return; }
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
@@ -4678,6 +4712,26 @@ async function buildRecommended() {
     out.innerHTML = `<div class="empty">Build failed — try again.</div>`;
   }
 }
+// Mega maker's live opt-in. Same rule as the baseball tab: off unless ticked,
+// because a live board is priced from a snapshot seconds old.
+function cmbLiveParam() {
+  const el = $("cmbLive");
+  return (el && el.checked) ? "&live=1" : "";
+}
+
+window.renderCmbLiveWarn = () => {
+  const el = $("cmbLiveWarn");
+  if (!el) return;
+  const on = $("cmbLive") && $("cmbLive").checked;
+  el.innerHTML = on ? `<div class="livewarn">
+    <b>\u26a0\ufe0f Live pricing is on</b> — games already under way are simulated forward from the
+    current score, count and base-out state, with what each player has banked counted toward his line.
+    Prices come from the live Kalshi market.
+    <div style="margin-top:4px">This is a <b>snapshot</b>: one pitch can move it. Re-build right before you place.</div>
+    <div style="margin-top:4px">In a <b>multi-sport parlay</b>, a live leg can settle long before the rest — the slip is only decided when every event finishes.</div>
+  </div>` : "";
+};
+
 async function buildCombine() {
   const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
   const out = $("combineOut");
@@ -4693,7 +4747,7 @@ async function buildCombine() {
   try {
     const q = `cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`
       + `&legs_mode=${legsMode}&payout_mode=${payoutMode}&conn=${conn}`
-      + cmbTypesParam() + cmbPerCatParam();
+      + cmbTypesParam() + cmbPerCatParam() + cmbLiveParam();
     const d = await (await fetch(`/api/combine?${q}`)).json();
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     let html = "";
