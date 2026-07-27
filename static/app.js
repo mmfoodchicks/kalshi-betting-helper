@@ -1447,6 +1447,111 @@ async function loadBaseball(silent) {
   }
 }
 
+// Kalshi titles are exchange-authored text dropped straight into markup here,
+// so they get escaped rather than trusted.
+function escapeHtml(x) {
+  return String(x == null ? "" : x).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ---------------------------------------------------------------------------
+// Futures: long-dated Kalshi contracts, ranked by annual yield.
+//
+// Deliberately market-only — no model, no edge claim. The job here is to make
+// the risk/return trade visible: every row shows what it pays per year NEXT TO
+// the chance it pays nothing, because those are the same number seen twice.
+// ---------------------------------------------------------------------------
+let futLoaded = false;
+let futTimer = null;
+
+function initFutures() {
+  if (futLoaded) return;
+  futLoaded = true;
+  ["futSort", "futMinProb", "futMaxDays", "futMinVol"].forEach((id) =>
+    $(id)?.addEventListener("change", loadFutures));
+  // Debounced so typing doesn't fire a request per keystroke.
+  $("futQ")?.addEventListener("input", () => {
+    clearTimeout(futTimer);
+    futTimer = setTimeout(loadFutures, 300);
+  });
+  loadFutures();
+}
+
+// Big APY numbers on short contracts are arithmetically true and practically
+// meaningless — a 20-day hold compounded 18x assumes you survive all 18 rolls.
+function futApy(r) {
+  if (r.apy_pct == null) return "—";
+  const v = r.apy_pct >= 1000 ? Math.round(r.apy_pct).toLocaleString() : r.apy_pct.toFixed(1);
+  const cls = r.apy_pct >= 25 ? "good" : r.apy_pct >= 6 ? "ok" : "meh";
+  return `<span class="futapy ${cls}">${v}%</span>${r.short_term ? `<span class="futflag" title="Short hold — the annual figure is extrapolated from a few weeks, and assumes you could repeat the trade all year and win every time.">extrap.</span>` : ""}`;
+}
+
+function futDays(d) {
+  if (d >= 730) return `${(d / 365).toFixed(1)} yr`;
+  if (d >= 60) return `${Math.round(d / 30.4)} mo`;
+  return `${Math.round(d)} d`;
+}
+
+async function loadFutures() {
+  const out = $("futOut");
+  if (!out) return;
+  const q = ($("futQ") || {}).value || "";
+  const sort = ($("futSort") || {}).value || "best";
+  const minProb = ($("futMinProb") || {}).value || "95";
+  const maxDays = ($("futMaxDays") || {}).value || "";
+  const minVol = ($("futMinVol") || {}).value || "";
+  out.innerHTML = `<div class="empty">Scanning Kalshi's long-dated markets…</div>`;
+  try {
+    let u = `/api/futures?limit=80&sort=${sort}&min_prob=${minProb}`
+      + `&q=${encodeURIComponent(q)}`;
+    if (maxDays) u += `&max_days=${maxDays}`;
+    if (minVol) u += `&min_volume=${minVol}`;
+    const d = await (await fetch(u)).json();
+    if (d.building) {
+      // Cold start: the sweep runs server-side on a background thread. Poll.
+      out.innerHTML = `<div class="empty">Scanning Kalshi's long-dated markets… this takes about half a minute the first time.</div>`;
+      clearTimeout(futTimer);
+      futTimer = setTimeout(loadFutures, 4000);
+      return;
+    }
+    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const cnt = $("futCount");
+    if (cnt) cnt.textContent = `${d.total.toLocaleString()} match · ${d.universe.toLocaleString()} tracked`;
+    const tiers = $("futTiers");
+    if (tiers && d.summary && d.summary.tiers) {
+      tiers.innerHTML = `What's on offer, by how safe the market says it is — `
+        + d.summary.tiers.map((t) =>
+          `<b>${t.tier}</b> ${t.n.toLocaleString()} (median ${t.median_apy == null ? "—" : t.median_apy + "%"}/yr)`).join(" · ");
+    }
+    if (!d.rows.length) {
+      out.innerHTML = `<div class="empty">Nothing matches. Try a lower safety floor, a longer window, or a broader search.</div>`;
+      return;
+    }
+    out.innerHTML = `<div class="futtablewrap"><table class="futtable">
+      <thead><tr>
+        <th>Contract</th><th class="r">Buy</th><th class="r">Pays/yr</th>
+        <th class="r">Return</th><th class="r">Settles</th>
+        <th class="r">Loss risk</th><th class="r">Traded</th>
+      </tr></thead><tbody>
+      ${d.rows.map((r) => `<tr>
+        <td>
+          <div class="futtitle"><span class="sidetag ${r.side}">${r.side.toUpperCase()}</span> ${escapeHtml(r.title)}</div>
+          <div class="futsub">${escapeHtml(r.subtitle || "")} <span class="futtick">${escapeHtml(r.ticker)}</span></div>
+        </td>
+        <td class="r"><b>${r.cost_cents}¢</b></td>
+        <td class="r">${futApy(r)}</td>
+        <td class="r">${r.return_pct}%</td>
+        <td class="r">${futDays(r.days)}</td>
+        <td class="r"><span class="futrisk t-${r.tier.replace(/ /g, "-")}">${r.loss_pct}%</span></td>
+        <td class="r">${Math.round(r.volume).toLocaleString()}</td>
+      </tr>`).join("")}
+      </tbody></table></div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">${escapeHtml(d.note)}</div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Couldn't load futures — try again.</div>`;
+  }
+}
+
 function setupTabs() {
   $("bbetsBtn")?.addEventListener("click", loadBestBets);
   document.querySelectorAll(".tab").forEach((btn) => {
@@ -1471,12 +1576,14 @@ function setupTabs() {
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
+      $("tab-futures").classList.toggle("hidden", tab !== "futures");
       $("tab-ledger").classList.toggle("hidden", tab !== "ledger");
       if (tab === "bestbets" && !$("bbetsResults").dataset.loaded) {
         $("bbetsResults").dataset.loaded = "1";
         loadBestBets();
       }
       if (tab === "combine") loadCombineCats();
+      if (tab === "futures") initFutures();
       if (tab === "sim") initSim();
       if (tab === "commodities" && !$("comResults").dataset.loaded) {
         $("comResults").dataset.loaded = "1";

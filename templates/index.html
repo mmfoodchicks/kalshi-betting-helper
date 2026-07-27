@@ -64,6 +64,7 @@
     <button class="tab" data-tab="weather">🌤️ Weather</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="combine">🎰 Combos</button>
+    <button class="tab" data-tab="futures">🏦 Futures</button>
     <button class="tab" data-tab="ledger">📒 Ledger</button>
   </nav>
 
@@ -677,6 +678,62 @@
       <div id="combineOut" class="markets"><div class="empty">Pick categories and build.</div></div>
     </section>
    </div><!-- /tab-combine -->
+
+   <div id="tab-futures" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🏦 Futures — parking money</h2>
+        <div id="futCount" class="stats"></div>
+      </div>
+      <p class="sub" style="margin:4px 0 10px">Every <b>long-dated</b> Kalshi contract, ranked by what it actually pays <b>per year</b>. A 96¢ contract settling in 2030 returns 4% — over three and a half years, which is worse than a bank. The same 96¢ settling in 60 days is 4% in two months. Same price, same risk per dollar, completely different instrument — so the ranking is annualized.</p>
+      <div class="futwarn">
+        <b>Read this once.</b> These are not savings accounts. You are buying a contract that pays $1 if it comes true and <b>$0 if it doesn't</b> — a 96¢ contract loses the whole stake 4% of the time, and your money is locked up until it settles. At the market's own price the expected value of every row here is slightly <b>negative</b> (Kalshi's fee). The yield is what you're paid for carrying that tail risk — it is not an edge we found.
+      </div>
+      <div class="futctl">
+        <input id="futQ" type="search" placeholder="Search — e.g. fed, bitcoin, nba, election…" />
+        <label>Sort
+          <select id="futSort">
+            <option value="best">Best yield (APY)</option>
+            <option value="worst">Worst yield</option>
+            <option value="soonest">Settles soonest</option>
+            <option value="latest">Settles latest</option>
+            <option value="safest">Safest first</option>
+            <option value="volume">Most traded</option>
+          </select>
+        </label>
+        <label>Min safety
+          <select id="futMinProb">
+            <option value="99">99% — near-certain</option>
+            <option value="97">97% — very safe</option>
+            <option value="95" selected>95% — safe (default)</option>
+            <option value="90">90% — moderate</option>
+            <option value="80">80% — risky</option>
+            <option value="1">any — speculative</option>
+          </select>
+        </label>
+        <label>Settles within
+          <select id="futMaxDays">
+            <option value="">any time</option>
+            <option value="45">45 days</option>
+            <option value="90">3 months</option>
+            <option value="180">6 months</option>
+            <option value="365">1 year</option>
+            <option value="1095">3 years</option>
+          </select>
+        </label>
+        <label>Min traded
+          <select id="futMinVol">
+            <option value="">any</option>
+            <option value="500" selected>500+</option>
+            <option value="5000">5,000+</option>
+            <option value="50000">50,000+</option>
+          </select>
+        </label>
+      </div>
+      <div id="futTiers" class="small" style="margin:8px 0"></div>
+      <div id="futOut" class="markets"><div class="empty">Loading futures…</div></div>
+    </section>
+   </div><!-- /tab-futures -->
 
    <div id="tab-ledger" class="hidden">
     <section class="card">

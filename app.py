@@ -1010,6 +1010,50 @@ def _allow_live():
     return v in ("1", "true", "yes", "on")
 
 
+@app.route("/api/futures")
+def api_futures():
+    """Long-dated Kalshi contracts, ranked by what they pay per year.
+
+    Deliberately market-only: no model, no edge claim. The board answers "given
+    how likely this is and how long my money is tied up, what does it pay?" and
+    shows the loss chance next to every yield."""
+    import futures as _fut
+    q = request.args.get("q", "")
+    sort = request.args.get("sort", "best")
+
+    def num(name, default=None, lo=None, hi=None):
+        v = request.args.get(name)
+        if v in (None, ""):
+            return default
+        try:
+            x = float(v)
+        except ValueError:
+            return default
+        if lo is not None:
+            x = max(lo, x)
+        if hi is not None:
+            x = min(hi, x)
+        return x
+    try:
+        data = _fut.board(
+            q=q, sort=sort,
+            min_prob=num("min_prob", _fut.DEFAULT_MIN_PROB, 1, 100),
+            max_days=num("max_days", None, 1, 40000),
+            min_days=num("min_days", _fut.MIN_DAYS, 1, 40000),
+            min_volume=num("min_volume", None, 0, 1e9),
+            limit=int(num("limit", 60, 1, 500)),
+        )
+        if data.get("building"):
+            # First hit after a cold start: the sweep is ~40 pages and runs on a
+            # background thread rather than holding the request open.
+            return jsonify({"building": True,
+                            "error": "scanning Kalshi's long-dated markets — retry shortly"}), 202
+        data["summary"] = _fut.summary()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": f"futures load failed: {e}"}), 502
+
+
 @app.route("/api/combine/meta")
 def api_combine_meta():
     import combine

@@ -1001,3 +1001,46 @@ body.tier-locked .owner-only { display: none !important; }
   letter-spacing: .04em; padding: 1px 5px; border-radius: 5px; vertical-align: 1px;
   margin-right: 4px; background: rgba(224, 86, 106, 0.16); color: #e0566a;
   border: 1px solid rgba(224, 86, 106, 0.45); }
+
+/* --- Futures board ------------------------------------------------------- */
+/* The warning is loud on purpose: the whole tab invites treating contracts as
+   savings, and they are not. Everything else is built so the yield and the
+   loss risk are read together rather than one at a time. */
+.futwarn { margin: 4px 0 12px; padding: 10px 12px; border-radius: 8px;
+  background: rgba(240, 173, 78, 0.10); border: 1px solid rgba(240, 173, 78, 0.40);
+  font-size: 0.79rem; line-height: 1.5; }
+.futwarn b { color: #f0ad4e; }
+.futctl { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 8px 0; }
+.futctl input[type="search"] { flex: 1 1 240px; min-width: 180px; font-size: 0.95rem;
+  padding: 8px 10px; }
+.futctl label { display: flex; flex-direction: column; gap: 3px; font-size: 0.72rem;
+  color: var(--muted); }
+.futctl select { padding: 7px 8px; font-size: 0.86rem; }
+.futtablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.futtable { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 620px; }
+.futtable th { text-align: left; font-size: 0.68rem; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--muted); font-weight: 700;
+  padding: 6px 8px; border-bottom: 1px solid var(--border, #2a2f3a); white-space: nowrap; }
+.futtable td { padding: 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.14);
+  vertical-align: top; }
+.futtable .r { text-align: right; white-space: nowrap; }
+.futtable tr:hover td { background: rgba(128, 128, 128, 0.07); }
+.futtitle { font-weight: 600; line-height: 1.35; }
+.futsub { color: var(--muted); font-size: 0.74rem; margin-top: 2px; }
+.futtick { opacity: .55; font-family: ui-monospace, Menlo, monospace; font-size: 0.68rem; }
+.futapy { font-weight: 800; }
+.futapy.good { color: #2fd17a; }
+.futapy.ok { color: #f0ad4e; }
+.futapy.meh { color: var(--muted); }
+.futflag { display: inline-block; margin-left: 4px; font-size: 0.6rem; font-weight: 700;
+  padding: 1px 4px; border-radius: 4px; color: var(--muted);
+  border: 1px solid rgba(128, 128, 128, 0.4); cursor: help; }
+.futrisk { font-weight: 700; }
+.futrisk.t-very-safe { color: #2fd17a; }
+.futrisk.t-safe { color: #8ac926; }
+.futrisk.t-moderate { color: #f0ad4e; }
+.futrisk.t-risky, .futrisk.t-speculative { color: #e0566a; }
+@media (max-width: 560px) {
+  .futtable { font-size: 0.76rem; }
+  .futctl label { flex: 1 1 45%; }
+}
