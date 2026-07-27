@@ -46,11 +46,11 @@ _SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl", "wnba")
 # Non-sport models. Anything here prices its own markets end-to-end and returns
 # rows in the same shape, so the board treats a Bitcoin strike exactly like a
 # division title: our number, the book's number, and what the difference is worth.
-_OTHER = ("crypto",)
+_OTHER = ("crypto", "climate")
 
 _LABEL = {"mlb": "⚾ MLB", "nfl": "🏈 NFL", "cfb": "🏈 CFB",
           "nba": "🏀 NBA", "nhl": "🏒 NHL", "wnba": "🏀 WNBA",
-          "crypto": "⚡ Crypto"}
+          "crypto": "⚡ Crypto", "climate": "🌡️ Climate"}
 
 # Human names for the market kinds the boards emit, normalized across sports
 # (MLB says "pennant", the NBA means "conference", they're the same bet).
@@ -59,7 +59,7 @@ _MARKET = {
     "pennant": "Conference / pennant", "conf": "Conference / pennant",
     "division": "Division", "playoffs": "Make the playoffs",
     "cfp": "Make the playoff", "win_total": "Season win total",
-    "price_level": "Price level",
+    "price_level": "Price level", "temperature": "Global temperature",
 }
 
 # A disagreement past this is far more likely to be a mapping bug, a market that
@@ -300,6 +300,89 @@ def _collect_crypto():
     return out
 
 
+def _collect_climate():
+    """Global-temperature markets, against the NASA GISS series they settle on.
+
+    Rare among these: the model reads the exact index the contract pays out from,
+    so there is no gap between what we forecast and what resolves. Months already
+    published are fixed, and only the rest of the year is uncertain -- the same
+    partial-information shape as resuming a live game."""
+    import re
+    import kalshi
+    import climate_model as cmod
+    import futures as _fut
+    out = []
+    year = None
+    for series_t in ("KXGTEMP", "KXHMONTH", "KXHMONTHRANGE"):
+        try:
+            d = kalshi._get_json(
+                f"{kalshi.BASE}/markets?series_ticker={series_t}&status=open&limit=100",
+                timeout=25)
+        except Exception:
+            continue
+        for m in d.get("markets") or []:
+            days = _fut.settles_in(m)
+            ask = kalshi._cents(m.get("yes_ask_dollars"))
+            vol = float(m.get("volume_fp") or 0)
+            if days is None or days <= 0 or ask is None or not (0 < ask < 100):
+                continue
+            # These ladders carry untraded placeholder quotes: the same month was
+            # listed at 75c for "above 1.30" AND 71c for "below 1.03", which
+            # cannot both be true. An ask nobody has traded against isn't a price.
+            if vol < _fut.MIN_VOLUME:
+                continue
+            title = (m.get("title") or "").strip()
+            rules = m.get("rules_primary") or ""
+            pct = None
+            if series_t == "KXGTEMP":
+                ym = re.search(r"(20\d\d) be the hottest year", title)
+                if not ym:
+                    continue
+                year = int(ym.group(1))
+                # Some of these add an explicit degree bar on top of "beat every
+                # prior year"; take it from the rules rather than assuming.
+                fm = re.search(r"([0-9]+\.[0-9]+)\s*degrees", rules)
+                pct = cmod.p_hottest_year(year, floor=float(fm.group(1)) if fm else None)
+            elif series_t == "KXHMONTH":
+                mm = re.search(r"hottest\s+([A-Za-z]{3})", title)
+                ym = re.search(r"([A-Za-z]{3})\s+(20\d\d)", title)
+                if not (mm and ym):
+                    continue
+                idx = cmod.month_index(mm.group(1))
+                year = int(ym.group(2))
+                if idx is None:
+                    continue
+                pct = cmod.p_hottest_month(year, idx)
+            else:                                   # anomaly ladder
+                ym = re.search(r"([A-Za-z]{3})\s+(20\d\d)", title)
+                thr = re.search(r"(above|below)\s+([0-9]+\.[0-9]+)", rules, re.I)
+                if not (ym and thr):
+                    continue
+                idx = cmod.month_index(ym.group(1))
+                year = int(ym.group(2))
+                if idx is None:
+                    continue
+                lvl = float(thr.group(2))
+                p_above = cmod.p_month_above(year, idx, lvl)
+                if p_above is None:
+                    continue
+                pct = p_above if thr.group(1).lower() == "above" else 100.0 - p_above
+            if pct is None:
+                continue
+            label = title.rstrip("?")
+            sub = (m.get("yes_sub_title") or "").strip()
+            if sub and sub.lower() not in label.lower():
+                label = f"{label} — {sub}"
+            row = _row("climate", "temperature", label, pct, ask,
+                       {"team": "NASA GISS", "ticker": m.get("ticker"),
+                        "volume": vol,
+                        "confidence": "high"},
+                       days)
+            if row:
+                out.append(row)
+    return out
+
+
 def _build():
     by_ticker, by_series = _close_days()
     out = []
@@ -321,6 +404,8 @@ def _build():
         try:
             if other == "crypto":
                 out += _collect_crypto()
+            elif other == "climate":
+                out += _collect_climate()
         except Exception:
             continue
     return out
