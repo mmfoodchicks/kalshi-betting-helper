@@ -43,8 +43,14 @@ import model_trust
 # MLB grew a flat `edges` list while the newer boards use a market->teams dict.
 _SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl", "wnba")
 
+# Non-sport models. Anything here prices its own markets end-to-end and returns
+# rows in the same shape, so the board treats a Bitcoin strike exactly like a
+# division title: our number, the book's number, and what the difference is worth.
+_OTHER = ("crypto",)
+
 _LABEL = {"mlb": "⚾ MLB", "nfl": "🏈 NFL", "cfb": "🏈 CFB",
-          "nba": "🏀 NBA", "nhl": "🏒 NHL", "wnba": "🏀 WNBA"}
+          "nba": "🏀 NBA", "nhl": "🏒 NHL", "wnba": "🏀 WNBA",
+          "crypto": "⚡ Crypto"}
 
 # Human names for the market kinds the boards emit, normalized across sports
 # (MLB says "pennant", the NBA means "conference", they're the same bet).
@@ -53,6 +59,7 @@ _MARKET = {
     "pennant": "Conference / pennant", "conf": "Conference / pennant",
     "division": "Division", "playoffs": "Make the playoffs",
     "cfp": "Make the playoff", "win_total": "Season win total",
+    "price_level": "Price level",
 }
 
 # A disagreement past this is far more likely to be a mapping bug, a market that
@@ -270,6 +277,29 @@ def _collect_pro(sport, by_ticker, by_series):
     return out
 
 
+def _collect_crypto():
+    """Long-dated crypto price levels, priced off realized volatility.
+
+    Its own module owns the hard parts (touch versus terminal payoff, and a
+    horizon-matched vol estimate); here it just gets mapped into a board row."""
+    import crypto_futures
+    out = []
+    for r in crypto_futures.rows():
+        row = _row("crypto", "price_level", r["label"], r["model_pct"],
+                   r["price_cents"],
+                   {"team": r["coin"], "ticker": r["ticker"],
+                    "volume": r["volume"],
+                    # A touch market read as terminal (or vice versa) is the main
+                    # way this can be wrong, so the payoff kind rides along.
+                    "confidence": "med" if r["kind"] == "touch" else "high"},
+                   r["days"])
+        if row:
+            row["detail"] = (f"{r['coin']} ${r['spot']:,.0f} → ${r['strike']:,.0f} "
+                             f"· {r['kind']} · {r['vol_pct']:.0f}% vol")
+            out.append(row)
+    return out
+
+
 def _build():
     by_ticker, by_series = _close_days()
     out = []
@@ -287,6 +317,12 @@ def _build():
                 out += _collect_pro(sport, by_ticker, by_series)
         except Exception:
             continue        # a sport out of season shouldn't sink the board
+    for other in _OTHER:
+        try:
+            if other == "crypto":
+                out += _collect_crypto()
+        except Exception:
+            continue
     return out
 
 
