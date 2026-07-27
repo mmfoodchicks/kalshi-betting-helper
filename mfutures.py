@@ -110,7 +110,7 @@ _SERIES_FOR = {
 
 
 def _close_days():
-    """({ticker: days}, {series prefix: days}) for the handful of series we use.
+    """({ticker: days}, {series prefix: days}, {ticker: NO ask}) for our series.
 
     This asks Kalshi directly for each series rather than mining the exchange-wide
     sweep. The sweep is forty paginated pages and a single failed page truncates
@@ -128,8 +128,8 @@ def _close_days():
                 f"{kalshi.BASE}/markets?series_ticker={pre}&status=open&limit=500",
                 timeout=25)
         except Exception:
-            return pre, {}, None
-        best, tick = None, {}
+            return pre, {}, None, {}
+        best, tick, nos = None, {}, {}
         for m in d.get("markets") or []:
             days = _fut.settles_in(m)
             if days is None or days <= 0:
@@ -137,19 +137,25 @@ def _close_days():
             t = m.get("ticker")
             if t:
                 tick[t] = days
+                # Kalshi quotes NO separately, and the two sides each carry the
+                # spread, so the NO price is never just 100 minus the YES.
+                na = kalshi._cents(m.get("no_ask_dollars"))
+                if na is not None and 0 < na < 100:
+                    nos[t] = na
             # All of a season's markets settle together; the soonest is this
             # season's, and later ones belong to seasons after it.
             if best is None or days < best:
                 best = days
-        return pre, tick, best
+        return pre, tick, best, nos
 
-    by_ticker, by_series = {}, {}
+    by_ticker, by_series, by_no = {}, {}, {}
     with ThreadPoolExecutor(max_workers=8) as ex:
-        for pre, tick, best in ex.map(one, wanted):
+        for pre, tick, best, nos in ex.map(one, wanted):
             by_ticker.update(tick)
+            by_no.update(nos)
             if best is not None:
                 by_series[pre] = best
-    return by_ticker, by_series
+    return by_ticker, by_series, by_no
 
 
 def _days_for(sport, mtype, ticker, by_ticker, by_series):
@@ -160,6 +166,28 @@ def _days_for(sport, mtype, ticker, by_ticker, by_series):
         if pre in by_series:
             return by_series[pre]
     return None
+
+
+def _no_row(row, no_ask):
+    """The other side of a modeled future.
+
+    We were only ever offering YES, which throws away half the board: when the
+    model says a team makes the playoffs 38% of the time and the book wants 55c,
+    the bet isn't "don't buy", it's BUY NO at whatever NO costs. Priced off
+    Kalshi's own no_ask rather than 100-minus-yes, because both sides carry the
+    spread and inverting the YES price would overstate the return."""
+    if not row or no_ask is None or not (0 < no_ask < 100):
+        return None
+    out = _row(row["sport"], row["market"], f"NO — {row['label']}",
+               100.0 - row["model_pct"], no_ask,
+               {"team": row.get("team"), "ticker": row.get("ticker"),
+                "volume": row.get("volume"), "thin": row.get("thin"),
+                "confidence": row.get("confidence"), "best_book": row.get("book")},
+               row.get("days"))
+    if out:
+        out["side"] = "no"
+        out["in_season"] = row.get("in_season", True)
+    return out
 
 
 def _row(sport, mtype, label, model_pct, price_cents, extra, days):
@@ -214,10 +242,15 @@ def _row(sport, mtype, label, model_pct, price_cents, extra, days):
         "confidence": extra.get("confidence") or "med",
         "book": extra.get("best_book"),
         "suspect": absurd,
+        "side": "yes",
+        # Continuous markets (crypto, climate) are always live; a league is only
+        # "in season" once its teams have actually played, which is what lets the
+        # board hide a sport whose year hasn't started.
+        "in_season": bool(extra.get("in_season", True)),
     }
 
 
-def _collect_mlb(by_ticker, by_series):
+def _collect_mlb(by_ticker, by_series, by_no):
     import season_sim
     d = season_sim.futures_edges()
     out = []
@@ -225,15 +258,29 @@ def _collect_mlb(by_ticker, by_series):
         price = r.get("market_cents")
         days = _days_for("mlb", r.get("type"), r.get("ticker"), by_ticker, by_series)
         row = _row("mlb", r.get("type"), r.get("label"), r.get("model_pct"), price,
-                   r, days)
+                   {**r, "in_season": True}, days)
         if row:
             out.append(row)
+            no = _no_row(row, by_no.get(r.get("ticker")))
+            if no:
+                out.append(no)
     return out
 
 
-def _collect_board(sport, board, by_ticker, by_series):
+def _collect_board(sport, board, by_ticker, by_series, by_no):
     """NFL / CFB / pro-league boards: {markets: {key: {label, teams: [...]}}}."""
     out = []
+    # A league whose teams have all played zero games is between seasons: its
+    # futures are listed but nothing has happened yet, which is exactly what the
+    # "in season only" filter is for.
+    played = False
+    for blk in ((board or {}).get("markets") or {}).values():
+        for t in blk.get("teams") or []:
+            if (t.get("wins") or 0) + (t.get("losses") or 0) > 0:
+                played = True
+                break
+        if played:
+            break
     for key, blk in ((board or {}).get("markets") or {}).items():
         for t in blk.get("teams") or []:
             price = t.get("kalshi_cents")
@@ -242,10 +289,13 @@ def _collect_board(sport, board, by_ticker, by_series):
             name = t.get("team") or t.get("abbr") or ""
             lbl = f"{name} — {blk.get('label') or key}"
             row = _row(sport, key, lbl, t.get("model_pct"), price,
-                       {**t, "team": name},
+                       {**t, "team": name, "in_season": played},
                        _days_for(sport, key, t.get("ticker"), by_ticker, by_series))
             if row:
                 out.append(row)
+                no = _no_row(row, by_no.get(t.get("ticker")))
+                if no:
+                    out.append(no)
     return out
 
 
@@ -276,7 +326,7 @@ def _has_listed_futures(sport):
         return any(ex.map(probe, tickers))
 
 
-def _collect_pro(sport, by_ticker, by_series):
+def _collect_pro(sport, by_ticker, by_series, by_no):
     """NBA / NHL / WNBA off the shared projection engine + the futures price map."""
     import pro_sim
     import pro_prices
@@ -318,7 +368,7 @@ def _collect_crypto():
         row = _row("crypto", "price_level", r["label"], r["model_pct"],
                    r["price_cents"],
                    {"team": r["coin"], "ticker": r["ticker"],
-                    "volume": r["volume"],
+                    "volume": r["volume"], "in_season": True,
                     # A touch market read as terminal (or vice versa) is the main
                     # way this can be wrong, so the payoff kind rides along.
                     "confidence": "med" if r["kind"] == "touch" else "high"},
@@ -327,6 +377,9 @@ def _collect_crypto():
             row["detail"] = (f"{r['coin']} ${r['spot']:,.0f} → ${r['strike']:,.0f} "
                              f"· {r['kind']} · {r['vol_pct']:.0f}% vol")
             out.append(row)
+            no = _no_row(row, r.get("no_cents"))
+            if no:
+                out.append(no)
     return out
 
 
@@ -405,11 +458,14 @@ def _collect_climate():
                 label = f"{label} — {sub}"
             row = _row("climate", "temperature", label, pct, ask,
                        {"team": "NASA GISS", "ticker": m.get("ticker"),
-                        "volume": vol,
+                        "volume": vol, "in_season": True,
                         "confidence": "high"},
                        days)
             if row:
                 out.append(row)
+                no = _no_row(row, kalshi._cents(m.get("no_ask_dollars")))
+                if no:
+                    out.append(no)
     return out
 
 
@@ -419,19 +475,19 @@ def _sources():
     Order matters because the board publishes incrementally: MLB, crypto and
     climate are seconds apart, so the page fills within about fifteen seconds
     instead of staying blank until the slowest league finishes."""
-    by_ticker, by_series = _close_days()
+    by_ticker, by_series, by_no = _close_days()
 
     def sport_src(sp):
         def run():
             if sp == "mlb":
-                return _collect_mlb(by_ticker, by_series)
+                return _collect_mlb(by_ticker, by_series, by_no)
             if sp == "nfl":
                 import nfl_season
-                return _collect_board("nfl", nfl_season.futures_board(), by_ticker, by_series)
+                return _collect_board("nfl", nfl_season.futures_board(), by_ticker, by_series, by_no)
             if sp == "cfb":
                 import cfb
-                return _collect_board("cfb", cfb.futures_board(), by_ticker, by_series)
-            return _collect_pro(sp, by_ticker, by_series)
+                return _collect_board("cfb", cfb.futures_board(), by_ticker, by_series, by_no)
+            return _collect_pro(sp, by_ticker, by_series, by_no)
         return run
     out = [("climate", _collect_climate), ("crypto", _collect_crypto)]
     out += [(sp, sport_src(sp)) for sp in ("mlb", "cfb", "nfl", "nba", "nhl", "wnba")]
@@ -439,20 +495,20 @@ def _sources():
 
 
 def _build():
-    by_ticker, by_series = _close_days()
+    by_ticker, by_series, by_no = _close_days()
     out = []
     for sport in _SPORTS:
         try:
             if sport == "mlb":
-                out += _collect_mlb(by_ticker, by_series)
+                out += _collect_mlb(by_ticker, by_series, by_no)
             elif sport == "nfl":
                 import nfl_season
-                out += _collect_board("nfl", nfl_season.futures_board(), by_ticker, by_series)
+                out += _collect_board("nfl", nfl_season.futures_board(), by_ticker, by_series, by_no)
             elif sport == "cfb":
                 import cfb
-                out += _collect_board("cfb", cfb.futures_board(), by_ticker, by_series)
+                out += _collect_board("cfb", cfb.futures_board(), by_ticker, by_series, by_no)
             else:
-                out += _collect_pro(sport, by_ticker, by_series)
+                out += _collect_pro(sport, by_ticker, by_series, by_no)
         except Exception:
             continue        # a sport out of season shouldn't sink the board
     for other in _OTHER:
@@ -518,7 +574,8 @@ _SORTS = {
 
 
 def board(q="", sort="best", sports=None, markets=None, min_prob=0.0,
-          max_days=None, limit=60, include_suspect=False, positive_only=True):
+          max_days=None, limit=60, include_suspect=False, positive_only=True,
+          in_season_only=False):
     rs = rows()
     if rs is None:
         return {"building": True, "rows": [], "total": 0, "universe": 0,
@@ -540,6 +597,10 @@ def board(q="", sort="best", sports=None, markets=None, min_prob=0.0,
         rs = [r for r in rs if r["fair_pct"] >= min_prob]
     if max_days:
         rs = [r for r in rs if r["days"] is not None and r["days"] <= max_days]
+    if in_season_only:
+        # Hides leagues that haven't kicked off yet -- the point being that a
+        # football win total is a six-month hold whether or not you want one.
+        rs = [r for r in rs if r.get("in_season", True)]
     if not include_suspect:
         rs = [r for r in rs if not r["suspect"]]
     if positive_only:

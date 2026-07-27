@@ -1044,3 +1044,8 @@ body.tier-locked .owner-only { display: none !important; }
   .futtable { font-size: 0.76rem; }
   .futctl label { flex: 1 1 45%; }
 }
+
+/* Futures filter checkbox — sits inline with the dropdowns rather than under them. */
+.futctl label.futcheck { flex-direction: row; align-items: center; gap: 6px;
+  padding-bottom: 8px; white-space: nowrap; cursor: help; }
+.futctl label.futcheck input { width: auto; margin: 0; }

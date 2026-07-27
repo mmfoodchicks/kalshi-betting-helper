@@ -1479,7 +1479,7 @@ function initFutures() {
     clearTimeout(futTimer);
     futTimer = setTimeout(loadFutures, 300);
   });
-  ["mfSort", "mfMarket", "mfMaxDays", "mfPos"].forEach((id) =>
+  ["mfSort", "mfMarket", "mfMaxDays", "mfPos", "mfSide", "mfInSeason"].forEach((id) =>
     $(id)?.addEventListener("change", loadModeledFutures));
   $("mfQ")?.addEventListener("input", () => {
     clearTimeout(mfTimer);
@@ -1510,12 +1510,15 @@ async function loadModeledFutures() {
   const mkt = ($("mfMarket") || {}).value || "";
   const maxDays = ($("mfMaxDays") || {}).value || "";
   const pos = ($("mfPos") || {}).value ?? "1";
+  const side = ($("mfSide") || {}).value || "";
+  const inSeason = $("mfInSeason") && $("mfInSeason").checked;
   out.innerHTML = `<div class="empty">Reading the season simulations…</div>`;
   try {
     let u = `/api/futures/modeled?limit=80&sort=${sort}&positive_only=${pos}`
       + `&q=${encodeURIComponent(q)}`;
     if (mkt) u += `&markets=${mkt}`;
     if (maxDays) u += `&max_days=${maxDays}`;
+    if (inSeason) u += `&in_season=1`;
     const d = await (await fetch(u)).json();
     if (d.building) {
       out.innerHTML = `<div class="empty">Running the season simulations… first rows appear in a few seconds.</div>`;
@@ -1533,6 +1536,7 @@ async function loadModeledFutures() {
     const cnt = $("futCount");
     if (cnt) cnt.textContent = `${d.total.toLocaleString()} shown · ${d.universe.toLocaleString()} modeled`
       + (d.partial ? " · still loading…" : "");
+    if (side) d.rows = d.rows.filter((r) => (r.side || "yes") === side);
     if (!d.rows.length && d.partial) {
       out.innerHTML = `<div class="empty">Loaded ${(d.loaded || []).join(", ") || "…"} — still simulating the rest.</div>`;
       return;
@@ -1549,8 +1553,8 @@ async function loadModeledFutures() {
       </tr></thead><tbody>
       ${d.rows.map((r) => `<tr>
         <td>
-          <div class="futtitle">${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.">check</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
-          <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}</div>
+          <div class="futtitle"><span class="sidetag ${r.side || "yes"}">${(r.side || "yes").toUpperCase()}</span> ${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.">check</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
+          <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}${r.in_season === false ? " · <b>off-season</b>" : ""}</div>
         </td>
         <td class="r"><b>${r.price_cents}¢</b></td>
         <td class="r">${r.model_pct}%</td>

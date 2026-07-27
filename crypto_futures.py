@@ -168,6 +168,7 @@ def rows(min_days=14):
             ask = kalshi._cents(m.get("yes_ask_dollars"))
             if ask is None or not (0 < ask < 100):
                 continue
+            no_ask = kalshi._cents(m.get("no_ask_dollars"))
             pct, kind = _model_pct(m.get("title"), spot, strike, above,
                                    days / 365.0, vol)
             out.append({
@@ -178,6 +179,7 @@ def rows(min_days=14):
                 "kind": kind, "vol_pct": round(vol * 100, 1),
                 "model_pct": round(pct, 1),
                 "price_cents": ask,
+                "no_cents": no_ask if (no_ask and 0 < no_ask < 100) else None,
                 "days": days,
                 "volume": float(m.get("volume_fp") or 0),
             })

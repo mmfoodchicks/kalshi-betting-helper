@@ -1048,6 +1048,7 @@ def api_futures_modeled():
             limit=int(num("limit", 60, 1, 400)),
             include_suspect=flag("include_suspect", False),
             positive_only=flag("positive_only", True),
+            in_season_only=flag("in_season", False),
         )
         if data.get("building"):
             return jsonify({"building": True,
