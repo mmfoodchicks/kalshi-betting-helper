@@ -103,11 +103,20 @@ def _no_legs(legs):
     It still contributes its probability to the combo; it just can't claim an
     edge it hasn't verified.
     """
+    # Legs whose NO side already exists. MLB builds its own from the sim, priced
+    # off Kalshi's real no_ask; mirroring those again would shadow each one with
+    # an unpriced duplicate that the assembler might pick instead.
+    have_no = {(l.get("event_id"), l.get("label")) for l in legs
+               if l.get("side") == "no"}
     out = []
     for l in legs:
         typ = l.get("type") or ""
         if typ in _NO_SKIP_TYPES:
             continue
+        if l.get("side") == "no":
+            continue                     # don't negate a NO leg back into a YES
+        if (l.get("event_id"), f"NO — {l.get('label')}") in have_no:
+            continue                     # its NO side is already on the board
         lab = (l.get("label") or "").lower()
         if any(w in lab for w in _NO_SKIP_WORDS):
             continue
@@ -151,6 +160,7 @@ def _mlb_legs(date, season):
             legs.append({"category": "⚾ MLB", "event_id": f"mlb_{g['game_pk']}",
                          "label": v["label"], "matchup": v["matchup"], "prob": v["prob"],
                          "price_cents": v.get("price_cents"), "type": v["type"],
+                         "side": v.get("side", "yes"),
                          "sim_avg": v.get("sim_avg"), "avg_unit": v.get("avg_unit")})
     return legs
 

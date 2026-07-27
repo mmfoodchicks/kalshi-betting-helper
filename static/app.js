@@ -1280,7 +1280,10 @@ function sideTag(l) {
   const t = (l.type || "");
   if (t === "RFI" || /1st-inn/i.test(t)) return "";
   const lab = (l.pick || "");
-  const isNo = /\(NO\)\s*$/.test(t) || /^NO\s*[—-]/i.test(lab) || /\bunder\b/i.test(lab);
+  // Legs built from the sim carry their own side; fall back to reading the
+  // label for the live-recomputed legs, which don't.
+  const isNo = l.side ? l.side === "no"
+    : (/\(NO\)\s*$/.test(t) || /^NO\s*[—-]/i.test(lab) || /\bunder\b/i.test(lab));
   return `<span class="sidetag ${isNo ? "no" : "yes"}">${isNo ? "NO" : "YES"}</span> `;
 }
 

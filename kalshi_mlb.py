@@ -71,12 +71,20 @@ def _no(m):
 
 def _build_index():
     """suffix -> {ml:{team:c}, spread:{(team,by):c}, total:{n:{over,under}},
-    rfi:c, players:{(stat,norm_name,line):c}}."""
+    rfi:c, players:{(stat,norm_name,line):c}, no:{...}}.
+
+    `no` mirrors the ml/spread/rfi/players maps with the NO ask, so a leg bet the
+    other way is priced off Kalshi's real quote rather than 100-minus-YES — the
+    two sides each carry the spread, so inverting the YES ask would understate
+    what the NO side actually costs. (Totals already hold both sides: the NO of
+    Over n IS Under n.)"""
     idx = {}
 
     def game(suf):
         return idx.setdefault(suf, {"ml": {}, "spread": {}, "total": {},
-                                    "rfi": None, "players": {}})
+                                    "rfi": None, "players": {},
+                                    "no": {"ml": {}, "spread": {}, "rfi": None,
+                                           "players": {}}})
 
     for series in _GAME_SERIES + _PLAYER_SERIES:
         for m in _fetch(series):
@@ -88,11 +96,14 @@ def _build_index():
             if series == "KXMLBGAME":
                 team = tk.rsplit("-", 1)[-1]
                 g["ml"][team] = _yes(m)
+                g["no"]["ml"][team] = _no(m)
             elif series == "KXMLBSPREAD":
                 tail = tk.rsplit("-", 1)[-1]              # e.g. "STL3"
                 mt = _SPREAD_TEAM.match(tail)
                 if mt:
-                    g["spread"][(mt.group(1), int(mt.group(2)))] = _yes(m)
+                    key = (mt.group(1), int(mt.group(2)))
+                    g["spread"][key] = _yes(m)
+                    g["no"]["spread"][key] = _no(m)
             elif series == "KXMLBTOTAL":
                 try:
                     n = int(tk.rsplit("-", 1)[-1])        # Over (n-0.5)
@@ -101,13 +112,16 @@ def _build_index():
                 g["total"][n] = {"over": _yes(m), "under": _no(m)}
             elif series == "KXMLBRFI":
                 g["rfi"] = _yes(m)
+                g["no"]["rfi"] = _no(m)
             else:                                          # player props
                 stat = _STAT_OF[series]
                 sub = m.get("yes_sub_title") or m.get("title") or ""
                 lm = _SUB_LINE.search(sub)
                 name = sub.split(":", 1)[0]
                 if lm and name:
-                    g["players"][(stat, _norm(name), int(lm.group(1)))] = _yes(m)
+                    key = (stat, _norm(name), int(lm.group(1)))
+                    g["players"][key] = _yes(m)
+                    g["no"]["players"][key] = _no(m)
     return idx
 
 
@@ -125,23 +139,29 @@ def index():
 
 
 def price_leg(idx, suffix, kref):
-    """Live Kalshi YES/NO ask (cents) for one leg, or None if not found/quoted.
-    `kref` is the structured key the candidate carries (see mlb_sim)."""
+    """Live Kalshi ask (cents) for one leg, or None if not found/quoted. `kref` is
+    the structured key the candidate carries (see mlb_sim); `kref["no"]` asks for
+    the NO side's own ask rather than the YES side's."""
     if not suffix or not kref:
         return None
     g = idx.get(suffix)
     if not g:
         return None
     t = kref.get("t")
+    no = bool(kref.get("no"))
+    src = (g.get("no") or {}) if no else g
     if t == "ml":
-        return g["ml"].get(kref.get("team"))
+        return (src.get("ml") or {}).get(kref.get("team"))
     if t == "spread":
-        return g["spread"].get((kref.get("team"), kref.get("by")))
+        return (src.get("spread") or {}).get((kref.get("team"), kref.get("by")))
     if t == "total":
+        # Both sides live in the same market: the NO of Over is Under, and vice versa.
         tot = g["total"].get(kref.get("n"))
-        return tot.get("over" if kref.get("over") else "under") if tot else None
+        over = bool(kref.get("over")) != no
+        return tot.get("over" if over else "under") if tot else None
     if t == "rfi":
-        return g["rfi"]
+        return src.get("rfi")
     if t in ("ks", "hit", "tb", "hr", "hrr"):
-        return g["players"].get((t, _norm(kref.get("player")), kref.get("line")))
+        return (src.get("players") or {}).get(
+            (t, _norm(kref.get("player")), kref.get("line")))
     return None

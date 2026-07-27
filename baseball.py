@@ -1591,16 +1591,18 @@ def _sim_pregame_legs(g, types=None):
         out.append({"game_pk": pk, "type": c["type"], "label": c["label"], "matchup": mu,
                     "prob": c["marg"], "price_cents": price(c.get("kref")), "live": False,
                     "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit"),
-                    "group": c.get("group")})
+                    "group": c.get("group"), "side": c.get("side", "yes")})
     return out
 
 
 def _curate_legs(legs):
-    """One best (highest-probability) leg per market group -- the small, varied
-    pool the suggested-combos assembler works from."""
+    """One best (highest-probability) leg per market group and SIDE -- the small,
+    varied pool the suggested-combos assembler works from. Keying on the group
+    alone would let a market's NO side (the near-certain negation of its longest
+    shot) evict the YES leg that is actually worth betting."""
     best = {}
     for l in legs:
-        k = l.get("group") or l["type"]
+        k = (l.get("group") or l["type"], l.get("side", "yes"))
         if k not in best or l["prob"] > best[k]["prob"]:
             best[k] = l
     return list(best.values())
@@ -1844,8 +1846,12 @@ def _game_variants(g, types=None):
     if state == "Final":
         return []
     if state == "Live":
+        # The live path is recomputed from the score, not from the sim, so it has
+        # no NO side of its own and still needs mirroring.
         return _mirror_no(_live_variants(g, types))
-    return _mirror_no(_sim_pregame_legs(g, types=types))
+    # Pre-game legs come from the shared sim, whose candidates already carry their
+    # own NO side -- priced off Kalshi's real no_ask. Mirroring here would double them.
+    return _sim_pregame_legs(g, types=types)
 
 
 def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, types):
@@ -1865,7 +1871,7 @@ def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, ty
     matchup = item.get("matchup")
     for l in item.get("legs", []):
         l.setdefault("matchup", matchup)
-        l.setdefault("side", "yes")
+        l.setdefault("side", "yes")      # same-game legs carry their own side
         l.setdefault("live", False)
     item["same_game"] = True
     item["target_pct"] = round(max(0.05, min(0.97, target_pct / 100.0)) * 100, 1)
@@ -2048,19 +2054,29 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
                 spip = (c.get("kref") or {}).get("sp_ip")
                 if spip is not None and spip < K_TRUST_MIN_IP:
                     conf = "low"
+            side = c.get("side", "yes")
+            # Both sides carry the spread, so yes_ask + no_ask > 100 and at most
+            # one side can show a positive edge. A NO leg priced against us is
+            # therefore never news -- it's the mirror of a YES row already on the
+            # board -- and listing it would bury the real bets under their own
+            # reflections. Keep NO only where NO is the side worth buying.
+            if side == "no" and edge <= 0:
+                continue
             rows.append({
                 "matchup": g["matchup"], "type": c["type"], "pick": c["label"],
                 "our_pct": sim_pct, "model_pct": model_pct,
                 "market_cents": cents, "market_payout_x": round(100.0 / cents, 2),
                 "edge": edge, "fee_cents": fee, "net_edge": net,
-                "confidence": conf,
+                "confidence": conf, "side": side,
             })
-    # Per-market lean over ALL priced legs. If a whole market type is one-sided
+    # Per-market lean, over the YES legs only. If a whole market type is one-sided
     # (e.g. every starter's Ks read high vs the market), that's a systematic model
     # bias to distrust, not a slate full of independent edges -- surface it so the
-    # user can tell the two apart.
+    # user can tell the two apart. NO legs are excluded because each is the mirror
+    # of its YES leg: counting both would make every market look balanced by
+    # construction and silence the lean flag entirely.
     summary = {}
-    for r in rows:
+    for r in (r for r in rows if r.get("side", "yes") == "yes"):
         s = summary.setdefault(r["type"], {"count": 0, "pos": 0, "neg": 0, "edge_sum": 0.0})
         s["count"] += 1
         s["pos" if r["edge"] >= 0 else "neg"] += 1
@@ -2330,6 +2346,9 @@ def pick6_game_sheet(games, pk=None):
     gs = _game_sim(g)
     by = {}
     for c in gs["cands"]:
+        if c.get("side", "yes") != "yes":
+            continue          # the sheet quotes More/Less itself; a NO twin would
+                              # overwrite the More % with its own complement
         kref = c.get("kref") or {}
         t, player, N = kref.get("t"), kref.get("player"), kref.get("line")
         if t not in _P6_SHEET_LABELS or not player or N is None:
@@ -2373,7 +2392,8 @@ def pick6_eval(games, pk, legs):
     jm, indep = full, 1.0
     for leg in legs:
         c = next((c for c in gs["cands"]
-                  if (c.get("kref") or {}).get("t") == leg.get("t")
+                  if c.get("side", "yes") == "yes"        # Less is the complement below
+                  and (c.get("kref") or {}).get("t") == leg.get("t")
                   and c["kref"].get("player") == leg.get("player")
                   and c["kref"].get("line") == leg.get("n")), None)
         if c is None:
@@ -2405,7 +2425,14 @@ def build_combos(games, max_legs=3, top_n=6, types=None):
 
     # Mixed combos draw from every bet type (moneyline + props).
     all_legs = _candidate_legs(live_games, types=types)
-    legs = sorted(all_legs, key=lambda l: l["prob"], reverse=True)[:10]
+    # Taking the 10 likeliest legs outright would make a NO leg structurally
+    # ineligible here: NO tops out around 90% by design, and a slate always
+    # fields ten 95%+ Overs. Give the NO side its own few slots so it can be
+    # considered. The combos are still ranked purely on combined probability, so
+    # a NO leg only survives into a suggestion when it genuinely competes.
+    _by_prob = lambda ls: sorted(ls, key=lambda l: l["prob"], reverse=True)
+    legs = (_by_prob([l for l in all_legs if l.get("side", "yes") == "yes"])[:10]
+            + _by_prob([l for l in all_legs if l.get("side") == "no"])[:3])
     mixed = _assemble(legs, max_legs)
     mixed.sort(key=lambda c: c["combined_prob_pct"], reverse=True)
 

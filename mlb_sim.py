@@ -798,7 +798,7 @@ def build_candidates(g, sim, types=None):
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
                           "group": group or typ, "model_pct": model, "kref": kref,
-                          "sim_avg": avg, "avg_unit": unit})
+                          "sim_avg": avg, "avg_unit": unit, "side": "yes"})
 
     # Moneyline (both sides; contradictory pairs are pruned in the search). The
     # closed-form win prob (g.p_home/p_away) rides along as the model number.
@@ -914,7 +914,47 @@ def build_candidates(g, sim, types=None):
                 lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)),
                 {"t": "ks", "player": props["away_sp_name"], "line": line, "sp_ip": asp_ip},
                 avg=mean_ak, unit="K")
+    cands.extend(_no_candidates(cands, n))
     return cands
+
+
+# Markets that already carry their own other side, so a NO leg would just
+# duplicate one: the moneyline pairs both teams, Under IS the NO of Over, and
+# Kalshi lists RFI as a YES-only market.
+_NO_SKIP_TYPES = {"ML", "Total", "RFI"}
+
+# A NO leg is only worth offering where it is a real position. The YES floor goes
+# down to 4% because a longshot is a legitimate payout play, but the mirror of one
+# ("NO 6+ H+R+RBI", 96%) is padding: it can't lose, so it adds no edge and only
+# inflates a slip's headline confidence. Keep NO to a band either side of a coin
+# flip -- a genuine fade, or a genuine longshot fade.
+_NO_MIN, _NO_MAX = 0.10, 0.90
+
+
+def _no_candidates(cands, n):
+    """The NO side of each eligible leg — betting a player DOESN'T get there.
+
+    The mask is the exact complement, so a NO leg's correlation with every other
+    leg falls straight out of the same simulation (fading a bat and taking the
+    under really are correlated, and this gets that for free instead of assuming
+    independence). The marginal is 1 minus the CALIBRATED yes marginal, not the
+    raw complement, so a leg and its negation always sum to 1.
+    """
+    full = (1 << n) - 1
+    out = []
+    for c in cands:
+        if c["type"] in _NO_SKIP_TYPES:
+            continue
+        marg = 1.0 - c["marg"]
+        if not (_NO_MIN <= marg <= _NO_MAX):
+            continue
+        kref = c.get("kref")
+        kref = dict(kref, no=True) if kref else None
+        model = c.get("model_pct")
+        out.append({**c, "label": f"NO — {c['label']}", "mask": (~c["mask"]) & full,
+                    "marg": marg, "side": "no", "kref": kref,
+                    "model_pct": round(100.0 - model, 1) if model is not None else None})
+    return out
 
 
 def er(g):
@@ -984,19 +1024,50 @@ def _market_conflict(combo):
     return False
 
 
+def _span(items, m):
+    """m entries spanning the probability range, not just the m likeliest."""
+    xs = sorted(items, key=lambda x: -x["marg"])
+    if m <= 0 or not xs:
+        return []
+    if m >= len(xs):
+        return xs
+    step = (len(xs) - 1) / (m - 1) if m > 1 else 0
+    picked, seen = [], set()
+    for i in range(m):
+        j = int(round(i * step))
+        if j not in seen:
+            seen.add(j)
+            picked.append(xs[j])
+    return picked
+
+
 def _pool(cands, k=22):
     """Trim the candidate set for the combinatorial search: at most two lines per
-    group (a safe one + an aggressive one), capped to k, so the search stays fast
-    while still spanning safe favorites and longer-shot payouts."""
-    by_group = {}
+    market SIDE (a safe one + an aggressive one), capped to k, so the search stays
+    fast while still spanning safe favorites and longer-shot payouts.
+
+    YES and NO bucket separately even though they share a `group` (which still
+    stops a parlay taking both). Pooled together, a player's likeliest leg is
+    always the NO of his longest shot — "NO 4+ hits" would evict "1+ hits" from
+    the board. NO also gets a reserved share of k, chosen across the probability
+    range: ranking the whole pool by probability would keep only the near-certain
+    NOs and drop the contrarian fades that are the reason to bet NO at all.
+    """
+    by_bucket = {}
     for c in sorted(cands, key=lambda x: -x["marg"]):
-        by_group.setdefault(c.get("group", c["type"]), []).append(c)
-    pool = []
-    for cs in by_group.values():
-        pool.append(cs[0])
+        by_bucket.setdefault((c.get("group", c["type"]), c.get("side", "yes")), []).append(c)
+    picks = {"yes": [], "no": []}
+    for (_grp, side), cs in by_bucket.items():
+        p = picks.get(side)
+        if p is None:
+            p = picks.setdefault(side, [])
+        p.append(cs[0])
         if len(cs) > 1:
-            pool.append(cs[-1])
-    return sorted(pool, key=lambda x: -x["marg"])[:k]
+            p.append(cs[-1])
+    no_slots = min(len(picks["no"]), max(2, k // 3)) if picks["no"] else 0
+    take_no = _span(picks["no"], no_slots)
+    take_yes = sorted(picks["yes"], key=lambda x: -x["marg"])[:max(0, k - len(take_no))]
+    return sorted(take_yes + take_no, key=lambda x: -x["marg"])
 
 
 def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
@@ -1078,6 +1149,7 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
                   "prob_pct": round(c["marg"] * 100, 1),
                   "model_pct": c.get("model_pct"), "kref": c.get("kref"),
                   "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit"),
+                  "side": c.get("side", "yes"),
                   "sims_hit": int(round(c["marg"] * n))} for c in combo],
         "combined_sims_hit": int(round(joint * n)),
         "combined_prob_pct": round(joint * 100, 1),
