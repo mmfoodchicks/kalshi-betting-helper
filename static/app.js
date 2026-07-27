@@ -1518,14 +1518,25 @@ async function loadModeledFutures() {
     if (maxDays) u += `&max_days=${maxDays}`;
     const d = await (await fetch(u)).json();
     if (d.building) {
-      out.innerHTML = `<div class="empty">Running the season simulations… this takes a minute the first time.</div>`;
+      out.innerHTML = `<div class="empty">Running the season simulations… first rows appear in a few seconds.</div>`;
       clearTimeout(mfTimer);
-      mfTimer = setTimeout(loadModeledFutures, 5000);
+      mfTimer = setTimeout(loadModeledFutures, 3000);
       return;
     }
     if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    // The board publishes each model as it lands, so keep polling quietly while
+    // the slower leagues finish rather than blocking on the whole set.
+    if (d.partial) {
+      clearTimeout(mfTimer);
+      mfTimer = setTimeout(loadModeledFutures, 6000);
+    }
     const cnt = $("futCount");
-    if (cnt) cnt.textContent = `${d.total.toLocaleString()} shown · ${d.universe.toLocaleString()} modeled`;
+    if (cnt) cnt.textContent = `${d.total.toLocaleString()} shown · ${d.universe.toLocaleString()} modeled`
+      + (d.partial ? " · still loading…" : "");
+    if (!d.rows.length && d.partial) {
+      out.innerHTML = `<div class="empty">Loaded ${(d.loaded || []).join(", ") || "…"} — still simulating the rest.</div>`;
+      return;
+    }
     if (!d.rows.length) {
       out.innerHTML = `<div class="empty">Nothing matches — try "everything" instead of only +EV, or clear the search.</div>`;
       return;
@@ -1549,6 +1560,7 @@ async function loadModeledFutures() {
         <td class="r">${r.days == null ? "—" : futDays(r.days)}</td>
       </tr>`).join("")}
       </tbody></table></div>
+      ${d.partial ? `<div class="small" style="margin-top:6px">⏳ Still simulating — loaded ${escapeHtml((d.loaded || []).join(", "))}. More rows will appear.</div>` : ""}
       <div class="small" style="margin-top:8px;color:var(--muted)">${escapeHtml(d.note)}</div>`;
   } catch (e) {
     out.innerHTML = `<div class="empty">Couldn't load — try again.</div>`;

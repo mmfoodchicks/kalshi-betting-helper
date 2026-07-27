@@ -78,6 +78,7 @@ _ABSURD_GAP = 30.0
 _TTL = 1800               # season sims move slowly; half an hour is plenty
 _cache = {}
 _inflight = set()
+_progress = {}      # key -> sources finished so far, while a build runs
 
 
 def _norm_market(mtype):
@@ -248,10 +249,39 @@ def _collect_board(sport, board, by_ticker, by_series):
     return out
 
 
+def _has_listed_futures(sport):
+    """Does this league have ANY open futures market right now?
+
+    Cheap gate in front of an expensive simulation. Out of season a league's
+    futures simply aren't listed yet, and running its season sim to produce rows
+    that can never be priced cost ~100 seconds of every cold build across the
+    three of them -- most of the wait before the board could show anything."""
+    import kalshi
+    import pro_prices
+    from concurrent.futures import ThreadPoolExecutor
+    tickers = [t for group in (pro_prices.SERIES.get(sport) or {}).values()
+               for t in group]
+    if not tickers:
+        return False
+
+    def probe(t):
+        try:
+            d = kalshi._get_json(
+                f"{kalshi.BASE}/markets?series_ticker={t}&status=open&limit=1",
+                timeout=15)
+            return bool(d.get("markets"))
+        except Exception:
+            return False
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        return any(ex.map(probe, tickers))
+
+
 def _collect_pro(sport, by_ticker, by_series):
     """NBA / NHL / WNBA off the shared projection engine + the futures price map."""
     import pro_sim
     import pro_prices
+    if not _has_listed_futures(sport):
+        return []                            # out of season: don't run the sim
     proj = pro_sim.project(sport)
     if not proj:
         return []
@@ -383,6 +413,31 @@ def _collect_climate():
     return out
 
 
+def _sources():
+    """(name, callable) for every model feeding the board, cheapest first.
+
+    Order matters because the board publishes incrementally: MLB, crypto and
+    climate are seconds apart, so the page fills within about fifteen seconds
+    instead of staying blank until the slowest league finishes."""
+    by_ticker, by_series = _close_days()
+
+    def sport_src(sp):
+        def run():
+            if sp == "mlb":
+                return _collect_mlb(by_ticker, by_series)
+            if sp == "nfl":
+                import nfl_season
+                return _collect_board("nfl", nfl_season.futures_board(), by_ticker, by_series)
+            if sp == "cfb":
+                import cfb
+                return _collect_board("cfb", cfb.futures_board(), by_ticker, by_series)
+            return _collect_pro(sp, by_ticker, by_series)
+        return run
+    out = [("climate", _collect_climate), ("crypto", _collect_crypto)]
+    out += [(sp, sport_src(sp)) for sp in ("mlb", "cfb", "nfl", "nba", "nhl", "wnba")]
+    return out
+
+
 def _build():
     by_ticker, by_series = _close_days()
     out = []
@@ -427,10 +482,24 @@ def rows(block=False):
         _inflight.add(key)
 
         def _bg():
+            # Publish as we go. A cold build runs several season simulations and
+            # takes minutes end to end; holding every row back until the slowest
+            # one finishes is what made the board look stuck behind a wall of
+            # 202s. Each source that lands is merged in and served immediately.
             try:
-                val = _build()
-                if val:
-                    _cache[key] = (_t.time(), val)
+                acc, done = [], []
+                for name, fn in _sources():
+                    try:
+                        got = fn()
+                    except Exception:
+                        got = []
+                    acc += got
+                    done.append(name)
+                    if acc:
+                        _cache[key] = (_t.time(), list(acc))
+                        _progress[key] = list(done)
+                _cache[key] = (_t.time(), acc)
+                _progress.pop(key, None)
             finally:
                 _inflight.discard(key)
         threading.Thread(target=_bg, daemon=True).start()
@@ -476,10 +545,13 @@ def board(q="", sort="best", sports=None, markets=None, min_prob=0.0,
     if positive_only:
         rs = [r for r in rs if r["ev_pct"] > 0]
     rs = sorted(rs, key=_SORTS.get(sort) or _SORTS["best"])
+    building = ("mfut",) in _inflight
     return {
         "rows": rs[:max(1, min(400, limit))],
         "total": len(rs),
         "universe": universe,
+        "partial": building,                 # more sources still landing
+        "loaded": _progress.get(("mfut",)) or [],
         "sort": sort if sort in _SORTS else "best",
         "sorts": list(_SORTS.keys()),
         "sports": sorted({r["sport"] for r in rows() or []}),
