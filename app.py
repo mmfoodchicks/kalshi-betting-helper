@@ -1010,6 +1010,53 @@ def _allow_live():
     return v in ("1", "true", "yes", "on")
 
 
+@app.route("/api/futures/modeled")
+def api_futures_modeled():
+    """Long-dated markets our season simulators actually model, ranked by
+    expected return to settlement.
+
+    Unlike /api/futures (market-only, no edge claim), these rows carry a model
+    number, so expected return can be genuinely positive. It is blended with the
+    market at the weight that sport's model has EARNED on graded results."""
+    import mfutures as _mf
+    def num(name, default=None, lo=None, hi=None):
+        v = request.args.get(name)
+        if v in (None, ""):
+            return default
+        try:
+            x = float(v)
+        except ValueError:
+            return default
+        if lo is not None:
+            x = max(lo, x)
+        if hi is not None:
+            x = min(hi, x)
+        return x
+    def flag(name, default=False):
+        v = request.args.get(name)
+        if v in (None, ""):
+            return default
+        return v.strip().lower() in ("1", "true", "yes", "on")
+    try:
+        data = _mf.board(
+            q=request.args.get("q", ""),
+            sort=request.args.get("sort", "best"),
+            sports=[x for x in (request.args.get("sports", "") or "").split(",") if x],
+            markets=[x for x in (request.args.get("markets", "") or "").split(",") if x],
+            min_prob=num("min_prob", 0, 0, 100),
+            max_days=num("max_days", None, 1, 40000),
+            limit=int(num("limit", 60, 1, 400)),
+            include_suspect=flag("include_suspect", False),
+            positive_only=flag("positive_only", True),
+        )
+        if data.get("building"):
+            return jsonify({"building": True,
+                            "error": "running the season simulations — retry shortly"}), 202
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": f"modeled futures failed: {e}"}), 502
+
+
 @app.route("/api/futures")
 def api_futures():
     """Long-dated Kalshi contracts, ranked by what they pay per year.

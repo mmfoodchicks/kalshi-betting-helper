@@ -685,7 +685,56 @@
         <h2>🏦 Futures — parking money</h2>
         <div id="futCount" class="stats"></div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">Every <b>long-dated</b> Kalshi contract, ranked by what it actually pays <b>per year</b>. A 96¢ contract settling in 2030 returns 4% — over three and a half years, which is worse than a bank. The same 96¢ settling in 60 days is 4% in two months. Same price, same risk per dollar, completely different instrument — so the ranking is annualized.</p>
+      <div class="subtabs" id="futSubtabs">
+        <button class="subtab active" data-futsub="modeled">🎯 We have a model</button>
+        <button class="subtab" data-futsub="all">🌐 All Kalshi futures</button>
+      </div>
+
+      <div id="futModeledView">
+        <p class="sub" style="margin:6px 0 10px">Long-dated markets our <b>season simulators actually model</b> — World Series, pennants, divisions, playoff berths, season win totals. Every row is our number against the market's, so unlike the all-futures board these can carry a genuinely positive expected return. The model is blended with the price at the weight that sport has <b>earned on graded results</b>, so a league whose model we've measured as no better than the market shows no edge by construction.</p>
+        <div class="futctl">
+          <input id="mfQ" type="search" placeholder="Search — e.g. dodgers, division, world series…" />
+          <label>Sort
+            <select id="mfSort">
+              <option value="best">Best expected return/yr</option>
+              <option value="edge">Biggest model edge</option>
+              <option value="soonest">Settles soonest</option>
+              <option value="latest">Settles latest</option>
+              <option value="safest">Most likely first</option>
+              <option value="cheapest">Cheapest first</option>
+              <option value="worst">Worst first</option>
+            </select>
+          </label>
+          <label>Market
+            <select id="mfMarket">
+              <option value="">all markets</option>
+              <option value="world_series">Championship</option>
+              <option value="pennant">Conference / pennant</option>
+              <option value="division">Division</option>
+              <option value="playoffs">Make the playoffs</option>
+              <option value="win_total">Season win totals</option>
+            </select>
+          </label>
+          <label>Settles within
+            <select id="mfMaxDays">
+              <option value="">any time</option>
+              <option value="60">2 months</option>
+              <option value="120">4 months</option>
+              <option value="240">8 months</option>
+            </select>
+          </label>
+          <label>Show
+            <select id="mfPos">
+              <option value="1" selected>only +EV</option>
+              <option value="0">everything</option>
+            </select>
+          </label>
+        </div>
+        <div id="mfOut" class="markets"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div id="futAllView" class="hidden">
+      <p class="sub" style="margin:6px 0 10px">Every <b>long-dated</b> Kalshi contract, ranked by what it actually pays <b>per year</b>. A 96¢ contract settling in 2030 returns 4% — over three and a half years, which is worse than a bank. The same 96¢ settling in 60 days is 4% in two months. Same price, same risk per dollar, completely different instrument — so the ranking is annualized.</p>
       <div class="futwarn">
         <b>Read this once.</b> These are not savings accounts. You are buying a contract that pays $1 if it comes true and <b>$0 if it doesn't</b> — a 96¢ contract loses the whole stake 4% of the time, and your money is locked up until it settles. At the market's own price the expected value of every row here is slightly <b>negative</b> (Kalshi's fee). The yield is what you're paid for carrying that tail risk — it is not an edge we found.
       </div>
@@ -732,6 +781,7 @@
       </div>
       <div id="futTiers" class="small" style="margin:8px 0"></div>
       <div id="futOut" class="markets"><div class="empty">Loading futures…</div></div>
+      </div><!-- /futAllView -->
     </section>
    </div><!-- /tab-futures -->
 

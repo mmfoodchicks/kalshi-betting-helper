@@ -105,9 +105,21 @@ def _sweep(min_days=MIN_DAYS):
                f"&min_close_ts={cutoff}")
         if cursor:
             url += f"&cursor={cursor}"
-        try:
-            d = kalshi._get_json(url, timeout=30)
-        except Exception:
+        # Pagination is a cursor chain, so ONE failed page truncates everything
+        # after it. Giving up on the first error silently cached a half-swept
+        # universe (9k tickers instead of 24k) that looked perfectly healthy, so
+        # a transient failure gets a couple of retries before we accept the cut.
+        d = None
+        for attempt in range(3):
+            try:
+                d = kalshi._get_json(url, timeout=30)
+                break
+            except Exception:
+                if attempt == 2:
+                    d = None
+                else:
+                    _t.sleep(0.6 * (attempt + 1))
+        if d is None:
             break
         ms = d.get("markets") or []
         # Drop the untradeable tail here rather than downstream: it is the bulk
@@ -131,6 +143,21 @@ def _days_to(close_iso, now=None):
         return None
     now = now or datetime.now(timezone.utc)
     return (t - now).total_seconds() / 86400.0
+
+
+def settles_in(m, now=None):
+    """Days until the contract actually PAYS -- which is not always its close.
+
+    Kalshi sets close_time as a legal backstop that can sit years past the real
+    event: the 2026 World Series winner market closes 826 days out but expects to
+    expire in 96, the day the series ends. Annualizing over the backstop divides
+    the return by nine and turns a three-month position into a fake three-year
+    one, so the expected expiration wins whenever it's the sooner of the two.
+    """
+    exp = _days_to(m.get("expected_expiration_time"), now)
+    close = _days_to(m.get("close_time"), now)
+    cands = [d for d in (exp, close) if d is not None and d > 0]
+    return min(cands) if cands else None
 
 
 def _tier(prob_pct):
@@ -194,7 +221,7 @@ def _side_row(m, side, ask, days, now_iso):
         "loss_pct": round(100.0 - prob, 1),          # chance of losing the stake
         "ev_pct": round(ev_cents / ask * 100, 2),    # expected return, after fee
         "days": round(days, 1),
-        "close_time": m.get("close_time"),
+        "close_time": m.get("expected_expiration_time") or m.get("close_time"),
         "volume": round(_f(m.get("volume_fp")), 1),
         "open_interest": round(_f(m.get("open_interest_fp")), 1),
         "payout_x": round(100.0 / ask, 3),
@@ -206,7 +233,7 @@ def _build_rows(min_days):
     now = datetime.now(timezone.utc)
     out = []
     for m in _sweep(min_days):
-        days = _days_to(m.get("close_time"), now)
+        days = settles_in(m, now)
         if days is None or days < min_days or days > _NO_MATURITY_DAYS:
             continue                         # no maturity -> can't be annualized
         for side, ask in (("yes", _cents(m.get("yes_ask_dollars"))),

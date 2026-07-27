@@ -1464,17 +1464,95 @@ function escapeHtml(x) {
 let futLoaded = false;
 let futTimer = null;
 
+// --- Modeled futures: the markets our season sims actually price ------------
+// The all-futures board can never show a positive expected return (at the
+// market's own probability the fee makes every row negative). These rows can,
+// because the model is allowed to disagree — so this is the default view.
+let mfTimer = null;
+
 function initFutures() {
   if (futLoaded) return;
   futLoaded = true;
   ["futSort", "futMinProb", "futMaxDays", "futMinVol"].forEach((id) =>
     $(id)?.addEventListener("change", loadFutures));
-  // Debounced so typing doesn't fire a request per keystroke.
   $("futQ")?.addEventListener("input", () => {
     clearTimeout(futTimer);
     futTimer = setTimeout(loadFutures, 300);
   });
-  loadFutures();
+  ["mfSort", "mfMarket", "mfMaxDays", "mfPos"].forEach((id) =>
+    $(id)?.addEventListener("change", loadModeledFutures));
+  $("mfQ")?.addEventListener("input", () => {
+    clearTimeout(mfTimer);
+    mfTimer = setTimeout(loadModeledFutures, 300);
+  });
+  document.querySelectorAll("#futSubtabs .subtab").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#futSubtabs .subtab").forEach((x) => x.classList.remove("active"));
+      b.classList.add("active");
+      const sub = b.dataset.futsub;
+      $("futModeledView").classList.toggle("hidden", sub !== "modeled");
+      $("futAllView").classList.toggle("hidden", sub !== "all");
+      if (sub === "all") loadFutures(); else loadModeledFutures();
+    });
+  });
+  loadModeledFutures();
+}
+
+function evCls(v) {
+  return v >= 15 ? "good" : v > 0 ? "ok" : "meh";
+}
+
+async function loadModeledFutures() {
+  const out = $("mfOut");
+  if (!out) return;
+  const q = ($("mfQ") || {}).value || "";
+  const sort = ($("mfSort") || {}).value || "best";
+  const mkt = ($("mfMarket") || {}).value || "";
+  const maxDays = ($("mfMaxDays") || {}).value || "";
+  const pos = ($("mfPos") || {}).value ?? "1";
+  out.innerHTML = `<div class="empty">Reading the season simulations…</div>`;
+  try {
+    let u = `/api/futures/modeled?limit=80&sort=${sort}&positive_only=${pos}`
+      + `&q=${encodeURIComponent(q)}`;
+    if (mkt) u += `&markets=${mkt}`;
+    if (maxDays) u += `&max_days=${maxDays}`;
+    const d = await (await fetch(u)).json();
+    if (d.building) {
+      out.innerHTML = `<div class="empty">Running the season simulations… this takes a minute the first time.</div>`;
+      clearTimeout(mfTimer);
+      mfTimer = setTimeout(loadModeledFutures, 5000);
+      return;
+    }
+    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
+    const cnt = $("futCount");
+    if (cnt) cnt.textContent = `${d.total.toLocaleString()} shown · ${d.universe.toLocaleString()} modeled`;
+    if (!d.rows.length) {
+      out.innerHTML = `<div class="empty">Nothing matches — try "everything" instead of only +EV, or clear the search.</div>`;
+      return;
+    }
+    out.innerHTML = `<div class="futtablewrap"><table class="futtable">
+      <thead><tr>
+        <th>Contract</th><th class="r">Buy</th><th class="r">Model</th>
+        <th class="r">Fair</th><th class="r">Exp. return</th><th class="r">Per yr</th>
+        <th class="r">Settles</th>
+      </tr></thead><tbody>
+      ${d.rows.map((r) => `<tr>
+        <td>
+          <div class="futtitle">${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.">check</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
+          <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}</div>
+        </td>
+        <td class="r"><b>${r.price_cents}¢</b></td>
+        <td class="r">${r.model_pct}%</td>
+        <td class="r">${r.fair_pct}%</td>
+        <td class="r"><span class="futapy ${evCls(r.ev_pct)}">${r.ev_pct > 0 ? "+" : ""}${r.ev_pct}%</span></td>
+        <td class="r">${r.apy_pct == null ? "—" : (r.apy_pct > 0 ? "+" : "") + r.apy_pct + "%"}</td>
+        <td class="r">${r.days == null ? "—" : futDays(r.days)}</td>
+      </tr>`).join("")}
+      </tbody></table></div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">${escapeHtml(d.note)}</div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Couldn't load — try again.</div>`;
+  }
 }
 
 // Big APY numbers on short contracts are arithmetically true and practically
