@@ -85,7 +85,11 @@ def report():
 
 
 # ---- The nightly refresh ----------------------------------------------------
-def refresh(sports=("ufc", "nhl", "nba", "mlb"), quick=True):
+# Every sport team_backtest can score, plus UFC. NFL and WNBA were missing from
+# this tuple, so they were never measured and silently kept the cautious default
+# forever -- which is how a preseason NFL model came to print double-digit edges
+# on a Super Bowl market. A sport that can be measured belongs here.
+def refresh(sports=("ufc", "nhl", "nba", "mlb", "nfl", "wnba"), quick=True):
     """Re-run the backtests and store each fitted weight. Designed for the nightly
     scheduler: every sport it can measure, it measures. Best-effort per sport, so
     one bad feed can't stop the rest."""
