@@ -16,9 +16,16 @@ import pro_sim
 # Series tickers per league, grouped by the market they price. Multiple
 # candidates per slot because Kalshi's naming has drifted over time.
 SERIES = {
-    "nfl": {"champ": ["KXNFLSB", "KXNFLCHAMP", "KXSUPERBOWL"],
-            "conf": ["KXNFLCONF", "KXNFLAFC", "KXNFLNFC"],
-            "division": ["KXNFLDIV"],
+    # Real, verified tickers. The previous guesses (KXNFLSB / KXNFLCHAMP /
+    # KXSUPERBOWL / KXNFLCONF / KXNFLDIV) match NOTHING on the exchange, so the
+    # whole NFL futures complex silently priced as "not listed" -- including a
+    # Super Bowl market carrying millions of contracts. Confirmed by walking
+    # Kalshi's series catalog rather than guessing at names.
+    "nfl": {"champ": ["KXSB"],
+            "conf": ["KXNFLAFCCHAMP", "KXNFLNFCCHAMP"],
+            "division": ["KXNFLAFCEAST", "KXNFLAFCNORTH", "KXNFLAFCSOUTH",
+                         "KXNFLAFCWEST", "KXNFLNFCEAST", "KXNFLNFCNORTH",
+                         "KXNFLNFCSOUTH", "KXNFLNFCWEST"],
             "wins": ["KXNFLWINS"]},
     "nba": {"champ": ["KXNBACHAMP", "KXNBAFINALS"],
             "conf": ["KXNBAEAST", "KXNBAWEST", "KXNBACONF"],

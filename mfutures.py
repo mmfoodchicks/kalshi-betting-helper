@@ -103,7 +103,11 @@ _SERIES_FOR = {
     # couple of probes date the whole market rather than thirty requests.
     ("mlb", "win_total"): ["KXMLBWINS-MIL", "KXMLBWINS-NYY", "KXMLBWINS-LAD"],
     ("nfl", "win_total"): ["KXNFLWINS"],
-    ("nfl", "world_series"): ["KXNFLSB", "KXNFLCHAMP"],
+    ("nfl", "world_series"): ["KXSB"],
+    ("nfl", "pennant"): ["KXNFLAFCCHAMP", "KXNFLNFCCHAMP"],
+    ("nfl", "division"): ["KXNFLAFCEAST", "KXNFLAFCNORTH", "KXNFLAFCSOUTH",
+                          "KXNFLAFCWEST", "KXNFLNFCEAST", "KXNFLNFCNORTH",
+                          "KXNFLNFCSOUTH", "KXNFLNFCWEST"],
     ("cfb", "champ"): ["KXNCAAF"],
     ("cfb", "cfp"): ["KXNCAAFPLAYOFF"],
 }
