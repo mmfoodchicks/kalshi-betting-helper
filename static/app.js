@@ -1553,7 +1553,7 @@ async function loadModeledFutures() {
       </tr></thead><tbody>
       ${d.rows.map((r) => `<tr>
         <td>
-          <div class="futtitle"><span class="sidetag ${r.side || "yes"}">${(r.side || "yes").toUpperCase()}</span> ${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.">check</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
+          <div class="futtitle"><span class="sidetag ${r.side || "yes"}">${(r.side || "yes").toUpperCase()}</span> ${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="${escapeHtml(r.disagreement ? "Our own models disagree — " + r.disagreement : "Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.")}">${r.disagreement ? "models disagree" : "check"}</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
           <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}${r.trust_measured ? ` <span class="trustok" title="Weight measured on ${r.trust_n} graded results">✓ measured</span>` : ` <span class="trustno" title="This model has never been scored against graded results — the weight is a cautious default, not a track record.">unvalidated</span>`}${r.in_season === false ? " · <b>off-season</b>" : ""}</div>
         </td>
         <td class="r"><b>${r.price_cents}¢</b></td>

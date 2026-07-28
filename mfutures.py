@@ -276,6 +276,39 @@ def _collect_mlb(by_ticker, by_series, by_no):
     return out
 
 
+def _nfl_second_opinion():
+    """{abbr: championship %} from the OTHER NFL season sim we run nightly.
+
+    We have two, and they disagree. nfl_season builds a roster-aware rating and
+    then lets an external win-projection source overwrite it wholesale, while
+    pro_sim keeps the roster read -- which for Seattle is the difference between
+    6.85% and 14.32% to win the Super Bowl, on the same 4,000 seasons. Until one
+    of them is validated against graded results there is no basis for picking a
+    winner, so the board cross-checks them and refuses to present a number both
+    halves of the app can't agree on."""
+    try:
+        import deep_cache
+        payload, _ts = deep_cache.load("nfl")
+        out = {}
+        for t in (payload or {}).get("teams") or []:
+            ab = t.get("abbrev") or t.get("abbr")
+            if not ab:
+                continue
+            out[ab] = {"champ": t.get("champ_pct"), "wins": t.get("proj_wins")}
+        return out
+    except Exception:
+        return {}
+
+
+# How far the two NFL sims may differ before their rows are treated as unsafe.
+_SECOND_OPINION_RATIO = 1.6
+# ...and how far their projected win totals may differ. Kalshi lists no NFL
+# championship market right now, so EVERY bettable NFL row is a win total: if
+# the check only covered championships it would never fire on anything you
+# could actually buy. Three quarters of a win is roughly one line on the ladder.
+_SECOND_OPINION_WINS = 0.75
+
+
 def _collect_board(sport, board, by_ticker, by_series, by_no):
     """NFL / CFB / pro-league boards: {markets: {key: {label, teams: [...]}}}."""
     out = []
@@ -290,6 +323,7 @@ def _collect_board(sport, board, by_ticker, by_series, by_no):
                 break
         if played:
             break
+    second = _nfl_second_opinion() if sport == "nfl" else {}
     for key, blk in ((board or {}).get("markets") or {}).items():
         for t in blk.get("teams") or []:
             price = t.get("kalshi_cents")
@@ -301,9 +335,30 @@ def _collect_board(sport, board, by_ticker, by_series, by_no):
                        {**t, "team": name, "in_season": played},
                        _days_for(sport, key, t.get("ticker"), by_ticker, by_series))
             if row:
+                # Championship-style NFL rows get checked against the other sim;
+                # a wide split means we don't actually know our own number, which
+                # is worse than having none, so the row is flagged out of the
+                # default board rather than quietly shown as an edge.
+                alt = second.get(t.get("abbr")) or {}
+                mk = _norm_market(key)
+                if mk == "world_series" and alt.get("champ") is not None and row["model_pct"] > 0:
+                    o = float(alt["champ"])
+                    r = max(o, row["model_pct"]) / max(0.01, min(o, row["model_pct"]))
+                    if r >= _SECOND_OPINION_RATIO:
+                        row["suspect"] = True
+                        row["disagreement"] = f"our other NFL sim says {o:.1f}%"
+                elif mk == "win_total" and alt.get("wins") is not None:
+                    mine = t.get("proj_wins")
+                    if mine is not None and abs(float(alt["wins"]) - float(mine)) >= _SECOND_OPINION_WINS:
+                        row["suspect"] = True
+                        row["disagreement"] = (f"our two NFL sims project {float(mine):.1f} "
+                                               f"vs {float(alt['wins']):.1f} wins")
                 out.append(row)
                 no = _no_row(row, by_no.get(t.get("ticker")))
                 if no:
+                    if row.get("disagreement"):
+                        no["suspect"] = True
+                        no["disagreement"] = row["disagreement"]
                     out.append(no)
     return out
 
