@@ -195,6 +195,13 @@ def _row(sport, mtype, label, model_pct, price_cents, extra, days):
     if price_cents is None or not (0 < price_cents < 100) or model_pct is None:
         return None
     w = model_trust.weight(sport)
+    # Whether that weight is a MEASURED read or just the cautious default. The
+    # difference matters more than the number: MLB's 0.57 comes from 131 graded
+    # results, while NFL's 0.50 means "we have never checked". Both render as a
+    # trust figure, and without this flag a preseason model with no track record
+    # looks exactly as authoritative as one that has earned its weight.
+    _rec = (model_trust.load().get("weights") or {}).get(sport) or {}
+    measured_n = _rec.get("n") or 0
     # The honest probability: our number pulled toward the market by exactly how
     # much that sport's model has earned. w=0 means "we measured this model and
     # it doesn't beat the price" -- the row then correctly shows no edge.
@@ -230,6 +237,8 @@ def _row(sport, mtype, label, model_pct, price_cents, extra, days):
         "price_cents": round(float(price_cents), 1),
         "fair_pct": round(fair, 1),
         "trust": round(w, 2),
+        "trust_measured": bool(measured_n),
+        "trust_n": measured_n,
         "edge": round(edge, 1),                 # raw model disagreement
         "ev_pct": round(ev_pct, 1),             # expected return, trust-weighted
         "apy_pct": round(apy, 1) if apy is not None else None,

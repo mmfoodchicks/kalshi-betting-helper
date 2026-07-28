@@ -1049,3 +1049,7 @@ body.tier-locked .owner-only { display: none !important; }
 .futctl label.futcheck { flex-direction: row; align-items: center; gap: 6px;
   padding-bottom: 8px; white-space: nowrap; cursor: help; }
 .futctl label.futcheck input { width: auto; margin: 0; }
+
+/* Whether a model's trust weight was measured or is just the default. */
+.trustok { color: #2fd17a; font-weight: 700; cursor: help; }
+.trustno { color: #f0ad4e; font-weight: 700; cursor: help; }
