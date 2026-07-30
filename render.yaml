@@ -21,9 +21,24 @@ services:
         sync: false                  # set your own in the dashboard to require login
       - key: TIERS_ENFORCED
         value: "0"
-      # - key: KALSHI_DB             # only with the disk below (Starter plan)
+      # With the disk below, point ALL THREE stores at it. Leaving any one at its
+      # in-image default means it is thrown away on every restart and redeploy --
+      # and the deep-sim run history is the one thing that cannot be recomputed.
+      # - key: KALSHI_DB
       #   value: /data/markets.db
-    # disk:                          # persistent SQLite (requires a paid plan)
+      # - key: PREDLOG_DB
+      #   value: /data/predlog.db
+      # - key: DEEP_CACHE_DIR
+      #   value: /data/deep
+    # disk:                          # persistent storage (requires a paid plan)
     #   name: vigil-data
     #   mountPath: /data
     #   sizeGB: 1
+    #
+    # SIZING, MEASURED: a 4,000-season deep run peaks near 840 MB across its
+    # worker processes on four cores, so a 512 MB plan (Free AND Starter) gets
+    # the sim OOM-killed -- the app survives, the run never finishes. It also
+    # costs ~1.1 CPU-hours for the sim plus ~1.9 for the attribution, so half a
+    # core turns a nightly job into a six-hour one. If you want the deep sim to
+    # actually complete here, you need a 2 GB / 1 CPU plan or larger; see
+    # DEPLOY.md, which compares this against a VPS on both price and wall clock.

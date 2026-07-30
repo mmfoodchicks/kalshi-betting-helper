@@ -8,9 +8,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# SQLite lives on a persistent volume mounted at /data (see docker-compose /
-# Render disk). A non-root user owns it so the container doesn't run as root.
-ENV PORT=8080 KALSHI_DB=/data/markets.db
+# Everything that must OUTLIVE the container lives on the volume mounted at
+# /data (see docker-compose / Render disk). All three matter and each was
+# defaulting inside the image, where a restart silently threw it away:
+#   KALSHI_DB      recorded market history
+#   PREDLOG_DB     the prediction log -- the accruing track record, and the only
+#                  way the model's calibration is ever fitted
+#   DEEP_CACHE_DIR the deep-sim cache AND its day-over-day run history, which is
+#                  the one thing here that cannot be recomputed after the fact
+# A non-root user owns it so the container doesn't run as root.
+ENV PORT=8080 KALSHI_DB=/data/markets.db PREDLOG_DB=/data/predlog.db \
+    DEEP_CACHE_DIR=/data/deep
 RUN mkdir -p /data && useradd -m -u 10001 vigil && chown -R vigil /app /data
 USER vigil
 

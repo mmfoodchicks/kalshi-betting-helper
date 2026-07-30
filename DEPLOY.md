@@ -4,11 +4,35 @@ Goal: get Vigil off your PC and onto a real, always-on, HTTPS website. Pick one
 of the paths below. All three give you a `https://…` URL with a valid TLS
 certificate; they differ in cost, effort, and how "your own server" it feels.
 
-| Path | Cost | Effort | Always-on recorder | Persistent data | Feels like |
-|------|------|--------|--------------------|-----------------|------------|
-| **Render (free)** | $0 | clicks | ❌ sleeps when idle | ❌ resets on deploy | a hosted demo |
-| **Render (Starter)** | ~$7/mo | clicks | ✅ | ✅ (1 GB disk) | a managed app |
-| **VPS + Docker + Caddy** | ~$4–6/mo | some CLI | ✅ | ✅ (volume) | your own server |
+| Path | Cost | Effort | Always-on | Persistent data | Deep sim finishes? |
+|------|------|--------|-----------|-----------------|--------------------|
+| **Render (free)** | $0 | clicks | ❌ sleeps when idle | ❌ resets on deploy | ❌ |
+| **Render (Starter)** | ~$7/mo | clicks | ✅ | ✅ (1 GB disk) | ❌ **512 MB — OOM** |
+| **Render (Standard)** | ~$25/mo | clicks | ✅ | ✅ | ✅ ~3 h/night |
+| **VPS + Docker + Caddy** | ~$5–12/mo | some CLI | ✅ | ✅ (volume) | ✅ ~1–2 h/night |
+
+### Sizing the box — measured, not guessed
+
+The deep season sim is the thing that decides your plan, and it is heavier than
+a web app looks:
+
+- **Memory: ~840 MB peak** across its worker processes on four cores. Anything
+  with 512 MB — Render **Free and Starter both** — gets the sim OOM-killed. The
+  site stays up and the run simply never finishes, which is a confusing way to
+  fail. **Starter is not enough, despite being the paid tier.**
+- **CPU: ~1.1 core-hours** for a 4,000-season run, plus ~1.9 more if attribution
+  is on (see `VIGIL_MAX_ATTRIB`). On half a core that is a six-hour night; on
+  2–4 cores it is one to two hours.
+
+So the honest comparison is **Render Standard (~$25/mo) vs a 2–4 core VPS
+(~$5–12/mo)**. The VPS is cheaper *and* several times faster for this workload,
+at the cost of running a couple of commands yourself. If you would rather never
+touch a terminal, Standard is fine — just not Starter.
+
+> If you want to stay small, set `VIGIL_MAX_ATTRIB=0`. You keep the calendar and
+> the "what changed" sentences and drop only the measured pp figures — which, as
+> the attribution notes explain, are frequently "no measurable effect" anyway.
+> That cuts the nightly cost by roughly two thirds.
 
 > Security note: a **managed host (Render)** is usually the *safer* default —
 > they patch the OS, terminate TLS, and isolate your app, so there's less for
@@ -44,17 +68,21 @@ HTTP login via `APP_PASSWORD`.
 4. Deploy. You get `https://vigil-xxxx.onrender.com`. Add a custom domain under
    **Settings → Custom Domains** (free TLS).
 
-**To make the recorders run 24/7 and keep their data:** change the plan to
-**Starter**, then in `render.yaml` uncomment the `disk:` block and the
-`KALSHI_DB` env var and redeploy. (Free services sleep when idle and have no
-disk, so the background logging pauses and the SQLite data resets on each
-deploy — fine for a demo, not for accumulating a track record.)
+**To make it run 24/7 and keep its data:** change the plan to **Standard** (not
+Starter — see the sizing note above; 512 MB OOM-kills the deep sim), then in
+`render.yaml` uncomment the `disk:` block **and all three env vars** —
+`KALSHI_DB`, `PREDLOG_DB`, `DEEP_CACHE_DIR` — and redeploy. Missing any one of
+them leaves that store inside the container, where every restart wipes it.
+(Free services sleep when idle and have no disk, so logging pauses and the data
+resets on each deploy — fine for a demo, not for accumulating a track record.)
 
 ---
 
 ## Path B — Your own server (VPS + Docker + Caddy)
 
-Any small VPS works (Hetzner, DigitalOcean, Vultr — ~$4–6/mo). This runs the app
+**Recommended for this app.** Pick a box with **at least 2 vCPU and 4 GB RAM**
+(Hetzner CX22, DigitalOcean 2 GB/2 vCPU, Vultr equivalent — roughly $5–12/mo).
+That is what the deep sim needs; see the sizing note above. This runs the app
 behind **Caddy**, which fetches and auto-renews a Let's Encrypt certificate.
 
 1. Create the VPS (Ubuntu), point your domain's **A record** at its IP.

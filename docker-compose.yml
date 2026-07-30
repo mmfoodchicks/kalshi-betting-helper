@@ -7,7 +7,11 @@ services:
     restart: unless-stopped
     environment:
       - PORT=8080
+      # All three stores go on the volume. Leaving any of them at its in-image
+      # default means it is thrown away on every restart and redeploy.
       - KALSHI_DB=/data/markets.db
+      - PREDLOG_DB=/data/predlog.db
+      - DEEP_CACHE_DIR=/data/deep
       - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in .env}
       - APP_PASSWORD=${APP_PASSWORD:-}
       - APP_USER=${APP_USER:-vigil}
