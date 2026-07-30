@@ -182,7 +182,7 @@ print("=" * 72)
 
 if "--live" not in sys.argv:
     print("\nThe deep source is UNVERIFIED until this is run with --live somewhere")
-    print("that can reach raw.githubusercontent.com/JeffSackmann.")
+    print("that can reach huggingface.co (the Sackmann archive mirror).")
     sys.exit(1 if FAIL else 0)
 
 # ---------------------------------------------------------------- live ------

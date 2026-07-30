@@ -404,12 +404,13 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # Elo from settled results -- works for everyone, including ITF players the
     # charting never sees. This is the UFC-style "rate them from past matches".
     elo_pa = None
-    # Surface-aware when we know the court. The rating is the player's surface Elo
-    # shrunk toward their overall (tennis_elo.K_SURFACE), so a clay specialist is
-    # rated as one on clay without discarding what they have done elsewhere. This
-    # is the "#1 player can be a dog on clay" effect, and it only became
-    # supportable once the deep archive made per-surface samples big enough --
-    # measured, it was harmful on thinner data.
+    # Surface-aware when we know the court: the player's overall rating plus their
+    # surface DEVIATION, shrunk by how much evidence that surface carries
+    # (tennis_elo.K_SURFACE), so a clay specialist is rated as one on clay without
+    # discarding what they have done elsewhere. This is the "#1 player can be a dog
+    # on clay" effect, and it only became supportable once the deep archive made
+    # per-surface samples big enough -- measured, it was harmful on thinner data,
+    # and the earlier parallel-chain estimator was harmful even on the deep one.
     ea = tennis_elo.rate(a["name"], tcode, surface)
     eb = tennis_elo.rate(b["name"], tcode, surface)
     if ea and eb:

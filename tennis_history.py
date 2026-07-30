@@ -9,13 +9,14 @@ tennis numbers.
 
 The fix is plain CSV -- one file per year, each row carrying a date, both players
 and the SURFACE. Fed in ahead of the Kalshi results, it gives ratings a real
-baseline to be provisional *against*. VERIFIED against the live source: 55,152
-matches over 2007-2026 parse cleanly, taking players with 8+ rated matches from
-29% to 43% and those with 20+ from 1.5% to 27%.
+baseline to be provisional *against*. VERIFIED against the live source: 436,751
+matches parse cleanly from 48 of 48 files in ~40s, taking players with 20+ rated
+matches from 1.5% to 33% and the pools from 8,341 to 19,409 players.
 
-Its limitation is real and stated in _SOURCES below: ATP TOUR ONLY. This deepens
-the handful of ATP matches on a board and does nothing for the ITF bulk, which
-remains the model's biggest gap.
+Crucially it now reaches the ITF tier -- futures for men, ITF/qualifying for
+women -- which is where most of a Kalshi tennis board sits and which previously
+had no historical source at all. ITF sides on the board carry a median 72 rated
+matches, and matches shown as "market, no model" fell from 39 to 5.
 
 TRUST MODEL. The parser does not assume a layout -- it reads the CSV header and
 resolves each field it needs by name from a set of accepted spellings, in any
@@ -33,34 +34,33 @@ import io
 import os
 import urllib.request
 
-# Primary is the same host tennis_data already uses for the charting archive.
-# The alternates are CDN mirrors of the same repositories, tried in order, so a
-# single host being unreachable does not silently disable the whole source.
-_HOSTS = (
-    "https://raw.githubusercontent.com/{repo}/master/{name}",
-    "https://raw.githubusercontent.com/{repo}/refs/heads/master/{name}",
-    "https://cdn.jsdelivr.net/gh/{repo}@master/{name}",
-)
+_HF = "https://huggingface.co/datasets/Aneeshers/tennis-sackmann-archive/resolve/main"
+_TML = "https://raw.githubusercontent.com/Tennismylife/TML-Database/master"
 
-# (tour code, owner/repo, filename template, kind).
+# (tour code, URL template taking {year}, kind).
 #
-# This originally pointed at JeffSackmann/tennis_atp and tennis_wta, which are the
-# canonical archives and carry ITF futures as well as tour. They are no longer
-# reachable: every path in them returns GitHub's own 404, including README.md,
-# while JeffSackmann/tennis_MatchChartingProject serves fine from the same host
-# and raw.githubusercontent is demonstrably ungated (jquery, torvalds/linux and
-# python/cpython all fetch normally). His profile now lists only the charting
-# project. Whatever happened to them, they cannot be fetched or forked.
+# The canonical archives -- JeffSackmann/tennis_atp and tennis_wta -- are gone
+# from GitHub. Every path in them returns GitHub's own 404 including README.md,
+# while his charting project serves fine from the same (demonstrably ungated)
+# host, and his profile now lists only that. They cannot be fetched or forked.
 #
-# Tennismylife/TML-Database is a live mirror of the same format -- identical
-# column names, one file per year -- and it IS reachable, verified by fetching and
-# parsing it. Its limitation is real and worth stating plainly: ATP TOUR ONLY. No
-# WTA, no Challengers, no qualifying, no ITF (those files 404 and the level codes
-# confirm it: 250/500/M/G/D/A/O/F, nothing in the ITF range). So this deepens
-# ratings for the handful of ATP matches on a board and does nothing for the ITF
-# bulk, which remains the model's biggest gap.
+# Aneeshers/tennis-sackmann-archive on HuggingFace is a full mirror of them: 473
+# files, byte-identical schema, updated within the last couple of months. Crucially
+# it carries the parts that matter most here and that no other reachable source
+# has -- ITF FUTURES for men (atp_matches_futures_*) and ITF for women
+# (wta_matches_qual_itf_*), which is the tier most of a Kalshi tennis board sits
+# in and which had no historical source at all.
+#
+# TML-Database stays as a tail source for ATP tour: it is live-updated where the
+# HuggingFace mirror runs a couple of months behind, and the two overlap
+# harmlessly because _build dedups on (date, players).
 _SOURCES = (
-    ("m", "Tennismylife/TML-Database", "{year}.csv", "atp tour"),
+    ("m", _HF + "/atp/atp_matches_futures_{year}.csv", "ITF men"),
+    ("w", _HF + "/wta/wta_matches_qual_itf_{year}.csv", "ITF women"),
+    ("m", _HF + "/atp/atp_matches_qual_chall_{year}.csv", "chall/qual"),
+    ("m", _HF + "/atp/atp_matches_{year}.csv", "atp tour"),
+    ("w", _HF + "/wta/wta_matches_{year}.csv", "wta tour"),
+    ("m", _TML + "/{year}.csv", "atp tour (live)"),
 )
 
 # Accepted spellings per field. The first that appears in the header wins. Kept
@@ -75,10 +75,13 @@ _FIELDS = {
 }
 _REQUIRED = ("date", "winner", "loser")     # surface/level are optional extras
 
-# Default window. Ratings care about who a player is NOW, and every extra year is
-# five more files to fetch; a decade is plenty to take a player off provisional
-# without pulling the whole archive on every cold start.
-DEFAULT_YEARS = 20
+# Default window. Ratings care about who a player is NOW, and the archive is much
+# bigger than it was when this pulled one small file per year -- ITF alone runs
+# ~18k men's and ~22k women's matches annually. Eight years takes every player on
+# a board well clear of provisional (the K ramp settles by ~50 matches) without
+# pulling a decade of juniors who have since retired, and keeps a cold start
+# inside the budget below. Cached for a week, so this cost is paid rarely.
+DEFAULT_YEARS = 8
 _TIMEOUT = 12
 _CACHE_KEY = "tennis_history_rows"
 _CACHE_TTL_DAYS = 7
@@ -86,7 +89,7 @@ _CACHE_TTL_DAYS = 7
 # cost seconds, not the 50 files x 3 hosts x timeout it would otherwise. Two
 # guards: a whole-run wall clock, and an early bail if nothing at all parses in
 # the first few files -- if the source is gone, it is gone for all of them.
-_BUDGET_S = 180
+_BUDGET_S = 300
 _PROBE_FILES = 3
 
 
@@ -104,18 +107,14 @@ def _get(url):
         return r.read().decode("utf-8", "replace")
 
 
-def _fetch(repo, name):
-    """Text of one archive file, trying each host in turn. None if unreachable."""
-    for host in _HOSTS:
-        try:
-            txt = _get(host.format(repo=repo, name=name))
-        except Exception:
-            continue
-        # A CDN can answer 200 with an error page; a results CSV always has a
-        # header line with commas in it.
-        if txt and "," in txt.split("\n", 1)[0]:
-            return txt
-    return None
+def _fetch(url):
+    """Text of one archive file, or None. A host can answer 200 with an error
+    page, so require a header line that looks like CSV."""
+    try:
+        txt = _get(url)
+    except Exception:
+        return None
+    return txt if (txt and "," in txt.split("\n", 1)[0]) else None
 
 
 def _resolve(header):
@@ -201,7 +200,7 @@ def fetch(years=DEFAULT_YEARS, upto=None, report=None, budget=_BUDGET_S):
     end = upto or clock.today_et().year
     started = time.time()
     out, tried, got_any = [], 0, False
-    for tour, repo, tmpl, kind in _SOURCES:
+    for tour, tmpl, kind in _SOURCES:
         for year in range(end - years + 1, end + 1):
             if time.time() - started > budget:
                 if report is not None:
@@ -217,9 +216,10 @@ def fetch(years=DEFAULT_YEARS, upto=None, report=None, budget=_BUDGET_S):
                                    "why": f"nothing parsed in {tried} files, "
                                           "treating the archive as unavailable"})
                 return []
-            name = tmpl.format(year=year)
+            url = tmpl.format(year=year)
+            name = url.rsplit("/", 1)[-1]
             tried += 1
-            txt = _fetch(repo, name)
+            txt = _fetch(url)
             if txt is None:
                 if report is not None:
                     report.append({"file": name, "tour": tour, "kind": kind,

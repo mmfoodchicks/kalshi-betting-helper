@@ -13,14 +13,20 @@ as the pool deepens.
      results, the ramp matches the deep pool's best constant (0.6099 vs 0.6095)
      and beats the shallow pool's (0.6540 vs 0.6572).
 
-  2. SURFACE-SPLIT RATING -- NOW SHIPPED (tennis_elo.K_SURFACE = 50).
-     Rejected twice on thinner data and accepted on the third look, which is the
-     point of keeping the check rather than the conclusion. On the 11.6k-match
-     charting archive, 69% of player-surface cells held under 5 matches and
-     rolling origin gave -0.0010. On the 55k-match deep archive that falls to 49%
-     and rolling origin gives +0.0035 with 5 of 5 folds positive, every fold
-     independently choosing 50. The ratings it produces are recognisable: Nadal
-     +164 clay over hard, Ruud +162, Musetti -113 on hard, Djokovic nearly flat.
+  2. SURFACE-AWARE RATING -- SHIPPED, but as a DEVIATION, not a parallel chain
+     (tennis_elo.K_DEV = 16, K_SURFACE = 50).
+     Rejected twice on thinner data, accepted as a chain on the third look, and
+     then caught: once the archive reached 436k matches the chain was measurably
+     WORSE THAN POOLING on every rolling-origin fold, on tour and ITF alike. It
+     seeded each surface from the player's overall rating and then hit it with a
+     debut-sized K, and it went stale once the chains forked.
+     Modelling the surface as a recentred deviation from the live overall rating
+     fixes both: +0.0022 vs pooling and +0.0044 vs the chain, 5 of 5 folds
+     positive on each, and positive on tour (+0.0025) and ITF (+0.0019)
+     separately. The ratings stay recognisable -- Nadal well up on clay, Musetti
+     down on hard, Djokovic nearly flat.
+     The lesson worth keeping: a new model beating the null is not enough when
+     the thing it replaces was never checked against the null itself.
 
   3. TIME DECAY / PROVISIONAL BOOST -- LEFT ALONE.
      Regressing an idle player's rating toward the pool mean hurt at every
@@ -136,10 +142,12 @@ def load_deep():
 
 
 def load_deep_surface():
-    """Same archive, keeping the surface label, for the surface check."""
+    """Same archive, keeping the surface label and the tier, for the surface
+    check. Tier matters because tour and ITF are different populations and the
+    surface question has to be answered on each rather than on their average."""
     try:
         import tennis_history
-        return [(d, "m", w, l, s)
+        return [(d, "m", w, l, s, not tennis_elo._is_low_tier(lv))
                 for d, tour, w, l, s, lv in tennis_history.results() if s]
     except Exception:
         return []
@@ -179,99 +187,167 @@ def rolling(name, rows, folds=5):
 
 
 def surface_check():
-    """Per-surface Elo shrunk toward overall by K_SURF prior matches.
-    K_SURF=None is the pooled null.
+    """Is a surface-aware rating better than pooling -- and which estimator?
 
-    Runs on the DEEP archive when it is reachable -- that is the data the shipped
-    K_SURFACE was fitted on and the only sample big enough to establish it. Falls
-    back to the charting archive, where the honest answer is still "not
-    established"."""
+    Three models, all walked point-in-time:
+      POOLED  one rating per player, no surface at all. The null.
+      CHAIN   the retired estimator: a parallel Elo per surface, seeded from the
+              player's overall rating, shrunk back toward it by K_SURFACE.
+      DEV     what ships now: overall + a recentred surface DEVIATION, shrunk by
+              how much evidence that surface carries.
+
+    CHAIN is kept in the comparison deliberately. It was shipped for a while and
+    it is WORSE THAN NOT SPLITTING AT ALL, which is the kind of result that is
+    easy to miss when a new model is only ever compared to the null. Two reasons:
+    it hit a freshly seeded surface rating with a debut-sized K and destroyed the
+    seed, and it went stale, since a player's improvement reached the overall
+    rating but not their clay rating.
+
+    Runs on the DEEP archive when reachable -- that is what the shipped constants
+    were fitted on. Falls back to the charting archive, which is tour-only and
+    far thinner, where the honest answer is "not established"."""
     deep = load_deep_surface()
-    rows = deep if deep else load_charting(with_surface=True)
+    rows = deep if deep else [(d, t, a, b, s, True)
+                              for d, t, a, b, s in load_charting(with_surface=True)]
     print("\n" + ("(deep archive)" if deep else "(charting archive -- thinner; "
-                                                 "the shipped value was fitted on the deep one)"))
+                                               "the shipped values were fitted on the deep one)"))
     print("\n" + "=" * 78)
-    print(f"SURFACE-SPLIT RATING  ({len(rows)} charted matches with a surface)")
+    print(f"SURFACE-AWARE RATING  ({len(rows)} matches with a surface)")
     print("=" * 78)
     cells = collections.Counter()
-    for _, tour, p1, p2, s in rows:
+    tiers = collections.Counter()
+    for _, tour, p1, p2, s, is_tour in rows:
         cells[(tour, p1, s)] += 1; cells[(tour, p2, s)] += 1
+        tiers["tour" if is_tour else "ITF/chall"] += 1
     thin = sum(1 for v in cells.values() if v < 5)
     print(f"  player-surface cells: {len(cells)};  under 5 matches: {thin} "
           f"({thin/len(cells)*100:.0f}%)")
+    print(f"  tier mix: {dict(tiers)}")
 
-    def w(K_SURF):
+    def w(mode, p1=None, p2=None):
+        """mode: 'pooled' | 'chain' (p1=K_SURFACE) | 'dev' (p1=K_DEV, p2=K_SHRINK).
+        Emits (prob, outcome, is_tour) so the tail can be split by tier."""
         ov = collections.defaultdict(lambda: 1500.0)
-        sf, n_ov, n_sf, out = {}, collections.Counter(), collections.Counter(), []
-        for date, tour, win, los, surf in rows:
+        sf, dev = {}, collections.defaultdict(float)
+        n_ov, n_sf = collections.Counter(), collections.Counter()
+        surfs, out = collections.defaultdict(set), []
+
+        def recentre(k):
+            ss = surfs[k]
+            tot = sum(n_sf[k + (s,)] for s in ss)
+            if tot <= 0:
+                return
+            m = sum(n_sf[k + (s,)] * dev[k + (s,)] for s in ss) / tot
+            for s in ss:
+                dev[k + (s,)] -= m
+
+        for date, tour, win, los, surf, is_tour in rows:
             kw, kl = (tour, win), (tour, los)
-            ksw, ksl = (tour, win, surf), (tour, los, surf)
-            for k, ks in ((kw, ksw), (kl, ksl)):
-                if ks not in sf:
-                    sf[ks] = ov[k]
+            ksw, ksl = kw + (surf,), kl + (surf,)
+            if mode == "chain":
+                for k, ks in ((kw, ksw), (kl, ksl)):
+                    if ks not in sf:
+                        sf[ks] = ov[k]
 
             def rate(k, ks):
-                if K_SURF is None:
+                if mode == "pooled":
                     return ov[k]
                 nn = n_sf[ks]
-                return ((nn * sf[ks] + K_SURF * ov[k]) / (nn + K_SURF)
-                        if nn + K_SURF > 0 else sf[ks])
+                if mode == "chain":
+                    return (nn * sf[ks] + p1 * ov[k]) / (nn + p1)
+                return ov[k] + dev[ks] * nn / (nn + p2)
+
             if n_ov[kw] >= MIN_N and n_ov[kl] >= MIN_N:
                 flip = (hash(date + win) % 2 == 0)
                 (x, kx, ksx), (y, ky, ksy) = (((win, kw, ksw), (los, kl, ksl)) if flip
                                               else ((los, kl, ksl), (win, kw, ksw)))
                 out.append((min(0.995, max(0.005, elo_p(rate(kx, ksx), rate(ky, ksy)))),
-                            1 if x == win else 0))
-            # Mirror PRODUCTION exactly: the experience ramp, and the surface
-            # rating stepped by its OWN match count. Using a flat K here made the
-            # test recommend K_surf 120-200 while the shipped 50 was fitted under
-            # the ramp -- the test was measuring a model that does not exist.
+                            1 if x == win else 0, is_tour))
+            # Mirror PRODUCTION exactly, including the experience ramp on the
+            # overall chain. Using a flat K here once made the test recommend
+            # K_surf 120-200 while the shipped 50 was fitted under the ramp --
+            # the test was measuring a model that does not exist.
             ew = elo_p(ov[kw], ov[kl])
+            eb = elo_p(rate(kw, ksw), rate(kl, ksl))
             ov[kw] += tennis_elo.k_for(n_ov[kw]) * (1.0 - ew)
             ov[kl] -= tennis_elo.k_for(n_ov[kl]) * (1.0 - ew)
-            ews = elo_p(sf[ksw], sf[ksl])
-            sf[ksw] += tennis_elo.k_for(n_sf[ksw]) * (1.0 - ews)
-            sf[ksl] -= tennis_elo.k_for(n_sf[ksl]) * (1.0 - ews)
+            if mode == "chain":
+                ews = elo_p(sf[ksw], sf[ksl])
+                sf[ksw] += tennis_elo.k_for(n_sf[ksw]) * (1.0 - ews)
+                sf[ksl] -= tennis_elo.k_for(n_sf[ksl]) * (1.0 - ews)
+            elif mode == "dev":
+                dev[ksw] += p1 * (1.0 - eb)
+                dev[ksl] -= p1 * (1.0 - eb)
             n_ov[kw] += 1; n_ov[kl] += 1; n_sf[ksw] += 1; n_sf[ksl] += 1
+            if mode == "dev":
+                surfs[kw].add(surf); surfs[kl].add(surf)
+                recentre(kw); recentre(kl)
         return out
 
-    grid = [None, 200, 120, 80, 50, 30, 20, 12, 6, 3, 0]
-    curves = {K: w(K) for K in grid}
-    print(f"\n  {'K_surf':>8s} {'logloss':>9s} {'acc':>7s}   (K_surf=pooled is the null)")
-    for K in grid:
-        print(f"  {('pooled' if K is None else str(K)):>8s} "
-              f"{ll(curves[K]):>9.4f} {acc(curves[K]):>7.4f}")
-    # The in-sample curve is NOT the verdict. At the shipped K it dips ~0.001 below
-    # pooled around K_surf=80, which is small enough to be selection noise -- so
-    # decide it the way K itself was decided, by rolling origin.
-    n = len(curves[None])
+    def L(rows_):
+        return ll([(p, y) for p, y, _ in rows_])
+
+    GRID = [(kd, ks) for kd in (8, 16, 32) for ks in (20, 50, 100)]
+    curves = {("dev",) + g: w("dev", *g) for g in GRID}
+    curves[("pooled",)] = w("pooled")
+    curves[("chain",)] = w("chain", tennis_elo.K_SURFACE)
+
+    print(f"\n  {'model':>16s} {'logloss':>9s} {'acc':>7s}   (pooled is the null)")
+    print(f"  {'pooled':>16s} {L(curves[('pooled',)]):>9.4f} "
+          f"{acc([(p, y) for p, y, _ in curves[('pooled',)]]):>7.4f}")
+    print(f"  {'chain (retired)':>16s} {L(curves[('chain',)]):>9.4f} "
+          f"{acc([(p, y) for p, y, _ in curves[('chain',)]]):>7.4f}")
+    for g in GRID:
+        c = curves[("dev",) + g]
+        print(f"  {f'dev {g[0]}/{g[1]}':>16s} {L(c):>9.4f} "
+              f"{acc([(p, y) for p, y, _ in c]):>7.4f}")
+
+    # The in-sample curve is NOT the verdict -- decide it the way K itself was
+    # decided, by rolling origin.
+    n = len(curves[("pooled",)])
     folds = 6
     edges = [int(n * i / folds) for i in range(folds + 1)]
-    print(f"\n  rolling origin -- choose K_surf on the past, score the next block")
-    print(f"  {'fold':>5s} {'block':>7s} {'chosen':>8s} {'chosen ll':>10s} "
-          f"{'pooled ll':>10s} {'gain':>8s}")
-    gains, chosen = [], []
+    print("\n  rolling origin -- choose the constants on the past, score the next block")
+    print(f"  {'fold':>5s} {'block':>7s} {'chosen':>10s} {'dev ll':>9s} "
+          f"{'pooled':>9s} {'chain':>9s} {'v.pool':>8s} {'v.chain':>8s}")
+    gains, vchain, chosen = [], [], []
     for i in range(1, folds):
         lo, hi = edges[i], edges[i + 1]
-        best = min(grid, key=lambda K: ll(curves[K][:lo]))
-        g = ll(curves[None][lo:hi]) - ll(curves[best][lo:hi])
-        gains.append(g); chosen.append(best)
-        print(f"  {i:>5d} {hi-lo:>7d} {str(best):>8s} {ll(curves[best][lo:hi]):>10.4f} "
-              f"{ll(curves[None][lo:hi]):>10.4f} {g:>+8.4f}")
+        g = min(GRID, key=lambda gg: L(curves[("dev",) + gg][:lo]))
+        d = L(curves[("dev",) + g][lo:hi])
+        p = L(curves[("pooled",)][lo:hi])
+        c = L(curves[("chain",)][lo:hi])
+        gains.append(p - d); vchain.append(c - d); chosen.append(g)
+        print(f"  {i:>5d} {hi-lo:>7d} {str(g):>10s} {d:>9.4f} {p:>9.4f} {c:>9.4f} "
+              f"{p-d:>+8.4f} {c-d:>+8.4f}")
     mean = sum(gains) / len(gains)
-    pos = sum(1 for g in gains if g > 0)
+    pos = sum(1 for x in gains if x > 0)
+    posc = sum(1 for x in vchain if x > 0)
     print(f"\n  chosen per fold: {chosen}")
     print(f"  mean gain vs pooled: {mean:+.4f} logloss  ({pos}/{len(gains)} folds positive)")
+    print(f"  mean gain vs chain : {sum(vchain)/len(vchain):+.4f} logloss  "
+          f"({posc}/{len(vchain)} folds positive)")
+
+    # Tour and ITF are different populations; a gain that only exists on their
+    # average is not a gain we can use, since most of a board is ITF.
+    kd, ks = collections.Counter(chosen).most_common(1)[0][0]
+    tail = slice(edges[1], None)
+    for lbl, keep in (("tour", True), ("ITF/chall", False)):
+        pr = [r for r in curves[("pooled",)][tail] if r[2] is keep]
+        dr = [r for r in curves[("dev", kd, ks)][tail] if r[2] is keep]
+        if pr:
+            print(f"  {lbl:>10s} n={len(pr):>6d}  pooled {L(pr):.4f}  "
+                  f"dev {L(dr):.4f}   gain {L(pr)-L(dr):+.4f}")
+
     established = mean > 0.002 and pos >= len(gains) - 1
-    shipped = getattr(tennis_elo, "K_SURFACE", None)
-    print(f"  -> {'SURFACE SPLIT HELPS' if established else 'not established on this data'}"
-          f"   (shipped K_SURFACE = {shipped})")
-    if established and shipped:
-        near = [c for c in chosen if c and abs(c - shipped) <= 30]
-        print(f"     folds agreeing with the shipped value: {len(near)}/{len(chosen)}")
-    elif not established and shipped:
+    print(f"\n  -> {'SURFACE-AWARE RATING HELPS' if established else 'not established on this data'}"
+          f"   (shipped K_DEV={tennis_elo.K_DEV}, K_SURFACE={tennis_elo.K_SURFACE})")
+    if established:
+        near = [c for c in chosen if c == (tennis_elo.K_DEV, tennis_elo.K_SURFACE)]
+        print(f"     folds agreeing with the shipped constants: {len(near)}/{len(chosen)}")
+    else:
         print("     NOTE: a surface split IS shipped but this data does not support it.")
-        print("     If this is the deep archive, reconsider K_SURFACE.")
+        print("     If this is the deep archive, reconsider K_DEV / K_SURFACE.")
     return established
 
 

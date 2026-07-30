@@ -29,11 +29,28 @@ _BASE = "https://api.elections.kalshi.com/trade-api/v2"
 _SERIES = [("KXATPMATCH", "m", 1600.0), ("KXWTAMATCH", "w", 1600.0),
            ("KXITFMATCH", "m", 1400.0), ("KXITFWMATCH", "w", 1400.0)]
 # Same two entry tiers, for players who arrive from the deep archive rather than
-# from a Kalshi market. Sackmann's tourney_level codes: 15/25 are ITF futures
-# prize tiers, C is Challenger, S is satellite, Q is qualifying -- all lower-tier
-# entries. G/M/A/D/F (slams, Masters, ATP, Davis Cup, finals) are main tour.
+# from a Kalshi market.
+#
+# Level codes are NUMERIC for ITF prize tiers and lettered for everything else.
+# The men's files only ever use 15 and 25, which is why an explicit pair worked
+# at first -- but the women's ITF file adds 35, 50, 60, 75 and 100, and listing
+# codes by hand silently entered all of those at TOUR level. That inflates the
+# ITF women's pool against the tour pool and corrupts every cross-tier comparison.
+# Any numeric level is an ITF prize tier; C (Challenger), S (satellite) and Q
+# (qualifying) are the lettered lower tiers. G/M/A/D/F/P/I (slams, Masters, ATP,
+# Davis Cup, finals, Premier, International) are main tour.
 _TOUR_START, _ITF_START = 1600.0, 1400.0
-_LOW_TIERS = {"15", "25", "C", "S", "Q", "ITF", "FUTURES"}
+_LOW_LETTERS = {"C", "S", "Q", "ITF", "FUTURES"}
+
+
+def _is_low_tier(level):
+    """True for ITF/Challenger/qualifying entries, which start below the tour."""
+    lv = (level or "").strip().upper()
+    return bool(lv) and (lv.isdigit() or lv in _LOW_LETTERS)
+
+
+# Kept for callers/tests that referenced the old set.
+_LOW_TIERS = _LOW_LETTERS | {str(n) for n in (15, 25, 35, 50, 60, 75, 100)}
 # Elo K by EXPERIENCE, fitted (tests/tennis_elo_fit.py):
 #
 #     K(n) = K_LATE + (K_EARLY - K_LATE) * exp(-n / K_TAU)
@@ -85,12 +102,47 @@ def _get(url):
 
 
 _STORE_KEY = "tennis_elo_results"     # persistent accumulating match store
-# Surface rating shrunk toward the player's overall by this many prior matches.
-# FITTED (tests/tennis_elo_fit.py). Rejected twice before on thinner data and now
-# established on the 55k-match deep archive: rolling origin gives +0.0035 mean
-# with 5 of 5 folds positive, and every fold independently chose 50.
-K_SURFACE = 50.0
+
+# --- surface ratings ---------------------------------------------------------
+# A surface rating is a DEVIATION from the player's live overall rating, not a
+# parallel Elo chain. The chain version shipped first and was measurably worse
+# than not splitting at all -- on the 436k-match archive it lost to pooling on
+# every rolling-origin fold, on both tour and ITF. Two structural reasons:
+#
+#   * it seeded each surface from the player's overall rating and then updated it
+#     with k_for(0) == K_EARLY, so a debut-sized K immediately destroyed a seed
+#     that was already good;
+#   * it went stale. Once the chains forked, a player's improvement showed up in
+#     the overall rating and never reached their clay rating except through clay
+#     matches, which for most of the board is a handful.
+#
+# Modelling the deviation fixes both: the overall term is always current, and
+# `dev` only ever carries "better on clay than on themselves". Deviations are
+# recentred (evidence-weighted) across a player's surfaces after every update, so
+# dev cannot quietly restate overall strength and double-count it.
+#
+# FITTED (tests/tennis_elo_fit.py) on 436k archive matches, rolling origin:
+# +0.0022 logloss vs pooling and +0.0044 vs the old chain, 5 of 5 folds positive
+# on both comparisons, and positive on tour (+0.0025) and ITF (+0.0019)
+# separately. Every fold chose K_DEV=16 out of a grid running to 48, so it is an
+# interior optimum rather than a grid edge.
+K_DEV = 16.0         # Elo points a deviation moves per match of surface evidence
+K_SURFACE = 50.0     # prior matches before a deviation is trusted in full
 _SURFACES = ("Hard", "Clay", "Grass")
+
+
+def _recentre(rec):
+    """Force a player's surface deviations to average zero, weighted by how much
+    evidence each surface carries. This is what keeps `dev` differential: without
+    it a strong player accrues a positive deviation on every surface and their
+    strength gets counted twice."""
+    sd = rec.get("surf") or {}
+    tot = sum(s["n"] for s in sd.values())
+    if tot <= 0:
+        return
+    m = sum(s["n"] * s["dev"] for s in sd.values()) / tot
+    for s in sd.values():
+        s["dev"] -= m
 
 
 def _tourney(title):
@@ -214,7 +266,7 @@ def _build():
         # Archive players enter at the tier their level implies: futures/ITF and
         # qualifying start where our ITF pool starts, main-draw tour where the
         # tour pool does, so the two populations stay on one comparable scale.
-        tier = _ITF_START if (level or "").upper() in _LOW_TIERS else _TOUR_START
+        tier = _ITF_START if _is_low_tier(level) else _TOUR_START
         by_gender.get(g, by_gender["m"]).append((date, win, los, tier, surf))
     pools = {"m": {}, "w": {}}
     for g, matches in by_gender.items():
@@ -229,22 +281,27 @@ def _build():
                                      "last": date, "res": [], "surf": {}})
             L = pool.setdefault(ln, {"elo": tier_start, "n": 0, "name": los,
                                      "last": date, "res": [], "surf": {}})
-            # A surface rating starts from the player's overall, so a first match
-            # on clay is not treated as a debut.
+            # A surface deviation starts at zero: with no clay evidence a player
+            # is exactly their overall rating on clay.
             if surf:
                 for P in (W, L):
-                    P.setdefault("surf", {}).setdefault(surf, {"elo": P["elo"], "n": 0})
+                    P.setdefault("surf", {}).setdefault(surf, {"dev": 0.0, "n": 0})
             ew = 1.0 / (1.0 + 10 ** ((L["elo"] - W["elo"]) / 400.0))
+            # The deviation is driven by the SURFACE-AWARE expectation, so it
+            # absorbs only what the court explains beyond the overall rating.
+            eb = ew if not surf else 1.0 / (1.0 + 10 ** (
+                (elo_on(L, surf) - elo_on(W, surf)) / 400.0))
             kw = k_for(W["n"])          # ramps down as a rating establishes
             kl = k_for(L["n"])
             W["elo"] += kw * (1.0 - ew)
             L["elo"] -= kl * (1.0 - ew)
             if surf:
-                ws, ls = W["surf"][surf], L["surf"][surf]
-                ews = 1.0 / (1.0 + 10 ** ((ls["elo"] - ws["elo"]) / 400.0))
-                ws["elo"] += k_for(ws["n"]) * (1.0 - ews)
-                ls["elo"] -= k_for(ls["n"]) * (1.0 - ews)
-                ws["n"] += 1; ls["n"] += 1
+                W["surf"][surf]["dev"] += K_DEV * (1.0 - eb)
+                L["surf"][surf]["dev"] -= K_DEV * (1.0 - eb)
+                W["surf"][surf]["n"] += 1
+                L["surf"][surf]["n"] += 1
+                _recentre(W)
+                _recentre(L)
             W["n"] += 1; L["n"] += 1
             W["last"] = L["last"] = date
             W["name"], L["name"] = win, los
@@ -258,6 +315,15 @@ def _build():
                 del W["res"][0]
             if len(L["res"]) > _FORM_WIN:
                 del L["res"][0]
+    # Materialise each surface deviation as an absolute rating for display and
+    # for the specialist insight. This is done once at the end because it is
+    # anchored to the FINAL overall rating -- doing it during the walk would
+    # freeze each surface against whatever the overall happened to be that day,
+    # which is the staleness the deviation form exists to avoid.
+    for pool in pools.values():
+        for rec in pool.values():
+            for s in (rec.get("surf") or {}).values():
+                s["elo"] = rec["elo"] + s["dev"]
     return pools
 
 
@@ -267,13 +333,14 @@ def pools():
 
 
 def elo_on(rec, surface=None):
-    """A player's rating for a given surface: their surface Elo shrunk toward
-    their overall by K_SURFACE prior matches on it.
+    """A player's rating for a given surface: their overall rating plus their
+    surface deviation, shrunk by how much evidence that surface carries.
 
     Shrinkage rather than a straight swap is the whole point. A pure surface
     rating throws away everything the player did elsewhere and is worse than
-    pooling at every sample size we have measured; blending keeps the overall as
-    the prior and lets clay evidence move it as clay evidence accumulates."""
+    pooling at every sample size we have measured; anchoring on the overall lets
+    clay evidence move a player as clay evidence accumulates, and a player with
+    two clay matches stays essentially their overall self."""
     if not rec:
         return None
     if not surface:
@@ -281,7 +348,10 @@ def elo_on(rec, surface=None):
     s = (rec.get("surf") or {}).get(surface)
     if not s or not s.get("n"):
         return rec["elo"]
-    return (s["n"] * s["elo"] + K_SURFACE * rec["elo"]) / (s["n"] + K_SURFACE)
+    # `dev` is the model quantity; `elo` is the materialised absolute rating.
+    # Derive one from the other so a record from either representation works.
+    dev = s["dev"] if "dev" in s else s.get("elo", rec["elo"]) - rec["elo"]
+    return rec["elo"] + dev * s["n"] / (s["n"] + K_SURFACE)
 
 
 def rate(name, gender="m", surface=None):
