@@ -3405,6 +3405,17 @@ function _tnEdge(e) {
   if (e == null) return "";
   return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
 }
+// Surface, said honestly. A court we could not identify is shown as unknown
+// rather than guessed, because the model genuinely does not use one there — it
+// falls back to the player's surface-agnostic profile. Silently printing a
+// surface we are not modelling on would be the misleading option.
+function surfTag(m) {
+  if (m.surface_known === false || !m.surface || m.surface === "Unknown") {
+    return `<span class="tn-surfunk" title="We could not identify this tournament's court, so the model uses each player's overall (surface-agnostic) profile rather than guessing a surface.">surface unknown</span>`;
+  }
+  return m.surface;
+}
+
 function _tnPlayer(p, served) {
   const px = p.cents != null ? `${p.cents}¢` : "—";
   // HEADLINE = fair_win: the confidence-blended number we actually believe and
@@ -3512,7 +3523,7 @@ function renderTennis() {
     const startTag = (!m.live && m.start && fmtStartTime(m.start))
       ? `<span class="starttime" title="scheduled start (Mountain Time)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
     return `<div class="tn-match${up ? " upsetcard" : ""}${unopened ? " tn-unopened" : ""}">
-        <div class="tn-mhead">${m.tour} · ${m.surface} · Bo${m.best_of} ${startTag}${liveChip}
+        <div class="tn-mhead">${m.tour} · ${surfTag(m)} · Bo${m.best_of} ${startTag}${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${kalshiWhere(m)}
         ${liveWin}

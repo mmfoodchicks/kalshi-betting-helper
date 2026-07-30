@@ -1053,3 +1053,7 @@ body.tier-locked .owner-only { display: none !important; }
 /* Whether a model's trust weight was measured or is just the default. */
 .trustok { color: #2fd17a; font-weight: 700; cursor: help; }
 .trustno { color: #f0ad4e; font-weight: 700; cursor: help; }
+
+/* Unidentified court: shown, not guessed — the model uses the surface-agnostic
+   profile for these, so the label is muted rather than presented as a fact. */
+.tn-surfunk { opacity: .6; font-style: italic; cursor: help; }
