@@ -255,10 +255,22 @@ def team_profile(team_id, season=None):
             xstats = savant.expected_stats(season) or {}
         except Exception:
             pass
+        # How much of what we asked for actually came back. The roster call
+        # hydrates SEASON and CAREER stats together; career is what regresses a
+        # player toward his true talent. When the hydration comes back partial --
+        # seen live on a constrained host -- career silently goes missing, every
+        # rate is taken at face value, and the projection tracks a team's RECORD
+        # instead of its talent. The board still renders, fully confident and
+        # meaningfully wrong, which is the worst way for this to fail. Counted
+        # here so the run can refuse to publish on top of a good one.
+        seen_n = career_n = 0
         batters, pitchers, depth, depth_bats = [], [], [], []
         for pid in set(hit) | set(pit):
             h, p = hit.get(pid), pit.get(pid)
             per, pos, code = (p or h)[0], (p or h)[1], (p or h)[4]
+            seen_n += 1
+            if (h and h[3]) or (p and p[3]):
+                career_n += 1
             # Active + short-IL play; RM (reassigned to minors) become emergency
             # taxi-squad depth; 60-day IL / suspended / paternity -> out.
             active = code == "A" or code in SHORT_IL
@@ -356,7 +368,9 @@ def team_profile(team_id, season=None):
             bench.append(taxi.pop(0))
         return {"rotation": starters or pitchers[:1], "bullpen": relievers,
                 "depth": depth[:6], "lineup": lineup, "bench": bench,
-                "depth_bats": taxi}
+                "depth_bats": taxi,
+                "_quality": {"players": seen_n, "with_career": career_n,
+                             "xstats": len(xstats)}}
     return baseball._cached(("deep_profile4", team_id, season), 21600, build)
 
 

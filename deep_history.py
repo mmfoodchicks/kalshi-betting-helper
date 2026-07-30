@@ -400,7 +400,11 @@ def attribute(events, cur_profiles, prev_profiles, season, seasons=None,
         cf[tid] = _revert_player(cur_team, prev_team, ev["pid"])
         # Reverting must actually change something, or we would burn a run to
         # measure nothing -- e.g. a 60-day IL player the sim already excluded.
-        if cf[tid] == cur_team:
+        # Compare the ROSTER GROUPS only: a profile also carries incidental keys
+        # (a data-quality report, for one), and comparing whole dicts would make
+        # every revert look like a change and pay for a counterfactual that
+        # measures nothing.
+        if all(cf[tid].get(g) == cur_team.get(g) for g in _GROUPS):
             ev["delta_note"] = "no effect on the simulated roster"
             continue
         ds = []

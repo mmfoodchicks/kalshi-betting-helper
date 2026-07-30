@@ -110,6 +110,27 @@ def _profiles(season, tids):
     return {tid: deep_data.team_profile(tid, season) for tid in tids}
 
 
+def profile_quality(profiles):
+    """How complete the data behind these profiles is, 0-1 on career coverage.
+
+    The roster call hydrates season AND career stats; career is what regresses a
+    player toward true talent. A partial hydration silently drops it, every rate
+    is taken at face value, and the projection tracks each team's RECORD rather
+    than its talent -- while still rendering as a confident board. Measured on a
+    healthy build this sits near 0.96."""
+    players = career = 0
+    teams_ok = 0
+    for prof in profiles.values():
+        q = (prof or {}).get("_quality") or {}
+        players += q.get("players", 0)
+        career += q.get("with_career", 0)
+        if q.get("players") and q.get("with_career", 0) / q["players"] >= 0.5:
+            teams_ok += 1
+    return {"players": players, "with_career": career,
+            "career_frac": round(career / players, 3) if players else 0.0,
+            "teams_ok": teams_ok, "teams": len(profiles)}
+
+
 def _play_series(a, b, need, ridx, rng, seed=None, tag=""):
     """Best-of (2*need-1) between team ids a (higher seed, home edge) and b.
     Rotations cycle from each club's top arms. Returns the winning team id.
@@ -534,4 +555,5 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
     agg["meta"] = {tid: {"name": stand[tid]["name"], "division": stand[tid]["division"],
                          "league": stand[tid]["league"], "wins": stand[tid]["wins"],
                          "losses": stand[tid]["losses"]} for tid in tids}
+    agg["quality"] = profile_quality(profs)
     return agg

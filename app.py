@@ -180,6 +180,11 @@ def _ensure_recorder():
             pass
 
 
+# A healthy build sits near 0.96 career coverage. Below this the roster
+# hydration came back partial and the projection is tracking record, not talent.
+_MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
+
+
 def _init_deep_sims():
     """Register the heavy season sims with the nightly cache/scheduler, reload any
     persisted result from disk, and start the background refresh (reruns each job
@@ -195,6 +200,23 @@ def _init_deep_sims():
         # second fetch that may have moved underneath us.
         profs = {}
         agg = deep_season.run_deep(season, n_seasons=4000, ret_profiles=profs)
+        # Refuse to publish a run built on incomplete data. The roster call
+        # hydrates season AND career stats together; career is what regresses a
+        # player toward true talent. When that hydration comes back partial --
+        # observed live, where the same code produced a materially different
+        # board on the deployed host than on a workstation -- every rate is taken
+        # at face value and the projection tracks each team's RECORD instead of
+        # its talent. The board still renders, fully confident and wrong, which is
+        # the worst way for this to fail. Returning None leaves the previous good
+        # run in the cache rather than overwriting it with this one.
+        q = agg.get("quality") or {}
+        if q.get("career_frac", 0) < _MIN_CAREER_FRAC:
+            app.logger.warning(
+                "deep run REJECTED: career coverage %.0f%% (need %.0f%%), "
+                "%d/%d teams ok - keeping the previous board",
+                100 * q.get("career_frac", 0), 100 * _MIN_CAREER_FRAC,
+                q.get("teams_ok", 0), q.get("teams", 0))
+            return None
         _deep["agg"] = agg
         _deep["season"] = season
         # Snapshot + attribution. Best-effort by design: the deep run is the

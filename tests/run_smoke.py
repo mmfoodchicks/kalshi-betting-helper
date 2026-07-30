@@ -248,6 +248,43 @@ def t_sim_worker_sizing():
         ds._cgroup_limit = orig
 
 
+def t_deep_run_data_quality():
+    """A deep run built on incomplete data must not overwrite a good one.
+
+    The MLB roster call hydrates season AND career stats together; career is what
+    regresses a player toward true talent. When that hydration comes back partial
+    -- observed live, where the deployed host produced a materially different
+    board from the same code on a workstation -- every rate is taken at face
+    value and the projection tracks each team's RECORD instead of its talent. It
+    renders as a confident board, which is the worst way for this to fail."""
+    import deep_season as ds
+
+    def prof(players, career):
+        return {"_quality": {"players": players, "with_career": career, "xstats": 1}}
+
+    healthy = {i: prof(45, 43) for i in range(30)}
+    q = ds.profile_quality(healthy)
+    check("healthy profiles report near-full career coverage",
+          q["career_frac"] > 0.9 and q["teams_ok"] == 30, q)
+
+    broken = {i: prof(45, 1) for i in range(30)}
+    qb = ds.profile_quality(broken)
+    check("partial hydration is visible as low coverage", qb["career_frac"] < 0.1, qb)
+    check("and no team passes its own bar", qb["teams_ok"] == 0, qb)
+
+    mixed = {i: prof(45, 43 if i < 10 else 1) for i in range(30)}
+    qm = ds.profile_quality(mixed)
+    check("a partly-degraded run is caught too", qm["career_frac"] < 0.4, qm)
+    check("teams_ok counts only the teams that loaded", qm["teams_ok"] == 10, qm)
+
+    check("empty profiles do not divide by zero", ds.profile_quality({})["career_frac"] == 0.0)
+
+    import app as _app
+    thr = _app._MIN_CAREER_FRAC
+    check("the publish gate sits below healthy but above degraded",
+          qb["career_frac"] < thr < q["career_frac"], thr)
+
+
 def t_pool_build_isolation():
     """The tennis pool build must be isolated WITHOUT multiprocessing.
 
@@ -525,6 +562,7 @@ def main():
     t_pick6_rules()
     t_clock()
     t_sim_worker_sizing()
+    t_deep_run_data_quality()
     t_pool_build_isolation()
     t_render_blueprint()
     t_boot_is_survivable()
