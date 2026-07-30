@@ -56,38 +56,43 @@ _GROUPS = ("rotation", "bullpen", "depth", "lineup", "bench", "depth_bats")
 # 3% of simulated seasons end with a different World Series winner. That residue
 # is irreducible, and it sets the precision.
 #
-# Measured twice, on repeated paired counterfactuals removing a leverage arm from
-# the strongest club:
-#     3 estimates at n=80  -> SD 1.91pp  => per-season variance ~0.029
-#     4 estimates at n=150 -> SD 1.59pp  => per-season variance ~0.038
-# The second is better powered, and where two honest estimates disagree the
-# conservative one is the right default: over-stating precision prints noise as
-# fact, while under-stating it only suppresses a marginal figure. So:
-#     SE(n) = 100 * sqrt(0.038 / n) pp
-# which is 1.6pp at n=150, 0.87pp at n=500 and 0.62pp at n=1,000. A figure inside
-# roughly twice that is not distinguishable from noise and is NOT shown as a
-# number. Chasing SE=0.3pp would need ~4,200 seasons per event, i.e. three
-# quarters of an hour each, so the honest move is to report the uncertainty
-# rather than hide it.
+# How precise is an attributed figure? MEASURED PER EVENT, not assumed.
 #
-# Cost at the defaults: (1 baseline + 6 events) x 1,000 seasons ~= 75 min on four
-# cores, on top of the 42-minute nightly. VIGIL_ATTRIB_SEASONS / VIGIL_MAX_ATTRIB
-# dial it without a deploy; 0 events disables attribution entirely and the day is
-# still snapshotted and diffed, just without pp figures.
-_ATTRIB_VAR = 0.038          # per-season variance of the paired WS indicator
+# The first version of this used one global variance constant. Measuring it three
+# times gave 0.029, 0.038 and 0.2365 -- an eight-fold spread -- and two of those
+# runs also reported a non-zero drift on a NULL counterfactual, which is
+# impossible on an engine already shown to be exactly deterministic. Those two
+# had returned fewer seasons than they were asked for; a short run divides by a
+# different denominator and injects noise into the difference.
+#
+# The clean, length-verified measurement put the per-season paired variance at
+# ~0.24 for a leverage reliever on the best team in the league -- meaning that
+# change alters the World Series winner in roughly a quarter of simulated
+# seasons. That number has no business being a constant: a closer and a bench bat
+# are nowhere near each other, and a single global figure would be badly wrong
+# for both.
+#
+# So each event's counterfactual is run in BATCHES with different seeds, and the
+# spread ACROSS batches is the error bar for that event. Same total seasons, same
+# cost, an error bar grounded in the run instead of in a guess. With few batches
+# the estimate is itself uncertain, so a two-sided t critical value is used rather
+# than 2 sigma, and a figure has to clear it to be shown as a number at all.
+#
+# Cost at the defaults: (1 baseline + 6 events) x 1,000 seasons on top of the
+# nightly. VIGIL_ATTRIB_SEASONS / VIGIL_MAX_ATTRIB dial it without a deploy;
+# MAX_ATTRIB=0 disables pricing entirely and the day is still snapshotted and
+# diffed, just without pp figures.
 _ATTRIB_SEASONS = int(os.environ.get("VIGIL_ATTRIB_SEASONS") or 1000)
 _MAX_ATTRIB = int(os.environ.get("VIGIL_MAX_ATTRIB") or 6)
+_ATTRIB_BATCHES = 5
+# Two-sided 95% t critical values by degrees of freedom (batches - 1). A small
+# batch count makes the SD estimate itself noisy, and t is what accounts for that.
+_T95 = {1: 12.71, 2: 4.30, 3: 3.18, 4: 2.78, 5: 2.57, 6: 2.45, 7: 2.36, 8: 2.31,
+        9: 2.26, 10: 2.23}
 
 
-def attrib_se(n):
-    """Standard error, in percentage points, of one attributed figure at n paired
-    seasons. Reported next to the number rather than assumed away."""
-    return 100.0 * (_ATTRIB_VAR / max(1, n)) ** 0.5
-
-
-def noise_floor(n=None):
-    """Below this a measured delta is not distinguishable from sim noise."""
-    return round(2.0 * attrib_se(n or _ATTRIB_SEASONS), 2)
+def _t_crit(batches):
+    return _T95.get(max(1, batches - 1), 2.09)
 
 _IL_NAMES = {"D7": "7-day IL", "D10": "10-day IL", "D15": "15-day IL",
              "D60": "60-day IL", "DL": "IL"}
@@ -333,18 +338,26 @@ def _impact_rank(ev, team_move):
 
 
 def attribute(events, cur_profiles, prev_profiles, season, seasons=None,
-              max_events=None, seed=None, team_moves=None, log=None):
-    """Price each event with a paired counterfactual and write `delta_pp` onto it.
+              max_events=None, seed=None, team_moves=None, log=None,
+              batches=None):
+    """Price each event with paired counterfactuals and write `delta_pp` onto it.
 
-    One baseline run is shared by every counterfactual, and all runs use the same
-    seed, so each reported number is a paired difference on identical simulated
-    seasons. Events that are not priced (over budget, or no profile to revert) are
-    left with delta_pp = None and say so rather than showing a zero."""
+    Each event is run in `batches` independent slices, every slice paired against
+    a baseline slice on the SAME seed. The mean across slices is the effect; the
+    spread across them is its error bar, measured on this event rather than
+    assumed from a constant -- a closer and a bench bat differ by an order of
+    magnitude and no single constant serves both.
+
+    Events that are not priced (over budget, nothing to revert, or a run that came
+    back short) are left with delta_pp = None and say why, rather than showing a
+    zero or a number the run cannot support."""
     import deep_season
     seasons = seasons or _ATTRIB_SEASONS
+    batches = max(2, batches or _ATTRIB_BATCHES)
     max_events = _MAX_ATTRIB if max_events is None else max_events
     seed = seed if seed is not None else 1_234_567
     team_moves = team_moves or {}
+    per = max(1, seasons // batches)
 
     flat = []
     for tid, evs in events.items():
@@ -353,19 +366,29 @@ def attribute(events, cur_profiles, prev_profiles, season, seasons=None,
     flat.sort(key=lambda x: -x[0])
     picked = flat[:max_events]
     if not picked:
-        return {"priced": 0, "seasons": seasons, "skipped": 0}
+        return {"priced": 0, "seasons": seasons, "skipped": 0, "batches": batches}
 
     def _say(m):
         if log is not None:
             log.append(m)
 
-    _say(f"baseline {seasons} seasons, seed {seed}")
-    base = deep_season.run_deep(season, n_seasons=seasons, seed=seed,
-                                profiles=cur_profiles, track_progress=False)
-    bn = base["n"] or 1
+    def _run(sd, profiles):
+        """One slice, or None if it came back short.
+
+        A paired difference is only valid if both sides played the same seasons.
+        A short slice divides by a different denominator and manufactures an
+        effect out of nothing -- observed for real while calibrating this, as a
+        2pp 'effect' from a change that had been reverted to itself."""
+        a = deep_season.run_deep(season, n_seasons=per, seed=sd,
+                                 profiles=profiles, track_progress=False)
+        return a if (a.get("n") or 0) == per else None
 
     def ws(agg, tid):
         return 100.0 * agg["ws"].get(tid, 0) / (agg["n"] or 1)
+
+    seeds = [seed + b * 7919 for b in range(batches)]
+    _say(f"baseline {batches}x{per} seasons")
+    base = [_run(s, cur_profiles) for s in seeds]
 
     priced = 0
     for _, tid, ev in picked:
@@ -380,30 +403,35 @@ def attribute(events, cur_profiles, prev_profiles, season, seasons=None,
         if cf[tid] == cur_team:
             ev["delta_note"] = "no effect on the simulated roster"
             continue
-        agg = deep_season.run_deep(season, n_seasons=seasons, seed=seed,
-                                   profiles=cf, track_progress=False)
-        # The pairing only holds if both sides played the SAME seasons. If a run
-        # comes back short -- a worker lost, a run cut off -- the two are divided
-        # by different denominators and the difference is an artefact of that, not
-        # of the roster change. Seen for real while measuring this: a short run
-        # produced a 2pp "effect" from a change that was reverted to itself.
-        if (agg["n"] or 0) != bn:
-            ev["delta_note"] = (f"unpaired run ({agg.get('n')} vs {bn} seasons); "
-                                "not reported")
-            _say(f"{ev.get('name')}: SHORT RUN {agg.get('n')} vs {bn}, skipped")
+        ds = []
+        for b, s in enumerate(seeds):
+            if base[b] is None:
+                continue
+            agg = _run(s, cf)
+            if agg is None:
+                continue
+            ds.append(ws(base[b], tid) - ws(agg, tid))
+        if len(ds) < 2:
+            ev["delta_note"] = "not enough complete runs to measure"
+            _say(f"{ev.get('name')}: only {len(ds)} usable slice(s), skipped")
             continue
-        d = ws(base, tid) - ws(agg, tid)      # today MINUS the reverted world
-        ev["delta_pp"] = round(d, 2)
-        ev["delta_se"] = round(attrib_se(seasons), 2)
-        ev["measured_on"] = seasons
-        if abs(d) < noise_floor(seasons):
+        mean = sum(ds) / len(ds)
+        var = sum((x - mean) ** 2 for x in ds) / (len(ds) - 1)
+        se = (var / len(ds)) ** 0.5
+        ev["delta_pp"] = round(mean, 2)
+        ev["delta_se"] = round(se, 2)
+        ev["measured_on"] = per * len(ds)
+        ev["batches"] = len(ds)
+        # With few slices the SD is itself uncertain, so the bar is a t critical
+        # value rather than 2 sigma.
+        if abs(mean) <= _t_crit(len(ds)) * se:
             ev["delta_note"] = "no measurable effect"
         priced += 1
-        _say(f"{ev.get('name')} ({ev.get('kind')}) -> {d:+.2f}pp")
-    return {"priced": priced, "seasons": seasons,
-            "skipped": max(0, len(flat) - len(picked)),
-            "se": round(attrib_se(seasons), 2),
-            "noise_floor": noise_floor(seasons)}
+        _say(f"{ev.get('name')} ({ev.get('kind')}) -> {mean:+.2f} ± {se:.2f}pp "
+             f"over {len(ds)} slices")
+    return {"priced": priced, "seasons": seasons, "batches": batches,
+            "per_batch": per,
+            "skipped": max(0, len(flat) - len(picked))}
 
 
 # -------------------------------------------------------------- narration ----
@@ -658,6 +686,8 @@ def report(date=None):
             "generated_at": rec.get("generated_at"),
             "n_games_left": rec.get("n_games_left"),
             "attribution": rec.get("attribution"),
-            "noise_floor": (rec.get("attribution") or {}).get(
-                "noise_floor", noise_floor()),
+            # Run-to-run spread of two INDEPENDENT nightly runs -- what a move
+            # with no cause behind it is measured against. Not the attribution
+            # error bar, which is per event and travels with each figure.
+            "run_noise": _run_noise(rec.get("n")),
             "dates": ds, "teams": teams}

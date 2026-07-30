@@ -223,7 +223,8 @@ try:
        any(t["name"] == "B" for t in rep["teams"]))
     ck("report lists the available dates for a calendar",
        "2026-07-30" in rep["dates"] and "2026-07-29" in rep["dates"])
-    ck("report exposes the noise floor it used", rep["noise_floor"] == dh.noise_floor())
+    ck("report exposes the run-to-run spread it judges bare moves against",
+       rep["run_noise"] == dh._run_noise(rep.get("n")))
     ck("defaulting to the newest date works", dh.report()["date"] == "2026-07-30")
 
     # A move with nothing behind it must be NAMED, not left as a bare number.
@@ -333,16 +334,13 @@ print("=" * 74)
 print("7. Attribution budget and honesty")
 print("=" * 74)
 ck("attribution is capped", dh._MAX_ATTRIB <= 16, dh._MAX_ATTRIB)
-ck("a noise floor is set and non-trivial", dh.noise_floor() > 0)
-ck("the noise floor is twice the standard error at the seasons used",
-   abs(dh.noise_floor(500) - 2 * dh.attrib_se(500)) < 0.01,
-   f"SE {dh.attrib_se(500):.2f} floor {dh.noise_floor(500):.2f}")
-ck("more paired seasons -> a tighter standard error",
-   dh.attrib_se(4000) < dh.attrib_se(500) < dh.attrib_se(80))
-ck("the SE matches what was measured at n=150 (~1.6pp)",
-   1.4 < dh.attrib_se(150) < 1.9, round(dh.attrib_se(150), 2))
-ck("the shipped variance is the CONSERVATIVE of the two measurements",
-   dh._ATTRIB_VAR >= 0.038 - 1e-9, dh._ATTRIB_VAR)
+ck("attribution runs in at least a few batches, or there is no error bar",
+   dh._ATTRIB_BATCHES >= 3, dh._ATTRIB_BATCHES)
+ck("the t critical value widens as batches fall",
+   dh._t_crit(3) > dh._t_crit(5) > dh._t_crit(11))
+ck("t is used, not 2 sigma, at the shipped batch count",
+   dh._t_crit(dh._ATTRIB_BATCHES) > 2.0, dh._t_crit(dh._ATTRIB_BATCHES))
+ck("run-to-run spread shrinks with seasons", dh._run_noise(16000) < dh._run_noise(1000))
 ck("roster moves outrank form for the budget",
    dh._impact_rank({"kind": "il_out", "pos": "P"}, 5.0)
    > dh._impact_rank({"kind": "blowup", "pos": "P"}, 5.0))
@@ -352,36 +350,60 @@ ck("a big team move raises an event's priority",
 ck("no events -> no baseline run is paid for",
    dh.attribute({}, {}, {}, "2026")["priced"] == 0)
 
-# A counterfactual is only paired if BOTH sides ran the same seasons. A short run
-# divides by a different denominator, which manufactures an effect out of nothing:
-# while measuring this, a run that came back short produced a 2pp "effect" from a
-# change that had been reverted to itself. Stub the sim to force that case.
+# A counterfactual is only paired if BOTH sides ran the same seasons. A short
+# slice divides by a different denominator, which manufactures an effect out of
+# nothing: while calibrating this, a short run produced a 2pp "effect" from a
+# change that had been reverted to itself. Short slices must be DROPPED, and if
+# too few survive, nothing may be reported. Stub the sim to force both cases.
 import deep_season as _ds
 
 _orig_run = _ds.run_deep
-_calls = {"i": 0}
+_state = {"short_after": 0, "i": 0}
 
 
 def _fake_run(season, n_seasons=None, seed=None, profiles=None, **kw):
-    _calls["i"] += 1
-    # baseline full length; the counterfactual comes back three seasons short
-    n = n_seasons if _calls["i"] == 1 else n_seasons - 3
-    return {"n": n, "ws": {"1": int(n * 0.30)}, "meta": {}}
+    _state["i"] += 1
+    short = _state["i"] > _state["short_after"]
+    n = (n_seasons - 3) if short else n_seasons
+    # a real, reproducible-looking split so the delta is non-zero
+    frac = 0.30 if profiles and profiles.get("__cf__") else 0.34
+    return {"n": n, "ws": {"1": int(n * frac)}, "meta": {}}
 
 
 _ds.run_deep = _fake_run
 try:
-    evs = {"1": [{"pid": 7, "name": "Arm", "pos": "P", "kind": "il_in", "to": "D15"}]}
-    cur = {"1": {g: ([{"id": 7}] if g == "bullpen" else []) for g in dh._GROUPS}}
-    prev = {"1": {g: [] for g in dh._GROUPS}}
-    info = dh.attribute(evs, cur, prev, "2026", seasons=100)
+    def _mk():
+        evs = {"1": [{"pid": 7, "name": "Arm", "pos": "P", "kind": "il_in",
+                      "to": "D15"}]}
+        cur = {"1": {g: ([{"id": 7}] if g == "bullpen" else [])
+                     for g in dh._GROUPS}}
+        prev = {"1": {g: [] for g in dh._GROUPS}}
+        return evs, cur, prev
+
+    # every slice after the first comes back short -> nothing usable
+    _state.update(short_after=1, i=0)
+    evs, cur, prev = _mk()
+    info = dh.attribute(evs, cur, prev, "2026", seasons=100, batches=5)
     ev = evs["1"][0]
-    ck("a short counterfactual is refused, not reported", ev.get("delta_pp") is None,
-       ev.get("delta_pp"))
-    ck("and it says why", "unpaired run" in (ev.get("delta_note") or ""),
+    ck("with too few complete slices, no figure is reported",
+       ev.get("delta_pp") is None, ev.get("delta_pp"))
+    ck("and it says why", "not enough complete runs" in (ev.get("delta_note") or ""),
        ev.get("delta_note"))
     ck("a refused event is not counted as priced", info["priced"] == 0, info)
     ck("its sentence carries no number", "pp" not in dh.sentence(ev), dh.sentence(ev))
+
+    # every slice complete -> a figure WITH an error bar measured from the spread
+    _state.update(short_after=10**9, i=0)
+    evs, cur, prev = _mk()
+    info = dh.attribute(evs, cur, prev, "2026", seasons=100, batches=5)
+    ev = evs["1"][0]
+    ck("with complete slices a figure IS produced", ev.get("delta_pp") is not None,
+       ev.get("delta_pp"))
+    ck("the figure records how many slices backed it", ev.get("batches") == 5,
+       ev.get("batches"))
+    ck("an error bar is attached", ev.get("delta_se") is not None)
+    ck("it reports the seasons actually used, not the seasons asked for",
+       ev.get("measured_on") == 5 * (100 // 5), ev.get("measured_on"))
 finally:
     _ds.run_deep = _orig_run
 

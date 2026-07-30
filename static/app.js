@@ -3920,7 +3920,7 @@ function renderDeepHistory(d) {
 
   const a = d.attribution || {};
   const note = a.priced
-    ? `${a.priced} change${a.priced === 1 ? "" : "s"} priced by re-running the season with that one player reverted, on the same seeds (${(a.seasons || 0).toLocaleString()} paired seasons each, ±${a.se}pp). ${a.skipped ? `${a.skipped} more listed without a number. ` : ""}Anything under ${d.noise_floor}pp is reported as no measurable effect rather than shown as a figure.`
+    ? `${a.priced} change${a.priced === 1 ? "" : "s"} priced by re-running the season with that one player reverted, on the same seeds — ${a.batches}×${(a.per_batch || 0).toLocaleString()} paired seasons each. The ± on a figure is measured from the spread across those runs, so it reflects that change rather than an assumed constant; anything not clearly separated from zero reads "no measurable effect" instead of a number.${a.skipped ? ` ${a.skipped} more change${a.skipped === 1 ? " is" : "s are"} listed without a figure.` : ""}`
     : `Changes are listed; measured pp figures appear once a run has priced them.`;
 
   box.innerHTML = `<div class="histwrap">
