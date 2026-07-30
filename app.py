@@ -263,18 +263,28 @@ def _init_deep_sims():
         except Exception:
             pass
     threading.Thread(target=_restore_history, daemon=True).start()
+    # The scheduler alone decides when heavy work runs, and it runs it one job at
+    # a time after a startup grace period. There used to be an eager warm-up loop
+    # here that fired four uncached season sims immediately -- on a fresh instance
+    # every job is stale, so it raced the scheduler and stacked sims on top of a
+    # container that was still being health-checked. The scheduler already picks
+    # these up; it just does it without taking the instance down.
     deep_cache.start_scheduler()
-    # Warm the in-season / preseason deep runs in the background if not cached.
-    for _k in ("nfl", "nfl_season", "wnba", "cfb"):
-        try:
-            if deep_cache.load(_k)[0] is None:
-                deep_cache.run_job(_k)
-        except Exception:
-            pass
+
+
+_PROBE_PATHS = ("/healthz", "/robots.txt")
 
 
 @app.before_request
 def _bootstrap_recorder():
+    # Platform probes must NOT trigger the bootstrap. The health check is the
+    # first request a fresh instance ever sees, so hanging the recorders and the
+    # sim scheduler off it means the probe pays for all of it -- and if that
+    # exceeds the platform's timeout the instance is killed and restarted before
+    # it can finish, forever. Probes stay a static 200; the first REAL request
+    # starts the background work.
+    if request.path in _PROBE_PATHS:
+        return
     _ensure_recorder()
 
 

@@ -109,6 +109,8 @@ def run_job(key, force=False):
     job = _jobs.get(key)
     if not job or job["running"]:
         return False
+    if not enabled() and not force:
+        return False
     if not force and not _job_stale(key, job):
         return False
 
@@ -149,20 +151,59 @@ def status(key):
                       else is_stale(key, job.get("max_age", DAY)))}
 
 
+def enabled():
+    """Heavy sims can be switched off entirely without a code change -- the kill
+    switch you want when an instance is thrashing and you need it serving."""
+    return (os.environ.get("VIGIL_SIMS", "on") or "on").lower() not in (
+        "0", "off", "false", "no")
+
+
+# Seconds of quiet after boot before ANY heavy job starts. A fresh instance has an
+# empty cache, so every registered job is stale at once; starting them while the
+# platform is still deciding whether the app is healthy is how a deploy ends up in
+# a restart loop.
+STARTUP_GRACE = int(os.environ.get("VIGIL_SIM_STARTUP_GRACE") or 300)
+
+
+def wait_for(key, timeout=None):
+    """Block until a running job finishes. Returns True if it is idle."""
+    job = _jobs.get(key)
+    if not job:
+        return True
+    start = time.time()
+    while job.get("running"):
+        if timeout and (time.time() - start) > timeout:
+            return False
+        time.sleep(5)
+    return True
+
+
 def start_scheduler(check_every=1800):
-    """Background loop: on boot and every `check_every` seconds (default 30 min, so
-    the nightly rerun fires within half an hour of local midnight), kick any stale
-    registered job. Staggered so they don't all fire at once."""
+    """Background loop: after a startup grace period, and every `check_every`
+    seconds (default 30 min, so the nightly rerun fires within half an hour of
+    local midnight), run any stale registered job -- ONE AT A TIME.
+
+    Sequential is the whole point. run_job() only SPAWNS a thread, so the old
+    30-second "stagger" waited for a job to start, not to finish: on a fresh
+    instance every job is stale, and within a few minutes ten 4,000-iteration
+    sims were running at once, each forking its own process pool. That is
+    survivable on a workstation and fatal on a small container -- the health
+    check times out, the platform restarts the instance, the cache is empty
+    again, and it repeats forever. Waiting for each job keeps peak load to one
+    sim no matter how many are registered."""
     global _sched_started
     if _sched_started:
         return
     _sched_started = True
 
     def _loop():
-        time.sleep(20)                         # let the app finish booting
+        time.sleep(STARTUP_GRACE)              # let the app get healthy first
         while True:
             for key in list(_jobs):
-                run_job(key)
-                time.sleep(30)                 # stagger heavy jobs
+                if not enabled():
+                    break
+                if run_job(key):
+                    wait_for(key)              # finish this one before the next
+                time.sleep(2)
             time.sleep(check_every)
     threading.Thread(target=_loop, daemon=True).start()

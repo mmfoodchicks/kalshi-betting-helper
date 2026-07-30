@@ -248,6 +248,85 @@ def t_sim_worker_sizing():
         ds._cgroup_limit = orig
 
 
+def t_boot_is_survivable():
+    """A fresh instance must not take itself down before it is healthy.
+
+    Two failures, both seen for real on a first deploy: the platform's health
+    check was the first request, so it triggered the whole bootstrap and timed
+    out; and the scheduler's "stagger" only waited for a job to START, so every
+    stale job piled up at once and starved the container. Restart, empty cache,
+    repeat."""
+    import time as _t
+    import threading
+    import app as _app
+    import deep_cache as dc
+
+    c = _app.app.test_client()
+    _app._rec_started = False
+    for path in ("/healthz", "/robots.txt"):
+        t0 = _t.time()
+        r = c.get(path)
+        check(f"{path} answers fast", r.status_code == 200 and (_t.time() - t0) < 1.0,
+              f"{r.status_code} in {_t.time()-t0:.2f}s")
+    check("a platform probe does not trigger the bootstrap", not _app._rec_started)
+
+    # heavy jobs must run one at a time no matter how many are stale
+    saved_jobs, saved_started = dict(dc._jobs), dc._sched_started
+    saved_grace = dc.STARTUP_GRACE
+    try:
+        dc._jobs.clear()
+        dc._sched_started = False
+        dc.STARTUP_GRACE = 0
+        live = {"n": 0, "peak": 0}
+        lock = threading.Lock()
+
+        def mk():
+            def run():
+                with lock:
+                    live["n"] += 1
+                    live["peak"] = max(live["peak"], live["n"])
+                _t.sleep(0.4)
+                with lock:
+                    live["n"] -= 1
+                return {"ok": 1}
+            return run
+        for k in "abcdef":
+            dc.register(k, mk())
+            dc._jobs[k]["cadence"] = "age"
+            dc._jobs[k]["max_age"] = 0
+        dc.start_scheduler(check_every=9999)
+        _t.sleep(4.0)
+        check("stale jobs run ONE at a time, not all at once",
+              live["peak"] == 1, f"peak concurrent = {live['peak']}")
+    finally:
+        dc._jobs.clear()
+        dc._jobs.update(saved_jobs)
+        dc._sched_started = saved_started
+        dc.STARTUP_GRACE = saved_grace
+
+    check("there is a startup grace before any heavy work", dc.STARTUP_GRACE > 0,
+          dc.STARTUP_GRACE)
+
+    had = os.environ.get("VIGIL_SIMS")
+    try:
+        os.environ["VIGIL_SIMS"] = "off"
+        import importlib
+        importlib.reload(dc)
+        check("VIGIL_SIMS=off is a real kill switch", not dc.enabled())
+        dc.register("z", lambda: {"a": 1})
+        dc._jobs["z"]["cadence"] = "age"
+        dc._jobs["z"]["max_age"] = 0
+        check("switched off, the scheduler starts nothing", dc.run_job("z") is False)
+        check("but a manual rerun still forces one through",
+              dc.run_job("z", force=True) is True)
+    finally:
+        os.environ.pop("VIGIL_SIMS", None)
+        if had is not None:
+            os.environ["VIGIL_SIMS"] = had
+        import importlib
+        importlib.reload(dc)
+
+
 # ----------------------------------------------------------------- online --
 def t_mask_math_live():
     """Brute-force the combo engine's joint odds on a real game: the popcount
@@ -380,6 +459,7 @@ def main():
     t_pick6_rules()
     t_clock()
     t_sim_worker_sizing()
+    t_boot_is_survivable()
     if online:
         print("== online (live data) ==")
         t_mask_math_live()
