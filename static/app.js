@@ -3847,6 +3847,93 @@ function deepBar(s) {
   </div>`;
 }
 
+// ---------------------------------------------------------------------------
+// "What happened" — day-over-day history of the nightly deep run.
+//
+// Every stored day describes the move from the PREVIOUS run to itself, so the
+// day you are looking at always answers "what changed to get here", including
+// today. The pp figures next to each line are measured, not inferred: each one
+// is a paired counterfactual run with that single player reverted (see
+// deep_history.attribute), which is why some lines have a number and others say
+// the change had no measurable effect.
+let _histDate = null;
+
+async function loadDeepHistory(date) {
+  const box = $("deepHistory");
+  if (!box) return;
+  box.innerHTML = `<div class="histwrap"><div class="small" style="color:var(--muted)">Loading what changed…</div></div>`;
+  try {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    renderDeepHistory(await (await fetch("/api/baseball/futures/deep/history" + q)).json());
+  } catch (e) {
+    box.innerHTML = `<div class="histwrap"><div class="small" style="color:var(--muted)">Couldn't load run history.</div></div>`;
+  }
+}
+
+function _histLine(s) {
+  // Colour only the measured effect, so the sentence itself stays readable.
+  // Matches "+4.1pp" and "+4.1 ± 0.5pp" — the error bar is part of the figure.
+  const m = String(s).match(/^(.*?)\s\s([+-][\d.]+(?:\s±\s[\d.]+)?pp)$/);
+  if (!m) return `<li>${escapeHtml(s)}</li>`;
+  const up = m[2].startsWith("+");
+  return `<li>${escapeHtml(m[1])} <span class="histpp ${up ? "up" : "down"}">${escapeHtml(m[2])}</span></li>`;
+}
+
+function renderDeepHistory(d) {
+  const box = $("deepHistory");
+  if (!box) return;
+  if (!d || d.empty || d.error) {
+    box.innerHTML = `<div class="histwrap"><div class="histhead">📅 What happened</div>
+      <div class="small" style="color:var(--muted)">${escapeHtml((d && (d.message || d.error)) || "No run history yet.")}</div></div>`;
+    return;
+  }
+  _histDate = d.date;
+  const dates = d.dates || [];
+  const i = dates.indexOf(d.date);
+  const newer = i > 0 ? dates[i - 1] : null;          // dates are newest-first
+  const older = i >= 0 && i < dates.length - 1 ? dates[i + 1] : null;
+  const nav = `
+    <div class="histnav">
+      <button class="track-mini" ${older ? "" : "disabled"} onclick="loadDeepHistory('${older || ""}')">‹ prev</button>
+      <input type="date" value="${escapeHtml(d.date)}"
+             min="${escapeHtml(dates[dates.length - 1] || d.date)}"
+             max="${escapeHtml(dates[0] || d.date)}"
+             onchange="loadDeepHistory(this.value)"/>
+      <button class="track-mini" ${newer ? "" : "disabled"} onclick="loadDeepHistory('${newer || ""}')">next ›</button>
+    </div>`;
+
+  const teams = (d.teams || []).filter((t) => (t.what || []).length);
+  const body = teams.length
+    ? teams.map((t) => {
+        const mv = t.move || 0;
+        const cls = mv > 0 ? "up" : mv < 0 ? "down" : "flat";
+        const arrow = (t.ws_prev != null)
+          ? `<span class="small" style="color:var(--muted)">WS ${t.ws_prev}% → ${t.ws}%</span>` : "";
+        return `<div class="histteam">
+          <div class="histteam-hd"><b>${escapeHtml(t.name)}</b>
+            <span class="histmove ${cls}">${mv > 0 ? "+" : ""}${mv.toFixed(1)}pp</span>
+            ${arrow}</div>
+          <ul class="histwhat">${(t.what || []).map(_histLine).join("")}</ul>
+        </div>`;
+      }).join("")
+    : `<div class="small" style="color:var(--muted)">Nothing moved between these two runs — no roster changes and no games played.</div>`;
+
+  const a = d.attribution || {};
+  const note = a.priced
+    ? `${a.priced} change${a.priced === 1 ? "" : "s"} priced by re-running the season with that one player reverted, on the same seeds (${(a.seasons || 0).toLocaleString()} paired seasons each, ±${a.se}pp). ${a.skipped ? `${a.skipped} more listed without a number. ` : ""}Anything under ${d.noise_floor}pp is reported as no measurable effect rather than shown as a figure.`
+    : `Changes are listed; measured pp figures appear once a run has priced them.`;
+
+  box.innerHTML = `<div class="histwrap">
+    <div class="histhead">📅 What happened
+      <span class="small" style="color:var(--muted);font-weight:400">
+        ${d.prev_date ? `changes from ${escapeHtml(d.prev_date)} → ${escapeHtml(d.date)}` : `first stored run (${escapeHtml(d.date)})`}</span>
+    </div>
+    ${nav}
+    ${body}
+    <div class="small" style="color:var(--muted);margin-top:8px">${escapeHtml(note)}</div>
+  </div>`;
+}
+
 // Wall-clock time a cached sim was generated (seconds since epoch) from its age.
 const _genTime = (age) => (Date.now() / 1000) - (age || 0);
 
@@ -3929,7 +4016,10 @@ function renderFeatured(d) {
   $("featuredSummary").innerHTML =
     `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
      <div style="margin-bottom:8px">${deepCtl}</div>
-     <div id="deepProg" style="margin-bottom:8px"></div>`;
+     <div id="deepProg" style="margin-bottom:8px"></div>
+     <div id="deepHistory" style="margin-bottom:8px"></div>`;
+  // Only the deep engine keeps a nightly history; the fast model isn't snapshotted.
+  if (d.engine === "deep") loadDeepHistory(_histDate);
   // Grouped market dropdown (Titles / Season win totals).
   const groups = {};
   d.order.forEach((k) => { const m = d.markets[k]; (groups[m.group] = groups[m.group] || []).push([k, m.label]); });

@@ -190,9 +190,20 @@ def _init_deep_sims():
     def run_mlb():
         import deep_season
         season = str(clock.today_et().year)
-        agg = deep_season.run_deep(season, n_seasons=4000)
+        # Capture the profiles this run actually used, so the day's history is
+        # diffed against the same rosters the numbers came from rather than a
+        # second fetch that may have moved underneath us.
+        profs = {}
+        agg = deep_season.run_deep(season, n_seasons=4000, ret_profiles=profs)
         _deep["agg"] = agg
         _deep["season"] = season
+        # Snapshot + attribution. Best-effort by design: the deep run is the
+        # product, and a history failure must never cost the night's numbers.
+        try:
+            import deep_history
+            deep_history.build_day(agg, season, profs)
+        except Exception:
+            pass
         return {"agg": agg, "season": season}
 
     def run_f1():
@@ -1810,7 +1821,29 @@ def api_baseball_deep_status():
     p["ready"] = bool(_deep.get("agg") and _deep.get("season") == season)
     import deep_cache
     p["age_sec"] = deep_cache.age("mlb_deep")
+    import deep_history
+    p["history_dates"] = deep_history.dates()[:60]
     return jsonify(p)
+
+
+@app.route("/api/baseball/futures/deep/history")
+def api_baseball_deep_history():
+    """What changed between two nightly deep runs, and what each change was worth.
+
+    ?date=YYYY-MM-DD picks a day (default: the newest run). Every day describes
+    the move from the PREVIOUS stored run to itself, so the current day is
+    answerable as soon as its run lands."""
+    import deep_history
+    date = request.args.get("date") or None
+    try:
+        rep = deep_history.report(date)
+    except Exception as e:
+        return jsonify({"error": f"history failed: {e}"}), 502
+    if not rep:
+        return jsonify({"empty": True, "dates": deep_history.dates(),
+                        "message": "No deep-run history yet. It starts building "
+                                   "from the next nightly run."})
+    return jsonify(rep)
 
 
 @app.route("/api/bestbets")

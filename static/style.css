@@ -552,6 +552,25 @@ button.danger { color: var(--no); }
 .deepbar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #7aa2ff); transition: width 0.6s ease; }
 .futrow-click { cursor: pointer; }
 .futrow-click:hover { background: rgba(91, 140, 255, 0.08); }
+
+/* "What happened": day-over-day changes behind the nightly deep run. */
+.histwrap { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.histhead { font-weight: 600; margin-bottom: 8px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.histnav { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.histnav input[type="date"] { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 7px; padding: 4px 7px; font: inherit; font-size: 0.86rem; }
+.histnav button[disabled] { opacity: 0.4; cursor: default; }
+.histteam { border-top: 1px solid var(--border); padding: 8px 0 4px; }
+.histteam:first-of-type { border-top: 0; }
+.histteam-hd { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.histmove { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.86rem; padding: 1px 6px; border-radius: 6px; }
+.histmove.up { color: #46c07a; background: rgba(70, 192, 122, 0.13); }
+.histmove.down { color: #e2685f; background: rgba(226, 104, 95, 0.13); }
+.histmove.flat { color: var(--muted); background: rgba(127, 127, 127, 0.12); }
+.histwhat { margin: 5px 0 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.5; }
+.histwhat li { margin: 1px 0; }
+.histpp { font-variant-numeric: tabular-nums; font-weight: 600; }
+.histpp.up { color: #46c07a; }
+.histpp.down { color: #e2685f; }
 .teamdetail { background: var(--card2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; margin: 6px 0 12px; }
 .teamdetailhead { font-size: 0.92rem; margin-bottom: 8px; }
 .tdclose { float: right; cursor: pointer; color: var(--muted); padding: 0 4px; }

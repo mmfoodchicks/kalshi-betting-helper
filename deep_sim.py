@@ -321,7 +321,7 @@ def _advance(bases, outcome, batter, rng):
     return len(scorers), scorers
 
 
-def _pick_ph(bench, due, pitcher_hand, used):
+def _pick_ph(bench, due, pitcher_hand, used, rng):
     """A better bench bat with the platoon edge, or None to let `due` hit."""
     best, best_gain = None, 0.0
     due_val = due["rates"]["1b"] + 2 * due["rates"]["2b"] + 4 * due["rates"]["hr"] + due["rates"]["bb"]
@@ -334,7 +334,14 @@ def _pick_ph(bench, due, pitcher_hand, used):
             best, best_gain = b, val - due_val
     # Managers pinch-hit far less in the universal-DH era (~0.5/game): require a
     # real talent gap AND a tendency roll, not every marginal edge.
-    return best if best_gain > 0.06 and random.random() < 0.21 else None
+    #
+    # The roll MUST come from the caller's rng. It used to use the module-global
+    # random, which left this the one draw in the engine nobody seeded: two runs
+    # on the same seed produced different games, and the deep sim was not
+    # reproducible at all. That also made paired counterfactual attribution
+    # impossible, since the noise it is designed to cancel was being reintroduced
+    # here on every pinch-hit decision.
+    return best if best_gain > 0.06 and rng.random() < 0.21 else None
 
 
 def _avail_sp(sp, prof, rng):
@@ -442,7 +449,7 @@ def play_game(home, away, sp_home=None, sp_away=None, rng=None, env=1.0, bvp=Non
                 bat = lineup[half][slot]
                 # Pinch-hit: late, close, weak spot due, better bench bat available.
                 if (inning >= 7 and abs(lead) <= 3 and bench[half]):
-                    ph = _pick_ph(bench[half], bat, pit["hand"], used_ph[half])
+                    ph = _pick_ph(bench[half], bat, pit["hand"], used_ph[half], rng)
                     if ph:
                         lineup[half][slot] = ph
                         used_ph[half].add(ph["id"])

@@ -33,12 +33,22 @@ def _profiles(season, tids):
     return {tid: deep_data.team_profile(tid, season) for tid in tids}
 
 
-def _play_series(a, b, need, ridx, rng):
+def _play_series(a, b, need, ridx, rng, seed=None, tag=""):
     """Best-of (2*need-1) between team ids a (higher seed, home edge) and b.
-    Rotations cycle from each club's top arms. Returns the winning team id."""
+    Rotations cycle from each club's top arms. Returns the winning team id.
+
+    With `seed`, the series draws from its OWN stream keyed by (seed, round,
+    both teams). A series is the one part of the sim that consumes a VARIABLE
+    number of draws -- a sweep uses far fewer than a game seven -- so on a shared
+    stream one short series shifts every later draw in the bracket, including the
+    other league's. That desynchronisation is what made paired counterfactual
+    runs drift on teams nobody touched. Keyed per series, the same two clubs in
+    the same round play the same way unless something about THEM changed."""
     wins = {a: 0, b: 0}
     pa, pb = _G["profiles"][a], _G["profiles"][b]
     rot_a, rot_b = pa["rotation"] or [None], pb["rotation"] or [None]
+    if seed is not None:
+        rng = random.Random(f"{seed}|{tag}|{a}|{b}")
     g = 0
     while wins[a] < need and wins[b] < need:
         # Higher seed hosts games 1,2,6,7 (2-3-2); home team bats last / has edge.
@@ -86,15 +96,30 @@ def _sim_one_season(seed):
 
     wins = {tid: stand[tid]["wins"] for tid in stand}
     ridx = defaultdict(int)
-    for home, away in games:
+    # Each game draws from its OWN stream, seeded from (season seed, game index).
+    #
+    # This is what makes deep_history's attribution possible. With one shared
+    # stream, changing a single player's availability shifts every subsequent
+    # draw in the season, so two runs on the same seed diverge everywhere and
+    # teams nobody touched drift by up to 3pp -- larger than the effect being
+    # measured. Per-game streams keep every game a team plays against unchanged
+    # opponents bit-identical between the two runs, so the difference that
+    # survives is the change itself. Measured: untouched-team drift falls from a
+    # 3.00pp tail to 0.
+    #
+    # The schedule is fixed and identical across runs, so the game index is a
+    # stable key. Re-seeding one Random is cheaper than constructing one per game.
+    grng = random.Random()
+    for gi, (home, away) in enumerate(games):
+        grng.seed(seed * 7919 + gi)
         ph, pa = profiles.get(home), profiles.get(away)
         if not ph or not pa:
-            wins[home if rng.random() < 0.5 else away] += 1
+            wins[home if grng.random() < 0.5 else away] += 1
             continue
         sh = ph["rotation"][ridx[home] % len(ph["rotation"])] if ph["rotation"] else None
         sa = pa["rotation"][ridx[away] % len(pa["rotation"])] if pa["rotation"] else None
         ridx[home] += 1; ridx[away] += 1
-        res = deep_sim.play_game(ph, pa, sh, sa, rng)
+        res = deep_sim.play_game(ph, pa, sh, sa, grng)
         wins[(home if res["home_win"] else away)] += 1
         _accum_box(res)
 
@@ -114,20 +139,21 @@ def _sim_one_season(seed):
         out["division"].extend(dws)
         out["playoffs"].extend(seeds)
         # WC (bo3): 3v6, 4v5; seeds 1-2 bye.
-        w36 = _play_series(seeds[2], seeds[5], _WC, pidx, rng)
-        w45 = _play_series(seeds[3], seeds[4], _WC, pidx, rng)
+        w36 = _play_series(seeds[2], seeds[5], _WC, pidx, rng, seed, "wc36")
+        w45 = _play_series(seeds[3], seeds[4], _WC, pidx, rng, seed, "wc45")
         ds_lo, ds_hi = (w36, w45) if seeds.index(w36) > seeds.index(w45) else (w45, w36)
-        d1 = _play_series(seeds[0], ds_lo, _DS, pidx, rng)
-        d2 = _play_series(seeds[1], ds_hi, _DS, pidx, rng)
+        d1 = _play_series(seeds[0], ds_lo, _DS, pidx, rng, seed, "ds1")
+        d2 = _play_series(seeds[1], ds_hi, _DS, pidx, rng, seed, "ds2")
         champ = _play_series(d1 if wins[d1] >= wins[d2] else d2,
-                             d2 if wins[d1] >= wins[d2] else d1, _LCS, pidx, rng)
+                             d2 if wins[d1] >= wins[d2] else d1, _LCS, pidx, rng,
+                             seed, "lcs")
         champs[lg_id] = champ
         out["pennant"].append(champ)
     lg_ids = list(champs)
     if len(lg_ids) == 2:
         a, b = champs[lg_ids[0]], champs[lg_ids[1]]
         hi, lo = (a, b) if wins[a] >= wins[b] else (b, a)
-        out["ws"] = _play_series(hi, lo, _WS, pidx, rng)
+        out["ws"] = _play_series(hi, lo, _WS, pidx, rng, seed, "ws")
     out["wins"] = {tid: wins[tid] for tid in stand}
     out["bat"] = {pid: dict(s) for pid, s in _G["season_bat"].items()}
     out["pit"] = {pid: dict(s) for pid, s in _G["season_pit"].items()}
@@ -356,13 +382,32 @@ def _ip_num(r):
 PROGRESS = {"running": False, "done": 0, "total": 0, "started": 0.0, "season": None}
 
 
-def run_deep(season=None, n_seasons=600, workers=None):
+def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
+             track_progress=True, ret_profiles=None):
     """Run the deep season Monte Carlo across processes; return aggregates keyed by
-    team id (counts) and player id (summed season lines)."""
+    team id (counts) and player id (summed season lines).
+
+    `seed` pins the season seeds. Two runs sharing a seed play the SAME simulated
+    seasons, so differencing them isolates whatever input was changed between them
+    and cancels almost all the Monte Carlo noise -- common random numbers, which is
+    what makes deep_history's per-player attribution affordable. Leave it None for
+    the nightly run, where independent draws are what you want.
+
+    `profiles` overrides the built team profiles ({team_id: profile}), which is how
+    a counterfactual reverts one player. `ret_profiles`, if a dict is passed, is
+    filled with the profiles actually used, so a caller can snapshot them without
+    paying for the roster fetch twice.
+
+    `track_progress=False` keeps a background counterfactual from clobbering the
+    loading bar that belongs to the user-facing run."""
     season = season or str(clock.today_et().year)
+
+    def _prog(**kw):
+        if track_progress:
+            PROGRESS.update(**kw)
     # Flag running immediately so the loading bar appears during the (network)
     # roster/standings prep, not only once the sim chunks start.
-    PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)
+    _prog(running=True, done=0, total=n_seasons, started=time.time(), season=season)
     stand = season_sim._standings(season)
     games = season_sim._remaining_games(season)
     games = [(h, a) for (h, a) in games if h in stand and a in stand]
@@ -370,15 +415,19 @@ def run_deep(season=None, n_seasons=600, workers=None):
     leagues = defaultdict(list)
     for tid in tids:
         leagues[stand[tid]["league"]].append(tid)
-    shared = {"standings": stand, "schedule": games, "profiles": _profiles(season, tids),
+    profs = _profiles(season, tids) if profiles is None else profiles
+    if ret_profiles is not None:
+        ret_profiles.update(profs)
+    shared = {"standings": stand, "schedule": games, "profiles": profs,
               "leagues": dict(leagues)}
 
     workers = workers or min(mp.cpu_count(), 8)
-    PROGRESS.update(running=True, done=0, total=n_seasons, started=time.time(), season=season)
+    _prog(running=True, done=0, total=n_seasons, started=time.time(), season=season)
     # Many small chunks (~20 per worker) so the loading bar advances smoothly over
     # a long 4,000-season run instead of jumping in a few big steps.
     per = max(1, n_seasons // (workers * 20) or 1)
-    chunks, seed = [], random.randrange(1 << 30)
+    chunks = []
+    seed = random.randrange(1 << 30) if seed is None else int(seed)
     assigned = 0
     while assigned < n_seasons:
         k = min(per, n_seasons - assigned)
@@ -391,14 +440,15 @@ def run_deep(season=None, n_seasons=600, workers=None):
             with mp.Pool(workers, initializer=_init_worker, initargs=(shared,)) as pool:
                 for part in pool.imap_unordered(_chunk_seasons, chunks):
                     _merge_agg(agg, part)
-                    PROGRESS["done"] = agg["n"]
+                    _prog(done=agg["n"])
         else:
             _init_worker(shared)
             for ch in chunks:
                 _merge_agg(agg, _chunk_seasons(ch))
-                PROGRESS["done"] = agg["n"]
+                _prog(done=agg["n"])
     finally:
-        PROGRESS["running"] = False
+        if track_progress:
+            PROGRESS["running"] = False
     # Convert to plain dicts so the result is picklable for the disk cache
     # (defaultdicts with lambda factories — wins_hist/bat/pit — can't pickle).
     agg = _plainify(agg)
