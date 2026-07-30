@@ -43,16 +43,32 @@ def init_db():
             ts INTEGER,
             graded INTEGER DEFAULT 0,
             outcome INTEGER,
-            resolved_ts INTEGER)""")
+            resolved_ts INTEGER,
+            mkt REAL)""")
         c.execute("CREATE INDEX IF NOT EXISTS ix_pred_model ON predictions(model, graded)")
+        # `mkt` is the de-vigged market probability at the moment we logged our
+        # own. Without it the graded record can only say whether WE were
+        # calibrated, never whether we beat the price -- and for the ITF matches
+        # that make up most of the tennis board there is no other benchmark:
+        # bookmakers do not price ITF, and Kalshi's settled markets report a
+        # post-resolution last price (0.99), so a close cannot be recovered after
+        # the fact. It has to be captured live or not at all. Added later, so
+        # tolerate an older table that predates it.
+        cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)")}
+        if "mkt" not in cols:
+            c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
 
 
 def log_many(model, rows):
-    """rows: iterable of (ticker, prob 0-1, close_time_epoch|None). One row per
-    ticker ever (the first, pre-settlement prediction) — later re-prices are
-    ignored so we grade the genuine forecast, not a near-settled one."""
+    """rows: iterable of (ticker, prob 0-1, close_time_epoch|None[, mkt 0-1]).
+    One row per ticker ever (the first, pre-settlement prediction) — later
+    re-prices are ignored so we grade the genuine forecast, not a near-settled
+    one. The optional fourth element is the market's own probability at that
+    moment, which is what lets the record answer "did we beat the price"."""
     clean = []
-    for tk, p, ct in rows:
+    for row in rows:
+        tk, p, ct = row[0], row[1], row[2]
+        mk = row[3] if len(row) > 3 else None
         if not tk or p is None:
             continue
         try:
@@ -61,18 +77,24 @@ def log_many(model, rows):
             continue
         if not (0.0 < p < 1.0):
             continue
-        clean.append((tk, model, p, int(ct) if ct else None, int(time.time())))
+        try:
+            mk = float(mk) if mk is not None else None
+        except (TypeError, ValueError):
+            mk = None
+        if mk is not None and not (0.0 < mk < 1.0):
+            mk = None
+        clean.append((tk, model, p, int(ct) if ct else None, int(time.time()), mk))
     if not clean:
         return 0
     with _lock, _conn() as c:
         c.executemany(
-            "INSERT OR IGNORE INTO predictions (ticker, model, prob, close_time, ts) "
-            "VALUES (?,?,?,?,?)", clean)
+            "INSERT OR IGNORE INTO predictions "
+            "(ticker, model, prob, close_time, ts, mkt) VALUES (?,?,?,?,?,?)", clean)
     return len(clean)
 
 
-def log(model, ticker, prob, close_time=None):
-    return log_many(model, [(ticker, prob, close_time)])
+def log(model, ticker, prob, close_time=None, mkt=None):
+    return log_many(model, [(ticker, prob, close_time, mkt)])
 
 
 def pairs(model):
@@ -82,6 +104,39 @@ def pairs(model):
         return [(r["prob"], float(r["outcome"])) for r in c.execute(
             "SELECT prob, outcome FROM predictions "
             "WHERE model=? AND graded=1 AND outcome IS NOT NULL", (model,)).fetchall()]
+
+
+def vs_market(model):
+    """Model against the price it was logged beside, on graded predictions.
+
+    This is the benchmark ITF otherwise has no way to get. Returns None until
+    enough has settled to say anything; `n` is small at first and grows daily.
+
+    Read it the way the odds benchmark is read: `edge` positive means our number
+    carried information the price did not."""
+    import math
+    with _lock, _conn() as c:
+        rows = [(r["prob"], r["mkt"], float(r["outcome"])) for r in c.execute(
+            "SELECT prob, mkt, outcome FROM predictions "
+            "WHERE model=? AND graded=1 AND outcome IS NOT NULL AND mkt IS NOT NULL",
+            (model,)).fetchall()]
+    if len(rows) < 30:
+        return {"n": len(rows), "ready": False}
+
+    def ll(get):
+        s = 0.0
+        for p, m, y in rows:
+            q = min(0.999, max(0.001, get(p, m)))
+            s += -math.log(q if y else 1 - q)
+        return s / len(rows)
+
+    ours, mkt = ll(lambda p, m: p), ll(lambda p, m: m)
+    return {"n": len(rows), "ready": True,
+            "model_logloss": round(ours, 4), "market_logloss": round(mkt, 4),
+            "edge": round(mkt - ours, 4),
+            "model_brier": round(sum((p - y) ** 2 for p, m, y in rows) / len(rows), 4),
+            "market_brier": round(sum((m - y) ** 2 for p, m, y in rows) / len(rows), 4),
+            "beats_market": ours < mkt}
 
 
 def _mark(ticker, graded, outcome=None, resolved_ts=None):
@@ -148,8 +203,10 @@ def _harvest_tennis():
             p = m.get(side) or {}
             # Log the RAW model number, not the calibrated one (avoids feedback).
             fair = p.get("fair_win_raw", p.get("fair_win"))
+            mk = p.get("mkt_win")
             if p.get("ticker") and fair is not None:
-                rows.append((p["ticker"], fair / 100.0, ct))
+                rows.append((p["ticker"], fair / 100.0, ct,
+                             (mk / 100.0) if mk is not None else None))
     return log_many("tennis", rows)
 
 
@@ -165,8 +222,10 @@ def _harvest_ufc():
         for side in ("a", "b"):
             f = bt.get(side) or {}
             fair = f.get("fair_win_raw", f.get("fair_win"))
+            mk = f.get("mkt_win")
             if f.get("ticker") and fair is not None:
-                rows.append((f["ticker"], fair / 100.0, f.get("close_time")))
+                rows.append((f["ticker"], fair / 100.0, f.get("close_time"),
+                             (mk / 100.0) if mk is not None else None))
     return log_many("ufc", rows)
 
 

@@ -333,12 +333,22 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
                # stop (serp_surface). Only reached when the keyword map has no
                # opinion, which for ITF is most of the board.
                or (serp_surfaces or {}).get(tournament))
-    # A wrong surface is worse than no surface. An unidentified stop used to be
-    # labelled Hard outright, so in the European summer -- when the ITF calendar is
-    # mostly clay and ITF is over 90% of the board -- every one of those matches was
-    # modelled on hard-court serve numbers. When the surface is genuinely unknown,
-    # use the player's SURFACE-AGNOSTIC overall profile instead: match_rates falls
-    # back to `overall` for any surface key it doesn't hold.
+    # Nothing matched. What that MEANS depends on the tier, and conflating the two
+    # is what made this wrong in both directions at different times.
+    #
+    # On the ATP/WTA tour, falling through really does mean hard court: the tour
+    # calendar is small and enumerable, and tennis_live's keyword lists name its
+    # clay and grass stops specifically, so the residual is the hard swing. That
+    # was the original design and it was right -- for the tour.
+    #
+    # At ITF it is not: hundreds of stops a year, no list can cover them, and in
+    # the European summer most of the ones that fall through are clay. Defaulting
+    # those to Hard modelled clay matches on hard-court serve numbers. They stay
+    # UNKNOWN and get the player's surface-agnostic overall profile instead
+    # (match_rates falls back to `overall` for any key it doesn't hold), which is
+    # the honest answer when we genuinely do not know.
+    if surface is None and not tour_label.startswith("ITF"):
+        surface = "Hard"
     surf_key = surface or "__unknown__"
     # Best-of-5 only for men's Grand Slam matches. The ticker carries NO
     # tournament (just [date][3 letters per player] — "NARdi GUErrieri"
@@ -601,8 +611,12 @@ def _compute(n_sims=12000):
     serp_surfaces = {}
     try:
         import serp_surface
-        unknown = {t for _, _, _, _, _, t in slate
-                   if t and not _surface_of(t)}
+        # ITF stops only. A tour event falls through to Hard by construction (see
+        # _build_match), and its bare Kalshi name is too generic to search well
+        # anyway -- "Washington tennis tournament court surface" came back split
+        # 5-5 between clay and hard. Spending the quota there would buy noise.
+        unknown = {t for label, _, _, _, _, t in slate
+                   if t and label.startswith("ITF") and not _surface_of(t)}
         if unknown:
             serp_surfaces = serp_surface.resolve(sorted(unknown))
     except Exception:
