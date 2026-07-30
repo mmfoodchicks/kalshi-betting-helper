@@ -103,7 +103,12 @@ def main():
     if worst[0] >= 10:
         print(f"\n  BIGGEST MISS: {worst[1]} -- books {worst[2]:.1f}%, "
               f"ours {worst[4]:.1f}% ({worst[4]-worst[2]:+.1f}pp, {worst[5]})")
-        print("  A double-digit gap against 7-8 books is our bug, not an edge.")
+        print("  A double-digit gap against 7-8 books is USUALLY our bug, not an edge.")
+        print("  But check the matchup before assuming so: books price injury news,")
+        print("  late withdrawals and retirements that no results-based model can see.")
+        print("  A slate here had eight books unanimously at 1.50 on a teenager over a")
+        print("  top-20 seed -- that is not a rating error, it is information we do")
+        print("  not have, and no amount of fitting will recover it.")
     return 0
 
 

@@ -30,6 +30,11 @@ _ELO_MIN = 8              # min settled matches before an Elo-only read is trust
 # (small k -> keep our read); a provisional Elo on an obscure ITF player is not,
 # so it defers hard (large k) -- a 5-match Elo never overrides a liquid price.
 _BLEND_K = {"serve": 12.0, "serve+elo": 14.0, "elo": 30.0, "market": 12.0}
+# Serve-sim share of the win probability: _SERVE_CAP * n/(n + _SERVE_K), where n is
+# the charted-match depth behind the THINNER player. Fitted -- see the long note at
+# the use site. ~0.00 on an unknown junior, ~0.10 at 20 charted matches, ~0.17 at
+# 50, approaching 0.30 for the best-documented pairs.
+_SERVE_CAP, _SERVE_K = 0.30, 40.0
 
 # (display label, Kalshi series, data tour-code). ATP/WTA are the charted tours;
 # ITF is the lowest pro tier -- its players are mostly absent from the Match
@@ -406,7 +411,34 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         a["hold"], b["hold"] = sim["holdA"], sim["holdB"]
         a["prof"], b["prof"] = ra[4], rb[4]
         if elo_ok:                              # ensemble the two independent reads
-            model_pa = round(0.55 * sim["p_a"] + 0.45 * elo_pa, 1)
+            # The serve sim's share of the WIN probability, scaled by how much
+            # charting stands behind the thinner of the two players.
+            #
+            # This was a flat 0.55, chosen when the Elo was two months of Kalshi
+            # results and the weaker half. With 20 years of ATP history behind it
+            # that is now backwards, and three independent checks agree: on a
+            # point-in-time walk of the charting archive the held-out log loss
+            # falls monotonically as serve weight drops (0.6273 at 0.55 vs 0.5647
+            # at zero); against an 8-book consensus the PRODUCTION serve sim sits
+            # 18.0pp out while the Elo sits 10.7pp; and depth-scaled variants beat
+            # every flat weight above 0.15.
+            #
+            # The scaling is what makes a low weight safe rather than blunt. The
+            # serve model's failure mode is thin charting: rates shrink to the
+            # league average, so a junior with 0.2 charted matches came out at 36%
+            # against de Minaur (books: 10.7%). Weighting by depth gives that
+            # match essentially pure Elo while leaving a well-charted pair with a
+            # real serve contribution.
+            #
+            # Kept deliberately conservative rather than following the fit to
+            # zero: the backtest's serve model is a simplified one (no surface
+            # split, fixed ace/df, no handedness or H2H), so it understates what
+            # ships here. The derived markets -- games, sets, aces, straight sets
+            # -- still come entirely from the sim and are unaffected.
+            depth = min(a["n"] or 0.0, b["n"] or 0.0)
+            w_serve = _SERVE_CAP * depth / (depth + _SERVE_K)
+            model_pa = round(w_serve * sim["p_a"] + (1 - w_serve) * elo_pa, 1)
+            a["serve_weight"] = b["serve_weight"] = round(w_serve, 3)
             source = "serve+elo"
             # Confidence in an ENSEMBLE is bounded by its weakest component, not
             # its strongest. This was max(), which was survivable while the Elo
