@@ -29,6 +29,7 @@ _SERIES = [("KXATPMATCH", "m", 1600.0), ("KXWTAMATCH", "w", 1600.0),
            ("KXITFMATCH", "m", 1400.0), ("KXITFWMATCH", "w", 1400.0)]
 _K = 24.0
 _MAX_PAGES = 22                      # bound the ITF firehose per series
+_FORM_WIN = 8                        # recent results kept per player
 
 
 def _norm(s):
@@ -116,8 +117,10 @@ def _build():
             if not wn or not ln or wn == ln:
                 continue
             # first appearance starts at the tier of that match (tour vs ITF)
-            W = pool.setdefault(wn, {"elo": tier_start, "n": 0, "name": win, "last": date})
-            L = pool.setdefault(ln, {"elo": tier_start, "n": 0, "name": los, "last": date})
+            W = pool.setdefault(wn, {"elo": tier_start, "n": 0, "name": win,
+                                     "last": date, "res": []})
+            L = pool.setdefault(ln, {"elo": tier_start, "n": 0, "name": los,
+                                     "last": date, "res": []})
             ew = 1.0 / (1.0 + 10 ** ((L["elo"] - W["elo"]) / 400.0))
             kw = _K * (1.6 if W["n"] < 10 else 1.0)    # provisional boost
             kl = _K * (1.6 if L["n"] < 10 else 1.0)
@@ -126,6 +129,16 @@ def _build():
             W["n"] += 1; L["n"] += 1
             W["last"] = L["last"] = date
             W["name"], L["name"] = win, los
+            # Recent results, with the pre-match expectation that produced them.
+            # This is the only form signal that reaches ITF -- the ESPN crawl in
+            # tennis_prices covers ATP/WTA only, which is under a tenth of the
+            # board. Kept to the last few matches per player.
+            W["res"].append((date, 1, round(ew, 4)))
+            L["res"].append((date, 0, round(1.0 - ew, 4)))
+            if len(W["res"]) > _FORM_WIN:
+                del W["res"][0]
+            if len(L["res"]) > _FORM_WIN:
+                del L["res"][0]
     return pools
 
 
@@ -137,6 +150,45 @@ def pools():
 def rate(name, gender="m"):
     """{elo, n, name} for a player in the men's/women's pool, or None."""
     return pools().get(gender, {}).get(_norm(name))
+
+
+def form(name, gender="m"):
+    """Recent-results form for a player, or None.
+
+    {w, l, streak, delta, n, last} where `streak` is signed consecutive results
+    (newest first) and `delta` is the recency-weighted (actual - expected) run:
+    0 means performing exactly to rating, negative means losing more than the
+    rating implies -- a slump in the only sense that is measurable.
+
+    REPORTED, NOT MODELLED. Adding this to the rating was backtested over 19,278
+    settled matches (tests/tennis_form_check.py): a linear form term, a
+    threshold-on-extremes term and a streak term all failed to beat the plain Elo
+    out of sample. The bucket tables that look convincing in-sample turn out to be
+    draw depth (a win streak means you have advanced to a harder opponent) and
+    rating immaturity, not momentum. It is surfaced so a human can see the context
+    behind a price; it does not move our number."""
+    r = pools().get(gender, {}).get(_norm(name))
+    if not r:
+        return None
+    res = r.get("res") or []
+    if not res:
+        return None
+    newest = list(reversed(res))                 # newest first
+    w = sum(1 for _, won, _ in newest if won)
+    streak = 0
+    for _, won, _ in newest:
+        if streak and won != newest[0][1]:
+            break
+        streak += 1
+    num = den = 0.0
+    for i, (_, won, exp) in enumerate(newest):
+        wt = 0.5 ** (i / 4.0)
+        num += wt * (won - exp)
+        den += wt
+    return {"w": w, "l": len(newest) - w,
+            "streak": streak if newest[0][1] else -streak,
+            "delta": round(num / den, 3) if den else 0.0,
+            "n": len(newest), "last": newest[0][0]}
 
 
 def win_prob(elo_a, elo_b):

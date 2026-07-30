@@ -35,8 +35,21 @@ _CLAY_KW = ("roland garros", "french open", "monte carlo", "monte-carlo", "madri
             "buenos aires", "rio", "santiago", "iasi", "prague", "warsaw",
             "bogota", "parma", "cagliari", "belgrade", "sardegna", "olomouc",
             "porto", "nordea", "swiss open", "croatia open",
-            # ITF clay events commonly carry these host towns
-            "villa constitucion", "castelo branco")
+            # ITF stops. These matter far more than the tour list: ITF is over 90%
+            # of a typical Kalshi tennis board, and until the ITF path started
+            # consulting this map (see tennis_prices._surface_of) every one of them
+            # fell through to a blind "Hard".
+            #
+            # Kept deliberately SHORT. Surface is a property of a specific venue,
+            # not of a city, and no free source we can reach publishes it for the
+            # ITF calendar (the ITF site is bot-walled, Sofascore 403s, ESPN carries
+            # no surface field and no ITF). Guessing a long list of host towns would
+            # just reintroduce confident-but-wrong labels in a new place. Anything
+            # absent here resolves to unknown, which tennis_prices now models
+            # surface-agnostically off the player's overall profile -- the right
+            # answer when we don't know, and the reason this list can stay small.
+            "villa constitucion", "castelo branco", "koszalin", "hechingen",
+            "kursumlijska banja", "santa margherita", "cordenons")
 # US/indoor/AO hard swings are the default, so no explicit HARD list is needed.
 
 

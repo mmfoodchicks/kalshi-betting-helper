@@ -51,16 +51,48 @@ def _norm(s):
     return " ".join("".join(c for c in s.lower() if c.isalnum() or c == " ").split())
 
 
+_FATIGUE_W = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.42, 4: 0.28, 5: 0.18, 6: 0.1}
+
+
+def _comp_day(comp, today):
+    """Days ago this match was actually PLAYED, from the match's own timestamp.
+
+    Essential, not cosmetic: ESPN's tennis scoreboard ignores the `dates` filter
+    for completed matches inside a live event -- querying any day of a tournament
+    returns every match already played there. Measured on a real slate, 133 of 172
+    completed matches came back on all five days crawled. Keying recency off the
+    QUERY day therefore counted one match up to seven times, each at a different
+    weight, and took rest_days = min(query offsets) = 0 for anyone whose event was
+    still running. Loads ran ~3.4x high and rest_days only ever came back 0, 3 or
+    4 -- never 1, 2, 5 or 6, which is the tell."""
+    ds = (comp.get("date") or comp.get("startDate") or "")[:10]
+    if len(ds) != 10:
+        return None
+    try:
+        d = datetime.date(int(ds[:4]), int(ds[5:7]), int(ds[8:10]))
+    except ValueError:
+        return None
+    return (today - d).days
+
+
 def _fatigue_index():
-    """{norm_name: {load, rest_days, recent}} from a short crawl of ESPN's dated
-    tennis scoreboards. `load` is recency-weighted recent sets played (a 3-setter
-    yesterday costs more than a 2-setter last week); `rest_days` is days since the
-    player's last match. Together these are the differential fatigue signal the sim
-    uses -- tennis is brutal on tired legs, especially in deciding sets."""
+    """{norm_name: {load, rest_days, recent, wins, losses, streak}} from a short
+    crawl of ESPN's dated tennis scoreboards.
+
+    `load` is recency-weighted recent sets played (a 3-setter yesterday costs more
+    than a 2-setter last week); `rest_days` is days since the player's last match.
+    Together these are the differential fatigue signal the sim uses -- tennis is
+    brutal on tired legs, especially in deciding sets.
+
+    `wins`/`losses`/`streak` are recent RESULTS. The same payload carries the
+    winner flag, so form comes free with the fatigue crawl. It is reported for
+    context only and deliberately does NOT move the probability: measured over
+    19,278 settled matches, a form or streak term added to the rating produced no
+    out-of-sample gain (tests/tennis_form_check.py). Displayed, not modelled."""
     def build():
         today = clock.today_et()
-        wmap = {0: 1.0, 1: 0.8, 2: 0.6, 3: 0.42, 4: 0.28, 5: 0.18, 6: 0.1}
         agg = {}
+        seen = set()                       # ESPN repeats a match on every event day
         for tour in ("atp", "wta"):
             for i in range(7):
                 d = today - datetime.timedelta(days=i)
@@ -76,37 +108,54 @@ def _fatigue_index():
                         for c in (g.get("competitions") or []):
                             if c.get("status", {}).get("type", {}).get("state") != "post":
                                 continue
+                            cid = c.get("id") or c.get("uid")
+                            if cid in seen:
+                                continue          # already counted on another day
+                            seen.add(cid)
+                            ago = _comp_day(c, today)
+                            if ago is None or not (0 <= ago <= 6):
+                                continue
                             comps = c.get("competitors") or []
                             sets = max((len(x.get("linescores") or []) for x in comps), default=2) or 2
                             for x in comps:
                                 nm = _norm((x.get("athlete") or {}).get("displayName"))
                                 if not nm:
                                     continue
-                                a = agg.setdefault(nm, {"load": 0.0, "rest_days": 99, "recent": []})
-                                a["load"] += wmap.get(i, 0.0) * sets
-                                a["rest_days"] = min(a["rest_days"], i)
-                                if len(a["recent"]) < 4:
-                                    a["recent"].append({"days_ago": i, "sets": sets})
+                                a = agg.setdefault(nm, {"load": 0.0, "rest_days": 99,
+                                                        "recent": [], "wins": 0, "losses": 0})
+                                a["load"] += _FATIGUE_W.get(ago, 0.0) * sets
+                                a["rest_days"] = min(a["rest_days"], ago)
+                                won = bool(x.get("winner"))
+                                a["wins" if won else "losses"] += 1
+                                a["recent"].append({"days_ago": ago, "sets": sets,
+                                                    "won": won})
+        for a in agg.values():
+            # newest first, and a signed streak off the ordered results
+            a["recent"].sort(key=lambda r: r["days_ago"])
+            a["recent"] = a["recent"][:6]
+            s = 0
+            for r in a["recent"]:
+                if s and (r["won"] != a["recent"][0]["won"]):
+                    break
+                s += 1
+            a["streak"] = s if a["recent"] and a["recent"][0]["won"] else -s
         return agg
     return racing._cached(("tennis_fatigue",), 3 * 3600, build) or {}
 
 
-def _surface_for(date):
-    """Calendar FALLBACK surface, used only when the tournament couldn't be
-    identified (tennis_live.surface_map is the real source). Never returns Grass:
-    grass is a tiny ~5-week window and low-level ITF events — the bulk of the
-    unidentified pool — are essentially never on grass, so a blind grass default
-    is almost always wrong. Grass comes exclusively from the keyword map. This
-    leaves Clay (the European spring swing) vs Hard (everything else)."""
+def _surface_of(tournament):
+    """Surface from a tournament NAME ('M25 Koszalin'), or None if unrecognised.
+
+    Thin wrapper so the ITF board can use the same keyword map the ATP/WTA board
+    does -- tennis_live is imported lazily elsewhere in this module, so keep that
+    shape here too."""
+    if not tournament:
+        return None
     try:
-        d = datetime.date(int(date[:4]), int(date[4:6]), int(date[6:8]))
+        import tennis_live
+        return tennis_live.surface_of(tournament)
     except Exception:
-        d = clock.today_et()
-    md = (d.month, d.day)
-    # European clay season: mid-April through Roland Garros (early June).
-    if (4, 15) <= md < (6, 9):
-        return "Clay"
-    return "Hard"
+        return None
 
 
 def _tourney_from_title(title):
@@ -185,8 +234,10 @@ def _insights(a, b, sim, surface, trusted=True):
         if abs(sim["holdA"] - sim["holdB"]) >= 6:
             s = a if sim["holdA"] > sim["holdB"] else b
             out.append(f"🎾 {s['name'].split()[-1]} serves bigger (holds {max(sim['holdA'], sim['holdB'])}% vs {min(sim['holdA'], sim['holdB'])}%)")
-        # surface edge: player's surface serve rate well above their overall
-        for p in (a, b):
+        # Surface edge: player's surface serve rate well above their overall. Only
+        # when we actually know the surface -- an unidentified stop is modelled on
+        # the surface-agnostic overall profile, where this comparison is vacuous.
+        for p in (a, b) if surface else ():
             prof = p.get("prof")
             if not prof:
                 continue
@@ -222,7 +273,31 @@ def _insights(a, b, sim, surface, trusted=True):
         sets = rec.get("sets")
         detail = f"{sets}-set match {when}" if sets else "a heavier recent load"
         out.append(f"😮‍💨 Fatigue edge: {fresh['name'].split()[-1]} is fresher ({tired['name'].split()[-1]} had {detail})")
-    return out[:6]
+    # Recent form. Flagged only at the extremes, and always as CONTEXT -- the
+    # backtest in tennis_elo.form found no out-of-sample edge in a form term, so
+    # this never claims the price is wrong, it just says what has been happening.
+    # Thresholds are set against what is actually OBSERVABLE, which is lopsided:
+    # in a knockout draw everyone still playing won their last match, so on a real
+    # board ~73% of players sit at streak +1 and barely 2% are negative. A player
+    # on a losing run is, by construction, already out of the tournament -- they
+    # only reappear at the start of the next one. "Fade the slump" therefore has
+    # very little surface area in tennis, which is why a losing streak of 2 is
+    # already noteworthy while a winning streak needs 5 to mean anything.
+    for p in (a, b):
+        f = p.get("form")
+        if not f or f["n"] < 4:
+            continue
+        last = p["name"].split()[-1]
+        if f["streak"] <= -2:
+            out.append(f"❄️ {last} arrives on a {-f['streak']}-match losing run "
+                       f"({f['w']}-{f['l']} over the last {f['n']}) — context, not priced in")
+        elif f["streak"] >= 5:
+            out.append(f"🔥 {last} has won {f['streak']} straight "
+                       f"({f['w']}-{f['l']} over the last {f['n']}) — context, not priced in")
+        elif f["delta"] <= -0.15:
+            out.append(f"📉 {last} is {f['w']}-{f['l']} recently, below what that "
+                       f"rating implies — context, not priced in")
+    return out[:7]
 
 
 def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
@@ -240,13 +315,21 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     if not tournament and tourn_map:
         tournament = (tourn_map.get(_norm(players[0]["name"]))
                       or tourn_map.get(_norm(players[1]["name"])))
-    # Real surface from the tournament (ESPN) when we can identify it; the
-    # calendar heuristic is only the fallback. Surface is a top driver in tennis,
-    # and the calendar can't tell post-Wimbledon clay from the concurrent US hard
-    # swing, so a correct surface here is a genuine accuracy win.
+    # Real surface, in order of reliability: the ESPN tournament map, then the
+    # tournament NAME off the Kalshi title. That second route is the only one that
+    # ever reaches ITF -- surface_map is built from ESPN scoreboards, which carry
+    # ATP/WTA only (45 players on a 219-match board) -- and it was previously never
+    # consulted, so the ITF clay towns in tennis_live._CLAY_KW were dead code.
     smap = surface_map or {}
     surface = (smap.get(_norm(players[0]["name"])) or smap.get(_norm(players[1]["name"]))
-               or _surface_for(date))
+               or _surface_of(tournament))
+    # A wrong surface is worse than no surface. An unidentified stop used to be
+    # labelled Hard outright, so in the European summer -- when the ITF calendar is
+    # mostly clay and ITF is over 90% of the board -- every one of those matches was
+    # modelled on hard-court serve numbers. When the surface is genuinely unknown,
+    # use the player's SURFACE-AGNOSTIC overall profile instead: match_rates falls
+    # back to `overall` for any surface key it doesn't hold.
+    surf_key = surface or "__unknown__"
     # Best-of-5 only for men's Grand Slam matches. The ticker carries NO
     # tournament (just [date][3 letters per player] — "NARdi GUErrieri"
     # contains "RG" and used to price as a five-setter), so slam status comes
@@ -258,8 +341,8 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # ITF: exact-name match only (no last-name fuzzy) so we never attach a charted
     # ATP/WTA player to an unrelated lower-tier player and invent an edge.
     fuzzy = not tour_label.startswith("ITF")
-    ra = td.match_rates(players[0]["name"], surface, tcode, fuzzy=fuzzy)
-    rb = td.match_rates(players[1]["name"], surface, tcode, fuzzy=fuzzy)
+    ra = td.match_rates(players[0]["name"], surf_key, tcode, fuzzy=fuzzy)
+    rb = td.match_rates(players[1]["name"], surf_key, tcode, fuzzy=fuzzy)
     lg = td.league(tcode)
 
     a = {"name": players[0]["name"], "cents": players[0]["cents"], "ticker": players[0]["ticker"]}
@@ -279,6 +362,13 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         elo_pa = round(100.0 * tennis_elo.win_prob(ea["elo"], eb["elo"]), 1)
         a["elo"], b["elo"] = round(ea["elo"]), round(eb["elo"])
         a["elo_n"], b["elo_n"] = ea["n"], eb["n"]
+    # Recent form from settled results. The ESPN fatigue crawl above is ATP/WTA
+    # only -- under a tenth of a typical board -- so form for the ITF bulk comes
+    # from the same settled-match store the Elo is built on. Context for a human
+    # reading the price, deliberately not an input to the probability: see
+    # tennis_elo.form for the backtest that rejected wiring it in.
+    a["form"] = tennis_elo.form(a["name"], tcode)
+    b["form"] = tennis_elo.form(b["name"], tcode)
     elo_n = min((ea or {}).get("n", 0), (eb or {}).get("n", 0)) if (ea and eb) else 0
     elo_ok = elo_pa is not None and elo_n >= _ELO_MIN
 
@@ -405,7 +495,10 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     kalshi_series = {"ATP": "ATP", "WTA": "WTA",
                      "ITF": "ITF", "ITF-W": "ITF Women"}.get(tour_label, "Tennis")
     match = {"event": ev, "tour": tour_label, "date": date, "start": start,
-             "surface": surface,
+             # None when the stop couldn't be identified -- say so rather than
+             # printing a confident "Hard" the model isn't actually using.
+             "surface": surface or "Unknown",
+             "surface_known": surface is not None,
              "best_of": best_of, "a": a, "b": b, "conf_tier": tier, "modeled": modeled,
              "model_source": source, "tradeable": tradeable, "overround": overround,
              "tournament": tournament, "kalshi_series": kalshi_series,
