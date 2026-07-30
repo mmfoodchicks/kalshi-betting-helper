@@ -252,7 +252,85 @@ finally:
 
 print()
 print("=" * 74)
-print("6. Attribution budget and honesty")
+print("6. Export / restore (the repo is the only durable storage)")
+print("=" * 74)
+import json as _json
+import shutil as _shutil
+import tempfile as _tf
+
+import deep_cache as _dc2
+
+_od = _dc2.CACHE_DIR
+_dc2.CACHE_DIR = _tf.mkdtemp(prefix="dhx_")
+try:
+    big = {str(i): {j: {"name": f"P{j}", "pos": "P", "status": "A",
+                        "ip": 10.0, "er": 4, "era": 3.6} for j in range(40)}
+           for i in range(30)}
+    dh.save_day({"date": "2026-07-28", "teams": {"1": {"name": "A", "ws": 5.0}},
+                 "roster": big, "events": {}, "moves": {}})
+    dh.save_day({"date": "2026-07-29", "teams": {"1": {"name": "A", "ws": 6.0}},
+                 "roster": big, "events": {}, "moves": {"1": 1.0}})
+    dh.save_day({"date": "2026-07-30", "teams": {"1": {"name": "A", "ws": 7.0}},
+                 "roster": big, "events": {}, "moves": {"1": 1.0}})
+    ck("only the newest day keeps a roster fingerprint",
+       dh.load_day("2026-07-30").get("roster")
+       and not dh.load_day("2026-07-29").get("roster"),
+       [bool(dh.load_day(d).get("roster")) for d in dh.dates()])
+
+    b = dh.export_bundle()
+    ck("bundle is JSON-serialisable (it is committed as text)",
+       isinstance(_json.dumps(b), str))
+    ck("bundle carries every stored day", len(b["days"]) == 3, len(b["days"]))
+    ck("bundle keeps exactly one roster (the newest)",
+       sum(1 for d in b["days"] if d.get("roster")) == 1)
+    ck("the retained roster is the newest day's",
+       (b["days"][0].get("date") == "2026-07-30") and bool(b["days"][0].get("roster")))
+    ck("bundle is versioned so a future format can be detected", b.get("format") == 1)
+
+    # a restore into an empty host
+    _shutil.rmtree(_dc2.CACHE_DIR, ignore_errors=True)
+    _dc2.CACHE_DIR = _tf.mkdtemp(prefix="dhx2_")
+    ck("host starts with nothing", dh.dates() == [])
+    res = dh.import_bundle(b)
+    ck("restore loads every day", res["loaded"] == 3, res)
+    ck("restored dates match", dh.dates() == ["2026-07-30", "2026-07-29", "2026-07-28"],
+       dh.dates())
+    ck("restored content survives the round trip",
+       dh.load_day("2026-07-29")["teams"]["1"]["ws"] == 6.0)
+    ck("the newest roster survives, so the next run can still diff",
+       bool(dh.load_day("2026-07-30").get("roster")))
+
+    # a restore must never clobber a fresher local run
+    dh.save_day({"date": "2026-07-30", "teams": {"1": {"name": "A", "ws": 99.0}},
+                 "roster": {}, "events": {}, "moves": {}})
+    res2 = dh.import_bundle(b)
+    ck("restore skips days already present", res2["skipped"] >= 1, res2)
+    ck("a newer local day is NOT overwritten by an older repo copy",
+       dh.load_day("2026-07-30")["teams"]["1"]["ws"] == 99.0)
+    dh.import_bundle(b, overwrite=True)
+    ck("overwrite=True does replace it",
+       dh.load_day("2026-07-30")["teams"]["1"]["ws"] == 7.0)
+
+    ck("garbage bundle is refused, not imported",
+       dh.import_bundle({"nope": 1})["loaded"] == 0)
+    ck("None bundle is refused", dh.import_bundle(None).get("error"))
+    ck("a day with no date is skipped rather than saved under None",
+       dh.import_bundle({"days": [{"teams": {}}]}, overwrite=True)["loaded"] == 0)
+finally:
+    _shutil.rmtree(_dc2.CACHE_DIR, ignore_errors=True)
+    _dc2.CACHE_DIR = _od
+
+ck("restore points at a branch that is NOT the deploy branch",
+   dh.GH_BRANCH != "claude/kalshi-crypto-predictor-ckutwm", dh.GH_BRANCH)
+ck("the raw URL is well formed",
+   dh._raw_url("history/mlb/bundle.json").startswith(
+       "https://raw.githubusercontent.com/") and dh.GH_BRANCH in dh._raw_url("x"))
+ck("an unreachable repo degrades to no history, not an exception",
+   isinstance(dh.restore_from_github(timeout=0.001), dict))
+
+print()
+print("=" * 74)
+print("7. Attribution budget and honesty")
 print("=" * 74)
 ck("attribution is capped", dh._MAX_ATTRIB <= 16, dh._MAX_ATTRIB)
 ck("a noise floor is set and non-trivial", dh.noise_floor() > 0)

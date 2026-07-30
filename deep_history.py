@@ -131,16 +131,15 @@ def _roster_fingerprint(season, tids):
         for pid, r in lines.items():
             rec = {"name": r.get("name"), "pos": r.get("pos"),
                    "status": r.get("status") or "A"}
-            p, b = r.get("pit"), r.get("bat")
+            # Pitching only. _events raises form flags for arms and not for bats
+            # -- a hitter's rest-of-season rate barely twitches on one game -- so
+            # carrying batter lines here would be bytes we never read, and this
+            # fingerprint is committed to a public repo nightly.
+            p = r.get("pit")
             if p:
-                rec["ip"] = _ip(p.get("ip"))
+                rec["ip"] = round(_ip(p.get("ip")), 2)
                 rec["er"] = round(_f(p.get("r")))      # runs allowed (season)
-                rec["era"] = _f(p.get("era"))
-                rec["gs"] = p.get("gs") or 0
-            if b:
-                rec["pa"] = _f(b.get("pa"))
-                rec["ops"] = _f(b.get("ops"))
-                rec["hr"] = _f(b.get("hr"))
+                rec["era"] = round(_f(p.get("era")), 2)
             team[int(pid)] = rec
         out[tid] = team
     return out
@@ -179,8 +178,23 @@ def _key(date):
 
 def save_day(rec):
     deep_cache.save(_key(rec["date"]), rec)
+    _shed_old_rosters()
     prune()
     return rec["date"]
+
+
+def _shed_old_rosters():
+    """Keep the roster fingerprint on the newest day only.
+
+    It exists to diff the next run against, and once that diff is done it is dead
+    weight -- roughly 100KB per day that would otherwise pile up in the cache and
+    in every nightly commit."""
+    for d in dates()[1:]:
+        rec = load_day(d)
+        if rec and rec.get("roster"):
+            rec.pop("roster", None)
+            rec["roster_shed"] = True
+            deep_cache.save(_key(d), rec)
 
 
 def load_day(date):
@@ -485,6 +499,93 @@ def build_day(agg, season, cur_profiles, attribute_events=True, log=None):
     except Exception:
         pass
     return rec
+
+
+# ------------------------------------------------- durable copy in the repo ---
+# The app runs on a host with no persistent disk: the deep cache is wiped on every
+# restart and redeploy, so a calendar kept only on that disk quietly empties
+# itself. The one thing that does survive is the GitHub repo, so the history is
+# mirrored there as plain JSON.
+#
+# The app never writes to GitHub and holds no token. A scheduled Action PULLS
+# `export_bundle()` from the running app and commits it -- the same direction the
+# existing weekly-sim workflow already works in, using the Action's own
+# GITHUB_TOKEN. The app only ever reads back, and since the repo is public that
+# needs no credentials either.
+#
+# It commits to a SEPARATE branch. The repo's default branch is the one Render
+# auto-deploys from, so nightly commits there would redeploy the app every night
+# -- restarting it, wiping the very cache this exists to protect, and possibly
+# killing a running sim.
+GH_OWNER = os.environ.get("VIGIL_GH_OWNER", "mmfoodchicks")
+GH_REPO = os.environ.get("VIGIL_GH_REPO", "kalshi-betting-helper")
+GH_BRANCH = os.environ.get("VIGIL_GH_HISTORY_BRANCH", "sim-history")
+GH_DIR = "history/mlb"
+_RAW = "https://raw.githubusercontent.com"
+
+
+def _slim(rec, keep_roster):
+    """A day record for the repo. The roster fingerprint is dropped from every
+    day but the newest: it exists only to diff the NEXT run against, so keeping
+    one per day would commit ~100KB of dead weight every night forever."""
+    out = {k: v for k, v in rec.items() if k != "roster"}
+    if keep_roster:
+        out["roster"] = rec.get("roster") or {}
+    return out
+
+
+def export_bundle(limit=KEEP_DAYS):
+    """Everything worth persisting, as plain JSON-able data."""
+    ds = dates()[:limit]
+    days = []
+    for i, d in enumerate(ds):
+        rec = load_day(d)
+        if rec:
+            days.append(_slim(rec, keep_roster=(i == 0)))
+    return {"format": 1, "sport": "mlb", "exported_at": time.time(),
+            "dates": [d["date"] for d in days], "days": days}
+
+
+def import_bundle(bundle, overwrite=False):
+    """Load an exported bundle back into the local cache. Existing days are kept
+    unless `overwrite`, so a restore can never clobber a fresher local run."""
+    if not bundle or not isinstance(bundle, dict):
+        return {"loaded": 0, "skipped": 0, "error": "not a bundle"}
+    have = set(dates())
+    loaded = skipped = 0
+    for rec in bundle.get("days") or []:
+        d = rec.get("date")
+        if not d:
+            continue
+        if d in have and not overwrite:
+            skipped += 1
+            continue
+        deep_cache.save(_key(d), rec)
+        loaded += 1
+    prune()
+    return {"loaded": loaded, "skipped": skipped}
+
+
+def _raw_url(path):
+    return f"{_RAW}/{GH_OWNER}/{GH_REPO}/{GH_BRANCH}/{path}"
+
+
+def restore_from_github(timeout=12, overwrite=False):
+    """Repopulate the local history from the repo copy. Called on boot, so a
+    restarted host comes back with its calendar intact.
+
+    Best-effort and silent on failure: no history is a degraded feature, not a
+    broken app, and this must never delay or break startup."""
+    import json
+    import urllib.request
+    try:
+        req = urllib.request.Request(_raw_url(f"{GH_DIR}/bundle.json"),
+                                     headers={"User-Agent": "vigil/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            bundle = json.loads(r.read())
+    except Exception as e:
+        return {"loaded": 0, "skipped": 0, "error": f"{type(e).__name__}"}
+    return import_bundle(bundle, overwrite=overwrite)
 
 
 def report(date=None):

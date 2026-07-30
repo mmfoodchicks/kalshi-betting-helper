@@ -1,0 +1,146 @@
+name: Nightly sim history snapshot
+
+# Banks the deep-sim run history in the repo, then kicks the next run.
+#
+# WHY THIS EXISTS. The app runs on a host with no persistent disk (Render free),
+# so its cache is wiped on every restart, redeploy and idle-sleep. The run history
+# is the one thing that cannot be recomputed -- yesterday's rosters and yesterday's
+# odds are gone once they are overwritten -- so it is mirrored here, in the only
+# storage that survives.
+#
+# DIRECTION MATTERS. This workflow PULLS the history out of the app and commits it
+# with the Action's own GITHUB_TOKEN. The app itself holds no GitHub credentials
+# and never writes to the repo. Reading back is free because the repo is public.
+#
+# ORDER MATTERS. It snapshots BEFORE triggering the rerun, so the day being
+# replaced is banked before the new run overwrites it.
+#
+# BRANCH MATTERS. It commits to a branch that is NOT the deploy branch. Render
+# auto-deploys from the repo's default branch, so committing there every night
+# would redeploy the app nightly -- restarting it, wiping the cache this exists to
+# protect, and possibly killing a sim mid-run.
+#
+# Setup: repo variable APP_URL must point at the deployed app (Settings -> Secrets
+# and variables -> Actions -> Variables). Without it this exits quietly.
+
+on:
+  schedule:
+    - cron: "0 8 * * *"       # 08:00 UTC daily — after the app's own midnight-ET rerun
+  workflow_dispatch:           # the "save it now" button
+
+concurrency:
+  group: sim-history
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  HISTORY_BRANCH: sim-history
+  HISTORY_DIR: history/mlb
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check config
+        id: cfg
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL not set — add it as a repo Actions variable. Skipping."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out
+        if: steps.cfg.outputs.ok == '1'
+        uses: actions/checkout@v4
+
+      - name: Switch to the history branch (creating it if new)
+        if: steps.cfg.outputs.ok == '1'
+        run: |
+          if git ls-remote --exit-code --heads origin "$HISTORY_BRANCH" >/dev/null 2>&1; then
+            git fetch -q --depth 1 origin "$HISTORY_BRANCH"
+            git checkout -q -B "$HISTORY_BRANCH" "origin/$HISTORY_BRANCH"
+          else
+            # Orphan on purpose: this branch holds data, not code, and should not
+            # drag the app's commit history along with it.
+            git checkout -q --orphan "$HISTORY_BRANCH"
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+            printf '%s\n' \
+              '# Sim history' '' \
+              'Nightly snapshots of the deep season sim, written by' \
+              '`.github/workflows/nightly-history.yml` on the default branch.' '' \
+              'Data only - no code lives here. The app restores from' \
+              '`history/mlb/bundle.json` on boot.' > README.md
+          fi
+
+      - name: Fetch the history from the running app
+        if: steps.cfg.outputs.ok == '1'
+        id: fetch
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          mkdir -p "$HISTORY_DIR"
+          # The host sleeps when idle, so the first request may only be waking it.
+          # Retry before treating an empty response as "nothing to snapshot".
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -sS -o /tmp/bundle.json -w '%{http_code}' --max-time 90 \
+                   "$APP_URL/api/baseball/futures/deep/history/export" || echo 000)
+            if [ "$code" = "200" ] && python3 -c "import json,sys; sys.exit(0 if json.load(open('/tmp/bundle.json')).get('days') else 1)" 2>/dev/null; then
+              ok=1; break
+            fi
+            echo "attempt $attempt: HTTP $code, no usable bundle yet; waiting..."
+            sleep 30
+          done
+          if [ "$ok" != "1" ]; then
+            echo "No history to snapshot (app asleep, or no deep run has completed)."
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Whole bundle for the app to restore from, plus one readable file per
+          # day so the history is browsable on GitHub and diffs are meaningful.
+          python3 - <<'PY'
+          import json, os, pathlib
+          d = json.load(open("/tmp/bundle.json"))
+          out = pathlib.Path(os.environ["HISTORY_DIR"])
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "bundle.json").write_text(json.dumps(d, indent=1, sort_keys=True))
+          for day in d.get("days", []):
+              if day.get("date"):
+                  (out / f"{day['date']}.json").write_text(
+                      json.dumps({k: v for k, v in day.items() if k != "roster"},
+                                 indent=1, sort_keys=True))
+          print(f"wrote {len(d.get('days', []))} day(s)")
+          PY
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+
+      - name: Commit
+        if: steps.cfg.outputs.ok == '1' && steps.fetch.outputs.changed == '1'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A "$HISTORY_DIR"
+          [ -f README.md ] && git add README.md
+          if git diff --cached --quiet; then
+            echo "History unchanged since the last snapshot."
+            exit 0
+          fi
+          git commit -q -m "sim history: snapshot $(date -u +%Y-%m-%d)"
+          git push origin "HEAD:$HISTORY_BRANCH"
+
+      - name: Trigger the next deep run
+        if: steps.cfg.outputs.ok == '1'
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          SIM_TOKEN: ${{ secrets.SIM_TOKEN }}
+        run: |
+          AUTH=()
+          [ -n "$SIM_TOKEN" ] && AUTH=(-H "X-Sim-Token: $SIM_TOKEN")
+          curl -sS -X POST --max-time 60 "${AUTH[@]}" \
+            "$APP_URL/api/sim/rerun?sport=mlb" || true

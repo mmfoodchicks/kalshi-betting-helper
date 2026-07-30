@@ -90,3 +90,55 @@ at `/data` for persistence.
 - Confirm the lock icon (valid TLS).
 - If you set `APP_PASSWORD`, confirm the browser prompts for login.
 - Keep one web worker (`-w 1`) so the background recorders run a single copy.
+
+---
+
+## Keeping the deep-sim history (the "What happened" calendar)
+
+Everything else the app stores can be recomputed. The **run history cannot** —
+once a nightly run overwrites the previous one, yesterday's rosters and yesterday's
+odds are gone. On a host with no persistent disk (Render free), the cache is wiped
+on every restart, redeploy and idle-sleep, so the calendar would quietly empty
+itself.
+
+The fix is to keep it in the repo, which is the one thing that survives.
+
+**Setup — one variable.** Settings → Secrets and variables → Actions → Variables,
+add `APP_URL` = your deployed URL (e.g. `https://vigil.onrender.com`). That is the
+same variable the weekly sim workflow already uses; if you have set it, you are
+done. Without it the workflow exits quietly instead of failing.
+
+**How it works.** `.github/workflows/nightly-history.yml` runs daily (and has a
+"Run workflow" button for when you want it saved right now). Each run:
+
+1. pulls `/api/baseball/futures/deep/history/export` from the app,
+2. commits it to the **`sim-history`** branch under `history/mlb/`,
+3. *then* triggers the next deep run — so the day being replaced is banked first.
+
+The app restores from that branch automatically on boot, so a restart comes back
+with its calendar intact.
+
+**Three deliberate choices, in case you wonder later:**
+
+- **The app never writes to GitHub and holds no token.** The workflow pulls and
+  commits with its own `GITHUB_TOKEN`. Reading back needs no credentials because
+  the repo is public.
+- **It commits to `sim-history`, not the deploy branch.** Render auto-deploys from
+  the default branch, so nightly commits there would redeploy the app every night —
+  restarting it, wiping the cache this exists to protect, and possibly killing a
+  sim mid-run. `sim-history` is an orphan branch holding data only, no code.
+- **Only the newest day keeps its roster fingerprint.** It exists to diff the next
+  run against; keeping one per day would commit ~100KB of dead weight nightly,
+  forever. A day file is ~12KB, so a full season is a few MB.
+
+**Two things it does not do.** It does not persist the full team profiles used for
+attribution (~1.5MB/night is too much to commit), so the first run after a restore
+lists what changed but cannot price it — you get the sentences without the pp
+figures, and normal service resumes the next night. And on Render free the app
+sleeps and is CPU-limited, so a 4,000-season run plus counterfactuals may not
+finish; the workflow retries while waking the host, but a consistently sparse
+calendar means the host, not the snapshotting.
+
+> The repo is **public**, so anything committed here is publicly visible. The
+> history is MLB roster data and sim outputs — nothing personal — and the model
+> code is already public, but it is worth knowing before you turn it on.

@@ -252,6 +252,17 @@ def _init_deep_sims():
     if payload:
         _deep["agg"] = payload.get("agg")
         _deep["season"] = payload.get("season")
+    # This host has no persistent disk, so the deep cache starts empty after every
+    # restart and redeploy. Pull the repo's copy of the run history back before
+    # the scheduler starts, so a restart doesn't silently empty the calendar.
+    # Best-effort: a failure here leaves the app exactly as it was.
+    def _restore_history():
+        try:
+            import deep_history
+            deep_history.restore_from_github()
+        except Exception:
+            pass
+    threading.Thread(target=_restore_history, daemon=True).start()
     deep_cache.start_scheduler()
     # Warm the in-season / preseason deep runs in the background if not cached.
     for _k in ("nfl", "nfl_season", "wnba", "cfb"):
@@ -1844,6 +1855,34 @@ def api_baseball_deep_history():
                         "message": "No deep-run history yet. It starts building "
                                    "from the next nightly run."})
     return jsonify(rep)
+
+
+@app.route("/api/baseball/futures/deep/history/export")
+def api_baseball_deep_history_export():
+    """The whole stored history as plain JSON, for the nightly Action to commit
+    to the repo.
+
+    This is a PULL: the app holds no GitHub credentials and never writes there.
+    The scheduled workflow fetches this, writes it under history/, and commits
+    with its own token -- the same direction the weekly sim-rerun workflow
+    already runs in."""
+    import deep_history
+    try:
+        return jsonify(deep_history.export_bundle())
+    except Exception as e:
+        return jsonify({"error": f"export failed: {e}"}), 502
+
+
+@app.route("/api/baseball/futures/deep/history/restore", methods=["POST"])
+def api_baseball_deep_history_restore():
+    """Pull the repo copy back into this host's cache. Runs automatically on boot;
+    this endpoint is for forcing it after a manual snapshot."""
+    import deep_history
+    try:
+        return jsonify(deep_history.restore_from_github(
+            overwrite=request.args.get("overwrite") in ("1", "true", "yes")))
+    except Exception as e:
+        return jsonify({"error": f"restore failed: {e}"}), 502
 
 
 @app.route("/api/bestbets")
