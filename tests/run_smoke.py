@@ -248,6 +248,32 @@ def t_sim_worker_sizing():
         ds._cgroup_limit = orig
 
 
+def t_render_blueprint():
+    """render.yaml must PARSE and carry every store, or the platform silently
+    ignores it. Uncommenting the disk block by hand is easy to get wrong -- drop
+    the '#' but keep its trailing space and every line is one column too deep,
+    which yields a file that does not parse and a paid disk that never mounts."""
+    import yaml
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    try:
+        d = yaml.safe_load(open(os.path.join(root, "render.yaml")))
+    except Exception as e:
+        check("render.yaml parses", False, str(e).splitlines()[0])
+        return
+    check("render.yaml parses", True)
+    svc = (d.get("services") or [{}])[0]
+    keys = {e.get("key") for e in (svc.get("envVars") or [])}
+    if svc.get("disk"):
+        # With a disk attached, every store that must survive a restart has to be
+        # pointed at it -- missing one means paying for a disk it never touches.
+        for k in ("KALSHI_DB", "PREDLOG_DB", "DEEP_CACHE_DIR"):
+            check(f"disk is mounted, so {k} points at it", k in keys, sorted(keys))
+        check("the disk mounts where those paths expect it",
+              (svc["disk"] or {}).get("mountPath") == "/data", svc.get("disk"))
+    check("a health check path is set", bool(svc.get("healthCheckPath")),
+          svc.get("healthCheckPath"))
+
+
 def t_boot_is_survivable():
     """A fresh instance must not take itself down before it is healthy.
 
@@ -459,6 +485,7 @@ def main():
     t_pick6_rules()
     t_clock()
     t_sim_worker_sizing()
+    t_render_blueprint()
     t_boot_is_survivable()
     if online:
         print("== online (live data) ==")
