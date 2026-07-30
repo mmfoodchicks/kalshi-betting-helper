@@ -27,7 +27,23 @@ _BASE = "https://api.elections.kalshi.com/trade-api/v2"
 # the pools (qualifiers, lucky losers) recalibrates from there.
 _SERIES = [("KXATPMATCH", "m", 1600.0), ("KXWTAMATCH", "w", 1600.0),
            ("KXITFMATCH", "m", 1400.0), ("KXITFWMATCH", "w", 1400.0)]
-_K = 24.0
+# Elo K factor -- FITTED, not guessed (tests/tennis_elo_fit.py). Rolling-origin
+# validation over two independent datasets -- ~19k settled Kalshi results
+# (ATP/WTA/ITF, the population this board actually runs on) and ~11.6k Match
+# Charting matches (tour level, decades deep) -- puts the minimum at 48 on BOTH,
+# with the curve flat from about 40 to 56. Held-out log loss improves 0.6560 ->
+# 0.6489 on Kalshi and 0.5557 -> 0.5477 on charting, and 7 of 8 rolling folds beat
+# the old 24. Accuracy barely moves; what improves is CALIBRATION, which is what
+# the fair-win blend and the edge calculation consume.
+#
+# Why so high: both populations turn over fast and are shallow per player (median
+# 4 Kalshi matches), so a rating has to move quickly to track a player at all. The
+# old 24 was tuned for a deep, stable pool that tennis at this tier does not have.
+_K = 48.0
+# Left ALONE, also measured: the 1.6x provisional boost under 10 matches (refitting
+# to 2.0/20 made the held-out tail worse), and time decay -- regressing an idle
+# player's rating toward the pool mean was monotonically harmful at every half-life
+# from 90 to 720 days on both datasets. `last` stays a display field.
 _MAX_PAGES = 22                      # bound the ITF firehose per series
 _FORM_WIN = 8                        # recent results kept per player
 
