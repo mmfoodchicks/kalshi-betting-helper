@@ -1664,7 +1664,6 @@ function setupTabs() {
       $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
-      $("tab-worldcup").classList.toggle("hidden", tab !== "worldcup");
       $("tab-lol").classList.toggle("hidden", tab !== "lol");
       $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
@@ -1685,7 +1684,6 @@ function setupTabs() {
       }
       if (tab === "baseball") initBaseballTab();
       if (tab === "sports") initSportsTab();
-      if (tab === "worldcup") initWorldCup();
       if (tab === "nfl") initNFL();
       if (tab === "wnba") initWNBA();
       if (tab === "nba") initNBA();
@@ -3536,8 +3534,6 @@ function renderTennis() {
   }).join("");
 }
 
-// ---- World Cup ----
-let _wcData = null, _wcSub = "futures";
 // ---- League of Legends (esports) ------------------------------------------
 let _lolData = null;
 let _lolp6 = { picks: [], payouts: {}, sel: new Set() };
@@ -3677,113 +3673,6 @@ function renderLoLP6Tally() {
   const corr = Object.values(sameM).some((c) => c > 1)
     ? ` <span class="small" style="color:var(--muted)">⚠ picks share a match — correlation shifts the true chance</span>` : "";
   t.innerHTML = `<b>${n}-pick</b> · all-hit chance <b>${(prob * 100).toFixed(1)}%</b>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${ev >= 0 ? "ev pos" : "ev neg"}">${ev >= 0 ? "+" : ""}${ev}%</b>` : ""}${corr}`;
-}
-
-function initWorldCup() {
-  if (!$("wcResults").dataset.loaded) { $("wcResults").dataset.loaded = "1"; loadWorldCup(); }
-  document.querySelectorAll("#wcSubtabs .subtab").forEach((b) => {
-    if (b.dataset.wired) return;
-    b.dataset.wired = "1";
-    b.addEventListener("click", () => {
-      document.querySelectorAll("#wcSubtabs .subtab").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      _wcSub = b.dataset.wcsub;
-      const p6 = _wcSub === "pick6";
-      $("wcResults").classList.toggle("hidden", p6);
-      $("wcPick6").classList.toggle("hidden", !p6);
-      if (p6) { initWCPick6(); return; }
-      renderWorldCup();
-    });
-  });
-}
-let _wcP6 = null;
-function initWCPick6() {
-  if ($("wcPick6").dataset.loaded) return;
-  $("wcPick6").dataset.loaded = "1";
-  loadWCPick6();
-}
-async function loadWCPick6() {
-  const box = $("wcPick6");
-  box.innerHTML = `<div class="empty">Building the World Cup player prop board…</div>`;
-  try {
-    const d = await (await fetch("/api/worldcup/pick6")).json();
-    if (d.error || !(d.picks && d.picks.length)) { box.innerHTML = `<div class="empty">${d.error || "No player props yet."}</div>`; return; }
-    _wcP6 = d;
-    renderWCPick6();
-  } catch (e) { box.innerHTML = `<div class="empty">World Cup props unavailable.</div>`; }
-}
-function renderWCPick6() {
-  const d = _wcP6; if (!d) return;
-  const rows = d.picks.map((p) => `<div class="p6row p6row-nfl" style="cursor:default">
-      <span class="p6side ${p.side === "More" ? "more" : "less"}">${p.side} ${p.line}</span>
-      <span class="p6name">${p.player} <span class="p6stat">${p.stat} · ${p.team}</span></span>
-      <span class="p6game">${p.matchup}</span>
-      <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
-    </div>`).join("");
-  const mchips = (d.matches || []).map((m) => `<span class="leanchip">${m.matchup}</span>`).join(" ");
-  $("wcPick6").innerHTML =
-    `<div class="small" style="margin:2px 0 6px">${mchips}</div>
-     <div class="small" style="margin:0 0 8px;color:var(--muted)">${d.note}</div>
-     <div class="p6list">${rows}</div>`;
-}
-async function loadWorldCup() {
-  $("wcResults").innerHTML = `<div class="empty">Simulating the rest of the tournament…</div>`;
-  try {
-    const d = await (await fetch("/api/worldcup")).json();
-    if (d.error) { $("wcResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    _wcData = d;
-    renderWorldCup();
-  } catch (e) { $("wcResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
-}
-function _wcEdge(e) {
-  if (e == null) return "—";
-  return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
-}
-function _wcPx(cents) { return cents != null ? `${cents}¢` : "—"; }
-function renderWorldCup() {
-  const d = _wcData; if (!d) return;
-  $("wcSummary").innerHTML = `Simulated <b>${d.n_sims.toLocaleString()}</b> tournaments · model = national-team Elo updated through results played, Poisson match engine. Edges are model − market.`;
-  if (_wcSub === "matches") return renderWCMatches(d);
-  // Futures: champion board with Kalshi + Poly edges.
-  const rows = d.teams.filter((t) => t.advance_pct > 0).map((t, i) => {
-    const k = (t.champion_market || {}).kalshi || {};
-    const p = (t.champion_market || {}).poly || {};
-    return `<div class="futrow wcrow">
-      <span class="fr-rank">${i + 1}</span>
-      <span class="fr-team">${t.name} <span class="small" style="color:var(--muted)">${t.group}</span></span>
-      <span class="fr-num">${t.champion_pct}%</span>
-      <span class="fr-num">${_wcPx(k.cents)}</span><span class="fr-num">${_wcEdge(k.edge)}</span>
-      <span class="fr-num">${_wcPx(p.cents)}</span>
-      <span class="fr-num">${t.finalist_pct}%</span>
-      <span class="fr-num">${t.advance_pct}%</span></div>`;
-  }).join("");
-  $("wcResults").innerHTML = `
-    <div class="futrow wcrow rchead">
-      <span class="fr-rank">#</span><span class="fr-team">Team</span>
-      <span class="fr-num">Champ</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span>
-      <span class="fr-num">Poly</span><span class="fr-num">Final</span><span class="fr-num">Advance</span></div>
-    ${rows}`;
-}
-function renderWCMatches(d) {
-  if (!d.matches.length) { $("wcResults").innerHTML = `<div class="empty">No upcoming matches with set teams.</div>`; return; }
-  const rows = d.matches.map((m) => {
-    const w = (m.markets || {}).winner || {};
-    const o = (m.markets || {}).over25, bt = (m.markets || {}).btts;
-    const cell = (pct, mk) => `<span class="fr-num">${pct}%</span><span class="fr-num">${mk ? _wcEdge(mk.edge) : "—"}</span>`;
-    return `<div class="wcmatch">
-      <div class="wcmatch-h"><b>${m.home}</b> v <b>${m.away}</b>
-        <span class="small" style="color:var(--muted)">${m.date} · ${m.stage === "group" ? "group" : "knockout"} · xG ${m.mean_goals}</span></div>
-      <div class="futrow wcmrow">
-        <span class="fr-team">${m.home} win</span>${cell(m.p_home, (w.home))}
-        <span class="fr-team">Draw</span>${cell(m.p_draw, (w.draw))}
-        <span class="fr-team">${m.away} win</span>${cell(m.p_away, (w.away))}</div>
-      <div class="futrow wcmrow">
-        <span class="fr-team">Over 2.5</span>${cell(m.over25, o)}
-        <span class="fr-team">BTTS</span>${cell(m.btts_pct, bt)}
-        <span class="fr-team"></span><span class="fr-num"></span><span class="fr-num"></span></div>
-    </div>`;
-  }).join("");
-  $("wcResults").innerHTML = rows;
 }
 
 function _pxCells(x) {  // Kalshi ¢ + edge cells (— when unmatched)

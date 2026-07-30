@@ -267,7 +267,7 @@ def _arb_rows():
     100¢ mean buying every outcome locks a profit. Rare, small, real."""
     import sports
     rows = []
-    for key in ("wnba", "golf", "soccer"):
+    for key in ("wnba", "golf", "mls"):
         try:
             for ev in sports.get_events(key) or []:
                 arb = ev.get("arbitrage_pct")

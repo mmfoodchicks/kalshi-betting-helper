@@ -1528,21 +1528,6 @@ def api_ufc():
     return jsonify(board)
 
 
-@app.route("/api/worldcup")
-def api_worldcup():
-    """World Cup simulator board: per-team champion/advance/round odds and per-match
-    result/total/BTTS probabilities, with live Kalshi + Polymarket prices + edges.
-    Cached ~20 min (the tournament is live)."""
-    try:
-        import worldcup
-        data = worldcup.board()
-    except Exception as e:
-        return jsonify({"error": f"world cup sim failed: {e}"}), 502
-    if not data:
-        return jsonify({"error": "no world cup data available"}), 502
-    return jsonify(data)
-
-
 @app.route("/api/lol")
 def api_lol():
     """League of Legends esports board: the pro slate with each team's roster,
@@ -1573,20 +1558,6 @@ def api_lol_futures():
         return jsonify({"error": f"lol futures failed: {e}"}), 502
     if not data:
         return jsonify({"error": "no data for that tournament yet (loading / rate-limited)"}), 502
-    return jsonify(data)
-
-
-@app.route("/api/worldcup/pick6")
-def api_worldcup_pick6():
-    """World Cup player Pick 6 board: More/Less props (shots, fouls, saves, goals,
-    assists, cards) from ESPN's squad stats."""
-    try:
-        import worldcup_pick6
-        data = worldcup_pick6.board()
-    except Exception as e:
-        return jsonify({"error": f"world cup pick6 failed: {e}"}), 502
-    if not data:
-        return jsonify({"error": "no World Cup player props available yet"}), 502
     return jsonify(data)
 
 

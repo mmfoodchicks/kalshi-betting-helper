@@ -1,5 +1,5 @@
 """Cross-category combo maker: build a single parlay spanning MLB, daily crypto,
-UFC, tennis, golf, World Cup soccer, and WNBA.
+UFC, tennis, golf, and WNBA.
 
 Each leg needs a probability. Where we have our own model we use it (MLB props /
 moneyline; crypto fair value from the GBM model); for the other sports we use
@@ -22,13 +22,12 @@ import sports
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
 # Only the categories Kalshi actually allows in multi-leg parlays.
-SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "soccer", "wnba"}
+SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "wnba"}
 
 CATEGORIES = {
     "mlb": "⚾ Baseball",
     "nfl": "🏈 NFL",
     "crypto": "⚡ Crypto (daily)",
-    "soccer": "⚽ World Cup",
     "wnba": "🏀 WNBA",
     "nba": "🏀 NBA",
     "nhl": "🏒 NHL",
@@ -51,8 +50,6 @@ CATEGORY_TYPES = {
             ["Rush Yds", "Rushing yds"], ["Rec Yds", "Receiving yds"],
             ["Receptions", "Receptions"], ["Anytime Td", "Anytime TD"]],
     "crypto": [["Crypto", "Price up/down"]],
-    "soccer": [["WC Result", "Result (1X2)"], ["WC Total", "Over/Under 2.5"],
-               ["WC BTTS", "Both teams score"], ["WC Champion", "Champion"]],
     "wnba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
              ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
     "nba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
@@ -81,7 +78,7 @@ COMBO_TOURS = ("ATP", "WTA")
 # Types whose NO side is either meaningless or already covered by a sibling leg.
 # ML pairs both teams already; Under is the NO of Over; RFI has no NO market on
 # Kalshi (the user confirmed there's no yes/no slot on run-in-first-inning).
-_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "WC Result", "Crypto", "Outright"}
+_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "Crypto", "Outright"}
 _NO_SKIP_WORDS = ("under ", "not ", " no ", "does not")
 
 
@@ -217,51 +214,6 @@ def _crypto_legs():
                     "label": f"{coin} {_TF_LABEL.get(tf, tf)} {side}: {m.get('subtitle') or m['ticker']}",
                     "matchup": coin, "prob": prob, "price_cents": price,
                     "type": "Crypto", "timeframe": tf})
-    return legs
-
-
-def _worldcup_legs():
-    """World Cup legs from OUR simulator (model probabilities, not de-vig). One
-    event per upcoming match, with candidate legs the target-tuner picks from:
-    3-way result, over/under 2.5 goals, both-teams-to-score. Champion futures are
-    added as their own low-probability events (useful in payout mode)."""
-    legs = []
-    try:
-        import worldcup
-        data = worldcup.board()
-    except Exception:
-        return legs
-    if not data:
-        return legs
-    cat = "⚽ World Cup"
-    for m in data.get("matches", []):
-        ev = f"wc_{m['home']}_{m['away']}_{m['date']}"
-        mk = m.get("markets") or {}
-        w = mk.get("winner") or {}
-        matchup = f"{m['home']} v {m['away']}"
-
-        mg = m.get("mean_goals")
-
-        def leg(label, prob_pct, cents, typ, avg=None, unit=None):
-            legs.append({"category": cat, "event_id": ev, "label": label,
-                         "matchup": matchup, "prob": prob_pct / 100.0,
-                         "price_cents": cents, "type": typ,
-                         "sim_avg": avg, "avg_unit": unit})
-        leg(f"{m['home']} to win", m["p_home"], (w.get("home") or {}).get("cents"), "WC Result")
-        leg("Draw", m["p_draw"], (w.get("draw") or {}).get("cents"), "WC Result")
-        leg(f"{m['away']} to win", m["p_away"], (w.get("away") or {}).get("cents"), "WC Result")
-        leg("Over 2.5 goals", m["over25"], (mk.get("over25") or {}).get("cents"), "WC Total",
-            avg=mg, unit="goals")
-        leg("Under 2.5 goals", round(100 - m["over25"], 1), None, "WC Total", avg=mg, unit="goals")
-        leg("Both teams to score", m["btts_pct"], (mk.get("btts") or {}).get("cents"), "WC BTTS")
-    for t in data.get("teams", []):
-        if t["champion_pct"] < 1:
-            continue
-        cm = (t.get("champion_market") or {}).get("kalshi") or {}
-        legs.append({"category": cat, "event_id": f"wc_champ_{t['name']}",
-                     "label": f"{t['name']} to win the World Cup", "matchup": "Champion",
-                     "prob": t["champion_pct"] / 100.0, "price_cents": cm.get("cents"),
-                     "type": "WC Champion"})
     return legs
 
 
@@ -567,8 +519,6 @@ def gather(cats, date, season, allow_live=False):
         add("nfl", _nfl_legs)
     if "crypto" in cats:
         add("crypto", _crypto_legs)
-    if "soccer" in cats:
-        add("soccer", _worldcup_legs)            # our World Cup model, not de-vig
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
     if "tennis" in cats:

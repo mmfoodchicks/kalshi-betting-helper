@@ -14,8 +14,8 @@ A live web app with tabs:
   *buy the dip* — and tracks how accurate it's been.
 - **⚾ Baseball** — model win probabilities for today's MLB slate, matched to
   live Kalshi prices to find edges, plus **parlay combo suggestions**.
-- **🏆 Sports** — live Kalshi markets for the **World Cup, tennis (ATP), golf
-  (PGA H2H), and UFC**, with **no-vig fair probabilities** (prices normalized to
+- **🏆 Sports** — live Kalshi markets for **tennis (ATP/WTA/ITF), golf
+  (PGA H2H), UFC, MLS and more**, with **no-vig fair probabilities** (prices normalized to
   strip out the house margin) and the **vig %** so you can see which markets are
   fair and which the house is gouging. **Arbitrage detector:** if an event's
   outcome prices ever sum to under 100¢, it flags the guaranteed profit. Log any

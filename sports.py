@@ -1,4 +1,4 @@
-"""Multi-sport browser over live Kalshi markets (soccer, tennis, golf, UFC).
+"""Multi-sport browser over live Kalshi markets (tennis, golf, UFC, MLS, …).
 
 These sports don't have a rich free stats API to model from (unlike MLB), so
 instead of a fake model we do something genuinely useful and math-sound: pull
@@ -15,7 +15,6 @@ Everything here is read-only public data; bets can be logged to the ledger.
 import kalshi
 
 SPORTS = {
-    "soccer": {"label": "⚽ World Cup", "series": ["KXWCGAME"]},
     "tennis": {"label": "🎾 Tennis (ATP)", "series": ["KXATPMATCH"]},
     "wta":    {"label": "🎾 Tennis (WTA)", "series": ["KXWTAMATCH"]},
     "itf":    {"label": "🎾 Tennis (ITF)", "series": ["KXITFMATCH", "KXITFWMATCH"]},
