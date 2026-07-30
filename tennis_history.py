@@ -13,8 +13,11 @@ and the SURFACE. Feeding that in ahead of the Kalshi results gives ratings a rea
 baseline to be provisional *against*.
 
 TRUST MODEL. This module was written without being able to fetch the files (the
-authoring sandbox scopes GitHub per repository owner). So it does not assume the
-layout -- it reads the CSV header and resolves each field it needs by name from a
+authoring sandbox scopes GitHub per repository owner). The five filenames and the
+column layout below were each corroborated against published documentation of the
+archives rather than taken from memory -- but corroboration is not the same as
+having parsed the real bytes, so the module still does not ASSUME the layout: it
+reads the CSV header and resolves each field it needs by name from a
 set of accepted spellings, and REJECTS any file whose header does not carry them.
 A file that fails validation is skipped and counted, never guessed at. If every
 file fails, `results()` returns nothing and tennis_elo carries on with the Kalshi
@@ -36,6 +39,7 @@ import urllib.request
 # single host being unreachable does not silently disable the whole source.
 _HOSTS = (
     "https://raw.githubusercontent.com/JeffSackmann/{repo}/master/{name}",
+    "https://raw.githubusercontent.com/JeffSackmann/{repo}/refs/heads/master/{name}",
     "https://cdn.jsdelivr.net/gh/JeffSackmann/{repo}@master/{name}",
     "https://raw.githack.com/JeffSackmann/{repo}/master/{name}",
 )
