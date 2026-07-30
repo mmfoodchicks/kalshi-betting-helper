@@ -26,6 +26,7 @@ probability. Inputs folded in:
 """
 
 import itertools
+import re as _re
 import time as _time
 from datetime import datetime as _dt, timedelta as _td
 from concurrent.futures import ThreadPoolExecutor
@@ -658,11 +659,56 @@ def get_kalshi_prices():
     return out
 
 
+_TICKER_MONTHS = {m: i + 1 for i, m in enumerate(
+    ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"))}
+_TICKER_START = _re.compile(r"-(\d{2})([A-Z]{3})(\d{2})(\d{2})(\d{2})")
+# A Kalshi event ticker whose start is further than this from the game's start is
+# a different game, not a loose match -- refuse it rather than price off it.
+_MATCH_TOLERANCE_S = 3 * 3600
+
+
+def _ticker_start(event_ticker):
+    """First pitch encoded in a Kalshi event ticker, as an epoch.
+    'KXMLBGAME-26JUL301340KCMIN' -> Jul 30 2026 13:40 America/New_York. Kalshi
+    names game tickers in Eastern; this matches MLB's scheduled start exactly."""
+    m = _TICKER_START.search(event_ticker or "")
+    if not m:
+        return None
+    yy, mon, dd, hh, mi = m.groups()
+    if mon not in _TICKER_MONTHS:
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        return _dt(2000 + int(yy), _TICKER_MONTHS[mon], int(dd), int(hh), int(mi),
+                   tzinfo=ZoneInfo("America/New_York")).timestamp()
+    except Exception:
+        return None
+
+
 def _match_price(kalshi_index, abbr_map, home_id, away_id, start_epoch):
+    """The Kalshi event for THIS game. Matched on first pitch, which the event
+    ticker encodes exactly.
+
+    Not on close_time: Kalshi closes an MLB game market a flat 72 hours after it
+    starts (a legal backstop, not the settlement time), so |close - start| is
+    ~72h for the right game, ~48h for yesterday's and ~96h for tomorrow's. Taking
+    the minimum therefore preferred the EARLIEST game of a series -- every game
+    with a same-opponent game the previous day got priced off that ALREADY-PLAYED
+    market, whose contracts sit at 0c/100c because they have settled. Half of a
+    typical slate matched the wrong day.
+    """
     home = abbr_map.get(home_id, ""); away = abbr_map.get(away_id, "")
     candidates = kalshi_index.get(frozenset({home, away}))
     if not candidates:
         return None, home, away
+    if start_epoch:
+        timed = [(abs(ts - start_epoch), e) for e in candidates
+                 for ts in (_ticker_start(e.get("event")),) if ts]
+        if timed:
+            gap, best = min(timed, key=lambda t: t[0])
+            # Better to show a game unpriced than priced off the wrong game.
+            return (best if gap <= _MATCH_TOLERANCE_S else None), home, away
+    # Ticker unparseable (naming change): fall back to the closest close_time.
     best = min(candidates, key=lambda e: abs((e["close"] or 0) - (start_epoch or 0)))
     return best, home, away
 
@@ -1639,7 +1685,7 @@ def _sim_pregame_legs(g, types=None, _gs=None, _live=False):
     # 7th is not still a 55% favourite -- there, both moneylines come off the
     # resumed sim below, like every other leg.
     if (not _live and g.get("pick_prob") is not None and g["pick_prob"] >= 0.5
-            and (not types or "ML" in types)):
+            and (types is None or "ML" in types)):
         out.append({"game_pk": pk, "type": "ML", "label": f"{g['pick']} to win",
                     "matchup": mu, "prob": g["pick_prob"],
                     "price_cents": g.get("pick_price_cents"), "live": False,
@@ -1647,7 +1693,10 @@ def _sim_pregame_legs(g, types=None, _gs=None, _live=False):
     for c in (_gs or _game_sim(g))["cands"]:
         if c["type"] == "ML" and not _live:
             continue                        # favorite handled above
-        if types and c["type"] not in types:
+        # `types is None` means no filter; an EMPTY list means the user unchecked
+        # every chip and expects nothing. `if types` conflated the two, so
+        # clearing every type silently returned the full board.
+        if types is not None and c["type"] not in types:
             continue
         out.append({"game_pk": pk, "type": c["type"], "label": c["label"], "matchup": mu,
                     "prob": c["marg"], "price_cents": price(c.get("kref")), "live": _live,
@@ -1676,7 +1725,7 @@ def _live_variants(g, types=None):
     pk, mu = g["game_pk"], g["matchup"]
 
     def add(typ, label, prob, price=None, avg=None, unit=None):
-        if types and typ not in types:
+        if types is not None and typ not in types:
             return
         if 0.02 <= prob <= 0.995:
             out.append({"game_pk": pk, "type": typ, "label": label, "matchup": mu,
@@ -1716,21 +1765,46 @@ def _candidate_legs(games, live_only=False, types=None, allow_live=False):
         if live_only and state != "Live":
             continue
         if state == "Live":
-            if allow_live:
-                # Opted in: the full sim-backed board, resumed from the current
-                # base-out state, same as any pre-game matchup.
+            # `live_only` is itself a request for in-progress games, so the
+            # live-only board resumes from the current state without needing the
+            # opt-in flag. Without this the live board fell through to the
+            # PRE-GAME moneyline below while still tagging every leg "LIVE —
+            # priced from the current game state": a team down six in the 7th
+            # showed as the same favourite it was at first pitch.
+            if allow_live or live_only:
+                # The full sim-backed board, resumed from the current base-out
+                # state, same as any pre-game matchup.
                 lv = _sim_live_legs(g, types)
                 if lv:
                     legs.extend(_curate_legs(lv))
                     continue
-            if (not types or "ML" in types) and (g.get("pick_prob") or 0) >= 0.5:
-                legs.append({"game_pk": g["game_pk"], "type": "ML",
-                             "label": f"{g['pick']} to win", "matchup": g["matchup"],
-                             "prob": g["pick_prob"], "price_cents": g.get("pick_price_cents"),
-                             "live": True, "sim_avg": _ml_margin(g), "avg_unit": "run margin"})
+                # Live feed unreadable: fall back to the thin moneyline. Inside
+                # the opt-in branch, so a caller that did NOT ask for live games
+                # can never be handed one.
+                if (types is None or "ML" in types) and (g.get("pick_prob") or 0) >= 0.5:
+                    legs.append({"game_pk": g["game_pk"], "type": "ML",
+                                 "label": f"{g['pick']} to win", "matchup": g["matchup"],
+                                 "prob": g["pick_prob"],
+                                 "price_cents": g.get("pick_price_cents"),
+                                 "live": True, "sim_avg": _ml_margin(g),
+                                 "avg_unit": "run margin"})
             continue
         legs.extend(_curate_legs(_sim_pregame_legs(g, types=types)))
     return legs
+
+
+def _pct(x):
+    """Round a percentage for display without collapsing small ones to zero."""
+    if x <= 0:
+        return 0.0
+    if x >= 1:
+        return round(x, 1)
+    # Under 1% a single decimal reads 0.0, and the first non-zero decimal still
+    # overstates badly (0.0064% -> 0.01%, a 56% error against a payout figure
+    # computed from the exact number). Two significant figures keeps the printed
+    # probability consistent with the printed payout.
+    import math
+    return round(x, min(12, 1 - math.floor(math.log10(x))))
 
 
 def _combo_item(combo):
@@ -1738,8 +1812,14 @@ def _combo_item(combo):
     prob = 1.0; cost = 1.0; priced = True
     for l in combo:
         prob *= l["prob"]
-        if l.get("price_cents"):
-            cost *= l["price_cents"] / 100.0
+        pc = l.get("price_cents")
+        # A quote at or above 100c is Kalshi saying there is no offer, not a price
+        # you can fill. Counted as a price it costs a full stake and pays 1.0x, so
+        # the leg drags the parlay's probability down for zero extra payout -- a
+        # strictly dominated slip. `_kalshi_payout` already required 0 < c < 100;
+        # this keeps the two payout paths on the same rule.
+        if pc and 0 < pc < 100:
+            cost *= pc / 100.0
         else:
             priced = False
     item = {
@@ -1750,7 +1830,12 @@ def _combo_item(combo):
                  for l in combo],
         "n_legs": len(combo),
         "any_live": any(l.get("live") for l in combo),
-        "combined_prob_pct": round(prob * 100, 1),
+        # One decimal is right for a normal slip but silently prints 0.0% for a
+        # longshot: three legs at the 4% floor is a genuine 0.0064% chance, and
+        # showing "0.0% to cash" next to a 15,625x payout reads as either free
+        # money or a broken number. Keep enough precision that a non-zero chance
+        # never displays as zero.
+        "combined_prob_pct": _pct(prob * 100),
         "fair_payout_x": round(1 / prob, 2) if prob > 0 else None,
     }
     if priced and cost > 0:
@@ -2078,7 +2163,7 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
             continue
         sim = gs["sim"]
         cands = [c for c in gs["cands"]
-                 if (not types or c["type"] in types) and c["marg"] >= target]
+                 if (types is None or c["type"] in types) and c["marg"] >= target]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
                                       target_payout, max_legs, budget=budget)
         if not item:
@@ -2138,7 +2223,7 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
             continue
         # Shared per-game sim (same object the combo maker + SGPs read).
         for c in _game_sim(g)["cands"]:
-            if types and c["type"] not in types:
+            if types is not None and c["type"] not in types:
                 continue
             kref = c.get("kref")
             if not kref:
@@ -2329,7 +2414,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         sim = gs["sim"]
         side = team_side(g)
         cands = [c for c in gs["cands"]
-                 if (not types or c["type"] in types) and c["marg"] >= floor
+                 if (types is None or c["type"] in types) and c["marg"] >= floor
                  and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
@@ -2527,6 +2612,23 @@ def pick6_eval(games, pk, legs):
             "sims_hit": mlb_sim._popcount(jm)}
 
 
+# A model-vs-market gap wider than this on a game-level market means something
+# is wrong (a mis-joined ticker, a stale quote, a market that isn't the moneyline)
+# rather than an edge worth betting. Player props legitimately move further, so
+# this only guards the game-level lines.
+_MAX_PLAUSIBLE_GAP = 25.0
+_GAME_LEVEL = {"ML", "Run line", "Total"}
+
+
+def _implausible(legs):
+    """True if any game-level leg disagrees with its price beyond belief."""
+    for l in legs:
+        if (l.get("type") in _GAME_LEVEL and l.get("price_cents")
+                and abs(l["prob_pct"] - l["price_cents"]) > _MAX_PLAUSIBLE_GAP):
+            return True
+    return False
+
+
 def build_combos(games, max_legs=3, top_n=6, types=None, allow_live=False):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.
@@ -2540,7 +2642,13 @@ def build_combos(games, max_legs=3, top_n=6, types=None, allow_live=False):
                for g in live_games if g["pick_prob"] >= 0.5][:top_n]
     ml_combos = _assemble(ml_legs, max_legs)
     safest = max(ml_combos, key=lambda c: c["combined_prob_pct"], default=None)
-    priced = [c for c in ml_combos if c.get("ev_pct") is not None]
+    # Ranking by EV means picking whichever leg the model disagrees with MOST --
+    # which is a broken-price detector, not an edge finder. A live MLB moneyline
+    # is efficient to within a few points, so a 50-point gap (the model at 61% on
+    # a side the book has at 8c) is one of the two numbers being wrong, not value.
+    # Left unguarded this produced a "Best value" slip advertising +697% EV.
+    priced = [c for c in ml_combos
+              if c.get("ev_pct") is not None and not _implausible(c["legs"])]
     best_value = max(priced, key=lambda c: c["ev_pct"], default=None)
 
     # Mixed combos draw from every bet type (moneyline + props).

@@ -224,21 +224,70 @@ def t_mask_math_live():
                     if all(c["mask"] & (1 << i) for c in legs))
         if mlb_sim._popcount(jm) != brute:
             joint_bad += 1
+    # build_candidates temperature-scales the moneyline and batter props against
+    # the graded record, so for those types marg is deliberately NOT the raw mask
+    # fraction. The types left raw must still match it exactly.
+    raw_types = {"Total", "Run line", "RFI", "Ks"}
+    cal_bad = []
     for c in cands:
-        if abs(c["marg"] - mlb_sim._popcount(c["mask"]) / n) > 1e-9:
-            marg_bad += 1
+        raw = mlb_sim._popcount(c["mask"]) / n
+        if c["type"] in raw_types:
+            if abs(c["marg"] - raw) > 1e-9:
+                marg_bad += 1
+        # Calibration must stay a sane monotone nudge, never a rewrite.
+        elif not (0.0 < c["marg"] < 1.0) or abs(c["marg"] - raw) > 0.15:
+            cal_bad.append((c["label"], round(raw, 4), round(c["marg"], 4)))
     from collections import defaultdict
     lad = defaultdict(list)
     for c in cands:
         kr = c.get("kref") or {}
         if kr.get("player") and kr.get("line") is not None:
-            lad[(kr["t"], kr["player"])].append((kr["line"], c["marg"]))
-    mono_bad = sum(1 for seq in lad.values()
-                   for (l1, p1), (l2, p2) in zip(sorted(seq), sorted(seq)[1:])
-                   if p2 > p1 + 1e-9)
+            # A NO leg shares its twin's (type, player, line), so bucketing
+            # without the side compared a market against its own complement and
+            # called every YES/NO pair a monotonicity break.
+            lad[(kr["t"], kr["player"], c.get("side", "yes"))].append(
+                (kr["line"], c["marg"]))
+    # "n+" ladders only go one way: a higher line can never be likelier. On the
+    # NO side the sense flips (NO 3+ hits is likelier than NO 1+ hits).
+    mono_bad = 0
+    for (t, player, side), seq in lad.items():
+        s = sorted(seq)
+        for (l1, p1), (l2, p2) in zip(s, s[1:]):
+            if l2 == l1:
+                continue
+            if (p2 > p1 + 1e-9) if side != "no" else (p2 < p1 - 1e-9):
+                mono_bad += 1
     check(f"joint odds == brute force ({g['matchup']})", joint_bad == 0, joint_bad)
-    check("marginals match masks", marg_bad == 0, marg_bad)
-    check("prop ladders monotonic", mono_bad == 0, mono_bad)
+    check("uncalibrated marginals match masks", marg_bad == 0, marg_bad)
+    check("calibration is a bounded nudge", not cal_bad, cal_bad[:3])
+    check("prop ladders monotonic (per side)", mono_bad == 0, mono_bad)
+    # The same-game joint must be quoted on the same calibrated scale as its legs,
+    # or a slip's headline probability disagrees with the legs printed under it.
+    item = mlb_sim.best_same_game([c for c in cands], n, 3, 0.45, 0, 3)
+    if item:
+        floor = min(l["prob_pct"] for l in item["legs"])
+        check("same-game joint <= its smallest leg",
+              item["combined_prob_pct"] <= floor + 1e-6,
+              f"{item['combined_prob_pct']} vs {floor}")
+        by_label = {c["label"]: c for c in cands}
+        raw_ind, raw_j = 1.0, None
+        masks = []
+        for l in item["legs"]:
+            c = by_label.get(l["pick"])
+            if not c:
+                masks = []
+                break
+            raw_ind *= mlb_sim._popcount(c["mask"]) / n
+            masks.append(c["mask"])
+        if masks:
+            jm = masks[0]
+            for m in masks[1:]:
+                jm &= m
+            raw_j = mlb_sim._popcount(jm) / n
+            true_corr = (raw_j - raw_ind) * 100
+            check("corr_delta reports correlation, not the calibration gap",
+                  abs(item["corr_delta_pct"] - true_corr) <= 1.0,
+                  f"reported {item['corr_delta_pct']} vs true {true_corr:.2f}")
 
 
 def t_season_end_projection_live():

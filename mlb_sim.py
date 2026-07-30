@@ -906,7 +906,7 @@ def build_candidates(g, sim, types=None):
     mean_margin = round(_mean([hr_runs[i] - ar_runs[i] for i in range(n)]), 1)
 
     def add(typ, label, pred, group=None, model=None, kref=None, avg=None, unit=None):
-        if types and typ not in types:
+        if types is not None and typ not in types:
             return
         # `group` = the underlying market (a player, or ML/Total/Run line); a
         # parlay never stacks two legs from the same group. `model` is the closed-
@@ -1147,7 +1147,12 @@ def _market_conflict(combo):
     player/pitcher (those are one correlated market, not independent picks)."""
     seen = set()
     for c in combo:
-        g = c.get("group", c["type"])
+        # dict.get evaluates its default EAGERLY, so c.get("group", c["type"])
+        # raised KeyError on any candidate without a "type" even when it had a
+        # perfectly good "group". Every candidate build_candidates emits happens
+        # to carry both, so this never fired -- but it made the conflict check
+        # crash-prone for anything constructed anywhere else.
+        g = c.get("group") or c.get("type")
         if g in seen:
             return True
         seen.add(g)
@@ -1212,6 +1217,21 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
     if len(cands) < 2:
         return None
     phi = _corr_matrix(cands, n)
+    # build_candidates CALIBRATES each leg's marginal against our graded record
+    # (temperature scaling on the win model and batter props), but a joint read
+    # off the sim masks is the RAW frequency. Mixing the two made a slip's
+    # headline probability disagree with its own legs by ~3pp -- always in the
+    # optimistic direction -- and left corr_delta (joint - indep) reporting the
+    # calibration gap as if it were correlation, sometimes with the wrong sign:
+    # legs that were genuinely +2pp correlated displayed as -0.5pp.
+    # Rescaling the joint by the product of the per-leg calibration ratios keeps
+    # the sim's dependence structure intact while putting the joint on the same
+    # scale as the marginals it is quoted beside.
+    margs = [c["marg"] for c in cands]
+    ratios = []
+    for c in cands:
+        raw = _popcount(c["mask"]) / n
+        ratios.append((c["marg"] / raw) if raw > 0 else 1.0)
     payout_mode = bool(target_payout and target_payout > 1)
     sizes = range(2, max_legs + 1) if payout_mode else [max(2, min(n_legs, max_legs))]
 
@@ -1247,6 +1267,15 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
             for m in masks[1:]:
                 jm &= m
             joint = _popcount(jm) / n
+            # Onto the calibrated scale, capped by the smallest marginal (a joint
+            # can never beat its least likely leg). Done here, not at the end, so
+            # the confidence/payout target is judged on the number we report.
+            cal, cap = 1.0, 1.0
+            for i in idxs:
+                cal *= ratios[i]
+                if margs[i] < cap:
+                    cap = margs[i]
+            joint = min(joint * cal, cap)
             if joint <= 0:
                 continue
             payout = 1.0 / joint
@@ -1305,6 +1334,15 @@ def game_bundles(cands, n, max_legs=3, per_size=6):
     few (high prob) and the longest-shot few (high payout, to reach a target)."""
     cs = _pool(cands, 14)
     phi = _corr_matrix(cs, n)
+    # Same calibrated-marginal / raw-joint mismatch as best_same_game -- and it
+    # compounds here, because a mixed parlay multiplies one bundle per game. Even
+    # a SIZE-1 bundle needs this: its raw mask frequency is not the calibrated
+    # marginal the leg is displayed with.
+    margs = [c["marg"] for c in cs]
+    ratios = []
+    for c in cs:
+        raw = _popcount(c["mask"]) / n
+        ratios.append((c["marg"] / raw) if raw > 0 else 1.0)
     bundles = []
     for sz in range(1, max_legs + 1):
         if sz > len(cs):
@@ -1320,6 +1358,12 @@ def game_bundles(cands, n, max_legs=3, per_size=6):
             for m in masks[1:]:
                 jm &= m
             joint = _popcount(jm) / n
+            cal, cap = 1.0, 1.0
+            for i in idxs:
+                cal *= ratios[i]
+                if margs[i] < cap:
+                    cap = margs[i]
+            joint = min(joint * cal, cap)
             if joint <= 0.005:
                 continue
             sized.append((joint, combo))
