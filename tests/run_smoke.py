@@ -193,6 +193,61 @@ def t_clock():
           time.time() - mid)
 
 
+def t_sim_worker_sizing():
+    """The deep sim must size its pool to the CONTAINER, not the host.
+
+    multiprocessing.cpu_count() reports the machine's cores, so on a small plan
+    the sim would start eight workers on half a core against a 512 MB cap and be
+    OOM-killed -- while the web app survives, so it looks like the run merely
+    never finishes."""
+    import os
+    import deep_season as ds
+
+    n = ds.default_workers()
+    check("worker count is sane on this box", 1 <= n <= 8, n)
+
+    had = os.environ.get("VIGIL_SIM_WORKERS")
+    try:
+        os.environ["VIGIL_SIM_WORKERS"] = "1"
+        check("VIGIL_SIM_WORKERS pins the pool", ds.default_workers() == 1)
+        os.environ["VIGIL_SIM_WORKERS"] = "not-a-number"
+        check("a bad override falls back instead of crashing",
+              1 <= ds.default_workers() <= 8)
+    finally:
+        os.environ.pop("VIGIL_SIM_WORKERS", None)
+        if had is not None:
+            os.environ["VIGIL_SIM_WORKERS"] = had
+
+    orig = ds._cgroup_limit
+    try:
+        def small(v2, v1, parse):
+            return parse("50000 100000") if "cpu" in v2 else parse(str(512 * 1024 * 1024))
+        ds._cgroup_limit = small
+        check("a 512 MB / half-core container gets 1 worker",
+              ds.default_workers() == 1, ds.default_workers())
+
+        def big(v2, v1, parse):
+            return parse("400000 100000") if "cpu" in v2 else parse(str(4 << 30))
+        ds._cgroup_limit = big
+        check("a 4 GB / 4-core container gets 4 workers",
+              ds.default_workers() == 4, ds.default_workers())
+
+        def memtight(v2, v1, parse):
+            # plenty of CPU, but only enough RAM for one worker
+            return parse("800000 100000") if "cpu" in v2 else parse(str(400 * 1024 * 1024))
+        ds._cgroup_limit = memtight
+        check("memory binds before CPU when it is the tighter limit",
+              ds.default_workers() == 1, ds.default_workers())
+
+        def nolimits(v2, v1, parse):
+            return None
+        ds._cgroup_limit = nolimits
+        check("no cgroup limits -> still bounded, never unbounded",
+              1 <= ds.default_workers() <= 8)
+    finally:
+        ds._cgroup_limit = orig
+
+
 # ----------------------------------------------------------------- online --
 def t_mask_math_live():
     """Brute-force the combo engine's joint odds on a real game: the popcount
@@ -324,6 +379,7 @@ def main():
     t_store_lifecycle()
     t_pick6_rules()
     t_clock()
+    t_sim_worker_sizing()
     if online:
         print("== online (live data) ==")
         t_mask_math_live()

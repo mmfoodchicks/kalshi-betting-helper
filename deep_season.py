@@ -14,6 +14,8 @@ run completes.
 """
 
 import multiprocessing as mp
+import os
+
 import clock
 import random
 import time
@@ -27,6 +29,81 @@ import season_sim
 _WC, _DS, _LCS, _WS = 2, 3, 4, 4
 
 _G = {}   # worker globals (set via initializer): profiles, schedule, standings, structure
+
+# Measured peak PSS -- the figure a container's memory limit actually enforces,
+# unlike summed RSS, which double-counts the copy-on-write pages forked workers
+# share and overstates a pool by several times.
+#   app idle 35 MB | workers=1 336 MB | workers=2 613 MB | workers=4 562 MB
+# So each forked worker costs roughly this much on top of the app.
+_MB_PER_WORKER = 140
+_MB_RESERVE = 220          # app, request threads, and the parent's own copy
+
+
+def _cgroup_limit(v2_path, v1_path, parse):
+    for p in (v2_path, v1_path):
+        try:
+            with open(p) as f:
+                v = parse(f.read().strip())
+            if v:
+                return v
+        except Exception:
+            continue
+    return None
+
+
+def default_workers():
+    """How many workers actually FIT, rather than how many cores the machine has.
+
+    multiprocessing.cpu_count() reports the HOST's cores, not the cgroup's quota.
+    On a small container that means eight workers started on half a core and
+    against a 512 MB cap, which is how a deep run gets OOM-killed instead of
+    merely being slow -- and it fails confusingly, because the web app survives
+    and only the sim dies. So read the container's real CPU and memory limits and
+    size the pool to whichever binds first.
+
+    VIGIL_SIM_WORKERS overrides everything, including on hosts that expose no
+    limits at all."""
+    env = os.environ.get("VIGIL_SIM_WORKERS")
+    if env:
+        try:
+            return max(1, int(env))
+        except ValueError:
+            pass
+    cap = mp.cpu_count()
+
+    def _cpu(s):
+        # cgroup v2 "max 100000" (unlimited) or "50000 100000" (half a core)
+        parts = s.split()
+        if parts and parts[0] not in ("max", "-1"):
+            try:
+                quota = float(parts[0])
+                period = float(parts[1]) if len(parts) > 1 else 100000.0
+                return max(1, int(quota / period)) if quota > 0 else None
+            except Exception:
+                return None
+        return None
+
+    cpu = _cgroup_limit("/sys/fs/cgroup/cpu.max",
+                        "/sys/fs/cgroup/cpu/cpu.cfs_quota_us", _cpu)
+    if cpu:
+        cap = min(cap, cpu)
+
+    def _mem(s):
+        if s in ("max", "-1"):
+            return None
+        try:
+            b = int(s)
+        except ValueError:
+            return None
+        # cgroup v1 reports a huge sentinel when unlimited
+        return b if 0 < b < (1 << 62) else None
+
+    mem = _cgroup_limit("/sys/fs/cgroup/memory.max",
+                        "/sys/fs/cgroup/memory/memory.limit_in_bytes", _mem)
+    if mem:
+        room = (mem / (1024 * 1024)) - _MB_RESERVE
+        cap = min(cap, max(1, int(room // _MB_PER_WORKER)))
+    return max(1, min(cap, 8))
 
 
 def _profiles(season, tids):
@@ -421,7 +498,7 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
     shared = {"standings": stand, "schedule": games, "profiles": profs,
               "leagues": dict(leagues)}
 
-    workers = workers or min(mp.cpu_count(), 8)
+    workers = workers or default_workers()
     _prog(running=True, done=0, total=n_seasons, started=time.time(), season=season)
     # Many small chunks (~20 per worker) so the loading bar advances smoothly over
     # a long 4,000-season run instead of jumping in a few big steps.

@@ -35,10 +35,11 @@ services:
     #   mountPath: /data
     #   sizeGB: 1
     #
-    # SIZING, MEASURED: a 4,000-season deep run peaks near 840 MB across its
-    # worker processes on four cores, so a 512 MB plan (Free AND Starter) gets
-    # the sim OOM-killed -- the app survives, the run never finishes. It also
-    # costs ~1.1 CPU-hours for the sim plus ~1.9 for the attribution, so half a
-    # core turns a nightly job into a six-hour one. If you want the deep sim to
-    # actually complete here, you need a 2 GB / 1 CPU plan or larger; see
-    # DEPLOY.md, which compares this against a VPS on both price and wall clock.
+    # SIZING, MEASURED as peak PSS (what a cgroup limit enforces; summed RSS
+    # double-counts the pages forked workers share and reads several times
+    # higher): app idle 35 MB, +336 MB with one sim worker, +613 MB with two.
+    # So Starter's 512 MB is enough at ONE worker, and a 4,000-season run takes
+    # about an hour -- fine for a job that runs at midnight.
+    # The app sizes its own pool from the cgroup CPU and memory limits, so it
+    # will pick 1 worker here rather than following the host core count off a
+    # cliff; VIGIL_SIM_WORKERS overrides. See DEPLOY.md.

@@ -6,33 +6,39 @@ certificate; they differ in cost, effort, and how "your own server" it feels.
 
 | Path | Cost | Effort | Always-on | Persistent data | Deep sim finishes? |
 |------|------|--------|-----------|-----------------|--------------------|
-| **Render (free)** | $0 | clicks | ❌ sleeps when idle | ❌ resets on deploy | ❌ |
-| **Render (Starter)** | ~$7/mo | clicks | ✅ | ✅ (1 GB disk) | ❌ **512 MB — OOM** |
-| **Render (Standard)** | ~$25/mo | clicks | ✅ | ✅ | ✅ ~3 h/night |
-| **VPS + Docker + Caddy** | ~$5–12/mo | some CLI | ✅ | ✅ (volume) | ✅ ~1–2 h/night |
+| **Render (free)** | $0 | clicks | ❌ sleeps when idle | ❌ resets on deploy | ❌ no disk |
+| **Render (Starter)** | ~$7/mo | clicks | ✅ | ✅ (1 GB disk) | ✅ ~1 worker, overnight |
+| **VPS + Docker + Caddy** | ~$5–12/mo | some CLI | ✅ | ✅ (volume) | ✅ faster, 2–4 workers |
 
-### Sizing the box — measured, not guessed
+### Sizing the box — measured
 
-The deep season sim is the thing that decides your plan, and it is heavier than
-a web app looks:
+The deep season sim decides your plan. The numbers below are **peak PSS**, which
+is what a container's memory limit actually enforces; summed RSS looks several
+times larger because it double-counts the copy-on-write pages forked workers
+share, and reading RSS is how you talk yourself into buying a bigger box than
+you need.
 
-- **Memory: ~840 MB peak** across its worker processes on four cores. Anything
-  with 512 MB — Render **Free and Starter both** — gets the sim OOM-killed. The
-  site stays up and the run simply never finishes, which is a confusing way to
-  fail. **Starter is not enough, despite being the paid tier.**
-- **CPU: ~1.1 core-hours** for a 4,000-season run, plus ~1.9 more if attribution
-  is on (see `VIGIL_MAX_ATTRIB`). On half a core that is a six-hour night; on
-  2–4 cores it is one to two hours.
+| | peak PSS | 4,000 seasons |
+|---|---|---|
+| app idle | 35 MB | — |
+| **+ sim, 1 worker** | **336 MB** | ~0.9 h |
+| + sim, 2 workers | 613 MB | ~0.5 h |
+| + sim, 4 workers | 562 MB | ~0.3 h |
 
-So the honest comparison is **Render Standard (~$25/mo) vs a 2–4 core VPS
-(~$5–12/mo)**. The VPS is cheaper *and* several times faster for this workload,
-at the cost of running a couple of commands yourself. If you would rather never
-touch a terminal, Standard is fine — just not Starter.
+So **512 MB is enough at one worker**, which is why Starter works if you are
+happy for the run to take the night — and at midnight, you probably are.
 
-> If you want to stay small, set `VIGIL_MAX_ATTRIB=0`. You keep the calendar and
-> the "what changed" sentences and drop only the measured pp figures — which, as
-> the attribution notes explain, are frequently "no measurable effect" anyway.
-> That cuts the nightly cost by roughly two thirds.
+**The catch, and it is handled for you:** `multiprocessing.cpu_count()` reports
+the HOST's cores, not your container's quota. Left alone it would start eight
+workers on half a core against a 512 MB cap and get the sim OOM-killed — while
+the web app survives, so it looks like the run merely never finishes. The app now
+reads the real cgroup CPU and memory limits and sizes the pool to whichever binds
+first. Override with `VIGIL_SIM_WORKERS` if you want to force it.
+
+> To cut the nightly cost by roughly two thirds, set `VIGIL_MAX_ATTRIB=0`. You
+> keep the calendar and every "what changed" sentence and drop only the measured
+> pp figures — which, as the attribution notes explain, are frequently "no
+> measurable effect" anyway.
 
 > Security note: a **managed host (Render)** is usually the *safer* default —
 > they patch the OS, terminate TLS, and isolate your app, so there's less for
@@ -52,7 +58,11 @@ HTTP login via `APP_PASSWORD`.
 | `SECRET_KEY` | Flask signing key | a long random string (`python -c "import secrets;print(secrets.token_hex(32))"`) |
 | `APP_PASSWORD` | if set, the whole site requires HTTP login | set one while it's private; blank = open |
 | `APP_USER` | username for that login | `vigil` (default) |
-| `KALSHI_DB` | SQLite path | `/data/markets.db` on a persistent disk |
+| `KALSHI_DB` | recorded market history | `/data/markets.db` on a persistent disk |
+| `PREDLOG_DB` | prediction log (your track record; calibration is fitted from it) | `/data/predlog.db` |
+| `DEEP_CACHE_DIR` | deep-sim cache **and its run history** | `/data/deep` |
+| `VIGIL_SIM_WORKERS` | force the sim's pool size | leave unset — auto-sized from the container's limits |
+| `VIGIL_MAX_ATTRIB` | how many changes get a measured pp figure | `6`; set `0` to skip pricing and cut the night by ~2/3 |
 | `TIERS_ENFORCED` | turn on subscription gating | `0` (off — owner/God mode) for now |
 | `PORT` | port to bind | set by the host automatically |
 
@@ -68,9 +78,8 @@ HTTP login via `APP_PASSWORD`.
 4. Deploy. You get `https://vigil-xxxx.onrender.com`. Add a custom domain under
    **Settings → Custom Domains** (free TLS).
 
-**To make it run 24/7 and keep its data:** change the plan to **Standard** (not
-Starter — see the sizing note above; 512 MB OOM-kills the deep sim), then in
-`render.yaml` uncomment the `disk:` block **and all three env vars** —
+**To make it run 24/7 and keep its data:** change the plan to **Starter**, then
+in `render.yaml` uncomment the `disk:` block **and all three env vars** —
 `KALSHI_DB`, `PREDLOG_DB`, `DEEP_CACHE_DIR` — and redeploy. Missing any one of
 them leaves that store inside the container, where every restart wipes it.
 (Free services sleep when idle and have no disk, so logging pauses and the data
@@ -80,10 +89,11 @@ resets on each deploy — fine for a demo, not for accumulating a track record.)
 
 ## Path B — Your own server (VPS + Docker + Caddy)
 
-**Recommended for this app.** Pick a box with **at least 2 vCPU and 4 GB RAM**
-(Hetzner CX22, DigitalOcean 2 GB/2 vCPU, Vultr equivalent — roughly $5–12/mo).
-That is what the deep sim needs; see the sizing note above. This runs the app
-behind **Caddy**, which fetches and auto-renews a Let's Encrypt certificate.
+Worth it if you want the sim to finish in half an hour rather than overnight, or
+you would rather not be on a managed platform. A 2 vCPU / 4 GB box (Hetzner CX22,
+DigitalOcean 2 GB, Vultr equivalent — roughly $5–12/mo) runs it with 2–4 workers.
+This puts the app behind **Caddy**, which fetches and auto-renews a Let's Encrypt
+certificate.
 
 1. Create the VPS (Ubuntu), point your domain's **A record** at its IP.
 2. Install Docker: `curl -fsSL https://get.docker.com | sh`
