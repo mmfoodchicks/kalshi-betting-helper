@@ -302,6 +302,7 @@ def _insights(a, b, sim, surface, trusted=True):
 
 def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
                  slam_names=None, tournament=None, surface_map=None, tourn_map=None,
+                 serp_surfaces=None,
                  start_map=None):
     if len(players) != 2:
         return None
@@ -322,7 +323,11 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # consulted, so the ITF clay towns in tennis_live._CLAY_KW were dead code.
     smap = surface_map or {}
     surface = (smap.get(_norm(players[0]["name"])) or smap.get(_norm(players[1]["name"]))
-               or _surface_of(tournament))
+               or _surface_of(tournament)
+               # Last resort before giving up: a cached Google lookup for this
+               # stop (serp_surface). Only reached when the keyword map has no
+               # opinion, which for ITF is most of the board.
+               or (serp_surfaces or {}).get(tournament))
     # A wrong surface is worse than no surface. An unidentified stop used to be
     # labelled Hard outright, so in the European summer -- when the ITF calendar is
     # mostly clay and ITF is over 90% of the board -- every one of those matches was
@@ -537,17 +542,33 @@ def _compute(n_sims=12000):
         surface_map = {}
         tourn_map = {}
         start_map = {}
-    matches = []
+    # Gather every tournament on the board first, so surfaces the keyword map
+    # cannot name are resolved in ONE batched pass with a spend cap, instead of
+    # each match firing its own lookup. Surface belongs to a venue, so these are
+    # cached permanently and a steady board costs nothing after the first run.
+    slate = []
     for label, series, tcode in _TOURS:
-        evs = _match_markets(series)
-        for ev, rec in evs.items():
+        for ev, rec in _match_markets(series).items():
             players = rec["players"] if isinstance(rec, dict) else rec
             tournament = rec.get("tournament") if isinstance(rec, dict) else None
+            slate.append((label, series, tcode, ev, players, tournament))
+    serp_surfaces = {}
+    try:
+        import serp_surface
+        unknown = {t for _, _, _, _, _, t in slate
+                   if t and not _surface_of(t)}
+        if unknown:
+            serp_surfaces = serp_surface.resolve(sorted(unknown))
+    except Exception:
+        serp_surfaces = {}
+
+    matches = []
+    for label, series, tcode, ev, players, tournament in slate:
             try:
                 m = _build_match(label, ev, players, n_sims, fatigue_idx, tcode,
                                  slam_names=slam_names, tournament=tournament,
                                  surface_map=surface_map, tourn_map=tourn_map,
-                                 start_map=start_map)
+                                 start_map=start_map, serp_surfaces=serp_surfaces)
             except Exception:
                 m = None
             if m:
