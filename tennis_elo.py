@@ -27,6 +27,12 @@ _BASE = "https://api.elections.kalshi.com/trade-api/v2"
 # the pools (qualifiers, lucky losers) recalibrates from there.
 _SERIES = [("KXATPMATCH", "m", 1600.0), ("KXWTAMATCH", "w", 1600.0),
            ("KXITFMATCH", "m", 1400.0), ("KXITFWMATCH", "w", 1400.0)]
+# Same two entry tiers, for players who arrive from the deep archive rather than
+# from a Kalshi market. Sackmann's tourney_level codes: 15/25 are ITF futures
+# prize tiers, C is Challenger, S is satellite, Q is qualifying -- all lower-tier
+# entries. G/M/A/D/F (slams, Masters, ATP, Davis Cup, finals) are main tour.
+_TOUR_START, _ITF_START = 1600.0, 1400.0
+_LOW_TIERS = {"15", "25", "C", "S", "Q", "ITF", "FUTURES"}
 # Elo K factor -- FITTED, not guessed (tests/tennis_elo_fit.py). Rolling-origin
 # validation over two independent datasets -- ~19k settled Kalshi results
 # (ATP/WTA/ITF, the population this board actually runs on) and ~11.6k Match
@@ -121,9 +127,32 @@ def _build():
         pass
 
     by_gender = {"m": [], "w": []}
+    seen = set()
     for rec in store.values():
         date, win, los, g, tier_start = rec
         by_gender.get(g, by_gender["m"]).append((date, win, los, tier_start))
+        seen.add((date.replace("-", ""), g, _norm(win), _norm(los)))
+
+    # Deep history ahead of the Kalshi results. Kalshi only reaches back to when
+    # it started listing tennis, which leaves nearly every rating provisional; the
+    # archive gives those players a real baseline before the recent results land
+    # on top. Optional by construction -- if it is disabled or unreachable this is
+    # an empty list and the pools are exactly what they were before.
+    try:
+        import tennis_history
+        deep = tennis_history.results()
+    except Exception:
+        deep = []
+    for date, g, win, los, surf, level in deep:
+        key = (date, g, _norm(win), _norm(los))
+        if key in seen:
+            continue                       # already have it from settled markets
+        seen.add(key)
+        # Archive players enter at the tier their level implies: futures/ITF and
+        # qualifying start where our ITF pool starts, main-draw tour where the
+        # tour pool does, so the two populations stay on one comparable scale.
+        tier = _ITF_START if (level or "").upper() in _LOW_TIERS else _TOUR_START
+        by_gender.get(g, by_gender["m"]).append((date, win, los, tier))
     pools = {"m": {}, "w": {}}
     for g, matches in by_gender.items():
         matches.sort(key=lambda x: x[0])             # global chronological order
