@@ -51,7 +51,10 @@ HALFLIFE = 5.0
 def load():
     store = deep_cache.load("tennis_elo_results")[0] or {}
     rows = []
-    for date, win, los, g, tier in store.values():
+    for rec in store.values():
+        # Rows gained a 6th element (tournament) when the surface Elo landed;
+        # older rows are 5 long, so slice rather than unpack.
+        date, win, los, g, tier = rec[:5]
         if date and win and los and win != los:
             rows.append((date, win, los, g, tier))
     rows.sort(key=lambda r: r[0])

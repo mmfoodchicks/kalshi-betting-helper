@@ -278,6 +278,34 @@ def _insights(a, b, sim, surface, trusted=True):
         sets = rec.get("sets")
         detail = f"{sets}-set match {when}" if sets else "a heavier recent load"
         out.append(f"😮‍💨 Fatigue edge: {fresh['name'].split()[-1]} is fresher ({tired['name'].split()[-1]} had {detail})")
+    # Surface specialists. The rating now splits by court, so say when a player is
+    # materially better or worse on this one than they are overall -- this is the
+    # "great player, but not on clay" effect, and it is the single biggest thing
+    # the model was blind to before.
+    if surface:
+        for p in (a, b):
+            # Compare this surface against the player's OTHER surfaces, not
+            # against their overall rating. Surface ratings update only on their
+            # own surface, so they lag the overall as a matter of arithmetic --
+            # comparing to it called Shelton "weaker on hard" when hard is his
+            # best court by nearly 100 Elo. Surface-to-surface is the claim a
+            # reader actually wants.
+            sp = p.get("elo_by_surface") or {}
+            here = sp.get(surface)
+            others = [(v["elo"], v["n"]) for k, v in sp.items()
+                      if k != surface and v.get("n", 0) >= 10]
+            if not here or here.get("n", 0) < 15 or not others:
+                continue
+            tot = sum(n for _, n in others)
+            elsewhere = sum(e * n for e, n in others) / tot
+            gap = here["elo"] - elsewhere
+            if abs(gap) < 40:               # below this it is not a specialism
+                continue
+            last = p["name"].split()[-1]
+            word = "stronger" if gap > 0 else "weaker"
+            out.append(f"🎾 {last} is a {surface.lower()}-court {'specialist' if gap > 0 else 'weak spot'}: "
+                       f"{gap:+.0f} Elo vs their other surfaces "
+                       f"({here['n']} matches on {surface.lower()})")
     # Recent form. Flagged only at the extremes, and always as CONTEXT -- the
     # backtest in tennis_elo.form found no out-of-sample edge in a form term, so
     # this never claims the price is wrong, it just says what has been happening.
@@ -376,12 +404,24 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # Elo from settled results -- works for everyone, including ITF players the
     # charting never sees. This is the UFC-style "rate them from past matches".
     elo_pa = None
-    ea = tennis_elo.rate(a["name"], tcode)
-    eb = tennis_elo.rate(b["name"], tcode)
+    # Surface-aware when we know the court. The rating is the player's surface Elo
+    # shrunk toward their overall (tennis_elo.K_SURFACE), so a clay specialist is
+    # rated as one on clay without discarding what they have done elsewhere. This
+    # is the "#1 player can be a dog on clay" effect, and it only became
+    # supportable once the deep archive made per-surface samples big enough --
+    # measured, it was harmful on thinner data.
+    ea = tennis_elo.rate(a["name"], tcode, surface)
+    eb = tennis_elo.rate(b["name"], tcode, surface)
     if ea and eb:
         elo_pa = round(100.0 * tennis_elo.win_prob(ea["elo"], eb["elo"]), 1)
         a["elo"], b["elo"] = round(ea["elo"]), round(eb["elo"])
         a["elo_n"], b["elo_n"] = ea["n"], eb["n"]
+        for p, e in ((a, ea), (b, eb)):
+            if e.get("elo_overall") is not None:
+                p["elo_overall"] = round(e["elo_overall"])
+                p["elo_surface_n"] = e.get("surf_n", 0)
+                p["elo_by_surface"] = {k: {"elo": round(v["elo"]), "n": v["n"]}
+                                       for k, v in (e.get("surf") or {}).items()}
     # Recent form from settled results. The ESPN fatigue crawl above is ATP/WTA
     # only -- under a tenth of a typical board -- so form for the ITF bulk comes
     # from the same settled-match store the Elo is built on. Context for a human

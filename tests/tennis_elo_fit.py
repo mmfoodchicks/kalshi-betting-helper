@@ -13,16 +13,14 @@ as the pool deepens.
      results, the ramp matches the deep pool's best constant (0.6099 vs 0.6095)
      and beats the shallow pool's (0.6540 vs 0.6572).
 
-  2. SURFACE-SPLIT RATING -- REJECTED.
-     Giving each player a per-surface Elo shrunk toward their overall makes the
-     model monotonically WORSE at every level of surface weight. 69% of
-     player-surface cells hold fewer than 5 matches: a match outcome is one bit,
-     so splitting a thin history three ways just triples the noise. Surface
-     belongs where tennis_data already puts it -- in the serve/return rates, which
-     are estimated from HUNDREDS of points per match rather than a handful of
-     1-bit outcomes, and are shrunk toward the player's overall profile.
-     This is not an argument that surface does not matter. It matters a lot; it
-     just cannot be learned from match results at this sample size.
+  2. SURFACE-SPLIT RATING -- NOW SHIPPED (tennis_elo.K_SURFACE = 50).
+     Rejected twice on thinner data and accepted on the third look, which is the
+     point of keeping the check rather than the conclusion. On the 11.6k-match
+     charting archive, 69% of player-surface cells held under 5 matches and
+     rolling origin gave -0.0010. On the 55k-match deep archive that falls to 49%
+     and rolling origin gives +0.0035 with 5 of 5 folds positive, every fold
+     independently choosing 50. The ratings it produces are recognisable: Nadal
+     +164 clay over hard, Ruud +162, Musetti -113 on hard, Djokovic nearly flat.
 
   3. TIME DECAY / PROVISIONAL BOOST -- LEFT ALONE.
      Regressing an idle player's rating toward the pool mean hurt at every
@@ -55,9 +53,14 @@ SHIPPED_K = tennis_elo._K
 
 
 def load_kalshi():
+    # Rows gained a 6th element (tournament) when the surface Elo landed; older
+    # rows are still 5 long, so slice rather than unpack.
     store = deep_cache.load("tennis_elo_results")[0] or {}
-    rows = [(d.replace("-", ""), g, w, l, t)
-            for d, w, l, g, t in store.values() if d and w and l and w != l]
+    rows = []
+    for rec in store.values():
+        d, w, l, g, t = rec[:5]
+        if d and w and l and w != l:
+            rows.append((d.replace("-", ""), g, w, l, t))
     rows.sort(key=lambda r: r[0])
     return rows
 
@@ -132,6 +135,16 @@ def load_deep():
         return []
 
 
+def load_deep_surface():
+    """Same archive, keeping the surface label, for the surface check."""
+    try:
+        import tennis_history
+        return [(d, "m", w, l, s)
+                for d, tour, w, l, s, lv in tennis_history.results() if s]
+    except Exception:
+        return []
+
+
 def rolling(name, rows, folds=5):
     """Choose K on everything seen so far, score the NEXT block, walk forward.
     The shipped model is the RAMP, so it is scored alongside the constants rather
@@ -167,8 +180,16 @@ def rolling(name, rows, folds=5):
 
 def surface_check():
     """Per-surface Elo shrunk toward overall by K_SURF prior matches.
-    K_SURF=None is the pooled null."""
-    rows = load_charting(with_surface=True)
+    K_SURF=None is the pooled null.
+
+    Runs on the DEEP archive when it is reachable -- that is the data the shipped
+    K_SURFACE was fitted on and the only sample big enough to establish it. Falls
+    back to the charting archive, where the honest answer is still "not
+    established"."""
+    deep = load_deep_surface()
+    rows = deep if deep else load_charting(with_surface=True)
+    print("\n" + ("(deep archive)" if deep else "(charting archive -- thinner; "
+                                                 "the shipped value was fitted on the deep one)"))
     print("\n" + "=" * 78)
     print(f"SURFACE-SPLIT RATING  ({len(rows)} charted matches with a surface)")
     print("=" * 78)
@@ -201,12 +222,16 @@ def surface_check():
                                               else ((los, kl, ksl), (win, kw, ksw)))
                 out.append((min(0.995, max(0.005, elo_p(rate(kx, ksx), rate(ky, ksy)))),
                             1 if x == win else 0))
+            # Mirror PRODUCTION exactly: the experience ramp, and the surface
+            # rating stepped by its OWN match count. Using a flat K here made the
+            # test recommend K_surf 120-200 while the shipped 50 was fitted under
+            # the ramp -- the test was measuring a model that does not exist.
             ew = elo_p(ov[kw], ov[kl])
-            bw = 1.6 if n_ov[kw] < 10 else 1.0
-            bl = 1.6 if n_ov[kl] < 10 else 1.0
-            ov[kw] += SHIPPED_K * bw * (1.0 - ew); ov[kl] -= SHIPPED_K * bl * (1.0 - ew)
+            ov[kw] += tennis_elo.k_for(n_ov[kw]) * (1.0 - ew)
+            ov[kl] -= tennis_elo.k_for(n_ov[kl]) * (1.0 - ew)
             ews = elo_p(sf[ksw], sf[ksl])
-            sf[ksw] += SHIPPED_K * bw * (1.0 - ews); sf[ksl] -= SHIPPED_K * bl * (1.0 - ews)
+            sf[ksw] += tennis_elo.k_for(n_sf[ksw]) * (1.0 - ews)
+            sf[ksl] -= tennis_elo.k_for(n_sf[ksl]) * (1.0 - ews)
             n_ov[kw] += 1; n_ov[kl] += 1; n_sf[ksw] += 1; n_sf[ksl] += 1
         return out
 
@@ -238,11 +263,16 @@ def surface_check():
     print(f"\n  chosen per fold: {chosen}")
     print(f"  mean gain vs pooled: {mean:+.4f} logloss  ({pos}/{len(gains)} folds positive)")
     established = mean > 0.002 and pos >= len(gains) - 1
-    print(f"  -> {'SURFACE SPLIT HELPS -- wire it into tennis_elo' if established else 'not established: keep the pooled rating'}")
-    if not established and pos >= len(gains) - 1:
-        print("     (most folds are slightly positive at heavy shrinkage, so this is")
-        print("      worth re-running as the store deepens -- it is marginal, not dead)")
-    return not established
+    shipped = getattr(tennis_elo, "K_SURFACE", None)
+    print(f"  -> {'SURFACE SPLIT HELPS' if established else 'not established on this data'}"
+          f"   (shipped K_SURFACE = {shipped})")
+    if established and shipped:
+        near = [c for c in chosen if c and abs(c - shipped) <= 30]
+        print(f"     folds agreeing with the shipped value: {len(near)}/{len(chosen)}")
+    elif not established and shipped:
+        print("     NOTE: a surface split IS shipped but this data does not support it.")
+        print("     If this is the deep archive, reconsider K_SURFACE.")
+    return established
 
 
 def _ramp_vs_constants(name, rows):
@@ -288,7 +318,7 @@ def main():
     ok = (new1 <= old1 + 1e-4) and (new2 <= old2 + 1e-4)
     print(f"  shipped ramp beats the old flat default on both: {'YES' if ok else 'NO'}")
     if not quick:
-        print(f"  surface-split rating still rejected: {'YES' if surf_rejected else 'NO'}")
+        print(f"  surface split supported by the data: {'YES' if surf_rejected else 'NO'}")
     # Deliberately NOT a comparison of K_LATE against the best constant: those
     # should differ. K_LATE is where a well-established rating settles, while a
     # single constant is a compromise across a mixture of deep and shallow
