@@ -332,19 +332,61 @@ def surface_check():
     # average is not a gain we can use, since most of a board is ITF.
     kd, ks = collections.Counter(chosen).most_common(1)[0][0]
     tail = slice(edges[1], None)
+    tiers_ok = True
     for lbl, keep in (("tour", True), ("ITF/chall", False)):
         pr = [r for r in curves[("pooled",)][tail] if r[2] is keep]
         dr = [r for r in curves[("dev", kd, ks)][tail] if r[2] is keep]
         if pr:
+            g = L(pr) - L(dr)
+            tiers_ok = tiers_ok and g > 0
             print(f"  {lbl:>10s} n={len(pr):>6d}  pooled {L(pr):.4f}  "
-                  f"dev {L(dr):.4f}   gain {L(pr)-L(dr):+.4f}")
+                  f"dev {L(dr):.4f}   gain {g:+.4f}")
 
-    established = mean > 0.002 and pos >= len(gains) - 1
+    # Significance on the PAIRED per-match difference, rather than a hand-picked
+    # floor on the mean. The old rule was "mean > 0.002", which is arbitrary: it
+    # reads a +0.0018 gain that is positive in every fold and in both tiers as a
+    # failure, while a +0.0021 gain that is positive in three of five would pass.
+    # Every model here scores the SAME matches, so the differences are paired and
+    # a standard error is the honest test of whether the gain is real.
+    pool_t, dev_t = curves[("pooled",)][tail], curves[("dev", kd, ks)][tail]
+    d = [(-math.log(max(1e-9, p if y else 1 - p)))
+         - (-math.log(max(1e-9, q if y else 1 - q)))
+         for (p, y, _), (q, _, _) in zip(pool_t, dev_t)]
+    nD = len(d)
+    mu = sum(d) / nD
+    var = sum((x - mu) ** 2 for x in d) / (nD - 1)
+    se = math.sqrt(var / nD)
+    t = mu / se if se else 0.0
+    print(f"\n  paired difference (pooled - dev) over {nD} held-out matches:")
+    print(f"    mean {mu:+.5f}  SE {se:.5f}  t = {t:+.1f}")
+
+    # Three independent things must hold, and each catches a different failure:
+    # the gain is real (t), it is not one lucky stretch (folds), and it is not an
+    # average over one population helping while the other is hurt (tiers).
+    established = t > 3.0 and pos == len(gains) and tiers_ok
     print(f"\n  -> {'SURFACE-AWARE RATING HELPS' if established else 'not established on this data'}"
           f"   (shipped K_DEV={tennis_elo.K_DEV}, K_SURFACE={tennis_elo.K_SURFACE})")
+    print(f"     t>3: {t > 3.0}   every fold positive: {pos == len(gains)}   "
+          f"both tiers positive: {tiers_ok}   beats retired chain: {posc}/{len(vchain)}")
     if established:
-        near = [c for c in chosen if c == (tennis_elo.K_DEV, tennis_elo.K_SURFACE)]
-        print(f"     folds agreeing with the shipped constants: {len(near)}/{len(chosen)}")
+        # What matters is not whether a fold picked the shipped pair exactly, but
+        # what picking it COSTS. The surface is a plateau -- K_SHRINK is flat from
+        # 5 to 80 and the whole gain comes from having any deviation at all -- so
+        # an exact-match count reads as total disagreement over a 0.0001 spread.
+        ship = (tennis_elo.K_DEV, tennis_elo.K_SURFACE)
+        exact = sum(1 for c in chosen if c == ship)
+        if ("dev",) + ship in curves:
+            costs = []
+            for i in range(1, folds):
+                lo, hi = edges[i], edges[i + 1]
+                costs.append(L(curves[("dev",) + ship][lo:hi])
+                             - L(curves[("dev",) + chosen[i - 1]][lo:hi]))
+            worst = max(costs)
+            print(f"     folds picking the shipped pair exactly: {exact}/{len(chosen)}; "
+                  f"cost of shipping it anyway: {sum(costs)/len(costs):+.5f} mean, "
+                  f"{worst:+.5f} worst")
+            if worst > 0.001:
+                print("     ^^ that is a real cost -- move K_DEV/K_SURFACE to the fold choice.")
     else:
         print("     NOTE: a surface split IS shipped but this data does not support it.")
         print("     If this is the deep archive, reconsider K_DEV / K_SURFACE.")

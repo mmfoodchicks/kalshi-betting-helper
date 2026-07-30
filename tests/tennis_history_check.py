@@ -203,16 +203,24 @@ if not rows:
     print("  tennis_elo will keep running on the Kalshi store alone (no regression).")
     sys.exit(1)
 
-# show a real header so the assumed layout is on the record
-for tour, repo, tmpl, kind in th._SOURCES:
-    import clock
-    txt = th._fetch(repo, tmpl.format(year=clock.today_et().year - 1))
-    if txt:
-        hdr = txt.split("\n", 1)[0]
-        print(f"\n  real header of {tmpl}:")
-        print(f"    {hdr[:300]}")
-        print(f"    resolved -> {th._resolve(hdr.split(','))}")
-        break
+# show a real header PER SOURCE so the assumed layout is on the record. Every
+# source has to resolve on its own -- the ITF files are the ones that matter most
+# here and they are not the first entry, so stopping at the first hit would leave
+# exactly the files we care about unverified.
+import clock
+for tour, tmpl, kind in th._SOURCES:
+    url = tmpl.format(year=clock.today_et().year - 1)
+    txt = th._fetch(url)
+    if not txt:
+        print(f"\n  {kind}: UNREACHABLE ({url.rsplit('/', 1)[-1]})")
+        continue
+    hdr = txt.split("\n", 1)[0]
+    res = th._resolve(hdr.split(","))
+    print(f"\n  {kind}  ({url.rsplit('/', 1)[-1]})")
+    print(f"    header   {hdr[:200]}")
+    print(f"    resolved {res}")
+    if not res:
+        print("    ^^ THIS SOURCE WOULD BE REJECTED")
 
 import collections
 print(f"\n  surface coverage: {dict(collections.Counter(r[4] for r in rows))}")
@@ -226,7 +234,8 @@ print(f"  players: {tot};  8+ matches: {sum(1 for v in cnt.values() if v>=8)} "
       f"20+: {sum(1 for v in cnt.values() if v>=20)} "
       f"({sum(1 for v in cnt.values() if v>=20)/tot*100:.0f}%)")
 print("\n  (compare the Kalshi-only pool: 29% at 8+, 1.5% at 20+)")
-print("\n  NEXT: re-run tests/tennis_elo_fit.py -- K=48 was fitted on the SHALLOW")
-print("  pool, and a deeper history usually wants a LOWER K. The fit test prints a")
-print("  drift warning when the shipped value no longer matches.")
+print("\n  NEXT: re-run tests/tennis_elo_fit.py. Both the K ramp and the surface")
+print("  constants were fitted on a snapshot of this archive; as it grows, the fit")
+print("  test re-checks them against pooling AND against the estimator they")
+print("  replaced, and says so when the shipped values no longer hold up.")
 sys.exit(0)

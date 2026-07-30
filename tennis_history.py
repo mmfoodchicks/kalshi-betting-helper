@@ -51,9 +51,12 @@ _TML = "https://raw.githubusercontent.com/Tennismylife/TML-Database/master"
 # (wta_matches_qual_itf_*), which is the tier most of a Kalshi tennis board sits
 # in and which had no historical source at all.
 #
-# TML-Database stays as a tail source for ATP tour: it is live-updated where the
-# HuggingFace mirror runs a couple of months behind, and the two overlap
-# harmlessly because _build dedups on (date, players).
+# TML-Database stays for ATP tour, but NOT for recency -- measured, its current
+# year holds 137 rows against the mirror's 1,449, and its settled years duplicate
+# the mirror almost row for row (3076/3076, 2943/2944). It earns its place as the
+# one source on a DIFFERENT host: the canonical GitHub repos vanished without
+# warning, and if HuggingFace goes the same way this still returns ATP tour
+# instead of nothing. The overlap is free -- _build dedups on (date, players).
 _SOURCES = (
     ("m", _HF + "/atp/atp_matches_futures_{year}.csv", "ITF men"),
     ("w", _HF + "/wta/wta_matches_qual_itf_{year}.csv", "ITF women"),
