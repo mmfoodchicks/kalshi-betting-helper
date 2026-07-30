@@ -17,3 +17,6 @@ predlog.db
 
 # Deep-sim cache
 data/
+
+# Build artifacts (a 47MB playwright wheel was committed once)
+*.whl

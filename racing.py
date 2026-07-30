@@ -325,15 +325,36 @@ def get_grid(sport, race_name=None, date=None):
 _form_cache = {}            # key -> (epoch, value)
 
 
+# Same leak as baseball._cached had: the TTL was only checked on READ, so an
+# entry nobody asked for again was never dropped. This cache holds the biggest
+# objects in the app -- the tennis Elo pools are ~47 MB -- so a stale copy left
+# lying beside a fresh one is the difference between fitting in 512 MB and not.
+_CACHE_SWEEP_EVERY = 50
+_cache_puts = 0
+
+
+def _sweep_form_cache(now):
+    dead = [k for k, v in _form_cache.items()
+            if len(v) > 2 and now - v[0] >= v[2]]
+    for k in dead:
+        _form_cache.pop(k, None)
+    return len(dead)
+
+
 def _cached(key, ttl, fn):
+    global _cache_puts
+    now = datetime.datetime.now().timestamp()
     hit = _form_cache.get(key)
-    if hit and (datetime.datetime.now().timestamp() - hit[0]) < ttl:
+    if hit and (now - hit[0]) < (hit[2] if len(hit) > 2 else ttl):
         return hit[1]
     try:
         val = fn()
     except Exception:
         val = None
-    _form_cache[key] = (datetime.datetime.now().timestamp(), val)
+    _form_cache[key] = (datetime.datetime.now().timestamp(), val, ttl)
+    _cache_puts += 1
+    if _cache_puts % _CACHE_SWEEP_EVERY == 0:
+        _sweep_form_cache(now)
     return val
 
 

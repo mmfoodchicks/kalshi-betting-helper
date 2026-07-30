@@ -12,3 +12,9 @@ venv/
 node_modules/
 DEPLOY.md
 ROADMAP.md
+
+# Stray build artifacts. A 47MB playwright wheel was committed and shipped inside
+# the image; nothing in requirements.txt uses playwright.
+*.whl
+*.tar.gz
+tests/

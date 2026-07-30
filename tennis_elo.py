@@ -15,6 +15,7 @@ ratings sharpen -- recursive and dynamic, like the rest of the engines.
 
 import datetime
 import json
+import os
 import math
 import unicodedata
 import urllib.request
@@ -327,9 +328,58 @@ def _build():
     return pools
 
 
+def _build_blob():
+    """Entry point for the isolated build: pools as a pickle. Module level so the
+    'spawn' start method can import and call it."""
+    import pickle
+    return pickle.dumps(_build(), protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def _build_isolated():
+    """Build the pools in a SEPARATE PROCESS and bring back just the result.
+
+    Building them costs far more memory than keeping them does: walking 436k
+    archive matches peaks near 390 MB, but the pools themselves are about 42 MB.
+    In-process that peak never comes back -- the freed rows leave pymalloc arenas
+    too fragmented to release (malloc_trim recovers ~4 MB of it), so the app sits
+    at ~215 MB afterwards and a 512 MB container has nothing left for the season
+    sim. Measured, this keeps the parent at ~75 MB instead: the child does the
+    allocating and the OS takes it all back when it exits.
+
+    A plain subprocess, NOT multiprocessing. Both alternatives are traps here:
+    'fork' can inherit a lock held by another thread of a threaded server and
+    deadlock the child, and 'spawn' re-imports the parent's __main__ -- which for
+    any SCRIPT that reaches this (the test suite, a one-off analysis) means the
+    child re-runs that script, calls back in here, and spawns again. That was not
+    hypothetical; it hung the tennis board check until the recursion was spotted.
+    Running a fresh interpreter on a fixed command has neither failure mode.
+
+    Falls back to building in-process if the subprocess cannot run -- heavier,
+    but never a dead board."""
+    import pickle
+    import subprocess
+    import sys
+    try:
+        out = subprocess.run(
+            [sys.executable, "-c",
+             "import sys, tennis_elo; sys.stdout.buffer.write(tennis_elo._build_blob())"],
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=_BUILD_TIMEOUT_S)
+        if out.returncode == 0 and out.stdout:
+            return pickle.loads(out.stdout)
+    except Exception:
+        pass
+    return _build()
+
+
+_BUILD_TIMEOUT_S = 900
+
+
 def pools():
     """Cached Elo pools, refreshed daily (settled results accrue continuously)."""
-    return racing._cached(("tennis_elo",), 24 * 3600, _build) or {"m": {}, "w": {}}
+    return (racing._cached(("tennis_elo",), 24 * 3600, _build_isolated)
+            or {"m": {}, "w": {}})
 
 
 def elo_on(rec, surface=None):

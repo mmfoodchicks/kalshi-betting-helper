@@ -248,6 +248,46 @@ def t_sim_worker_sizing():
         ds._cgroup_limit = orig
 
 
+def t_pool_build_isolation():
+    """The tennis pool build must be isolated WITHOUT multiprocessing.
+
+    It has to run out-of-process: in-process it leaves ~215 MB of unreleasable
+    pymalloc arenas behind and a 512 MB container then has nothing left for the
+    season sim. But both multiprocessing start methods are traps here. 'fork' can
+    inherit a lock held by another thread of a threaded server. 'spawn'
+    re-imports the parent's __main__, so any SCRIPT that reaches this -- every
+    file in this directory -- gets re-run inside the child, calls back in, and
+    spawns again. That is not hypothetical: it hung tennis_board_check.
+    A plain subprocess on a fixed command has neither failure mode."""
+    import inspect
+    import tennis_elo
+
+    import ast
+    import textwrap
+
+    src = inspect.getsource(tennis_elo._build_isolated)
+    # Check the CODE, not the prose. The docstring names fork, spawn and
+    # multiprocessing to explain why each is wrong here, so scanning raw source
+    # would flag the explanation as the offence. Parse and drop the docstring.
+    fn = ast.parse(textwrap.dedent(src)).body[0]
+    if (fn.body and isinstance(fn.body[0], ast.Expr)
+            and isinstance(fn.body[0].value, ast.Constant)
+            and isinstance(fn.body[0].value.value, str)):
+        fn.body = fn.body[1:]
+    body = ast.unparse(fn)
+    check("the pool build is isolated out-of-process", "subprocess" in body)
+    check("it does NOT use multiprocessing (fork/spawn are both unsafe here)",
+          "multiprocessing" not in body and "get_context" not in body,
+          [l.strip() for l in body.splitlines()
+           if "multiprocessing" in l or "get_context" in l])
+    check("it falls back to an in-process build rather than returning nothing",
+          "_build()" in body)
+    check("the child entry point exists and is module level",
+          callable(getattr(tennis_elo, "_build_blob", None)))
+    check("pools() goes through the isolated build",
+          "_build_isolated" in inspect.getsource(tennis_elo.pools))
+
+
 def t_render_blueprint():
     """render.yaml must PARSE and carry every store, or the platform silently
     ignores it. Uncommenting the disk block by hand is easy to get wrong -- drop
@@ -485,6 +525,7 @@ def main():
     t_pick6_rules()
     t_clock()
     t_sim_worker_sizing()
+    t_pool_build_isolation()
     t_render_blueprint()
     t_boot_is_survivable()
     if online:

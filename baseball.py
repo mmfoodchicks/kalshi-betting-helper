@@ -75,13 +75,34 @@ PARK_FACTORS = {
 
 # ---- tiny TTL cache -------------------------------------------------------
 _cache = {}
+# Expired entries used to sit here forever: the TTL was only ever checked on
+# READ, so a key never asked for again was never removed. Keys like
+# ("bvp", batter_id, pitcher_id) are per batter-pitcher PAIR, so a long-running
+# instance accumulated thousands of dead entries it would never look at again.
+# Sweeping on insert keeps the cache proportional to what is actually live.
+_CACHE_SWEEP_EVERY = 500
+_cache_puts = 0
+
+
+def _sweep_cache(now):
+    """Drop entries whose own TTL has expired."""
+    dead = [k for k, (ts, _v, ttl) in _cache.items() if now - ts >= ttl]
+    for k in dead:
+        _cache.pop(k, None)
+    return len(dead)
+
+
 def _cached(key, ttl, producer):
+    global _cache_puts
     now = _time.time()
     hit = _cache.get(key)
-    if hit and now - hit[0] < ttl:
+    if hit and now - hit[0] < hit[2]:
         return hit[1]
     val = producer()
-    _cache[key] = (now, val)
+    _cache[key] = (now, val, ttl)
+    _cache_puts += 1
+    if _cache_puts % _CACHE_SWEEP_EVERY == 0:
+        _sweep_cache(now)
     return val
 
 
