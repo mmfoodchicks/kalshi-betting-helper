@@ -35,10 +35,6 @@ SERIES = {
             "conf": ["KXNHLCONF", "KXNHLEAST", "KXNHLWEST"],
             "division": ["KXNHLDIV"],
             "wins": ["KXNHLWINS"]},
-    "wnba": {"champ": ["KXWNBACHAMP", "KXWNBAFINALS", "KXWNBATITLE"],
-             "conf": ["KXWNBACONF"],
-             "division": [],
-             "wins": ["KXWNBAWINS"]},
 }
 
 

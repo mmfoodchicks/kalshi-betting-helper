@@ -1,9 +1,9 @@
 """Basketball core: the full baseball-style stack, league-parameterized.
 
-One possession engine serves every basketball league — WNBA (live now) and NBA
-(lights up in October; its Kalshi game/spread/total series auto-price the moment
-they list). Everything hangs off a league config: ESPN endpoints, Kalshi series
-names, pace/efficiency norms, home-court edge and season labeling.
+One possession engine serves the NBA (it lights up in October; its Kalshi
+game/spread/total series auto-price the moment they list). Everything hangs off a
+league config: ESPN endpoints, Kalshi series names, pace/efficiency norms,
+home-court edge and season labeling.
 
   DATA      ESPN — teams, standings (points for/against), per-team statistics
             (possessions -> pace + offensive/defensive efficiency), and one
@@ -32,10 +32,6 @@ import clock
 import racing                       # shared cached-JSON getter
 
 LEAGUES = {
-    "wnba": {"path": "wnba", "label": "🏀 WNBA", "hca_eff": 1.013,
-             "lg_ppp": 0.995, "lg_pace": 79.0, "regress_g": 8.0,
-             "kx_ml": "KXWNBAGAME", "kx_spread": "KXWNBASPREAD",
-             "kx_total": "KXWNBATOTAL", "cal": "wnba"},
     "nba":  {"path": "nba", "label": "🏀 NBA", "hca_eff": 1.010,
              "lg_ppp": 1.145, "lg_pace": 99.0, "regress_g": 12.0,
              "kx_ml": "KXNBAGAME", "kx_spread": "KXNBASPREAD",
@@ -162,7 +158,7 @@ def ratings(lg):
 def players(lg):
     """{abbr: [players sorted by ppg]} with {name, ppg, rpg, apg, gp}. Paged
     byathlete call for the whole league. Cached 6h."""
-    pages = 5 if lg == "wnba" else 14        # NBA rosters are ~3x the league size
+    pages = 14                               # NBA rosters need every page
 
     def build():
         out = {}
@@ -558,7 +554,18 @@ _inflight = set()
 
 
 def board(lg, date=None):
-    """Non-blocking daily slate. Cached 10m (live Kalshi prices refresh)."""
+    """Non-blocking daily slate. Cached 10m (live Kalshi prices refresh).
+
+    Out of season this returns an empty board WITHOUT touching the network:
+    there are no games to price, and on a small host the fetch is memory and
+    time taken from the sports that are actually playing."""
+    try:
+        import pro_sim
+        if not pro_sim.in_season(lg):
+            return {"date": date or clock.today_et().isoformat(), "games": [],
+                    "off_season": True, "league": lg}
+    except Exception:
+        pass
     date = date or clock.today_et().isoformat()
     key = ("bk_board", lg, date)
     hit = _cache.get(key)

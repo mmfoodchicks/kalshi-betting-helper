@@ -39,9 +39,6 @@ PARAMS = {
     "nhl": {"reg": 0.30, "home": 0.30, "k": 0.95, "ros_pts": 0.55, "key_pen": 0.5,
             "seeds": 8, "best_of": 7, "season": 2026, "family": "hockey",
             "ot_points": True},
-    "wnba": {"reg": 0.35, "home": 2.6, "k": 10.5, "ros_pts": 4.0, "key_pen": 0.0,
-             "seeds": 8, "best_of": 5, "season": 2026, "family": "basketball",
-             "path": "wnba", "flat_playoff": True},
 }
 
 
@@ -288,11 +285,49 @@ def _one_season(rate, schedule, conf_ids, p, rng, game_p=None, resolver=None,
     return wins, champ, conf_champs, div_winners, made
 
 
+# Season windows as (start month, day) -> (end month, day) in ET: from a few
+# weeks before the opener (so preseason futures are live while there is something
+# to price) until the title is decided.
+#
+# Without this, project() ran the full 4,000-season Monte Carlo for every league
+# year round -- in July it was still fetching NBA and NHL schedules and simulating
+# a season that does not start for months. Wasted every night, and on a small host
+# it is memory and CPU taken from the sports that ARE playing.
+SEASON_WINDOW = {
+    "nfl": ((8, 1), (2, 15)),       # camp through the Super Bowl
+    "nba": ((9, 20), (6, 30)),      # media day through the Finals
+    "nhl": ((9, 15), (6, 30)),      # camp through the Cup
+}
+
+
+def in_season(league, today=None):
+    """Is this league close enough to playing to be worth simulating?
+
+    Windows WRAP the new year -- an NBA season starting in September ends the
+    following June -- so a plain start <= today <= end test is wrong for exactly
+    the months that matter."""
+    win = SEASON_WINDOW.get(league)
+    if not win:
+        return True                 # unknown league: never silently go dark
+    if today is None:
+        import clock
+        today = clock.today_et()
+    (sm, sd), (em, ed) = win
+    cur, start, end = (today.month, today.day), (sm, sd), (em, ed)
+    if start <= end:                # window sits inside one calendar year
+        return start <= cur <= end
+    return cur >= start or cur <= end        # window wraps into the next year
+
+
 def project(league, n=4000, seed=None, workers=None):
     """Monte-Carlo the season one game at a time with the sport's engine; return
     the futures board. Completed games are locked to their real result and only
     the remainder is played, so the same call serves preseason (full schedule)
-    and mid-season (banked wins + remaining games)."""
+    and mid-season (banked wins + remaining games).
+
+    Returns None out of season, BEFORE any network fetch or simulation."""
+    if not in_season(league):
+        return None
     # Fan the seasons out across cores (each worker runs its slice single-process).
     import mp_season
     par = mp_season.run("pro_sim", "project", {"league": league}, n, seed,
@@ -326,7 +361,7 @@ def project(league, n=4000, seed=None, workers=None):
     base_pts = ({tid: base_wins.get(tid, 0) * 2 + base_otl.get(tid, 0)
                  for tid in rate} if ot_points else None)
 
-    # Flat-playoff leagues (WNBA) seed league-wide, not by conference.
+    # Flat-playoff leagues seed league-wide, not by conference.
     conf_ids = defaultdict(list)
     if p.get("flat_playoff"):
         conf_ids["League"] = list(rate)

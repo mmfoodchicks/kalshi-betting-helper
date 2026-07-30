@@ -21,7 +21,6 @@ SPORTS = {
     "golf":   {"label": "⛳ Golf (PGA H2H)", "series": ["KXPGAH2H"]},
     "ufc":    {"label": "🥊 UFC", "series": ["KXUFCFIGHT"]},
     "boxing": {"label": "🥊 Boxing", "series": ["KXBOXINGFIGHT"]},
-    "wnba":   {"label": "🏀 WNBA", "series": ["KXWNBAGAME"]},
     "cricket": {"label": "🏏 Cricket (T20)", "series": ["KXT20MATCH"]},
     "cfl":    {"label": "🏈 CFL", "series": ["KXCFLGAME"]},
     "nfl":    {"label": "🏈 NFL", "series": ["KXNFLGAME"]},

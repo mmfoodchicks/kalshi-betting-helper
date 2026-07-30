@@ -138,10 +138,21 @@ def index():
     return _cache["data"]
 
 
+def _quote(c):
+    """A quote AT or beyond the bounds is Kalshi's "no offer" sentinel, not a
+    price. A 100c ask means nobody is selling: a contract that costs 100c to win
+    100c is not a bet, and letting it through prices a leg the board cannot
+    actually buy. Seen live on the NO side of thin player props."""
+    return c if (c is not None and 0 < c < 100) else None
+
+
 def price_leg(idx, suffix, kref):
     """Live Kalshi ask (cents) for one leg, or None if not found/quoted. `kref` is
     the structured key the candidate carries (see mlb_sim); `kref["no"]` asks for
-    the NO side's own ask rather than the YES side's."""
+    the NO side's own ask rather than the YES side's.
+
+    Every return goes through _quote, so an unbuyable 0/100 sentinel reaches
+    callers as "unpriced" rather than as a real-looking number."""
     if not suffix or not kref:
         return None
     g = idx.get(suffix)
@@ -151,17 +162,17 @@ def price_leg(idx, suffix, kref):
     no = bool(kref.get("no"))
     src = (g.get("no") or {}) if no else g
     if t == "ml":
-        return (src.get("ml") or {}).get(kref.get("team"))
+        return _quote((src.get("ml") or {}).get(kref.get("team")))
     if t == "spread":
-        return (src.get("spread") or {}).get((kref.get("team"), kref.get("by")))
+        return _quote((src.get("spread") or {}).get((kref.get("team"), kref.get("by"))))
     if t == "total":
         # Both sides live in the same market: the NO of Over is Under, and vice versa.
         tot = g["total"].get(kref.get("n"))
         over = bool(kref.get("over")) != no
-        return tot.get("over" if over else "under") if tot else None
+        return _quote(tot.get("over" if over else "under")) if tot else None
     if t == "rfi":
-        return src.get("rfi")
+        return _quote(src.get("rfi"))
     if t in ("ks", "hit", "tb", "hr", "hrr"):
-        return (src.get("players") or {}).get(
-            (t, _norm(kref.get("player")), kref.get("line")))
+        return _quote((src.get("players") or {}).get(
+            (t, _norm(kref.get("player")), kref.get("line"))))
     return None

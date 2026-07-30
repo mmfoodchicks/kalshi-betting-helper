@@ -1658,14 +1658,11 @@ function setupTabs() {
       $("tab-baseball").classList.toggle("hidden", tab !== "baseball");
       $("tab-sports").classList.toggle("hidden", tab !== "sports");
       $("tab-nfl").classList.toggle("hidden", tab !== "nfl");
-      $("tab-wnba").classList.toggle("hidden", tab !== "wnba");
       $("tab-nba").classList.toggle("hidden", tab !== "nba");
       $("tab-nhl").classList.toggle("hidden", tab !== "nhl");
-      $("tab-draft").classList.toggle("hidden", tab !== "draft");
       $("tab-ufc").classList.toggle("hidden", tab !== "ufc");
       $("tab-tennis").classList.toggle("hidden", tab !== "tennis");
       $("tab-lol").classList.toggle("hidden", tab !== "lol");
-      $("tab-commodities").classList.toggle("hidden", tab !== "commodities");
       $("tab-weather").classList.toggle("hidden", tab !== "weather");
       $("tab-sim").classList.toggle("hidden", tab !== "sim");
       $("tab-combine").classList.toggle("hidden", tab !== "combine");
@@ -1678,20 +1675,14 @@ function setupTabs() {
       if (tab === "combine") loadCombineCats();
       if (tab === "futures") initFutures();
       if (tab === "sim") initSim();
-      if (tab === "commodities" && !$("comResults").dataset.loaded) {
-        $("comResults").dataset.loaded = "1";
-        loadCommodities();
-      }
       if (tab === "baseball") initBaseballTab();
       if (tab === "sports") initSportsTab();
       if (tab === "nfl") initNFL();
-      if (tab === "wnba") initWNBA();
       if (tab === "nba") initNBA();
       if (tab === "nhl") initNHL();
       if (tab === "ufc") initUFC();
       if (tab === "tennis") initTennis();
       if (tab === "lol") initLoL();
-      if (tab === "draft") initDraft();
       if (tab === "weather" && !$("wxResults").dataset.loaded) {
         $("wxResults").dataset.loaded = "1";
         loadWeather();
@@ -2317,7 +2308,7 @@ async function loadLive() {
   try {
     const d = await (await fetch("/api/sports/live")).json();
     if (!d.games || !d.games.length) {
-      box.innerHTML = `<div class="empty">No tracked games are live right now. Any MLB, WNBA, NHL, NBA, NFL, college football, or soccer game we track appears here the moment it tips off, with the live score and game clock.</div>`;
+      box.innerHTML = `<div class="empty">No tracked games are live right now. Any MLB, NHL, NBA, NFL, college football, or soccer game we track appears here the moment it tips off, with the live score and game clock.</div>`;
       return;
     }
     const conf = d.games.filter((g) => g.confirmed);
@@ -2622,36 +2613,11 @@ function renderNFLWeek() {
   $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
 }
 
-// ---- WNBA possession-engine slate ------------------------------------------
-let _wnbaData = null;
-function initWNBA() {
-  const dt = $("wnbaDate");
-  if (dt && !dt.dataset.wired) {
-    dt.dataset.wired = "1";
-    dt.value = new Date().toISOString().slice(0, 10);
-    dt.addEventListener("change", () => { _wnbaData = null; $("wnbaResults").dataset.loaded = ""; loadWNBA(0); });
-  }
-  if (!$("wnbaResults").dataset.loaded) { $("wnbaResults").dataset.loaded = "1"; loadWNBA(0); }
-}
-async function loadWNBA(attempt) {
-  attempt = attempt || 0;
-  const box = $("wnbaResults"), dt = ($("wnbaDate") || {}).value || "";
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — possession engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
-  try {
-    const d = await (await fetch(`/api/wnba/slate${dt ? `?date=${dt}` : ""}`)).json();
-    if (d.error) {
-      if (attempt < 9) { setTimeout(() => loadWNBA(attempt + 1), 5000); return; }
-      box.innerHTML = `<div class="empty">${d.error}</div>`;
-      return;
-    }
-    _wnbaData = d;
-    renderWNBA();
-  } catch (e) {
-    if (attempt < 9) { setTimeout(() => loadWNBA(attempt + 1), 5000); return; }
-    box.innerHTML = `<div class="empty">WNBA slate unavailable.</div>`;
-  }
-}
-function _wnbaEdges(rows, kind) {
+// ---- Basketball slate cards (shared renderer) -----------------------------
+// These came in with the WNBA board and outlived it: the NBA slate renders
+// through exactly the same card, so they are named for the sport rather than
+// the league that happened to introduce them.
+function _basketEdges(rows, kind) {
   if (!rows || !rows.length) return "";
   const chips = rows.slice(0, 4).map((r) => {
     const lbl = kind === "total" ? `O${r.line}` : `${r.team} −${r.line}`;
@@ -2659,7 +2625,7 @@ function _wnbaEdges(rows, kind) {
   }).join(" ");
   return `<div class="small" style="margin:3px 0">${kind === "total" ? "Totals" : "Spreads"} (Kalshi lines): ${chips}</div>`;
 }
-function wnbaGameCard(g) {
+function basketGameCard(g) {
   const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
   const kx = g.kalshi || {};
   const live = g.state === "in" ? `<span style="color:#e0566a">🔴 ${g.detail || "live"} · ${g.away} ${g.away_score}–${g.home_score} ${g.home}</span> · ` : "";
@@ -2685,24 +2651,13 @@ function wnbaGameCard(g) {
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
-    ${_wnbaEdges(g.spread_edges, "spread")}
-    ${_wnbaEdges(g.total_edges, "total")}
+    ${_basketEdges(g.spread_edges, "spread")}
+    ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>
     ${props ? `<details class="simdetail"><summary>📊 Top props (points / rebounds / assists)</summary><ul class="legs">${props}</ul></details>` : ""}
     ${sgp}
   </div>`;
 }
-function renderWNBA() {
-  const d = _wnbaData; if (!d) return;
-  if (!d.games || !d.games.length) {
-    $("wnbaSummary").innerHTML = "";
-    $("wnbaResults").innerHTML = `<div class="empty">${d.note || "No WNBA games for this date."}</div>`;
-    return;
-  }
-  $("wnbaSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
-  $("wnbaResults").innerHTML = d.games.map(wnbaGameCard).join("");
-}
-
 // ---- NBA possession-engine slate (shares the basketball card renderer) ------
 let _nbaData = null;
 function initNBA() {
@@ -2740,7 +2695,7 @@ function renderNBA() {
     return;
   }
   $("nbaSummary").innerHTML = `<b>${d.n_games}</b> games · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
-  $("nbaResults").innerHTML = d.games.map(wnbaGameCard).join("");
+  $("nbaResults").innerHTML = d.games.map(basketGameCard).join("");
 }
 
 // ---- NHL shot-event slate --------------------------------------------------
@@ -2798,8 +2753,8 @@ function nhlGameCard(g) {
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
       <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
-    ${_wnbaEdges(g.spread_edges, "spread")}
-    ${_wnbaEdges(g.total_edges, "total")}
+    ${_basketEdges(g.spread_edges, "spread")}
+    ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>
     ${props ? `<details class="simdetail"><summary>📊 Top props (anytime goal / 1+ point)</summary><ul class="legs">${props}</ul></details>` : ""}
     ${sgp}
@@ -2965,331 +2920,6 @@ async function rerunPro(lg) {
   try { await fetch(`/api/sim/rerun?sport=${lg}`, { method: "POST" }); } catch (e) {}
   $("nflResults").innerHTML = `<div class="empty">Rerun started — reloading shortly…</div>`;
   setTimeout(loadNFL, 6000);
-}
-
-// ---- Best-Ball Draft Room ----
-let _drPool = null, _drState = null, _drPoll = null, _drPos = "ALL";
-function initDraft() {
-  if (!$("draftResults").dataset.loaded) { $("draftResults").dataset.loaded = "1"; loadDraft(); }
-}
-async function loadDraft() {
-  try {
-    const r = await fetch("/api/nfl/fantasy");
-    if (r.status === 202) {
-      $("draftResults").innerHTML = `<div class="empty">Simulating the season for every player (4,000 seasons w/ injury, variance, boom/bust)… ~1 min cold start.</div>`;
-      if (!_drPoll) _drPoll = setInterval(loadDraft, 8000);
-      return;
-    }
-    const d = await r.json();
-    if (d.error) { $("draftResults").innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    if (_drPoll) { clearInterval(_drPoll); _drPoll = null; }
-    _drPool = d.pool;
-    $("draftResults").innerHTML = "";
-    renderDraftSetup();
-  } catch (e) { $("draftResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
-}
-function renderDraftSetup() {
-  const slots = Array.from({ length: 12 }, (_, i) => i + 1)
-    .map((s) => `<button class="dr-slot" onclick="startDraft(${s})">${s}</button>`).join("");
-  $("draftSetup").innerHTML = `<div class="small">12-team snake best-ball · pick your draft slot:</div>
-    <div class="dr-slots">${slots}</div>
-    <div class="small" style="color:var(--muted);margin-top:4px">${_drPool.length} players projected (vets + rookies). I'll log every team's pick as you go and tell you who to take on your clock.</div>`;
-  $("draftSummary").innerHTML = "";
-}
-// snake order: which team (0-indexed) is on the clock for a 0-indexed overall pick
-function _drTeam(p, teams) {
-  const rd = Math.floor(p / teams), inr = p % teams;
-  return rd % 2 === 0 ? inr : teams - 1 - inr;
-}
-function startDraft(slot) {
-  const teams = 12, rounds = 18;
-  _drState = {
-    teams, rounds, mySlot: slot - 1, pick: 0,
-    drafted: {}, rosters: Array.from({ length: teams }, () => []),
-  };
-  $("draftSetup").innerHTML = `<button class="track-mini" onclick="renderDraftSetup()">↺ restart</button>
-    <span class="small" style="margin-left:8px">You are <b>Team ${slot}</b> (12-team snake, ${rounds} rounds).</span>`;
-  $("draftBody").classList.remove("hidden");
-  drawDraft();
-}
-function _drMyNextPick() {  // 0-indexed overall pick number of my next turn (or -1)
-  const s = _drState;
-  for (let p = s.pick; p < s.teams * s.rounds; p++) if (_drTeam(p, s.teams) === s.mySlot) return p;
-  return -1;
-}
-function draftPlayer(id) {
-  const s = _drState; if (!s) return;
-  const team = _drTeam(s.pick, s.teams);
-  s.drafted[id] = team;
-  const pl = _drPool.find((p) => p.id === id);
-  if (pl) s.rosters[team].push(pl);
-  s.pick++;
-  drawDraft();
-}
-function _drAvail() { return _drPool.filter((p) => !(p.id in _drState.drafted)); }
-function drawDraft() {
-  const s = _drState;
-  const done = s.pick >= s.teams * s.rounds;
-  const team = done ? -1 : _drTeam(s.pick, s.teams);
-  const myTurn = team === s.mySlot;
-  const rd = Math.floor(s.pick / s.teams) + 1, inr = (s.pick % s.teams) + 1;
-  $("draftOnClock").innerHTML = done ? "Draft complete 🏆"
-    : myTurn ? `<b style="color:var(--pos)">YOUR PICK — ${rd}.${String(inr).padStart(2, "0")}</b>`
-      : `On the clock: <b>Team ${team + 1}</b> · pick ${rd}.${String(inr).padStart(2, "0")}`;
-  renderDraftRecs(myTurn);
-  renderDraftPool();
-  renderDraftRoster();
-  renderDraftBoardGrid();
-}
-function _drStackBonus(pl, roster) {
-  // best-ball loves correlation: QB with his pass-catchers and vice-versa
-  if (pl.pos === "QB") {
-    if (roster.some((r) => (r.pos === "WR" || r.pos === "TE") && r.team === pl.team)) return 1;
-  } else if (pl.pos === "WR" || pl.pos === "TE") {
-    if (roster.some((r) => r.pos === "QB" && r.team === pl.team)) return 1;
-  }
-  return 0;
-}
-function _drNeed(pos, roster, rounds) {
-  const target = { QB: Math.max(2, rounds * 0.12), RB: rounds * 0.33, WR: rounds * 0.42, TE: Math.max(2, rounds * 0.12) }[pos] || 1;
-  const have = roster.filter((r) => r.pos === pos).length;
-  return Math.max(0.55, Math.min(1.5, 1 + (target - have) / target * 0.6));
-}
-function computeRecs() {
-  const s = _drState, avail = _drAvail(), roster = s.rosters[s.mySlot];
-  const myNext = _drMyNextPick();
-  const after = myNext < 0 ? 0 : (() => { for (let p = myNext + 1; p < s.teams * s.rounds; p++) if (_drTeam(p, s.teams) === s.mySlot) return p; return s.teams * s.rounds; })();
-  const gap = after - myNext;                       // picks between this and my next turn
-  const scored = avail.map((pl) => {
-    const stack = _drStackBonus(pl, roster);
-    const need = _drNeed(pl.pos, roster, s.rounds);
-    const score = (pl.value + 12) * need * (1 + 0.18 * stack);
-    return { pl, score, stack, need };
-  }).sort((a, b) => b.score - a.score);
-  // rank within available by raw VOR for the "won't last" call
-  const byVor = [...avail].sort((a, b) => b.value - a.value);
-  return scored.slice(0, 4).map((x) => {
-    const reasons = [];
-    if (byVor[0] && byVor[0].id === x.pl.id) reasons.push("Best value on the board");
-    if (x.stack) reasons.push(`Stacks your ${x.pl.pos === "QB" ? "pass-catcher" : "QB"} (${x.pl.team})`);
-    if (x.need >= 1.2) reasons.push(`You're light at ${x.pl.pos}`);
-    else if (x.need <= 0.7) reasons.push(`Already deep at ${x.pl.pos}`);
-    const vorRank = byVor.findIndex((p) => p.id === x.pl.id);
-    if (gap > 0 && vorRank >= 0 && vorRank < gap * 0.8) reasons.push(`Won't last to your next pick`);
-    if (x.pl.rookie) reasons.push("Rookie upside (boom/bust)");
-    if (x.pl.injury_return) reasons.push("Injury bounce-back (consensus still buys him)");
-    if (x.pl.fa) reasons.push("Free agent — landing spot pending");
-    else if (x.pl.new_team) reasons.push(`New team (${x.pl.sleeper_team || x.pl.team})`);
-    return { ...x.pl, reasons };
-  });
-}
-function _drFlags(p) {
-  // Forward-looking status badges from the live draft consensus / injury feed.
-  let h = "";
-  if (p.fa) h += ' <span class="dr-fl fa" title="Free agent / unsigned">FA</span>';
-  if (p.new_team) h += ` <span class="dr-fl new" title="New team this season">→${p.sleeper_team || ""}</span>`;
-  if (p.injury_return) h += ` <span class="dr-fl ir" title="Returning from injury">${p.injury || "INJ"}</span>`;
-  else if (p.injury) h += ` <span class="dr-fl q" title="${p.injury}">Q</span>`;
-  return h;
-}
-function _drCons(p) {
-  return p.consensus_rank ? ` <span class="dr-cons" title="Sleeper consensus draft rank">ADP ${p.consensus_rank}</span>` : "";
-}
-function renderDraftRecs(myTurn) {
-  if (!myTurn) { $("draftRecs").innerHTML = ""; return; }
-  const recs = computeRecs();
-  if (!recs.length) { $("draftRecs").innerHTML = ""; return; }
-  $("draftRecs").innerHTML = `<div class="dr-recs"><div class="dr-recs-h">🎯 Take one of these:</div>
-    ${recs.map((r, i) => `<div class="dr-rec ${i === 0 ? "top" : ""}">
-      <div class="dr-rec-main"><b>${r.name}</b> <span class="legtag">${r.pos}</span> <span class="dr-team">${r.team}</span>${r.rookie ? ' <span class="dr-rk">R</span>' : ""}${_drFlags(r)}${_drCons(r)}</div>
-      <div class="dr-rec-meta">VOR <b>${r.value}</b> · boom ${r.boom} · ${r.reasons.join(" · ")}</div>
-      <button class="track-mini primary-mini" onclick="draftPlayer('${r.id}')">Draft</button></div>`).join("")}</div>`;
-}
-function renderDraftPool() {
-  if (!_drState) return;
-  const q = ($("draftSearch") ? $("draftSearch").value : "").toLowerCase();
-  const filt = ["ALL", "QB", "RB", "WR", "TE"].map((p) =>
-    `<button class="dr-pf ${_drPos === p ? "active" : ""}" onclick="_drPos='${p}';renderDraftPool()">${p}</button>`).join("");
-  $("draftPosFilter").innerHTML = filt;
-  let avail = _drAvail();
-  if (_drPos !== "ALL") avail = avail.filter((p) => p.pos === _drPos);
-  if (q) avail = avail.filter((p) => (p.name || "").toLowerCase().includes(q));
-  const rows = avail.slice(0, 80).map((p) => `<div class="dr-prow" onclick="draftPlayer('${p.id}')">
-    <span class="dr-padp" title="our board rank — the pool is sorted by blended value">${p.adp}</span>
-    <span class="dr-pname">${p.name}${p.rookie ? ' <span class="dr-rk">R</span>' : ""}${_drFlags(p)}${_drCons(p)}</span>
-    <span class="legtag">${p.pos}</span><span class="dr-team">${p.team || ""}</span>
-    <span class="dr-pvor">VOR ${p.value}</span><span class="dr-pboom">${p.boom}</span></div>`).join("");
-  $("draftPool").innerHTML = rows || `<div class="empty">No players.</div>`;
-}
-function renderDraftRoster() {
-  const r = _drState.rosters[_drState.mySlot];
-  const cnt = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  r.forEach((p) => cnt[p.pos]++);
-  $("draftRoster").innerHTML = `<div class="dr-roster-h">Your roster (${r.length}) · QB ${cnt.QB} RB ${cnt.RB} WR ${cnt.WR} TE ${cnt.TE}</div>
-    ${r.map((p) => `<div class="dr-rrow"><span class="legtag">${p.pos}</span> ${p.name} <span class="dr-team">${p.team}</span>${_drFlags(p)}</div>`).join("") || '<div class="small" style="color:var(--muted)">no picks yet</div>'}`;
-}
-function renderDraftBoardGrid() {
-  const s = _drState, team = s.pick < s.teams * s.rounds ? _drTeam(s.pick, s.teams) : -1;
-  $("draftBoard").innerHTML = `<div class="dr-board-h">Teams (picks made)</div><div class="dr-teams">` +
-    s.rosters.map((ro, i) => `<span class="dr-tcount ${i === s.mySlot ? "mine" : ""} ${i === team ? "clock" : ""}">T${i + 1}:${ro.length}</span>`).join("") + "</div>";
-}
-
-// ---- AI key setup (optional, stored locally on the user's machine) ----
-async function refreshAiKeyStatus() {
-  try {
-    const d = await (await fetch("/api/settings/ai_key")).json();
-    _setAiKeyUI(d.configured);
-  } catch (e) { /* leave as-is */ }
-}
-function _setAiKeyUI(configured) {
-  const s = $("aiKeyStatus");
-  if (s) s.innerHTML = configured ? '<span style="color:var(--pos)">✓ on</span>' : '<span style="color:var(--muted)">(off)</span>';
-  if (configured && $("gradeLLM")) $("gradeLLM").checked = true;
-}
-async function saveAiKey(key) {
-  const msg = $("aiKeyMsg");
-  msg.textContent = key ? "Verifying…" : "Clearing…";
-  try {
-    const d = await (await fetch("/api/settings/ai_key", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) })).json();
-    if (d.error) { msg.innerHTML = `<span style="color:#e0566a">${d.error}</span>`; return; }
-    if (d.cleared) { msg.innerHTML = '<span style="color:var(--muted)">Key removed — AI explanations off.</span>'; _setAiKeyUI(false); $("aiKeyInput").value = ""; return; }
-    msg.innerHTML = '<span style="color:var(--pos)">✓ Key verified &amp; saved (stored locally). AI explanations are on.</span>';
-    _setAiKeyUI(true);
-    $("aiKeyInput").value = "";
-  } catch (e) { msg.innerHTML = '<span style="color:#e0566a">Save failed — try again.</span>'; }
-}
-
-// ---- Best-ball Team Grader (multi-team) ----
-let _gradeTeams = [{ label: "", text: "", pitch: "" }];
-function renderGradeTeams() {
-  $("gradeTeams").innerHTML = _gradeTeams.map((t, i) => `
-    <div class="grade-team-in">
-      <div class="grade-team-hd">
-        <input class="grade-label" placeholder="Title / drafter name (e.g. Grok, ChatGPT, You, Dad)" value="${(t.label || "").replace(/"/g, "&quot;")}" oninput="_gradeTeams[${i}].label=this.value">
-        ${_gradeTeams.length > 1 ? `<button class="track-mini" onclick="removeGradeTeam(${i})">✕</button>` : ""}
-      </div>
-      <textarea class="grade-ta" rows="5" placeholder="Paste this team — one player per line, or comma-separated&#10;Josh Allen&#10;Bijan Robinson&#10;…" oninput="_gradeTeams[${i}].text=this.value">${t.text || ""}</textarea>
-      <textarea class="grade-ta grade-pitch" rows="2" placeholder="Their argument (optional) — let this drafter plead their case to sway the AI grader…" oninput="_gradeTeams[${i}].pitch=this.value">${t.pitch || ""}</textarea>
-    </div>`).join("");
-}
-window.removeGradeTeam = (i) => { _gradeTeams.splice(i, 1); if (!_gradeTeams.length) _gradeTeams.push({ label: "", text: "", pitch: "" }); renderGradeTeams(); };
-function addGradeTeam(label, text) { _gradeTeams.push({ label: label || "", text: text || "", pitch: "" }); renderGradeTeams(); }
-function gradeAddMine() {
-  if (!_drState || !_drState.rosters[_drState.mySlot] || !_drState.rosters[_drState.mySlot].length) {
-    $("gradeOut").innerHTML = `<div class="empty">No drafted team yet — start a draft and make some picks first.</div>`;
-    return;
-  }
-  addGradeTeam("My team", _drState.rosters[_drState.mySlot].map((p) => p.name).join("\n"));
-}
-async function gradeRunAll() {
-  const out = $("gradeOut");
-  const teams = _gradeTeams
-    .map((t) => ({ label: t.label, pitch: t.pitch, names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean) }))
-    .filter((t) => t.names.length);
-  if (!teams.length) { out.innerHTML = `<div class="empty">Paste at least one team.</div>`; return; }
-  saveGradeTeams(true);                       // persist so a re-run needs no retyping
-  const useLLM = $("gradeLLM") && $("gradeLLM").checked;
-  out.innerHTML = `<div class="empty">Grading ${teams.length} team${teams.length > 1 ? "s" : ""}…${useLLM ? " (AI explanations on)" : ""}</div>`;
-  try {
-    const r = await fetch("/api/nfl/grade", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teams, use_llm: useLLM }) });
-    if (r.status === 202) { out.innerHTML = `<div class="empty">Warming the projection pool (cold start, ~1 min) — try again shortly.</div>`; return; }
-    const d = await r.json();
-    if (d.error) { out.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    out.innerHTML = renderMultiGrade(d);
-  } catch (e) { out.innerHTML = `<div class="empty">Grade failed — try again.</div>`; }
-}
-
-async function saveGradeTeams(silent) {
-  const teams = _gradeTeams.map((t) => ({
-    label: t.label || "",
-    names: (t.text || "").split(/[\n,]+/).map((s) => s.trim()).filter(Boolean),
-    pitch: t.pitch || "",
-  })).filter((t) => t.names.length || t.label);
-  try {
-    await fetch("/api/nfl/teams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teams }) });
-    const b = $("gradeSaveBtn");
-    if (b && !silent) { const o = b.textContent; b.textContent = "✓ Saved"; setTimeout(() => { b.textContent = o; }, 1500); }
-  } catch (e) { /* best-effort */ }
-}
-
-async function loadGradeTeams() {
-  try {
-    const d = await (await fetch("/api/nfl/teams")).json();
-    if (d.teams && d.teams.length) {
-      _gradeTeams = d.teams.map((t) => ({ label: t.label || "", text: (t.names || []).join("\n"), pitch: t.pitch || "" }));
-    }
-  } catch (e) { /* keep the default blank team */ }
-  renderGradeTeams();
-}
-function _gradeColor(letter) {
-  const c = (letter || "")[0];
-  return c === "A" ? "#34c77b" : c === "B" ? "#8ad06a" : c === "C" ? "#ffcf66" : c === "D" ? "#ff9f43" : "#e0566a";
-}
-function renderMultiGrade(d) {
-  const teams = d.teams || [];
-  if (!teams.length) return `<div class="empty">No teams could be graded.</div>`;
-  const medal = (r) => (r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `#${r}`);
-  let html = "";
-  // Leaderboard only for head-to-head (2+ teams); a single team just gets graded.
-  if (teams.length > 1) {
-    html += `<div class="grade-board"><div class="grade-board-h">🏆 Leaderboard</div>`;
-    html += teams.map((g) => {
-      const col = _gradeColor(g.grade);
-      return `<div class="grade-row">
-          <span class="grade-rank">${medal(g.rank)}</span>
-          <span class="grade-rname"><b>${g.label}</b></span>
-          <span class="grade-rgrade" style="color:${col}">${g.grade}</span>
-          <span class="grade-rscore">${g.score}</span>
-          <span class="small" style="color:var(--muted)">${g.archetype} · ${g.ceiling_week} ceiling</span>
-        </div>`;
-    }).join("");
-    html += `</div>`;
-  }
-  // per-team detail (winner expanded)
-  html += teams.map((g, i) => {
-    const col = _gradeColor(g.grade);
-    const cats = (g.categories || []).map((c) =>
-      `<div class="grade-cat"><span class="grade-cat-l">${c.emoji} ${c.label}</span><span class="grade-cat-g" style="color:${_gradeColor(c.grade)}">${c.grade}</span><div class="grade-cat-why small">${c.why}</div></div>`).join("");
-    const posCards = ["QB", "RB", "WR", "TE"].map((pos) => {
-      const v = g.positions[pos]; if (!v) return "";
-      return `<div class="grade-pos">
-          <div class="grade-pos-h"><b>${pos}</b> <span style="color:${_gradeColor(v.grade)};font-weight:700">${v.grade}</span> <span class="small" style="color:var(--muted)">${v.count}</span></div>
-          <div class="small" style="color:var(--muted)">${v.note}</div>
-        </div>`;
-    }).join("");
-    const stacks = (g.stacks || []).length ? `🔗 ${g.stacks.map((s) => `${s.qb}+${s.partners.join(", ")}`).join(" · ")}` : "No stacks";
-    const sch = g.schedule || {};
-    const schBits = [];
-    if (sch.playoff_sos != null) schBits.push(`Playoff (wk 15-17) SoS <b>${sch.playoff_sos}</b> <span class="small" style="color:var(--muted)">(opp wins; lower = easier)</span>`);
-    (sch.matchup_notes || []).forEach((n) => schBits.push(n));
-    (sch.bye_notes || []).forEach((n) => schBits.push(`📅 ${n}`));
-    const schedBlock = schBits.length
-      ? `<details style="margin-top:6px"><summary class="small">🗓️ Bye weeks & playoff matchups</summary><ul class="grade-list">${schBits.map((s) => `<li>${s}</li>`).join("")}</ul></details>`
-      : "";
-    const narrative = g.llm_narrative || g.narrative || "";
-    const pitch = g.pitch ? `<div class="grade-pitch-show small">🗣️ <b>${g.label}'s case:</b> ${g.pitch}</div>` : "";
-    const unmatched = (g.unmatched && g.unmatched.length)
-      ? `<div class="small" style="color:#ff9f43;margin-top:6px">⚠️ Couldn't find: ${g.unmatched.join(", ")}</div>` : "";
-    return `<details class="grade-card" ${i === 0 ? "open" : ""}>
-      <summary class="grade-sum">
-        <span class="grade-letter sm" style="color:${col};border-color:${col}">${g.grade}</span>
-        <span><b>${g.label}</b> · ${g.score}/100 · ${g.archetype}</span>
-      </summary>
-      ${pitch}
-      <div class="grade-narr">${g.llm_narrative ? "🤖 " : ""}${narrative}</div>
-      <div class="grade-catgrid">${cats}</div>
-      <div class="grade-posgrid">${posCards}</div>
-      <div class="small" style="margin-top:8px">${stacks}</div>
-      ${schedBlock}
-      <div class="grade-cols">
-        ${(g.strengths || []).length ? `<div><div class="grade-h">💪 Strengths</div><ul class="grade-list">${g.strengths.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
-        ${(g.weaknesses || []).length ? `<div><div class="grade-h">⚠️ Weaknesses</div><ul class="grade-list">${g.weaknesses.map((s) => `<li>${s}</li>`).join("")}</ul></div>` : ""}
-      </div>
-      <details style="margin-top:6px"><summary class="small">Best lineup</summary><div class="grade-starters">${(g.starters || []).map((s) => `<span class="grade-st"><b>${s.pos}</b> ${s.name}${s.bye ? ` <span class="grade-bye">bye ${s.bye}</span>` : ""}</span>`).join("")}</div></details>
-      ${unmatched}
-    </details>`;
-  }).join("");
-  return html;
 }
 
 // ---- UFC ----
@@ -4114,81 +3744,6 @@ function renderSports() {
     || (a.close_time || 1e18) - (b.close_time || 1e18));
   if (!events.length) { box.innerHTML = banner + `<div class="empty">All ${d.events.length} markets are thin/untraded. Uncheck "hide thin" to see them.</div>`; return; }
   box.innerHTML = banner + events.map((e) => renderSportEvent(e, key)).join("");
-}
-
-// ---- Commodities scanner --------------------------------------------------
-let comLoaded = false;
-function renderComRow(m, basisBad) {
-  const sig = m.signal;
-  // In a thin book, or when our spot doesn't line up with Kalshi's ladder, the
-  // modeled edge is unreliable -- show it muted as HOLD instead of a buy call.
-  const trusted = !m.thin && !basisBad;
-  const side = (trusted && sig.recommendation === "BUY YES") ? "YES"
-    : (trusted && sig.recommendation === "BUY NO") ? "NO" : null;
-  const cls = side ? "scanrow edge" : "scanrow";
-  let action;
-  if (side) {
-    const cost = side === "YES" ? m.yes_ask : m.no_ask;
-    const fair = side === "YES" ? sig.fair_yes_cents : sig.fair_no_cents;
-    action = `<div class="actionline">${badge(sig.recommendation, sig.strength)}<span class="edgeval pos">+${m.best_edge}¢ edge</span></div>
-      <div class="plain">✅ Buy <b>${side}</b> at <b>${cost}¢</b> → fair <b>${fair}¢</b>${sig.confidence != null ? ` · <b>${sig.confidence}%</b> confidence` : ""}</div>`;
-  } else if (sig.recommendation !== "HOLD") {
-    // There's a modeled edge but we don't trust it (thin / basis off).
-    const why = m.thin ? "thin/untraded" : "spot vs ladder off";
-    action = `<div class="actionline">${badge("HOLD", "flat")}<span class="edgeval neg">edge unreliable (${why})</span></div>
-      <div class="plain">Model sees ${m.best_edge}¢ but the price isn't trustworthy here.</div>`;
-  } else {
-    action = `<div class="actionline">${badge("HOLD", "flat")}<span class="edgeval neg">no clear edge</span></div>
-      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market.</div>`;
-  }
-  const spStr = m.spread != null ? ` · spread ${m.spread}¢` : "";
-  return `<div class="${cls}">
-    <div class="scanhead">
-      <div class="strike">${m.subtitle || m.ticker}${m.thin ? ` <span class="ev neg" style="font-size:.72rem">thin</span>` : ""}</div>
-      <div class="small">closes in ${m.days_to_close}d · Kalshi YES ${m.yes_ask ?? "–"}¢ / NO ${m.no_ask ?? "–"}¢${spStr}</div>
-    </div>
-    ${action}
-  </div>`;
-}
-
-function comBasisBanner(b, spot) {
-  if (!b || b.center == null) {
-    return `<div class="small">our spot <b>$${spot}</b> — verify it matches Kalshi's level (couldn't auto-read the ladder).</div>`;
-  }
-  if (b.ok === true) {
-    return `<div class="small" style="color:var(--yes)">✓ spot <b>$${spot}</b> aligns with Kalshi-implied <b>$${b.center}</b> (${b.diff_pct > 0 ? "+" : ""}${b.diff_pct}%). Basis looks fine.</div>`;
-  }
-  if (b.ok === null) {
-    return `<div class="small" style="color:var(--muted)">spot <b>$${spot}</b> vs ladder ~$${b.center} — this contract type (max/min/range) isn't directly comparable, so basis can't be auto-verified. Eyeball it.</div>`;
-  }
-  return `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ Basis mismatch: our spot <b>$${spot}</b> vs Kalshi-implied <b>$${b.center}</b> (${b.diff_pct > 0 ? "+" : ""}${b.diff_pct}%). Our feed and Kalshi's settlement reference disagree, so the edges below are unreliable — don't trade off them.</div>`;
-}
-async function loadCommodities() {
-  if (!comLoaded) {
-    const meta = await (await fetch("/api/commodities/meta")).json();
-    $("comSel").innerHTML = Object.entries(meta).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-    comLoaded = true;
-  }
-  const box = $("comResults");
-  const key = $("comSel").value;
-  box.innerHTML = `<div class="empty">Scanning ${key}…</div>`;
-  try {
-    const d = await (await fetch("/api/commodities/scan?key=" + key)).json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    // Don't trust modeled edges when the basis is off OR the contract type isn't
-    // spot-comparable (max/min/range) -- the spot-GBM model doesn't fit those.
-    const basisBad = d.basis && (d.basis.ok === false || d.basis.incomparable);
-    const tradeable = d.markets.filter((m) => !m.thin);
-    const buys = basisBad ? 0 : tradeable.filter((m) => m.signal.recommendation !== "HOLD").length;
-    const head = `<div class="volbox"><div class="sellhead">
-      <span class="sellaction">${d.label}</span>
-      <span class="small">${buys} actionable edge${buys === 1 ? "" : "s"} · ${tradeable.length}/${d.markets.length} liquid</span>
-    </div>${comBasisBanner(d.basis, d.spot)}</div>`;
-    if (!d.markets.length) { box.innerHTML = head + `<div class="empty">No open ${key} contracts right now.</div>`; return; }
-    box.innerHTML = head + d.markets.map((m) => renderComRow(m, basisBad)).join("");
-  } catch (e) {
-    box.innerHTML = `<div class="empty">Scan failed.</div>`;
-  }
 }
 
 // ---- Weather edge ---------------------------------------------------------
@@ -5198,8 +4753,6 @@ async function init() {
   if ($("wxDate")) $("wxDate").addEventListener("change", loadWeather);
 
   // Commodities
-  $("comBtn").addEventListener("click", loadCommodities);
-  $("comSel").addEventListener("change", loadCommodities);
 
   // Best-ball team grader (multi-team)
   if ($("gradeTeams")) {
@@ -5207,9 +4760,6 @@ async function init() {
     $("gradeAddBtn").addEventListener("click", () => addGradeTeam());
     $("gradeMineBtn").addEventListener("click", gradeAddMine);
     $("gradeSaveBtn").addEventListener("click", () => saveGradeTeams(false));
-    $("gradeRunBtn").addEventListener("click", gradeRunAll);
-    $("aiKeySave").addEventListener("click", () => saveAiKey($("aiKeyInput").value));
-    $("aiKeyClear").addEventListener("click", () => saveAiKey(""));
     refreshAiKeyStatus();
   }
 

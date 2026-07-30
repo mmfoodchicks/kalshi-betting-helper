@@ -30,7 +30,6 @@ import racing
 
 LEAGUES = {
     "nba":  {"sport": "basketball", "league": "nba",  "family": "basketball", "hca": 1.010, "pace": 99.0},
-    "wnba": {"sport": "basketball", "league": "wnba", "family": "basketball", "hca": 1.013, "pace": 79.0},
     "nhl":  {"sport": "hockey",     "league": "nhl",  "family": "hockey",     "hca": 1.045},
     "nfl":  {"sport": "football",   "league": "nfl",  "family": "football",   "hca": 2.0},
     "mlb":  {"sport": "baseball",   "league": "mlb",  "family": "runs",       "hca": 0.15},
@@ -51,7 +50,7 @@ _SITE = "https://site.api.espn.com/apis/site/v2/sports"
 # Rough season windows (start year, months) so the scoreboard sweep covers the
 # whole schedule without probing empty dates.
 _WINDOWS = {"nhl": (-1, 10, 4), "nba": (-1, 10, 4), "nfl": (-1, 9, 2),
-            "wnba": (0, 5, 10), "mlb": (0, 3, 10)}
+            "mlb": (0, 3, 10)}
 
 
 def season_games(key, year):

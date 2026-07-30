@@ -39,8 +39,6 @@ LEAGUES = {
             "games": 82, "pos_w": _NBA_POS_W, "key_pos": None},
     "nhl": {"sport": "hockey", "league": "nhl", "label": "🏒 NHL",
             "games": 82, "pos_w": _NHL_POS_W, "key_pos": "G"},
-    "wnba": {"sport": "basketball", "league": "wnba", "label": "🏀 WNBA",
-             "games": 44, "pos_w": _NBA_POS_W, "key_pos": None},
 }
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports"

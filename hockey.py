@@ -455,6 +455,15 @@ _inflight = set()
 
 
 def board(date=None):
+    # Out of season: no games to price, so do not fetch anything. See
+    # pro_sim.SEASON_WINDOW.
+    try:
+        import pro_sim
+        if not pro_sim.in_season("nhl"):
+            return {"date": date or clock.today_et().isoformat(), "games": [],
+                    "off_season": True, "league": "nhl"}
+    except Exception:
+        pass
     date = date or clock.today_et().isoformat()
     key = ("nhl_board", date)
     hit = _cache.get(key)

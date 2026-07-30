@@ -41,7 +41,7 @@ import model_trust
 # Season simulators, in the order they're most likely to be in season. Each
 # entry says how to pull its board and how to read the rows out of it, because
 # MLB grew a flat `edges` list while the newer boards use a market->teams dict.
-_SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl", "wnba")
+_SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl")
 
 # Non-sport models. Anything here prices its own markets end-to-end and returns
 # rows in the same shape, so the board treats a Bitcoin strike exactly like a
@@ -49,7 +49,7 @@ _SPORTS = ("mlb", "nfl", "cfb", "nba", "nhl", "wnba")
 _OTHER = ("crypto", "climate")
 
 _LABEL = {"mlb": "⚾ MLB", "nfl": "🏈 NFL", "cfb": "🏈 CFB",
-          "nba": "🏀 NBA", "nhl": "🏒 NHL", "wnba": "🏀 WNBA",
+          "nba": "🏀 NBA", "nhl": "🏒 NHL",
           "crypto": "⚡ Crypto", "climate": "🌡️ Climate"}
 
 # Human names for the market kinds the boards emit, normalized across sports
@@ -395,7 +395,7 @@ def _has_listed_futures(sport):
 
 
 def _collect_pro(sport, by_ticker, by_series, by_no):
-    """NBA / NHL / WNBA off the shared projection engine + the futures price map."""
+    """NBA / NHL off the shared projection engine + the futures price map."""
     import pro_sim
     import pro_prices
     if not _has_listed_futures(sport):
@@ -558,7 +558,7 @@ def _sources():
             return _collect_pro(sp, by_ticker, by_series, by_no)
         return run
     out = [("climate", _collect_climate), ("crypto", _collect_crypto)]
-    out += [(sp, sport_src(sp)) for sp in ("mlb", "cfb", "nfl", "nba", "nhl", "wnba")]
+    out += [(sp, sport_src(sp)) for sp in ("mlb", "cfb", "nfl", "nba", "nhl")]
     return out
 
 

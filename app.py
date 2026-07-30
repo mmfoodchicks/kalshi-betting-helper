@@ -241,11 +241,12 @@ def _init_deep_sims():
     deep_cache.register("nfl_season", run_nfl_season)
     deep_cache.register("cfb", run_cfb)
     deep_cache.register("model_trust", run_model_trust)
-    # Every pro-league season is now played out game by game with its own engine
-    # (drive-level football, possession basketball, shot-event hockey). WNBA runs
-    # in-season; NBA/NHL light up once their upcoming-season schedules publish
-    # (their run returns None until then).
-    for _lg in ("nfl", "nba", "nhl", "wnba"):
+    # Every pro-league season is played out game by game with its own engine
+    # (drive-level football, possession basketball, shot-event hockey). Each run
+    # returns None outside its own season window (pro_sim.SEASON_WINDOW) before
+    # fetching anything, so an out-of-season league costs a date comparison
+    # rather than a schedule pull and 4,000 simulated seasons.
+    for _lg in ("nfl", "nba", "nhl"):
         deep_cache.register(_lg, run_pro(_lg))
     # Restore the MLB deep run from disk so a restart doesn't lose it.
     payload, _ts = deep_cache.load("mlb_deep")
@@ -524,56 +525,6 @@ def api_kalshi_scan():
 
     return jsonify({"coin": coin, "timeframe": timeframe, "spot": round(spot, 2),
                     "markets": enriched, "vol": vol})
-
-
-@app.route("/api/commodities/meta")
-def api_commodities_meta():
-    import commodities
-    return jsonify({k: v["label"] for k, v in commodities.COMMODITIES.items()})
-
-
-@app.route("/api/commodities/scan")
-def api_commodities_scan():
-    """Model Kalshi commodity price markets like crypto (GBM on daily prices)."""
-    import commodities
-    key = request.args.get("key", "gold")
-    cfg = commodities.COMMODITIES.get(key)
-    if not cfg:
-        return jsonify({"error": "unknown commodity"}), 400
-    try:
-        spot = commodities.get_spot(key)
-        candles = commodities.get_candles(key)
-    except Exception as e:
-        return jsonify({"error": f"price feed failed: {e}"}), 502
-    markets = []
-    for st in cfg["series"]:
-        try:
-            markets += kalshi.markets_for_series(st)
-        except Exception:
-            pass
-    enriched = []
-    now = time.time()
-    for m in markets:
-        if not m.get("yes_ask"):
-            continue
-        days = max(0.0, (m["close_time"] - now) / 86400.0) if m["close_time"] else 0.0
-        sig = odds.kalshi_signal(spot, candles, m, days, calibrated=True)  # day-based units
-        item = dict(m)
-        item["days_to_close"] = round(days, 1)
-        item["signal"] = sig
-        # Liquidity: an "edge" off a thin/untraded contract is a mirage.
-        spread = (round(m["yes_ask"] - m["yes_bid"], 1)
-                  if (m.get("yes_ask") is not None and m.get("yes_bid") is not None) else None)
-        item["spread"] = spread
-        vol = m.get("volume") or 0
-        item["thin"] = (spread is None or spread >= 10 or vol < 20)
-        edges = [e for e in (sig["edge_yes_cents"], sig["edge_no_cents"]) if e is not None]
-        item["best_edge"] = max(edges) if edges else None
-        enriched.append(item)
-    enriched.sort(key=lambda x: (x["best_edge"] is None, -(x["best_edge"] or 0)))
-    basis = commodities.basis_check(spot, markets)
-    return jsonify({"key": key, "label": cfg["label"], "spot": round(spot, 4) if spot else None,
-                    "basis": basis, "markets": enriched})
 
 
 @app.route("/api/simulate/price")
@@ -1142,7 +1093,7 @@ def api_combine_meta():
 
 @app.route("/api/combine")
 def api_combine():
-    """Cross-category parlay (MLB + daily crypto + UFC/tennis/golf/soccer/WNBA),
+    """Cross-category parlay (MLB + daily crypto + UFC/tennis/golf),
     tuned to a target per-leg confidence."""
     import datetime as _dt
     import combine
@@ -1334,7 +1285,7 @@ def api_pro_league(league):
     import deep_cache
     import time as _t
     league = (league or "").lower()
-    if league not in ("nfl", "nba", "nhl", "wnba"):
+    if league not in ("nfl", "nba", "nhl"):
         return jsonify({"error": "unknown league"}), 404
     data, ts = deep_cache.load(league)
     if data is None:
@@ -1399,57 +1350,6 @@ def api_nfl_team():
         return jsonify({"error": f"team detail failed: {e}"}), 502
 
 
-@app.route("/api/nfl/fantasy")
-def api_nfl_fantasy():
-    """NFL fantasy / best-ball projection pool (the draft-room engine): per-player
-    fppg / floor / ceiling / boom / season + draft value (VOR), vets and rookies.
-    Cold start computes in the background (202 until ready)."""
-    try:
-        import nfl_sim
-        b = nfl_sim.board()
-    except Exception as e:
-        return jsonify({"error": f"nfl sim failed: {e}"}), 502
-    if not b:
-        return jsonify({"status": "computing",
-                        "message": "simulating the season for every player…"}), 202
-    return jsonify(b)
-
-
-@app.route("/api/nfl/grade", methods=["POST"])
-def api_nfl_grade():
-    """Grade one or many best-ball rosters. Body: {names:[...]} for a single team, or
-    {teams:[{label, names}]} to grade + rank several (duplicate players allowed
-    across teams). `use_llm: true` adds a small-LLM written narrative when an
-    ANTHROPIC_API_KEY is configured."""
-    try:
-        import nfl_sim
-        d = request.get_json(force=True) or {}
-        use_llm = bool(d.get("use_llm"))
-        teams = d.get("teams")
-        if isinstance(teams, list) and teams:
-            clean = [{"label": str(t.get("label") or "")[:40],
-                      "names": [str(n) for n in (t.get("names") or [])][:40],
-                      "pitch": str(t.get("pitch") or "")[:2000]}
-                     for t in teams[:16]]
-            res = nfl_sim.grade_multi(clean, use_llm=use_llm)
-            if res is None:
-                return jsonify({"status": "computing", "message": "warming the projection pool…"}), 202
-            return jsonify(res)
-        names = d.get("names") or []
-        if not isinstance(names, list) or not names:
-            return jsonify({"error": "send a 'names' list or 'teams'"}), 400
-        g, _ = nfl_sim.grade_names([str(n) for n in names][:40], use_llm=use_llm,
-                                   pitch=str(d.get("pitch") or "")[:2000])
-        if g is None:
-            return jsonify({"status": "computing", "message": "warming the projection pool…"}), 202
-        return jsonify(g)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-
-
-_TEAMS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "nfl_teams.json")
-
-
 @app.route("/api/nfl/teams", methods=["GET", "POST"])
 def api_nfl_teams():
     """Persist the drafter's best-ball teams so they survive reloads and don't have
@@ -1477,44 +1377,6 @@ def api_nfl_teams():
             return jsonify(json.load(f))
     except Exception:
         return jsonify({"teams": []})
-
-
-@app.route("/api/settings/ai_key", methods=["GET", "POST"])
-def api_ai_key():
-    """Set up the optional Anthropic key for AI explanations. GET reports whether a
-    key is configured (never returns the key). POST saves a pasted key to a local,
-    gitignored file and verifies it with a tiny test call."""
-    import os
-    import nfl_sim
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "anthropic_key.txt")
-    if request.method == "GET":
-        return jsonify({"configured": nfl_sim.ai_available()})
-    d = request.get_json(force=True) or {}
-    key = str(d.get("key") or "").strip()
-    if not key:                                       # empty -> clear it
-        try:
-            os.remove(path)
-        except OSError:
-            pass
-        return jsonify({"configured": False, "cleared": True})
-    if not key.startswith("sk-ant-"):
-        return jsonify({"error": "That doesn't look like an Anthropic key (they start with 'sk-ant-')."}), 400
-    # verify with a 1-token call before saving
-    try:
-        import anthropic
-        anthropic.Anthropic(api_key=key).messages.create(
-            model="claude-haiku-4-5", max_tokens=1,
-            messages=[{"role": "user", "content": "hi"}])
-    except Exception as e:
-        return jsonify({"error": f"Key didn't work: {str(e)[:160]}"}), 400
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            f.write(key)
-        os.chmod(path, 0o600)
-    except Exception as e:
-        return jsonify({"error": f"Couldn't save: {e}"}), 500
-    return jsonify({"configured": True, "verified": True})
 
 
 @app.route("/api/ufc")
@@ -1588,22 +1450,6 @@ def api_nfl_week():
         return jsonify({"error": f"nfl data failed: {e}"}), 502
     if not data:
         return jsonify({"error": "no NFL data yet (building in the background — retry shortly)"}), 502
-    return jsonify(data)
-
-
-@app.route("/api/wnba/slate")
-def api_wnba_slate():
-    """WNBA daily slate: possession-engine win probs vs Kalshi ML/spread/total
-    at the exact listed lines, correlated player props and same-game parlays.
-    Non-blocking; the frontend polls while the board builds."""
-    date = request.args.get("date") or None
-    try:
-        import wnba
-        data = wnba.board(date)
-    except Exception as e:
-        return jsonify({"error": f"wnba slate failed: {e}"}), 502
-    if not data:
-        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
     return jsonify(data)
 
 
@@ -1864,6 +1710,15 @@ def api_baseball_deep_history_restore():
             overwrite=request.args.get("overwrite") in ("1", "true", "yes")))
     except Exception as e:
         return jsonify({"error": f"restore failed: {e}"}), 502
+
+
+@app.route("/api/commodities/meta")
+def api_commodities_meta():
+    """Commodity list for the SIMULATOR tab's price sim. The Commodities scanner
+    tab is gone, but the sim still offers commodities alongside crypto, and this
+    is what fills that dropdown."""
+    import commodities
+    return jsonify({k: v["label"] for k, v in commodities.COMMODITIES.items()})
 
 
 @app.route("/api/bestbets")

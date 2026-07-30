@@ -21,7 +21,6 @@ import racing
 # different, much larger payload that the proxy truncates, so they're left to
 # their own dedicated model tabs rather than risk a flaky live read.)
 _LEAGUES = [
-    ("🏀 WNBA", "basketball/wnba"),
     ("🏀 NBA", "basketball/nba"),
     ("🏒 NHL", "hockey/nhl"),
     ("🏈 NFL", "football/nfl"),

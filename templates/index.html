@@ -50,16 +50,13 @@
     <button class="tab" data-tab="sim">🎲 Sim &amp; DFS</button>
     <button class="tab" data-tab="sports">🔴 Live &amp; Futures</button>
     <button class="tab" data-tab="nfl">🏈 NFL</button>
-    <button class="tab" data-tab="wnba">🏀 WNBA</button>
     <button class="tab" data-tab="nba">🏀 NBA</button>
     <button class="tab" data-tab="nhl">🏒 NHL</button>
-    <button class="tab" data-tab="draft">📋 Draft</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
     <button class="tab" data-tab="tennis">🎾 Tennis</button>
     <button class="tab" data-tab="lol">🎮 LoL</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="crypto">⚡ Crypto</button>
-    <button class="tab" data-tab="commodities">🛢️ Commodities</button>
     <button class="tab" data-tab="weather">🌤️ Weather</button>
     <span class="navsep"></span>
     <button class="tab" data-tab="combine">🎰 Combos</button>
@@ -337,54 +334,6 @@
     </section>
    </div><!-- /tab-sports -->
 
-   <div id="tab-draft" class="hidden">
-    <section class="card">
-      <div class="row-between"><h2>🏈 Best-Ball Draft Room</h2><span id="draftOnClock" class="small"></span></div>
-      <div id="draftSetup" class="dr-setup"></div>
-      <div id="draftSummary" class="small"></div>
-      <div id="draftBody" class="hidden">
-        <div id="draftRecs"></div>
-        <div class="dr-cols">
-          <div class="dr-poolwrap">
-            <div class="dr-poolctl">
-              <input id="draftSearch" placeholder="Search player…" oninput="renderDraftPool()">
-              <span id="draftPosFilter"></span>
-            </div>
-            <div id="draftPool" class="dr-pool"></div>
-          </div>
-          <div class="dr-side">
-            <div id="draftRoster"></div>
-            <div id="draftBoard"></div>
-          </div>
-        </div>
-      </div>
-      <div id="draftResults"><div class="empty">Loading the simulator…</div></div>
-    </section>
-
-    <section class="card">
-      <div class="row-between"><h2>🏆 Team Grader</h2></div>
-      <p class="sub" style="margin:4px 0 10px">Grade one team, or add several to <b>rank them head-to-head</b> — overall grade, 8 category grades, per-position breakdowns, and a plain-English why. One player per line; each box can also hold that drafter's <b>argument</b>. Duplicates across teams are fine.</p>
-      <details class="grade-keybox">
-        <summary class="small">🔑 Set up AI explanations <span id="aiKeyStatus" class="small"></span></summary>
-        <div class="small" style="margin:6px 0">Optional. Paste an Anthropic API key (<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → API Keys) and the grader writes an analyst take per team. Stored only on this machine.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input id="aiKeyInput" type="password" placeholder="sk-ant-…" style="flex:1 1 240px;font-size:16px" autocomplete="off">
-          <button id="aiKeySave" class="track-mini">Save &amp; verify</button>
-          <button id="aiKeyClear" class="track-mini">Clear</button>
-        </div>
-        <div id="aiKeyMsg" class="small" style="margin-top:6px"></div>
-      </details>
-      <div id="gradeTeams"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center">
-        <button id="gradeAddBtn" class="track-mini">＋ Add team</button>
-        <button id="gradeMineBtn" class="track-mini">＋ Add my drafted team</button>
-        <button id="gradeSaveBtn" class="track-mini" title="Save these teams so they're here next time — no retyping">💾 Save teams</button>
-        <label class="small" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="gradeLLM" style="width:auto"/> 🤖 AI explanations</label>
-        <button id="gradeRunBtn" class="track-mini primary-mini" style="margin-left:auto">Grade &amp; Rank</button>
-      </div>
-      <div id="gradeOut" class="markets" style="margin-top:12px"></div>
-    </section>
-   </div><!-- /tab-draft -->
 
    <div id="tab-nfl" class="hidden">
     <section class="card">
@@ -422,17 +371,6 @@
     </section>
    </div><!-- /tab-nfl -->
 
-   <div id="tab-wnba" class="hidden">
-    <section class="card">
-      <div class="row-between">
-        <h2>🏀 WNBA</h2>
-        <input id="wnbaDate" type="date" style="width:auto"/>
-      </div>
-      <p class="sub" style="margin:2px 0 8px">A <b>possession-level Monte Carlo</b>: each side's points-per-possession vs the opponent's defense at the game's blended pace, with garbage time and OT. <b>Win probabilities, spreads and totals are priced against Kalshi's exact listed lines</b> for real edges; player points/rebounds/assists are dealt from the simulated team game, so props and the <b>same-game parlay</b> carry real correlation. Model picks feed the 🎯 Best Bets screen and the 🎰 combo builder.</p>
-      <div id="wnbaSummary" class="small"></div>
-      <div id="wnbaResults" class="markets"><div class="empty">Simulating the slate in the background (~5s)…</div></div>
-    </section>
-   </div><!-- /tab-wnba -->
 
    <div id="tab-nba" class="hidden">
     <section class="card">
@@ -440,7 +378,7 @@
         <h2>🏀 NBA</h2>
         <input id="nbaDate" type="date" style="width:auto"/>
       </div>
-      <p class="sub" style="margin:2px 0 8px">The same <b>possession-level engine</b> as the WNBA slate, tuned to NBA pace and efficiency. Lights up when the season tips off in October — Kalshi's NBA game/spread/total markets price automatically the moment they list. Model picks feed 🎯 Best Bets and the 🎰 combo builder.</p>
+      <p class="sub" style="margin:2px 0 8px">A <b>possession-level engine</b> tuned to NBA pace and efficiency. Lights up when the season tips off in October — Kalshi's NBA game/spread/total markets price automatically the moment they list. Model picks feed 🎯 Best Bets and the 🎰 combo builder.</p>
       <div id="nbaSummary" class="small"></div>
       <div id="nbaResults" class="markets"><div class="empty">Loading…</div></div>
     </section>
@@ -513,19 +451,6 @@
     </section>
    </div><!-- /tab-lol -->
 
-   <div id="tab-commodities" class="hidden">
-    <section class="card">
-      <div class="row-between">
-        <h2>🛢️ Commodities scanner</h2>
-        <div class="scan-controls">
-          <select id="comSel"></select>
-          <button id="comBtn">Scan</button>
-        </div>
-      </div>
-      <p class="sub" style="margin:4px 0 10px">Kalshi commodity ladders modeled like crypto — each contract gets a <b>recommendation + confidence + edge</b>. Check the spot matches Kalshi's ladder: our feed is the Yahoo front-month and can differ from settlement (basis risk).</p>
-      <div id="comResults" class="markets"><div class="empty">Pick a commodity, then Scan.</div></div>
-    </section>
-   </div><!-- /tab-commodities -->
 
    <div id="tab-weather" class="hidden">
     <section class="card">
@@ -624,7 +549,7 @@
           <button class="subtab" data-cmbsub="rec">🔥 Recommended</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> — MLB, crypto, UFC, tennis, golf &amp; WNBA — auto-tuned to your target confidence. <b>%</b> is our model for MLB &amp; crypto, the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
+      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> — MLB, crypto, UFC, tennis &amp; golf — auto-tuned to your target confidence. <b>%</b> is our model for MLB &amp; crypto, the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
       <div id="combineCats" class="catrow"></div>
       <div id="cmbTypeChips" class="small" style="margin:6px 0"></div>
       <div id="cmbCatCounts" class="small" style="margin:6px 0"></div>

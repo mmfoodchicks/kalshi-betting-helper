@@ -1,5 +1,5 @@
 """Cross-category combo maker: build a single parlay spanning MLB, daily crypto,
-UFC, tennis, golf, and WNBA.
+UFC, tennis and golf.
 
 Each leg needs a probability. Where we have our own model we use it (MLB props /
 moneyline; crypto fair value from the GBM model); for the other sports we use
@@ -22,13 +22,12 @@ import sports
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
 # Only the categories Kalshi actually allows in multi-leg parlays.
-SPORT_KEYS = {"ufc", "tennis", "wta", "golf", "wnba"}
+SPORT_KEYS = {"ufc", "tennis", "wta", "golf"}
 
 CATEGORIES = {
     "mlb": "⚾ Baseball",
     "nfl": "🏈 NFL",
     "crypto": "⚡ Crypto (daily)",
-    "wnba": "🏀 WNBA",
     "nba": "🏀 NBA",
     "nhl": "🏒 NHL",
     "golf": "⛳ PGA",
@@ -50,8 +49,6 @@ CATEGORY_TYPES = {
             ["Rush Yds", "Rushing yds"], ["Rec Yds", "Receiving yds"],
             ["Receptions", "Receptions"], ["Anytime Td", "Anytime TD"]],
     "crypto": [["Crypto", "Price up/down"]],
-    "wnba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
-             ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
     "nba": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
             ["Points", "Points"], ["Rebounds", "Rebounds"], ["Assists", "Assists"]],
     "nhl": [["ML", "Moneyline"], ["Spread", "Spread"], ["Total", "Totals"],
@@ -380,11 +377,6 @@ def _board_legs(b, category, prefix):
     return legs
 
 
-def _wnba_legs():
-    import wnba
-    return _board_legs(wnba.board(), "🏀 WNBA", "wnba")
-
-
 def _nba_legs():
     import basket
     return _board_legs(basket.board("nba"), "🏀 NBA", "nba")
@@ -527,8 +519,6 @@ def gather(cats, date, season, allow_live=False):
         add("nba", _nba_legs)
     if "nhl" in cats:
         add("nhl", _nhl_legs)
-    if "wnba" in cats:          # possession-engine legs, de-vig browse as fallback
-        add("wnba", lambda: _wnba_legs() or _sport_legs("wnba"))
     if "golf" in cats:          # tournament-simulator legs, de-vig browse fallback
         add("golf", lambda: _golf_legs() or _sport_legs("golf"))
     # Every market has two sides; offer both. NO legs share their YES leg's

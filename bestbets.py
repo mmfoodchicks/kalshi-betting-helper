@@ -100,8 +100,8 @@ def _cfb_futures_rows():
 
 
 def _pro_futures_rows(league, label):
-    """Positive-edge championship rows from a pro-league deep season (WNBA now;
-    NBA/NHL once their season markets open)."""
+    """Positive-edge championship rows from a pro-league deep season (NBA/NHL,
+    once their season markets open)."""
     import deep_cache
     import pro_prices
     data, _ts = deep_cache.load(league)
@@ -217,11 +217,6 @@ def _board_rows(b, sport_label):
     return rows[:10]
 
 
-def _wnba_rows():
-    import wnba
-    return _board_rows(wnba.board(), "🏀 WNBA")
-
-
 def _nba_rows():
     import basket
     return _board_rows(basket.board("nba"), "🏀 NBA")
@@ -267,7 +262,7 @@ def _arb_rows():
     100¢ mean buying every outcome locks a profit. Rare, small, real."""
     import sports
     rows = []
-    for key in ("wnba", "golf", "mls"):
+    for key in ("golf", "mls"):
         try:
             for ev in sports.get_events(key) or []:
                 arb = ev.get("arbitrage_pct")
@@ -310,11 +305,9 @@ def board(date=None, season=None, sims=2500):
 
     pull("mlb", _mlb_rows, date, season, sims)
     pull("mlb_futures", _mlb_futures_rows, season)
-    pull("wnba", _wnba_rows)
     pull("nba", _nba_rows)
     pull("nhl", _nhl_rows)
     pull("cfb_futures", _cfb_futures_rows)
-    pull("wnba_futures", _pro_futures_rows, "wnba", "🏀 WNBA futures")
     pull("ufc", _ufc_rows)
     pull("golf", _golf_rows)
     pull("tennis", _tennis_rows)
