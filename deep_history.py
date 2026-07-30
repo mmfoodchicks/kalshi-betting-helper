@@ -56,19 +56,25 @@ _GROUPS = ("rotation", "bullpen", "depth", "lineup", "bench", "depth_bats")
 # 3% of simulated seasons end with a different World Series winner. That residue
 # is irreducible, and it sets the precision.
 #
-# Measured (scratch runs, three paired estimates at n=80 differing by 1.25 to
-# 2.50pp): the per-season variance of the paired WS indicator is ~0.029, so
-#     SE(n) = 100 * sqrt(0.029 / n) pp
-# which is 1.9pp at n=80, 0.76pp at n=500 and 0.54pp at n=1,000. A figure below
+# Measured twice, on repeated paired counterfactuals removing a leverage arm from
+# the strongest club:
+#     3 estimates at n=80  -> SD 1.91pp  => per-season variance ~0.029
+#     4 estimates at n=150 -> SD 1.59pp  => per-season variance ~0.038
+# The second is better powered, and where two honest estimates disagree the
+# conservative one is the right default: over-stating precision prints noise as
+# fact, while under-stating it only suppresses a marginal figure. So:
+#     SE(n) = 100 * sqrt(0.038 / n) pp
+# which is 1.6pp at n=150, 0.87pp at n=500 and 0.62pp at n=1,000. A figure inside
 # roughly twice that is not distinguishable from noise and is NOT shown as a
-# number. Chasing SE=0.3pp would need ~3,200 seasons per event, i.e. half an hour
-# each, so the honest move is to report the uncertainty rather than hide it.
+# number. Chasing SE=0.3pp would need ~4,200 seasons per event, i.e. three
+# quarters of an hour each, so the honest move is to report the uncertainty
+# rather than hide it.
 #
 # Cost at the defaults: (1 baseline + 6 events) x 1,000 seasons ~= 75 min on four
 # cores, on top of the 42-minute nightly. VIGIL_ATTRIB_SEASONS / VIGIL_MAX_ATTRIB
 # dial it without a deploy; 0 events disables attribution entirely and the day is
 # still snapshotted and diffed, just without pp figures.
-_ATTRIB_VAR = 0.029          # per-season variance of the paired WS indicator
+_ATTRIB_VAR = 0.038          # per-season variance of the paired WS indicator
 _ATTRIB_SEASONS = int(os.environ.get("VIGIL_ATTRIB_SEASONS") or 1000)
 _MAX_ATTRIB = int(os.environ.get("VIGIL_MAX_ATTRIB") or 6)
 
@@ -376,6 +382,16 @@ def attribute(events, cur_profiles, prev_profiles, season, seasons=None,
             continue
         agg = deep_season.run_deep(season, n_seasons=seasons, seed=seed,
                                    profiles=cf, track_progress=False)
+        # The pairing only holds if both sides played the SAME seasons. If a run
+        # comes back short -- a worker lost, a run cut off -- the two are divided
+        # by different denominators and the difference is an artefact of that, not
+        # of the roster change. Seen for real while measuring this: a short run
+        # produced a 2pp "effect" from a change that was reverted to itself.
+        if (agg["n"] or 0) != bn:
+            ev["delta_note"] = (f"unpaired run ({agg.get('n')} vs {bn} seasons); "
+                                "not reported")
+            _say(f"{ev.get('name')}: SHORT RUN {agg.get('n')} vs {bn}, skipped")
+            continue
         d = ws(base, tid) - ws(agg, tid)      # today MINUS the reverted world
         ev["delta_pp"] = round(d, 2)
         ev["delta_se"] = round(attrib_se(seasons), 2)

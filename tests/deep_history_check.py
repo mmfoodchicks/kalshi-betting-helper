@@ -339,8 +339,10 @@ ck("the noise floor is twice the standard error at the seasons used",
    f"SE {dh.attrib_se(500):.2f} floor {dh.noise_floor(500):.2f}")
 ck("more paired seasons -> a tighter standard error",
    dh.attrib_se(4000) < dh.attrib_se(500) < dh.attrib_se(80))
-ck("the SE matches what was measured at n=80 (~1.9pp)",
-   1.6 < dh.attrib_se(80) < 2.2, round(dh.attrib_se(80), 2))
+ck("the SE matches what was measured at n=150 (~1.6pp)",
+   1.4 < dh.attrib_se(150) < 1.9, round(dh.attrib_se(150), 2))
+ck("the shipped variance is the CONSERVATIVE of the two measurements",
+   dh._ATTRIB_VAR >= 0.038 - 1e-9, dh._ATTRIB_VAR)
 ck("roster moves outrank form for the budget",
    dh._impact_rank({"kind": "il_out", "pos": "P"}, 5.0)
    > dh._impact_rank({"kind": "blowup", "pos": "P"}, 5.0))
@@ -349,6 +351,39 @@ ck("a big team move raises an event's priority",
    > dh._impact_rank({"kind": "il_out", "pos": "P"}, 0.0))
 ck("no events -> no baseline run is paid for",
    dh.attribute({}, {}, {}, "2026")["priced"] == 0)
+
+# A counterfactual is only paired if BOTH sides ran the same seasons. A short run
+# divides by a different denominator, which manufactures an effect out of nothing:
+# while measuring this, a run that came back short produced a 2pp "effect" from a
+# change that had been reverted to itself. Stub the sim to force that case.
+import deep_season as _ds
+
+_orig_run = _ds.run_deep
+_calls = {"i": 0}
+
+
+def _fake_run(season, n_seasons=None, seed=None, profiles=None, **kw):
+    _calls["i"] += 1
+    # baseline full length; the counterfactual comes back three seasons short
+    n = n_seasons if _calls["i"] == 1 else n_seasons - 3
+    return {"n": n, "ws": {"1": int(n * 0.30)}, "meta": {}}
+
+
+_ds.run_deep = _fake_run
+try:
+    evs = {"1": [{"pid": 7, "name": "Arm", "pos": "P", "kind": "il_in", "to": "D15"}]}
+    cur = {"1": {g: ([{"id": 7}] if g == "bullpen" else []) for g in dh._GROUPS}}
+    prev = {"1": {g: [] for g in dh._GROUPS}}
+    info = dh.attribute(evs, cur, prev, "2026", seasons=100)
+    ev = evs["1"][0]
+    ck("a short counterfactual is refused, not reported", ev.get("delta_pp") is None,
+       ev.get("delta_pp"))
+    ck("and it says why", "unpaired run" in (ev.get("delta_note") or ""),
+       ev.get("delta_note"))
+    ck("a refused event is not counted as priced", info["priced"] == 0, info)
+    ck("its sentence carries no number", "pp" not in dh.sentence(ev), dh.sentence(ev))
+finally:
+    _ds.run_deep = _orig_run
 
 print()
 print("=" * 74)
