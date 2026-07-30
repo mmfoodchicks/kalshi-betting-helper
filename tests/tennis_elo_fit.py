@@ -4,9 +4,14 @@ This file backs three constants/decisions in tennis_elo and tennis_prices. Re-ru
 it as results accumulate -- the Kalshi store grows daily, and the right K can move
 as the pool deepens.
 
-  1. K FACTOR -- SHIPPED AT 48 (was 24, never fitted).
-     Rolling-origin validation over two independent datasets puts the minimum at
-     48 on both, with the curve flat from ~40 to ~56.
+  1. K FACTOR -- now a RAMP BY EXPERIENCE, not a constant
+     (K_EARLY=100, K_LATE=22, K_TAU=10 in tennis_elo).
+     A constant cannot serve this pool because the pool is a mixture: since the
+     deep archive was wired in, ATP players carry hundreds of rated matches and
+     want K~24, while the ITF players who make up most of a board carry a handful
+     and want K~48. Fitted jointly over ~55k deep ATP matches and ~19k Kalshi
+     results, the ramp matches the deep pool's best constant (0.6099 vs 0.6095)
+     and beats the shallow pool's (0.6540 vs 0.6572).
 
   2. SURFACE-SPLIT RATING -- REJECTED.
      Giving each player a per-surface Elo shrunk toward their overall makes the
@@ -91,6 +96,9 @@ def acc(pairs):
 
 
 def walk(rows, K):
+    """K may be a number (constant, with the old 1.6x step) or the string
+    "ramp", which uses the schedule tennis_elo actually ships."""
+    ramp = (K == "ramp")
     elo, n_m, out = {}, collections.Counter(), []
     for date, pool, win, los, tier in rows:
         for p in (win, los):
@@ -103,15 +111,33 @@ def walk(rows, K):
             out.append((min(0.995, max(0.005, elo_p(elo[x], elo[y]))),
                         1 if x == win else 0))
         ew = elo_p(ra, rb)
-        elo[win] = ra + K * (1.6 if n_m[win] < 10 else 1.0) * (1.0 - ew)
-        elo[los] = rb - K * (1.6 if n_m[los] < 10 else 1.0) * (1.0 - ew)
+        if ramp:
+            kw, kl = tennis_elo.k_for(n_m[win]), tennis_elo.k_for(n_m[los])
+        else:
+            kw = K * (1.6 if n_m[win] < 10 else 1.0)
+            kl = K * (1.6 if n_m[los] < 10 else 1.0)
+        elo[win] = ra + kw * (1.0 - ew)
+        elo[los] = rb - kl * (1.0 - ew)
         n_m[win] += 1; n_m[los] += 1
     return out
 
 
+def load_deep():
+    """The deep ATP archive the ramp was fitted on (empty if unreachable)."""
+    try:
+        import tennis_history
+        return [(d, "m", w, l, 1500.0)
+                for d, tour, w, l, s, lv in tennis_history.results()]
+    except Exception:
+        return []
+
+
 def rolling(name, rows, folds=5):
-    """Choose K on everything seen so far, score the NEXT block, walk forward."""
+    """Choose K on everything seen so far, score the NEXT block, walk forward.
+    The shipped model is the RAMP, so it is scored alongside the constants rather
+    than being looked up as one of them."""
     curves = {K: walk(rows, K) for K in K_GRID}
+    curves["ramp"] = walk(rows, "ramp")
     n = len(curves[OLD_K])
     edges = [int(n * i / folds) for i in range(folds + 1)]
     print("\n" + "=" * 78)
@@ -129,12 +155,14 @@ def rolling(name, rows, folds=5):
               f"{ll(curves[OLD_K][lo:hi]):>9.4f} {g:>+8.4f}")
     print(f"  folds chose {[int(c) for c in chosen]};  "
           f"mean gain over K=24: {sum(gains)/len(gains):+.4f}")
-    print(f"\n  {'K':>5s} {'logloss':>9s} {'acc':>7s}")
+    print(f"\n  {'K':>6s} {'logloss':>9s} {'acc':>7s}")
     lo_k = min(K_GRID, key=lambda k: ll(curves[k]))
     for K in K_GRID:
-        tag = "  <-- min" if K == lo_k else ("  (shipped)" if K == SHIPPED_K else "")
-        print(f"  {K:>5.0f} {ll(curves[K]):>9.4f} {acc(curves[K]):>7.4f}{tag}")
-    return lo_k, ll(curves[OLD_K]), ll(curves[SHIPPED_K])
+        tag = "  <-- best constant" if K == lo_k else ""
+        print(f"  {K:>6.0f} {ll(curves[K]):>9.4f} {acc(curves[K]):>7.4f}{tag}")
+    print(f"  {'ramp':>6s} {ll(curves['ramp']):>9.4f} {acc(curves['ramp']):>7.4f}"
+          f"  <-- SHIPPED")
+    return lo_k, ll(curves[OLD_K]), ll(curves["ramp"])
 
 
 def surface_check():
@@ -217,27 +245,65 @@ def surface_check():
     return not established
 
 
+def _ramp_vs_constants(name, rows):
+    """Does the shipped ramp beat the best constant on this dataset?"""
+    if not rows:
+        print(f"\n{name}: no data")
+        return
+    curves = {K: walk(rows, K) for K in K_GRID}
+    curves["ramp"] = walk(rows, "ramp")
+    print("\n" + "=" * 78)
+    print(f"{name}: shipped RAMP vs the best constant  ({len(rows)} matches)")
+    print("=" * 78)
+    bestK = min(K_GRID, key=lambda k: ll(curves[k]))
+    print(f"  best constant K={bestK:.0f}: logloss {ll(curves[bestK]):.4f} "
+          f"acc {acc(curves[bestK]):.4f}")
+    print(f"  shipped ramp       : logloss {ll(curves['ramp']):.4f} "
+          f"acc {acc(curves['ramp']):.4f}")
+    d = ll(curves[bestK]) - ll(curves["ramp"])
+    print(f"  ramp vs best constant: {d:+.4f} "
+          f"({'ramp wins' if d > 0 else 'within ' + format(-d, '.4f') + ' of it'})")
+
+
 def main():
     quick = "--quick" in sys.argv
     k1, old1, new1 = rolling("KALSHI settled results (ITF-heavy -- the live board)",
                              load_kalshi())
     k2, old2, new2 = rolling("CHARTING match index (tour level, decades deep)",
                              load_charting())
+    _ramp_vs_constants("KALSHI (shallow, ITF-heavy)", load_kalshi())
+    if not quick:
+        _ramp_vs_constants("DEEP ATP archive", load_deep())
     surf_rejected = True if quick else surface_check()
 
     print("\n" + "=" * 78)
     print("VERDICT")
     print("=" * 78)
-    print(f"  shipped K = {SHIPPED_K:.0f};  minimum found: KALSHI {k1:.0f}, CHARTING {k2:.0f}")
-    print(f"  vs the old K=24 -- KALSHI  {old1:.4f} -> {new1:.4f} ({old1-new1:+.4f})")
-    print(f"                     CHARTING {old2:.4f} -> {new2:.4f} ({old2-new2:+.4f})")
+    print(f"  shipped: ramp K_EARLY={tennis_elo.K_EARLY:.0f} K_LATE={tennis_elo.K_LATE:.0f} "
+          f"K_TAU={tennis_elo.K_TAU:.0f}")
+    print(f"  best CONSTANT found: KALSHI {k1:.0f}, CHARTING {k2:.0f} "
+          f"(they disagree -- which is why the shipped model is a ramp)")
+    print(f"  ramp vs flat K=24 -- KALSHI   {old1:.4f} -> {new1:.4f} ({old1-new1:+.4f})")
+    print(f"                       CHARTING {old2:.4f} -> {new2:.4f} ({old2-new2:+.4f})")
     ok = (new1 <= old1 + 1e-4) and (new2 <= old2 + 1e-4)
-    print(f"  shipped K beats the old default on both datasets: {'YES' if ok else 'NO'}")
+    print(f"  shipped ramp beats the old flat default on both: {'YES' if ok else 'NO'}")
     if not quick:
         print(f"  surface-split rating still rejected: {'YES' if surf_rejected else 'NO'}")
-    if abs(SHIPPED_K - k1) > 12 or abs(SHIPPED_K - k2) > 12:
-        print("  NOTE: the fitted minimum has drifted well away from the shipped K.")
-        print("        The pool has changed shape -- consider re-shipping.")
+    # Deliberately NOT a comparison of K_LATE against the best constant: those
+    # should differ. K_LATE is where a well-established rating settles, while a
+    # single constant is a compromise across a mixture of deep and shallow
+    # players, so it always lands higher. The meaningful check is whether the ramp
+    # still beats the best constant on the population the board actually runs on.
+    kal = load_kalshi()
+    if kal:
+        cur = {K: walk(kal, K) for K in K_GRID}
+        cur["ramp"] = walk(kal, "ramp")
+        bc = min(K_GRID, key=lambda K: ll(cur[K]))
+        margin = ll(cur[bc]) - ll(cur["ramp"])
+        print(f"  ramp vs best constant on KALSHI: {margin:+.4f}")
+        if margin < 0:
+            print("  NOTE: a flat K now beats the ramp on the live population.")
+            print("        The pool has changed shape -- re-fit K_EARLY/K_LATE/K_TAU.")
     return 0 if ok else 1
 
 

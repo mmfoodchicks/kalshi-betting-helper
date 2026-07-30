@@ -1,4 +1,4 @@
-"""Deep tennis match history -- Jeff Sackmann's results archives.
+"""Deep tennis match history -- ATP tour results, 20 years deep.
 
 WHY: tennis_elo rates players from settled Kalshi markets, which only reach back
 to when Kalshi started listing tennis. That is a couple of months: the median
@@ -7,26 +7,25 @@ board is provisional. Since the Elo is the ONLY model for the ITF matches that
 make up most of the board, that shallowness is the single biggest limit on the
 tennis numbers.
 
-Sackmann publishes the fix as plain CSV -- every tour match for decades, plus
-Challengers, qualifying and ITF futures, each row carrying a date, both players
-and the SURFACE. Feeding that in ahead of the Kalshi results gives ratings a real
-baseline to be provisional *against*.
+The fix is plain CSV -- one file per year, each row carrying a date, both players
+and the SURFACE. Fed in ahead of the Kalshi results, it gives ratings a real
+baseline to be provisional *against*. VERIFIED against the live source: 55,152
+matches over 2007-2026 parse cleanly, taking players with 8+ rated matches from
+29% to 43% and those with 20+ from 1.5% to 27%.
 
-TRUST MODEL. This module was written without being able to fetch the files (the
-authoring sandbox scopes GitHub per repository owner). The five filenames and the
-column layout below were each corroborated against published documentation of the
-archives rather than taken from memory -- but corroboration is not the same as
-having parsed the real bytes, so the module still does not ASSUME the layout: it
-reads the CSV header and resolves each field it needs by name from a
-set of accepted spellings, and REJECTS any file whose header does not carry them.
-A file that fails validation is skipped and counted, never guessed at. If every
-file fails, `results()` returns nothing and tennis_elo carries on with the Kalshi
-store exactly as it does today. The failure mode is "no improvement", not "wrong
-ratings".
+Its limitation is real and stated in _SOURCES below: ATP TOUR ONLY. This deepens
+the handful of ATP matches on a board and does nothing for the ITF bulk, which
+remains the model's biggest gap.
 
-Before relying on it, run:  python3 tests/tennis_history_check.py --live
-which fetches the real headers, reports exactly what matched, and re-fits the Elo
-K factor over the deepened pool.
+TRUST MODEL. The parser does not assume a layout -- it reads the CSV header and
+resolves each field it needs by name from a set of accepted spellings, in any
+column order, and REJECTS any file whose header does not carry a date, a winner
+and a loser. A file that fails validation is skipped and counted, never guessed
+at. If every file fails, `results()` returns nothing and tennis_elo carries on
+with the Kalshi store exactly as before: the failure mode is "no improvement",
+not "wrong ratings". VIGIL_TENNIS_HISTORY=0 disables it without a deploy.
+
+Check it with:  python3 tests/tennis_history_check.py --live
 """
 
 import csv
@@ -38,19 +37,30 @@ import urllib.request
 # The alternates are CDN mirrors of the same repositories, tried in order, so a
 # single host being unreachable does not silently disable the whole source.
 _HOSTS = (
-    "https://raw.githubusercontent.com/JeffSackmann/{repo}/master/{name}",
-    "https://raw.githubusercontent.com/JeffSackmann/{repo}/refs/heads/master/{name}",
-    "https://cdn.jsdelivr.net/gh/JeffSackmann/{repo}@master/{name}",
-    "https://raw.githack.com/JeffSackmann/{repo}/master/{name}",
+    "https://raw.githubusercontent.com/{repo}/master/{name}",
+    "https://raw.githubusercontent.com/{repo}/refs/heads/master/{name}",
+    "https://cdn.jsdelivr.net/gh/{repo}@master/{name}",
 )
 
-# (tour code, repo, filename template). `kind` is only used for reporting.
+# (tour code, owner/repo, filename template, kind).
+#
+# This originally pointed at JeffSackmann/tennis_atp and tennis_wta, which are the
+# canonical archives and carry ITF futures as well as tour. They are no longer
+# reachable: every path in them returns GitHub's own 404, including README.md,
+# while JeffSackmann/tennis_MatchChartingProject serves fine from the same host
+# and raw.githubusercontent is demonstrably ungated (jquery, torvalds/linux and
+# python/cpython all fetch normally). His profile now lists only the charting
+# project. Whatever happened to them, they cannot be fetched or forked.
+#
+# Tennismylife/TML-Database is a live mirror of the same format -- identical
+# column names, one file per year -- and it IS reachable, verified by fetching and
+# parsing it. Its limitation is real and worth stating plainly: ATP TOUR ONLY. No
+# WTA, no Challengers, no qualifying, no ITF (those files 404 and the level codes
+# confirm it: 250/500/M/G/D/A/O/F, nothing in the ITF range). So this deepens
+# ratings for the handful of ATP matches on a board and does nothing for the ITF
+# bulk, which remains the model's biggest gap.
 _SOURCES = (
-    ("m", "tennis_atp", "atp_matches_{year}.csv", "tour"),
-    ("m", "tennis_atp", "atp_matches_qual_chall_{year}.csv", "chall/qual"),
-    ("m", "tennis_atp", "atp_matches_futures_{year}.csv", "futures"),
-    ("w", "tennis_wta", "wta_matches_{year}.csv", "tour"),
-    ("w", "tennis_wta", "wta_matches_qual_itf_{year}.csv", "qual/itf"),
+    ("m", "Tennismylife/TML-Database", "{year}.csv", "atp tour"),
 )
 
 # Accepted spellings per field. The first that appears in the header wins. Kept
@@ -68,7 +78,7 @@ _REQUIRED = ("date", "winner", "loser")     # surface/level are optional extras
 # Default window. Ratings care about who a player is NOW, and every extra year is
 # five more files to fetch; a decade is plenty to take a player off provisional
 # without pulling the whole archive on every cold start.
-DEFAULT_YEARS = 10
+DEFAULT_YEARS = 20
 _TIMEOUT = 12
 _CACHE_KEY = "tennis_history_rows"
 _CACHE_TTL_DAYS = 7

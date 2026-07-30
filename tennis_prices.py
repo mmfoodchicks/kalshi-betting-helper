@@ -408,7 +408,21 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         if elo_ok:                              # ensemble the two independent reads
             model_pa = round(0.55 * sim["p_a"] + 0.45 * elo_pa, 1)
             source = "serve+elo"
-            conf = max(min(a["n"], b["n"]), elo_n)
+            # Confidence in an ENSEMBLE is bounded by its weakest component, not
+            # its strongest. This was max(), which was survivable while the Elo
+            # was as thin as the charting; once tennis_history gave ATP players
+            # hundreds of rated matches it broke badly -- elo_n of 339 drove the
+            # market weight to 0.96, so a deep Elo was used to justify trusting a
+            # SERVE sim that had not improved at all. Measured against an 8-book
+            # consensus, that pushed our error on the worst match from 16.9pp to
+            # 21.7pp: more data, worse answer.
+            conf = min(min(a["n"], b["n"]), elo_n)
+            # Two independent reads disagreeing is evidence that one of them is
+            # wrong, and we do not know which. Fade toward the market when they
+            # do: full confidence when they agree, a quarter of it once they are
+            # 30 points apart.
+            spread = abs(sim["p_a"] - elo_pa)
+            conf *= max(0.25, 1.0 - spread / 40.0)
         else:
             model_pa = sim["p_a"]
             source = "serve"

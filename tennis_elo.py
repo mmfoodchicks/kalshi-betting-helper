@@ -15,6 +15,7 @@ ratings sharpen -- recursive and dynamic, like the rest of the engines.
 
 import datetime
 import json
+import math
 import unicodedata
 import urllib.request
 
@@ -33,23 +34,40 @@ _SERIES = [("KXATPMATCH", "m", 1600.0), ("KXWTAMATCH", "w", 1600.0),
 # entries. G/M/A/D/F (slams, Masters, ATP, Davis Cup, finals) are main tour.
 _TOUR_START, _ITF_START = 1600.0, 1400.0
 _LOW_TIERS = {"15", "25", "C", "S", "Q", "ITF", "FUTURES"}
-# Elo K factor -- FITTED, not guessed (tests/tennis_elo_fit.py). Rolling-origin
-# validation over two independent datasets -- ~19k settled Kalshi results
-# (ATP/WTA/ITF, the population this board actually runs on) and ~11.6k Match
-# Charting matches (tour level, decades deep) -- puts the minimum at 48 on BOTH,
-# with the curve flat from about 40 to 56. Held-out log loss improves 0.6560 ->
-# 0.6489 on Kalshi and 0.5557 -> 0.5477 on charting, and 7 of 8 rolling folds beat
-# the old 24. Accuracy barely moves; what improves is CALIBRATION, which is what
-# the fair-win blend and the edge calculation consume.
+# Elo K by EXPERIENCE, fitted (tests/tennis_elo_fit.py):
 #
-# Why so high: both populations turn over fast and are shallow per player (median
-# 4 Kalshi matches), so a rating has to move quickly to track a player at all. The
-# old 24 was tuned for a deep, stable pool that tennis at this tier does not have.
-_K = 48.0
-# Left ALONE, also measured: the 1.6x provisional boost under 10 matches (refitting
-# to 2.0/20 made the held-out tail worse), and time decay -- regressing an idle
-# player's rating toward the pool mean was monotonically harmful at every half-life
-# from 90 to 720 days on both datasets. `last` stays a display field.
+#     K(n) = K_LATE + (K_EARLY - K_LATE) * exp(-n / K_TAU)
+#
+# A single K cannot serve this pool, because the pool is a mixture. Since the deep
+# archive was wired in (tennis_history), ATP players carry hundreds of rated
+# matches and want a SMALL K -- one result should barely move a well-established
+# rating. The ITF players who make up most of a Kalshi board still carry a handful
+# and want a LARGE one, or the rating never says anything at all. Fitting a
+# constant to that mixture splits the difference and serves neither: measured, the
+# deep pool's best constant is 24 and the shallow pool's is 48.
+#
+# The ramp gets both. Fitted jointly over ~55k deep ATP matches and ~19k settled
+# Kalshi results, scored on each dataset separately, it MATCHES the deep pool's
+# best constant (0.6099 vs 0.6095) and BEATS the shallow pool's (0.6540 vs 0.6572)
+# -- and improves on what was shipped in both (deep 0.6167 -> 0.6099, Kalshi
+# 0.6572 -> 0.6540). In practice K runs ~100 for a debut, ~51 at ten matches, ~33
+# at twenty and settles near 22 by fifty.
+#
+# This SUBSUMES the old flat 48 with a 1.6x boost under 10 matches, which was the
+# same idea expressed as a step function -- and which was itself fitted before
+# there was any deep history to be established against.
+K_EARLY, K_LATE, K_TAU = 100.0, 22.0, 10.0
+_K = K_LATE          # kept for callers/tests that reference a nominal K
+
+
+def k_for(n):
+    """Elo K for a player with `n` matches already rated."""
+    return K_LATE + (K_EARLY - K_LATE) * math.exp(-max(0, n) / K_TAU)
+
+
+# Time decay stays OFF, re-measured on the deep pool: a 10-year half-life was the
+# best of a bad set (+0.0012 rolling, split 3/2 across folds) and everything
+# shorter was clearly harmful. `last` stays a display field.
 _MAX_PAGES = 22                      # bound the ITF firehose per series
 _FORM_WIN = 8                        # recent results kept per player
 
@@ -167,8 +185,8 @@ def _build():
             L = pool.setdefault(ln, {"elo": tier_start, "n": 0, "name": los,
                                      "last": date, "res": []})
             ew = 1.0 / (1.0 + 10 ** ((L["elo"] - W["elo"]) / 400.0))
-            kw = _K * (1.6 if W["n"] < 10 else 1.0)    # provisional boost
-            kl = _K * (1.6 if L["n"] < 10 else 1.0)
+            kw = k_for(W["n"])          # ramps down as a rating establishes
+            kl = k_for(L["n"])
             W["elo"] += kw * (1.0 - ew)
             L["elo"] -= kl * (1.0 - ew)
             W["n"] += 1; L["n"] += 1

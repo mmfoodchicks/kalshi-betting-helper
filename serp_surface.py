@@ -37,6 +37,8 @@ _TIMEOUT = 20
 MAX_LOOKUPS_PER_RUN = 8
 # Refuse to spend the last of the quota, so a human still has searches to debug with.
 MIN_SEARCHES_LEFT = 20
+# How long a failed lookup stays cached before it is worth one more search.
+_NEG_RETRY_DAYS = 21
 
 # Canonical ways the answer actually appears, strongest first. Matching a phrase
 # beats counting loose keyword mentions -- "clay" shows up in unrelated text, but
@@ -161,23 +163,32 @@ def resolve(tournaments, budget=MAX_LOOKUPS_PER_RUN):
 
     A name that resolves to nothing is cached as a negative so it is not retried
     every build -- the quota is too small to keep asking a question Google has
-    already declined to answer."""
+    already declined to answer. But negatives EXPIRE (`_NEG_RETRY_DAYS`), because
+    a permanent one is a trap: a stop that failed once for a transient reason, or
+    under an older and worse query, would never be asked again no matter how much
+    the extraction improved. Positives never expire -- a venue's surface does not
+    change. Negatives are stored as a timestamp, positives as a string, so the two
+    are told apart by type."""
     try:
         import deep_cache
         cache = deep_cache.load(_CACHE_KEY)[0] or {}
     except Exception:
         cache, deep_cache = {}, None
 
+    import time
+    now = time.time()
     out, todo = {}, []
     for t in tournaments:
         n = _norm(t)
         if not n:
             continue
-        if n in cache:
-            if cache[n]:
-                out[t] = cache[n]
+        hit = cache.get(n)
+        if isinstance(hit, str) and hit:
+            out[t] = hit                       # resolved: permanent
+        elif isinstance(hit, (int, float)) and (now - hit) < _NEG_RETRY_DAYS * 86400:
+            continue                           # negative, still cooling off
         elif t not in todo:
-            todo.append(t)
+            todo.append(t)                     # new, or a negative that has aged out
 
     if todo and enabled():
         left = searches_left()
@@ -191,7 +202,7 @@ def resolve(tournaments, budget=MAX_LOOKUPS_PER_RUN):
     dirty = False
     for t in todo[:budget]:
         surf = lookup(t)
-        cache[_norm(t)] = surf or ""        # "" is a cached negative
+        cache[_norm(t)] = surf or now       # a bare timestamp marks a negative
         dirty = True
         if surf:
             out[t] = surf
