@@ -17,6 +17,7 @@ import datetime
 import json
 import os
 import math
+import time
 import unicodedata
 import urllib.request
 
@@ -376,9 +377,40 @@ def _build_isolated():
 _BUILD_TIMEOUT_S = 900
 
 
+_POOLS_KEY = "tennis_elo_pools"
+_POOLS_TTL = 24 * 3600
+
+
+def _pools_from_disk_or_build():
+    """Pools, preferring the persisted copy over a rebuild.
+
+    Rebuilding is the single most expensive thing this app does: walking the
+    436k-match archive peaks near 440 MB even isolated in a child, which is more
+    than a 512 MB container has. The finished pools are ~5 MB pickled. Keeping
+    them only in memory meant every restart paid the full rebuild -- and on a
+    small host that rebuild is itself what killed the instance, so it restarted
+    and rebuilt again. Persisting them turns the common case into a 5 MB read."""
+    try:
+        import deep_cache
+        cached, ts = deep_cache.load(_POOLS_KEY)
+        if cached and ts and (time.time() - ts) < _POOLS_TTL:
+            return cached
+    except Exception:
+        pass
+    built = _build_isolated()
+    if built and (built.get("m") or built.get("w")):
+        try:
+            import deep_cache
+            deep_cache.save(_POOLS_KEY, built)
+        except Exception:
+            pass
+    return built
+
+
 def pools():
-    """Cached Elo pools, refreshed daily (settled results accrue continuously)."""
-    return (racing._cached(("tennis_elo",), 24 * 3600, _build_isolated)
+    """Cached Elo pools, refreshed daily (settled results accrue continuously).
+    Held in memory for the process and on disk across restarts."""
+    return (racing._cached(("tennis_elo",), _POOLS_TTL, _pools_from_disk_or_build)
             or {"m": {}, "w": {}})
 
 

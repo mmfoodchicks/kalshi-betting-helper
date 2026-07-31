@@ -78,15 +78,50 @@ _FIELDS = {
 }
 _REQUIRED = ("date", "winner", "loser")     # surface/level are optional extras
 
-# Default window. Ratings care about who a player is NOW, and the archive is much
-# bigger than it was when this pulled one small file per year -- ITF alone runs
-# ~18k men's and ~22k women's matches annually. Eight years takes every player on
-# a board well clear of provisional (the K ramp settles by ~50 matches) without
-# pulling a decade of juniors who have since retired, and keeps a cold start
-# inside the budget below. Cached for a week, so this cost is paid rarely.
-DEFAULT_YEARS = 8
+# Window. Ratings care about who a player is NOW, and the archive is much bigger
+# than it was when this pulled one small file per year -- ITF alone runs ~18k
+# men's and ~22k women's matches annually. Eight years takes every player on a
+# board well clear of provisional (the K ramp settles by ~50 matches) without
+# pulling a decade of juniors who have since retired. Cached for a week, so the
+# fetch cost is paid rarely -- but the MEMORY cost is paid on every rebuild, which
+# is why the depth is sized to the host below.
+def default_years():
+    """How deep to pull, sized to the box rather than fixed.
+
+    Eight years is 436k matches, and turning those into Elo pools peaks near
+    440 MB -- more than a 512 MB container has, so the rebuild is what kills the
+    instance rather than merely being slow. Memory scales with the row count, so
+    a small host takes fewer years: shallower ratings still beat no board at all,
+    and the pools persist across restarts so this rebuild is rare either way.
+    VIGIL_TENNIS_YEARS overrides."""
+    env = os.environ.get("VIGIL_TENNIS_YEARS")
+    if env:
+        try:
+            return max(1, int(env))
+        except ValueError:
+            pass
+    for path in ("/sys/fs/cgroup/memory.max",
+                 "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+        try:
+            with open(path) as f:
+                raw = f.read().strip()
+            if raw in ("max", "-1"):
+                continue
+            mb = int(raw) / (1024 * 1024)
+            if 0 < mb < (1 << 22):
+                return 3 if mb < 768 else (5 if mb < 1536 else 8)
+        except Exception:
+            continue
+    return 8
+
+
+DEFAULT_YEARS = 8               # the full-fat depth, used when memory allows
 _TIMEOUT = 12
-_CACHE_KEY = "tennis_history_rows"
+# The cache key carries the DEPTH. Without it a box that once cached eight years
+# would keep loading all 436k rows even after dropping to three -- the row list is
+# ~146 MB in memory, so serving the wrong depth from cache would defeat the whole
+# point of shortening it.
+_CACHE_PREFIX = "tennis_history_rows"
 _CACHE_TTL_DAYS = 7
 # This runs on the path that builds the Elo pools, so an unreachable archive must
 # cost seconds, not the 50 files x 3 hosts x timeout it would otherwise. Two
@@ -191,7 +226,7 @@ def parse(text):
     return rows, None
 
 
-def fetch(years=DEFAULT_YEARS, upto=None, report=None, budget=_BUDGET_S):
+def fetch(years=None, upto=None, report=None, budget=_BUDGET_S):
     """[(date, tour, winner, loser, surface, level)] across the archives, in date
     order. `report` (a list) collects one dict per file for diagnostics.
 
@@ -200,6 +235,7 @@ def fetch(years=DEFAULT_YEARS, upto=None, report=None, budget=_BUDGET_S):
     same as no read, so stopping early costs depth, never correctness."""
     import time
     import clock
+    years = years or default_years()
     end = upto or clock.today_et().year
     started = time.time()
     out, tried, got_any = [], 0, False
@@ -240,17 +276,18 @@ def fetch(years=DEFAULT_YEARS, upto=None, report=None, budget=_BUDGET_S):
     return out
 
 
-def results(years=DEFAULT_YEARS, force=False):
+def results(years=None, force=False):
     """Cached deep history. Empty list when disabled or unavailable -- callers
     must treat that as "no extra history", never as an error."""
     if not enabled():
         return []
+    years = years or default_years()
     try:
         import deep_cache
     except Exception:
         return fetch(years)
     if not force:
-        cached, ts = deep_cache.load(_CACHE_KEY)
+        cached, ts = deep_cache.load(f"{_CACHE_PREFIX}_{years}y")
         if cached:
             try:
                 import time
@@ -261,7 +298,7 @@ def results(years=DEFAULT_YEARS, force=False):
     rows = fetch(years)
     if rows:
         try:
-            deep_cache.save(_CACHE_KEY, rows)
+            deep_cache.save(f"{_CACHE_PREFIX}_{years}y", rows)
         except Exception:
             pass
     return rows

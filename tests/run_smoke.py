@@ -285,6 +285,66 @@ def t_deep_run_data_quality():
           qb["career_frac"] < thr < q["career_frac"], thr)
 
 
+def t_tennis_memory_guards():
+    """The tennis pool build is the biggest single memory event in the app, and
+    on a small host it was the thing killing the instance.
+
+    Measured: eight years of archive peaks at 436 MB to rebuild -- more than a
+    512 MB container has -- while the finished pools are ~3 MB pickled. Held only
+    in memory, every restart paid the full rebuild, which OOM-killed the instance,
+    which restarted and rebuilt again. Two guards: persist the result so a restart
+    reads it, and size the archive depth to the host so the rare rebuild fits
+    (measured 213 MB at three years)."""
+    import inspect
+    import os as _os
+    import tennis_elo
+    import tennis_history as th
+
+    src = inspect.getsource(tennis_elo._pools_from_disk_or_build)
+    check("built pools are persisted, not just memoised",
+          "deep_cache.save" in src and "deep_cache.load" in src)
+    check("pools() goes through the persisted path",
+          "_pools_from_disk_or_build" in inspect.getsource(tennis_elo.pools))
+
+    had = _os.environ.get("VIGIL_TENNIS_YEARS")
+    try:
+        _os.environ["VIGIL_TENNIS_YEARS"] = "4"
+        check("VIGIL_TENNIS_YEARS pins the depth", th.default_years() == 4)
+        _os.environ["VIGIL_TENNIS_YEARS"] = "junk"
+        check("a bad override falls back rather than crashing",
+              1 <= th.default_years() <= 20)
+    finally:
+        _os.environ.pop("VIGIL_TENNIS_YEARS", None)
+        if had is not None:
+            _os.environ["VIGIL_TENNIS_YEARS"] = had
+
+    import builtins
+    real_open = builtins.open
+
+    def fake(limit_mb):
+        def _o(path, *a, **k):
+            if "memory.max" in str(path):
+                import io
+                return io.StringIO(str(int(limit_mb * 1024 * 1024)))
+            return real_open(path, *a, **k)
+        return _o
+    try:
+        builtins.open = fake(512)
+        small = th.default_years()
+        builtins.open = fake(4096)
+        big = th.default_years()
+    finally:
+        builtins.open = real_open
+    check("a 512 MB host pulls a shallower archive than a 4 GB one",
+          small < big, f"{small} vs {big}")
+    check("even the small host pulls something", small >= 1, small)
+
+    # the row cache must not serve a deeper archive than was asked for
+    check("the row cache key carries the depth",
+          "_CACHE_PREFIX" in inspect.getsource(th.results)
+          and "years" in inspect.getsource(th.results))
+
+
 def t_pool_build_isolation():
     """The tennis pool build must be isolated WITHOUT multiprocessing.
 
@@ -321,8 +381,12 @@ def t_pool_build_isolation():
           "_build()" in body)
     check("the child entry point exists and is module level",
           callable(getattr(tennis_elo, "_build_blob", None)))
-    check("pools() goes through the isolated build",
-          "_build_isolated" in inspect.getsource(tennis_elo.pools))
+    # pools() -> _pools_from_disk_or_build() -> _build_isolated(). Follow the
+    # chain rather than assuming which link calls the builder, so inserting the
+    # persistence layer does not read as the isolation having been lost.
+    chain = (inspect.getsource(tennis_elo.pools)
+             + inspect.getsource(tennis_elo._pools_from_disk_or_build))
+    check("pools() reaches the isolated build", "_build_isolated" in chain)
 
 
 def t_render_blueprint():
@@ -563,6 +627,7 @@ def main():
     t_clock()
     t_sim_worker_sizing()
     t_deep_run_data_quality()
+    t_tennis_memory_guards()
     t_pool_build_isolation()
     t_render_blueprint()
     t_boot_is_survivable()
