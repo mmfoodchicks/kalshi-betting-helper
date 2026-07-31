@@ -285,6 +285,36 @@ def t_deep_run_data_quality():
           qb["career_frac"] < thr < q["career_frac"], thr)
 
 
+def t_slate_is_non_blocking():
+    """The MLB slate must never hold a request open through a cold build.
+
+    A cold build simulates every game on the card: ~54s on four fast cores, so
+    several MINUTES on a half-core instance. Held open, that outlives the
+    server's worker timeout, the browser gets a 502 instead of JSON, and the page
+    reads "Failed to load slate" with nothing in the app's logs to explain it."""
+    import inspect
+    import baseball as B
+    import app as _app
+
+    sig = inspect.signature(B.analyze_slate)
+    check("analyze_slate can be asked for the cache only",
+          "cached_only" in sig.parameters, list(sig.parameters))
+    check("a cold cache returns None rather than building",
+          B.analyze_slate("1999-01-01", "1999", cached_only=True) is None)
+
+    src = inspect.getsource(_app.api_baseball_today)
+    check("the endpoint answers 202 while the slate builds", "202" in src)
+    check("and builds it in the background", "Thread" in src)
+    check("a second request does not start a second build", "_slate_inflight" in src)
+
+    js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                           "static", "app.js")).read()
+    i = js.index("async function loadBaseball(")
+    body = js[i:i + 3000]
+    check("the frontend polls instead of treating 202 as a failure",
+          "202" in body and "setTimeout" in body)
+
+
 def t_tennis_memory_guards():
     """The tennis pool build is the biggest single memory event in the app, and
     on a small host it was the thing killing the instance.
@@ -627,6 +657,7 @@ def main():
     t_clock()
     t_sim_worker_sizing()
     t_deep_run_data_quality()
+    t_slate_is_non_blocking()
     t_tennis_memory_guards()
     t_pool_build_isolation()
     t_render_blueprint()

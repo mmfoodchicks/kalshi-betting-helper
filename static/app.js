@@ -1356,6 +1356,7 @@ function renderCombo(c, tag, extraCls) {
   </div>`;
 }
 
+let _slatePoll = null;   // poll handle while the MLB slate builds
 async function loadBaseball(silent) {
   const gamesBox = $("bbGames");
   const combosBox = $("bbCombos");
@@ -1365,7 +1366,22 @@ async function loadBaseball(silent) {
     combosBox.innerHTML = `<div class="empty">Crunching combos…</div>`;
   }
   try {
-    const d = await (await fetch("/api/baseball/today?date=" + date)).json();
+    const r = await fetch("/api/baseball/today?date=" + date);
+    // 202 = the slate is still simulating. A cold build runs every game through
+    // the engine, which is far longer than a request should be held open, so the
+    // server answers immediately and we poll. Without this the request outlived
+    // the worker timeout and came back as a 502 -- "Failed to load slate", with
+    // nothing in the logs to say why.
+    if (r.status === 202) {
+      if (!silent) {
+        gamesBox.innerHTML = `<div class="empty">Simulating every game on the slate… (~1 min cold, then it's cached)</div>`;
+        combosBox.innerHTML = "";
+      }
+      clearTimeout(_slatePoll);
+      _slatePoll = setTimeout(() => loadBaseball(true), 6000);
+      return;
+    }
+    const d = await r.json();
     if (d.error) { if (!silent) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; } return; }
     if (!d.games.length) {
       gamesBox.innerHTML = `<div class="empty">No MLB games scheduled for ${date}.</div>`;

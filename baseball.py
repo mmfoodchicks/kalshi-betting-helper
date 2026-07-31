@@ -1212,7 +1212,30 @@ def _deep_wp_weight():
     return w
 
 
-def analyze_slate(date, season):
+def analyze_slate(date, season, cached_only=False):
+    """The day's modelled slate. Cached, because a cold build simulates every game
+    and takes ~54s on four fast cores -- minutes on a small instance.
+
+    `cached_only` returns the cached board or None WITHOUT building, so a web
+    handler can answer immediately and let the build happen in the background
+    rather than holding a request open past the server's worker timeout."""
+    key = ("slate", date, season)
+    hit = _cache.get(key)
+    if hit and _time.time() - hit[0] < _SLATE_TTL:
+        return hit[1]
+    if cached_only:
+        return None
+    out = _analyze_slate_uncached(date, season)
+    _cache[key] = (_time.time(), out, _SLATE_TTL)
+    return out
+
+
+# Short enough that live scores and prices stay fresh, long enough that a page
+# refresh doesn't pay for another full slate simulation.
+_SLATE_TTL = 300
+
+
+def _analyze_slate_uncached(date, season):
     schedule = _schedule(date, season)
     hit = _hitting_map(season); pit = _pitching_map(season)
     bp = _bullpen_map(season); hitplat = _hitting_platoon(season)

@@ -819,12 +819,58 @@ def api_calibration():
         return jsonify({"error": f"calibration report failed: {e}"}), 502
 
 
+# The MLB slate is the heaviest board in the app: a cold build simulates every
+# game and takes ~54s on four fast cores, which on a half-core instance is several
+# MINUTES. Blocking a request for that long does not merely feel slow -- gunicorn
+# kills the worker at its timeout, the browser gets a 502 instead of JSON, and the
+# page shows "Failed to load slate" with nothing in the app's own logs to explain
+# it. Every other heavy board here (NBA, NHL, tennis) already answers 202 and
+# builds in the background; this one was the exception.
+_slate_inflight = set()
+_slate_lock = threading.Lock()
+
+
+def _slate_ready(date, season):
+    """The slate if it is already built and cached, else None. Never blocks."""
+    try:
+        return baseball.analyze_slate(date, season, cached_only=True)
+    except TypeError:
+        # Older signature without the flag: fall back to the cache directly so a
+        # partial deploy degrades to "slow" rather than "broken".
+        hit = baseball._cache.get(("slate", date, season))
+        return hit[1] if hit else None
+    except Exception:
+        return None
+
+
 @app.route("/api/baseball/today")
 def api_baseball_today():
-    """Model predictions for a day's MLB slate plus parlay combo suggestions."""
+    """Model predictions for a day's MLB slate plus parlay combo suggestions.
+
+    Non-blocking: 202 while the board builds, the frontend polls."""
     import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
+    key = (date, season)
+    games = _slate_ready(date, season)
+    if games is None:
+        with _slate_lock:
+            starting = key not in _slate_inflight
+            if starting:
+                _slate_inflight.add(key)
+
+        if starting:
+            def _bg():
+                try:
+                    baseball.analyze_slate(date, season)
+                except Exception:
+                    pass
+                finally:
+                    with _slate_lock:
+                        _slate_inflight.discard(key)
+            threading.Thread(target=_bg, daemon=True).start()
+        return jsonify({"status": "computing", "date": date,
+                        "message": "simulating every game on the slate…"}), 202
     try:
         games = baseball.analyze_slate(date, season)
     except Exception as e:
