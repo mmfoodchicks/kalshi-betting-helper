@@ -1226,9 +1226,50 @@ def analyze_slate(date, season, cached_only=False):
         return hit[1]
     if cached_only:
         return None
-    out = _analyze_slate_isolated(date, season)
-    _cache[key] = (_time.time(), out, _SLATE_TTL)
-    return out
+
+    # Share one build across every caller. analyze_slate is reached from the web
+    # handler, the prop recorder's background loop, best-bets and the DFS board,
+    # and each used to start its own -- so a user opening the tab while the
+    # recorder ticked meant several full simulations of the same slate at once.
+    # Measured: three concurrent callers, six child builds, 547 MB. The first
+    # caller builds; the rest wait and take the same answer.
+    with _slate_guard:
+        ev = _slate_building.get(key)
+        leader = ev is None
+        if leader:
+            ev = _threading.Event()
+            _slate_building[key] = ev
+    if not leader:
+        ev.wait(timeout=_SLATE_BUILD_TIMEOUT)
+        hit = _cache.get(key)
+        if hit:
+            return hit[1]
+        return _analyze_slate_uncached(date, season)   # the leader failed
+    try:
+        with deep_cache_gate():
+            out = _analyze_slate_isolated(date, season)
+        _cache[key] = (_time.time(), out, _SLATE_TTL)
+        return out
+    finally:
+        with _slate_guard:
+            _slate_building.pop(key, None)
+        ev.set()
+
+
+import threading as _threading
+
+_slate_guard = _threading.Lock()
+_slate_building = {}
+
+
+def deep_cache_gate():
+    """The app-wide one-heavy-build-at-a-time gate, or a no-op if unavailable."""
+    try:
+        import deep_cache
+        return deep_cache.HEAVY_BUILD
+    except Exception:
+        import contextlib
+        return contextlib.nullcontext()
 
 
 def _slate_blob(date, season):

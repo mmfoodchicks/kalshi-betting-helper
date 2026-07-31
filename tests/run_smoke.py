@@ -322,6 +322,27 @@ def t_slate_is_non_blocking():
     check("analyze_slate reaches the isolated build",
           "_analyze_slate_isolated" in inspect.getsource(B.analyze_slate))
 
+    # Concurrency is the part that actually killed the instance: every caller
+    # started its OWN build. Three at once produced six child builds and 547 MB.
+    slate_src = inspect.getsource(B.analyze_slate)
+    check("concurrent callers share one slate build",
+          "_slate_building" in slate_src and "wait(" in slate_src)
+    check("and the build passes an app-wide heavy-build gate",
+          "deep_cache_gate" in slate_src or "HEAVY_BUILD" in slate_src)
+
+    import deep_cache as _dc
+    check("the heavy-build gate exists and is a real limit",
+          hasattr(_dc, "HEAVY_BUILD") and _dc.HEAVY_BUILD.acquire(blocking=False))
+    try:
+        check("it admits ONE builder at a time by default",
+              not _dc.HEAVY_BUILD.acquire(blocking=False))
+    finally:
+        _dc.HEAVY_BUILD.release()
+
+    import tennis_elo as _te
+    check("the tennis rebuild goes through the same gate",
+          "HEAVY_BUILD" in inspect.getsource(_te._pools_from_disk_or_build))
+
     src = inspect.getsource(_app.api_baseball_today)
     check("the endpoint answers 202 while the slate builds", "202" in src)
     check("and builds it in the background", "Thread" in src)

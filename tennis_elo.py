@@ -397,7 +397,17 @@ def _pools_from_disk_or_build():
             return cached
     except Exception:
         pass
-    built = _build_isolated()
+    # Through the same app-wide gate as the MLB slate: both are large
+    # out-of-process builds, and overlapping them is what puts a small instance
+    # over its limit even though each fits on its own.
+    try:
+        import deep_cache
+        gate = deep_cache.HEAVY_BUILD
+    except Exception:
+        import contextlib
+        gate = contextlib.nullcontext()
+    with gate:
+        built = _build_isolated()
     if built and (built.get("m") or built.get("w")):
         try:
             import deep_cache

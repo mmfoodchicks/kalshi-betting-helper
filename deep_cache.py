@@ -26,6 +26,17 @@ DAY = 86400
 
 _lock = threading.Lock()
 
+# ONE heavy out-of-process build at a time, across the whole app.
+#
+# The expensive builds -- the MLB slate and the tennis Elo pools -- each isolate
+# themselves in a child so their allocation dies with it. That is the right shape
+# on its own and the wrong shape in parallel: three callers hitting the slate at
+# once produced six concurrent child builds and 547 MB, which is how a 512 MB
+# instance dies while every individual piece looks affordable. Callers that
+# cannot get the gate wait for the one in flight rather than starting another.
+HEAVY_BUILD = threading.Semaphore(
+    max(1, int(os.environ.get("VIGIL_HEAVY_BUILDS") or 1)))
+
 
 def _last_midnight_epoch():
     """Epoch of the most recent LOCAL midnight — the boundary a nightly job must
