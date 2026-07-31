@@ -27,6 +27,7 @@ probability. Inputs folded in:
 
 import itertools
 import re as _re
+import os as _os
 import time as _time
 from datetime import datetime as _dt, timedelta as _td
 from concurrent.futures import ThreadPoolExecutor
@@ -1225,9 +1226,58 @@ def analyze_slate(date, season, cached_only=False):
         return hit[1]
     if cached_only:
         return None
-    out = _analyze_slate_uncached(date, season)
+    out = _analyze_slate_isolated(date, season)
     _cache[key] = (_time.time(), out, _SLATE_TTL)
     return out
+
+
+def _slate_blob(date, season):
+    """Child entry point: the slate as a pickle. Module level so a subprocess can
+    import and call it."""
+    import pickle
+    return pickle.dumps(_analyze_slate_uncached(date, season),
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def _analyze_slate_isolated(date, season):
+    """Build the slate in a SEPARATE PROCESS and bring back just the result.
+
+    Building costs vastly more memory than the answer occupies. Simulating ten
+    games allocates millions of tiny short-lived objects; measured, the process
+    goes from 34 MB to ~175 MB and STAYS there -- clearing the cache and forcing
+    a collection recovers almost none of it, because the survivors leave pymalloc
+    arenas too fragmented to release (malloc_trim gets ~10 MB back). It plateaus
+    rather than growing without bound, but it is a permanent ~140 MB that a
+    512 MB instance cannot spare on top of the Elo pools and the season sim.
+
+    The finished board is 0.5 MB. So the child does the allocating, the parent
+    gets the answer, and the OS reclaims the rest when the child exits.
+
+    A plain subprocess rather than multiprocessing, for the same reasons as
+    tennis_elo._build_isolated: 'fork' can inherit a lock held by another thread
+    of a threaded server, and 'spawn' re-imports the parent's __main__, so any
+    script that reaches this would re-run itself inside the child. Falls back to
+    building in-process if the subprocess cannot run -- heavier, never broken."""
+    import pickle
+    import subprocess
+    import sys
+    try:
+        out = subprocess.run(
+            [sys.executable, "-c",
+             "import sys, baseball; sys.stdout.buffer.write("
+             "baseball._slate_blob(sys.argv[1], sys.argv[2]))",
+             str(date), str(season)],
+            cwd=_os.path.dirname(_os.path.abspath(__file__)),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=_SLATE_BUILD_TIMEOUT)
+        if out.returncode == 0 and out.stdout:
+            return pickle.loads(out.stdout)
+    except Exception:
+        pass
+    return _analyze_slate_uncached(date, season)
+
+
+_SLATE_BUILD_TIMEOUT = 600
 
 
 # Short enough that live scores and prices stay fresh, long enough that a page

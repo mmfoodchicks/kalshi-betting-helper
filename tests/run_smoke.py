@@ -302,6 +302,26 @@ def t_slate_is_non_blocking():
     check("a cold cache returns None rather than building",
           B.analyze_slate("1999-01-01", "1999", cached_only=True) is None)
 
+    isol = inspect.getsource(B._analyze_slate_isolated)
+    # Same reasoning as the tennis pool build: check the CODE, not the docstring,
+    # which names fork and spawn to explain why neither is used here.
+    import ast as _ast
+    import textwrap as _tw
+    fn = _ast.parse(_tw.dedent(isol)).body[0]
+    if (fn.body and isinstance(fn.body[0], _ast.Expr)
+            and isinstance(fn.body[0].value, _ast.Constant)):
+        fn.body = fn.body[1:]
+    body = _ast.unparse(fn)
+    check("the slate is built out-of-process", "subprocess" in body)
+    check("it does NOT use multiprocessing here either",
+          "multiprocessing" not in body and "get_context" not in body)
+    check("it falls back to an in-process build rather than returning nothing",
+          "_analyze_slate_uncached" in body)
+    check("the child entry point is module level",
+          callable(getattr(B, "_slate_blob", None)))
+    check("analyze_slate reaches the isolated build",
+          "_analyze_slate_isolated" in inspect.getsource(B.analyze_slate))
+
     src = inspect.getsource(_app.api_baseball_today)
     check("the endpoint answers 202 while the slate builds", "202" in src)
     check("and builds it in the background", "Thread" in src)
