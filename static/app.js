@@ -899,6 +899,8 @@ let parlayPayout = 0;
 let comboLegsModePref = "prefer";
 let comboPayoutModePref = "off";
 let comboConnPref = "or";
+// Which point on the price/probability frontier the maker returns.
+let comboObjectivePref = "balanced";
 let comboSameGamePref = false;
 let comboIncludeLive = false;
 let comboGameSel = null;   // null/empty = ALL games; else {pk: true|teamName} selection
@@ -965,6 +967,7 @@ window.buildCombo = async () => {
   comboLegsModePref = ($("comboLegsMode") || {}).value || "prefer";
   comboPayoutModePref = ($("comboPayoutMode") || {}).value || "off";
   comboConnPref = ($("comboConn") || {}).value || "or";
+  comboObjectivePref = ($("comboObjective") || {}).value || "balanced";
   const date = $("bbDate").value;
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
@@ -973,7 +976,7 @@ window.buildCombo = async () => {
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
-      + `&include_live=${comboIncludeLive ? 1 : 0}`;
+      + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`;
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
@@ -1273,6 +1276,18 @@ function renderMixed(m) {
   const hardWarn = (m.hard_ok === false)
     ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy your required target(s) on today's slate — showing the closest parlay. Try: loosen a target to "recommend", switch AND→OR, lower the payout, or lower the per-leg % (a higher payout needs longer-shot legs).</div>` : "";
   const stacked = m.groups.some((g) => g.same_game);
+  // Price-side numbers. EV is what the slip returns per $1 at Kalshi's actual
+  // asks including the taker fee, so a negative one means the likeliest slip is
+  // still a long-run loser — worth saying out loud rather than burying.
+  const evTxt = (m.ev_pct == null) ? "" :
+    `<span>EV at market <b style="color:${m.ev_pct >= 0 ? "#3ad17a" : "#e0566a"}">${m.ev_pct >= 0 ? "+" : ""}${m.ev_pct}%</b></span>`;
+  const kellyTxt = (m.kelly_pct > 0)
+    ? `<span>Kelly stake <b>${m.kelly_pct}%</b> of roll</span>` : "";
+  const evWarn = (m.ev_ok === false)
+    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ No slip on today's slate clears break-even at Kalshi's prices with enough legs actually quoted — this is the closest. On an exchange that is normal: you pay the spread and a fee on every leg. Consider fewer legs, or skip today.</div>` : "";
+  const unpriced = (m.priced_frac != null && m.priced_frac < 1)
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">${Math.round(m.priced_frac * 100)}% of these legs have a live Kalshi quote; the rest are priced at fair value, so the EV above only reflects the ones you can actually place.</div>` : "";
+  const alts = renderAlternatives(m);
   return `<div class="combo hl prop">
     <div class="chead">
       <span class="ctag">${stacked ? "🔀 Mixed parlay" : "🎯 Cross-game parlay"}</span>
@@ -1283,13 +1298,36 @@ function renderMixed(m) {
       <span>Combined chance <b>${m.combined_prob_pct}%</b></span>
       <span>Fair payout <b>${m.fair_payout_x}×</b></span>
       ${kalshiPayout(m)}
+      ${evTxt}
+      ${kellyTxt}
       ${legNote}
       ${payNote}
       <span>Correlation: ${corrTxt}</span>
     </div>
     ${hardWarn}
+    ${evWarn}
+    ${unpriced}
+    ${alts}
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) — Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;
+}
+
+// The same frontier ranked the other two ways. Shown so "the price mattered" is
+// something you can see rather than something we assert — and when all three
+// land on the same slip, that itself is the useful answer.
+function renderAlternatives(m) {
+  const a = m.alternatives;
+  if (!a) return "";
+  const label = { safe: "🛡️ Likeliest", value: "💰 Best value", balanced: "⚖️ Balanced" };
+  const rows = Object.keys(a).filter((k) => a[k]).map((k) => {
+    const v = a[k];
+    const mine = v.same_as_chosen;
+    return `<span style="${mine ? "font-weight:700" : "opacity:.75"}">${label[k] || k}: ${v.legs}L · ${v.prob_pct}%`
+      + (v.ev_pct == null ? "" : ` · EV ${v.ev_pct >= 0 ? "+" : ""}${v.ev_pct}%`)
+      + (mine ? " ←" : "") + `</span>`;
+  });
+  if (!rows.length) return "";
+  return `<div class="cnums" style="margin-top:4px;font-size:.85em">${rows.join("")}</div>`;
 }
 
 // Small "avg sim 9.1 runs" tag shown under a combo leg when we have a simulated
@@ -1417,6 +1455,9 @@ async function loadBaseball(silent) {
         ${renderGameGrid(d.games)}
         <div style="margin-top:8px">each leg ≥
         <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely</div>
+        <div class="small" style="margin-top:6px">goal
+          ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], comboObjectivePref)}
+        </div>
         <div class="small" style="margin-top:6px">
           ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], comboLegsModePref)}
           <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs

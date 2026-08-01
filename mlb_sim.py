@@ -1395,7 +1395,15 @@ def _mixed_item(sel, games_bundles, target_payout=None):
             legs.append({"pick": c["label"], "type": c["type"],
                          "prob_pct": round(c["marg"] * 100, 1),
                          "model_pct": c.get("model_pct"), "kref": c.get("kref"),
-                         "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit")})
+                         "sim_avg": c.get("sim_avg"), "avg_unit": c.get("avg_unit"),
+                         "side": c.get("side", "yes"),
+                         # Pre-blend sim number and how much of the final
+                         # probability is still ours, so a leg where the market
+                         # overruled the model is visible rather than silent.
+                         "sim_pct": (round(c["marg_model"] * 100, 1)
+                                     if c.get("marg_model") is not None else None),
+                         "model_weight": c.get("model_weight"),
+                         "market_quality": c.get("market_quality")})
         groups.append({"matchup": mu, "size": b["size"], "suffix": suffix,
                        "joint_pct": round(b["prob"] * 100, 1),
                        "same_game": b["size"] > 1, "legs": legs})

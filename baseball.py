@@ -36,6 +36,7 @@ import kalshi  # reuse BASE + _get_json + _parse_time + _cents helpers
 import weather as weather_mod
 import stadiums as stadiums_mod
 import props as props_mod
+import mlb_form
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
@@ -781,6 +782,41 @@ def _boxscore_lineup(game_pk):
     return _cached(("box", game_pk), 300, fetch)
 
 
+def _with_form(lineup, form_map):
+    """A copy of a posted lineup with each hitter's OPS nudged by his last-10 form.
+
+    The season OPS is what a hitter has BEEN; ten games is what he is doing now.
+    Neither alone is right -- ten games is ~40 PA and mostly noise -- so the
+    multiplier is regressed by the plate appearances behind it and capped at
+    +/-12% (see mlb_form). A hitter's talent estimate still governs; form moves
+    it a few percent and earns a label.
+
+    Copies rather than mutating: the lineup dicts come out of a shared cache, so
+    editing them in place would compound the same adjustment on every slate build
+    until the cache expired."""
+    if not lineup:
+        return lineup
+    if not form_map:
+        return lineup
+    out = []
+    for b in lineup:
+        rec = form_map.get(b.get("id"))
+        if not rec:
+            out.append(b)
+            continue
+        f, note = mlb_form.hitter_factor(rec, b.get("ops"))
+        if f == 1.0:
+            out.append(b)
+            continue
+        nb = dict(b)
+        nb["ops"] = round((b.get("ops") or 0) * f, 4)
+        nb["form_factor"] = round(f, 4)
+        nb["form_note"] = note
+        nb["form_tag"] = mlb_form.trend_tag(rec, b.get("ops"))
+        out.append(nb)
+    return out
+
+
 def _last_posted_lineup(team_id, date):
     """The team's most recent POSTED batting order (their regulars) — the
     per-batter prop fallback for the hours before today's card is out. Without
@@ -1337,6 +1373,13 @@ def _analyze_slate_uncached(date, season):
     except Exception:
         xstats = {}; speed = {}
     rec = _records_map(season); abbr_map = _abbr_map(season)
+    # Last-10 form for every hitter in the league in one request (~3s, cached an
+    # hour). Empty on any failure, which every consumer reads as "no form data"
+    # and falls back to the season line.
+    try:
+        form_map = (mlb_form.form(season) or {}).get("hitting") or {}
+    except Exception:
+        form_map = {}
     lg = _league_avgs(hit, pit, bp, hitplat)
     try:
         pen_fatigue = _bullpen_fatigue(date, season)   # {team_id: {factor, count, arms}}
@@ -1602,8 +1645,10 @@ def _analyze_slate_uncached(date, season):
         # Posted lineup when it's out; otherwise the team's last posted order
         # (their regulars) so batter props exist all morning. Confirm status
         # still says 'projected' either way until the real card posts.
-        lu_home = lu.get("home") or _last_posted_lineup(g["home_id"], date)
-        lu_away = lu.get("away") or _last_posted_lineup(g["away_id"], date)
+        lu_home = _with_form(lu.get("home") or _last_posted_lineup(g["home_id"], date),
+                             form_map)
+        lu_away = _with_form(lu.get("away") or _last_posted_lineup(g["away_id"], date),
+                             form_map)
         if lu_home:
             hit_home = props_mod.hit_props(lu_home, ohf_home)
             bat_home = bat_list(lu_home, ohf_home)
@@ -2483,24 +2528,59 @@ def _cand_side(cand, g):
     return None
 
 
+def _price_cands(cands, suffix, blend=True):
+    """Annotate each candidate with its live Kalshi ask and market-blended
+    probability, in place.
+
+    Done BEFORE bundles are built, for two reasons. The price has to be inside
+    the search rather than decoration on the finished slip, and the blend has to
+    reach `marg` before mlb_sim.game_bundles reads it, so the bundle's joint
+    probability is rescaled onto the blended marginals by the machinery already
+    there. Unpriced legs keep price_cents=None and are EV-neutral in
+    combo_engine; legs with no two-sided quote keep the model number unchanged."""
+    import combo_engine
+    try:
+        import kalshi_mlb
+        idx = kalshi_mlb.index()
+    except Exception:
+        idx = {}
+    quotes = {}
+    for c in cands:
+        px = q = None
+        if idx and suffix:
+            try:
+                px = kalshi_mlb.price_leg(idx, suffix, c.get("kref"))
+                q = kalshi_mlb.quote_leg(idx, suffix, c.get("kref"))
+            except Exception:
+                px = q = None
+        c["price_cents"] = px
+        quotes[id(c)] = q
+    if blend:
+        combo_engine.blend_candidates(cands, quotes)
+    return cands
+
+
 def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
-                       game_sel=None, include_live=False):
+                       game_sel=None, include_live=False, objective="balanced",
+                       net_fees=True):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
     Honest math: within a game legs are correlated, so each game contributes a
-    simulated joint probability; across games they're independent, so the parlay
-    probability is the product of the per-game joint odds. The independent
-    product of every leg's marginal is also returned so the correlation effect
-    of any stacked game is visible.
+    simulated joint probability; across games they're independent (measured --
+    see combo_engine), so the parlay probability is the product of the per-game
+    joint odds. The independent product of every leg's marginal is also returned
+    so the correlation effect of any stacked game is visible.
 
     `legs_mode`/`payout_mode` ("require"/"prefer"/"off") + `conn` ("and"/"or")
     control whether the leg count and the payout are hard requirements or just
-    recommendations.
+    recommendations. `objective` ("balanced"/"safe"/"value") then orders whatever
+    satisfies them, with the Kalshi price inside the search.
     """
     import mlb_sim
+    import combo_engine
     floor = max(0.05, min(0.97, target_pct / 100.0))
 
     def team_side(g):
@@ -2542,6 +2622,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
                        "group": "ML", "live": True,
                        "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
+                _price_cands([leg], g.get("kalshi_suffix"))
                 bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
                 games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
                 continue
@@ -2553,22 +2634,48 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                  and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
+        _price_cands(cands, g.get("kalshi_suffix"))
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
         if bundles:
             label = g["matchup"] + (" 🔴" if live_gs else "")
             games_bundles.append((label, bundles, g.get("kalshi_suffix")))
     if not games_bundles:
         return None
-    item = mlb_sim.assemble_mixed(games_bundles, n_legs, target_payout,
-                                  legs_mode=legs_mode, payout_mode=payout_mode,
-                                  conn=conn, max_total_legs=max_total_legs)
-    if item:
-        item["n_sims"] = _SIM_N
-        # Price via each group's own game suffix (carried through the DP) so a
-        # doubleheader's two games don't collide on an identical matchup string.
-        pairs = [(leg, grp.get("suffix"))
-                 for grp in item["groups"] for leg in grp["legs"]]
-        item.update(_kalshi_payout(pairs))
+
+    states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
+                                   net=net_fees)
+    targets = {"legs_target": n_legs, "payout_target": target_payout,
+               "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+    best, meta = combo_engine.choose(states, objective=objective, **targets)
+    if not best:
+        return None
+    item = mlb_sim._mixed_item(best["sel"], games_bundles,
+                               target_payout if payout_mode != "off" else None)
+    item["n_sims"] = _SIM_N
+    # Only overwrite what the chooser actually decided. legs_met/payout_reached
+    # come back None when that target is "off", and blanking _mixed_item's own
+    # values with them would turn "no target, so nothing to miss" into "unknown".
+    for k, v in meta.items():
+        if k != "objective" and v is not None:
+            item[k] = v
+    item["objective"] = objective
+    item["legs_target"] = n_legs if legs_mode != "off" else None
+    # What the price actually costs and returns, as opposed to the fair payout.
+    item["net_fees"] = bool(net_fees)
+    item["cost_x"] = round(best["cost"], 4)
+    item["market_payout_x"] = round(best["payout"], 2) if best["payout"] else None
+    item["ev_pct"] = round(best["ev"] * 100, 1) if best["ev"] is not None else None
+    item["kelly_pct"] = round(combo_engine.kelly(best["prob"], best["cost"]) * 100, 2)
+    item["priced_frac"] = round(best["priced_frac"], 2)
+    item["priced_legs"] = best["priced"]
+    # The same frontier ranked the other two ways, so "the price mattered" is
+    # showable rather than asserted.
+    item["alternatives"] = combo_engine.compare(states, best, **targets)
+    # Price via each group's own game suffix (carried through the DP) so a
+    # doubleheader's two games don't collide on an identical matchup string.
+    pairs = [(leg, grp.get("suffix"))
+             for grp in item["groups"] for leg in grp["legs"]]
+    item.update(_kalshi_payout(pairs))
     return item
 
 

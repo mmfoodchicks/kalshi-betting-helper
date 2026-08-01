@@ -369,6 +369,61 @@ def t_slate_is_non_blocking():
           "renderCombo(" not in bb and "Safest" not in bb and "+EV)" not in bb,
           "loadBaseball still renders suggestion slips")
 
+    # The combo maker must SEE the price. Selection used to maximise probability
+    # alone and look up Kalshi afterwards, so it could not tell a 70% leg at 55c
+    # from the same leg at 78c.
+    import combo_engine as _ce
+    mixed = inspect.getsource(B.build_mixed_parlay)
+    check("selection runs through the price-aware frontier",
+          "combo_engine.frontier" in mixed and "assemble_mixed" not in mixed)
+    check("legs are priced BEFORE the bundles are built",
+          mixed.index("_price_cands") < mixed.index("game_bundles"))
+    check("all three objectives are offered",
+          set(_ce.OBJECTIVES) == {"safe", "value", "balanced"}, _ce.OBJECTIVES)
+    check("a 100c quote is still not a price", _ce.leg_cost(100) is None)
+    check("fees are charged per leg on the way in", _ce.leg_cost(50, net=True) > 0.50)
+    check("an unpriced leg is EV-neutral, never free money",
+          abs(_ce.bundle_cost([{"prob": 0.5, "price_cents": None}])[0] - 0.5) < 1e-9)
+    check("a leg cannot claim an unbounded edge over its market",
+          _ce.blend_prob(0.95, {"ask": 40.0, "bid": 4.0, "mid": 22.0, "spread": 36.0,
+                                "size": 1, "vol": 0, "oi": 0}, "HRR")[0]
+          <= 0.40 + _ce._MAX_EDGE + 1e-9)
+    check("one contract of depth is not a fillable market",
+          not _ce.tradeable({"ask": 40.0, "bid": 4.0, "mid": 22.0, "spread": 36.0,
+                             "size": 1.0, "vol": 0.0, "oi": 0.0}))
+    check("the API exposes the objective",
+          "objective" in inspect.getsource(_app.api_baseball_mixed))
+    check("and rejects an unknown one rather than passing it through",
+          "OBJECTIVES" in inspect.getsource(_app.api_baseball_mixed))
+
+    # Cross-game legs stay independent: measured, not assumed.
+    check("the engine documents the independence measurement",
+          "ICC" in _ce.__doc__ and "7,287" in _ce.__doc__)
+
+    # Recent form: capped, regressed, and never mutating the shared lineup cache.
+    import mlb_form as _mf
+    check("form is capped so a hot streak can't rewrite a projection",
+          _mf._MAX_FORM <= 0.15, _mf._MAX_FORM)
+    check("a thin form sample moves nothing",
+          _mf.hitter_factor({"pa": 5, "ab": 5, "h": 4, "ops": 1.5, "g": 2}, 0.715)[0] == 1.0)
+    _orig = [{"id": 1, "name": "A", "ops": 0.700}]
+    B._with_form(_orig, {1: {"pa": 45, "ab": 40, "h": 16, "ops": 1.0, "g": 10}})
+    check("applying form does not mutate the cached lineup",
+          _orig[0]["ops"] == 0.700)
+    check("form has a kill switch", hasattr(_mf, "enabled"))
+
+    # Calibration must be able to correct a BIAS, not just a temperature.
+    import calibrate as _cal
+    check("calibration supports a log-odds intercept",
+          _cal.scale(0.7, 1.0, 0.5, -0.4) < 0.7)
+    check("which moves both sides of 50% the same way",
+          _cal.scale(0.3, 1.0, 0.5, -0.4) < 0.3,
+          "a temperature moves them apart, so it cannot fix a bias")
+    check("the family is chosen by cross-validation",
+          "_cv_loss" in inspect.getsource(_cal._fit))
+    check("and a thin history still earns no correction",
+          _cal._fit([(0.6, 1)] * 30, 800) == (1.0, 0.5, 0.0, 30))
+
     src = inspect.getsource(_app.api_baseball_today)
     check("the endpoint answers 202 while the slate builds", "202" in src)
     check("and builds it in the background", "Thread" in src)

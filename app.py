@@ -1921,7 +1921,10 @@ def api_baseball_sgp():
 def api_baseball_mixed():
     """One parlay across multiple games that may stack correlated legs in a game
     and add single legs from others. Within a game -> simulated joint odds;
-    across games -> independent product."""
+    across games -> independent product (measured: see combo_engine).
+
+    `objective` picks which point on the price/probability frontier to return —
+    safe (likeliest), value (best EV), or balanced (likeliest that isn't -EV)."""
     import datetime as _dt
     locked = _locked("mixed_parlay")
     if locked:
@@ -1951,6 +1954,10 @@ def api_baseball_mixed():
     if payout_mode not in modes:
         payout_mode = "off"
     include_live = request.args.get("include_live") == "1"
+    import combo_engine
+    objective = request.args.get("objective", "balanced")
+    if objective not in combo_engine.OBJECTIVES:
+        objective = "balanced"
     # Optional game grid: "sel" = comma list of "pk" (whole game) or "pk:Team"
     # (only that team's legs). Empty -> all games.
     sel = {}
@@ -1973,7 +1980,8 @@ def api_baseball_mixed():
                                        max_total_legs=max_total,
                                        legs_mode=legs_mode, payout_mode=payout_mode,
                                        conn=conn, game_sel=sel or None,
-                                       include_live=include_live, types=_prop_types())
+                                       include_live=include_live, types=_prop_types(),
+                                       objective=objective)
     return jsonify({"parlay": item})
 
 

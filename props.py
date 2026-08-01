@@ -298,7 +298,12 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
             "tb6": round(tb6 * 100, 1), "tb7": round(tb7 * 100, 1),
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
             "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4),
-            "spd": spd, "sbr": sbr, "ret": round(ret, 3)}
+            "spd": spd, "sbr": sbr, "ret": round(ret, 3),
+            # Last-10 form, already folded into this hitter's OPS upstream
+            # (baseball._with_form). Carried through so a leg can SAY why it
+            # moved rather than just quietly being a different number.
+            "form_tag": b.get("form_tag"), "form_note": b.get("form_note"),
+            "form_factor": b.get("form_factor")}
 
 
 def pitcher_k_props(k9, exp_ip=5.3, est_pitches=None):

@@ -364,11 +364,18 @@ mism = [(g["matchup"], g.get("kalshi_suffix")) for g in games
 ck(f"every priced game on the real slate matches {today_tag}",
    not mism, mism[:3])
 print(f"    {sum(1 for g in games if g.get('kalshi_suffix'))}/{len(games)} games priced")
-# and no settled-market tell (a 0c/100c quote) on a game that hasn't started
-extreme = [(g["matchup"], g.get("pick_price_cents")) for g in games
+# and no settled-market tell (a 0c/100c quote) on a game that hasn't started.
+#
+# The state filter is the point of the check and was missing: without it this
+# passed every morning and failed every afternoon, because a Live or Final game
+# SHOULD quote 100c/1c -- that is the market correctly pricing a decided outcome,
+# not the stale-suffix bug this is here to catch.
+unstarted = [g for g in games if (g.get("live") or {}).get("state") not in ("Live", "Final")]
+extreme = [(g["matchup"], g.get("pick_price_cents")) for g in unstarted
            if g.get("pick_price_cents") is not None
            and not (0 < g["pick_price_cents"] < 100)]
 ck("no moneyline quoted at 0c/100c on an unstarted game", not extreme, extreme[:3])
+print(f"    {len(unstarted)}/{len(games)} games not yet started")
 
 print()
 print("=" * 72)

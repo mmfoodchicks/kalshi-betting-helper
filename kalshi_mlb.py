@@ -69,6 +69,36 @@ def _no(m):
     return kalshi._cents(m.get("no_ask_dollars"))
 
 
+def _f(v, default=0.0):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def _q(m, side):
+    """Full quote for one side: ask, bid, mid, spread and depth.
+
+    The ASK is what a leg costs; the MID is the market's opinion of fair value.
+    Those are different numbers and conflating them was costing accuracy in both
+    directions -- a leg quoted 6c/5c is a 5.5c market you pay 6c for, not a 6c
+    market. `spread` and the depth fields say how much that opinion is worth: a
+    penny-wide market with real volume is a strong estimator, while an untraded
+    prop with a 20c spread is barely an opinion at all."""
+    ask = kalshi._cents(m.get(f"{side}_ask_dollars"))
+    bid = kalshi._cents(m.get(f"{side}_bid_dollars"))
+    if ask is None or not (0 < ask < 100):
+        return None
+    if bid is None or not (0 <= bid <= 100) or bid > ask:
+        bid = None
+    return {"ask": ask, "bid": bid,
+            "mid": ((bid + ask) / 2.0) if bid is not None else ask,
+            "spread": (ask - bid) if bid is not None else None,
+            "size": _f(m.get(f"{side}_ask_size_fp")),
+            "vol": _f(m.get("volume_fp")),
+            "oi": _f(m.get("open_interest_fp"))}
+
+
 def _build_index():
     """suffix -> {ml:{team:c}, spread:{(team,by):c}, total:{n:{over,under}},
     rfi:c, players:{(stat,norm_name,line):c}, no:{...}}.
@@ -81,8 +111,12 @@ def _build_index():
     idx = {}
 
     def game(suf):
+        # "q" holds the FULL quote (ask/bid/mid/spread/depth) for every leg key,
+        # keyed exactly as price_leg resolves them plus the side. The flat cent
+        # maps above stay as they are -- every existing caller keeps working and
+        # keeps getting the ask, which is what it should pay.
         return idx.setdefault(suf, {"ml": {}, "spread": {}, "total": {},
-                                    "rfi": None, "players": {},
+                                    "rfi": None, "players": {}, "q": {},
                                     "no": {"ml": {}, "spread": {}, "rfi": None,
                                            "players": {}}})
 
@@ -93,10 +127,18 @@ def _build_index():
             if not suf:
                 continue
             g = game(suf)
+
+            def both(key):
+                """Record the yes/no quotes for one leg key."""
+                for side, tag in (("yes", False), ("no", True)):
+                    q = _q(m, side)
+                    if q:
+                        g["q"][key + (tag,)] = q
             if series == "KXMLBGAME":
                 team = tk.rsplit("-", 1)[-1]
                 g["ml"][team] = _yes(m)
                 g["no"]["ml"][team] = _no(m)
+                both(("ml", team))
             elif series == "KXMLBSPREAD":
                 tail = tk.rsplit("-", 1)[-1]              # e.g. "STL3"
                 mt = _SPREAD_TEAM.match(tail)
@@ -104,15 +146,23 @@ def _build_index():
                     key = (mt.group(1), int(mt.group(2)))
                     g["spread"][key] = _yes(m)
                     g["no"]["spread"][key] = _no(m)
+                    both(("spread",) + key)
             elif series == "KXMLBTOTAL":
                 try:
                     n = int(tk.rsplit("-", 1)[-1])        # Over (n-0.5)
                 except ValueError:
                     continue
                 g["total"][n] = {"over": _yes(m), "under": _no(m)}
+                # A total's two sides ARE the two sides of one market, so Over
+                # takes the yes quote and Under the no quote (not a mirrored one).
+                for side, over in (("yes", True), ("no", False)):
+                    q = _q(m, side)
+                    if q:
+                        g["q"][("total", n, over)] = q
             elif series == "KXMLBRFI":
                 g["rfi"] = _yes(m)
                 g["no"]["rfi"] = _no(m)
+                both(("rfi",))
             else:                                          # player props
                 stat = _STAT_OF[series]
                 sub = m.get("yes_sub_title") or m.get("title") or ""
@@ -122,6 +172,7 @@ def _build_index():
                     key = (stat, _norm(name), int(lm.group(1)))
                     g["players"][key] = _yes(m)
                     g["no"]["players"][key] = _no(m)
+                    both(key)
     return idx
 
 
@@ -176,3 +227,38 @@ def price_leg(idx, suffix, kref):
         return _quote((src.get("players") or {}).get(
             (t, _norm(kref.get("player")), kref.get("line"))))
     return None
+
+
+def _qkey(kref):
+    """The `q` index key for a leg, or None if the leg has no structured key."""
+    if not kref:
+        return None
+    t, no = kref.get("t"), bool(kref.get("no"))
+    if t == "ml":
+        return ("ml", kref.get("team"), no)
+    if t == "spread":
+        return ("spread", kref.get("team"), kref.get("by"), no)
+    if t == "total":
+        # Over and Under are the two sides of one market, so a NO on Over is an
+        # Under and resolves to that side's own quote.
+        return ("total", kref.get("n"), bool(kref.get("over")) != no)
+    if t == "rfi":
+        return ("rfi", no)
+    if t in ("ks", "hit", "tb", "hr", "hrr"):
+        return (t, _norm(kref.get("player")), kref.get("line"), no)
+    return None
+
+
+def quote_leg(idx, suffix, kref):
+    """Full quote dict for one leg (ask/bid/mid/spread/size/vol/oi), or None.
+
+    price_leg answers "what does this cost"; this answers "what does the market
+    think, and how much is that opinion worth". The combo engine needs the second
+    to tell a real edge from a stale quote nobody is trading."""
+    if not suffix or not kref:
+        return None
+    g = idx.get(suffix)
+    key = _qkey(kref)
+    if not g or not key:
+        return None
+    return (g.get("q") or {}).get(key)
