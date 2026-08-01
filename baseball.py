@@ -2764,6 +2764,24 @@ def _implausible(legs):
     return False
 
 
+def combo_context(games, allow_live=False):
+    """The few cheap facts the interactive combo MAKER needs, without building any
+    suggestions.
+
+    build_combos assembles safest / best-value / mixed / live slips on every slate
+    load, which means enumerating candidate legs for every game and running the
+    combinatorial assembler -- measured at ~26 MB and several seconds each time,
+    paid whether or not anyone scrolls down to look. The maker itself only needs
+    to know how many legs are available and whether cross-game combos are
+    possible at all, and both are a count of playable games."""
+    playable = [g for g in games if _playable(g, allow_live)]
+    n = len(playable)
+    return {"max_legs_available": n,
+            # One playable game cannot make a cross-game parlay, so the maker
+            # falls back to stacking correlated legs from that single game.
+            "same_game_only": n == 1}
+
+
 def build_combos(games, max_legs=3, top_n=6, types=None, allow_live=False):
     # Only games that haven't finished -- a settled game has no business in a
     # suggested parlay. Upcoming and in-progress games are eligible.

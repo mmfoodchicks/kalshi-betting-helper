@@ -343,6 +343,32 @@ def t_slate_is_non_blocking():
     check("the tennis rebuild goes through the same gate",
           "HEAVY_BUILD" in inspect.getsource(_te._pools_from_disk_or_build))
 
+    # The slate response must NOT carry auto-built suggestion slips. They were
+    # assembled on every load whether or not anyone scrolled to them, and on a
+    # small instance that is memory and seconds spent on nothing.
+    today = inspect.getsource(_app.api_baseball_today)
+    check("the slate no longer auto-builds suggestion slips",
+          "build_combos" not in today, "still calls build_combos")
+    check("but it still hands the maker what it needs",
+          "combo_context" in today)
+    ctx = B.combo_context([], allow_live=False)
+    check("combo_context answers on an empty slate",
+          ctx["max_legs_available"] == 0 and ctx["same_game_only"] is False, ctx)
+    check("the interactive maker is untouched",
+          callable(getattr(B, "build_target_parlay", None)))
+    js2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                            "static", "app.js")).read()
+    check("the maker UI is still rendered", "combomaker" in js2)
+    # Scope this to loadBaseball's body. The Combine tab has its OWN maker that
+    # renders titled slips on demand and was deliberately left alone, so scanning
+    # the whole file would fail on code this change never touched.
+    _bb0 = js2.index("async function loadBaseball(")
+    _bb1 = js2.index("\nfunction escapeHtml(", _bb0)
+    bb = js2[_bb0:_bb1]
+    check("the suggestion slips are no longer rendered",
+          "renderCombo(" not in bb and "Safest" not in bb and "+EV)" not in bb,
+          "loadBaseball still renders suggestion slips")
+
     src = inspect.getsource(_app.api_baseball_today)
     check("the endpoint answers 202 while the slate builds", "202" in src)
     check("and builds it in the background", "Thread" in src)

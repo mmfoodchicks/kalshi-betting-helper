@@ -888,7 +888,12 @@ def api_baseball_today():
                                   prob_raw=g.get("pick_prob_raw"))
             # Track the latest pre-game price of our side for closing-line value.
             store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
-    combos = baseball.build_combos(games, types=_prop_types(), allow_live=_allow_live())
+    # The auto-built suggestion slips (safest / best value / mixed / live) are no
+    # longer produced on every slate load: they cost ~26 MB and seconds of work
+    # per request whether or not anyone looked at them, on an instance with no
+    # memory to spare. The interactive combo MAKER is untouched and still builds
+    # on demand via /api/baseball/parlay; it only needs these two cheap facts.
+    combos = baseball.combo_context(games, allow_live=_allow_live())
     return jsonify({"date": date, "games": games, "combos": combos})
 
 

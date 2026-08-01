@@ -1396,7 +1396,7 @@ async function loadBaseball(silent) {
     loadPropLog();
 
     const c = d.combos;
-    bbCombosData = c;
+    bbCombosData = Object.assign({}, c, { games: d.games || [] });
     let html = "";
     // Unified combo maker: a game-selection grid + the targets, all persisted
     // across the auto-refresh so an in-progress build is never clobbered.
@@ -1434,22 +1434,11 @@ async function loadBaseball(silent) {
         <div id="comboOut"></div>
       </div>`;
     }
-    if (c.safest) html += renderCombo(c.safest, "🛡️ Safest combo", "hl");
-    if (c.best_value && JSON.stringify(c.best_value.legs) !== JSON.stringify(c.safest && c.safest.legs))
-      html += renderCombo(c.best_value, "💰 Best value (+EV)", "hl value");
-    if (c.mixed && c.mixed.length)
-      html += renderCombo(c.mixed[0], "🎲 Best prop combo", "hl prop");
-    if (c.live && c.live.length) {
-      html += `<div class="small" style="margin:12px 0 4px"><b>🔴 Live combos</b> — games in progress right now:</div>`;
-      html += c.live.map((x) => renderCombo(x)).join("");
-    }
-    if (c.mixed && c.mixed.length) {
-      const mlabel = c.same_game_only
-        ? `<b>🎲 Same-game combos</b> — one game on the slate, so these stack correlated legs (moneyline, totals &amp; props) from that game, priced with the correlation-aware sim:`
-        : `<b>🎲 Mixed combos (incl. props)</b> — moneyline, run line, totals &amp; hit props, one leg per game:`;
-      html += `<div class="small" style="margin:14px 0 4px">${mlabel}</div>`;
-      html += c.mixed.map((x) => renderCombo(x)).join("");
-    }
+    // The auto-built suggestion slips (safest / best value / best prop / live /
+    // mixed) used to render here. They were rebuilt on every slate load whether
+    // or not anyone scrolled to them -- ~26 MB and seconds of work per request on
+    // an instance with none to spare. The combo MAKER above is unchanged and
+    // builds the same slips on demand from whatever you select.
     // Preserve a built combo slip across the auto-refresh so it isn't wiped while
     // you're reading/screenshotting it. (Control values are restored from prefs.)
     const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
