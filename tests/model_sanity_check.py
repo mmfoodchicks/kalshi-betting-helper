@@ -375,10 +375,173 @@ _mon = _ms._build_setup(_ms._rates([{"name": "m", "r1": 0.6, "r2": 0.3, "r3": 0.
 check("and the on-base cap holds even for an impossible hitter",
       _mon[0]["thresh_tto"][-1][-1][0] <= 0.96,
       f'{_mon[0]["thresh_tto"][-1][-1][0]:.4f}')
-check("the known hit-efficiency limit is documented, not silent",
-      "hits per run" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                          "..", "mlb_sim.py")).read(),
-      "sim 1.613 vs real 1.839 -> hit props inherit a downward bias")
+
+# --- 1h. baserunners must advance the way real ones do ------------------------
+head("1h. Baserunner advancement")
+
+# These probe one hit at a time: slot 0 gets the event, every other slot is an
+# automatic out, and the half starts with two down, so exactly one play happens
+# and the returned runs ARE that play's advancement rate.
+def _one(code, start, outs=2, n=20000, seed=4242):
+    _th = [(1.0, code)]
+    _lu = [{"name": "b%d" % i, "thresh": (_th if i == 0 else []),
+            "thresh_tto": [(_th if i == 0 else [])] * 4,
+            "spd": 1.0, "sbr": 0.0, "psub": 0.0} for i in range(9)]
+    _r = _rnd.Random(seed).random
+    tot = 0
+    for _ in range(n):
+        tot += _ms._half_inning(_lu, [[0] * 7 for _ in range(9)], 0, _r,
+                                start_outs=outs, start_bases=list(start))[0]
+    return tot / n
+
+_ON_1, _ON_2, _ON_3 = [0, None, None], [None, 0, None], [None, None, 0]
+
+# THE REGRESSION THAT MATTERS. `bases` is [1st, 2nd, 3rd] everywhere in this
+# engine, and the hit branch used to unpack it backwards -- so the runner on
+# FIRST scored on every single while the runner on THIRD went back to second.
+# The run level hid it (the calibration simply lowered everyone's rates), but it
+# made each hit worth far too much: 1.68 hits per run against a real 1.86.
+check("a runner on third scores on a single", _one(1, _ON_3) > 0.98,
+      f"{_one(1, _ON_3):.3f}")
+check("a runner on FIRST does not", _one(1, _ON_1) < 0.15,
+      f"{_one(1, _ON_1):.3f} — .061 real (.468 reach third with two down, "
+      "and .131 of those keep going)")
+check("a runner on second scores on a double", _one(2, _ON_2) > 0.95,
+      f"{_one(2, _ON_2):.3f}")
+check("a runner on first usually does not", _one(2, _ON_1) < 0.60,
+      f"{_one(2, _ON_1):.3f} — .475 real with two down")
+
+# Advancement is conditioned on the OUT COUNT, which is the single biggest
+# driver: with two down the runner leaves on contact, with nobody out he waits.
+_s2_0, _s2_2 = _ms._S_2B_SCORE[0], _ms._S_2B_SCORE[2]
+check("scoring from second on a single rises sharply with outs",
+      _s2_2 > _s2_0 * 1.6, f"{_s2_0:.3f} (0 out) -> {_s2_2:.3f} (2 out)")
+
+
+
+def _no_out_advance(fn):
+    """Run `fn` with the OUT-branch advancement switched off.
+
+    A probe that starts with fewer than two down plays on after the hit, and
+    those later outs move runners too -- so without this the measurement is the
+    whole half-inning rather than the one play being asked about."""
+    keep = (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
+            _ms._DP_SCORE_3B)
+    _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
+    _ms._OUT_DP = _ms._DP_SCORE_3B = 0.0
+    try:
+        return fn()
+    finally:
+        (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
+         _ms._DP_SCORE_3B) = keep
+
+
+_s2_at0 = _no_out_advance(lambda: _one(1, _ON_2, outs=0))
+_s2_at2 = _one(1, _ON_2, outs=2)
+check("and the engine actually uses the out count, not just stores it",
+      _s2_at2 - _s2_at0 > 0.25, f"{_s2_at0:.3f} (0 out) -> {_s2_at2:.3f} (2 out), "
+      "against a measured .389 -> .751")
+
+# Every rate is a measured league value, so a league-average runner must land
+# exactly on it -- a speed adjustment that shifted the mean would silently
+# re-tune the whole engine.
+check("speed scaling is centred on the league-average runner",
+      all(abs(_ms._adv(p, 1.0) - p) < 1e-12
+          for tbl in (_ms._S_2B_SCORE, _ms._S_1B_THIRD, _ms._D_1B_SCORE)
+          for p in tbl))
+check("a fast runner advances more than a slow one",
+      _ms._adv(_ms._S_1B_THIRD[1], 1.2) > _ms._adv(_ms._S_1B_THIRD[1], 0.8))
+check("and the bounds are proportional, not fixed floors",
+      _ms._adv(0.30, 0.8) < 0.30,
+      "the old max(0.4, ...) floor sat ABOVE the real nobody-out rate of .389, "
+      "so the slowest runner in the league scored more often than average")
+
+# Steals are baserunning too, and the same measurement caught the engine
+# throwing out twice as many runners as the league really does.
+check("stealing second succeeds at the measured league rate",
+      0.78 < _ms._SB2_OK < 0.85,
+      f"{_ms._SB2_OK} — .8146 measured (391 SB / 89 CS over 300 games). "
+      "The engine had 0.62, so it invented an out on nearly a fifth of steals.")
+check("and stealing THIRD is the harder of the two, not the easier",
+      _ms._SB3_OK < _ms._SB2_OK,
+      f"3rd {_ms._SB3_OK} vs 2nd {_ms._SB2_OK} — .688 against .815 measured; "
+      "the engine had it backwards at 0.72 vs 0.62")
+check("steals of third stay a small share of attempts",
+      0.08 < _ms._SB3_FRAC < 0.18,
+      f"{_ms._SB3_FRAC} — .119 of completed steals measured")
+
+# Taking an extra base has to cost something, or it is free and the engine
+# over-produces runs exactly the way it used to.
+check("runners get thrown out trying", _ms._TOOB_S_2B > 0 and _ms._TOOB_S_1B > 0
+      and _ms._TOOB_D_1B > 0)
+check("stretching for home off first is the riskiest of them",
+      _ms._TOOB_D_1B > _ms._TOOB_S_2B > _ms._TOOB_S_1B,
+      f"{_ms._TOOB_D_1B} > {_ms._TOOB_S_2B} > {_ms._TOOB_S_1B}")
+
+# Outs move runners. The engine used to move nobody but the man on third, on 16%
+# of outs; real outs score him on 40% and push another runner up about a fifth
+# of the time.
+check("an out can score the runner from third", 0.30 < _ms._OUT_SCORE_3B < 0.50,
+      f"{_ms._OUT_SCORE_3B} — .402 measured over ALL outs, strikeouts included")
+check("an out can move a runner up", _ms._OUT_ADV_2B > 0 and _ms._OUT_ADV_1B > 0,
+      f"2nd->3rd {_ms._OUT_ADV_2B}, 1st->2nd {_ms._OUT_ADV_1B}")
+
+
+
+def _dp_only(fn):
+    """Force every out to be a double play and switch off the sac fly, so the
+    only way a run can score is on the DP itself."""
+    keep = (_ms._OUT_DP, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B)
+    _ms._OUT_DP = 1.0
+    _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
+    try:
+        return fn()
+    finally:
+        (_ms._OUT_DP, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
+         _ms._OUT_ADV_1B) = keep
+
+
+_FIRST_AND_THIRD = [0, None, 0]
+check("a run cannot score on a double play that is the third out",
+      _dp_only(lambda: _one(0, _FIRST_AND_THIRD, outs=1)) < 1e-9,
+      "one down, first and third: the DP ends the inning on a force, so the "
+      "run does not count")
+check("but with nobody out it can",
+      _dp_only(lambda: _one(0, _FIRST_AND_THIRD, outs=0)) > 0.05,
+      f"{_dp_only(lambda: _one(0, _FIRST_AND_THIRD, outs=0)):.3f} — .125 measured")
+
+# THE AGGREGATE TEST, and the one that exposed the bug in the first place. Feed
+# the engine the league's own measured per-PA rates and play real-rules games
+# with NO calibration -- _build_setup at mult 1.0, not _team. A league-average
+# lineup should then score about what a league-average team scores. Before the
+# advancement fix it scored 5.197, seventeen percent high, and _team was quietly
+# dialling every real lineup's rates DOWN to hide it. That is why the hits came
+# out short: the runs were forced right, so the hits had to be wrong.
+_LG_PA = {"r1": 0.1424, "r2": 0.0434, "r3": 0.0035, "rhr": 0.0313, "rbb": 0.0946}
+_lg_lu = [dict(name="h%d" % i, spd=1.0, sbr=0.08, ret=1.0, **_LG_PA)
+          for i in range(9)]
+_lg_setup = _ms._build_setup(_ms._rates(_lg_lu), 1.0)
+_lg_play = _rnd.Random(818).random
+_eh = _er = _etg = 0
+for _ in range(3000):
+    _ra, _rh, _sa, _sh, _f1, _xi = _ms._play_matchup(_lg_setup, _lg_setup,
+                                                     _lg_play, ip_h=5.4, ip_a=5.4)
+    _er += _ra + _rh
+    _eh += sum(row[0] for row in _sa) + sum(row[0] for row in _sh)
+    _etg += 2
+_rpg, _hpg = _er / _etg, _eh / _etg
+_eff = _eh / max(1, _er)
+check("league-average rates produce league-average RUNS, uncalibrated",
+      4.10 < _rpg < 4.75,
+      f"{_rpg:.3f} vs a real 4.447 — and 5.197 before the advancement fix")
+check("and league-average HITS", 8.0 < _hpg < 9.0,
+      f"{_hpg:.3f} vs a real 8.259")
+check("so hits per run lands near the real league value", 1.80 < _eff < 2.06,
+      f"{_eff:.3f} vs a real 1.857 (2025 census: 40,138 H / 21,614 R). "
+      "Was 1.645 on this same construction before the fix. Nine identical "
+      "hitters draw slightly more PAs than a real lineup, which is most of "
+      "what is left; over 16 real lineups through the production path it is "
+      "1.855.")
 
 
 # --- 2. edge plausibility ----------------------------------------------------

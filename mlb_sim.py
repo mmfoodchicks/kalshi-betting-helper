@@ -157,40 +157,6 @@ _PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineu
 # home team never bats in the 9th, so those half-innings are a filtered sample of
 # game states, and the 9th's 0.877 is substantially that artifact rather than the
 # bullpen. Innings 1-6 carry the clean signal and the fit uses only them.
-# KNOWN LIMIT: THE ENGINE IS TOO EFFICIENT WITH ITS HITS.
-#
-# It scores the right RUNS -- that is what _team calibrates -- but reaches them
-# with about an eighth fewer hits than real baseball needs. Measured over 16 real
-# lineups x 8,000 games, against 9,488 real 2024-25 team-games:
-#
-#     sim   7.822 hits / 4.848 runs = 1.613 hits per run
-#     real  8.218 hits / 4.468 runs = 1.839 hits per run     -> sim -12.3%
-#
-# Each hit is worth too much here: baserunners advance or score more freely than
-# they really do, so fewer of them are needed for the same total. The run level is
-# right, the path to it is not.
-#
-# It shows up hardest in the tail, where the app can be checked against something
-# unambiguous -- a no-hitter:
-#
-#     0-hit games   sim 0.00085   real 0.00042      2x too often
-#     perfect games sim 1 in 3,970 (34 of 135,000)  vs roughly 1 in 17,000 real
-#
-# So the answer to "can this simulator throw a perfect game" is yes, it genuinely
-# can -- nothing in the outcome ladder forces a baserunner, and it produces them
-# at a measurable rate. It just throws them about four times too often, for the
-# same reason it under-counts hits.
-#
-# Anything priced off HIT COUNTS -- 1+/2+ hit props, team total hits -- inherits
-# that bias downward. Run-based markets (moneyline, totals, run line) do not,
-# because the runs are calibrated.
-#
-# NOT FIXED HERE, deliberately. The cure is retuning baserunner advancement
-# (first-to-third on a single, scoring from second, how often runners strand),
-# and that has to be measured against real advancement rates and re-validated
-# against the run calibration it would disturb. That is its own piece of work,
-# like the TTO fit was, and doing it as a footnote to this one would be how the
-# run level got broken in the first place.
 _TTO_STEP = 1.040
 _TTO_MAX_TURN = 2                    # 0-indexed: 1st, 2nd, 3rd-and-later
 
@@ -335,15 +301,169 @@ _N_INNINGS = 9
 _DK_HIT = {1: 3, 2: 5, 3: 8, 4: 10}   # DraftKings hitter points by hit type
 
 
-# Steals of 3rd run at this fraction of a runner's steal-of-2nd attempt rate
-# (they're ~10-13% of real MLB steals).
+# Steals of 3rd run at this fraction of a runner's steal-of-2nd attempt rate.
+# Measured at .119 of all completed steals over the same 300 games (53 of 445),
+# so the standing 0.12 was right and stays.
 _SB3_FRAC = 0.12
+
+# STEAL SUCCESS. Measured over those 300 games (600 team-games):
+#
+#     stealing 2nd    391 SB / 89 CS   .8146   attempts .800 per team-game
+#     stealing 3rd     53 SB / 24 CS   .6883   attempts .128
+#
+# The engine had 0.62 and 0.72 -- both wrong, and in opposite directions. It was
+# throwing out 38% of runners going to second against a real 19%, which cost
+# steals and, worse, manufactured outs that never happened. And it had stealing
+# THIRD as the easier of the two when it is measurably the harder one: the throw
+# is shorter and the runner's lead counts for less, so a play that gets attempted
+# only in hand-picked spots still succeeds less often than the ordinary one.
+#
+# Fixing the success rate is also what fixes the steal LEVEL. The engine ran .547
+# steals per team-game against a real .708; at the correct success rate the same
+# attempt rate lands at about .72, so `_SBR_ADJ` needs no touching. Raising the
+# attempt rate instead would have hit the total while leaving twice as many
+# runners thrown out as really are.
+_SB2_OK = 0.815
+_SB3_OK = 0.688
+_SB_SPD = 0.7                        # sprint-speed sensitivity (unfitted, kept)
 # Structural calibration for the real-rules matchup engine (measured): a lineup
 # calibrated to er over a solo 9-inning game realizes less as the HOME side
 # (bottom-9 skip + walk-off truncation, minus the extras bump) and a touch more
 # as the AWAY side (extras bump only).
+#
+# REFIT over 16 real lineups x 12,000 matchups a side, each calibrated to its own
+# er with no correction applied, so the ratio measured IS the whole effect:
+#
+#     away realizes 1.0305 of its solo mean  -> 0.9704
+#     home realizes 0.9796                   -> 1.0208
+#
+# The away figure had drifted: 0.962 was leaving every away side about 0.9% under
+# the runs the model actually asked for. It was already off before baserunner
+# advancement was touched (the same measurement against the previous engine says
+# 0.9756), so this is a standing error being corrected rather than fallout. The
+# home figure was already right and is left alone.
+#
+# One constant per side is an approximation either way -- how often the home team
+# skips the ninth depends on the matchup, and across the 16 pairs the home ratio
+# ranges 0.946-1.012 against an away range of 1.008-1.047. The mean is the right
+# single number, and the home spread is the wider one precisely because the
+# bottom-of-the-ninth skip is a function of who is winning.
 _CAL_HOME = 1.02
-_CAL_AWAY = 0.962
+_CAL_AWAY = 0.970
+
+
+# --- BASERUNNER ADVANCEMENT ---------------------------------------------------
+# THE BUG THIS REPLACED. `bases` is [1st, 2nd, 3rd] everywhere in this engine --
+# the walk branch, the steal gates, the double-play branch, the live-game resume
+# in state_from_snapshot. The hit branch unpacked it BACKWARDS:
+#
+#     r3, r2, r1 = bases          # r3 got the runner on FIRST
+#
+# so on every single the man on first scored and the man on third went back to
+# second, and on every double the man on first scored while the man on third was
+# rolled at 45%. Nothing caught it because _team calibrates the run LEVEL: with
+# each hit worth far too much, the calibrator simply dialled every lineup's rates
+# down until the total came back to `er`. Feeding the engine the league's own
+# measured per-PA rates with NO calibration is what exposed it --
+#
+#     league-average rates, uncalibrated, real-rules games
+#       before   5.197 runs/game    8.549 hits  ->  1.645 hits per run
+#       after    4.493              8.645       ->  1.924
+#       real     4.447              8.259       ->  1.857
+#
+# -- and it is the reason the engine looked like it needed "an eighth fewer hits
+# than real baseball": the runs were being forced right, so the hits had to come
+# out wrong.
+#
+# That flat construction is a smoke alarm, not a precision instrument -- nine
+# identical hitters is not a team, and it draws a few more plate appearances a
+# game than a real lineup does, which is most of the residual above. The precise
+# measurement is over 16 real lineups through the production path, and there:
+#
+#              hits/game   runs/game   hits per run
+#       before    7.577       4.500        1.684
+#       after     8.316       4.483        1.855
+#       real      8.259       4.447        1.857
+#
+# The no-hitter rate roughly halved with it, 1 in 831 -> 1 in 1,391 against a
+# real 1 in 2,433. That real figure is 4 events in 9,732 team-games, so its own
+# confidence interval runs from about 1 in 900 to 1 in 6,500: the engine now sits
+# inside it instead of clearly outside, which is as much as four events can say.
+# The shoulder is the sample worth trusting, and it agrees -- games of 2 hits or
+# fewer come out at .0186 against a real .0208.
+#
+# WHAT IS STILL MISSING, stated plainly: a batter can only reach here on a hit or
+# a walk. Real hitters also reach on errors and catcher's interference, .61% of
+# plate appearances, and runners advance on wild pitches and passed balls. Those
+# are baserunners -- and runs -- that arrive without a hit. They are not modelled
+# because the per-PA rates this engine is fed are a hitter's own H/BB/HBP;
+# reach-on-error is a property of the defence behind him, and inventing a
+# hitter-level rate for it would be worse than leaving the gap stated.
+#
+# Every rate below is measured from 300 real 2025 games of StatsAPI play-by-play
+# (22,782 plate appearances), with the base-out state reconstructed before each
+# play so the rate is stated over exactly the situation this engine rolls it in.
+#
+#     SINGLE                                          real
+#       runner on 3rd scores                          .994   -> automatic here
+#       runner on 2nd scores           by outs        .389 / .536 / .751
+#       runner on 2nd thrown out                      .032
+#       runner on 1st reaches 3rd+     by outs        .305 / .271 / .468
+#       runner on 1st thrown out                      .018
+#         of those reaching 3rd+, scores              .131
+#     DOUBLE
+#       runner on 3rd scores                          .990   -> automatic
+#       runner on 2nd scores                          .968   -> automatic
+#       runner on 1st scores           by outs        .293 / .289 / .475
+#       runner on 1st thrown out                      .053
+#     TRIPLE (n=54), HOME RUN                        1.000   -> automatic
+#     ANY OUT, fewer than 2 down -- and "any out" is right, because code 0 in
+#     this engine is every PA that is not a hit and not a walk, strikeouts
+#     included. Measuring these over balls in play only would overstate them by
+#     half (a strikeout scores the man on third .026 of the time; a ball in play
+#     scores him .547):
+#       double play          | runner on 1st          .155
+#       runner on 3rd scores | no double play         .402
+#       runner on 2nd to 3rd | 3rd open               .339
+#       runner on 1st to 2nd | 2nd open               .204
+#       runner on 3rd scores | double play            .125
+#
+# THE OUT COUNT IS THE BIGGEST SINGLE DRIVER and the old code ignored it. With
+# two down the runner leaves on contact; with nobody out he has to wait and see
+# the ball land. Scoring from second on a single nearly doubles across that
+# span, .389 to .751, and no fixed constant can sit in both places.
+_S_2B_SCORE = (0.389, 0.536, 0.751)   # single: runner on 2nd scores, by outs
+_S_1B_THIRD = (0.305, 0.271, 0.468)   # single: runner on 1st reaches 3rd+
+_S_1B_HOME = 0.131                    # ... and of those, comes all the way round
+_D_1B_SCORE = (0.293, 0.289, 0.475)   # double: runner on 1st scores, by outs
+# Thrown out trying. These cost the runner AND an out, which is why the engine
+# needed them: without a price on advancing, taking the extra base was free.
+_TOOB_S_2B = 0.032
+_TOOB_S_1B = 0.018
+_TOOB_D_1B = 0.053
+# On an out.
+_OUT_DP = 0.155                       # runner on 1st, <2 out
+_OUT_SCORE_3B = 0.402                 # runner on 3rd, <2 out, no double play
+_OUT_ADV_2B = 0.339                   # runner on 2nd -> 3rd, 3rd open
+_OUT_ADV_1B = 0.204                   # runner on 1st -> 2nd, 2nd open
+_DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
+# How hard a runner's own speed swings an advancement roll. `spd` is sprint
+# speed centred on the league average and clamped to [0.8, 1.2] upstream, so
+# this is a +/-20% relative swing on any base-taking chance -- the fastest and
+# slowest regulars really do sit about that far apart on first-to-third.
+_SPD_ADV = 1.0
+
+
+def _adv(p, spd):
+    """An advancement chance scaled by the runner's speed, centred so that a
+    league-average runner (spd == 1.0) sits exactly on the measured rate.
+
+    The bounds are proportional rather than the fixed floors the old code used.
+    Those floors were written against a single constant and quietly became
+    wrong once the rate moved with the out count: a `max(0.4, ...)` floor under
+    a nobody-out rate of .389 pinned even the slowest runner ABOVE the league
+    average, which is the opposite of what a floor is for."""
+    return max(0.02, min(0.95, p * (1.0 + (spd - 1.0) * _SPD_ADV)))
 
 
 def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0,
@@ -386,7 +506,8 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         if bases[0] is not None and bases[0] >= 0 and bases[1] is None and outs < 2:
             rr = bases[0]
             if rnd() < setup[rr]["sbr"]:
-                if rnd() < max(0.55, min(0.9, 0.62 + (setup[rr]["spd"] - 1.0) * 0.7)):
+                if rnd() < max(0.60, min(0.93,
+                                         _SB2_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD)):
                     bases[1] = rr; bases[0] = None
                     stats[rr][5] += 1; stats[rr][6] += 5            # SB +5
                 else:
@@ -397,7 +518,8 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         elif bases[1] is not None and bases[1] >= 0 and bases[2] is None and outs < 2:
             rr = bases[1]
             if rnd() < setup[rr]["sbr"] * _SB3_FRAC:
-                if rnd() < max(0.6, min(0.92, 0.72 + (setup[rr]["spd"] - 1.0) * 0.7)):
+                if rnd() < max(0.50, min(0.88,
+                                         _SB3_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD)):
                     bases[2] = rr; bases[1] = None
                     stats[rr][5] += 1; stats[rr][6] += 5
                 else:
@@ -432,16 +554,35 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         onb = -1 if phantom else bi                                # what goes on base
         if code == 0:                         # out
             # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
-            if bases[0] is not None and outs < 2 and rnd() < 0.13:
+            if bases[0] is not None and outs < 2 and rnd() < _OUT_DP:
                 outs += 2
                 bases[0] = None
-            else:
-                # Sac fly / productive out: runner on 3rd, < 2 outs scores ~16%.
-                if bases[2] is not None and outs < 2 and rnd() < 0.16:
+                # A run can still come home on a double play -- but only if the
+                # DP was not the third out, since no run scores when the inning
+                # ends on a force. No RBI: the rules do not award one to a
+                # batter who grounds into one.
+                if outs < 3 and bases[2] is not None and rnd() < _DP_SCORE_3B:
                     credit_run(bases[2])
-                    s[4] += 1; s[6] += 2; bases[2] = None
+                    bases[2] = None
                     if won():
                         return runs, idx, True
+            else:
+                # Resolved LEAD RUNNER FIRST so a vacated base is available to
+                # the man behind him: third scores, second takes third, first
+                # takes second. The engine used to move nobody but the man on
+                # third, which made every out a dead end -- real outs advance a
+                # runner about a fifth of the time.
+                if bases[2] is not None and outs < 2 and rnd() < _OUT_SCORE_3B:
+                    credit_run(bases[2])
+                    s[4] += 1; s[6] += 2; bases[2] = None   # sac fly: RBI stands
+                    if won():
+                        return runs, idx, True
+                if bases[1] is not None and bases[2] is None and outs < 2 \
+                        and rnd() < _OUT_ADV_2B:
+                    bases[2] = bases[1]; bases[1] = None
+                if bases[0] is not None and bases[1] is None and outs < 2 \
+                        and rnd() < _OUT_ADV_1B:
+                    bases[1] = bases[0]; bases[0] = None
                 outs += 1
         elif code == 5:                       # walk (force advances only)
             s[6] += 2
@@ -459,8 +600,17 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                     return runs, idx, True
         else:                                 # a hit
             s[0] += 1; s[1] += code; s[6] += _DK_HIT[code]
-            r3, r2, r1 = bases
+            # bases is [1st, 2nd, 3rd] everywhere in this engine -- the walk
+            # branch above, the steal gates, the live-game resume in
+            # state_from_snapshot -- so this unpack has to run in that order.
+            r1, r2, r3 = bases
             scored = 0
+            spd1 = setup[r1]["spd"] if (r1 is not None and r1 >= 0) else 1.0
+            spd2 = setup[r2]["spd"] if (r2 is not None and r2 >= 0) else 1.0
+            # Outs as they stood when the ball was hit. A runner gunned down on
+            # this same play must not change how aggressive the man behind him
+            # was, and the real rates are conditioned the same way.
+            o0 = min(outs, 2)
             if code == 4:                     # HR: everyone (incl. batter) scores
                 s[2] += 1
                 for r in (r1, r2, r3):
@@ -482,40 +632,65 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 bases = [None, None, onb]
             elif code == 2:                   # double
                 nb = [None, onb, None]        # batter to 2nd
-                for r in (r3, r2):
+                # From 3rd (.990 real) and from 2nd (.968) -- close enough to
+                # automatic that modelling the hold would only put a runner on a
+                # base the man behind him needs.
+                for r in (r3, r2):            # lead runner crosses first
                     if r is not None:
                         credit_run(r); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
-                if r1 is not None:            # from 1st: faster runners score more
-                    if rnd() < max(0.25, min(0.7, 0.45 * (setup[r1]["spd"] if r1 >= 0 else 1.0))):
+                if r1 is not None:            # from 1st: score, get gunned, or 3rd
+                    u1 = rnd()
+                    p_sc = _adv(_D_1B_SCORE[o0], spd1)
+                    if u1 < p_sc:
                         credit_run(r1); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
+                    elif u1 < p_sc + _TOOB_D_1B:
+                        outs += 1             # thrown out at the plate
                     else:
                         nb[2] = r1
                 bases = nb
                 s[4] += scored; s[6] += 2 * scored
             else:                             # single
                 nb = [onb, None, None]        # batter to 1st
-                if r3 is not None:
+                if r3 is not None:            # from 3rd: .994 real -> automatic
                     credit_run(r3); scored += 1
                     if won():
                         s[4] += scored; s[6] += 2 * scored
                         return runs, idx, True
-                if r2 is not None:            # from 2nd: ~60%, speed-scaled
-                    if rnd() < max(0.4, min(0.85, 0.60 * (setup[r2]["spd"] if r2 >= 0 else 1.0))):
+                if r2 is not None:            # from 2nd: score, gunned, or 3rd
+                    u2 = rnd()
+                    p_sc = _adv(_S_2B_SCORE[o0], spd2)
+                    if u2 < p_sc:
                         credit_run(r2); scored += 1
                         if won():
                             s[4] += scored; s[6] += 2 * scored
                             return runs, idx, True
+                    elif u2 < p_sc + _TOOB_S_2B:
+                        outs += 1             # thrown out at the plate
                     else:
                         nb[2] = r2
-                if r1 is not None:            # from 1st: ->2nd, or ->3rd (speed)
-                    if nb[2] is None and rnd() < max(0.15, min(0.5, 0.28 * (setup[r1]["spd"] if r1 >= 0 else 1.0))):
-                        nb[2] = r1
+                # If the man ahead was gunned down for the third out, nothing
+                # behind him scores -- the inning is already over.
+                if r1 is not None and outs < 3:   # from 1st: 3rd+, gunned, or 2nd
+                    u1 = rnd()
+                    p_adv = _adv(_S_1B_THIRD[o0], spd1)
+                    if u1 < p_adv:
+                        if rnd() < _S_1B_HOME:        # all the way around
+                            credit_run(r1); scored += 1
+                            if won():
+                                s[4] += scored; s[6] += 2 * scored
+                                return runs, idx, True
+                        elif nb[2] is None:
+                            nb[2] = r1
+                        else:                 # third is taken -- hold at second
+                            nb[1] = r1
+                    elif u1 < p_adv + _TOOB_S_1B:
+                        outs += 1             # thrown out stretching
                     else:
                         nb[1] = r1
                 bases = nb
