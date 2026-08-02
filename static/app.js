@@ -892,6 +892,7 @@ function renderSlateGames() {
 window.setSlateSort = (v) => { bbSlateSort = v; renderSlateGames(); };
 let parlayLegs = 3;
 let parlayTarget = 65;
+let parlayCap = 0;          // 0 = no ceiling; >0 turns the floor into a band
 let parlayPayout = 0;
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
 // the maker, so without this the selects snap back to defaults — which used to
@@ -960,8 +961,12 @@ window.buildCombo = async () => {
   if (!out) return;
   let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
   let t = parseInt(($("comboTarget") || {}).value, 10); if (isNaN(t)) t = 65;
+  let c = parseInt(($("comboCap") || {}).value, 10); if (isNaN(c) || c <= 0) c = 0;
+  // A ceiling below the floor is meaningless — treat it as "no ceiling" rather
+  // than silently building nothing.
+  if (c && c < t) c = 0;
   let p = parseFloat(($("comboPayout") || {}).value) || 0;
-  parlayLegs = n; parlayTarget = t; parlayPayout = p;
+  parlayLegs = n; parlayTarget = t; parlayPayout = p; parlayCap = c;
   // Persist the control choices so the auto-refresh re-renders them as-set.
   comboSameGamePref = !!($("comboSameGame") && $("comboSameGame").checked);
   comboLegsModePref = ($("comboLegsMode") || {}).value || "prefer";
@@ -976,14 +981,18 @@ window.buildCombo = async () => {
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
-      + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`;
+      + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
+      + (c ? `&cap=${c}` : "");
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build — no eligible games for that selection. Try ALL GAMES, allow live, or loosen a target.</div>`; return; }
+    if (!d.parlay) {
+      out.innerHTML = `<div class="small">Couldn't build — no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
+      return;
+    }
     out.innerHTML = renderMixed(d.parlay);
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed — try again.</div>`;
@@ -1273,6 +1282,10 @@ function renderMixed(m) {
     ? `<span>Payout ≥${m.target_payout_x}× <b style="color:${m.payout_reached ? "#3ad17a" : "#e0566a"}">${m.payout_reached ? "✓ reached" : "✗ best is " + m.fair_payout_x + "×"}</b></span>` : "";
   const legNote = (m.legs_target != null)
     ? `<span>${m.legs_target} legs <b style="color:${m.legs_met ? "#3ad17a" : "#e0566a"}">${m.legs_met ? "✓" : "✗ got " + m.n_legs}</b></span>` : "";
+  // With a ceiling set, say so on the slip — every leg above is inside the band
+  // by construction, and the lines shown are the ones that got it there.
+  const bandNote = (m.leg_cap_pct != null)
+    ? `<span>every leg <b>${m.leg_floor_pct}–${m.leg_cap_pct}%</b></span>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required
   // payout it never said which one broke, and the builder used to quietly drop
@@ -1329,6 +1342,7 @@ function renderMixed(m) {
       ${kellyTxt}
       ${legNote}
       ${payNote}
+      ${bandNote}
       <span>Correlation: ${corrTxt}</span>
     </div>
     ${hardWarn}
@@ -1481,7 +1495,9 @@ async function loadBaseball(silent) {
         <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from — or <b>ALL GAMES</b>:</div>
         ${renderGameGrid(d.games)}
         <div style="margin-top:8px">each leg ≥
-        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>% likely</div>
+        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>%
+        and ≤ <input id="comboCap" type="number" min="0" max="99" value="${parlayCap || ""}" placeholder="—" style="width:54px"/>% likely</div>
+        <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each market walks to the line that lands in the band — Over 3.5 at 90% becomes Over 4.5 or 5.5, and a run line at 40% becomes the NO side.</div>
         <div class="small" style="margin-top:6px">goal
           ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], comboObjectivePref)}
         </div>

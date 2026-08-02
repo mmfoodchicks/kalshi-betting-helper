@@ -2617,7 +2617,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
-                       net_fees=True):
+                       net_fees=True, cap_pct=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -2631,10 +2631,24 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     control whether the leg count and the payout are hard requirements or just
     recommendations. `objective` ("balanced"/"safe"/"value") then orders whatever
     satisfies them, with the Kalshi price inside the search.
+
+    `cap_pct` turns the confidence floor into a BAND. Ask for 60-70% and a leg
+    at 90% is not "safely inside the range", it is out -- so the builder walks
+    the ladder to the line that lands in it. Over 3.5 at 90% becomes Over 4.5 or
+    Over 5.5; a run line at 40% becomes the NO side of the same margin. The
+    ladders and both sides already exist as candidates, so the band is a filter
+    and the walking falls out of it.
     """
     import mlb_sim
     import combo_engine
     floor = max(0.05, min(0.97, target_pct / 100.0))
+    # A ceiling at or below the floor is not a band, it is an empty set. Treat it
+    # as "no ceiling" rather than returning nothing and making the caller guess
+    # why -- the UI already refuses to send one, but the endpoint is public.
+    ceil = 1.0
+    if cap_pct is not None and cap_pct / 100.0 > floor:
+        ceil = min(1.0, cap_pct / 100.0)
+    banded = ceil < 1.0
 
     def team_side(g):
         """If the grid restricts this game to one team, return that team's side."""
@@ -2662,7 +2676,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             # been banked. Falls back to the win leg alone if the feed is down.
             live_gs = _live_game_sim(g)
             if live_gs is None:
-                if not g.get("pick_prob") or g["pick_prob"] < floor:
+                if not g.get("pick_prob") or not (floor <= g["pick_prob"] <= ceil):
                     continue
                 side = team_side(g)
                 pick = g.get("pick")
@@ -2692,7 +2706,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         # decides the number the user actually sees. Filtering first let a leg
         # qualify at 60% pre-blend and then get marked down to 41% by the market,
         # so a slip built under "each leg >= 55%" came back showing 38-43% legs.
-        cands = [c for c in cands if c["marg"] >= floor]
+        cands = [c for c in cands if floor <= c["marg"] <= ceil]
         if not cands:
             continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
@@ -2720,6 +2734,10 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             item[k] = v
     item["objective"] = objective
     item["legs_target"] = n_legs if legs_mode != "off" else None
+    # The band the legs were drawn from, so the slip can say so rather than
+    # leaving the reader to check every leg by eye.
+    item["leg_floor_pct"] = round(floor * 100, 1)
+    item["leg_cap_pct"] = round(ceil * 100, 1) if banded else None
     # What the price actually costs and returns, as opposed to the fair payout.
     item["net_fees"] = bool(net_fees)
     item["cost_x"] = round(best["cost"], 4)

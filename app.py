@@ -1933,7 +1933,17 @@ def api_baseball_mixed():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
+    # Optional confidence CEILING -> the floor becomes a band and the builder
+    # walks each ladder to the line that lands inside it.
+    cap = request.args.get("cap")
+    try:
+        cap = float(cap) if cap not in (None, "") else None
+    except ValueError:
+        cap = None
+    if cap is not None and not (0 < cap <= 100):
+        cap = None
     item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
+                                       cap_pct=cap,
                                        target_payout=payout, n_sims=sims,
                                        max_legs_per_game=max_total if same_game else 1,
                                        max_total_legs=max_total,

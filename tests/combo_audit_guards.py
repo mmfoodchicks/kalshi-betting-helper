@@ -375,6 +375,41 @@ extreme = [(g["matchup"], g.get("pick_price_cents")) for g in unstarted
 ck("no moneyline quoted at 0c/100c on an unstarted game", not extreme, extreme[:3])
 print(f"    {len(unstarted)}/{len(games)} games not yet started")
 
+# --- confidence BAND ----------------------------------------------------------
+print()
+print("=" * 72)
+print("Confidence band: a ceiling turns the floor into a range")
+print("=" * 72)
+
+import inspect as _insp        # noqa: E402
+import mlb_sim as _MS          # noqa: E402
+
+_src = _insp.getsource(B.build_mixed_parlay)
+ck("the builder takes a ceiling", "cap_pct" in _src)
+ck("and filters BOTH ends, not just the floor",
+   'floor <= c["marg"] <= ceil' in _src,
+   "asking for 60-70% and getting a 90% leg is not 'comfortably inside'")
+ck("a ceiling at or below the floor is ignored, not left empty",
+   "cap_pct / 100.0 > floor" in _src,
+   "the UI refuses to send one, but /api/baseball/mixed is reachable directly")
+ck("the live-fallback leg respects the band too",
+   'floor <= g["pick_prob"] <= ceil' in _src,
+   "a live game's moneyline is a leg like any other")
+ck("and the band is reported back so the slip can state it",
+   "leg_cap_pct" in _src and "leg_floor_pct" in _src)
+
+# The line-walking itself needed no new code: every Kalshi-booked total is
+# already a candidate on both sides, every run-line margin likewise, and
+# _no_candidates supplies the NO of each. The band is a filter; the walking
+# falls out of it.
+_no_src = _insp.getsource(_MS._no_candidates)
+ck("the NO side of a leg uses the exact complement mask",
+   '~c["mask"]' in _no_src,
+   "so a NO leg's correlation with the rest of the slip is simulated rather "
+   "than assumed - which is why the run line needed no NO generator of its own")
+ck("and its marginal is 1 minus the CALIBRATED yes, so a pair sums to 1",
+   '1.0 - c["marg"]' in _no_src)
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
@@ -383,3 +418,4 @@ if FAIL:
     for n, d in FAIL:
         print(f"   - {n}   {d}")
 print("=" * 72)
+

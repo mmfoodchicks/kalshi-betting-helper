@@ -431,11 +431,15 @@ def t_slate_is_non_blocking():
           _s["legs"] == 3, f"{_s['legs']} legs")
     check("and the unreachable target is named", _meta["unmet"] == ["payout"])
 
-    # The per-leg floor must apply to the number the user is SHOWN, i.e. after
-    # the market blend, not to the pre-blend model number.
+    # The per-leg BAND must apply to the number the user is SHOWN, i.e. after the
+    # market blend, not to the pre-blend model number. This held for the floor
+    # alone and has to keep holding now that there is a ceiling too -- a leg
+    # marked down by the market must be able to fall INTO a band as well as out
+    # of the bottom of one.
     _bm = inspect.getsource(B.build_mixed_parlay)
-    check("the per-leg floor is applied after the market blend",
-          _bm.index("_price_cands") < _bm.rindex('c["marg"] >= floor'))
+    check("the per-leg band is applied after the market blend",
+          _bm.index("_price_cands") < _bm.rindex('floor <= c["marg"] <= ceil'))
+    check("and it bounds both ends", "cap_pct" in _bm and "ceil" in _bm)
 
     check("the API exposes the objective",
           "objective" in inspect.getsource(_app.api_baseball_mixed))
