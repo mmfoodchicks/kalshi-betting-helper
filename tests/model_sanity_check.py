@@ -149,6 +149,63 @@ check("and calibration only fits its own generation",
       "a correction for the old run level would double-count on top of the fix")
 
 
+# --- 1c. probability ladders must be coherent --------------------------------
+head("1c. A ladder of thresholds must be monotone and in range")
+
+import props as _props  # noqa: E402
+import random as _rnd   # noqa: E402
+
+_r = _rnd.Random(5)
+
+
+def _hitter():
+    """A COHERENT synthetic hitter. The first version of this check generated
+    random fields independently and produced hitters with more hits than at-bats,
+    which made the model emit P(2+ hits)=100% — a garbage-in artifact I nearly
+    reported as a bug. Derive the counting stats from the rate stats instead."""
+    ab = _r.randrange(50, 600)
+    hits = int(ab * _r.uniform(.180, .340))
+    d = int(hits * _r.uniform(.10, .28))
+    t = int(hits * _r.uniform(0, .03))
+    hr = min(int(hits * _r.uniform(.02, .25)), max(0, hits - d - t))
+    bb, hbp = int(ab * _r.uniform(.04, .16)), int(ab * _r.uniform(0, .02))
+    return {"name": "x", "ops": _r.uniform(.560, .980), "ab": ab, "hits": hits,
+            "pa": ab + bb + hbp, "doubles": d, "triples": t, "hr": hr, "bb": bb,
+            "hbp": hbp, "strikeouts": int(ab * _r.uniform(.10, .35)),
+            "sb": _r.randrange(0, 40), "cs": _r.randrange(0, 12),
+            "g": _r.randrange(20, 162)}
+
+
+_mono, _range = [], []
+for _ in range(400):
+    _bp = _props.batter_props(_hitter(), _r.randrange(0, 9), _r.uniform(0.8, 1.25),
+                              _r.uniform(0.9, 1.1), _r.uniform(0.9, 1.1))
+    if not _bp:
+        continue
+    for _pref, _ks in (("hit", (1, 2, 3, 4)), ("tb", (2, 3, 4, 5, 6, 7)), ("hr", (1, 2))):
+        _v = [_bp.get(f"{_pref}{k}") for k in _ks]
+        _v = [x for x in _v if x is not None]
+        if any(a + 1e-9 < b for a, b in zip(_v, _v[1:])):
+            _mono.append((_pref, _v))
+    for _k, _val in _bp.items():
+        if _k[:2] in ("hi", "tb", "hr") and isinstance(_val, (int, float)) \
+                and not (0 <= _val <= 100):
+            _range.append((_k, _val))
+check("P(>= k) never rises with k, over 400 hitters", not _mono, _mono[:2])
+check("every prop probability lands in [0, 100]", not _range, _range[:2])
+
+_kbad = []
+for _ in range(200):
+    _kp = _props.pitcher_k_props(_r.uniform(3, 15), _r.uniform(2.5, 7.5))
+    _lad = (_kp or {}).get("ladder")
+    if not isinstance(_lad, list):
+        continue
+    _v = [r.get("pct") for r in _lad if isinstance(r, dict) and r.get("pct") is not None]
+    if any(a + 1e-9 < b for a, b in zip(_v, _v[1:])):
+        _kbad.append(_v[:6])
+check("starter K ladders are monotone too", not _kbad, _kbad[:2])
+
+
 # --- 2. edge plausibility ----------------------------------------------------
 head("2. No source may present an implausible edge as trustworthy")
 

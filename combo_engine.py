@@ -125,6 +125,27 @@ def bundle_cost(legs, net=True):
 # moneyline with real volume is a strong opinion, an untraded prop with a 14c
 # spread is barely one -- so a genuinely stale line still leaves room for an edge,
 # while a liquid market mostly overrules us.
+# THESE WEIGHTS WERE SET FOR A MODEL THAT WAS BIASED, AND THE BIAS IS NOW FIXED.
+# _MARKET_K was chosen when the sim ran ~9pp hot on totals and props (a one-sided
+# home-field multiplier inflating every run total by 4%; see baseball.HOME_RUNS_MULT).
+# Re-measured after that fix, across 857 legs with a usable two-sided quote:
+#
+#     model - market, pre-blend    median -0.075pp   mean -0.041pp
+#     per market: Total +0.1, Run line +0.1, HRR +0.1, Hit -0.2, ML +0.7, Ks -2.0
+#     how far the blend then moves it   median +0.06pp
+#
+# The model now agrees with the market on average, so the blend is close to a
+# no-op in aggregate and is left exactly as it is. But note what it still does
+# per leg: it keeps ~29% of the weight on us, which shrinks a GENUINE disagreement
+# by about 70% along with a spurious one. That is the right trade only while we
+# have no evidence that our disagreements pay.
+#
+# Getting that evidence is now possible and was not before: store.MODEL_VERSION
+# retires calibration data from the old model, so graded outcomes accruing under
+# version 2 measure THIS model. Once there are enough of them, check whether legs
+# where we disagreed with the market beat it, and raise the model's weight if they
+# did. Do not raise it on the strength of the bias fix alone -- unbiased on average
+# is not the same as informative leg by leg.
 _MARKET_K = 3.0          # precision of an ideal (zero-spread, deep) market
 _SPREAD_WIDE = 20.0      # cents of spread at which a market says nothing
 _DEPTH_HALF = 40.0       # contracts of volume for half the depth credit
