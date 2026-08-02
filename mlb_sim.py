@@ -259,6 +259,35 @@ def _build_setup(rows, mult):
     return setup
 
 
+# How far the calibration is allowed to move a lineup's rates. This is the LAST
+# line of defence, not the first: it exists to stop a bad input from producing an
+# absurd game, and it should essentially never bind on real data.
+#
+# It used to be [0.7, 1.5] and it DID bind, silently. One lineup in sixteen came
+# out of calibration 39% above the runs the model asked for, because a call-up
+# with 4.6 plate appearances carried a .9193 home-run rate and the floor of 0.7
+# could not pull nine hitters like that back down to 3.69 runs. The clamp was not
+# the bug -- the unregressed rate was, and props._reg now fixes it at source --
+# but a guard that fails by quietly returning the wrong answer is the wrong
+# guard. Widened so a genuinely extreme MATCHUP still calibrates, and the engine
+# now says so when it cannot.
+_MULT_LO, _MULT_HI = 0.55, 1.8
+
+
+def _clamp_mult(m):
+    return max(_MULT_LO, min(_MULT_HI, m))
+
+
+def calibration_error(setup, er, rnd, opp_sp_ip=None, n=900):
+    """How far a calibrated lineup actually lands from its target, as a signed
+    fraction. Exposed so callers and tests can catch a lineup the calibration
+    could not reach instead of pricing a game off it."""
+    if not setup or not er:
+        return 0.0
+    mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(n)) / float(n)
+    return mean / er - 1.0
+
+
 def _team(batters, er, rnd, opp_sp_ip=None):
     """Lineup setup with on-base rates EMPIRICALLY calibrated so the simulated
     runs land near `er` (the matchup-adjusted model total). Returns [] if no
@@ -297,16 +326,14 @@ def _team(batters, er, rnd, opp_sp_ip=None):
             if 0.8 < k < 4.0:                # sane local slope -> use it
                 k_exp = max(0.3, min(0.7, 1.0 / k))
         prev = (mult, mean)
-        # Clamp near 1.0 so matchup calibration nudges team runs to er without
-        # badly distorting each hitter's true rate.
-        mult = max(0.7, min(1.5, mult * (er / mean) ** k_exp))
+        mult = _clamp_mult(mult * (er / mean) ** k_exp)
     # Final centering pass: acceptance still fires on a noisy estimate, so one
     # more measurement plus a single corrective nudge (never re-checked, so it
     # can't oscillate) centers the residual around ~1%.
     setup = _build_setup(rows, mult)
     mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(700)) / 700.0
     if mean > 0.3:
-        mult = max(0.7, min(1.5, mult * (er / mean) ** k_exp))
+        mult = _clamp_mult(mult * (er / mean) ** k_exp)
     return _build_setup(rows, mult)
 
 

@@ -305,6 +305,35 @@ LG_OUT_MIX = (0.3241, 0.3181, 0.3577)     # strikeout, ground, air
 _OUT_MIX_K = 120.0                        # outs before a hitter's own mix leads
 
 
+# --- SMALL SAMPLES ------------------------------------------------------------
+# League per-PA rates, 2025 (measured over 300 games of play-by-play, 22,782 PA).
+# These are the prior every hitter is regressed toward.
+LG_PA = {"1b": 0.1424, "2b": 0.0434, "3b": 0.0035, "hr": 0.0313, "bb": 0.0946}
+# Plate appearances at which a hitter's own rate is trusted half-and-half against
+# that prior. Power is the noisiest thing a hitter does and gets the largest k;
+# walks settle fastest. Same shape and the same numbers the season engine has
+# used all along in deep_data._batter -- this path simply never had them.
+_SHRINK_K = {"1b": 320.0, "2b": 200.0, "3b": 200.0, "hr": 200.0, "bb": 120.0}
+
+
+def _reg(obs, key, pa):
+    """Regress an observed per-PA rate toward the league prior.
+
+    THIS IS NOT COSMETIC. Without it a September call-up who homered in his only
+    swing carried a .9193 home-run rate into the model, and the app published
+    "Brian Navarreto 99.0% to hit a home run, 2.76 expected" off 4.6 plate
+    appearances. It also fed the game simulator, whose lineup then scored 9.15
+    runs a game against a model expectation of 3.69 -- the rate multiplier hit
+    its floor trying to pull that back and silently gave up 39% high.
+
+    A hot start is not talent, and one plate appearance is not a rate."""
+    pri = LG_PA[key]
+    kk = _SHRINK_K[key]
+    if pa <= 0:
+        return pri
+    return (obs * pa + pri * kk) / (pa + kk)
+
+
 def _out_mix(b):
     """(strikeout, ground, air) share of this hitter's outs, shrunk to league.
 
@@ -361,14 +390,24 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     # night lifts HR much more than singles), so HR gets an extra environment
     # multiplier on top of the hit-scale one already baked into `f`.
     he = max(0.85, min(1.25, hr_env))
-    r_2b = (b.get("doubles") or 0) / spa * f * pm
-    r_3b = (b.get("triples") or 0) / spa * f * pm
-    r_hr = (b.get("hr") or 0) / spa * f * pm * he
-    r_hit = (b.get("hits") or 0) / spa * f * cm
-    r_1b = max(0.0, r_hit - r_2b - r_3b - r_hr)
+    # Regressed to league on this hitter's own sample FIRST, then the matchup and
+    # environment multipliers ride on top. Doing it the other way round would
+    # regress the park and the opposing starter away along with the noise.
+    _2b = _reg((b.get("doubles") or 0) / spa, "2b", spa)
+    _3b = _reg((b.get("triples") or 0) / spa, "3b", spa)
+    _hr = _reg((b.get("hr") or 0) / spa, "hr", spa)
+    _xbh = _2b + _3b + _hr
+    # Singles carry their own prior rather than falling out of hits-minus-XBH,
+    # so a thin line cannot produce a negative single rate.
+    _1b = _reg(max(0.0, (b.get("hits") or 0) / spa - _xbh), "1b", spa)
+    r_2b = _2b * f * pm
+    r_3b = _3b * f * pm
+    r_hr = _hr * f * pm * he
+    r_1b = _1b * f * cm
+    r_hit = r_1b + r_2b + r_3b + r_hr
     # Walks + HBP together: both put the batter on 1st the same way, and DK
     # scores them identically (+2), so HBP rides the walk outcome code.
-    r_bb = ((b.get("bb") or 0) + (b.get("hbp") or 0)) / spa
+    r_bb = _reg(((b.get("bb") or 0) + (b.get("hbp") or 0)) / spa, "bb", spa)
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
     # Exact hit-count distribution (binomial) -> 1+/2+/3+/4+ hits.

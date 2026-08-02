@@ -376,6 +376,57 @@ check("and the on-base cap holds even for an impossible hitter",
       _mon[0]["thresh_tto"][-1][-1][0] <= 0.96,
       f'{_mon[0]["thresh_tto"][-1][-1][0]:.4f}')
 
+# --- 1g2. one plate appearance is not a rate ----------------------------------
+head("1g2. Small samples must be regressed before they are priced")
+
+# THE ONE THAT SHIPPED. A call-up who homered in his only swing carried a .9193
+# per-PA home-run rate straight into the model, and the app published "99.0% to
+# hit a home run, 2.76 expected" off 4.6 plate appearances. It also fed the game
+# simulator, whose lineup then scored 9.15 runs against a model expectation of
+# 3.69. The season engine in deep_data had regressed its rates all along; this
+# path -- the one behind every prop, every combo leg and the game sim -- never
+# did.
+_thin = {"name": "callup", "pa": 1, "ab": 1, "g": 1, "hits": 1, "doubles": 0,
+         "triples": 0, "hr": 1, "bb": 0, "hbp": 0, "ops": 4.0, "strikeouts": 0}
+_tp = _props.batter_props(_thin, 4)
+check("a 1-for-1 with a homer does not become a 92% home-run hitter",
+      _tp["hr1"] < 20.0,
+      f'P(HR) = {_tp["hr1"]}% off one plate appearance')
+check("and his expected home runs stay under one",
+      _tp["exp_hr"] < 1.0, f'{_tp["exp_hr"]}')
+check("his rate sits near league, not near his line",
+      abs(_props._reg(1.0, "hr", 1) - _props.LG_PA["hr"]) < 0.005,
+      f'{_props._reg(1.0, "hr", 1):.4f} vs league {_props.LG_PA["hr"]}')
+# Regression has to fade as the sample grows, or it would flatten real talent.
+_pull_1 = _props._reg(0.09, "hr", 1) - _props.LG_PA["hr"]
+_pull_600 = _props._reg(0.09, "hr", 600) - _props.LG_PA["hr"]
+check("but a full season of the same rate survives it",
+      _pull_600 > _pull_1 * 10, f"{_pull_1:.4f} at 1 PA -> {_pull_600:.4f} at 600")
+check("a real slugger's season is still a slugger",
+      _props._reg(0.09, "hr", 600) > 0.06,
+      f'{_props._reg(0.09, "hr", 600):.4f} — league is {_props.LG_PA["hr"]}')
+check("power is regressed harder than walks, because it is noisier",
+      _props._SHRINK_K["hr"] > _props._SHRINK_K["bb"],
+      f'HR k={_props._SHRINK_K["hr"]}, BB k={_props._SHRINK_K["bb"]}')
+# A thin line must never produce a negative or absurd component rate.
+_odd = _props.batter_props({"name": "x", "pa": 3, "ab": 3, "g": 1, "hits": 3,
+                            "doubles": 3, "triples": 0, "hr": 0, "bb": 0,
+                            "hbp": 0, "ops": 3.0, "strikeouts": 0}, 0)
+check("a line that is all doubles still yields sane component rates",
+      all(0 <= _odd[c] < 0.35 for c in ("r1", "r2", "r3", "rhr", "rbb")),
+      " ".join(f'{c}={_odd[c]}' for c in ("r1", "r2", "r3", "rhr", "rbb")))
+
+# The calibration clamp is the LAST line of defence, and it must not be the one
+# doing the work. It used to bind on 1 lineup in 16 and silently return a game
+# running 39% hot.
+check("the rate clamp is wide enough for a genuinely extreme matchup",
+      _ms._MULT_LO <= 0.6 and _ms._MULT_HI >= 1.7,
+      f"[{_ms._MULT_LO}, {_ms._MULT_HI}] — was [0.7, 1.5], which bound")
+check("and the engine can report how far calibration actually landed",
+      callable(getattr(_ms, "calibration_error", None)),
+      "a guard that fails by quietly returning the wrong answer is the wrong guard")
+
+
 # --- 1h. baserunners must advance the way real ones do ------------------------
 head("1h. Baserunner advancement")
 
