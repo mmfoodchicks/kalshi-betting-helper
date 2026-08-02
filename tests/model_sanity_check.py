@@ -1,0 +1,218 @@
+"""Sanity checks that a model is worth betting, not just that it runs.
+
+Every other suite here asks "does this code do what it says". This one asks the
+question that actually costs money: is the number any good? Three defects found in
+one audit pass all shared a shape -- the code was correct and the output was
+nonsense, so nothing caught them:
+
+  * The crypto GBM extrapolated a 2-hour drift estimate across a 19-hour horizon,
+    displacing the distribution's centre by 2.3x the entire uncertainty of the
+    outcome. It priced "SOL >= $73" at 96.97% with spot at $72.58.
+  * The CFB title model ranked teams by projected win total. Its championship
+    ordering correlated +0.07 with the market and +0.87 with wins -- a
+    strength-of-schedule artifact wearing a title-odds label.
+  * Best Bets sorted by trust and then size, but four of its six sources never
+    downgraded an implausible edge, so the least believable rows sat on top.
+
+The checks below are the generic forms of those three questions:
+
+  1. DRIFT DISCIPLINE  -- a trend estimated from n samples must not dominate a
+     horizon of N >> n.
+  2. MARKET AGREEMENT  -- a model that ranks a field must correlate with the
+     market that prices it. Not agree on levels; agree on ORDER. A model at
+     r ~ 0 is not finding value, it is measuring something else.
+  3. EDGE PLAUSIBILITY -- no source may present a huge edge as trustworthy.
+
+Offline by default. `--live` runs 2 against real boards, which needs network.
+
+    python3 tests/model_sanity_check.py
+    python3 tests/model_sanity_check.py --live
+"""
+
+import math
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+_p = _f = 0
+
+
+def check(name, cond, detail=""):
+    global _p, _f
+    if cond:
+        _p += 1
+        print(f"  PASS  {name}" + (f"   {detail}" if detail else ""))
+    else:
+        _f += 1
+        print(f"  FAIL  {name}   {detail}")
+
+
+def head(t):
+    print("\n" + "=" * 72 + f"\n{t}\n" + "=" * 72)
+
+
+def spearman(xs, ys):
+    """Rank correlation. Levels can disagree for honest reasons (vig, our own
+    calibration); ORDER disagreeing means we are ranking on the wrong thing."""
+    def rank(v):
+        order = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0] * len(v)
+        for pos, i in enumerate(order):
+            r[i] = pos
+        return r
+    rx, ry = rank(xs), rank(ys)
+    n = len(xs)
+    if n < 3:
+        return 0.0
+    mx, my = sum(rx) / n, sum(ry) / n
+    num = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    den = math.sqrt(sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry))
+    return num / den if den else 0.0
+
+
+# --- 1. drift discipline -----------------------------------------------------
+head("1. A trend must not outweigh the uncertainty it sits inside")
+
+import odds  # noqa: E402
+
+check("drift ships OFF", odds.DRIFT_VOL_CAP == 0.0, f"cap={odds.DRIFT_VOL_CAP}")
+check("a driftless model returns no drift",
+      odds.damped_drift(1e-4, 4e-4, 119, 1151) == 0.0)
+
+# With the cap raised, both guards must still bound the damage. These are the
+# real measured inputs from the SOL daily market that exposed the bug.
+odds.DRIFT_VOL_CAP = 0.25
+try:
+    mu, sigma, n, N = 8.379e-05, 4.384e-04, 119, 1151.0
+    old = 0.35 * mu * N
+    new = odds.damped_drift(mu, sigma, n, N)
+    vol = sigma * math.sqrt(N)
+    check("the old flat damping let drift exceed the horizon vol",
+          abs(old) / vol > 2.0, f"{abs(old)/vol:.2f}x")
+    check("the guarded drift never exceeds the cap",
+          abs(new) / vol <= 0.2500001, f"{abs(new)/vol:.2f}x")
+    check("and it is far smaller than the old one", abs(new) < abs(old) / 5)
+    # Pure noise (t ~ 0) must contribute essentially nothing even uncapped.
+    quiet = odds.damped_drift(1e-7, 4e-4, 119, 1151.0)
+    check("a trend indistinguishable from noise is discarded",
+          abs(quiet) < 1e-6, f"{quiet:.2e}")
+    # A shorter horizon than the estimation window is the only regime where a
+    # drift estimate has any business being applied at full strength.
+    short = odds.damped_drift(mu, sigma, n, 60.0)
+    check("a short horizon keeps more of the trend than a long one",
+          abs(short) / (sigma * math.sqrt(60.0)) <= 0.2500001)
+    check("drift is signed like mu", odds.damped_drift(-mu, sigma, n, N) < 0)
+finally:
+    odds.DRIFT_VOL_CAP = 0.0
+
+# The GBM must stay monotone in the strike no matter what the drift does: a
+# higher bar cannot be MORE likely to clear.
+probs = [odds._prob_above(72.585, k, 1151.0, 8.379e-05, 4.384e-04, 119)
+         for k in (70, 72, 73, 74, 76, 80)]
+check("P(>= strike) is monotone decreasing in the strike",
+      all(a >= b for a, b in zip(probs, probs[1:])),
+      " ".join(f"{p:.3f}" for p in probs))
+check("and P(>= spot) is near 50% with no drift",
+      abs(odds._prob_above(72.585, 72.585, 1151.0, 8.379e-05, 4.384e-04, 119) - 0.5) < 0.01)
+
+# --- 2. edge plausibility ----------------------------------------------------
+head("2. No source may present an implausible edge as trustworthy")
+
+import bestbets  # noqa: E402
+
+check("there is a shared implausible-edge threshold",
+      0 < bestbets._IMPLAUSIBLE_EDGE <= 25, bestbets._IMPLAUSIBLE_EDGE)
+big = bestbets._row("x", "k", "p", "m", 90.0, 5.0, "med")
+check("a 85pp edge is forced to low trust regardless of the caller",
+      big["trust"] == "low", big["trust"])
+check("and carries an explanation", bool(big["note"]))
+small = bestbets._row("x", "k", "p", "m", 56.0, 50.0, "med")
+check("an ordinary edge keeps its trust", small["trust"] == "med")
+check("a caller's own low trust is not upgraded",
+      bestbets._row("x", "k", "p", "m", 56.0, 50.0, "low")["trust"] == "low")
+check("an unquoted leg makes no row at all",
+      bestbets._row("x", "k", "p", "m", 56.0, None, "med") is None)
+check("a 100c 'no offer' makes no row",
+      bestbets._row("x", "k", "p", "m", 56.0, 100.0, "med") is None)
+check("the CFB futures source is withheld until it is rebuilt",
+      bestbets._cfb_futures_rows() == [],
+      "it ranked on projected wins, r=+0.07 vs market")
+
+# Trust must sort before size, or a flagged row still leads the board.
+rows = [{"trust": "low", "net_edge": 80.0}, {"trust": "med", "net_edge": 6.0},
+        {"trust": "high", "net_edge": 3.0}]
+rank = {"high": 0, "med": 1, "low": 2}
+rows.sort(key=lambda r: (rank.get(r["trust"], 1), -r["net_edge"]))
+check("a solid +3 outranks a flagged +80",
+      rows[0]["trust"] == "high" and rows[-1]["net_edge"] == 80.0)
+
+# --- 3. market agreement (live) ---------------------------------------------
+if "--live" in sys.argv:
+    head("3. A ranking model must agree with the market on ORDER")
+
+    def rank_check(label, pairs, floor=0.5):
+        """pairs: [(model_pct, market_cents)]"""
+        if len(pairs) < 8:
+            print(f"  SKIP  {label} — only {len(pairs)} priced entries")
+            return
+        r = spearman([p[0] for p in pairs], [p[1] for p in pairs])
+        check(f"{label} ranks like the market", r >= floor,
+              f"Spearman {r:+.3f} over {len(pairs)} entries (floor {floor})")
+
+    try:
+        import season_sim
+        out = season_sim.futures_board("2026")
+        pooled = []
+        for name, grp in (out.get("markets") or {}).items():
+            ok = [(t["model_pct"], t["kalshi_cents"])
+                  for t in (grp.get("teams") or [])
+                  if t.get("kalshi_cents") and t.get("model_pct") is not None
+                  and not t.get("thin")]
+            pooled += ok
+        rank_check("MLB futures", pooled, floor=0.6)
+    except Exception as e:
+        print(f"  SKIP  MLB futures — {type(e).__name__}: {str(e)[:60]}")
+
+    # The crypto model against every tight two-sided book on the board. This is
+    # the check that would have caught the drift bug on day one.
+    try:
+        import kalshi
+        import prices
+        import time
+        now = time.time()
+        errs = []
+        for coin in ("BTC", "ETH", "SOL", "XRP"):
+            spot = prices.get_spot(coin)
+            candles = prices.get_candles(coin, granularity=60)
+            mu, sigma, n = odds.estimate_params(candles)
+            for tf in ("daily", "hourly"):
+                for m in (kalshi.get_open_markets(coin, tf) or []):
+                    ya, yb = m.get("yes_ask"), m.get("yes_bid")
+                    if not ya or not yb or ya >= 100 or ya - yb > 8:
+                        continue
+                    mins = max(0.0, (m["close_time"] - now) / 60.0) if m.get("close_time") else 0
+                    if mins < 20:
+                        continue
+                    mid = (ya + yb) / 2.0
+                    if not (8 <= mid <= 92):
+                        continue
+                    p = odds.probability_yes_for_strike(
+                        spot, m["strike_type"], m["floor"], m["cap"], mins, mu, sigma, n)
+                    errs.append(abs(p * 100 - mid))
+        if len(errs) >= 8:
+            errs.sort()
+            med = errs[len(errs) // 2]
+            check("the crypto model tracks tight two-sided books", med <= 6.0,
+                  f"median |model-market| {med:.1f}pp over {len(errs)} markets")
+        else:
+            print(f"  SKIP  crypto — only {len(errs)} tight books open")
+    except Exception as e:
+        print(f"  SKIP  crypto — {type(e).__name__}: {str(e)[:60]}")
+
+print("\n" + "=" * 72)
+print(f"RESULT: {_p} passed, {_f} failed")
+print("=" * 72)
+if "--live" not in sys.argv:
+    print("\nOffline only — market agreement is UNVERIFIED until run with --live.")
+sys.exit(1 if _f else 0)

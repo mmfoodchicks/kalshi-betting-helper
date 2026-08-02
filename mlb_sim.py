@@ -1190,7 +1190,12 @@ def _pool(cands, k=22):
     """
     by_bucket = {}
     for c in sorted(cands, key=lambda x: -x["marg"]):
-        by_bucket.setdefault((c.get("group", c["type"]), c.get("side", "yes")), []).append(c)
+        # `c.get("group", c["type"])` evaluates the default EAGERLY, so a
+        # candidate without a "type" raised KeyError even when it had a perfectly
+        # good "group". Same bug as _market_conflict, which was fixed; this copy
+        # was missed.
+        by_bucket.setdefault((c.get("group") or c.get("type"),
+                              c.get("side", "yes")), []).append(c)
     picks = {"yes": [], "no": []}
     for (_grp, side), cs in by_bucket.items():
         p = picks.get(side)

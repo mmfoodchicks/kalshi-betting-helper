@@ -27,7 +27,77 @@ import statistics
 # estimates; we damp them so the model leans on volatility + threshold distance
 # rather than chasing the last few green/red candles. 0 = ignore trend,
 # 1 = full trend. 0.35 is a deliberately conservative middle ground.
+#
+# 0.35 was NOT conservative enough, and a flat damping factor was the wrong shape
+# of guard. mu is the mean of ~120 one-minute log returns -- two hours of data --
+# and it was being extrapolated across the whole horizon, up to 19 hours for a
+# daily market. The estimate's own noise grows as sqrt(N/n) relative to the real
+# volatility over that horizon:
+#
+#     horizon    60 min  ->  drift-noise / vol = 0.71x
+#     horizon   240 min  ->                      1.41x
+#     horizon  1151 min  ->                      3.10x
+#
+# Measured live on 2026-08-01 with a SOL daily market 19 hours from settlement:
+#
+#     coin   t(mu)   drift@19h   vol@19h   |drift|/vol
+#     BTC    +1.04     +0.83%      0.74%      1.13
+#     ETH    +1.37     +1.99%      1.33%      1.49
+#     SOL    +2.08     +3.38%      1.49%      2.27
+#
+# So the trend guess was displacing the centre of the distribution by more than
+# twice the entire uncertainty of the outcome. With spot at $72.58 the model
+# priced "SOL >= $73" at 96.97% against a market at 34.5c, and "SOL >= $74" at
+# 83.24% against 9.5c -- its 50/50 point sat near $75, three percent above spot.
+# Those became +61pp and +73pp "edges" at the top of the Best Bets board.
+#
+# Two guards replace the single constant, because there are two distinct
+# questions: is there a trend at all, and even if there is, should it be allowed
+# to outweigh the uncertainty?
 DRIFT_DAMPING = 0.35
+
+# 1. Is the trend real? Shrink mu toward zero by its own signal-to-noise ratio
+#    t = mu / SE(mu), SE = sigma/sqrt(n). Weight t^2/(1+t^2) is ~0 for a trend
+#    indistinguishable from noise and approaches 1 only for a genuinely large,
+#    well-measured one. At the t values above (1.0-2.1) this keeps 52-81%.
+# 2. Even a real trend must not dominate. The total drift is capped at this
+#    fraction of the horizon's own volatility.
+#
+# THE CAP IS ZERO, because the measurement said so. Both guards were first tried
+# at a 0.25-sigma cap, and then checked against 25 near-the-money Kalshi crypto
+# markets that had a tight two-sided book (spread <= 8c, >= 20 min to close),
+# scoring each model against the market's own midpoint:
+#
+#     model                        median |err|   mean bias   max err
+#     old  (0.35 * mu * N)             28.1pp      +17.8pp     73.8pp
+#     t-shrunk, capped at 0.25 sigma    4.2pp       +4.0pp     13.7pp
+#     ZERO DRIFT                        1.8pp       +0.3pp      7.9pp
+#
+# A driftless GBM tracks the market to under 2pp with essentially no bias. Every
+# amount of trend we added made it worse. That is what an efficient short-horizon
+# market looks like: there is no exploitable drift to estimate, only the noise in
+# trying. The machinery below stays because it is the correctly-shaped guard IF
+# evidence for drift ever appears -- raise VIGIL_DRIFT_VOL_CAP and the shrinkage
+# still protects against the noise -- but it ships off.
+import os as _os
+
+DRIFT_VOL_CAP = float(_os.environ.get("VIGIL_DRIFT_VOL_CAP") or 0.0)
+
+
+def damped_drift(mu, sigma, n, minutes):
+    """Total log-price drift to apply over `minutes`, after both guards.
+
+    Returns 0.0 whenever the inputs cannot support a trend estimate at all."""
+    if minutes <= 0 or sigma <= 0 or n < 5 or not mu:
+        return 0.0
+    se = sigma / math.sqrt(n)
+    if se <= 0:
+        return 0.0
+    t = mu / se
+    signal = (t * t) / (1.0 + t * t)
+    drift = DRIFT_DAMPING * signal * mu * minutes
+    cap = DRIFT_VOL_CAP * sigma * math.sqrt(minutes)
+    return max(-cap, min(cap, drift))
 
 # Recommendation thresholds (in probability terms) when no live market price
 # is supplied. Edge-based logic is used instead when a Kalshi YES price is given.
@@ -75,7 +145,7 @@ def estimate_params(candles, lookback=120):
     return mu, sigma, len(rets)
 
 
-def probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma):
+def probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma, n=0):
     """Probability the contract resolves YES under GBM.
 
     direction: 'above' (YES if price >= threshold) or 'below' (YES if price <= threshold).
@@ -87,7 +157,7 @@ def probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma):
             return 1.0 if spot >= threshold else 0.0
         return 1.0 if spot <= threshold else 0.0
 
-    drift = DRIFT_DAMPING * mu * minutes_to_close
+    drift = damped_drift(mu, sigma, n, minutes_to_close)
     vol = sigma * math.sqrt(minutes_to_close)
     # d = standardized distance of log-threshold from expected log-price.
     d = (math.log(spot / threshold) + drift) / vol
@@ -95,18 +165,18 @@ def probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma):
     return p_above if direction == "above" else (1.0 - p_above)
 
 
-def _prob_above(spot, strike, minutes_to_close, mu, sigma):
+def _prob_above(spot, strike, minutes_to_close, mu, sigma, n=0):
     """P(price >= strike at close) under GBM. Robust to degenerate inputs."""
     if minutes_to_close <= 0 or sigma <= 0 or spot <= 0 or strike <= 0:
         return 1.0 if spot >= strike else 0.0
-    drift = DRIFT_DAMPING * mu * minutes_to_close
+    drift = damped_drift(mu, sigma, n, minutes_to_close)
     vol = sigma * math.sqrt(minutes_to_close)
     d = (math.log(spot / strike) + drift) / vol
     return _norm_cdf(d)
 
 
 def probability_yes_for_strike(spot, strike_type, floor, cap,
-                               minutes_to_close, mu, sigma):
+                               minutes_to_close, mu, sigma, n=0):
     """Probability a Kalshi market resolves YES, given its strike geometry.
 
     strike_type:
@@ -116,12 +186,12 @@ def probability_yes_for_strike(spot, strike_type, floor, cap,
     """
     st = (strike_type or "").lower()
     if st in ("greater", "greater_or_equal"):
-        return _prob_above(spot, floor, minutes_to_close, mu, sigma)
+        return _prob_above(spot, floor, minutes_to_close, mu, sigma, n)
     if st in ("less", "less_or_equal"):
-        return 1.0 - _prob_above(spot, cap, minutes_to_close, mu, sigma)
+        return 1.0 - _prob_above(spot, cap, minutes_to_close, mu, sigma, n)
     if st == "between" and floor is not None and cap is not None:
-        p_hi = _prob_above(spot, cap, minutes_to_close, mu, sigma)
-        p_lo = _prob_above(spot, floor, minutes_to_close, mu, sigma)
+        p_hi = _prob_above(spot, cap, minutes_to_close, mu, sigma, n)
+        p_lo = _prob_above(spot, floor, minutes_to_close, mu, sigma, n)
         return max(0.0, p_lo - p_hi)
     # Unknown geometry: fall back to a coin flip rather than crashing.
     return 0.5
@@ -149,7 +219,7 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
     Returns a dict the UI can render directly.
     """
     mu, sigma, n = estimate_params(candles)
-    prob_yes = probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma)
+    prob_yes = probability_yes(spot, threshold, direction, minutes_to_close, mu, sigma, n)
     prob_yes = max(0.0, min(1.0, prob_yes))
     fair_yes = round(prob_yes * 100, 1)
     fair_no = round((1.0 - prob_yes) * 100, 1)
@@ -529,7 +599,7 @@ def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
     mu, sigma, n = estimate_params(candles)
     prob_yes = max(0.0, min(1.0, probability_yes_for_strike(
         spot, market["strike_type"], market["floor"], market["cap"],
-        minutes_to_close, mu, sigma)))
+        minutes_to_close, mu, sigma, n)))
     # Reality-calibrate the GBM fair value against resolved crypto markets — but
     # ONLY when asked (calibrated=True). The recorder logs the RAW fair value (it
     # IS the calibration evidence, so calibrating it would double-count and, since

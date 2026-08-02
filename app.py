@@ -1423,33 +1423,12 @@ def api_nfl_team():
         return jsonify({"error": f"team detail failed: {e}"}), 502
 
 
-@app.route("/api/nfl/teams", methods=["GET", "POST"])
-def api_nfl_teams():
-    """Persist the drafter's best-ball teams so they survive reloads and don't have
-    to be retyped. GET returns saved teams; POST {teams:[{label,names,pitch}]}
-    overwrites them. Stored in a gitignored local file."""
-    import json
-    if request.method == "POST":
-        d = request.get_json(force=True, silent=True) or {}
-        teams = d.get("teams")
-        if not isinstance(teams, list):
-            return jsonify({"error": "send a 'teams' list"}), 400
-        clean = [{"label": str(t.get("label") or "")[:40],
-                  "names": [str(n) for n in (t.get("names") or [])][:40],
-                  "pitch": str(t.get("pitch") or "")[:2000]}
-                 for t in teams[:16] if (t.get("names") or t.get("label"))]
-        try:
-            os.makedirs(os.path.dirname(_TEAMS_PATH), exist_ok=True)
-            with open(_TEAMS_PATH, "w") as f:
-                json.dump({"teams": clean}, f)
-        except Exception as e:
-            return jsonify({"error": f"save failed: {e}"}), 500
-        return jsonify({"saved": len(clean)})
-    try:
-        with open(_TEAMS_PATH) as f:
-            return jsonify(json.load(f))
-    except Exception:
-        return jsonify({"teams": []})
+# /api/nfl/teams lived here: it persisted the best-ball drafter's saved teams.
+# The Draft tab was removed, and the removal took _TEAMS_PATH with it while
+# leaving the endpoint behind, so every call raised NameError -- silently on GET
+# (the bare `except` returned an empty team list) and as a 500 on POST. Nothing in
+# the frontend referenced it. Deleted rather than repaired: there is no drafter
+# left to save teams for.
 
 
 @app.route("/api/ufc")

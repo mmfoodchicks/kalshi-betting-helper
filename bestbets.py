@@ -11,6 +11,7 @@ edge you'd actually bank. Sources are best-effort and independently degradable;
 `sources` reports what loaded so the UI can be honest about coverage.
 """
 
+import os
 import time
 import clock
 import datetime as _dt
@@ -21,10 +22,24 @@ def _fee(cents):
     return 7.0 * p * (1.0 - p)
 
 
+# An edge this large is a claim that the market is wrong by more than any liquid
+# market usually is. Two sources (MLB futures, CFB futures) already downgraded
+# their own big edges to "low" and explained why; the other four -- crypto, the
+# shared basketball/hockey board, UFC and golf -- passed a flat "med" through, so
+# an implausible number from those sources outranked a solid +6 from anywhere
+# else. Since trust sorts BEFORE size, that put the least believable rows at the
+# very top of the board. The check belongs here, once, where every row passes.
+_IMPLAUSIBLE_EDGE = 15.0
+_IMPLAUSIBLE_NOTE = ("an edge this big is usually a stale or wide quote, or our "
+                     "model's tails — verify the live ask before acting")
+
+
 def _row(sport, kind, pick, matchup, our_pct, cents, trust, note=None):
     if cents is None or not (0 < cents < 100) or our_pct is None:
         return None
     edge = our_pct - cents
+    if edge >= _IMPLAUSIBLE_EDGE and trust != "low":
+        trust, note = "low", note or _IMPLAUSIBLE_NOTE
     net = round(edge - _fee(cents), 1)
     return {"sport": sport, "kind": kind, "pick": pick, "matchup": matchup,
             "our_pct": round(our_pct, 1), "cents": round(cents, 1),
@@ -77,8 +92,32 @@ def _mlb_futures_rows(season):
     return rows[:8]
 
 
+# The CFB title model has no demonstrated skill, so its edges are not offered as
+# bets. Measured 2026-08-01 against 23 teams carrying a live Kalshi title price:
+#
+#     Spearman(model, market)     = +0.071      <- no relationship at all
+#     Spearman(model, proj_wins)  = +0.871
+#     Spearman(market, proj_wins) = +0.071
+#
+# The model's championship ordering is almost entirely a projected-WIN-TOTAL
+# ordering. That is a reasonable way to rank who makes a 12-team playoff, and a
+# poor way to rank who wins four games against the best teams in it: a soft
+# schedule inflates wins without saying anything about beating Georgia in
+# January. It put Texas Tech, Indiana, Miami and Utah on top while the market had
+# Notre Dame, Oregon, Georgia and Alabama, and produced an "85.9pp edge" on Miami
+# at 5c.
+#
+# A model that correlates 0.07 with the market is not finding value in it, so the
+# rows are withheld from Best Bets rather than shown with a warning label. The CFB
+# tab still displays the projections -- as projections. Set VIGIL_CFB_FUTURES=1
+# to put them back once the rating is rebuilt on team strength rather than wins.
+_CFB_FUTURES_OK = (os.environ.get("VIGIL_CFB_FUTURES") or "").lower() in ("1", "true", "yes", "on")
+
+
 def _cfb_futures_rows():
     """Positive-edge national-title / make-Playoff rows from the CFB deep season."""
+    if not _CFB_FUTURES_OK:
+        return []
     import cfb
     b = cfb.futures_board()
     if not b:
