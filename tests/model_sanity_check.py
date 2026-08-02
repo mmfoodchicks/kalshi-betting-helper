@@ -683,6 +683,14 @@ def _dp_only(fn):
 
 
 _FIRST_AND_THIRD = [0, None, 0]
+check("a run DOES score on a double play from nobody out",
+      _ms._DP_SCORE_3B > 0.6,
+      f"{_ms._DP_SCORE_3B} — .8095 measured (34/42). The blended .2164 that "
+      "this used to carry was dominated by one-out double plays, where the DP "
+      "is outs two and three and no run can count at all.")
+check("and the runner on second takes third on most of them",
+      _ms._DP_ADV_2B > 0.6, f"{_ms._DP_ADV_2B} — .79 measured; a 6-4-3 leaves "
+      "him ninety feet further along, not standing on second")
 check("a run cannot score on a double play that is the third out",
       _dp_only(lambda: _one(0, _FIRST_AND_THIRD, outs=1)) < 1e-9,
       "one down, first and third: the DP ends the inning on a force, so the "

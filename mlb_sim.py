@@ -544,7 +544,24 @@ _ADV_1B_BY_TYPE = (0.000, 0.534, 0.077)
 # somebody with a real arm is standing out there. Modelling the arm would mean
 # modelling the go/no-go decision, which needs the ball's depth and hang time,
 # and this engine has no batted-ball location -- only its type.
-_DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
+# A RUN ON A DOUBLE PLAY, and this one was wrong by a factor of six.
+#
+#     3rd scores | NOBODY out before     34 / 42    .8095
+#     3rd scores | one out before         3 / 129   .0233
+#     3rd scores | blended               37 / 171   .2164   <- what I measured
+#
+# The engine only rolls this when the double play came from nobody out -- with
+# one down the DP is the second and third outs and no run can count, which the
+# `outs < 3` gate already handles. So the right denominator is the first row.
+# The blended figure is dominated by the cases where scoring is PHYSICALLY
+# IMPOSSIBLE, and using it meant a bases-loaded ground ball with nobody out
+# almost never brought the run home. That is the single event that produced the
+# stranding: bases loaded and nobody out, the engine came away with nothing 18.1%
+# of the time against a real 11.5%.
+_DP_SCORE_3B = 0.810
+# And the runner on second takes third on most of them -- a 6-4-3 leaves him
+# ninety feet further along, where the engine used to leave him standing.
+_DP_ADV_2B = 0.790
 
 # --- THE EVENT INVENTORY, AND A NEGATIVE RESULT --------------------------------
 # Every event real baseball produces was listed by rate per team-game and checked
@@ -617,33 +634,85 @@ _DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
 # and it CORRECTS what this note used to say: "3-4% too readily" was inferred
 # from the wild-pitch experiment, and the table does not support it.
 #
-# What the table does show is that the SHAPE is tilted:
+# What the table does show is a TRAFFIC gap. With one man aboard the engine is
+# inside 2% of real at every out count. With two or three aboard and nobody out
+# it is short by a tenth or more:
 #
-#     0 out    -3.39%   (-2.4 sd)      too little scoring with nobody out
-#     1 out    +0.76%   (+0.6 sd)
-#     2 out    +5.31%   (+2.7 sd)      too much with two down
+#     12_ 0 out  -13.3%     1_3 0 out  -10.3%
+#     123 0 out  -11.2%     _23 0 out   -9.5%
 #
-# and it is concentrated in TRAFFIC. With one man aboard the engine is inside 2%
-# of real at every out count. With two or three aboard and nobody out it is 9-14%
-# light -- first-and-second -14%, first-and-third -14%, bases loaded -13%, second
-# and third -9%. The engine does not build big innings the way real baseball
-# does, and it makes the runs back with two outs.
+# THE PROBE WAS AUDITED BEFORE THE ENGINE, because two of the errors this file
+# documents were mine and not the model's. The first table was read off nine
+# IDENTICAL hitters drawn uniformly across the order, where a real lineup runs
+# .3423 OBP at the top against .2878 at the bottom, and where the batter due up
+# depends on the state. Rebuilt with per-slot rates and the slot drawn from the
+# real state-conditional distribution:
+#
+#     flat lineup, uniform slot     all 24 +0.06%   0 out -2.99%   2 out +5.37%
+#     graded lineup, uniform slot          -0.01%         -2.55%         +5.26%
+#     graded lineup, REAL slot mix         +0.85%         -1.36%         +5.21%
+#
+# The confound is real, it is worth about a point and a half at nobody out, and
+# it runs the OPPOSITE way to the guess that motivated the check -- loaded states
+# select WORSE hitters (mean slot 5.06 against an overall 4.83), not better. The
+# traffic gap does not move at all. It is the engine.
+#
+# HOW IT GOES WRONG IS STRANDING, NOT THE TAIL. Runs scored from bases loaded
+# and nobody out:
+#
+#     ZERO runs    sim 18.1%   real 11.5%      <- the engine comes away empty
+#     3+ runs      sim 37.9%   real 41.8%         57% more often than reality
+#
+# and from a lone runner on first, the control, it matches to a point.
+#
+# THAT LOCATED A FOURTH MEASUREMENT ERROR OF MINE, worth a factor of six:
+#
+#     3rd scores on a DP | NOBODY out before    34 / 42    .8095
+#                        | one out before        3 / 129   .0233
+#                        | blended              37 / 171   .2164  <- I used .125
+#
+# The engine only rolls this when the DP came from nobody out; with one down the
+# DP is the second and third outs and no run can count, which the `outs < 3` gate
+# already handles. So the blended figure was dominated by cases where scoring is
+# PHYSICALLY IMPOSSIBLE. Fixed, along with the runner on second taking third on
+# .79 of double plays where the engine used to leave him standing. Bases loaded
+# and first-and-third improved by 2.5 and 3.0 points; first-and-second and
+# second-and-third barely moved, which is right -- second-and-third has nobody on
+# first, so no double play was ever possible there.
 #
 # TWO EXPLANATIONS TESTED AND REJECTED, so they do not get re-proposed:
 #
-#   * The double play. Switching it off entirely leaves first-and-second at -3%
-#     and second-and-third at -7% -- and second-and-third has nobody on first, so
-#     no double play was ever possible there. It also breaks the one state where
-#     the rate is demonstrably right: a lone runner on first goes -2% -> +10%.
+#   * The double play RATE. Switching it off entirely still leaves
+#     first-and-second at -3% and second-and-third at -7%, and it breaks the one
+#     state where the rate is demonstrably right: a lone runner on first goes
+#     -2% -> +10%. The rate was fine; the run it failed to score was not.
 #   * Pitcher-day variance -- one rate multiplier drawn per half-inning instead
 #     of identical rates every PA, on the theory that traffic is itself evidence
 #     the pitcher is off today. A multiplicative spread lifts EVERY row convexly
 #     (0 out +1.95%, 1 out +5.84%, 2 out +9.93% at sigma .18). It does not tilt
-#     them. Whatever the mechanism is, it is not that.
+#     them. Whatever the rest of the mechanism is, it is not that.
 #
-# This is also why the wild pitch made things worse: an extra baserunner is worth
-# slightly too little here in the states that matter and slightly too much with
-# two down, so handing the engine more of them does not land where the runs are.
+# --- AND THE THING ALL OF THIS KEEPS RUNNING INTO -----------------------------
+# Every correct fix to baserunning in this file has cost the engine hits, and it
+# is always the same mechanism: _team SCALES A LINEUP'S RATES UNTIL ITS RUNS
+# EQUAL er. Runs are pinned to a target. Hits are whatever falls out. So a run
+# manufactured anywhere else -- a wild pitch, a run on a double play, an error --
+# is a run subtracted from the hitters, and the hit level absorbs every
+# improvement made to the baserunning.
+#
+#     wild pitch + reach on error   hits/g 8.375 -> 7.983
+#     run on a double play          hits/g 8.375 -> 8.183   (real 8.259)
+#
+# The second is a smaller move toward a better number, which is why it stays and
+# the first did not. But the pattern is the point: HITS ARE A FREE VARIABLE HERE
+# AND NOTHING PINS THEM DOWN. Feed the engine the league's own per-PA rates with
+# no calibration at all and it produces about the right runs on its own, which
+# says the rates and the baserunning are broadly sound and the scaling step is
+# what is throwing the hits around.
+#
+# So the next question is not another event and not another advancement rate. It
+# is whether _team should be scaling every rate to hit er at all, or whether it
+# should trust the rates it was given and let the total land where it lands.
 #
 # WHAT THIS MEANS FOR BETTING, stated plainly. Totals and moneylines read the
 # frequency-weighted number, which is right. The tilt lands on the tails -- team
@@ -820,6 +889,9 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                     bases[2] = None
                     if won():
                         return runs, idx, True
+                if outs < 3 and bases[1] is not None and bases[2] is None \
+                        and rnd() < _DP_ADV_2B:
+                    bases[2] = bases[1]; bases[1] = None
             else:
                 # Resolved LEAD RUNNER FIRST so a vacated base is available to
                 # the man behind him: third scores, second takes third, first
