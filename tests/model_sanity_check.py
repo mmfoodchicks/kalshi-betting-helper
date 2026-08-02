@@ -116,6 +116,39 @@ check("P(>= strike) is monotone decreasing in the strike",
 check("and P(>= spot) is near 50% with no drift",
       abs(odds._prob_above(72.585, 72.585, 1151.0, 8.379e-05, 4.384e-04, 119) - 0.5) < 0.01)
 
+# --- 1b. the run level must be centred ---------------------------------------
+head("1b. A multiplicative model must be neutral when its inputs are neutral")
+
+import baseball as B  # noqa: E402
+
+check("home-field is a RATIO, applied geometrically",
+      abs(B._HOME_SPLIT - B.HOME_RUNS_MULT ** 0.5) < 1e-12,
+      f"split={B._HOME_SPLIT:.4f} from ratio {B.HOME_RUNS_MULT}")
+# The whole point of a geometric split: the ratio (which carries the moneyline
+# through PYTH_EXP) survives, while the product (which carries the total) is 1.
+check("the home:away ratio is preserved exactly",
+      abs((B._HOME_SPLIT / (1.0 / B._HOME_SPLIT)) - B.HOME_RUNS_MULT) < 1e-12)
+check("and the level it implies is neutral",
+      abs(B._HOME_SPLIT * (1.0 / B._HOME_SPLIT) - 1.0) < 1e-12,
+      "a one-sided x1.08 lifted every total by 4%")
+# A one-sided application is the bug this replaced; make it un-reintroducible.
+one_sided = (B.HOME_RUNS_MULT + 1.0) / 2.0
+geometric = (B._HOME_SPLIT + 1.0 / B._HOME_SPLIT) / 2.0
+check("geometric beats one-sided on level neutrality",
+      abs(geometric - 1.0) < abs(one_sided - 1.0) / 10,
+      f"one-sided {one_sided:.4f} vs geometric {geometric:.4f}")
+
+# Calibration must never outlive the model it was fit on.
+import store  # noqa: E402
+
+check("prop rows carry a model version", B and store.MODEL_VERSION >= 2,
+      store.MODEL_VERSION)
+src = __import__("inspect").getsource(store.prop_grade_pairs)
+check("and calibration only fits its own generation",
+      "model_version" in src,
+      "a correction for the old run level would double-count on top of the fix")
+
+
 # --- 2. edge plausibility ----------------------------------------------------
 head("2. No source may present an implausible edge as trustworthy")
 

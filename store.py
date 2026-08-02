@@ -107,7 +107,18 @@ def init_db():
         # Additive migration: entry-time snapshot for closing-line-value (CLV).
         # log_prop refreshes price/model in place while ungraded, so without
         # these the entry read is lost by grading time.
-        for col in ("entry_cents REAL", "entry_model_pct REAL", "entry_ts INTEGER"):
+        for col in ("entry_cents REAL", "entry_model_pct REAL", "entry_ts INTEGER",
+                    # Which generation of the run model produced model_pct. A
+                    # calibration is a correction for a SPECIFIC model's errors;
+                    # applied to a different model it is just a bias. When the MLB
+                    # run level was fixed (the one-sided home multiplier that
+                    # inflated every total by 4%), the 1,738 rows already logged
+                    # became evidence about a model that no longer exists -- and
+                    # the Platt intercept fit on them, b=-0.36, would have been
+                    # applied on top of the fix, double-correcting every prop.
+                    # Stamping the version lets the fitter use only rows its own
+                    # model produced. Rows predating this column read as version 0.
+                    "model_version INTEGER"):
             try:
                 c.execute(f"ALTER TABLE prop_log ADD COLUMN {col}")
             except Exception:
@@ -202,7 +213,8 @@ def prop_grade_pairs():
     with _lock, _conn() as c:
         return [(r["model_pct"] / 100.0, r["actual"]) for r in c.execute(
             "SELECT model_pct, actual FROM prop_log "
-            "WHERE graded=1 AND model_pct IS NOT NULL AND actual IS NOT NULL").fetchall()]
+            "WHERE graded=1 AND model_pct IS NOT NULL AND actual IS NOT NULL "
+            "AND COALESCE(model_version, 0) = ?", (MODEL_VERSION,)).fetchall()]
 
 
 def mlb_record():
@@ -302,6 +314,17 @@ def mlb_record():
 
 
 # ---- Player-prop log (model vs Kalshi vs recent form, graded) -------------
+# Generation of the MLB run model. BUMP THIS whenever a change alters the level
+# or shape of the numbers written to prop_log — a new park/weather term, a
+# different run baseline, a fix like the one-sided home multiplier. Calibration is
+# fit per version, so a bump retires the old evidence instead of letting a
+# correction for yesterday's model be applied to today's.
+#
+#   1  original
+#   2  home-field applied geometrically (was one-sided, inflating totals 4%)
+MODEL_VERSION = 2
+
+
 def log_prop(game_pk, date, player_id, name, stat, line, market,
              model_pct, kalshi_cents, recent_pct, season_pct):
     """Record (or refresh, while still ungraded) one batter prop observation."""
@@ -311,22 +334,23 @@ def log_prop(game_pk, date, player_id, name, stat, line, market,
             """INSERT OR IGNORE INTO prop_log
                (ts, game_pk, date, player_id, name, stat, line, market,
                 model_pct, kalshi_cents, recent_pct, season_pct,
-                entry_cents, entry_model_pct, entry_ts)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                entry_cents, entry_model_pct, entry_ts, model_version)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (now, game_pk, date, player_id, name, stat, line, market,
              model_pct, kalshi_cents, recent_pct, season_pct,
-             kalshi_cents, model_pct, now),
+             kalshi_cents, model_pct, now, MODEL_VERSION),
         )
         # Keep the latest pre-game read (price/model/form drift) until it grades —
         # that becomes the CLOSING read. The entry_* snapshot is frozen at first
         # sight (backfilled once if the market had no quote when first logged).
         c.execute(
             """UPDATE prop_log SET kalshi_cents=?, model_pct=?, recent_pct=?, season_pct=?,
+                   model_version=?,
                    entry_model_pct=COALESCE(entry_model_pct, ?),
                    entry_ts=CASE WHEN entry_cents IS NULL THEN ? ELSE entry_ts END,
                    entry_cents=COALESCE(entry_cents, ?)
                WHERE game_pk=? AND player_id=? AND market=? AND graded=0""",
-            (kalshi_cents, model_pct, recent_pct, season_pct,
+            (kalshi_cents, model_pct, recent_pct, season_pct, MODEL_VERSION,
              model_pct, now, kalshi_cents, game_pk, player_id, market),
         )
 

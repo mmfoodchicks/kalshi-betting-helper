@@ -46,7 +46,32 @@ PYTH_EXP = 1.83
 # offenses so it moves the total but cancels in the moneyline. 0.0 = no ump data.
 _UMP_RUN = 1.0
 SP_INNINGS_WEIGHT = 0.60   # share of game the starter is responsible for
-HOME_RUNS_MULT = 1.08      # home-field edge on home expected runs (~54%)
+
+# Home-field edge, expressed as the RATIO of home to away expected runs. 1.08 is
+# reverse-engineered from the win rate: through PYTH_EXP it yields ~53.5% home
+# wins, against a real 52.89% over 7,145 games (2023-25). As a ratio it is doing
+# its job -- the moneyline is close to unbiased against the market (median +0.6pp).
+#
+# But it used to be APPLIED one-sided, home x1.08 and away x1.00, which lifts every
+# game TOTAL by (1.08+1.00)/2 = 1.040. That was 4 of the ~8.8% by which this
+# model's expected totals ran hot, and it is why the sim sat above the market's
+# implied Over in 10 of 10 games.
+#
+# It is applied geometrically now: home x sqrt(1.08), away / sqrt(1.08). The ratio
+# is preserved exactly, so every moneyline is unchanged to the last decimal, while
+# the product -- and therefore the total -- is neutral.
+#
+# Worth recording WHY a one-sided run bump was the wrong shape in the first place.
+# Home-field advantage in baseball is not a run-scoring advantage. Over the same
+# 7,145 games home teams scored 4.421 rpg against away 4.401, a ratio of 1.0002 --
+# no scoring edge at all -- and yet won 52.89%. Pythagoras on the true run ratio
+# predicts 50.01%. The edge lives in the structure of the game, not in run
+# production: the home team bats last, and stops batting the moment it is ahead in
+# the ninth, which truncates its run total while preserving its win. So a run
+# multiplier can reproduce the right WIN rate or the right TOTAL, never both. The
+# geometric split lets the ratio carry the win rate and keeps the level honest.
+HOME_RUNS_MULT = 1.08      # home:away expected-run RATIO (not a one-sided level)
+_HOME_SPLIT = HOME_RUNS_MULT ** 0.5      # applied to home; away gets its inverse
 SP_IP_REGRESS = 50.0       # innings constant for regressing a starter's season ERA
 RECENT_IP_REGRESS = 25.0   # innings constant for the recent-form blend
 RECENT_WEIGHT = 0.25       # how much recent form pulls the season number
@@ -1482,8 +1507,8 @@ def _analyze_slate_uncached(date, season):
         # on the OTHER team's glove.
         def_h = def_map.get(str(g["home_id"]), 1.0)
         def_a = def_map.get(str(g["away_id"]), 1.0)
-        er_home = lg["rpg"] * off_h * pit_a_factor * HOME_RUNS_MULT * def_a
-        er_away = lg["rpg"] * off_a * pit_h_factor * def_h
+        er_home = lg["rpg"] * off_h * pit_a_factor * _HOME_SPLIT * def_a
+        er_away = lg["rpg"] * off_a * pit_h_factor * def_h / _HOME_SPLIT
 
         # Park + weather scale BOTH teams' run environment. Baking them into the
         # expected runs (not just the headline total) keeps every downstream
