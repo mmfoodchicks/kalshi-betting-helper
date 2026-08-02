@@ -598,11 +598,99 @@ _DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
 # every honest number I put in its place exposes it.
 #
 # So the whole attempt is reverted, including my own correction, and the engine
-# ships at its best measured fit. THE NEXT PIECE OF WORK IS THE RUN VALUE OF A
-# BASERUNNER, not another event: the run-expectancy table by base-out state,
-# compared against the real one, which will say exactly which transition is worth
-# too much. Adding detail on top of an uncalibrated conversion rate just moves
-# the error into the hit props, which is where the money is.
+# ships at its best measured fit.
+#
+# --- RE24: WHAT THE RUN EXPECTANCY TABLE SAYS ----------------------------------
+# Expected runs from each base-out state to the end of the inning, measured over
+# 15,907 complete half-innings of 2025 play-by-play (truncated halves dropped --
+# a walk-off, or a home ninth never batted, would drag every estimate down),
+# against the same table read straight off _half_inning, which already takes
+# start_outs and start_bases and so needs no instrumentation at all.
+#
+# REAL_RE24 below is that measurement. The comparison carries sampling error on
+# BOTH sides -- the engine's own table moves about a point between seeds, which
+# is not something to leave out of the arithmetic:
+#
+#     ALL 24 STATES, frequency weighted     -0.67%   (-1.1 sd)
+#
+# THE ENGINE CONVERTS A BASERUNNER INTO A RUN CORRECTLY. That is the headline,
+# and it CORRECTS what this note used to say: "3-4% too readily" was inferred
+# from the wild-pitch experiment, and the table does not support it.
+#
+# What the table does show is that the SHAPE is tilted:
+#
+#     0 out    -3.39%   (-2.4 sd)      too little scoring with nobody out
+#     1 out    +0.76%   (+0.6 sd)
+#     2 out    +5.31%   (+2.7 sd)      too much with two down
+#
+# and it is concentrated in TRAFFIC. With one man aboard the engine is inside 2%
+# of real at every out count. With two or three aboard and nobody out it is 9-14%
+# light -- first-and-second -14%, first-and-third -14%, bases loaded -13%, second
+# and third -9%. The engine does not build big innings the way real baseball
+# does, and it makes the runs back with two outs.
+#
+# TWO EXPLANATIONS TESTED AND REJECTED, so they do not get re-proposed:
+#
+#   * The double play. Switching it off entirely leaves first-and-second at -3%
+#     and second-and-third at -7% -- and second-and-third has nobody on first, so
+#     no double play was ever possible there. It also breaks the one state where
+#     the rate is demonstrably right: a lone runner on first goes -2% -> +10%.
+#   * Pitcher-day variance -- one rate multiplier drawn per half-inning instead
+#     of identical rates every PA, on the theory that traffic is itself evidence
+#     the pitcher is off today. A multiplicative spread lifts EVERY row convexly
+#     (0 out +1.95%, 1 out +5.84%, 2 out +9.93% at sigma .18). It does not tilt
+#     them. Whatever the mechanism is, it is not that.
+#
+# This is also why the wild pitch made things worse: an extra baserunner is worth
+# slightly too little here in the states that matter and slightly too much with
+# two down, so handing the engine more of them does not land where the runs are.
+#
+# WHAT THIS MEANS FOR BETTING, stated plainly. Totals and moneylines read the
+# frequency-weighted number, which is right. The tilt lands on the tails -- team
+# total OVERS want the big innings the engine is 9-14% short of, and RBI props
+# settle disproportionately in exactly those loaded states. Those are the legs to
+# treat as the least trustworthy until this is closed.
+REAL_RE24 = {
+    "___": (0.4999, 0.2690, 0.1042),
+    "1__": (0.8861, 0.5124, 0.2295),
+    "_2_": (1.1008, 0.6166, 0.3054),
+    "12_": (1.6490, 0.9384, 0.4419),
+    "__3": (1.3535, 0.8217, 0.3426),
+    "1_3": (1.9050, 1.2389, 0.4594),
+    "_23": (2.0865, 1.4055, 0.6322),
+    "123": (2.5594, 1.5918, 0.7697),
+}
+_RE24_N = {                          # PAs behind each real cell, for weighting
+    "___": (16685, 12011, 9502), "1__": (3994, 4861, 5063),
+    "_2_": (863, 1557, 1978), "12_": (1000, 1738, 2030),
+    "__3": (99, 488, 867), "1_3": (337, 720, 1084),
+    "_23": (208, 439, 503), "123": (261, 610, 747),
+}
+
+
+def run_expectancy(setup, rnd, n=8000, pen_frac=0.4):
+    """The engine's own RE24, in the same shape as REAL_RE24.
+
+    Drops the lineup into each base-out state and averages the runs it scores
+    before the third out. `idx` cycles across three turns through the order so
+    the table is not read off one lineup spot."""
+    out = {}
+    L = len(setup)
+    slots = {"1__": (0, None, None), "_2_": (None, 0, None), "12_": (0, 1, None),
+             "__3": (None, None, 0), "1_3": (0, None, 1), "_23": (None, 0, 1),
+             "123": (0, 1, 2), "___": (None, None, None)}
+    for st, offs in slots.items():
+        row = []
+        for o in (0, 1, 2):
+            tot = 0.0
+            for i in range(n):
+                bases = [None if x is None else (i - 1 - x) % L for x in offs]
+                tot += _half_inning(setup, [[0] * 7 for _ in range(L)], i % 27,
+                                    rnd, start_outs=o, start_bases=bases,
+                                    pen=((i % 10) < pen_frac * 10))[0]
+            row.append(tot / float(n))
+        out[st] = tuple(row)
+    return out
 # How hard a runner's own speed swings an advancement roll. `spd` is sprint
 # speed centred on the league average and clamped to [0.8, 1.2] upstream, so
 # this is a +/-20% relative swing on any base-taking chance -- the fastest and

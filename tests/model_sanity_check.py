@@ -427,6 +427,54 @@ check("and the engine can report how far calibration actually landed",
       "a guard that fails by quietly returning the wrong answer is the wrong guard")
 
 
+# --- 1g3. run expectancy by base-out state ------------------------------------
+head("1g3. RE24 — the engine must be worth the same runs real baseball is")
+
+# The single most complete statement of whether a game engine's baserunning is
+# right: expected runs from each of the 24 base-out states to the end of the
+# inning. REAL_RE24 is measured over 15,907 complete half-innings of 2025
+# play-by-play. If a change to advancement, double plays or steals breaks the run
+# value of a baserunner, it shows up here and nowhere else.
+check("the real table is carried in the source, not remembered",
+      len(_ms.REAL_RE24) == 8 and all(len(v) == 3 for v in _ms.REAL_RE24.values()))
+check("and it is monotone: more outs is always fewer runs",
+      all(v[0] > v[1] > v[2] for v in _ms.REAL_RE24.values()),
+      "a table that failed this would be mis-measured, not interesting")
+check("and more runners is always more runs, at every out count",
+      all(_ms.REAL_RE24["___"][o] < _ms.REAL_RE24["1__"][o] < _ms.REAL_RE24["12_"][o]
+          < _ms.REAL_RE24["123"][o] for o in (0, 1, 2)))
+
+_LGPA = {"r1": 0.1424, "r2": 0.0434, "r3": 0.0035, "rhr": 0.0313, "rbb": 0.0946}
+_re_lu = [dict(name="h%d" % i, spd=1.0, sbr=0.08, ret=1.0, **_LGPA)
+          for i in range(9)]
+_re_setup = _ms._build_setup(_ms._rates(_re_lu), 1.0083)
+_re_sim = _ms.run_expectancy(_re_setup, _rnd.Random(20250802).random, n=2500)
+_num = _den = 0.0
+_rows = [[0.0, 0.0] for _ in range(3)]
+for _st, _row in _re_sim.items():
+    for _o in range(3):
+        _w = _ms._RE24_N[_st][_o]
+        _num += _row[_o] * _w
+        _den += _ms.REAL_RE24[_st][_o] * _w
+        _rows[_o][0] += _row[_o] * _w
+        _rows[_o][1] += _ms.REAL_RE24[_st][_o] * _w
+_overall = _num / _den - 1.0
+check("the engine is worth the right runs across all 24 states",
+      abs(_overall) < 0.05,
+      f"{_overall*100:+.2f}% — measured at -0.67% over a much longer run; this "
+      "check is short enough to live in a suite, so the band is wide")
+# The known tilt. Guarded so it cannot get WORSE without somebody noticing, and
+# so that closing it shows up as this check needing new numbers.
+_t0 = _rows[0][0] / _rows[0][1] - 1.0
+_t2 = _rows[2][0] / _rows[2][1] - 1.0
+check("the known out-count tilt is still only a tilt",
+      -0.12 < _t0 < 0.06 and -0.04 < _t2 < 0.14,
+      f"0 out {_t0*100:+.1f}%, 2 out {_t2*100:+.1f}% — the long run says "
+      "-3.4% and +5.3%. The engine builds fewer big innings than real "
+      "baseball and makes it back with two down; team-total overs and RBI "
+      "props are the legs that ride on it.")
+
+
 # --- 1h. baserunners must advance the way real ones do ------------------------
 head("1h. Baserunner advancement")
 
