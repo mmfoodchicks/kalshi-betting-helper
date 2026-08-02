@@ -157,6 +157,40 @@ _PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineu
 # home team never bats in the 9th, so those half-innings are a filtered sample of
 # game states, and the 9th's 0.877 is substantially that artifact rather than the
 # bullpen. Innings 1-6 carry the clean signal and the fit uses only them.
+# KNOWN LIMIT: THE ENGINE IS TOO EFFICIENT WITH ITS HITS.
+#
+# It scores the right RUNS -- that is what _team calibrates -- but reaches them
+# with about an eighth fewer hits than real baseball needs. Measured over 16 real
+# lineups x 8,000 games, against 9,488 real 2024-25 team-games:
+#
+#     sim   7.822 hits / 4.848 runs = 1.613 hits per run
+#     real  8.218 hits / 4.468 runs = 1.839 hits per run     -> sim -12.3%
+#
+# Each hit is worth too much here: baserunners advance or score more freely than
+# they really do, so fewer of them are needed for the same total. The run level is
+# right, the path to it is not.
+#
+# It shows up hardest in the tail, where the app can be checked against something
+# unambiguous -- a no-hitter:
+#
+#     0-hit games   sim 0.00085   real 0.00042      2x too often
+#     perfect games sim 1 in 3,970 (34 of 135,000)  vs roughly 1 in 17,000 real
+#
+# So the answer to "can this simulator throw a perfect game" is yes, it genuinely
+# can -- nothing in the outcome ladder forces a baserunner, and it produces them
+# at a measurable rate. It just throws them about four times too often, for the
+# same reason it under-counts hits.
+#
+# Anything priced off HIT COUNTS -- 1+/2+ hit props, team total hits -- inherits
+# that bias downward. Run-based markets (moneyline, totals, run line) do not,
+# because the runs are calibrated.
+#
+# NOT FIXED HERE, deliberately. The cure is retuning baserunner advancement
+# (first-to-third on a single, scoring from second, how often runners strand),
+# and that has to be measured against real advancement rates and re-validated
+# against the run calibration it would disturb. That is its own piece of work,
+# like the TTO fit was, and doing it as a footnote to this one would be how the
+# run level got broken in the first place.
 _TTO_STEP = 1.040
 _TTO_MAX_TURN = 2                    # 0-indexed: 1st, 2nd, 3rd-and-later
 

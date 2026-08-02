@@ -353,6 +353,34 @@ check("an empty season still projects off the career book",
       "these used to be dropped for want of a current-season line")
 
 
+# --- 1g. the tails must be reachable -----------------------------------------
+head("1g. Rare events must be possible, and honestly rated")
+
+# A perfect game needs 27 consecutive outs with nothing forcing a baserunner. If
+# the outcome ladder ever guaranteed one, the engine could not produce the tail at
+# all and every no-hitter market would price at zero.
+_rows2 = _ms._rates([{"name": "x", "r1": 0.15, "r2": 0.05, "r3": 0.004,
+                      "rhr": 0.04, "rbb": 0.09, "spd": 1.0, "sbr": 0.02, "ret": 1.0}])
+_s2 = _ms._build_setup(_rows2, 1.0)
+for _lad in _s2[0]["thresh_tto"]:
+    check("an out is always reachable at every turn", _lad[-1][0] < 1.0,
+          f"P(on base) = {_lad[-1][0]:.4f}, so P(out) = {1-_lad[-1][0]:.4f}")
+    break
+check("no ladder ever guarantees a baserunner",
+      all(l[-1][0] < 0.96 for l in _s2[0]["thresh_tto"]))
+# Even a comically good hitter is capped short of certainty.
+_mon = _ms._build_setup(_ms._rates([{"name": "m", "r1": 0.6, "r2": 0.3, "r3": 0.1,
+                                     "rhr": 0.3, "rbb": 0.3, "spd": 1.0,
+                                     "sbr": 0.0, "ret": 1.0}]), 1.0)
+check("and the on-base cap holds even for an impossible hitter",
+      _mon[0]["thresh_tto"][-1][-1][0] <= 0.96,
+      f'{_mon[0]["thresh_tto"][-1][-1][0]:.4f}')
+check("the known hit-efficiency limit is documented, not silent",
+      "hits per run" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                          "..", "mlb_sim.py")).read(),
+      "sim 1.613 vs real 1.839 -> hit props inherit a downward bias")
+
+
 # --- 2. edge plausibility ----------------------------------------------------
 head("2. No source may present an implausible edge as trustworthy")
 

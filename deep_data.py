@@ -112,6 +112,28 @@ _MLE = {
     14: {"hit": 0.720, "hr": 0.460, "bb": 0.560, "k": 1.520},      # Single-A
 }
 _MLE_LEVELS = (11, 12, 13, 14)
+
+# The same translation for ARMS, measured the same way: 154 pitchers threw 20+ IP
+# in both MLB and Triple-A in 2025.
+#
+#     stat      MLB/BF    AAA/BF    MLB/AAA
+#     K         .2119     .2495      0.849    <- strikeouts DROP
+#     BB        .0881     .0936      0.942
+#     H         .2245     .2130      1.054
+#     HR        .0339     .0233      1.453    <- homers jump
+#     ERA       4.751     3.950      1.203
+#
+# It mirrors the hitting side and tells the same story from the mound: a promoted
+# arm misses fewer bats, gives up more contact and far more of it over the fence,
+# and his ERA rises about 20%. Walks going slightly DOWN is the one surprise —
+# most likely selection, since the arms clubs promote are the ones who throw
+# strikes — but it is measured, so it stays.
+_MLE_PIT = {
+    11: {"k": 0.849, "bb": 0.942, "hr": 1.453, "h": 1.054, "era": 1.203},   # AAA
+    12: {"k": 0.800, "bb": 1.020, "hr": 1.600, "h": 1.090, "era": 1.330},   # AA
+    13: {"k": 0.760, "bb": 1.090, "hr": 1.720, "h": 1.120, "era": 1.440},   # A+
+    14: {"k": 0.720, "bb": 1.160, "hr": 1.840, "h": 1.150, "era": 1.550},   # A
+}
 # A call-up is a fringe major-leaguer, not a league-average one. Even after
 # translation, cap the pool so a hot Triple-A line cannot promote someone into a
 # better hitter than the regulars he is covering for.
@@ -145,6 +167,63 @@ def milb_hitting(season):
         return baseball._cached(("milb_hit", season), 6 * 3600, fetch)
     except Exception:
         return {}
+
+
+def milb_pitching(season):
+    """{player_id: (translated stat dict, level)} for minor-league arms, best
+    level first. Same shape and cost as milb_hitting."""
+    def fetch():
+        out = {}
+        for sid in _MLE_LEVELS:
+            try:
+                d = baseball._get(f"{STATS}/stats?stats=season&group=pitching"
+                                  f"&season={season}&sportId={sid}&limit=3000"
+                                  f"&playerPool=All")
+            except Exception:
+                continue
+            for sp in (d.get("stats") or [{}])[0].get("splits") or []:
+                pid = (sp.get("player") or {}).get("id")
+                st = sp.get("stat") or {}
+                if not pid or pid in out:
+                    continue
+                if _ip_outs(st.get("inningsPitched")) < 15:
+                    continue                  # too thin to translate
+                out[pid] = (_translate_pit(st, _MLE_PIT[sid]), sid)
+        return out
+    try:
+        return baseball._cached(("milb_pit", season), 6 * 3600, fetch)
+    except Exception:
+        return {}
+
+
+def _ip_outs(v):
+    """MLB writes innings as 5.1 / 5.2 meaning 5 1/3 / 5 2/3, not decimal."""
+    try:
+        w, _, fr = str(v).partition(".")
+        return int(w) + (int(fr[0]) / 3.0 if fr else 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _translate_pit(st, f):
+    """A minor-league pitching line rescaled to major-league equivalence.
+
+    Innings are NOT scaled, for the same reason plate appearances are not on the
+    hitting side: the workload is real evidence about the arm even though the
+    level is not, and it is what the shrinkage weighs."""
+    out = dict(st)
+    # BOTH the counts and the per-9 rates. _pit_rates_from reads the DERIVED
+    # strikeoutsPer9Inn / walksPer9Inn fields, not the counts, so scaling only the
+    # counts left the translation a silent no-op for K and BB -- the arm came out
+    # with its untouched Triple-A strikeout rate. Every feed here carries both, so
+    # both have to move together or the two disagree.
+    for key, mult in (("strikeOuts", f["k"]), ("strikeoutsPer9Inn", f["k"]),
+                      ("baseOnBalls", f["bb"]), ("walksPer9Inn", f["bb"]),
+                      ("homeRuns", f["hr"]), ("homeRunsPer9", f["hr"]),
+                      ("hits", f["h"]), ("era", f["era"])):
+        if st.get(key) is not None:
+            out[key] = _f(st.get(key)) * mult
+    return out
 
 
 def _translate(st, f):
@@ -228,7 +307,14 @@ def _pit_rates_from(st, ip):
     """Per-batter-faced K/BB/HR from a pitching stat line (None-safe)."""
     if not st or ip <= 0:
         return None
-    k9, bb9 = _f(st.get("strikeoutsPer9Inn")), _f(st.get("walksPer9Inn"))
+    # Prefer the derived per-9 fields, but fall back to the RAW COUNTS before the
+    # league average. HR already did this; K and BB dropped straight to the league
+    # mean, so a line carrying real counts but no derived rate projected as a
+    # perfectly average arm. Every current feed supplies the derived fields, so
+    # this is a guard rather than a fix for something observed live -- but it is
+    # the difference between degrading gracefully and degrading invisibly.
+    k9 = _f(st.get("strikeoutsPer9Inn")) or (_f(st.get("strikeOuts")) * 9 / ip)
+    bb9 = _f(st.get("walksPer9Inn")) or (_f(st.get("baseOnBalls")) * 9 / ip)
     hr9 = _f(st.get("homeRunsPer9")) or (_f(st.get("homeRuns")) * 9 / ip)
     return {"k": min(0.50, k9 / PA_PER_9) if k9 else LG["k"],
             "bb": min(0.22, bb9 / PA_PER_9) if bb9 else LG["bb"],
@@ -352,6 +438,7 @@ def team_profile(team_id, season=None):
         seen_n = career_n = 0
         batters, pitchers, depth, depth_bats = [], [], [], []
         milb = milb_hitting(season) or {}
+        milb_p = milb_pitching(season) or {}
         for pid in set(hit) | set(pit):
             h, p = hit.get(pid), pit.get(pid)
             per, pos, code = (p or h)[0], (p or h)[1], (p or h)[4]
@@ -376,8 +463,15 @@ def team_profile(team_id, season=None):
             # A career book with no current season is still a projection: _pitcher
             # shrinks an empty season toward the career prior, so passing {} gives
             # exactly the career rates. These used to be dropped outright.
-            if is_pitcher_pos and (pst or pcar):
-                arm = _pitcher(per, pst or {}, pcar, avail)
+            pst_eff, pmilb_lvl = pst, None
+            if is_depth and not pst and not pcar:
+                got = milb_p.get(pid)
+                if got:
+                    pst_eff, pmilb_lvl = got
+            if is_pitcher_pos and (pst_eff or pcar):
+                arm = _pitcher(per, pst_eff or {}, pcar, avail)
+                if pmilb_lvl:
+                    arm["milb_level"] = pmilb_lvl
                 (depth if is_depth else pitchers).append(arm)
             # Batting side: position players + two-way. RM (optioned) bats become
             # the position-player taxi squad — the call-up pool the engine reaches
