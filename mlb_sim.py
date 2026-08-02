@@ -1107,6 +1107,47 @@ def _play_game(setup, rnd, opp_sp_ip=None):
     return runs, stats, first_inning
 
 
+# --- THE RUN DISTRIBUTION IS TOO NARROW, AND WIDENING IT IS THE WRONG FIX ------
+# The engine draws every plate appearance from fixed rates, so the only spread in
+# a game total is binomial noise. Real starters have good days and bad ones.
+# Measured INSIDE A FIXED MATCHUP, which is the comparison that matters -- the
+# league's pooled spread also mixes over matchups, and the 16 test pairs mix over
+# a wider range of expected totals than the league does, so pooled numbers
+# understate this:
+#
+#     within-matchup sd of a game total    sim 4.220    real 4.557   (-7.4%)
+#
+# It prices out at about a cent and a half on the tails, one-directional: every
+# high line looks less likely than it is, every low line more. On team totals,
+# P(over 7.5) reads .147 against a real .162.
+#
+# THE OBVIOUS FIX WAS BUILT AND MEASURED AND DOES NOT WORK. A rate multiplier
+# drawn once per game per side, seven quantile points, divided back out so the
+# run mean is preserved:
+#
+#                          hits/g   runs/g      H/R   no-hitter  within-sd  o7.5
+#     shipped, no shock     8.214    4.398   1.8676   1 in 1,260    4.220   .1473
+#     sd .05, mean-held     8.188    4.389   1.8657   1 in 1,081    4.250   .1475
+#     real                  8.259    4.447   1.8572   1 in 2,433    4.557   .1619
+#
+# It buys .03 of standard deviation and two hundredths of a cent, and it costs
+# 14% on the no-hitter rate. An uncentred version looks much better -- sd .09
+# reaches .157 on the line -- but that gain is the mean drifting up 1.7%, not
+# dispersion, and re-centring gives it all back.
+#
+# THE REASON IS A SHAPE PROBLEM, NOT A SCALE ONE, and it is worth stating because
+# it kills a whole family of would-be fixes. Scaling rates widens BOTH tails. The
+# engine's low tail is ALREADY too fat -- no-hitters run twice as often as real
+# baseball before anything is touched. Real baseball's distribution is wider than
+# this engine's at the top while being THINNER at the bottom. No symmetric
+# widening can produce that; it makes the bad end worse faster than it helps the
+# good end.
+#
+# So the dispersion gap stays open, deliberately, and the thing to fix first is
+# the LOW tail -- the same defect the no-hitter rate has been reporting all
+# along. Widening the distribution is not the tool for it.
+
+
 def _play_matchup(setup_a, setup_h, rnd, state=None, ip_h=None, ip_a=None):
     """A full REAL-RULES game between two lineups: interleaved half-innings, the
     home team skips the bottom of the 9th when already leading, a walk-off ends

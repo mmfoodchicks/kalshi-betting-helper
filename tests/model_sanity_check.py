@@ -457,6 +457,17 @@ check("and more runners is always more runs, at every out count",
       all(_ms.REAL_RE24["___"][o] < _ms.REAL_RE24["1__"][o] < _ms.REAL_RE24["12_"][o]
           < _ms.REAL_RE24["123"][o] for o in (0, 1, 2)))
 
+# The run distribution is 7.4% too narrow inside a fixed matchup (sim sd 4.220
+# against a real 4.557), worth about a cent and a half on tail lines. The obvious
+# fix -- a per-game rate shock -- was built, measured and reverted: mean-preserved
+# it buys .03 of sd and costs 14% on a no-hitter rate that is already twice too
+# frequent. Scaling rates widens BOTH tails, and this engine's low tail is the
+# one that is already wrong. Guarded so the dead end is not re-walked.
+check("the engine does not fake dispersion with a rate shock",
+      not hasattr(_ms, "_DAY_SD") and not hasattr(_ms, "day_bundle"),
+      "real baseball is wider at the top and THINNER at the bottom; no "
+      "symmetric widening produces that. Fix the low tail first.")
+
 _LGPA = {"r1": 0.1424, "r2": 0.0434, "r3": 0.0035, "rhr": 0.0313, "rbb": 0.0946}
 _re_lu = [dict(name="h%d" % i, spd=1.0, sbr=0.08, ret=1.0, **_LGPA)
           for i in range(9)]
