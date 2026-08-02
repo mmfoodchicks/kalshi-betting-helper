@@ -297,6 +297,36 @@ def _speed_inputs(b, sprint):
     return round(spd, 3), round(sbr, 4)
 
 
+# League split of what an out actually is, 2025 (all 30 clubs): the same three
+# counters every hitter carries, so a player's own mix is directly comparable.
+# Cross-checked against 300 games of play-by-play, which reads .316 / .364 / .320
+# off the descriptions -- the API's own numbers, independently derived.
+LG_OUT_MIX = (0.3241, 0.3181, 0.3577)     # strikeout, ground, air
+_OUT_MIX_K = 120.0                        # outs before a hitter's own mix leads
+
+
+def _out_mix(b):
+    """(strikeout, ground, air) share of this hitter's outs, shrunk to league.
+
+    This is the single biggest thing the game engine was missing about an out.
+    A strikeout leaves every runner exactly where he stood; a fly ball scores
+    the man on third .596 of the time; a ground ball turns two .424 of the time.
+    Treating all three as one event makes a contact hitter and a
+    three-true-outcomes slugger identical on the bases, and they are not:
+    strikeouts are 43% of Aaron Judge's outs against a league 32%."""
+    k = max(0.0, b.get("strikeouts") or 0)
+    g = max(0.0, b.get("gouts") or 0)
+    a = max(0.0, b.get("aouts") or 0)
+    n = k + g + a
+    if n <= 0:
+        return LG_OUT_MIX
+    w = n / (n + _OUT_MIX_K)
+    out = tuple(round(w * (v / n) + (1 - w) * p, 4)
+                for v, p in zip((k, g, a), LG_OUT_MIX))
+    s = sum(out)
+    return tuple(round(v / s, 4) for v in out) if s > 0 else LG_OUT_MIX
+
+
 def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, sprint=None,
                  hr_env=1.0):
     """Exact per-game prop probabilities for a hitter (the limit a simulation
@@ -389,6 +419,8 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
             "pa": pa, "r1": round(r_1b, 4), "r2": round(r_2b, 4),
             "r3": round(r_3b, 4), "rhr": round(r_hr, 4), "rbb": round(r_bb, 4),
             "spd": spd, "sbr": sbr, "ret": round(ret, 3),
+            # Out mix -- what happens to the runners when he makes an out.
+            "ok": _out_mix(b)[0], "og": _out_mix(b)[1], "of": _out_mix(b)[2],
             # Last-10 form, already folded into this hitter's OPS upstream
             # (baseball._with_form). Carried through so a leg can SAY why it
             # moved rather than just quietly being a different number.

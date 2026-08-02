@@ -382,11 +382,15 @@ head("1h. Baserunner advancement")
 # These probe one hit at a time: slot 0 gets the event, every other slot is an
 # automatic out, and the half starts with two down, so exactly one play happens
 # and the returned runs ARE that play's advancement rate.
-def _one(code, start, outs=2, n=20000, seed=4242):
+def _one(code, start, outs=2, n=20000, seed=4242, otype=None):
+    """`otype` pins what kind of out every batter makes -- 0 strikeout, 1 ground,
+    2 air -- so the out branch can be probed one column at a time. None uses the
+    league mix, which is what a lineup with no batted-ball data falls back to."""
     _th = [(1.0, code)]
+    _okg = {0: (1.0, 1.0), 1: (0.0, 1.0), 2: (0.0, 0.0)}.get(otype)
     _lu = [{"name": "b%d" % i, "thresh": (_th if i == 0 else []),
             "thresh_tto": [(_th if i == 0 else [])] * 4,
-            "spd": 1.0, "sbr": 0.0, "psub": 0.0} for i in range(9)]
+            "spd": 1.0, "sbr": 0.0, "psub": 0.0, "okg": _okg} for i in range(9)]
     _r = _rnd.Random(seed).random
     tot = 0
     for _ in range(n):
@@ -425,15 +429,17 @@ def _no_out_advance(fn):
     A probe that starts with fewer than two down plays on after the hit, and
     those later outs move runners too -- so without this the measurement is the
     whole half-inning rather than the one play being asked about."""
-    keep = (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
-            _ms._OUT_DP_R3, _ms._DP_SCORE_3B)
-    _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
-    _ms._OUT_DP = _ms._OUT_DP_R3 = _ms._DP_SCORE_3B = 0.0
+    keep = (_ms._SCORE_3B_BY_TYPE, _ms._ADV_2B_BY_TYPE, _ms._ADV_1B_BY_TYPE,
+            _ms._DP_BY_TYPE, _ms._DP_BY_TYPE_R3, _ms._DP_SCORE_3B)
+    _z = (0.0, 0.0, 0.0)
+    _ms._SCORE_3B_BY_TYPE = _ms._ADV_2B_BY_TYPE = _ms._ADV_1B_BY_TYPE = _z
+    _ms._DP_BY_TYPE = _ms._DP_BY_TYPE_R3 = _z
+    _ms._DP_SCORE_3B = 0.0
     try:
         return fn()
     finally:
-        (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
-         _ms._OUT_DP_R3, _ms._DP_SCORE_3B) = keep
+        (_ms._SCORE_3B_BY_TYPE, _ms._ADV_2B_BY_TYPE, _ms._ADV_1B_BY_TYPE,
+         _ms._DP_BY_TYPE, _ms._DP_BY_TYPE_R3, _ms._DP_SCORE_3B) = keep
 
 
 _s2_at0 = _no_out_advance(lambda: _one(1, _ON_2, outs=0))
@@ -481,23 +487,56 @@ check("stretching for home off first is the riskiest of them",
 # Outs move runners. The engine used to move nobody but the man on third, on 16%
 # of outs; real outs score him on 40% and push another runner up about a fifth
 # of the time.
-check("an out can score the runner from third", 0.30 < _ms._OUT_SCORE_3B < 0.50,
-      f"{_ms._OUT_SCORE_3B} — .402 measured over ALL outs, strikeouts included")
-check("an out can move a runner up", _ms._OUT_ADV_2B > 0 and _ms._OUT_ADV_1B > 0,
-      f"2nd->3rd {_ms._OUT_ADV_2B}, 1st->2nd {_ms._OUT_ADV_1B}")
+_K, _GB, _FB = 0, 1, 2
+check("a fly ball scores the runner from third, a strikeout does not",
+      _ms._SCORE_3B_BY_TYPE[_FB] > 0.5 > _ms._SCORE_3B_BY_TYPE[_K] * 10,
+      f"fly {_ms._SCORE_3B_BY_TYPE[_FB]} vs strikeout "
+      f"{_ms._SCORE_3B_BY_TYPE[_K]} — .596 and .026 measured")
+check("a ground ball turns two, a fly ball essentially never does",
+      _ms._DP_BY_TYPE[_GB] > 0.35 and _ms._DP_BY_TYPE[_FB] < 0.05,
+      f"ground {_ms._DP_BY_TYPE[_GB]} vs fly {_ms._DP_BY_TYPE[_FB]} — a "
+      "twenty-five fold gap the old single .155 blended away")
+check("a ground ball is what moves a runner up",
+      _ms._ADV_2B_BY_TYPE[_GB] > _ms._ADV_2B_BY_TYPE[_FB] > 0,
+      f"2nd->3rd: ground {_ms._ADV_2B_BY_TYPE[_GB]}, fly "
+      f"{_ms._ADV_2B_BY_TYPE[_FB]} — .685 and .230 measured")
+check("a strikeout advances nobody, so steals are not counted twice",
+      _ms._ADV_1B_BY_TYPE[_K] == 0 and _ms._ADV_2B_BY_TYPE[_K] == 0
+      and _ms._DP_BY_TYPE[_K] == 0,
+      "the measured .146 of runners reaching second on a strikeout is almost "
+      "all STOLEN BASES, which the engine already rolls before the batter")
+check("but a wild pitch still scores the man on third",
+      _ms._SCORE_3B_BY_TYPE[_K] > 0,
+      f"{_ms._SCORE_3B_BY_TYPE[_K]} — the one thing in that column nothing "
+      "else in the engine models")
 check("a double play is rarer with a runner on third",
-      _ms._OUT_DP_R3 < _ms._OUT_DP * 0.85,
-      f"{_ms._OUT_DP_R3} vs {_ms._OUT_DP} — .112 against .160 measured, 2.9 "
-      "sigma; the fielder checks him or goes home instead of turning two")
+      _ms._DP_BY_TYPE_R3[_GB] < _ms._DP_BY_TYPE[_GB] * 0.95,
+      f"{_ms._DP_BY_TYPE_R3[_GB]} vs {_ms._DP_BY_TYPE[_GB]} — .373 against "
+      ".424 on ground balls; the fielder checks him or goes home")
+check("the league out mix is a partition",
+      abs(sum(_ms._LG_OUT_MIX) - 1.0) < 0.002, f"{_ms._LG_OUT_MIX}")
+
+# The engine must READ the hitter's own mix, not a league blend -- that is the
+# whole point. Same base state, two different hitters.
+# One down, not two: a sac fly needs fewer than two out, and starting at one
+# means the next batter's out ends the inning, so exactly one chance is measured.
+_sf_fly = _one(0, _ON_3, outs=1, otype=_FB)
+_sf_k = _one(0, _ON_3, outs=1, otype=_K)
+check("and a contact hitter drives in the run where a strikeout hitter does not",
+      _sf_fly > 0.5 and _sf_k < 0.06,
+      f"runner on third, one down: fly-ball hitter scores him {_sf_fly:.3f}, "
+      f"strikeout hitter {_sf_k:.3f} — the old engine gave both .402")
 
 
 
-def _batters(start, outs=0, n=20000, seed=61):
+def _batters(start, outs=0, n=20000, seed=61, otype=1):
     """Batters it takes to end a half-inning when every one of them makes an
     out. Two outs on one play means one fewer batter, so this counts double
-    plays directly rather than inferring them from runs."""
+    plays directly rather than inferring them from runs. Defaults to ground
+    balls, since those are the only outs that turn two."""
+    _okg = {0: (1.0, 1.0), 1: (0.0, 1.0), 2: (0.0, 0.0)}.get(otype)
     _lu = [{"name": "b%d" % i, "thresh": [], "thresh_tto": [[]] * 4,
-            "spd": 1.0, "sbr": 0.0, "psub": 0.0} for i in range(9)]
+            "spd": 1.0, "sbr": 0.0, "psub": 0.0, "okg": _okg} for i in range(9)]
     _r = _rnd.Random(seed).random
     tot = 0
     for _ in range(n):
@@ -518,17 +557,18 @@ check("and the engine reads the base state, not just the constant",
 def _dp_only(fn):
     """Force every out to be a double play and switch off the sac fly, so the
     only way a run can score is on the DP itself."""
-    keep = (_ms._OUT_DP, _ms._OUT_DP_R3, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
-            _ms._OUT_ADV_1B)
-    # Both DP rates: the engine picks _OUT_DP_R3 when third is occupied, which
+    keep = (_ms._DP_BY_TYPE, _ms._DP_BY_TYPE_R3, _ms._SCORE_3B_BY_TYPE,
+            _ms._ADV_2B_BY_TYPE, _ms._ADV_1B_BY_TYPE)
+    # Both DP tables: the engine reads the _R3 one when third is occupied, which
     # is exactly the state these probes use.
-    _ms._OUT_DP = _ms._OUT_DP_R3 = 1.0
-    _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
+    _ms._DP_BY_TYPE = _ms._DP_BY_TYPE_R3 = (1.0, 1.0, 1.0)
+    _z = (0.0, 0.0, 0.0)
+    _ms._SCORE_3B_BY_TYPE = _ms._ADV_2B_BY_TYPE = _ms._ADV_1B_BY_TYPE = _z
     try:
         return fn()
     finally:
-        (_ms._OUT_DP, _ms._OUT_DP_R3, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
-         _ms._OUT_ADV_1B) = keep
+        (_ms._DP_BY_TYPE, _ms._DP_BY_TYPE_R3, _ms._SCORE_3B_BY_TYPE,
+         _ms._ADV_2B_BY_TYPE, _ms._ADV_1B_BY_TYPE) = keep
 
 
 _FIRST_AND_THIRD = [0, None, 0]

@@ -64,12 +64,24 @@ def _poisson(lam):
 
 
 def _rates(batters):
-    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb], spd, sbr, ret)]."""
+    """Parse the lineup into [(name, [r1,r2,r3,rhr,rbb], spd, sbr, ret, mix)].
+
+    `mix` is (strikeout, ground, air) share of this hitter's outs. Defaults to
+    the league split so a bare game dict, a test fixture or an older cached
+    slate still simulates."""
     rows = []
     for b in batters or []:
+        mix = (b.get("ok"), b.get("og"), b.get("of"))
+        if not all(isinstance(v, (int, float)) and v >= 0 for v in mix) \
+                or sum(mix) <= 0:
+            mix = _LG_OUT_MIX
+        else:
+            t = float(sum(mix))
+            mix = tuple(v / t for v in mix)
         rows.append([b.get("name"),
                      [max(0.0, b.get(k) or 0.0) for k in ("r1", "r2", "r3", "rhr", "rbb")],
-                     b.get("spd") or 1.0, b.get("sbr") or 0.0, b.get("ret") or 1.0])
+                     b.get("spd") or 1.0, b.get("sbr") or 0.0, b.get("ret") or 1.0,
+                     mix])
     return rows
 
 
@@ -219,7 +231,7 @@ def _build_setup(rows, mult):
     order; `thresh` stays as the first-turn ladder so any caller that has not been
     taught about TTO keeps its old behaviour instead of breaking."""
     setup = []
-    for i, (name, rates, spd, sbr, ret) in enumerate(rows):
+    for i, (name, rates, spd, sbr, ret, mix) in enumerate(rows):
         by_turn = []
         # One extra ladder on the end: index _TTO_MAX_TURN+1 is the BULLPEN, used
         # once the starter hands off, so a reliever is not charged the tiring
@@ -240,6 +252,9 @@ def _build_setup(rows, mult):
         lost = slot_pa * (1.0 - min(1.0, ret))
         setup.append({"name": name, "thresh": by_turn[0], "thresh_tto": by_turn,
                       "spd": spd, "sbr": min(0.6, sbr * _SBR_ADJ),
+                      # Cumulative so one draw picks the out type: k, then
+                      # ground, then air by remainder.
+                      "okg": (mix[0], mix[0] + mix[1]),
                       "psub": min(0.45, lost / 1.75) if lost > 0 else 0.0})
     return setup
 
@@ -441,27 +456,49 @@ _D_1B_SCORE = (0.293, 0.289, 0.475)   # double: runner on 1st scores, by outs
 _TOOB_S_2B = 0.032
 _TOOB_S_1B = 0.018
 _TOOB_D_1B = 0.053
-# On an out.
+# --- WHAT KIND OF OUT WAS IT ---------------------------------------------------
+# The engine used to have ONE out. A strikeout, a fly ball and a ground ball are
+# not one event -- they are three, and they do almost opposite things to the men
+# on base. Measured over the same 300 games (the row is what happens to that
+# runner, given fewer than two down):
 #
-# THE DOUBLE PLAY DEPENDS ON WHETHER THIRD IS OCCUPIED, and by a lot. Fielders
-# concede the second out to check the runner at third, or go home with it
-# instead. Measured over the same 300 games, by which bases were occupied:
+#                              STRIKEOUT   GROUND    FLY      old single number
+#     double play (1st on)        .045      .424     .018          .155
+#     runner on 3rd scores        .026      .484     .596          .402
+#     runner on 2nd -> 3rd        .056      .685     .230          .339
+#     runner on 1st -> 2nd        .146      .534     .077          .204
 #
-#     1st only          310 / 1960   .158
-#     1st + 2nd         107 /  644   .166      -> third empty  .160
-#     1st + 3rd          29 /  259   .112
-#     bases loaded       22 /  195   .113      -> third on     .112
+# The double-play rate varies TWENTY-FIVE FOLD between a ground ball and a fly
+# ball. Blending it meant a contact hitter and a three-true-outcomes slugger ran
+# the bases identically, when strikeouts are 43% of Aaron Judge's outs against a
+# league 32%. The mix is per hitter, from the groundOuts / airOuts / strikeOuts
+# counters already in every stat line the app pulls -- league .318 / .358 / .324,
+# which independently reproduces the .316 / .364 / .320 read off the play-by-play
+# descriptions.
 #
-# .160 against .112 is 2.9 sigma, and it lands in the state that matters most:
-# a flat rate ended innings four points too often with a run standing ninety
-# feet away.
-_OUT_DP = 0.160                       # runner on 1st, <2 out, third EMPTY
-_OUT_DP_R3 = 0.112                    # ... and with a runner on third
+# THE STRIKEOUT COLUMN IS DELIBERATELY NOT THE MEASURED ONE. A runner reaching
+# second on a strikeout is almost always a STOLEN BASE, and this engine already
+# rolls steals separately, before the batter -- taking .146 here would count them
+# twice. Same for the .045 "double play" on a strikeout, which is a strikeout
+# plus a caught stealing the engine also already has. Only the runner scoring
+# from third survives, because that one is a wild pitch, which nothing else here
+# models.
+_LG_OUT_MIX = (0.3241, 0.3181, 0.3577)   # strikeout, ground, air -- 2025 league
+_DP_BY_TYPE = (0.000, 0.424, 0.018)      # runner on 1st, <2 out, third EMPTY
+_DP_BY_TYPE_R3 = (0.000, 0.373, 0.012)   # ... and with a runner on third
+_SCORE_3B_BY_TYPE = (0.026, 0.484, 0.596)
+_ADV_2B_BY_TYPE = (0.000, 0.685, 0.230)
+_ADV_1B_BY_TYPE = (0.000, 0.534, 0.077)
 #
-# The runner on third, by contrast, does NOT need conditioning, which is worth
+# THE DOUBLE PLAY ALSO DEPENDS ON WHETHER THIRD IS OCCUPIED. Within ground balls,
+# .424 with third empty against .373 with a runner there -- fielders concede the
+# second out to check him or go home with it instead. That was 2.9 sigma when
+# measured across all out types (.160 vs .112) and it survives the split.
+#
+# The runner on third does NOT need conditioning on the force, which is worth
 # recording because the opposite is the intuitive guess. With the bases loaded
-# the fielder has a force at the plate and takes it, so the run should score
-# less often -- and it does, but not measurably:
+# the fielder has a force at the plate and takes it, so the run should score less
+# often -- and it does, but not measurably:
 #
 #     third scores, first base empty      .382 +/- .029
 #     third scores, first on, not loaded  .421 +/- .031
@@ -469,10 +506,17 @@ _OUT_DP_R3 = 0.112                    # ... and with a runner on third
 #
 # All three sit inside about one and a half standard errors of each other. The
 # force only bites on a ground ball, and strikeouts and fly balls -- where it is
-# irrelevant -- are most of the denominator. One constant is the honest fit.
-_OUT_SCORE_3B = 0.402                 # runner on 3rd, <2 out, no double play
-_OUT_ADV_2B = 0.339                   # runner on 2nd -> 3rd, 3rd open
-_OUT_ADV_1B = 0.204                   # runner on 1st -> 2nd, 2nd open
+# irrelevant -- are most of the denominator.
+#
+# AND NOTHING IS THROWN OUT TAGGING UP. Runner on third, ball caught in the air,
+# fewer than two down: he scored 161 times, held 109 times, and was thrown out
+# ZERO times in 270 chances. Going to third off a fly is 3 in 413. So an
+# outfielder's arm does not belong in a "can he make the throw" branch -- that
+# branch would never fire. Its whole effect is DETERRENCE, and deterrence is
+# already inside the .596: the runner holds four times in ten precisely because
+# somebody with a real arm is standing out there. Modelling the arm would mean
+# modelling the go/no-go decision, which needs the ball's depth and hang time,
+# and this engine has no batted-ball location -- only its type.
 _DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
 # How hard a runner's own speed swings an advancement roll. `spd` is sprint
 # speed centred on the league average and clamped to [0.8, 1.2] upstream, so
@@ -580,10 +624,17 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         s = [0, 0, 0, 0, 0, 0, 0] if phantom else stats[bi]        # discard row for PH
         onb = -1 if phantom else bi                                # what goes on base
         if code == 0:                         # out
+            # WHICH out. One draw off this hitter's own strikeout / ground / air
+            # mix, and everything below reads from that column instead of a
+            # league blend.
+            _kg = setup[bi].get("okg") or (_LG_OUT_MIX[0],
+                                           _LG_OUT_MIX[0] + _LG_OUT_MIX[1])
+            _u = rnd()
+            _t = 0 if _u < _kg[0] else (1 if _u < _kg[1] else 2)
             # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
             # Much less likely with a runner on third, where the fielder is
             # checking him or going home instead of turning two.
-            _dp = _OUT_DP_R3 if bases[2] is not None else _OUT_DP
+            _dp = (_DP_BY_TYPE_R3 if bases[2] is not None else _DP_BY_TYPE)[_t]
             if bases[0] is not None and outs < 2 and rnd() < _dp:
                 outs += 2
                 bases[0] = None
@@ -602,16 +653,17 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 # takes second. The engine used to move nobody but the man on
                 # third, which made every out a dead end -- real outs advance a
                 # runner about a fifth of the time.
-                if bases[2] is not None and outs < 2 and rnd() < _OUT_SCORE_3B:
+                if bases[2] is not None and outs < 2 \
+                        and rnd() < _SCORE_3B_BY_TYPE[_t]:
                     credit_run(bases[2])
                     s[4] += 1; s[6] += 2; bases[2] = None   # sac fly: RBI stands
                     if won():
                         return runs, idx, True
                 if bases[1] is not None and bases[2] is None and outs < 2 \
-                        and rnd() < _OUT_ADV_2B:
+                        and rnd() < _ADV_2B_BY_TYPE[_t]:
                     bases[2] = bases[1]; bases[1] = None
                 if bases[0] is not None and bases[1] is None and outs < 2 \
-                        and rnd() < _OUT_ADV_1B:
+                        and rnd() < _ADV_1B_BY_TYPE[_t]:
                     bases[1] = bases[0]; bases[0] = None
                 outs += 1
         elif code == 5:                       # walk (force advances only)

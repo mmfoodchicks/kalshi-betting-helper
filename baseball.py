@@ -791,6 +791,14 @@ def _boxscore_lineup(game_pk):
                         "hr": _f(bs.get("homeRuns")), "bb": _f(bs.get("baseOnBalls")),
                         "hbp": _f(bs.get("hitByPitch")),
                         "strikeouts": _f(bs.get("strikeOuts")),
+                        # What KIND of out this hitter makes. A strikeout leaves
+                        # every runner where he stood, a fly ball scores the man
+                        # on third six times in ten, a ground ball turns two on
+                        # four in ten. The engine cannot tell them apart without
+                        # these, and it is the same three counters the league
+                        # mix is built from.
+                        "gouts": _f(bs.get("groundOuts")),
+                        "aouts": _f(bs.get("airOuts")),
                         "sb": _f(bs.get("stolenBases")), "cs": _f(bs.get("caughtStealing")),
                     })
                 out[side] = batters
