@@ -14,11 +14,71 @@ import math
 
 LEAGUE_HIT_RATE = 0.225          # ~ hits per plate appearance, league-ish
 PA_BY_SLOT = [4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8]  # expected PA by lineup spot
-_MAXR = 22                       # cap runs for the Poisson grid
+# Cap on the runs grid. Raised from 22 when the run model moved from Poisson to
+# a negative binomial: the fatter tail is the whole point of the change, and at
+# 22 a Coors-type game (10-12 expected runs a side) lost 1.2-3.2% of its
+# probability mass off the end — understating exactly the extreme Overs the new
+# distribution exists to price. game_props is O(_MAXR^2) over a trivial grid, so
+# the headroom is free.
+_MAXR = 40
 # Effective first-inning scoring rate vs runs/9. Real innings are bursty, so a
 # team scores in a given inning much less than Poisson(runs/9) implies; this
 # calibrates a league-average game's RFI to the empirical/market ~50%.
-RFI_K = 0.73
+#
+# RFI_K no longer patches over burstiness — that is modelled properly below. It
+# was the right diagnosis and the wrong cure: a multiplicative shrink on lambda
+# makes ONE scoring level come out right and drifts everywhere else, because the
+# problem was never the mean, it was the shape.
+#
+# What it encodes now is the share of a game's runs that land in the FIRST inning,
+# measured rather than tuned. Runs per half-inning across 21,171 real 2025
+# half-innings:
+#
+#   inn  1     2     3     4     5     6     7     8     9
+#      .490  .442  .541  .527  .538  .525  .480  .488  .435
+#
+# That is the times-through-the-order effect in the raw data: the first pass
+# through the lineup (innings 1-2) is suppressed because the starter is fresh,
+# innings 3-6 run 5-8% hot as he faces the order a second and third time, and the
+# 9th is lowest partly because a leading home team never bats. The first inning is
+# .490/4.466 = 10.97% of a game's runs, against the flat 1/9 = 11.11% the model
+# assumed, so the correction is a modest 0.987 — the top of the order nearly
+# cancels the fresh starter.
+#
+# Small, but free and directional. At league-average scoring the RFI model now
+# lands at 48.4% against a measured 47.7%.
+RFI_K = 0.987
+
+# BASEBALL RUNS ARE NOT POISSON. Poisson requires variance == mean; scoring is
+# roughly twice that, because runs come in clusters — you need baserunners before
+# anyone can score, so most innings are three-up-three-down and the rest are
+# rallies. Measured on real 2025 games:
+#
+#   per half-inning (21,171 of them)   mean 0.511   var 1.078   var/mean 2.11
+#   per team per game  (3,204 teams)   mean 4.468   var 10.301  var/mean 2.31
+#
+# The cost of assuming Poisson lands almost entirely in the tails, which is
+# exactly where the totals ladder and the run line are priced:
+#
+#   P(team shutout)   actual .0668   Poisson .0115  (5.8x too low)
+#   P(team 8+ runs)   actual .1682   Poisson .0839  (2.0x too low)
+#   P(team 12+ runs)  actual .0343   Poisson .0023  (15x too low)
+#   P(run in the 1st) actual .4766   Poisson .6398  (+16pp)
+#
+# A NEGATIVE BINOMIAL with the same mean and a dispersion factor tracks the whole
+# distribution instead: .0574 / .1592 / .0340 / .4967 against those same figures.
+#
+# RUN_DISPERSION is the CONDITIONAL variance/mean — the spread that remains once
+# the matchup is known — not the 2.31 pooled across all games. Some of that
+# pooled figure is variety the model already predicts (a Coors game really does
+# have a higher mean than a pitchers' duel), and counting it twice would make
+# every distribution too wide. Decomposing Var = E[Var|lambda] + Var(lambda) with
+# a plausible spread of true game means puts the conditional figure near 2.16,
+# and the per-inning measurement — where matchup heterogeneity is far smaller —
+# lands independently at 2.11. The engine's own PA-level simulation produces 1.76
+# unaided, so 2.1 sits sensibly between "assumes no clustering at all" and the
+# pooled number that double-counts matchup spread.
+RUN_DISPERSION = 2.1
 
 
 def _poisson_pmf(lam, kmax=_MAXR):
@@ -27,6 +87,28 @@ def _poisson_pmf(lam, kmax=_MAXR):
     for k in range(kmax + 1):
         pmf.append(p)
         p = p * lam / (k + 1)
+    return pmf
+
+
+def _runs_pmf(lam, kmax=_MAXR, dispersion=None):
+    """Distribution of runs scored, as a negative binomial with mean `lam`.
+
+    Parameterised by the mean and the variance/mean ratio: p = 1/phi and
+    r = lam/(phi-1) give variance = lam*phi. Falls back to Poisson when the
+    dispersion is <= 1 (no clustering) or the mean is ~0, so the degenerate cases
+    stay well-behaved. Built by the same forward recurrence as the Poisson helper
+    — P(k+1) = P(k) * (1-p) * (k+r)/(k+1) — so it stays exact without gamma
+    functions."""
+    phi = RUN_DISPERSION if dispersion is None else dispersion
+    if phi <= 1.0 or lam <= 1e-9:
+        return _poisson_pmf(lam, kmax)
+    p = 1.0 / phi
+    r = lam / (phi - 1.0)
+    pmf = []
+    cur = p ** r                                  # P(0)
+    for k in range(kmax + 1):
+        pmf.append(cur)
+        cur = cur * (1.0 - p) * (k + r) / (k + 1.0)
     return pmf
 
 
@@ -46,9 +128,11 @@ def _spread_ladder(margin):
 
 
 def game_props(er_home, er_away, home_abbr, away_abbr):
-    """Run line + game total over/unders from independent-Poisson run dists."""
-    ph = _poisson_pmf(er_home)
-    pa = _poisson_pmf(er_away)
+    """Run line + game total over/unders from independent NEGATIVE-BINOMIAL run
+    distributions (see _runs_pmf: real scoring is ~2x overdispersed vs Poisson,
+    and the difference is almost all in the tails these markets price)."""
+    ph = _runs_pmf(er_home)
+    pa = _runs_pmf(er_away)
 
     p_home_win = p_away_win = p_tie = 0.0
     p_home_by2 = p_away_by2 = 0.0
@@ -96,15 +180,21 @@ def game_props(er_home, er_away, home_abbr, away_abbr):
         over, under = over_under(ln)
         ladder.append({"line": ln, "over_pct": over, "under_pct": under})
 
-    # RFI (a Run scored in the First Inning, either team). A naive Poisson on
-    # runs/inning badly over-counts: real innings are bursty (zero-inflated), so
-    # a team scores in a given inning far less often than Poisson(runs/9) implies.
-    # RFI_K calibrates the effective rate so a league-average game lands near the
-    # empirical ~50% (and Kalshi's ~50c price); it already nets the top-of-order
-    # first-inning boost. YES = at least one team scores: 1 - P(no run each half).
+    # RFI (a Run scored in the First Inning, either team). YES = at least one
+    # team scores, so it is 1 - P(neither half-inning scores) and lives entirely
+    # on P(0) — the single quantity Poisson gets worst. Poisson(runs/9) put a
+    # league-average game at 64.0% against a measured 47.7%; the same negative
+    # binomial used for the game lands at 48.8%.
+    #
+    # Measured on 768 real 2025 games, first innings only, the rate is 47.7%.
+    # Innings 1 and 2 also score BELOW the game average (0.975x and 0.880x) while
+    # innings 3-6 run 1.05-1.08x — the times-through-the-order effect, with the
+    # first inning partly offset by facing the top of the order. Using the flat
+    # runs/9 rate here therefore still leaves a small upward bias on RFI; the
+    # honest fix is an inning-aware rate curve, which this is not.
     lam1_a = er_away / 9.0 * RFI_K
     lam1_h = er_home / 9.0 * RFI_K
-    rfi_yes = 1 - math.exp(-lam1_a) * math.exp(-lam1_h)
+    rfi_yes = 1 - _runs_pmf(lam1_a, kmax=0)[0] * _runs_pmf(lam1_h, kmax=0)[0]
 
     home_by, away_by = _spread_ladder(margin)
     return {
@@ -129,8 +219,8 @@ def live_game_props(cur_home, cur_away, rem_home_mean, rem_away_mean,
     score plus remaining runs (independent Poisson). This keeps totals honest
     once a game is underway -- a 13-run 2nd inning makes 'Over 8.5' ~100%, not
     the stale pre-game number."""
-    ph = _poisson_pmf(max(0.0001, rem_home_mean))
-    pa = _poisson_pmf(max(0.0001, rem_away_mean))
+    ph = _runs_pmf(max(0.0001, rem_home_mean))
+    pa = _runs_pmf(max(0.0001, rem_away_mean))
     cur_total = cur_home + cur_away
     total_pmf = [0.0] * (2 * _MAXR + 1)   # over REMAINING runs
     p_home_by2 = p_away_by2 = 0.0          # final margin (current + remaining)
@@ -178,8 +268,8 @@ def in_game_win_prob(home_cur, away_cur, rem_home_mean, rem_away_mean):
     """P(home wins) given the current score and each side's expected remaining
     runs, modeling remaining runs as independent Poisson. Ties go to extra
     innings with a small home edge."""
-    ph = _poisson_pmf(max(0.0001, rem_home_mean))
-    pa = _poisson_pmf(max(0.0001, rem_away_mean))
+    ph = _runs_pmf(max(0.0001, rem_home_mean))
+    pa = _runs_pmf(max(0.0001, rem_away_mean))
     p_home = p_away = p_tie = 0.0
     for i, phi in enumerate(ph):
         for j, paj in enumerate(pa):

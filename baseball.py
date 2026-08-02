@@ -1741,6 +1741,25 @@ def _analyze_slate_uncached(date, season):
             "p_home_model": round(p_home_model, 4),
             "p_home_deep": round(p_home_deep, 4) if p_home_deep is not None else None,
             "exp_runs_home": round(er_home, 2), "exp_runs_away": round(er_away, 2),
+            # The same expected runs with the home-field tilt DIVIDED BACK OUT.
+            #
+            # HOME_RUNS_MULT exists because the closed-form Pythagorean win prob
+            # cannot see the rules of baseball: it works on run totals alone, so
+            # the only way to make it produce a realistic home win rate is to hand
+            # the home team more runs. The SIMULATOR has no such limitation -- it
+            # plays the bottom of the 9th only when the home team needs it and
+            # ends on a walk-off -- and those rules generate the home edge by
+            # themselves. Measured with identical run inputs on both sides, the
+            # sim returns 53.35% home wins against a real MLB 52.89%. It is
+            # already right, from first principles.
+            #
+            # Feeding it the tilted runs on top of that counted the advantage
+            # twice: +2.9pp over the closed form on all 15 games of a slate, and
+            # against the market a HOME mean of +2.0pp versus an AWAY mean of
+            # -2.1pp -- a 4.1pp tilt that the pooled median (+0.7pp) hid entirely,
+            # because the two sides cancel.
+            "exp_runs_home_talent": round(er_home / _HOME_SPLIT, 4),
+            "exp_runs_away_talent": round(er_away * _HOME_SPLIT, 4),
             "exp_total": exp_total, "park_factor": park,
             "weather": _weather_block(winfo),
             "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),

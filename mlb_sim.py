@@ -629,8 +629,15 @@ def simulate(g, n=5000, live=None):
     while only the unplayed remainder is actually random.
     """
     props = g.get("props") or {}
-    er_h = g.get("exp_runs_home") or 4.3
-    er_a = g.get("exp_runs_away") or 4.3
+    # TALENT-ONLY expected runs when the slate provides them. The home-field
+    # multiplier is a crutch for the closed-form win model, which cannot see that
+    # the home team bats last; this engine plays that rule directly and produces
+    # the home edge on its own (53.35% with identical inputs, vs a real 52.89%).
+    # Taking the tilted runs here would count home-field twice. Falls back to the
+    # plain fields so a bare game dict, a test fixture or an older cached slate
+    # still simulates.
+    er_h = g.get("exp_runs_home_talent") or g.get("exp_runs_home") or 4.3
+    er_a = g.get("exp_runs_away_talent") or g.get("exp_runs_away") or 4.3
     rnd = random.random
     # `_team` calibrates a lineup to `er` over a SOLO 9-inning game, but the
     # real-rules matchup shifts realized scoring: the home team loses the bottom

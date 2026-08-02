@@ -1298,8 +1298,18 @@ function renderMixed(m) {
   // still a long-run loser — worth saying out loud rather than burying.
   const evTxt = (m.ev_pct == null) ? "" :
     `<span>EV at market <b style="color:${m.ev_pct >= 0 ? "#3ad17a" : "#e0566a"}">${m.ev_pct >= 0 ? "+" : ""}${m.ev_pct}%</b></span>`;
-  const kellyTxt = (m.kelly_pct > 0)
-    ? `<span>Kelly stake <b>${m.kelly_pct}%</b> of roll</span>` : "";
+  // Apply the user's Kelly fraction, exactly like every other bet on the site.
+  // The backend returns FULL Kelly, which for a parlay is a dangerous number to
+  // put in front of someone: a live slip came back at 44% of bankroll. Full Kelly
+  // is only optimal when the probability is KNOWN, and a parlay's probability is
+  // a product of estimates — each leg's error multiplies, so the true uncertainty
+  // is much wider than a single bet's and full Kelly badly overbets it. The rest
+  // of the app already defaults to ½; this was the one place that didn't.
+  const _km = getKellyMult();
+  const _kf = (m.kelly_pct || 0) * _km;
+  const _klabel = _km === 1 ? "full" : _km === 0.25 ? "¼" : _km === 0.5 ? "½" : `${_km}×`;
+  const kellyTxt = (_kf > 0)
+    ? `<span>Stake <b>${_kf.toFixed(2)}%</b> of roll (${_klabel}-Kelly)</span>` : "";
   const evWarn = (m.ev_ok === false)
     ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ No slip on today's slate clears break-even at Kalshi's prices with enough legs actually quoted — this is the closest. On an exchange that is normal: you pay the spread and a fee on every leg. Consider fewer legs, or skip today.</div>` : "";
   const unpriced = (m.priced_frac != null && m.priced_frac < 1)

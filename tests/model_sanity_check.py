@@ -120,6 +120,7 @@ check("and P(>= spot) is near 50% with no drift",
 head("1b. A multiplicative model must be neutral when its inputs are neutral")
 
 import baseball as B  # noqa: E402
+import props as _props  # noqa: E402
 
 check("home-field is a RATIO, applied geometrically",
       abs(B._HOME_SPLIT - B.HOME_RUNS_MULT ** 0.5) < 1e-12,
@@ -204,6 +205,47 @@ for _ in range(200):
     if any(a + 1e-9 < b for a, b in zip(_v, _v[1:])):
         _kbad.append(_v[:6])
 check("starter K ladders are monotone too", not _kbad, _kbad[:2])
+
+
+# --- 1d. the run distribution must match baseball ----------------------------
+head("1d. Runs are not Poisson — the distribution must have the right shape")
+
+_pp = _props._poisson_pmf(4.468)
+_nb = _props._runs_pmf(4.468)
+check("the run model is overdispersed", _props.RUN_DISPERSION > 1.5,
+      f"var/mean = {_props.RUN_DISPERSION} (Poisson assumes 1.0)")
+check("the pmf is a distribution", abs(sum(_nb) - 1.0) < 1e-3, sum(_nb))
+_mean = sum(k * p for k, p in enumerate(_nb))
+check("and it preserves the mean", abs(_mean - 4.468) < 0.02, f"{_mean:.4f}")
+_var = sum(p * (k - _mean) ** 2 for k, p in enumerate(_nb))
+check("with the intended variance", abs(_var / _mean - _props.RUN_DISPERSION) < 0.1,
+      f"var/mean {_var/_mean:.2f}")
+
+# Measured on real 2025 games. Poisson's error is in the tails, which is exactly
+# where the totals ladder and the run line are priced.
+# NB: not `_f` — that is this file's FAIL counter, and shadowing it makes the
+# summary line print a lambda instead of a number. Second time in this suite.
+for _lbl, _actual, _fn in (("P(team shutout)", 0.0668, lambda d: d[0]),
+                           ("P(team 8+ runs)", 0.1682, lambda d: sum(d[8:])),
+                           ("P(team 12+ runs)", 0.0343, lambda d: sum(d[12:]))):
+    _e_po, _e_nb = abs(_fn(_pp) - _actual), abs(_fn(_nb) - _actual)
+    check(f"{_lbl} is closer to reality than Poisson", _e_nb < _e_po,
+          f"actual {_actual:.4f}  Poisson {_fn(_pp):.4f}  NegBin {_fn(_nb):.4f}")
+
+check("a zero-dispersion setting degrades to Poisson",
+      _props._runs_pmf(3.0, dispersion=1.0) == _props._poisson_pmf(3.0))
+check("and a zero mean does not blow up",
+      abs(sum(_props._runs_pmf(0.0)) - 1.0) < 1e-9)
+check("the pmf is monotone in the tail",
+      all(a >= b for a, b in zip(_nb[5:], _nb[6:])))
+
+# RFI lives entirely on P(0), the quantity Poisson gets worst.
+_l1 = 4.468 / 9.0 * _props.RFI_K
+_rfi = 1 - _props._runs_pmf(_l1, kmax=0)[0] ** 2
+check("RFI at league-average scoring matches the measured 47.7%",
+      abs(_rfi - 0.477) < 0.02, f"model {_rfi*100:.1f}%  (Poisson gave 63.0%)")
+check("the first-inning share is measured, not tuned to a market",
+      0.95 <= _props.RFI_K <= 1.0, _props.RFI_K)
 
 
 # --- 2. edge plausibility ----------------------------------------------------
@@ -319,6 +361,8 @@ if "--live" in sys.argv:
         print(f"  SKIP  crypto — {type(e).__name__}: {str(e)[:60]}")
 
 print("\n" + "=" * 72)
+assert isinstance(_p, int) and isinstance(_f, int), (
+    f"the pass/fail counters were shadowed by a loop variable: _p={_p!r} _f={_f!r}")
 print(f"RESULT: {_p} passed, {_f} failed")
 print("=" * 72)
 if "--live" not in sys.argv:
