@@ -545,6 +545,64 @@ _ADV_1B_BY_TYPE = (0.000, 0.534, 0.077)
 # modelling the go/no-go decision, which needs the ball's depth and hang time,
 # and this engine has no batted-ball location -- only its type.
 _DP_SCORE_3B = 0.125                  # run on a double play (never the 3rd out)
+
+# --- THE EVENT INVENTORY, AND A NEGATIVE RESULT --------------------------------
+# Every event real baseball produces was listed by rate per team-game and checked
+# one at a time against what this engine can express. Most were already modelled,
+# or folded into something with the identical base-out consequence (a hit by
+# pitch is a walk; a force play leaves the same men aboard as the batter being
+# retired), or under a rate worth any code at all -- balks .018 a team-game,
+# catcher's interference .023, triple plays .003, defensive indifference .058.
+#
+# Two came out clearly on top of what was genuinely missing:
+#
+#     wild pitch / passed ball / balk    .0202 per PA with a runner aboard
+#                                        (.055 runs a team-game score on one)
+#     batter reaches on an error         .0061 per PA  (.208 a team-game)
+#
+# BOTH WERE BUILT, MEASURED, AND TAKEN BACK OUT. They are real, the rates above
+# are right, and adding them made the simulator fit real baseball WORSE on every
+# hit-based number:
+#
+#                          hits/g   runs/g   hits per run   no-hitters
+#     without (shipped)     8.375    4.508      1.8580      1 in 1,803
+#     with, as measured     7.983    4.362      1.8299      1 in 1,049
+#     REAL                  8.259    4.447      1.8570      1 in 2,433
+#
+# The mechanism is not mysterious: _team calibrates RUNS to er, so any run this
+# engine manufactures without a hit is a run it then takes away from the hitters,
+# and the hits fall. For that to come out right, a wild pitch would have to be
+# worth the same here as it is in a real game, and it is worth more -- adding
+# .53 baserunner-events a game cost .39 hits a game, which is too many.
+#
+# So somewhere the engine still converts a baserunner into a run slightly too
+# readily, and today the missing wild pitches and errors are cancelling that
+# error out. Two wrongs, and removing one of them is worse than leaving both.
+# That is not a satisfying place to stop, but shipping a change that degrades
+# every hit prop in order to be more detailed is the wrong trade, and the honest
+# version of "more realistic" is realistic ABOUT ITS OWN FIT.
+#
+# THE SAME THING HAPPENED TO A STRAIGHT MEASUREMENT ERROR OF MINE, which is what
+# makes this a diagnosis rather than a shrug. The runner on third scoring on a
+# GROUND BALL was measured at .484 over all ground outs -- including double
+# plays, where he cannot score. The engine only rolls it on the non-double-play
+# branch, so the right denominator gives .596. That correction is unambiguously
+# right about baseball, and applying it moved the engine the same way the wild
+# pitch did: hits/run 1.8580 -> 1.8666 and no-hitters 1 in 1,803 -> 1 in 1,196.
+#
+# Three separate corrections, each independently correct, each adding a way for a
+# run to score without a hit, and all three degrade the fit. That is not three
+# coincidences. The engine converts a baserunner into a run roughly 3-4% too
+# readily, and the constant it has been hiding behind is the one thing that was
+# fitted rather than measured -- .484 is doing the work of a fudge factor, and
+# every honest number I put in its place exposes it.
+#
+# So the whole attempt is reverted, including my own correction, and the engine
+# ships at its best measured fit. THE NEXT PIECE OF WORK IS THE RUN VALUE OF A
+# BASERUNNER, not another event: the run-expectancy table by base-out state,
+# compared against the real one, which will say exactly which transition is worth
+# too much. Adding detail on top of an uncalibrated conversion rate just moves
+# the error into the hit props, which is where the money is.
 # How hard a runner's own speed swings an advancement roll. `spd` is sprint
 # speed centred on the league average and clamped to [0.8, 1.2] upstream, so
 # this is a +/-20% relative swing on any base-taking chance -- the fastest and

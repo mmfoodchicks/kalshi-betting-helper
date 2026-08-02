@@ -538,6 +538,18 @@ check("stretching for home off first is the riskiest of them",
 # Outs move runners. The engine used to move nobody but the man on third, on 16%
 # of outs; real outs score him on 40% and push another runner up about a fifth
 # of the time.
+# The event inventory turned up two real events the engine does not have --
+# wild pitches (.0202 per PA with a man aboard) and reach-on-error (.0061 per
+# PA). Both were built and both were taken back out: they made the fit WORSE on
+# every hit-based number, because _team calibrates runs to er and any run made
+# without a hit is a run taken away from the hitters. Guard the conclusion so it
+# does not get quietly re-added without re-measuring the aggregate.
+check("the engine models no run that arrives without a hit or a walk",
+      not hasattr(_ms, "_WP_PA") and not hasattr(_ms, "_ROE_ON_OUT"),
+      "wild pitch and reach-on-error were measured, built, and reverted — "
+      "hits/run went 1.858 -> 1.830 against a real 1.857, and no-hitters "
+      "nearly doubled. The gap they cancel is documented in mlb_sim.")
+
 _K, _GB, _FB = 0, 1, 2
 check("a fly ball scores the runner from third, a strikeout does not",
       _ms._SCORE_3B_BY_TYPE[_FB] > 0.5 > _ms._SCORE_3B_BY_TYPE[_K] * 10,
