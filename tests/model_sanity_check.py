@@ -268,8 +268,9 @@ check("the first time through is the baseline", _ms._tto_mult(0) == 1.0)
 _rows = _ms._rates([{"name": "x", "r1": 0.15, "r2": 0.05, "r3": 0.004,
                      "rhr": 0.04, "rbb": 0.09, "spd": 1.0, "sbr": 0.02, "ret": 1.0}])
 _su = _ms._build_setup(_rows, 1.0)[0]
-check("a per-turn ladder exists for every turn",
-      len(_su["thresh_tto"]) == _ms._TTO_MAX_TURN + 1)
+check("a ladder exists for every turn PLUS the bullpen",
+      len(_su["thresh_tto"]) == _ms._TTO_MAX_TURN + 2,
+      f'{len(_su["thresh_tto"])} ladders')
 check("each ladder is cumulative and bounded",
       all(all(0 < a <= 1.0 for a, _c in t) and
           all(x[0] <= y[0] for x, y in zip(t, t[1:]))
@@ -279,6 +280,30 @@ check("later turns put more men on base",
       f'{_su["thresh_tto"][0][-1][0]:.4f} -> {_su["thresh_tto"][2][-1][0]:.4f}')
 check("`thresh` still holds the first-turn ladder for older callers",
       _su["thresh"] == _su["thresh_tto"][0])
+
+# The handoff: the penalty belongs to the STARTER and must end when he does.
+check("the bullpen resets the hitter to baseline",
+      _ms._PEN_MULT == 1.0,
+      "measured: innings 7-8 land at 0.9747 of the game mean vs a real 0.9754, "
+      "so the late dip is the penalty ENDING, not relievers being better")
+_pen_ob = _su["thresh_tto"][-1][-1][0]
+_t1_ob = _su["thresh_tto"][0][-1][0]
+check("so the pen ladder matches the first-turn ladder",
+      abs(_pen_ob - _t1_ob) < 1e-9, f"{_pen_ob:.4f} vs {_t1_ob:.4f}")
+check("and it is easier on hitters than the 3rd time through",
+      _pen_ob < _su["thresh_tto"][_ms._TTO_MAX_TURN][-1][0])
+
+# The exit is sampled, not fixed — a hard threshold would leave a kink in the
+# run curve at the same frame of every game.
+_ex = [_ms._sample_exit(5.4, _rnd.Random(i).random) for i in range(400)]
+check("the starter's exit is spread across innings", len(set(_ex)) >= 3,
+      sorted(set(_ex)))
+check("and stays inside a plausible band", min(_ex) >= 2 and max(_ex) <= 8,
+      f"{min(_ex)}-{max(_ex)}")
+check("an unknown workload never hands off", _ms._sample_exit(None, _rnd.random) > 9)
+check("a short outing hands off earlier than a long one",
+      sum(_ms._sample_exit(3.5, _rnd.Random(i).random) for i in range(200))
+      < sum(_ms._sample_exit(7.0, _rnd.Random(i).random) for i in range(200)))
 
 # One RFI model, not two. mlb_sim used to carry its own _RFI_K = 0.73 + Poisson.
 # Match an ASSIGNMENT at column 0, not the string anywhere: the comment that
@@ -292,6 +317,40 @@ check("the engine has no second RFI constant",
       "one RFI model, in props")
 check("and takes its RFI target from props",
       "_props._runs_pmf" in __import__("inspect").getsource(_ms.simulate))
+
+
+# --- 1f. the call-up pool ----------------------------------------------------
+head("1f. A club's call-up pool must contain the players it can actually call up")
+
+import deep_data as _dd  # noqa: E402
+
+check("the minor-league gate is the real roster code",
+      '"RM"' in __import__("inspect").getsource(_dd.team_profile)
+      or "RM" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "..", "deep_data.py")).read(),
+      "RM = Reassigned to Minors, ~10 per 40-man")
+check("Triple-A is translated, not taken at face value",
+      _dd._MLE[11]["hit"] < 1.0 and _dd._MLE[11]["hr"] < 1.0)
+check("and strikeouts go UP on the way to the majors",
+      _dd._MLE[11]["k"] > 1.0, f'x{_dd._MLE[11]["k"]}')
+check("lower levels are harsher than Triple-A",
+      all(_dd._MLE[l]["hit"] < _dd._MLE[11]["hit"] for l in (12, 13, 14)))
+check("and monotonically so",
+      all(_dd._MLE[a]["hit"] > _dd._MLE[b]["hit"]
+          for a, b in zip(_dd._MLE_LEVELS, _dd._MLE_LEVELS[1:])))
+_raw = {"plateAppearances": 400, "hits": 100, "homeRuns": 20, "baseOnBalls": 50,
+        "strikeOuts": 80, "doubles": 25, "triples": 2, "hitByPitch": 4}
+_tr = _dd._translate(_raw, _dd._MLE[11])
+check("translation scales the counting stats", _tr["hits"] < _raw["hits"])
+check("but NOT the sample size", _tr["plateAppearances"] == _raw["plateAppearances"],
+      "the PA are real even though the level is not — that is what shrinkage reads")
+check("and it raises strikeouts", _tr["strikeOuts"] > _raw["strikeOuts"])
+check("an empty season still projects off the career book",
+      _dd._batter({"id": 1, "fullName": "x"}, {},
+                  {"plateAppearances": 900, "hits": 250, "homeRuns": 30,
+                   "baseOnBalls": 80, "strikeOuts": 180, "doubles": 50,
+                   "triples": 3, "hitByPitch": 6})["rates"]["1b"] > 0,
+      "these used to be dropped for want of a current-season line")
 
 
 # --- 2. edge plausibility ----------------------------------------------------

@@ -104,10 +104,24 @@ _PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineu
 #     1.0300     1.0775       -0.86%     <- real MLB is 1.0794
 #     1.0450     1.1226       -1.14%
 #
-# 3.1% per turn on the on-base rates lands the run ratio on reality. The step is
-# small because runs respond superlinearly to baserunners (more men on -> more
-# PAs -> compounding; _team measures the local exponent near 2.2), and because
-# innings 1-3 and 4-6 each straddle roughly 1.2 turns rather than exactly one.
+# The step is small because runs respond superlinearly to baserunners (more men on
+# -> more PAs -> compounding; _team measures the local exponent near 2.2), and
+# because innings 1-3 and 4-6 each straddle roughly 1.2 turns rather than one.
+#
+# REFITTED once the bullpen handoff below existed, because the two interact: the
+# pen now enters partway through innings 5-6, which cuts how much penalty those
+# frames carry. Same sweep with the handoff active and _PEN_MULT at 1.00:
+#
+#     step    t2/t1     inn78      <- targets 1.0794 and 0.9754
+#     1.031   1.0482    0.9747
+#     1.040   1.0745    0.9603
+#     1.048   1.0806    0.9559
+#
+# The two targets pull against each other through the normalisation -- innings 7-8
+# are measured relative to the game mean, so making 4-6 hotter deflates them.
+# 1.040 is the best joint fit. t2/t1 is weighted the more heavily of the two: by
+# the 7th, pinch hitters and defensive substitutions have changed the lineups, so
+# that window is a noisier read on pitching than innings 1-6 are.
 #
 # Innings 7-9 are excluded from the fit: a leading home team never bats in the
 # 9th, so those half-innings are a biased sample of game states rather than a
@@ -143,13 +157,56 @@ _PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineu
 # home team never bats in the 9th, so those half-innings are a filtered sample of
 # game states, and the 9th's 0.877 is substantially that artifact rather than the
 # bullpen. Innings 1-6 carry the clean signal and the fit uses only them.
-_TTO_STEP = 1.031
+_TTO_STEP = 1.040
 _TTO_MAX_TURN = 2                    # 0-indexed: 1st, 2nd, 3rd-and-later
+
+# THE BULLPEN HANDOFF. The penalty above belongs to the STARTER, and it must stop
+# when he does -- a reliever entering in the 7th has faced nobody. Without this the
+# curve rose and plateaued, leaving innings 7-9 too hot (sim 1.028/1.034/1.041
+# against real 0.967/0.983/0.877).
+#
+# _PEN_MULT is the on-base multiplier once the pen is in, relative to the hitter's
+# own baseline. Fitted against innings 7-8 -- NOT the 9th, which is a filtered
+# sample of game states (a leading home team never bats) rather than a read on
+# relief pitching:
+#
+#     pen    inn7/avg  inn8/avg   mean78     <- real target 0.9754
+#     1.00     0.970     0.979    0.9747
+#     0.97     0.924     0.939    0.9312
+#     0.94     0.887     0.889    0.8881
+#
+# 1.00 lands it, and that is the interesting result: THE BULLPEN RESETS THE HITTER
+# TO HIS BASELINE, no better and no worse. The late-inning dip in real baseball is
+# not relievers being superior -- it is the starter's accumulated penalty simply
+# ending. A fresh reliever facing a lineup for the first time is, to this engine,
+# the same thing as a fresh starter facing it for the first time, which is exactly
+# what the baseline ladder is.
+#
+# The exit inning is SAMPLED per game, not fixed at the mean. A hard threshold at
+# 5.4 innings would put a cliff in the middle of every game's 6th and leave a
+# visible kink in the run curve; real starters exit across a spread, and averaging
+# over that spread is what smooths it.
+_PEN_MULT = 1.00
+_PEN_EXIT_SD = 1.15                  # innings of spread around a starter's expected exit
 
 
 def _tto_mult(turn):
     """On-base multiplier for the `turn`-th time through the order (0-based)."""
     return _TTO_STEP ** min(max(0, turn), _TTO_MAX_TURN)
+
+
+def _sample_exit(exp_ip, rnd):
+    """Inning (0-based) at which this game's starter hands off.
+
+    Sampled around his own expected innings so the handoff is spread across the
+    slate instead of every game turning over in the same frame. Clamped to a
+    plausible band: nobody is pulled before the 2nd, and nobody in this engine
+    goes past the 8th."""
+    if not exp_ip or exp_ip <= 0:
+        return 99                                    # unknown -> never hand off
+    # Triangular-ish spread from two uniforms: cheap, bounded, no math import.
+    jitter = (rnd() + rnd() - 1.0) * _PEN_EXIT_SD * 1.5
+    return max(2, min(8, int(round(exp_ip + jitter))))
 
 
 def _build_setup(rows, mult):
@@ -164,8 +221,12 @@ def _build_setup(rows, mult):
     setup = []
     for i, (name, rates, spd, sbr, ret) in enumerate(rows):
         by_turn = []
-        for t in range(_TTO_MAX_TURN + 1):
-            sr = [x * mult * _tto_mult(t) for x in rates]
+        # One extra ladder on the end: index _TTO_MAX_TURN+1 is the BULLPEN, used
+        # once the starter hands off, so a reliever is not charged the tiring
+        # starter's accumulated penalty.
+        for t in list(range(_TTO_MAX_TURN + 1)) + ["pen"]:
+            f = _PEN_MULT if t == "pen" else _tto_mult(t)
+            sr = [x * mult * f for x in rates]
             tot = sum(sr)
             if tot > 0.95:
                 sr = [x * 0.95 / tot for x in sr]
@@ -183,10 +244,14 @@ def _build_setup(rows, mult):
     return setup
 
 
-def _team(batters, er, rnd):
+def _team(batters, er, rnd, opp_sp_ip=None):
     """Lineup setup with on-base rates EMPIRICALLY calibrated so the simulated
     runs land near `er` (the matchup-adjusted model total). Returns [] if no
-    lineup is posted."""
+    lineup is posted.
+
+    `opp_sp_ip` (the opposing starter's expected innings) is passed straight to
+    the calibration games so the multiplier is fitted against the same TTO and
+    bullpen shape the real simulation will use."""
     rows = _rates(batters)
     if not rows:
         return []
@@ -203,7 +268,7 @@ def _team(batters, er, rnd):
     k_exp, prev = 0.45, None                 # 1/2.2 starting guess
     for _ in range(6):
         setup = _build_setup(rows, mult)
-        mean = sum(_play_game(setup, rnd)[0] for _ in range(500)) / 500.0
+        mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(500)) / 500.0
         if mean <= 0.3:
             mult *= 1.5
             continue
@@ -224,7 +289,7 @@ def _team(batters, er, rnd):
     # more measurement plus a single corrective nudge (never re-checked, so it
     # can't oscillate) centers the residual around ~1%.
     setup = _build_setup(rows, mult)
-    mean = sum(_play_game(setup, rnd)[0] for _ in range(700)) / 700.0
+    mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(700)) / 700.0
     if mean > 0.3:
         mult = max(0.7, min(1.5, mult * (er / mean) ** k_exp))
     return _build_setup(rows, mult)
@@ -248,7 +313,7 @@ _CAL_AWAY = 0.962
 
 
 def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_runs=0,
-                 late=False, subbed=None, start_outs=0, start_bases=None):
+                 late=False, subbed=None, start_outs=0, start_bases=None, pen=False):
     """One half-inning of base-out simulation for a lineup. Returns
     (runs, next_batter_idx, walkoff).
 
@@ -320,8 +385,12 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         u = rnd()
         code = 0
         _tt = setup[bi].get("thresh_tto")
-        for acc, c in (_tt[turn if turn < len(_tt) else -1] if _tt
-                       else setup[bi]["thresh"]):
+        if _tt:
+            # Last slot is the bullpen ladder; otherwise the turn's own, capped.
+            _row = _tt[-1] if pen else _tt[min(turn, len(_tt) - 2)]
+        else:
+            _row = setup[bi]["thresh"]
+        for acc, c in _row:
             if u < acc:
                 code = c
                 break
@@ -420,25 +489,34 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
     return runs, idx, False
 
 
-def _play_game(setup, rnd):
+def _play_game(setup, rnd, opp_sp_ip=None):
     """One SOLO 9-inning game for a lineup (no opponent interaction) -- the
     calibration reference `_team` converges against. Returns (runs, per-batter
     [hits, tb, hr, runs_scored, rbi, sb, dk_points]). dk_points is the batter's
-    DraftKings fantasy total (1B+3 2B+5 3B+8 HR+10 R+2 RBI+2 BB+2 SB+5)."""
+    DraftKings fantasy total (1B+3 2B+5 3B+8 HR+10 R+2 RBI+2 BB+2 SB+5).
+
+    `opp_sp_ip` is the OPPOSING starter's expected innings; past his sampled exit
+    the lineup faces the bullpen and the times-through-order penalty stops. It
+    matters here and not only in the real-rules matchup because this is the
+    function `_team` calibrates against -- if the two disagreed about when the pen
+    enters, the rate multiplier would be tuned against a game that is never
+    played."""
     L = len(setup)
     stats = [[0, 0, 0, 0, 0, 0, 0] for _ in range(L)]   # H,TB,HR,R,RBI,SB,DK
     runs, idx, first_inning = 0, 0, 0
     subbed = set()
+    exit_inn = _sample_exit(opp_sp_ip, rnd)
     for _inn in range(_N_INNINGS):
         r, idx, _ = _half_inning(setup, stats, idx, rnd,
-                                 late=_inn >= 6, subbed=subbed)
+                                 late=_inn >= 6, subbed=subbed,
+                                 pen=_inn >= exit_inn)
         runs += r
         if _inn == 0:
             first_inning = r
     return runs, stats, first_inning
 
 
-def _play_matchup(setup_a, setup_h, rnd, state=None):
+def _play_matchup(setup_a, setup_h, rnd, state=None, ip_h=None, ip_a=None):
     """A full REAL-RULES game between two lineups: interleaved half-innings, the
     home team skips the bottom of the 9th when already leading, a walk-off ends
     the game the moment home takes the lead in the bottom 9th or extras, and
@@ -453,6 +531,11 @@ def _play_matchup(setup_a, setup_h, rnd, state=None):
     stats_h = [[0, 0, 0, 0, 0, 0, 0] for _ in range(len(setup_h))]
     ia = ih = ra = rh = f1 = 0
     sub_a, sub_h = set(), set()
+    # Each lineup hands off when the OPPOSING starter does: the away bats face the
+    # home starter (ip_h) and vice versa. Sampled once per game so both halves of
+    # a frame agree on who is pitching.
+    exit_a = _sample_exit(ip_h, rnd)      # away lineup's opponent
+    exit_h = _sample_exit(ip_a, rnd)      # home lineup's opponent
     start_inn, start_top, s_outs, s_bases = 0, True, 0, None
     if state:
         ia, ih = state.get("ia", 0), state.get("ih", 0)
@@ -470,6 +553,7 @@ def _play_matchup(setup_a, setup_h, rnd, state=None):
         first = inn == start_inn                # the half we resume into
         if not (first and not start_top):       # already past the top of this inning?
             r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, late=late, subbed=sub_a,
+                                    pen=inn >= exit_a,
                                     start_outs=s_outs if (first and start_top) else 0,
                                     start_bases=s_bases if (first and start_top) else None)
             ra += r
@@ -478,6 +562,7 @@ def _play_matchup(setup_a, setup_h, rnd, state=None):
         resume_bot = first and not start_top
         if inn < 8:
             r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, late=late, subbed=sub_h,
+                                    pen=inn >= exit_h,
                                     start_outs=s_outs if resume_bot else 0,
                                     start_bases=s_bases if resume_bot else None)
             rh += r
@@ -486,17 +571,18 @@ def _play_matchup(setup_a, setup_h, rnd, state=None):
         elif rh <= ra:                      # bottom 9 only if home isn't ahead
             r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd,
                                     lead_target=ra, base_runs=rh,
-                                    late=True, subbed=sub_h,
+                                    late=True, subbed=sub_h, pen=inn >= exit_h,
                                     start_outs=s_outs if resume_bot else 0,
                                     start_bases=s_bases if resume_bot else None)
             rh += r
     extra = 0
     while ra == rh and extra < 12:          # ghost-runner extras until decided
         extra += 1
-        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, ghost=True,
+        # Extras are always relief on both sides — no starter reaches the 10th.
+        r, ia, _ = _half_inning(setup_a, stats_a, ia, rnd, ghost=True, pen=True,
                                 late=True, subbed=sub_a)
         ra += r
-        r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, ghost=True,
+        r, ih, _ = _half_inning(setup_h, stats_h, ih, rnd, ghost=True, pen=True,
                                 lead_target=ra, base_runs=rh,
                                 late=True, subbed=sub_h)
         rh += r
@@ -725,8 +811,14 @@ def simulate(g, n=5000, live=None):
     # of the 9th when leading (and gets walk-off-truncated), while extras add a
     # little to both sides. These measured factors recenter each side's realized
     # matchup mean back onto its er (see the engine calibration test).
-    setup_h = _team(props.get("batters_home"), er_h * _CAL_HOME, rnd)
-    setup_a = _team(props.get("batters_away"), er_a * _CAL_AWAY, rnd)
+    # Starter workloads are read FIRST: _team calibrates against _play_game, and
+    # that game now hands off to the bullpen, so the multiplier has to be fitted
+    # against the same shape the matchup will actually play.
+    ip_h = (props.get("ks_home") or {}).get("exp_ip") or 5.4
+    ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
+    # Each lineup's handoff is governed by the OPPOSING starter.
+    setup_h = _team(props.get("batters_home"), er_h * _CAL_HOME, rnd, opp_sp_ip=ip_a)
+    setup_a = _team(props.get("batters_away"), er_a * _CAL_AWAY, rnd, opp_sp_ip=ip_h)
     lam_h = (props.get("ks_home") or {}).get("expected")   # home starter, faces away
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 
@@ -734,8 +826,6 @@ def simulate(g, n=5000, live=None):
     # Each starter's expected innings ride along so his pitch limit is his own.
     hsp, asp = g.get("home_sp") or {}, g.get("away_sp") or {}
     ht, at = g.get("home_team") or {}, g.get("away_team") or {}
-    ip_h = (props.get("ks_home") or {}).get("exp_ip") or 5.4
-    ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
     home_k9 = hsp.get("k9") or (lam_h / ip_h * 9 if lam_h else None)
     away_k9 = asp.get("k9") or (lam_a / ip_a * 9 if lam_a else None)
     # Walk-aware workload: each starter's own pitch budget + real walk rate, so a
@@ -802,7 +892,8 @@ def simulate(g, n=5000, live=None):
     for i in range(n):
         if setup_a and setup_h:
             # Real-rules matchup: bottom-9 skip, walk-off, ghost-runner extras.
-            ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd, state=state)
+            ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd, state=state,
+                                                   ip_h=ip_h, ip_a=ip_a)
             store(sa, idx_a, i); store(sh, idx_h, i)
             home_runs[i] = rh
             away_runs[i] = ra

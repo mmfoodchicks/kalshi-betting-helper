@@ -75,6 +75,92 @@ def _roster_stats(team_id, season, group):
     return baseball._cached(("deep_roster40c", team_id, season, group), 21600, fetch)
 
 
+# --- Minor-league translation -------------------------------------------------
+# A player optioned to the minors ("RM") is the club's call-up pool, and most of
+# that pool has no MLB line to project from. Measured on 8 real 40-man rosters,
+# only 29% of optioned HITTERS and 49% of optioned pitchers carried MLB season
+# stats -- the other 60%/44% had none at all, and a further 11%/7% had a career
+# book but no current season. All of them were dropped, so the taxi squad the
+# engine reaches for was a third of its real size and skewed toward shuttle
+# veterans over actual prospects.
+#
+# Career-only players need no translation: _batter/_pitcher already shrink an
+# empty season toward the career prior, so they just had to stop being filtered
+# out. Players with ONLY minor-league stats need their rates translated, because
+# Triple-A production is not major-league production.
+#
+# MEASURED, not assumed. 127 hitters logged 80+ PA in BOTH MLB and Triple-A in
+# 2025 -- which is exactly the shuttle population this pool models, so it is the
+# right sample rather than a biased one:
+#
+#     stat      MLB/PA    AAA/PA    MLB/AAA
+#     hits      .2021     .2394      0.844
+#     HR        .0237     .0345      0.687
+#     BB        .0764     .1159      0.659
+#     K         .2510     .2083      1.205   <- strikeouts go UP
+#     OPS       .6465     .8393      0.770
+#
+# Levels below Triple-A are progressively harsher. Those are stepped down from the
+# measured AAA figures rather than measured directly: the same-season two-level
+# sample thins out fast below AAA (few players yo-yo between Double-A and the
+# majors in one year), so a fitted number there would be noise wearing a decimal
+# point.
+_MLE = {
+    11: {"hit": 0.844, "hr": 0.687, "bb": 0.659, "k": 1.205},      # Triple-A
+    12: {"hit": 0.800, "hr": 0.590, "bb": 0.620, "k": 1.320},      # Double-A
+    13: {"hit": 0.760, "hr": 0.520, "bb": 0.590, "k": 1.420},      # High-A
+    14: {"hit": 0.720, "hr": 0.460, "bb": 0.560, "k": 1.520},      # Single-A
+}
+_MLE_LEVELS = (11, 12, 13, 14)
+# A call-up is a fringe major-leaguer, not a league-average one. Even after
+# translation, cap the pool so a hot Triple-A line cannot promote someone into a
+# better hitter than the regulars he is covering for.
+_MLE_CAP = 1.00
+
+
+def milb_hitting(season):
+    """{player_id: (translated stat dict, level_sport_id)} for every minor-league
+    hitter, best level first. One request per level (~800 players each), cached
+    like everything else here -- the per-player endpoint would be hundreds of
+    calls for a single slate."""
+    def fetch():
+        out = {}
+        for sid in _MLE_LEVELS:
+            try:
+                d = baseball._get(f"{STATS}/stats?stats=season&group=hitting"
+                                  f"&season={season}&sportId={sid}&limit=3000"
+                                  f"&playerPool=All")
+            except Exception:
+                continue
+            for sp in (d.get("stats") or [{}])[0].get("splits") or []:
+                pid = (sp.get("player") or {}).get("id")
+                st = sp.get("stat") or {}
+                if not pid or pid in out:
+                    continue          # already have him at a higher level
+                if _f(st.get("plateAppearances")) < 40:
+                    continue          # too thin to translate
+                out[pid] = (_translate(st, _MLE[sid]), sid)
+        return out
+    try:
+        return baseball._cached(("milb_hit", season), 6 * 3600, fetch)
+    except Exception:
+        return {}
+
+
+def _translate(st, f):
+    """A minor-league stat line rescaled to major-league equivalence. Counting
+    stats are scaled in place so the downstream per-PA maths is unchanged; PA
+    itself is NOT scaled, because the sample size is real even if the level is
+    not -- that is what the shrinkage should see."""
+    out = dict(st)
+    for key, mult in (("hits", f["hit"]), ("doubles", f["hit"]), ("triples", f["hit"]),
+                      ("homeRuns", f["hr"]), ("baseOnBalls", f["bb"]),
+                      ("hitByPitch", f["bb"]), ("strikeOuts", f["k"])):
+        if st.get(key) is not None:
+            out[key] = _f(st.get(key)) * mult
+    return out
+
+
 def _shrink(obs, prior, n, k):
     """Sample-weighted blend toward a prior: little data -> mostly prior, lots of
     data -> mostly observed. k is the stabilization point (in the same units as n)."""
@@ -265,6 +351,7 @@ def team_profile(team_id, season=None):
         # here so the run can refuse to publish on top of a good one.
         seen_n = career_n = 0
         batters, pitchers, depth, depth_bats = [], [], [], []
+        milb = milb_hitting(season) or {}
         for pid in set(hit) | set(pit):
             h, p = hit.get(pid), pit.get(pid)
             per, pos, code = (p or h)[0], (p or h)[1], (p or h)[4]
@@ -286,20 +373,38 @@ def team_profile(team_id, season=None):
             # Pitching side: pure pitchers + two-way players. A two-way ace lands in
             # BOTH pools, so his elite innings reach the rotation instead of being
             # dropped and his bat reallocated to the bullpen bottom.
-            if is_pitcher_pos and pst:
-                arm = _pitcher(per, pst, pcar, avail)
+            # A career book with no current season is still a projection: _pitcher
+            # shrinks an empty season toward the career prior, so passing {} gives
+            # exactly the career rates. These used to be dropped outright.
+            if is_pitcher_pos and (pst or pcar):
+                arm = _pitcher(per, pst or {}, pcar, avail)
                 (depth if is_depth else pitchers).append(arm)
             # Batting side: position players + two-way. RM (optioned) bats become
             # the position-player taxi squad — the call-up pool the engine reaches
             # for when injuries drain the MLB bench, mirroring the depth arms.
-            if (not is_pitcher_pos or two_way) and hst:
+            # Same for bats, plus the minor-league fallback: an optioned player
+            # with no MLB record at all gets his translated Triple-A (or lower)
+            # line, which is the difference between a call-up pool of shuttle
+            # veterans and one that contains the actual prospects.
+            hst_eff, milb_lvl = hst, None
+            if is_depth and not hst and not hcar:
+                got = milb.get(pid)
+                if got:
+                    hst_eff, milb_lvl = got
+            if (not is_pitcher_pos or two_way) and (hst_eff or hcar):
                 mults = (1.0, 1.0)
                 try:
                     import savant
                     mults = savant.quality_mults(xstats.get(pid))
                 except Exception:
                     pass
-                b = _batter(per, hst, hcar, avail, mults)
+                if milb_lvl:
+                    # Statcast has no minor-league book for him, and a translated
+                    # line is already an estimate -- do not stack a second one.
+                    mults = (min(_MLE_CAP, mults[0]), min(_MLE_CAP, mults[1]))
+                b = _batter(per, hst_eff or {}, hcar, avail, mults)
+                if milb_lvl:
+                    b["milb_level"] = milb_lvl
                 (depth_bats if is_depth else batters).append(b)
         # Rotation = top starters by games started; bullpen = the rest with innings.
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
