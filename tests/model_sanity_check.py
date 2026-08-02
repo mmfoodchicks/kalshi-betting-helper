@@ -426,14 +426,14 @@ def _no_out_advance(fn):
     those later outs move runners too -- so without this the measurement is the
     whole half-inning rather than the one play being asked about."""
     keep = (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
-            _ms._DP_SCORE_3B)
+            _ms._OUT_DP_R3, _ms._DP_SCORE_3B)
     _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
-    _ms._OUT_DP = _ms._DP_SCORE_3B = 0.0
+    _ms._OUT_DP = _ms._OUT_DP_R3 = _ms._DP_SCORE_3B = 0.0
     try:
         return fn()
     finally:
         (_ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B, _ms._OUT_DP,
-         _ms._DP_SCORE_3B) = keep
+         _ms._OUT_DP_R3, _ms._DP_SCORE_3B) = keep
 
 
 _s2_at0 = _no_out_advance(lambda: _one(1, _ON_2, outs=0))
@@ -485,19 +485,49 @@ check("an out can score the runner from third", 0.30 < _ms._OUT_SCORE_3B < 0.50,
       f"{_ms._OUT_SCORE_3B} — .402 measured over ALL outs, strikeouts included")
 check("an out can move a runner up", _ms._OUT_ADV_2B > 0 and _ms._OUT_ADV_1B > 0,
       f"2nd->3rd {_ms._OUT_ADV_2B}, 1st->2nd {_ms._OUT_ADV_1B}")
+check("a double play is rarer with a runner on third",
+      _ms._OUT_DP_R3 < _ms._OUT_DP * 0.85,
+      f"{_ms._OUT_DP_R3} vs {_ms._OUT_DP} — .112 against .160 measured, 2.9 "
+      "sigma; the fielder checks him or goes home instead of turning two")
+
+
+
+def _batters(start, outs=0, n=20000, seed=61):
+    """Batters it takes to end a half-inning when every one of them makes an
+    out. Two outs on one play means one fewer batter, so this counts double
+    plays directly rather than inferring them from runs."""
+    _lu = [{"name": "b%d" % i, "thresh": [], "thresh_tto": [[]] * 4,
+            "spd": 1.0, "sbr": 0.0, "psub": 0.0} for i in range(9)]
+    _r = _rnd.Random(seed).random
+    tot = 0
+    for _ in range(n):
+        tot += _ms._half_inning(_lu, [[0] * 7 for _ in range(9)], 0, _r,
+                                start_outs=outs, start_bases=list(start))[1]
+    return tot / n
+
+
+_b13 = _batters([0, None, 0])
+_b1 = _batters([0, None, None])
+check("and the engine reads the base state, not just the constant",
+      _b13 > _b1 + 0.02,
+      f"first-and-third needs {_b13:.3f} batters to get three outs, "
+      f"first-alone only {_b1:.3f} — fewer double plays with the run on third")
 
 
 
 def _dp_only(fn):
     """Force every out to be a double play and switch off the sac fly, so the
     only way a run can score is on the DP itself."""
-    keep = (_ms._OUT_DP, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B, _ms._OUT_ADV_1B)
-    _ms._OUT_DP = 1.0
+    keep = (_ms._OUT_DP, _ms._OUT_DP_R3, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
+            _ms._OUT_ADV_1B)
+    # Both DP rates: the engine picks _OUT_DP_R3 when third is occupied, which
+    # is exactly the state these probes use.
+    _ms._OUT_DP = _ms._OUT_DP_R3 = 1.0
     _ms._OUT_SCORE_3B = _ms._OUT_ADV_2B = _ms._OUT_ADV_1B = 0.0
     try:
         return fn()
     finally:
-        (_ms._OUT_DP, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
+        (_ms._OUT_DP, _ms._OUT_DP_R3, _ms._OUT_SCORE_3B, _ms._OUT_ADV_2B,
          _ms._OUT_ADV_1B) = keep
 
 

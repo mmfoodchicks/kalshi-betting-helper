@@ -442,7 +442,34 @@ _TOOB_S_2B = 0.032
 _TOOB_S_1B = 0.018
 _TOOB_D_1B = 0.053
 # On an out.
-_OUT_DP = 0.155                       # runner on 1st, <2 out
+#
+# THE DOUBLE PLAY DEPENDS ON WHETHER THIRD IS OCCUPIED, and by a lot. Fielders
+# concede the second out to check the runner at third, or go home with it
+# instead. Measured over the same 300 games, by which bases were occupied:
+#
+#     1st only          310 / 1960   .158
+#     1st + 2nd         107 /  644   .166      -> third empty  .160
+#     1st + 3rd          29 /  259   .112
+#     bases loaded       22 /  195   .113      -> third on     .112
+#
+# .160 against .112 is 2.9 sigma, and it lands in the state that matters most:
+# a flat rate ended innings four points too often with a run standing ninety
+# feet away.
+_OUT_DP = 0.160                       # runner on 1st, <2 out, third EMPTY
+_OUT_DP_R3 = 0.112                    # ... and with a runner on third
+#
+# The runner on third, by contrast, does NOT need conditioning, which is worth
+# recording because the opposite is the intuitive guess. With the bases loaded
+# the fielder has a force at the plate and takes it, so the run should score
+# less often -- and it does, but not measurably:
+#
+#     third scores, first base empty      .382 +/- .029
+#     third scores, first on, not loaded  .421 +/- .031
+#     third scores, BASES LOADED          .369 +/- .035
+#
+# All three sit inside about one and a half standard errors of each other. The
+# force only bites on a ground ball, and strikeouts and fly balls -- where it is
+# irrelevant -- are most of the denominator. One constant is the honest fit.
 _OUT_SCORE_3B = 0.402                 # runner on 3rd, <2 out, no double play
 _OUT_ADV_2B = 0.339                   # runner on 2nd -> 3rd, 3rd open
 _OUT_ADV_1B = 0.204                   # runner on 1st -> 2nd, 2nd open
@@ -554,7 +581,10 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         onb = -1 if phantom else bi                                # what goes on base
         if code == 0:                         # out
             # Double play: runner on 1st, < 2 outs -> erase batter + lead runner.
-            if bases[0] is not None and outs < 2 and rnd() < _OUT_DP:
+            # Much less likely with a runner on third, where the fielder is
+            # checking him or going home instead of turning two.
+            _dp = _OUT_DP_R3 if bases[2] is not None else _OUT_DP
+            if bases[0] is not None and outs < 2 and rnd() < _dp:
                 outs += 2
                 bases[0] = None
                 # A run can still come home on a double play -- but only if the
