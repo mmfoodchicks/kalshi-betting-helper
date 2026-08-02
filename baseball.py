@@ -2709,7 +2709,11 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
         if not cands:
             continue
-        bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
+        # A same-game stack never needs to be deeper than the parlay itself, and
+        # the depth is what costs -- so asking for 4 legs buys a much wider pool
+        # to find a correlating pair in than passing the 30-leg tier ceiling did.
+        _depth = max(2, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+        bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=_depth)
         if bundles:
             label = g["matchup"] + (" 🔴" if live_gs else "")
             games_bundles.append((label, bundles, g.get("kalshi_suffix")))

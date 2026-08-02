@@ -382,6 +382,7 @@ print("Confidence band: a ceiling turns the floor into a range")
 print("=" * 72)
 
 import inspect as _insp        # noqa: E402
+import math as _math           # noqa: E402
 import mlb_sim as _MS          # noqa: E402
 
 _src = _insp.getsource(B.build_mixed_parlay)
@@ -409,6 +410,41 @@ ck("the NO side of a leg uses the exact complement mask",
    "than assumed - which is why the run line needed no NO generator of its own")
 ck("and its marginal is 1 minus the CALIBRATED yes, so a pair sums to 1",
    '1.0 - c["marg"]' in _no_src)
+
+# --- correlation search width --------------------------------------------------
+print()
+print("=" * 72)
+print("Correlation search: width where it pays, depth only where it is needed")
+print("=" * 72)
+
+_gb = _insp.getsource(_MS.game_bundles)
+ck("the pool is chosen against a combination budget, not fixed",
+   "_pool_for(max_legs)" in _gb,
+   "the subset scan makes DEPTH the exponent, so a shallow ask can afford a "
+   "much wider pool for the same work")
+ck("a shallow stack buys a far wider pool", _MS._pool_for(3) >= 2 * 14,
+   f"depth 3 -> {_MS._pool_for(3)} legs, depth 4 -> {_MS._pool_for(4)}")
+ck("and a deep one falls back rather than exploding",
+   _MS._pool_for(12) <= 16 and _MS._pool_for(30) <= 16,
+   f"depth 12 -> {_MS._pool_for(12)}, depth 30 -> {_MS._pool_for(30)}; a thin "
+   "slate that really needs an 8-leg single-game bundle still gets one")
+for _d in (2, 3, 4, 5, 6, 8, 12, 30):
+    _k = _MS._pool_for(_d)
+    _tot = sum(_math.comb(_k, _z) for _z in range(1, min(_k, _d) + 1))
+    if _tot > _MS._STACK_BUDGET:
+        break
+ck("every depth stays inside the budget it was sized against",
+   all(sum(_math.comb(_MS._pool_for(d), z)
+           for z in range(1, min(_MS._pool_for(d), d) + 1)) <= _MS._STACK_BUDGET
+       for d in (2, 3, 4, 5, 6, 8, 12, 30)))
+
+ck("bundles are kept for CORRELATING, not only for being likely",
+   "key=lambda x: x[2]" in _gb,
+   "widening the pool did nothing on its own -- a trim ranked by joint "
+   "probability threw away every complementary pair it found")
+ck("and the correlation kept is measured against independence",
+   "joint - ind" in _gb,
+   "a stack is only worth stacking if it beats the product of its legs")
 
 print()
 print("=" * 72)

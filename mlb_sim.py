@@ -2150,11 +2150,44 @@ def best_same_game(cands, n, n_legs, target, target_payout, max_legs,
 # game contributes at most one "bundle" of 1..k legs with its simulated joint
 # probability; the overall parlay probability is the product of the bundles.
 
+# How many leg combinations one game may enumerate. The bundle search is a
+# subset scan, so DEPTH is the exponent and the pool is not: at depth 4 a pool of
+# 26 costs fewer combinations than a pool of 14 explored to the bottom. That is
+# the whole trade this budget exists to make -- spend it on WIDTH, which is what
+# finds a correlating pair, rather than on 12-leg same-game stacks nobody bets.
+#
+#     pool 14, every depth   16,383      <- what this used to do
+#     pool 20, depth 5       21,699
+#     pool 26, depth 4       17,902
+#     pool 30, depth 3        4,525
+#
+# Measured at roughly 12us a combination (the cost is popcounting 5,000-bit masks),
+# so 25,000 is about 0.3s per game against a full 15-game build of ~27s.
+_STACK_BUDGET = 25000
+_POOL_MIN, _POOL_MAX = 14, 30
+
+
+def _pool_for(depth):
+    """Widest candidate pool that can be searched to `depth` inside the budget.
+
+    Deep stacks force a narrow pool and shallow ones buy a wide one, automatically
+    -- so a thin slate that genuinely needs an 8-leg single-game bundle still gets
+    it, at the old width, while the ordinary 3-5 leg ask gets twice the legs to
+    correlate across."""
+    best = _POOL_MIN
+    for k in range(_POOL_MIN, _POOL_MAX + 1):
+        tot = sum(math.comb(k, sz) for sz in range(1, min(k, depth) + 1))
+        if tot > _STACK_BUDGET:
+            break
+        best = k
+    return best
+
+
 def game_bundles(cands, n, max_legs=3, per_size=6):
     """Non-redundant leg bundles (size 1..max_legs) for one game, each with its
     simulated joint probability. Trimmed to the most useful per size: the safest
     few (high prob) and the longest-shot few (high payout, to reach a target)."""
-    cs = _pool(cands, 14)
+    cs = _pool(cands, _pool_for(max_legs))
     phi = _corr_matrix(cs, n)
     # Same calibrated-marginal / raw-joint mismatch as best_same_game -- and it
     # compounds here, because a mixed parlay multiplies one bundle per game. Even
@@ -2188,11 +2221,24 @@ def game_bundles(cands, n, max_legs=3, per_size=6):
             joint = min(joint * cal, cap)
             if joint <= 0.005:
                 continue
-            sized.append((joint, combo))
+            # How much the stack beats treating its legs as independent. This is
+            # the whole point of a same-game bundle, and it is NOT what sorting by
+            # joint probability finds -- the safest bundles are usually the ones
+            # whose legs barely interact.
+            ind = 1.0
+            for i in idxs:
+                ind *= margs[i]
+            sized.append((joint, combo, joint - ind))
         sized.sort(key=lambda x: x[0], reverse=True)
+        # Safest few, longest-shot few, and -- added because widening the pool did
+        # nothing without it -- the few that CORRELATE best. A bigger pool finds
+        # more complementary pairs and then a probability-ranked trim throws every
+        # one of them away.
         keep = sized[:per_size] + sized[-per_size:]
+        if sz > 1:
+            keep += sorted(sized, key=lambda x: x[2], reverse=True)[:per_size]
         seen = set()
-        for joint, combo in keep:
+        for joint, combo, _dlt in keep:
             key = tuple(sorted(c["label"] for c in combo))
             if key in seen:
                 continue
