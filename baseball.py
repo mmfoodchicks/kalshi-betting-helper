@@ -648,11 +648,12 @@ def _offense_factor(team_hit, ops_vs_hand, opp_hand, lg):
 
 # ---- Kalshi price matching ------------------------------------------------
 def _kalshi_fee(cents):
-    """Expected Kalshi taker fee in cents per contract at price `cents`:
-    fee = 0.07 x price x (1 - price), i.e. ~1.75¢ at 50¢, ~0.6¢ at 90¢. Kalshi
-    rounds up per order; we use the smooth expectation for edge math."""
-    p = cents / 100.0
-    return round(7.0 * p * (1.0 - p), 1)
+    """Kalshi taker fee in cents at price `cents` — see kalshi.taker_fee_cents.
+
+    Rounded to 0.1c because this one feeds DISPLAYED edge figures, where a
+    trailing 0.0693 reads as false precision. The unrounded value is the one to
+    compute with; every caller doing money math should use kalshi's directly."""
+    return round(kalshi.taker_fee_cents(cents), 1)
 
 
 def get_kalshi_prices():
@@ -2734,7 +2735,6 @@ def pick6_board(games, top_n=60):
     all-must-hit player-prop parlay, so we rank safest first and show each pick's
     projected value + our probability. DK's actual line governs -- match ours to
     the board."""
-    import math
     picks = []
     for g in games:
         if _game_state(g) == "Final":

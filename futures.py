@@ -32,7 +32,6 @@ import time as _t
 from datetime import datetime, timezone
 
 import kalshi
-import racing
 
 # A "future" is something you hold, not something you trade this afternoon.
 # Below a couple of weeks the fee and spread dominate any yield calculation and
@@ -79,12 +78,12 @@ def _cents(v):
 
 
 def fee_cents(price_cents):
-    """Kalshi's taker fee for one contract at `price_cents`: 0.07 x p x (1-p),
-    in cents. It peaks at 1.75c mid-book and nearly vanishes at the extremes,
-    which is exactly where this board shops -- but on a 4% return even half a
-    cent matters, so it comes off the yield rather than being waved away."""
-    p = max(0.0, min(1.0, price_cents / 100.0))
-    return 7.0 * p * (1.0 - p)
+    """Kalshi's taker fee for one contract — see kalshi.taker_fee_cents.
+
+    It peaks at 1.75c mid-book and nearly vanishes at the extremes, which is
+    exactly where this board shops -- but on a 4% return even half a cent
+    matters, so it comes off the yield rather than being waved away."""
+    return kalshi.taker_fee_cents(price_cents)
 
 
 _cache = {}

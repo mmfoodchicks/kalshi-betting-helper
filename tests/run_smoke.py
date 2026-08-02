@@ -85,20 +85,48 @@ def t_accumulator_keys():
 
 
 def t_fee_consistency():
-    """All Kalshi taker-fee implementations must agree."""
+    """Every Kalshi taker-fee wrapper must agree, and the FORMULA must exist once.
+
+    This used to list the implementations by hand and guard one of them on
+    `hasattr(combine, "_kalshi_fee")` — a name combine never had. So it silently
+    compared three of the five copies and passed while futures.fee_cents and
+    combine._fee_cents drifted unchecked. Now the formula is grepped for instead
+    of enumerated, which cannot go stale when someone adds a sixth copy."""
+    import glob
+    import re
     import baseball
     import bestbets
-    import odds
     import combine
-    fns = [odds.taker_fee_cents, bestbets._fee, baseball._kalshi_fee]
-    if hasattr(combine, "_kalshi_fee"):
-        fns.append(combine._kalshi_fee)
+    import futures
+    import kalshi
+    import odds
+    fns = {"kalshi.taker_fee_cents": kalshi.taker_fee_cents,
+           "odds.taker_fee_cents": odds.taker_fee_cents,
+           "bestbets._fee": bestbets._fee,
+           "baseball._kalshi_fee": baseball._kalshi_fee,
+           "combine._fee_cents": combine._fee_cents,
+           "futures.fee_cents": futures.fee_cents}
     bad = []
     for c in (1, 10, 35, 50, 65, 90, 99):
-        vals = [round(fn(c), 1) for fn in fns]
-        if len(set(vals)) != 1:
+        vals = {n: round(f(c), 1) for n, f in fns.items()}
+        if len(set(vals.values())) != 1:
             bad.append((c, vals))
-    check("taker fee identical across implementations", not bad, bad)
+    check("taker fee identical across every implementation", not bad, bad[:2])
+
+    # Out-of-range prices are Kalshi's "no offer" sentinel, not a price.
+    check("fee is 0 outside a real price",
+          all(kalshi.taker_fee_cents(x) == 0.0 for x in (None, 0, 100, -5, 101, "x")))
+    check("fee peaks mid-book", kalshi.taker_fee_cents(50) > kalshi.taker_fee_cents(90))
+
+    # The formula itself must live in exactly one place. Anyone re-deriving
+    # 0.07*p*(1-p) has made a sixth copy that will drift like the last five.
+    root = os.path.dirname(HERE)
+    pat = re.compile(r"7(?:\.0)?\s*\*\s*p\s*\*\s*\(\s*1(?:\.0)?\s*-\s*p\s*\)")
+    holders = []
+    for f in sorted(glob.glob(os.path.join(root, "*.py"))):
+        if pat.search(open(f).read()):
+            holders.append(os.path.basename(f))
+    check("the fee formula is written exactly once", holders == ["kalshi.py"], holders)
 
 
 def t_dfs_cap_and_exclusivity():
@@ -183,7 +211,6 @@ def t_pick6_rules():
 
 def t_clock():
     """The app clock must be Eastern (UTC-4 or UTC-5)."""
-    import datetime
     import clock
     off = clock.now_et().utcoffset().total_seconds() / 3600
     check("clock is Eastern (UTC-4/-5)", off in (-4.0, -5.0), off)

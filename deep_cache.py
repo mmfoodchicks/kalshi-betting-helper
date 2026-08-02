@@ -17,7 +17,6 @@ import os
 import pickle
 import threading
 import time
-import datetime as _dt
 
 CACHE_DIR = os.environ.get("DEEP_CACHE_DIR") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "data", "deep")

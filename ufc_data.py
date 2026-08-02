@@ -14,7 +14,6 @@ two weeks -- a fighter's history only changes when they next compete.
 
 import concurrent.futures as _cf
 import clock
-import datetime
 import re
 
 import racing

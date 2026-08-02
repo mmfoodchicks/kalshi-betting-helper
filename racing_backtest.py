@@ -17,7 +17,6 @@ Point-in-time throughout: race N is predicted using only races 1..N-1 of that
 season. Nothing sees its own result or anything after it.
 """
 
-import math
 import random
 from collections import defaultdict
 

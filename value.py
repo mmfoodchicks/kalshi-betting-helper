@@ -11,7 +11,6 @@ ignores tonight's pitcher, so we also show the matchup-adjusted model number and
 warn when recent form and the model disagree (it may just be a hot/cold streak).
 """
 
-import datetime
 import clock
 import re
 import time

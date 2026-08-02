@@ -59,7 +59,6 @@ def _norm_cdf(z):
 
 def _season():
     """Upcoming NFL season year (a new season is 'current' from March on)."""
-    import datetime as _dt
     t = clock.today_et()
     return t.year if t.month >= 3 else t.year - 1
 

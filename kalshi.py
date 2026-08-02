@@ -118,6 +118,34 @@ def get_market(ticker):
     }
 
 
+# ---- Taker fee -------------------------------------------------------------
+# Kalshi charges 0.07 * C * p * (1-p) per order, rounded UP to the cent. This is
+# the smooth per-contract expectation of that, which is the right number for edge
+# math: a single contract really pays the rounded-up cent, but over any real order
+# size the per-contract cost converges here.
+#
+# THIS IS THE ONE COPY. There were five -- baseball._kalshi_fee, futures.fee_cents,
+# combine._fee_cents, bestbets._fee and odds.taker_fee_cents -- each re-deriving
+# the same formula, and they had already drifted on rounding. The smoke test that
+# was supposed to catch that guarded on `hasattr(combine, "_kalshi_fee")`, a name
+# combine never had, so it silently compared three of the five and passed.
+def taker_fee_cents(cents):
+    """Expected Kalshi taker fee in cents for one contract priced at `cents`.
+
+    ~1.75c at 50c, ~0.6c at 90c, ~0 at the extremes. Returns 0.0 for a price
+    outside (0, 100), which is Kalshi's "no offer" sentinel rather than a price."""
+    if cents is None:
+        return 0.0
+    try:
+        c = float(cents)
+    except (TypeError, ValueError):
+        return 0.0
+    if not (0 < c < 100):
+        return 0.0
+    p = c / 100.0
+    return 7.0 * p * (1.0 - p)
+
+
 def _cents(dollars):
     v = _f(dollars)
     return round(v * 100, 1) if v is not None else None

@@ -4,7 +4,7 @@ Part 1 is deterministic: synthetic legs through the math and assembly functions,
 so every equation and invariant is checked exactly rather than sampled.
 Part 2 (combo_audit_live.py) drives the real builders against a real slate.
 """
-import os, sys, math, itertools, random
+import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
 import parlay

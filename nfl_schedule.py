@@ -8,7 +8,6 @@ strength of schedule (who they play, especially in the fantasy playoff weeks
 week, and approximate schedule difficulty from opponents' projected wins.
 """
 
-import datetime
 import clock
 
 import nfl_awards          # racing cache + _team_wins

@@ -174,6 +174,24 @@ if "--live" in sys.argv:
     except Exception as e:
         print(f"  SKIP  MLB futures — {type(e).__name__}: {str(e)[:60]}")
 
+    # Tennis, on the books it says are tradeable. Audited at +0.953 over 218
+    # sides, so this floor is set where a real regression would trip it.
+    try:
+        import tennis_prices
+        tb = tennis_prices.board() or tennis_prices._compute(n_sims=1200)
+        pairs = []
+        for m in (tb.get("matches") or []):
+            if not m.get("tradeable"):
+                continue
+            for s in ("a", "b"):
+                p = m[s]
+                fw = p.get("fair_win_raw") if p.get("fair_win_raw") is not None else p.get("model_win")
+                if fw is not None and p.get("cents") is not None:
+                    pairs.append((fw, p["cents"]))
+        rank_check("tennis", pairs, floor=0.7)
+    except Exception as e:
+        print(f"  SKIP  tennis — {type(e).__name__}: {str(e)[:60]}")
+
     # The crypto model against every tight two-sided book on the board. This is
     # the check that would have caught the drift bug on day one.
     try:

@@ -525,8 +525,16 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
         mkt_a = round(100.0 * ca / (ca + cb), 1)
         mkt_b = round(100.0 * cb / (ca + cb), 1)
     # Overround (vig). A no-liquidity pre-match book quotes both sides high (e.g.
-    # 94/94 -> overround ~88); a real two-sided market is ~100-110. We treat a
-    # huge overround as "not really priced" and keep it out of the board/combos.
+    # 94/94 -> overround ~88); a real two-sided market is ~100-110.
+    #
+    # This flag SORTS such matches down and labels them; it does not remove them
+    # or suppress their edges, which is what this comment used to claim. Audited
+    # on a live 146-match board and the weaker claim turns out to be enough: of
+    # 63 positive edges, ZERO sat on a book with overround > 25. The edge is
+    # computed against the ASK, and a no-liquidity book quotes BOTH sides high,
+    # so every leg on one comes out with a negative edge -- "do not buy", which is
+    # correct. A positive edge needs a low ask, and a low ask means a real book.
+    # The ask-based edge is self-protecting on the buy side.
     overround = (ca + cb - 100) if (ca is not None and cb is not None) else None
     tradeable = overround is not None and overround <= 25
     w = conf / (conf + _BLEND_K.get(source, 12.0))

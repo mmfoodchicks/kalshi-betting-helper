@@ -11,7 +11,6 @@ breaks one fails loudly here instead of quietly mispricing a board.
 
 Run: python3 tests/tennis_board_check.py
 """
-import math
 import os
 import sys
 

@@ -110,7 +110,6 @@ def groups(league):
 
 
 def _recent_season(league):
-    import datetime
     return clock.today_et().year - 1
 
 

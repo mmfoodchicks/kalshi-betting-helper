@@ -7,7 +7,6 @@ market to a team by name and hang the price, our model probability and the edge
 so the board lights up more columns as the calendar approaches the season.
 """
 
-import math
 import re
 
 import kalshi

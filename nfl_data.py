@@ -13,7 +13,6 @@ and keep every stat line consistent with the team total and the game script.
 Home/away pairing comes from ESPN's scoreboard (Sleeper rows only know
 team/opponent). Everything is cached and fails safe to None.
 """
-import clock
 
 import racing                      # shared cached JSON getter
 import nfl_live                    # ESPN schedule + last-season ratings (fallback)

@@ -1,6 +1,6 @@
 """Part 2: drive the real baseball combo builders against a real slate and
 assert the invariants that must hold no matter what the sim produced."""
-import os, sys, math, datetime, collections
+import os, sys, datetime, collections
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
 

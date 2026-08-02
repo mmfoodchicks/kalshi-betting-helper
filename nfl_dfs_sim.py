@@ -21,7 +21,6 @@ import gzip as _gzip
 import random as _random
 import time as _time
 import threading as _threading
-import datetime as _dt
 
 _PROJ = "https://api.sleeper.com/projections/nfl/{season}/{week}"
 _cache = {}

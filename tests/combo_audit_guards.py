@@ -5,10 +5,9 @@ fallback, display/refresh stability, fee accounting, and monotonicity laws that
 must hold for ANY slate (raising the floor can't lower a leg; adding legs can't
 raise the combined chance).
 """
-import os, sys, math, datetime, collections, copy
+import os, sys, datetime, collections
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
-import mlb_sim
 
 PASS, FAIL = [], []
 
@@ -357,7 +356,6 @@ ck("doubleheader game 1 -> 13:40 event", g1 and g1["event"].endswith("1340KCMIN"
 ck("doubleheader game 2 -> 17:40 event", g2 and g2["event"].endswith("1740KCMIN"))
 ck("unknown team pair -> None", B._match_price(idx, abbr, 1, 99, now)[0] is None)
 # live slate: every matched suffix must carry TODAY's date
-import re as _re2
 today_tag = datetime.date.fromisoformat(DATE).strftime("%y%b%d").upper()
 mism = [(g["matchup"], g.get("kalshi_suffix")) for g in games
         if g.get("kalshi_suffix") and today_tag not in g["kalshi_suffix"]]

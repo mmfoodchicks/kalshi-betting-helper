@@ -16,7 +16,6 @@ Pipeline:
   league's 6-team bracket, play the postseason analytically -> aggregate odds.
 """
 
-import datetime
 import clock
 import random
 from collections import defaultdict

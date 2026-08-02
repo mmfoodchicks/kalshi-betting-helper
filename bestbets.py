@@ -14,12 +14,12 @@ edge you'd actually bank. Sources are best-effort and independently degradable;
 import os
 import time
 import clock
-import datetime as _dt
 
 
 def _fee(cents):
-    p = cents / 100.0
-    return 7.0 * p * (1.0 - p)
+    """Kalshi taker fee — see kalshi.taker_fee_cents."""
+    import kalshi
+    return kalshi.taker_fee_cents(cents)
 
 
 # An edge this large is a claim that the market is wrong by more than any liquid

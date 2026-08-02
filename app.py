@@ -190,7 +190,6 @@ def _init_deep_sims():
     persisted result from disk, and start the background refresh (reruns each job
     once per day just after local midnight)."""
     import deep_cache
-    import datetime as _dt
 
     def run_mlb():
         import deep_season
@@ -583,7 +582,7 @@ def api_simulate_price():
 @app.route("/api/simulate/game")
 def api_simulate_game():
     """Simulate a baseball game many times -> win %, totals, blowout/shutout."""
-    import simulate, datetime as _dt
+    import simulate
     date = request.args.get("date") or clock.today_et().isoformat()
     try:
         game_pk = int(request.args["game_pk"])
@@ -697,7 +696,6 @@ def api_simulate_dfs():
         cap = int(d.get("cap", 50000))
     except (ValueError, TypeError):
         return jsonify({"error": "bad roster/cap"}), 400
-    import datetime as _dt
     n = tiers.cap_sims(_tier(), d.get("sims", 20000))
     if d.get("sport") == "lol":
         # LoL Classic DFS: captain + role optimizer with team-correlated ceiling.
@@ -848,7 +846,6 @@ def api_baseball_today():
     """Model predictions for a day's MLB slate plus parlay combo suggestions.
 
     Non-blocking: 202 while the board builds, the frontend polls."""
-    import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     key = (date, season)
@@ -990,7 +987,6 @@ def api_sports(sport_key):
     if sport_key in ("nascar", "f1") and tiers.has_feature(_tier(), "racing_picks"):
         try:
             import racing
-            import datetime as _dt
             events, grid = racing.race_board(sport_key, events,
                                              date=clock.today_et().isoformat())
         except Exception:
@@ -1010,7 +1006,6 @@ def api_sports_live():
     inning/base-out feed; the other tracked leagues come from ESPN scoreboards and
     surface the moment a game flips to in-progress."""
     import time as _t
-    import datetime as _dt
     now = _t.time()
     if _live_cache["data"] and now - _live_cache["ts"] < 30:
         return jsonify(_live_cache["data"])
@@ -1168,7 +1163,6 @@ def api_combine_meta():
 def api_combine():
     """Cross-category parlay (MLB + daily crypto + UFC/tennis/golf),
     tuned to a target per-leg confidence."""
-    import datetime as _dt
     import combine
     date = request.args.get("date") or clock.today_et().isoformat()
     season = date[:4]
@@ -1220,7 +1214,6 @@ def api_combine():
 @app.route("/api/combine/recommended")
 def api_combine_recommended():
     """Auto-built safest / best-value / best parlays from the checked sports."""
-    import datetime as _dt
     import combine
     date = request.args.get("date") or clock.today_et().isoformat()
     season = date[:4]
@@ -1241,7 +1234,6 @@ def api_combine_recommended():
 def api_baseball_parlay():
     """Build an N-leg parlay tuned to a target per-leg confidence, picking the
     optimal line (hits 1+/2+, run total, moneyline/spread) for each leg."""
-    import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
@@ -1265,7 +1257,6 @@ def api_baseball_parlay():
 def api_baseball_season():
     """Our season Monte Carlo (division/playoff/pennant/WS odds + win totals) and
     the resulting edges vs Kalshi futures markets."""
-    import datetime as _dt
     import season_sim
     season = request.args.get("season") or str(clock.today_et().year)
     try:
@@ -1290,7 +1281,6 @@ def api_baseball_futures():
     win-total line) and get the full ranked team list — how many of the N sims
     each team won it, our model %, Kalshi and Polymarket. Built for the dropdown +
     search UI."""
-    import datetime as _dt
     import season_sim
     season = request.args.get("season") or str(clock.today_et().year)
     try:
@@ -1654,7 +1644,6 @@ _deep = {"agg": None, "season": None}
 def api_baseball_deep_start():
     """Kick off the deep multicore season run in the background (it takes minutes).
     Poll /deep/status; when ready, GET /futures?engine=deep for the deep board."""
-    import datetime as _dt
     import deep_season
     import deep_cache
     if deep_season.PROGRESS.get("running"):
@@ -1679,7 +1668,6 @@ def api_baseball_live(game_pk):
 def api_baseball_team():
     """Per-player simulated season stat lines for one team from the latest deep
     run (hits/HR/BB/K/R for bats, IP/K/BB/ERA for arms). Needs ?abbr=NYY."""
-    import datetime as _dt
     import deep_season
     season = request.args.get("season") or str(clock.today_et().year)
     abbr = (request.args.get("abbr") or "").upper()
@@ -1698,7 +1686,6 @@ def api_baseball_team():
 
 @app.route("/api/baseball/futures/deep/status")
 def api_baseball_deep_status():
-    import datetime as _dt
     import deep_season
     season = request.args.get("season") or str(clock.today_et().year)
     p = dict(deep_season.PROGRESS)
@@ -1778,7 +1765,6 @@ def api_bestbets():
     """Cross-sport Best Bets: every positive net-of-fee edge across all our
     models (MLB slate/props, season futures, UFC, tennis, crypto, arbitrage),
     ranked by the edge you'd actually bank. Sources degrade independently."""
-    import datetime as _dt
     import bestbets
     date = request.args.get("date") or clock.today_et().isoformat()
     try:
@@ -1796,7 +1782,6 @@ def api_baseball_edges():
     """Rank the biggest model/sim-vs-Kalshi disparities across the day's slate.
     For each leg we can price live, edge = our simulated probability minus
     Kalshi's implied price. A disagreement finder, flagged by confidence."""
-    import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
@@ -1817,7 +1802,6 @@ def api_baseball_edges():
 def api_baseball_pick6():
     """DraftKings Pick 6 board: our player-prop projections framed as More/Less at
     DK-style lines, from the same shared game sim the combos use."""
-    import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
@@ -1831,7 +1815,6 @@ def api_baseball_pick6():
 def api_baseball_pick6_sheet():
     """Pick 6 game browser: one game's full per-player simulated stat sheet
     (avg + More% at every line) plus the slate's game list. ?date=&pk=."""
-    import datetime as _dt
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     try:
@@ -1849,7 +1832,6 @@ def api_baseball_pick6_sheet():
 def api_baseball_pick6_eval():
     """Exact joint odds for a hand-built same-game Pick 6 slip (masks ANDed on
     the shared sim, not an independence product)."""
-    import datetime as _dt
     d = request.get_json(force=True, silent=True) or {}
     date = d.get("date") or clock.today_et().isoformat()
     legs = d.get("legs") or []
@@ -1871,7 +1853,6 @@ def api_baseball_sgp():
     """Same-game parlays with correlation-aware (simulated) joint odds. Legs from
     one game are correlated, so these are read off a full game simulation rather
     than multiplying independent marginals."""
-    import datetime as _dt
     locked = _locked("same_game_parlay")
     if locked:
         return locked
@@ -1904,7 +1885,6 @@ def api_baseball_mixed():
 
     `objective` picks which point on the price/probability frontier to return —
     safe (likeliest), value (best EV), or balanced (likeliest that isn't -EV)."""
-    import datetime as _dt
     locked = _locked("mixed_parlay")
     if locked:
         return locked
@@ -1971,7 +1951,6 @@ def api_baseball_value():
     if locked:
         return locked
     import value
-    import datetime as _dt
     season = request.args.get("season") or clock.today_et().isoformat()[:4]
     try:
         n = max(5, min(40, int(request.args.get("games", 15))))
@@ -2016,7 +1995,6 @@ def api_baseball_hits():
     """Predicted Hits + Risky Hits: from the recorder's graded props, the ones the
     model liked that cashed, and the longshots that would've paid big."""
     import mlb_recorder
-    import datetime as _dt
     date = request.args.get("date")
     if date == "today":
         date = clock.today_et().isoformat()

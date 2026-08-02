@@ -109,13 +109,12 @@ MIN_EDGE_CENTS = 5.0
 
 
 def taker_fee_cents(cents):
-    """Expected Kalshi taker fee per contract at price `cents`:
-    0.07 x p x (1-p), ~1.8¢ at 50¢. The rest of the app nets this out of every
-    displayed edge; crypto must too."""
-    if cents is None or not (0 < cents < 100):
-        return 0.0
-    p = cents / 100.0
-    return round(7.0 * p * (1.0 - p), 1)
+    """Expected Kalshi taker fee per contract — see kalshi.taker_fee_cents.
+
+    Rounded to 0.1c: this feeds displayed crypto edges. The rest of the app nets
+    the fee out of every displayed edge; crypto must too."""
+    import kalshi
+    return round(kalshi.taker_fee_cents(cents), 1)
 
 
 def _norm_cdf(x):

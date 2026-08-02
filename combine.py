@@ -528,9 +528,8 @@ def gather(cats, date, season, allow_live=False):
 
 
 def _fee_cents(cents):
-    """Expected Kalshi taker fee per contract at `cents`: 0.07 x p x (1-p) x 100."""
-    p = cents / 100.0
-    return 7.0 * p * (1.0 - p)
+    """Expected Kalshi taker fee per contract — see kalshi.taker_fee_cents."""
+    return kalshi.taker_fee_cents(cents)
 
 
 def _item(combo):

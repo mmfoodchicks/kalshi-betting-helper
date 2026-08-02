@@ -193,7 +193,6 @@ def f1_type_skill(year=None, n_back=2):
     in-type sample. The delta-of-deltas strips out the car a driver had each year,
     so a street/wet specialist keeps that skill even through a team change — and it
     gives a real sample where the current 5-race season has almost none."""
-    import datetime
     year = year or clock.today_et().year
     base = ERGAST.rsplit("/", 1)[0]                  # .../ergast/f1
 
@@ -368,7 +367,6 @@ def f1_remaining():
     """Remaining races as [{round, name, sprint, circuit, wet_prob, avg_wind}].
     Wet-race probability + wind come from the circuit's historical race-day
     climate (Open-Meteo archive)."""
-    import datetime
     import race_weather
     def build():
         d = racing._get_json(f"{ERGAST}.json")
@@ -644,7 +642,6 @@ def nascar_type_skill(year=None, series=1, n_back=2):
     − that season's overall avg finish) — how much better than the driver's OWN
     baseline on that track type — then recency-weight across seasons and regress by
     the total in-type sample. The result is applied to the CURRENT base pace."""
-    import datetime
     year = year or clock.today_et().year
 
     def build():
@@ -734,7 +731,6 @@ def _cup_points(pos):
 def nascar_state(year=None, series=1):
     """Current Cup standings + pace from this season's completed points races:
     {driver_id: {name, points, playoff_points, wins, race_pace, dnf, starts}}."""
-    import datetime
     year = year or clock.today_et().year
 
     def build():

@@ -13,7 +13,6 @@ the win probability is the standard Elo logistic. As more matches settle, the
 ratings sharpen -- recursive and dynamic, like the rest of the engines.
 """
 
-import datetime
 import json
 import os
 import math

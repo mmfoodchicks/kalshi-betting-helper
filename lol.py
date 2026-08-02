@@ -18,7 +18,6 @@ board works -- esports has no Kalshi combos, so this is a pure prop tool.
 """
 
 import time
-import datetime as _dt
 
 import requests
 

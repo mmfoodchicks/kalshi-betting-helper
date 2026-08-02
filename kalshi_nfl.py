@@ -8,7 +8,6 @@ adds them mid-season (as they did for MLB) they start pricing automatically.
 Games are matched by the PAIR of team abbreviations in the event suffix, so no
 date math is needed. All lookups degrade gracefully to None.
 """
-import re
 import time
 
 import kalshi

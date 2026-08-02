@@ -23,7 +23,6 @@ quick_game() is the deep-season resolver: ONE fast game returning goals + the
 overtime flag, so the nightly 4000-season Monte Carlo can award real NHL
 standings points (2 win / 1 OT loss).
 """
-import math
 import random
 import re
 import threading
