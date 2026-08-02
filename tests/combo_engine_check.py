@@ -194,6 +194,33 @@ check("and reported as met", m3["legs_met"] is True)
 s9, m9 = CE.choose(states, objective="safe", legs_target=9, legs_mode="require")
 check("an impossible requirement is flagged, not silently dropped",
       m9["hard_ok"] is False)
+
+# A required leg count must SURVIVE an unsatisfiable combination. This is the
+# case that was broken: "require 3 legs AND require 20x" returned 8 legs, because
+# when the pair could not both be met the code dropped BOTH requirements and
+# re-ranked over everything -- and the ranking then preferred the slip that
+# reached the payout.
+many = [(chr(65 + i), [bundle(0.60, 58), bundle(0.85, 86)], None) for i in range(8)]
+mstates = CE.frontier(many, max_total_legs=8, net=False)
+best_at_3 = max(s["fair_payout"] for s in mstates if s["legs"] == 3)
+s_hard, m_hard = CE.choose(mstates, objective="safe", legs_target=3,
+                           payout_target=20.0, legs_mode="require",
+                           payout_mode="require", conn="and")
+check("a required leg count is honoured even when the payout can't be reached",
+      s_hard["legs"] == 3, f"{s_hard['legs']} legs")
+check("and it takes the biggest payout available at that leg count",
+      abs(s_hard["fair_payout"] - best_at_3) < 1e-9,
+      f"{s_hard['fair_payout']:.2f}x of a possible {best_at_3:.2f}x")
+check("the unreachable target is named", m_hard["unmet"] == ["payout"], m_hard["unmet"])
+check("the leg target is reported as met", m_hard["legs_met"] is True)
+check("the payout is reported as missed", m_hard["payout_reached"] is False)
+check("and the best payout at that size is reported",
+      abs(m_hard["best_payout_at_legs"] - best_at_3) < 0.01,
+      m_hard["best_payout_at_legs"])
+s_ok, m_ok = CE.choose(mstates, objective="safe", legs_target=3, payout_target=3.0,
+                       legs_mode="require", payout_mode="require", conn="and")
+check("a satisfiable pair still satisfies both",
+      s_ok["legs"] == 3 and m_ok["hard_ok"] is True and not m_ok["unmet"])
 sp, mp = CE.choose(states, objective="safe", payout_target=3.0,
                    payout_mode="require")
 check("a required payout is judged on the FAIR payout",

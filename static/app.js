@@ -1273,8 +1273,25 @@ function renderMixed(m) {
     ? `<span>Payout ≥${m.target_payout_x}× <b style="color:${m.payout_reached ? "#3ad17a" : "#e0566a"}">${m.payout_reached ? "✓ reached" : "✗ best is " + m.fair_payout_x + "×"}</b></span>` : "";
   const legNote = (m.legs_target != null)
     ? `<span>${m.legs_target} legs <b style="color:${m.legs_met ? "#3ad17a" : "#e0566a"}">${m.legs_met ? "✓" : "✗ got " + m.n_legs}</b></span>` : "";
-  const hardWarn = (m.hard_ok === false)
-    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy your required target(s) on today's slate — showing the closest parlay. Try: loosen a target to "recommend", switch AND→OR, lower the payout, or lower the per-leg % (a higher payout needs longer-shot legs).</div>` : "";
+  // Name what was honoured and what was impossible. "Couldn't satisfy your
+  // target(s)" was true but useless: with a required leg count AND a required
+  // payout it never said which one broke, and the builder used to quietly drop
+  // BOTH. A required leg count is now always honoured, so the message is about
+  // the one target that genuinely could not be reached at that size.
+  const unmet = m.unmet || [];
+  let hardWarn = "";
+  if (m.hard_ok === false && unmet.length) {
+    const held = [];
+    if (m.legs_target != null && !unmet.includes("legs")) held.push(`<b>${m.legs_target} legs</b>`);
+    if (m.target_payout_x && !unmet.includes("payout")) held.push(`<b>≥${m.target_payout_x}×</b>`);
+    const heldTxt = held.length ? ` Held your ${held.join(" and ")}.` : "";
+    if (unmet.includes("payout")) {
+      const best = m.best_payout_at_legs || m.fair_payout_x;
+      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${m.target_payout_x}× isn't reachable with ${m.n_legs} legs</b> at your per-leg floor — the most any ${m.n_legs}-leg parlay pays today is <b>${best}×</b>.${heldTxt} To reach ${m.target_payout_x}×: add legs, or lower the per-leg % so longer shots qualify.</div>`;
+    } else {
+      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy <b>${unmet.join(" or ")}</b> on today's slate — showing the closest parlay.${heldTxt}</div>`;
+    }
+  }
   const stacked = m.groups.some((g) => g.same_game);
   // Price-side numbers. EV is what the slip returns per $1 at Kalshi's actual
   // asks including the taker fee, so a negative one means the likeliest slip is

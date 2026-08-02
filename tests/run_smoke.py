@@ -391,6 +391,25 @@ def t_slate_is_non_blocking():
     check("one contract of depth is not a fillable market",
           not _ce.tradeable({"ask": 40.0, "bid": 4.0, "mid": 22.0, "spread": 36.0,
                              "size": 1.0, "vol": 0.0, "oi": 0.0}))
+    # "require" must be hard. A required leg count used to be abandoned whenever
+    # it could not be met TOGETHER with a required payout, which turned a hard
+    # "3 legs" into an 8-leg slip.
+    _mb = [(chr(65 + i), [{"size": 1, "prob": 0.6,
+                           "legs": [{"prob": 0.6, "price_cents": 58,
+                                     "fillable": True}]}], None) for i in range(8)]
+    _ms = _ce.frontier(_mb, max_total_legs=8, net=False)
+    _s, _meta = _ce.choose(_ms, objective="safe", legs_target=3, payout_target=99.0,
+                           legs_mode="require", payout_mode="require", conn="and")
+    check("a required leg count survives an unreachable payout",
+          _s["legs"] == 3, f"{_s['legs']} legs")
+    check("and the unreachable target is named", _meta["unmet"] == ["payout"])
+
+    # The per-leg floor must apply to the number the user is SHOWN, i.e. after
+    # the market blend, not to the pre-blend model number.
+    _bm = inspect.getsource(B.build_mixed_parlay)
+    check("the per-leg floor is applied after the market blend",
+          _bm.index("_price_cands") < _bm.rindex('c["marg"] >= floor'))
+
     check("the API exposes the objective",
           "objective" in inspect.getsource(_app.api_baseball_mixed))
     check("and rejects an unknown one rather than passing it through",

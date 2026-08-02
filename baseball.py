@@ -2630,11 +2630,18 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         sim = gs["sim"]
         side = team_side(g)
         cands = [c for c in gs["cands"]
-                 if (types is None or c["type"] in types) and c["marg"] >= floor
+                 if (types is None or c["type"] in types)
                  and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
         _price_cands(cands, g.get("kalshi_suffix"))
+        # The per-leg floor is applied AFTER the blend, because the blend is what
+        # decides the number the user actually sees. Filtering first let a leg
+        # qualify at 60% pre-blend and then get marked down to 41% by the market,
+        # so a slip built under "each leg >= 55%" came back showing 38-43% legs.
+        cands = [c for c in cands if c["marg"] >= floor]
+        if not cands:
+            continue
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=max_legs_per_game)
         if bundles:
             label = g["matchup"] + (" 🔴" if live_gs else "")

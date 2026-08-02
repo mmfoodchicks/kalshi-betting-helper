@@ -367,19 +367,38 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
     # separately; targeting it instead would silently chase mispriced legs.
     meets_payout = lambda s: (s["fair_payout"] or 0) >= Y
 
+    # Hard requirements, in the order they are given up. A leg count is an exact
+    # structural target a slate can nearly always hit; a payout is a ">=" that may
+    # be physically unreachable (three legs at a 55% floor cannot pay 20x -- the
+    # arithmetic caps at about 6x). So when the two cannot both be satisfied, the
+    # leg count is the one that survives.
     reqs = []
     if legs_mode == "require" and legs_target:
-        reqs.append(meets_legs)
+        reqs.append(("legs", meets_legs))
     if payout_mode == "require" and want_payout:
-        reqs.append(meets_payout)
-    feasible, hard_ok = states, True
+        reqs.append(("payout", meets_payout))
+    feasible, hard_ok, unmet = states, True, []
     if reqs:
         combine = all if conn == "and" else any
-        got = [s for s in states if combine(r(s) for r in reqs)]
+        got = [s for s in states if combine(fn(s) for _n, fn in reqs)]
         if got:
             feasible = got
         else:
-            hard_ok = False                 # unsatisfiable -> best effort over all
+            # Unsatisfiable TOGETHER is not a licence to ignore both. Dropping
+            # straight to "best effort over everything" is what turned a hard
+            # "3 legs AND 20x payout" into an 8-leg slip: neither requirement
+            # bound any more, and the ranking tier then preferred the 8-legger
+            # because it was the one that reached the payout. Narrow by each
+            # requirement that IS satisfiable instead, in priority order, so the
+            # ones we can honour still bind and only the impossible one is
+            # reported as missed.
+            hard_ok = False
+            for name, fn in reqs:
+                sub = [s for s in feasible if fn(s)]
+                if sub:
+                    feasible = sub
+                else:
+                    unmet.append(name)
 
     pool, ev_ok = feasible, None
     if objective in ("balanced", "value"):
@@ -420,6 +439,18 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
     return best, {"hard_ok": hard_ok, "ev_ok": ev_ok, "objective": objective,
                   "legs_met": meets_legs(best) if want_legs else None,
                   "payout_reached": meets_payout(best) if want_payout else None,
+                  # Which hard requirements could not be met at all, so the UI can
+                  # name the one that failed instead of shrugging at both.
+                  "unmet": unmet,
+                  # The best payout actually available at the leg count we were
+                  # held to -- the honest answer to "20x wasn't possible, so what
+                  # was?" without making the user re-run with a lower target.
+                  # Measured over `pool`, not `feasible`: under `balanced` the
+                  # -EV slips were never selectable, so quoting their payout here
+                  # would advertise a number this objective refused to pick.
+                  "best_payout_at_legs": (
+                      round(max((s["fair_payout"] or 0) for s in pool), 2)
+                      if pool else None),
                   "n_states": len(states), "n_feasible": len(feasible)}
 
 
