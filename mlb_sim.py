@@ -271,6 +271,52 @@ def _build_setup(rows, mult):
 # but a guard that fails by quietly returning the wrong answer is the wrong
 # guard. Widened so a genuinely extreme MATCHUP still calibrates, and the engine
 # now says so when it cannot.
+# HOW FAR TO TRUST er OVER THE RATES. `mult` is the multiplier that would land a
+# lineup exactly on its er; this is the power it is raised to, so 0 keeps the
+# rates untouched and 1 forces the total onto er. It used to be 1, implicitly.
+#
+# THE RATES ALREADY CARRY THE MATCHUP. props.batter_props multiplies every
+# component by opp_hit_factor before the simulator sees a thing, so er and the
+# rates are two estimates of the same quantity, not a target and a raw input.
+# Forcing one onto the other throws away half the information, and it always
+# comes out of the HITS, because er pins the runs and nothing pins the hits.
+#
+# Swept over 16 real lineups, 112,000 team-games a setting, against the real
+# league and against the model's OWN expected hits:
+#
+#     power   hits/g  runs/g     H/R   rho(er)  slope   vs real
+#      0.00    8.348   4.510  1.8511    0.764   1.068   H +1.08%  R +1.42%
+#      0.25    8.281   4.462  1.8558    0.848   1.020   H +0.27%  R +0.35%
+#      0.35    8.266   4.438  1.8627    0.867   1.014   H +0.09%  R -0.21%
+#      0.50    8.232   4.413  1.8652    0.911   1.005   H -0.33%  R -0.75%
+#      1.00    8.120   4.323  1.8785    0.941   0.908   H -1.68%  R -2.80%
+#     real     8.259   4.447  1.8572        -   1.000
+#
+# Full calibration was the worst setting on every level number, and the reason is
+# in the SLOPE column: at power 1 a lineup's realized runs move only 0.908 per
+# unit of er. The step meant to impose the matchup was COMPRESSING it, because
+# the convergence loop systematically undershoots the high-scoring lineups. At
+# 0.35 the slope is 1.014 -- the matchup comes through at full strength.
+#
+# There is a real trade-off and it is worth naming: rank correlation with er
+# falls from .941 to .867, so some matchup ORDERING is given up for a level that
+# is right. 0.25 through 0.50 is a plateau on the level numbers; 0.35 is chosen
+# inside it as the setting that keeps the most er ordering.
+#
+# Shipped, with _CAL_HOME/_CAL_AWAY refit underneath it (they ride inside the
+# target, so the shrink diluted them too):
+#
+#                       hits/g   runs/g      H/R    away/er   home/er
+#     before             8.183    4.374   1.8709     1.000     0.999
+#     after              8.210    4.399   1.8663     1.004     1.003
+#     real               8.259    4.447   1.8572     1.000     1.000
+#
+# Every level number moves toward real and both sides still land on their own er.
+# The gain is modest. The reason to take it is the slope: the engine no longer
+# flattens the difference between a good matchup and a bad one.
+_CAL_SHRINK = 0.35
+
+
 _MULT_LO, _MULT_HI = 0.55, 1.8
 
 
@@ -334,7 +380,10 @@ def _team(batters, er, rnd, opp_sp_ip=None):
     mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(700)) / 700.0
     if mean > 0.3:
         mult = _clamp_mult(mult * (er / mean) ** k_exp)
-    return _build_setup(rows, mult)
+    # PARTIALLY. See _CAL_SHRINK: `mult` is the multiplier that would land the
+    # lineup exactly on er, and going all the way there is measurably worse than
+    # going most of the way back toward the rates it was handed.
+    return _build_setup(rows, _clamp_mult(mult ** _CAL_SHRINK))
 
 
 _N_INNINGS = 9
@@ -390,8 +439,14 @@ _SB_SPD = 0.7                        # sprint-speed sensitivity (unfitted, kept)
 # ranges 0.946-1.012 against an away range of 1.008-1.047. The mean is the right
 # single number, and the home spread is the wider one precisely because the
 # bottom-of-the-ninth skip is a function of who is winning.
-_CAL_HOME = 1.02
-_CAL_AWAY = 0.970
+# REFIT AGAIN once _CAL_SHRINK existed, because these ride INSIDE the target and
+# the shrink dilutes them along with everything else. At shrink 0.35 the old
+# 0.970 left the away side realizing 1.0370 of its er; home was already exact at
+# 0.9987. These are now the factor applied to er to FORM THE TARGET, not the
+# realized correction -- they have absorbed the dilution, which is why the away
+# number looks so far from 1. What matters is the measurement below them.
+_CAL_HOME = 1.024
+_CAL_AWAY = 0.875
 
 
 # --- BASERUNNER ADVANCEMENT ---------------------------------------------------

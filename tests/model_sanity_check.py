@@ -419,6 +419,19 @@ check("a line that is all doubles still yields sane component rates",
 # The calibration clamp is the LAST line of defence, and it must not be the one
 # doing the work. It used to bind on 1 lineup in 16 and silently return a game
 # running 39% hot.
+# er and the per-hitter rates are two estimates of the same thing -- the rates
+# already carry the matchup via opp_hit_factor -- so forcing one onto the other
+# throws away half the information, and it always comes out of the HITS because
+# er pins the runs and nothing pins the hits.
+check("the calibration only moves PART of the way to er",
+      0.15 < _ms._CAL_SHRINK < 0.6,
+      f"{_ms._CAL_SHRINK} — at 1.0 the engine's realized runs moved only 0.908 "
+      "per unit of er, so the step meant to impose the matchup was compressing "
+      "it. At 0.35 the slope is 1.014.")
+check("and going all the way is measurably worse on the level",
+      _ms._CAL_SHRINK < 1.0,
+      "full calibration: hits/g 8.120 and runs/g 4.323 against a real 8.259 "
+      "and 4.447; at 0.35 it is 8.266 and 4.438")
 check("the rate clamp is wide enough for a genuinely extreme matchup",
       _ms._MULT_LO <= 0.6 and _ms._MULT_HI >= 1.7,
       f"[{_ms._MULT_LO}, {_ms._MULT_HI}] — was [0.7, 1.5], which bound")
