@@ -248,6 +248,52 @@ check("the first-inning share is measured, not tuned to a market",
       0.95 <= _props.RFI_K <= 1.0, _props.RFI_K)
 
 
+# --- 1e. times through the order ---------------------------------------------
+head("1e. A starter must get worse the more times he faces the order")
+
+import mlb_sim as _ms  # noqa: E402
+
+check("the engine has a TTO term", _ms._TTO_STEP > 1.0, _ms._TTO_STEP)
+check("and it is a nudge, not a rewrite", _ms._TTO_STEP < 1.10,
+      f"{(_ms._TTO_STEP-1)*100:.1f}% per turn on the on-base rates")
+check("it compounds per turn", _ms._tto_mult(1) < _ms._tto_mult(2))
+check("and stops once the starter would be gone",
+      _ms._tto_mult(3) == _ms._tto_mult(_ms._TTO_MAX_TURN)
+      == _ms._tto_mult(9),
+      "no pitcher identity on the offense side, so a 4th-turn penalty "
+      "would be inventing detail")
+check("the first time through is the baseline", _ms._tto_mult(0) == 1.0)
+
+# The ladders must stay valid probability ladders at every turn.
+_rows = _ms._rates([{"name": "x", "r1": 0.15, "r2": 0.05, "r3": 0.004,
+                     "rhr": 0.04, "rbb": 0.09, "spd": 1.0, "sbr": 0.02, "ret": 1.0}])
+_su = _ms._build_setup(_rows, 1.0)[0]
+check("a per-turn ladder exists for every turn",
+      len(_su["thresh_tto"]) == _ms._TTO_MAX_TURN + 1)
+check("each ladder is cumulative and bounded",
+      all(all(0 < a <= 1.0 for a, _c in t) and
+          all(x[0] <= y[0] for x, y in zip(t, t[1:]))
+          for t in _su["thresh_tto"]))
+check("later turns put more men on base",
+      _su["thresh_tto"][2][-1][0] > _su["thresh_tto"][0][-1][0],
+      f'{_su["thresh_tto"][0][-1][0]:.4f} -> {_su["thresh_tto"][2][-1][0]:.4f}')
+check("`thresh` still holds the first-turn ladder for older callers",
+      _su["thresh"] == _su["thresh_tto"][0])
+
+# One RFI model, not two. mlb_sim used to carry its own _RFI_K = 0.73 + Poisson.
+# Match an ASSIGNMENT at column 0, not the string anywhere: the comment that
+# explains the removal quotes the old constant, and a substring check flags its
+# own documentation. (The fee test made exactly this mistake.)
+import re as _re  # noqa: E402
+_ms_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "..", "mlb_sim.py")).read()
+check("the engine has no second RFI constant",
+      not _re.search(r"(?m)^_RFI_K\s*=", _ms_src),
+      "one RFI model, in props")
+check("and takes its RFI target from props",
+      "_props._runs_pmf" in __import__("inspect").getsource(_ms.simulate))
+
+
 # --- 2. edge plausibility ----------------------------------------------------
 head("2. No source may present an implausible edge as trustworthy")
 

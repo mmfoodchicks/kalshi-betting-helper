@@ -30,6 +30,7 @@ import math
 import random
 
 import calibrate as _calibrate
+import props as _props
 
 # Linear-weight run values per offensive event (relative to an out). The
 # lineup's raw run-units are rescaled each game so the mean matches the model's
@@ -81,27 +82,103 @@ _SBR_ADJ = 1.85
 
 _PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineup spot
 
+# TIMES THROUGH THE ORDER. A starter gets worse each time he faces a lineup --
+# hitters have seen his stuff, his sequencing and his velocity that day. It is one
+# of the best-established effects in baseball and this engine did not have it
+# (deep_sim did), so every prop, total and combo leg was priced off a pitcher who
+# never tired within a game.
+#
+# The size is FITTED so the engine reproduces the real per-inning curve, rather
+# than copied from that curve directly. Part of the observed shape is lineup
+# position -- innings 1 and 2 face the top and bottom of the order -- and this
+# engine already models lineup position correctly. Reading the raw curve into a
+# pitcher term would double-count it, the same mistake as the one-sided home
+# multiplier. So the fit targets the runs-per-half-inning ratio between innings
+# 1-3 and 4-6, with the step swept under COMMON RANDOM NUMBERS (every step value
+# replays the identical draws, so the differences are signal, not sampling noise
+# -- an earlier independent-sample sweep was non-monotonic and useless):
+#
+#     step     sim t2/t1    level err
+#     1.0000     0.9976       -0.83%     <- lineup position alone
+#     1.0150     1.0359       -1.27%
+#     1.0300     1.0775       -0.86%     <- real MLB is 1.0794
+#     1.0450     1.1226       -1.14%
+#
+# 3.1% per turn on the on-base rates lands the run ratio on reality. The step is
+# small because runs respond superlinearly to baserunners (more men on -> more
+# PAs -> compounding; _team measures the local exponent near 2.2), and because
+# innings 1-3 and 4-6 each straddle roughly 1.2 turns rather than exactly one.
+#
+# Innings 7-9 are excluded from the fit: a leading home team never bats in the
+# 9th, so those half-innings are a biased sample of game states rather than a
+# clean read on the pitcher.
+#
+# Applied to on-base rates, compounding per turn and HELD FLAT from the third turn
+# on. By then the starter is usually gone, and this engine has no pitcher identity
+# on the offense side -- it cannot tell a fresh reliever from a tiring starter, so
+# claiming a fourth-turn penalty would be inventing detail it does not have.
+#
+# The level takes care of itself, and the sweep confirms it: _team() calibrates the
+# rate multiplier until simulated runs hit `er`, so the shape change is absorbed
+# there and the team total stays within ~1% of where the run model put it at every
+# step tried. This moves WHEN runs score, not HOW MANY.
+#
+# VERIFIED at the shipped step (16 real lineups x 1500 games, CRN):
+#
+#     turn2/turn1   sim 1.0841   real 1.0794      <- the fitted target
+#     level         -1.17% vs er                  <- inside _team's tolerance
+#     inn 1  sim/avg 0.997 vs real 0.987
+#     inn 2          0.879        0.891
+#     inn 6          1.075        1.058
+#
+# WHAT IS STILL MISSING, stated plainly: innings 3-5 come out low (sim 0.954 /
+# 0.982 / 1.011 against real 1.090 / 1.062 / 1.084) and 7-9 high. Real scoring
+# rises through the starter's second pass and then FALLS once the bullpen takes
+# over; this curve rises and holds, because the penalty compounds to a plateau and
+# nothing here knows when the starter was pulled. Modelling the handoff needs
+# pitcher identity on the offense side, which this engine does not have -- the
+# staff is simulated separately, only for the strikeout line.
+#
+# The real innings 7-9 are also a poor target to fit even if it could: a leading
+# home team never bats in the 9th, so those half-innings are a filtered sample of
+# game states, and the 9th's 0.877 is substantially that artifact rather than the
+# bullpen. Innings 1-6 carry the clean signal and the fit uses only them.
+_TTO_STEP = 1.031
+_TTO_MAX_TURN = 2                    # 0-indexed: 1st, 2nd, 3rd-and-later
+
+
+def _tto_mult(turn):
+    """On-base multiplier for the `turn`-th time through the order (0-based)."""
+    return _TTO_STEP ** min(max(0, turn), _TTO_MAX_TURN)
+
 
 def _build_setup(rows, mult):
     """Cumulative outcome thresholds with on-base rates scaled by `mult`,
     carrying each batter's speed factor, steal rate, and late-sub probability
     (`psub`: chance per late-inning PA of being lifted for a pinch hitter, sized
-    so his expected lost PAs match his measured substitution retention)."""
+    so his expected lost PAs match his measured substitution retention).
+
+    `thresh_tto[t]` is the same ladder rebuilt for the t-th time through the
+    order; `thresh` stays as the first-turn ladder so any caller that has not been
+    taught about TTO keeps its old behaviour instead of breaking."""
     setup = []
     for i, (name, rates, spd, sbr, ret) in enumerate(rows):
-        sr = [x * mult for x in rates]
-        tot = sum(sr)
-        if tot > 0.95:
-            sr = [x * 0.95 / tot for x in sr]
-        thresh, acc = [], 0.0
-        for code, p in zip((1, 2, 3, 4, 5), sr):
-            if p > 0:
-                acc += p
-                thresh.append((acc, code))
+        by_turn = []
+        for t in range(_TTO_MAX_TURN + 1):
+            sr = [x * mult * _tto_mult(t) for x in rates]
+            tot = sum(sr)
+            if tot > 0.95:
+                sr = [x * 0.95 / tot for x in sr]
+            thresh, acc = [], 0.0
+            for code, p in zip((1, 2, 3, 4, 5), sr):
+                if p > 0:
+                    acc += p
+                    thresh.append((acc, code))
+            by_turn.append(thresh)
         slot_pa = _PA_SLOT[i] if i < 9 else 3.8
         lost = slot_pa * (1.0 - min(1.0, ret))
-        setup.append({"name": name, "thresh": thresh, "spd": spd,
-                      "sbr": min(0.6, sbr * _SBR_ADJ),
+        setup.append({"name": name, "thresh": by_turn[0], "thresh_tto": by_turn,
+                      "spd": spd, "sbr": min(0.6, sbr * _SBR_ADJ),
                       "psub": min(0.45, lost / 1.75) if lost > 0 else 0.0})
     return setup
 
@@ -154,8 +231,6 @@ def _team(batters, er, rnd):
 
 
 _N_INNINGS = 9
-# Calibrated effective first-inning scoring rate vs runs/9 (see props.RFI_K).
-_RFI_K = 0.73
 
 
 _DK_HIT = {1: 3, 2: 5, 3: 8, 4: 10}   # DraftKings hitter points by hit type
@@ -231,6 +306,10 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                     if outs >= 3:
                         break
         bi = idx % L
+        # Which time through the order this is. `idx` runs continuously across
+        # innings (that is why it is threaded back out of every half-inning), so
+        # idx // L is exactly the number of complete passes the pitcher has made.
+        turn = idx // L
         idx += 1
         phantom = False
         if late and subbed is not None:
@@ -240,7 +319,9 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 subbed.add(bi); phantom = True                     # lifted right now
         u = rnd()
         code = 0
-        for acc, c in setup[bi]["thresh"]:
+        _tt = setup[bi].get("thresh_tto")
+        for acc, c in (_tt[turn if turn < len(_tt) else -1] if _tt
+                       else setup[bi]["thresh"]):
             if u < acc:
                 code = c
                 break
@@ -697,11 +778,17 @@ def simulate(g, n=5000, live=None):
     # the order over-counts P(run), but the SIMULATED first frame carries the real
     # correlation with the rest of the game (a 1st-inning run and the Over cash
     # together). So we take the sim's own first-inning outcome and recalibrate its
-    # marginal to the closed-form rate (_RFI_K, the empirical/market ~50%) by
-    # thinning the yes's -- correlation preserved, marginal honest. A side with no
-    # posted lineup falls back to an independent calibrated draw.
-    p1a = 1 - math.exp(-_RFI_K * er_a / 9.0)
-    p1h = 1 - math.exp(-_RFI_K * er_h / 9.0)
+    # marginal to the closed-form rate by thinning the yes's -- correlation
+    # preserved, marginal honest. A side with no posted lineup falls back to an
+    # independent calibrated draw.
+    #
+    # That closed-form target comes from props, not a second copy of the formula.
+    # This module used to keep its own _RFI_K = 0.73 with a Poisson tail, so when
+    # props moved to a negative binomial and a measured first-inning share the two
+    # silently disagreed -- the engine would have thinned toward a 63% rate while
+    # the board displayed 48%.
+    p1a = 1 - _props._runs_pmf(er_a / 9.0 * _props.RFI_K, kmax=0)[0]
+    p1h = 1 - _props._runs_pmf(er_h / 9.0 * _props.RFI_K, kmax=0)[0]
     p_target = 1 - (1 - p1a) * (1 - p1h)      # P(either team scores in the 1st)
     f1_raw = [False] * n                      # simulated 1st-inning run (either team)
     # A live game resumes from its own base-out state, and its staffs from the
