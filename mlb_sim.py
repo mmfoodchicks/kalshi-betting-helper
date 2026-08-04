@@ -2308,7 +2308,18 @@ def _mixed_item(sel, games_bundles, target_payout=None):
                          "sim_pct": (round(c["marg_model"] * 100, 1)
                                      if c.get("marg_model") is not None else None),
                          "model_weight": c.get("model_weight"),
-                         "market_quality": c.get("market_quality")})
+                         "market_quality": c.get("market_quality"),
+                         # The leg's live Kalshi ask, and whether it can actually
+                         # be filled. The slip has always SAID "a ¢ price means
+                         # it's a live Kalshi market" and never carried one --
+                         # the candidate had price_cents throughout and the item
+                         # dropped it, so every leg rendered priceless in both
+                         # sports. It matters most where a slate is half-quoted:
+                         # NFL preseason week 2 lists moneylines only, so a slip
+                         # mixes placeable legs with model-only ones and nothing
+                         # on screen said which was which.
+                         "market_cents": c.get("price_cents"),
+                         "fillable": c.get("fillable")})
         groups.append({"matchup": mu, "size": b["size"], "suffix": suffix,
                        "joint_pct": round(b["prob"] * 100, 1),
                        "same_game": b["size"] > 1, "legs": legs})

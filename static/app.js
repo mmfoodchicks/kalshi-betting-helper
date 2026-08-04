@@ -1170,8 +1170,15 @@ function legProb(l, nsim) {
   let mkt = "";
   if (l.market_cents != null) {
     const edge = Math.round(l.prob_pct - l.market_cents);
-    mkt = ` <span class="kmkt">Kalshi <b>${l.market_cents}¢</b>${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` +
-      ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span></span>`;
+    // A quote nobody can fill is not a price. It still shows — seeing the
+    // market's number is useful — but greyed, without an edge, because an edge
+    // against a book with no depth behind it is not something you can take.
+    mkt = (l.fillable === false)
+      ? ` <span class="kmkt" style="opacity:.55">Kalshi <b>${l.market_cents}¢</b> <span style="color:var(--muted)">thin</span></span>`
+      : ` <span class="kmkt">Kalshi <b>${l.market_cents}¢</b>${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` +
+        ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span></span>`;
+  } else if (l.market_cents === null && l.kref) {
+    mkt = ` <span class="kmkt" style="opacity:.55">no Kalshi market</span>`;
   }
   return `<span style="color:var(--muted)">(${core}${cnt})</span>${mkt}`;
 }

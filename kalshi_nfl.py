@@ -300,6 +300,27 @@ def ladders(suffix):
 _MAX_PROP_SPREAD = 20.0    # cents between bid and ask before a book is an opinion
 
 
+def believable(q, max_spread=_MAX_PROP_SPREAD):
+    """Is this quote an opinion, or just a listing?
+
+    The same trap that empties a prop ladder empties a TEAM ladder, and it bites
+    harder there. Kalshi lists a game's spread and total series weeks out and
+    they sit untouched until the game is close:
+
+        26SEP13DALNYG  NYG by 7+   bid 3c  ask 97c   vol 0  oi 0
+        26AUG06CARARI  CAR by 7+   bid 31c ask 34c   vol 51 oi 48
+
+    Every September rung de-vigs to 0.50, and interpolating a 50%-crossing
+    through that flat noise produced "NYG by 9.5" on a game whose MONEYLINE has
+    Dallas favoured -- a fabricated spread, on the wrong team, that every leg on
+    the board would then have been anchored to."""
+    if not q:
+        return False
+    if q.get("spread") is None or q["spread"] > max_spread:
+        return False
+    return ((q.get("vol") or 0) + (q.get("oi") or 0)) > 0
+
+
 def prop_ladders(suffix):
     """{(stat, norm_name): {'name', 'rungs': [(line, p_over), ...]}} for a game.
 
@@ -315,8 +336,7 @@ def prop_ladders(suffix):
         nq = q.get(("prop", stat, nm, line, True))
         if not yq or not nq:
             continue
-        if (yq.get("spread") is None or yq["spread"] > _MAX_PROP_SPREAD
-                or ((yq.get("vol") or 0) + (yq.get("oi") or 0)) <= 0):
+        if not believable(yq):
             continue
         tot = yq["mid"] + nq["mid"]
         if tot <= 0:
@@ -363,8 +383,18 @@ def implied(suffix):
     anchored to the market's level while still supplying the JOINT structure a
     parlay needs, which no single market price carries.
 
-    Returns {'total', 'margin', 'home', 'away'} or None. `margin` is signed
-    toward the first team of the pair as listed in the ticker (away+home)."""
+    NOT EVERY GAME HAS A LADDER. Kalshi opens the moneyline as soon as a game is
+    scheduled and adds the spread and total series only as the game approaches:
+    two days out, the Panthers game had 24 spreads and 19 totals, while all
+    SIXTEEN games of the following week were moneyline-only. So a ladder read is
+    the good case, and a moneyline read has to be the fallback rather than the
+    whole thing returning None -- which silently emptied next week's board.
+
+    Returns {'total', 'margin', 'favourite', 'p_win', 'source'} or None. `total`
+    and `margin` are None when only a moneyline exists; `p_win` carries the
+    de-vigged win probability per team, which is what the market actually said,
+    and the model converts that into points using its own measured margin
+    distribution rather than having this file guess at one."""
     g = index().get(suffix)
     if not g:
         return None
@@ -375,9 +405,14 @@ def implied(suffix):
         t = yes + no
         return (yes / t) if t > 0 else None
 
+    q = g.get("q") or {}
+
     # Total: the ladder is P(over N-0.5) falling as N rises. Interpolate to .50.
+    # Only rungs with a real book count -- see believable().
     pts = []
     for n, side in sorted((g.get("total") or {}).items()):
+        if not believable(q.get(("total", n, True))):
+            continue
         p_over = devig(side.get("over"), side.get("under"))
         if p_over is not None:
             pts.append((n - 0.5, p_over))
@@ -393,6 +428,8 @@ def implied(suffix):
     # side is favoured so the interpolation runs through the middle of its curve.
     by_team = {}
     for (team, n), c in (g.get("spread") or {}).items():
+        if not believable(q.get(("spread", team, n, False))):
+            continue
         by_team.setdefault(team, []).append((n - 0.5, c))
     margin, who = None, None
     for team, rows in by_team.items():
@@ -410,13 +447,30 @@ def implied(suffix):
                 if margin is None or m > margin:
                     margin, who = m, team
                 break
-    if margin is None:
-        # No crossing: fall back to the moneyline favourite at a token margin.
-        ml = {k: v for k, v in (g.get("ml") or {}).items() if v}
-        if len(ml) == 2:
-            who = min(ml, key=ml.get)
-            margin = 1.0
-    if total is None:
+    # The moneyline, de-vigged against its own NO side and then normalized so the
+    # pair sums to one. Both are needed: each side carries its own spread, so one
+    # de-vigged ask is not yet a probability the other side agrees with.
+    no_ml = (g.get("no") or {}).get("ml") or {}
+    p_win = {}
+    for team, yes in (g.get("ml") or {}).items():
+        p = devig(yes, no_ml.get(team))
+        if p is not None:
+            p_win[team] = p
+    if len(p_win) == 2:
+        s = sum(p_win.values())
+        if s > 0:
+            p_win = {k: v / s for k, v in p_win.items()}
+    else:
+        p_win = {}
+    if margin is None and p_win:
+        # No spread ladder. Name the favourite and leave the MARGIN to the model:
+        # turning a win probability into points needs the margin distribution,
+        # which is a measured model constant and not something this file knows.
+        who = max(p_win, key=p_win.get)
+    if total is None and not p_win:
         return None
-    return {"total": round(total, 2),
-            "margin": round(margin or 0.0, 2), "favourite": who}
+    return {"total": round(total, 2) if total is not None else None,
+            "margin": round(margin, 2) if margin is not None else None,
+            "favourite": who,
+            "p_win": {k: round(v, 4) for k, v in p_win.items()},
+            "source": "ladder" if total is not None else "moneyline"}

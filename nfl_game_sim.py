@@ -483,6 +483,19 @@ def _season():
 # +5.3% bias was absorbing.
 _ENGINE_BIAS = 0.990
 
+# What the engine's own home-field bump is WORTH, in points, measured by running
+# two identically-specified teams against each other:
+#
+#     equal points both sides -> p_home 0.5103, exp 20.70 vs 20.50
+#
+# +0.20 points, not the "~+0.6" _HFA_SCORE's comment claims. It matters when a
+# margin is read off a MONEYLINE, because the market's price already contains a
+# real home-field edge and the engine then adds its own on top. Subtracting the
+# league's measured +0.78 there over-corrected by more than half a point and put
+# the simulated home side 1.7pp under the market on 15 of 16 games -- one-signed,
+# so a bias rather than noise. What has to come out is what the ENGINE adds.
+_ENGINE_HFA_PTS = 0.20
+
 
 def profile_from_points(abbr, name, points, home, roster=None, props=None):
     """A synthetic team profile that scores `points` a game through the drive
@@ -546,14 +559,33 @@ def _anchor(players, props, exp):
 def simulate_preseason(home_ab, away_ab, home_name, away_name, implied, n=2400,
                        seed=None, ladders=None, rosters=None, props=None):
     """Market-anchored simulation of one exhibition. `implied` is
-    kalshi_nfl.implied(): {'total', 'margin', 'favourite'}."""
-    total = max(20.0, float(implied.get("total") or 35.0))
-    margin = float(implied.get("margin") or 0.0)
-    fav = implied.get("favourite")
-    edge = margin if fav == home_ab else (-margin if fav == away_ab else 0.0)
+    kalshi_nfl.implied().
+
+    Two grades of anchor, because Kalshi lists the two markets at different
+    times. With a LADDER the market supplies both the level and the margin. With
+    only a MONEYLINE it supplies the margin alone -- as a win probability, which
+    the measured preseason margin distribution converts into points -- and the
+    level falls back to the measured league-average exhibition, which is a real
+    number rather than a guess and is right on average by construction."""
+    import nfl_preseason as pre
+    total = implied.get("total")
+    total = max(20.0, float(total)) if total else 2.0 * pre.PRE_TEAM["points"]
+    margin, fav = implied.get("margin"), implied.get("favourite")
+    if margin is None:
+        # No spread ladder: read the margin off the moneyline instead. The
+        # market's price already contains a home-field edge and the engine adds
+        # its OWN on top, so the engine's is what comes back out first --
+        # otherwise the home side is favoured twice.
+        p_win = implied.get("p_win") or {}
+        p_home = p_win.get(kalshi_canon(home_ab))
+        if p_home is None and p_win:
+            p_home = 1.0 - (p_win.get(kalshi_canon(away_ab)) or 0.5)
+        edge = (pre.margin_from_prob(p_home) - _ENGINE_HFA_PTS) if p_home else 0.0
+    else:
+        margin = float(margin)
+        edge = margin if fav == home_ab else (-margin if fav == away_ab else 0.0)
     ph = max(6.0, (total + edge) / 2.0)
     pa = max(6.0, (total - edge) / 2.0)
-    import nfl_preseason as pre
     ros = rosters or {}
     # A player's ladder only belongs to HIS team's profile -- both sides of the
     # game share one Kalshi event, so the props map has to be split by roster.
@@ -571,6 +603,18 @@ def simulate_preseason(home_ab, away_ab, home_name, away_name, implied, n=2400,
 def _nkey(name):
     import nfl_preseason as pre
     return pre._key(name)
+
+
+def kalshi_canon(ab):
+    """ESPN's abbreviation in Kalshi's spelling. p_win is keyed the way Kalshi
+    writes a team (WSH, JAX, LAR), and the schedule is keyed the way ESPN does,
+    so a Washington or Jacksonville game would silently read no win probability
+    at all and fall back to a pick'em."""
+    try:
+        import kalshi_nfl
+        return kalshi_nfl._canon(ab)
+    except Exception:
+        return (ab or "").upper()
 
 
 def board(week=1, preseason=False):

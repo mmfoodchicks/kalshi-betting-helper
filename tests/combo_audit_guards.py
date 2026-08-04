@@ -634,6 +634,88 @@ ck("preseason players swing much harder than regular-season ones",
 
 print()
 print("=" * 72)
+print("A listed market is not a quoted one, and next week is not this week")
+print("=" * 72)
+
+# --- believable(): the filter that keeps a listing out of the model ---------
+_real = {"bid": 31.0, "ask": 34.0, "spread": 3.0, "vol": 51.0, "oi": 48.0, "mid": 32.5}
+_empty = {"bid": 3.0, "ask": 97.0, "spread": 94.0, "vol": 0.0, "oi": 0.0, "mid": 50.0}
+_thin = {"bid": 40.0, "ask": 44.0, "spread": 4.0, "vol": 0.0, "oi": 0.0, "mid": 42.0}
+ck("a tight book with trading behind it is an opinion", _K.believable(_real))
+ck("a 94-cent-wide book with no volume is NOT",
+   not _K.believable(_empty),
+   "26SEP13DALNYG spreads were 3c/97c, vol 0, oi 0 -- five weeks out, every rung "
+   "de-vigged to 0.50 and the interpolation read a 9.5-point favourite out of the "
+   "noise, on the team its own MONEYLINE had as the underdog")
+ck("a tight book that has never traded is not one either", not _K.believable(_thin))
+ck("and neither is a missing quote", not _K.believable(None))
+
+# --- implied() degrades to the moneyline instead of to None ----------------
+_src = open(_K.__file__).read()
+ck("implied() filters ladder rungs through believable()",
+   _src.count("believable(q.get(") >= 2,
+   "the total AND the spread ladder both need it -- a fabricated anchor is worse "
+   "than no anchor, because everything else is built on top of it")
+ck("and a moneyline-only game still returns a read",
+   "'source': 'ladder' if total is not None else 'moneyline'" in _src
+   or '"source": "ladder" if total is not None else "moneyline"' in _src,
+   "Kalshi opens the moneyline when a game is scheduled and the ladders only as "
+   "it approaches: two days before week 1, all SIXTEEN games of week 2 were "
+   "moneyline-only and every one of them was being skipped")
+ck("the moneyline is de-vigged against its own NO side, then normalized",
+   "p_win = {k: v / s for k, v in p_win.items()}" in _src,
+   "each side carries its own spread, so one de-vigged ask is not yet a "
+   "probability the other side agrees with")
+
+# --- margin_from_prob: turning a price into points -------------------------
+ck("a 50% moneyline is a pick'em", abs(_P.margin_from_prob(0.5)) < 0.01)
+ck("a favourite gets positive points", _P.margin_from_prob(0.62) > 0)
+ck("and an underdog negative", _P.margin_from_prob(0.38) < 0)
+ck("the conversion is symmetric",
+   abs(_P.margin_from_prob(0.62) + _P.margin_from_prob(0.38)) < 0.01)
+ck("it is monotone in the price",
+   _P.margin_from_prob(0.70) > _P.margin_from_prob(0.60) > _P.margin_from_prob(0.55))
+ck("a 62c home price is about 4.7 points in August",
+   4.2 < _P.margin_from_prob(0.62) < 5.2,
+   f"{_P.margin_from_prob(0.62):.2f} against 4.1 at a regular-season sigma -- a "
+   "WIDER outcome distribution needs MORE points to buy the same win probability")
+ck("preseason margins scatter wider than regular-season ones",
+   _P.MARGIN_SD > 13.5, f"{_P.MARGIN_SD} against roughly 13.5 in September")
+ck("and preseason home-field advantage is nearly nothing",
+   _P.HFA_PTS < 1.5, f"{_P.HFA_PTS} points, against roughly 2.5 in September")
+ck("an absurd price is clamped rather than sent to infinity",
+   abs(_P.margin_from_prob(0.0)) < 40 and abs(_P.margin_from_prob(1.0)) < 40)
+
+# --- the engine's own HFA is what gets subtracted --------------------------
+_gs = open(_G.__file__).read()
+ck("the moneyline anchor removes the ENGINE's home edge, not the league's",
+   "_ENGINE_HFA_PTS" in _gs and "pre.margin_from_prob(p_home) - _ENGINE_HFA_PTS" in _gs,
+   "the market's price already contains a real home edge; what has to come out "
+   "is only what the engine will add back")
+ck("and the engine's edge is measured, not assumed",
+   0.0 < _G._ENGINE_HFA_PTS < 0.5,
+   f"{_G._ENGINE_HFA_PTS} points -- two identical teams give p_home 0.5103, not "
+   "the ~0.6 points _HFA_SCORE's comment claimed; subtracting the league's 0.78 "
+   "put the simulated home side 1.7pp under the market on 15 of 16 games")
+ck("team abbreviations are canonicalized before reading a win probability",
+   "kalshi_canon" in _gs,
+   "p_win is keyed WSH/JAX/LAR and the schedule is keyed WAS/JAC/LA, so those "
+   "games silently read no price at all and fell back to a pick'em")
+
+# --- the slip finally carries the price it always claimed to --------------
+_mi = open(_MS.__file__).read()
+ck("a parlay leg carries its live Kalshi ask",
+   '"market_cents": c.get("price_cents")' in _mi,
+   "the slip has always said 'a c price means it is a live Kalshi market' and "
+   "never carried one -- the candidate had it and the item dropped it, in BOTH "
+   "sports")
+ck("and whether that ask can actually be filled",
+   '"fillable": c.get("fillable")' in _mi,
+   "on a half-quoted slate a slip mixes placeable legs with model-only ones, and "
+   "nothing on screen said which was which")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
