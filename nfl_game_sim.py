@@ -361,13 +361,14 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
     sp = (ladders or {}).get("spread") or {}
     margins_h = sp.get(h) or [3, 7, 10]
     margins_a = sp.get(a) or [3, 7, 10]
+    import combo_engine as _ce
     for m in margins_h:
-        add("Spread", f"{h} wins by {m}+",
+        add("Spread", _ce.spread_label(h, m, "points"),
             _mask_of(lambda i, m=m: margins[i] >= m, n), "Spread",
             kref={"t": "spread", "team": h, "by": m},
             avg=round(sum(margins) / n, 1), unit="pt margin")
     for m in margins_a:
-        add("Spread", f"{a} wins by {m}+",
+        add("Spread", _ce.spread_label(a, m, "points"),
             _mask_of(lambda i, m=m: margins[i] <= -m, n), "Spread",
             kref={"t": "spread", "team": a, "by": m},
             avg=round(-sum(margins) / n, 1), unit="pt margin")

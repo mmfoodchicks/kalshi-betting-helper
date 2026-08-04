@@ -716,6 +716,52 @@ ck("and whether that ask can actually be filled",
 
 print()
 print("=" * 72)
+print("A spread leg is named the way the BOOK names it")
+print("=" * 72)
+import combo_engine as _CE
+
+# Kalshi's ticker integer and its printed line differ by a half:
+#   KXMLBSPREAD-...-PIT4  "Pittsburgh wins by over 3.5 runs"  floor_strike 3.5
+ck("a ticker integer becomes the line the book prints",
+   _CE.spread_label("PIT", 4, "runs") == "PIT by over 3.5 runs",
+   _CE.spread_label("PIT", 4, "runs") + '   -- was "PIT win by 4+", against a '
+   "board showing 3.5")
+ck("the whole pre-game run line reads 1.5 / 2.5 / 3.5",
+   [_CE.spread_label("X", n, "runs") for n in (2, 3, 4)]
+   == ["X by over 1.5 runs", "X by over 2.5 runs", "X by over 3.5 runs"],
+   "Kalshi books exactly those three before a game starts -- checked across all "
+   "52 open MLB events, every one of them {2,3,4} and nothing above")
+ck("and the live-only rung reads 4.5",
+   _CE.spread_label("X", 5, "runs") == "X by over 4.5 runs",
+   "once a game starts and runs are in, Kalshi adds it")
+ck("a half-point line passes straight through",
+   _CE.spread_label("BOS", 3.5, "points") == "BOS by over 3.5 points",
+   "basketball and hockey already carry LINES rather than tickers, so the "
+   "formatter must not shift those by another half")
+ck("football tickers convert the same way",
+   _CE.spread_label("ARI", 10, "points") == "ARI by over 9.5 points",
+   "KXNFLSPREAD-...-ARI10 is titled 'Arizona wins by over 9.5 points'")
+ck("no trailing space when a leg carries no unit",
+   not _CE.spread_label("X", 3, "").endswith(" "))
+ck("the label is monotone in the ticker",
+   _CE.spread_label("X", 2, "runs") != _CE.spread_label("X", 3, "runs"))
+
+# Every emitter goes through it, so the convention lives in exactly one place.
+for _f, _why in (("mlb_sim.py", "the combo candidates"),
+                 ("baseball.py", "the other run-line path (_add_spread_legs)"),
+                 ("nfl_game_sim.py", "football spreads"),
+                 ("basket.py", "basketball"), ("hockey.py", "hockey"),
+                 ("bestbets.py", "the best-bets board"),
+                 ("combine.py", "the combine board")):
+    _src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", _f)).read()
+    ck(f"{_f} names spreads through the shared formatter ({_why})",
+       "spread_label(" in _src)
+    ck(f"and {_f} no longer writes the raw ticker with a plus",
+       'wins by {m}+' not in _src and 'win by {mgn}+' not in _src
+       and "win by {m}+" not in _src and "wins by {s['line']}+" not in _src)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

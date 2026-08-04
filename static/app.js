@@ -640,10 +640,11 @@ function renderProps(g) {
     <summary>📊 Props &amp; odds — run line, totals, hit props${liveTag}</summary>
     <div class="propgrid">
       <div class="propcard">
-        <div class="teamhdr">Run line — Kalshi "win by X+" (adjustable)</div>
+        <div class="teamhdr">Run line — Kalshi "wins by over X" (adjustable)</div>
         ${[[rl.home, rl.home_by], [rl.away, rl.away_by]].map(([tm, by]) => by
-          ? `<div class="small"><b>${tm} by</b> ` + Object.entries(by).map(([m, p]) => `${m}+ <b>${p}%</b>`).join(" · ") + `</div>`
-          : `<div class="small"><b>${tm} win by 2+</b>: <b>${tm === rl.home ? rl.home_by2_pct : rl.away_by2_pct}%</b></div>`).join("")}
+          ? `<div class="small"><b>${tm} by over</b> ` + Object.entries(by).map(([m, p]) => `${(+m - 0.5)} <b>${p}%</b>`).join(" · ") + `</div>`
+          : `<div class="small"><b>${tm} by over 1.5</b>: <b>${tm === rl.home ? rl.home_by2_pct : rl.away_by2_pct}%</b></div>`).join("")}
+        <div class="small" style="color:var(--muted)">Pre-game Kalshi books 1.5 / 2.5 / 3.5; once a game is live and the runs are in it adds 4.5 or drops back to 2.5, and this follows whatever it lists.</div>
         <div class="teamhdr" style="margin-top:8px">Total runs (model ${p.model_total})</div>
         <div class="small">${totals}</div>
       </div>

@@ -49,6 +49,30 @@ OBJECTIVES = ("balanced", "safe", "value")
 MIN_PRICED_FRAC = 0.75
 
 
+def spread_label(team, by, unit="runs"):
+    """A spread/run-line leg named the way the BOOK names it.
+
+    Kalshi's ticker carries an integer and its title carries the line, and the
+    two are not the same number:
+
+        KXMLBSPREAD-...-PIT4   "Pittsburgh wins by over 3.5 runs"   floor 3.5
+        KXNFLSPREAD-...-ARI10  "Arizona wins by over 9.5 points"    floor 9.5
+
+    The slip was built off the ticker, so it read "PIT win by 4+" against a board
+    showing 3.5. Identical events -- a margin of 4+ IS a margin over 3.5 when
+    runs are whole numbers -- but the reader has to do that conversion on every
+    leg, and it makes the top of the ladder look like a line that does not
+    exist: pre-game Kalshi books 1.5/2.5/3.5 and nothing above, so "win by 4+"
+    reads like a 4.5 that is not on the board until the game goes live.
+
+    `by` accepts either form. An integer is a ticker and becomes ticker - 0.5;
+    a half number is already a line and is left alone."""
+    b = float(by)
+    line = b - 0.5 if abs(b - round(b)) < 1e-9 else b
+    txt = f"{line:g}"
+    return f"{team} by over {txt} {unit}".rstrip()
+
+
 def _fee_cents(c):
     try:
         import baseball

@@ -366,7 +366,9 @@ def _board_legs(b, category, prefix):
             leg(f"{nm} to win", g[f"p_{side}"] * 100.0, kx.get(side + "_cents"), "ML",
                 avg=g.get("mean_margin") if side == "home" else None, unit="margin")
         for s in (g.get("spread_edges") or [])[:2]:
-            leg(f"{s['team']} wins by {s['line']}+", s["model_pct"], s["cents"], "Spread")
+            import combo_engine as _ce
+            leg(_ce.spread_label(s["team"], s["line"]).replace(" runs", ""),
+                s["model_pct"], s["cents"], "Spread")
         for t in (g.get("total_edges") or [])[:2]:
             leg(f"Over {t['line']}", t["model_pct"], t["cents"], "Total",
                 avg=g.get("exp_total"), unit="points")

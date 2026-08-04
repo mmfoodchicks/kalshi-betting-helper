@@ -2126,13 +2126,20 @@ def _final_winners(date):
 
 
 def _add_spread_legs(add, rl, avg=None, unit=None):
-    """Offer Kalshi's adjustable spread for both teams: '<team> win by 2+/3+/4+/5+'
-    (the 1.5/2.5/3.5/4.5 lines). `add` filters out near-0/near-1 lines."""
+    """Offer Kalshi's adjustable run line for both teams -- the 1.5 / 2.5 / 3.5
+    lines pre-game, extending to 4.5 once a game is live and the runs are in.
+    `add` filters out near-0/near-1 lines.
+
+    Named the way Kalshi names it (see combo_engine.spread_label): the ticker
+    integer and the printed line differ by a half, and a slip that says "win by
+    4+" against a board that says 3.5 makes the reader convert every leg."""
     if not rl:
         return
+    import combo_engine
     for tm, key in ((rl.get("home"), "home_by"), (rl.get("away"), "away_by")):
         for m, pct in sorted((rl.get(key) or {}).items(), key=lambda x: int(x[0])):
-            add("Run line", f"{tm} win by {m}+", pct / 100.0, avg=avg, unit=unit)
+            add("Run line", combo_engine.spread_label(tm, m, "runs"),
+                pct / 100.0, avg=avg, unit=unit)
 
 
 def _ktotals(g):

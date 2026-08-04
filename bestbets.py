@@ -243,8 +243,10 @@ def _board_rows(b, sport_label):
             if row:
                 rows.append(row)
         for s in (g.get("spread_edges") or [])[:3]:
-            row = _row(sport_label, "Spread", f"{s['team']} wins by {s['line']}+", mu,
-                       s["model_pct"], s["cents"], "med")
+            import combo_engine as _ce
+            row = _row(sport_label, "Spread",
+                       _ce.spread_label(s["team"], s["line"], _SPREAD_UNIT.get(sport_label, "")),
+                       mu, s["model_pct"], s["cents"], "med")
             if row:
                 rows.append(row)
         for t in (g.get("total_edges") or [])[:3]:

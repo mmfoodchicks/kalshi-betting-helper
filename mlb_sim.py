@@ -1765,12 +1765,15 @@ def build_candidates(g, sim, types=None):
     def _margins(by_map):
         ms = sorted(int(k) for k in by_map) if by_map else [2, 3]
         return ms
+    import combo_engine as _ce
     for mgn in _margins(home_by):
-        add("Run line", f"{ha} win by {mgn}+", lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m,
+        add("Run line", _ce.spread_label(ha, mgn, "runs"),
+            lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m,
             model=home_by.get(str(mgn)), kref={"t": "spread", "team": ha, "by": mgn},
             avg=mean_margin, unit="run margin")
     for mgn in _margins(away_by):
-        add("Run line", f"{aa} win by {mgn}+", lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m,
+        add("Run line", _ce.spread_label(aa, mgn, "runs"),
+            lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m,
             model=away_by.get(str(mgn)), kref={"t": "spread", "team": aa, "by": mgn},
             avg=round(-mean_margin, 1), unit="run margin")
     # Game total -- iterate the totals ladder, which analyze_slate has already

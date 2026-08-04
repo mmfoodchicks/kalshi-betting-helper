@@ -185,6 +185,14 @@ def schedule(date=None):
 
 
 # ---- Kalshi (auto-lights-up when the season's series list) -------------------
+
+def _spread_label(team, m):
+    """Kalshi's own wording for a spread leg (combo_engine.spread_label). These
+    margins are already half-point LINES, so they pass straight through -- the
+    change here is phrasing, so a leg reads the same across every sport."""
+    import combo_engine
+    return combo_engine.spread_label(team, m, "goals")
+
 _SPREAD_RE = re.compile(r"^(.*?)\s+wins by over", re.I)
 
 
@@ -397,9 +405,9 @@ def simulate_game(rh, ra, ph_list, pa_list, n=3000, seed=None):
              kref={"t": "ml", "team": ra["abbr"]},
              avg=round(-sum(margins) / n, 2), unit="goal margin")
     for m in (1.5, 2.5):
-        add_cand("Spread", f"{rh['abbr']} wins by {m}+",
+        add_cand("Spread", _spread_label(rh["abbr"], m),
                  lambda i, m=m: margins[i] > m, "Spread")
-        add_cand("Spread", f"{ra['abbr']} wins by {m}+",
+        add_cand("Spread", _spread_label(ra["abbr"], m),
                  lambda i, m=m: margins[i] < -m, "Spread")
     for d in (-1, 0, 1):
         line = round(mean_total) + d + 0.5
