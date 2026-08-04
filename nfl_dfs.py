@@ -200,11 +200,12 @@ def _pct(a, q):
 
 
 def build(csv_text, week=1, objective="projection", stack=True, contest=None,
-          contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None):
+          contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
+          preseason=False):
     csv_players = simulate.parse_dk_csv(csv_text)
     if len(csv_players) < len(ROSTER):
         return {"error": f"need at least {len(ROSTER)} players in the CSV (got {len(csv_players)})"}
-    pool = nfl_dfs_sim.player_pool(week)
+    pool = nfl_dfs_sim.player_pool(week, preseason=preseason)
     if not pool:
         return {"error": "projections not ready — the weekly sim is still building, retry shortly"}
 

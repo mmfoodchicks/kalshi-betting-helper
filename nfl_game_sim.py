@@ -573,11 +573,11 @@ def _nkey(name):
     return pre._key(name)
 
 
-def board(week=1):
+def board(week=1, preseason=False):
     """Non-blocking weekly slate: cached if fresh, else built in the background
     (Sleeper fetch + 16 drive-engine sims + Kalshi pricing)."""
     season = _season()
-    key = ("nfl_slate", season, week)
+    key = ("nfl_slate", season, week, bool(preseason))
     hit = _cache.get(key)
     if hit and _time.time() - hit[0] < 1800:
         return hit[1]
@@ -586,7 +586,7 @@ def board(week=1):
 
         def _bg():
             try:
-                val = _build_board(season, week)
+                val = _build_board(season, week, preseason=preseason)
                 if val is not None:
                     _cache[key] = (_time.time(), val)
             finally:
@@ -595,11 +595,61 @@ def board(week=1):
     return hit[1] if hit else None
 
 
-def _build_board(season, week, n=2400):
+def _preseason_sims(season, week, n):
+    """[(sim, suffix)] for the week's exhibitions, market-anchored.
+
+    The regular-season board is seeded by Sleeper projections, which do not
+    exist in August; these are anchored to the Kalshi ladder instead and carry a
+    full measured player board underneath (nfl_preseason)."""
+    import nfl_live, nfl_preseason, kalshi_nfl
+    try:
+        sched = nfl_live.schedule(week, season, seasontype=1) or []
+    except Exception:
+        return []
+    try:
+        idx = kalshi_nfl.index()
+    except Exception:
+        idx = {}
+    try:
+        ros = nfl_preseason.rosters(season) or {}
+    except Exception:
+        ros = {}
+    out = []
+    for gm in sched:
+        h, a = gm.get("home"), gm.get("away")
+        suffix = _suffix_for(idx, h, a)
+        if not suffix:
+            continue
+        try:
+            imp = kalshi_nfl.implied(suffix)
+            lad = kalshi_nfl.ladders(suffix)
+        except Exception:
+            continue
+        if not imp:
+            continue
+        sim = simulate_preseason(h, a, gm.get("home_name") or h,
+                                 gm.get("away_name") or a, imp, n=n, ladders=lad,
+                                 rosters={h: ros.get(h), a: ros.get(a)},
+                                 props=(lad or {}).get("props"))
+        sim["date"] = gm.get("date")
+        sim["state"] = gm.get("state")
+        sim["implied"] = imp
+        out.append((sim, suffix))
+    return out
+
+
+def _build_board(season, week, n=2400, preseason=False):
     import nfl_data
-    games = nfl_data.week_games(str(season), week)
-    if not games:
-        return None
+    if preseason:
+        sims = [s for s, _suf in _preseason_sims(season, week, n)]
+        if not sims:
+            return None
+        games = None
+    else:
+        games = nfl_data.week_games(str(season), week)
+        if not games:
+            return None
+        sims = None
     try:
         import kalshi_nfl
         kx = True
@@ -612,10 +662,17 @@ def _build_board(season, week, n=2400):
         cal = lambda p: p
 
     out, log_rows = [], []
-    for h, a in games:
-        sim = simulate_game(h, a, n=n)
+    # A preseason model has no independent read on the level -- it is anchored TO
+    # the market -- so the calibrator, which corrects a model against its own
+    # graded record, has nothing to correct and is left out of that path.
+    for sim in (sims if preseason else
+                (simulate_game(h, a, n=n) for h, a in games)):
         raw_ph = sim["p_home"]
-        ph = cal(raw_ph)
+        if preseason:
+            cal_used = lambda p: p
+        else:
+            cal_used = cal
+        ph = cal_used(raw_ph)
         g = {k: sim[k] for k in ("home", "away", "home_name", "away_name", "date",
                                  "state", "exp_home", "exp_away", "exp_total",
                                  "mean_margin", "spread_ladder", "n_sims")}
@@ -666,12 +723,20 @@ def _build_board(season, week, n=2400):
         except Exception:
             pass
     out.sort(key=lambda g: g["date"] or "")
+    note = ("Drive-level Monte Carlo seeded by Sleeper's matchup-adjusted "
+            "projections: alternating possessions with game script, short "
+            "fields and OT; player lines are dealt from the simulated team "
+            "game, so props and same-game parlays carry real correlation.")
+    if preseason:
+        note = ("Preseason: the LEVEL comes from Kalshi's de-vigged ladder, because "
+                "no projection source covers exhibitions. The engine supplies the "
+                "joint structure a parlay needs and a set of separately-priced "
+                "lines does not. Player usage is measured off 96 team-games of "
+                "last preseason and runs INVERTED -- backups and rookies take the "
+                "snaps -- and where Kalshi books a player his ladder sets his level. "
+                "No edge is claimed on the total; the edge claimed is on correlation.")
     return {"season": season, "week": week, "engine": "drive", "n_games": len(out),
-            "n_sims": n, "games": out,
-            "note": "Drive-level Monte Carlo seeded by Sleeper's matchup-adjusted "
-                    "projections: alternating possessions with game script, short "
-                    "fields and OT; player lines are dealt from the simulated team "
-                    "game, so props and same-game parlays carry real correlation."}
+            "n_sims": n, "games": out, "preseason": bool(preseason), "note": note}
 
 
 # --- COMBO MAKER ---------------------------------------------------------------

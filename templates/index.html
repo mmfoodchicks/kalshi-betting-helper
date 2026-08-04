@@ -350,16 +350,22 @@
       </div>
       <div id="nflSimBox" class="hidden">
         <div class="row-between" style="margin:2px 0 8px">
-          <p class="sub" style="margin:0;max-width:74%">A <b>correlated per-game Monte Carlo</b> seeded by <b>Sleeper's weekly projections</b>. Player means are pinned to Sleeper; the sim adds <b>floor / median / ceiling / boom%</b> and same-game correlation (a QB and his WRs boom together). <b>Sim</b> = per-game cards · <b>Best ball</b> = ceilings + top QB→WR stacks (with your Sleeper ADP) · <b>Pick 6</b> = correlation-aware prop More/Less.</p>
-          <select id="nflSimWeek"></select>
+          <p class="sub" style="margin:0;max-width:74%">A <b>correlated per-game Monte Carlo</b> seeded by <b>Sleeper's weekly projections</b>. Player means are pinned to Sleeper; the sim adds <b>floor / median / ceiling / boom%</b> and same-game correlation (a QB and his WRs boom together). <b>Sim</b> = per-game cards · <b>Best ball</b> = ceilings + top QB→WR stacks (with your Sleeper ADP) · <b>Pick 6</b> = correlation-aware prop More/Less.<br/><b>Preseason</b> switches the source: Sleeper projects nothing for exhibitions, so the means are measured off 96 team-games of last August and the usage model runs <b>inverted</b> — backups and camp bodies take the snaps, so DraftKings chalk is upside down.</p>
+          <div class="row" style="gap:8px;align-items:center">
+            <label class="small" style="white-space:nowrap"><input type="checkbox" id="nflSimPre" style="width:auto"/> 🏟️ preseason</label>
+            <select id="nflSimWeek"></select>
+          </div>
         </div>
         <div id="nflSimSummary" class="small"></div>
         <div id="nflSimResults" class="markets"><div class="empty">Simulating the week in the background (~10s)…</div></div>
       </div>
       <div id="nflWeekBox">
         <div class="row-between" style="margin:2px 0 8px">
-          <p class="sub" style="margin:0;max-width:78%">The week's slate (preseason skipped) with a <b>modeled score</b> (expected points), a <b>win-probability bar</b>, matchup-adjusted <b>pass / rush yards + TDs</b>, and each team's <b>key players</b> (QB/RB/WR) with projected yards. Ratings from the last completed season. <b>Match ours to the book's line.</b></p>
-          <select id="nflWeek"></select>
+          <p class="sub" style="margin:0;max-width:78%">The week's slate with a <b>modeled score</b> (expected points), a <b>win-probability bar</b>, matchup-adjusted <b>pass / rush yards + TDs</b>, and each team's <b>key players</b> (QB/RB/WR) with projected yards. <b>Match ours to the book's line.</b></p>
+          <div class="row" style="gap:8px;align-items:center">
+            <label class="small" style="white-space:nowrap"><input type="checkbox" id="nflPre" style="width:auto"/> 🏟️ preseason</label>
+            <select id="nflWeek"></select>
+          </div>
         </div>
         <div id="nflWeekSummary" class="small"></div>
         <div id="nflWeekResults" class="markets"><div class="empty">Building the week board in the background (~15s)…</div></div>
@@ -368,6 +374,12 @@
         <div id="nflSummary" class="small"></div>
         <div id="nflResults" class="markets"><div class="empty">Loading the projection…</div></div>
       </div>
+    </section>
+
+    <section class="card" id="nflComboBox">
+      <h2>🎲 NFL combo maker</h2>
+      <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market. Moneylines, spread and total ladders and — in the preseason, where Kalshi actually books them — <b>player props</b> are all in the pool.</p>
+      <div id="nflComboMaker"></div>
     </section>
    </div><!-- /tab-nfl -->
 
@@ -511,6 +523,7 @@
         <div class="scan-controls ctl-row">
           <select id="dfsSport" title="Which sport's DFS slate this CSV is for"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option><option value="mlb">⚾ MLB (sim-driven)</option><option value="nfl">🏈 NFL (sim-driven)</option><option value="lol">🎮 LoL (Captain)</option></select>
           <select id="dfsNflWeek" class="hidden" title="Which NFL week this slate is for"></select>
+          <label class="small hidden" id="dfsNflPreLbl" style="white-space:nowrap" title="Preseason lineups use MEASURED exhibition usage instead of Sleeper's regular-season projections — which do not exist in August. Preseason usage is inverted: backups and camp bodies take the snaps, so DraftKings chalk is upside down."><input type="checkbox" id="dfsNflPre" style="width:auto"/> 🏟️ preseason slate</label>
           <select id="dfsMode" title="Classic = a full roster from the whole slate. Showdown = one game, a 1.5× captain plus flex."><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
           <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments). Leverage = ceiling discounted by projected ownership — being different AND right, the way huge fields are actually won."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option><option value="leverage">GPP leverage (ceiling + low own)</option></select>
           <label class="small" title="How many players make up one lineup (DraftKings sets this per contest).">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>

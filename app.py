@@ -737,7 +737,8 @@ def api_simulate_dfs():
                 contest_size=(int(_ni("contest_size", 0, int)) or None),
                 entry_fee=max(0.01, _ni("entry_fee", 1.0)),
                 prize_pool=(_ni("prize_pool", 0.0) or None),
-                first_prize=(_ni("first_prize", 0.0) or None)))
+                first_prize=(_ni("first_prize", 0.0) or None),
+                preseason=_nfl_pre_flag(d)))
         except Exception as e:
             return jsonify({"error": f"nfl dfs failed: {e}"}), 502
     if d.get("sport") == "mlb":
@@ -1535,12 +1536,96 @@ def api_nfl_slate():
     week = max(1, min(18, week))
     try:
         import nfl_game_sim
-        data = nfl_game_sim.board(week=week)
+        data = nfl_game_sim.board(week=week, preseason=_nfl_preseason())
     except Exception as e:
         return jsonify({"error": f"nfl slate failed: {e}"}), 502
     if not data:
         return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
     return jsonify(data)
+
+
+def _nfl_pre_flag(payload):
+    """Preseason flag from a POSTed DFS body -- same rule as the query-string
+    version, so the lineup builder and the boards agree."""
+    v = (payload or {}).get("preseason")
+    if v is None:
+        try:
+            import nfl_preseason
+            return nfl_preseason.is_preseason()
+        except Exception:
+            return False
+    return v is True or str(v).lower() in ("1", "true", "yes")
+
+
+def _nfl_preseason():
+    """Whether this request wants exhibitions. `?preseason=1|0` is explicit;
+    with no parameter the calendar decides, so the tab is right in August without
+    the user having to know which season type ESPN files a game under."""
+    raw = request.args.get("preseason")
+    if raw in ("1", "true", "yes"):
+        return True
+    if raw in ("0", "false", "no"):
+        return False
+    try:
+        import nfl_preseason
+        return nfl_preseason.is_preseason()
+    except Exception:
+        return False
+
+
+@app.route("/api/nfl/parlay")
+def api_nfl_parlay():
+    """One NFL parlay across the week's games, priced against Kalshi — the
+    football twin of /api/baseball/mixed, on the same combo engine.
+
+    `cap` turns the confidence floor into a BAND and the builder walks the spread,
+    total and player ladders to the lines that land inside it."""
+    locked = _locked("mixed_parlay")
+    if locked:
+        return locked
+    try:
+        week = max(1, min(18, int(request.args.get("week", 1))))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 4))
+        target = float(request.args.get("target", 55))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else 0
+        sims = tiers.cap_sims(_tier(), request.args.get("sims", 3000))
+        max_total = tiers.cap_legs(_tier(), 30)
+    except ValueError:
+        return jsonify({"error": "bad week/legs/payout"}), 400
+    cap = request.args.get("cap")
+    try:
+        cap = float(cap) if cap not in (None, "") else None
+    except ValueError:
+        cap = None
+    if cap is not None and not (0 < cap <= 100):
+        cap = None
+    same_game = request.args.get("same_game", "1") != "0"
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode", "off")
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode not in modes:
+        payout_mode = "off"
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    import combo_engine
+    objective = request.args.get("objective", "balanced")
+    if objective not in combo_engine.OBJECTIVES:
+        objective = "balanced"
+    sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
+    try:
+        import nfl_game_sim
+        item = nfl_game_sim.build_parlay(
+            week=week, preseason=_nfl_preseason(), n_legs=legs, target_pct=target,
+            cap_pct=cap, target_payout=payout, n_sims=sims,
+            max_legs_per_game=max_total if same_game else 1,
+            max_total_legs=max_total, legs_mode=legs_mode,
+            payout_mode=payout_mode, conn=conn, objective=objective,
+            types=_prop_types(), game_sel=sel or None)
+    except Exception as e:
+        return jsonify({"error": f"nfl parlay failed: {e}"}), 502
+    return jsonify({"parlay": item})
 
 
 @app.route("/api/nfl/sim")
@@ -1555,7 +1640,7 @@ def api_nfl_sim():
     week = max(1, min(18, week))
     try:
         import nfl_dfs_sim
-        data = nfl_dfs_sim.board(week=week)
+        data = nfl_dfs_sim.board(week=week, preseason=_nfl_preseason())
     except Exception as e:
         return jsonify({"error": f"nfl sim failed: {e}"}), 502
     if not data:

@@ -2573,6 +2573,9 @@ function initNFL() {
       $("nflWeekBox").classList.toggle("hidden", s !== "week");
       $("nflSimBox").classList.toggle("hidden", !simViews.includes(s));
       $("nflFutBox").classList.toggle("hidden", s === "week" || simViews.includes(s));
+      // The combo maker belongs to the week board -- it builds slips out of the
+      // markets on THAT slate, so it has no meaning under futures or win totals.
+      $("nflComboBox").classList.toggle("hidden", s !== "week");
       if (s === "week") { initNFLWeek(); return; }
       if (simViews.includes(s)) { _nflSimView = s; initNFLSim(); return; }
       _nflSub = s;                         // "futures" | "wins" share the projection load
@@ -2584,6 +2587,14 @@ function initNFL() {
 
 // ---- NFL week board (modeled scores / yards / TDs) -------------------------
 let _nflWeekData = null;
+// August or not, decided ONCE here and sent explicitly on every NFL request, so
+// the week board, the combo maker and the DFS builder can never disagree about
+// which season type they are looking at.
+let nflPreseason = (() => {
+  const m = new Date().getMonth() + 1;
+  return m === 8 || (m === 7 && new Date().getDate() >= 25);
+})();
+function nflPreQuery() { return nflPreseason ? "&preseason=1" : "&preseason=0"; }
 function initNFLWeek() {
   const sel = $("nflWeek");
   if (sel && !sel.dataset.filled) {
@@ -2597,17 +2608,30 @@ function initNFLWeek() {
       loadNFLWeek(0);
     });
   }
+  const pre = $("nflPre");
+  if (pre && !pre.dataset.wired) {
+    pre.dataset.wired = "1";
+    pre.checked = nflPreseason;
+    pre.addEventListener("change", () => {
+      nflPreseason = pre.checked;
+      _nflWeekData = null;
+      $("nflWeekResults").dataset.loaded = "1";
+      loadNFLWeek(0);
+      renderNFLComboMaker();
+    });
+  }
   if (!$("nflWeekResults").dataset.loaded) { $("nflWeekResults").dataset.loaded = "1"; loadNFLWeek(0); }
+  renderNFLComboMaker();
 }
 async function loadNFLWeek(attempt) {
   attempt = attempt || 0;
   const box = $("nflWeekResults"), wk = ($("nflWeek") || {}).value || 1;
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} — drive-level engine off Sleeper's matchup projections, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} — drive-level engine${nflPreseason ? ", anchored to Kalshi's ladder (preseason)" : " off Sleeper's matchup projections"}, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
   try {
     // Drive-engine slate first; the older ESPN closed-form board is the fallback
     // (deep offseason, Sleeper gap). Slate payloads carry engine:"drive".
     let d = null;
-    try { d = await (await fetch(`/api/nfl/slate?week=${wk}`)).json(); } catch (e) { d = null; }
+    try { d = await (await fetch(`/api/nfl/slate?week=${wk}${nflPreQuery()}`)).json(); } catch (e) { d = null; }
     if (!d || d.error || !(d.games && d.games.length)) {
       const f = await (await fetch(`/api/nfl/week?week=${wk}`)).json();
       if (!(f.error) && f.games && f.games.length) { _nflWeekData = f; renderNFLWeek(); return; }
@@ -2700,6 +2724,76 @@ function renderNFLWeek() {
   }
   $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
   $("nflWeekResults").innerHTML = d.games.map(nflGameCard).join("");
+}
+
+// ---- NFL combo maker -------------------------------------------------------
+// Deliberately the same controls, the same slip renderer and the same combo
+// engine as baseball's: only the candidate source differs, so a band or an
+// objective means exactly what it means on the other tab.
+let nflComboLegs = 3, nflComboTarget = 55, nflComboCap = 0, nflComboPayout = 0;
+let nflComboObjective = "balanced", nflComboLegsMode = "prefer";
+let nflComboPayoutMode = "off", nflComboConn = "or", nflComboSameGame = true;
+function renderNFLComboMaker() {
+  const box = $("nflComboMaker");
+  if (!box) return;
+  const prev = (() => { const el = $("nflComboOut"); return el ? el.innerHTML : ""; })();
+  const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
+    + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
+  box.innerHTML = `<div class="combomaker">
+    🎯 <b>Combo maker</b>${nflPreseason ? ` <span class="chip">🏟️ preseason</span>` : ""}
+    <div style="margin-top:8px">each leg ≥
+      <input id="nflComboTarget" type="number" min="20" max="97" value="${nflComboTarget}" style="width:54px"/>%
+      and ≤ <input id="nflComboCap" type="number" min="0" max="99" value="${nflComboCap || ""}" placeholder="—" style="width:54px"/>% likely</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band — Kalshi books two dozen spreads and nineteen totals a game, so there is almost always a line that fits.</div>
+    <div class="small" style="margin-top:6px">goal
+      ${sel("nflComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], nflComboObjective)}
+    </div>
+    <div class="small" style="margin-top:6px">
+      ${sel("nflComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], nflComboLegsMode)}
+      <input id="nflComboN" type="number" min="2" max="12" value="${nflComboLegs}" style="width:50px"/> legs
+      &nbsp;${sel("nflComboConn", [["or", "OR"], ["and", "AND"]], nflComboConn)}&nbsp;
+      ${sel("nflComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], nflComboPayoutMode)}
+      reach <input id="nflComboPayout" type="number" min="0" step="any" value="${nflComboPayout}" style="width:60px"/>× payout
+    </div>
+    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="nflComboSameGame"${nflComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+    <button class="track-mini primary-mini" style="margin-top:6px;display:block" onclick="buildNFLCombo()">Build</button>
+    <div class="small" style="margin-top:4px">Moneylines, every booked spread and total, and${nflPreseason ? "" : " (once Kalshi lists them)"} player props are all candidates. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
+    <div id="nflComboOut"></div>
+  </div>`;
+  if (prev) { const el = $("nflComboOut"); if (el) el.innerHTML = prev; }
+}
+async function buildNFLCombo() {
+  const out = $("nflComboOut");
+  if (!out) return;
+  const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
+  nflComboLegs = Math.max(2, Math.min(12, num("nflComboN", 3)));
+  nflComboTarget = Math.max(20, Math.min(97, num("nflComboTarget", 55)));
+  let cap = parseInt(($("nflComboCap") || {}).value, 10);
+  nflComboCap = (isNaN(cap) || cap <= 0) ? 0 : cap;
+  nflComboPayout = num("nflComboPayout", 0);
+  nflComboObjective = ($("nflComboObjective") || {}).value || "balanced";
+  nflComboLegsMode = ($("nflComboLegsMode") || {}).value || "prefer";
+  nflComboPayoutMode = ($("nflComboPayoutMode") || {}).value || "off";
+  nflComboConn = ($("nflComboConn") || {}).value || "or";
+  nflComboSameGame = !!(($("nflComboSameGame") || {}).checked);
+  const wk = ($("nflWeek") || {}).value || 1;
+  out.innerHTML = `<div class="empty">Simulating the slate and searching combos…</div>`;
+  const q = `week=${wk}${nflPreQuery()}&legs=${nflComboLegs}&target=${nflComboTarget}`
+    + (nflComboCap ? `&cap=${nflComboCap}` : "")
+    + `&payout=${nflComboPayout}&objective=${nflComboObjective}`
+    + `&legs_mode=${nflComboLegsMode}&payout_mode=${nflComboPayoutMode}`
+    + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`;
+  try {
+    const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
+    if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+    if (!d.parlay) {
+      out.innerHTML = `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
+      return;
+    }
+    out.innerHTML = renderMixed(d.parlay);
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Combo build failed.</div>`;
+  }
 }
 
 // ---- Basketball slate cards (shared renderer) -----------------------------
@@ -2871,15 +2965,31 @@ function initNFLSim() {
     sel.innerHTML = opts;
     sel.addEventListener("change", () => { _nflSimData = null; $("nflSimResults").dataset.loaded = ""; loadNFLSim(0); });
   }
+  // Same flag the week board and the combo maker use, so the three views of one
+  // slate can never end up looking at different season types.
+  const pre = $("nflSimPre");
+  if (pre && !pre.dataset.wired) {
+    pre.dataset.wired = "1";
+    pre.addEventListener("change", () => {
+      nflPreseason = pre.checked;
+      const wk = $("nflPre"); if (wk) wk.checked = pre.checked;
+      _nflSimData = null; _nflWeekData = null;
+      $("nflSimResults").dataset.loaded = "1";
+      $("nflWeekResults").dataset.loaded = "";
+      loadNFLSim(0);
+      renderNFLComboMaker();
+    });
+  }
+  if (pre) pre.checked = nflPreseason;
   if (_nflSimData) { renderNFLSim(); return; }
   if (!$("nflSimResults").dataset.loaded) { $("nflSimResults").dataset.loaded = "1"; loadNFLSim(0); }
 }
 async function loadNFLSim(attempt) {
   attempt = attempt || 0;
   const box = $("nflSimResults"), wk = ($("nflSimWeek") || {}).value || 1;
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} in the background — Sleeper projections + 16 correlated game sims (~10s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} in the background — ${nflPreseason ? "measured preseason usage" : "Sleeper projections"} + correlated game sims (~10s). Auto-refreshes.</div>`;
   try {
-    const d = await (await fetch(`/api/nfl/sim?week=${wk}`)).json();
+    const d = await (await fetch(`/api/nfl/sim?week=${wk}${nflPreQuery()}`)).json();
     if (d.error || !(d.games && d.games.length)) {
       if (attempt < 9) { setTimeout(() => loadNFLSim(attempt + 1), 6000); return; }
       box.innerHTML = `<div class="empty">${d.error || "No sim available."}</div>`;
@@ -3937,6 +4047,15 @@ async function initSim() {
         wk.innerHTML = o;
       }
     }
+    // Regular DraftKings lineups vs preseason. Defaults to the calendar so it is
+    // right in August without being told, and stays a manual override the rest of
+    // the year (a September user testing a preseason slate is a real thing).
+    const preLbl = $("dfsNflPreLbl");
+    if (preLbl) {
+      preLbl.classList.toggle("hidden", !isNfl);
+      const cb = $("dfsNflPre");
+      if (cb && !cb.dataset.wired) { cb.dataset.wired = "1"; cb.checked = nflPreseason; }
+    }
     const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
     if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb || isLol);
     if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb || isLol);
@@ -4229,6 +4348,7 @@ async function runDfsSim() {
         entry_fee: parseFloat(($("dfsEntry") || {}).value) || 1,
         prize_pool: parseFloat(($("dfsPool") || {}).value) || 0,
         first_prize: parseFloat(($("dfsFirst") || {}).value) || 0,
+        preseason: !!(($("dfsNflPre") || {}).checked),
         grid: (($("dfsGrid") || {}).value || "").trim() || null,
         week: parseInt(($("dfsNflWeek") || {}).value, 10) || 1 }),
     })).json();

@@ -99,6 +99,82 @@ def weekly_games(season, week):
     return _cached(("nfl_sleeper", season, week), 3600, build)
 
 
+# DraftKings scoring, for turning a projected stat line into projected points.
+_DK = {"pass_yd": 0.04, "pass_td": 4.0, "int": -1.0, "rush_yd": 0.1,
+       "rush_td": 6.0, "rec": 1.0, "rec_yd": 0.1, "rec_td": 6.0, "fum": -1.0}
+
+
+def dk_points(means):
+    return sum(_DK[k] * (means.get(k) or 0.0) for k in _DK)
+
+
+def preseason_games(season, week):
+    """weekly_games' shape for exhibitions, where Sleeper projects nothing.
+
+    Every stat line is built the same way the preseason game engine builds one:
+    the measured team-game budget from 96 exhibitions, distributed by the
+    INVERTED usage model, and scaled to what Kalshi's ladder says the game is
+    worth. So a DFS lineup and a combo slip on the same board are reading the
+    same projection rather than two that happen to look similar."""
+    def build():
+        import nfl_live, nfl_preseason, kalshi_nfl, nfl_game_sim
+        try:
+            sched = nfl_live.schedule(week, int(season), seasontype=1) or []
+        except Exception:
+            return None
+        try:
+            ros = nfl_preseason.rosters(season) or {}
+        except Exception:
+            return None
+        try:
+            idx = kalshi_nfl.index()
+        except Exception:
+            idx = {}
+        games = {}
+        for gm in sched:
+            h, a = gm.get("home"), gm.get("away")
+            if not h or not a:
+                continue
+            # Kalshi's number where there is one; the measured league average
+            # where there is not, so a game with no market still gets a lineup.
+            pts = {h: nfl_preseason.PRE_TEAM["points"], a: nfl_preseason.PRE_TEAM["points"]}
+            props = {}
+            suffix = nfl_game_sim._suffix_for(idx, h, a)
+            if suffix:
+                try:
+                    imp = kalshi_nfl.implied(suffix) or {}
+                    props = kalshi_nfl.prop_ladders(suffix) or {}
+                except Exception:
+                    imp = {}
+                tot = float(imp.get("total") or 0) or None
+                if tot:
+                    m = float(imp.get("margin") or 0.0)
+                    fav = imp.get("favourite")
+                    edge = m if fav == h else (-m if fav == a else 0.0)
+                    pts = {h: max(6.0, (tot + edge) / 2.0), a: max(6.0, (tot - edge) / 2.0)}
+            rows = []
+            for ab, opp in ((h, a), (a, h)):
+                names = {nfl_preseason._key(p["name"]) for p in (ros.get(ab) or [])}
+                mine = {k: v for k, v in props.items() if k[1] in names}
+                prof = nfl_game_sim.profile_from_points(ab, ab, pts[ab], ab == h,
+                                                        ros.get(ab), mine)
+                for pl in prof["players"]:
+                    means = {"pass_yd": pl["pass_yd"], "pass_td": pl["pass_td"],
+                             "int": pl.get("pass_int", 0.0), "rush_yd": pl["rush_yd"],
+                             "rush_td": pl["rush_td"], "rec": pl["rec"],
+                             "rec_yd": pl["rec_yd"], "rec_td": pl["rec_td"],
+                             "fum": 0.0}
+                    rows.append({"name": pl["name"], "pos": pl["pos"], "team": ab,
+                                 "opp": opp, "means": means,
+                                 "proj_pts": round(dk_points(means), 2),
+                                 "note": pl.get("note")})
+            if rows:
+                games[f"pre-{a}@{h}"] = {"players": rows, "teams": [h, a],
+                                         "label": f"{a} @ {h}"}
+        return games or None
+    return _cached(("nfl_pre_dfs", season, week), 3600, build)
+
+
 # ---- Correlated game simulation --------------------------------------------
 # How much each latent swings a stat (mean-1 multiplicative unless noted).
 _ENV_SD = 0.18          # shared pace/total: a shootout lifts both teams' volume
@@ -127,6 +203,11 @@ def _pois(mean):
 # Floors keep the board to players a book would actually post a line on.
 _PROP_SPECS = [("pass_yd", "pass yds", 5, 180), ("rush_yd", "rush yds", 5, 30),
                ("rec_yd", "rec yds", 5, 30), ("rec", "receptions", 0.5, 3.0)]
+# The "is this worth posting a line on" floors above are regular-season sized and
+# post NOTHING in August: a preseason quarterback projects around 100 yards
+# against a 180 cutoff, so the whole Pick 6 board came back empty. These are the
+# same idea against the measured exhibition budget -- roughly a 40% game.
+_PRE_PROP_FLOOR = {"pass_yd": 40.0, "rush_yd": 12.0, "rec_yd": 12.0, "rec": 1.0}
 
 
 def _prop_line(mean, step):
@@ -137,7 +218,7 @@ def _prop_line(mean, step):
     return math.floor(mean) + 0.5          # receptions: X.5
 
 
-def simulate_game(game, n=4000, with_samples=False):
+def simulate_game(game, n=4000, with_samples=False, preseason=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
     correlation-aware component prop over/unders, and QB->receiver stacks.
     with_samples=True attaches each player's rescaled point array (`arr`) so a DFS
@@ -197,6 +278,8 @@ def simulate_game(game, n=4000, with_samples=False):
         out.append(row)
         # Component props (correlation is already baked into the samples).
         for key, lab, step, floor_mean in _PROP_SPECS:
+            if preseason:
+                floor_mean = _PRE_PROP_FLOOR.get(key, floor_mean)
             cs = comp[i][key]
             mean = sum(cs) / len(cs)
             if mean < floor_mean:
@@ -272,7 +355,7 @@ def dst_projections(season, week):
     return _cached(("nfl_dst", season, week), 3600, build)
 
 
-def player_pool(week, n=3000):
+def player_pool(week, n=3000, preseason=False):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -280,12 +363,13 @@ def player_pool(week, n=3000):
     season = _season()
 
     def build():
-        games = weekly_games(str(season), week)
+        games = (preseason_games(str(season), week) if preseason
+                 else weekly_games(str(season), week))
         if not games:
             return None
         pool = {}
         for gid, g in games.items():
-            sim = simulate_game(g, n=n, with_samples=True)
+            sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
             for p in sim["players"]:
                 pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
                                    "proj": p["proj_pts"], "ceiling": p["ceiling"],
@@ -300,7 +384,7 @@ def player_pool(week, n=3000):
                              "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                              "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
-    return _cached(("nfl_pool", season, week, n), 1800, build)
+    return _cached(("nfl_pool", season, week, n, bool(preseason)), 1800, build)
 
 
 # ---- Week board (all games simmed) -----------------------------------------
@@ -312,30 +396,31 @@ def _season():
 _board_inflight = set()
 
 
-def board(week=1):
+def board(week=1, preseason=False):
     """Non-blocking week sim board: cached if fresh, else kick a background build
     (Sleeper fetch + 16 correlated game sims) and return None while it runs."""
     season = _season()
-    key = ("nfl_sim_board", season, week)
+    key = ("nfl_sim_board", season, week, bool(preseason))
     hit = _cache.get(key)
     if hit and _time.time() - hit[0] < 1800:
         return hit[1]
-    if week not in _board_inflight:
-        _board_inflight.add(week)
+    if key not in _board_inflight:
+        _board_inflight.add(key)
 
         def _bg():
             try:
-                val = _build_board(season, week)
+                val = _build_board(season, week, preseason=preseason)
                 if val is not None:
                     _cache[key] = (_time.time(), val)
             finally:
-                _board_inflight.discard(week)
+                _board_inflight.discard(key)
         _threading.Thread(target=_bg, daemon=True).start()
     return hit[1] if hit else None
 
 
-def _build_board(season, week, n=4000):
-    games = weekly_games(str(season), week)
+def _build_board(season, week, n=4000, preseason=False):
+    games = (preseason_games(str(season), week) if preseason
+             else weekly_games(str(season), week))
     if not games:
         return None
     # Sleeper consensus draft rank (~ADP) for best-ball value, if available.
@@ -350,7 +435,7 @@ def _build_board(season, week, n=4000):
 
     sims, ceilings, props, stacks = [], [], [], []
     for gid, g in games.items():
-        s = simulate_game(g, n=n)
+        s = simulate_game(g, n=n, preseason=preseason)
         sims.append(s)
         props.extend(s["props"])
         for st in s["stacks"]:
@@ -383,9 +468,20 @@ def _build_board(season, week, n=4000):
             seen[p["player"]] = seen.get(p["player"], 0) + 1
             props.append(p)
     stacks.sort(key=lambda x: -x["combined_ceiling"])
+    note = ("Correlated per-game Monte Carlo seeded by Sleeper's weekly "
+            "projections. Player means are pinned to Sleeper; the sim adds "
+            "floor/ceiling shape and same-game correlation (QB<->WR stacks).")
+    if preseason:
+        note = ("PRESEASON lineups. Sleeper projects nothing for exhibitions, so "
+                "the means are measured instead: one team-game from 96 of last "
+                "August's, distributed by a usage model that runs INVERTED -- the "
+                "backup quarterback throws about a third more than the starter, a "
+                "camp-body running back gets roughly double a starter's touches, "
+                "and the starters sit after a series. Where Kalshi books a player "
+                "his own ladder sets his level. Chalk is upside down here: the "
+                "names at the top of a DraftKings salary list are the ones who "
+                "will not play.")
     return {"season": season, "week": week, "n_games": len(sims), "n_sims": n,
             "games": sims, "ceilings": ceilings[:80], "props": props[:80],
             "stacks": stacks[:16], "has_adp": bool(adp),
-            "note": "Correlated per-game Monte Carlo seeded by Sleeper's weekly "
-                    "projections. Player means are pinned to Sleeper; the sim adds "
-                    "floor/ceiling shape and same-game correlation (QB<->WR stacks)."}
+            "preseason": bool(preseason), "note": note}

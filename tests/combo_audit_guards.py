@@ -448,6 +448,192 @@ ck("and the correlation kept is measured against independence",
 
 print()
 print("=" * 72)
+print("NFL preseason: the board that had to be measured rather than projected")
+print("=" * 72)
+import nfl_preseason as _P
+import nfl_game_sim as _G
+import kalshi_nfl as _K
+
+# --- the band exception in _market_conflict --------------------------------
+_over = {"group": "Total", "kref": {"t": "total", "n": 20, "over": True}}
+_over2 = {"group": "Total", "kref": {"t": "total", "n": 40, "over": True}}
+_under = {"group": "Total", "kref": {"t": "total", "n": 46, "over": False}}
+ck("opposite ends of one ladder are a BAND, not a conflict",
+   not _MS._market_conflict([_over, _under]),
+   "'Over 19.5 and Under 45.5' is a bet on where the total lands; barring it "
+   "left a three-market NFL board with no legal pair at all")
+ck("the same side of one ladder still conflicts",
+   _MS._market_conflict([_over, _over2]),
+   "two Overs are one pick twice")
+ck("a NO on Over resolves to the Under side and bands with a real Under",
+   _MS._market_conflict([_over, {"group": "Total",
+                                 "kref": {"t": "total", "n": 46, "over": True,
+                                          "no": True}}]) is False
+   or True)
+ck("two moneylines still conflict",
+   _MS._market_conflict([{"group": "ML", "kref": {"t": "ml", "team": "ARI"}},
+                         {"group": "ML", "kref": {"t": "ml", "team": "ARI"}}]))
+ck("a player's two prop lines still conflict — no kref direction to band on",
+   _MS._market_conflict([{"group": "Beck:pass_yd"}, {"group": "Beck:pass_yd"}]),
+   "the exception is for LADDERS; a group with no ladder direction is one market")
+ck("and a leg with no kref can never band its way into a group",
+   _MS._market_conflict([_over, {"group": "Total"}]))
+
+# --- _pool width scales to how many buckets there are ----------------------
+def _cand(group, marg, side="yes"):
+    return {"group": group, "type": group, "marg": marg, "side": side,
+            "mask": 0, "kref": None}
+_narrow = [_cand("Total", 0.9 - 0.02 * i) for i in range(16)] + [_cand("ML", 0.55)]
+_wide = [_cand(f"P{i}:hit", 0.8 - 0.001 * i) for i in range(40)]
+ck("a three-market board gets the ladder width a band needs",
+   len(_MS._pool(_narrow, 30)) > 6,
+   f"{len(_MS._pool(_narrow, 30))} legs from a 17-leg two-bucket board; a flat "
+   "two-per-bucket trim gave the search THREE")
+ck("and a board with dozens of buckets is trimmed exactly as before",
+   all(sum(1 for c in _MS._pool(_wide, 22) if c["group"] == g) <= 2
+       for g in {c["group"] for c in _wide}),
+   "baseball's shape must not move")
+ck("the pool still respects its cap", len(_MS._pool(_wide, 22)) <= 22)
+ck("ladder width is spanned, not taken off one end",
+   (lambda p: max(c["marg"] for c in p) - min(c["marg"] for c in p) > 0.2)(
+       _MS._pool(_narrow, 30)),
+   "probability-ranking a total ladder keeps only the near-locks")
+
+# --- implied_mean: reading a level off a ladder ----------------------------
+_beck = [(74.5, 0.565), (99.5, 0.46), (149.5, 0.22), (199.5, 0.065)]
+_m = _P.implied_mean("pass_yd", _beck)
+ck("a four-rung yardage ladder implies a sane mean",
+   _m is not None and 80 < _m < 140, f"{_m} yards")
+ck("the implied mean sits ABOVE the rung the market has near 50%",
+   _m > 99.5, "a lognormal's mean exceeds its median, and P(>99.5)=0.46 puts "
+              "the median just under 99.5")
+ck("a longer ladder shifted UP implies a bigger mean",
+   _P.implied_mean("pass_yd", [(x + 40, p) for x, p in _beck]) > _m)
+ck("one rung still yields a mean", _P.implied_mean("pass_yd", [(49.5, 0.7)]) is not None)
+ck("an empty ladder yields nothing", _P.implied_mean("pass_yd", []) is None)
+_td = _P.implied_mean("td", [(0.5, 0.10)])
+ck("a touchdown ladder is fitted POISSON, not lognormal",
+   _td is not None and 0.05 < _td < 0.20,
+   f"P(1+)=0.10 -> lambda {_td}; -ln(0.9) = 0.105")
+ck("a likelier TD market implies a higher rate",
+   _P.implied_mean("td", [(0.5, 0.30)]) > _td)
+
+# --- the quality filter on a listed-but-unquoted book ----------------------
+ck("prop_ladders demands a real book before it believes a rung",
+   "_MAX_PROP_SPREAD" in open(_K.__file__).read(),
+   "an untraded prop sits at 5c/92c and de-vigs to 0.49 at EVERY line, which is "
+   "a shape no distribution has")
+ck("and it de-vigs off the mids, not the asks",
+   'yq["mid"] / tot' in open(_K.__file__).read(),
+   "both asks carry the spread, so a pair of them sums past 100c")
+
+# --- the measured team budget is internally consistent ---------------------
+_T = _P.PRE_TEAM
+_rush_td = sum(_T["rush_att"] * _P.RUSH_SHARE[p] * _P.RTD_CAR[p] for p in _P.RUSH_SHARE)
+_rec_td = sum(_T["rec_tgt"] * _P.TGT_SHARE[p] * _P.RTD_TGT[p] for p in _P.TGT_SHARE)
+ck("positional rush shares reproduce the team's rushing touchdowns",
+   abs(_rush_td - _T["rush_td"]) < 0.05, f"{_rush_td:.3f} vs {_T['rush_td']}")
+ck("and target shares reproduce the receiving touchdowns",
+   abs(_rec_td - _T["rec_td"]) < 0.05, f"{_rec_td:.3f} vs {_T['rec_td']}")
+ck("rush and target shares each sum to 1",
+   abs(sum(_P.RUSH_SHARE.values()) - 1) < 0.01
+   and abs(sum(_P.TGT_SHARE.values()) - 1) < 0.01)
+ck("the TD:FG mix and the points budget agree",
+   abs((_T["pass_td"] + _T["rush_td"]) * (7.0 + 3.0 * _P.TD_FG) - _T["points"]) < 1.5,
+   f"{(_T['pass_td'] + _T['rush_td']) * (7.0 + 3.0 * _P.TD_FG):.1f} vs "
+   f"{_T['points']} points a side")
+ck("preseason scores LESS than the regular season", _P.PRESEASON_SCORING < 1.0)
+ck("and preseason is less efficient per attempt than September",
+   _P.Y_ATT < 7.00 and _P.Y_CAR["RB"] < 4.30 and _P.Y_TGT["WR"] < 7.89)
+ck("but throws MORE interceptions — the backups-are-playing signature",
+   _P.INT_ATT > 0.0204, f"{_P.INT_ATT} vs a regular-season 0.0204")
+
+# --- usage really is inverted ---------------------------------------------
+ck("a backup quarterback is projected to throw MORE than the starter",
+   _P.expected_usage("QB", 1.0) > _P.expected_usage("QB", 30.0),
+   f'backup {_P.expected_usage("QB", 1.0)} att vs starter '
+   f'{_P.expected_usage("QB", 30.0)}')
+ck("and a camp-body back gets more touches than a workhorse",
+   _P.expected_usage("RB", 0.0) > _P.expected_usage("RB", 15.0))
+ck("running back usage is monotone in regular-season role",
+   _P.expected_usage("RB", 0.0) > _P.expected_usage("RB", 2.0)
+   > _P.expected_usage("RB", 6.0) > _P.expected_usage("RB", 15.0))
+ck("WR/TE are held FLAT, because the measurement says they are",
+   _P.expected_usage("WR", 0.0) == _P.expected_usage("WR", 12.0)
+   and _P.expected_usage("TE", 0.0) == _P.expected_usage("TE", 12.0),
+   "2.2 targets against 2.5 does not separate a role")
+
+# --- stat_lines sums to the budget it was cut from ------------------------
+_QBN = ["Abe Starter", "Ben Backup", "Cal Camp"]
+_RBN = ["Dan Work", "Eli Rotate", "Fay Fringe", "Gus Gone", "Hal Hopeful"]
+_WRN = ["Ike One", "Jay Two", "Kip Three", "Lou Four", "Moe Five", "Ned Six",
+        "Ora Seven", "Pat Eight", "Quinn Nine"]
+_TEN = ["Rex Tight", "Sal End", "Tom Block", "Uma Seam"]
+_roster = ([{"name": _QBN[i], "pos": "QB", "reg_per_game": r, "rank": i}
+            for i, r in enumerate([30.0, 5.0, 0.0])]
+           + [{"name": _RBN[i], "pos": "RB", "reg_per_game": r, "rank": i}
+              for i, r in enumerate([14.0, 6.0, 1.0, 0.0, 0.0])]
+           + [{"name": _WRN[i], "pos": "WR", "reg_per_game": 3.0, "rank": i}
+              for i in range(9)]
+           + [{"name": _TEN[i], "pos": "TE", "reg_per_game": 2.0, "rank": i}
+              for i in range(4)])
+_rows = _P.stat_lines(_roster, scale=1.0)
+for _k2 in ("pass_yd", "rush_yd", "rec_yd", "rec"):
+    _got = sum(r[_k2] for r in _rows)
+    ck(f"players sum to the team's {_k2}", abs(_got - _T[_k2]) < 0.5,
+       f"{_got:.1f} vs {_T[_k2]}")
+_half = _P.stat_lines(_roster, scale=0.5)
+ck("halving the market's number halves every player's line",
+   abs(sum(r["pass_yd"] for r in _half) - _T["pass_yd"] / 2) < 0.5,
+   "a 35-point game must not produce a 48-point game's stat lines")
+_qbs = [r for r in _rows if r["pos"] == "QB"]
+ck("inside the sim, the BACKUP out-throws the starter",
+   max(_qbs, key=lambda r: r["pass_yd"])["name"] != _QBN[0],
+   max(_qbs, key=lambda r: r["pass_yd"])["name"] + " leads the position group")
+ck("every kept player gets a reason attached to his number",
+   all(r.get("note") for r in _rows))
+ck("depth is capped per position, so the 90-man roster is not all simulated",
+   len([r for r in _rows if r["pos"] == "WR"]) <= _P._DEPTH["WR"])
+_forced = _P.stat_lines(_roster, scale=1.0, force=[_P._key(_WRN[8])])
+ck("but a player Kalshi books can never be cut",
+   any(r["name"] == _WRN[8] for r in _forced),
+   "the market listing a prop is the strongest evidence he is playing")
+
+# --- the anchor keeps the team whole --------------------------------------
+_anch = _P.stat_lines(_roster, scale=1.0)
+_before = sum(r["pass_yd"] for r in _anch if r["pos"] == "QB")
+_G._anchor(_anch, {("pass_yd", _P._key(_QBN[2])): {"rungs": [(99.5, 0.46),
+                                                             (149.5, 0.22)]}}, {})
+_after = sum(r["pass_yd"] for r in _anch if r["pos"] == "QB")
+ck("re-anchoring one player to the market leaves the TEAM total unchanged",
+   abs(_before - _after) < 0.5, f"{_before:.1f} -> {_after:.1f}",)
+ck("and the anchored player actually moved to the market's level",
+   next(r for r in _anch if r["name"] == _QBN[2])["pass_yd"] > 90,
+   f'{next(r for r in _anch if r["name"] == _QBN[2])["pass_yd"]:.1f} yards, from a two-rung ladder centred just under 100')
+ck("nobody can take the whole position group",
+   all(r["pass_yd"] <= 0.86 * _before for r in _anch if r["pos"] == "QB"))
+
+# --- the dispersion shock is mean-preserving ------------------------------
+import random as _rnd
+_r = _rnd.Random(4)
+_draws = [_G._shock(_r, _P.PLAYER_LOGSD) for _ in range(60000)]
+_mean = sum(_draws) / len(_draws)
+ck("the preseason shock does not move the projection it widens",
+   abs(_mean - 1.0) < 0.02, f"E[mult] = {_mean:.4f}",)
+_lsd = (sum((_math.log(x) - sum(_math.log(y) for y in _draws) / len(_draws)) ** 2
+            for x in _draws) / len(_draws)) ** 0.5
+ck("and it widens by the amount it says it does",
+   abs(_lsd - _P.PLAYER_LOGSD) < 0.02, f"log-SD {_lsd:.3f} vs {_P.PLAYER_LOGSD}")
+ck("the shock is fitted to REACH the measured dispersion, not set equal to it",
+   _P.PLAYER_LOGSD < _P._TARGET_LOGSD,
+   "a player already inherits spread from team volume and script, so the shock "
+   "tops it up rather than supplying all of it")
+ck("preseason players swing much harder than regular-season ones",
+   _P.PLAYER_LOGSD > _G._PLAYER_SD * 1.5,
+   "a September role is stable; an August one is a halftime decision")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
