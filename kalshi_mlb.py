@@ -91,10 +91,18 @@ def _q(m, side):
         return None
     if bid is None or not (0 <= bid <= 100) or bid > ask:
         bid = None
+    # Kalshi does not publish `no_ask_size_fp` on ANY market -- checked across
+    # every open MLB and NFL market, zero of them carry it -- so the NO side was
+    # reading a missing field and reporting depth 0.0 on a book that is often
+    # thick. Buying NO at the ask lifts the same resting orders as selling YES at
+    # the bid, so the YES bid size IS the NO ask size.
+    size = m.get(f"{side}_ask_size_fp")
+    if size is None and side == "no":
+        size = m.get("yes_bid_size_fp")
     return {"ask": ask, "bid": bid,
             "mid": ((bid + ask) / 2.0) if bid is not None else ask,
             "spread": (ask - bid) if bid is not None else None,
-            "size": _f(m.get(f"{side}_ask_size_fp")),
+            "size": _f(size),
             "vol": _f(m.get("volume_fp")),
             "oi": _f(m.get("open_interest_fp"))}
 

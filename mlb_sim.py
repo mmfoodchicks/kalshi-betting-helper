@@ -1958,11 +1958,34 @@ def _worst_pair(idxs, phi):
     return worst
 
 
+def _ladder_dir(c):
+    """Which way a ladder leg points -- the team for a moneyline or spread,
+    over/under for a total, with the NO side inverted. None for anything that is
+    not a ladder leg (player props, and anything built without a Kalshi ref)."""
+    k = c.get("kref") or {}
+    t, no = k.get("t"), bool(k.get("no"))
+    if t == "total":
+        return "over" if bool(k.get("over")) != no else "under"
+    if t in ("ml", "spread"):
+        return ("not:" if no else "") + str(k.get("team") or "").upper()
+    return None
+
+
 def _market_conflict(combo):
     """True if a parlay stacks two legs from the same market group -- two game
-    totals, two run-line margins, two moneylines, or two props on the SAME
-    player/pitcher (those are one correlated market, not independent picks)."""
-    seen = set()
+    totals on the same side, two run-line margins, two moneylines, or two props
+    on the SAME player/pitcher (those are one correlated market, not independent
+    picks).
+
+    OPPOSITE ENDS OF ONE LADDER ARE THE EXCEPTION. "Over 18.5 and Under 45.5" is
+    a band on where the total lands, which is a real two-leg bet and not two
+    bites at one pick -- and on a board whose entire slate is three team markets
+    (an NFL preseason game has no player props at all) it is the only way a
+    same-game stack reaches three legs. Same-side pairs stay barred, and the pair
+    is still put through _redundant (nested lines) and the counteract filter (a
+    band tight enough that its legs fight each other), so what survives is a wide
+    band and nothing else."""
+    seen = {}
     for c in combo:
         # dict.get evaluates its default EAGERLY, so c.get("group", c["type"])
         # raised KeyError on any candidate without a "type" even when it had a
@@ -1970,9 +1993,14 @@ def _market_conflict(combo):
         # to carry both, so this never fired -- but it made the conflict check
         # crash-prone for anything constructed anywhere else.
         g = c.get("group") or c.get("type")
-        if g in seen:
+        d = _ladder_dir(c)
+        prev = seen.get(g)
+        if prev is None:
+            seen[g] = [d]
+            continue
+        if d is None or any(p is None or p == d for p in prev):
             return True
-        seen.add(g)
+        prev.append(d)
     return False
 
 
@@ -2004,6 +2032,14 @@ def _pool(cands, k=22):
     the board. NO also gets a reserved share of k, chosen across the probability
     range: ranking the whole pool by probability would keep only the near-certain
     NOs and drop the contrarian fades that are the reason to bet NO at all.
+
+    Two per bucket is the right trim when there are DOZENS of buckets, which is
+    baseball's shape -- a group per player per stat. It starves a board whose
+    whole slate is three team markets: an NFL preseason game has no player props,
+    so ML/Spread/Total is everything, and a flat two-per-bucket trim handed the
+    search a pool of three legs to build a parlay out of. The per-bucket
+    allowance therefore scales to how many buckets there are, which leaves a wide
+    board exactly as it was and gives a narrow one the ladder width a band needs.
     """
     by_bucket = {}
     for c in sorted(cands, key=lambda x: -x["marg"]):
@@ -2013,14 +2049,15 @@ def _pool(cands, k=22):
         # was missed.
         by_bucket.setdefault((c.get("group") or c.get("type"),
                               c.get("side", "yes")), []).append(c)
+    per = max(2, -(-k // max(1, len(by_bucket))))
     picks = {"yes": [], "no": []}
     for (_grp, side), cs in by_bucket.items():
         p = picks.get(side)
         if p is None:
             p = picks.setdefault(side, [])
-        p.append(cs[0])
-        if len(cs) > 1:
-            p.append(cs[-1])
+        # _span, not the top few: on a ladder the useful width runs across the
+        # LINES, and probability-ranking a total ladder keeps only one end of it.
+        p.extend(_span(cs, min(per, len(cs))))
     no_slots = min(len(picks["no"]), max(2, k // 3)) if picks["no"] else 0
     take_no = _span(picks["no"], no_slots)
     take_yes = sorted(picks["yes"], key=lambda x: -x["marg"])[:max(0, k - len(take_no))]

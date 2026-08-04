@@ -51,6 +51,18 @@ def _pois(lam, rng):
             return k - 1
 
 
+def _shock(rng, logsd=None):
+    """Per-player volume multiplier for one game.
+
+    `logsd` set (preseason) draws a MEAN-PRESERVING lognormal: subtracting
+    sigma^2/2 from the mean of the log is what keeps E[mult] at 1.0, so widening
+    a player's distribution does not quietly raise his projection -- the whole
+    point is to move probability into both tails, not to move the line."""
+    if logsd:
+        return math.exp(rng.gauss(0.0, logsd) - logsd * logsd / 2.0)
+    return max(0.1, rng.gauss(1.0, _PLAYER_SD))
+
+
 def _rates(prof, home):
     """Per-drive outcome rates from a team's expected production."""
     e = prof["exp"]
@@ -152,7 +164,8 @@ def _shares(prof):
     return ps, tot
 
 
-def simulate_game(home, away, n=2400, seed=None):
+def simulate_game(home, away, n=2400, seed=None, ladders=None, prop_lad=None,
+                  shock=None):
     """Correlated Monte Carlo of one game from two nfl_data team profiles.
 
     Returns win probs, score/margin/total distributions, per-player prop
@@ -215,16 +228,21 @@ def simulate_game(home, away, n=2400, seed=None):
 
             for i, p in enumerate(ps):
                 L = lines[off + i]
-                noise = max(0.1, rng.gauss(1.0, _PLAYER_SD))
+                noise = _shock(rng, shock)
                 if p["pass_yd"] > 0:
-                    L["pass_yd"][s] = p["pass_yd"] / (tot["pass_yd"] or 1) * team_pass \
-                        * max(0.5, rng.gauss(1.0, 0.08))
+                    # A quarterback's yardage tracks his team's passing game
+                    # almost exactly in the regular season -- he is the only one
+                    # throwing. In an exhibition it does not: whether he plays a
+                    # series or a half is a coaching decision, so the preseason
+                    # shock applies to him too.
+                    qn = _shock(rng, shock) if shock else max(0.5, rng.gauss(1.0, 0.08))
+                    L["pass_yd"][s] = p["pass_yd"] / (tot["pass_yd"] or 1) * team_pass * qn
                     L["pass_td"][s] = pass_td_n if p["pass_yd"] / tot["pass_yd"] > 0.7 \
                         else _pois(p["pass_td"] * pass_mult, rng)
                 if p["rush_yd"] > 0:
                     L["rush_yd"][s] = p["rush_yd"] / tot["rush_yd"] * team_rush * noise
                 if p["rec_yd"] > 0:
-                    rn = max(0.1, rng.gauss(1.0, _PLAYER_SD))
+                    rn = _shock(rng, shock)
                     L["rec_yd"][s] = p["rec_yd"] / tot["rec_yd"] * team_pass \
                         * (tot["rec_yd"] / (tot["pass_yd"] or 1)) * rn
                     L["rec"][s] = p["rec"] / (tot["rec"] or 1) * (e["rec"] * pass_mult) * rn
@@ -255,7 +273,12 @@ def simulate_game(home, away, n=2400, seed=None):
         spread_ladder["home"][str(m)] = round(100 * sum(1 for x in margins if x >= m) / n, 1)
         spread_ladder["away"][str(m)] = round(100 * sum(1 for x in margins if x <= -m) / n, 1)
 
-    # Player boards + prop ladders.
+    # Player boards + prop ladders. The cutoff for "worth showing" is a fraction
+    # of a real game in the preseason: a team runs for 109 yards a side in an
+    # exhibition against ~120 in September, split across five backs instead of
+    # two, so a 25-yard floor built for the regular season hides the ENTIRE
+    # running back and receiver board -- which is exactly the board Kalshi books.
+    floor_yd, floor_rec = (10.0, 1.0) if shock else (25.0, 2.5)
     players, props = [], []
     for i, p in enumerate(all_ps):
         L = lines[i]
@@ -264,7 +287,7 @@ def simulate_game(home, away, n=2400, seed=None):
                          ("rec_yd", "rec yds"), ("rec", "receptions")):
             arr = L[key]
             mean = sum(arr) / n
-            if mean < (2.5 if key == "rec" else 25):
+            if mean < (floor_rec if key == "rec" else floor_yd):
                 continue
             row[key] = round(mean, 1)
             row[key + "_floor"] = round(q(arr, 0.15), 1)
@@ -278,7 +301,7 @@ def simulate_game(home, away, n=2400, seed=None):
                                   "team": team_of[i], "stat": lab,
                                   "line": line, "over_pct": round(over * 100, 1)})
         td1 = sum(1 for x in L["td"] if x >= 1) / n
-        if td1 >= 0.12:
+        if td1 >= (0.05 if shock else 0.12):
             row["td1_pct"] = round(td1 * 100, 1)
             props.append({"player": p["name"], "pos": p["pos"], "team": team_of[i],
                           "stat": "anytime TD", "line": 0.5,
@@ -297,7 +320,7 @@ def simulate_game(home, away, n=2400, seed=None):
         "total_ladder": total_ladder, "spread_ladder": spread_ladder,
         "players": players, "props": props, "n_sims": n,
         "_masks": _build_masks(home, away, hp, ap, lines, margins, totals,
-                               p_home, n),
+                               p_home, n, ladders=ladders, prop_lad=prop_lad),
     }
 
 
@@ -310,7 +333,8 @@ def _mask_of(pred, n):
     return m
 
 
-def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n):
+def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
+                 ladders=None, prop_lad=None):
     """Candidate legs with sim masks. Shape matches mlb_sim's candidates so
     best_same_game / game_bundles run unchanged."""
     cands = []
@@ -327,32 +351,75 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n):
         "ML", kref={"t": "ml", "team": h}, avg=round(sum(margins) / n, 1), unit="pt margin")
     add("ML", f"{away.get('name', a)} to win", _mask_of(lambda i: margins[i] < 0, n),
         "ML", kref={"t": "ml", "team": a}, avg=round(-sum(margins) / n, 1), unit="pt margin")
-    for m in (3, 7, 10):
-        add("Spread", f"{h} wins by {m}+", _mask_of(lambda i, m=m: margins[i] >= m, n), "Spread")
-        add("Spread", f"{a} wins by {m}+", _mask_of(lambda i, m=m: margins[i] <= -m, n), "Spread")
     mean_total = sum(totals) / n
-    for d in (-4, 0, 4):
-        line = round(mean_total) + d + 0.5
+    # Spread and total legs come off KALSHI'S OWN LADDER when we have it, with the
+    # kref that prices them. These used to be three hardcoded margins and three
+    # made-up totals carrying no kref at all, so every one of them went out
+    # unpriced against a market that books two dozen lines a game -- and a combo
+    # cannot walk to the line that lands in a confidence band if the only lines it
+    # knows about are the ones it invented.
+    sp = (ladders or {}).get("spread") or {}
+    margins_h = sp.get(h) or [3, 7, 10]
+    margins_a = sp.get(a) or [3, 7, 10]
+    for m in margins_h:
+        add("Spread", f"{h} wins by {m}+",
+            _mask_of(lambda i, m=m: margins[i] >= m, n), "Spread",
+            kref={"t": "spread", "team": h, "by": m},
+            avg=round(sum(margins) / n, 1), unit="pt margin")
+    for m in margins_a:
+        add("Spread", f"{a} wins by {m}+",
+            _mask_of(lambda i, m=m: margins[i] <= -m, n), "Spread",
+            kref={"t": "spread", "team": a, "by": m},
+            avg=round(-sum(margins) / n, 1), unit="pt margin")
+    tl = (ladders or {}).get("total")
+    lines_t = tl if tl else [round(mean_total) + d for d in (-4, 0, 4)]
+    for nn in lines_t:
+        line = nn - 0.5
         add("Total", f"Over {line}", _mask_of(lambda i, L=line: totals[i] > L, n),
-            "Total", avg=round(mean_total, 1), unit="points")
+            "Total", kref={"t": "total", "n": nn, "over": True},
+            avg=round(mean_total, 1), unit="points")
         add("Total", f"Under {line}", _mask_of(lambda i, L=line: totals[i] < L, n),
-            "Total", avg=round(mean_total, 1), unit="points")
+            "Total", kref={"t": "total", "n": nn, "over": False},
+            avg=round(mean_total, 1), unit="points")
 
+    # Player legs come off KALSHI'S OWN LADDER wherever it books one -- with the
+    # kref that prices them -- and fall back to an invented line only where it
+    # does not. Preseason props exist and are traded (Carson Beck has four rungs
+    # with real volume), so a made-up line here would throw away both the price
+    # and the market's read on who is even playing.
+    prop_lad = prop_lad or {}
     all_ps = list(hp) + list(ap)
     for i, p in enumerate(all_ps):
         L = lines[i]
         nm = p["name"]
+        key_nm = _nkey(nm)
         for key, lab, step in (("pass_yd", "pass yds", 25), ("rush_yd", "rush yds", 15),
                                ("rec_yd", "rec yds", 15), ("rec", "receptions", 1)):
             arr = L[key]
             mean = sum(arr) / n
+            booked = (prop_lad.get((key, key_nm)) or {}).get("rungs") or []
+            if booked:
+                for ln, _p in booked:
+                    add(lab.title(), f"{nm} {ln}+ {lab}",
+                        _mask_of(lambda i2, A=arr, l2=ln: A[i2] > l2, n),
+                        f"{nm}:{key}", avg=round(mean, 1), unit=lab,
+                        kref={"t": "prop", "stat": key, "player": nm, "line": ln})
+                continue
             if mean < (3 if key == "rec" else 30):
                 continue
             line = (math.floor(mean / step) * step) + 0.5
             add(lab.title(), f"{nm} {line}+ {lab}",
                 _mask_of(lambda i2, A=arr, ln=line: A[i2] > ln, n),
                 f"{nm}:{key}", avg=round(mean, 1), unit=lab)
-        if sum(1 for x in L["td"] if x >= 1) / n >= 0.15:
+        td_booked = (prop_lad.get(("td", key_nm)) or {}).get("rungs") or []
+        if td_booked:
+            for ln, _p in td_booked:
+                k = int(math.ceil(ln))
+                add("TD", f"{nm} {k}+ TD",
+                    _mask_of(lambda i2, A=L["td"], k2=k: A[i2] >= k2, n),
+                    f"{nm}:td",
+                    kref={"t": "prop", "stat": "td", "player": nm, "line": ln})
+        elif sum(1 for x in L["td"] if x >= 1) / n >= 0.15:
             add("TD", f"{nm} anytime TD",
                 _mask_of(lambda i2, A=L["td"]: A[i2] >= 1, n), f"{nm}:td")
     return cands
@@ -378,6 +445,132 @@ def _season():
     import clock
     t = clock.today_et()
     return t.year if t.month >= 3 else t.year - 1
+
+
+# --- PRESEASON ----------------------------------------------------------------
+# An exhibition has no usable team profile: Sleeper projects nothing in August
+# (every field comes back null), so there is no expected production to hand the
+# drive engine. Kalshi, however, books a deep ladder on these games -- 24 spread
+# markets and 19 totals on the Hall of Fame game -- and a ladder IS an estimate
+# of the score.
+#
+# So preseason games are simulated MARKET-ANCHORED: the level comes from the
+# de-vigged ladder, and the engine supplies the JOINT structure a parlay needs
+# and a set of independent market prices cannot. That division is the honest one.
+# It does not claim an edge on the level -- it claims that the market prices each
+# line separately and does not price the correlation between them.
+# The PLAYERS come from nfl_preseason, which measured what an exhibition team-game
+# actually looks like off Sleeper's preseason STATS feed (the projections feed is
+# null in August, the stats feed is not) and distributes it by the inverted usage
+# model -- the third quarterback throws more than the first. Where Kalshi books a
+# player, his ladder overrides the model for that stat: the market prices THIS
+# player in THIS exhibition, which no positional model can match.
+#
+# The drive engine realizes slightly more than the points it is asked for --
+# stable across the range, so it is a bias and not noise, and it is divided out
+# rather than left for the caller to wonder about. REMEASURED after the TD:FG mix
+# moved to the preseason's own 0.82 (see nfl_preseason.TD_FG), because the old
+# 1.0533 was fitted at the regular season's 0.55 and a different mix reaches the
+# same points through a different number of touchdowns:
+#
+#     asked   30.0   35.0   40.0   46.0   52.0
+#     got     29.7   34.5   39.8   46.2   52.2
+#     ratio  0.990  0.986  0.995  1.004  1.004
+#
+# Under a point across the whole range and no longer one-signed, because the
+# preseason TD:FG mix puts more of the scoring through field goals -- which the
+# drive engine models directly rather than through the touchdown rate the old
+# +5.3% bias was absorbing.
+_ENGINE_BIAS = 0.990
+
+
+def profile_from_points(abbr, name, points, home, roster=None, props=None):
+    """A synthetic team profile that scores `points` a game through the drive
+    engine, with a full preseason player board underneath it.
+
+    Everything scales off ONE measured team-game, so the players always sum to
+    the team and the team always sums to the market's number."""
+    import nfl_preseason as pre
+    ask = max(6.0, points) / _ENGINE_BIAS
+    scale = ask / pre.PRE_TEAM["points"]
+    exp = pre.team_exp(scale)
+    tds = exp["pass_td"] + exp["rush_td"]
+    exp["fgm"] = tds * pre.TD_FG
+    exp["rec_td"] = exp["pass_td"]
+    players = []
+    if roster:
+        try:
+            players = pre.stat_lines(roster, scale,
+                                     force=[k[1] for k in (props or {})])
+            _anchor(players, props, exp)
+        except Exception:
+            players = []
+    return {"abbr": abbr, "name": name, "home": home, "players": players,
+            "exp": exp}
+
+
+def _anchor(players, props, exp):
+    """Rewrite a player's expected stat to the level Kalshi's ladder implies, and
+    give the rest of his position group what is left of the team's budget.
+
+    Without the second half this would break the invariant the whole design rests
+    on. The market says Carson Beck throws for ~105 in a game the model gives
+    Arizona 177 passing yards total; taking that number and leaving the other two
+    quarterbacks alone would hand the team 220 and quietly inflate every team-level
+    leg the player legs are supposed to correlate WITH."""
+    import nfl_preseason as pre
+    if not props:
+        return
+    by_name = {pre._key(p["name"]): p for p in players}
+    for (stat, nm), lad in props.items():
+        p = by_name.get(nm)
+        if not p or stat not in ("pass_yd", "rush_yd", "rec_yd", "rec"):
+            continue
+        want = pre.implied_mean(stat, lad.get("rungs"))
+        if not want or want <= 0:
+            continue
+        pool = [q for q in players if q["pos"] == p["pos"]]
+        tot = sum(q[stat] for q in pool)
+        if tot <= 0:
+            continue
+        want = min(want, 0.85 * tot)            # nobody is the entire position group
+        rest = tot - want
+        others = sum(q[stat] for q in pool if q is not p)
+        p[stat] = want
+        if others > 0:
+            for q in pool:
+                if q is not p:
+                    q[stat] *= rest / others
+
+
+def simulate_preseason(home_ab, away_ab, home_name, away_name, implied, n=2400,
+                       seed=None, ladders=None, rosters=None, props=None):
+    """Market-anchored simulation of one exhibition. `implied` is
+    kalshi_nfl.implied(): {'total', 'margin', 'favourite'}."""
+    total = max(20.0, float(implied.get("total") or 35.0))
+    margin = float(implied.get("margin") or 0.0)
+    fav = implied.get("favourite")
+    edge = margin if fav == home_ab else (-margin if fav == away_ab else 0.0)
+    ph = max(6.0, (total + edge) / 2.0)
+    pa = max(6.0, (total - edge) / 2.0)
+    import nfl_preseason as pre
+    ros = rosters or {}
+    # A player's ladder only belongs to HIS team's profile -- both sides of the
+    # game share one Kalshi event, so the props map has to be split by roster.
+    def mine(ab):
+        names = {_nkey(p["name"]) for p in (ros.get(ab) or [])}
+        return {k: v for k, v in (props or {}).items() if k[1] in names}
+    return simulate_game(profile_from_points(home_ab, home_name, ph, True,
+                                             ros.get(home_ab), mine(home_ab)),
+                         profile_from_points(away_ab, away_name, pa, False,
+                                             ros.get(away_ab), mine(away_ab)),
+                         n=n, seed=seed, ladders=ladders, prop_lad=props,
+                         shock=pre.PLAYER_LOGSD)
+
+
+def _nkey(name):
+    import nfl_preseason as pre
+    return pre._key(name)
 
 
 def board(week=1):
@@ -479,3 +672,171 @@ def _build_board(season, week, n=2400):
                     "projections: alternating possessions with game script, short "
                     "fields and OT; player lines are dealt from the simulated team "
                     "game, so props and same-game parlays carry real correlation."}
+
+
+# --- COMBO MAKER ---------------------------------------------------------------
+# Baseball's builder, on NFL legs. Everything downstream is already shared: the
+# candidates carry the same mask/marg/group/kref shape mlb_sim emits, so
+# game_bundles gives correlation-aware same-game stacks and combo_engine does the
+# cross-game DP and the price-aware choice. Only the pricing source differs.
+def price_cands(cands, suffix, blend=True):
+    """Annotate each candidate with its live Kalshi ask and market-blended
+    probability, in place -- before bundles are built, so the bundle's joint is
+    computed on the number the user is actually shown."""
+    import combo_engine
+    try:
+        import kalshi_nfl
+        idx = kalshi_nfl.index()
+    except Exception:
+        idx = {}
+    quotes = {}
+    for c in cands:
+        px, q = None, None
+        if idx and suffix:
+            try:
+                px = kalshi_nfl.price_leg(idx, suffix, c.get("kref"))
+                q = kalshi_nfl.quote_leg(idx, suffix, c.get("kref"))
+            except Exception:
+                px, q = None, None
+        c["price_cents"] = px
+        # The full quote, not None. Passing None here marked every NFL leg
+        # untradeable, so combo_engine charged the whole slate at fair value and
+        # reported priced_frac 0.0 against a board of live asks.
+        quotes[id(c)] = q
+    if blend:
+        combo_engine.blend_candidates(cands, quotes)
+    return cands
+
+
+def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
+                 target_payout=0, max_legs_per_game=3, max_total_legs=8,
+                 legs_mode="prefer", payout_mode="off", conn="or",
+                 objective="balanced", n_sims=3000, types=None, game_sel=None):
+    """One parlay across the week's NFL games, priced against Kalshi.
+
+    `cap_pct` turns the confidence floor into a band exactly as it does in
+    baseball: the spread and total ladders now carry every line Kalshi books, so
+    the builder walks to the one that lands inside it."""
+    import combo_engine
+    import mlb_sim
+    import kalshi_nfl
+
+    floor = max(0.05, min(0.97, target_pct / 100.0))
+    ceil = 1.0
+    if cap_pct is not None and cap_pct / 100.0 > floor:
+        ceil = min(1.0, cap_pct / 100.0)
+
+    games = _slate_sims(week, preseason, n_sims)
+    games_bundles = []
+    for g in games:
+        if game_sel and g["suffix"] not in game_sel:
+            continue
+        cands = [c for c in g["cands"]
+                 if (types is None or c["type"] in types)]
+        if not cands:
+            continue
+        price_cands(cands, g["suffix"])
+        cands = [c for c in cands if floor <= c["marg"] <= ceil]
+        if not cands:
+            continue
+        depth = max(2, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+        bundles = mlb_sim.game_bundles(cands, g["n"], max_legs=depth)
+        if bundles:
+            games_bundles.append((g["label"], bundles, g["suffix"]))
+    if not games_bundles:
+        return None
+
+    states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
+                                   net=True)
+    targets = {"legs_target": n_legs, "payout_target": target_payout,
+               "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+    best, meta = combo_engine.choose(states, objective=objective, **targets)
+    if not best:
+        return None
+    item = mlb_sim._mixed_item(best["sel"], games_bundles,
+                               target_payout if payout_mode != "off" else None)
+    for k, v in meta.items():
+        if k != "objective" and v is not None:
+            item[k] = v
+    item["objective"] = objective
+    item["legs_target"] = n_legs if legs_mode != "off" else None
+    item["leg_floor_pct"] = round(floor * 100, 1)
+    item["leg_cap_pct"] = round(ceil * 100, 1) if ceil < 1.0 else None
+    item["preseason"] = bool(preseason)
+    item["cost_x"] = round(best["cost"], 4)
+    item["market_payout_x"] = round(best["payout"], 2) if best["payout"] else None
+    item["ev_pct"] = round(best["ev"] * 100, 1) if best["ev"] is not None else None
+    item["kelly_pct"] = round(combo_engine.kelly(best["prob"], best["cost"]) * 100, 2)
+    item["priced_frac"] = round(best["priced_frac"], 2)
+    item["priced_legs"] = best["priced"]
+    item["alternatives"] = combo_engine.compare(states, best, **targets)
+    item["n_sims"] = n_sims
+    return item
+
+
+def _slate_sims(week, preseason, n_sims):
+    """[{label, suffix, cands, n}] for the week -- market-anchored in preseason,
+    profile-driven in the regular season."""
+    import nfl_live
+    season = _season()
+    out = []
+    try:
+        sched = nfl_live.schedule(week, season,
+                                  seasontype=1 if preseason else 2) or []
+    except Exception:
+        sched = []
+    idx = {}
+    try:
+        idx = kalshi_index()
+    except Exception:
+        idx = {}
+    for gm in sched:
+        h, a = gm.get("home"), gm.get("away")
+        suffix = _suffix_for(idx, h, a)
+        if not suffix:
+            continue
+        try:
+            import kalshi_nfl
+            imp = kalshi_nfl.implied(suffix)
+            lad = kalshi_nfl.ladders(suffix)
+        except Exception:
+            imp = lad = None
+        if preseason:
+            if not imp:
+                continue                       # no market -> nothing to anchor to
+            import nfl_preseason
+            try:
+                ros = nfl_preseason.rosters(season) or {}
+            except Exception:
+                ros = {}
+            sim = simulate_preseason(h, a, gm.get("home_name") or h,
+                                     gm.get("away_name") or a, imp,
+                                     n=n_sims, ladders=lad,
+                                     rosters={h: ros.get(h), a: ros.get(a)},
+                                     props=(lad or {}).get("props"))
+        else:
+            import nfl_data
+            pair = next(((th, ta) for th, ta in
+                         (nfl_data.week_games(str(season), week) or [])
+                         if th.get("abbr") == h and ta.get("abbr") == a), None)
+            if not pair:
+                continue
+            sim = simulate_game(pair[0], pair[1], n=n_sims, ladders=lad)
+        out.append({"label": f"{gm.get('away_name') or a} @ {gm.get('home_name') or h}",
+                    "suffix": suffix, "cands": sim["_masks"], "n": sim["n_sims"]})
+    return out
+
+
+def kalshi_index():
+    import kalshi_nfl
+    return kalshi_nfl.index()
+
+
+def _suffix_for(idx, home, away):
+    """Kalshi event suffix for a matchup, matched on the team pair."""
+    import kalshi_nfl
+    want = frozenset({kalshi_nfl._canon(home), kalshi_nfl._canon(away)})
+    for suffix, e in (idx or {}).items():
+        if e.get("pair") == want:
+            return suffix
+    return None
