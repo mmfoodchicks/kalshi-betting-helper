@@ -135,10 +135,15 @@ def team_leaders(season, tid, games):
 
 
 # ---- Schedule ---------------------------------------------------------------
-def schedule(week, season):
-    """Regular-season week `week` (seasontype=2 skips preseason). Cached 1h."""
+def schedule(week, season, seasontype=2):
+    """Week `week` of `season`. `seasontype` 2 = regular season, 1 = PRESEASON.
+
+    Preseason used to be unreachable here, which made the whole NFL board look
+    dead through August -- the Hall of Fame game and three weeks of exhibitions
+    are real games that Kalshi books moneylines, spreads and totals on. Cached 1h,
+    keyed on the season type so the two do not collide."""
     def build():
-        d = _get(f"{_SITE}/scoreboard?seasontype=2&week={week}&dates={season}")
+        d = _get(f"{_SITE}/scoreboard?seasontype={seasontype}&week={week}&dates={season}")
         if not d:
             return None
         out = []
@@ -157,7 +162,7 @@ def schedule(week, season):
                 "home_name": home["team"].get("shortDisplayName"),
                 "away_name": away["team"].get("shortDisplayName")})
         return out or None
-    return _cached(("nfl_sched", week, season), 3600, build)
+    return _cached(("nfl_sched", week, season, seasontype), 3600, build)
 
 
 # ---- Model ------------------------------------------------------------------
