@@ -3293,6 +3293,7 @@ function _tnPlayer(p, served) {
 // this runs through combine's assembler with the category pinned to tennis, and
 // the joint probability is an honest product of independent matches.
 let tnComboLegs = 3, tnComboTarget = 60, tnComboCap = 0, tnComboPayout = 0;
+let tnComboLive = false;
 let tnComboLegsMode = "prefer", tnComboPayoutMode = "off", tnComboConn = "or";
 function renderTennisMaker() {
   const box = $("tnMaker");
@@ -3315,6 +3316,8 @@ function renderTennisMaker() {
       ${sel("tnComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], tnComboPayoutMode)}
       reach <input id="tnComboPayout" type="number" min="0" step="any" value="${tnComboPayout}" style="width:60px"/>× payout
     </div>
+    <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, and our win% is a pre-match read. Note we can only detect this for <b>ATP/WTA</b> — no scoreboard we can reach covers ITF, so an in-progress ITF match cannot be filtered out here or flagged in the Live tab.</div>
     <button class="track-mini primary-mini" style="margin-top:8px;display:block" onclick="buildTennisCombo()">Build</button>
     <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent.</div>
     <div id="tnComboOut"></div>
@@ -3333,9 +3336,10 @@ async function buildTennisCombo() {
   tnComboLegsMode = ($("tnComboLegsMode") || {}).value || "prefer";
   tnComboPayoutMode = ($("tnComboPayoutMode") || {}).value || "off";
   tnComboConn = ($("tnComboConn") || {}).value || "or";
+  tnComboLive = !!(($("tnComboLive") || {}).checked);
   out.innerHTML = `<div class="empty">Building…</div>`;
   const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
-    + (tnComboCap ? `&cap=${tnComboCap}` : "")
+    + (tnComboCap ? `&cap=${tnComboCap}` : "") + (tnComboLive ? "&live=1" : "")
     + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`;
   try {
     const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
@@ -3363,8 +3367,13 @@ function renderTennis() {
   else if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
   else if (_tnSub === "wta") matches = matches.filter((m) => m.tour === "WTA");
   else if (_tnSub === "itf") matches = matches.filter((m) => (m.tour || "").startsWith("ITF"));
+  // Edges EXCLUDES anything already on court. Our number is a PRE-MATCH read and
+  // the price is live, so the gap between them is staleness, not insight: a
+  // player we had at 60% whose price has crashed to 20c because he is a set down
+  // shows up as a +40 "edge" and tops the tab. The upset radar is where an
+  // in-progress swing belongs, and it re-simulates from the current score.
   else if (_tnSub === "edges") matches = matches.filter((m) =>
-    [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
+    !m.live && [m.a.edge, m.b.edge].some((e) => e != null && e >= 4));
   else if (_tnSub === "live") {
     matches = matches.filter((m) => m.live);
     matches.sort((x, y) => (y.upset_score || 0) - (x.upset_score || 0));

@@ -853,6 +853,49 @@ ck("a cap at or below the floor is ignored rather than emptying the board",
 
 print()
 print("=" * 72)
+print("A match already on court is not an edge and not a silent leg")
+print("=" * 72)
+_cb2 = open(_CB.__file__).read()
+_js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                        "static", "app.js")).read()
+
+ck("the tennis leg builder takes the live opt-in",
+   "def _tennis_legs(tours=None, eligible_only=True, allow_live=False)" in _cb2)
+ck("and gather passes the caller's choice down to it",
+   "_tennis_legs(allow_live=allow_live)" in _cb2,
+   "the parameter existed on gather() and every other sport honoured it; tennis "
+   "was the one builder that ignored it entirely")
+ck("a live match is skipped unless opted in",
+   'if m.get("live") and not allow_live:' in _cb2)
+ck("live state is ATTACHED before that test",
+   "tennis_live.attach(board)" in _cb2,
+   "the cached board carries no live state at all -- attach() runs per request "
+   "in the API layer and this builder reads the cache directly, so an in-progress "
+   "match arrived indistinguishable from a scheduled one and the maker took it")
+ck("the maker sends live=1 only when the box is ticked",
+   'tnComboLive ? "&live=1" : ""' in _js)
+ck("and the box defaults OFF",
+   "let tnComboLive = false;" in _js)
+
+ck("the Edges tab drops anything already on court",
+   '!m.live && [m.a.edge, m.b.edge]' in _js,
+   "our number is a PRE-MATCH read against a live price, so the gap is staleness: "
+   "a player we had at 60% whose price crashed to 20c a set down reads as a +40 "
+   "edge and tops the tab")
+ck("but the upset radar still keeps them",
+   '_tnSub === "upsets") {\n    matches = matches.filter((m) => m.upset);' in _js
+   or 'm.upset' in _js,
+   "an in-progress swing is exactly what that tab is for, and it re-simulates "
+   "from the current score rather than reusing the pre-match number")
+
+ck("the UI states the ITF live blind spot rather than implying coverage",
+   "no scoreboard we can reach covers ITF" in _js,
+   "ESPN publishes atp and wta only -- itf/itf-men/itf-women/atp-challenger all "
+   "404 -- Kalshi exposes no match state, and previous_yes_ask is unpopulated on "
+   "296 of 320 markets, so an in-progress ITF match genuinely cannot be detected")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

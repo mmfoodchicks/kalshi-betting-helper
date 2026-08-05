@@ -276,7 +276,7 @@ _TENNIS_CAT = {"ATP": "🎾 Tennis", "WTA": "🎾 Tennis (WTA)",
                "ITF": "🎾 Tennis (ITF)", "ITF-W": "🎾 Tennis (ITF-W)"}
 
 
-def _tennis_legs(tours=None, eligible_only=True):
+def _tennis_legs(tours=None, eligible_only=True, allow_live=False):
     """Tennis legs from OUR match simulator (model probabilities, not de-vig). One
     event per match with both players as winner legs, plus the coherent derived
     markets -- total games over/under, total sets, aces -- the sim prices together,
@@ -290,6 +290,17 @@ def _tennis_legs(tours=None, eligible_only=True):
             return legs
     except Exception:
         return legs
+    # A match already under way must not walk into a slip on its own. The cached
+    # board carries NO live state -- tennis_live.attach() runs per request in the
+    # API layer, and this builder reads the cache directly -- so an in-progress
+    # match arrived here indistinguishable from a scheduled one, and the maker
+    # took it. Attaching here is what makes the opt-in mean anything.
+    if not allow_live:
+        try:
+            import tennis_live
+            board = tennis_live.attach(board) or board
+        except Exception:
+            pass
     # Eligibility is per MATCH and Kalshi publishes it, so ask rather than infer
     # from the tour. `tours` is kept for callers that genuinely want one tour.
     elig = set()
@@ -303,6 +314,8 @@ def _tennis_legs(tours=None, eligible_only=True):
         if tours and m.get("tour") not in tours:
             continue
         if elig and m.get("event") not in elig:
+            continue
+        if m.get("live") and not allow_live:
             continue
         a, b = m["a"], m["b"]
         if a.get("fair_win") is None and a.get("model_win") is None:
@@ -538,7 +551,7 @@ def gather(cats, date, season, allow_live=False):
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
     if "tennis" in cats:
-        add("tennis", lambda: _tennis_legs())
+        add("tennis", lambda: _tennis_legs(allow_live=allow_live))
     if "nba" in cats:
         add("nba", _nba_legs)
     if "nhl" in cats:
