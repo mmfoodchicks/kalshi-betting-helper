@@ -31,7 +31,7 @@ CATEGORIES = {
     "nba": "🏀 NBA",
     "nhl": "🏒 NHL",
     "golf": "⛳ PGA",
-    "tennis": "🎾 Tennis (ATP/WTA)",   # combos: main tours only — see COMBO_TOURS
+    "tennis": "🎾 Tennis",   # eligibility is per-match, from Kalshi (see _tennis_legs)
     "ufc": "🥊 UFC",
 }
 
@@ -64,11 +64,13 @@ CATEGORY_TYPES = {
 # filtered out (so an unmapped type can't silently vanish from a build).
 _ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
 
-# Kalshi does not allow ITF matches as parlay legs — only the main tours combine.
-# The tennis BOARD still prices ITF (it's fine as a single bet); this restriction
-# applies to multi-leg combos only, so the maker can't build a slip that Kalshi
-# will refuse to accept.
-COMBO_TOURS = ("ATP", "WTA")
+# Which tennis matches can be parlay legs is decided PER MATCH by Kalshi, not per
+# tour: a match is eligible when its event is in one of Kalshi's multivariate
+# event collections (kalshi.combo_events). This used to be COMBO_TOURS =
+# ("ATP", "WTA") on the stated grounds that "Kalshi does not allow ITF matches as
+# parlay legs", which is simply not true -- 95 ITF and 87 ITF-W events are
+# eligible today, and a fair number of ATP/WTA ones are not. Nothing here needs a
+# tour list any more; _tennis_legs asks Kalshi.
 
 
 
@@ -274,7 +276,7 @@ _TENNIS_CAT = {"ATP": "🎾 Tennis", "WTA": "🎾 Tennis (WTA)",
                "ITF": "🎾 Tennis (ITF)", "ITF-W": "🎾 Tennis (ITF-W)"}
 
 
-def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
+def _tennis_legs(tours=None, eligible_only=True):
     """Tennis legs from OUR match simulator (model probabilities, not de-vig). One
     event per match with both players as winner legs, plus the coherent derived
     markets -- total games over/under, total sets, aces -- the sim prices together,
@@ -288,8 +290,19 @@ def _tennis_legs(tours=("ATP", "WTA", "ITF", "ITF-W")):
             return legs
     except Exception:
         return legs
+    # Eligibility is per MATCH and Kalshi publishes it, so ask rather than infer
+    # from the tour. `tours` is kept for callers that genuinely want one tour.
+    elig = set()
+    if eligible_only:
+        try:
+            import kalshi
+            elig = kalshi.combo_events() or set()
+        except Exception:
+            elig = set()
     for m in board.get("matches", []):
-        if m.get("tour") not in tours:
+        if tours and m.get("tour") not in tours:
+            continue
+        if elig and m.get("event") not in elig:
             continue
         a, b = m["a"], m["b"]
         if a.get("fair_win") is None and a.get("model_win") is None:
@@ -505,7 +518,16 @@ def gather(cats, date, season, allow_live=False):
             new = []
         for l in new:
             l.setdefault("cat_key", key)
-        legs.extend(new)
+            # A price at or beyond the bounds is Kalshi's NO-OFFER sentinel, not a
+            # price: nobody sells a contract for 100c that pays 100c. Left in, it
+            # is the single most attractive thing on the board to an assembler
+            # ranking by probability -- a 99%-likely leg at "100c" -- and a tennis
+            # slip came back three legs of 98-100c paying 1.06x, none of them
+            # placeable. Dropped rather than blanked, because for a market Kalshi
+            # actively prices, no offer means no leg.
+            c = l.get("price_cents")
+            l["_no_offer"] = c is not None and not (0 < c < 100)
+        legs.extend(l for l in new if not l.pop("_no_offer", False))
 
     if "mlb" in cats:
         add("mlb", lambda: _mlb_legs(date, season, allow_live=allow_live))
@@ -516,7 +538,7 @@ def gather(cats, date, season, allow_live=False):
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
     if "tennis" in cats:
-        add("tennis", lambda: _tennis_legs(COMBO_TOURS))
+        add("tennis", lambda: _tennis_legs())
     if "nba" in cats:
         add("nba", _nba_legs)
     if "nhl" in cats:
@@ -565,7 +587,8 @@ def _item(combo):
 
 
 def _assemble(by_event, target, legs_target, payout_target,
-              legs_mode="prefer", payout_mode="off", conn="or", max_legs=12):
+              legs_mode="prefer", payout_mode="off", conn="or", max_legs=12,
+              cap=1.0):
     """Pick the legs under two optional, combinable targets -- a leg count and a
     fair payout -- exactly like the baseball mixed maker. Each target is "require"
     (hard), "prefer" (a recommendation that nudges but never blocks), or "off";
@@ -578,10 +601,15 @@ def _assemble(by_event, target, legs_target, payout_target,
     targets, breaking ties toward the safest parlay -- or, when chasing an unmet
     payout, toward the bigger payout. Returns (legs, meta) or ([], None)."""
     import math
-    # eligible legs per event (those clearing the per-leg confidence floor)
+    # Eligible legs per event: inside the confidence BAND, not merely above the
+    # floor. A ceiling is what makes this maker usable on a live tennis board --
+    # in-progress matches sit at 97-99c, an assembler ranking by probability takes
+    # them every time, and the slip comes back "3 legs, 91%, 1.1x", which is a
+    # true statement about a bet nobody wants. Same control the football and
+    # baseball makers already have.
     groups = []
     for vs in by_event.values():
-        ok = [v for v in vs if v["prob"] >= target]
+        ok = [v for v in vs if target <= v["prob"] <= cap]
         if ok:
             groups.append(ok)
     # best-effort: if the floor is too strict to field 2 legs, fall back to each
@@ -877,7 +905,7 @@ def _assemble_by_cat(legs, per_cat, target, max_legs, payout_target=None, payout
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
           legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None,
-          allow_live=False):
+          allow_live=False, cap_pct=None):
     legs = _filter_types(gather(cats, date, season, allow_live), types)
     counts = {}
     for l in legs:
@@ -885,6 +913,9 @@ def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=1
     if not legs:
         return {"combo": None, "counts": counts}
     target = max(0.05, min(0.97, target_pct / 100.0))
+    cap = 1.0
+    if cap_pct is not None and (cap_pct / 100.0) > target:
+        cap = min(1.0, cap_pct / 100.0)
     # Per-sport budget mode: the combo is built entirely from the requested count
     # per sport (a sport with no count contributes nothing), so leg counts differ
     # by sport instead of one global floor deciding everything.
@@ -915,11 +946,12 @@ def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=1
         by_event.setdefault(l["event_id"], []).append(l)
     chosen, meta = _assemble(by_event, target, n_legs, target_payout,
                              legs_mode=legs_mode, payout_mode=payout_mode,
-                             conn=conn, max_legs=max_legs)
+                             conn=conn, max_legs=max_legs, cap=cap)
     if not chosen:
         return {"combo": None, "counts": counts}
     item = _item(chosen)
     item["target_pct"] = round(target * 100, 1)
+    item["cap_pct"] = round(cap * 100, 1) if cap < 1.0 else None
     item["legs_meeting_target"] = sum(1 for v in chosen if v.get("meets"))
     item["legs_used"] = len(chosen)
     item["requested_legs"] = n_legs

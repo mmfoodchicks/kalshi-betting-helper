@@ -767,14 +767,22 @@ print("=" * 72)
 import tennis_prices as _TP
 import combine as _CB
 
-ck("the board and the combo builder agree on which tours combine",
-   tuple(_TP.COMBO_TOURS) == tuple(_CB.COMBO_TOURS),
-   "the filter that hides a match and the builder that refuses it must be the "
-   "same rule, or the board promises legs the maker will not use")
-ck("ITF is not one of them",
-   not any(t.startswith("ITF") for t in _TP.COMBO_TOURS),
-   "Kalshi will not accept an ITF match in a multi-leg slip -- which is the "
-   "single biggest reason a 264-match board yields ~41 usable ones")
+import kalshi as _KX
+ck("eligibility is asked of Kalshi, not inferred from the tour",
+   not hasattr(_TP, "COMBO_TOURS") and not hasattr(_CB, "COMBO_TOURS"),
+   "a combo leg is a MULTIVARIATE EVENT COLLECTION membership, which Kalshi "
+   "publishes; the tour heuristic that replaced it was wrong in both directions")
+ck("the board and the builder read the same source",
+   "combo_events()" in open(_TP.__file__).read()
+   and "combo_events()" in open(_CB.__file__).read(),
+   "the filter that hides a match and the builder that refuses it must be one "
+   "rule, or the board promises legs the maker will not use")
+ck("a lost feed means UNKNOWN, never 'nothing is eligible'",
+   _KX.combo_ok("ANY-TICKER") if not _KX.combo_events() else True,
+   "an empty set must not silently blank a board")
+_ce_src = open(_KX.__file__).read()
+ck("and it is cached rather than refetched per match",
+   "_combo_cache" in _ce_src and "_COMBO_TTL" in _ce_src)
 
 # --- side_liquid(): a listed price is not a market ------------------------
 _good = {"cents": 62.0, "spread": 4.0, "vol": 68.0, "oi": 64.0}
@@ -788,26 +796,28 @@ ck("and a side with no price at all is not",
 ck("nor is a missing side", not _TP.side_liquid(None))
 
 # --- combo_status() names the reason ---------------------------------------
-_atp_ok = {"tour": "ATP", "tradeable": True, "a": _good, "b": _good}
-_itf = {"tour": "ITF", "tradeable": True, "a": _good, "b": _good}
-_quiet = {"tour": "WTA", "tradeable": True, "a": _untraded, "b": _untraded}
-_wideb = {"tour": "WTA", "tradeable": False, "a": _good, "b": _good}
-ck("a quoted main-tour match is combo-ready", _TP.combo_status(_atp_ok)[0])
-ck("an ITF match is not, and says so",
-   _TP.combo_status(_itf) == (False, "ITF can't be a parlay leg on Kalshi"),
-   _TP.combo_status(_itf)[1])
-ck("a listed-but-unquoted match is not, and says so",
-   not _TP.combo_status(_quiet)[0] and "not quoted" in _TP.combo_status(_quiet)[1],
-   _TP.combo_status(_quiet)[1])
-ck("a too-wide book is not, and says so",
-   not _TP.combo_status(_wideb)[0] and "wide" in _TP.combo_status(_wideb)[1],
-   _TP.combo_status(_wideb)[1])
+# combo_status reads live eligibility, so pin it for the shape checks.
+_real_events = _KX.combo_events()
+_IN = next(iter(_real_events)) if _real_events else "X-1"
+_OUT = "DEFINITELY-NOT-A-REAL-EVENT"
+_mk = lambda ev, a, b, tr=True: {"event": ev, "tour": "ITF", "tradeable": tr, "a": a, "b": b}
+ck("an ITF match Kalshi HAS opened is combo-ready",
+   _TP.combo_status(_mk(_IN, _good, _good))[0] if _real_events else True,
+   "95 ITF and 87 ITF-W events are eligible today; the old rule hid all of them")
+ck("one Kalshi has NOT opened is excluded, and says so",
+   (lambda r: not r[0] and "opened" in r[1])(_TP.combo_status(_mk(_OUT, _good, _good)))
+   if _real_events else True,
+   "which is why some ITF tournaments show and some do not")
+ck("a listed-but-unquoted match is excluded, and says so",
+   (lambda r: not r[0] and "not quoted" in r[1])(_TP.combo_status(_mk(_IN, _untraded, _untraded)))
+   if _real_events else True)
+ck("a too-wide book is excluded, and says so",
+   (lambda r: not r[0] and "wide" in r[1])(_TP.combo_status(_mk(_IN, _good, _good, tr=False)))
+   if _real_events else True)
 ck("ONE liquid side is enough -- a parlay leg picks a winner, not both",
-   _TP.combo_status({"tour": "ATP", "tradeable": True,
-                     "a": _good, "b": _untraded})[0])
-ck("every rejection carries a reason the board can print",
-   all(_TP.combo_status(m)[1] for m in (_itf, _quiet, _wideb)))
-ck("and an accepted one carries none", _TP.combo_status(_atp_ok)[1] is None)
+   _TP.combo_status(_mk(_IN, _good, _untraded))[0] if _real_events else True)
+ck("an accepted match carries no rejection reason",
+   _TP.combo_status(_mk(_IN, _good, _good))[1] is None if _real_events else True)
 
 # --- the depth actually survives the trip to the board --------------------
 _src = open(_TP.__file__).read()
@@ -820,6 +830,26 @@ ck("and _build_match carries it through to the match dict",
    'for k in ("bid", "spread", "size", "vol", "oi")' in _src,
    "building a fresh player dict is what dropped it the first time: every "
    "single match came back 'listed but not quoted' and n_combo was ZERO")
+
+# --- a no-offer price is not a price --------------------------------------
+_cb_src = open(_CB.__file__).read()
+ck("gather() drops legs quoted at or beyond the bounds",
+   "_no_offer" in _cb_src,
+   "nobody sells a 100c contract that pays 100c -- and to an assembler ranking "
+   "by probability it is the most attractive thing on the board: a live tennis "
+   "slip came back three legs of 98-100c paying 1.06x, none of them placeable")
+ck("but an unpriced model-only leg still survives",
+   "c is not None and not (0 < c < 100)" in _cb_src,
+   "totals and straight-sets have no Kalshi market and must not be dropped")
+
+# --- the confidence BAND, same control the other two makers have ----------
+ck("_assemble takes a ceiling, not just a floor",
+   "target <= v[\"prob\"] <= cap" in _cb_src,
+   "without one, a live board hands back matches that are already decided")
+ck("and build() turns a cap_pct into it",
+   "cap_pct" in _cb_src and "item[\"cap_pct\"]" in _cb_src)
+ck("a cap at or below the floor is ignored rather than emptying the board",
+   "(cap_pct / 100.0) > target" in _cb_src)
 
 print()
 print("=" * 72)

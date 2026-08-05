@@ -1681,8 +1681,9 @@ def api_tennis_parlay():
     mlb_sim's same-game machinery. Everything the user sees is the same: a per-leg
     confidence band, legs/payout targets, and Kalshi pricing.
 
-    ITF never appears: Kalshi will not accept it as a parlay leg (combine's
-    COMBO_TOURS), which is why a 264-match board yields ~41 usable ones."""
+    Which matches are eligible is Kalshi's call, per match, read off its
+    multivariate event collections (kalshi.combo_events) -- ITF very much
+    included."""
     import combine
     date = request.args.get("date") or clock.today_et().isoformat()
     try:
@@ -1702,9 +1703,16 @@ def api_tennis_parlay():
         payout_mode = None
     types = ([t for t in request.args.get("types", "").split(",") if t]
              if "types" in request.args else None)
+    cap = request.args.get("cap")
+    try:
+        cap = float(cap) if cap not in (None, "") else None
+    except ValueError:
+        cap = None
+    if cap is not None and not (0 < cap <= 100):
+        cap = None
     try:
         out = combine.build(["tennis"], legs, target, date, date[:4],
-                            target_payout=payout,
+                            target_payout=payout, cap_pct=cap,
                             max_legs=tiers.cap_legs(_tier(), 30),
                             legs_mode=legs_mode, payout_mode=payout_mode,
                             conn=conn, types=types, allow_live=_allow_live())
@@ -1716,7 +1724,6 @@ def api_tennis_parlay():
         import tennis_prices
         b = tennis_prices.board() or {}
         out["n_combo_matches"] = b.get("n_combo")
-        out["combo_tours"] = b.get("combo_tours")
     except Exception:
         pass
     return jsonify(out)

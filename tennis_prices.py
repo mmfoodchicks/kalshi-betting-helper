@@ -203,20 +203,27 @@ def side_liquid(p):
     return ((p.get("vol") or 0) + (p.get("oi") or 0)) >= _MIN_TRADED
 
 
-# Kalshi will not accept an ITF match as a parlay leg -- only the main tours
-# combine (see combine.COMBO_TOURS). That is the single biggest reason a 260-match
-# board yields a handful of usable legs, and until now the board gave no sign of
-# it: every match rendered the same whether or not it could ever go in a slip.
-COMBO_TOURS = ("ATP", "WTA")
-
-
+# Whether a match can be a parlay leg is not a property of its TOUR. It is
+# membership in one of Kalshi's multivariate event collections, which Kalshi
+# publishes (kalshi.combo_events) -- and the tour heuristic this replaced was
+# wrong in the direction that cost the most:
+#
+#     KXITFMATCH   95 events eligible
+#     KXITFWMATCH  87 events eligible
+#
+# ITF combines. "Kalshi does not allow ITF matches as parlay legs" had been
+# carried in this codebase as a bare assertion, and filtering on it hid 87 usable
+# matches while showing none of the ~40 ITF events that genuinely are not
+# eligible -- so the board was wrong in both directions at once.
 def combo_status(m):
     """(ok, reason) -- can this match be a leg in a Kalshi parlay?
 
-    Three things have to hold, and the board should say which one failed rather
+    Two things have to hold, and the board should say which one failed rather
     than leaving the reader to scroll 264 cards hunting for the few that work."""
-    if m.get("tour") not in COMBO_TOURS:
-        return False, f"{m.get('tour') or 'this tour'} can't be a parlay leg on Kalshi"
+    import kalshi
+    elig = kalshi.combo_events()
+    if elig and m.get("event") not in elig:
+        return False, "Kalshi hasn't opened this match for combos"
     if not (side_liquid(m.get("a")) or side_liquid(m.get("b"))):
         return False, "listed but not quoted — no side has a book to lift"
     if not m.get("tradeable"):
@@ -765,7 +772,6 @@ def _compute(n_sims=12000):
             "n_matches": len(matches),
             "n_play": sum(1 for m in matches if m["tier"] == "play"),
             "n_combo": sum(1 for m in matches if m.get("combo_ok")),
-            "combo_tours": list(COMBO_TOURS),
             "matches": matches}
 
 

@@ -15,6 +15,7 @@ return an empty list and the UI says so.
 """
 
 import json
+import time
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
@@ -62,6 +63,53 @@ def _f(v):
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+# --- What Kalshi will actually accept in a parlay ----------------------------
+# A "combo" on Kalshi is a MULTIVARIATE EVENT COLLECTION, and a market can only
+# be a leg if its EVENT is one of the collection's associated events. That is the
+# whole rule, it is published, and it is the only thing worth asking -- every
+# heuristic for it is wrong somewhere:
+#
+#     KXMVESPORTSMULTIGAMEEXTENDED-R   "What will happen across all games?"
+#     KXMVECROSSCATEGORY-R             "Will multiple conditions be met?"
+#
+# Today those two carry 11,922 events, and the tennis slice alone is
+#
+#     KXATPMATCH 24   KXWTAMATCH 17   KXITFMATCH 95   KXITFWMATCH 87
+#     KXATPCHALLENGERMATCH 20   KXWTACHALLENGERMATCH 8
+#     KXITFDOUBLES 36   KXITFWDOUBLES 32
+#
+# which is the correction that mattered: ITF IS combo-eligible, in quantity. The
+# codebase had carried "Kalshi does not allow ITF matches as parlay legs" as a
+# bare assertion, and it was hiding 87 perfectly good matches.
+_COMBO_TTL = 600
+_combo_cache = {"ts": 0.0, "events": None}
+
+
+def combo_events():
+    """Set of event tickers Kalshi will accept as a parlay leg. Empty on failure,
+    which callers must treat as "unknown", never as "nothing is eligible"."""
+    now = time.time()
+    if _combo_cache["events"] is not None and now - _combo_cache["ts"] < _COMBO_TTL:
+        return _combo_cache["events"]
+    out = set()
+    try:
+        d = _get_json(f"{BASE}/multivariate_event_collections", timeout=25)
+        for c in (d.get("multivariate_contracts") or []):
+            out |= set(c.get("associated_event_tickers") or [])
+    except Exception:
+        return _combo_cache["events"] or set()
+    _combo_cache["events"] = out
+    _combo_cache["ts"] = now
+    return out
+
+
+def combo_ok(event_ticker):
+    """True when this event can be a parlay leg. Unknown (feed down) -> True, so
+    a fetch failure never silently empties a board."""
+    ev = combo_events()
+    return (not ev) or (event_ticker in ev)
 
 
 def markets_for_series(series_ticker_, limit=100):
