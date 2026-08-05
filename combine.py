@@ -77,7 +77,26 @@ _ALL_TYPES = {tv for lst in CATEGORY_TYPES.values() for tv, _ in lst}
 # Types whose NO side is either meaningless or already covered by a sibling leg.
 # ML pairs both teams already; Under is the NO of Over; RFI has no NO market on
 # Kalshi (the user confirmed there's no yes/no slot on run-in-first-inning).
-_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "Crypto", "Outright"}
+#
+# EVERY TENNIS TYPE BELONGS HERE, for the same reason ML does, and leaving them
+# out was doing real damage rather than just reading badly. The tennis builder
+# already emits both sides of every market, so each NO mirror was an exact
+# duplicate of a leg that was already on the board -- and the duplicate came
+# through UNPRICED, because tennis has no no_ask plumbed:
+#
+#     Oliver Ojakaar to win        p=0.490   23c
+#     Adrian Oetzbach to win       p=0.510   78c
+#     NO — Oliver Ojakaar to win   p=0.510   (no price)   <- same bet as Oetzbach
+#
+# An unpriced leg is charged at FAIR value, which is EV-neutral by construction,
+# so the assembler actively preferred the phantom over the real, placeable leg
+# beside it. That is how a slip asking for match winners came back reading
+# "NO — Alexander Blockx to win" instead of "Jiri Lehecka to win". 399 of 399
+# tennis NO mirrors were unpriced, and 100% of the Match, Sets and Games ones
+# duplicated an existing leg; Aces was the only market missing a side, and it now
+# states its own under.
+_NO_SKIP_TYPES = {"RFI", "ML", "UFC ML", "Crypto", "Outright",
+                  "Match", "Sets", "Games", "Aces"}
 _NO_SKIP_WORDS = ("under ", "not ", " no ", "does not")
 
 
@@ -370,7 +389,13 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False):
         ace_mean = m.get("aces_total")
         if ace_mean and ace_mean > 4:
             aline = round(ace_mean) - 0.5
-            leg(f"Over {aline} aces", round(100 * _poisson_over(ace_mean, aline), 1), None, "Aces",
+            over = round(100 * _poisson_over(ace_mean, aline), 1)
+            leg(f"Over {aline} aces", over, None, "Aces",
+                avg=round(ace_mean, 1), unit="aces")
+            # Name the under side rather than leaving _no_legs to mirror it into
+            # "NO — Over 8.5 aces". Every other tennis market already states both
+            # of its outcomes plainly; this was the one that did not.
+            leg(f"Under {aline} aces", round(100 - over, 1), None, "Aces",
                 avg=round(ace_mean, 1), unit="aces")
     return legs
 

@@ -968,6 +968,28 @@ ck("a NO leg follows its parent chip",
 
 print()
 print("=" * 72)
+print("No phantom NO legs: every tennis market names both its own outcomes")
+print("=" * 72)
+for _t in ("Match", "Sets", "Games", "Aces"):
+    ck(f"tennis '{_t}' is not NO-mirrored", _t in _CB._NO_SKIP_TYPES)
+ck("because the builder already emits both sides of each",
+   'leg(f"Under {aline} aces"' in _cb2 and 'leg(f"{b[\'name\']} to win"' in _cb2,
+   "Match/Sets/Games always had their complement; Aces was the one market that "
+   "did not, and now states its own under instead of relying on a mirror")
+ck("no tennis type is left able to produce a 'NO — ' label",
+   all(t in _CB._NO_SKIP_TYPES for t, _ in _CB.CATEGORY_TYPES["tennis"]),
+   "a NO mirror duplicated a leg already on the board AND arrived unpriced, and "
+   "an unpriced leg is charged at fair value -- EV-neutral by construction -- so "
+   "the assembler preferred the phantom to the real placeable leg beside it. "
+   "That is how a match-winners slip came back reading 'NO - Alexander Blockx to "
+   "win' instead of 'Jiri Lehecka to win'")
+ck("the sports that DO plumb their own NO side keep it",
+   "Hit" not in _CB._NO_SKIP_TYPES and "Total" not in _CB._NO_SKIP_TYPES,
+   "MLB builds NO legs from the sim priced off Kalshi's real no_ask; those are "
+   "genuine legs and must not be swept up by this")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
