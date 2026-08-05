@@ -1668,6 +1668,14 @@ def api_tennis():
         board = tennis_live.attach(board)
     except Exception:
         pass
+    # ESPN covers atp and wta only, and ITF is over 90% of this board. The trade
+    # tape fills that in -- see tennis_tape -- so an in-progress ITF match is
+    # marked live everywhere instead of nowhere.
+    try:
+        import tennis_tape
+        board = tennis_tape.attach(board)
+    except Exception:
+        pass
     return jsonify(board)
 
 

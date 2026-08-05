@@ -3317,7 +3317,7 @@ function renderTennisMaker() {
       reach <input id="tnComboPayout" type="number" min="0" step="any" value="${tnComboPayout}" style="width:60px"/>× payout
     </div>
     <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
-    <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, and our win% is a pre-match read. Note we can only detect this for <b>ATP/WTA</b> — no scoreboard we can reach covers ITF, so an in-progress ITF match cannot be filtered out here or flagged in the Live tab.</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere — ESPN publishes ATP/WTA only — so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
     <button class="track-mini primary-mini" style="margin-top:8px;display:block" onclick="buildTennisCombo()">Build</button>
     <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent.</div>
     <div id="tnComboOut"></div>

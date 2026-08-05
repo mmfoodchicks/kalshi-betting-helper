@@ -301,6 +301,11 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False):
             board = tennis_live.attach(board) or board
         except Exception:
             pass
+        try:
+            import tennis_tape          # ITF, which no scoreboard covers
+            board = tennis_tape.attach(board) or board
+        except Exception:
+            pass
     # Eligibility is per MATCH and Kalshi publishes it, so ask rather than infer
     # from the tour. `tours` is kept for callers that genuinely want one tour.
     elig = set()

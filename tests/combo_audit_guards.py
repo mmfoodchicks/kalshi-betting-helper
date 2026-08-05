@@ -888,11 +888,52 @@ ck("but the upset radar still keeps them",
    "an in-progress swing is exactly what that tab is for, and it re-simulates "
    "from the current score rather than reusing the pre-match number")
 
-ck("the UI states the ITF live blind spot rather than implying coverage",
-   "no scoreboard we can reach covers ITF" in _js,
-   "ESPN publishes atp and wta only -- itf/itf-men/itf-women/atp-challenger all "
-   "404 -- Kalshi exposes no match state, and previous_yes_ask is unpopulated on "
-   "296 of 320 markets, so an in-progress ITF match genuinely cannot be detected")
+ck("the UI names the tape as the ITF live source",
+   "Kalshi's own trade tape" in _js,
+   "ESPN publishes atp and wta only, so ITF live state comes from trade velocity")
+
+print()
+print("=" * 72)
+print("The ITF live feed, built out of Kalshi's trade tape")
+print("=" * 72)
+import tennis_tape as _TT
+_tt = open(_TT.__file__).read()
+
+ck("the detector measures trade VELOCITY, not volume",
+   "_LIVE_SPAN_MIN" in _tt and "_SAMPLE" in _tt,
+   "volume is confounded by popularity -- a PRE match (Rinderknech, 138k 24h "
+   "volume) outranked three LIVE ones, so 'how much' cannot separate them")
+ck("and the feature is scale-free, which is what lets ATP calibration hold on ITF",
+   "span" in _tt and "max(stamps) - min(stamps)" in _tt,
+   "minutes spanned by the last N trades asks how FAST a market moves, so a thin "
+   "ITF book and a heavy ATP one are read the same way")
+ck("the threshold sits inside the measured gap, not against an edge",
+   8.0 < _TT._LIVE_SPAN_MIN < 31.4,
+   f"{_TT._LIVE_SPAN_MIN} min, between the slowest live (8.0) and fastest pre "
+   "(31.4) on the ESPN-labelled slate")
+ck("a market with too few trades is left UNCLAIMED",
+   "_MIN_TRADES" in _tt and "len(stamps) < _MIN_TRADES" in _tt,
+   "silence is not evidence a match is scheduled -- an untraded book says nothing")
+ck("markets that have not traded today are never even checked",
+   "_bulk_volume" in _tt and "vol.get(t, 0) > 0" in _tt,
+   "the pre-filter is four bulk requests, not one per match")
+ck("the tape pass is cached, because attach() runs per request",
+   "_cached((\"tennis_tape_live\",)" in _tt,
+   "the uncached pass is ~9s against a full board -- fine once a minute, absurd "
+   "on every page load")
+ck("ESPN keeps priority where it has an opinion",
+   "unknown = [m for m in matches if not m.get(\"live\")]" in _tt,
+   "ESPN carries the SCORE and the upset radar re-simulates from it; the tape "
+   "only adds matches ESPN cannot see")
+ck("and a tape-detected match claims no score it does not have",
+   '"score": None' in _tt,
+   "the tape says a match is being played, not what the score is")
+ck("both the board and the combo maker run the tape",
+   "tennis_tape" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      "..", "app.py")).read()
+   and "tennis_tape" in _cb2,
+   "a live match must be flagged in the UI and excluded from a slip by the same "
+   "detection, or the two disagree")
 
 print()
 print("=" * 72)
