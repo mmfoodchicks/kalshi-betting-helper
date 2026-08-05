@@ -347,3 +347,103 @@ def attach(board):
     out["n_live"] = sum(1 for m in matches if m.get("live"))
     out["n_upsets"] = sum(1 for m in matches if m.get("upset"))
     return out
+
+
+# How far a favourite's price has to fall below our pre-match read before it is
+# worth an alarm. Measured off a quiet board the ordinary live drift is a couple
+# of points either way (the widest was -7.5); the case that prompted this was
+# Zverev at a 78.9% pre-match read trading 28c, a 51-point collapse. 20 sits well
+# clear of the noise.
+_PRICE_COLLAPSE = 20.0
+# A verified dip: the LIVE probability, re-simulated from the current score,
+# still beats the ask by this much. Wider than a normal edge threshold because a
+# live price moves under you while you act on it.
+_DIP_EDGE = 8.0
+
+
+def mark_dips(board):
+    """Flag live matches where the favourite has been marked down, and say which
+    of them that is actually evidence about.
+
+    Two tiers, and the split is the whole point. Where ESPN gives a SCORE the sim
+    re-runs from it, so "still 71% from here against a 55c ask" is a real edge on
+    a number we computed. Where it does not -- all of ITF -- the price drop is
+    the only thing we can see, and a collapse is exactly as consistent with a
+    player about to lose as with one about to come back. Those are surfaced for
+    awareness and never ranked as value."""
+    if not board:
+        return board
+    matches = []
+    n_ver = n_unv = 0
+    for m in board.get("matches") or []:
+        m = dict(m)
+        lv = m.get("live") or {}
+        if not lv:
+            matches.append(m)
+            continue
+        fa = m["a"].get("fair_win") or 0
+        fb = m["b"].get("fair_win") or 0
+        fav, side = (m["a"], "a") if fa >= fb else (m["b"], "b")
+        ask = fav.get("cents")
+        model = max(fa, fb)
+        live_pct = lv.get("p_a") if side == "a" else lv.get("p_b")
+        if ask is None:
+            matches.append(m)
+            continue
+        if live_pct is not None:
+            edge = live_pct - ask
+            if edge >= _DIP_EDGE:
+                m["dip"] = {"tier": "verified", "player": fav["name"],
+                            "live_pct": live_pct, "cents": ask,
+                            "edge": round(edge, 1), "model_pct": model,
+                            "sets": f'{lv.get("sets_a")}–{lv.get("sets_b")}'
+                                    if lv.get("sets_a") is not None else None,
+                            "detail": lv.get("detail")}
+                m["dip_score"] = round(edge, 1)
+                n_ver += 1
+        elif (model - ask) >= _PRICE_COLLAPSE:
+            m["dip"] = {"tier": "unverified", "player": fav["name"],
+                        "live_pct": None, "cents": ask,
+                        "drop": round(model - ask, 1), "model_pct": model,
+                        "sets": None, "detail": lv.get("detail")}
+            # Ranked BELOW every verified dip on purpose: a bigger unverified
+            # drop is a bigger unknown, not a better bet.
+            m["dip_score"] = -1000 + round(model - ask, 1)
+            n_unv += 1
+        matches.append(m)
+    out = dict(board)
+    out["matches"] = matches
+    out["n_dips"] = n_ver
+    out["n_dips_unverified"] = n_unv
+    return out
+
+
+def mark_price_upsets(board):
+    """Upset alarms for live matches with no score feed.
+
+    The radar's own premise is that Kalshi over-reacts to a big name in trouble,
+    and a price collapse IS that event observed. The scored path (attach) can
+    never reach these: its upset block sits inside the branch that matched a
+    match to ESPN, and ITF never matches."""
+    if not board:
+        return board
+    matches = []
+    for m in board.get("matches") or []:
+        if m.get("live") and not m.get("upset"):
+            fa = m["a"].get("fair_win") or 0
+            fb = m["b"].get("fair_win") or 0
+            fav = m["a"] if fa >= fb else m["b"]
+            model, ask = max(fa, fb), fav.get("cents")
+            if ask is not None and (model - ask) >= _PRICE_COLLAPSE:
+                m = dict(m)
+                m["upset"] = {"fav": fav["name"], "fav_cents": ask,
+                              "gap": round(model - ask), "sets": None,
+                              "note": f"marked down to {ask:.0f}c from a "
+                                      f"{model:.0f}% pre-match read",
+                              "fav_live_pct": None, "price_only": True}
+                m["upset_score"] = round(model - ask)
+        matches.append(m)
+    out = dict(board)
+    out["matches"] = matches
+    out["n_upsets"] = sum(1 for x in matches if x.get("upset"))
+    return out

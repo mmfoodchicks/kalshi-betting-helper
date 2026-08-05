@@ -975,6 +975,17 @@ body.tier-locked .owner-only { display: none !important; }
 /* Which DAY a tennis match is played. Loud on purpose: betting a match you
    believed was today is the mistake this exists to stop, and "Tomorrow" has to
    be impossible to skim past. */
+/* A favourite the market marked down mid-match. Verified and unverified are
+   deliberately different colours: one is an edge we computed from the current
+   score, the other is a price move we cannot explain. */
+.tn-dip { margin: 6px 0; padding: 7px 10px; border-radius: 8px; font-size: .82rem;
+  line-height: 1.45; }
+.tn-dip.verified { color: #d6f5e3; background: rgba(58, 209, 122, .10);
+  border: 1px solid rgba(58, 209, 122, .38); }
+.tn-dip.unverified { color: var(--muted); background: rgba(245, 165, 36, .07);
+  border: 1px dashed rgba(245, 165, 36, .38); }
+.tn-dip b { color: var(--text); }
+.tn-dip.unverified b { color: #f5a524; }
 .tn-day { font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
   white-space: nowrap; }

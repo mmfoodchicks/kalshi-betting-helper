@@ -3442,6 +3442,14 @@ function tnApplySort(matches) {
     (y.live ? 1 : 0) - (x.live ? 1 : 0) || by(x, y)) : matches;
 }
 window.setTnSort = (v) => { _tnSort = v; renderTennis(); };
+// Live scores, the trade tape and Kalshi's prices all move inside the board's
+// own cache window, so a manual pull is the difference between reading a dip and
+// reading a dip from four minutes ago.
+window.refreshTennis = async (btn) => {
+  if (btn) { btn.disabled = true; btn.textContent = "↻ …"; }
+  try { await loadTennis(); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "↻ Refresh"; } }
+};
 
 function renderTennis() {
   const d = _tnData; if (!d) return;
@@ -3466,6 +3474,11 @@ function renderTennis() {
   } else if (_tnSub === "upsets") {
     matches = matches.filter((m) => m.upset);
     matches.sort((x, y) => (y.upset_score || 0) - (x.upset_score || 0));
+  } else if (_tnSub === "dips") {
+    matches = matches.filter((m) => m.dip);
+    // Verified dips first — dip_score is deliberately deeply negative for the
+    // unverified ones, so a bigger unknown can never outrank a real edge.
+    matches.sort((x, y) => (y.dip_score || 0) - (x.dip_score || 0));
   }
   const q = ($("tnSearch")?.value || "").trim().toLowerCase();
   if (q) matches = matches.filter((m) =>
@@ -3478,13 +3491,17 @@ function renderTennis() {
   const playBit = d.n_play != null && d.n_play < d.n_matches ? ` <span class="small" style="color:var(--muted)">(${d.n_play} with a model read, rest are markets not open yet)</span>` : "";
   const comboBit = d.n_combo != null
     ? ` · <b style="color:#3ad17a">🎲 ${d.n_combo} combo-ready</b>` : "";
-  $("tnSummary").innerHTML = _tnSub === "combo"
+  const dipBit = d.n_dips ? ` · <b style="color:#3ad17a">📉 ${d.n_dips} dip${d.n_dips > 1 ? "s" : ""}</b>` : "";
+  $("tnSummary").innerHTML = _tnSub === "dips"
+    ? `<b>${matches.length}</b> match${matches.length === 1 ? "" : "es"} where the market has marked a favourite down mid-match. A <b>verified</b> dip re-runs the point-by-point sim <b>from the current score</b> and is only shown when that number still beats the ask by ${8}+ — a real edge on a number we computed. An <b>unverified</b> one is in play on a tour with no scoreboard, so the price drop is the only thing we can see, and a collapse looks identical to a comeback from here: those are listed last and are not a recommendation. <b>Hit ↻ Refresh before acting</b> — a live price moves while you read it.`
+    : _tnSub === "combo"
     ? `<b>${matches.length} of ${d.n_matches}</b> matches can actually be a <b>parlay leg</b>${liveBit}${upBit}. Kalshi decides this <b>per match</b> — not per tour, so plenty of <b>ITF</b> qualifies — and it also needs a <b>real book</b>, not just a listed price. Each card that missed says which. Everything else is one click away under <b>All</b>, where it's fine as a single bet. Edge = fair win% − Kalshi ask.`
-    : `<b>${d.n_matches} matches</b>${comboBit}${liveBit}${upBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
+    : `<b>${d.n_matches} matches</b>${comboBit}${liveBit}${upBit}${dipBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
   appendCalNote("tnSummary", "tennis", "tennis");
   if (!matches.length) {
     const msg = _tnSub === "live" ? "No tracked matches on court right now."
       : _tnSub === "upsets" ? "No big favorites trailing right now — check back during play."
+      : _tnSub === "dips" ? "No favourite is being marked down right now. This fills up mid-match when a big name drops a set and the price overshoots."
       : _tnSub === "combo" ? "No match on the board can be a parlay leg right now — Kalshi only takes ATP/WTA in a slip, and none are quoted. Check <b>All</b> for singles."
       : q ? `No matches for “${q}”.` : "No matches in this view.";
     $("tnResults").innerHTML = `<div class="empty">${msg}</div>`; return;
@@ -3516,8 +3533,14 @@ function renderTennis() {
         ? `<div class="tn-lean none">Market-priced — no charting data on these players, so we defer to Kalshi's odds</div>`
         : `<div class="tn-lean none">No edge — model agrees with the market</div>`);
     const lv = m.live;
+    // A tape-detected live match has NO score -- that is the honest limit of
+    // reading "in play" off trade velocity -- so the chip must not render one.
+    // It was printing "LIVE undefined-undefined".
     const liveChip = lv
-      ? `<span class="tn-livechip">🔴 LIVE ${lv.sets_a}–${lv.sets_b}${lv.cur ? ` (${lv.cur[0]}-${lv.cur[1]})` : ""} · ${lv.detail || lv.score}</span>` : "";
+      ? (lv.sets_a != null
+        ? `<span class="tn-livechip">🔴 LIVE ${lv.sets_a}–${lv.sets_b}${lv.cur ? ` (${lv.cur[0]}-${lv.cur[1]})` : ""} · ${lv.detail || lv.score}</span>`
+        : `<span class="tn-livechip" title="in play, detected from Kalshi's trade tape — no scoreboard covers this tour, so we have no score">🔴 LIVE · in play<span style="opacity:.7"> (no score feed)</span></span>`)
+      : "";
     // Live in-match win probability from the current score (the point-by-point
     // sim re-run from here) + the live edge vs Kalshi's current ask.
     const liveWin = (lv && lv.p_a != null)
@@ -3529,7 +3552,16 @@ function renderTennis() {
       ? `still <b>${up.fav_live_pct}% live</b> vs ${up.fav_cents}¢ — market overshot`
       : `the market overshoots on a big name dropping a set`;
     const upBanner = up
-      ? `<div class="tn-upset">🚨 <b>${up.fav}</b> is ${up.note} (sets ${up.sets}${up.fav_cents != null ? ` · ${up.fav_cents}¢` : ""}) but ${liveNote}.</div>` : "";
+      ? (up.price_only
+        ? `<div class="tn-upset">🚨 <b>${up.fav}</b> ${up.note} — in play with no scoreboard for this tour, so the price drop is all we can see. Worth a look, not a read.</div>`
+        : `<div class="tn-upset">🚨 <b>${up.fav}</b> is ${up.note}${up.sets ? ` (sets ${up.sets}` : " ("}${up.fav_cents != null ? ` · ${up.fav_cents}¢` : ""}) but ${liveNote}.</div>`)
+      : "";
+    const dp = m.dip;
+    const dipBanner = dp
+      ? (dp.tier === "verified"
+        ? `<div class="tn-dip verified" title="the sim re-run from the CURRENT score still has this player ahead of what the market is charging">📉 <b>Dip:</b> <b>${dp.player}</b> is <b>${dp.cents}¢</b> but the sim run from the current score${dp.sets ? ` (${dp.sets})` : ""} still has him <b>${dp.live_pct}%</b> — <span class="ev pos">+${dp.edge}</span>. Pre-match read was ${dp.model_pct}%.</div>`
+        : `<div class="tn-dip unverified" title="in play with no scoreboard for this tour — the price drop is the only observation we have">⚠️ <b>Unverified dip:</b> <b>${dp.player}</b> has fallen to <b>${dp.cents}¢</b> from a ${dp.model_pct}% pre-match read (−${dp.drop}). <b>No score feed for this tour</b>, so we cannot tell a comeback from a collapse — this is a place to look, not a number.</div>`)
+      : "";
     const unopened = m.tier === "unopened";
     const leanBlock = unopened
       ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet — both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
@@ -3542,6 +3574,7 @@ function renderTennis() {
         ${kalshiWhere(m)}
         ${liveWin}
         ${upBanner}
+        ${dipBanner}
         ${_tnPlayer(a)}${_tnPlayer(b)}
         ${leanBlock}
         <div class="tn-derived">${games}${distance}${aces}${setsLine ? `<span class="tn-chip">${setsLine}</span>` : ""}</div>

@@ -1676,6 +1676,13 @@ def api_tennis():
         board = tennis_tape.attach(board)
     except Exception:
         pass
+    # Alarms and dips run LAST, after both live sources, so a match the tape
+    # found is judged the same way as one ESPN found.
+    try:
+        board = tennis_live.mark_price_upsets(board)
+        board = tennis_live.mark_dips(board)
+    except Exception:
+        pass
     return jsonify(board)
 
 

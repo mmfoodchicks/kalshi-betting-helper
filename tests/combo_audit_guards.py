@@ -1064,6 +1064,80 @@ ck("every card shows which day it is played",
 
 print()
 print("=" * 72)
+print("Live tennis: the score we do not have, the alarm, and the dip")
+print("=" * 72)
+import tennis_live as _TL
+
+ck("a live match with no score never renders one",
+   "lv.sets_a != null" in _js and "no score feed" in _js,
+   "a tape-detected match has no score -- that is the honest limit of reading "
+   "'in play' off trade velocity -- and the chip was printing "
+   "'LIVE undefined-undefined'")
+
+# --- the alarm reaches matches ESPN cannot see ----------------------------
+_tl = open(_TL.__file__).read()
+ck("upsets are also raised from a PRICE collapse",
+   "def mark_price_upsets" in _tl,
+   "the scored path sits inside the branch that matched a match to ESPN, and "
+   "ITF never matches -- so a heavy favourite could be marked down 50 points "
+   "with no alarm anywhere")
+_mk = lambda model, ask, live=None: {
+    "live": {"detail": "in play"},
+    "a": {"name": "Fav", "fair_win": model, "cents": ask},
+    "b": {"name": "Dog", "fair_win": 100 - model, "cents": 100 - ask}}
+_out = _TL.mark_price_upsets({"matches": [_mk(78.9, 28)]})
+ck("a 51-point markdown raises one", bool(_out["matches"][0].get("upset")),
+   "Zverev at a 78.9% pre-match read trading 28c -- the case that prompted this")
+ck("and it is labelled price-only, not dressed up as a score",
+   _out["matches"][0]["upset"].get("price_only") is True)
+ck("ordinary live drift does NOT", 
+   not _TL.mark_price_upsets({"matches": [_mk(54.5, 62)]})["matches"][0].get("upset"),
+   "the widest ordinary drift measured on a quiet board was 7.5 points; the "
+   "threshold is 20")
+ck("a match that already has a scored alarm is left alone",
+   (lambda m: _TL.mark_price_upsets({"matches": [m]})["matches"][0]["upset"].get("note")
+    == "down a set")(dict(_mk(78.9, 28), upset={"note": "down a set"})),
+   "the scored read is the better one and must not be overwritten")
+
+# --- dips: two tiers, and the split is the point --------------------------
+ck("a dip needs the LIVE probability to beat the ask", "_DIP_EDGE" in _tl)
+ck("and the bar is wider than an ordinary edge",
+   _TL._DIP_EDGE >= 5.0,
+   f"{_TL._DIP_EDGE} -- a live price moves under you while you act on it")
+_ver = _TL.mark_dips({"matches": [dict(_mk(80, 55), live={"detail": "S2", "p_a": 71.0,
+                                                          "p_b": 29.0, "sets_a": 1, "sets_b": 1})]})
+ck("a verified dip is flagged when the re-sim still beats the price",
+   (_ver["matches"][0].get("dip") or {}).get("tier") == "verified",
+   "still 71% from here against a 55c ask")
+ck("an unverified one is flagged separately when there is no score",
+   (_TL.mark_dips({"matches": [_mk(78.9, 28)]})["matches"][0].get("dip") or {}).get("tier")
+   == "unverified")
+ck("and it can never outrank a verified dip",
+   _TL.mark_dips({"matches": [_mk(78.9, 28)]})["matches"][0]["dip_score"]
+   < _ver["matches"][0]["dip_score"],
+   "a bigger unexplained drop is a bigger UNKNOWN, not a better bet -- without a "
+   "score a collapse looks identical to a comeback")
+ck("a small live edge is not called a dip",
+   _TL.mark_dips({"matches": [dict(_mk(80, 68), live={"p_a": 70.0, "p_b": 30.0,
+                                                      "sets_a": 1, "sets_b": 0})]}
+                 )["matches"][0].get("dip") is None)
+ck("a match not in play is never a dip",
+   _TL.mark_dips({"matches": [{"a": {"name": "A", "fair_win": 90, "cents": 20},
+                               "b": {"name": "B", "fair_win": 10, "cents": 80}}]}
+                 )["matches"][0].get("dip") is None,
+   "a 20c price on a 90% pre-match read is a market disagreement, not a dip")
+ck("the board counts verified and unverified separately",
+   '"n_dips"' in _tl and '"n_dips_unverified"' in _tl)
+ck("the UI says which tier it is looking at",
+   "Unverified dip" in _js and "cannot tell a comeback from a collapse" in _js)
+
+ck("the board has a manual refresh",
+   "refreshTennis" in _js,
+   "live scores, the trade tape and Kalshi prices all move inside the board's "
+   "own cache window")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
