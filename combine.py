@@ -295,7 +295,80 @@ _TENNIS_CAT = {"ATP": "🎾 Tennis", "WTA": "🎾 Tennis (WTA)",
                "ITF": "🎾 Tennis (ITF)", "ITF-W": "🎾 Tennis (ITF-W)"}
 
 
-def _tennis_legs(tours=None, eligible_only=True, allow_live=False):
+# Time windows the tennis maker can be held to, and what each one can honestly
+# police. The DAY is known for every match -- it is in the Kalshi event ticker --
+# so "today" covers the whole board. A CLOCK TIME only exists where ESPN publishes
+# one, which is ATP/WTA, so the tighter windows can only ever admit those. Kalshi's
+# occurrence_datetime was checked as a substitute and is not one: against ESPN
+# start times it runs from 27.8 hours early to 15.5 hours late.
+_WINDOWS = {"today": None, "3h": 3.0, "1h": 1.0}
+
+
+def _in_window(m, window, now):
+    """Does this match start inside `window`? (ok, needs_clock)
+
+    `needs_clock` reports that the answer had to be no for want of a start time
+    rather than because the match is late -- the caller says so out loud instead
+    of quietly dropping most of the board."""
+    if not window or window not in _WINDOWS:
+        return True, False
+    date = m.get("date") or ""
+    today = now.strftime("%Y%m%d")
+    if window == "today":
+        # Live counts as today whatever the ticker says: it is being played now.
+        return (date == today or bool(m.get("live"))), False
+    if m.get("live"):
+        return True, False
+    start = m.get("start")
+    if not start:
+        return False, True
+    try:
+        import datetime as _dt
+        st = _dt.datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return False, True
+    hrs = (st - now).total_seconds() / 3600.0
+    # Already begun but not flagged live yet, or starting inside the window.
+    return (-0.5 <= hrs <= _WINDOWS[window]), False
+
+
+
+def _tn_now():
+    import datetime as _dt
+    return _dt.datetime.now(_dt.timezone.utc)
+
+
+def window_counts(window=None, allow_live=False):
+    """{window: n_matches} plus how many were refused only for want of a clock.
+
+    The maker shows this so "within the hour" never looks broken when it is
+    merely honest: on a board that is 90% ITF, most matches have no published
+    start time and cannot satisfy an hour window at all."""
+    try:
+        import tennis_prices, tennis_live, tennis_tape
+        board = tennis_prices.board()
+        if not board:
+            return {}
+        board = tennis_tape.attach(tennis_live.attach(board) or board) or board
+    except Exception:
+        return {}
+    now = _tn_now()
+    out = {"any": 0, "today": 0, "3h": 0, "1h": 0, "no_clock": 0}
+    for m in board.get("matches") or []:
+        if not m.get("combo_ok"):
+            continue
+        if m.get("live") and not allow_live:
+            continue
+        out["any"] += 1
+        for w in ("today", "3h", "1h"):
+            ok, needs = _in_window(m, w, now)
+            if ok:
+                out[w] += 1
+            elif needs and w == "1h":
+                out["no_clock"] += 1
+    return out
+
+def _tennis_legs(tours=None, eligible_only=True, allow_live=False, window=None):
     """Tennis legs from OUR match simulator (model probabilities, not de-vig). One
     event per match with both players as winner legs, plus the coherent derived
     markets -- total games over/under, total sets, aces -- the sim prices together,
@@ -341,6 +414,10 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False):
             continue
         if m.get("live") and not allow_live:
             continue
+        if window:
+            ok, _needs = _in_window(m, window, _tn_now())
+            if not ok:
+                continue
         a, b = m["a"], m["b"]
         if a.get("fair_win") is None and a.get("model_win") is None:
             continue
@@ -548,7 +625,7 @@ def _sport_legs(key):
     return legs
 
 
-def gather(cats, date, season, allow_live=False):
+def gather(cats, date, season, allow_live=False, tennis_window=None):
     """All legs for the checked categories. Each leg is tagged with its source
     category KEY (`cat_key`) so the maker can budget legs per sport, independent
     of the display label (tennis, for instance, spans several tour labels)."""
@@ -581,7 +658,8 @@ def gather(cats, date, season, allow_live=False):
     if "ufc" in cats:
         add("ufc", _ufc_legs)                    # our UFC fight model, not de-vig
     if "tennis" in cats:
-        add("tennis", lambda: _tennis_legs(allow_live=allow_live))
+        add("tennis", lambda: _tennis_legs(allow_live=allow_live,
+                                           window=tennis_window))
     if "nba" in cats:
         add("nba", _nba_legs)
     if "nhl" in cats:
@@ -948,8 +1026,9 @@ def _assemble_by_cat(legs, per_cat, target, max_legs, payout_target=None, payout
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
           legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None,
-          allow_live=False, cap_pct=None):
-    legs = _filter_types(gather(cats, date, season, allow_live), types)
+          allow_live=False, cap_pct=None, tennis_window=None):
+    legs = _filter_types(gather(cats, date, season, allow_live,
+                                tennis_window=tennis_window), types)
     counts = {}
     for l in legs:
         counts[l["category"]] = counts.get(l["category"], 0) + 1

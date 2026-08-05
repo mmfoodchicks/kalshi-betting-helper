@@ -972,6 +972,18 @@ body.tier-locked .owner-only { display: none !important; }
 .legwhere { font-size: 0.72rem; color: var(--muted); }
 
 /* Start time shown on a game/match/race tile */
+/* Which DAY a tennis match is played. Loud on purpose: betting a match you
+   believed was today is the mistake this exists to stop, and "Tomorrow" has to
+   be impossible to skim past. */
+.tn-day { font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
+  white-space: nowrap; }
+.tn-day.today { color: #3ad17a; background: rgba(58, 209, 122, .12);
+  border: 1px solid rgba(58, 209, 122, .35); }
+.tn-day.soon { color: #f5a524; background: rgba(245, 165, 36, .12);
+  border: 1px solid rgba(245, 165, 36, .40); }
+.tn-day.past { color: var(--muted); background: rgba(127, 127, 127, .10);
+  border: 1px solid rgba(127, 127, 127, .28); }
 .starttime { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 .starttime b { color: var(--text); font-variant-numeric: tabular-nums; }
 

@@ -1718,9 +1718,16 @@ def api_tennis_parlay():
         cap = None
     if cap is not None and not (0 < cap <= 100):
         cap = None
+    # Start-time window. "today" is enforceable for every match (the day is in
+    # the Kalshi event ticker); the tighter ones need a published start time and
+    # so can only ever admit ATP/WTA.
+    window = request.args.get("window")
+    if window not in ("today", "3h", "1h"):
+        window = None
     try:
         out = combine.build(["tennis"], legs, target, date, date[:4],
                             target_payout=payout, cap_pct=cap,
+                            tennis_window=window,
                             max_legs=tiers.cap_legs(_tier(), 30),
                             legs_mode=legs_mode, payout_mode=payout_mode,
                             conn=conn, types=types, allow_live=_allow_live())
@@ -1732,6 +1739,8 @@ def api_tennis_parlay():
         import tennis_prices
         b = tennis_prices.board() or {}
         out["n_combo_matches"] = b.get("n_combo")
+        out["window"] = window
+        out["window_counts"] = combine.window_counts(allow_live=_allow_live())
     except Exception:
         pass
     return jsonify(out)

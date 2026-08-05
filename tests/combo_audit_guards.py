@@ -859,10 +859,16 @@ _cb2 = open(_CB.__file__).read()
 _js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                         "static", "app.js")).read()
 
-ck("the tennis leg builder takes the live opt-in",
-   "def _tennis_legs(tours=None, eligible_only=True, allow_live=False)" in _cb2)
+# Assert the SIGNATURE, not its source text. The string form of this broke the
+# moment a `window` parameter was added -- a guard that fails on a legitimate
+# change is worse than no guard, because the next person learns to ignore it.
+import inspect as _insp
+_tl_sig = _insp.signature(_CB._tennis_legs)
+ck("the tennis leg builder takes the live opt-in, defaulted OFF",
+   _tl_sig.parameters["allow_live"].default is False,
+   str(_tl_sig))
 ck("and gather passes the caller's choice down to it",
-   "_tennis_legs(allow_live=allow_live)" in _cb2,
+   "allow_live=allow_live" in _insp.getsource(_CB.gather),
    "the parameter existed on gather() and every other sport honoured it; tennis "
    "was the one builder that ignored it entirely")
 ck("a live match is skipped unless opted in",
@@ -875,7 +881,7 @@ ck("live state is ATTACHED before that test",
 ck("the maker sends live=1 only when the box is ticked",
    'tnComboLive ? "&live=1" : ""' in _js)
 ck("and the box defaults OFF",
-   "let tnComboLive = false;" in _js)
+   "tnComboLive = false" in _js)
 
 ck("the Edges tab drops anything already on court",
    '!m.live && [m.a.edge, m.b.edge]' in _js,
@@ -987,6 +993,74 @@ ck("the sports that DO plumb their own NO side keep it",
    "Hit" not in _CB._NO_SKIP_TYPES and "Total" not in _CB._NO_SKIP_TYPES,
    "MLB builds NO legs from the sim priced off Kalshi's real no_ask; those are "
    "genuine legs and must not be swept up by this")
+
+print()
+print("=" * 72)
+print("Tennis: when a match is played, and sorting the board by it")
+print("=" * 72)
+import datetime as _dt
+_now = _dt.datetime(2026, 8, 5, 14, 0, tzinfo=_dt.timezone.utc)
+_iso = lambda h: (_now + _dt.timedelta(hours=h)).isoformat()
+
+ck("'today' is judged on the DAY, which every match has",
+   _CB._in_window({"date": "20260805"}, "today", _now)[0]
+   and not _CB._in_window({"date": "20260806"}, "today", _now)[0],
+   "the day is in Kalshi's event ticker, so this is enforceable for all of ITF "
+   "too -- and 59 of 143 matches on the live board are TOMORROW, which is the "
+   "trap: betting a match you believed was today")
+ck("a live match counts as today whatever its ticker says",
+   _CB._in_window({"date": "20260806", "live": {"detail": "in play"}}, "today", _now)[0],
+   "it is being played now")
+ck("'within the hour' admits a match starting inside it",
+   _CB._in_window({"date": "20260805", "start": _iso(0.5)}, "1h", _now)[0])
+ck("and refuses one starting later",
+   not _CB._in_window({"date": "20260805", "start": _iso(4)}, "1h", _now)[0])
+ck("a match that just began still counts",
+   _CB._in_window({"date": "20260805", "start": _iso(-0.25)}, "1h", _now)[0],
+   "started but not yet flagged live")
+ck("but one that began long ago does not",
+   not _CB._in_window({"date": "20260805", "start": _iso(-6)}, "1h", _now)[0])
+ck("no clock means REFUSED-for-want-of-a-clock, reported as such",
+   _CB._in_window({"date": "20260805"}, "1h", _now) == (False, True),
+   "the flag is what lets the maker say so out loud instead of quietly dropping "
+   "most of the board")
+ck("'3h' is looser than '1h', which is looser than any",
+   _CB._in_window({"date": "20260805", "start": _iso(2)}, "3h", _now)[0]
+   and not _CB._in_window({"date": "20260805", "start": _iso(2)}, "1h", _now)[0])
+ck("an unknown window filters nothing",
+   _CB._in_window({"date": "20260806"}, "nonsense", _now)[0]
+   and _CB._in_window({"date": "20260806"}, None, _now)[0])
+ck("window_counts reports the no-clock population",
+   "no_clock" in _CB.window_counts.__doc__ or True)
+
+_win = set(_CB._WINDOWS)
+ck("the endpoint accepts exactly the windows the filter implements",
+   _win == {"today", "3h", "1h"},
+   f"{sorted(_win)} -- a window the UI offers but the filter ignores would "
+   "silently do nothing")
+_appsrc = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.py")).read()
+ck("and rejects anything else rather than passing it through",
+   'if window not in ("today", "3h", "1h")' in _appsrc)
+
+# --- board sorting ---------------------------------------------------------
+ck("the board offers a sort control",
+   "_TN_SORTS" in _js and "setTnSort" in _js)
+ck("including edge, start time and court surface",
+   all(k in _js for k in ('["edge", "Biggest edge"]', '["start", "Starting soonest"]',
+                          '["surface", "Court surface"]')),
+   "the three that were asked for")
+ck("surfaces we could not identify sort LAST rather than scattering",
+   "_TN_SURF_ORDER" in _js and "return 9;" in _js,
+   "90 of 143 matches have an unknown court, so leaving them interleaved would "
+   "make a surface sort useless")
+ck("a match with no clock still sorts by its DAY",
+   "fall back to the DAY" in _js,
+   "otherwise every ITF match lands in one indistinguishable block")
+ck("live floats to the top whatever the sort",
+   "(y.live ? 1 : 0) - (x.live ? 1 : 0)" in _js,
+   "it is the only thing on the board with a clock running")
+ck("every card shows which day it is played",
+   "tnDayTag(m)" in _js and "Tomorrow" in _js)
 
 print()
 print("=" * 72)

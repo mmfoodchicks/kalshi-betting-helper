@@ -3209,6 +3209,12 @@ function initTennis() {
     $("tnResults").dataset.loaded = "1";
     loadTennis();
     $("tnSearch")?.addEventListener("input", () => renderTennis());
+    const ss = $("tnSort");
+    if (ss && !ss.dataset.filled) {
+      ss.dataset.filled = "1";
+      ss.innerHTML = _TN_SORTS.map(([v, l]) =>
+        `<option value="${v}"${v === _tnSort ? " selected" : ""}>${l}</option>`).join("");
+    }
     document.querySelectorAll("#tnSubtabs .subtab").forEach((b) => {
       b.addEventListener("click", () => {
         document.querySelectorAll("#tnSubtabs .subtab").forEach((x) => x.classList.remove("active"));
@@ -3293,7 +3299,8 @@ function _tnPlayer(p, served) {
 // this runs through combine's assembler with the category pinned to tennis, and
 // the joint probability is an honest product of independent matches.
 let tnComboLegs = 3, tnComboTarget = 60, tnComboCap = 0, tnComboPayout = 0;
-let tnComboLive = false;
+let tnComboLive = false, tnComboWindow = "";
+let _tnWinCounts = null;
 // Leg types, mirroring combine.CATEGORY_TYPES["tennis"]. The cross-sport maker
 // has always had these chips; the dedicated tennis maker shipped without them,
 // so asking for "just match winners" was impossible and a slip came back as two
@@ -3330,6 +3337,13 @@ function renderTennisMaker() {
       ${sel("tnComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], tnComboPayoutMode)}
       reach <input id="tnComboPayout" type="number" min="0" step="any" value="${tnComboPayout}" style="width:60px"/>× payout
     </div>
+    <div class="small" style="margin-top:8px">Starts
+      ${sel("tnComboWindow", [["", "any time" + (_tnWinCounts ? ` (${_tnWinCounts.any})` : "")],
+                              ["today", "today only" + (_tnWinCounts ? ` (${_tnWinCounts.today})` : "")],
+                              ["3h", "within 3 hours" + (_tnWinCounts ? ` (${_tnWinCounts["3h"]})` : "")],
+                              ["1h", "within the hour" + (_tnWinCounts ? ` (${_tnWinCounts["1h"]})` : "")]], tnComboWindow)}
+    </div>
+    <div class="small" style="margin-top:2px;color:var(--muted)"><b>today only</b> is enforceable for every match — the day is in Kalshi's own event ticker. The hour windows need a published start time, which is ATP/WTA only${_tnWinCounts && _tnWinCounts.no_clock ? `, so <b>${_tnWinCounts.no_clock}</b> otherwise-eligible matches can't qualify for one` : ""}. Kalshi's own timing field was checked as a substitute and is off by anywhere from 28 hours early to 15 hours late.</div>
     <div class="small" style="margin-top:8px">Leg types <span style="color:var(--muted)">(none selected = all)</span>: <span class="ptchips">${_TN_TYPES.map(([v, l]) => `<span class="ptchip${_tnTypes.has(v) ? " on" : ""}" onclick="toggleTnType(this,'${v}')">${l}</span>`).join("")}</span></div>
     <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
     <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere — ESPN publishes ATP/WTA only — so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
@@ -3352,13 +3366,15 @@ async function buildTennisCombo() {
   tnComboPayoutMode = ($("tnComboPayoutMode") || {}).value || "off";
   tnComboConn = ($("tnComboConn") || {}).value || "or";
   tnComboLive = !!(($("tnComboLive") || {}).checked);
+  tnComboWindow = ($("tnComboWindow") || {}).value || "";
   out.innerHTML = `<div class="empty">Building…</div>`;
   const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
     + (tnComboCap ? `&cap=${tnComboCap}` : "") + (tnComboLive ? "&live=1" : "")
-    + tnTypesParam()
+    + tnTypesParam() + (tnComboWindow ? `&window=${tnComboWindow}` : "")
     + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`;
   try {
     const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
+    if (d.window_counts) { _tnWinCounts = d.window_counts; renderTennisMaker(); }
     if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     if (!d.combo) {
       const n = d.n_combo_matches;
@@ -3372,6 +3388,60 @@ async function buildTennisCombo() {
     out.innerHTML = `<div class="empty">Build failed.</div>`;
   }
 }
+
+// The DAY a tennis match is played, which is in the Kalshi event ticker and so
+// known for every match including all of ITF -- unlike the clock time, which
+// only ESPN publishes and only for ATP/WTA. Showing it is the fix for betting a
+// match you believed was today.
+function tnDayTag(m) {
+  const ds = m.date || "";
+  if (ds.length !== 8) return "";
+  const y = +ds.slice(0, 4), mo = +ds.slice(4, 6), d = +ds.slice(6, 8);
+  const when = new Date(y, mo - 1, d);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((when - today) / 86400000);
+  if (days === 0) return `<span class="tn-day today" title="playing today">Today</span>`;
+  if (days === 1) return `<span class="tn-day soon" title="NOT today — tomorrow">Tomorrow</span>`;
+  if (days < 0) return `<span class="tn-day past" title="scheduled before today">${when.toLocaleDateString([], { month: "short", day: "numeric" })}</span>`;
+  return `<span class="tn-day soon" title="${days} days out">${when.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}</span>`;
+}
+// Surface, ordered so the courts we actually model come first and the ones we
+// could not identify sort last rather than scattering through the list.
+const _TN_SURF_ORDER = { "Clay": 0, "Hard": 1, "Grass": 2, "Carpet": 3 };
+function _tnSurfKey(m) {
+  if (m.surface_known === false || !m.surface || m.surface === "Unknown") return 9;
+  return _TN_SURF_ORDER[m.surface] != null ? _TN_SURF_ORDER[m.surface] : 8;
+}
+function _tnBestEdge(m) {
+  return Math.max(m.a.edge == null ? -99 : m.a.edge, m.b.edge == null ? -99 : m.b.edge);
+}
+function _tnStartMs(m) {
+  if (m.start) { const t = new Date(m.start).getTime(); if (!isNaN(t)) return t; }
+  // No clock: fall back to the DAY so a dateless sort still puts tomorrow after
+  // today instead of dumping every ITF match in one indistinguishable block.
+  const ds = m.date || "";
+  if (ds.length === 8) return new Date(+ds.slice(0,4), +ds.slice(4,6)-1, +ds.slice(6,8), 23, 59).getTime();
+  return Infinity;
+}
+let _tnSort = "default";
+const _TN_SORTS = [["default", "Best read first"], ["edge", "Biggest edge"],
+                   ["start", "Starting soonest"], ["surface", "Court surface"],
+                   ["tour", "Tour"], ["conf", "Most charted data"]];
+function tnApplySort(matches) {
+  const t = { high: 0, medium: 1, elo: 2, thin: 3, market: 4 };
+  const by = {
+    edge: (x, y) => _tnBestEdge(y) - _tnBestEdge(x),
+    start: (x, y) => _tnStartMs(x) - _tnStartMs(y),
+    surface: (x, y) => _tnSurfKey(x) - _tnSurfKey(y) || _tnBestEdge(y) - _tnBestEdge(x),
+    tour: (x, y) => String(x.tour).localeCompare(String(y.tour)) || _tnBestEdge(y) - _tnBestEdge(x),
+    conf: (x, y) => (t[x.conf_tier] ?? 9) - (t[y.conf_tier] ?? 9) || _tnBestEdge(y) - _tnBestEdge(x),
+  }[_tnSort];
+  // Live always floats to the top whatever the sort: it is the only thing on the
+  // board with a clock running on it.
+  return by ? matches.slice().sort((x, y) =>
+    (y.live ? 1 : 0) - (x.live ? 1 : 0) || by(x, y)) : matches;
+}
+window.setTnSort = (v) => { _tnSort = v; renderTennis(); };
 
 function renderTennis() {
   const d = _tnData; if (!d) return;
@@ -3402,6 +3472,7 @@ function renderTennis() {
     (m.a.name + " " + m.b.name + " " + (m.tour || "") + " " + (m.tournament || "")
       + " " + (m.kalshi_series || "") + " " + ((m.live || {}).tournament || ""))
       .toLowerCase().includes(q));
+  matches = tnApplySort(matches);
   const liveBit = d.n_live ? ` · <b style="color:#e5484d">🔴 ${d.n_live} live</b>` : "";
   const upBit = d.n_upsets ? ` · <b style="color:#e5484d">🚨 ${d.n_upsets} favorite${d.n_upsets > 1 ? "s" : ""} trailing</b>` : "";
   const playBit = d.n_play != null && d.n_play < d.n_matches ? ` <span class="small" style="color:var(--muted)">(${d.n_play} with a model read, rest are markets not open yet)</span>` : "";
@@ -3466,7 +3537,7 @@ function renderTennis() {
     const startTag = (!m.live && m.start && fmtStartTime(m.start))
       ? `<span class="starttime" title="scheduled start (Mountain Time)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
     return `<div class="tn-match${up ? " upsetcard" : ""}${unopened ? " tn-unopened" : ""}">
-        <div class="tn-mhead">${m.tour} · ${surfTag(m)} · Bo${m.best_of} ${startTag}${liveChip}
+        <div class="tn-mhead">${m.tour} · ${surfTag(m)} · Bo${m.best_of} ${tnDayTag(m)} ${startTag}${liveChip}
           <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${kalshiWhere(m)}
         ${liveWin}
