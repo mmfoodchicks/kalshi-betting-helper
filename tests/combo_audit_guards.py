@@ -937,6 +937,37 @@ ck("both the board and the combo maker run the tape",
 
 print()
 print("=" * 72)
+print("Leg-type chips: asking for just match winners")
+print("=" * 72)
+import re as _re
+_chips = dict(_re.findall(r'\["(\w+)", "([^"]+)"\]', 
+                          _re.search(r"_TN_TYPES = \[(.*?)\];", _js, _re.S).group(1)))
+_backend = {tv: lbl for tv, lbl in _CB.CATEGORY_TYPES["tennis"]}
+ck("the tennis maker offers a chip per leg type",
+   set(_chips) == set(_backend),
+   f"chips {sorted(_chips)} vs backend {sorted(_backend)} -- a type the builder "
+   "emits with no chip cannot be turned off, and a chip with no type silently "
+   "does nothing")
+ck("and the chip VALUES match what the leg builder stamps",
+   all(_chips[k] == _backend[k] for k in _chips),
+   "the value is matched against leg['type'] exactly, so a drifted label filters "
+   "everything out")
+ck("none selected means all, rather than none",
+   "_tnTypes.size ?" in _js,
+   "an empty chip row must not be read as 'exclude everything'")
+ck("the maker actually sends the filter",
+   "+ tnTypesParam()" in _js)
+ck("and the endpoint distinguishes absent from empty",
+   'if "types" in request.args else None' in open(
+       os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.py")).read(),
+   "absent = no filtering; present-but-empty = everything catalogued is off")
+ck("a NO leg follows its parent chip",
+   'return t[:-5] if t.endswith(" (NO)") else t' in _cb2,
+   "'Match (NO)' is still a match-winner bet -- filtering to Match must keep it, "
+   "and turning Match off must drop it")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

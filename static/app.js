@@ -3294,6 +3294,20 @@ function _tnPlayer(p, served) {
 // the joint probability is an honest product of independent matches.
 let tnComboLegs = 3, tnComboTarget = 60, tnComboCap = 0, tnComboPayout = 0;
 let tnComboLive = false;
+// Leg types, mirroring combine.CATEGORY_TYPES["tennis"]. The cross-sport maker
+// has always had these chips; the dedicated tennis maker shipped without them,
+// so asking for "just match winners" was impossible and a slip came back as two
+// straight-sets legs, a total-games line and one match winner.
+const _TN_TYPES = [["Match", "Match winner"], ["Sets", "Sets / straight-sets"],
+                   ["Games", "Total games"], ["Aces", "Total aces"]];
+let _tnTypes = new Set();
+window.toggleTnType = (el, t) => {
+  if (_tnTypes.has(t)) { _tnTypes.delete(t); el.classList.remove("on"); }
+  else { _tnTypes.add(t); el.classList.add("on"); }
+};
+function tnTypesParam() {
+  return _tnTypes.size ? "&types=" + [..._tnTypes].map(encodeURIComponent).join(",") : "";
+}
 let tnComboLegsMode = "prefer", tnComboPayoutMode = "off", tnComboConn = "or";
 function renderTennisMaker() {
   const box = $("tnMaker");
@@ -3316,10 +3330,11 @@ function renderTennisMaker() {
       ${sel("tnComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], tnComboPayoutMode)}
       reach <input id="tnComboPayout" type="number" min="0" step="any" value="${tnComboPayout}" style="width:60px"/>× payout
     </div>
+    <div class="small" style="margin-top:8px">Leg types <span style="color:var(--muted)">(none selected = all)</span>: <span class="ptchips">${_TN_TYPES.map(([v, l]) => `<span class="ptchip${_tnTypes.has(v) ? " on" : ""}" onclick="toggleTnType(this,'${v}')">${l}</span>`).join("")}</span></div>
     <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
     <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere — ESPN publishes ATP/WTA only — so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
     <button class="track-mini primary-mini" style="margin-top:8px;display:block" onclick="buildTennisCombo()">Build</button>
-    <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent.</div>
+    <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent. Pick <b>Match winner</b> alone for a plain winners-only parlay.</div>
     <div id="tnComboOut"></div>
   </div>`;
   if (prev) { const el = $("tnComboOut"); if (el) el.innerHTML = prev; }
@@ -3340,6 +3355,7 @@ async function buildTennisCombo() {
   out.innerHTML = `<div class="empty">Building…</div>`;
   const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
     + (tnComboCap ? `&cap=${tnComboCap}` : "") + (tnComboLive ? "&live=1" : "")
+    + tnTypesParam()
     + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`;
   try {
     const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
