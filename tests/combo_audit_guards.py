@@ -762,6 +762,67 @@ for _f, _why in (("mlb_sim.py", "the combo candidates"),
 
 print()
 print("=" * 72)
+print("Tennis: a 264-match board where 41 can actually be a leg")
+print("=" * 72)
+import tennis_prices as _TP
+import combine as _CB
+
+ck("the board and the combo builder agree on which tours combine",
+   tuple(_TP.COMBO_TOURS) == tuple(_CB.COMBO_TOURS),
+   "the filter that hides a match and the builder that refuses it must be the "
+   "same rule, or the board promises legs the maker will not use")
+ck("ITF is not one of them",
+   not any(t.startswith("ITF") for t in _TP.COMBO_TOURS),
+   "Kalshi will not accept an ITF match in a multi-leg slip -- which is the "
+   "single biggest reason a 264-match board yields ~41 usable ones")
+
+# --- side_liquid(): a listed price is not a market ------------------------
+_good = {"cents": 62.0, "spread": 4.0, "vol": 68.0, "oi": 64.0}
+_wide = {"cents": 62.0, "spread": 55.0, "vol": 900.0, "oi": 900.0}
+_untraded = {"cents": 62.0, "spread": 2.0, "vol": 0.0, "oi": 0.0}
+ck("a tight, traded side is liquid", _TP.side_liquid(_good))
+ck("a wide book is not", not _TP.side_liquid(_wide))
+ck("an untraded one is not", not _TP.side_liquid(_untraded))
+ck("and a side with no price at all is not",
+   not _TP.side_liquid({"cents": None, "spread": 1.0, "vol": 99.0}))
+ck("nor is a missing side", not _TP.side_liquid(None))
+
+# --- combo_status() names the reason ---------------------------------------
+_atp_ok = {"tour": "ATP", "tradeable": True, "a": _good, "b": _good}
+_itf = {"tour": "ITF", "tradeable": True, "a": _good, "b": _good}
+_quiet = {"tour": "WTA", "tradeable": True, "a": _untraded, "b": _untraded}
+_wideb = {"tour": "WTA", "tradeable": False, "a": _good, "b": _good}
+ck("a quoted main-tour match is combo-ready", _TP.combo_status(_atp_ok)[0])
+ck("an ITF match is not, and says so",
+   _TP.combo_status(_itf) == (False, "ITF can't be a parlay leg on Kalshi"),
+   _TP.combo_status(_itf)[1])
+ck("a listed-but-unquoted match is not, and says so",
+   not _TP.combo_status(_quiet)[0] and "not quoted" in _TP.combo_status(_quiet)[1],
+   _TP.combo_status(_quiet)[1])
+ck("a too-wide book is not, and says so",
+   not _TP.combo_status(_wideb)[0] and "wide" in _TP.combo_status(_wideb)[1],
+   _TP.combo_status(_wideb)[1])
+ck("ONE liquid side is enough -- a parlay leg picks a winner, not both",
+   _TP.combo_status({"tour": "ATP", "tradeable": True,
+                     "a": _good, "b": _untraded})[0])
+ck("every rejection carries a reason the board can print",
+   all(_TP.combo_status(m)[1] for m in (_itf, _quiet, _wideb)))
+ck("and an accepted one carries none", _TP.combo_status(_atp_ok)[1] is None)
+
+# --- the depth actually survives the trip to the board --------------------
+_src = open(_TP.__file__).read()
+ck("the market fetch captures a book, not just an ask",
+   all(k in _src for k in ('"bid": bid', '"vol": _f(m.get("volume_fp"))',
+                           '"oi": _f(m.get("open_interest_fp"))')),
+   "the board carried only yes_ask, which every open market has -- so all 264 "
+   "matches looked equally live")
+ck("and _build_match carries it through to the match dict",
+   'for k in ("bid", "spread", "size", "vol", "oi")' in _src,
+   "building a fresh player dict is what dropped it the first time: every "
+   "single match came back 'listed but not quoted' and n_combo was ZERO")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

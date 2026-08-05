@@ -421,20 +421,26 @@
       <div class="row-between">
         <h2>🎾 Tennis — match simulator</h2>
         <div class="subtabs" id="tnSubtabs">
-          <button class="subtab active" data-tnsub="all">All</button>
+          <button class="subtab active" data-tnsub="combo" title="only the matches Kalshi will actually accept as a parlay leg — main tour, with a real book">🎲 Combo-ready</button>
+          <button class="subtab" data-tnsub="all">All</button>
           <button class="subtab" data-tnsub="atp">ATP</button>
           <button class="subtab" data-tnsub="wta">WTA</button>
           <button class="subtab" data-tnsub="itf">ITF</button>
           <button class="subtab" data-tnsub="edges">Edges</button>
           <button class="subtab" data-tnsub="live" title="matches on court right now (live scoreboard)">🔴 Live</button>
           <button class="subtab" data-tnsub="upsets" title="big-Elo favorites currently trailing — when sentiment-driven prices overshoot">🚨 Upsets</button>
+          <button class="subtab" data-tnsub="maker" title="build a tennis-only parlay">🎯 Combo maker</button>
         </div>
       </div>
-      <div class="scan-controls ctl-row" style="margin-top:6px">
+      <div class="scan-controls ctl-row" style="margin-top:6px" id="tnSearchRow">
         <input id="tnSearch" type="search" placeholder="🔍 Search player…" style="flex:1;min-width:160px" autocomplete="off"/>
       </div>
       <div id="tnSummary" class="small"></div>
       <div id="tnResults" class="markets"><div class="empty">Loading the slate…</div></div>
+      <div id="tnMakerBox" class="hidden">
+        <p class="sub" style="margin:4px 0 12px">A <b>tennis-only parlay</b>, built from the matches above that Kalshi will actually take as legs. Two tennis matches are genuinely independent — there is no same-game correlation to exploit here the way there is in baseball or football — so the combined chance is an honest product, and the whole edge has to come from the per-leg reads.</p>
+        <div id="tnMaker"></div>
+      </div>
     </section>
    </div><!-- /tab-tennis -->
 

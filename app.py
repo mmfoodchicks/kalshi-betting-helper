@@ -1671,6 +1671,57 @@ def api_tennis():
     return jsonify(board)
 
 
+@app.route("/api/tennis/parlay")
+def api_tennis_parlay():
+    """A tennis-only parlay, on the same builder the cross-sport combine uses.
+
+    Tennis has no bitmask sim to stack correlated legs the way baseball and
+    football do -- two matches are genuinely independent -- so this runs through
+    combine's assembler with the category pinned to tennis rather than through
+    mlb_sim's same-game machinery. Everything the user sees is the same: a per-leg
+    confidence band, legs/payout targets, and Kalshi pricing.
+
+    ITF never appears: Kalshi will not accept it as a parlay leg (combine's
+    COMBO_TOURS), which is why a 264-match board yields ~41 usable ones."""
+    import combine
+    date = request.args.get("date") or clock.today_et().isoformat()
+    try:
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
+        target = float(request.args.get("target", 60))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else None
+    except ValueError:
+        return jsonify({"error": "bad legs/target"}), 400
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode")
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode is not None and payout_mode not in modes:
+        payout_mode = None
+    types = ([t for t in request.args.get("types", "").split(",") if t]
+             if "types" in request.args else None)
+    try:
+        out = combine.build(["tennis"], legs, target, date, date[:4],
+                            target_payout=payout,
+                            max_legs=tiers.cap_legs(_tier(), 30),
+                            legs_mode=legs_mode, payout_mode=payout_mode,
+                            conn=conn, types=types, allow_live=_allow_live())
+    except Exception as e:
+        return jsonify({"error": f"tennis parlay failed: {e}"}), 502
+    # How many matches could have contributed, so an empty build can say whether
+    # the slate was thin or the targets were.
+    try:
+        import tennis_prices
+        b = tennis_prices.board() or {}
+        out["n_combo_matches"] = b.get("n_combo")
+        out["combo_tours"] = b.get("combo_tours")
+    except Exception:
+        pass
+    return jsonify(out)
+
+
 @app.route("/api/golf")
 def api_golf():
     """Golf tournament simulator: win / top-5/10/20 / make-the-cut and every

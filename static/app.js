@@ -3203,7 +3203,7 @@ function renderUFC() {
 }
 
 // ---- Tennis ----
-let _tnData = null, _tnLivePoll = null, _tnPoll = null, _tnSub = "all";
+let _tnData = null, _tnLivePoll = null, _tnPoll = null, _tnSub = "combo";
 function initTennis() {
   if (!$("tnResults").dataset.loaded) {
     $("tnResults").dataset.loaded = "1";
@@ -3214,6 +3214,14 @@ function initTennis() {
         document.querySelectorAll("#tnSubtabs .subtab").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         _tnSub = b.dataset.tnsub;
+        // The maker replaces the board rather than sitting under it: it is a
+        // different job, and 264 cards above it is exactly the scrolling this
+        // change exists to end.
+        const mk = _tnSub === "maker";
+        $("tnMakerBox").classList.toggle("hidden", !mk);
+        $("tnResults").classList.toggle("hidden", mk);
+        $("tnSearchRow").classList.toggle("hidden", mk);
+        if (mk) { renderTennisMaker(); return; }
         renderTennis();
         clearInterval(_tnLivePoll); _tnLivePoll = null;
         if (_tnSub === "live" || _tnSub === "upsets") _tnLivePoll = setInterval(loadTennis, 60000);
@@ -3279,10 +3287,76 @@ function _tnPlayer(p, served) {
         <span class="fr-num">${px}</span><span class="fr-num">${_tnEdge(p.edge)}</span></div>
     </div>`;
 }
+// ---- Tennis combo maker ----------------------------------------------------
+// Same controls and the same slip renderer as the NFL and baseball makers. What
+// differs is underneath: tennis has no bitmask sim to stack correlated legs, so
+// this runs through combine's assembler with the category pinned to tennis, and
+// the joint probability is an honest product of independent matches.
+let tnComboLegs = 3, tnComboTarget = 60, tnComboPayout = 0;
+let tnComboLegsMode = "prefer", tnComboPayoutMode = "off", tnComboConn = "or";
+function renderTennisMaker() {
+  const box = $("tnMaker");
+  if (!box) return;
+  const prev = (() => { const el = $("tnComboOut"); return el ? el.innerHTML : ""; })();
+  const n = (_tnData && _tnData.n_combo != null) ? _tnData.n_combo : null;
+  const tours = ((_tnData && _tnData.combo_tours) || ["ATP", "WTA"]).join(" / ");
+  const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
+    + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
+  box.innerHTML = `<div class="combomaker">
+    🎯 <b>Tennis combo maker</b>
+    ${n != null ? `<div class="small" style="margin:4px 0 2px">Drawing from the <b>${n}</b> match${n === 1 ? "" : "es"} Kalshi will take as a leg (${tours} with a real book). ITF is excluded because Kalshi refuses it in a slip, not because the model dislikes it.</div>` : ""}
+    <div style="margin-top:8px">each leg ≥
+      <input id="tnComboTarget" type="number" min="20" max="97" value="${tnComboTarget}" style="width:54px"/>% likely</div>
+    <div class="small" style="margin-top:6px">
+      ${sel("tnComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], tnComboLegsMode)}
+      <input id="tnComboN" type="number" min="2" max="12" value="${tnComboLegs}" style="width:50px"/> legs
+      &nbsp;${sel("tnComboConn", [["or", "OR"], ["and", "AND"]], tnComboConn)}&nbsp;
+      ${sel("tnComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], tnComboPayoutMode)}
+      reach <input id="tnComboPayout" type="number" min="0" step="any" value="${tnComboPayout}" style="width:60px"/>× payout
+    </div>
+    <button class="track-mini primary-mini" style="margin-top:8px;display:block" onclick="buildTennisCombo()">Build</button>
+    <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent.</div>
+    <div id="tnComboOut"></div>
+  </div>`;
+  if (prev) { const el = $("tnComboOut"); if (el) el.innerHTML = prev; }
+}
+async function buildTennisCombo() {
+  const out = $("tnComboOut");
+  if (!out) return;
+  const num = (id, d) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? d : v; };
+  tnComboLegs = Math.max(2, Math.min(12, num("tnComboN", 3)));
+  tnComboTarget = Math.max(20, Math.min(97, num("tnComboTarget", 60)));
+  tnComboPayout = num("tnComboPayout", 0);
+  tnComboLegsMode = ($("tnComboLegsMode") || {}).value || "prefer";
+  tnComboPayoutMode = ($("tnComboPayoutMode") || {}).value || "off";
+  tnComboConn = ($("tnComboConn") || {}).value || "or";
+  out.innerHTML = `<div class="empty">Building…</div>`;
+  const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
+    + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`;
+  try {
+    const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
+    if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+    if (!d.combo) {
+      const n = d.n_combo_matches;
+      out.innerHTML = `<div class="empty">No slip fits those targets.${n === 0
+        ? " Nothing on the board can be a parlay leg right now — Kalshi only takes ATP/WTA in a slip."
+        : (n != null ? ` Only <b>${n}</b> match${n === 1 ? " is" : "es are"} eligible today, so try fewer legs or a lower per-leg %.` : "")}</div>`;
+      return;
+    }
+    out.innerHTML = renderCombo(d.combo, "🎾 Tennis parlay", "hl prop");
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Build failed.</div>`;
+  }
+}
+
 function renderTennis() {
   const d = _tnData; if (!d) return;
   let matches = (d.matches || []).slice();
-  if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
+  // The default view. A 264-match board where ~40 can go in a slip is not a
+  // board, it's a haystack — Kalshi refuses ITF as a parlay leg, and plenty of
+  // what's left is listed without being quoted.
+  if (_tnSub === "combo") matches = matches.filter((m) => m.combo_ok);
+  else if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
   else if (_tnSub === "wta") matches = matches.filter((m) => m.tour === "WTA");
   else if (_tnSub === "itf") matches = matches.filter((m) => (m.tour || "").startsWith("ITF"));
   else if (_tnSub === "edges") matches = matches.filter((m) =>
@@ -3302,11 +3376,16 @@ function renderTennis() {
   const liveBit = d.n_live ? ` · <b style="color:#e5484d">🔴 ${d.n_live} live</b>` : "";
   const upBit = d.n_upsets ? ` · <b style="color:#e5484d">🚨 ${d.n_upsets} favorite${d.n_upsets > 1 ? "s" : ""} trailing</b>` : "";
   const playBit = d.n_play != null && d.n_play < d.n_matches ? ` <span class="small" style="color:var(--muted)">(${d.n_play} with a model read, rest are markets not open yet)</span>` : "";
-  $("tnSummary").innerHTML = `<b>${d.n_matches} matches</b>${liveBit}${upBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
+  const comboBit = d.n_combo != null
+    ? ` · <b style="color:#3ad17a">🎲 ${d.n_combo} combo-ready</b>` : "";
+  $("tnSummary").innerHTML = _tnSub === "combo"
+    ? `<b>${matches.length} of ${d.n_matches}</b> matches can actually be a <b>parlay leg</b>${liveBit}${upBit}. Kalshi does not accept <b>ITF</b> in a multi-leg slip — only ${(d.combo_tours || ["ATP", "WTA"]).join(" / ")} — and a match also needs a <b>real book</b>, not just a listed price. Everything else is still there under <b>All</b>, where it is perfectly fine as a single bet. Edge = fair win% − Kalshi ask.`
+    : `<b>${d.n_matches} matches</b>${comboBit}${liveBit}${upBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
   appendCalNote("tnSummary", "tennis", "tennis");
   if (!matches.length) {
     const msg = _tnSub === "live" ? "No tracked matches on court right now."
       : _tnSub === "upsets" ? "No big favorites trailing right now — check back during play."
+      : _tnSub === "combo" ? "No match on the board can be a parlay leg right now — Kalshi only takes ATP/WTA in a slip, and none are quoted. Check <b>All</b> for singles."
       : q ? `No matches for “${q}”.` : "No matches in this view.";
     $("tnResults").innerHTML = `<div class="empty">${msg}</div>`; return;
   }

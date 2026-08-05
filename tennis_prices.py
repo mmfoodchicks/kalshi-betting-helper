@@ -180,6 +180,50 @@ def _tourney_from_title(title):
     return t or None
 
 
+def _f(v, default=0.0):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+# What it takes for a side to be worth calling a market: a book you could lift,
+# and some evidence somebody has. Same standard the NFL and MLB boards use.
+_MAX_SPREAD = 20.0
+_MIN_TRADED = 1.0
+
+
+def side_liquid(p):
+    """Is this player's winner market actually quoted, or merely listed?"""
+    if not p or p.get("cents") is None:
+        return False
+    sp = p.get("spread")
+    if sp is None or sp > _MAX_SPREAD:
+        return False
+    return ((p.get("vol") or 0) + (p.get("oi") or 0)) >= _MIN_TRADED
+
+
+# Kalshi will not accept an ITF match as a parlay leg -- only the main tours
+# combine (see combine.COMBO_TOURS). That is the single biggest reason a 260-match
+# board yields a handful of usable legs, and until now the board gave no sign of
+# it: every match rendered the same whether or not it could ever go in a slip.
+COMBO_TOURS = ("ATP", "WTA")
+
+
+def combo_status(m):
+    """(ok, reason) -- can this match be a leg in a Kalshi parlay?
+
+    Three things have to hold, and the board should say which one failed rather
+    than leaving the reader to scroll 264 cards hunting for the few that work."""
+    if m.get("tour") not in COMBO_TOURS:
+        return False, f"{m.get('tour') or 'this tour'} can't be a parlay leg on Kalshi"
+    if not (side_liquid(m.get("a")) or side_liquid(m.get("b"))):
+        return False, "listed but not quoted — no side has a book to lift"
+    if not m.get("tradeable"):
+        return False, "book is too wide to price against"
+    return True, None
+
+
 def _match_markets(series):
     """Open winner markets grouped by event ->
     {event: {'players': [...], 'tournament': str|None}}."""
@@ -199,9 +243,19 @@ def _match_markets(series):
             if not nm:
                 continue
             rec = out.setdefault(ev, {"players": [], "tournament": None})
+            ask = kalshi._cents(m.get("yes_ask_dollars"))
+            bid = kalshi._cents(m.get("yes_bid_dollars"))
             rec["players"].append({
-                "name": nm, "ticker": tk,
-                "cents": kalshi._cents(m.get("yes_ask_dollars"))})
+                "name": nm, "ticker": tk, "cents": ask,
+                # Depth, so a LISTED market can be told from a QUOTED one. The
+                # board carried only the ask, which every open market has, so all
+                # 264 matches looked equally live when barely half had a book
+                # anyone had traded.
+                "bid": bid,
+                "spread": (ask - bid) if (ask is not None and bid is not None) else None,
+                "size": _f(m.get("yes_ask_size_fp")),
+                "vol": _f(m.get("volume_fp")),
+                "oi": _f(m.get("open_interest_fp"))})
             if not rec["tournament"]:
                 rec["tournament"] = _tourney_from_title(m.get("title"))
         cursor = d.get("cursor") or ""
@@ -393,8 +447,16 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     rb = td.match_rates(players[1]["name"], surf_key, tcode, fuzzy=fuzzy)
     lg = td.league(tcode)
 
-    a = {"name": players[0]["name"], "cents": players[0]["cents"], "ticker": players[0]["ticker"]}
-    b = {"name": players[1]["name"], "cents": players[1]["cents"], "ticker": players[1]["ticker"]}
+    # Carry the book through, not just the ask: side_liquid() reads spread and
+    # volume off these, and building a fresh dict here is what silently dropped
+    # them the first time -- every match came back "listed but not quoted".
+    def _side(p):
+        d = {"name": p["name"], "cents": p["cents"], "ticker": p["ticker"]}
+        for k in ("bid", "spread", "size", "vol", "oi"):
+            if p.get(k) is not None:
+                d[k] = p[k]
+        return d
+    a, b = _side(players[0]), _side(players[1])
     # recent-load fatigue per player (differential drives the sim)
     fidx = fatigue_idx or {}
     fa = fidx.get(_norm(a["name"]))
@@ -690,6 +752,9 @@ def _compute(n_sims=12000):
     for m in matches:
         m["tier"] = ("play" if (m.get("modeled") or m.get("tradeable"))
                      else "unopened")
+        ok, why = combo_status(m)
+        m["combo_ok"] = ok
+        m["combo_why"] = why
     # Sort: real reads first (by play strength), unopened at the bottom
     # (alphabetical by tournament so they're findable).
     matches.sort(key=lambda m: (
@@ -699,6 +764,8 @@ def _compute(n_sims=12000):
     return {"sport": "tennis", "generated": clock.now_et().isoformat(timespec="seconds"),
             "n_matches": len(matches),
             "n_play": sum(1 for m in matches if m["tier"] == "play"),
+            "n_combo": sum(1 for m in matches if m.get("combo_ok")),
+            "combo_tours": list(COMBO_TOURS),
             "matches": matches}
 
 
