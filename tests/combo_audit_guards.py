@@ -1512,6 +1512,30 @@ ck("and the UI says so rather than showing a clean-looking lineup",
    "status_warning" in _js
    and "could NOT be excluded" in _insp.getsource(_ND))
 
+# The team-abbreviation fallback. It exists so DK's "CAR" matches the pool's
+# defense entry -- but it was applied to EVERY player, so anyone whose name was
+# missing inherited his team's DEFENSE: projection, ceiling, floor and the
+# sample ARRAY. On one preseason board that was 26 players, and because they
+# shared the same array object they boomed in perfect lockstep, manufacturing a
+# lineup ceiling out of one defense counted four times.
+_fakepool = {
+    "Real Guy": {"pos": "WR", "proj": 9.0, "ceiling": 18.0, "floor": 2.0, "arr": [9.0]},
+    "Panthers": {"pos": "DST", "proj": 6.0, "ceiling": 12.0, "floor": 0.0, "arr": [6.0]},
+    "CAR": {"pos": "DST", "proj": 6.0, "ceiling": 12.0, "floor": 0.0, "arr": [6.0]},
+}
+ck("an exact name still matches", _ND._pool_match(_fakepool, "Real Guy", "WR", "CAR"))
+ck("a DST matches by team abbreviation, which is why the fallback exists",
+   (_ND._pool_match(_fakepool, "Cardinals", "DST", "CAR") or {}).get("pos") == "DST")
+ck("but a missing SKILL player does NOT inherit his team's defense",
+   _ND._pool_match(_fakepool, "Fifth String TE", "TE", "CAR") is None,
+   "a fifth-string tight end was being projected AS the Carolina defense")
+ck("nor a missing kicker, nor a quarterback",
+   _ND._pool_match(_fakepool, "Some K", "K", "CAR") is None
+   and _ND._pool_match(_fakepool, "Some QB", "QB", "CAR") is None)
+ck("and a team key that is not a defense is refused even for a DST row",
+   _ND._pool_match({"CAR": {"pos": "WR", "arr": [1]}}, "X", "DST", "CAR") is None,
+   "matching on the team key alone would take whatever happened to be there")
+
 ck("a CPT-bearing export is detected as showdown",
    _ND.detect_mode(_rows) == "showdown")
 ck("an ordinary export is detected as classic",

@@ -83,6 +83,35 @@ def _playable(c):
     return (c.get("status") or "").upper() not in _OUT_STATUS
 
 
+def _pool_match(pool, name, pos, team):
+    """This player's simulated projection, or None.
+
+    The team-abbreviation lookup exists for ONE reason: DK writes a defense as
+    "Panthers" or "CAR" and the pool registers it under both. It was applied to
+    every player, so anyone whose NAME was not in the pool silently inherited his
+    team's DEFENSE -- projection, ceiling, floor and sample array alike.
+
+    On a single preseason board that was 26 players. Feleipe Franks, a fifth-
+    string tight end, was not being projected as a tight end at all; his
+    projection WAS the Carolina defense. And because they all took the same array
+    OBJECT, a lineup holding four of them looked like it had enormous upside --
+    they boomed in perfect lockstep, since they were the same numbers. That is
+    the tail the ceiling objective was buying.
+
+    Nothing warned, either: `unmatched` stayed empty because a match had been
+    found. A player the model deliberately left out of the pool (beyond the
+    measured exhibition depth at his position) must come back as unmatched and be
+    priced as the fringe player he is."""
+    hit = pool.get(name)
+    if hit is not None:
+        return hit
+    if (pos or "").upper() == "DST" and team:
+        hit = pool.get(team)
+        if hit is not None and hit.get("pos") == "DST":
+            return hit
+    return None
+
+
 def _status_seen(csv_players):
     """Did this paste actually carry DK's Status column?
 
@@ -478,7 +507,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     unmatched = []
     for e in ents:
         sp = _special_arr(e["pos"], preseason)
-        sim = pool.get(e["name"]) or pool.get(e.get("team", ""))
+        sim = _pool_match(pool, e["name"], e["pos"], e.get("team"))
         if sp:                                  # kicker / defense in August
             e["arr"] = sp
             e["proj"] = sum(sp) / len(sp)
@@ -575,11 +604,11 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     players, unmatched = [], []
     for c in csv_players:
         nm = c["name"]
-        sim = pool.get(nm) or pool.get(c.get("team", ""))
         pos = (c.get("pos") or "").upper().split("/")[0]
         elig = _elig(pos)
         if not elig:
             continue
+        sim = _pool_match(pool, nm, pos, c.get("team"))
         _sp = _special_arr(pos, preseason)
         if _sp:                                     # kicker / defense in August
             samp = _sp
