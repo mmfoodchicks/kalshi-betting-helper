@@ -83,6 +83,16 @@ def _playable(c):
     return (c.get("status") or "").upper() not in _OUT_STATUS
 
 
+def _status_seen(csv_players):
+    """Did this paste actually carry DK's Status column?
+
+    A filter that cannot see its input is not a filter, and it fails SILENTLY --
+    every OUT and IR player just quietly becomes eligible. On a preseason slate
+    that is close to guaranteed damage, because August rosters are full of them.
+    So the answer travels to the UI rather than being assumed."""
+    return any((c.get("status") or "").strip() for c in csv_players)
+
+
 def showdown_pool(csv_players):
     """[{name, pos, team, salary, cpt_salary, proj}] -- one entry per PLAYER.
 
@@ -516,7 +526,13 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     # the reader to notice the salary column never changes.
     _sals = {e["salary"] for e in ents}
     flat = len(_sals) == 1
+    _sk = _status_seen(csv_players)
     return {"mode": "showdown", "roster": SHOWDOWN_ROSTER,
+            "status_known": _sk,
+            "status_warning": None if _sk else
+            ("DK's Status column isn't in this paste, so OUT and IR players "
+             "could NOT be excluded — check every name is active before you "
+             "enter. Copy the whole CSV including its header row."),
             "flat_priced": flat,
             "flat_note": ("Every player on this slate is priced the same "
                           f"(${sorted(_sals)[0]:,} FLEX). Points per dollar is a "
@@ -612,7 +628,13 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
         rows.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
                      "salary": p["salary"], "proj": p["proj"], "ceiling": p["ceiling"],
                      "floor": p["floor"], "own": p.get("own")})
+    _sk = _status_seen(csv_players)
     return {"mode": "classic", "roster": ROSTER,
+            "status_known": _sk,
+            "status_warning": None if _sk else
+            ("DK's Status column isn't in this paste, so OUT and IR players "
+             "could NOT be excluded — check every name is active before you "
+             "enter. Copy the whole CSV including its header row."),
             "week": week, "objective": objective, "stack": bool(stack_min),
             "salary": sum(p["salary"] for p in lineup), "cap": CAP,
             "proj": round(sum(p["proj"] for p in lineup), 1),

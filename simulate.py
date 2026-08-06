@@ -161,10 +161,19 @@ def parse_dk_csv(text):
         game = parts[6].strip() if len(parts) > 6 else ""
         # Roster Position (col 4) carries CPT / D / CNSTR for captain-mode slates.
         rpos = parts[4].strip().upper() if len(parts) > 4 else ""
+        # Status (col 9). This path used not to read it AT ALL -- not as empty,
+        # but as an absent key -- so a caller asking "is this player OUT?" got
+        # None and read it as "fine". Paste a DK export without its header row
+        # and every IR and OUT player silently became rosterable: a lineup came
+        # back recommending a receiver who was on injured reserve. The key is now
+        # always present, so "no status column" is distinguishable from "status
+        # column says the player is active".
+        status = parts[9].strip().upper() if len(parts) > 9 else ""
         if name and salary and salary > 0:
             out.append({"name": name, "salary": salary, "proj": proj or 0.0,
                         "pos": pos, "roster_pos": rpos, "game": game,
-                        "team": parts[7].strip() if len(parts) > 7 else ""})
+                        "team": parts[7].strip() if len(parts) > 7 else "",
+                        "status": status})
     return out
 
 

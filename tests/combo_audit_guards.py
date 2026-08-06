@@ -1488,6 +1488,30 @@ ck("and does not silently fall back to Roster Position",
    "QB/RB/WR/TE values, so nobody noticed until showdown made it CPT")
 ck("the Status column is carried", "status" in _rows[0])
 
+# The header-less path. A DK export pasted without its first line falls to
+# positional parsing, which did not read Status AT ALL -- not as empty, as an
+# absent key -- so _playable saw None and read it as "active". Every OUT and IR
+# player silently became rosterable, and a lineup came back recommending a
+# receiver who was on injured reserve.
+_HDRLESS = ("WR,Hurt Guy (1),Hurt Guy,1,CPT,11400,X@Y 01/01/2026 08:00PM ET,CAR,0,IR\n"
+            "WR,Hurt Guy (2),Hurt Guy,2,FLEX,7600,X@Y 01/01/2026 08:00PM ET,CAR,0,IR\n"
+            "WR,Fit Guy (3),Fit Guy,3,FLEX,7600,X@Y 01/01/2026 08:00PM ET,ARI,9,\n")
+_hl = _SIM.parse_dk_csv(_HDRLESS)
+ck("a header-less export still reads Status",
+   _hl and all("status" in r for r in _hl) and _hl[0]["status"] == "IR",
+   [r.get("status") for r in _hl])
+ck("and the IR player does not survive into the pool",
+   "Hurt Guy" not in [e["name"] for e in _ND.showdown_pool(_hl)],
+   [e["name"] for e in _ND.showdown_pool(_hl)])
+ck("a missing status is reported, not assumed healthy",
+   _ND._status_seen(_hl) and not _ND._status_seen(
+       [{"status": ""}, {"name": "x"}]),
+   "a filter that cannot see its input fails silently, which on an August "
+   "roster full of IR bodies is close to guaranteed damage")
+ck("and the UI says so rather than showing a clean-looking lineup",
+   "status_warning" in _js
+   and "could NOT be excluded" in _insp.getsource(_ND))
+
 ck("a CPT-bearing export is detected as showdown",
    _ND.detect_mode(_rows) == "showdown")
 ck("an ordinary export is detected as classic",

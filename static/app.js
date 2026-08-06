@@ -4656,9 +4656,16 @@ function renderNflDfs(d) {
   }).join("");
   const un = (d.unmatched && d.unmatched.length)
     ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection — used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
+  // A silently-disabled availability filter is worse than none: it puts an IR
+  // player in a lineup with nothing on screen to say it could not check.
+  const stWarn = d.status_warning
+    ? `<div class="small" style="margin-top:6px;color:#e0566a">⚠️ ${escapeHtml(d.status_warning)}</div>` : "";
+  const flatNote = d.flat_note
+    ? `<div class="small" style="margin-top:6px;color:var(--muted)">${escapeHtml(d.flat_note)}</div>` : "";
   return `<div class="combo hl prop">
-    <div class="chead"><span class="ctag">🏈 NFL lineup — ${objName}</span>
-      <span class="small">Week ${d.week} · ${d.stack ? "QB stack" : "no stack"}</span></div>
+    <div class="chead"><span class="ctag">🏈 NFL ${d.mode === "showdown" ? "showdown" : "lineup"} — ${objName}</span>
+      <span class="small">Week ${d.week}${d.mode === "showdown" ? " · CPT + 5 FLEX" : ` · ${d.stack ? "QB stack" : "no stack"}`}</span></div>
+    ${stWarn}
     <div class="cnums" style="margin:4px 0">
       <span>salary <b>$${nf(d.salary)}</b>/$${nf(d.cap)}</span>
       <span>proj <b>${d.proj}</b></span>
@@ -4668,6 +4675,7 @@ function renderNflDfs(d) {
     ${csHead}
     <div class="nfl-dfslist">${rows}</div>
     ${un}
+    ${flatNote}
     <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}</div>
   </div>`;
 }
