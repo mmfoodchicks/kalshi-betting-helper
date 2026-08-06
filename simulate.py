@@ -84,6 +84,15 @@ def parse_dk_csv(text):
     text = (text or "").strip()
     if not text:
         return []
+    # DK exports with a UTF-8 BOM, which lands INSIDE the first header name:
+    # DictReader then keys the first column as "﻿Position" and every
+    # r.get("Position") returns None. Classic slates survived it by accident --
+    # the code falls back to "Roster Position", which in classic carries the same
+    # QB/RB/WR/TE/DST values -- but a showdown export's Roster Position is
+    # CPT/FLEX, so every player came back with position "CPT" and the pool
+    # emptied. Strip it once here rather than in each reader.
+    if text[:1] == "﻿":
+        text = text[1:]
     lines = [ln for ln in text.splitlines() if ln.strip()]
     first = lines[0].lower()
     out = []
@@ -107,7 +116,11 @@ def parse_dk_csv(text):
                             "pos": (r.get("Position") or r.get("Roster Position") or "").strip(),
                             "roster_pos": (r.get("Roster Position") or "").strip().upper(),
                             "game": (r.get("Game Info") or r.get("GameInfo") or "").strip(),
-                            "team": (r.get("TeamAbbrev") or r.get("Team") or "").strip()})
+                            "team": (r.get("TeamAbbrev") or r.get("Team") or "").strip(),
+                            # DK's own availability flag. Carried so a builder can
+                            # refuse to roster a player who is already ruled out --
+                            # tonight's showdown export lists one OUT and two IR.
+                            "status": (r.get("Status") or "").strip().upper()})
         if out:
             return out
 

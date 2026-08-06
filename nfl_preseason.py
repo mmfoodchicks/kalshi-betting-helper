@@ -108,12 +108,35 @@ _BASE = {"QB": 10.3, "RB": 6.2, "WR": 2.5, "TE": 1.7}
 
 # Multiplier on that baseline by the player's regular-season workload. Measured;
 # the ordering is the whole point, and it runs the opposite way to the regular
-# season. WR/TE are held flat because the measurement says they are.
+# season.
+#
+# WR and TE used to be a single flat (0.0, 1.0) entry, carrying the note "held
+# flat because the measurement says they are". The measurement says no such
+# thing. Re-run over 805 players who appear in both the 2025 exhibition feed and
+# the 2024 regular-season feed (Sleeper, season_type=pre joined to regular on
+# player_id), preseason touches per game by prior regular-season workload:
+#
+#     WR   >=6/g  n= 24   1.78        TE   >=6/g  n=  8   0.69
+#          4-6    n= 23   1.41             4-6    n=  8   0.60
+#          2-4    n= 35   2.43             2-4    n= 13   1.29
+#          0.1-2  n= 66   2.59             0.1-2  n= 56   1.19
+#          none   n=190   2.32             none   n= 93   1.12
+#
+# That is the same inversion QB and RB already carry, and proportionally a
+# sharper one: an established WR takes ~30% fewer exhibition targets than a camp
+# body, an established TE ~42% fewer. Holding them flat gave every receiver on a
+# team an identical projection -- on the Panthers-Cardinals showdown slate all 26
+# WRs came out at 3.38 or 3.00, so Marvin Harrison Jr. and a camp body were the
+# same bet and the optimizer had nothing to choose between them.
+#
+# Tiers are merged where the split was noise (4-6 against >=6 is n=23 vs n=24 and
+# runs the wrong way), leaving three tiers with n=47/101/190 for WR. Ratios are
+# against the no-role tier, matching how the QB and RB rows are written.
 _ROLE = {
     "QB": ((20.0, 8.8 / 10.3), (1.0, 11.9 / 10.3), (0.0, 1.0)),
     "RB": ((10.0, 3.2 / 6.2), (4.0, 4.4 / 6.2), (0.1, 5.4 / 6.2), (0.0, 1.0)),
-    "WR": ((0.0, 1.0),),
-    "TE": ((0.0, 1.0),),
+    "WR": ((4.0, 1.60 / 2.32), (0.1, 2.53 / 2.32), (0.0, 1.0)),
+    "TE": ((4.0, 0.65 / 1.12), (0.1, 1.21 / 1.12), (0.0, 1.0)),
 }
 
 # A preseason game is not a game. Starters who do play take a series or two, and

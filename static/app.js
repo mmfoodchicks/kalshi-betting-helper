@@ -4398,6 +4398,9 @@ async function initSim() {
       const cb = $("dfsNflPre");
       if (cb && !cb.dataset.wired) { cb.dataset.wired = "1"; cb.checked = nflPreseason; }
     }
+    // Showdown vs Classic. Left on auto by default because the CSV already says
+    // which it is — a showdown export lists every player twice, once as CPT.
+    if ($("dfsNflMode")) $("dfsNflMode").classList.toggle("hidden", !isNfl);
     const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
     if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb || isLol);
     if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb || isLol);
@@ -4692,6 +4695,7 @@ async function runDfsSim() {
         first_prize: parseFloat(($("dfsFirst") || {}).value) || 0,
         preseason: !!(($("dfsNflPre") || {}).checked),
         grid: (($("dfsGrid") || {}).value || "").trim() || null,
+        nfl_mode: ($("dfsNflMode") || {}).value || "auto",
         week: parseInt(($("dfsNflWeek") || {}).value, 10) || 1 }),
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }

@@ -1456,6 +1456,112 @@ ck("the button label follows the server's cap, not a hardcoded 320",
 
 print()
 print("=" * 72)
+print("NFL DFS — a showdown slate is not a classic one")
+print("=" * 72)
+import simulate as _SIM
+import nfl_dfs as _ND
+import nfl_preseason as _NP
+
+# The BOM. DK exports one, it lands inside the first header name, and every
+# r.get("Position") then returns None.
+_BOM_CSV = ("﻿Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,"
+            "TeamAbbrev,AvgPointsPerGame,Status\n"
+            "QB,A B (1),A B,1,CPT,11400,X@Y 01/01/2026 08:00PM ET,ARI,18,\n"
+            "QB,A B (2),A B,2,FLEX,7600,X@Y 01/01/2026 08:00PM ET,ARI,18,\n")
+_rows = _SIM.parse_dk_csv(_BOM_CSV)
+ck("a BOM'd DK export still yields the Position column",
+   _rows and _rows[0]["pos"] == "QB", _rows[0]["pos"] if _rows else "no rows")
+ck("and does not silently fall back to Roster Position",
+   _rows[0]["pos"] != _rows[0]["roster_pos"],
+   "classic survived this by accident -- there Roster Position holds the same "
+   "QB/RB/WR/TE values, so nobody noticed until showdown made it CPT")
+ck("the Status column is carried", "status" in _rows[0])
+
+ck("a CPT-bearing export is detected as showdown",
+   _ND.detect_mode(_rows) == "showdown")
+ck("an ordinary export is detected as classic",
+   _ND.detect_mode([{"roster_pos": "QB", "game": "A@B"},
+                    {"roster_pos": "RB", "game": "C@D"}]) == "classic")
+ck("a one-game FLEX-only export is treated as showdown",
+   _ND.detect_mode([{"roster_pos": "FLEX", "game": "A@B 1"},
+                    {"roster_pos": "FLEX", "game": "A@B 1"}]) == "showdown")
+
+ck("showdown rosters 6, not 9",
+   len(_ND.SHOWDOWN_ROSTER) == 6 and _ND.SHOWDOWN_ROSTER[0] == "CPT")
+ck("the captain is worth 1.5x", _ND.CPT_MULT == 1.5)
+ck("showdown admits kickers, classic does not",
+   "K" in _ND.SHOWDOWN_POS and not _ND._elig("K"))
+ck("a roster must span both teams", _ND.SHOWDOWN_MIN_TEAMS == 2)
+ck("OUT and IR are unrosterable, questionable is not",
+   not _ND._playable({"status": "OUT"}) and not _ND._playable({"status": "IR"})
+   and _ND._playable({"status": "Q"}) and _ND._playable({}))
+ck("ownership scales to the roster it is for",
+   (lambda ps: (_ND._set_ownership(ps, n_slots=6),
+                sum(p["own"] for p in ps))[1])(
+       [{"proj": 5.0, "salary": 7600} for _ in range(6)])
+   < (lambda ps: (_ND._set_ownership(ps, n_slots=9),
+                  sum(p["own"] for p in ps))[1])(
+       [{"proj": 5.0, "salary": 7600} for _ in range(6)]),
+   "9 slots' worth of ownership on a 6-slot slate inflates every number by half")
+
+# The pool dedupe: DK lists every player twice and the same man must not be
+# rostered as both his CPT self and his FLEX self.
+_sd_rows = [
+    {"name": "A B", "salary": 11400, "pos": "QB", "roster_pos": "CPT",
+     "team": "ARI", "proj": 18, "status": "", "game": "X@Y"},
+    {"name": "A B", "salary": 7600, "pos": "QB", "roster_pos": "FLEX",
+     "team": "ARI", "proj": 18, "status": "", "game": "X@Y"},
+    {"name": "Gone", "salary": 7600, "pos": "WR", "roster_pos": "FLEX",
+     "team": "CAR", "proj": 4, "status": "OUT", "game": "X@Y"},
+]
+_sd = _ND.showdown_pool(_sd_rows)
+ck("the pool holds one entry per player, not one per row",
+   len(_sd) == 1, [e["name"] for e in _sd])
+ck("and carries both salaries",
+   _sd[0]["salary"] == 7600 and _sd[0]["cpt_salary"] == 11400)
+ck("an OUT player never reaches the pool",
+   "Gone" not in [e["name"] for e in _sd])
+ck("a missing CPT row falls back to the 1.5x rule",
+   _ND.showdown_pool([{"name": "C D", "salary": 8000, "pos": "WR",
+                       "roster_pos": "FLEX", "team": "CAR", "proj": 4,
+                       "status": "", "game": "X@Y"}])[0]["cpt_salary"] == 12000)
+
+# The optimizer, on the shape that failed: flat salaries where classic cannot fit.
+_flat = [{"name": f"P{i}", "pos": "WR", "team": ("ARI" if i % 2 else "CAR"),
+          "salary": 7600, "cpt_salary": 11400, "proj": 10.0 - i * 0.1,
+          "ceiling": 20.0 - i * 0.1, "own": 8.0} for i in range(20)]
+_got = _ND.optimize_showdown(_flat, _ND.CAP, "projection", restarts=20)
+ck("a flat-priced showdown board builds a lineup", _got is not None)
+if _got:
+    _cp, _pk, _sal = _got
+    ck("1 captain + 5 flex", len(_pk) == 5)
+    ck("under the cap", _sal <= _ND.CAP, f"${_sal}")
+    ck("priced as 1 CPT + 5 FLEX", _sal == 11400 + 5 * 7600, f"${_sal}")
+    ck("no player used twice",
+       len({_cp["name"]} | {p["name"] for p in _pk}) == 6)
+    ck("spans both teams",
+       len({_cp["team"]} | {p["team"] for p in _pk}) >= 2)
+    ck("nine of these would NOT have fit, which is the original bug",
+       9 * 7600 > _ND.CAP, f"9 x $7,600 = ${9 * 7600} against a ${_ND.CAP} cap")
+
+# The preseason usage model: WR/TE were flat, and flat means the optimizer
+# cannot tell a WR1 from a camp body.
+ck("an established WR is dampened relative to a camp body",
+   _NP.role_factor("WR", 7.0) < _NP.role_factor("WR", 0.0),
+   f'{_NP.role_factor("WR", 7.0):.2f} vs {_NP.role_factor("WR", 0.0):.2f}')
+ck("an established TE likewise",
+   _NP.role_factor("TE", 7.0) < _NP.role_factor("TE", 0.0),
+   f'{_NP.role_factor("TE", 7.0):.2f} vs {_NP.role_factor("TE", 0.0):.2f}')
+ck("a fringe WR outworks both", _NP.role_factor("WR", 2.0) > 1.0)
+ck("WR/TE are no longer a single flat entry",
+   len(_NP._ROLE["WR"]) > 1 and len(_NP._ROLE["TE"]) > 1,
+   "((0.0, 1.0),) gave every receiver on a team the same projection")
+ck("the inversion holds for every position, not just QB/RB",
+   all(_NP.role_factor(p, 25.0) < _NP.role_factor(p, 0.0)
+       for p in ("QB", "RB", "WR", "TE")))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

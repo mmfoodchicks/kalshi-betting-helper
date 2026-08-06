@@ -738,7 +738,15 @@ def api_simulate_dfs():
                 entry_fee=max(0.01, _ni("entry_fee", 1.0)),
                 prize_pool=(_ni("prize_pool", 0.0) or None),
                 first_prize=(_ni("first_prize", 0.0) or None),
-                preseason=_nfl_pre_flag(d)))
+                preseason=_nfl_pre_flag(d),
+                # auto reads it off the CSV (a showdown export carries CPT rows);
+                # the explicit values are the override for when DK posts a
+                # one-game CLASSIC slate, which auto cannot tell apart by size.
+                # `nfl_mode`, not `mode` -- the DFS payload already carries a
+                # `mode` for the racing/UFC builders and reusing it would let a
+                # NASCAR setting decide an NFL roster.
+                mode=(d.get("nfl_mode") if d.get("nfl_mode") in ("showdown", "classic")
+                      else "auto")))
         except Exception as e:
             return jsonify({"error": f"nfl dfs failed: {e}"}), 502
     if d.get("sport") == "mlb":
