@@ -829,7 +829,7 @@ def _assemble_max_bet(by_event, target, cap, max_legs, cap_x=None):
     that lets one such quote run away with the whole slip, which is why the max
     bet insists on liquidity where the other tennis builders do not.
 
-    The band's floor is dropped: reaching a 320x payout takes either many legs or
+    The band's floor is dropped: reaching the payout cap takes either many legs or
     unlikely ones, and a 55% floor across twelve matches cannot get there. The
     per-leg probability still travels with each leg, so the slip shows what it is.
     """

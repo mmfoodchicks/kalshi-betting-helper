@@ -17,7 +17,7 @@ function uiBusy() {
 // every max-bet response carries cap_x and this is updated from it — the default
 // here just has to be right often enough to render a sensible button before the
 // first build.
-let MAX_BET_X = 320;
+let MAX_BET_X = 435;
 function noteMaxBetCap(d) {
   const c = (d && (d.cap_x || (d.parlay && d.parlay.cap_x) || (d.combo && d.combo.cap_x)));
   if (c && c > 1) MAX_BET_X = c;
@@ -1400,12 +1400,12 @@ function renderMixed(m) {
 // bet has no leg or payout target — it has a ceiling, and the only questions are
 // whether it was reached and how likely the slip that reached it is.
 //
-// Both probabilities are shown side by side on purpose. On a 320x ticket our
+// Both probabilities are shown side by side on purpose. On a capped ticket our
 // model and the market can disagree by a lot, and showing only our own number
 // would advertise a chance the price does not agree with.
 function maxBetNote(m) {
   if (m.objective !== "max_bet") return "";
-  const cap = m.cap_x || 320;
+  const cap = m.cap_x || MAX_BET_X;
   if (!m.cap_reached) {
     return `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${cap}× isn't reachable on this board today.</b>`
       + ` The most any fully-quoted slip pays is <b>${m.best_payout_x}×</b> — that's what's shown above.`

@@ -48,12 +48,16 @@ _MAX_PRICE_C = 99
 #
 # This number is NOT in the API. /multivariate_event_collections publishes
 # size_min, size_max and the resolution rules and nothing about price or payout,
-# and the help centre only says a combo "pays out a maximum of $1.00 per
-# contract" -- which is the per-contract settlement, not the multiple. 320 is the
-# figure the app is built around; it is an observation off the exchange UI, not
-# something this code can verify, so it lives in one named place and can be moved
-# by an env var when the real number is confirmed.
-MAX_PAYOUT_X = float(os.getenv("VIGIL_MAX_PAYOUT_X") or 320)
+# and the help centre only says a combo "pays out a maximum of $1.00 per contract"
+# -- which is the per-contract settlement, not the multiple.
+#
+# 435 is measured, not documented: building combos out of the cheapest legs the
+# exchange offers tops out at 435x every time, however the legs are chosen. That
+# implies a minimum combo price of about 0.23c, which is not a round number in
+# cents and is why it cannot be inferred from the tick size either. It stays an
+# empirical constant in one named place, movable by env var if the exchange
+# changes it.
+MAX_PAYOUT_X = float(os.getenv("VIGIL_MAX_PAYOUT_X") or 435)
 
 OBJECTIVES = ("balanced", "safe", "value")
 
@@ -518,7 +522,7 @@ def max_bet(states, cap=None):
 
     A different question from `choose`, and it needs a different answer. Kalshi
     pays a combo at most `cap`x, so payout past the ceiling is thrown away: a
-    900x slip and a 320x slip pay you exactly the same money, and the 320x one
+    900x slip and a 435x slip pay you exactly the same money, and the 435x one
     can be several times likelier to get there. "Biggest payout on the board" is
     therefore the wrong target. The right one is: of the slips that reach the
     ceiling, take the one that most often pays.
@@ -531,7 +535,7 @@ def max_bet(states, cap=None):
       over, so the market number is the only one that means anything.
     * Every leg priced. Unpriced legs are charged at fair value upstream, which
       makes them EV-neutral and invisible in the cost -- so a slip can "reach
-      320x" through legs that have no market to buy. That is a number, not a bet.
+      cap" through legs that have no market to buy. That is a number, not a bet.
 
     Returns (state, meta) like `choose`, so callers reuse the same plumbing.
     """
@@ -586,7 +590,7 @@ def max_bet(states, cap=None):
         "best_payout_x": round(max(s["payout"] for s in pool), 2),
         "all_legs_priced": all_priced,
         # What the MARKET thinks this slip's chance is -- the product of the
-        # prices you pay. Shown next to our own number because on a 320x lottery
+        # prices you pay. Shown next to our own number because on a capped
         # ticket the two can differ by a lot, and the user is entitled to see the
         # disagreement rather than only the half of it we happen to believe.
         "market_prob_pct": round(best["cost"] * 100, 3) if best.get("cost") else None,
@@ -596,7 +600,7 @@ def max_bet(states, cap=None):
     }
 
 
-# Per-leg floors a max bet is tried at. Reaching a 320x MARKET payout needs
+# Per-leg floors a max bet is tried at. Reaching the MARKET payout cap needs
 # either many legs or unlikely ones, so a 55% floor usually cannot get there at
 # all -- but simply dropping the floor to the basement is not the answer either,
 # because the candidate pipeline is lossy by design: _pool trims to ~22 legs a

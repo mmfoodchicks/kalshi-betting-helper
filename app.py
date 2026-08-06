@@ -1631,7 +1631,7 @@ def api_nfl_parlay():
 
         if max_bet:
             # A max bet has to be free to go deep and to use unlikely legs --
-            # that is what a 320x MARKET payout costs. Holding it to the maker's
+            # that is what the MARKET payout cap costs. Holding it to the maker's
             # band would guarantee the answer "can't be done", so the ceiling and
             # the payout target are dropped and the floor is swept.
             item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
@@ -2171,7 +2171,7 @@ def api_baseball_mixed():
 
     if max_bet:
         # The band and the payout target are dropped and the per-leg floor is
-        # swept: reaching a 320x MARKET payout needs room the maker's own
+        # swept: reaching the MARKET payout cap needs room the maker's own
         # settings would not give it. See combo_engine.MAX_BET_FLOORS.
         item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
         if not item:

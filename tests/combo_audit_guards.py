@@ -1296,51 +1296,61 @@ import combo_engine as _CE
 _S = lambda prob, payout, pf=1.0: {
     "legs": 4, "prob": prob, "payout": payout, "cost": 1.0 / payout,
     "priced_frac": pf, "sel": []}
+# Everything below is expressed RELATIVE to the ceiling. It was written against a
+# hardcoded 320 and every one of these would have failed the moment the constant
+# moved -- which it did, to a measured 435 -- on a change that is not a
+# regression. The cap is exactly the kind of number that moves again.
+_CAP = _CE.MAX_PAYOUT_X
 
-# The core trade. A 900x slip and a 320x slip pay the same money once the
-# ceiling truncates them, so the likelier one wins -- "biggest payout" is the
-# wrong target and picking it would cost real probability for nothing.
-_b, _m = _CE.max_bet([_S(0.008, 900.0), _S(0.020, 325.0), _S(0.010, 340.0)])
+# The core trade. A slip paying far over the ceiling and one just clearing it pay
+# the same money once truncated, so the likelier one wins -- "biggest payout" is
+# the wrong target and picking it would cost real probability for nothing.
+_b, _m = _CE.max_bet([_S(0.008, _CAP * 2.8), _S(0.020, _CAP + 5),
+                      _S(0.010, _CAP + 20)])
 ck("takes the likeliest slip that clears the ceiling, not the biggest payout",
-   _b["payout"] == 325.0, f'{_b["payout"]}x @ {_b["prob"]}')
+   _b["payout"] == _CAP + 5, f'{_b["payout"]}x @ {_b["prob"]} (cap {_CAP})')
 ck("and reports what is actually collected, not what it multiplies to",
-   _m["collected_x"] == 320.0 and _m["uncapped_payout_x"] == 325.0)
+   _m["collected_x"] == round(_CAP, 2) and _m["uncapped_payout_x"] == _CAP + 5)
 ck("the overshoot is named as waste", _m["overshoot_x"] == 5.0)
 ck("EV is computed on the CAPPED payout",
-   abs(_m["capped_ev_pct"] - (0.020 * 320 - 1) * 100) < 0.05,
+   abs(_m["capped_ev_pct"] - (0.020 * _CAP - 1) * 100) < 0.05,
    f'{_m["capped_ev_pct"]}%')
 
 # A phantom: unpriced legs are charged at fair value upstream, so a slip built
 # from them looks free and arbitrarily profitable. It is not a bet.
-_b2, _m2 = _CE.max_bet([_S(0.02, 325.0, 1.0), _S(0.90, 999.0, 0.5)])
+_b2, _m2 = _CE.max_bet([_S(0.02, _CAP + 5, 1.0), _S(0.90, _CAP * 3, 0.5)])
 ck("a slip with an unpriced leg cannot win a max bet",
-   _b2["payout"] == 325.0,
-   "the 90%/999x phantom is the most attractive state on every axis")
+   _b2["payout"] == _CAP + 5,
+   "the 90% phantom at 3x the ceiling is the most attractive state on every axis")
 ck("all_legs_priced says which kind of answer this is", _m2["all_legs_priced"])
-_b3, _m3 = _CE.max_bet([_S(0.90, 999.0, 0.5)])
+_b3, _m3 = _CE.max_bet([_S(0.90, _CAP * 3, 0.5)])
 ck("but a board with nothing fully priced still answers, flagged",
    _b3 is not None and _m3["all_legs_priced"] is False)
 
 # Unreachable is an answer, not a failure.
-_b4, _m4 = _CE.max_bet([_S(0.30, 50.0), _S(0.10, 47.0)])
+_b4, _m4 = _CE.max_bet([_S(0.30, _CAP * 0.11), _S(0.10, _CAP * 0.10)])
 ck("an unreachable ceiling reports the best available instead of nothing",
-   _b4 is not None and _m4["cap_reached"] is False and _m4["best_payout_x"] == 50.0)
-ck("and collects only what that slip pays", _m4["collected_x"] == 50.0)
+   _b4 is not None and _m4["cap_reached"] is False
+   and _m4["best_payout_x"] == round(_CAP * 0.11, 2))
+ck("and collects only what that slip pays",
+   _m4["collected_x"] == round(_CAP * 0.11, 2))
 ck("empty in, empty out", _CE.max_bet([])[0] is None)
 
 # The compounding bound. Every leg individually inside MAX_BET_OPTIMISM can
 # still multiply into a slip claiming an edge nobody has.
 ck("total optimism is bounded, not just per-leg",
    _CE.MAX_BET_TOTAL_OPTIMISM > 1.0 and hasattr(_CE, "MAX_BET_TOTAL_OPTIMISM"))
-_wild = _S(0.017, 404.88)      # the real tennis slip: +451% EV, 6.9x the market
-_sane = _S(0.0031, 330.0)
+# Shaped like the real tennis slip that motivated the bound: ~7x the market's
+# own probability, which the per-leg guard let through and the slip guard does not.
+_wild = _S(7.0 / (_CAP + 10), _CAP + 10)
+_sane = _S(1.02 / (_CAP + 5), _CAP + 5)
 _b5, _m5 = _CE.max_bet([_wild, _sane])
-ck("a slip claiming 6.9x the market's probability loses to a sane one",
-   _b5["payout"] == 330.0,
+ck("a slip claiming 7x the market's probability loses to a sane one",
+   _b5["payout"] == _CAP + 5,
    "it was likelier on paper, which is exactly the trap: 25c legs the model "
    "called 45.8% multiplied into a fantasy")
 ck("optimism_x is reported so the claim is visible",
-   abs(_m5["optimism_x"] - 0.0031 * 330.0) < 0.01, _m5["optimism_x"])
+   abs(_m5["optimism_x"] - 1.02) < 0.01, _m5["optimism_x"])
 _b6, _m6 = _CE.max_bet([_wild])
 ck("if EVERY slip is over-optimistic it still answers, flagged",
    _b6 is not None and _m6["optimism_ok"] is False,
