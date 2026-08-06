@@ -1574,6 +1574,34 @@ ck("a fringe WR outworks both", _NP.role_factor("WR", 2.0) > 1.0)
 ck("WR is no longer a single flat entry",
    len(_NP._ROLE["WR"]) > 1,
    "((0.0, 1.0),) gave every receiver on a team the same projection")
+
+# The two units that never leave the field. Measured over three exhibition
+# seasons, K and DST are the highest-scoring preseason positions -- which is the
+# opposite of their regular-season role as salary relief.
+_rngK = _rnd.Random(11)
+_ks = _NP.special_samples("K", 8000, _rngK)
+_ds = _NP.special_samples("DST", 8000, _rngK)
+ck("a kicker has a measured exhibition distribution at all",
+   _ks is not None and len(_ks) == 8000,
+   "kickers are not in the game sim, so without this they fell through to DK's "
+   "REGULAR-SEASON average plus an invented Gaussian")
+ck("and it reproduces the measured mean",
+   abs(sum(_ks) / len(_ks) - _NP.SPECIAL_MEAN["K"]) < 0.4,
+   f'{sum(_ks) / len(_ks):.2f} vs {_NP.SPECIAL_MEAN["K"]}')
+ck("a defense likewise",
+   abs(sum(_ds) / len(_ds) - _NP.SPECIAL_MEAN["DST"]) < 0.4,
+   f'{sum(_ds) / len(_ds):.2f} vs {_NP.SPECIAL_MEAN["DST"]}')
+ck("a defense can score NEGATIVE, which a Normal fit would have hidden",
+   min(_ds) < 0, f"floor {min(_ds)}")
+ck("a kicker cannot", min(_ks) > 0, f"floor {min(_ks)}")
+ck("both outscore every skill position in August",
+   _NP.SPECIAL_MEAN["K"] > 4.67 and _NP.SPECIAL_MEAN["DST"] > 4.67,
+   "K 5.83 and DST 7.07 against QB 5.04, RB 4.67, WR 3.96, TE 2.63 -- the two "
+   "positions a regular-season optimizer treats as salary relief")
+ck("the ladder is only used in preseason",
+   _ND._special_arr("K", False) is None and _ND._special_arr("K", True))
+ck("and only for those two positions",
+   _ND._special_arr("WR", True) is None and _ND._special_arr("QB", True) is None)
 ck("the inversion holds for the three positions that measure it",
    all(_NP.role_factor(p, 25.0) < _NP.role_factor(p, 0.0)
        for p in ("QB", "RB", "WR")))

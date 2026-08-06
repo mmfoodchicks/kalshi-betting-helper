@@ -345,6 +345,25 @@ def _pct(a, q):
     return s[min(len(s) - 1, int(q * len(s)))]
 
 
+def _special_arr(pos, preseason, n=1500):
+    """Measured exhibition scoring for a kicker or a defense, or None.
+
+    These two are the only units that play the whole game, and in preseason they
+    are the highest-scoring positions on the board -- but neither was modelled
+    for August. Kickers are not in the game sim at all, so they fell through to
+    DK's AvgPointsPerGame, which is a REGULAR-SEASON average, plus an invented
+    Gaussian. And dst_projections asks Sleeper for season_type=regular
+    unconditionally, so a preseason DST carried a regular-season projection.
+    Both now come from nfl_preseason's measured decile ladder."""
+    if not preseason or (pos or "").upper() not in ("K", "DST"):
+        return None
+    try:
+        import nfl_preseason
+    except Exception:
+        return None
+    return nfl_preseason.special_samples(pos.upper(), n, random)
+
+
 def _sd_field_lineup(players, cap, own_w, rng, tries=10):
     """One plausible opponent showdown roster: a captain drawn by ownership, then
     five FLEX the same way."""
@@ -448,8 +467,13 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     pool = nfl_dfs_sim.player_pool(week, preseason=preseason) or {}
     unmatched = []
     for e in ents:
+        sp = _special_arr(e["pos"], preseason)
         sim = pool.get(e["name"]) or pool.get(e.get("team", ""))
-        if sim and sim.get("arr"):
+        if sp:                                  # kicker / defense in August
+            e["arr"] = sp
+            e["proj"] = sum(sp) / len(sp)
+            e["ceiling"], e["floor"] = round(_pct(sp, 0.9), 1), round(_pct(sp, 0.1), 1)
+        elif sim and sim.get("arr"):
             e["proj"], e["ceiling"], e["floor"], e["arr"] = (
                 sim["proj"], sim["ceiling"], sim["floor"], sim["arr"])
         else:
@@ -484,8 +508,21 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
                      "ceiling": round(mult * p["ceiling"], 1),
                      "floor": round(mult * p["floor"], 1), "own": p.get("own")})
     teams = sorted({p["team"] for p in lineup if p["team"]})
-    # Same keys the classic build returns, so one renderer handles both.
+    # Flat pricing changes what the optimizer is solving. With one salary for the
+    # whole pool the knapsack dissolves: there is no value play, no salary saver,
+    # nothing to punt, and points-per-dollar is a constant. Every lineup that
+    # fills six slots costs the same, so the only questions left are who plays
+    # and who else will roster them. Worth saying out loud rather than leaving
+    # the reader to notice the salary column never changes.
+    _sals = {e["salary"] for e in ents}
+    flat = len(_sals) == 1
     return {"mode": "showdown", "roster": SHOWDOWN_ROSTER,
+            "flat_priced": flat,
+            "flat_note": ("Every player on this slate is priced the same "
+                          f"(${sorted(_sals)[0]:,} FLEX). Points per dollar is a "
+                          "constant, so the cap can't distinguish lineups — the "
+                          "whole decision is playing time and ownership.")
+            if flat else None,
             "week": week, "objective": objective, "stack": False,
             "salary": sal, "cap": CAP, "salary_left": CAP - sal,
             "proj": round(sum(r["proj"] for r in rows), 1),
@@ -527,7 +564,12 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
         elig = _elig(pos)
         if not elig:
             continue
-        if sim and sim.get("arr"):
+        _sp = _special_arr(pos, preseason)
+        if _sp:                                     # kicker / defense in August
+            samp = _sp
+            proj = sum(_sp) / len(_sp)
+            ceiling, floor = round(_pct(_sp, 0.9), 1), round(_pct(_sp, 0.1), 1)
+        elif sim and sim.get("arr"):
             proj, ceiling, floor, samp = sim["proj"], sim["ceiling"], sim["floor"], sim["arr"]
         else:                                       # in the CSV but not projected -> soft fallback
             proj = c.get("proj") or 0.0

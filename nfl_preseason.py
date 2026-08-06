@@ -98,6 +98,54 @@ RTD_TGT = {"QB": 0.0000, "RB": 0.0211, "WR": 0.0431, "TE": 0.0378}
 # quarterback is under three of them, 20.3 WR targets at 2.5 apiece is eight.
 _DEPTH = {"QB": 3, "RB": 5, "WR": 8, "TE": 3}
 
+# --- the two units that never leave the field --------------------------------
+# A kicker takes every extra point and field goal; a defense plays every
+# defensive snap. Nobody else on a preseason roster does, and the scoring follows
+# directly. DK points per game across three exhibition seasons (Sleeper,
+# season_type=pre):
+#
+#     K     n=132  mean 5.83  sd 3.16      DST   n= 96  mean 7.07  sd 3.44
+#     QB    n=216  mean 5.04                WR   n=574  mean 3.96
+#     RB    n=347  mean 4.67                TE   n=262  mean 2.63
+#
+# The two positions a regular-season optimizer treats as salary relief are the
+# top two scorers in August, by mean AND median, in every season measured. That
+# is not a preference, it is what limited playing time does to everyone else.
+#
+# Stored as a decile ladder rather than a mean and SD because the shape matters:
+# a kicker's floor is a real 0.5 (one extra point) and a defense's is NEGATIVE
+# (points allowed with no takeaways), while both carry a long right tail off a
+# return touchdown. A Normal fitted to the mean would invent a symmetric spread
+# neither of them has.
+_SPECIAL_Q = {
+    "K":   (0.5, 2.0, 3.33, 4.0, 4.67, 5.5, 6.33, 7.0, 8.0, 10.33, 16.0),
+    "DST": (-1.5, 2.67, 4.33, 5.33, 6.33, 7.0, 7.33, 9.0, 10.33, 12.0, 16.0),
+}
+SPECIAL_MEAN = {"K": 5.83, "DST": 7.07}
+
+
+def special_samples(pos, n, rng, scale=1.0):
+    """n sampled DK scores for a kicker or a defense in an exhibition.
+
+    Inverse-CDF off the measured decile ladder with uniform interpolation inside
+    each decile, so the draw reproduces the real shape -- floor, median and tail
+    -- instead of a Normal's idea of it. `scale` tilts it for a game the market
+    prices high or low, since both units score off the same drives everyone else
+    does."""
+    q = _SPECIAL_Q.get((pos or "").upper())
+    if not q:
+        return None
+    last = len(q) - 1
+    out = []
+    for _ in range(n):
+        u = rng.random() * last
+        i = int(u)
+        if i >= last:
+            i = last - 1
+        lo, hi = q[i], q[i + 1]
+        out.append(round((lo + (hi - lo) * (u - i)) * scale, 2))
+    return out
+
 _POS = ("QB", "RB", "WR", "TE")
 _PROJ = "https://api.sleeper.com/projections/nfl/{season}/1"
 _STATS = "https://api.sleeper.com/stats/nfl/{season}"
