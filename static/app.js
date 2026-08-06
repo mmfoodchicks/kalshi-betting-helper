@@ -12,6 +12,17 @@ function uiBusy() {
   return false;
 }
 
+// Kalshi's combo payout ceiling, used only to LABEL the max-bet buttons. The
+// server owns the real value (combo_engine.MAX_PAYOUT_X, overridable by env), so
+// every max-bet response carries cap_x and this is updated from it — the default
+// here just has to be right often enough to render a sensible button before the
+// first build.
+let MAX_BET_X = 320;
+function noteMaxBetCap(d) {
+  const c = (d && (d.cap_x || (d.parlay && d.parlay.cap_x) || (d.combo && d.combo.cap_x)));
+  if (c && c > 1) MAX_BET_X = c;
+}
+
 // ---- Subscription tiers ---------------------------------------------------
 let TIERMATRIX = null;
 const TIER_RANK = { free: 0, pro: 1, edge: 2, owner: 3 };
@@ -957,7 +968,7 @@ window.renderLiveWarn = () => {
 
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
-window.buildCombo = async () => {
+window.buildCombo = async (maxBet) => {
   const out = $("comboOut");
   if (!out) return;
   let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
@@ -978,20 +989,25 @@ window.buildCombo = async () => {
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
   comboBuilding = true;
-  simLoader(out, comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
+  simLoader(out, maxBet ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
       + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
-      + (c ? `&cap=${c}` : "");
+      + (c ? `&cap=${c}` : "")
+      + (maxBet ? "&max_bet=1" : "");
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
+    noteMaxBetCap(d);
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.parlay) {
-      out.innerHTML = `<div class="small">Couldn't build — no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
+      out.innerHTML = (d.hint === "max_bet_unreachable")
+        ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
+        : `<div class="small">Couldn't build — no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
       return;
     }
     out.innerHTML = renderMixed(d.parlay);
@@ -1352,9 +1368,11 @@ function renderMixed(m) {
   const unpriced = (m.priced_frac != null && m.priced_frac < 1)
     ? `<div class="small" style="margin-top:4px;color:var(--muted)">${Math.round(m.priced_frac * 100)}% of these legs have a live Kalshi quote; the rest are priced at fair value, so the EV above only reflects the ones you can actually place.</div>` : "";
   const alts = renderAlternatives(m);
+  const maxNote = maxBetNote(m);
   return `<div class="combo hl prop">
     <div class="chead">
-      <span class="ctag">${stacked ? "🔀 Mixed parlay" : "🎯 Cross-game parlay"}</span>
+      <span class="ctag">${m.objective === "max_bet" ? "🎰 Max bet"
+        : stacked ? "🔀 Mixed parlay" : "🎯 Cross-game parlay"}</span>
       <span class="small">${m.n_legs} legs · ${m.n_games} games · ${(m.n_sims || 0).toLocaleString()} sims</span>
     </div>
     ${groups}
@@ -1369,12 +1387,47 @@ function renderMixed(m) {
       ${bandNote}
       <span>Correlation: ${corrTxt}</span>
     </div>
+    ${maxNote}
     ${hardWarn}
     ${evWarn}
     ${unpriced}
     ${alts}
     <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) — Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;
+}
+
+// The max-bet block. Shown INSTEAD of the ordinary target notes, because a max
+// bet has no leg or payout target — it has a ceiling, and the only questions are
+// whether it was reached and how likely the slip that reached it is.
+//
+// Both probabilities are shown side by side on purpose. On a 320x ticket our
+// model and the market can disagree by a lot, and showing only our own number
+// would advertise a chance the price does not agree with.
+function maxBetNote(m) {
+  if (m.objective !== "max_bet") return "";
+  const cap = m.cap_x || 320;
+  if (!m.cap_reached) {
+    return `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${cap}× isn't reachable on this board today.</b>`
+      + ` The most any fully-quoted slip pays is <b>${m.best_payout_x}×</b> — that's what's shown above.`
+      + ` Every leg has to have a real Kalshi quote behind it, so a thin board caps out early.</div>`;
+  }
+  const mk = (m.market_prob_pct == null) ? "" :
+    `<span>Market says <b>${m.market_prob_pct}%</b></span>`;
+  const opt = (m.optimism_x == null) ? "" :
+    `<span>We're <b>${m.optimism_x}×</b> the market</span>`;
+  const over = m.overshoot_x
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">This slip prices at <b>${m.uncapped_payout_x}×</b>, but Kalshi pays at most <b>${cap}×</b> — the extra ${m.overshoot_x}× is thrown away. It was still chosen because it's the likeliest slip that clears the ceiling.</div>`
+    : "";
+  const warn = (m.optimism_ok === false)
+    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Every slip that reaches ${cap}× claims a bigger edge over the market than we're willing to believe. Treat the chance above as our model's opinion, not a forecast.</div>`
+    : "";
+  const floors = (m.max_bet_floors_tried || []).length > 1
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">Tried per-leg floors ${m.max_bet_floors_tried.map((f) => f.floor_pct + "%").join(", ")} and kept the best.</div>`
+    : "";
+  return `<div class="cnums" style="margin-top:4px">
+      <span>🎰 <b>Max bet</b> — pays the ${cap}× ceiling</span>
+      ${mk}${opt}
+    </div>${over}${warn}${floors}`;
 }
 
 // The same frontier ranked the other two ways. Shown so "the price mattered" is
@@ -1477,6 +1530,7 @@ function renderCombo(c, tag, extraCls) {
     </div>
     <ul class="legs">${legs}</ul>
     <div class="cnums">${nums}${band}${legsNote}${payNote}</div>
+    ${maxBetNote(c)}
     ${warn}
   </div>`;
 }
@@ -1558,7 +1612,10 @@ async function loadBaseball(silent) {
         &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked;renderLiveWarn()"/> 🔴 include games in progress</label>
         <div id="liveWarn">${liveWarnHtml()}</div>
         ${mlbTypeChipRow()}
-        <button class="track-mini primary-mini" style="margin-top:6px" onclick="buildCombo()">Build</button>
+        <div style="margin-top:6px">
+          <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
+          <button class="track-mini" style="margin-left:6px" onclick="buildCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+        </div>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         ${modelLegend()}
         <div id="comboOut"></div>
@@ -2802,13 +2859,16 @@ function renderNFLComboMaker() {
       reach <input id="nflComboPayout" type="number" min="0" step="any" value="${nflComboPayout}" style="width:60px"/>× payout
     </div>
     <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="nflComboSameGame"${nflComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
-    <button class="track-mini primary-mini" style="margin-top:6px;display:block" onclick="buildNFLCombo()">Build</button>
+    <div style="margin-top:6px">
+      <button class="track-mini primary-mini" onclick="buildNFLCombo()">Build</button>
+      <button class="track-mini" style="margin-left:6px" onclick="buildNFLCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+    </div>
     <div class="small" style="margin-top:4px">Moneylines, every booked spread and total, and${nflPreseason ? "" : " (once Kalshi lists them)"} player props are all candidates. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
     <div id="nflComboOut"></div>
   </div>`;
   if (prev) { const el = $("nflComboOut"); if (el) el.innerHTML = prev; }
 }
-async function buildNFLCombo() {
+async function buildNFLCombo(maxBet) {
   const out = $("nflComboOut");
   if (!out) return;
   const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
@@ -2823,18 +2883,24 @@ async function buildNFLCombo() {
   nflComboConn = ($("nflComboConn") || {}).value || "or";
   nflComboSameGame = !!(($("nflComboSameGame") || {}).checked);
   const wk = ($("nflWeek") || {}).value || 1;
-  out.innerHTML = `<div class="empty">Simulating the slate and searching combos…</div>`;
+  out.innerHTML = `<div class="empty">${maxBet
+    ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : "Simulating the slate and searching combos…"}</div>`;
   const q = `week=${wk}${nflPreQuery()}&legs=${nflComboLegs}&target=${nflComboTarget}`
     + (nflComboCap ? `&cap=${nflComboCap}` : "")
     + `&payout=${nflComboPayout}&objective=${nflComboObjective}`
     + `&legs_mode=${nflComboLegsMode}&payout_mode=${nflComboPayoutMode}`
-    + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`;
+    + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`
+    + (maxBet ? "&max_bet=1" : "");
   try {
     const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
+    noteMaxBetCap(d);
     if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     if (!d.parlay) {
       out.innerHTML = (d.hint === "single_game_no_stack")
         ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game on this board, and <b>same-game parlays are off</b> — one leg per game can't make a multi-leg slip. Tick <b>allow same-game parlays</b>, or wait for more of the week to open.</div>`
+        : (d.hint === "max_bet_unreachable")
+        ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, and a thin board runs out of them long before the ceiling.</div>`
         : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
     }
@@ -3387,13 +3453,16 @@ function renderTennisMaker() {
     <div class="small" style="margin-top:8px">Leg types <span style="color:var(--muted)">(none selected = all)</span>: <span class="ptchips">${_TN_TYPES.map(([v, l]) => `<span class="ptchip${_tnTypes.has(v) ? " on" : ""}" onclick="toggleTnType(this,'${v}')">${l}</span>`).join("")}</span></div>
     <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
     <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere — ESPN publishes ATP/WTA only — so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
-    <button class="track-mini primary-mini" style="margin-top:8px;display:block" onclick="buildTennisCombo()">Build</button>
+    <div style="margin-top:8px">
+      <button class="track-mini primary-mini" onclick="buildTennisCombo()">Build</button>
+      <button class="track-mini" style="margin-left:6px" onclick="buildTennisCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+    </div>
     <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent. Pick <b>Match winner</b> alone for a plain winners-only parlay.</div>
     <div id="tnComboOut"></div>
   </div>`;
   if (prev) { const el = $("tnComboOut"); if (el) el.innerHTML = prev; }
 }
-async function buildTennisCombo() {
+async function buildTennisCombo(maxBet) {
   // Resolve the output node at WRITE time, every time. Capturing it once was the
   // bug behind "Building…" forever: renderTennisMaker() below rebuilds the whole
   // maker box to refresh the window counts, which destroys and recreates
@@ -3413,23 +3482,30 @@ async function buildTennisCombo() {
   tnComboConn = ($("tnComboConn") || {}).value || "or";
   tnComboLive = !!(($("tnComboLive") || {}).checked);
   tnComboWindow = ($("tnComboWindow") || {}).value || "";
-  put(`<div class="empty">Building…</div>`);
+  put(`<div class="empty">${maxBet
+    ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…` : "Building…"}</div>`);
   const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
     + (tnComboCap ? `&cap=${tnComboCap}` : "") + (tnComboLive ? "&live=1" : "")
     + tnTypesParam() + (tnComboWindow ? `&window=${tnComboWindow}` : "")
-    + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`;
+    + `&legs_mode=${tnComboLegsMode}&payout_mode=${tnComboPayoutMode}&conn=${tnComboConn}`
+    + (maxBet ? "&max_bet=1" : "");
   try {
     const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
+    noteMaxBetCap(d);
     if (d.window_counts) { _tnWinCounts = d.window_counts; renderTennisMaker(); }
     if (d.error) { put(`<div class="empty">${escapeHtml(d.error)}</div>`); return; }
     if (!d.combo) {
       const n = d.n_combo_matches;
+      if (d.hint === "max_bet_unreachable" || d.hint === "max_bet_needs_priced_legs") {
+        put(`<div class="empty">No tennis slip can pay <b>${d.cap_x || MAX_BET_X}×</b> right now. A max bet only uses matches with a real, traded Kalshi quote on both sides — most of the board is listed but barely quoted, so there usually aren't enough to multiply that far.</div>`);
+        return;
+      }
       put(`<div class="empty">No slip fits those targets.${n === 0
         ? " Kalshi has no tennis match open for combos right now."
         : (n != null ? ` Only <b>${n}</b> match${n === 1 ? " is" : "es are"} eligible today, so try fewer legs or a lower per-leg %.` : "")}</div>`);
       return;
     }
-    put(renderCombo(d.combo, "🎾 Tennis parlay", "hl prop"));
+    put(renderCombo(d.combo, maxBet ? `🎰 Tennis max bet` : "🎾 Tennis parlay", "hl prop"));
   } catch (e) {
     put(`<div class="empty">Build failed.</div>`);
   }

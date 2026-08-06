@@ -2624,7 +2624,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
-                       net_fees=True, cap_pct=None):
+                       net_fees=True, cap_pct=None, max_bet=False, cap_x=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -2645,6 +2645,11 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     Over 5.5; a run line at 40% becomes the NO side of the same margin. The
     ladders and both sides already exist as candidates, so the band is a filter
     and the walking falls out of it.
+
+    `max_bet` replaces every other target with the one Kalshi imposes: build the
+    slip most likely to cash among those that still collect the full capped
+    payout (`cap_x`, default combo_engine.MAX_PAYOUT_X). See combo_engine.max_bet
+    for why that is a different question from any of the three objectives.
     """
     import mlb_sim
     import combo_engine
@@ -2714,6 +2719,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         # qualify at 60% pre-blend and then get marked down to 41% by the market,
         # so a slip built under "each leg >= 55%" came back showing 38-43% legs.
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
+        # A max bet reaches for cheap legs and multiplies them, so a leg our
+        # model likes far more than the market can carry the whole slip on its
+        # own. combo_engine.stackable bounds that optimism as a ratio.
+        if max_bet:
+            cands = [c for c in cands
+                     if combo_engine.stackable(c["marg"], c.get("price_cents"))]
         if not cands:
             continue
         # A same-game stack never needs to be deeper than the parlay itself, and
@@ -2737,13 +2748,21 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
 
     states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
                                    net=net_fees)
-    targets = {"legs_target": n_legs, "payout_target": target_payout,
-               "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
-    best, meta = combo_engine.choose(states, objective=objective, **targets)
+    if max_bet:
+        # The ceiling IS the target, so the leg count and payout controls have
+        # nothing left to say -- passing them through would only let a "4 legs"
+        # preference outrank the one thing being asked for.
+        targets = {}
+        best, meta = combo_engine.max_bet(states, cap=cap_x)
+    else:
+        targets = {"legs_target": n_legs, "payout_target": target_payout,
+                   "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+        best, meta = combo_engine.choose(states, objective=objective, **targets)
     if not best:
         return None
     item = mlb_sim._mixed_item(best["sel"], games_bundles,
-                               target_payout if payout_mode != "off" else None)
+                               None if max_bet else
+                               (target_payout if payout_mode != "off" else None))
     item["n_sims"] = _SIM_N
     # Only overwrite what the chooser actually decided. legs_met/payout_reached
     # come back None when that target is "off", and blanking _mixed_item's own
@@ -2751,8 +2770,14 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     for k, v in meta.items():
         if k != "objective" and v is not None:
             item[k] = v
-    item["objective"] = objective
-    item["legs_target"] = n_legs if legs_mode != "off" else None
+    item["objective"] = "max_bet" if max_bet else objective
+    item["legs_target"] = None if max_bet else (n_legs if legs_mode != "off" else None)
+    if max_bet:
+        # _mixed_item defaults payout_reached to True when it is given no
+        # fair-payout target, which on a max bet would announce success no matter
+        # what happened. The only "reached" that means anything here is the cap.
+        item["payout_reached"] = meta.get("cap_reached")
+        item["target_payout_x"] = None
     # The band the legs were drawn from, so the slip can say so rather than
     # leaving the reader to check every leg by eye.
     item["leg_floor_pct"] = round(floor * 100, 1)
@@ -2766,8 +2791,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     item["priced_frac"] = round(best["priced_frac"], 2)
     item["priced_legs"] = best["priced"]
     # The same frontier ranked the other two ways, so "the price mattered" is
-    # showable rather than asserted.
-    item["alternatives"] = combo_engine.compare(states, best, **targets)
+    # showable rather than asserted. Meaningless for a max bet: the three
+    # objectives all answer "which slip is best", and this one is answering
+    # "which slip reaches the ceiling", so they would be compared on a question
+    # none of them was asked.
+    if not max_bet:
+        item["alternatives"] = combo_engine.compare(states, best, **targets)
     # Price via each group's own game suffix (carried through the DP) so a
     # doubleheader's two games don't collide on an identical matchup string.
     pairs = [(leg, grp.get("suffix"))

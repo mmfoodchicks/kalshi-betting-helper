@@ -1614,17 +1614,34 @@ def api_nfl_parlay():
     if objective not in combo_engine.OBJECTIVES:
         objective = "balanced"
     sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
+    max_bet = request.args.get("max_bet") == "1"
     try:
         import nfl_game_sim
-        item = nfl_game_sim.build_parlay(
-            week=week, preseason=_nfl_preseason(), n_legs=legs, target_pct=target,
-            cap_pct=cap, target_payout=payout, n_sims=sims,
-            max_legs_per_game=max_total if same_game else 1,
-            max_total_legs=max_total, legs_mode=legs_mode,
-            payout_mode=payout_mode, conn=conn, objective=objective,
-            types=_prop_types(), game_sel=sel or None)
+
+        def _build(target_pct, _mb=False):
+            return nfl_game_sim.build_parlay(
+                week=week, preseason=_nfl_preseason(), n_legs=legs,
+                target_pct=target_pct,
+                cap_pct=None if _mb else cap, target_payout=0 if _mb else payout,
+                n_sims=sims,
+                max_legs_per_game=max_total if same_game else 1,
+                max_total_legs=max_total, legs_mode=legs_mode,
+                payout_mode=payout_mode, conn=conn, objective=objective,
+                types=_prop_types(), game_sel=sel or None, max_bet=_mb)
+
+        if max_bet:
+            # A max bet has to be free to go deep and to use unlikely legs --
+            # that is what a 320x MARKET payout costs. Holding it to the maker's
+            # band would guarantee the answer "can't be done", so the ceiling and
+            # the payout target are dropped and the floor is swept.
+            item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+        else:
+            item = _build(target)
     except Exception as e:
         return jsonify({"error": f"nfl parlay failed: {e}"}), 502
+    if max_bet and not item:
+        return jsonify({"parlay": None, "hint": "max_bet_unreachable",
+                        "cap_x": combo_engine.MAX_PAYOUT_X})
     if isinstance(item, dict) and item.get("error_hint") == "single_game_no_stack":
         return jsonify({"parlay": None, "hint": item["error_hint"],
                         "n_games_available": item.get("n_games_available")})
@@ -1734,13 +1751,39 @@ def api_tennis_parlay():
     window = request.args.get("window")
     if window not in ("today", "3h", "1h"):
         window = None
+    max_bet = request.args.get("max_bet") == "1"
     try:
-        out = combine.build(["tennis"], legs, target, date, date[:4],
-                            target_payout=payout, cap_pct=cap,
-                            tennis_window=window,
-                            max_legs=tiers.cap_legs(_tier(), 30),
-                            legs_mode=legs_mode, payout_mode=payout_mode,
-                            conn=conn, types=types, allow_live=_allow_live())
+        import combo_engine
+
+        def _build(target_pct, _mb=False):
+            return combine.build(
+                ["tennis"], legs, target_pct, date, date[:4],
+                target_payout=None if _mb else payout,
+                cap_pct=None if _mb else cap,
+                tennis_window=window,
+                max_legs=tiers.cap_legs(_tier(), 30),
+                legs_mode=legs_mode, payout_mode=payout_mode,
+                conn=conn, types=None if _mb else types,
+                allow_live=_allow_live(), max_bet=_mb)
+
+        if max_bet:
+            # combine.build returns {combo, counts}; the sweep compares slips, so
+            # it is handed the combo and the wrapper is rebuilt around the winner.
+            last = {}
+
+            def _combo(f):
+                last.clear()
+                last.update(_build(f, _mb=True) or {})
+                return last.get("combo")
+
+            best = combo_engine.best_max_bet(_combo)
+            out = dict(last)
+            out["combo"] = best
+            if not best:
+                out["hint"] = out.get("hint") or "max_bet_unreachable"
+                out["cap_x"] = combo_engine.MAX_PAYOUT_X
+        else:
+            out = _build(target)
     except Exception as e:
         return jsonify({"error": f"tennis parlay failed: {e}"}), 502
     # How many matches could have contributed, so an empty build can say whether
@@ -2112,15 +2155,30 @@ def api_baseball_mixed():
         cap = None
     if cap is not None and not (0 < cap <= 100):
         cap = None
-    item = baseball.build_mixed_parlay(games, n_legs=legs, target_pct=target,
-                                       cap_pct=cap,
-                                       target_payout=payout, n_sims=sims,
-                                       max_legs_per_game=max_total if same_game else 1,
-                                       max_total_legs=max_total,
-                                       legs_mode=legs_mode, payout_mode=payout_mode,
-                                       conn=conn, game_sel=sel or None,
-                                       include_live=include_live, types=_prop_types(),
-                                       objective=objective)
+    max_bet = request.args.get("max_bet") == "1"
+
+    def _build(target_pct, _mb=False):
+        return baseball.build_mixed_parlay(
+            games, n_legs=legs, target_pct=target_pct,
+            cap_pct=None if _mb else cap,
+            target_payout=0 if _mb else payout, n_sims=sims,
+            max_legs_per_game=max_total if same_game else 1,
+            max_total_legs=max_total,
+            legs_mode=legs_mode, payout_mode=payout_mode,
+            conn=conn, game_sel=sel or None,
+            include_live=include_live, types=_prop_types(),
+            objective=objective, max_bet=_mb)
+
+    if max_bet:
+        # The band and the payout target are dropped and the per-leg floor is
+        # swept: reaching a 320x MARKET payout needs room the maker's own
+        # settings would not give it. See combo_engine.MAX_BET_FLOORS.
+        item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+        if not item:
+            return jsonify({"parlay": None, "hint": "max_bet_unreachable",
+                            "cap_x": combo_engine.MAX_PAYOUT_X})
+    else:
+        item = _build(target)
     return jsonify({"parlay": item})
 
 

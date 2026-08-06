@@ -1277,6 +1277,160 @@ ck("the payload the grid sorts on actually carries a start time",
 
 print()
 print("=" * 72)
+print("Max bet — the ceiling is the target, and the payout past it is waste")
+print("=" * 72)
+import combo_engine as _CE
+
+_S = lambda prob, payout, pf=1.0: {
+    "legs": 4, "prob": prob, "payout": payout, "cost": 1.0 / payout,
+    "priced_frac": pf, "sel": []}
+
+# The core trade. A 900x slip and a 320x slip pay the same money once the
+# ceiling truncates them, so the likelier one wins -- "biggest payout" is the
+# wrong target and picking it would cost real probability for nothing.
+_b, _m = _CE.max_bet([_S(0.008, 900.0), _S(0.020, 325.0), _S(0.010, 340.0)])
+ck("takes the likeliest slip that clears the ceiling, not the biggest payout",
+   _b["payout"] == 325.0, f'{_b["payout"]}x @ {_b["prob"]}')
+ck("and reports what is actually collected, not what it multiplies to",
+   _m["collected_x"] == 320.0 and _m["uncapped_payout_x"] == 325.0)
+ck("the overshoot is named as waste", _m["overshoot_x"] == 5.0)
+ck("EV is computed on the CAPPED payout",
+   abs(_m["capped_ev_pct"] - (0.020 * 320 - 1) * 100) < 0.05,
+   f'{_m["capped_ev_pct"]}%')
+
+# A phantom: unpriced legs are charged at fair value upstream, so a slip built
+# from them looks free and arbitrarily profitable. It is not a bet.
+_b2, _m2 = _CE.max_bet([_S(0.02, 325.0, 1.0), _S(0.90, 999.0, 0.5)])
+ck("a slip with an unpriced leg cannot win a max bet",
+   _b2["payout"] == 325.0,
+   "the 90%/999x phantom is the most attractive state on every axis")
+ck("all_legs_priced says which kind of answer this is", _m2["all_legs_priced"])
+_b3, _m3 = _CE.max_bet([_S(0.90, 999.0, 0.5)])
+ck("but a board with nothing fully priced still answers, flagged",
+   _b3 is not None and _m3["all_legs_priced"] is False)
+
+# Unreachable is an answer, not a failure.
+_b4, _m4 = _CE.max_bet([_S(0.30, 50.0), _S(0.10, 47.0)])
+ck("an unreachable ceiling reports the best available instead of nothing",
+   _b4 is not None and _m4["cap_reached"] is False and _m4["best_payout_x"] == 50.0)
+ck("and collects only what that slip pays", _m4["collected_x"] == 50.0)
+ck("empty in, empty out", _CE.max_bet([])[0] is None)
+
+# The compounding bound. Every leg individually inside MAX_BET_OPTIMISM can
+# still multiply into a slip claiming an edge nobody has.
+ck("total optimism is bounded, not just per-leg",
+   _CE.MAX_BET_TOTAL_OPTIMISM > 1.0 and hasattr(_CE, "MAX_BET_TOTAL_OPTIMISM"))
+_wild = _S(0.017, 404.88)      # the real tennis slip: +451% EV, 6.9x the market
+_sane = _S(0.0031, 330.0)
+_b5, _m5 = _CE.max_bet([_wild, _sane])
+ck("a slip claiming 6.9x the market's probability loses to a sane one",
+   _b5["payout"] == 330.0,
+   "it was likelier on paper, which is exactly the trap: 25c legs the model "
+   "called 45.8% multiplied into a fantasy")
+ck("optimism_x is reported so the claim is visible",
+   abs(_m5["optimism_x"] - 0.0031 * 330.0) < 0.01, _m5["optimism_x"])
+_b6, _m6 = _CE.max_bet([_wild])
+ck("if EVERY slip is over-optimistic it still answers, flagged",
+   _b6 is not None and _m6["optimism_ok"] is False,
+   "returning nothing would be worse than returning it with a warning")
+ck("the market's own view of the slip travels with it",
+   _m6["market_prob_pct"] is not None)
+
+# stackable(): the per-leg bound, one-sided and ratio-based.
+ck("a 2c leg the model calls 16.6% is not stackable",
+   not _CE.stackable(0.166, 2.0),
+   "an 8x overstatement; a points threshold sees only 14.6pp and shrugs")
+ck("a 25c leg the model calls 30% is stackable", _CE.stackable(0.30, 25.0))
+ck("pessimism is never blocked (the search discards it anyway)",
+   _CE.stackable(0.10, 50.0))
+ck("a 99c leg is refused — it buys 1.01x for a third of the probability",
+   not _CE.stackable(0.834, 99.0),
+   f"ceiling is {_CE.MAX_BET_LEG_CENTS}c")
+ck("an unpriced leg is never stackable", not _CE.stackable(0.5, None))
+ck("a 100c 'no offer' is never stackable", not _CE.stackable(0.5, 100))
+
+# The floor sweep. Reachability is not monotone in the floor, which is the whole
+# reason one fixed floor cannot be trusted.
+_calls = []
+
+
+def _fake_build(f):
+    _calls.append(f)
+    return {"n_legs": 5, "cap_reached": f == 35,
+            "combined_prob_pct": 0.3 if f == 35 else 0.1,
+            "uncapped_payout_x": 330.0 if f == 35 else 12.0}
+
+
+_swept = _CE.best_max_bet(_fake_build, floors=(45, 35, 25))
+ck("the sweep tries every floor", _calls == [45, 35, 25], _calls)
+ck("and keeps the one that reached the ceiling", _swept["cap_reached"])
+ck("the floors tried travel back on the slip",
+   len(_swept["max_bet_floors_tried"]) == 3)
+ck("a sweep where nothing reaches keeps the closest",
+   _CE.best_max_bet(lambda f: {"n_legs": 3, "cap_reached": False,
+                               "uncapped_payout_x": f},
+                    floors=(10, 90, 50))["uncapped_payout_x"] == 90)
+ck("a builder that returns nothing anywhere yields None",
+   _CE.best_max_bet(lambda f: None, floors=(45, 25)) is None)
+ck("a builder that raises does not sink the sweep",
+   _CE.best_max_bet(lambda f: (_ for _ in ()).throw(RuntimeError("x"))
+                    if f == 45 else {"n_legs": 2, "cap_reached": True,
+                                     "combined_prob_pct": 1.0},
+                    floors=(45, 25)) is not None)
+
+# The ceiling itself is one named, movable number -- it is not in Kalshi's API.
+ck("the cap is a single named constant", _CE.MAX_PAYOUT_X > 1)
+ck("and is env-overridable, since the API does not publish it",
+   "VIGIL_MAX_PAYOUT_X" in _insp.getsource(_CE))
+
+# Wiring: all three builders take it, and none of them silently claims success.
+import combine as _CMB
+for _mod, _fn, _nm in ((B, "build_mixed_parlay", "baseball"),
+                       (_NFS, "build_parlay", "nfl_game_sim"),
+                       (_CMB, "build", "combine/tennis")):
+    ck(f"{_nm} accepts max_bet",
+       "max_bet" in _insp.signature(getattr(_mod, _fn)).parameters)
+for _mod, _nm in ((B, "baseball"), (_NFS, "nfl_game_sim")):
+    _src = _insp.getsource(_mod)
+    ck(f"{_nm} does not let payout_reached default to True on a max bet",
+       'item["payout_reached"] = meta.get("cap_reached")' in _src,
+       "_mixed_item defaults it to True when given no fair-payout target, which "
+       "would announce success on every max bet regardless of what happened")
+    ck(f"{_nm} bounds per-leg optimism when max_bet is on",
+       "combo_engine.stackable" in _src)
+ck("tennis requires liquidity, not merely a price",
+   'v.get("liquid")' in _insp.getsource(_CMB._assemble_max_bet),
+   "84 priced legs, and the price-only version took a 1c side with no volume")
+ck("tennis prices its frontier on COST, not 1/prob",
+   '"payout": 1.0 / cost' in _insp.getsource(_CMB._assemble_max_bet),
+   "the ceiling applies to what the exchange pays, not to the fair payout")
+ck("the tennis board hands liquidity to the leg builder",
+   "side_liquid" in _insp.getsource(_CMB._tennis_legs))
+
+# API + UI
+_app = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                         "app.py")).read()
+ck("all three endpoints read max_bet", _app.count('request.args.get("max_bet")') == 3,
+   _app.count('request.args.get("max_bet")'))
+ck("and all three sweep rather than picking one floor",
+   _app.count("best_max_bet") == 3, _app.count("best_max_bet"))
+ck("an unreachable ceiling is a named hint, not a bare null",
+   _app.count("max_bet_unreachable") >= 3)
+for _b, _label in (("buildCombo", "MLB"), ("buildNFLCombo", "NFL"),
+                   ("buildTennisCombo", "tennis")):
+    ck(f"the {_label} maker has a max-bet button",
+       f"{_b}(true)" in _js)
+ck("every max-bet button is labelled with the ceiling",
+   _js.count("🎰 Max bet (${MAX_BET_X}×)") == 3)
+ck("the slip shows the market's probability beside ours",
+   "market_prob_pct" in _js and "Market says" in _js)
+ck("and says so when the ceiling could not be reached",
+   "isn't reachable on this board today" in _js)
+ck("the button label follows the server's cap, not a hardcoded 320",
+   "noteMaxBetCap" in _js and _js.count("noteMaxBetCap(d)") == 3)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -34,12 +34,26 @@ net. `net=True` (the default) prices every leg at ask+fee.
 """
 
 import math
+import os
 
 # Kalshi's taker fee, as a fraction of the contract, is fee_rate * p * (1-p)
 # rounded up to the cent. baseball._kalshi_fee owns the exact formula; this
 # module asks it rather than keeping a second copy that can drift.
 _MIN_PRICE_C = 1
 _MAX_PRICE_C = 99
+
+# The ceiling on what a Kalshi combo pays. A combo settles at $1.00 per contract,
+# so the multiple you collect is 1/price and the ceiling is set by the cheapest
+# price a combo can be quoted at.
+#
+# This number is NOT in the API. /multivariate_event_collections publishes
+# size_min, size_max and the resolution rules and nothing about price or payout,
+# and the help centre only says a combo "pays out a maximum of $1.00 per
+# contract" -- which is the per-contract settlement, not the multiple. 320 is the
+# figure the app is built around; it is an observation off the exchange UI, not
+# something this code can verify, so it lives in one named place and can be moved
+# by an env var when the real number is confirmed.
+MAX_PAYOUT_X = float(os.getenv("VIGIL_MAX_PAYOUT_X") or 320)
 
 OBJECTIVES = ("balanced", "safe", "value")
 
@@ -497,6 +511,189 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
                       round(max((s["fair_payout"] or 0) for s in pool), 2)
                       if pool else None),
                   "n_states": len(states), "n_feasible": len(feasible)}
+
+
+def max_bet(states, cap=None):
+    """The slip most likely to cash among those that still collect the full cap.
+
+    A different question from `choose`, and it needs a different answer. Kalshi
+    pays a combo at most `cap`x, so payout past the ceiling is thrown away: a
+    900x slip and a 320x slip pay you exactly the same money, and the 320x one
+    can be several times likelier to get there. "Biggest payout on the board" is
+    therefore the wrong target. The right one is: of the slips that reach the
+    ceiling, take the one that most often pays.
+
+    Two things this insists on that `choose` does not:
+
+    * The MARKET payout (1/cost), not the fair payout. `choose` deliberately
+      judges its payout target on the fair number so it isn't dragged around by
+      mispriced legs. Here the cap is a property of what Kalshi actually hands
+      over, so the market number is the only one that means anything.
+    * Every leg priced. Unpriced legs are charged at fair value upstream, which
+      makes them EV-neutral and invisible in the cost -- so a slip can "reach
+      320x" through legs that have no market to buy. That is a number, not a bet.
+
+    Returns (state, meta) like `choose`, so callers reuse the same plumbing.
+    """
+    cap = float(cap or MAX_PAYOUT_X)
+    if not states:
+        return None, {}
+    priced = [s for s in states
+              if s.get("payout") and s.get("priced_frac", 0.0) >= 1.0]
+    # Falling back to partly-unpriced slips is worth doing -- an empty answer is
+    # useless -- but it changes what the number means, so it travels in the meta
+    # and the slip is expected to say so.
+    pool, all_priced = (priced, True) if priced else (
+        [s for s in states if s.get("payout")], False)
+    if not pool:
+        return None, {}
+    # Bound what the slip as a whole may claim over the market. Kept as a
+    # fallback rather than a hard filter: if literally nothing clears it, the
+    # honest move is to return the least-inflated slip and flag it, not to
+    # pretend the board is empty.
+    sane = [s for s in pool
+            if s["prob"] * s["payout"] <= MAX_BET_TOTAL_OPTIMISM]
+    optimism_ok = bool(sane)
+    if sane:
+        pool = sane
+
+    at_cap = [s for s in pool if s["payout"] >= cap]
+    if at_cap:
+        # Among slips that all collect the same capped payout, probability is the
+        # only thing left to want. Ties break toward the smaller overshoot, which
+        # is the slip wasting least of its theoretical payout on the ceiling.
+        best = max(at_cap, key=lambda s: (s["prob"], -s["payout"]))
+    else:
+        # Nothing on the board reaches it. "This slate tops out at 47x" is a real
+        # answer; returning None and letting the UI say "no combo" is not.
+        best = max(pool, key=lambda s: (s["payout"], s["prob"]))
+
+    collected = min(best["payout"], cap)
+    return best, {
+        "max_bet": True,
+        "cap_x": round(cap, 2),
+        "cap_reached": bool(at_cap),
+        "collected_x": round(collected, 2),
+        # What the slip would pay with no ceiling, and how much of that the
+        # ceiling eats. Both only interesting when there IS an overshoot.
+        "uncapped_payout_x": round(best["payout"], 2),
+        "overshoot_x": (round(best["payout"] - cap, 2)
+                        if best["payout"] > cap else None),
+        # EV against the payout you are actually handed, not the one the
+        # multiplication implies. Above the cap these diverge sharply, and the
+        # capped number is the true one.
+        "capped_ev_pct": round((best["prob"] * collected - 1.0) * 100, 1),
+        "best_payout_x": round(max(s["payout"] for s in pool), 2),
+        "all_legs_priced": all_priced,
+        # What the MARKET thinks this slip's chance is -- the product of the
+        # prices you pay. Shown next to our own number because on a 320x lottery
+        # ticket the two can differ by a lot, and the user is entitled to see the
+        # disagreement rather than only the half of it we happen to believe.
+        "market_prob_pct": round(best["cost"] * 100, 3) if best.get("cost") else None,
+        "optimism_x": round(best["prob"] * best["payout"], 2),
+        "optimism_ok": optimism_ok,
+        "n_states": len(states), "n_feasible": len(pool),
+    }
+
+
+# Per-leg floors a max bet is tried at. Reaching a 320x MARKET payout needs
+# either many legs or unlikely ones, so a 55% floor usually cannot get there at
+# all -- but simply dropping the floor to the basement is not the answer either,
+# because the candidate pipeline is lossy by design: _pool trims to ~22 legs a
+# game and game_bundles keeps only the safest few, the longest few and the best
+# correlating few. Which legs survive that trim depends on the floor, so the
+# reachable payout is NOT monotone in it. Measured on an 8-game slate:
+#
+#     floor 50%, <=12 legs -> best payout 8.39x
+#     floor 40%, <=16 legs -> best payout 3.07x     <- lower floor, worse reach
+#     floor 25%, <=20 legs -> 327.9x
+#
+# A single floor therefore makes the button a coin flip. Sweeping a few and
+# keeping the best is what makes "the best slip that reaches the cap" true.
+MAX_BET_FLOORS = (45, 35, 25, 15)
+
+
+# How much more likely than the market a leg may be and still be stacked into a
+# max bet. A RATIO, not a gap in points, because a max bet multiplies prices and
+# it is relative optimism that compounds. Measured on a live tennis board: the
+# model/market gap is small in absolute terms (median 2.4pp, max 22.1pp over 84
+# priced legs) and looks harmless -- but the cheapest leg was 2c against a model
+# probability of 16.6%, an eight-fold overstatement, and two of those multiplied
+# into a "384x at 4.5%, +1334% EV" slip. A points threshold cannot see that; 16.6
+# vs 2.0 is a 14.6pp gap, which is unremarkable. A ratio can.
+MAX_BET_OPTIMISM = 2.0
+
+# Above this a leg cannot earn its place in a max bet. Every leg you add
+# multiplies the payout by 1/price and the probability by p, and since the payout
+# is capped the only thing left to protect is probability -- so a leg is worth
+# adding only if it buys meaningfully more payout than it costs in chance. A 99c
+# leg multiplies the payout by 1.001 and the probability by 0.834, which is a
+# terrible trade in every direction, and one turned up in a live tennis slip
+# because the cost-bucketed DP is coarse enough to lose the state that dominates
+# it. Cheaper to exclude the useless legs than to fight the bucketing.
+MAX_BET_LEG_CENTS = 95
+
+
+def stackable(prob, price_cents, k=MAX_BET_OPTIMISM):
+    """May this leg go into a max bet? One-sided on purpose.
+
+    A leg the model likes far MORE than the market is the one a payout-seeking
+    search reaches for -- cheap and, according to us, likely -- and it is exactly
+    where the model is least trustworthy, because deep longshots are the hardest
+    region to calibrate. A leg the model likes LESS than the market needs no
+    guard: it lowers the slip's probability, so the search discards it anyway.
+    """
+    if not price_cents or not (0 < price_cents <= MAX_BET_LEG_CENTS):
+        return False
+    return prob <= k * (price_cents / 100.0)
+
+
+# A per-leg bound cannot see compounding, and compounding is the whole problem.
+# With MAX_BET_OPTIMISM alone, a live tennis board returned six legs that each
+# sat just inside it -- 45.8% against 25c, 38.1% against 22c, 36.6% against 22c,
+# 36.2% against 27c -- and the slip claimed +451% EV, because four legs at ~1.7x
+# the market's probability multiply to roughly 8x. Every leg was individually
+# defensible and the product was fantasy.
+#
+# So the SLIP is bounded too. prob/cost is exactly the total optimism ratio (and
+# exactly EV+1), so one number covers it: a max bet may claim at most this much
+# more than the market thinks it is worth.
+MAX_BET_TOTAL_OPTIMISM = 3.0
+
+
+def _mb_key(it):
+    """Order two max-bet slips. Reaching the ceiling beats not reaching it; among
+    those that reach it the likelier one wins; among those that don't, the one
+    that got closest."""
+    reached = bool(it.get("cap_reached"))
+    return (1 if reached else 0,
+            (it.get("combined_prob_pct") or 0.0) if reached
+            else (it.get("uncapped_payout_x") or 0.0))
+
+
+def best_max_bet(build, floors=MAX_BET_FLOORS):
+    """Best max bet across several per-leg floors. `build(floor_pct)` returns a
+    finished slip or None; see MAX_BET_FLOORS for why one floor is not enough.
+
+    The floors tried travel back on the slip, because "we looked at four and this
+    was the best" is a materially different claim from "this is what 25% gave us"
+    and the UI should be able to tell the truth about which one it is."""
+    best, tried = None, []
+    for f in floors:
+        try:
+            it = build(f)
+        except Exception:
+            continue
+        if not it or not isinstance(it, dict) or not it.get("n_legs"):
+            continue
+        tried.append({"floor_pct": f, "reached": bool(it.get("cap_reached")),
+                      "payout_x": it.get("uncapped_payout_x"),
+                      "prob_pct": it.get("combined_prob_pct")})
+        if best is None or _mb_key(it) > _mb_key(best):
+            best = it
+    if best is not None:
+        best["max_bet_floors_tried"] = tried
+    return best
 
 
 def compare(states, chosen, **kw):

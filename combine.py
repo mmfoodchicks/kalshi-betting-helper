@@ -431,23 +431,31 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False, window=None):
         insights = m.get("insights") or []
         why = insights[0] if insights else None
 
-        def leg(label, prob_pct, cents, typ, why=None, avg=None, unit=None):
+        def leg(label, prob_pct, cents, typ, why=None, avg=None, unit=None,
+                liquid=None):
             if prob_pct is None:
                 return
             d = {"category": cat, "event_id": ev, "label": label, "matchup": mu,
                  "prob": max(0.01, min(0.99, prob_pct / 100.0)),
-                 "price_cents": cents, "type": typ,
+                 "price_cents": cents, "type": typ, "liquid": liquid,
                  "sim_avg": avg, "avg_unit": unit, "where": where or None}
             if why:
                 d["why"] = why
             legs.append(d)
 
         fav_is_a = (a.get("fair_win") or a.get("model_win") or 0) >= (b.get("fair_win") or b.get("model_win") or 0)
-        # winner legs use the confidence-blended fair win% (falls back to model)
+        # winner legs use the confidence-blended fair win% (falls back to model).
+        # `liquid` separates a price that is QUOTED from one that is merely
+        # listed: a 1c side with no volume, no open interest and a 40c spread has
+        # a number next to it and nothing behind it. Only the max-bet builder
+        # insists on it today, because it is the one that multiplies prices
+        # together and is therefore the one a penny quote can run away with.
         leg(f"{a['name']} to win", a.get("fair_win") if a.get("fair_win") is not None else a.get("model_win"),
-            a.get("cents"), "Match", why if fav_is_a else None)
+            a.get("cents"), "Match", why if fav_is_a else None,
+            liquid=tennis_prices.side_liquid(a))
         leg(f"{b['name']} to win", b.get("fair_win") if b.get("fair_win") is not None else b.get("model_win"),
-            b.get("cents"), "Match", why if not fav_is_a else None)
+            b.get("cents"), "Match", why if not fav_is_a else None,
+            liquid=tennis_prices.side_liquid(b))
         # total sets / goes the distance (Bo3) -- model only
         ts = m.get("total_sets") or {}
         if m.get("best_of") == 3 and ts.get("3") is not None:
@@ -801,6 +809,84 @@ def _assemble(by_event, target, legs_target, payout_target,
                     "meets_payout": meets_payout(best), "hard_ok": hard_ok}
 
 
+def _assemble_max_bet(by_event, target, cap, max_legs, cap_x=None):
+    """Tennis's answer to Kalshi's payout ceiling: the likeliest slip that still
+    collects the full capped payout.
+
+    `_assemble` cannot answer this. Its DP tracks probability alone and reports
+    `payout` as 1/prob -- the FAIR payout. That is the right number for its own
+    targets and the wrong one here, because the ceiling applies to what the
+    exchange actually pays, which is 1/cost. So this walks the same
+    one-leg-per-event structure with a COST-keyed DP, the way the baseball and
+    football frontier already does, and hands the states to the shared selector.
+
+    Legs must be priced AND liquid. Priced alone is not enough here, and this is
+    not a hypothetical: with only the price check, a live board returned a
+    TWO-leg slip paying 384x at a 4.5% joint chance, and reported a best
+    available payout of 7.4 BILLION x. Those are 1c sides with no volume, no open
+    interest and a spread the width of the market -- a number printed next to a
+    match, not an offer. Multiplying prices together is precisely the operation
+    that lets one such quote run away with the whole slip, which is why the max
+    bet insists on liquidity where the other tennis builders do not.
+
+    The band's floor is dropped: reaching a 320x payout takes either many legs or
+    unlikely ones, and a 55% floor across twelve matches cannot get there. The
+    per-leg probability still travels with each leg, so the slip shows what it is.
+    """
+    import math
+    import combo_engine
+    groups = []
+    for vs in by_event.values():
+        ok = [v for v in vs
+              if v.get("price_cents") and 0 < v["price_cents"] < 100
+              and v.get("liquid") and v["prob"] <= cap
+              and combo_engine.stackable(v["prob"], v["price_cents"])]
+        if ok:
+            groups.append(ok)
+    if len(groups) < 2:
+        return [], None
+
+    RES = 0.05
+    # dp[(n_legs, cost_bucket)] = (log_prob, log_cost, sel) -- keep the likeliest
+    # slip at each price, which is exactly the frontier a ceiling needs.
+    dp = {(0, 0): (0.0, 0.0, [])}
+    for legs in groups:
+        nd = dict(dp)                           # skipping an event is allowed
+        for (nlegs, _bk), (lp, lc, sel) in dp.items():
+            for l in legs:
+                nl = nlegs + 1
+                if nl > max_legs:
+                    continue
+                p = l["prob"]
+                if not (0 < p <= 1):
+                    continue
+                c = l["price_cents"]
+                c = min(99.9, c + _fee_cents(c)) / 100.0    # each leg pays a taker fee
+                nlp, nlc = lp + math.log(max(1e-9, p)), lc + math.log(c)
+                key = (nl, int(round(nlc / RES)))
+                cur = nd.get(key)
+                if cur is None or nlp > cur[0]:
+                    nd[key] = (nlp, nlc, sel + [l])
+        dp = nd
+
+    states = []
+    for (nlegs, _bk), (lp, lc, sel) in dp.items():
+        if nlegs < 2 or not sel:
+            continue
+        prob, cost = math.exp(lp), math.exp(lc)
+        if cost <= 0:
+            continue
+        states.append({"legs": nlegs, "prob": prob, "cost": cost,
+                       "payout": 1.0 / cost, "priced_frac": 1.0, "sel": sel})
+    if not states:
+        return [], None
+    best, meta = combo_engine.max_bet(states, cap=cap_x)
+    if not best:
+        return [], None
+    chosen = [dict(l, meets=(l["prob"] >= target)) for l in best["sel"]]
+    return chosen, meta
+
+
 def _leg_edge(l):
     """Edge in cents = our prob - the Kalshi ask, or None if the leg isn't priced."""
     return (l["prob"] * 100 - l["price_cents"]) if l.get("price_cents") else None
@@ -1026,7 +1112,8 @@ def _assemble_by_cat(legs, per_cat, target, max_legs, payout_target=None, payout
 
 def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=12,
           legs_mode="prefer", payout_mode=None, conn="or", types=None, per_cat=None,
-          allow_live=False, cap_pct=None, tennis_window=None):
+          allow_live=False, cap_pct=None, tennis_window=None,
+          max_bet=False, cap_x=None):
     legs = _filter_types(gather(cats, date, season, allow_live,
                                 tennis_window=tennis_window), types)
     counts = {}
@@ -1066,6 +1153,18 @@ def build(cats, n_legs, target_pct, date, season, target_payout=None, max_legs=1
     by_event = {}
     for l in legs:
         by_event.setdefault(l["event_id"], []).append(l)
+    if max_bet:
+        chosen, mb = _assemble_max_bet(by_event, target, cap, max_legs, cap_x=cap_x)
+        if not chosen:
+            return {"combo": None, "counts": counts,
+                    "hint": "max_bet_needs_priced_legs"}
+        item = _item(chosen)
+        item["target_pct"] = round(target * 100, 1)
+        item["legs_meeting_target"] = sum(1 for v in chosen if v.get("meets"))
+        item["legs_used"] = len(chosen)
+        item["objective"] = "max_bet"
+        item.update(mb)
+        return {"combo": item, "counts": counts}
     chosen, meta = _assemble(by_event, target, n_legs, target_payout,
                              legs_mode=legs_mode, payout_mode=payout_mode,
                              conn=conn, max_legs=max_legs, cap=cap)

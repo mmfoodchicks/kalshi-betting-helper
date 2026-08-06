@@ -821,12 +821,16 @@ def price_cands(cands, suffix, blend=True):
 def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
                  target_payout=0, max_legs_per_game=3, max_total_legs=8,
                  legs_mode="prefer", payout_mode="off", conn="or",
-                 objective="balanced", n_sims=3000, types=None, game_sel=None):
+                 objective="balanced", n_sims=3000, types=None, game_sel=None,
+                 max_bet=False, cap_x=None):
     """One parlay across the week's NFL games, priced against Kalshi.
 
     `cap_pct` turns the confidence floor into a band exactly as it does in
     baseball: the spread and total ladders now carry every line Kalshi books, so
-    the builder walks to the one that lands inside it."""
+    the builder walks to the one that lands inside it.
+
+    `max_bet` swaps every target for Kalshi's payout ceiling -- the likeliest
+    slip that still collects the full capped payout. See combo_engine.max_bet."""
     import combo_engine
     import mlb_sim
     import kalshi_nfl
@@ -847,6 +851,11 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
             continue
         price_cands(cands, g["suffix"])
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
+        # Same optimism bound as baseball: a max bet multiplies prices, so a leg
+        # the model likes far more than the market can carry the slip alone.
+        if max_bet:
+            cands = [c for c in cands
+                     if combo_engine.stackable(c["marg"], c.get("price_cents"))]
         if not cands:
             continue
         # Floor of 1, not 2 -- same bug as baseball carried. With same-game off
@@ -864,18 +873,30 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
         return {"error_hint": "single_game_no_stack", "n_games_available": len(games_bundles)}
     states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
                                    net=True)
-    targets = {"legs_target": n_legs, "payout_target": target_payout,
-               "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
-    best, meta = combo_engine.choose(states, objective=objective, **targets)
+    if max_bet:
+        # Same reasoning as baseball: the ceiling is the target, so the leg and
+        # payout preferences have nothing left to bind.
+        targets = {}
+        best, meta = combo_engine.max_bet(states, cap=cap_x)
+    else:
+        targets = {"legs_target": n_legs, "payout_target": target_payout,
+                   "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+        best, meta = combo_engine.choose(states, objective=objective, **targets)
     if not best:
         return None
     item = mlb_sim._mixed_item(best["sel"], games_bundles,
-                               target_payout if payout_mode != "off" else None)
+                               None if max_bet else
+                               (target_payout if payout_mode != "off" else None))
     for k, v in meta.items():
         if k != "objective" and v is not None:
             item[k] = v
-    item["objective"] = objective
-    item["legs_target"] = n_legs if legs_mode != "off" else None
+    item["objective"] = "max_bet" if max_bet else objective
+    item["legs_target"] = None if max_bet else (n_legs if legs_mode != "off" else None)
+    if max_bet:
+        # Same trap as baseball: _mixed_item's payout_reached defaults to True
+        # with no fair-payout target, which would claim every max bet succeeded.
+        item["payout_reached"] = meta.get("cap_reached")
+        item["target_payout_x"] = None
     item["leg_floor_pct"] = round(floor * 100, 1)
     item["leg_cap_pct"] = round(ceil * 100, 1) if ceil < 1.0 else None
     item["preseason"] = bool(preseason)
@@ -885,7 +906,8 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item["kelly_pct"] = round(combo_engine.kelly(best["prob"], best["cost"]) * 100, 2)
     item["priced_frac"] = round(best["priced_frac"], 2)
     item["priced_legs"] = best["priced"]
-    item["alternatives"] = combo_engine.compare(states, best, **targets)
+    if not max_bet:
+        item["alternatives"] = combo_engine.compare(states, best, **targets)
     item["n_sims"] = n_sims
     return item
 
