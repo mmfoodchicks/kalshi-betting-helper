@@ -1433,13 +1433,35 @@ function renderCombo(c, tag, extraCls) {
     nums += `<span>Parlay payout <b>${c.parlay_payout_x}×</b></span>
              <span>EV <b class="${c.ev_pct >= 0 ? "ev pos" : "ev neg"}">${c.ev_pct >= 0 ? "+" : ""}${c.ev_pct}%</b>${netEv}</span>`;
   }
+  // Whether the targets you REQUIRED were actually met. This was computed all
+  // along and never shown: ask for "require 5x payout" on a board whose legs are
+  // capped at 70% and the builder returns its best effort -- 3.94x -- with
+  // nothing on screen to say the hard target was missed, so the slip reads like
+  // the answer you asked for.
+  const band = (c.target_pct != null)
+    ? `<span>each leg <b>${c.target_pct}%${c.cap_pct != null ? `–${c.cap_pct}%` : "+"}</b></span>` : "";
+  const legsNote = (c.legs_target != null && c.legs_mode && c.legs_mode !== "off")
+    ? `<span>${c.legs_target} legs <b style="color:${c.legs_met === false ? "#e0566a" : "#3ad17a"}">${c.legs_met === false ? `✗ got ${c.legs_used}` : "✓"}</b></span>` : "";
+  const payNote = (c.target_payout_x && c.payout_mode && c.payout_mode !== "off")
+    ? `<span>payout ≥${c.target_payout_x}× <b style="color:${c.payout_reached ? "#3ad17a" : "#e0566a"}">${c.payout_reached ? "✓" : `✗ best ${c.fair_payout_x}×`}</b></span>` : "";
+  let warn = "";
+  if (c.hard_ok === false) {
+    const miss = [];
+    if (c.legs_met === false) miss.push("the leg count");
+    if (c.target_payout_x && !c.payout_reached) miss.push(`a ${c.target_payout_x}× payout`);
+    warn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't hit ${miss.join(" or ") || "one of your required targets"} on this board — showing the closest slip. ${
+      (c.target_payout_x && !c.payout_reached && c.cap_pct != null)
+        ? `A ceiling of ${c.cap_pct}% caps each leg's payout, so ${c.legs_used} of them can reach about ${c.fair_payout_x}× at most: raise the ceiling or add legs.`
+        : "Loosen a target or add legs."}</div>`;
+  }
   return `<div class="combo ${extraCls || ""}">
     <div class="chead">
       <span class="ctag">${tag || c.n_legs + "-team parlay"}</span>
       <span class="small">${c.n_legs} legs</span>
     </div>
     <ul class="legs">${legs}</ul>
-    <div class="cnums">${nums}</div>
+    <div class="cnums">${nums}${band}${legsNote}${payNote}</div>
+    ${warn}
   </div>`;
 }
 
@@ -2793,7 +2815,7 @@ async function buildNFLCombo() {
     + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`;
   try {
     const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
-    if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+    if (d.error) { put(`<div class="empty">${escapeHtml(d.error)}</div>`); return; }
     if (!d.parlay) {
       out.innerHTML = `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
@@ -3354,8 +3376,14 @@ function renderTennisMaker() {
   if (prev) { const el = $("tnComboOut"); if (el) el.innerHTML = prev; }
 }
 async function buildTennisCombo() {
-  const out = $("tnComboOut");
-  if (!out) return;
+  // Resolve the output node at WRITE time, every time. Capturing it once was the
+  // bug behind "Building…" forever: renderTennisMaker() below rebuilds the whole
+  // maker box to refresh the window counts, which destroys and recreates
+  // #tnComboOut -- so the captured reference became a detached node and every
+  // later write landed nowhere, while the rebuild restored the preserved
+  // "Building…" into the new one.
+  const put = (html) => { const el = $("tnComboOut"); if (el) el.innerHTML = html; };
+  if (!$("tnComboOut")) return;
   const num = (id, d) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? d : v; };
   tnComboLegs = Math.max(2, Math.min(12, num("tnComboN", 3)));
   tnComboTarget = Math.max(20, Math.min(97, num("tnComboTarget", 60)));
@@ -3367,7 +3395,7 @@ async function buildTennisCombo() {
   tnComboConn = ($("tnComboConn") || {}).value || "or";
   tnComboLive = !!(($("tnComboLive") || {}).checked);
   tnComboWindow = ($("tnComboWindow") || {}).value || "";
-  out.innerHTML = `<div class="empty">Building…</div>`;
+  put(`<div class="empty">Building…</div>`);
   const q = `legs=${tnComboLegs}&target=${tnComboTarget}&payout=${tnComboPayout}`
     + (tnComboCap ? `&cap=${tnComboCap}` : "") + (tnComboLive ? "&live=1" : "")
     + tnTypesParam() + (tnComboWindow ? `&window=${tnComboWindow}` : "")
@@ -3375,17 +3403,17 @@ async function buildTennisCombo() {
   try {
     const d = await (await fetch(`/api/tennis/parlay?${q}`)).json();
     if (d.window_counts) { _tnWinCounts = d.window_counts; renderTennisMaker(); }
-    if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+    if (d.error) { put(`<div class="empty">${escapeHtml(d.error)}</div>`); return; }
     if (!d.combo) {
       const n = d.n_combo_matches;
-      out.innerHTML = `<div class="empty">No slip fits those targets.${n === 0
+      put(`<div class="empty">No slip fits those targets.${n === 0
         ? " Kalshi has no tennis match open for combos right now."
-        : (n != null ? ` Only <b>${n}</b> match${n === 1 ? " is" : "es are"} eligible today, so try fewer legs or a lower per-leg %.` : "")}</div>`;
+        : (n != null ? ` Only <b>${n}</b> match${n === 1 ? " is" : "es are"} eligible today, so try fewer legs or a lower per-leg %.` : "")}</div>`);
       return;
     }
-    out.innerHTML = renderCombo(d.combo, "🎾 Tennis parlay", "hl prop");
+    put(renderCombo(d.combo, "🎾 Tennis parlay", "hl prop"));
   } catch (e) {
-    out.innerHTML = `<div class="empty">Build failed.</div>`;
+    put(`<div class="empty">Build failed.</div>`);
   }
 }
 

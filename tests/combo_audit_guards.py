@@ -1138,6 +1138,43 @@ ck("the board has a manual refresh",
 
 print()
 print("=" * 72)
+print("The maker writes where you can see it, and admits a missed target")
+print("=" * 72)
+import re as _re2
+_bt = _re2.search(r"async function buildTennisCombo\(\) \{.*?\n\}", _js, _re2.S).group(0)
+ck("the tennis maker resolves its output node at WRITE time",
+   "const put = (html) => { const el = $(\"tnComboOut\"); if (el) el.innerHTML = html; };" in _bt,
+   "capturing it once was the 'Building...' forever bug: renderTennisMaker() "
+   "rebuilds the maker box to refresh the window counts, which DESTROYS and "
+   "recreates #tnComboOut, so the captured node was detached and every later "
+   "write landed nowhere while the rebuild restored the preserved 'Building...'")
+ck("and holds no stale element reference at all",
+   not _re2.search(r"\bout\.innerHTML", _bt),
+   "one survived the first pass and would have thrown ReferenceError, since "
+   "`out` no longer exists")
+ck("every exit path writes through it",
+   _bt.count("put(") >= 5,
+   "loading, error, no-combo and success -- a path that forgets leaves the "
+   "spinner up forever, which is exactly how this presented")
+_bn = _re2.search(r"async function buildNFLCombo\(\) \{.*?\n\}", _js, _re2.S).group(0)
+ck("the NFL maker never rebuilds its own box mid-flight",
+   "renderNFLComboMaker()" not in _bn,
+   "it caches its node too, but renderMixed() only returns a string -- so the "
+   "same bug is not latent there")
+
+_rc = _re2.search(r"function renderCombo\(.*?\n\}\n", _js, _re2.S).group(0)
+for _f in ("payout_reached", "legs_met", "hard_ok", "target_payout_x", "cap_pct"):
+    ck(f"the slip surfaces {_f}", _f in _rc,
+       "computed all along and never shown" if _f == "hard_ok" else "")
+ck("a missed hard target is called out, not left to be inferred",
+   "Couldn't hit" in _rc,
+   "asking for a 5x payout with legs capped at 70% is unreachable -- the "
+   "builder returns its best effort (3.9x) and the slip has to say so")
+ck("and the explanation names the ceiling when that is the binding constraint",
+   "caps each leg's payout" in _rc)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
