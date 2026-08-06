@@ -1145,7 +1145,19 @@ print("=" * 72)
 print("The maker writes where you can see it, and admits a missed target")
 print("=" * 72)
 import re as _re2
-_bt = _re2.search(r"async function buildTennisCombo\(\) \{.*?\n\}", _js, _re2.S).group(0)
+
+
+def _js_fn(name):
+    """Source of a JS function by NAME, whatever its parameter list.
+
+    Matching the parameter list literally is how three of these guards broke the
+    moment a function grew an argument -- the guard failed on a signature change
+    that was not a regression, which is the least useful kind of failure."""
+    m = _re2.search(r"(?:async )?function " + name + r"\([^)]*\) \{.*?\n\}",
+                    _js, _re2.S)
+    assert m, f"could not locate JS function {name}"
+    return m.group(0)
+_bt = _js_fn("buildTennisCombo")
 ck("the tennis maker resolves its output node at WRITE time",
    "const put = (html) => { const el = $(\"tnComboOut\"); if (el) el.innerHTML = html; };" in _bt,
    "capturing it once was the 'Building...' forever bug: renderTennisMaker() "
@@ -1160,7 +1172,7 @@ ck("every exit path writes through it",
    _bt.count("put(") >= 5,
    "loading, error, no-combo and success -- a path that forgets leaves the "
    "spinner up forever, which is exactly how this presented")
-_bn = _re2.search(r"async function buildNFLCombo\(\) \{.*?\n\}", _js, _re2.S).group(0)
+_bn = _js_fn("buildNFLCombo")
 ck("the NFL maker never rebuilds its own box mid-flight",
    "renderNFLComboMaker()" not in _bn,
    "it caches its node too, but renderMixed() only returns a string -- so the "
@@ -1258,7 +1270,7 @@ ck("the NFL maker calls no helper it does not own",
    "put(" not in _bn,
    "`put` is scoped to buildTennisCombo; calling it here is a ReferenceError")
 
-_gg = _re2.search(r"function renderGameGrid\(games\) \{.*?\n\}", _js, _re2.S).group(0)
+_gg = _js_fn("renderGameGrid")
 ck("the combo maker's game picker is ordered by start time",
    ".sort(" in _gg and "start_epoch" in _gg,
    "the strip scrolls sideways, so 'the first few games' has to BE the first "
@@ -1427,7 +1439,10 @@ ck("the slip shows the market's probability beside ours",
 ck("and says so when the ceiling could not be reached",
    "isn't reachable on this board today" in _js)
 ck("the button label follows the server's cap, not a hardcoded 320",
-   "noteMaxBetCap" in _js and _js.count("noteMaxBetCap(d)") == 3)
+   "function noteMaxBetCap(" in _js and _js.count("noteMaxBetCap(d);") == 3,
+   # counted with the semicolon: without it the DEFINITION line matches too and
+   # three call sites read as four
+   _js.count("noteMaxBetCap(d);"))
 
 print()
 print("=" * 72)
