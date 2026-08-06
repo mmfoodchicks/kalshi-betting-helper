@@ -1536,6 +1536,34 @@ ck("and a team key that is not a defense is refused even for a DST row",
    _ND._pool_match({"CAR": {"pos": "WR", "arr": [1]}}, "X", "DST", "CAR") is None,
    "matching on the team key alone would take whatever happened to be there")
 
+# Name matching. Sleeper writes first + last (no suffix); DK keeps the suffix and
+# punctuates initials, so an exact compare missed ~a third of a slate.
+_np = {"Marvin Harrison": {"pos": "WR", "proj": 2.5, "arr": [2.5]},
+       "AJ Dillon": {"pos": "RB", "proj": 3.0, "arr": [3.0]},
+       "Panthers": {"pos": "DST", "proj": 7.0, "arr": [7.0]}}
+_ni, _nf = _ND._norm_index(_np)
+ck("a dropped suffix still matches",
+   (_ND._pool_match(_np, "Marvin Harrison Jr.", "WR", "ARI", _ni, _nf) or {}).get("proj") == 2.5,
+   "the miss put a REGULAR-SEASON average on a preseason starter and made him "
+   "the highest projection on the board")
+ck("punctuated initials still match",
+   (_ND._pool_match(_np, "A.J. Dillon", "RB", "CAR", _ni, _nf) or {}).get("proj") == 3.0,
+   "_norm turns 'A.J.' into 'a j', which is not 'aj' -- hence the second key")
+ck("but a normalised match across POSITIONS is refused",
+   _ND._pool_match(_np, "Marvin Harrison Jr.", "TE", "ARI", _ni, _nf) is None,
+   "loosening the name must not start trading players between positions")
+
+# Being left out of the pool must not be an upgrade.
+_dp = _ND._deep_fallback({"a": {"pos": "RB", "proj": 3.0}, "b": {"pos": "RB", "proj": 8.0},
+                          "c": {"pos": "WR", "proj": 2.0},
+                          "d": {"pos": "DST", "proj": 7.0}}, True)
+ck("a preseason player beyond the depth gets the LAST modelled player's number",
+   _dp.get("RB") == 3.0 and _dp.get("WR") == 2.0, _dp)
+ck("and the table is empty out of preseason, where DK's average means what it says",
+   _ND._deep_fallback({"a": {"pos": "RB", "proj": 3.0}}, False) == {})
+ck("defenses are not in that table — they have their own measured ladder",
+   "DST" not in _dp)
+
 ck("a CPT-bearing export is detected as showdown",
    _ND.detect_mode(_rows) == "showdown")
 ck("an ordinary export is detected as classic",

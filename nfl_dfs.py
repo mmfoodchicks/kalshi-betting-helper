@@ -83,7 +83,43 @@ def _playable(c):
     return (c.get("status") or "").upper() not in _OUT_STATUS
 
 
-def _pool_match(pool, name, pos, team):
+def _norm_index(pool):
+    """{normalised name: entry} for the projection pool.
+
+    Sleeper builds its name as first + last, which drops the suffix; DK keeps it
+    and punctuates initials. So "Marvin Harrison Jr." never equalled "Marvin
+    Harrison", "A.J. Dillon" never equalled "AJ Dillon", and roughly a third of a
+    slate missed on an exact-string compare -- falling back to DK's
+    AvgPointsPerGame, which is a REGULAR-SEASON number and the single thing the
+    preseason model exists to override. It made a starter who will play one
+    series the highest projection on the board.
+
+    nfl_adp._norm already strips accents, suffixes, punctuation and case for
+    exactly this reason; it simply was not being used here."""
+    try:
+        import nfl_adp
+        norm = nfl_adp._norm
+    except Exception:
+        return {}, None
+    idx = {}
+    for k, v in pool.items():
+        nk = norm(k)
+        # First writer wins: a real player must never be displaced by a defense
+        # that happens to normalise alike.
+        if nk and nk not in idx:
+            idx[nk] = v
+        # Punctuated initials survive _norm as separate tokens -- "A.J. Dillon"
+        # becomes "a j dillon" while Sleeper's "AJ Dillon" becomes "aj dillon",
+        # so the two still miss. Squeezing the spaces out makes them the same
+        # key. Kept as a SECOND key rather than replacing the first, so the
+        # looser form is only reached when the ordinary one finds nothing.
+        sk = nk.replace(" ", "")
+        if sk and sk not in idx:
+            idx[sk] = v
+    return idx, norm
+
+
+def _pool_match(pool, name, pos, team, nidx=None, norm=None):
     """This player's simulated projection, or None.
 
     The team-abbreviation lookup exists for ONE reason: DK writes a defense as
@@ -105,11 +141,43 @@ def _pool_match(pool, name, pos, team):
     hit = pool.get(name)
     if hit is not None:
         return hit
+    if nidx and norm:
+        nk = norm(name)
+        want = (pos or "").upper()
+        for key in (nk, nk.replace(" ", "")):
+            hit = nidx.get(key)
+            # Only across the same position -- normalising must not turn a
+            # missing tight end into somebody who shares a stripped name.
+            if hit is not None and (hit.get("pos") or "").upper() == want:
+                return hit
     if (pos or "").upper() == "DST" and team:
         hit = pool.get(team)
         if hit is not None and hit.get("pos") == "DST":
             return hit
     return None
+
+
+def _deep_fallback(pool, preseason):
+    """{pos: projection} for a preseason player the depth model left out.
+
+    Being excluded must not be an UPGRADE, and it was. A matched player carries a
+    preseason projection -- two or three points, because exhibition usage is
+    small. An unmatched one fell back to DK's AvgPointsPerGame, a REGULAR-SEASON
+    average worth seven to ten. So every player the model deliberately judged too
+    deep to see the field came back rated three times higher than the players it
+    had modelled, and one of them turned up as the captain.
+
+    A player beyond the measured exhibition depth at his position cannot
+    reasonably be projected above the LAST player who made it in, so that is what
+    he gets. Regular season keeps DK's average, where it means what it says."""
+    if not preseason:
+        return {}
+    by = {}
+    for v in pool.values():
+        p = (v.get("pos") or "").upper()
+        if p in ("QB", "RB", "WR", "TE") and v.get("proj") is not None:
+            by.setdefault(p, []).append(float(v["proj"]))
+    return {p: min(vals) for p, vals in by.items() if vals}
 
 
 def _status_seen(csv_players):
@@ -504,10 +572,12 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
                          f"(got {len(ents)} after dropping OUT/IR)"}
     pool = nfl_dfs_sim.player_pool(week, preseason=preseason) or {}
+    _nidx, _norm = _norm_index(pool)
+    _deep = _deep_fallback(pool, preseason)
     unmatched = []
     for e in ents:
         sp = _special_arr(e["pos"], preseason)
-        sim = _pool_match(pool, e["name"], e["pos"], e.get("team"))
+        sim = _pool_match(pool, e["name"], e["pos"], e.get("team"), _nidx, _norm)
         if sp:                                  # kicker / defense in August
             e["arr"] = sp
             e["proj"] = sum(sp) / len(sp)
@@ -516,7 +586,8 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             e["proj"], e["ceiling"], e["floor"], e["arr"] = (
                 sim["proj"], sim["ceiling"], sim["floor"], sim["arr"])
         else:
-            pr = e["proj"]
+            pr = _deep.get(e["pos"], e["proj"])
+            e["proj"] = pr
             e["arr"] = [max(0.0, random.gauss(pr, pr * 0.5 + 2)) for _ in range(1500)]
             e["ceiling"], e["floor"] = round(_pct(e["arr"], 0.9), 1), round(_pct(e["arr"], 0.1), 1)
             unmatched.append(e["name"])
@@ -601,6 +672,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     if not pool:
         return {"error": "projections not ready — the weekly sim is still building, retry shortly"}
 
+    _deep = _deep_fallback(pool, preseason)
     players, unmatched = [], []
     for c in csv_players:
         nm = c["name"]
@@ -608,7 +680,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
         elig = _elig(pos)
         if not elig:
             continue
-        sim = _pool_match(pool, nm, pos, c.get("team"))
+        sim = _pool_match(pool, nm, pos, c.get("team"), _nidx, _norm)
         _sp = _special_arr(pos, preseason)
         if _sp:                                     # kicker / defense in August
             samp = _sp
@@ -617,7 +689,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
         elif sim and sim.get("arr"):
             proj, ceiling, floor, samp = sim["proj"], sim["ceiling"], sim["floor"], sim["arr"]
         else:                                       # in the CSV but not projected -> soft fallback
-            proj = c.get("proj") or 0.0
+            proj = _deep.get(pos, c.get("proj") or 0.0)
             samp = [max(0.0, random.gauss(proj, proj * 0.5 + 2)) for _ in range(1500)]
             ceiling, floor = round(_pct(samp, 0.9), 1), round(_pct(samp, 0.1), 1)
             unmatched.append(nm)
