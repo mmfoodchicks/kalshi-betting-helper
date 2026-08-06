@@ -558,10 +558,21 @@ ck("and a camp-body back gets more touches than a workhorse",
 ck("running back usage is monotone in regular-season role",
    _P.expected_usage("RB", 0.0) > _P.expected_usage("RB", 2.0)
    > _P.expected_usage("RB", 6.0) > _P.expected_usage("RB", 15.0))
-ck("WR/TE are held FLAT, because the measurement says they are",
-   _P.expected_usage("WR", 0.0) == _P.expected_usage("WR", 12.0)
-   and _P.expected_usage("TE", 0.0) == _P.expected_usage("TE", 12.0),
-   "2.2 targets against 2.5 does not separate a role")
+# WR separates and TE does not, and the two need separate guards -- the single
+# guard that covered both asserted the model equalled itself, which is true by
+# construction once the table is flat and so could never have caught the WR half
+# being wrong. Numbers below are pooled over two seasons; see nfl_preseason._ROLE.
+ck("an established WR is projected BELOW a camp body",
+   _P.expected_usage("WR", 12.0) < _P.expected_usage("WR", 0.0),
+   f'{_P.expected_usage("WR", 12.0)} vs {_P.expected_usage("WR", 0.0)} '
+   "targets -- 1.58 against 2.28 over n=676, Welch t = -5.01")
+ck("and a fringe WR outworks both, being the one who plays all four quarters",
+   _P.expected_usage("WR", 2.0) > _P.expected_usage("WR", 0.0)
+   > _P.expected_usage("WR", 12.0))
+ck("TE is held FLAT, because the measurement really does say so",
+   _P.expected_usage("TE", 0.0) == _P.expected_usage("TE", 12.0),
+   "1.13 against 1.25 over n=358 is t = -0.49; the single-season split that "
+   "looked like a role (0.65 vs 1.12) rested on n=8 against n=8")
 
 # --- stat_lines sums to the budget it was cut from ------------------------
 _QBN = ["Abe Starter", "Ben Backup", "Cal Camp"]
@@ -1495,14 +1506,20 @@ ck("a roster must span both teams", _ND.SHOWDOWN_MIN_TEAMS == 2)
 ck("OUT and IR are unrosterable, questionable is not",
    not _ND._playable({"status": "OUT"}) and not _ND._playable({"status": "IR"})
    and _ND._playable({"status": "Q"}) and _ND._playable({}))
+def _own_sum(n_slots):
+    # Spread the projections out. Identical players push every share to the same
+    # value, which the 45% cap then flattens in BOTH branches -- the first
+    # version of this guard compared two capped sums and failed on a difference
+    # it had made impossible to observe.
+    ps = [{"proj": 2.0 + 3.0 * i, "salary": 7600} for i in range(12)]
+    _ND._set_ownership(ps, n_slots=n_slots)
+    return sum(p["own"] for p in ps)
+
+
 ck("ownership scales to the roster it is for",
-   (lambda ps: (_ND._set_ownership(ps, n_slots=6),
-                sum(p["own"] for p in ps))[1])(
-       [{"proj": 5.0, "salary": 7600} for _ in range(6)])
-   < (lambda ps: (_ND._set_ownership(ps, n_slots=9),
-                  sum(p["own"] for p in ps))[1])(
-       [{"proj": 5.0, "salary": 7600} for _ in range(6)]),
-   "9 slots' worth of ownership on a 6-slot slate inflates every number by half")
+   _own_sum(6) < _own_sum(9),
+   f"6-slot {_own_sum(6)} vs 9-slot {_own_sum(9)} -- 9 slots' worth on a 6-slot "
+   "slate inflates every number by half")
 
 # The pool dedupe: DK lists every player twice and the same man must not be
 # rostered as both his CPT self and his FLEX self.
@@ -1549,16 +1566,17 @@ if _got:
 ck("an established WR is dampened relative to a camp body",
    _NP.role_factor("WR", 7.0) < _NP.role_factor("WR", 0.0),
    f'{_NP.role_factor("WR", 7.0):.2f} vs {_NP.role_factor("WR", 0.0):.2f}')
-ck("an established TE likewise",
-   _NP.role_factor("TE", 7.0) < _NP.role_factor("TE", 0.0),
-   f'{_NP.role_factor("TE", 7.0):.2f} vs {_NP.role_factor("TE", 0.0):.2f}')
+ck("a TE is NOT, because two seasons say the effect isn't there",
+   _NP.role_factor("TE", 7.0) == _NP.role_factor("TE", 0.0),
+   "t = -0.49 over n=358 -- the one-season version of this guard would have "
+   "locked in an overfit to n=8")
 ck("a fringe WR outworks both", _NP.role_factor("WR", 2.0) > 1.0)
-ck("WR/TE are no longer a single flat entry",
-   len(_NP._ROLE["WR"]) > 1 and len(_NP._ROLE["TE"]) > 1,
+ck("WR is no longer a single flat entry",
+   len(_NP._ROLE["WR"]) > 1,
    "((0.0, 1.0),) gave every receiver on a team the same projection")
-ck("the inversion holds for every position, not just QB/RB",
+ck("the inversion holds for the three positions that measure it",
    all(_NP.role_factor(p, 25.0) < _NP.role_factor(p, 0.0)
-       for p in ("QB", "RB", "WR", "TE")))
+       for p in ("QB", "RB", "WR")))
 
 print()
 print("=" * 72)
