@@ -1625,6 +1625,9 @@ def api_nfl_parlay():
             types=_prop_types(), game_sel=sel or None)
     except Exception as e:
         return jsonify({"error": f"nfl parlay failed: {e}"}), 502
+    if isinstance(item, dict) and item.get("error_hint") == "single_game_no_stack":
+        return jsonify({"parlay": None, "hint": item["error_hint"],
+                        "n_games_available": item.get("n_games_available")})
     return jsonify({"parlay": item})
 
 

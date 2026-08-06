@@ -2719,7 +2719,15 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         # A same-game stack never needs to be deeper than the parlay itself, and
         # the depth is what costs -- so asking for 4 legs buys a much wider pool
         # to find a correlating pair in than passing the 30-leg tier ceiling did.
-        _depth = max(2, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+        #
+        # The floor is 1, NOT 2. With same-game parlays switched off the caller
+        # passes max_legs_per_game=1, and a floor of 2 silently overrode it: the
+        # bundle search still built pairs, the frontier still picked them, and a
+        # slip came back stacking "Over 2.5 runs" and "Under 11.5 runs" from one
+        # game with the box unticked. The floor was there to keep the search from
+        # being pointless, but one leg per game is a legitimate ask, not a
+        # degenerate one -- the cross-game frontier still has plenty to do.
+        _depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
         bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=_depth)
         if bundles:
             label = g["matchup"] + (" 🔴" if live_gs else "")

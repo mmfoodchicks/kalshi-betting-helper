@@ -1026,7 +1026,21 @@ function teamShort(name) {
 // clickable team chips. Click a team = only that team's legs (auto-selects the
 // game); click the card = the whole game; click ALL GAMES = clear to all.
 function renderGameGrid(games) {
-  const elig = games.filter((g) => ((g.live || {}).state) !== "Final");
+  // Chronological, earliest on the left, ALWAYS -- independent of the slate's
+  // sort control. The grid scrolls sideways, so "the first few games" has to be
+  // the first few cards or it means walking the whole strip to find them.
+  // Games already under way sort first, which is where they belong in time.
+  // A game with no usable time sorts last rather than to 1970 -- and note
+  // Date.parse(0) is year 2000, not the epoch, so the fallback parses `start`
+  // only when there is a string to parse.
+  const at = (g) => {
+    if (g.start_epoch) return g.start_epoch;
+    const t = g.start ? Date.parse(g.start) : NaN;
+    return isNaN(t) ? Infinity : t / 1000;
+  };
+  const elig = games.filter((g) => ((g.live || {}).state) !== "Final")
+    .slice()
+    .sort((a, b) => at(a) - at(b));
   const allOn = !comboGameSel || !Object.keys(comboGameSel).length;
   const esc = (s) => (s || "").replace(/'/g, "\\'");
   let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="comboSelectAll()">ALL<br>GAMES</div>`;
@@ -1035,11 +1049,13 @@ function renderGameGrid(games) {
     const live = (g.live || {}).state === "Live";
     const aOn = sel === true || sel === g.away_name;
     const hOn = sel === true || sel === g.home_name;
-    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="comboToggleGame(${pk})" title="${g.matchup || ""}">
+    const when = fmtStartTime(g.start);
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="comboToggleGame(${pk})" title="${g.matchup || ""}${when ? ` — ${when}` : ""}">
       ${live ? '<span class="gg-live">🔴 LIVE</span>' : ""}
       <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();comboToggleTeam(${pk},'${esc(g.away_name)}')">${teamShort(g.away_name)}</span>
       <span class="gg-vs">vs</span>
       <span class="gg-team${hOn ? " on" : ""}" onclick="event.stopPropagation();comboToggleTeam(${pk},'${esc(g.home_name)}')">${teamShort(g.home_name)}</span>
+      ${(!live && when) ? `<span class="gg-when">${when.replace(" MT", "")}</span>` : ""}
     </div>`;
   }).join("");
   return `<div class="gamegrid">${cards}</div>`;
@@ -2815,9 +2831,11 @@ async function buildNFLCombo() {
     + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`;
   try {
     const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
-    if (d.error) { put(`<div class="empty">${escapeHtml(d.error)}</div>`); return; }
+    if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     if (!d.parlay) {
-      out.innerHTML = `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
+      out.innerHTML = (d.hint === "single_game_no_stack")
+        ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game on this board, and <b>same-game parlays are off</b> — one leg per game can't make a multi-leg slip. Tick <b>allow same-game parlays</b>, or wait for more of the week to open.</div>`
+        : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
     }
     out.innerHTML = renderMixed(d.parlay);

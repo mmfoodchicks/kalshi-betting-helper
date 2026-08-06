@@ -373,6 +373,9 @@ button.danger { color: var(--no); }
 .gg-team:hover { background: rgba(91, 140, 255, 0.12); }
 .gg-team.on { background: var(--accent); color: #fff; font-weight: 600; }
 .gg-vs { display: block; font-size: 0.62rem; color: var(--muted); margin: 0; }
+/* Start time on the card. The grid is ordered by it, so the label is what makes
+   that order readable instead of something you have to take on faith. */
+.gg-when { display: block; font-size: 0.6rem; color: var(--muted); margin-top: 3px; white-space: nowrap; }
 /* Futures board: market dropdown + search + ranked team list */
 .futctl { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; flex-wrap: wrap; }
 .futctl label { color: var(--muted); }

@@ -620,8 +620,12 @@ _draws = [_G._shock(_r, _P.PLAYER_LOGSD) for _ in range(60000)]
 _mean = sum(_draws) / len(_draws)
 ck("the preseason shock does not move the projection it widens",
    abs(_mean - 1.0) < 0.02, f"E[mult] = {_mean:.4f}",)
-_lsd = (sum((_math.log(x) - sum(_math.log(y) for y in _draws) / len(_draws)) ** 2
-            for x in _draws) / len(_draws)) ** 0.5
+# Hoist the log-mean. Written inline it was recomputed for every draw -- 60k x
+# 60k logarithms, which does not fail, it just never finishes, and a guard file
+# nobody can wait out is a guard file that stops being run.
+_logs = [_math.log(x) for x in _draws]
+_lmean = sum(_logs) / len(_logs)
+_lsd = (sum((v - _lmean) ** 2 for v in _logs) / len(_logs)) ** 0.5
 ck("and it widens by the amount it says it does",
    abs(_lsd - _P.PLAYER_LOGSD) < 0.02, f"log-SD {_lsd:.3f} vs {_P.PLAYER_LOGSD}")
 ck("the shock is fitted to REACH the measured dispersion, not set equal to it",
@@ -1172,6 +1176,104 @@ ck("a missed hard target is called out, not left to be inferred",
    "builder returns its best effort (3.9x) and the slip has to say so")
 ck("and the explanation names the ceiling when that is the binding constraint",
    "caps each leg's payout" in _rc)
+
+print()
+print("=" * 72)
+print("Same-game OFF means off — the checkbox is not a suggestion")
+print("=" * 72)
+import inspect as _insp
+import mlb_sim as _MS
+import nfl_game_sim as _NFS
+
+# Source guard on the exact line that broke. app.py sends max_legs_per_game=1
+# when the box is unticked; a floor of 2 raised it back to 2 before the bundle
+# search ever ran, so the search built pairs and the frontier picked them.
+for _mod, _name in ((B, "baseball"), (_NFS, "nfl_game_sim")):
+    _src = _insp.getsource(_mod)
+    ck(f"{_name} does not floor the per-game depth at 2",
+       "max(2, min(max_legs_per_game" not in _src,
+       "min(1, 3, 30) = 1, but max(2, 1) = 2 -- the request was overwritten")
+    ck(f"{_name} floors it at 1 instead",
+       "max(1, min(max_legs_per_game" in _src,
+       "one leg per game is a legitimate ask, not a degenerate one")
+
+# Behavioural guard on the layer underneath: whatever depth is passed, the
+# bundle search must respect it. A source guard alone would not catch a
+# regression inside game_bundles.
+_fake = [{"mask": (1 << i) | 0b1010101, "marg": 0.5 + 0.01 * i, "prob": 0.5,
+          "label": f"L{i}", "group": f"g{i}", "side": "yes", "type": "Total",
+          "price_cents": 50, "matchup": "A @ B"} for i in range(6)]
+_b1 = _MS.game_bundles(_fake, n=64, max_legs=1)
+ck("game_bundles(max_legs=1) returns only single-leg bundles",
+   _b1 and all(len(b["legs"]) == 1 for b in _b1),
+   sorted({len(b["legs"]) for b in _b1}) if _b1 else "no bundles")
+_b3 = _MS.game_bundles(_fake, n=64, max_legs=3)
+ck("game_bundles(max_legs=3) still reaches three",
+   _b3 and max(len(b["legs"]) for b in _b3) == 3,
+   sorted({len(b["legs"]) for b in _b3}) if _b3 else "no bundles")
+
+# End-to-end on the real slate: the shape the bug report actually described.
+# The slip is a list of per-game GROUPS, so a same-game stack is a group of
+# size > 1 -- the Marlins/Braves group carrying "Over 2.5" and "Under 11.5".
+_off = B.build_mixed_parlay(playable, n_legs=4, target_pct=50,
+                            max_legs_per_game=1, max_total_legs=8)
+if _off:
+    _sizes = [g["size"] for g in _off["groups"]]
+    ck("a same-game-OFF mixed parlay puts at most one leg in each game",
+       set(_sizes) <= {1},
+       [(g["matchup"], g["size"]) for g in _off["groups"] if g["size"] > 1])
+    ck("and no group is flagged same_game",
+       not [g for g in _off["groups"] if g.get("same_game")])
+    ck("and each game appears once",
+       len({g["matchup"] for g in _off["groups"]}) == len(_off["groups"]))
+    ck("and the leg count still matches the groups",
+       _off["n_legs"] == sum(_sizes), f"{_off['n_legs']} vs {sum(_sizes)}")
+else:
+    ck("a same-game-OFF mixed parlay puts at most one leg in each game",
+       False, "no slip built at all -- the fix must not have emptied the board")
+# The other half of the same guard: turning it ON must still stack, or the fix
+# traded one wrong answer for another.
+_on = B.build_mixed_parlay(playable, n_legs=6, target_pct=45,
+                           max_legs_per_game=4, max_total_legs=12)
+if _on:
+    ck("same-game ON still stacks (the fix did not disable stacking)",
+       max(g["size"] for g in _on["groups"]) > 1,
+       [(g["matchup"], g["size"]) for g in _on["groups"]][:4])
+
+# One game on the board plus one leg per game cannot reach two legs. Returning
+# a bare None left the NFL tab saying "no combo" with no reason, on a preseason
+# week that had exactly one game.
+_hint = _insp.getsource(_NFS.build_parlay)
+ck("the one-leg-per-game / one-game dead end is named, not shrugged at",
+   "single_game_no_stack" in _hint,
+   "None is indistinguishable from 'the slate is dry'")
+ck("and the API forwards that hint", "single_game_no_stack" in open(
+   os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.py")).read())
+ck("and the UI explains it in words",
+   "single_game_no_stack" in _js and "same-game parlays are off" in _js)
+# `put` is a local of buildTennisCombo. It leaked into the NFL maker on the
+# copy across and would have thrown ReferenceError on the /api/nfl/parlay
+# error path -- the one path where the user most needs to be told something.
+ck("the NFL maker calls no helper it does not own",
+   "put(" not in _bn,
+   "`put` is scoped to buildTennisCombo; calling it here is a ReferenceError")
+
+_gg = _re2.search(r"function renderGameGrid\(games\) \{.*?\n\}", _js, _re2.S).group(0)
+ck("the combo maker's game picker is ordered by start time",
+   ".sort(" in _gg and "start_epoch" in _gg,
+   "the strip scrolls sideways, so 'the first few games' has to BE the first "
+   "few cards -- otherwise picking an early game means scanning the whole row")
+ck("and it sorts a copy, not the shared slate array",
+   ".slice()" in _gg,
+   "bbSlateGames backs the slate cards too, which have their own sort control")
+ck("each card shows the start time that order is based on",
+   "gg-when" in _gg and "fmtStartTime" in _gg)
+ck("the start-time label is styled",
+   ".gg-when" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "..", "static", "style.css")).read())
+ck("the payload the grid sorts on actually carries a start time",
+   all(g.get("start_epoch") or g.get("start") for g in playable),
+   [g.get("matchup") for g in playable if not (g.get("start_epoch") or g.get("start"))][:3])
 
 print()
 print("=" * 72)

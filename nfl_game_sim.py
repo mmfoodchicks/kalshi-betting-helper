@@ -849,13 +849,19 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
         if not cands:
             continue
-        depth = max(2, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+        # Floor of 1, not 2 -- same bug as baseball carried. With same-game off
+        # the caller passes max_legs_per_game=1 and a floor of 2 stacked anyway.
+        depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
         bundles = mlb_sim.game_bundles(cands, g["n"], max_legs=depth)
         if bundles:
             games_bundles.append((g["label"], bundles, g["suffix"]))
     if not games_bundles:
         return None
 
+    # One leg per game on a one-game board cannot reach two legs, and that is a
+    # sentence the caller should be able to say rather than shrug at.
+    if len(games_bundles) < 2 and max_legs_per_game <= 1:
+        return {"error_hint": "single_game_no_stack", "n_games_available": len(games_bundles)}
     states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
                                    net=True)
     targets = {"legs_target": n_legs, "payout_target": target_payout,
