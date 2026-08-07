@@ -124,6 +124,54 @@ _SPECIAL_Q = {
 SPECIAL_MEAN = {"K": 5.83, "DST": 7.07}
 
 
+# How hard a defense's score tracks what the other offense did to it. Measured
+# over 96 exhibition team-seasons (Sleeper pts_allow against DK defensive points):
+#
+#     allowed  0-14/g  n=16   10.90        r     = -0.694
+#             14-20    n=40    7.83        slope = -0.427 per point allowed
+#             20-24    n=28    5.40        fit at 30 allowed = 2.23
+#             24-30    n= 9    4.33        fit at 18 allowed = 7.35
+#             30+      n= 3    0.56
+#
+# Carolina allowed 30 and scored 1; Arizona allowed 33 and scored 2. The model
+# had them at 7.1 and 7.3 -- the unconditional average of an 18.7-points-allowed
+# game -- because the two defenses were drawn INDEPENDENTLY of the game they were
+# playing in and of each other. That is what made rostering both look like
+# diversification when it is the most concentrated bet on the board: in a
+# shootout they lose together, which is exactly what happened.
+DST_R = -0.694
+DST_SD = 3.44
+
+
+def dst_from_offense(opp_fp, n, rng, mean=None, sd=None, r=DST_R):
+    """Defensive DK scores correlated with the opposing offense, iteration by
+    iteration.
+
+    `opp_fp` is that offense's per-iteration fantasy output from the game sim --
+    a proxy for the points this defense conceded, and the only per-iteration
+    handle on game script available. Standardised and mapped through a bivariate
+    normal at the measured correlation, so the marginal mean and spread stay the
+    measured ones while the ORDERING follows the game: heavy offensive iterations
+    are the ones where this defense scores badly.
+
+    The correlation is measured against literal points allowed, not against
+    fantasy output, so using the proxy attenuates it -- the realised figure will
+    be somewhat weaker than -0.694. Weaker and correctly signed beats zero."""
+    mean = SPECIAL_MEAN["DST"] if mean is None else mean
+    sd = DST_SD if sd is None else sd
+    if not opp_fp:
+        return None
+    m = sum(opp_fp) / len(opp_fp)
+    var = sum((x - m) ** 2 for x in opp_fp) / max(1, len(opp_fp))
+    s = var ** 0.5
+    resid = sd * (1.0 - r * r) ** 0.5
+    out = []
+    for i in range(n):
+        z = ((opp_fp[i % len(opp_fp)] - m) / s) if s > 0 else 0.0
+        out.append(round(mean + r * sd * z + rng.gauss(0.0, resid), 2))
+    return out
+
+
 def special_samples(pos, n, rng, scale=1.0):
     """n sampled DK scores for a kicker or a defense in an exhibition.
 

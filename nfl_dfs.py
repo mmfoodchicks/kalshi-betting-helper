@@ -453,7 +453,14 @@ def _pct(a, q):
 
 
 def _special_arr(pos, preseason, n=1500):
-    """Measured exhibition scoring for a kicker or a defense, or None.
+    """Measured exhibition scoring for a KICKER, or None.
+
+    Defenses used to come through here too and must not any more: the pool now
+    builds them from the opposing offense's per-iteration output, which is the
+    only way the two defenses in a game end up correlated. Drawing them here
+    would replace that with an independent sample and put the original problem
+    straight back -- rostering both defenses would look like diversification
+    again.
 
     These two are the only units that play the whole game, and in preseason they
     are the highest-scoring positions on the board -- but neither was modelled
@@ -462,13 +469,13 @@ def _special_arr(pos, preseason, n=1500):
     Gaussian. And dst_projections asks Sleeper for season_type=regular
     unconditionally, so a preseason DST carried a regular-season projection.
     Both now come from nfl_preseason's measured decile ladder."""
-    if not preseason or (pos or "").upper() not in ("K", "DST"):
+    if not preseason or (pos or "").upper() != "K":
         return None
     try:
         import nfl_preseason
     except Exception:
         return None
-    return nfl_preseason.special_samples(pos.upper(), n, random)
+    return nfl_preseason.special_samples("K", n, random)
 
 
 def _sd_field_lineup(players, cap, own_w, rng, tries=10):

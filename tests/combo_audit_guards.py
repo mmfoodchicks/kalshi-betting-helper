@@ -1564,6 +1564,50 @@ ck("and the table is empty out of preseason, where DK's average means what it sa
 ck("defenses are not in that table — they have their own measured ladder",
    "DST" not in _dp)
 
+# A defense is scored against the offense it faced. Both were drawn
+# independently before, which made rostering BOTH look like diversification when
+# it is the most concentrated bet on the board -- they lose together in a
+# shootout. Carolina allowed 30 and scored 1, Arizona allowed 33 and scored 2,
+# against projections of 7.1 and 7.3.
+ck("the measured points-allowed relationship is negative and strong",
+   _NP.DST_R < -0.5, f"r = {_NP.DST_R} over 96 exhibition team-seasons")
+import random as _rnd2
+_r2 = _rnd2.Random(11)
+_off = [_r2.gauss(60.0, 15.0) for _ in range(4000)]
+_dsa = _NP.dst_from_offense(_off, 4000, _r2)
+ck("dst_from_offense keeps the measured marginal mean",
+   abs(sum(_dsa) / len(_dsa) - _NP.SPECIAL_MEAN["DST"]) < 0.5,
+   f'{sum(_dsa)/len(_dsa):.2f} vs {_NP.SPECIAL_MEAN["DST"]}')
+_dsd = (sum((x - sum(_dsa) / len(_dsa)) ** 2 for x in _dsa) / len(_dsa)) ** 0.5
+ck("and the measured spread", abs(_dsd - _NP.DST_SD) < 0.5,
+   f"{_dsd:.2f} vs {_NP.DST_SD}")
+
+
+def _pearson(a, b):
+    n = min(len(a), len(b))
+    a, b = a[:n], b[:n]
+    ma, mb = sum(a) / n, sum(b) / n
+    num = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+    den = ((sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b)) ** 0.5)
+    return num / den if den else 0.0
+
+
+ck("a big day for the offence is a bad day for the defence facing it",
+   _pearson(_off, _dsa) < -0.4, f"r = {_pearson(_off, _dsa):+.3f}")
+ck("an empty offence series yields no array, rather than a fake one",
+   _NP.dst_from_offense([], 10, _r2) is None)
+
+ck("the simulator hands back per-team offensive output",
+   '"team_fp": team_fp if with_samples else None' in _insp.getsource(_NFS_SIM)
+   if (_NFS_SIM := __import__("nfl_dfs_sim")) else False)
+ck("defenses no longer take the unconditional ladder",
+   '!= "K"' in _insp.getsource(_ND._special_arr),
+   "drawing them there would replace the game-script correlation with an "
+   "independent sample and put the original problem straight back")
+ck("kickers still do — they are genuinely independent of the score",
+   _ND._special_arr("K", True) is not None
+   and _ND._special_arr("DST", True) is None)
+
 ck("a CPT-bearing export is detected as showdown",
    _ND.detect_mode(_rows) == "showdown")
 ck("an ordinary export is detected as classic",

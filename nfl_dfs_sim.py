@@ -228,9 +228,15 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
     pts = {i: [] for i in range(len(players))}
     comp = {i: {k: [] for k, _, _, _ in _PROP_SPECS} for i in range(len(players))}
     fp_raw = {i: [] for i in range(len(players))}    # for the QB<->WR stack correlation
+    # Per-iteration offensive output by team. A defense's score is mostly a
+    # function of what the OTHER offense did to it, and nothing here tracked
+    # that -- so the two defenses in a game were drawn independently, as if a
+    # shootout could punish one and spare the other.
+    team_fp = {t: [] for t in teams}
     gauss = _random.gauss
 
     for _ in range(n):
+        by_team = {t: 0.0 for t in teams}
         env = max(0.4, gauss(1.0, _ENV_SD))                 # shared game pace/total
         qb_lat = {t: max(0.0, gauss(1.0, _QB_SD)) for t in teams}
         script = {t: gauss(0.0, _SCRIPT_SD) for t in teams}
@@ -251,9 +257,13 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
                       rec, rec_yd, rec_td, _pois(m["fum"]))
             pts[i].append(fp)
             fp_raw[i].append(fp)
+            if t in by_team:
+                by_team[t] += fp
             c = comp[i]
             c["pass_yd"].append(pass_yd); c["rush_yd"].append(rush_yd)
             c["rec_yd"].append(rec_yd); c["rec"].append(rec)
+        for t, v in by_team.items():
+            team_fp[t].append(v)
 
     def pct(arr, q):
         s = sorted(arr)
@@ -298,7 +308,10 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
     props.sort(key=lambda x: -x["prob"])
     stacks = _stacks(players, fp_raw, teams)
     return {"label": game["label"], "teams": teams, "players": out,
-            "props": props, "stacks": stacks, "n_sims": n}
+            "props": props, "stacks": stacks, "n_sims": n,
+            # Per-iteration offensive output by team, so a defense can be scored
+            # against what it actually faced in that same iteration.
+            "team_fp": team_fp if with_samples else None}
 
 
 def _corr(a, b):
@@ -368,21 +381,48 @@ def player_pool(week, n=3000, preseason=False):
         if not games:
             return None
         pool = {}
+        pre_dst = {}
         for gid, g in games.items():
             sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
             for p in sim["players"]:
                 pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
                                    "proj": p["proj_pts"], "ceiling": p["ceiling"],
                                    "floor": p["floor"], "arr": p["arr"]}
+            # In August a defense is scored against the offense it faced in that
+            # same iteration, so the two defenses in a game move together and a
+            # shootout punishes both. Sleeper's regular-season DST projection --
+            # which dst_projections asks for unconditionally -- knows nothing
+            # about either.
+            tfp = sim.get("team_fp") or {}
+            if preseason and len(tfp) >= 2:
+                import nfl_preseason as _np
+                ts = list(tfp)
+                for me, opp in ((ts[0], ts[1]), (ts[1], ts[0])):
+                    arr = _np.dst_from_offense(tfp[opp], n, _random)
+                    if arr:
+                        pre_dst[me] = arr
         dst = dst_projections(str(season), week) or {}
         for team, d in dst.items():
-            proj = d["proj"]
-            sd = 0.7 * proj + 4.0                        # DST scoring is high-variance
-            arr = [round(max(-4.0, _random.gauss(proj, sd)), 2) for _ in range(n)]
+            arr = pre_dst.get(team)
+            if arr:
+                proj = round(sum(arr) / len(arr), 2)
+            else:
+                proj = d["proj"]
+                sd = 0.7 * proj + 4.0                    # DST scoring is high-variance
+                arr = [round(max(-4.0, _random.gauss(proj, sd)), 2) for _ in range(n)]
             for key in {d["nickname"], team}:            # match DK by nickname or abbr
                 pool[key] = {"pos": "DST", "team": team, "opp": None, "proj": proj,
                              "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                              "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
+        # A preseason defense whose team Sleeper did not list still gets its
+        # simulated array rather than dropping out of the pool entirely.
+        for team, arr in pre_dst.items():
+            if team in pool:
+                continue
+            pool[team] = {"pos": "DST", "team": team, "opp": None,
+                          "proj": round(sum(arr) / len(arr), 2),
+                          "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
+                          "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
     return _cached(("nfl_pool", season, week, n, bool(preseason)), 1800, build)
 
