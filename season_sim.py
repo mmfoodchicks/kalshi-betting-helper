@@ -110,67 +110,181 @@ def _strength(season):
 
 # How many starters a team actually uses once it reaches October. A best-of-five
 # needs three and a best-of-seven four; nobody's fifth starter throws a playoff
-# inning. Regressed the same way baseball._starter_ra9 regresses a season line,
-# so a 40-inning arm cannot buy a rotation spot with a small-sample ERA.
+# inning.
 _PLAYOFF_ROT = 4
+_SEASON_ROT = 5        # and how many turn over in a normal week
 _MIN_GS = 5
-_ROT_IP_REGRESS = 50.0
+
+# And how many RELIEVERS. A regular-season bullpen ERA is the whole pen, mop-up
+# arms and all; an October pen is the three or four men who get the ball in a
+# one-run game, plus whoever eats the rare blowout. Leaving it at the season
+# figure made the same mistake on the back half of the game that the six-man
+# rotation made on the front half.
+_PLAYOFF_PEN = 5
+_MIN_PEN_IP = 15.0
+_PEN_IP_REGRESS = 25.0     # relievers throw ~65 IP, so a starter's constant is too heavy
+
+# Batters a pitcher plunks, per 9. roster_lines carries no HBP column, and FIP
+# needs one. Charging every arm the league rate is the honest prior — it ranks
+# nobody up or down, and it keeps FIP on the scale FIP_CONSTANT was fitted for
+# (dropping the term outright would shift every FIP down ~0.15 against a league
+# ERA that still includes them, which does NOT cancel in a ratio).
+_LG_HBP9 = 0.45
+
+
+def _po_weights(k, games):
+    """Share of `games` starts each of `k` rotation arms gets, ace first.
+
+    A best-of-seven is not four equal turns: the rotation runs 1-2-3-4-1-2-3, so
+    the top three start twice and the fourth once. Averaging the best four FLAT
+    (the first cut of this) gave the #4 the same say as the ace. A five-man
+    regular-season rotation over five games is the same function, and comes out
+    flat, which is the point — one rule, two series lengths.
+    """
+    if k <= 0:
+        return []
+    counts = [0] * k
+    for g in range(games):
+        counts[g % k] += 1
+    return [c / games for c in counts]
+
+
+def _rot_ra9(arms, k, games):
+    """RA/9 of the top `k` arms (best first) over a `games`-long turn of the order.
+
+    Both halves of the year read this, which makes one thing true BY PROOF rather
+    than by hope. Over five ranked arms a1<=..<=a5, the season is flat fifths and
+    October is (2,2,2,1)/7, so
+
+        season - october = (-3a1 - 3a2 - 3a3 + 2a4 + 7a5) / 35 >= 0
+
+    since 2a4 + 7a5 >= 9a3 >= 3a1 + 3a2 + 3a3. A club's October rotation can
+    therefore never rate worse than its season rotation. Two earlier cuts of this
+    both broke that — one weighted the season by games started (a record of who
+    pitched in April, not a forecast of who takes the next turn), and the next
+    still let a thin staff rate worse in October because BOTH halves drew on the
+    same three arms and the weight profiles crossed. Hence the padding in
+    _rotations: five arms go in, always.
+    """
+    top = arms[:max(1, k)]
+    return sum(w * a["ra9"] for w, a in zip(_po_weights(len(top), games), top))
+
+
+def _sp_ra9(p, lg):
+    """One starter's RA/9 through baseball._starter_ra9 — the SAME three-way
+    ERA + FIP + WHIP blend the daily board grades a probable pitcher with.
+
+    An earlier version of this regressed raw ERA and nothing else, which meant
+    the season board and the game board disagreed about how good a pitcher is:
+    ERA alone rewards the defence behind him and the order the hits arrived in,
+    and it is the least predictive of the three for what he does NEXT.
+
+    roster_lines carries no HBP, and no last-5 line, so this is the season-shape
+    read: FIP gets a league-rate HBP prior and the recent-form blend sits out.
+    """
+    ip = baseball._ip_float(p.get("ip"), 0.0)
+    try:
+        era = float(p.get("era"))
+    except (TypeError, ValueError):
+        return None
+    if ip <= 0 or era <= 0:
+        return None
+    return baseball._starter_ra9({"season": {
+        "era": era, "whip": baseball._f(p.get("whip"), lg.get("whip") or 1.30),
+        "ip": ip, "gs": p.get("gs") or 0,
+        "hr": baseball._f(p.get("hr")), "bb": baseball._f(p.get("bb")),
+        "k": baseball._f(p.get("k")), "hbp": ip * _LG_HBP9 / 9.0,
+    }}, lg)
+
+
+def _pen_ra9(p, lg):
+    """One reliever's RA/9, regressed by innings toward the league bullpen."""
+    ip = baseball._ip_float(p.get("ip"), 0.0)
+    try:
+        era = float(p.get("era"))
+    except (TypeError, ValueError):
+        return None
+    if ip < _MIN_PEN_IP or era <= 0:
+        return None
+    rel = ip / (ip + _PEN_IP_REGRESS)
+    era_eff = rel * era + (1 - rel) * (lg.get("bp_era") or 4.0)
+    whip = baseball._f(p.get("whip"))
+    whip_eff = (rel * whip + (1 - rel) * (lg.get("bp_whip") or 1.28)) if whip > 0 \
+        else (lg.get("bp_whip") or 1.28)
+    return baseball._bullpen_ra9({"era": era_eff, "whip": whip_eff}, lg)
 
 
 def _rotations(season, lg):
-    """team_id -> {sp_season, sp_playoff, bp} in RA/9.
+    """team_id -> {sp_season, sp_playoff, bp_season, bp_playoff} in RA/9.
 
     The season sim priced every game off ONE team ERA, so facing a rotation's
     ace and facing its fifth starter were the same event, and a team that is
     four deep in front-line arms looked identical to one with a flat staff. That
     is wrong all year and badly wrong in October, when the bottom of a rotation
-    simply does not pitch:
+    simply does not pitch, and neither does the back of a bullpen.
 
-        Dodgers   best four 2.67   full staff 3.64   gain 0.97
-        Red Sox   best four 3.08   full staff 3.44   gain 0.36
-
-    So the model was charging Los Angeles for Sheehan, Lauer and Sasaki in every
-    simulated playoff game -- roughly 0.6 runs of ERA against them RELATIVE to
-    Boston, in exactly the market with the largest disagreement on the board.
+    Over 162 games the per-START effect is second order — every arm gets his ~32
+    turns, so what moves a win total is the staff aggregate — but WHICH aggregate
+    matters: this one is regressed by innings, blended off FIP and WHIP as well
+    as ERA, and counts only the men actually starting now. In a seven-game series
+    it is first order, and that is what sp_playoff / bp_playoff are for.
     """
     import deep_data
-    lg_era = lg.get("era") or 4.20
     bp_map = baseball._bullpen_map(season) or {}
+    lg_era = lg.get("era") or 4.20
     out = {}
     for tid in list(baseball._pitching_map(season) or {}):
         try:
             rl = deep_data.roster_lines(tid, season) or {}
         except Exception:
             continue
-        arms = []
+        arms, pen = [], []
         for r in rl.values():
             if r.get("il"):
                 continue
             p = r.get("pit") or {}
-            gs = p.get("gs") or 0
             # MLB writes innings base-3 after the point: "133.2" is 133 and TWO
             # THIRDS, not 133.2. baseball._ip_float already knows that; parsing it
             # as a plain float would understate every workload and so under-
             # regress every small sample toward league average.
-            ip = baseball._ip_float(p.get("ip"), 0.0)
-            try:
-                era = float(p.get("era"))
-            except (TypeError, ValueError):
-                continue
-            if gs < _MIN_GS or ip <= 0:
-                continue
-            # Regress toward league by innings, exactly as the game model does.
-            rel = ip / (ip + _ROT_IP_REGRESS)
-            arms.append({"gs": gs, "ra9": rel * float(era) + (1 - rel) * lg_era})
+            #
+            # Every arm lands on exactly one side of this line. Requiring a
+            # reliever to have made ZERO starts (the first cut of this) threw out
+            # every swingman — several clubs came back with one or two qualifying
+            # relievers, and "the best five of two" is not a short bullpen, it is
+            # a small sample wearing one.
+            if (p.get("gs") or 0) >= _MIN_GS:
+                ra9 = _sp_ra9(p, lg)
+                if ra9 is not None:
+                    arms.append({"gs": p["gs"], "ra9": ra9})
+            else:
+                ra9 = _pen_ra9(p, lg)
+                if ra9 is not None:
+                    pen.append(ra9)
         if not arms:
             continue
-        starts = sum(a["gs"] for a in arms) or 1
-        sp_season = sum(a["ra9"] * a["gs"] for a in arms) / starts
-        best = sorted(arms, key=lambda a: a["ra9"])[:_PLAYOFF_ROT]
-        sp_playoff = sum(a["ra9"] for a in best) / len(best)
-        bp = (bp_map.get(tid) or {}).get("era") or lg_era
+        # A club whose active roster only shows three qualifying starters is not
+        # running a three-man rotation — the other turns went to arms this filter
+        # cannot see (on the IL, traded in, still short of _MIN_GS). Price those
+        # turns at a league-average starter rather than handing them to whoever
+        # happens to have survived the filter, and the ranked list is always five
+        # deep, which is what makes _rot_ra9's ordering proof hold.
+        n_real = len(arms)
+        arms += [{"ra9": lg_era}] * max(0, _SEASON_ROT - n_real)
+        arms.sort(key=lambda a: a["ra9"])
+        sp_season = _rot_ra9(arms, _SEASON_ROT, _SEASON_ROT)
+        sp_playoff = _rot_ra9(arms, _PLAYOFF_ROT, 7)
+        # Regular season: the team's real relief line, mop-up innings included.
+        bp_season = float((bp_map.get(tid) or {}).get("era") or lg_era)
+        # October: the arms that actually get a lead to protect. A club short of
+        # qualifying arms is topped up with its own season pen rather than having
+        # the whole bullpen rated off two men — partial evidence, partial credit.
+        pen_best = sorted(pen)[:_PLAYOFF_PEN]
+        pen_best += [bp_season] * (_PLAYOFF_PEN - len(pen_best))
+        bp_playoff = sum(pen_best) / len(pen_best)
         out[tid] = {"sp_season": sp_season, "sp_playoff": sp_playoff,
-                    "bp": float(bp), "n_arms": len(arms)}
+                    "bp_season": bp_season, "bp_playoff": min(bp_playoff, bp_season),
+                    "n_arms": n_real, "n_pen": len(pen)}
     return out
 
 
@@ -185,7 +299,8 @@ def _pit_factor(rot, lg, playoff):
         return 1.0
     w = baseball.SP_INNINGS_WEIGHT
     sp = rot["sp_playoff"] if playoff else rot["sp_season"]
-    return (w * sp + (1 - w) * rot["bp"]) / lg_era if lg_era else 1.0
+    bp = rot["bp_playoff"] if playoff else rot["bp_season"]
+    return (w * sp + (1 - w) * bp) / lg_era if lg_era else 1.0
 
 
 def _win_prob(home, away, teams, lg, home_field=True):
@@ -269,20 +384,30 @@ def simulate(season=None, n=4000):
         leagues[stand[tid]["league"]].append(tid)
         divisions[stand[tid]["division"]].append(tid)
 
-    # Pre-compute per-matchup home win prob (regular season has home field).
-    pmap = {m: _win_prob(m[0], m[1], teams, lg) for m in set(games)}
-    # October is played by a different pitching staff than August is. Teams keep
-    # their offence and swap in the best-four rotation the postseason actually
-    # uses; a team four deep in front-line arms gains, a flat staff barely moves.
+    # Per-pitcher run prevention, for BOTH halves of the year. _strength() rates a
+    # staff by its combined team ERA, which takes a rotation's sequencing luck and
+    # its defence at face value and keeps counting arms who stopped starting in
+    # May. The rotation build regresses each man by his own innings and blends
+    # ERA with FIP and WHIP, so the rating tracks the pitchers rather than the
+    # record. Best effort: on a roster-fetch failure the old team-ERA rating
+    # stands rather than the board failing.
     try:
         rot = _rotations(season, lg)
     except Exception:
         rot = {}
-    teams_po = dict(teams)
-    for _tid, _r in rot.items():
-        if _tid in teams_po:
-            teams_po[_tid] = {"off": teams_po[_tid]["off"],
-                              "pit": _pit_factor(_r, lg, True)}
+    teams = {tid: ({"off": t["off"], "pit": _pit_factor(rot[tid], lg, False)}
+                   if tid in rot else t)
+             for tid, t in teams.items()}
+    # October is played by a different pitching staff than August is. Teams keep
+    # their offence and swap in the best-four rotation and the short bullpen the
+    # postseason actually uses; a team deep in front-line arms gains, a flat
+    # staff barely moves.
+    teams_po = {tid: ({"off": t["off"], "pit": _pit_factor(rot[tid], lg, True)}
+                      if tid in rot else t)
+                for tid, t in teams.items()}
+
+    # Pre-compute per-matchup home win prob (regular season has home field).
+    pmap = {m: _win_prob(m[0], m[1], teams, lg) for m in set(games)}
     # Neutral single-game probs for the postseason (cache lazily).
     neut = {}
 

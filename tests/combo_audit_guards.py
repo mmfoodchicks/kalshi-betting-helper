@@ -1837,8 +1837,11 @@ print("=" * 72)
 print("October is pitched by a different staff than August is")
 print("=" * 72)
 _lg_t = {"era": 4.20}
-_deep_rot = {"sp_season": 3.84, "sp_playoff": 3.16, "bp": 4.06}   # top-heavy
-_flat_rot = {"sp_season": 3.59, "sp_playoff": 3.45, "bp": 2.89}   # flat
+# top-heavy staff and flat staff, each with its season pen and its short October pen
+_deep_rot = {"sp_season": 3.62, "sp_playoff": 3.33,
+             "bp_season": 4.06, "bp_playoff": 3.63}
+_flat_rot = {"sp_season": 3.71, "sp_playoff": 3.58,
+             "bp_season": 2.89, "bp_playoff": 2.89}
 
 ck("a playoff rotation is never worse than the season staff",
    all(_SS._pit_factor(r, _lg_t, True) <= _SS._pit_factor(r, _lg_t, False)
@@ -1847,30 +1850,37 @@ ck("a playoff rotation is never worse than the season staff",
 ck("a top-heavy staff gains far more than a flat one",
    (_SS._pit_factor(_deep_rot, _lg_t, False) - _SS._pit_factor(_deep_rot, _lg_t, True))
    > 3 * (_SS._pit_factor(_flat_rot, _lg_t, False) - _SS._pit_factor(_flat_rot, _lg_t, True)),
-   "measured on the live board: Dodgers gain 0.098, Red Sox 0.020 -- the model "
-   "was charging Los Angeles for three arms that never throw a playoff inning")
+   "measured on the live board: Dodgers gain 0.082, Red Sox 0.018 -- the model "
+   "was charging Los Angeles for arms that never throw a playoff inning")
 ck("the split uses the game model's own innings weight, not a second one",
    "baseball.SP_INNINGS_WEIGHT" in _insp.getsource(_SS._pit_factor),
    "the season sim and the daily board must read ONE definition of pitching")
 ck("a missing rotation degrades to league average, not to a crash",
    _SS._pit_factor(None, _lg_t, True) == 1.0)
 ck("the playoff rotation is picked by QUALITY, not by games started",
-   "sorted(arms, key=lambda a: a[\"ra9\"])" in _insp.getsource(_SS._rotations),
+   'arms.sort(key=lambda a: a["ra9"])' in _insp.getsource(_SS._rotations),
    "sorting by starts hands a team its most-used arms -- on this board that "
    "meant two ERAs near 5.00, and produced a playoff staff WORSE than the "
    "season average, which is backwards")
 ck("innings are parsed base-3, not as a decimal",
-   "_ip_float" in _insp.getsource(_SS._rotations),
+   "_ip_float" in _insp.getsource(_SS._sp_ra9)
+   and "_ip_float" in _insp.getsource(_SS._pen_ra9),
    "MLB writes 133 and two thirds as '133.2'; reading that as 133.2 understates "
    "every workload and under-regresses every small sample")
 ck("small samples cannot buy a rotation spot",
-   _SS._MIN_GS >= 5 and _SS._ROT_IP_REGRESS > 0)
+   _SS._MIN_GS >= 5 and B.SP_IP_REGRESS > 0)
+ck("nor a spot in the October bullpen",
+   _SS._MIN_PEN_IP >= 10 and _SS._PEN_IP_REGRESS > 0)
 ck("a best-of-seven rotation is four deep", _SS._PLAYOFF_ROT == 4)
-ck("the postseason reads the playoff staff, the regular season does not",
-   "teams_po" in _insp.getsource(_SS.simulate)
-   and "_win_prob(m[0], m[1], teams, lg)" in _insp.getsource(_SS.simulate),
-   "swapping the regular season onto playoff rotations would credit every team "
-   "with an October staff for 45 games of August")
+ck("the regular season runs on the SEASON staff, October on the playoff staff",
+   "_pit_factor(rot[tid], lg, False)" in _insp.getsource(_SS.simulate)
+   and "_pit_factor(rot[tid], lg, True)" in _insp.getsource(_SS.simulate)
+   and "teams_po" in _insp.getsource(_SS.simulate),
+   "these must be two different ratings: crediting every team with an October "
+   "staff for 45 games of August is as wrong as charging a playoff club for its "
+   "sixth starter. The guard that used to sit here asserted the regular season "
+   "kept its flat team ERA -- it was passing while the defect it described was "
+   "the defect")
 
 print()
 print("=" * 72)
@@ -2060,6 +2070,106 @@ ck("the playoff rotation is built ONCE per worker, not per series",
        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                     "deep_season.py")).read(),
    "4,000 seasons x 13 series of re-sorting would cost more than the games")
+
+
+
+print()
+print("=" * 72)
+print("The season board rates PITCHERS, not staff ERA (season_sim)")
+print("=" * 72)
+import season_sim as _SSIM
+
+_lgx = {"era": 4.20, "whip": 1.30, "bp_era": 4.05, "bp_whip": 1.28,
+        "rpg": 4.40, "ops": 0.720, "ops_vl": 0.720, "ops_vr": 0.720}
+_arm = lambda ra9: {"ra9": ra9}
+
+ck("a five-man rotation is five equal turns",
+   _SSIM._po_weights(5, 5) == [0.2] * 5)
+ck("a best-of-seven is 2-2-2-1, not four equal turns",
+   [round(w * 7) for w in _SSIM._po_weights(4, 7)] == [2, 2, 2, 1],
+   "flat-averaging the best four gave the #4 the same say as the ace")
+ck("every weight set sums to one",
+   all(abs(sum(_SSIM._po_weights(k, g)) - 1.0) < 1e-12
+       for k in range(1, 8) for g in (3, 5, 7)))
+
+_staff = sorted((_arm(x) for x in (2.60, 3.10, 3.55, 4.20, 5.40, 6.10)),
+                key=lambda a: a["ra9"])
+ck("the October rotation is better than the season rotation",
+   _SSIM._rot_ra9(_staff, _SSIM._PLAYOFF_ROT, 7)
+   < _SSIM._rot_ra9(_staff, _SSIM._SEASON_ROT, _SSIM._SEASON_ROT))
+ck("the #5 and #6 never appear in the October number",
+   abs(_SSIM._rot_ra9(_staff, 4, 7)
+       - _SSIM._rot_ra9(_staff[:4] + [_arm(99.0), _arm(99.0)], 4, 7)) < 1e-12)
+# the ordering law, on every ranked staff shape rather than one fixture
+import random as _r2
+_rr2 = _r2.Random(11)
+_viol = 0
+for _ in range(20000):
+    _a = sorted(({"ra9": _rr2.uniform(1.5, 7.5)}
+                 for _ in range(_rr2.randint(1, 9))), key=lambda x: x["ra9"])
+    _a += [{"ra9": 4.20}] * max(0, _SSIM._SEASON_ROT - len(_a))
+    _a.sort(key=lambda x: x["ra9"])
+    if _SSIM._rot_ra9(_a, 4, 7) > _SSIM._rot_ra9(_a, 5, 5) + 1e-12:
+        _viol += 1
+ck("October can NEVER rate worse than the season, on any staff shape",
+   _viol == 0, f"{_viol}/20000 violations — two earlier cuts of this failed here")
+
+_sp = {"era": 3.20, "whip": 1.10, "ip": "180.2", "gs": 30,
+       "hr": 18, "bb": 45, "k": 210}
+_ra = _SSIM._sp_ra9(_sp, _lgx)
+ck("a starter is graded by the game model's ERA+FIP+WHIP blend, not raw ERA",
+   _ra is not None and abs(_ra - 3.20) > 0.01 and 2.0 < _ra < 4.5,
+   f"RA9 {_ra:.2f} off a 3.20 ERA — FIP and WHIP get their vote")
+ck("and innings are read base-3 (180.2 is 180 and two THIRDS)",
+   abs(B._ip_float("180.2") - (180 + 2 / 3.0)) < 1e-9)
+ck("a short sample is pulled toward league, not taken at face value",
+   _SSIM._sp_ra9(dict(_sp, ip="12.0", gs=2), _lgx)
+   > _SSIM._sp_ra9(_sp, _lgx))
+_ip180 = B._ip_float("180.2")
+_fip_with = B._fip({"ip": _ip180, "hr": 18, "bb": 45, "k": 210,
+                    "hbp": _ip180 * _SSIM._LG_HBP9 / 9.0})
+_fip_zero = B._fip({"ip": _ip180, "hr": 18, "bb": 45, "k": 210, "hbp": 0})
+ck("FIP gets a league-rate HBP prior rather than a silent zero",
+   0.3 < _SSIM._LG_HBP9 < 0.7 and 0.10 < (_fip_with - _fip_zero) < 0.25,
+   f"a silent zero puts FIP {_fip_with - _fip_zero:.2f} LOW against a league ERA "
+   "that still counts the men who got plunked — a level error, and levels do "
+   "not cancel in a ratio the way a uniform scale factor does")
+ck("and it is a PRIOR, not a thumb on the scale — every arm pays the same rate",
+   abs(_SSIM._sp_ra9({"era": 3.20, "whip": 1.10, "ip": "180.2", "gs": 30,
+                      "hr": 18, "bb": 45, "k": 210}, _lgx)
+       - _SSIM._sp_ra9({"era": 3.20, "whip": 1.10, "ip": "180.2", "gs": 30,
+                        "hr": 18, "bb": 45, "k": 210, "hbp": 99}, _lgx)) < 1e-12,
+   "roster_lines carries no HBP column, so a line that somehow had one must not "
+   "be read — the prior is what every arm gets")
+ck("junk lines are skipped, not crashed on",
+   _SSIM._sp_ra9({"era": None, "ip": "0.0"}, _lgx) is None
+   and _SSIM._sp_ra9({"era": "x", "ip": "5.0"}, _lgx) is None)
+ck("a 4-inning September call-up cannot be an October reliever",
+   _SSIM._pen_ra9({"era": 0.00, "whip": 0.50, "ip": "4.0"}, _lgx) is None,
+   "'best five of two' is a small sample wearing a short bullpen's clothes")
+ck("a real reliever's line does come through",
+   (_SSIM._pen_ra9({"era": 2.40, "whip": 1.00, "ip": "62.0"}, _lgx) or 9) < 3.4)
+
+_sim_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                             "season_sim.py")).read()
+ck("BOTH halves of the year read the rotation, not just October",
+   "_pit_factor(rot[tid], lg, False)" in _sim_src
+   and "_pit_factor(rot[tid], lg, True)" in _sim_src,
+   "sp_season was computed and then never called — the 162 games that decide "
+   "seeding still ran on one flat staff ERA")
+ck("the October bullpen is the short one",
+   '"bp_playoff"' in _sim_src and "rot[\"bp_playoff\"] if playoff" in _sim_src)
+ck("a thin bullpen is topped up from its own season pen, not rated off two arms",
+   "[bp_season] * (_PLAYOFF_PEN - len(pen_best))" in _sim_src)
+ck("a thin rotation is topped up at league average",
+   '[{"ra9": lg_era}] * max(0, _SEASON_ROT - n_real)' in _sim_src,
+   "three surviving starters does not mean a three-man rotation")
+ck("a roster-fetch failure leaves the old rating standing, not a broken board",
+   "except Exception:\n        rot = {}" in _sim_src)
+
+_r_empty = {tid: t for tid, t in ()}
+ck("a team with no rotation data keeps its team-ERA rating",
+   _SSIM._pit_factor(None, _lgx, True) == 1.0)
 
 print()
 print("=" * 72)
