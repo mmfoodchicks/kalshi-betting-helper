@@ -1776,6 +1776,64 @@ ck("and every registered model answers without raising",
 
 print()
 print("=" * 72)
+print("MLB postseason home field — the rule MLB actually uses")
+print("=" * 72)
+import season_sim as _SS
+
+ck("every series format knows which games the host plays at home",
+   _SS._HOME_GAMES == {2: (1, 2, 3), 3: (1, 2, 5), 4: (1, 2, 6, 7)},
+   "wild card is all three at the higher seed; best-of-5 is 2-2-1; "
+   "best-of-7 is 2-3-2")
+# Probability mass has to be conserved -- an enumeration that drops sequences
+# would quietly under-count one side.
+for _need in (2, 3, 4):
+    _homes, _mx, _tot = set(_SS._HOME_GAMES[_need]), 2 * _need - 1, [0.0]
+
+    def _walk(g, w, l, pr, need=_need, homes=_homes, mx=_mx, tot=_tot):
+        if w == need or l == need:
+            tot[0] += pr
+            return
+        if g > mx:
+            return
+        p = 0.58 if g in homes else 0.47
+        _walk(g + 1, w + 1, l, pr * p)
+        _walk(g + 1, w, l + 1, pr * (1 - p))
+
+    _walk(1, 0, 0, 1.0)
+    ck(f"best-of-{2 * _need - 1} enumeration conserves probability",
+       abs(_tot[0] - 1.0) < 1e-9, _tot[0])
+ck("with no home edge it reduces EXACTLY to the venue-blind formula",
+   abs(_SS._series_p_hf(0.6, 0.6, 4) - _SS._series_p(0.6, 4)) < 1e-12,
+   "the new path must not move a number it has no information about")
+ck("a home edge favours the host in every format",
+   all(_SS._series_p_hf(0.54, 0.46, k) > 0.5 for k in (2, 3, 4)))
+ck("and favours him MOST in the all-home wild card round",
+   _SS._series_p_hf(0.54, 0.46, 2) > _SS._series_p_hf(0.54, 0.46, 3)
+   > _SS._series_p_hf(0.54, 0.46, 4),
+   "three of three at home beats three of five beats four of seven -- and a "
+   "longer series regresses toward the better team, diluting a fixed per-game "
+   "edge")
+ck("certain and impossible stay certain and impossible",
+   _SS._series_p_hf(1.0, 1.0, 4) == 1.0 and _SS._series_p_hf(0.0, 0.0, 4) == 0.0)
+
+_ss_src = _insp.getsource(_SS)
+ck("the World Series host is the better REGULAR-SEASON record",
+   "wins[a] > wins[b]" in _ss_src,
+   "the All-Star Game decided this from 2003 to 2016; the 2017 CBA scrapped it, "
+   "and hard-coding an AL edge would bias every World Series price")
+ck("and nothing in the sim ties home field to the All-Star Game",
+   "all_star" not in _ss_src.lower() and "allstar" not in _ss_src.lower())
+ck("the postseason no longer runs fully neutral",
+   "series(host, road, _WS_NEED)" in _ss_src,
+   "every playoff round used npr() with home_field=False, so no series had any "
+   "home advantage at all")
+ck("the host is decided INSIDE each simulated season",
+   "wins[a] == wins[b] and rnd() < 0.5" in _ss_src,
+   "records are a sim output, not a fixed input -- deciding the host outside the "
+   "loop would freeze today's standings into every simulated October")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

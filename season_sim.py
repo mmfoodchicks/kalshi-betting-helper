@@ -108,10 +108,53 @@ def _win_prob(home, away, teams, lg, home_field=True):
 
 
 def _series_p(p, need):
-    """P(team with single-game prob p wins a series, first to `need` wins)."""
+    """P(team with single-game prob p wins a series, first to `need` wins).
+
+    Venue-blind: every game is played at the same single-game probability. Kept
+    for callers that genuinely have no home field to model."""
     total = 0.0
     for losses in range(need):           # opponent wins before we clinch
         total += comb(need - 1 + losses, losses) * (p ** need) * ((1 - p) ** losses)
+    return total
+
+
+# Which games of a series the HOST plays at home, by series length. MLB's formats:
+# best-of-3 wild card is all three at the higher seed; best-of-5 is 2-2-1; and
+# best-of-7 is 2-3-2. Indexed from game 1.
+_HOME_GAMES = {2: (1, 2, 3), 3: (1, 2, 5), 4: (1, 2, 6, 7)}
+
+
+def _series_p_hf(p_home, p_away, need):
+    """P(the HOST wins the series), with the venue alternating by MLB's format.
+
+    The postseason used to run entirely on `npr()` -- a neutral single-game
+    probability with home_field=False -- so no playoff series had any home
+    advantage at all. That is not a small omission in a best-of-seven: the host
+    plays four of the seven at home, and the regular-season home edge is the one
+    thing every one of those games shares.
+
+    `p_home` is the host's win probability AT HOME, `p_away` his probability on
+    the road. Exact rather than simulated: enumerate every sequence of wins and
+    losses that ends the series, multiplying the per-game probability that the
+    venue for that game implies."""
+    homes = _HOME_GAMES.get(need)
+    if not homes:
+        return _series_p(p_home, need)
+    total = 0.0
+    max_games = 2 * need - 1
+
+    def walk(game, w, l, prob):
+        nonlocal total
+        if w == need:
+            total += prob
+            return
+        if l == need or game > max_games:
+            return
+        p = p_home if game in homes else p_away
+        walk(game + 1, w + 1, l, prob * p)
+        walk(game + 1, w, l + 1, prob * (1 - p))
+
+    walk(1, 0, 0, 1.0)
     return total
 
 
@@ -145,6 +188,21 @@ def simulate(season=None, n=4000):
             neut[(a, b)] = p
             neut[(b, a)] = 1 - p
         return neut[(a, b)]
+
+    hf = {}
+
+    def hpr(host, road):
+        """(host's P(win) at home, host's P(win) on the road) for a playoff pair."""
+        if (host, road) not in hf:
+            at_home = _win_prob(host, road, teams, lg, home_field=True)
+            on_road = 1.0 - _win_prob(road, host, teams, lg, home_field=True)
+            hf[(host, road)] = (at_home, on_road)
+        return hf[(host, road)]
+
+    def series(host, road, need):
+        """P(host wins), with home field where MLB actually grants it."""
+        ph, pa = hpr(host, road)
+        return _series_p_hf(ph, pa, need)
 
     rnd = random.random
     win_samples = defaultdict(list)
@@ -180,21 +238,33 @@ def simulate(season=None, n=4000):
             for tid in seeds:
                 playoffs[tid] += 1
             # Wild Card round (best-of-3): 3v6, 4v5; seeds 1,2 bye.
-            w36 = seeds[2] if rnd() < _series_p(npr(seeds[2], seeds[5]), _WC_NEED) else seeds[5]
-            w45 = seeds[3] if rnd() < _series_p(npr(seeds[3], seeds[4]), _WC_NEED) else seeds[4]
+            w36 = seeds[2] if rnd() < series(seeds[2], seeds[5], _WC_NEED) else seeds[5]
+            w45 = seeds[3] if rnd() < series(seeds[3], seeds[4], _WC_NEED) else seeds[4]
             # Division Series (best-of-5): 1 vs lower remaining seed, 2 vs other.
             ds_lo, ds_hi = (w36, w45) if seeds.index(w36) > seeds.index(w45) else (w45, w36)
-            d1 = seeds[0] if rnd() < _series_p(npr(seeds[0], ds_lo), _DS_NEED) else ds_lo
-            d2 = seeds[1] if rnd() < _series_p(npr(seeds[1], ds_hi), _DS_NEED) else ds_hi
+            d1 = seeds[0] if rnd() < series(seeds[0], ds_lo, _DS_NEED) else ds_lo
+            d2 = seeds[1] if rnd() < series(seeds[1], ds_hi, _DS_NEED) else ds_hi
             # LCS (best-of-7) -> pennant.
-            champ = d1 if rnd() < _series_p(npr(d1, d2), _LCS_NEED) else d2
+            lcs_host, lcs_road = (d1, d2) if seeds.index(d1) <= seeds.index(d2) else (d2, d1)
+            champ = (lcs_host if rnd() < series(lcs_host, lcs_road, _LCS_NEED)
+                     else lcs_road)
             champs[lg_id] = champ
             pennants[champ] += 1
         # World Series (best-of-7).
         lg_ids = list(champs.keys())
         if len(lg_ids) == 2:
             a, b = champs[lg_ids[0]], champs[lg_ids[1]]
-            winner = a if rnd() < _series_p(npr(a, b), _WS_NEED) else b
+            # Home field goes to the pennant winner with the better REGULAR-SEASON
+            # record. It has nothing to do with the All-Star Game -- that rule ran
+            # 2003-2016 and the 2017 CBA scrapped it. `wins` is this simulated
+            # season's win total, so the host is decided inside each iteration
+            # rather than assumed. Ties break on the coin the tiebreaker ladder
+            # would eventually reach.
+            if wins[a] > wins[b] or (wins[a] == wins[b] and rnd() < 0.5):
+                host, road = a, b
+            else:
+                host, road = b, a
+            winner = host if rnd() < series(host, road, _WS_NEED) else road
             rings[winner] += 1
 
     def pct(c):
