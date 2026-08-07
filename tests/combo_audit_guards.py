@@ -1834,6 +1834,46 @@ ck("the host is decided INSIDE each simulated season",
 
 print()
 print("=" * 72)
+print("October is pitched by a different staff than August is")
+print("=" * 72)
+_lg_t = {"era": 4.20}
+_deep_rot = {"sp_season": 3.84, "sp_playoff": 3.16, "bp": 4.06}   # top-heavy
+_flat_rot = {"sp_season": 3.59, "sp_playoff": 3.45, "bp": 2.89}   # flat
+
+ck("a playoff rotation is never worse than the season staff",
+   all(_SS._pit_factor(r, _lg_t, True) <= _SS._pit_factor(r, _lg_t, False)
+       for r in (_deep_rot, _flat_rot)),
+   "dropping your worst starters cannot hurt you")
+ck("a top-heavy staff gains far more than a flat one",
+   (_SS._pit_factor(_deep_rot, _lg_t, False) - _SS._pit_factor(_deep_rot, _lg_t, True))
+   > 3 * (_SS._pit_factor(_flat_rot, _lg_t, False) - _SS._pit_factor(_flat_rot, _lg_t, True)),
+   "measured on the live board: Dodgers gain 0.098, Red Sox 0.020 -- the model "
+   "was charging Los Angeles for three arms that never throw a playoff inning")
+ck("the split uses the game model's own innings weight, not a second one",
+   "baseball.SP_INNINGS_WEIGHT" in _insp.getsource(_SS._pit_factor),
+   "the season sim and the daily board must read ONE definition of pitching")
+ck("a missing rotation degrades to league average, not to a crash",
+   _SS._pit_factor(None, _lg_t, True) == 1.0)
+ck("the playoff rotation is picked by QUALITY, not by games started",
+   "sorted(arms, key=lambda a: a[\"ra9\"])" in _insp.getsource(_SS._rotations),
+   "sorting by starts hands a team its most-used arms -- on this board that "
+   "meant two ERAs near 5.00, and produced a playoff staff WORSE than the "
+   "season average, which is backwards")
+ck("innings are parsed base-3, not as a decimal",
+   "_ip_float" in _insp.getsource(_SS._rotations),
+   "MLB writes 133 and two thirds as '133.2'; reading that as 133.2 understates "
+   "every workload and under-regresses every small sample")
+ck("small samples cannot buy a rotation spot",
+   _SS._MIN_GS >= 5 and _SS._ROT_IP_REGRESS > 0)
+ck("a best-of-seven rotation is four deep", _SS._PLAYOFF_ROT == 4)
+ck("the postseason reads the playoff staff, the regular season does not",
+   "teams_po" in _insp.getsource(_SS.simulate)
+   and "_win_prob(m[0], m[1], teams, lg)" in _insp.getsource(_SS.simulate),
+   "swapping the regular season onto playoff rotations would credit every team "
+   "with an October staff for 45 games of August")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
