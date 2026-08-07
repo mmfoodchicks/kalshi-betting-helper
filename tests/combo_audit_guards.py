@@ -1899,6 +1899,74 @@ ck("a winner-style row is keyed off the ticker's team suffix",
 
 print()
 print("=" * 72)
+print("A week of history is one answer, not seven")
+print("=" * 72)
+import deep_history as _DH
+
+_DAYS = {
+    "2026-08-07": {"date": "2026-08-07", "prev_date": "2026-08-06", "n": 4000,
+                   "teams": [
+                       {"id": 1, "name": "A", "ws": 15.0, "ws_prev": 19.0,
+                        "playoffs": 99.0, "playoffs_prev": 99.0, "mean_wins": 97,
+                        "what": ["lost 4  -4.0pp"], "events": [{"k": "a1"}]},
+                       {"id": 2, "name": "B", "ws": 21.0, "ws_prev": 20.0,
+                        "playoffs": 100.0, "playoffs_prev": 100.0, "mean_wins": 100,
+                        "what": ["won 2  +1.0pp"], "events": [{"k": "b1"}]}]},
+    "2026-08-06": {"date": "2026-08-06", "prev_date": "2026-08-05", "n": 4000,
+                   "teams": [{"id": 1, "name": "A", "ws": 19.0, "ws_prev": 16.0,
+                              "playoffs": 99.0, "playoffs_prev": 98.0, "mean_wins": 98,
+                              "what": ["trade  +3.0pp"], "events": [{"k": "a2"}]}]},
+    "2026-08-05": {"date": "2026-08-05", "prev_date": "2026-08-04", "n": 4000,
+                   "teams": [{"id": 1, "name": "A", "ws": 16.0, "ws_prev": 18.0,
+                              "playoffs": 98.0, "playoffs_prev": 98.0, "mean_wins": 97,
+                              "what": ["lost 2  -2.0pp"], "events": [{"k": "a3"}]}]},
+}
+_od, _orp = _DH.dates, _DH.report
+try:
+    _DH.dates = lambda: sorted(_DAYS, reverse=True)
+    _DH.report = lambda d=None: _DAYS.get(d or sorted(_DAYS, reverse=True)[0])
+    _rr = _DH.report_range("2026-08-05", "2026-08-07")
+    _a = next(t for t in _rr["teams"] if t["name"] == "A")
+    _b = next(t for t in _rr["teams"] if t["name"] == "B")
+
+    ck("a multi-day window returns ONE combined answer",
+       _rr["days"] == 3 and _rr.get("range") is True)
+    ck("the move is measured END TO END, not summed from the dailies",
+       _a["move"] == -3.0 and _a["ws_prev"] == 18.0 and _a["ws"] == 15.0,
+       "summing accumulates each night's rounding and hides a round trip: "
+       "+3 then -4 is a -1 week, not two moves")
+    ck("every day's events survive the merge",
+       [e["k"] for e in _a["events"]] == ["a1", "a2", "a3"])
+    ck("and every day's sentences do, newest first and dated",
+       len(_a["what"]) == 3 and _a["what"][0].startswith("2026-08-07"))
+    ck("a team present on only SOME days still gets a baseline",
+       _b["move"] == 1.0 and _b["ws_prev"] == 20.0,
+       "taking the start from the oldest day alone left every team absent from "
+       "it with move=None -- which is exactly the teams whose single big piece "
+       "of news is what you opened the box to read")
+    ck("days_seen says how much of the window a team appears in",
+       _a["days_seen"] == 3 and _b["days_seen"] == 1)
+    ck("a one-day window is just the plain daily report",
+       (_DH.report_range("2026-08-07", "2026-08-07") or {}).get("range") is None)
+    ck("reversed endpoints are normalised, not empty",
+       (_DH.report_range("2026-08-07", "2026-08-05") or {}).get("days") == 3)
+    ck("a window with no stored runs is None, not a crash",
+       _DH.report_range("2020-01-01", "2020-01-02") is None)
+finally:
+    _DH.dates, _DH.report = _od, _orp
+
+_app_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                             "app.py")).read()
+ck("the API accepts a from/to window", "report_range" in _app_src
+   and 'request.args.get("from")' in _app_src)
+ck("and still answers a bare ?date the old way",
+   "deep_history.report(date)" in _app_src)
+ck("the UI can ask for a span", "histSpan" in _js and "loadDeepHistory(" in _js)
+ck("and renders the window it actually got",
+   "combined over" in _js and "d.days" in _js)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

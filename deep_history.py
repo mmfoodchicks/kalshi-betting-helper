@@ -685,7 +685,8 @@ def report(date=None):
         })
     # Biggest movers first; teams with news but no move still appear below them.
     teams.sort(key=lambda t: -abs(t.get("move") or 0))
-    return {"date": date, "prev_date": rec.get("prev_date"),
+    return {"date": date, "prev_date": rec.get("prev_date"), "days": 1,
+            "from": rec.get("prev_date"), "to": date,
             "season": rec.get("season"), "n": rec.get("n"),
             "generated_at": rec.get("generated_at"),
             "n_games_left": rec.get("n_games_left"),
@@ -694,4 +695,101 @@ def report(date=None):
             # with no cause behind it is measured against. Not the attribution
             # error bar, which is per event and travels with each figure.
             "run_noise": _run_noise(rec.get("n")),
+            "dates": ds, "teams": teams}
+
+
+def report_range(start=None, end=None):
+    """One combined 'what happened' box spanning every stored run from `start`
+    to `end`, inclusive of both endpoints' changes.
+
+    A single day answers "what moved since last night". A week answers "what
+    moved since last week", which is a different and usually more useful
+    question -- and reading seven separate boxes to assemble it by hand is how
+    you miss that a team gained three points on Monday and gave back four on
+    Thursday.
+
+    Per team the events from every day in the window are concatenated (newest
+    first, biggest first within a day), while the MOVE is measured end to end
+    from the oldest day's starting probability to the newest day's -- not summed
+    from the dailies, because summing accumulates each night's rounding and, more
+    importantly, hides a round trip: +3 then -4 is a -1 week, not "two moves".
+
+    Falls back to a single day when the window holds one run, so callers can use
+    this for both and the UI has one shape to render."""
+    ds = dates()                                    # newest first
+    if not ds:
+        return None
+    end = end or ds[0]
+    start = start or end
+    if start > end:
+        start, end = end, start
+    window = [d for d in ds if start <= d <= end]   # newest first
+    if not window:
+        return None
+    if len(window) == 1:
+        return report(window[0])
+
+    newest, oldest = window[0], window[-1]
+    per_day = []
+    for d in window:                                # newest -> oldest
+        r = report(d)
+        if r:
+            per_day.append(r)
+    if not per_day:
+        return None
+    if len(per_day) == 1:
+        return per_day[0]
+
+    base = per_day[0]                               # newest run: current levels
+    first = per_day[-1]
+    # Where the window STARTS for each team: the earliest day it appears on, not
+    # the earliest day in the window. A team only shows up on a day it moved or
+    # had news, so taking the oldest day's roster alone left every team absent
+    # from it with no baseline -- and therefore no move at all, which on a live
+    # board means the teams with a single big piece of news are exactly the ones
+    # that come back blank.
+    start_ws, start_po = {}, {}
+    for r in reversed(per_day):                     # oldest -> newest
+        for t in r["teams"]:
+            start_ws.setdefault(t["id"], t.get("ws_prev"))
+            start_po.setdefault(t["id"], t.get("playoffs_prev"))
+
+    merged = {}
+    for r in per_day:                               # newest first
+        for t in r["teams"]:
+            m = merged.setdefault(t["id"], {
+                "id": t["id"], "name": t.get("name"),
+                "ws": None, "ws_prev": None, "playoffs": None,
+                "playoffs_prev": None, "mean_wins": None,
+                "what": [], "events": [], "_days": 0})
+            if m["ws"] is None:                     # newest run wins the levels
+                m["ws"] = t.get("ws")
+                m["playoffs"] = t.get("playoffs")
+                m["mean_wins"] = t.get("mean_wins")
+            for line in (t.get("what") or []):
+                # Same sentence can recur across nights (a signing keeps showing
+                # up until it ages out); keep the first, newest, occurrence.
+                if line not in m["what"]:
+                    m["what"].append(f"{r['date']}: {line}")
+            m["events"].extend(t.get("events") or [])
+            m["_days"] += 1
+
+    teams = []
+    for tid, m in merged.items():
+        sw, sp = start_ws.get(tid), start_po.get(tid)
+        m["ws_prev"], m["playoffs_prev"] = sw, sp
+        m["move"] = (round(m["ws"] - sw, 1)
+                     if (m["ws"] is not None and sw is not None) else None)
+        m["days_seen"] = m.pop("_days")
+        if m["what"] or m["move"]:
+            teams.append(m)
+    teams.sort(key=lambda t: -abs(t.get("move") or 0))
+    return {"date": newest, "prev_date": first.get("prev_date"),
+            "from": first.get("prev_date") or oldest, "to": newest,
+            "days": len(per_day), "range": True,
+            "season": base.get("season"), "n": base.get("n"),
+            "generated_at": base.get("generated_at"),
+            "n_games_left": base.get("n_games_left"),
+            "attribution": base.get("attribution"),
+            "run_noise": _run_noise(base.get("n")),
             "dates": ds, "teams": teams}

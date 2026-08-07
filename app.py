@@ -1933,8 +1933,16 @@ def api_baseball_deep_history():
     answerable as soon as its run lands."""
     import deep_history
     date = request.args.get("date") or None
+    # A range collapses every run in the window into ONE box. Reading a week as
+    # seven separate boxes is how a +3 on Monday and a -4 on Thursday get read as
+    # two moves instead of a -1 week.
+    d_from = request.args.get("from") or None
+    d_to = request.args.get("to") or None
     try:
-        rep = deep_history.report(date)
+        if d_from or d_to:
+            rep = deep_history.report_range(d_from, d_to or date)
+        else:
+            rep = deep_history.report(date)
     except Exception as e:
         return jsonify({"error": f"history failed: {e}"}), 502
     if not rep:

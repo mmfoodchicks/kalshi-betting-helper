@@ -3917,18 +3917,35 @@ function deepBar(s) {
 // deep_history.attribute), which is why some lines have a number and others say
 // the change had no measurable effect.
 let _histDate = null;
+let _histFrom = null;                   // set = range mode, one combined box
 
-async function loadDeepHistory(date) {
+async function loadDeepHistory(date, from) {
   const box = $("deepHistory");
   if (!box) return;
+  _histFrom = from || null;
   box.innerHTML = `<div class="histwrap"><div class="small" style="color:var(--muted)">Loading what changed…</div></div>`;
   try {
-    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    // A range asks the server to merge every run in the window into ONE answer.
+    // Reading a week as seven boxes is how +3 on Monday and -4 on Thursday get
+    // read as two moves rather than as a -1 week.
+    const q = from
+      ? `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(date || "")}`
+      : (date ? `?date=${encodeURIComponent(date)}` : "");
     renderDeepHistory(await (await fetch("/api/baseball/futures/deep/history" + q)).json());
   } catch (e) {
     box.innerHTML = `<div class="histwrap"><div class="small" style="color:var(--muted)">Couldn't load run history.</div></div>`;
   }
 }
+
+// "last N days" shortcut: the window ends at the newest run and reaches back N.
+window.histSpan = (days) => {
+  const ds = _histDates || [];
+  if (!ds.length) return;
+  const to = ds[0];
+  const from = ds[Math.min(ds.length - 1, Math.max(0, days - 1))];
+  loadDeepHistory(to, days <= 1 ? null : from);
+};
+let _histDates = [];
 
 function _histLine(s) {
   // Colour only the measured effect, so the sentence itself stays readable.
@@ -3949,17 +3966,33 @@ function renderDeepHistory(d) {
   }
   _histDate = d.date;
   const dates = d.dates || [];
+  _histDates = dates;
   const i = dates.indexOf(d.date);
   const newer = i > 0 ? dates[i - 1] : null;          // dates are newest-first
   const older = i >= 0 && i < dates.length - 1 ? dates[i + 1] : null;
+  const oldest = dates[dates.length - 1] || d.date;
+  const rng = !!d.range;
+  const spanBtn = (n, lab) =>
+    `<button class="track-mini${(rng ? d.days === n : n === 1) ? " primary-mini" : ""}"`
+    + ` onclick="histSpan(${n})">${lab}</button>`;
+  // From/to, with the single-day case being simply from = the previous run.
   const nav = `
     <div class="histnav">
       <button class="track-mini" ${older ? "" : "disabled"} onclick="loadDeepHistory('${older || ""}')">‹ prev</button>
-      <input type="date" value="${escapeHtml(d.date)}"
-             min="${escapeHtml(dates[dates.length - 1] || d.date)}"
-             max="${escapeHtml(dates[0] || d.date)}"
-             onchange="loadDeepHistory(this.value)"/>
+      <input type="date" value="${escapeHtml(rng ? (d.from || oldest) : (d.prev_date || d.date))}"
+             min="${escapeHtml(oldest)}" max="${escapeHtml(dates[0] || d.date)}"
+             title="from"
+             onchange="loadDeepHistory('${escapeHtml(d.to || d.date)}', this.value)"/>
+      <span class="small" style="color:var(--muted)">→</span>
+      <input type="date" value="${escapeHtml(d.to || d.date)}"
+             min="${escapeHtml(oldest)}" max="${escapeHtml(dates[0] || d.date)}"
+             title="to"
+             onchange="loadDeepHistory(this.value, ${rng ? `'${escapeHtml(d.from || oldest)}'` : "null"})"/>
       <button class="track-mini" ${newer ? "" : "disabled"} onclick="loadDeepHistory('${newer || ""}')">next ›</button>
+    </div>
+    <div class="histnav" style="margin-top:4px">
+      ${spanBtn(1, "1 day")}${spanBtn(3, "3 days")}${spanBtn(7, "1 week")}${spanBtn(14, "2 weeks")}
+      ${rng ? `<span class="small" style="color:var(--muted)">combined over <b>${d.days}</b> runs, ${escapeHtml(d.from || "")} → ${escapeHtml(d.to || "")}</span>` : ""}
     </div>`;
 
   const teams = (d.teams || []).filter((t) => (t.what || []).length);
