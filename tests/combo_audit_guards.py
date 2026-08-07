@@ -1965,6 +1965,102 @@ ck("the UI can ask for a span", "histSpan" in _js and "loadDeepHistory(" in _js)
 ck("and renders the window it actually got",
    "combined over" in _js and "d.days" in _js)
 
+
+print()
+print("=" * 72)
+print("October is not August: playoff rotation + real home field (deep season)")
+print("=" * 72)
+import random as _rnd, collections as _co
+import deep_season as _DS, deep_sim as _DSIM, deep_data as _DD, season_sim as _SS
+
+
+def _fake_prof(tag, n=6):
+    """Six starters, best-first by construction, then SHUFFLED — so any code that
+    just takes the head of the list instead of ranking is caught."""
+    arms = [{"id": f"{tag}{i}", "name": f"{tag}{i}", "kpa": 0.30 - 0.03 * i,
+             "bbpa": 0.06, "era": 2.5 + 0.6 * i} for i in range(n)]
+    _rnd.Random(7).shuffle(arms)
+    return {"rotation": arms}
+
+
+def _series_log(need, trials=500):
+    """Play until a FULL-LENGTH series turns up; return [(home_is_high, sh, sa)]."""
+    log = []
+    real = _DSIM.play_game
+    _DSIM.play_game = lambda ph, pa, sh, sa, rng: (
+        log.append((ph is _pf[1], sh["name"], sa["name"])),
+        {"home_win": rng.random() < 0.5, "batting": {}, "pitching": {}})[1]
+    try:
+        for t in range(trials):
+            log.clear()
+            _DS._play_series(1, 2, need, _rnd.Random(t))
+            if len(log) == 2 * need - 1:
+                return list(log)
+    finally:
+        _DSIM.play_game = real
+    return list(log)
+
+
+_pf = {1: _fake_prof("A"), 2: _fake_prof("B")}
+_saved_G = dict(_DS._G)
+try:
+    _DS._G.clear()
+    _DS._init_worker({"profiles": _pf})
+    _mk = lambda ks: _co.defaultdict(lambda: dict.fromkeys(ks, 0))
+    _DS._G["season_bat"] = _mk(("pa", "ab", "h", "2b", "3b", "hr", "bb", "k",
+                                "r", "rbi", "sb", "ph"))
+    _DS._G["season_pit"] = _mk(("bf", "outs", "k", "bb", "h", "hr", "r"))
+
+    _wc, _ds, _lcs = _series_log(2), _series_log(3), _series_log(4)
+    _hosts = lambda log: [h for h, _, _ in log]
+    _hi_sp = lambda log: [s if h else a for h, s, a in log]
+
+    ck("the Wild Card is played ENTIRELY at the higher seed's park",
+       _hosts(_wc) == [True, True, True],
+       "a flat 2-3-2 pattern gave the top seed 2 of 3 — the bye round's whole "
+       "reward is the third home game")
+    ck("the Division Series is 2-2-1, so the higher seed hosts the DECIDER",
+       _hosts(_ds) == [True, True, False, False, True],
+       "the old pattern handed Game 5 to the road team")
+    ck("the LCS/World Series is 2-3-2", _hosts(_lcs) == [True, True, False,
+                                                         False, False, True, True])
+    ck("home games match the closed-form season_sim uses",
+       all(_hosts(lg) == [(g + 1) in _SS._HOME_GAMES[need] for g in range(len(lg))]
+           for need, lg in ((2, _wc), (3, _ds), (4, _lcs))),
+       "the fast board and the deep board must not disagree about who is home")
+
+    ck("every series opens with the ACE, not wherever August left the index",
+       _hi_sp(_wc)[0] == "A0" and _hi_sp(_ds)[0] == "A0" and _hi_sp(_lcs)[0] == "A0")
+    ck("the rotation is ordered by quality, not by list position",
+       [p["name"] for p in _DS._po_rotation(1, 4)] == ["A0", "A1", "A2", "A3"],
+       "the fixture is shuffled: taking rotation[:4] would fail this")
+    ck("the #5 and #6 starters NEVER throw a playoff game",
+       not ({s if h else a for lg in (_wc, _ds, _lcs) for h, s, a in lg}
+            & {"A4", "A5", "B4", "B5"}),
+       "cycling all six through October charged a deep staff for arms that in "
+       "reality watch the series from the bullpen")
+    ck("a best-of-three uses THREE arms — no ace on zero days' rest",
+       _hi_sp(_wc) == ["A0", "A1", "A2"],
+       "the WC is three games on three consecutive days")
+    ck("a best-of-seven brings the ace back for Game 5 on normal rest",
+       _hi_sp(_lcs) == ["A0", "A1", "A2", "A3", "A0", "A1", "A2"])
+    ck("one scale ranks arms everywhere (bullpen order == rotation order)",
+       _DS._build_po_rot(_pf)[1][4] ==
+       sorted(_pf[1]["rotation"], key=_DD.arm_quality, reverse=True)[:4])
+    ck("a club with no rotation data degrades instead of crashing",
+       _DS._build_po_rot({9: {"rotation": []}})[9][4] == [None])
+    ck("a three-man staff is not indexed off the end",
+       len(_DS._build_po_rot({9: {"rotation": _fake_prof("C", 3)["rotation"]}})[9][4]) == 3)
+finally:
+    _DS._G.clear()
+    _DS._G.update(_saved_G)
+
+ck("the playoff rotation is built ONCE per worker, not per series",
+   "_G[\"po_rot\"] = _build_po_rot" in open(
+       os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                    "deep_season.py")).read(),
+   "4,000 seasons x 13 series of re-sorting would cost more than the games")
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
@@ -1973,4 +2069,3 @@ if FAIL:
     for n, d in FAIL:
         print(f"   - {n}   {d}")
 print("=" * 72)
-

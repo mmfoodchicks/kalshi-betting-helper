@@ -412,6 +412,15 @@ def _attach_platoon(batters, season):
         list(ex.map(one, batters))
 
 
+def arm_quality(p):
+    """How good a pitcher is, on one scale: more Ks, fewer walks, lower ERA.
+
+    Shared so every consumer ranks arms the same way — the bullpen order inside
+    a profile, and the playoff rotation deep_season starts in October.
+    """
+    return (p["kpa"] - p["bbpa"]) - p["era"] / 20.0
+
+
 def team_profile(team_id, season=None):
     """{rotation, bullpen, lineup, bench} of player dicts for one club."""
     season = season or str(clock.today_et().year)
@@ -504,10 +513,9 @@ def team_profile(team_id, season=None):
         starters = sorted((p for p in pitchers if p["gs"] >= 3),
                           key=lambda p: (p["gs"], p["ip"]), reverse=True)[:6]
         sid = {p["id"] for p in starters}
-        # Quality score: more Ks, fewer walks, lower ERA = better. Bullpen is ranked
-        # WORST-first so the best arm (closer) is held back for late innings.
-        def quality(p):
-            return (p["kpa"] - p["bbpa"]) - p["era"] / 20.0
+        # Bullpen is ranked WORST-first so the best arm (closer) is held back for
+        # late innings.
+        quality = arm_quality
         relievers = [p for p in pitchers if p["id"] not in sid and p["ip"] > 0]
         relievers.sort(key=quality)
         depth.sort(key=quality)                       # worst-first; real org arms

@@ -131,9 +131,27 @@ def profile_quality(profiles):
             "teams_ok": teams_ok, "teams": len(profiles)}
 
 
-def _play_series(a, b, need, ridx, rng, seed=None, tag=""):
+# How many starters a club actually uses in a series of each length (keyed by
+# wins needed). Nobody's fifth starter throws a playoff inning. The Wild Card is
+# three games on three consecutive days, so it needs three arms -- the ace cannot
+# come back for Game 3 on zero rest. A best-of-five has an off day either side of
+# the middle games and is covered by three; a best-of-seven by four, with the ace
+# back for Game 5 on normal rest. The regular-season list runs six deep, so
+# cycling it through October handed real playoff starts to arms that in reality
+# watch from the bullpen -- and it cost the deep staffs most, because a club
+# four aces deep is exactly the one whose #5 and #6 drag it furthest down.
+_PO_ARMS = {2: 3, 3: 3, 4: 4}
+
+
+def _po_rotation(tid, need):
+    """The arms team `tid` actually starts in a series of this length, best first."""
+    return _G["po_rot"][tid][need]
+
+
+def _play_series(a, b, need, rng, seed=None, tag=""):
     """Best-of (2*need-1) between team ids a (higher seed, home edge) and b.
-    Rotations cycle from each club's top arms. Returns the winning team id.
+    Each club opens with its ace and works down its playoff rotation. Returns
+    the winning team id.
 
     With `seed`, the series draws from its OWN stream keyed by (seed, round,
     both teams). A series is the one part of the sim that consumes a VARIABLE
@@ -144,15 +162,20 @@ def _play_series(a, b, need, ridx, rng, seed=None, tag=""):
     the same round play the same way unless something about THEM changed."""
     wins = {a: 0, b: 0}
     pa, pb = _G["profiles"][a], _G["profiles"][b]
-    rot_a, rot_b = pa["rotation"] or [None], pb["rotation"] or [None]
+    rot_a, rot_b = _po_rotation(a, need), _po_rotation(b, need)
+    # Which games the higher seed hosts, by MLB's real format: the Wild Card is
+    # played entirely at the higher seed's park, the Division Series is 2-2-1 and
+    # the LCS/World Series 2-3-2. One flat 2-3-2 pattern (the old behaviour) gave
+    # the top seed 2 of 3 in the WC instead of 3, and handed away Game 5 of the DS.
+    homes = season_sim._HOME_GAMES.get(need, ())
     if seed is not None:
         rng = random.Random(f"{seed}|{tag}|{a}|{b}")
     g = 0
     while wins[a] < need and wins[b] < need:
-        # Higher seed hosts games 1,2,6,7 (2-3-2); home team bats last / has edge.
-        home_is_a = g in (0, 1, 5, 6)
-        sa = rot_a[(ridx[a] + g) % len(rot_a)]
-        sb = rot_b[(ridx[b] + g) % len(rot_b)]
+        home_is_a = (g + 1) in homes           # home team bats last / has the edge
+        # Each series resets to the ace: rotations line up on the off days between
+        # rounds, they do not carry an index over from August.
+        sa, sb = rot_a[g % len(rot_a)], rot_b[g % len(rot_b)]
         if home_is_a:
             res = deep_sim.play_game(pa, pb, sa, sb, rng)
             winner = a if res["home_win"] else b
@@ -162,8 +185,6 @@ def _play_series(a, b, need, ridx, rng, seed=None, tag=""):
         wins[winner] += 1
         _accum_box(res)
         g += 1
-    ridx[a] += g
-    ridx[b] += g
     return a if wins[a] > wins[b] else b
 
 
@@ -223,7 +244,6 @@ def _sim_one_season(seed):
 
     # Postseason bracket per league, then World Series.
     out = {"division": [], "playoffs": [], "pennant": [], "ws": None}
-    pidx = defaultdict(int)
     champs = {}
     for lg_id, members in leagues.items():
         order = sorted(members, key=lambda t: (wins[t], rng.random()), reverse=True)
@@ -237,13 +257,13 @@ def _sim_one_season(seed):
         out["division"].extend(dws)
         out["playoffs"].extend(seeds)
         # WC (bo3): 3v6, 4v5; seeds 1-2 bye.
-        w36 = _play_series(seeds[2], seeds[5], _WC, pidx, rng, seed, "wc36")
-        w45 = _play_series(seeds[3], seeds[4], _WC, pidx, rng, seed, "wc45")
+        w36 = _play_series(seeds[2], seeds[5], _WC, rng, seed, "wc36")
+        w45 = _play_series(seeds[3], seeds[4], _WC, rng, seed, "wc45")
         ds_lo, ds_hi = (w36, w45) if seeds.index(w36) > seeds.index(w45) else (w45, w36)
-        d1 = _play_series(seeds[0], ds_lo, _DS, pidx, rng, seed, "ds1")
-        d2 = _play_series(seeds[1], ds_hi, _DS, pidx, rng, seed, "ds2")
+        d1 = _play_series(seeds[0], ds_lo, _DS, rng, seed, "ds1")
+        d2 = _play_series(seeds[1], ds_hi, _DS, rng, seed, "ds2")
         champ = _play_series(d1 if wins[d1] >= wins[d2] else d2,
-                             d2 if wins[d1] >= wins[d2] else d1, _LCS, pidx, rng,
+                             d2 if wins[d1] >= wins[d2] else d1, _LCS, rng,
                              seed, "lcs")
         champs[lg_id] = champ
         out["pennant"].append(champ)
@@ -251,15 +271,35 @@ def _sim_one_season(seed):
     if len(lg_ids) == 2:
         a, b = champs[lg_ids[0]], champs[lg_ids[1]]
         hi, lo = (a, b) if wins[a] >= wins[b] else (b, a)
-        out["ws"] = _play_series(hi, lo, _WS, pidx, rng, seed, "ws")
+        out["ws"] = _play_series(hi, lo, _WS, rng, seed, "ws")
     out["wins"] = {tid: wins[tid] for tid in stand}
     out["bat"] = {pid: dict(s) for pid, s in _G["season_bat"].items()}
     out["pit"] = {pid: dict(s) for pid, s in _G["season_pit"].items()}
     return out
 
 
+def _build_po_rot(profiles):
+    """{team_id: {wins_needed: [starter, ...]}} — each club's October rotation.
+
+    Built once per worker rather than per series: sorting six arms 4,000 seasons
+    x 13 series deep would cost more than the games themselves. Ranked by
+    deep_data.arm_quality, the same scale the bullpen order uses, so "best arm"
+    means one thing across the app.
+    """
+    out = {}
+    for tid, prof in profiles.items():
+        rot = (prof or {}).get("rotation") or []
+        if not rot:
+            out[tid] = {need: [None] for need in _PO_ARMS}
+            continue
+        best = sorted(rot, key=deep_data.arm_quality, reverse=True)
+        out[tid] = {need: best[:min(len(best), k)] for need, k in _PO_ARMS.items()}
+    return out
+
+
 def _init_worker(shared):
     _G.update(shared)
+    _G["po_rot"] = _build_po_rot(_G["profiles"])
 
 
 def _chunk_seasons(args):
