@@ -27,7 +27,19 @@ import kalshi
 
 # Kalshi futures series. Winner-style series have one YES market per team
 # (ticker ...-{ABBR}); we map each to one of our simulated probabilities.
-_WS_SERIES = ("KXMLBWS", "KXMLBWORLD")          # World Series winner (try both)
+# World Series winner. The live series is KXMLB -- "Will <team> win the 2026 Pro
+# Baseball Championship", one YES market per team, 30 of them, all quoted.
+#
+# The two tickers here before it found NOTHING, so every World Series row on the
+# board carried kalshi_cents=null and every "edge" was measured against
+# Polymarket alone -- against a venue that is not where the bets get placed.
+# KXMLBWS returns no open markets at all, and KXMLBWORLD is the World Baseball
+# CLASSIC: a different tournament, played by national teams, in a different year.
+# It would have been a wrong price rather than a missing one had it ever quoted.
+#
+# Kept in the tuple after KXMLB purely as fallbacks in case Kalshi renames the
+# live one mid-season; the first series that returns markets wins.
+_WS_SERIES = ("KXMLB", "KXMLBWS")
 _PENNANT = {"KXMLBAL": 103, "KXMLBNL": 104}
 _DIVISION = ("KXMLBALEAST", "KXMLBALCENT", "KXMLBALWEST",
              "KXMLBNLEAST", "KXMLBNLCENT", "KXMLBNLWEST")

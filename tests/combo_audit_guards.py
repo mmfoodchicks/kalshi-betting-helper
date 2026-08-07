@@ -1874,6 +1874,31 @@ ck("the postseason reads the playoff staff, the regular season does not",
 
 print()
 print("=" * 72)
+print("The World Series board has to be priced against the venue you bet at")
+print("=" * 72)
+_ss_src = _insp.getsource(_SS)
+ck("the live World Series series is the one we ask for",
+   "KXMLB" in _SS._WS_SERIES,
+   "KXMLB carries 30 quoted markets -- one per team. Without it every WS row "
+   "came back kalshi_cents=null and the edge was measured against Polymarket "
+   "alone, a venue these bets do not get placed at")
+ck("and the World Baseball CLASSIC is not mistaken for it",
+   "KXMLBWORLD" not in _SS._WS_SERIES,
+   "different tournament, national teams, different year -- had it ever quoted "
+   "it would have been a WRONG price rather than a missing one")
+ck("the fallback order tries the live series first",
+   _SS._WS_SERIES[0] == "KXMLB")
+ck("prices are read in deci-cents, not rounded to the cent",
+   _CENTS_OK := (__import__("kalshi")._cents(0.371) == 37.1
+                 and __import__("kalshi")._cents(0.002) == 0.2),
+   "these markets quote in 0.1c steps; rounding to whole cents would turn a "
+   "0.2c longshot into 0c and divide by zero downstream")
+ck("a winner-style row is keyed off the ticker's team suffix",
+   '.rsplit("-", 1)[-1]' in _ss_src,
+   "KXMLB-26-LAD -> LAD")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
