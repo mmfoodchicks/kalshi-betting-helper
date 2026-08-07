@@ -679,6 +679,11 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     if not pool:
         return {"error": "projections not ready — the weekly sim is still building, retry shortly"}
 
+    # Both indexes, same as the showdown path. Building them only there left the
+    # classic path calling _pool_match with names it had never defined -- a
+    # NameError on EVERY classic build, which is the format every multi-game
+    # preseason slate uses. Showdown is the exception, not the rule.
+    _nidx, _norm = _norm_index(pool)
     _deep = _deep_fallback(pool, preseason)
     players, unmatched = [], []
     for c in csv_players:

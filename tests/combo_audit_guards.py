@@ -1608,6 +1608,24 @@ ck("kickers still do — they are genuinely independent of the score",
    _ND._special_arr("K", True) is not None
    and _ND._special_arr("DST", True) is None)
 
+# Both build paths must set up everything they use. The name index was added to
+# the showdown path only, and the classic path called _pool_match with it
+# regardless -- a NameError on EVERY classic build, which is the format every
+# multi-game slate uses. Showdown is the exception, not the rule, and it is the
+# one that got exercised.
+_bsrc = _insp.getsource(_ND.build)
+_ssrc = _insp.getsource(_ND._build_showdown)
+for _fn, _src in (("build (classic)", _bsrc), ("_build_showdown", _ssrc)):
+    for _need in ("_norm_index(pool)", "_deep_fallback(pool"):
+        ck(f"{_fn} builds its own {_need.split('(')[0]}",
+           _need in _src,
+           "a helper used in one path and defined in the other is a NameError "
+           "waiting for the format nobody tested")
+ck("neither path uses a name it did not define",
+   all(f"{v} =" in _bsrc or f"{v}, " in _bsrc
+       for v in ("_nidx", "_deep")),
+   "caught by running a real 16-game week-2 slate, not by any guard here")
+
 ck("a CPT-bearing export is detected as showdown",
    _ND.detect_mode(_rows) == "showdown")
 ck("an ordinary export is detected as classic",
