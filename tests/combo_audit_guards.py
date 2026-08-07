@@ -1746,6 +1746,36 @@ ck("the inversion holds for the three positions that measure it",
 
 print()
 print("=" * 72)
+print("Preseason is a different model, and its record has to say so")
+print("=" * 72)
+import calibrate as _CAL
+
+ck("preseason NFL has its own calibration bucket",
+   "nfl_pre" in _CAL._MODELS,
+   "one temperature fitted across exhibitions AND regular games learns a blend "
+   "of two shapes -- margin SD 15.40 against ~13.5 -- and then applies it to "
+   "games that only ever have one of them")
+ck("and it is not an alias of the regular-season one",
+   _CAL._MODELS["nfl_pre"][0] is not _CAL._MODELS["nfl"][0])
+_ngs = _insp.getsource(_NFS)
+ck("the RECORD side routes exhibitions to it",
+   'predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)' in _ngs,
+   "the apply side was already guarded; the logging was not, so every August "
+   "game was graded into the regular-season model's evidence")
+ck("the APPLY side still refuses to calibrate a market-anchored probability",
+   "cal_used = lambda p: p" in _ngs,
+   "the preseason level comes from Kalshi's ladder, so there is no error of "
+   "our own to correct -- registering the bucket is for measurement, not use")
+ck("its floor demands more than one preseason of evidence",
+   _CAL._MODELS["nfl_pre"][1] > 65,
+   f'{_CAL._MODELS["nfl_pre"][1]} against ~65 exhibition games a year')
+ck("an unregistered model is a clean no-op, not an error",
+   _CAL._params("not_a_model") == (1.0, 0.5, 0.0, 0))
+ck("and every registered model answers without raising",
+   all(len(_CAL._params(m)) == 4 for m in _CAL._MODELS))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

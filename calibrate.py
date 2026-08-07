@@ -281,6 +281,16 @@ _MODELS = {
     # NFL moneylines (drive engine): same noisy-binary shape as tennis/UFC, and a
     # week only settles ~16 games, so a full correction takes about a season.
     "nfl":    (lambda: _predlog_pairs("nfl"),    250),
+    # Preseason NFL is a SEPARATE model, not more of the same one. The engine is
+    # anchored to Kalshi's de-vigged ladder rather than to a projection source,
+    # and the games themselves scatter differently -- margin SD 15.40 against
+    # roughly 13.5, home edge +0.78 against roughly 2.5. Registered so its record
+    # is measurable in report(); nfl_game_sim deliberately does NOT apply it,
+    # because a market-anchored probability has no error of its own to correct.
+    # If that record ever shows a real, stable bias, THAT is the evidence for
+    # applying it -- and it can only accrue in a bucket of its own. ~65 games a
+    # year, so the floor is three seasons rather than one.
+    "nfl_pre": (lambda: _predlog_pairs("nfl_pre"), 200),
     # WNBA moneylines (possession engine): ~2-6 games/day settle, so history
     # accrues fast; still a noisy binary, so a real floor before full trust.
     # NBA / NHL (possession & shot engines) — dense schedules settle fast.

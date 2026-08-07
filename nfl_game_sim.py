@@ -764,7 +764,18 @@ def _build_board(season, week, n=2400, preseason=False):
         try:
             import predlog
             predlog.init_db()          # safe no-op when already initialized
-            predlog.log_many("nfl", log_rows)
+            # Preseason keeps its OWN bucket. The apply side already refuses to
+            # calibrate exhibitions, but the record side did not, so every
+            # August game was being graded into the regular-season model's
+            # evidence -- and the two are not the same distribution. Measured
+            # off last preseason: margin SD 15.40 against roughly 13.5 in the
+            # regular season, home edge +0.78 against roughly 2.5. Fitting one
+            # temperature across both would learn a blend of two shapes and
+            # apply it to games that only ever have one of them. ~65 exhibition
+            # games a year against ~285 regular ones, so the contamination
+            # would have been steady rather than dramatic, which is worse: it
+            # never gets big enough to look obviously wrong.
+            predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)
         except Exception:
             pass
     out.sort(key=lambda g: g["date"] or "")
