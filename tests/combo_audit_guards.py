@@ -2264,6 +2264,97 @@ ck("300 sweeps against four writing threads raise nothing", _err is None, str(_e
 
 print()
 print("=" * 72)
+print("A week is one record, not seven lines of 0-1")
+print("=" * 72)
+
+
+def _mkdays(n=8):
+    """n consecutive nights for one club: a game every day, one roster item."""
+    days, w, l = {}, 60, 50
+    for i in range(n):
+        d = "2026-08-%02d" % (i + 1)
+        dw, dl = (1, 0) if i % 3 else (0, 1)
+        w += dw; l += dl
+        what = [_DH.record_sentence(dw, dl)]
+        if i == 3:
+            what.insert(0, "Signed a bat  +3.0pp")
+        days[d] = {"date": d, "prev_date": ("2026-08-%02d" % i) if i else None,
+                   "n": 4000,
+                   "teams": [{"id": 1, "name": "A", "ws": 15.0 + i, "ws_prev": 14.0 + i,
+                              "playoffs": 90.0, "playoffs_prev": 89.0, "mean_wins": 95,
+                              "wins": w, "losses": l,
+                              "wins_prev": w - dw, "losses_prev": l - dl,
+                              "record": {"w": dw, "l": dl},
+                              "what": what, "events": []}]}
+    return days
+
+
+_D8 = _mkdays(8)
+_od2, _orp2 = _DH.dates, _DH.report
+try:
+    _DH.dates = lambda: sorted(_D8, reverse=True)
+    _DH.report = lambda d=None: _D8.get(d or sorted(_D8, reverse=True)[0])
+    _wk = _DH.report_range("2026-08-01", "2026-08-08")
+    _t8 = _wk["teams"][0]
+    _recs = [x for x in _t8["what"] if "Went " in x]
+
+    ck("a week prints ONE record line, not one per night",
+       len(_recs) == 1,
+       f"{len(_recs)} record lines over 8 runs -- seven lines is not seven "
+       "pieces of news, it is one record chopped up")
+    ck("and it is the record FOR THE WINDOW, with both endpoints named",
+       _recs[0] == "Went 5-3 from 2026-08-01 to 2026-08-08", _recs[0])
+    ck("the arithmetic is right", _t8["record"]["w"] == 5 and _t8["record"]["l"] == 3)
+    ck("the record leads, before the roster news",
+       _t8["what"][0].startswith("Went "))
+    ck("real news is NOT swallowed by the collapse, and keeps its date",
+       any("Signed a bat" in x and x.startswith("2026-08-04") for x in _t8["what"]),
+       "only the mechanical W-L line is folded; anything that is actual news "
+       "still has to survive with the day it happened on")
+    ck("nine lines become two", len(_t8["what"]) == 2, str(_t8["what"]))
+    ck("the record is also structured, not only prose",
+       _t8["record"]["from"] == "2026-08-01" and _t8["record"]["to"] == "2026-08-08")
+    ck("a single day still reads 'since the previous run'",
+       _DH.report_range("2026-08-08", "2026-08-08")["teams"][0]["what"][0]
+       == "Went 1-0 since the previous run",
+       "the daily box is unchanged -- one night IS 'since last night'")
+
+    # end-to-end, not summed: drop a day out of storage and the record stays right
+    _gone = _D8.pop("2026-08-05")
+    _wk2 = _DH.report_range("2026-08-01", "2026-08-08")
+    _r2 = [x for x in _wk2["teams"][0]["what"] if "Went " in x][0]
+    _D8["2026-08-05"] = _gone
+    ck("a missing night does not make the record short",
+       _r2 == "Went 5-3 from 2026-08-01 to 2026-08-08", _r2 + " (2026-08-05 removed)")
+    ck("...which summing the nightlies WOULD have done",
+       True, "first-to-last is exact; a sum of what happens to be stored is not")
+
+    # a club that did not play at all in the window
+    _idle = {d: {**v, "teams": [{**v["teams"][0], "wins": 60, "losses": 50,
+                                 "wins_prev": 60, "losses_prev": 50,
+                                 "record": None,
+                                 "what": ["Signed a bat  +3.0pp"]}]}
+             for d, v in _mkdays(3).items()}
+    _DH.dates = lambda: sorted(_idle, reverse=True)
+    _DH.report = lambda d=None: _idle.get(d or sorted(_idle, reverse=True)[0])
+    _wi = _DH.report_range("2026-08-01", "2026-08-03")
+    ck("a club that played no games gets no record line at all",
+       not any("Went " in x for x in _wi["teams"][0]["what"])
+       and _wi["teams"][0]["record"] is None,
+       "'Went 0-0' is not information")
+finally:
+    _DH.dates, _DH.report = _od2, _orp2
+
+ck("report() carries the W-L structured, so nothing parses English back out",
+   '"record": {"w": rd[0], "l": rd[1]}' in open(
+       os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                    "deep_history.py")).read(),
+   "the per-night line is dropped by rebuilding it from the numbers and matching "
+   "exactly -- a regex over generated prose would rot the first time the "
+   "sentence is reworded")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

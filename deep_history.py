@@ -493,16 +493,31 @@ def _run_noise(n, p=0.15, sigmas=3.0):
     return round(sigmas * (p * (1 - p) / n) ** 0.5 * 100 * (2 ** 0.5), 2)
 
 
-def team_sentence(prev_t, cur_t):
-    """The mechanical part: they played games. Separated from roster news because
-    a team winning is not a surprise and should not read like one."""
-    if not prev_t:
+def record_delta(prev_t, cur_t):
+    """(wins, losses) a team added between two snapshots, or None if it sat idle."""
+    if not prev_t or not cur_t:
         return None
     dw = (cur_t.get("wins") or 0) - (prev_t.get("wins") or 0)
     dl = (cur_t.get("losses") or 0) - (prev_t.get("losses") or 0)
-    if dw == 0 and dl == 0:
-        return None
+    return None if (dw == 0 and dl == 0) else (dw, dl)
+
+
+def record_sentence(dw, dl, span=None):
+    """'Went 3-4' over one night, or over a window when `span` is (from, to).
+
+    A week-long window used to print seven of these, one per night, each saying
+    a team went 0-1 or 1-0. Seven lines is not seven pieces of news -- it is one
+    record, chopped up, and the reader has to add it back up to learn anything."""
+    if span:
+        return f"Went {dw}-{dl} from {span[0]} to {span[1]}"
     return f"Went {dw}-{dl} since the previous run"
+
+
+def team_sentence(prev_t, cur_t):
+    """The mechanical part: they played games. Separated from roster news because
+    a team winning is not a surprise and should not read like one."""
+    d = record_delta(prev_t, cur_t)
+    return record_sentence(d[0], d[1]) if d else None
 
 
 # ---------------------------------------------------------------- assembly ---
@@ -673,6 +688,10 @@ def report(date=None):
                 f"No roster or form changes found; {abs(mv):.1f}pp is "
                 f"{'within' if abs(mv) <= _run_noise(rec.get('n')) else 'ABOVE'} "
                 f"the run-to-run spread of a {(rec.get('n') or 0):,}-season sim")
+        # The W-L carried STRUCTURED as well as written out, so a multi-day
+        # window can add records up without parsing English back out of a
+        # sentence it just generated.
+        rd = record_delta(pt, t)
         teams.append({
             "id": tid, "name": t.get("name"),
             "ws": t.get("ws"), "ws_prev": pt.get("ws") if pt else None,
@@ -680,6 +699,10 @@ def report(date=None):
             "playoffs": t.get("playoffs"),
             "playoffs_prev": pt.get("playoffs") if pt else None,
             "mean_wins": t.get("mean_wins"),
+            "wins": t.get("wins"), "losses": t.get("losses"),
+            "wins_prev": pt.get("wins") if pt else None,
+            "losses_prev": pt.get("losses") if pt else None,
+            "record": {"w": rd[0], "l": rd[1]} if rd else None,
             "what": lines,
             "events": evs.get(tid) or [],
         })
@@ -748,11 +771,13 @@ def report_range(start=None, end=None):
     # from it with no baseline -- and therefore no move at all, which on a live
     # board means the teams with a single big piece of news are exactly the ones
     # that come back blank.
-    start_ws, start_po = {}, {}
+    start_ws, start_po, start_w, start_l = {}, {}, {}, {}
     for r in reversed(per_day):                     # oldest -> newest
         for t in r["teams"]:
             start_ws.setdefault(t["id"], t.get("ws_prev"))
             start_po.setdefault(t["id"], t.get("playoffs_prev"))
+            start_w.setdefault(t["id"], t.get("wins_prev"))
+            start_l.setdefault(t["id"], t.get("losses_prev"))
 
     merged = {}
     for r in per_day:                               # newest first
@@ -761,12 +786,24 @@ def report_range(start=None, end=None):
                 "id": t["id"], "name": t.get("name"),
                 "ws": None, "ws_prev": None, "playoffs": None,
                 "playoffs_prev": None, "mean_wins": None,
+                "wins": None, "losses": None, "record": None,
                 "what": [], "events": [], "_days": 0})
             if m["ws"] is None:                     # newest run wins the levels
                 m["ws"] = t.get("ws")
                 m["playoffs"] = t.get("playoffs")
                 m["mean_wins"] = t.get("mean_wins")
+            if m["wins"] is None:
+                m["wins"], m["losses"] = t.get("wins"), t.get("losses")
+            # That night's own W-L line is dropped here and replaced by ONE line
+            # for the whole window below. Rebuilt from the structured record and
+            # matched exactly, so nothing is parsed out of prose.
+            skip = None
+            rd = t.get("record")
+            if rd:
+                skip = record_sentence(rd["w"], rd["l"])
             for line in (t.get("what") or []):
+                if line == skip:
+                    continue
                 # Same sentence can recur across nights (a signing keeps showing
                 # up until it ages out); keep the first, newest, occurrence.
                 if line not in m["what"]:
@@ -774,12 +811,22 @@ def report_range(start=None, end=None):
             m["events"].extend(t.get("events") or [])
             m["_days"] += 1
 
+    span = ((first.get("prev_date") or oldest), newest)
     teams = []
     for tid, m in merged.items():
         sw, sp = start_ws.get(tid), start_po.get(tid)
         m["ws_prev"], m["playoffs_prev"] = sw, sp
         m["move"] = (round(m["ws"] - sw, 1)
                      if (m["ws"] is not None and sw is not None) else None)
+        # The window's record, measured END TO END for the same reason the WS
+        # move is: a day missing from storage makes a sum of the nightlies quietly
+        # short, while first-to-last stays exact.
+        w0, l0 = start_w.get(tid), start_l.get(tid)
+        if m["wins"] is not None and w0 is not None:
+            dw, dl = m["wins"] - w0, (m["losses"] or 0) - (l0 or 0)
+            if dw or dl:
+                m["record"] = {"w": dw, "l": dl, "from": span[0], "to": span[1]}
+                m["what"].insert(0, record_sentence(dw, dl, span))
         m["days_seen"] = m.pop("_days")
         if m["what"] or m["move"]:
             teams.append(m)
