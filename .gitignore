@@ -20,3 +20,4 @@ data/
 
 # Build artifacts (a 47MB playwright wheel was committed once)
 *.whl
+futures_history/

@@ -57,6 +57,16 @@ def init_db():
         cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)")}
         if "mkt" not in cols:
             c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
+        # Repair: NFL exhibitions logged before the nfl_pre split carried
+        # model='nfl', and first-write-wins means the corrected router could
+        # never re-file them — so August games would grade into the REGULAR
+        # SEASON calibration bucket, the exact contamination the split exists
+        # to prevent. An NFL game ticker with an AUG date is always an
+        # exhibition (the regular season has never opened before September),
+        # so the re-file is safe to run every boot; it's a no-op once clean.
+        c.execute("UPDATE predictions SET model='nfl_pre' "
+                  "WHERE model='nfl' AND ticker LIKE 'KXNFLGAME-%' "
+                  "AND substr(ticker, 13, 3) = 'AUG'")
 
 
 def log_many(model, rows):
@@ -90,11 +100,38 @@ def log_many(model, rows):
         c.executemany(
             "INSERT OR IGNORE INTO predictions "
             "(ticker, model, prob, close_time, ts, mkt) VALUES (?,?,?,?,?,?)", clean)
+        # The PREDICTION is first-write-wins forever — that is the genuine
+        # forecast, and later re-prices must never touch it. The market column
+        # is a benchmark, not a forecast: a row logged before its book was
+        # quoted (or before this column existed) carries NULL, and leaving it
+        # NULL forever just means the sport can never answer "did we beat the
+        # price". Backfill it once, while the prediction is still ungraded.
+        c.executemany(
+            "UPDATE predictions SET mkt=? WHERE ticker=? AND graded=0 AND mkt IS NULL",
+            [(row[5], row[0]) for row in clean if row[5] is not None])
     return len(clean)
 
 
 def log(model, ticker, prob, close_time=None, mkt=None):
     return log_many(model, [(ticker, prob, close_time, mkt)])
+
+
+def devig(own_cents, opp_cents):
+    """The market's own probability for a side, with the overround stripped:
+    own/(own+opp), as a 0-1 float, or None when either side is unquoted.
+
+    This is the number to pass as `mkt`. The raw ask overstates both sides at
+    once (a 106c book says every team is better than it is), so grading against
+    it would flatter the model by exactly the vig. Grading against the de-vigged
+    price asks the only question that matters: did we know something the market,
+    fairly stated, did not."""
+    try:
+        a, b = float(own_cents), float(opp_cents)
+    except (TypeError, ValueError):
+        return None
+    if a <= 0 or b <= 0:
+        return None
+    return a / (a + b)
 
 
 def pairs(model):

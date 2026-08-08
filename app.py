@@ -225,6 +225,14 @@ def _init_deep_sims():
             deep_history.build_day(agg, season, profs)
         except Exception:
             pass
+        # Futures snapshot + market-coherence flags: write down what the model
+        # AND both venues said tonight, so October grades against a record
+        # instead of a memory. Same best-effort rule.
+        try:
+            import coherence
+            coherence.snapshot(season)
+        except Exception:
+            pass
         return {"agg": agg, "season": season}
 
     def run_f1():
@@ -900,7 +908,15 @@ def api_baseball_today():
     # memory to spare. The interactive combo MAKER is untouched and still builds
     # on demand via /api/baseball/parlay; it only needs these two cheap facts.
     combos = baseball.combo_context(games, allow_live=_allow_live())
-    return jsonify({"date": date, "games": games, "combos": combos})
+    # What the factor/deep blend is running on, so a changed weight is visible on
+    # the board rather than silently re-shaping every number (the deep engine
+    # once sat at 0% for weeks and nothing said so).
+    try:
+        blend = baseball.deep_blend_info()
+    except Exception:
+        blend = None
+    return jsonify({"date": date, "games": games, "combos": combos,
+                    "deep_blend": blend})
 
 
 @app.route("/api/backtest")
@@ -1536,15 +1552,19 @@ def api_nhl_slate():
 def api_nfl_slate():
     """Drive-engine NFL slate: per-game win probs vs live Kalshi moneylines
     (edges), score/total/spread distributions, correlated player props and a
-    default same-game parlay per game. Non-blocking; the frontend polls."""
+    default same-game parlay per game. Non-blocking; the frontend polls.
+    week=0 (or absent) means AUTO: the first week with games still to play."""
     try:
-        week = int(request.args.get("week", 1))
+        week = int(request.args.get("week", 0))
     except ValueError:
-        week = 1
-    week = max(1, min(18, week))
+        week = 0
+    pre = _nfl_preseason()
     try:
         import nfl_game_sim
-        data = nfl_game_sim.board(week=week, preseason=_nfl_preseason())
+        if week < 1:
+            week = nfl_game_sim.current_week(pre)
+        week = max(1, min(18, week))
+        data = nfl_game_sim.board(week=week, preseason=pre)
     except Exception as e:
         return jsonify({"error": f"nfl slate failed: {e}"}), 502
     if not data:
@@ -1922,6 +1942,29 @@ def api_baseball_deep_status():
     import deep_history
     p["history_dates"] = deep_history.dates()[:60]
     return jsonify(p)
+
+
+@app.route("/api/baseball/coherence")
+def api_baseball_coherence():
+    """Is Kalshi's futures book coherent with ITSELF? Model-free checks:
+    P(win WS | win pennant) per team, the league split of WS probability, and
+    parent/child price ordering. A flag says two of the venue's own prices
+    cannot both be right — no model required. ?date=YYYY-MM-DD serves a stored
+    nightly snapshot instead of a live check."""
+    import coherence
+    date = request.args.get("date")
+    if date:
+        rec = coherence.load_day(date)
+        if not rec:
+            return jsonify({"error": f"no snapshot for {date}",
+                            "dates": coherence.history_dates()[-30:]}), 404
+        return jsonify(rec)
+    try:
+        out = coherence.check()
+    except Exception as e:
+        return jsonify({"error": f"coherence check failed: {e}"}), 502
+    out["dates"] = coherence.history_dates()[-30:]
+    return jsonify(out)
 
 
 @app.route("/api/baseball/futures/deep/history")

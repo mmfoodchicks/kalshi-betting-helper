@@ -23,6 +23,7 @@ quick_game() is the deep-season resolver: ONE fast game returning goals + the
 overtime flag, so the nightly 4000-season Monte Carlo can award real NHL
 standings points (2 win / 1 OT loss).
 """
+import predlog
 import random
 import re
 import threading
@@ -563,10 +564,17 @@ def _build_board(date, n=3000):
             tot_edges.sort(key=lambda r: -abs(r["edge"]))
             row["spread_edges"] = sp_edges[:4]
             row["total_edges"] = tot_edges[:4]
-            for side, ml, p in (("home", mk["home_ml"], raw_ph),
-                                ("away", mk["away_ml"], 1 - raw_ph)):
+            # Fourth element: the de-vigged price beside the prediction. Without
+            # it predlog.vs_market can never answer for this sport -- calibration
+            # alone says whether we're honest, only the price says whether we'd
+            # have been PAID.
+            _hc = (mk["home_ml"] or {}).get("cents")
+            _ac = (mk["away_ml"] or {}).get("cents")
+            for side, ml, p, own, opp in (("home", mk["home_ml"], raw_ph, _hc, _ac),
+                                          ("away", mk["away_ml"], 1 - raw_ph, _ac, _hc)):
                 if ml and ml.get("ticker"):
-                    log_rows.append((ml["ticker"], p, ml.get("close")))
+                    log_rows.append((ml["ticker"], p, ml.get("close"),
+                                     predlog.devig(own, opp)))
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -580,7 +588,6 @@ def _build_board(date, n=3000):
 
     if log_rows:
         try:
-            import predlog
             predlog.init_db()
             predlog.log_many("nhl", log_rows)
         except Exception:

@@ -22,6 +22,7 @@ parlays honest. Leg masks feed the same bitmask machinery MLB uses
 (mlb_sim.best_same_game / game_bundles), so NFL gets correlated SGPs for free.
 """
 import math
+import predlog
 import random
 
 # ---- Engine constants -------------------------------------------------------
@@ -487,6 +488,27 @@ def _season():
     return t.year if t.month >= 3 else t.year - 1
 
 
+def current_week(preseason=False):
+    """The week the NFL tab should open on: the first whose games are not all in
+    the past (ET). The tab used to default to week 1 forever, which is right for
+    a few days a year — the morning after the Hall of Fame game it served one
+    already-played exhibition while sixteen games sat under week 2, and the
+    board read "no games" until the user guessed the dropdown."""
+    import clock
+    import nfl_live
+    today = clock.today_et().isoformat()
+    last = 4 if preseason else 18
+    for wk in range(1, last + 1):
+        try:
+            sch = nfl_live.schedule(wk, int(_season()),
+                                    seasontype=1 if preseason else 2) or []
+        except Exception:
+            sch = []
+        if any((g.get("date") or "")[:10] >= today for g in sch):
+            return wk
+    return last
+
+
 # --- PRESEASON ----------------------------------------------------------------
 # An exhibition has no usable team profile: Sleeper projects nothing in August
 # (every field comes back null), so there is no expected production to hand the
@@ -782,11 +804,15 @@ def _build_board(season, week, n=2400, preseason=False):
                 if px["away_cents"] is not None:
                     g["edge_away"] = round((1 - ph) * 100 - px["away_cents"], 1)
                 # Log the RAW model prob per side for the calibrator (predlog
-                # dedups by ticker, so re-logging a week is harmless).
-                for side, tk, p in (("home", px.get("home_ticker"), raw_ph),
-                                    ("away", px.get("away_ticker"), 1 - raw_ph)):
+                # dedups by ticker, so re-logging a week is harmless), beside the
+                # de-vigged price so vs_market can answer for football too.
+                _hc, _ac = px.get("home_cents"), px.get("away_cents")
+                for side, tk, p, own, opp in (
+                        ("home", px.get("home_ticker"), raw_ph, _hc, _ac),
+                        ("away", px.get("away_ticker"), 1 - raw_ph, _ac, _hc)):
                     if tk:
-                        log_rows.append((tk, p, px.get("close")))
+                        log_rows.append((tk, p, px.get("close"),
+                                         predlog.devig(own, opp)))
 
         # Model pick (calibrated) + default same-game parlay.
         pick_home = ph >= 0.5
@@ -801,7 +827,6 @@ def _build_board(season, week, n=2400, preseason=False):
 
     if log_rows:
         try:
-            import predlog
             predlog.init_db()          # safe no-op when already initialized
             # Preseason keeps its OWN bucket. The apply side already refuses to
             # calibrate exhibitions, but the record side did not, so every

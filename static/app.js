@@ -2706,6 +2706,7 @@ function initNFLWeek() {
     for (let w = 1; w <= 18; w++) opts += `<option value="${w}">Week ${w}</option>`;
     sel.innerHTML = opts;
     sel.addEventListener("change", () => {
+      sel.dataset.userSet = "1";   // an explicit choice beats the auto week
       _nflWeekData = null;
       $("nflWeekResults").dataset.loaded = "";
       loadNFLWeek(0);
@@ -2728,15 +2729,22 @@ function initNFLWeek() {
 }
 async function loadNFLWeek(attempt) {
   attempt = attempt || 0;
-  const box = $("nflWeekResults"), wk = ($("nflWeek") || {}).value || 1;
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} — drive-level engine${nflPreseason ? ", anchored to Kalshi's ladder (preseason)" : " off Sleeper's matchup projections"}, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
+  // week=0 until the user touches the dropdown: the server picks the first week
+  // with games still to play (week 1 is the right default a few days a year —
+  // the morning after the HOF game it served one finished exhibition while the
+  // whole next slate sat under week 2).
+  const box = $("nflWeekResults"), sel = $("nflWeek");
+  const userPicked = sel && sel.dataset.userSet;
+  const wk = userPicked ? sel.value : 0;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating ${userPicked ? `Week ${wk}` : "the current week"} — drive-level engine${nflPreseason ? ", anchored to Kalshi's ladder (preseason)" : " off Sleeper's matchup projections"}, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
   try {
     // Drive-engine slate first; the older ESPN closed-form board is the fallback
     // (deep offseason, Sleeper gap). Slate payloads carry engine:"drive".
     let d = null;
     try { d = await (await fetch(`/api/nfl/slate?week=${wk}${nflPreQuery()}`)).json(); } catch (e) { d = null; }
+    if (d && d.week && sel && !userPicked) sel.value = d.week;  // reflect the auto pick
     if (!d || d.error || !(d.games && d.games.length)) {
-      const f = await (await fetch(`/api/nfl/week?week=${wk}`)).json();
+      const f = await (await fetch(`/api/nfl/week?week=${wk || 1}`)).json();
       if (!(f.error) && f.games && f.games.length) { _nflWeekData = f; renderNFLWeek(); return; }
       if (attempt < 9) { setTimeout(() => loadNFLWeek(attempt + 1), 6000); return; }
       box.innerHTML = `<div class="empty">${(d && d.error) || (f && f.error) || "No games for this week."}</div>`;

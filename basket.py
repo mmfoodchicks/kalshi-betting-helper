@@ -23,6 +23,7 @@ home-court edge and season labeling.
             calibrator fits a per-league temperature on the graded history.
 """
 import math
+import predlog
 import random
 import re
 import threading
@@ -669,10 +670,16 @@ def _build_board(lg, date, n=3000):
             tot_edges.sort(key=lambda r: -abs(r["edge"]))
             row["spread_edges"] = sp_edges[:6]
             row["total_edges"] = tot_edges[:6]
-            for side, ml, p in (("home", mk["home_ml"], raw_ph),
-                                ("away", mk["away_ml"], 1 - raw_ph)):
+            # Fourth element: the de-vigged price beside the prediction, so
+            # vs_market can one day say whether this board would have been PAID,
+            # not merely whether it was calibrated.
+            _hc = (mk["home_ml"] or {}).get("cents")
+            _ac = (mk["away_ml"] or {}).get("cents")
+            for side, ml, p, own, opp in (("home", mk["home_ml"], raw_ph, _hc, _ac),
+                                          ("away", mk["away_ml"], 1 - raw_ph, _ac, _hc)):
                 if ml and ml.get("ticker"):
-                    log_rows.append((ml["ticker"], p, ml.get("close")))
+                    log_rows.append((ml["ticker"], p, ml.get("close"),
+                                     predlog.devig(own, opp)))
 
         pick_home = ph >= 0.5
         row["pick"] = {"team": row["home" if pick_home else "away"],
@@ -686,7 +693,6 @@ def _build_board(lg, date, n=3000):
 
     if log_rows:
         try:
-            import predlog
             predlog.init_db()
             predlog.log_many(cfg["cal"], log_rows)
         except Exception:

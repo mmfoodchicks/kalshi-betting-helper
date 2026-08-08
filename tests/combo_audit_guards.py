@@ -2355,6 +2355,251 @@ ck("report() carries the W-L structured, so nothing parses English back out",
 
 print()
 print("=" * 72)
+print("The record answers for itself: predlog carries the price it argued with")
+print("=" * 72)
+import importlib, tempfile, os as _os
+import predlog as _PL
+
+ck("devig strips the vig symmetrically",
+   abs(_PL.devig(52, 54) + _PL.devig(54, 52) - 1.0) < 1e-12)
+ck("devig of an even book is a coin flip", _PL.devig(53, 53) == 0.5)
+ck("devig refuses a one-sided book",
+   _PL.devig(None, 54) is None and _PL.devig(54, None) is None
+   and _PL.devig(0, 54) is None,
+   "grading against half a book would invent a price nobody quoted")
+
+# functional round-trip on a scratch DB — the real predlog code, isolated file
+_tmp = tempfile.mkdtemp()
+_os.environ["PREDLOG_DB"] = _os.path.join(_tmp, "t.db")
+importlib.reload(_PL)
+try:
+    _PL.init_db()
+    _PL.log_many("guardtest", [("TK-A", 0.62, 1900000000, 0.55),
+                               ("TK-B", 0.38, 1900000000, 0.45),
+                               ("TK-C", 0.50, None)])
+    import sqlite3 as _sq
+    _c = _sq.connect(_os.environ["PREDLOG_DB"])
+    _rows = {r[0]: r for r in _c.execute("SELECT ticker, prob, mkt FROM predictions")}
+    ck("a 4-tuple lands with its market price", _rows["TK-A"][2] == 0.55)
+    ck("a 3-tuple still logs, mkt NULL", _rows["TK-C"][2] is None,
+       "the old call shape must keep working — three sports still used it "
+       "when this landed")
+    _PL.log_many("guardtest", [("TK-A", 0.99, 1900000000, 0.99)])
+    _c2 = _sq.connect(_os.environ["PREDLOG_DB"])
+    ck("re-logging cannot overwrite the genuine first forecast",
+       _c2.execute("SELECT prob FROM predictions WHERE ticker='TK-A'").fetchone()[0] == 0.62)
+finally:
+    del _os.environ["PREDLOG_DB"]
+    importlib.reload(_PL)
+
+_bb_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "baseball.py")).read()
+ck("MLB finally logs its predictions — the flagship was the only silent sport",
+   'log_many("mlb"' in _bb_src)
+ck("MLB logs the de-vigged price beside each one", "predlog_mod.devig" in _bb_src)
+ck("and only PREGAME calls — a live prob has the score already in it",
+   'price_entry and (g.get("live") or {}).get("state") == "Preview"' in _bb_src,
+   "grading an in-game number as a pregame forecast flatters the model with "
+   "information it did not have")
+ck("the RAW pre-calibration prob is what gets logged",
+   "p_home_raw, hc, ac" in _bb_src,
+   "the calibrator must fit on the model's own output, not on a number it "
+   "already corrected — that loop feeds on itself")
+ck("a logging failure can never cost the slate",
+   "a logging hiccup must never cost the user his slate" in _bb_src)
+for _f, _pat in (("hockey.py", "predlog.devig(own, opp)"),
+                 ("basket.py", "predlog.devig(own, opp)"),
+                 ("nfl_game_sim.py", "predlog.devig(own, opp)")):
+    _src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", _f)).read()
+    ck(f"{_f} logs the price beside the prediction", _pat in _src,
+       "without it vs_market can never answer for this sport")
+_tp_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "tennis_prices.py")).read()
+ck("tennis matches carry a real close time",
+   '"close_epoch": kalshi._parse_time(m.get("close_time"))' in _tp_src
+   and '"close_epoch": close_epoch' in _tp_src,
+   "every tennis row used to log close_time NULL — due immediately, polled "
+   "for days before its match had even started")
+
+print()
+print("=" * 72)
+print("The blend earns its weight — no more 40-game cliff")
+print("=" * 72)
+_K, _prior = B._DEEP_W_SHRINK_N, B._DEEP_WP_WEIGHT
+_wu = lambda n, fit: (n * fit + _K * _prior) / (n + _K)
+ck("41 games saying 'zero' cannot switch the engine off",
+   _wu(41, 0.0) > 0.25,
+   f"the grid said 0.00 at n=41 and the deep engine silently lost its whole "
+   f"vote; shrinkage prices that verdict at what it's worth: w={_wu(41,0.0):.3f}")
+ck("but a persistent verdict does win in the end",
+   _wu(3000, 0.0) < 0.02, f"n=3000 -> {_wu(3000,0.0):.3f}")
+ck("no cliff: one extra game moves the weight smoothly",
+   abs(_wu(40, 0.0) - _wu(41, 0.0)) < 0.005,
+   "the old code jumped 0.35 -> 0.00 between n=39 and n=40")
+ck("below the fit floor the prior stands untouched", B._DEEP_W_MIN_N >= 20)
+ck("the board SAYS what the blend is running on",
+   callable(getattr(B, "deep_blend_info", None))
+   and all(k in B.deep_blend_info() for k in ("w_deep", "w_fitted", "n_graded")),
+   "the engine sat at 0% for weeks and nothing on the board said so")
+_app_src2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                               "app.py")).read()
+ck("and the API serves it", '"deep_blend": blend' in _app_src2)
+
+print()
+print("=" * 72)
+print("The market must agree with itself — coherence checks")
+print("=" * 72)
+import coherence as _CO
+
+# synthetic books, so the guards run without the network and with KNOWN answers
+_real_wm = _SS._winner_markets
+_BOOKS = {
+    "KXMLB":     [("LAD", 37), ("MIL", 8), ("BOS", 11), ("NYY", 9),
+                  ("ATL", 7), ("TB", 6), ("CHC", 7), ("SEA", 3),
+                  ("PHI", 5), ("CWS", 3), ("HOU", 3), ("DET", 2)],
+    "KXMLBAL":   [("BOS", 21), ("NYY", 21), ("TB", 17), ("SEA", 11),
+                  ("CWS", 8), ("HOU", 10), ("DET", 6)],
+    "KXMLBNL":   [("LAD", 47), ("MIL", 18), ("ATL", 13), ("CHC", 13),
+                  ("PHI", 8)],
+    "KXMLBPLAYOFFS": [("LAD", 99), ("MIL", 99), ("BOS", 95), ("NYY", 96),
+                      ("ATL", 99), ("TB", 99), ("CHC", 97), ("SEA", 55),
+                      ("PHI", 57), ("CWS", 61), ("HOU", 52), ("DET", 8)],
+}
+_AL = {"BOS", "NYY", "TB", "SEA", "CWS", "HOU", "DET"}
+try:
+    _SS._winner_markets = lambda series: [
+        (ab, {"ticker": f"{series}-{ab}", "yes_ask": c})
+        for ab, c in _BOOKS.get(series, [])]
+    _CO._leagues = lambda season: {ab: (103 if ab in _AL else 104)
+                                   for bk in _BOOKS.values() for ab, _ in bk}
+    _r = _CO.check("2026")
+
+    ck("the pennant tier is the UNION of both league books",
+       set(a for c in _r["checks"]["conditionals"] for a in [c["abbr"]])
+       >= {"LAD", "BOS"},
+       "stopping at the first series that answered saw only the AL, flagged "
+       "all of it low, and missed the one team actually mispriced — this "
+       "module's own first live-fire bug")
+    _lad = next(c for c in _r["checks"]["conditionals"] if c["abbr"] == "LAD")
+    ck("LAD's conditional reads ~0.78 off these books",
+       0.74 <= _lad["cond"] <= 0.84, _lad["cond"])
+    ck("and is flagged above the believable bo7 band",
+       any(f["kind"] == "conditional" and f["abbr"] == "LAD"
+           and f["value"] > _CO.COND_BAND[1] for f in _r["flags"]))
+    _mil = next(c for c in _r["checks"]["conditionals"] if c["abbr"] == "MIL")
+    ck("a coherent team (MIL ~0.44) is NOT flagged",
+       not any(f.get("abbr") == "MIL" and f["kind"] == "conditional"
+               for f in _r["flags"]), _mil["cond"])
+    ck("the NL split off these books is flagged over the max",
+       any(f["kind"] == "league_split" and f["league"] == "NL"
+           for f in _r["flags"]),
+       str(_r["checks"].get("league_split")))
+    ck("longshot ratios are not flagged — 1c/2c is all noise",
+       not any(f.get("abbr") == "DET" and f["kind"] == "conditional"
+               for f in _r["flags"]))
+    ck("no parent/child flags on a correctly ordered book",
+       not any(f["kind"] == "parent_child" for f in _r["flags"]))
+
+    # break the ordering on purpose: a WS YES clearly dearer than the pennant
+    # YES (past the vig tolerance — 48c vs 47c would sit inside it, which is
+    # exactly what the tolerance is for)
+    _BOOKS["KXMLB"] = [(a, (50 if a == "LAD" else c)) for a, c in _BOOKS["KXMLB"]]
+    _r2 = _CO.check("2026")
+    ck("a WS YES dearer than the pennant YES is caught",
+       any(f["kind"] == "parent_child" and f["abbr"] == "LAD"
+           and f["child"] == "WS" for f in _r2["flags"]),
+       "winning the World Series requires the pennant; pricing the harder "
+       "event above the easier one is free money for somebody")
+    ck("flags rank by the size of the violation",
+       [abs(f.get("size") or 0) for f in _r2["flags"]]
+       == sorted((abs(f.get("size") or 0) for f in _r2["flags"]), reverse=True))
+finally:
+    _SS._winner_markets = _real_wm
+    importlib.reload(_CO)
+
+ck("the believable bo7 band is derived, not decorative",
+   _CO.COND_BAND == (0.28, 0.68),
+   "even a 60/40 per-game favourite — rare between two pennant winners — "
+   "wins a bo7 ~71%; the band leaves room for that and still catches 78.5%")
+ck("the nightly deep run snapshots the futures board",
+   "coherence.snapshot(season)" in _app_src2,
+   "the WS disagreement cannot be graded in October if nobody wrote down "
+   "what everyone said in August")
+ck("the API serves the check and its history",
+   "/api/baseball/coherence" in _app_src2)
+
+print()
+print("=" * 72)
+print("Sweep repairs: backfilled prices, re-filed exhibitions, the auto week")
+print("=" * 72)
+_tmp2 = tempfile.mkdtemp()
+_os.environ["PREDLOG_DB"] = _os.path.join(_tmp2, "t.db")
+importlib.reload(_PL)
+try:
+    _PL.init_db()
+    # a row logged in the 3-tuple era: no market price attached
+    _PL.log_many("guard2", [("TK-OLD", 0.60, 1900000000)])
+    # the same ticker re-priced later, now with a book
+    _PL.log_many("guard2", [("TK-OLD", 0.99, 1900000000, 0.52)])
+    import sqlite3 as _sq
+    _r = _sq.connect(_os.environ["PREDLOG_DB"]).execute(
+        "SELECT prob, mkt FROM predictions WHERE ticker='TK-OLD'").fetchone()
+    ck("a NULL market price backfills when the book finally quotes",
+       _r[1] == 0.52,
+       "32 NFL rows from the 3-tuple era could otherwise never be benchmarked")
+    ck("but the FORECAST is still first-write-wins", _r[0] == 0.60,
+       "the prediction is the record; only the benchmark may attach late")
+    _PL.log_many("guard2", [("TK-OLD", 0.99, 1900000000, 0.99)])
+    _r2 = _sq.connect(_os.environ["PREDLOG_DB"]).execute(
+        "SELECT mkt FROM predictions WHERE ticker='TK-OLD'").fetchone()
+    ck("and the benchmark itself backfills only ONCE", _r2[0] == 0.52,
+       "re-pricing toward settlement would grade us against a near-decided book")
+    # graded rows are immutable entirely
+    _PL._mark("TK-OLD", 1, 1, 1900000001)
+    _PL.log_many("guard2", [("TK-OLD", 0.99, None, 0.88)])
+    _r3 = _sq.connect(_os.environ["PREDLOG_DB"]).execute(
+        "SELECT mkt FROM predictions WHERE ticker='TK-OLD'").fetchone()
+    ck("a graded row is untouchable", _r3[0] == 0.52)
+
+    # exhibitions filed under the regular-season model get re-filed on boot
+    _PL.log_many("nfl", [("KXNFLGAME-26AUG13DETCIN-DET", 0.6, None),
+                         ("KXNFLGAME-26SEP09NESEA-SEA", 0.5, None)])
+    _PL.init_db()
+    _st = _PL.status()
+    ck("August NFL tickers re-file to the preseason bucket on boot",
+       _st.get("nfl_pre", {}).get("logged") == 1
+       and _st.get("nfl", {}).get("logged") == 1,
+       "first-write-wins had frozen exhibitions under model='nfl', grading "
+       "August football into the regular-season calibration — the exact "
+       "contamination the nfl_pre split exists to prevent")
+finally:
+    del _os.environ["PREDLOG_DB"]
+    importlib.reload(_PL)
+
+import nfl_game_sim as _NG2
+ck("the NFL tab no longer defaults to week 1 forever",
+   callable(getattr(_NG2, "current_week", None)),
+   "the morning after the HOF game the tab served one finished exhibition "
+   "while sixteen games sat under week 2")
+_app3 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                           "app.py")).read()
+ck("week=0/absent means AUTO on the slate API",
+   "week = nfl_game_sim.current_week(pre)" in _app3)
+_js2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "static", "app.js")).read()
+ck("the UI asks for the auto week until the user picks one",
+   "dataset.userSet" in _js2 and "sel.value = d.week" in _js2)
+import re as _re2
+for _f2 in ("nfl_game_sim.py", "hockey.py", "basket.py"):
+    _s2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", _f2)).read()
+    ck(f"{_f2}: no function-local predlog import shadows the module-level one",
+       not _re2.search(r"^\s+import predlog\s*$", _s2, _re2.M),
+       "the local import made `predlog` a local name for the WHOLE function, "
+       "so the devig call above it raised UnboundLocalError — found live when "
+       "the week-2 preseason board refused to build")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -1258,34 +1258,59 @@ def _deep_game_wp(g, season, n=800, ump=0.0, frame=0.0):
 # track record); the deep engine's player-level read gets a meaningful minority
 # vote until the recorder grades it on its own.
 _DEEP_WP_WEIGHT = 0.35
-_DEEP_W_CACHE = {"t": 0.0, "w": None}
+_DEEP_W_SHRINK_N = 150     # graded games at which the fit gets an equal vote with the prior
+_DEEP_W_MIN_N = 20         # below this, don't even fit -- the grid is reading noise
+_DEEP_W_CACHE = {"t": 0.0, "w": None, "n": 0, "fit": None}
 
 
 def _deep_wp_weight():
-    """Evidence-tuned blend weight: once >=40 graded games carry BOTH components,
-    grid-search the weight that minimizes the blend's Brier score on the actual
-    results, capped at 0.65 so the graded factor model always keeps a real vote.
-    Below the sample floor it's the 0.35 default. Cached 6h."""
+    """Evidence-tuned blend weight, SHRUNK toward the 0.35 prior by sample size:
+
+        w_used = (n * w_fit + K * w_prior) / (n + K),  K = 150 graded games
+
+    The previous version was a cliff: at 39 graded games the deep engine got its
+    default 35% vote, at 40 a grid-search took over outright -- and on the first
+    41 games the grid said 0.00, silently switching the whole per-player engine
+    OFF on the strength of a sample whose Brier standard error (~0.078) dwarfed
+    every difference in the grid (~0.012). One game decided a 35-point swing.
+    Shrinkage makes the evidence buy exactly the influence it has earned: at
+    n=41 a fitted 0.0 moves the weight to ~0.27, at n=300 to ~0.12, and only a
+    persistent verdict over hundreds of games can actually zero the engine.
+    Cached 6h; the cache also keeps n and the raw fit so the board can SAY what
+    the blend is running on instead of moving silently."""
     import time as _t
     if _DEEP_W_CACHE["w"] is not None and _t.time() - _DEEP_W_CACHE["t"] < 6 * 3600:
         return _DEEP_W_CACHE["w"]
-    w = _DEEP_WP_WEIGHT
+    w, n, fit = _DEEP_WP_WEIGHT, 0, None
     try:
         import store
         rows = store.deep_grades()
-        if len(rows) >= 40:
+        n = len(rows)
+        if n >= _DEEP_W_MIN_N:
             best = None
-            for cand in (0.0, 0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.65):
+            for cand in (0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35,
+                         0.4, 0.45, 0.5, 0.55, 0.6, 0.65):
                 b = sum(((1 - cand) * m + cand * d - hw) ** 2
-                        for m, d, hw in rows) / len(rows)
+                        for m, d, hw in rows) / n
                 if best is None or b < best[0]:
                     best = (b, cand)
-            w = best[1]
+            fit = best[1]
+            w = (n * fit + _DEEP_W_SHRINK_N * _DEEP_WP_WEIGHT) / (n + _DEEP_W_SHRINK_N)
     except Exception:
         pass
-    _DEEP_W_CACHE["t"] = _t.time()
-    _DEEP_W_CACHE["w"] = w
+    _DEEP_W_CACHE.update(t=_t.time(), w=w, n=n, fit=fit)
     return w
+
+
+def deep_blend_info():
+    """What the daily blend is actually running on, for the board: the weight in
+    use, the raw fitted value, and the graded-game count behind it. Reading the
+    cache (warming it if cold) so this costs nothing on a served slate."""
+    _deep_wp_weight()
+    return {"w_deep": round(_DEEP_W_CACHE["w"], 3),
+            "w_fitted": _DEEP_W_CACHE["fit"],
+            "n_graded": _DEEP_W_CACHE["n"],
+            "w_prior": _DEEP_WP_WEIGHT}
 
 
 def analyze_slate(date, season, cached_only=False):
@@ -1494,6 +1519,8 @@ def _analyze_slate_uncached(date, season):
         return m.get(tid, {}).get("ops")
 
     games = []
+    _predlog_rows = []
+    import predlog as predlog_mod
     for g in schedule:
         h_sp = sp_stats.get(g["home_sp_id"]); a_sp = sp_stats.get(g["away_sp_id"])
         h_hand = hand.get(g["home_sp_id"], "R"); a_hand = hand.get(g["away_sp_id"], "R")
@@ -1612,6 +1639,23 @@ def _analyze_slate_uncached(date, season):
 
         price_entry, home_abbr, away_abbr = _match_price(
             kalshi_index, abbr_map, g["home_id"], g["away_id"], g["start_epoch"])
+        # Log the pre-game prediction beside the price it disagreed with. MLB was
+        # the ONLY sport with no prediction log -- the flagship board, graded
+        # nowhere. Raw (pre-calibration) prob, per the convention every other
+        # harvester follows, so the calibrator fits on the model's own output and
+        # not on a number it already corrected; predlog dedups by ticker, so the
+        # slate rebuilding every few minutes logs each game once, at first price.
+        # Pregame only: a live in-game prob is a different quantity with the
+        # score already in it, and grading it as a pregame call would flatter us.
+        if price_entry and (g.get("live") or {}).get("state") == "Preview":
+            hc = price_entry["prices"].get(home_abbr)
+            ac = price_entry["prices"].get(away_abbr)
+            for ab, p_side, own, opp in ((home_abbr, p_home_raw, hc, ac),
+                                         (away_abbr, 1 - p_home_raw, ac, hc)):
+                if ab and own is not None:
+                    _predlog_rows.append((f"{price_entry['event']}-{ab}", p_side,
+                                          price_entry.get("close"),
+                                          predlog_mod.devig(own, opp)))
         edge = market_prob = pick_price = fee_cents = net_edge = None
         fair_prob = edge_vs_fair = vig_cents = None
         if price_entry:
@@ -1801,6 +1845,12 @@ def _analyze_slate_uncached(date, season):
             "fee_cents": fee_cents, "net_edge_cents": net_edge,
             "fair_prob": fair_prob, "edge_vs_fair": edge_vs_fair, "vig_cents": vig_cents,
         })
+    if _predlog_rows:
+        try:
+            predlog_mod.init_db()
+            predlog_mod.log_many("mlb", _predlog_rows)
+        except Exception:
+            pass          # a logging hiccup must never cost the user his slate
     games.sort(key=lambda x: x["pick_prob"], reverse=True)
     return games
 

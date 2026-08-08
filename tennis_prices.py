@@ -254,6 +254,11 @@ def _match_markets(series):
             bid = kalshi._cents(m.get("yes_bid_dollars"))
             rec["players"].append({
                 "name": nm, "ticker": tk, "cents": ask,
+                # The market's close, carried through to the match so predlog
+                # logs a real due-time. Every tennis row used to go in with
+                # close_time NULL, which made the resolver treat all of them as
+                # due immediately and poll matches that were days from settling.
+                "close_epoch": kalshi._parse_time(m.get("close_time")),
                 # Depth, so a LISTED market can be told from a QUOTED one. The
                 # board carried only the ask, which every open market has, so all
                 # 264 matches looked equally live when barely half had a book
@@ -464,6 +469,11 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
                 d[k] = p[k]
         return d
     a, b = _side(players[0]), _side(players[1])
+    # Match-level close for the prediction log: the later of the two sides'
+    # closes (they should agree; take max so an odd one can't mark the match
+    # due before it has settled).
+    _closes = [p.get("close_epoch") for p in players[:2] if p.get("close_epoch")]
+    close_epoch = max(_closes) if _closes else None
     # recent-load fatigue per player (differential drives the sim)
     fidx = fatigue_idx or {}
     fa = fidx.get(_norm(a["name"]))
@@ -674,6 +684,7 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     kalshi_series = {"ATP": "ATP", "WTA": "WTA",
                      "ITF": "ITF", "ITF-W": "ITF Women"}.get(tour_label, "Tennis")
     match = {"event": ev, "tour": tour_label, "date": date, "start": start,
+             "close_epoch": close_epoch,
              # None when the stop couldn't be identified -- say so rather than
              # printing a confident "Hard" the model isn't actually using.
              "surface": surface or "Unknown",
