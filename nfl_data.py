@@ -101,6 +101,25 @@ def week_teams(season, week):
             t["players"].sort(key=lambda p: -(p["pass_yd"] + p["rush_yd"] + p["rec_yd"]))
             t["players"] = t["players"][:14]              # the lines a book would post
 
+        # Each club's own scoring DEFENCE, so the engine can rate an offence
+        # against the unit it is actually facing. Sleeper's projections carry
+        # only about an eighth of that effect (measured slope +0.124 against a
+        # true +0.349), and the engine had no other read on it at all. Best
+        # effort: without these fields nfl_game_sim's multiplier is 1.0 and the
+        # sim behaves exactly as it did before.
+        try:
+            rt = nfl_live.team_ratings(season) or {}
+            pas = [v["pa_pg"] for v in rt.values() if v.get("pa_pg")]
+            lg_pa = sum(pas) / len(pas) if pas else None
+            if lg_pa:
+                for ab, t in teams.items():
+                    t["lg_pa_pg"] = round(lg_pa, 3)
+                    r = rt.get(ab) or rt.get(_canon(ab))
+                    if r and r.get("pa_pg"):
+                        t["def_pa_pg"] = r["pa_pg"]
+        except Exception:
+            pass
+
         # Home/away from ESPN's scoreboard for the week.
         try:
             for g in nfl_live.schedule(week, int(season)) or []:

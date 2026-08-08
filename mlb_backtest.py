@@ -110,6 +110,35 @@ def pitcher_line(pid, date):
     return racing._cached(("mlbbt_sp", pid, end), 30 * 86400, build)
 
 
+def batter_line(pid, date):
+    """A hitter's season-to-date line as of the day BEFORE `date` — the hitting
+    twin of pitcher_line, and the input to any point-in-time test of whether a
+    posted LINEUP predicts runs better than the team's season scoring rate does.
+    {pa, ops} or None."""
+    end = _prev_day(date)
+    season = date[:4]
+
+    def build():
+        try:
+            d = racing._get_json(_PSTAT.format(pid=pid, season=season, end=end,
+                                               group="hitting"), timeout=20)
+        except Exception:
+            return None
+        for s in d.get("stats") or []:
+            for sp in s.get("splits") or []:
+                st = sp.get("stat") or {}
+                pa = float(st.get("plateAppearances") or 0)
+                try:
+                    ops = float(st.get("ops"))
+                except (TypeError, ValueError):
+                    continue
+                if pa <= 0 or ops <= 0:
+                    continue
+                return {"pa": pa, "ops": ops}
+        return None
+    return racing._cached(("mlbbt_bat", pid, end), 30 * 86400, build)
+
+
 def _sp_quality(line):
     """Starter quality as runs-allowed-per-9, shrunk to the league mean by innings.
     Lower is better."""

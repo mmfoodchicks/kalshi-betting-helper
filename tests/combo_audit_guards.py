@@ -2173,6 +2173,97 @@ ck("a team with no rotation data keeps its team-ERA rating",
 
 print()
 print("=" * 72)
+print("Who you play: opponent defence in the NFL engine")
+print("=" * 72)
+import nfl_game_sim as _NG
+
+ck("a neutral defence is exactly neutral",
+   _NG.def_factor(23.0, 23.0) == 1.0)
+ck("a missing rating is a NO-OP, not a guess",
+   _NG.def_factor(None, 23.0) == 1.0 and _NG.def_factor(23.0, None) == 1.0
+   and _NG.def_factor(0, 23.0) == 1.0,
+   "the preseason path builds profiles with no ESPN rating and is anchored to "
+   "the market's implied points -- it must come out of this unchanged")
+ck("a good defence suppresses the offence it faces",
+   _NG.def_factor(17.2, 23.0) < 1.0)
+ck("a bad one lets it breathe", _NG.def_factor(30.1, 23.0) > 1.0)
+ck("monotone in the opponent's defence",
+   all(_NG.def_factor(pa, 23.0) < _NG.def_factor(pa + 1, 23.0)
+       for pa in range(18, 29)))
+ck("the exponent is the RESIDUAL, not the whole measured effect",
+   0.15 < _NG._DEF_EXP < 0.30,
+   "measured true exponent +0.349 +/- 0.087 over three seasons (n=1,708); "
+   "Sleeper's projections already carry +0.124 of it, so applying the full "
+   "0.349 would count the first slice twice")
+ck("and it is far below proportional, because points allowed is a noisy read",
+   _NG._DEF_EXP < 0.5,
+   "a proportional 1.0 would swing an offence 14 points across the league's "
+   "defensive range; the honest number is nearer 3")
+ck("the swing stays inside a believable band",
+   0.85 < _NG.def_factor(14.0, 23.0) and _NG.def_factor(34.0, 23.0) < 1.16,
+   f"league extremes: x{_NG.def_factor(14.0, 23.0):.3f} .. "
+   f"x{_NG.def_factor(34.0, 23.0):.3f}")
+ck("takeaways move the OTHER way — a good defence forces more of them",
+   _NG._rates({"exp": {"pass_td": 1.6, "rush_td": 0.8, "fgm": 1.7,
+                       "pass_int": 0.8, "fum_lost": 0.6}}, False, 0.94)[2]
+   > _NG._rates({"exp": {"pass_td": 1.6, "rush_td": 0.8, "fgm": 1.7,
+                         "pass_int": 0.8, "fum_lost": 0.6}}, False, 1.06)[2],
+   "turnovers belong to the defence forcing them, so the multiplier inverts")
+_flat = {"exp": {"pass_td": 1.6, "rush_td": 0.8, "fgm": 1.7,
+                 "pass_int": 0.8, "fum_lost": 0.6}}
+ck("with no defence term the rates are bit-identical to the old engine",
+   _NG._rates(_flat, True) == _NG._rates(_flat, True, 1.0))
+ck("each side is rated against the OTHER side's defence, not its own",
+   "def_factor(away.get(\"def_pa_pg\")" in _insp.getsource(_NG.simulate_game)
+   and "def_factor(home.get(\"def_pa_pg\")" in _insp.getsource(_NG.simulate_game))
+_nd_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                            "nfl_data.py")).read()
+ck("the ratings are attached where the profiles are built",
+   "def_pa_pg" in _nd_src and "lg_pa_pg" in _nd_src and "team_ratings" in _nd_src)
+ck("and a failed ratings fetch leaves the board standing",
+   "except Exception:\n            pass\n\n        # Home/away" in _nd_src)
+
+print()
+print("=" * 72)
+print("Cache sweeps must not race the threads that fill them")
+print("=" * 72)
+import racing as _RC, threading as _th, time as _tm
+for _mod, _name in ((B, "baseball"), (_RC, "racing")):
+    _sw = _mod._sweep_cache if _mod is B else _mod._sweep_form_cache
+    ck(f"{_name} sweeps a SNAPSHOT, not the live dict",
+       "list(" in _insp.getsource(_sw),
+       "iterating the live dict raised 'dictionary changed size during "
+       "iteration' out of whatever request happened to trigger the sweep -- a "
+       "24-thread backtest hit it in under two minutes")
+# and prove it: sweep while other threads insert
+_d = B._cache
+_stop = [False]
+def _churn():
+    i = 0
+    while not _stop[0]:
+        _d[("guard_churn", i)] = (0.0, None, 0.0)   # already expired
+        i += 1
+        if i > 20000:
+            i = 0
+_ts = [_th.Thread(target=_churn, daemon=True) for _ in range(4)]
+for _t in _ts:
+    _t.start()
+_err = None
+try:
+    for _ in range(300):
+        B._sweep_cache(_tm.time())
+except RuntimeError as e:
+    _err = e
+finally:
+    _stop[0] = True
+    for _t in _ts:
+        _t.join(timeout=2)
+    for _k in [k for k in list(_d) if isinstance(k, tuple) and k[:1] == ("guard_churn",)]:
+        _d.pop(_k, None)
+ck("300 sweeps against four writing threads raise nothing", _err is None, str(_err or ""))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

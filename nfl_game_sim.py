@@ -63,14 +63,46 @@ def _shock(rng, logsd=None):
     return max(0.1, rng.gauss(1.0, _PLAYER_SD))
 
 
-def _rates(prof, home):
-    """Per-drive outcome rates from a team's expected production."""
+# WHO YOU PLAY. The per-drive rates are built from Sleeper's weekly projections,
+# which are matchup-aware in principle -- and barely in practice. Measured on the
+# 2025 projections, the within-team slope of a club's projected points against
+# its opponent's points allowed per game is +0.124 (n=416): Sleeper moves a
+# team's number by under two points across the league's whole defensive range.
+#
+# What the right slope is, measured on three seasons of real results (n=1,708,
+# leave-one-out season rates so no game sees itself, log-log, controlling for the
+# team's own offence):
+#
+#     own-offence exponent      +0.697
+#     OPPONENT-DEFENCE exponent +0.349 +/- 0.087   t = +4.03
+#
+# Real, and much smaller than proportional -- points allowed is a noisy read on a
+# defence, so it regresses hard. The engine's job is the part Sleeper has NOT
+# already priced, so it applies the RESIDUAL exponent and nothing more; using the
+# full 0.349 would count the first 0.124 twice.
+_DEF_EXP = 0.225
+_DEF_CLAMP = (0.88, 1.14)
+
+
+def def_factor(opp_pa_pg, lg_pa_pg):
+    """Scoring multiplier from the defence a team is facing (weak D -> more points)."""
+    if not opp_pa_pg or not lg_pa_pg or opp_pa_pg <= 0 or lg_pa_pg <= 0:
+        return 1.0
+    lo, hi = _DEF_CLAMP
+    return max(lo, min(hi, (opp_pa_pg / lg_pa_pg) ** _DEF_EXP))
+
+
+def _rates(prof, home, def_mult=1.0):
+    """Per-drive outcome rates from a team's expected production, against the
+    defence it is actually facing."""
     e = prof["exp"]
     tds = e["pass_td"] + e["rush_td"]
     hfa = _HFA_SCORE if home else 1.0
-    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _CAL))
-    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _CAL))
-    p_to = max(0.02, min(0.30, (e["pass_int"] + e["fum_lost"]) / _DRIVES))
+    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _CAL * def_mult))
+    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _CAL * def_mult))
+    # Takeaways belong to the DEFENCE forcing them, so a good defence raises the
+    # offence's turnover rate — the multiplier goes the other way here.
+    p_to = max(0.02, min(0.30, (e["pass_int"] + e["fum_lost"]) / _DRIVES / def_mult))
     return p_td, p_fg, p_to
 
 
@@ -173,7 +205,14 @@ def simulate_game(home, away, n=2400, seed=None, ladders=None, prop_lad=None,
     candidate legs the MLB parlay machinery consumes."""
     rng = random.Random(seed if seed is not None
                         else hash((home["abbr"], away["abbr"])) & 0xFFFFFFFF)
-    rh, ra = _rates(home, home.get("home") is not False), _rates(away, False)
+    # Each side is rated against the OTHER side's defence. `def_pa_pg` is attached
+    # by the board build; without it both multipliers are 1.0 and the engine
+    # behaves exactly as it did before.
+    lg_pa = home.get("lg_pa_pg") or away.get("lg_pa_pg")
+    dh = def_factor(away.get("def_pa_pg"), lg_pa)      # home offence vs away defence
+    da = def_factor(home.get("def_pa_pg"), lg_pa)
+    rh = _rates(home, home.get("home") is not False, dh)
+    ra = _rates(away, False, da)
     hp, ht = _shares(home)
     ap, at = _shares(away)
 

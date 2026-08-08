@@ -112,11 +112,16 @@ _cache_puts = 0
 
 
 def _sweep_cache(now):
-    """Drop entries whose own TTL has expired."""
-    dead = [k for k, (ts, _v, ttl) in _cache.items() if now - ts >= ttl]
-    for k in dead:
-        _cache.pop(k, None)
-    return len(dead)
+    """Drop entries whose own TTL has expired.
+
+    Snapshot with list() before iterating: this cache is written from the worker
+    threads every slate build fans out into, and walking the live dict races any
+    thread inserting a fresh entry ("dictionary changed size during iteration").
+    Rare by construction -- the sweep runs on one put in five hundred -- which is
+    exactly what makes it the kind of bug that reads as a fluke in a log."""
+    for k, (ts, _v, ttl) in list(_cache.items()):
+        if now - ts >= ttl:
+            _cache.pop(k, None)
 
 
 def _cached(key, ttl, producer):

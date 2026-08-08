@@ -334,11 +334,15 @@ _cache_puts = 0
 
 
 def _sweep_form_cache(now):
-    dead = [k for k, v in _form_cache.items()
-            if len(v) > 2 and now - v[0] >= v[2]]
-    for k in dead:
-        _form_cache.pop(k, None)
-    return len(dead)
+    # list(...) FIRST. This cache is read and written from worker threads all over
+    # the app -- every slate build fans out eight ways -- and iterating the live
+    # dict raced any thread inserting a fresh entry, raising "dictionary changed
+    # size during iteration" out of whatever request happened to trigger the
+    # sweep. It fires on one put in fifty, so it stayed rare enough to look like
+    # a fluke; a 24-thread backtest hit it in under two minutes.
+    for k, v in list(_form_cache.items()):
+        if len(v) > 2 and now - v[0] >= v[2]:
+            _form_cache.pop(k, None)
 
 
 def _cached(key, ttl, fn):
