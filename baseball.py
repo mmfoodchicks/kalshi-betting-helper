@@ -2398,7 +2398,11 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
         # reach the payout (expanding the count), never dropping below the floor.
         groups = []
         for g in games:
-            vs = [v for v in _game_variants(g, types, allow_live) if v["prob"] >= target]
+            # Bettable legs only: a leg with no Kalshi market can't go on a real
+            # slip, so it doesn't belong in the pool (same rule as the mixed
+            # maker). Variants carry their live price from the sim layer.
+            vs = [v for v in _game_variants(g, types, allow_live)
+                  if v["prob"] >= target and v.get("price_cents")]
             if vs:
                 groups.append(vs)
         res = parlay.payout_combo(groups, n_legs, target_payout, max_legs=max_legs)
@@ -2417,7 +2421,8 @@ def build_target_parlay(games, n_legs, target_pct, target_payout=None, max_legs=
 
     chosen = []  # one best variant per game, tuned near the target confidence
     for g in games:
-        variants = _game_variants(g, types, allow_live)
+        variants = [v for v in _game_variants(g, types, allow_live)
+                    if v.get("price_cents")]      # bettable legs only
         if not variants:
             continue
         meeting = [v for v in variants if v["prob"] >= target]
@@ -2459,6 +2464,12 @@ def build_same_game_parlays(games, n_legs=3, target_pct=55, target_payout=0,
         sim = gs["sim"]
         cands = [c for c in gs["cands"]
                  if (types is None or c["type"] in types) and c["marg"] >= target]
+        # Bettable legs only, same rule as the other makers. Priced WITHOUT the
+        # market blend — this builder's probabilities have always been the pure
+        # model margins, and the request was to exclude unlisted legs, not to
+        # re-price the listed ones.
+        _price_cands(cands, g.get("kalshi_suffix"), blend=False)
+        cands = [c for c in cands if c.get("price_cents")]
         item = mlb_sim.best_same_game(cands, sim["n"], n_legs, target,
                                       target_payout, max_legs, budget=budget)
         if not item:
@@ -2728,6 +2739,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                 else "away" if sel == g.get("away_name") else None)
 
     games_bundles = []
+    excluded_unpriced = 0
     for g in games:
         state = _game_state(g)
         if state == "Final":
@@ -2757,6 +2769,9 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        "group": "ML", "live": True,
                        "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
                 _price_cands([leg], g.get("kalshi_suffix"))
+                if not leg.get("price_cents"):
+                    excluded_unpriced += 1          # same rule as every other leg
+                    continue
                 bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
                 games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
                 continue
@@ -2769,6 +2784,16 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         if not cands:
             continue
         _price_cands(cands, g.get("kalshi_suffix"))
+        # ONLY BETTABLE LEGS. A leg with no Kalshi market cannot go on a real
+        # slip -- the maker used to include them anyway (EV-neutral at fair
+        # value), which built slips the user then could not place: "no Kalshi
+        # market" rows sitting in the middle of a parlay. Excluded at the pool,
+        # not at display, so the optimizer never spends a slot on one. The count
+        # is carried out so a thin morning pool (lines post near game time) is
+        # explainable instead of mysterious.
+        n_all = len(cands)
+        cands = [c for c in cands if c.get("price_cents")]
+        excluded_unpriced += n_all - len(cands)
         # The per-leg floor is applied AFTER the blend, because the blend is what
         # decides the number the user actually sees. Filtering first let a leg
         # qualify at 60% pre-blend and then get marked down to 41% by the market,
@@ -2826,6 +2851,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         if k != "objective" and v is not None:
             item[k] = v
     item["objective"] = "max_bet" if max_bet else objective
+    item["excluded_unpriced"] = excluded_unpriced
     item["legs_target"] = None if max_bet else (n_legs if legs_mode != "off" else None)
     if max_bet:
         # _mixed_item defaults payout_reached to True when it is given no

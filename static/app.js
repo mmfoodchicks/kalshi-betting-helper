@@ -1326,6 +1326,11 @@ function renderMixed(m) {
   // by construction, and the lines shown are the ones that got it there.
   const bandNote = (m.leg_cap_pct != null)
     ? `<span>every leg <b>${m.leg_floor_pct}–${m.leg_cap_pct}%</b></span>` : "";
+  // Every leg on a slip is bettable on Kalshi by construction now; say how much
+  // of the pool that rule removed, so a thin morning build (lines post near
+  // game time) is explainable instead of mysterious.
+  const unpricedNote = m.excluded_unpriced
+    ? `<span style="color:var(--muted)" title="Legs the model liked but Kalshi doesn't list (or hasn't posted yet) are excluded — a slip you can't place isn't a slip. Pools widen as lines post near game time.">${m.excluded_unpriced.toLocaleString()} unlisted legs excluded</span>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required
   // payout it never said which one broke, and the builder used to quietly drop
@@ -1386,6 +1391,7 @@ function renderMixed(m) {
       ${payNote}
       ${bandNote}
       <span>Correlation: ${corrTxt}</span>
+      ${unpricedNote}
     </div>
     ${maxNote}
     ${hardWarn}

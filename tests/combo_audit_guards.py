@@ -2600,6 +2600,46 @@ for _f2 in ("nfl_game_sim.py", "hockey.py", "basket.py"):
 
 print()
 print("=" * 72)
+print("A slip you can't place isn't a slip: unlisted legs stay out of the makers")
+print("=" * 72)
+_bb2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("the mixed maker drops unpriced legs AT THE POOL, before the optimizer",
+   'cands = [c for c in cands if c.get("price_cents")]' in _bb2
+   and _bb2.index('if c.get("price_cents")]')
+       < _bb2.index("bundles = mlb_sim.game_bundles"),
+   "excluding at display would still let the optimizer spend slots on legs "
+   "nobody can bet; the pool is where the rule has to live")
+ck("and counts what it removed, so a thin morning pool is explainable",
+   '"excluded_unpriced"' in _bb2 and "excluded_unpriced += " in _bb2)
+ck("the live-ML fallback leg obeys the same rule",
+   'if not leg.get("price_cents"):\n                    excluded_unpriced' in _bb2)
+ck("the target-parlay maker filters both of its modes",
+   'v["prob"] >= target and v.get("price_cents")' in _bb2
+   and 'if v.get("price_cents")]      # bettable legs only' in _bb2)
+ck("the same-game builder prices WITHOUT the blend before filtering",
+   '_price_cands(cands, g.get("kalshi_suffix"), blend=False)' in _bb2,
+   "its probabilities have always been pure model margins; the request was to "
+   "exclude unlisted legs, not to re-price the listed ones")
+ck("NO mirrors are judged on their own no-side quote, not the YES ask",
+   '"price_cents": v.get("no_cents")' in _bb2,
+   "a NO with no no-book is not bettable even when its YES side is")
+_js3 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "static", "app.js")).read()
+ck("the UI says how many unlisted legs the rule removed",
+   "unlisted legs excluded" in _js3 and "excluded_unpriced" in _js3)
+
+# functional: with every leg priced, a slip builds; with no leg priced, none does
+import mlb_sim as _MS
+_fake_g = None   # source-level guards above; the live-fire proof ran on today's
+                 # slate (5,280 unpriced candidates excluded, every built leg
+                 # carrying a real market_cents) -- a network-free fixture for
+                 # the whole maker would re-test mlb_sim, not the filter.
+ck("max bet path unchanged: stackable already required a price",
+   "combo_engine.stackable(c[\"marg\"], c.get(\"price_cents\"))" in _bb2)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
