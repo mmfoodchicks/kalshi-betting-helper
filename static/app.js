@@ -1084,6 +1084,10 @@ window.buildCombo = async (maxBet) => {
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
     if (!d.parlay) {
+      if (d.hint === "kalshi_unpriced") {
+        out.innerHTML = `<div class="small">No Kalshi prices on the slate yet - <b>${d.n_pregame}</b> game${d.n_pregame === 1 ? "" : "s"} are listed but none is quoted. The maker only builds legs you can actually place, so there is nothing to pick from. MLB lines usually post closer to first pitch; try again nearer game time.</div>`;
+        return;
+      }
       out.innerHTML = (d.hint === "max_bet_unreachable")
         ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
         : `<div class="small">Couldn't build - no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
@@ -1408,7 +1412,9 @@ function renderMixed(m) {
   // Every leg on a slip is bettable on Kalshi by construction now; say how much
   // of the pool that rule removed, so a thin morning build (lines post near
   // game time) is explainable instead of mysterious.
-  const unpricedNote = m.excluded_unpriced
+  const unpricedNote = m.pricing_unavailable
+    ? `<span style="color:#e0566a" title="The Kalshi price index came back empty, so no leg on the slate could be priced. Rather than build nothing, the maker fell back to model-only legs - check each one is actually listed before you place it.">⚠ no Kalshi prices, model-only legs</span>`
+    : m.excluded_unpriced
     ? `<span style="color:var(--muted)" title="Legs the model liked but Kalshi doesn't list (or hasn't posted yet) are excluded - a slip you can't place isn't a slip. Pools widen as lines post near game time.">${m.excluded_unpriced.toLocaleString()} unlisted legs excluded</span>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required

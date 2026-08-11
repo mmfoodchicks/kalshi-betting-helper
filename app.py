@@ -2248,6 +2248,17 @@ def api_baseball_mixed():
                             "cap_x": combo_engine.MAX_PAYOUT_X})
     else:
         item = _build(target)
+    if not item:
+        # Say WHY nothing built. "No eligible games for that selection" sends the
+        # user to loosen filters that were never the problem: the common cause is
+        # that the slate carries no Kalshi prices yet (lines post near game time,
+        # or the exchange is unreachable), and the maker only builds legs you can
+        # actually place. pick_price_cents is already on every game, so this
+        # costs nothing.
+        pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+        if pre and not any(g.get("pick_price_cents") for g in pre):
+            return jsonify({"parlay": None, "hint": "kalshi_unpriced",
+                            "n_pregame": len(pre)})
     return jsonify({"parlay": item})
 
 

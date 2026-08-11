@@ -2613,10 +2613,10 @@ ck("the mixed maker drops unpriced legs AT THE POOL, before the optimizer",
 ck("and counts what it removed, so a thin morning pool is explainable",
    '"excluded_unpriced"' in _bb2 and "excluded_unpriced += " in _bb2)
 ck("the live-ML fallback leg obeys the same rule",
-   'if not leg.get("price_cents"):\n                    excluded_unpriced' in _bb2)
+   'if priced_ok and not leg.get("price_cents"):' in _bb2)
 ck("the target-parlay maker filters both of its modes",
-   'v["prob"] >= target and v.get("price_cents")' in _bb2
-   and 'if v.get("price_cents")]      # bettable legs only' in _bb2)
+   'v["prob"] >= target and (v.get("price_cents") or not up)' in _bb2
+   and 'if v.get("price_cents") or not up]        # bettable legs only' in _bb2)
 ck("the same-game builder prices WITHOUT the blend before filtering",
    '_price_cands(cands, g.get("kalshi_suffix"), blend=False)' in _bb2,
    "its probabilities have always been pure model margins; the request was to "
@@ -2629,14 +2629,130 @@ _js3 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
 ck("the UI says how many unlisted legs the rule removed",
    "unlisted legs excluded" in _js3 and "excluded_unpriced" in _js3)
 
-# functional: with every leg priced, a slip builds; with no leg priced, none does
-import mlb_sim as _MS
-_fake_g = None   # source-level guards above; the live-fire proof ran on today's
-                 # slate (5,280 unpriced candidates excluded, every built leg
-                 # carrying a real market_cents) -- a network-free fixture for
-                 # the whole maker would re-test mlb_sim, not the filter.
 ck("max bet path unchanged: stackable already required a price",
    "combo_engine.stackable(c[\"marg\"], c.get(\"price_cents\"))" in _bb2)
+
+print()
+print("=" * 72)
+print("...but 'not listed' and 'can't reach Kalshi' are different problems")
+print("=" * 72)
+# The rule above shipped without this distinction and took the whole baseball
+# moneyline maker down: the price index came back empty, so EVERY leg looked
+# unlisted, every pool emptied, and the maker returned nothing -- under a message
+# telling the user his filters were too narrow. Reported as "it's not pulling any
+# games at all". These run the real maker end to end on a fixture slate, with the
+# sim and the pricer stubbed, so the only variable is whether Kalshi answers.
+import baseball as _BB
+import sys as _sys
+
+_N_SIM = 256
+
+
+def _mask(frac):
+    """A sim mask whose popcount is frac of _N_SIM -- what game_bundles reads."""
+    k = int(round(frac * _N_SIM))
+    return (1 << k) - 1
+
+
+def _fx_games(n=3):
+    out = []
+    for i in range(n):
+        out.append({"game_pk": 700000 + i, "matchup": f"AAA @ BBB {i}",
+                    "home_name": f"Home {i}", "away_name": f"Away {i}",
+                    "home_abbr": "HHH", "away_abbr": "AAA",
+                    "kalshi_suffix": f"FIX{i}", "live": {"state": "Preview"},
+                    "pick": f"Home {i}", "pick_prob": 0.62})
+    return out
+
+
+def _fx_cands():
+    return [{"type": "ML", "label": "Home to win", "marg": 0.62, "group": "ML",
+             "mask": _mask(0.62), "kref": {"t": "ml", "team": "HHH"}},
+            {"type": "TOTAL", "label": "Over 8.5", "marg": 0.58, "group": "TOT",
+             "mask": _mask(0.58), "kref": {"t": "tot", "line": 8.5}}]
+
+
+class _KalshiStub:
+    """Stands in for the kalshi_mlb module so _kalshi_up() has something to ask."""
+
+    def __init__(self, up):
+        self._up = up
+
+    def index(self):
+        return {"KXMLBGAME-FIX0-HHH": {"yes_ask": 55}} if self._up else {}
+
+
+def _run_mixed(up, price_them):
+    """Run the real build_mixed_parlay with Kalshi up/down and legs priced/not."""
+    saved_mod = _sys.modules.get("kalshi_mlb")
+    saved_sim, saved_price = _BB._game_sim, _BB._price_cands
+    _sys.modules["kalshi_mlb"] = _KalshiStub(up)
+    _BB._game_sim = lambda g: {"sim": {"n": _N_SIM}, "cands": _fx_cands()}
+
+    def _fake_price(cands, suffix, blend=True):
+        for c in cands:
+            c["price_cents"] = 55 if price_them else None
+    _BB._price_cands = _fake_price
+    try:
+        return _BB.build_mixed_parlay(_fx_games(), n_legs=3, target_pct=50,
+                                      max_legs_per_game=1)
+    finally:
+        _BB._game_sim, _BB._price_cands = saved_sim, saved_price
+        if saved_mod is None:
+            _sys.modules.pop("kalshi_mlb", None)
+        else:
+            _sys.modules["kalshi_mlb"] = saved_mod
+
+
+ck("_kalshi_up() is False when the price index comes back empty",
+   _run_mixed(up=False, price_them=False) is not None,
+   "an empty index means the exchange is unreachable or the slate hasn't "
+   "listed yet -- not that every line was individually delisted")
+
+_down = _run_mixed(up=False, price_them=False)
+ck("KALSHI DOWN: the maker still builds instead of returning nothing",
+   _down is not None and _down.get("n_legs", 0) >= 2
+   and len(_down.get("groups") or []) >= 2,
+   "this is the regression the user hit: zero games out of a full slate")
+ck("...and the slip SAYS its legs are unpriced, rather than passing them off",
+   _down is not None and _down.get("pricing_unavailable") is True)
+ck("...and does not report them as excluded, because none were",
+   _down is not None and not _down.get("excluded_unpriced"))
+
+_up_unpriced = _run_mixed(up=True, price_them=False)
+ck("KALSHI UP but the line is unlisted: the leg is still excluded",
+   _up_unpriced is None,
+   "the original rule is intact -- when the book is up and simply doesn't "
+   "carry the line, that leg can't go on a slip")
+
+_up_priced = _run_mixed(up=True, price_them=True)
+ck("KALSHI UP and listed: normal build, and no unpriced warning",
+   _up_priced is not None and _up_priced.get("pricing_unavailable") is False)
+
+# --- the same gate on the other two makers ---------------------------------
+ck("the target maker reads Kalshi ONCE, not per game and not per variant",
+   "up = _kalshi_up()      # read once, not per game and not per variant" in _bb2)
+ck("the same-game builder reads it once per call too",
+   "up = _kalshi_up()      # read once, not per game" in _bb2)
+ck("there is ONE definition of 'is Kalshi up', not a copy per maker",
+   _bb2.count("def _kalshi_up(") == 1
+   and _bb2.count("import kalshi_mlb\n        return bool(kalshi_mlb.index())") == 1)
+
+# --- the endpoint names the real cause -------------------------------------
+_ap = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                         "app.py")).read()
+ck("an empty result is explained by PRICES, not blamed on the user's filters",
+   '"hint": "kalshi_unpriced"' in _ap,
+   "'no eligible games for that selection' sent the user off to loosen "
+   "filters that were never the problem")
+ck("...and that hint only fires when no pregame game carries a price",
+   'if pre and not any(g.get("pick_price_cents") for g in pre):' in _ap,
+   "with a priced slate a genuinely narrow filter must still read as a narrow "
+   "filter")
+ck("the UI has a message for the hint",
+   "kalshi_unpriced" in _js3)
+ck("and flags a model-only slip on its face",
+   "pricing_unavailable" in _js3 and "model-only" in _js3)
 
 print()
 print("=" * 72)
@@ -2796,16 +2912,20 @@ if _m:
 _saved_meta = _UMP._TABLE["v"]
 try:
     _UMP._TABLE["t"] = _tm.time()
-    _UMP._TABLE["v"] = {"meta": {"k_per_bias": 20.0, "k_t": 3.2,
-                                 "r_per_bias": -1.0, "r_t": 0.15,
+    # Fixture carries the REAL measured t-stats, so the gate is exercised where
+    # the shipped table actually sits rather than at comfortable made-up values.
+    _UMP._TABLE["v"] = {"meta": {"k_per_bias": 20.0, "k_t": 2.05,
+                                 "r_per_bias": -1.0, "r_t": -0.10,
                                  "lg_r_per_game": 9.0}, "umps": {}}
     ck("a slope inside its own error bar is NOT applied",
        _UMP.slope("r") is None,
-       "the run slope came out -1.06 +/- 7.1 on a full season -- an interval "
+       "the run slope came out -1.06 +/- 10.7 on a full season -- an interval "
        "spanning both signs. Pricing that point estimate would be fitting a "
        "coincidence")
     ck("...but a slope that clears it is",
-       _UMP.slope("k") == 20.0, "the K slope is t ~ 3.2 and real")
+       _UMP.slope("k") == 20.0,
+       "the K slope is t = 2.05: past the bar, but only just. It was reported "
+       "here as t ~ 3.2 until the regression standard error was recomputed")
     ck("the bar is a genuine significance bar", _UMP.MIN_T >= 2.0)
     _UMP._TABLE["v"] = {"meta": {}, "umps": {}}
     ck("no table means no slope, not a default one",
