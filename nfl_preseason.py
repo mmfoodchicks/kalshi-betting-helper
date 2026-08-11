@@ -320,15 +320,15 @@ def usage_note(pos, reg_per_game):
     """Why this player's preseason number is what it is, in one line, so a lineup
     can be argued with rather than just trusted."""
     if pos in ("WR", "TE"):
-        return "preseason target share is flat across roles — no edge from depth"
+        return "preseason target share is flat across roles - no edge from depth"
     r = reg_per_game or 0.0
     if r >= _STARTER_AT.get(pos, 10.0):
-        return "regular-season starter — sits early in exhibitions"
+        return "regular-season starter - sits early in exhibitions"
     if r >= _ROTATIONAL_AT.get(pos, 4.0):
-        return "rotational — moderate exhibition workload"
+        return "rotational - moderate exhibition workload"
     if r > 0:
-        return "fringe — heavy exhibition workload"
-    return "no regular-season role — the snaps starters give up"
+        return "fringe - heavy exhibition workload"
+    return "no regular-season role - the snaps starters give up"
 
 
 # ---- Roster -> preseason stat lines ------------------------------------------

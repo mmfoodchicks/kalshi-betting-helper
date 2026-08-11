@@ -182,7 +182,7 @@ def _no_row(row, no_ask):
     spread and inverting the YES price would overstate the return."""
     if not row or no_ask is None or not (0 < no_ask < 100):
         return None
-    out = _row(row["sport"], row["market"], f"NO — {row['label']}",
+    out = _row(row["sport"], row["market"], f"NO - {row['label']}",
                100.0 - row["model_pct"], no_ask,
                {"team": row.get("team"), "ticker": row.get("ticker"),
                 "volume": row.get("volume"), "thin": row.get("thin"),
@@ -334,7 +334,7 @@ def _collect_board(sport, board, by_ticker, by_series, by_no):
             if price is None:
                 price = t.get("market_cents")
             name = t.get("team") or t.get("abbr") or ""
-            lbl = f"{name} — {blk.get('label') or key}"
+            lbl = f"{name} - {blk.get('label') or key}"
             row = _row(sport, key, lbl, t.get("model_pct"), price,
                        {**t, "team": name, "in_season": played},
                        _days_for(sport, key, t.get("ticker"), by_ticker, by_series))
@@ -417,7 +417,7 @@ def _collect_pro(sport, by_ticker, by_series, by_no):
             pct = t.get(pct_key)
             price = (t.get(f"{key}_cents") or t.get("kalshi_cents")
                      if key == "champ" else t.get(f"{key}_cents"))
-            row = _row(sport, key, f"{t.get('team') or t.get('abbr')} — {lbl}",
+            row = _row(sport, key, f"{t.get('team') or t.get('abbr')} - {lbl}",
                        pct, price, {**t, "team": t.get("team") or t.get("abbr")},
                        _days_for(sport, key, t.get(f"{key}_ticker"), by_ticker, by_series))
             if row:
@@ -523,7 +523,7 @@ def _collect_climate():
             label = title.rstrip("?")
             sub = (m.get("yes_sub_title") or "").strip()
             if sub and sub.lower() not in label.lower():
-                label = f"{label} — {sub}"
+                label = f"{label} - {sub}"
             row = _row("climate", "temperature", label, pct, ask,
                        {"team": "NASA GISS", "ticker": m.get("ticker"),
                         "volume": vol, "in_season": True,
@@ -687,7 +687,7 @@ def board(q="", sort="best", sports=None, markets=None, min_prob=0.0,
         "markets": sorted({r["market"] for r in rows() or []}),
         "note": ("Expected return uses our simulation blended with the market at "
                  "the weight that sport's model has actually EARNED on graded "
-                 "results — so a league where the model has been measured no "
+                 "results - so a league where the model has been measured no "
                  "better than the price shows no edge, by construction. It is "
                  "still a forecast: if the model is wrong the edge is imaginary, "
                  "and the contract pays nothing rather than a little less."),

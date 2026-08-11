@@ -235,9 +235,9 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
     # YES contract is likely cheap right now). Mirror for NO on a pump.
     dip_note = None
     if prob_yes >= LEAN_PROB and mom < -0.0008:
-        dip_note = "Model favors YES but price just dipped — YES is likely cheap. Good dip-buy."
+        dip_note = "Model favors YES but price just dipped - YES is likely cheap. Good dip-buy."
     elif prob_yes <= (1 - LEAN_PROB) and mom > 0.0008:
-        dip_note = "Model favors NO but price just popped — NO is likely cheap. Good fade."
+        dip_note = "Model favors NO but price just popped - NO is likely cheap. Good fade."
 
     # --- Recommendation ------------------------------------------------------
     edge = fee = net_edge = None
@@ -257,24 +257,24 @@ def compute_signal(spot, candles, threshold, direction, minutes_to_close,
         else:
             rec, strength = "HOLD", "flat"
             rationale = (f"Fair YES ≈ {fair_yes}¢ is within {MIN_EDGE_CENTS}¢ of "
-                         f"market {yes_price_cents}¢ — no clear edge.")
+                         f"market {yes_price_cents}¢ - no clear edge.")
     else:
         # Probability-based when no live market price is provided.
         if prob_yes >= STRONG_PROB:
             rec, strength = "BUY YES", "strong"
-            rationale = f"Model gives {fair_yes}% chance of YES — strong lean."
+            rationale = f"Model gives {fair_yes}% chance of YES - strong lean."
         elif prob_yes >= LEAN_PROB:
             rec, strength = "BUY YES", "lean"
-            rationale = f"Model gives {fair_yes}% chance of YES — mild lean."
+            rationale = f"Model gives {fair_yes}% chance of YES - mild lean."
         elif prob_yes <= (1 - STRONG_PROB):
             rec, strength = "BUY NO", "strong"
-            rationale = f"Model gives {fair_no}% chance of NO — strong lean."
+            rationale = f"Model gives {fair_no}% chance of NO - strong lean."
         elif prob_yes <= (1 - LEAN_PROB):
             rec, strength = "BUY NO", "lean"
-            rationale = f"Model gives {fair_no}% chance of NO — mild lean."
+            rationale = f"Model gives {fair_no}% chance of NO - mild lean."
         else:
             rec, strength = "HOLD", "flat"
-            rationale = f"Model near a coin-flip ({fair_yes}% YES) — wait for a clearer edge."
+            rationale = f"Model near a coin-flip ({fair_yes}% YES) - wait for a clearer edge."
 
     # --- Exit / take-profit hint --------------------------------------------
     # Since Kalshi lets you sell anytime, suggest a target to lock profit.
@@ -446,15 +446,15 @@ def vol_edge(spot, candles, markets, minutes_to_close):
         ratio = iv / sigma
         if ratio > 1.15:
             verdict = "Market is OVERpricing movement"
-            suggestion = ("Real moves are smaller than the market implies — near-the-money "
+            suggestion = ("Real moves are smaller than the market implies - near-the-money "
                           "favorites (and NO on far strikes) look underpriced; fade big-move longshots.")
         elif ratio < 0.87:
             verdict = "Market is UNDERpricing movement"
-            suggestion = ("Real volatility is higher than priced — the far/longshot strikes "
+            suggestion = ("Real volatility is higher than priced - the far/longshot strikes "
                           "(big moves) look underpriced; buy the wings.")
         else:
             verdict = "Volatility fairly priced"
-            suggestion = "Implied and realized movement roughly agree — no clear vol edge here."
+            suggestion = "Implied and realized movement roughly agree - no clear vol edge here."
         out.update({
             "implied_move_pct": round(iv * rt * 100, 3),
             "implied_annual_pct": round(iv * ann * 100, 1),
@@ -521,22 +521,22 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
     if sell_price >= fair - 1:
         action = "SELL"
         if pnl is None:
-            headline = "Sell — the edge is gone"
+            headline = "Sell - the edge is gone"
         elif pnl >= 0:
-            headline = f"Sell now — lock in +{pnl}¢ profit"
+            headline = f"Sell now - lock in +{pnl}¢ profit"
         else:
-            headline = f"Sell / cut — edge gone, trim the {abs(pnl)}¢ loss"
+            headline = f"Sell / cut - edge gone, trim the {abs(pnl)}¢ loss"
         detail = (f"You can sell your {side} for ~{sell_price}¢, and the model's fair "
-                  f"value is only {fair}¢ — little left to gain by holding.")
+                  f"value is only {fair}¢ - little left to gain by holding.")
     else:
         action = "HOLD"
         upside = round(fair - sell_price, 1)
         if pnl is None:
-            headline = "Hold — still underpriced"
+            headline = "Hold - still underpriced"
         elif pnl >= 0:
-            headline = f"Hold — up {pnl}¢, still has edge"
+            headline = f"Hold - up {pnl}¢, still has edge"
         else:
-            headline = f"Hold — down {abs(pnl)}¢, model still likes it"
+            headline = f"Hold - down {abs(pnl)}¢, model still likes it"
         detail = (f"Model fair value is {fair}¢ but you'd only get ~{sell_price}¢ selling "
                   f"now ({upside}¢ of upside left). Hold, or sell only if you want to "
                   f"de-risk.")
@@ -550,9 +550,9 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
     settle_note = None
     if minutes_to_close is not None and minutes_to_close <= 10:
         if fair >= 75:
-            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely winning (≈{fair}¢) — holding to settlement should pay ~100¢."
+            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely winning (≈{fair}¢) - holding to settlement should pay ~100¢."
         elif fair <= 25:
-            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely losing (≈{fair}¢) — it may settle at 0¢. Selling now salvages value."
+            settle_note = f"Close in ~{round(minutes_to_close)}m and {side} is likely losing (≈{fair}¢) - it may settle at 0¢. Selling now salvages value."
 
     # Flip signal: the model now favors the *other* side as a fresh +edge buy.
     # That means your position turned the wrong way -- consider selling out and
@@ -633,13 +633,13 @@ def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
         rec = "BUY YES"
         strength = "strong" if best_edge >= 2 * MIN_EDGE_CENTS else "lean"
         rationale = f"Fair YES ≈ {fair_yes}¢ vs ask {yes_ask}¢ → +{best_edge}¢ edge."
-        dip_note = ("Price just dipped — YES looks extra cheap here."
+        dip_note = ("Price just dipped - YES looks extra cheap here."
                     if prob_yes >= LEAN_PROB and mom < -0.0008 else None)
     elif best_side == "NO":
         rec = "BUY NO"
         strength = "strong" if best_edge >= 2 * MIN_EDGE_CENTS else "lean"
         rationale = f"Fair NO ≈ {fair_no}¢ vs ask {no_ask}¢ → +{best_edge}¢ edge."
-        dip_note = ("Price just popped — NO looks extra cheap here."
+        dip_note = ("Price just popped - NO looks extra cheap here."
                     if prob_yes <= (1 - LEAN_PROB) and mom > 0.0008 else None)
     else:
         rec, strength = "HOLD", "flat"

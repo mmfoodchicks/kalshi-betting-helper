@@ -901,7 +901,7 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         proj = projections(games, n_sims)
         engine = "fast"
     if not proj:
-        return {"error": "no projections — lineups may not be posted yet"}
+        return {"error": "no projections - lineups may not be posted yet"}
     market_boom = {}
     try:
         market_boom = market_signals(date[:4])
@@ -931,10 +931,10 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
     if not lineups:
         n_conf = sum(1 for p in players if p.get("confirmed"))
         miss = _missing_positions(players)
-        why = (f"short {', '.join(miss)} — not enough players at those slots"
+        why = (f"short {', '.join(miss)} - not enough players at those slots"
                if miss else "no combination fits the salary cap")
         return {"error": f"couldn't fill a valid roster ({why}). "
-                f"Matched {n_conf} confirmed starters of {len(players_raw)} CSV players — "
+                f"Matched {n_conf} confirmed starters of {len(players_raw)} CSV players - "
                 "if lineups aren't posted yet, try again closer to first pitch."}
 
     add_ownership_leverage(players, market_boom)

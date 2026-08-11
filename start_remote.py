@@ -63,7 +63,7 @@ def _sync_latest():
         else:
             print("  ✓ Already up to date.")
     else:
-        print("  ⚠ Couldn't reach GitHub — running the code already on disk.")
+        print("  ⚠ Couldn't reach GitHub - running the code already on disk.")
     head = _git("log", "-1", "--format=%h  %s")
     if head and head.returncode == 0:
         print(f"  build: {_build_token()}   commit: {head.stdout.strip()}")
@@ -127,14 +127,14 @@ def main():
     time.sleep(2)
 
     if not os.environ.get("APP_PASSWORD"):
-        print("\n  ⚠  No APP_PASSWORD set — a public tunnel URL would be open to anyone.")
+        print("\n  ⚠  No APP_PASSWORD set - a public tunnel URL would be open to anyone.")
         print("     Lock it:  Windows  $env:APP_PASSWORD='pw'; python start_remote.py")
         print("               Mac/Lin  APP_PASSWORD=pw python start_remote.py")
 
     # Same-wifi URL works instantly with zero install — scan and go.
     ip = _lan_ip()
     if ip:
-        _banner("📶  ON HOME WIFI — scan this, then Add to Home Screen:",
+        _banner("📶  ON HOME WIFI - scan this, then Add to Home Screen:",
                 f"http://{ip}:{PORT}")
 
     cf = shutil.which("cloudflared")
@@ -158,7 +158,7 @@ def main():
             m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
             if m and not shown:
                 shown = True
-                _banner("🌍  WORKS ANYWHERE — scan this, then Add to Home Screen:",
+                _banner("🌍  WORKS ANYWHERE - scan this, then Add to Home Screen:",
                         m.group(0))
     except KeyboardInterrupt:
         pass

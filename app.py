@@ -555,10 +555,10 @@ def api_kalshi_scan():
                     vol["deribit_ratio"] = round(r, 2)
                     if r >= 1.15:
                         vol["deribit_note"] = (f"{src} vol ({ki}%) is RICHER than Deribit ({dvol}%) "
-                                               f"— favorites/near-money look cheap on Kalshi.")
+                                               f"- favorites/near-money look cheap on Kalshi.")
                     elif r <= 0.87:
                         vol["deribit_note"] = (f"{src} vol ({ki}%) is CHEAPER than Deribit ({dvol}%) "
-                                               f"— the wings/longshots look cheap on Kalshi.")
+                                               f"- the wings/longshots look cheap on Kalshi.")
                     else:
                         vol["deribit_note"] = f"{src} vol ({ki}%) is in line with Deribit ({dvol}%)."
 
@@ -1138,7 +1138,7 @@ def api_futures_modeled():
         )
         if data.get("building"):
             return jsonify({"building": True,
-                            "error": "running the season simulations — retry shortly"}), 202
+                            "error": "running the season simulations - retry shortly"}), 202
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": f"modeled futures failed: {e}"}), 502
@@ -1181,7 +1181,7 @@ def api_futures():
             # First hit after a cold start: the sweep is ~40 pages and runs on a
             # background thread rather than holding the request open.
             return jsonify({"building": True,
-                            "error": "scanning Kalshi's long-dated markets — retry shortly"}), 202
+                            "error": "scanning Kalshi's long-dated markets - retry shortly"}), 202
         data["summary"] = _fut.summary()
         return jsonify(data)
     except Exception as e:
@@ -1489,7 +1489,7 @@ def api_lol():
     except Exception as e:
         return jsonify({"error": f"lol data failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "no LoL data available yet (loading / rate-limited — retry shortly)"}), 502
+        return jsonify({"error": "no LoL data available yet (loading / rate-limited - retry shortly)"}), 502
     return jsonify(data)
 
 
@@ -1526,7 +1526,7 @@ def api_nfl_week():
     except Exception as e:
         return jsonify({"error": f"nfl data failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "no NFL data yet (building in the background — retry shortly)"}), 502
+        return jsonify({"error": "no NFL data yet (building in the background - retry shortly)"}), 502
     return jsonify(data)
 
 
@@ -1540,7 +1540,7 @@ def api_nba_slate():
     except Exception as e:
         return jsonify({"error": f"nba slate failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+        return jsonify({"error": "simulating the slate in the background - retry shortly"}), 502
     return jsonify(data)
 
 
@@ -1554,7 +1554,7 @@ def api_nhl_slate():
     except Exception as e:
         return jsonify({"error": f"nhl slate failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+        return jsonify({"error": "simulating the slate in the background - retry shortly"}), 502
     return jsonify(data)
 
 
@@ -1578,7 +1578,7 @@ def api_nfl_slate():
     except Exception as e:
         return jsonify({"error": f"nfl slate failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "simulating the slate in the background — retry shortly"}), 502
+        return jsonify({"error": "simulating the slate in the background - retry shortly"}), 502
     return jsonify(data)
 
 
@@ -1702,7 +1702,7 @@ def api_nfl_sim():
     except Exception as e:
         return jsonify({"error": f"nfl sim failed: {e}"}), 502
     if not data:
-        return jsonify({"error": "simulating the week in the background — retry shortly"}), 502
+        return jsonify({"error": "simulating the week in the background - retry shortly"}), 502
     return jsonify(data)
 
 

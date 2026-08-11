@@ -574,4 +574,4 @@ def _build_board(max_matches):
         return {"matches": matches, "picks": picks[:60], "payouts": _PICK6_PAYOUT,
                 "tournaments": tourns[:12],
                 "note": "Correlated per-map sim (kills zero-sum across the two teams). "
-                        "DK/PrizePicks lines govern — match ours to their board."}
+                        "DK/PrizePicks lines govern - match ours to their board."}

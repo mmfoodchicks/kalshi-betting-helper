@@ -362,7 +362,7 @@ def apply_grid(players, sport, date=None, grid_text=None):
     prof_race = _sim_raw_profile(sport).get("race")
     return {"available": bool(grid), "manual": bool(manual),
             "reason": None if grid else
-            ("no qualifying grid yet — projections come from the race simulator "
+            ("no qualifying grid yet - projections come from the race simulator "
              "(place differential applies after qualifying)" if dk_hits else
              "no qualifying grid posted yet (check back after qualifying)"),
             "race": ("Pasted grid" if manual else grid["race"]) if grid else prof_race,
@@ -864,7 +864,7 @@ def apply_ufc(players):
         return {"available": False, "reason": f"fight sim failed: {e}"}
     if not board:
         return {"available": False,
-                "reason": "fighter sim warming up (rating every fighter from history) — using CSV projections; rerun in ~1 min"}
+                "reason": "fighter sim warming up (rating every fighter from history) - using CSV projections; rerun in ~1 min"}
     idx = {}
     for bt in board.get("bouts", []):
         for side in ("a", "b"):

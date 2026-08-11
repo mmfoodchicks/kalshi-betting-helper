@@ -638,12 +638,12 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "status_known": _sk,
             "status_warning": None if _sk else
             ("DK's Status column isn't in this paste, so OUT and IR players "
-             "could NOT be excluded — check every name is active before you "
+             "could NOT be excluded - check every name is active before you "
              "enter. Copy the whole CSV including its header row."),
             "flat_priced": flat,
             "flat_note": ("Every player on this slate is priced the same "
                           f"(${sorted(_sals)[0]:,} FLEX). Points per dollar is a "
-                          "constant, so the cap can't distinguish lineups — the "
+                          "constant, so the cap can't distinguish lineups - the "
                           "whole decision is playing time and ownership.")
             if flat else None,
             "week": week, "objective": objective, "stack": False,
@@ -677,7 +677,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     csv_players = [c for c in csv_players if _playable(c)]
     pool = nfl_dfs_sim.player_pool(week, preseason=preseason)
     if not pool:
-        return {"error": "projections not ready — the weekly sim is still building, retry shortly"}
+        return {"error": "projections not ready - the weekly sim is still building, retry shortly"}
 
     # Both indexes, same as the showdown path. Building them only there left the
     # classic path calling _pool_match with names it had never defined -- a
@@ -746,7 +746,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             "status_known": _sk,
             "status_warning": None if _sk else
             ("DK's Status column isn't in this paste, so OUT and IR players "
-             "could NOT be excluded — check every name is active before you "
+             "could NOT be excluded - check every name is active before you "
              "enter. Copy the whole CSV including its header row."),
             "week": week, "objective": objective, "stack": bool(stack_min),
             "salary": sum(p["salary"] for p in lineup), "cap": CAP,

@@ -48,7 +48,7 @@ def _loop(branch, interval, log):
         time.sleep(interval)
         try:
             if _pull_if_new(branch):
-                log(f"[selfupdate] pulled origin/{branch} — restarting to apply")
+                log(f"[selfupdate] pulled origin/{branch} - restarting to apply")
                 # Replace this process image with the freshly-pulled code.
                 os.execv(sys.executable, [sys.executable] + sys.argv)
         except Exception as e:

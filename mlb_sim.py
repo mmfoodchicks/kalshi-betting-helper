@@ -1901,7 +1901,7 @@ def _no_candidates(cands, n):
         kref = c.get("kref")
         kref = dict(kref, no=True) if kref else None
         model = c.get("model_pct")
-        out.append({**c, "label": f"NO — {c['label']}", "mask": (~c["mask"]) & full,
+        out.append({**c, "label": f"NO - {c['label']}", "mask": (~c["mask"]) & full,
                     "marg": marg, "side": "no", "kref": kref,
                     "model_pct": round(100.0 - model, 1) if model is not None else None})
     return out

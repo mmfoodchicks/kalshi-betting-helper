@@ -328,11 +328,11 @@ def board(q="", sort="best", min_prob=DEFAULT_MIN_PROB, max_days=None,
         "sorts": list(_SORTS.keys()),
         "note": ("Yield is what the contract pays if it settles your way, net of "
                  "Kalshi's taker fee. The implied % is the market's own estimate of "
-                 "that happening — which makes it also your chance of losing the "
+                 "that happening - which makes it also your chance of losing the "
                  "whole stake. At the market's own price the expected value of every "
                  "row here is slightly NEGATIVE (the fee); the yield is what you are "
                  "paid for carrying the tail risk, not an edge we've found. This is "
-                 "not a savings account — there is no principal protection, and money "
+                 "not a savings account - there is no principal protection, and money "
                  "is locked up until settlement."),
     }
 

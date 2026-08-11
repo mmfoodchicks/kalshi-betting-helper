@@ -21,8 +21,8 @@ TIER_ORDER = ["free", "pro", "edge", "owner"]
 TIERS = {
     "owner": {
         "label": "Owner (God)",
-        "price": "—",
-        "blurb": "Full unlimited access — that's you.",
+        "price": "-",
+        "blurb": "Full unlimited access - that's you.",
         "max_sims": 200000,
         "max_combo_legs": 30,
     },

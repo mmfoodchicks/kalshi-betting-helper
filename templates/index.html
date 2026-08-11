@@ -21,7 +21,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand"><span class="brand-mark">V</span><span class="brand-name">Vigil</span></div>
-      <p class="sub">Model odds &amp; live edges — Kalshi, DraftKings &amp; crypto.</p>
+      <p class="sub">Model odds &amp; live edges - Kalshi, DraftKings &amp; crypto.</p>
       <div class="settingsbar">
         <span class="setlabel">Bankroll</span> $<input id="bankroll" type="number" min="0" step="any" placeholder="1000" style="width:84px"/>
         <span class="setlabel">Kelly</span>
@@ -68,12 +68,12 @@
    <div id="tab-bestbets">
     <section class="card">
       <div class="row-between">
-        <h2>🎯 Best Bets — every edge, one screen</h2>
+        <h2>🎯 Best Bets - every edge, one screen</h2>
         <div class="scan-controls">
           <button id="bbetsBtn" class="primary">↻ Rescan</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 8px">Every positive edge across all our models, ranked by <b>net edge</b> = our&nbsp;% − Kalshi ask − taker fee — the number you actually bank. First scan of the day can take ~30s.</p>
+      <p class="sub" style="margin:4px 0 8px">Every positive edge across all our models, ranked by <b>net edge</b> = our&nbsp;% − Kalshi ask − taker fee, the number you actually bank. First scan of the day can take ~30s.</p>
       <div id="bbetsSources" class="small" style="margin-bottom:8px"></div>
       <div id="bbetsResults" class="markets"><div class="empty">Open the tab or hit Rescan to hunt edges across every model.</div></div>
     </section>
@@ -130,7 +130,7 @@
             <option value="hourly" selected>Hourly</option>
             <option value="daily">Daily</option>
           </select>
-          <label class="small" title="Hide contracts with no edge (the model says HOLD) — show only actionable BUY YES / BUY NO."><input type="checkbox" id="scanBuysOnly" checked/> Buys only</label>
+          <label class="small" title="Hide contracts with no edge (the model says HOLD) - show only actionable BUY YES / BUY NO."><input type="checkbox" id="scanBuysOnly" checked/> Buys only</label>
           <button id="scanBtn">Scan</button>
         </div>
       </div>
@@ -140,7 +140,7 @@
         <ul>
           <li><b>Buy YES</b> = you bet the price <i>will</i> hit the target; <b>Buy NO</b> = you bet it <i>won't</i>. Each costs some cents (0–100¢) and pays <b>100¢</b> if it wins.</li>
           <li><b>Fair value</b> = the model's estimate of what the contract is truly worth. <b>Edge</b> = fair value − the price you'd pay. A bigger positive edge = a better deal.</li>
-          <li>You can <b>sell anytime</b> before close. Tap <b>“I bought this”</b> and enter what you paid — the app will then tell you <b>when to sell</b> in “Tracked markets” below.</li>
+          <li>You can <b>sell anytime</b> before close. Tap <b>“I bought this”</b> and enter what you paid - the app will then tell you <b>when to sell</b> in “Tracked markets” below.</li>
         </ul>
       </details>
       <div id="scanResults" class="markets"><div class="empty">Pick a coin &amp; timeframe, then Scan.</div></div>
@@ -167,7 +167,7 @@
           <button id="btBtn">Run backtest</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Replays real price history — predicts each minute using only past data, then checks what happened. Honest proof of whether the model beats a coin flip.</p>
+      <p class="sub" style="margin:4px 0 12px">Replays real price history - predicts each minute using only past data, then checks what happened. Honest proof of whether the model beats a coin flip.</p>
       <div id="btResults" class="markets"><div class="empty">Pick a coin &amp; horizon, then Run backtest.</div></div>
     </section>
 
@@ -200,7 +200,7 @@
             <option value="edge">Sort: Kalshi edge</option>
             <option value="ks" title="Best simulated strikeout projection on the card (either starter)">Sort: SP strikeouts tonight</option>
             <option value="kshigh" title="Biggest single-start strikeout total either starter has posted this season">Sort: SP season K high</option>
-            <option value="kdawg" title="Starters whose best night sits furthest above their own season average — a real ceiling, not just a high number">Sort: 🐕 dawg games</option>
+            <option value="kdawg" title="Starters whose best night sits furthest above their own season average - a real ceiling, not just a high number">Sort: 🐕 dawg games</option>
           </select>
           <button id="bbBtn" class="primary">Load slate</button>
           <button id="bbRefresh">↻ Refresh</button>
@@ -220,7 +220,7 @@
           <button id="valBtn">Scan</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Kalshi's prop price vs how often the batter has <b>actually</b> done it lately. Recent form is a small, pitcher-blind sample — the season rate is shown so you can spot a streak (⚠️) likely to regress.</p>
+      <p class="sub" style="margin:4px 0 12px">Kalshi's prop price vs how often the batter has <b>actually</b> done it lately. Recent form is a small, pitcher-blind sample - the season rate is shown so you can spot a streak (⚠️) likely to regress.</p>
       <div id="bbValue" class="markets"><div class="empty">Scan to compare Kalshi prices vs recent form.</div></div>
     </section>
 
@@ -229,7 +229,7 @@
         <h2>📓 Prop recorder (track record)</h2>
         <button id="propLogBtn">Refresh</button>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Logs every Kalshi batter prop with the model's %, then grades it against the real box score. One night is noise — <b>Brier</b> (lower is better; 0.25 = coin flip) and realized ROI are the honest scoreboard.</p>
+      <p class="sub" style="margin:4px 0 12px">Logs every Kalshi batter prop with the model's %, then grades it against the real box score. One night is noise - <b>Brier</b> (lower is better; 0.25 = coin flip) and realized ROI are the honest scoreboard.</p>
       <div id="bbPropLog" class="stats"><div class="empty">Logs build automatically as games are played. Refresh to see the running record.</div></div>
     </section>
 
@@ -242,7 +242,7 @@
         </div>
       </div>
       <p class="sub" id="comboKalshiSub" style="margin:4px 0 12px">All legs must win; combined odds = each leg's probability multiplied. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market.</p>
-      <p class="sub hidden" id="comboPick6Sub" style="margin:4px 0 12px">Pick a game and see <b>what the sim expects every player to get</b> — hits, total bases, H+R+RBI, HR, stolen bases, pitcher Ks — with the chance at <b>every line</b> (0.5 / 1.5 / 2.5…). Click a line to drop it into <b>your slip</b> (2–6 picks, all must hit); the slip's joint odds are read off the same simulation, so same-game correlation is real, not an independence guess. <b>DK's posted line governs</b> — match ours to their board.</p>
+      <p class="sub hidden" id="comboPick6Sub" style="margin:4px 0 12px">Pick a game and see <b>what the sim expects every player to get</b> - hits, total bases, H+R+RBI, HR, stolen bases, pitcher Ks - with the chance at <b>every line</b> (0.5 / 1.5 / 2.5…). Click a line to drop it into <b>your slip</b> (2–6 picks, all must hit); the slip's joint odds are read off the same simulation, so same-game correlation is real, not an independence guess. <b>DK's posted line governs</b> - match ours to their board.</p>
       <div id="bbCombos" class="markets"><div class="empty">Load a slate to use the combo maker.</div></div>
       <div id="bbPick6" class="hidden"></div>
     </section>
@@ -251,7 +251,7 @@
     <div class="bb-edges hidden">
     <section class="card">
       <h2>🎯 Edge Finder</h2>
-      <p class="sub">Every MLB leg we can price, ranked by our simulated chance − Kalshi's implied chance. A <b>disagreement finder, not a guarantee</b> — a whole market leaning one way (flagged) usually means model bias, not free money.</p>
+      <p class="sub">Every MLB leg we can price, ranked by our simulated chance − Kalshi's implied chance. A <b>disagreement finder, not a guarantee</b> - a whole market leaning one way (flagged) usually means model bias, not free money.</p>
       <div class="row" style="gap:8px;align-items:center">
         <label class="small">Slate
           <select id="edgeDate" style="width:auto;margin-left:4px"></select>
@@ -282,7 +282,7 @@
     <div class="bb-hits hidden">
     <section class="card">
       <h2>📈 Predicted Hits</h2>
-      <p class="sub">Receipts. The app logs Kalshi batter props through the night with the model's read, then grades them off the real box scores. This board shows the props the model <b>liked that actually hit</b> — and the <b>longshots that cashed</b>.</p>
+      <p class="sub">Receipts. The app logs Kalshi batter props through the night with the model's read, then grades them off the real box scores. This board shows the props the model <b>liked that actually hit</b> - and the <b>longshots that cashed</b>.</p>
       <div class="row" style="gap:8px;align-items:center">
         <label class="small">Slate
           <select id="hitsDate" style="width:auto;margin-left:4px"></select>
@@ -309,7 +309,7 @@
     </section>
 
     <section class="card sub-sports sub-featured hidden">
-      <h2>⭐ Featured — season championship sims</h2>
+      <h2>⭐ Featured - season championship sims</h2>
       <div class="sporttoggle">
         <button class="sportbtn active" data-fsport="mlb" onclick="setFeatSport('mlb')">⚾ MLB</button>
         <button class="sportbtn" data-fsport="f1" onclick="setFeatSport('f1')">🏎️ F1</button>
@@ -317,7 +317,7 @@
         <button class="sportbtn" data-fsport="nfl" onclick="setFeatSport('nfl')">🏈 NFL</button>
         <button class="sportbtn refreshall" onclick="loadFeatured(true)" title="Reload this sport's board from the server">↻ Refresh</button>
       </div>
-      <p class="sub" id="featuredIntro" style="margin:4px 0 12px">Our season Monte Carlo vs the market — the rest of the schedule simulated for <b>division / playoff / pennant / title</b> odds and win totals, compared to Kalshi's futures. Edge = our % − price.</p>
+      <p class="sub" id="featuredIntro" style="margin:4px 0 12px">Our season Monte Carlo vs the market - the rest of the schedule simulated for <b>division / playoff / pennant / title</b> odds and win totals, compared to Kalshi's futures. Edge = our % − price.</p>
       <div id="featuredSummary"></div>
       <div id="featuredResults" class="markets"><div class="empty">Simulating the season…</div></div>
     </section>
@@ -353,7 +353,7 @@
       </div>
       <div id="nflSimBox" class="hidden">
         <div class="row-between" style="margin:2px 0 8px">
-          <p class="sub" style="margin:0;max-width:74%">A <b>correlated per-game Monte Carlo</b> seeded by <b>Sleeper's weekly projections</b>. Player means are pinned to Sleeper; the sim adds <b>floor / median / ceiling / boom%</b> and same-game correlation (a QB and his WRs boom together). <b>Sim</b> = per-game cards · <b>Best ball</b> = ceilings + top QB→WR stacks (with your Sleeper ADP) · <b>Pick 6</b> = correlation-aware prop More/Less.<br/><b>Preseason</b> switches the source: Sleeper projects nothing for exhibitions, so the means are measured off 96 team-games of last August and the usage model runs <b>inverted</b> — backups and camp bodies take the snaps, so DraftKings chalk is upside down.</p>
+          <p class="sub" style="margin:0;max-width:74%">A <b>correlated per-game Monte Carlo</b> seeded by <b>Sleeper's weekly projections</b>. Player means are pinned to Sleeper; the sim adds <b>floor / median / ceiling / boom%</b> and same-game correlation (a QB and his WRs boom together). <b>Sim</b> = per-game cards · <b>Best ball</b> = ceilings + top QB→WR stacks (with your Sleeper ADP) · <b>Pick 6</b> = correlation-aware prop More/Less.<br/><b>Preseason</b> switches the source: Sleeper projects nothing for exhibitions, so the means are measured off 96 team-games of last August and the usage model runs <b>inverted</b> - backups and camp bodies take the snaps, so DraftKings chalk is upside down.</p>
           <div class="row" style="gap:8px;align-items:center">
             <label class="small" style="white-space:nowrap"><input type="checkbox" id="nflSimPre" style="width:auto"/> 🏟️ preseason</label>
             <select id="nflSimWeek"></select>
@@ -381,7 +381,7 @@
 
     <section class="card" id="nflComboBox">
       <h2>🎲 NFL combo maker</h2>
-      <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market. Moneylines, spread and total ladders and — in the preseason, where Kalshi actually books them — <b>player props</b> are all in the pool.</p>
+      <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market. Moneylines, spread and total ladders and - in the preseason, where Kalshi actually books them - <b>player props</b> are all in the pool.</p>
       <div id="nflComboMaker"></div>
     </section>
    </div><!-- /tab-nfl -->
@@ -393,7 +393,7 @@
         <h2>🏀 NBA</h2>
         <input id="nbaDate" type="date" style="width:auto"/>
       </div>
-      <p class="sub" style="margin:2px 0 8px">A <b>possession-level engine</b> tuned to NBA pace and efficiency. Lights up when the season tips off in October — Kalshi's NBA game/spread/total markets price automatically the moment they list. Model picks feed 🎯 Best Bets and the 🎰 combo builder.</p>
+      <p class="sub" style="margin:2px 0 8px">A <b>possession-level engine</b> tuned to NBA pace and efficiency. Lights up when the season tips off in October - Kalshi's NBA game/spread/total markets price automatically the moment they list. Model picks feed 🎯 Best Bets and the 🎰 combo builder.</p>
       <div id="nbaSummary" class="small"></div>
       <div id="nbaResults" class="markets"><div class="empty">Loading…</div></div>
     </section>
@@ -413,7 +413,7 @@
 
    <div id="tab-ufc" class="hidden">
     <section class="card">
-      <div class="row-between"><h2>🥊 UFC — fight simulator</h2></div>
+      <div class="row-between"><h2>🥊 UFC - fight simulator</h2></div>
       <div id="ufcSummary" class="small"></div>
       <div id="ufcResults" class="markets"><div class="empty">Loading the card…</div></div>
     </section>
@@ -422,16 +422,16 @@
    <div id="tab-tennis" class="hidden">
     <section class="card">
       <div class="row-between">
-        <h2>🎾 Tennis — match simulator</h2>
+        <h2>🎾 Tennis - match simulator</h2>
         <div class="subtabs" id="tnSubtabs">
-          <button class="subtab active" data-tnsub="combo" title="only the matches Kalshi will actually accept as a parlay leg — main tour, with a real book">🎲 Combo-ready</button>
+          <button class="subtab active" data-tnsub="combo" title="only the matches Kalshi will actually accept as a parlay leg - main tour, with a real book">🎲 Combo-ready</button>
           <button class="subtab" data-tnsub="all">All</button>
           <button class="subtab" data-tnsub="atp">ATP</button>
           <button class="subtab" data-tnsub="wta">WTA</button>
           <button class="subtab" data-tnsub="itf">ITF</button>
           <button class="subtab" data-tnsub="edges">Edges</button>
           <button class="subtab" data-tnsub="live" title="matches on court right now (live scoreboard)">🔴 Live</button>
-          <button class="subtab" data-tnsub="upsets" title="big-Elo favorites currently trailing — when sentiment-driven prices overshoot">🚨 Upsets</button>
+          <button class="subtab" data-tnsub="upsets" title="big-Elo favorites currently trailing - when sentiment-driven prices overshoot">🚨 Upsets</button>
           <button class="subtab" data-tnsub="dips" title="a favourite the market has marked down mid-match, with the live sim run from the current score to check whether it overshot">📉 Dip buy</button>
           <button class="subtab" data-tnsub="maker" title="build a tennis-only parlay">🎯 Combo maker</button>
         </div>
@@ -439,12 +439,12 @@
       <div class="scan-controls ctl-row" style="margin-top:6px" id="tnSearchRow">
         <input id="tnSearch" type="search" placeholder="🔍 Search player…" style="flex:1;min-width:160px" autocomplete="off"/>
         <label class="small" style="white-space:nowrap">Sort <select id="tnSort" style="width:auto;margin-left:4px" onchange="setTnSort(this.value)"></select></label>
-        <button class="track-mini" id="tnRefresh" onclick="refreshTennis(this)" title="re-pull the board — live scores, the trade tape and Kalshi prices all move fast">↻ Refresh</button>
+        <button class="track-mini" id="tnRefresh" onclick="refreshTennis(this)" title="re-pull the board - live scores, the trade tape and Kalshi prices all move fast">↻ Refresh</button>
       </div>
       <div id="tnSummary" class="small"></div>
       <div id="tnResults" class="markets"><div class="empty">Loading the slate…</div></div>
       <div id="tnMakerBox" class="hidden">
-        <p class="sub" style="margin:4px 0 12px">A <b>tennis-only parlay</b>, built from the matches above that Kalshi will actually take as legs. Two tennis matches are genuinely independent — there is no same-game correlation to exploit here the way there is in baseball or football — so the combined chance is an honest product, and the whole edge has to come from the per-leg reads.</p>
+        <p class="sub" style="margin:4px 0 12px">A <b>tennis-only parlay</b>, built from the matches above that Kalshi will actually take as legs. Two tennis matches are genuinely independent - there is no same-game correlation to exploit here the way there is in baseball or football - so the combined chance is an honest product, and the whole edge has to come from the per-leg reads.</p>
         <div id="tnMaker"></div>
       </div>
     </section>
@@ -461,7 +461,7 @@
           <button class="subtab" data-lolsub="futures">🏆 Futures</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">Pro LoL from real per-map history (Leaguepedia): rosters with recent <b>K/D/A/CS</b> + champions, a <b>match win%</b> from team Elo, a <b>DK/PrizePicks Pick 6</b> board (More/Less kills/assists/CS), and <b>title-odds futures</b> — who wins the split. Per-map numbers: <b>match ours to the book's line</b>. First load is slow (rate-limited wiki).</p>
+      <p class="sub" style="margin:4px 0 10px">Pro LoL from real per-map history (Leaguepedia): rosters with recent <b>K/D/A/CS</b> + champions, a <b>match win%</b> from team Elo, a <b>DK/PrizePicks Pick 6</b> board (More/Less kills/assists/CS), and <b>title-odds futures</b> - who wins the split. Per-map numbers: <b>match ours to the book's line</b>. First load is slow (rate-limited wiki).</p>
       <div id="lolSummary" class="small"></div>
       <div id="lolResults" class="markets"><div class="empty">Open the tab to load the slate…</div></div>
       <div id="lolPick6" class="hidden"></div>
@@ -486,7 +486,7 @@
           <button id="wxBtn">Load</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Kalshi daily high-temp strikes priced off the <b>NOAA forecast</b>. Trust moderate edges — <b>a huge one usually means our weather station differs from Kalshi's</b>, not free money.</p>
+      <p class="sub" style="margin:4px 0 12px">Kalshi daily high-temp strikes priced off the <b>NOAA forecast</b>. Trust moderate edges - <b>a huge one usually means our weather station differs from Kalshi's</b>, not free money.</p>
       <div id="wxResults" class="markets"><div class="empty">Pick a city, then Load.</div></div>
     </section>
    </div><!-- /tab-weather -->
@@ -494,7 +494,7 @@
    <div id="tab-sim" class="hidden">
     <section class="card">
       <h2>🎲 Simulator</h2>
-      <p class="sub" style="margin:4px 0 12px">Monte Carlo — thousands of random runs to see the full range of outcomes.</p>
+      <p class="sub" style="margin:4px 0 12px">Monte Carlo - thousands of random runs to see the full range of outcomes.</p>
       <div class="scan-controls" style="flex-wrap:wrap;gap:8px">
         <select id="simMode">
           <option value="price">Coin / Commodity</option>
@@ -535,30 +535,30 @@
         <div class="scan-controls ctl-row">
           <select id="dfsSport" title="Which sport's DFS slate this CSV is for"><option value="nascar">NASCAR</option><option value="f1">Formula 1</option><option value="ufc">UFC</option><option value="mlb">⚾ MLB (sim-driven)</option><option value="nfl">🏈 NFL (sim-driven)</option><option value="lol">🎮 LoL (Captain)</option></select>
           <select id="dfsNflWeek" class="hidden" title="Which NFL week this slate is for"></select>
-          <select id="dfsNflMode" class="hidden" title="Showdown (one game) is 1 CPT at 1.5x points and 1.5x salary plus 5 FLEX from any position; Classic is 1 QB / 2 RB / 3 WR / 1 TE / 1 FLEX / 1 DST. Auto reads it off the CSV — a showdown export lists every player twice, once as CPT."><option value="auto">auto (from CSV)</option><option value="showdown">Showdown (CPT + 5)</option><option value="classic">Classic (9 slots)</option></select>
-          <label class="small hidden" id="dfsNflPreLbl" style="white-space:nowrap" title="Preseason lineups use MEASURED exhibition usage instead of Sleeper's regular-season projections — which do not exist in August. Preseason usage is inverted: backups and camp bodies take the snaps, so DraftKings chalk is upside down."><input type="checkbox" id="dfsNflPre" style="width:auto"/> 🏟️ preseason slate</label>
+          <select id="dfsNflMode" class="hidden" title="Showdown (one game) is 1 CPT at 1.5x points and 1.5x salary plus 5 FLEX from any position; Classic is 1 QB / 2 RB / 3 WR / 1 TE / 1 FLEX / 1 DST. Auto reads it off the CSV - a showdown export lists every player twice, once as CPT."><option value="auto">auto (from CSV)</option><option value="showdown">Showdown (CPT + 5)</option><option value="classic">Classic (9 slots)</option></select>
+          <label class="small hidden" id="dfsNflPreLbl" style="white-space:nowrap" title="Preseason lineups use MEASURED exhibition usage instead of Sleeper's regular-season projections - which do not exist in August. Preseason usage is inverted: backups and camp bodies take the snaps, so DraftKings chalk is upside down."><input type="checkbox" id="dfsNflPre" style="width:auto"/> 🏟️ preseason slate</label>
           <select id="dfsMode" title="Classic = a full roster from the whole slate. Showdown = one game, a 1.5× captain plus flex."><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
-          <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments). Leverage = ceiling discounted by projected ownership — being different AND right, the way huge fields are actually won."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option><option value="leverage">GPP leverage (ceiling + low own)</option></select>
+          <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments). Leverage = ceiling discounted by projected ownership - being different AND right, the way huge fields are actually won."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option><option value="leverage">GPP leverage (ceiling + low own)</option></select>
           <label class="small" title="How many players make up one lineup (DraftKings sets this per contest).">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
           <label class="small" title="The salary cap a lineup must fit under.">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>
         <div id="dfsMlbOpts" class="scan-controls ctl-row hidden" style="margin-top:8px">
           <label class="small" title="How many different lineups to build as a portfolio. Set above 1 to use the exposure/unique rules below.">lineups <input id="dfsLineups" type="number" value="1" min="1" max="150" style="width:54px"/></label>
           <label class="small" title="Exposure cap: the most lineups (as a %) any single player is allowed to appear in across your portfolio. Lower = more spread out.">max exp% <input id="dfsMaxExp" type="number" value="60" min="5" max="100" style="width:54px"/></label>
-          <label class="small" title="Minimum hitters from the SAME team in each lineup. Stacking correlates upside — when a team has a big inning, your stacked bats boom together.">stack <select id="dfsStack"><option value="0">none</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select></label>
+          <label class="small" title="Minimum hitters from the SAME team in each lineup. Stacking correlates upside - when a team has a big inning, your stacked bats boom together.">stack <select id="dfsStack"><option value="0">none</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option></select></label>
           <label class="small" title="Uniqueness: each lineup must differ from every other lineup you build by at least this many players, so your portfolio isn't near-duplicates. Only matters when lineups is above 1.">unique <input id="dfsUniq" type="number" value="2" min="1" max="6" style="width:44px"/></label>
-          <label class="small" title="Simulate your lineup(s) against the field to estimate win% and ROI. GPP = top-heavy payouts (only the top finishers win big). Double-up = ~half the field doubles their money.">contest <select id="dfsContest"><option value="">— off —</option><option value="gpp">GPP (top-heavy)</option><option value="double_up">Double-up</option></select></label>
-          <label class="small" title="The REAL number of entries in your contest (e.g. 11437, or 100000+ for a milly-maker). This is what win% and ROI are scaled to — leave 0 to use the sample size. The bigger the field, the harder it is to win.">entries <input id="dfsEntries" type="number" value="0" min="0" max="5000000" style="width:74px" placeholder="auto"/></label>
+          <label class="small" title="Simulate your lineup(s) against the field to estimate win% and ROI. GPP = top-heavy payouts (only the top finishers win big). Double-up = ~half the field doubles their money.">contest <select id="dfsContest"><option value="">- off -</option><option value="gpp">GPP (top-heavy)</option><option value="double_up">Double-up</option></select></label>
+          <label class="small" title="The REAL number of entries in your contest (e.g. 11437, or 100000+ for a milly-maker). This is what win% and ROI are scaled to - leave 0 to use the sample size. The bigger the field, the harder it is to win.">entries <input id="dfsEntries" type="number" value="0" min="0" max="5000000" style="width:74px" placeholder="auto"/></label>
           <label class="small" title="Your entry fee (buy-in) for this contest. ROI is measured against this.">entry $<input id="dfsEntry" type="number" value="1" min="0.01" style="width:58px"/></label>
           <label class="small" title="First-place prize (optional). Leave 0 and we estimate it from the pool.">1st $<input id="dfsFirst" type="number" value="0" min="0" style="width:74px" placeholder="auto"/></label>
           <label class="small" title="Total prize pool (optional). Leave 0 and we estimate it from entries × entry fee minus typical rake.">pool $<input id="dfsPool" type="number" value="0" min="0" style="width:84px" placeholder="auto"/></label>
-          <label class="small" title="How many opponent lineups to simulate as a SAMPLE to gauge your lineup's strength. This is then scaled to your real entry count above — it is NOT the contest size. Bigger sample = steadier estimate, slower.">sample <input id="dfsField" type="number" value="600" min="100" max="1200" style="width:64px"/></label>
+          <label class="small" title="How many opponent lineups to simulate as a SAMPLE to gauge your lineup's strength. This is then scaled to your real entry count above - it is NOT the contest size. Bigger sample = steadier estimate, slower.">sample <input id="dfsField" type="number" value="600" min="100" max="1200" style="width:64px"/></label>
         </div>
-        <p id="dfsMlbHint" class="sub hidden" style="margin:6px 0 0;font-size:0.78rem">💡 <b>entries</b> = your contest's real size (11,437, or 100k+ for a milly-maker) — win% &amp; ROI scale to this · <b>sample</b> = opponents simulated to gauge lineup strength (not the contest size) · <b>1st $ / pool $</b> = leave 0 to auto-estimate · <b>unique</b> = how many players each lineup must differ by (only with 2+ lineups).</p>
+        <p id="dfsMlbHint" class="sub hidden" style="margin:6px 0 0;font-size:0.78rem">💡 <b>entries</b> = your contest's real size (11,437, or 100k+ for a milly-maker) - win% &amp; ROI scale to this · <b>sample</b> = opponents simulated to gauge lineup strength (not the contest size) · <b>1st $ / pool $</b> = leave 0 to auto-estimate · <b>unique</b> = how many players each lineup must differ by (only with 2+ lineups).</p>
         <p class="sub" style="margin:6px 0 4px">Paste the <b>DKSalaries.csv</b> from your contest. Lineups are built under the cap with projected <b>ownership + leverage</b>, and can be <b>simulated against a field</b> for win% &amp; ROI. <span id="dfsLock"></span></p>
         <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
         <div id="dfsGridBox" class="hidden" style="margin-top:8px">
-          <p class="sub" style="margin:0 0 4px;font-size:0.78rem">🏁 <b>Starting grid</b> (optional) — the results feed lags a round and shows <i>qualifying</i> order, not the penalty-adjusted <i>starting</i> grid. Paste the real grid here to override it (one driver per line; "1st Antonelli", "P4 Russell", or just names in order). This is what place-differential + the grid-conditioned sim run on.</p>
+          <p class="sub" style="margin:0 0 4px;font-size:0.78rem">🏁 <b>Starting grid</b> (optional) - the results feed lags a round and shows <i>qualifying</i> order, not the penalty-adjusted <i>starting</i> grid. Paste the real grid here to override it (one driver per line; "1st Antonelli", "P4 Russell", or just names in order). This is what place-differential + the grid-conditioned sim run on.</p>
           <textarea id="dfsGrid" rows="4" placeholder="1st Kimi Antonelli&#10;2nd Charles Leclerc&#10;3rd Lewis Hamilton&#10;4th George Russell&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
         </div>
       </div>
@@ -575,12 +575,12 @@
           <button class="subtab" data-cmbsub="rec">🔥 Recommended</button>
         </div>
       </div>
-      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> — MLB, crypto, UFC, tennis &amp; golf — auto-tuned to your target confidence. <b>%</b> is our model for MLB &amp; crypto, the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
+      <p class="sub" style="margin:4px 0 10px">One parlay across <b>everything at once</b> - MLB, crypto, UFC, tennis &amp; golf - auto-tuned to your target confidence. <b>%</b> is our model for MLB &amp; crypto, the de-vig'd market elsewhere; one leg per event keeps the odds honest.</p>
       <div id="combineCats" class="catrow"></div>
       <div id="cmbTypeChips" class="small" style="margin:6px 0"></div>
       <div id="cmbCatCounts" class="small" style="margin:6px 0"></div>
       <div id="cmbRecView" class="hidden" style="margin-top:10px">
-        <div class="small" style="margin-bottom:8px">Auto-built from the sports you check above — the <b>safest</b>, the <b>best value</b>, and the <b>best all-around</b> parlay.</div>
+        <div class="small" style="margin-bottom:8px">Auto-built from the sports you check above - the <b>safest</b>, the <b>best value</b>, and the <b>best all-around</b> parlay.</div>
         <button id="cmbRecBtn" class="track-mini primary-mini">🔄 Build recommended</button>
         <div id="cmbRecOut" class="markets" style="margin-top:10px"><div class="empty">Check one or more sports above, then build.</div></div>
       </div>
@@ -617,7 +617,7 @@
    <div id="tab-futures" class="hidden">
     <section class="card">
       <div class="row-between">
-        <h2>🏦 Futures — parking money</h2>
+        <h2>🏦 Futures - parking money</h2>
         <div id="futCount" class="stats"></div>
       </div>
       <div class="subtabs" id="futSubtabs">
@@ -626,9 +626,9 @@
       </div>
 
       <div id="futModeledView">
-        <p class="sub" style="margin:6px 0 10px">Long-dated markets our <b>season simulators actually model</b> — World Series, pennants, divisions, playoff berths, season win totals. Every row is our number against the market's, so unlike the all-futures board these can carry a genuinely positive expected return. The model is blended with the price at the weight that sport has <b>earned on graded results</b>, so a league whose model we've measured as no better than the market shows no edge by construction.</p>
+        <p class="sub" style="margin:6px 0 10px">Long-dated markets our <b>season simulators actually model</b> - World Series, pennants, divisions, playoff berths, season win totals. Every row is our number against the market's, so unlike the all-futures board these can carry a genuinely positive expected return. The model is blended with the price at the weight that sport has <b>earned on graded results</b>, so a league whose model we've measured as no better than the market shows no edge by construction.</p>
         <div class="futctl">
-          <input id="mfQ" type="search" placeholder="Search — e.g. dodgers, division, world series…" />
+          <input id="mfQ" type="search" placeholder="Search - e.g. dodgers, division, world series…" />
           <label>Sort
             <select id="mfSort">
               <option value="best">Best expected return/yr</option>
@@ -673,7 +673,7 @@
               <option value="no">NO only</option>
             </select>
           </label>
-          <label class="futcheck" title="Hide leagues that haven't started their season — a football win total is a six-month hold whether you want one or not.">
+          <label class="futcheck" title="Hide leagues that haven't started their season - a football win total is a six-month hold whether you want one or not.">
             <input type="checkbox" id="mfInSeason" /> in-season only
           </label>
         </div>
@@ -681,12 +681,12 @@
       </div>
 
       <div id="futAllView" class="hidden">
-      <p class="sub" style="margin:6px 0 10px">Every <b>long-dated</b> Kalshi contract, ranked by what it actually pays <b>per year</b>. A 96¢ contract settling in 2030 returns 4% — over three and a half years, which is worse than a bank. The same 96¢ settling in 60 days is 4% in two months. Same price, same risk per dollar, completely different instrument — so the ranking is annualized.</p>
+      <p class="sub" style="margin:6px 0 10px">Every <b>long-dated</b> Kalshi contract, ranked by what it actually pays <b>per year</b>. A 96¢ contract settling in 2030 returns 4% - over three and a half years, which is worse than a bank. The same 96¢ settling in 60 days is 4% in two months. Same price, same risk per dollar, completely different instrument - so the ranking is annualized.</p>
       <div class="futwarn">
-        <b>Read this once.</b> These are not savings accounts. You are buying a contract that pays $1 if it comes true and <b>$0 if it doesn't</b> — a 96¢ contract loses the whole stake 4% of the time, and your money is locked up until it settles. At the market's own price the expected value of every row here is slightly <b>negative</b> (Kalshi's fee). The yield is what you're paid for carrying that tail risk — it is not an edge we found.
+        <b>Read this once.</b> These are not savings accounts. You are buying a contract that pays $1 if it comes true and <b>$0 if it doesn't</b> - a 96¢ contract loses the whole stake 4% of the time, and your money is locked up until it settles. At the market's own price the expected value of every row here is slightly <b>negative</b> (Kalshi's fee). The yield is what you're paid for carrying that tail risk - it is not an edge we found.
       </div>
       <div class="futctl">
-        <input id="futQ" type="search" placeholder="Search — e.g. fed, bitcoin, nba, election…" />
+        <input id="futQ" type="search" placeholder="Search - e.g. fed, bitcoin, nba, election…" />
         <label>Sort
           <select id="futSort">
             <option value="best">Best yield (APY)</option>
@@ -699,12 +699,12 @@
         </label>
         <label>Min safety
           <select id="futMinProb">
-            <option value="99">99% — near-certain</option>
-            <option value="97">97% — very safe</option>
-            <option value="95" selected>95% — safe (default)</option>
-            <option value="90">90% — moderate</option>
-            <option value="80">80% — risky</option>
-            <option value="1">any — speculative</option>
+            <option value="99">99% - near-certain</option>
+            <option value="97">97% - very safe</option>
+            <option value="95" selected>95% - safe (default)</option>
+            <option value="90">90% - moderate</option>
+            <option value="80">80% - risky</option>
+            <option value="1">any - speculative</option>
           </select>
         </label>
         <label>Settles within
@@ -738,7 +738,7 @@
         <h2>📒 Bet ledger</h2>
         <div id="ledgerSummary" class="stats"></div>
       </div>
-      <p class="sub" style="margin:4px 0 12px">Log every real bet you place. Settle it Won/Lost and it tracks your actual profit, win rate, and ROI — the only scoreboard that matters.</p>
+      <p class="sub" style="margin:4px 0 12px">Log every real bet you place. Settle it Won/Lost and it tracks your actual profit, win rate, and ROI - the only scoreboard that matters.</p>
       <div class="grid">
         <label>Type
           <select id="betKind">

@@ -127,7 +127,7 @@ def check(season=None):
                 "band": COND_BAND, "ws_c": ws.get(ab), "pennant_c": pen.get(ab),
                 "size": round(cond - (COND_BAND[1] if hi else COND_BAND[0]), 3),
                 "note": (f"{ab} is priced to win {cond * 100:.0f}% of the World "
-                         f"Series it reaches — a best-of-seven between league "
+                         f"Series it reaches - a best-of-seven between league "
                          f"champions lives in {COND_BAND[0]:.0%}–{COND_BAND[1]:.0%}. "
                          f"Its WS price and its pennant price cannot both be right."),
             })
@@ -150,7 +150,7 @@ def check(season=None):
                 "value": round(norm[top], 3), "max": LEAGUE_SPLIT_MAX,
                 "size": round(norm[top] - LEAGUE_SPLIT_MAX, 3),
                 "note": (f"The {top} champion is priced to win {norm[top]:.0%} of "
-                         f"World Series — one league can't own 2 of 3 in advance."),
+                         f"World Series - one league can't own 2 of 3 in advance."),
             })
 
     # 3. Parent/child in raw cents: WS <= pennant <= playoffs, each + tolerance.
@@ -166,7 +166,7 @@ def check(season=None):
                     "parent": parent, "parent_c": parent_c,
                     "size": round(child_c - parent_c, 1),
                     "note": (f"{ab}'s {child} YES costs {child_c}c but its "
-                             f"{parent} YES only {parent_c}c — the {child} "
+                             f"{parent} YES only {parent_c}c - the {child} "
                              f"requires the {parent}, so this buys the harder "
                              f"event for more than the easier one."),
                 })

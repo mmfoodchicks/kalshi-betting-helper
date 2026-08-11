@@ -31,7 +31,7 @@ def _fee(cents):
 # very top of the board. The check belongs here, once, where every row passes.
 _IMPLAUSIBLE_EDGE = 15.0
 _IMPLAUSIBLE_NOTE = ("an edge this big is usually a stale or wide quote, or our "
-                     "model's tails — verify the live ask before acting")
+                     "model's tails - verify the live ask before acting")
 
 
 def _row(sport, kind, pick, matchup, our_pct, cents, trust, note=None):
@@ -60,7 +60,7 @@ def _mlb_rows(date, season, sims):
         trust, note = r["confidence"], None
         if r["type"] in lean:
             # A whole market leaning one way is usually OUR bias, not free money.
-            trust, note = "low", f"whole {r['type']} market leans one way — likely model bias"
+            trust, note = "low", f"whole {r['type']} market leans one way - likely model bias"
         row = _row("⚾ MLB", r["type"], r["pick"], r["matchup"],
                    r["our_pct"], r["market_cents"], trust, note)
         if row:
@@ -82,7 +82,7 @@ def _mlb_futures_rows(season):
         # (win-total tails especially). Surface it, but say what it likely is.
         if r["edge"] >= 15:
             trust = "low"
-            note = "edge this large on a futures book is usually a stale quote or fat model tails — verify the live ask first"
+            note = "edge this large on a futures book is usually a stale quote or fat model tails - verify the live ask first"
         row = _row("⚾ MLB futures", r["type"].replace("_", " "), r["label"],
                    f"{r.get('best_book') or 'Kalshi'} · vol {r.get('volume') or 0}",
                    r["model_pct"], r.get("market_cents"), trust, note)
@@ -129,7 +129,7 @@ def _cfb_futures_rows():
                 continue
             trust = "low" if r["edge"] >= 15 else "med"
             note = ("edge this large on a futures book is usually a stale quote or "
-                    "fat model tails — check the live ask") if trust == "low" else None
+                    "fat model tails - check the live ask") if trust == "low" else None
             row = _row("🏈 CFB futures", kind, r["team"], f"{r['conf']} · {r['prior']}",
                        r["model_pct"], r.get("kalshi_cents"), trust, note)
             if row:
@@ -157,7 +157,7 @@ def _pro_futures_rows(league, label):
         if not m or m.get("cents") is None or (m.get("edge") or 0) <= 0:
             continue
         trust = "low" if m["edge"] >= 15 else "med"
-        note = ("large futures edge — usually a stale/wide quote or fat model tails"
+        note = ("large futures edge - usually a stale/wide quote or fat model tails"
                 if trust == "low" else None)
         row = _row(label, "Champion", t["name"], f"{t.get('conf', '')} · {t.get('prior', '')}",
                    m["model"], m["cents"], trust, note)
@@ -183,13 +183,13 @@ def _ufc_rows():
             if cents is None or fair is None:
                 continue
             trust = "low" if (f.get("debut") or f.get("thin")) else "med"
-            note = "sparse UFC history — rating heavily shrunk" if trust == "low" else None
+            note = "sparse UFC history - rating heavily shrunk" if trust == "low" else None
             # Fading a liquid market is where an unvalidated model gets punished
             # first; rank those below the picks the book agrees with.
             if f.get("fades_market"):
                 trust = "low"
                 note = ("our model has this fighter ahead but the book has him an "
-                        "underdog — a disagreement flag, not a proven edge")
+                        "underdog - a disagreement flag, not a proven edge")
             row = _row("🥊 UFC", "ML", f"{f['name']} to win",
                        f"{bt['a']['name']} vs {bt['b']['name']}",
                        fair, cents, trust, note)
@@ -281,7 +281,7 @@ def _golf_rows():
         if r.get("cents") is None or r.get("edge") is None:
             continue
         trust = "low" if r["edge"] >= 20 else "med"
-        note = ("big make-cut edge — often a longshot the model has thin data on; "
+        note = ("big make-cut edge - often a longshot the model has thin data on; "
                 "it self-calibrates as rounds post") if trust == "low" else None
         row = _row("⛳ Golf", "Make cut", f"{r['player']} makes the cut", ev,
                    r["model_pct"], r["cents"], trust, note)
@@ -314,7 +314,7 @@ def _arb_rows():
                                  "our_pct": 100.0, "cents": round(100 - arb, 1),
                                  "payout_x": None, "edge": round(arb, 1),
                                  "net_edge": round(arb - 2.0, 1),   # ~fees across the legs
-                                 "trust": "high", "note": "guaranteed if all fills — check book depth"})
+                                 "trust": "high", "note": "guaranteed if all fills - check book depth"})
         except Exception:
             continue
     return [r for r in rows if r["net_edge"] > 0]

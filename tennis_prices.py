@@ -225,7 +225,7 @@ def combo_status(m):
     if elig and m.get("event") not in elig:
         return False, "Kalshi hasn't opened this match for combos"
     if not (side_liquid(m.get("a")) or side_liquid(m.get("b"))):
-        return False, "listed but not quoted — no side has a book to lift"
+        return False, "listed but not quoted - no side has a book to lift"
     if not m.get("tradeable"):
         return False, "book is too wide to price against"
     return True, None
@@ -321,18 +321,18 @@ def _insights(a, b, sim, surface, trusted=True):
             out.append(f"🧹 {a['name'].split()[-1]} often in straight sets ({sim['a_straight']}%)")
     # Favorite framing — always from fair_win, so it matches the headline + lean.
     if 42 <= fw(fav) <= 58:
-        out.append(f"⚖️ Coin-flip — lean Over {sim['mean_games']:.0f} games / 3 sets")
+        out.append(f"⚖️ Coin-flip - lean Over {sim['mean_games']:.0f} games / 3 sets")
     elif fw(fav) >= 72:
         out.append(f"💪 {fav['name'].split()[-1]} the favorite ({round(fw(fav))}%)")
     if not trusted:
-        out.append("🔴 Thin charting on these players — deferring to the market, so the win% is the market's read, not a strong model edge.")
+        out.append("🔴 Thin charting on these players - deferring to the market, so the win% is the market's read, not a strong model edge.")
     # model vs market value
     for p in (a, b):
         if p.get("edge") is not None and p["edge"] >= 6:
             out.append(f"💰 Value: model has {p['name'].split()[-1]} at {p['fair_win']}% vs {p['cents']}¢")
     # ace-heavy
     if sim["aces_total"] >= 18:
-        out.append(f"🔥 Big-serving match (~{sim['aces_total']:.0f} aces) — ace overs in play")
+        out.append(f"🔥 Big-serving match (~{sim['aces_total']:.0f} aces) - ace overs in play")
     # fatigue differential
     fa, fb = a.get("fatigue"), b.get("fatigue")
     la, lb = (fa or {}).get("load", 0.0), (fb or {}).get("load", 0.0)
@@ -389,13 +389,13 @@ def _insights(a, b, sim, surface, trusted=True):
         last = p["name"].split()[-1]
         if f["streak"] <= -2:
             out.append(f"❄️ {last} arrives on a {-f['streak']}-match losing run "
-                       f"({f['w']}-{f['l']} over the last {f['n']}) — context, not priced in")
+                       f"({f['w']}-{f['l']} over the last {f['n']}) - context, not priced in")
         elif f["streak"] >= 5:
             out.append(f"🔥 {last} has won {f['streak']} straight "
-                       f"({f['w']}-{f['l']} over the last {f['n']}) — context, not priced in")
+                       f"({f['w']}-{f['l']} over the last {f['n']}) - context, not priced in")
         elif f["delta"] <= -0.15:
             out.append(f"📉 {last} is {f['w']}-{f['l']} recently, below what that "
-                       f"rating implies — context, not priced in")
+                       f"rating implies - context, not priced in")
     return out[:7]
 
 

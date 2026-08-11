@@ -14,7 +14,7 @@ function uiBusy() {
 
 // Kalshi's combo payout ceiling, used only to LABEL the max-bet buttons. The
 // server owns the real value (combo_engine.MAX_PAYOUT_X, overridable by env), so
-// every max-bet response carries cap_x and this is updated from it — the default
+// every max-bet response carries cap_x and this is updated from it - the default
 // here just has to be right often enough to render a sensible button before the
 // first build.
 let MAX_BET_X = 435;
@@ -38,7 +38,7 @@ function selectedTier() {
   return (s && s.value) || localStorage.getItem("tier") || "owner";
 }
 // God mode: only the owner sees the data/diagnostics panels (track records,
-// recorder logs, backtests). Everyone else just gets the service — no fluff.
+// recorder logs, backtests). Everyone else just gets the service - no fluff.
 // True only when the server resolves us to owner AND owner is selected, so a
 // previewed (or, once enforced, a real) lower tier hides the data.
 function isOwner() {
@@ -86,7 +86,7 @@ function applyTierUI() {
   const info = TIERMATRIX && TIERMATRIX.tiers[t];
   if ($("tierHint") && info) {
     $("tierHint").textContent = t === "owner"
-      ? "👑 God mode — full access (tiers not enforced)"
+      ? "👑 God mode - full access (tiers not enforced)"
       : `${info.price} · up to ${info.max_sims.toLocaleString()} sim runs`;
   }
   if ($("dfsLock")) $("dfsLock").innerHTML = lockTag("dfs");
@@ -380,7 +380,7 @@ function renderVol(v) {
   let deribit = "";
   if (v.deribit_dvol_pct) {
     const dcls = v.deribit_ratio >= 1.15 ? "ev neg" : v.deribit_ratio <= 0.87 ? "ev pos" : "";
-    deribit = `<div class="small" style="margin-top:6px">🛰️ vs Deribit (sharp options): DVOL <b>${v.deribit_dvol_pct}%</b>${v.deribit_ratio != null ? ` (<b class="${dcls}">${v.deribit_ratio}×</b>)` : ""} — ${v.deribit_note}</div>`;
+    deribit = `<div class="small" style="margin-top:6px">🛰️ vs Deribit (sharp options): DVOL <b>${v.deribit_dvol_pct}%</b>${v.deribit_ratio != null ? ` (<b class="${dcls}">${v.deribit_ratio}×</b>)` : ""} - ${v.deribit_note}</div>`;
   }
   return `<div class="volbox">
     <div class="sellhead"><span class="sellaction">📊 ${v.verdict}</span>
@@ -406,10 +406,10 @@ async function calNote(model, label) {
     if (!c) return "";
     if (c.n >= 40 && Math.abs(c.t - 1) >= 0.03) {
       const verb = c.t > 1 ? "reining in overconfidence" : "sharpening (was underconfident)";
-      return `<div class="small calnote" style="color:var(--muted);margin:2px 0 8px">🎯 Calibrated ${label}: <b>${(+c.t).toFixed(2)}×</b> — ${verb}, fit on ${c.n} settled markets.</div>`;
+      return `<div class="small calnote" style="color:var(--muted);margin:2px 0 8px">🎯 Calibrated ${label}: <b>${(+c.t).toFixed(2)}×</b> - ${verb}, fit on ${c.n} settled markets.</div>`;
     }
     if ((c.logged || 0) > 0)
-      return `<div class="small calnote" style="color:var(--muted);margin:2px 0 8px">🎯 Calibration for ${label}: <b>accruing</b> — ${c.logged} prediction${c.logged > 1 ? "s" : ""} logged, ${c.n} graded so far. Auto-activates once enough markets settle.</div>`;
+      return `<div class="small calnote" style="color:var(--muted);margin:2px 0 8px">🎯 Calibration for ${label}: <b>accruing</b> - ${c.logged} prediction${c.logged > 1 ? "s" : ""} logged, ${c.n} graded so far. Auto-activates once enough markets settle.</div>`;
     return "";
   } catch (e) { return ""; }
 }
@@ -452,7 +452,7 @@ function renderScanRow(m) {
   } else {
     action = `<div class="actionline">${badge("HOLD", "flat")}
         <span class="edgeval neg">no clear edge</span></div>
-      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market — wait for a better price.</div>`;
+      <div class="plain">Model fair YES <b>${sig.fair_yes_cents}¢</b> vs market - wait for a better price.</div>`;
   }
 
   scanCtx[m.ticker] = {
@@ -483,7 +483,7 @@ function renderScanRow(m) {
 
   const ns = sig.near_settlement;
   const nsHtml = ns
-    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">⏱ Near settlement (${ns.mins}m left): outcome looks ${ns.side === "YES" ? "YES" : "NO"} (model ${ns.fair}¢) but you can still buy <b>${ns.side}</b> at <b>${ns.ask}¢</b> — convergence edge.</div>`
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">⏱ Near settlement (${ns.mins}m left): outcome looks ${ns.side === "YES" ? "YES" : "NO"} (model ${ns.fair}¢) but you can still buy <b>${ns.side}</b> at <b>${ns.ask}¢</b> - convergence edge.</div>`
     : "";
   return `<div class="${rowCls}">
     <div class="scanhead">
@@ -555,7 +555,7 @@ async function runScan() {
     if (buysOnly) {
       head += shown.length
         ? `<div class="small" style="color:var(--muted);margin:2px 0 8px">Showing <b>${shown.length}</b> buy${shown.length > 1 ? "s" : ""}${hidden ? ` · ${hidden} HOLD hidden` : ""}. <a href="#" id="scanShowAll">show all</a></div>`
-        : `<div class="empty">No edges right now — all ${d.markets.length} ${coin} ${timeframe} contracts are a HOLD. <a href="#" id="scanShowAll">show them anyway</a></div>`;
+        : `<div class="empty">No edges right now - all ${d.markets.length} ${coin} ${timeframe} contracts are a HOLD. <a href="#" id="scanShowAll">show them anyway</a></div>`;
     }
     box.innerHTML = head + shown.map(renderScanRow).join("");
     const showAll = $("scanShowAll");
@@ -563,7 +563,7 @@ async function runScan() {
       e.preventDefault(); if ($("scanBuysOnly")) $("scanBuysOnly").checked = false; runScan();
     });
   } catch (e) {
-    box.innerHTML = `<div class="empty">Scan failed — retrying on next refresh.</div>`;
+    box.innerHTML = `<div class="empty">Scan failed - retrying on next refresh.</div>`;
   }
 }
 
@@ -646,12 +646,12 @@ function renderProps(g) {
     </div>`;
   };
   const liveTag = p.props_live
-    ? ` <span class="ev pos" style="font-size:.8em">● LIVE — updates with the score</span>` : "";
+    ? ` <span class="ev pos" style="font-size:.8em">● LIVE - updates with the score</span>` : "";
   return `<details class="props">
-    <summary>📊 Props &amp; odds — run line, totals, hit props${liveTag}</summary>
+    <summary>📊 Props &amp; odds - run line, totals, hit props${liveTag}</summary>
     <div class="propgrid">
       <div class="propcard">
-        <div class="teamhdr">Run line — Kalshi "wins by over X" (adjustable)</div>
+        <div class="teamhdr">Run line - Kalshi "wins by over X" (adjustable)</div>
         ${[[rl.home, rl.home_by], [rl.away, rl.away_by]].map(([tm, by]) => by
           ? `<div class="small"><b>${tm} by over</b> ` + Object.entries(by).map(([m, p]) => `${(+m - 0.5)} <b>${p}%</b>`).join(" · ") + `</div>`
           : `<div class="small"><b>${tm} by over 1.5</b>: <b>${tm === rl.home ? rl.home_by2_pct : rl.away_by2_pct}%</b></div>`).join("")}
@@ -675,9 +675,9 @@ function spLine(sp) {
   const hand = sp.hand ? `${sp.hand}HP` : "";
   const recent = sp.recent_era != null ? ` · last5 <b>${sp.recent_era}</b> ERA` : "";
   const fip = sp.fip != null ? `, <b>${sp.fip}</b> FIP` : "";
-  const wl = sp.exp_ip != null ? ` · <span title="expected innings this start, from his workload history — sizes the K ladder">~${sp.exp_ip} IP tonight</span>` : "";
+  const wl = sp.exp_ip != null ? ` · <span title="expected innings this start, from his workload history - sizes the K ladder">~${sp.exp_ip} IP tonight</span>` : "";
   const ip = sp.ip != null && isFinite(+sp.ip) ? Math.round(+sp.ip * 10) / 10 : sp.ip;
-  return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}`;
+  return `${sp.name} (${hand}) - <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}`;
 }
 
 // Tonight's simulated strikeouts against what he has actually done all year.
@@ -689,7 +689,7 @@ function spKs(k) {
   const shown = k.sim_k != null ? k.sim_k : k.proj;
   if (shown == null) return "";
   const src = k.sim_k != null
-    ? `title="Mean strikeouts across the game simulations — pitch-count aware, so an arm that burns its budget early is capped rather than projected forward. Poisson model says ${k.proj != null ? k.proj : "—"}."`
+    ? `title="Mean strikeouts across the game simulations - pitch-count aware, so an arm that burns its budget early is capped rather than projected forward. Poisson model says ${k.proj != null ? k.proj : "-"}."`
     : `title="Closed-form projection (regressed K/9 × expected innings). The simulation hasn't run for this game yet."`;
   // Thin season: an average and a "high" off one or two starts is a stat line,
   // not a tendency. Say the sample instead of implying a trend.
@@ -700,7 +700,7 @@ function spKs(k) {
     const tag = (v != null && Math.abs(v) >= 1.0)
       ? ` <span class="${v > 0 ? "ev pos" : "ev neg"}" title="tonight's projection vs his own season average">${v > 0 ? "+" : ""}${v}</span>` : "";
     season = ` · season <b>${k.avg}</b> avg${tag}, high <b>${k.high}</b>`
-      + `<span style="color:var(--muted)" title="${thin ? "Only " : ""}${k.gs} start${k.gs === 1 ? "" : "s"} behind these numbers${thin ? " — treat the average and the high as a sample, not a tendency" : ""}"> (${k.gs} GS${thin ? " ⚠" : ""})</span>`;
+      + `<span style="color:var(--muted)" title="${thin ? "Only " : ""}${k.gs} start${k.gs === 1 ? "" : "s"} behind these numbers${thin ? " - treat the average and the high as a sample, not a tendency" : ""}"> (${k.gs} GS${thin ? " ⚠" : ""})</span>`;
   }
   const ipTag = k.sim_ip != null
     ? `<span style="color:var(--muted)" title="simulated innings / pitches"> · ~${k.sim_ip} IP, ${k.sim_pitches}p</span>` : "";
@@ -709,14 +709,14 @@ function spKs(k) {
   return `<div class="small" ${src}>⚾ Ks tonight <b>${shown}</b>${season}${ipTag}${last5}${dawgTag(k)}</div>`;
 }
 
-// "He was an absolute dawg that night" — his best start of the year, when it
+// "He was an absolute dawg that night" - his best start of the year, when it
 // clears both bars (a big number AND well clear of his own average). Only shown
 // when it's real, so it keeps meaning something.
 function dawgTag(k) {
   const d = k && k.dawg;
   if (!d) return "";
   const where = d.home ? "vs" : "at";
-  return `<div class="small" style="color:#f0b429" title="His ceiling game this season: ${d.k} K in ${d.ip} IP, ${d.over_avg} above his season average. The K ladder's top rungs are priced off nights like this being possible.">🐕 <b>DAWG GAME</b> — ${d.k} K in ${d.ip} IP ${where} ${d.opp} on ${d.date} <span style="color:var(--muted)">(+${d.over_avg} over his avg)</span></div>`;
+  return `<div class="small" style="color:#f0b429" title="His ceiling game this season: ${d.k} K in ${d.ip} IP, ${d.over_avg} above his season average. The K ladder's top rungs are priced off nights like this being possible.">🐕 <b>DAWG GAME</b> - ${d.k} K in ${d.ip} IP ${where} ${d.opp} on ${d.date} <span style="color:var(--muted)">(+${d.over_avg} over his avg)</span></div>`;
 }
 
 // ---- Live game feedback feed (pitch counts, AB-by-AB, live model odds) -----
@@ -748,7 +748,7 @@ function renderLiveFeed(d) {
     · ${s.half || ""} ${s.inning || ""} · ${s.outs ?? 0} out · ${s.status || ""}</div>`;
   const pit = (d.pitchers || []).map((p) => {
     // Our projected outing for the starter: expected innings + pitch budget
-    // (walk-aware — a wild arm gets pulled sooner) alongside the K/9 read.
+    // (walk-aware - a wild arm gets pulled sooner) alongside the K/9 read.
     const proj = (p.starter && (p.model_k9 || p.est_ip))
       ? `<div class="small lf-proj">📊 proj: ${[
           p.model_k9 ? `${p.model_k9} K/9` : null,
@@ -759,7 +759,7 @@ function renderLiveFeed(d) {
     return `<div class="lf-pcard">
       <div class="lf-pname">${p.name} <span class="small">${p.team}</span></div>
       <div class="lf-pline"><b>${p.pitches}</b> pitches · ${p.ip} IP · <b>${p.k}</b> K · ${p.bb} BB · ${p.h} H · ${p.er} ER</div>
-      <div class="small">season ERA <b>${p.season_era ?? "—"}</b> · WHIP <b>${p.season_whip ?? "—"}</b></div>
+      <div class="small">season ERA <b>${p.season_era ?? "-"}</b> · WHIP <b>${p.season_whip ?? "-"}</b></div>
       ${proj}
     </div>`;
   }).join("");
@@ -770,16 +770,16 @@ function renderLiveFeed(d) {
   };
   const bvpCell = (h) => {
     const s = h.sim_bvp, b = h.bvp;
-    if (s) {   // our pitch-by-pitch sim vs the starter — large sample, pure model
+    if (s) {   // our pitch-by-pitch sim vs the starter - large sample, pure model
       const cls = s.avg >= 0.290 ? "hit" : (s.avg <= 0.215 ? "k" : "");
       const career = b ? ` · real career ${b.h}-${b.ab} (${b.pa} PA)` : "";
-      return `<span class="lf-bvp ${cls}" title="Our pitch-by-pitch sim — ${s.pa} simulated matchups vs ${h.vs_pitcher || "the starter"}: AVG ${s.avg} · ${s.k_pct}% K · ${s.hr_pct}% HR · ${s.bb_pct}% BB${career}">${s.avg}<span class="small" style="opacity:.7"> ${s.k_pct}%K</span></span>`;
+      return `<span class="lf-bvp ${cls}" title="Our pitch-by-pitch sim - ${s.pa} simulated matchups vs ${h.vs_pitcher || "the starter"}: AVG ${s.avg} · ${s.k_pct}% K · ${s.hr_pct}% HR · ${s.bb_pct}% BB${career}">${s.avg}<span class="small" style="opacity:.7"> ${s.k_pct}%K</span></span>`;
     }
     if (b) {   // fall back to the real (small-sample) career line while the sim warms
       const avg = b.ab > 0 ? b.h / b.ab : 0;
       const cls = b.ab >= 3 && avg >= 0.35 ? "hit" : (b.ab >= 5 && avg <= 0.12 ? "k" : "");
       const extra = (b.hr ? ` ${b.hr}HR` : "") + (b.so ? ` ${b.so}K` : "");
-      return `<span class="lf-bvp ${cls}" title="Real career vs ${h.vs_pitcher || "the starter"}: ${b.h}-for-${b.ab}${extra}, ${b.bb} BB · OPS ${b.ops || "—"} (${b.pa} PA — small sample)">${b.h}-${b.ab}${b.hr ? ` ${b.hr}HR` : ""}</span>`;
+      return `<span class="lf-bvp ${cls}" title="Real career vs ${h.vs_pitcher || "the starter"}: ${b.h}-for-${b.ab}${extra}, ${b.bb} BB · OPS ${b.ops || "-"} (${b.pa} PA - small sample)">${b.h}-${b.ab}${b.hr ? ` ${b.hr}HR` : ""}</span>`;
     }
     return `<span class="small" style="color:var(--muted)" title="Simulating this matchup pitch-by-pitch… refresh in a moment">…</span>`;
   };
@@ -788,16 +788,16 @@ function renderLiveFeed(d) {
     <td><b>${h.hits}</b>/${h.ab}</td>
     <td>${bvpCell(h)}</td>
     <td class="lf-log">${(h.ab_log || []).map(abBadge).join("")}</td>
-    <td>${h.model_hit_pct != null ? h.model_hit_pct + "%" : "—"}</td>
-    <td>${h.second_given_first != null ? h.second_given_first + "%" : "—"}</td>
-    <td>${h.live_next_hit_pct != null ? h.live_next_hit_pct + "%" : "—"}</td>
+    <td>${h.model_hit_pct != null ? h.model_hit_pct + "%" : "-"}</td>
+    <td>${h.second_given_first != null ? h.second_given_first + "%" : "-"}</td>
+    <td>${h.live_next_hit_pct != null ? h.live_next_hit_pct + "%" : "-"}</td>
   </tr>`).join("");
   return `<div class="lf-wrap">
     ${head}
     <div class="lf-pgrid">${pit}</div>
     <table class="lf-table"><thead><tr>
       <th>Hitter</th><th>H/AB</th>
-      <th title="Our pitch-by-pitch sim's read on this hitter vs today's starter — AVG / K% over hundreds of simulated matchups (real career line in the tooltip)">vs SP (sim)</th>
+      <th title="Our pitch-by-pitch sim's read on this hitter vs today's starter - AVG / K% over hundreds of simulated matchups (real career line in the tooltip)">vs SP (sim)</th>
       <th>AB results</th>
       <th title="Model: chance of 1+ hit this game">Hit%</th>
       <th title="Given a hit, chance of a 2nd">2nd</th>
@@ -831,11 +831,11 @@ function renderGame(g) {
     : `<span style="color:var(--muted)">no Kalshi price matched</span>`;
   // De-vig: the ask you pay includes the overround (both teams' asks sum to >100).
   // edge-vs-fair strips it out, so you can tell a genuine model disagreement from
-  // just the vig — a small negative vs the ASK but ~0 vs FAIR means the model
+  // just the vig - a small negative vs the ASK but ~0 vs FAIR means the model
   // agrees with Kalshi and you're only seeing the house margin.
   if (g.fair_prob != null && g.edge_vs_fair != null) {
     const ef = g.edge_vs_fair;
-    market += ` <span class="small" style="color:var(--muted)" title="Kalshi's two team asks sum to ${(100 + (g.vig_cents || 0)).toFixed(0)}¢ — the ${g.vig_cents}¢ over 100 is the vig. Fair strips it out.">· vs fair ${g.fair_prob}¢ <b class="${ef >= 0 ? "ev pos" : "ev neg"}">${ef >= 0 ? "+" : ""}${ef}</b> <span style="opacity:.7">(vig ${g.vig_cents}¢)</span></span>`;
+    market += ` <span class="small" style="color:var(--muted)" title="Kalshi's two team asks sum to ${(100 + (g.vig_cents || 0)).toFixed(0)}¢ - the ${g.vig_cents}¢ over 100 is the vig. Fair strips it out.">· vs fair ${g.fair_prob}¢ <b class="${ef >= 0 ? "ev pos" : "ev neg"}">${ef >= 0 ? "+" : ""}${ef}</b> <span style="opacity:.7">(vig ${g.vig_cents}¢)</span></span>`;
   }
   if (g.pick_price_cents != null) {
     const st = stakeText(g.pick_prob, g.pick_price_cents);
@@ -859,14 +859,14 @@ function renderGame(g) {
     return `<div class="small" style="color:var(--no)" title="${arms}">🔋 Bullpen fatigue: <b>${f.count}</b> arm${f.count > 1 ? "s" : ""} gassed (+${pct}% pen RA9 → leans OVER)</div>`;
   };
   // Home-plate umpire. Shown whenever the crew is posted, even at a neutral
-  // zone — "who is calling it" is the question, and "this one is average" is a
+  // zone - "who is calling it" is the question, and "this one is average" is a
   // real answer. The effects are the measured whole-game slopes, already shrunk
   // toward league by his sample and already net of ABS challenges.
   const u = g.umpire;
   let umpLine = "";
   if (u && u.name) {
     if (!u.known) {
-      umpLine = `<div class="small" style="color:var(--muted)">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> — no tracked sample yet, treated as neutral</div>`;
+      umpLine = `<div class="small" style="color:var(--muted)">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> - no tracked sample yet, treated as neutral</div>`;
     } else {
       const b = u.bias || 0;
       const lean = b > 0.008 ? "big zone" : b < -0.008 ? "tight zone" : "neutral zone";
@@ -875,20 +875,20 @@ function renderGame(g) {
       if (u.k_effect) eff.push(`${u.k_effect > 0 ? "+" : ""}${u.k_effect} K`);
       if (u.r_effect) eff.push(`${u.r_effect > 0 ? "+" : ""}${u.r_effect} runs`);
       const effTxt = eff.length ? ` → <b class="${cls}">${eff.join(", ")}</b> on the game` : "";
-      umpLine = `<div class="small" title="Called-strike rate on borderline pitches vs league, shrunk toward average by his own sample (${u.n || 0} tracked borderline calls; raw ${u.raw != null ? (u.raw > 0 ? "+" : "") + (100 * u.raw).toFixed(1) + "pp" : "—"}). Built from POST-REVIEW call codes, so ABS challenges are already netted out. A big zone means more strikeouts and fewer runs; it hits both offenses, so it moves the total and the K ladder but cancels in the moneyline.">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> — ${lean} (${b > 0 ? "+" : ""}${(100 * b).toFixed(1)}pp)${effTxt}</div>`;
+      umpLine = `<div class="small" title="Called-strike rate on borderline pitches vs league, shrunk toward average by his own sample (${u.n || 0} tracked borderline calls; raw ${u.raw != null ? (u.raw > 0 ? "+" : "") + (100 * u.raw).toFixed(1) + "pp" : "-"}). Built from POST-REVIEW call codes, so ABS challenges are already netted out. A big zone means more strikeouts and fewer runs; it hits both offenses, so it moves the total and the K ladder but cancels in the moneyline.">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> - ${lean} (${b > 0 ? "+" : ""}${(100 * b).toFixed(1)}pp)${effTxt}</div>`;
     }
   }
   const w = g.weather;
   let wxLine = "";
   if (w && w.roof === "fixed") {
-    // Fixed dome: weather has zero effect — say so instead of a misleading wx line.
-    wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: <b>dome</b> — weather neutral (no wind/temp effect on runs)</div>`;
+    // Fixed dome: weather has zero effect - say so instead of a misleading wx line.
+    wxLine = `<div class="small">🏟️ ${w.stadium || "Indoor"}: <b>dome</b> - weather neutral (no wind/temp effect on runs)</div>`;
   } else if (w && w.available) {
     const rp = w.run_pct;
     const runTag = (rp != null && Math.abs(rp) >= 0.3)
       ? ` → <b class="${rp > 0 ? "ev pos" : "ev neg"}">${rp > 0 ? "+" : ""}${rp}% runs</b>` : "";
     const roofTag = w.roof === "retractable" ? ` · <b>retractable roof</b> (weather at half weight)` : "";
-    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} — ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""}${roofTag} <span style="color:var(--border)">[${w.source}]</span></div>`;
+    wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} - ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""}${roofTag} <span style="color:var(--border)">[${w.source}]</span></div>`;
   }
   return `<div class="${cls}" data-pk="${g.game_pk}">
     <div class="top">
@@ -899,14 +899,14 @@ function renderGame(g) {
       ${liveHeader(g)}
     </div>
     <div class="winbar"><div class="fill" style="width:${pct}%"></div>
-      <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% — ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
+      <div class="lbl">${g.away_name.split(" ").pop()} ${Math.round(g.p_away*100)}% - ${Math.round(g.p_home*100)}% ${g.home_name.split(" ").pop()}</div>
     </div>
     ${g.p_home_deep != null ? `<div class="small" style="color:var(--muted)" title="The win% above blends two models: the factor model (team OPS/pitching/platoon/defense/bullpen-fatigue Pythagorean) and the deep player engine (per-player Statcast rates, arsenal matchups, platoon splits, TTO, real bullpen chains, pinch hitters, steals) at 65/35.">🧬 factor model ${Math.round(g.p_home_model*100)}% · deep player engine ${Math.round(g.p_home_deep*100)}% home</div>` : ""}
     ${confirmBadge(g)}
-    ${g.in_game ? `<div class="small" style="color:var(--no)">📈 Live in-game win probability — ${g.in_game.state} ${g.in_game.inning}, ${g.in_game.outs} out${g.in_game.on_base.length ? `, runners on ${g.in_game.on_base.join("/")}` : ", bases empty"}</div>
-    <button class="track-mini" style="margin-top:6px" onclick="toggleLiveFeed(${g.game_pk})">📡 Live feed — pitches · AB results · model odds</button>
+    ${g.in_game ? `<div class="small" style="color:var(--no)">📈 Live in-game win probability - ${g.in_game.state} ${g.in_game.inning}, ${g.in_game.outs} out${g.in_game.on_base.length ? `, runners on ${g.in_game.on_base.join("/")}` : ", bases empty"}</div>
+    <button class="track-mini" style="margin-top:6px" onclick="toggleLiveFeed(${g.game_pk})">📡 Live feed - pitches · AB results · model odds</button>
     <div id="lf-${g.game_pk}" class="livefeed"></div>` : ""}
-    <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
+    <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} - <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
     ${wxLine}
     ${umpLine}
     <div class="matchgrid">
@@ -939,7 +939,7 @@ let bbSlateSort = "confidence";
 function sortSlateGames(games) {
   const g = games.slice();
   const isLive = (x) => (x.live && (x.live.is_live || x.live.state === "Live")) ? 0 : 1;
-  // Strikeout sorts read BOTH starters and take the bigger — the card is a game,
+  // Strikeout sorts read BOTH starters and take the bigger - the card is a game,
   // and a game is interesting for a K angle if either arm is.
   const kOf = (x, field) => Math.max(
     ((x.home_sp_ks || {})[field] ?? -1),
@@ -948,7 +948,7 @@ function sortSlateGames(games) {
     ((x.home_sp_ks || {}).sim_k ?? (x.home_sp_ks || {}).proj ?? -1),
     ((x.away_sp_ks || {}).sim_k ?? (x.away_sp_ks || {}).proj ?? -1));
   // "Dawg" ranks by how far a starter's best night sits above his own average,
-  // not by the raw high — a 10-K game from someone who fans 9 a start is his
+  // not by the raw high - a 10-K game from someone who fans 9 a start is his
   // Tuesday, and the point of the sort is finding the arms with a real ceiling.
   const dawgOf = (x) => Math.max(
     (((x.home_sp_ks || {}).dawg || {}).over_avg ?? -1),
@@ -986,7 +986,7 @@ let parlayTarget = 65;
 let parlayCap = 0;          // 0 = no ceiling; >0 turns the floor into a band
 let parlayPayout = 0;
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
-// the maker, so without this the selects snap back to defaults — which used to
+// the maker, so without this the selects snap back to defaults - which used to
 // revert AND→OR and detach the in-flight result. See comboBuilding guard below.)
 let comboLegsModePref = "prefer";
 let comboPayoutModePref = "off";
@@ -1032,11 +1032,11 @@ function liveWarnHtml() {
   const n = liveGameCount();
   const multi = (bbCombosData && bbCombosData.games || []).length > 1;
   return `<div class="livewarn">
-    <b>⚠️ Live pricing is on</b> — ${n ? `${n} game${n === 1 ? " is" : "s are"}` : "games"} in progress will be
+    <b>⚠️ Live pricing is on</b> - ${n ? `${n} game${n === 1 ? " is" : "s are"}` : "games"} in progress will be
     simulated forward from the current score, count and base-out state, with whatever each
     player has already banked counted toward his line. Prices come from the live Kalshi market.
     <div style="margin-top:4px">This board is a <b>snapshot</b>: one pitch can move it. Re-build right before you place.</div>
-    ${multi ? `<div style="margin-top:4px">In a <b>multi-game parlay</b>, a live leg can settle long before the rest — the slip is only decided when every game finishes.</div>` : ""}
+    ${multi ? `<div style="margin-top:4px">In a <b>multi-game parlay</b>, a live leg can settle long before the rest - the slip is only decided when every game finishes.</div>` : ""}
   </div>`;
 }
 
@@ -1053,7 +1053,7 @@ window.buildCombo = async (maxBet) => {
   let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
   let t = parseInt(($("comboTarget") || {}).value, 10); if (isNaN(t)) t = 65;
   let c = parseInt(($("comboCap") || {}).value, 10); if (isNaN(c) || c <= 0) c = 0;
-  // A ceiling below the floor is meaningless — treat it as "no ceiling" rather
+  // A ceiling below the floor is meaningless - treat it as "no ceiling" rather
   // than silently building nothing.
   if (c && c < t) c = 0;
   let p = parseFloat(($("comboPayout") || {}).value) || 0;
@@ -1086,12 +1086,12 @@ window.buildCombo = async (maxBet) => {
     if (!d.parlay) {
       out.innerHTML = (d.hint === "max_bet_unreachable")
         ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
-        : `<div class="small">Couldn't build — no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
+        : `<div class="small">Couldn't build - no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
       return;
     }
     out.innerHTML = renderMixed(d.parlay);
   } catch (e) {
-    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   } finally {
     comboBuilding = false;
   }
@@ -1145,7 +1145,7 @@ function renderGameGrid(games) {
     const aOn = sel === true || sel === g.away_name;
     const hOn = sel === true || sel === g.home_name;
     const when = fmtStartTime(g.start);
-    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="comboToggleGame(${pk})" title="${g.matchup || ""}${when ? ` — ${when}` : ""}">
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="comboToggleGame(${pk})" title="${g.matchup || ""}${when ? ` - ${when}` : ""}">
       ${live ? '<span class="gg-live">🔴 LIVE</span>' : ""}
       <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();comboToggleTeam(${pk},'${esc(g.away_name)}')">${teamShort(g.away_name)}</span>
       <span class="gg-vs">vs</span>
@@ -1197,15 +1197,15 @@ window.buildParlay = async () => {
         note += `<div class="small">Added legs up to <b>${c.legs_used}</b> (you asked ${c.requested_legs}) to reach ${p}× while keeping every leg ≥ ${t}%.</div>`;
       }
       if (!c.payout_reached) {
-        note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the max at that floor is <b>${c.fair_payout_x}×</b> (used ${c.legs_used} legs). Lower the confidence floor or the target to go higher.</div>`;
+        note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% - the max at that floor is <b>${c.fair_payout_x}×</b> (used ${c.legs_used} legs). Lower the confidence floor or the target to go higher.</div>`;
       }
-      note += `<div class="small">At ${c.fair_payout_x}× the chance of hitting is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds props that chance is the same however the legs are split — extra legs just land you closer to the exact target.</div>`;
+      note += `<div class="small">At ${c.fair_payout_x}× the chance of hitting is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). For fair-odds props that chance is the same however the legs are split - extra legs just land you closer to the exact target.</div>`;
     } else {
       title = `🎯 ${c.n_legs}-leg parlay tuned to ${t}%+`;
     }
     out.innerHTML = renderCombo(c, title, "hl prop") + note;
   } catch (e) {
-    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   }
 };
 
@@ -1221,23 +1221,23 @@ window.buildSGP = async () => {
     const d = await (await fetch(`/api/baseball/sgp?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-    if (!d.games || !d.games.length) { out.innerHTML = `<div class="small">No same-game parlays available — need upcoming (non-final) games.</div>`; return; }
+    if (!d.games || !d.games.length) { out.innerHTML = `<div class="small">No same-game parlays available - need upcoming (non-final) games.</div>`; return; }
     out.innerHTML = `<div class="small" style="margin:6px 0">Best same-game parlay per game (${(d.n_sims || 0).toLocaleString()} sims each):</div>`
       + d.games.map(renderSGP).join("");
   } catch (e) {
-    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   }
 };
 
 // Animated progress bar for the long simulations. There's no real per-sim
 // progress from the server (it's one request), so the bar eases asymptotically
-// toward ~95% and shows a live elapsed timer — enough to prove it's working and
+// toward ~95% and shows a live elapsed timer - enough to prove it's working and
 // not frozen. It self-clears once the caller replaces the container's contents.
 function simLoader(el, msg) {
   el.innerHTML = `<div class="simloader">
     <div class="small simloader-msg">${msg}</div>
     <div class="simloader-track"><div class="simloader-fill"></div></div>
-    <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span> elapsed — crunching the simulation…</div>
+    <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span> elapsed - crunching the simulation…</div>
   </div>`;
   const fill = el.querySelector(".simloader-fill");
   const pctEl = el.querySelector(".slpct");
@@ -1259,14 +1259,14 @@ function simLoader(el, msg) {
 function modelLegend() {
   return `<details class="modelhelp"><summary>ℹ️ What do these numbers mean?</summary>
     <ul class="legendlist">
-      <li><b>Model %</b> — our estimate of the chance this hits, from the matchup math: each hitter's rate vs the opposing pitcher, the starter's K rate, and the run distribution adjusted for park &amp; weather. This is the exact closed-form number.</li>
-      <li><b>Sim %</b> — the <i>same</i> outcome measured a different way: we simulate the whole game thousands of times (baserunning, steals, pitch-count &amp; relief, correlations) and count how often it happened. Model and Sim should be close; a gap shows where game context (correlation, a starter getting pulled) moves it.</li>
-      <li><b>Market %</b> — Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
-      <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) — Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
-      <li><b>Fair payout ×</b> — 1 ÷ our probability (a 25% chance is a fair 4×). The <b>no-vig fair value</b> from our model.</li>
-      <li><b>Kalshi pays ×</b> — the <i>real</i> payout from Kalshi's live prices (product of each leg's market price), so it matches what you'd see building the combo on Kalshi. It's lower than our fair payout by their margin. If our fair payout is <i>way</i> above Kalshi's, we strongly disagree with the market on a leg — possible edge, or miscalibration to sanity-check. (Lines post closer to game time, so it may read "—" early.)</li>
-      <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> — that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = our sim % minus Kalshi's price.</li>
-      <li><b>Weather → ±% runs</b> — park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
+      <li><b>Model %</b> - our estimate of the chance this hits, from the matchup math: each hitter's rate vs the opposing pitcher, the starter's K rate, and the run distribution adjusted for park &amp; weather. This is the exact closed-form number.</li>
+      <li><b>Sim %</b> - the <i>same</i> outcome measured a different way: we simulate the whole game thousands of times (baserunning, steals, pitch-count &amp; relief, correlations) and count how often it happened. Model and Sim should be close; a gap shows where game context (correlation, a starter getting pulled) moves it.</li>
+      <li><b>Market %</b> - Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
+      <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) - Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
+      <li><b>Fair payout ×</b> - 1 ÷ our probability (a 25% chance is a fair 4×). The <b>no-vig fair value</b> from our model.</li>
+      <li><b>Kalshi pays ×</b> - the <i>real</i> payout from Kalshi's live prices (product of each leg's market price), so it matches what you'd see building the combo on Kalshi. It's lower than our fair payout by their margin. If our fair payout is <i>way</i> above Kalshi's, we strongly disagree with the market on a leg - possible edge, or miscalibration to sanity-check. (Lines post closer to game time, so it may read "-" early.)</li>
+      <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> - that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = our sim % minus Kalshi's price.</li>
+      <li><b>Weather → ±% runs</b> - park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
     </ul></details>`;
 }
 
@@ -1282,8 +1282,8 @@ function legProb(l, nsim) {
   let mkt = "";
   if (l.market_cents != null) {
     const edge = Math.round(l.prob_pct - l.market_cents);
-    // A quote nobody can fill is not a price. It still shows — seeing the
-    // market's number is useful — but greyed, without an edge, because an edge
+    // A quote nobody can fill is not a price. It still shows - seeing the
+    // market's number is useful - but greyed, without an edge, because an edge
     // against a book with no depth behind it is not something you can take.
     mkt = (l.fillable === false)
       ? ` <span class="kmkt" style="opacity:.55">Kalshi <b>${l.market_cents}¢</b> <span style="color:var(--muted)">thin</span></span>`
@@ -1316,7 +1316,7 @@ function renderBreakdown(b, n) {
     }).join("");
     return rows ? `<div class="simgroup">${label}</div>${rows}` : "";
   };
-  return `<details class="simdetail"><summary>🔬 Simulation detail — every pitcher &amp; hitter (${nf(b.n_sims)} sims)</summary>
+  return `<details class="simdetail"><summary>🔬 Simulation detail - every pitcher &amp; hitter (${nf(b.n_sims)} sims)</summary>
     <div class="simwrap">
       <div class="simgroup">Starting pitchers</div>${pit}
       ${hitSide("away", "Away hitters")}${hitSide("home", "Home hitters")}
@@ -1327,7 +1327,7 @@ function renderBreakdown(b, n) {
 // to our fair payout so the number matches Kalshi's own builder.
 function kalshiPayout(m) {
   if (m.kalshi_payout_x == null) {
-    return `<span style="color:var(--muted)">Kalshi pays — <span class="small">(no live prices yet — markets post closer to game time)</span></span>`;
+    return `<span style="color:var(--muted)">Kalshi pays <span class="small">(no live prices yet, markets post closer to game time)</span></span>`;
   }
   const partial = m.kalshi_full ? "" : ` <span class="small" style="color:var(--muted)">(${m.kalshi_priced}/${m.kalshi_total_legs} legs priced)</span>`;
   const net = m.kalshi_payout_net_x != null
@@ -1345,7 +1345,7 @@ function renderSGP(s) {
     : `<span style="color:var(--muted)">~independent (${corr >= 0 ? "+" : ""}${corr}%)</span>`;
   const cnt = s.combined_sims_hit != null ? ` <span style="color:var(--muted)">(${s.combined_sims_hit.toLocaleString()}/${nsim.toLocaleString()} sims)</span>` : "";
   const warn = s.counteracting
-    ? `<div class="small" style="margin:4px 0;padding:5px 8px;border-radius:6px;background:rgba(224,86,106,.12);color:#e0566a"><b>⚠ Counteracting legs</b> — this slate couldn't field a clean parlay, so a pair here works against each other (worst pair corr ${s.worst_pair_corr}). For one leg to hit, another tends to miss. Prefer a different combo.</div>`
+    ? `<div class="small" style="margin:4px 0;padding:5px 8px;border-radius:6px;background:rgba(224,86,106,.12);color:#e0566a"><b>⚠ Counteracting legs</b> - this slate couldn't field a clean parlay, so a pair here works against each other (worst pair corr ${s.worst_pair_corr}). For one leg to hit, another tends to miss. Prefer a different combo.</div>`
     : "";
   return `<div class="combo hl prop">
     <div class="chead">
@@ -1360,7 +1360,7 @@ function renderSGP(s) {
       ${kalshiPayout(s)}
       <span>Correlation: ${corrTxt}</span>
     </div>
-    <div class="small" style="margin-top:4px">Naive independent guess: <b>${s.indep_prob_pct}%</b> (${s.indep_payout_x}×). The simulation gives the real correlated number.${s.has_props ? "" : " <i>Run-based legs only — hitter &amp; strikeout props appear once lineups post (a few hours pre-game).</i>"}</div>
+    <div class="small" style="margin-top:4px">Naive independent guess: <b>${s.indep_prob_pct}%</b> (${s.indep_payout_x}×). The simulation gives the real correlated number.${s.has_props ? "" : " <i>Run-based legs only - hitter &amp; strikeout props appear once lineups post (a few hours pre-game).</i>"}</div>
     ${renderBreakdown(s.breakdown, nsim)}
   </div>`;
 }
@@ -1377,10 +1377,10 @@ window.buildMixed = async () => {
     const d = await (await fetch(`/api/baseball/mixed?date=${date}&legs=${n}&target=${t}&payout=${p}`)).json();
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build a mixed parlay — need upcoming games.</div>`; return; }
+    if (!d.parlay) { out.innerHTML = `<div class="small">Couldn't build a mixed parlay - need upcoming games.</div>`; return; }
     out.innerHTML = renderMixed(d.parlay);
   } catch (e) {
-    out.innerHTML = `<div class="small">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   }
 };
 
@@ -1389,8 +1389,8 @@ function renderMixed(m) {
     const legs = g.legs.map((l) =>
       `<li><span class="legtag">${l.type}</span> ${liveTag(l)}${sideTag(l)}${l.pick} ${legProb(l)}${simAvgTag(l)}</li>`).join("");
     const head = g.same_game
-      ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> — same-game stack, joint <b>${g.joint_pct}%</b></div>`
-      : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> — single leg</div>`;
+      ? `<div class="small" style="margin:6px 0 2px"><b>🎰 ${g.matchup}</b> - same-game stack, joint <b>${g.joint_pct}%</b></div>`
+      : `<div class="small" style="margin:6px 0 2px"><b>${g.matchup}</b> - single leg</div>`;
     return head + `<ul class="legs">${legs}</ul>`;
   }).join("");
   const corr = m.corr_delta_pct;
@@ -1401,7 +1401,7 @@ function renderMixed(m) {
     ? `<span>Payout ≥${m.target_payout_x}× <b style="color:${m.payout_reached ? "#3ad17a" : "#e0566a"}">${m.payout_reached ? "✓ reached" : "✗ best is " + m.fair_payout_x + "×"}</b></span>` : "";
   const legNote = (m.legs_target != null)
     ? `<span>${m.legs_target} legs <b style="color:${m.legs_met ? "#3ad17a" : "#e0566a"}">${m.legs_met ? "✓" : "✗ got " + m.n_legs}</b></span>` : "";
-  // With a ceiling set, say so on the slip — every leg above is inside the band
+  // With a ceiling set, say so on the slip - every leg above is inside the band
   // by construction, and the lines shown are the ones that got it there.
   const bandNote = (m.leg_cap_pct != null)
     ? `<span>every leg <b>${m.leg_floor_pct}–${m.leg_cap_pct}%</b></span>` : "";
@@ -1409,7 +1409,7 @@ function renderMixed(m) {
   // of the pool that rule removed, so a thin morning build (lines post near
   // game time) is explainable instead of mysterious.
   const unpricedNote = m.excluded_unpriced
-    ? `<span style="color:var(--muted)" title="Legs the model liked but Kalshi doesn't list (or hasn't posted yet) are excluded — a slip you can't place isn't a slip. Pools widen as lines post near game time.">${m.excluded_unpriced.toLocaleString()} unlisted legs excluded</span>` : "";
+    ? `<span style="color:var(--muted)" title="Legs the model liked but Kalshi doesn't list (or hasn't posted yet) are excluded - a slip you can't place isn't a slip. Pools widen as lines post near game time.">${m.excluded_unpriced.toLocaleString()} unlisted legs excluded</span>` : "";
   // Name what was honoured and what was impossible. "Couldn't satisfy your
   // target(s)" was true but useless: with a required leg count AND a required
   // payout it never said which one broke, and the builder used to quietly drop
@@ -1424,22 +1424,22 @@ function renderMixed(m) {
     const heldTxt = held.length ? ` Held your ${held.join(" and ")}.` : "";
     if (unmet.includes("payout")) {
       const best = m.best_payout_at_legs || m.fair_payout_x;
-      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${m.target_payout_x}× isn't reachable with ${m.n_legs} legs</b> at your per-leg floor — the most any ${m.n_legs}-leg parlay pays today is <b>${best}×</b>.${heldTxt} To reach ${m.target_payout_x}×: add legs, or lower the per-leg % so longer shots qualify.</div>`;
+      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${m.target_payout_x}× isn't reachable with ${m.n_legs} legs</b> at your per-leg floor - the most any ${m.n_legs}-leg parlay pays today is <b>${best}×</b>.${heldTxt} To reach ${m.target_payout_x}×: add legs, or lower the per-leg % so longer shots qualify.</div>`;
     } else {
-      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy <b>${unmet.join(" or ")}</b> on today's slate — showing the closest parlay.${heldTxt}</div>`;
+      hardWarn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't satisfy <b>${unmet.join(" or ")}</b> on today's slate - showing the closest parlay.${heldTxt}</div>`;
     }
   }
   const stacked = m.groups.some((g) => g.same_game);
   // Price-side numbers. EV is what the slip returns per $1 at Kalshi's actual
   // asks including the taker fee, so a negative one means the likeliest slip is
-  // still a long-run loser — worth saying out loud rather than burying.
+  // still a long-run loser - worth saying out loud rather than burying.
   const evTxt = (m.ev_pct == null) ? "" :
     `<span>EV at market <b style="color:${m.ev_pct >= 0 ? "#3ad17a" : "#e0566a"}">${m.ev_pct >= 0 ? "+" : ""}${m.ev_pct}%</b></span>`;
   // Apply the user's Kelly fraction, exactly like every other bet on the site.
   // The backend returns FULL Kelly, which for a parlay is a dangerous number to
   // put in front of someone: a live slip came back at 44% of bankroll. Full Kelly
   // is only optimal when the probability is KNOWN, and a parlay's probability is
-  // a product of estimates — each leg's error multiplies, so the true uncertainty
+  // a product of estimates - each leg's error multiplies, so the true uncertainty
   // is much wider than a single bet's and full Kelly badly overbets it. The rest
   // of the app already defaults to ½; this was the one place that didn't.
   const _km = getKellyMult();
@@ -1448,7 +1448,7 @@ function renderMixed(m) {
   const kellyTxt = (_kf > 0)
     ? `<span>Stake <b>${_kf.toFixed(2)}%</b> of roll (${_klabel}-Kelly)</span>` : "";
   const evWarn = (m.ev_ok === false)
-    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ No slip on today's slate clears break-even at Kalshi's prices with enough legs actually quoted — this is the closest. On an exchange that is normal: you pay the spread and a fee on every leg. Consider fewer legs, or skip today.</div>` : "";
+    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ No slip on today's slate clears break-even at Kalshi's prices with enough legs actually quoted - this is the closest. On an exchange that is normal: you pay the spread and a fee on every leg. Consider fewer legs, or skip today.</div>` : "";
   const unpriced = (m.priced_frac != null && m.priced_frac < 1)
     ? `<div class="small" style="margin-top:4px;color:var(--muted)">${Math.round(m.priced_frac * 100)}% of these legs have a live Kalshi quote; the rest are priced at fair value, so the EV above only reflects the ones you can actually place.</div>` : "";
   const alts = renderAlternatives(m);
@@ -1477,12 +1477,12 @@ function renderMixed(m) {
     ${evWarn}
     ${unpriced}
     ${alts}
-    <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) — Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
+    <div class="small" style="margin-top:4px">Naive independent guess: <b>${m.indep_prob_pct}%</b> (${m.indep_payout_x}×). Same-game legs use simulated joint odds; different games multiply. <i>Fair payout is no-vig (1÷our probability) - Kalshi's actual combo pays a bit less (their margin); a much bigger gap means we disagree with the market on a leg.</i></div>
   </div>`;
 }
 
 // The max-bet block. Shown INSTEAD of the ordinary target notes, because a max
-// bet has no leg or payout target — it has a ceiling, and the only questions are
+// bet has no leg or payout target - it has a ceiling, and the only questions are
 // whether it was reached and how likely the slip that reached it is.
 //
 // Both probabilities are shown side by side on purpose. On a capped ticket our
@@ -1493,7 +1493,7 @@ function maxBetNote(m) {
   const cap = m.cap_x || MAX_BET_X;
   if (!m.cap_reached) {
     return `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${cap}× isn't reachable on this board today.</b>`
-      + ` The most any fully-quoted slip pays is <b>${m.best_payout_x}×</b> — that's what's shown above.`
+      + ` The most any fully-quoted slip pays is <b>${m.best_payout_x}×</b> - that's what's shown above.`
       + ` Every leg has to have a real Kalshi quote behind it, so a thin board caps out early.</div>`;
   }
   const mk = (m.market_prob_pct == null) ? "" :
@@ -1501,7 +1501,7 @@ function maxBetNote(m) {
   const opt = (m.optimism_x == null) ? "" :
     `<span>We're <b>${m.optimism_x}×</b> the market</span>`;
   const over = m.overshoot_x
-    ? `<div class="small" style="margin-top:4px;color:var(--muted)">This slip prices at <b>${m.uncapped_payout_x}×</b>, but Kalshi pays at most <b>${cap}×</b> — the extra ${m.overshoot_x}× is thrown away. It was still chosen because it's the likeliest slip that clears the ceiling.</div>`
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">This slip prices at <b>${m.uncapped_payout_x}×</b>, but Kalshi pays at most <b>${cap}×</b> - the extra ${m.overshoot_x}× is thrown away. It was still chosen because it's the likeliest slip that clears the ceiling.</div>`
     : "";
   const warn = (m.optimism_ok === false)
     ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Every slip that reaches ${cap}× claims a bigger edge over the market than we're willing to believe. Treat the chance above as our model's opinion, not a forecast.</div>`
@@ -1510,13 +1510,13 @@ function maxBetNote(m) {
     ? `<div class="small" style="margin-top:4px;color:var(--muted)">Tried per-leg floors ${m.max_bet_floors_tried.map((f) => f.floor_pct + "%").join(", ")} and kept the best.</div>`
     : "";
   return `<div class="cnums" style="margin-top:4px">
-      <span>🎰 <b>Max bet</b> — pays the ${cap}× ceiling</span>
+      <span>🎰 <b>Max bet</b> - pays the ${cap}× ceiling</span>
       ${mk}${opt}
     </div>${over}${warn}${floors}`;
 }
 
 // The same frontier ranked the other two ways. Shown so "the price mattered" is
-// something you can see rather than something we assert — and when all three
+// something you can see rather than something we assert - and when all three
 // land on the same slip, that itself is the useful answer.
 function renderAlternatives(m) {
   const a = m.alternatives;
@@ -1542,8 +1542,8 @@ function simAvgTag(l) {
 }
 
 // YES/NO badge for a combo leg. Kalshi settles almost every market as a yes/no
-// contract, so a slip should say which side it's actually buying — an "Under"
-// or a "NO —" leg is the NO contract, everything else is YES. RFI is the one
+// contract, so a slip should say which side it's actually buying - an "Under"
+// or a "NO -" leg is the NO contract, everything else is YES. RFI is the one
 // exception the book doesn't split into sides, so it gets no badge.
 // Marks a leg priced off a game already under way.
 function liveTag(l) {
@@ -1557,7 +1557,7 @@ function sideTag(l) {
   // Legs built from the sim carry their own side; fall back to reading the
   // label for the live-recomputed legs, which don't.
   const isNo = l.side ? l.side === "no"
-    : (/\(NO\)\s*$/.test(t) || /^NO\s*[—-]/i.test(lab) || /\bunder\b/i.test(lab));
+    : (/\(NO\)\s*$/.test(t) || /^NO\s*[ - -]/i.test(lab) || /\bunder\b/i.test(lab));
   return `<span class="sidetag ${isNo ? "no" : "yes"}">${isNo ? "NO" : "YES"}</span> `;
 }
 
@@ -1603,7 +1603,7 @@ function renderCombo(c, tag, extraCls) {
     const miss = [];
     if (c.legs_met === false) miss.push("the leg count");
     if (c.target_payout_x && !c.payout_reached) miss.push(`a ${c.target_payout_x}× payout`);
-    warn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't hit ${miss.join(" or ") || "one of your required targets"} on this board — showing the closest slip. ${
+    warn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't hit ${miss.join(" or ") || "one of your required targets"} on this board - showing the closest slip. ${
       (c.target_payout_x && !c.payout_reached && c.cap_pct != null)
         ? `A ceiling of ${c.cap_pct}% caps each leg's payout, so ${c.legs_used} of them can reach about ${c.fair_payout_x}× at most: raise the ceiling or add legs.`
         : "Loosen a target or add legs."}</div>`;
@@ -1667,7 +1667,7 @@ async function loadBaseball(silent) {
     const maxN = c.max_legs_available || 0;
     // Single-game slates (e.g. the day back from the All-Star break) can't form
     // cross-game combos, so the backend falls back to same-game parlays and flags
-    // same_game_only. Show the maker in that case too — defaulted to same-game.
+    // same_game_only. Show the maker in that case too - defaulted to same-game.
     if (maxN >= 2 || c.same_game_only) {
       const bsKeys = Object.keys(c.by_size || {}).map(Number);
       const effMax = c.same_game_only ? (bsKeys.length ? Math.max(...bsKeys) : 4) : maxN;
@@ -1677,12 +1677,12 @@ async function loadBaseball(silent) {
         + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
       html += `<div class="combomaker">
         🎯 <b>Combo maker</b>
-        <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from — or <b>ALL GAMES</b>:</div>
+        <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from - or <b>ALL GAMES</b>:</div>
         ${renderGameGrid(d.games)}
         <div style="margin-top:8px">each leg ≥
         <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>%
-        and ≤ <input id="comboCap" type="number" min="0" max="99" value="${parlayCap || ""}" placeholder="—" style="width:54px"/>% likely</div>
-        <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each market walks to the line that lands in the band — Over 3.5 at 90% becomes Over 4.5 or 5.5, and a run line at 40% becomes the NO side.</div>
+        and ≤ <input id="comboCap" type="number" min="0" max="99" value="${parlayCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+        <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each market walks to the line that lands in the band - Over 3.5 at 90% becomes Over 4.5 or 5.5, and a run line at 40% becomes the NO side.</div>
         <div class="small" style="margin-top:6px">goal
           ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], comboObjectivePref)}
         </div>
@@ -1693,7 +1693,7 @@ async function loadBaseball(silent) {
           ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], comboPayoutModePref)}
           reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
         </div>
-        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${(comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today — combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
+        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${(comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today - combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
         &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked;renderLiveWarn()"/> 🔴 include games in progress</label>
         <div id="liveWarn">${liveWarnHtml()}</div>
         ${mlbTypeChipRow()}
@@ -1734,7 +1734,7 @@ function escapeHtml(x) {
 // ---------------------------------------------------------------------------
 // Futures: long-dated Kalshi contracts, ranked by annual yield.
 //
-// Deliberately market-only — no model, no edge claim. The job here is to make
+// Deliberately market-only - no model, no edge claim. The job here is to make
 // the risk/return trade visible: every row shows what it pays per year NEXT TO
 // the chance it pays nothing, because those are the same number seen twice.
 // ---------------------------------------------------------------------------
@@ -1744,7 +1744,7 @@ let futTimer = null;
 // --- Modeled futures: the markets our season sims actually price ------------
 // The all-futures board can never show a positive expected return (at the
 // market's own probability the fee makes every row negative). These rows can,
-// because the model is allowed to disagree — so this is the default view.
+// because the model is allowed to disagree - so this is the default view.
 let mfTimer = null;
 
 function initFutures() {
@@ -1815,11 +1815,11 @@ async function loadModeledFutures() {
       + (d.partial ? " · still loading…" : "");
     if (side) d.rows = d.rows.filter((r) => (r.side || "yes") === side);
     if (!d.rows.length && d.partial) {
-      out.innerHTML = `<div class="empty">Loaded ${(d.loaded || []).join(", ") || "…"} — still simulating the rest.</div>`;
+      out.innerHTML = `<div class="empty">Loaded ${(d.loaded || []).join(", ") || "…"} - still simulating the rest.</div>`;
       return;
     }
     if (!d.rows.length) {
-      out.innerHTML = `<div class="empty">Nothing matches — try "everything" instead of only +EV, or clear the search.</div>`;
+      out.innerHTML = `<div class="empty">Nothing matches - try "everything" instead of only +EV, or clear the search.</div>`;
       return;
     }
     out.innerHTML = `<div class="futtablewrap"><table class="futtable">
@@ -1830,31 +1830,31 @@ async function loadModeledFutures() {
       </tr></thead><tbody>
       ${d.rows.map((r) => `<tr>
         <td>
-          <div class="futtitle"><span class="sidetag ${r.side || "yes"}">${(r.side || "yes").toUpperCase()}</span> ${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="${escapeHtml(r.disagreement ? "Our own models disagree — " + r.disagreement : "Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.")}">${r.disagreement ? "models disagree" : "check"}</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted — you may not get filled at this price.">thin</span>` : ""}</div>
-          <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}${r.trust_measured ? ` <span class="trustok" title="Weight measured on ${r.trust_n} graded results">✓ measured</span>` : ` <span class="trustno" title="This model has never been scored against graded results — the weight is a cautious default, not a track record.">unvalidated</span>`}${r.in_season === false ? " · <b>off-season</b>" : ""}</div>
+          <div class="futtitle"><span class="sidetag ${r.side || "yes"}">${(r.side || "yes").toUpperCase()}</span> ${escapeHtml(r.label)}${r.suspect ? `<span class="futflag" title="${escapeHtml(r.disagreement ? "Our own models disagree - " + r.disagreement : "Model and market disagree so wildly that a mis-mapped team or a subtly different market definition is the likelier explanation.")}">${r.disagreement ? "models disagree" : "check"}</span>` : ""}${r.thin ? `<span class="futflag" title="Thinly quoted - you may not get filled at this price.">thin</span>` : ""}</div>
+          <div class="futsub">${escapeHtml(r.sport_label)} · ${escapeHtml(r.market_label)} · trust ${r.trust}${r.trust_measured ? ` <span class="trustok" title="Weight measured on ${r.trust_n} graded results">✓ measured</span>` : ` <span class="trustno" title="This model has never been scored against graded results - the weight is a cautious default, not a track record.">unvalidated</span>`}${r.in_season === false ? " · <b>off-season</b>" : ""}</div>
         </td>
         <td class="r"><b>${r.price_cents}¢</b></td>
         <td class="r">${r.model_pct}%</td>
         <td class="r">${r.fair_pct}%</td>
         <td class="r"><span class="futapy ${evCls(r.ev_pct)}">${r.ev_pct > 0 ? "+" : ""}${r.ev_pct}%</span></td>
-        <td class="r">${r.apy_pct == null ? "—" : (r.apy_pct > 0 ? "+" : "") + r.apy_pct + "%"}</td>
-        <td class="r">${r.days == null ? "—" : futDays(r.days)}</td>
+        <td class="r">${r.apy_pct == null ? "-" : (r.apy_pct > 0 ? "+" : "") + r.apy_pct + "%"}</td>
+        <td class="r">${r.days == null ? "-" : futDays(r.days)}</td>
       </tr>`).join("")}
       </tbody></table></div>
-      ${d.partial ? `<div class="small" style="margin-top:6px">⏳ Still simulating — loaded ${escapeHtml((d.loaded || []).join(", "))}. More rows will appear.</div>` : ""}
+      ${d.partial ? `<div class="small" style="margin-top:6px">⏳ Still simulating - loaded ${escapeHtml((d.loaded || []).join(", "))}. More rows will appear.</div>` : ""}
       <div class="small" style="margin-top:8px;color:var(--muted)">${escapeHtml(d.note)}</div>`;
   } catch (e) {
-    out.innerHTML = `<div class="empty">Couldn't load — try again.</div>`;
+    out.innerHTML = `<div class="empty">Couldn't load - try again.</div>`;
   }
 }
 
 // Big APY numbers on short contracts are arithmetically true and practically
-// meaningless — a 20-day hold compounded 18x assumes you survive all 18 rolls.
+// meaningless - a 20-day hold compounded 18x assumes you survive all 18 rolls.
 function futApy(r) {
-  if (r.apy_pct == null) return "—";
+  if (r.apy_pct == null) return "-";
   const v = r.apy_pct >= 1000 ? Math.round(r.apy_pct).toLocaleString() : r.apy_pct.toFixed(1);
   const cls = r.apy_pct >= 25 ? "good" : r.apy_pct >= 6 ? "ok" : "meh";
-  return `<span class="futapy ${cls}">${v}%</span>${r.short_term ? `<span class="futflag" title="Short hold — the annual figure is extrapolated from a few weeks, and assumes you could repeat the trade all year and win every time.">extrap.</span>` : ""}`;
+  return `<span class="futapy ${cls}">${v}%</span>${r.short_term ? `<span class="futflag" title="Short hold - the annual figure is extrapolated from a few weeks, and assumes you could repeat the trade all year and win every time.">extrap.</span>` : ""}`;
 }
 
 function futDays(d) {
@@ -1890,9 +1890,9 @@ async function loadFutures() {
     if (cnt) cnt.textContent = `${d.total.toLocaleString()} match · ${d.universe.toLocaleString()} tracked`;
     const tiers = $("futTiers");
     if (tiers && d.summary && d.summary.tiers) {
-      tiers.innerHTML = `What's on offer, by how safe the market says it is — `
+      tiers.innerHTML = `What's on offer, by how safe the market says it is - `
         + d.summary.tiers.map((t) =>
-          `<b>${t.tier}</b> ${t.n.toLocaleString()} (median ${t.median_apy == null ? "—" : t.median_apy + "%"}/yr)`).join(" · ");
+          `<b>${t.tier}</b> ${t.n.toLocaleString()} (median ${t.median_apy == null ? "-" : t.median_apy + "%"}/yr)`).join(" · ");
     }
     if (!d.rows.length) {
       out.innerHTML = `<div class="empty">Nothing matches. Try a lower safety floor, a longer window, or a broader search.</div>`;
@@ -1919,7 +1919,7 @@ async function loadFutures() {
       </tbody></table></div>
       <div class="small" style="margin-top:8px;color:var(--muted)">${escapeHtml(d.note)}</div>`;
   } catch (e) {
-    out.innerHTML = `<div class="empty">Couldn't load futures — try again.</div>`;
+    out.innerHTML = `<div class="empty">Couldn't load futures - try again.</div>`;
   }
 }
 
@@ -1975,7 +1975,7 @@ const _SRC_LABEL = { mlb: "⚾ MLB slate", mlb_futures: "⚾ MLB futures", ufc: 
                      tennis: "🎾 Tennis", crypto: "⚡ Crypto", arbitrage: "🔒 Arbitrage" };
 async function loadBestBets() {
   const box = $("bbetsResults"), src = $("bbetsSources");
-  box.innerHTML = `<div class="empty">Hunting edges across every model… (the MLB slate sim is the slow part — ~30s cold)</div>`;
+  box.innerHTML = `<div class="empty">Hunting edges across every model… (the MLB slate sim is the slow part - ~30s cold)</div>`;
   src.innerHTML = "";
   try {
     const d = await (await fetch("/api/bestbets")).json();
@@ -1984,7 +1984,7 @@ async function loadBestBets() {
     src.innerHTML = Object.entries(d.sources || {}).map(([k, s]) =>
       `<span class="leanchip${s.ok ? "" : " warn"}" title="${s.ok ? "" : (s.error || "unavailable")}">${_SRC_LABEL[k] || k}: ${s.ok ? `<b>${s.rows}</b>` : "✗"}</span>`).join(" ");
     if (!d.rows || !d.rows.length) {
-      box.innerHTML = `<div class="empty">No positive net-of-fee edges right now — that's an honest answer, not a bug. Markets tighten close to game time; check back when slates/cards post.</div>`;
+      box.innerHTML = `<div class="empty">No positive net-of-fee edges right now - that's an honest answer, not a bug. Markets tighten close to game time; check back when slates/cards post.</div>`;
       return;
     }
     const head = `<div class="edgerow edgehead">
@@ -1999,14 +1999,14 @@ async function loadBestBets() {
         <span class="ecol-pick"><span class="legtag">${r.sport}</span> <b>${r.pick}</b><span class="emu">${r.kind} · ${r.matchup}</span>${note}${stake ? `<span class="emu">${stake}</span>` : ""}</span>
         <span class="ecol-num">${r.our_pct}%</span>
         <span class="ecol-num">${r.cents}¢</span>
-        <span class="ecol-num">${r.payout_x ? r.payout_x + "×" : "—"}</span>
+        <span class="ecol-num">${r.payout_x ? r.payout_x + "×" : "-"}</span>
         <span class="ecol-conf conf-${r.trust}">${CONF_LABEL[r.trust] || r.trust}</span>
       </div>`;
     }).join("");
     box.innerHTML = head + body +
       `<div class="small" style="margin-top:10px;color:var(--muted)">${d.rows.length} bets from ${d.n_candidates} candidates · net = our % − ask − Kalshi taker fee · capped 3 per matchup so one opinion can't flood the board. <b>Trust</b>: soft rows are usually our model's bias, not the market's mistake.</div>`;
   } catch (e) {
-    box.innerHTML = `<div class="empty">Best Bets scan failed — try Rescan.</div>`;
+    box.innerHTML = `<div class="empty">Best Bets scan failed - try Rescan.</div>`;
   }
 }
 
@@ -2076,7 +2076,7 @@ function renderP6Browser() {
           h += `<button class="p6chip lessc${p6on(pl.player, st.t, ln.n, "Less") ? " on" : ""}" onclick="p6add(${pi},${si},${li},'Less')">&lt;${ln.line} <b>${Math.round((100 - ln.more_pct) * 10) / 10}%</b></button>`;
         return h;
       }).join("");
-      return `<div class="p6statline"><span class="p6statlbl">${st.label} <b>${st.avg != null ? st.avg : "—"}</b><span class="small" style="color:var(--faint)"> avg</span></span><span class="p6chips">${chips}</span></div>`;
+      return `<div class="p6statline"><span class="p6statlbl">${st.label} <b>${st.avg != null ? st.avg : "-"}</b><span class="small" style="color:var(--faint)"> avg</span></span><span class="p6chips">${chips}</span></div>`;
     }).join("");
     return `<div class="p6prow"><div class="p6pname">${pl.kind === "P" ? "🧢 " : ""}${pl.player}</div>${stats}</div>`;
   }).join("");
@@ -2086,7 +2086,7 @@ function renderP6Browser() {
       <span class="small" style="color:var(--muted)">${nf(_p6b.n_sims)} sims · avg = what the sim expects · click a line to add it to your slip</span>
     </div>
     <div id="p6slip" class="p6tally"></div>
-    <div class="p6sheet">${rows || `<div class="empty">No simmable players yet — batter props post with lineups (a few hours pre-game).</div>`}</div>`;
+    <div class="p6sheet">${rows || `<div class="empty">No simmable players yet - batter props post with lineups (a few hours pre-game).</div>`}</div>`;
   renderP6Slip();
 }
 function p6add(pi, si, li, side) {
@@ -2107,7 +2107,7 @@ function renderP6Slip(ev) {
   if (!t) return;
   const n = _p6b.slip.length;
   if (!n) {
-    t.innerHTML = `<span class="small">🎯 <b>Your slip</b> — click lines below (2–6 picks, all must hit). The % on each chip is the sim's chance at that exact line; DK's posted line governs.</span>`;
+    t.innerHTML = `<span class="small">🎯 <b>Your slip</b> - click lines below (2–6 picks, all must hit). The % on each chip is the sim's chance at that exact line; DK's posted line governs.</span>`;
     return;
   }
   const legs = _p6b.slip.map((l, i) =>
@@ -2117,7 +2117,7 @@ function renderP6Slip(ev) {
     const pay = _p6b.payouts[String(n)];
     if (ev && ev.joint_pct != null) {
       const evPct = pay ? Math.round((ev.joint_pct / 100 * pay - 1) * 100) : null;
-      tally = ` · joint <b>${ev.joint_pct}%</b> <span class="small" style="color:var(--muted)" title="what independent multiplication would claim — same-game legs are correlated, the joint number is the real one">(indep ${ev.indep_pct}%)</span>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${evPct >= 0 ? "ev pos" : "ev neg"}">${evPct >= 0 ? "+" : ""}${evPct}%</b>` : ""}`;
+      tally = ` · joint <b>${ev.joint_pct}%</b> <span class="small" style="color:var(--muted)" title="what independent multiplication would claim - same-game legs are correlated, the joint number is the real one">(indep ${ev.indep_pct}%)</span>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${evPct >= 0 ? "ev pos" : "ev neg"}">${evPct >= 0 ? "+" : ""}${evPct}%</b>` : ""}`;
     } else tally = ` · <span class="small" style="color:var(--muted)">computing correlated joint odds…</span>`;
   } else tally = ` · <span class="small">add ${2 - n} more for a payable slip</span>`;
   t.innerHTML = `<b>${n}-pick</b>${tally}<div class="p6sliplegs">${legs}</div>`;
@@ -2174,7 +2174,7 @@ async function loadHits() {
 function renderHitCombo(c, tag, extraCls) {
   const legs = c.legs.map((l) =>
     `<li>✅ <span class="legtag">${l.type}</span> ${l.pick}
-      <span style="color:var(--muted)">(model ${l.prob_pct != null ? l.prob_pct + "%" : "—"}, ${l.price_cents}¢ → ${l.payout_x}×)</span></li>`).join("");
+      <span style="color:var(--muted)">(model ${l.prob_pct != null ? l.prob_pct + "%" : "-"}, ${l.price_cents}¢ → ${l.payout_x}×)</span></li>`).join("");
   return `<div class="combo ${extraCls || ""}">
     <div class="chead">
       <span class="ctag">${tag}</span>
@@ -2182,7 +2182,7 @@ function renderHitCombo(c, tag, extraCls) {
     </div>
     <ul class="legs">${legs}</ul>
     <div class="cnums">
-      <span>Combined chance <b>${c.combined_prob_pct != null ? c.combined_prob_pct + "%" : "—"}</b></span>
+      <span>Combined chance <b>${c.combined_prob_pct != null ? c.combined_prob_pct + "%" : "-"}</b></span>
       <span>Parlay paid <b class="ev pos">${c.parlay_payout_x}×</b></span>
       <span>$5 → <b class="ev pos">$${c.ret_5.toLocaleString()}</b></span>
       <span>$10 → <b class="ev pos">$${c.ret_10.toLocaleString()}</b></span>
@@ -2204,13 +2204,13 @@ function renderHits(d) {
     ? d.predicted_combos.map((c, i) => renderHitCombo(c, i === 0 ? "🛡️ Best model combo that cashed" : "✅ Model combo that cashed", "hl")).join("")
     : `<div class="small">No multi-leg model combo cashed for this slate yet (need ≥2 model-liked props hitting in different games).</div>`;
   const moon = d.moonshot
-    ? renderHitCombo(d.moonshot, "🚀 Moonshot — longshots that all cashed", "hl prop")
+    ? renderHitCombo(d.moonshot, "🚀 Moonshot - longshots that all cashed", "hl prop")
     : `<div class="small">No longshot moonshot cashed this slate (or none graded yet).</div>`;
   return `
-    <div class="hitsec"><div class="hitsechead">🎯 Predicted combos — what the model liked, that cashed</div>
+    <div class="hitsec"><div class="hitsechead">🎯 Predicted combos - what the model liked, that cashed</div>
       ${sumLine}${predicted}</div>
-    <div class="hitsec"><div class="hitsechead">🍀 Risky moonshot — the few-dollars-to-thousands combo</div>
-      <div class="small" style="margin:2px 0 8px">The cheapest YES longshots that all hit on one slate, parlayed. Pure hindsight — what it <i>would</i> have paid, not advice.</div>
+    <div class="hitsec"><div class="hitsechead">🍀 Risky moonshot - the few-dollars-to-thousands combo</div>
+      <div class="small" style="margin:2px 0 8px">The cheapest YES longshots that all hit on one slate, parlayed. Pure hindsight - what it <i>would</i> have paid, not advice.</div>
       ${moon}</div>`;
 }
 
@@ -2220,8 +2220,8 @@ function renderBacktest(r) {
   const roi = r.roi_vs_50_pct;
   let verdict, vcls;
   if (roi != null && roi > 2) { verdict = "✅ Beats a coin-flip market"; vcls = "ev pos"; }
-  else if (roi != null && roi < -2) { verdict = "❌ Loses to a coin-flip market — don't trust directional calls at this horizon"; vcls = "ev neg"; }
-  else { verdict = "➖ Roughly break-even — no real edge here"; vcls = ""; }
+  else if (roi != null && roi < -2) { verdict = "❌ Loses to a coin-flip market - don't trust directional calls at this horizon"; vcls = "ev neg"; }
+  else { verdict = "➖ Roughly break-even - no real edge here"; vcls = ""; }
 
   const cal = r.calibration.map((b) => {
     const off = Math.abs(b.predicted - b.actual);
@@ -2244,7 +2244,7 @@ function renderBacktest(r) {
       <span>Illustrative ROI vs 50¢ <b class="${roi >= 0 ? "ev pos" : "ev neg"}">${roi >= 0 ? "+" : ""}${roi}%</b></span>
       <span>Bet win rate <b>${r.roi_win_pct}%</b> <span style="color:var(--muted)">(${r.roi_bets} bets)</span></span>
     </div>
-    <div class="teamhdr" style="margin-top:10px">Calibration — does the predicted % match what happened?</div>
+    <div class="teamhdr" style="margin-top:10px">Calibration - does the predicted % match what happened?</div>
     <div class="calbox">${cal}</div>
     <div class="small" style="margin-top:8px">Brier below 0.25 and ROI above 0 mean the model is adding real signal. If not, treat this coin/horizon as a coin flip.</div>
   </div>`;
@@ -2292,7 +2292,7 @@ function renderEdges() {
   if (!d) return;
   const box = $("edgeResults");
   if (!d.edges || !d.edges.length) {
-    box.innerHTML = `<div class="empty">No legs priced yet — Kalshi posts most props/totals closer to game time. Try again nearer first pitch.</div>`;
+    box.innerHTML = `<div class="empty">No legs priced yet - Kalshi posts most props/totals closer to game time. Try again nearer first pitch.</div>`;
     return;
   }
   // Per-market lean banner: flags systematic model bias vs one-off edges.
@@ -2303,7 +2303,7 @@ function renderEdges() {
     .join("");
   let banner = `<div class="leanrow">${chips}</div>`;
   if (leaned.length) {
-    banner += `<div class="leanwarn">⚠ ${leaned.map(([t]) => t).join(", ")} lean almost entirely one way across the slate — that's usually <b>our model</b> being systematically off on that market, not ${leaned.length > 1 ? "those" : "that"} being real edges. Treat with skepticism.</div>`;
+    banner += `<div class="leanwarn">⚠ ${leaned.map(([t]) => t).join(", ")} lean almost entirely one way across the slate - that's usually <b>our model</b> being systematically off on that market, not ${leaned.length > 1 ? "those" : "that"} being real edges. Treat with skepticism.</div>`;
   }
   $("edgeSummary").innerHTML = banner;
 
@@ -2347,7 +2347,7 @@ async function runBacktest() {
     const r = await (await fetch(`/api/backtest?coin=${coin}&horizon=${horizon}`)).json();
     box.innerHTML = renderBacktest(r);
   } catch (e) {
-    box.innerHTML = `<div class="empty">Backtest failed — try again.</div>`;
+    box.innerHTML = `<div class="empty">Backtest failed - try again.</div>`;
   }
 }
 
@@ -2368,7 +2368,7 @@ async function loadStrategy() {
       ${bt.calibration_brier != null ? `<span>Model Brier <b>${bt.calibration_brier}</b> (coin-flip 0.25)</span>` : ""}
     </div>`;
     if (!bt.resolved_markets) {
-      html += `<div class="empty" style="margin-top:10px">No contracts have settled yet. Leave the app running — the recorder samples every 90s and this fills in as markets close.</div>`;
+      html += `<div class="empty" style="margin-top:10px">No contracts have settled yet. Leave the app running - the recorder samples every 90s and this fills in as markets close.</div>`;
     } else {
       html += `<div class="teamhdr" style="margin-top:12px">Betting the model's edge at real Kalshi prices (net of fees):</div>
         <div class="calbox">
@@ -2380,7 +2380,7 @@ async function loadStrategy() {
         html += `<div class="calrow"><span>≥ ${s.min_edge}¢ edge</span>
           <span>${s.bets} · ${s.win_pct}% · <b class="${roiCls}">${net >= 0 ? "+" : ""}${net}%</b> · <span style="color:var(--muted)">${s.roi_pct >= 0 ? "+" : ""}${s.roi_pct}% gross</span></span></div>`;
       }
-      html += `</div><div class="small" style="margin-top:8px">ROI is <b>net of Kalshi's ~1.7¢/contract trading fee</b>. Positive net ROI that grows with the edge filter = a real, fee-proof edge. The biggest edges (≥15¢) often mean the model is missing info — the 6–10¢ band is the sweet spot. Small samples are noisy; let it accumulate.</div>`;
+      html += `</div><div class="small" style="margin-top:8px">ROI is <b>net of Kalshi's ~1.7¢/contract trading fee</b>. Positive net ROI that grows with the edge filter = a real, fee-proof edge. The biggest edges (≥15¢) often mean the model is missing info - the 6–10¢ band is the sweet spot. Small samples are noisy; let it accumulate.</div>`;
     }
     box.innerHTML = html;
   } catch (e) {
@@ -2396,7 +2396,7 @@ function renderBet(b) {
       <div class="top">
         <div>
           <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
-          <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "—"}</div>
+          <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
         </div>${x}
       </div>
       <div class="scanbtns">
@@ -2412,7 +2412,7 @@ function renderBet(b) {
     <div class="top">
       <div>
         <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
-        <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "—"}</div>
+        <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
       </div>${x}
     </div>
     <div class="kv"><span>Result <b class="${cls}">${b.status.toUpperCase()}</b></span><span>P/L <b class="${cls}">${pnl}</b></span></div>
@@ -2518,7 +2518,7 @@ function renderSportEvent(e, sportKey) {
     return `<div class="sportout">
       <div class="left">
         <span class="oname">${o.name}</span>
-        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${spStr}${modelStr}</span>
+        <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "-"}</b> · no-vig fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "-"}</b>${spStr}${modelStr}</span>
       </div>
       <button class="track-mini" id="${f}_btn" onclick="showSportLog('${o.ticker}')">Log</button>
       <div class="buyform hidden" id="${f}">
@@ -2532,14 +2532,14 @@ function renderSportEvent(e, sportKey) {
   // mirages off stale quotes, so warn and suppress the misleading callouts.
   const thin = e.liquidity === "thin" || e.liquidity === "none";
   const liqWarn = thin
-    ? `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ ${e.liquidity === "none" ? "Untraded / one-sided book" : "Thin market"} (${e.volume || 0} contracts) — the no-vig fair %, edges and any "arbitrage" here come off stale, wide quotes and aren't reliably tradeable.</div>`
+    ? `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ ${e.liquidity === "none" ? "Untraded / one-sided book" : "Thin market"} (${e.volume || 0} contracts) - the no-vig fair %, edges and any "arbitrage" here come off stale, wide quotes and aren't reliably tradeable.</div>`
     : "";
   const arb = (e.arbitrage_pct && !thin)
-    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ — buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ - buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
   // Racing: the model edge pick beats the market-favorite lean when present.
   const mp = e.model_pick
-    ? `<div class="note" style="border:1px solid var(--yes);color:var(--yes)">🏁 Model edge pick: <b>${e.model_pick.name}</b> @ ${e.model_pick.yes_ask}¢ — model <b>${e.model_pick.model_pct}%</b> vs market, <b>+${e.model_pick.edge_cents}¢ edge</b></div>`
+    ? `<div class="note" style="border:1px solid var(--yes);color:var(--yes)">🏁 Model edge pick: <b>${e.model_pick.name}</b> @ ${e.model_pick.yes_ask}¢ - model <b>${e.model_pick.model_pct}%</b> vs market, <b>+${e.model_pick.edge_cents}¢ edge</b></div>`
     : "";
   const pick = (e.pick && !thin)
     ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">✅ Buy this one: <b>${e.pick.name}</b> @ ${e.pick.yes_ask}¢ · <b>${e.pick.fair_pct}%</b> confidence (market favorite)</div>`
@@ -2599,7 +2599,7 @@ async function loadLive() {
         <span class="livescore">${g.score || ""}</span> <span class="small">${g.detail || ""}</span>${_liveNavs[d.games.indexOf(g)] ? '<span class="small" style="color:var(--muted)"> · tap to open ➜</span>' : ""}</div>`).join("");
     }
     if (inf.length) {
-      h += `<div class="teamhdr" style="margin-top:12px">⏳ Likely in-play <span class="small">(inferred from Kalshi market timing — approximate)</span></div>`;
+      h += `<div class="teamhdr" style="margin-top:12px">⏳ Likely in-play <span class="small">(inferred from Kalshi market timing - approximate)</span></div>`;
       h += inf.map((g) => `<div class="liverow"><b>${g.sport}</b> ${g.title}
         <span class="small">${g.detail || ""}</span>${g.fav ? ` · lean <b>${g.fav.name}</b> ${g.fav.fair}%` : ""}</div>`).join("");
     }
@@ -2642,7 +2642,7 @@ function liveNavGo(nav) {
       el.classList.add("nav-flash");
       setTimeout(() => el.classList.remove("nav-flash"), 3000);
     } else if (Date.now() - t0 < 15000) {
-      setTimeout(find, 700);      // board may still be loading — retry
+      setTimeout(find, 700);      // board may still be loading - retry
     }
   };
   setTimeout(find, 450);
@@ -2651,10 +2651,10 @@ function liveNavGo(nav) {
 let _boardData = null, _featMarket = null, _featSport = "mlb";
 let _deepTimer = null, _featGenTime = 0;   // generation time of the board on screen
 const _featIntro = {
-  mlb: `Our season Monte Carlo vs the market — division / playoff / pennant / World Series odds and win totals, vs Kalshi & Polymarket. Click "Run deep sim" for the pitch-by-pitch engine.`,
-  f1: `Deep F1 season sim — every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
-  nfl: `NFL season Monte Carlo — every remaining game simulated 4,000 times off roster-aware team projections → Super Bowl / conference / division / playoff odds and win totals vs Kalshi's futures. Click a team for its Sleeper-projected player stat lines (real stats blend in as the season plays).`,
-  nascar: `Deep NASCAR Cup sim — pace + points from this season's races, then the full playoff bracket (Round of 16 → 12 → 8 → Championship 4). The winner-take-all finale keeps title odds flat, as in real NASCAR.`,
+  mlb: `Our season Monte Carlo vs the market - division / playoff / pennant / World Series odds and win totals, vs Kalshi & Polymarket. Click "Run deep sim" for the pitch-by-pitch engine.`,
+  f1: `Deep F1 season sim - every remaining weekend we simulate qualifying (the grid/pole), the race, and sprints, award points, and roll the season forward. Title odds, projected points, expected wins/poles/podiums + constructors.`,
+  nfl: `NFL season Monte Carlo - every remaining game simulated 4,000 times off roster-aware team projections → Super Bowl / conference / division / playoff odds and win totals vs Kalshi's futures. Click a team for its Sleeper-projected player stat lines (real stats blend in as the season plays).`,
+  nascar: `Deep NASCAR Cup sim - pace + points from this season's races, then the full playoff bracket (Round of 16 → 12 → 8 → Championship 4). The winner-take-all finale keeps title odds flat, as in real NASCAR.`,
 };
 function setFeatSport(s) {
   _featSport = s;
@@ -2671,7 +2671,7 @@ async function loadFeatured(force) {
   const my = ++_featReq;                    // this request's token
   // `force` (Refresh button) appends a cache-buster so the browser re-fetches
   // from the server instead of serving a stale HTTP-cached response. The server
-  // board itself is still its normal cached run (fast) — this fixes a wrong/
+  // board itself is still its normal cached run (fast) - this fixes a wrong/
   // stale board on screen without kicking a slow recompute.
   const bust = force ? `_=${Date.now()}` : "";
   box.innerHTML = `<div class="empty">Simulating the season…</div>`;
@@ -2815,13 +2815,13 @@ function initNFLWeek() {
 async function loadNFLWeek(attempt) {
   attempt = attempt || 0;
   // week=0 until the user touches the dropdown: the server picks the first week
-  // with games still to play (week 1 is the right default a few days a year —
+  // with games still to play (week 1 is the right default a few days a year -
   // the morning after the HOF game it served one finished exhibition while the
   // whole next slate sat under week 2).
   const box = $("nflWeekResults"), sel = $("nflWeek");
   const userPicked = sel && sel.dataset.userSet;
   const wk = userPicked ? sel.value : 0;
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating ${userPicked ? `Week ${wk}` : "the current week"} — drive-level engine${nflPreseason ? ", anchored to Kalshi's ladder (preseason)" : " off Sleeper's matchup projections"}, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating ${userPicked ? `Week ${wk}` : "the current week"} - drive-level engine${nflPreseason ? ", anchored to Kalshi's ladder (preseason)" : " off Sleeper's matchup projections"}, priced vs live Kalshi moneylines (~10s). Auto-refreshes.</div>`;
   try {
     // Drive-engine slate first; the older ESPN closed-form board is the fallback
     // (deep offseason, Sleeper gap). Slate payloads carry engine:"drive".
@@ -2852,9 +2852,9 @@ function nflGameCard(g) {
       <div class="matchup">${g.away_name} @ ${g.home_name} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}</span></div>
       <div class="pick">Model: <b>${g.fav}</b> by ${g.spread} · total ${g.exp_total}</div>
     </div></div>
-    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.score_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.score_home}</b> ${g.home}</span></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.score_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.score_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${g.p_home}%"></div>
-      <div class="lbl">${g.away} ${g.p_away}% — ${g.p_home}% ${g.home}</div></div>
+      <div class="lbl">${g.away} ${g.p_away}% - ${g.p_home}% ${g.home}</div></div>
     <div class="matchgrid">
       <div>
         <div class="teamhdr">${g.away} ${g.away_rec} · away</div>
@@ -2881,13 +2881,13 @@ function nflSlateCard(g) {
     `<span class="chip">O${r.line} <b>${r.over_pct}%</b></span>`).join(" ");
   const sh = g.spread_ladder || {};
   const spreads = ["3", "7", "10"].map((m) =>
-    `<span class="chip">${g.home} −${m === "3" ? "2.5" : m === "7" ? "6.5" : "9.5"} <b>${(sh.home || {})[m] ?? "—"}%</b></span>`).join(" ");
+    `<span class="chip">${g.home} −${m === "3" ? "2.5" : m === "7" ? "6.5" : "9.5"} <b>${(sh.home || {})[m] ?? "-"}%</b></span>`).join(" ");
   const props = (g.props || []).slice(0, 6).map((p) =>
     `<li><span class="legtag">${p.stat}</span> ${p.player} ${p.stat === "anytime TD" ? "" : `${p.line}+`} <span style="color:var(--muted)">(${p.over_pct}%)</span></li>`).join("");
   let sgp = "";
   if (g.sgp && g.sgp.legs) {
     const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
-    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay - joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
   }
   const players = (g.players || []).slice(0, 6).map((p) => {
     const bits = [];
@@ -2902,9 +2902,9 @@ function nflSlateCard(g) {
       <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}</span></div>
       <div class="pick">Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total <b>${g.exp_total}</b></div>
     </div></div>
-    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
-      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
     <div class="small" style="margin:4px 0">${ladder} ${spreads}</div>
     <div class="nfl-pls">${players}</div>
     ${props ? `<details class="simdetail"><summary>📊 Top props</summary><ul class="legs">${props}</ul></details>` : ""}
@@ -2939,8 +2939,8 @@ function renderNFLComboMaker() {
     🎯 <b>Combo maker</b>${nflPreseason ? ` <span class="chip">🏟️ preseason</span>` : ""}
     <div style="margin-top:8px">each leg ≥
       <input id="nflComboTarget" type="number" min="20" max="97" value="${nflComboTarget}" style="width:54px"/>%
-      and ≤ <input id="nflComboCap" type="number" min="0" max="99" value="${nflComboCap || ""}" placeholder="—" style="width:54px"/>% likely</div>
-    <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band — Kalshi books two dozen spreads and nineteen totals a game, so there is almost always a line that fits.</div>
+      and ≤ <input id="nflComboCap" type="number" min="0" max="99" value="${nflComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band - Kalshi books two dozen spreads and nineteen totals a game, so there is almost always a line that fits.</div>
     <div class="small" style="margin-top:6px">goal
       ${sel("nflComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], nflComboObjective)}
     </div>
@@ -2991,10 +2991,10 @@ async function buildNFLCombo(maxBet) {
     if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     if (!d.parlay) {
       out.innerHTML = (d.hint === "single_game_no_stack")
-        ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game on this board, and <b>same-game parlays are off</b> — one leg per game can't make a multi-leg slip. Tick <b>allow same-game parlays</b>, or wait for more of the week to open.</div>`
+        ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game on this board, and <b>same-game parlays are off</b> - one leg per game can't make a multi-leg slip. Tick <b>allow same-game parlays</b>, or wait for more of the week to open.</div>`
         : (d.hint === "max_bet_unreachable")
         ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, and a thin board runs out of them long before the ceiling.</div>`
-        : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow — widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
+        : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow - widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
     }
     out.innerHTML = renderMixed(d.parlay);
@@ -3031,16 +3031,16 @@ function basketGameCard(g) {
   let sgp = "";
   if (g.sgp && g.sgp.legs) {
     const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
-    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay - joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
   }
   return `<div class="bbgame nflcard">
     <div class="top"><div>
       <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(11, 16)}Z</span></div>
       <div class="pick">${done}${live}Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total <b>${g.exp_total}</b> · recs ${g.away_rec} / ${g.home_rec}</div>
     </div></div>
-    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
-      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
     ${_basketEdges(g.spread_edges, "spread")}
     ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>
@@ -3062,7 +3062,7 @@ function initNBA() {
 async function loadNBA(attempt) {
   attempt = attempt || 0;
   const box = $("nbaResults"), dt = ($("nbaDate") || {}).value || "";
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — possession engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate - possession engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
   try {
     const d = await (await fetch(`/api/nba/slate${dt ? `?date=${dt}` : ""}`)).json();
     if (d.error) {
@@ -3102,7 +3102,7 @@ function initNHL() {
 async function loadNHL(attempt) {
   attempt = attempt || 0;
   const box = $("nhlResults"), dt = ($("nhlDate") || {}).value || "";
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate — shot-event engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating the slate - shot-event engine + live Kalshi ML/spread/total pricing (~5s). Auto-refreshes.</div>`;
   try {
     const d = await (await fetch(`/api/nhl/slate${dt ? `?date=${dt}` : ""}`)).json();
     if (d.error) {
@@ -3133,16 +3133,16 @@ function nhlGameCard(g) {
   let sgp = "";
   if (g.sgp && g.sgp.legs) {
     const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
-    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay — joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
+    sgp = `<details class="simdetail"><summary>🎰 Same-game parlay - joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
   }
   return `<div class="bbgame nflcard">
     <div class="top"><div>
       <div class="matchup">${g.away_name || g.away} @ ${g.home_name || g.home} <span class="small" style="color:var(--muted)">${(g.date || "").slice(11, 16)}Z</span></div>
       <div class="pick">${done}${live}Pick: <b>${g.pick.name || g.pick.team}</b> ${g.pick.pct}% · total goals <b>${g.exp_total}</b></div>
     </div></div>
-    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">—</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
     <div class="winbar"><div class="fill" style="width:${ph}%"></div>
-      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} — ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
     ${_basketEdges(g.spread_edges, "spread")}
     ${_basketEdges(g.total_edges, "total")}
     <div class="nfl-pls">${players}</div>
@@ -3194,7 +3194,7 @@ function initNFLSim() {
 async function loadNFLSim(attempt) {
   attempt = attempt || 0;
   const box = $("nflSimResults"), wk = ($("nflSimWeek") || {}).value || 1;
-  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} in the background — ${nflPreseason ? "measured preseason usage" : "Sleeper projections"} + correlated game sims (~10s). Auto-refreshes.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating Week ${wk} in the background - ${nflPreseason ? "measured preseason usage" : "Sleeper projections"} + correlated game sims (~10s). Auto-refreshes.</div>`;
   try {
     const d = await (await fetch(`/api/nfl/sim?week=${wk}${nflPreQuery()}`)).json();
     if (d.error || !(d.games && d.games.length)) {
@@ -3241,10 +3241,10 @@ function renderNFLBest(d) {
       <span class="nfl-stnum">combined ceiling <b class="ev pos">${s.combined_ceiling}</b></span>
       <span class="small" style="color:var(--muted)">QB↔WR corr ${s.qb_wr_corr}</span></div>`).join("");
   $("nflSimResults").innerHTML =
-    `<div class="small" style="margin:2px 0 6px"><b>🥇 Ceiling board</b> — best-ball values the 90th-percentile game. ${d.has_adp ? "ADP = your Sleeper consensus rank." : ""}</div>
+    `<div class="small" style="margin:2px 0 6px"><b>🥇 Ceiling board</b> - best-ball values the 90th-percentile game. ${d.has_adp ? "ADP = your Sleeper consensus rank." : ""}</div>
      <div class="futrow nflbestrow rchead"><span class="fr-rank">#</span><span class="fr-team">Player</span><span class="fr-num">proj</span><span class="fr-num">ceil</span><span class="fr-num">boom</span></div>
      ${rows}
-     <div class="small" style="margin:14px 0 6px"><b>🔗 Top stacks</b> — a QB + his two best pass-catchers, combined 90th-percentile ceiling (the correlation is why stacking wins best ball).</div>
+     <div class="small" style="margin:14px 0 6px"><b>🔗 Top stacks</b> - a QB + his two best pass-catchers, combined 90th-percentile ceiling (the correlation is why stacking wins best ball).</div>
      ${stacks}`;
 }
 function renderNFLPick6(d) {
@@ -3255,13 +3255,13 @@ function renderNFLPick6(d) {
       <span class="p6game">${p.matchup}</span>
       <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span></div>`).join("");
   $("nflSimResults").innerHTML =
-    `<div class="small" style="margin:2px 0 8px">Correlation-aware prop More/Less from the game sim (yards &amp; receptions). DK &amp; PrizePicks set the line — take ours where it clears theirs. Same-game legs are correlated — the sim already knows.</div>
+    `<div class="small" style="margin:2px 0 8px">Correlation-aware prop More/Less from the game sim (yards &amp; receptions). DK &amp; PrizePicks set the line - take ours where it clears theirs. Same-game legs are correlated - the sim already knows.</div>
      <div class="p6list">${rows}</div>`;
 }
 async function loadNFL() {
   try {
     const r = await fetch("/api/pro/nfl");
-    if (r.status === 202) {       // projection warming up — poll until ready
+    if (r.status === 202) {       // projection warming up - poll until ready
       $("nflResults").innerHTML = `<div class="empty">Projecting the season (4,000 simulations)… this takes ~30s on a cold start.</div>`;
       if (!_nflPoll) _nflPoll = setInterval(loadNFL, 8000);
       return;
@@ -3283,7 +3283,7 @@ function _nflQB(t) {
   if (!q || !q.starter) return "";
   const cls = q.adj >= 0.8 ? "ev pos" : q.adj <= -0.8 ? "ev neg" : "";
   const tag = q.unproven ? " (unproven)" : q.changed ? " (new)" : "";
-  const tip = `Projected starter: ${q.starter}${tag} — last-season efficiency ${q.score} vs league ${q.lg_avg}` +
+  const tip = `Projected starter: ${q.starter}${tag} - last-season efficiency ${q.score} vs league ${q.lg_avg}` +
     (q.changed ? `; replaces a ${q.prev_score} passer` : "") +
     `. QB rating adjustment ${q.adj >= 0 ? "+" : ""}${q.adj} pts/gm.`;
   return `<span class="small" style="display:block;color:var(--muted)" title="${tip}">QB ${q.starter}${tag}${q.adj ? ` <b class="${cls}">${q.adj >= 0 ? "+" : ""}${q.adj}</b>` : ""}</span>`;
@@ -3291,7 +3291,7 @@ function _nflQB(t) {
 function renderNFL() {
   const d = _nflData; if (!d) return;
   const age = d.age_sec != null ? `updated ${agoStr(d.age_sec)} · ` : "";
-  $("nflSummary").innerHTML = `Simulated <b>${(d.n_sims || 0).toLocaleString()}</b> seasons · prior-year point differential (regressed) + <b>projected-starter QB layer</b> (efficiency + QB-change swings) + live roster availability from ESPN. <span style="color:var(--muted)">${age}refreshes nightly. 🏆 = franchise Super Bowl titles ${d.titles_asof || ""} — shown for context, never used in the model (a 1975 ring predicts nothing).</span> <button class="track-mini" onclick="rerunPro('nfl')">↻ rerun</button>`;
+  $("nflSummary").innerHTML = `Simulated <b>${(d.n_sims || 0).toLocaleString()}</b> seasons · prior-year point differential (regressed) + <b>projected-starter QB layer</b> (efficiency + QB-change swings) + live roster availability from ESPN. <span style="color:var(--muted)">${age}refreshes nightly. 🏆 = franchise Super Bowl titles ${d.titles_asof || ""} - shown for context, never used in the model (a 1975 ring predicts nothing).</span> <button class="track-mini" onclick="rerunPro('nfl')">↻ rerun</button>`;
   if (_nflSub === "wins") return renderNFLWins(d);
   const rows = d.teams.map((t, i) => `<div class="futrow nflrow">
       <span class="fr-rank">${i + 1}</span>
@@ -3307,7 +3307,7 @@ function renderNFL() {
       <span class="fr-num">SB</span><span class="fr-num">Conf</span><span class="fr-num">Div</span>
       <span class="fr-num">Playoff</span><span class="fr-num">Proj W</span><span class="fr-num">'25</span></div>
     ${rows}
-    <div class="small" style="color:var(--muted);margin-top:8px">Super Bowl / conference / division markets light up here once Kalshi opens them. Win-total edges are live now — see the Win totals tab.</div>`;
+    <div class="small" style="color:var(--muted);margin-top:8px">Super Bowl / conference / division markets light up here once Kalshi opens them. Win-total edges are live now - see the Win totals tab.</div>`;
 }
 function renderNFLWins(d) {
   // Teams with win-total markets, sorted by the biggest available edge.
@@ -3316,7 +3316,7 @@ function renderNFLWins(d) {
   const rows = teams.map((t) => {
     const cells = t.markets.win_totals.map((w) => {
       const ec = w.edge == null ? "" : (w.edge >= 0 ? "pos" : "neg");
-      return `<span class="nflwt ${ec}" title="model ${w.model}% vs ${w.cents}¢">${w.line}+ <b>${w.edge >= 0 ? "+" : ""}${w.edge == null ? "—" : w.edge}</b></span>`;
+      return `<span class="nflwt ${ec}" title="model ${w.model}% vs ${w.cents}¢">${w.line}+ <b>${w.edge >= 0 ? "+" : ""}${w.edge == null ? "-" : w.edge}</b></span>`;
     }).join("");
     return `<div class="nflwtrow"><div class="nflwt-team"><b>${t.name}</b> <span class="small" style="color:var(--muted)">proj ${t.proj_wins}W</span></div><div class="nflwt-lines">${cells}</div></div>`;
   });
@@ -3324,7 +3324,7 @@ function renderNFLWins(d) {
 }
 async function rerunPro(lg) {
   try { await fetch(`/api/sim/rerun?sport=${lg}`, { method: "POST" }); } catch (e) {}
-  $("nflResults").innerHTML = `<div class="empty">Rerun started — reloading shortly…</div>`;
+  $("nflResults").innerHTML = `<div class="empty">Rerun started - reloading shortly…</div>`;
   setTimeout(loadNFL, 6000);
 }
 
@@ -3349,34 +3349,34 @@ async function loadUFC() {
   } catch (e) { $("ufcResults").innerHTML = `<div class="empty">Failed to load.</div>`; }
 }
 function _ufcEdge(e) {
-  if (e == null) return "—";
+  if (e == null) return "-";
   return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
 }
 function _ratingChip(f) {
   if (f.rating == null) return "";
   const rc = f.rating >= 60 ? "#3ad17a" : f.rating <= 40 ? "#e0566a" : "var(--muted)";
   const c = f.components || {};
-  const tip = [`Power rating (league avg = 50) from our fight-history model — not an Elo.`,
+  const tip = [`Power rating (league avg = 50) from our fight-history model - not an Elo.`,
     `Striking ${c.striking}`, `Strike def ${c.str_def}`, `Power/KD ${c.power}`,
     `Finishing ${c.finishing}`, `Takedowns ${c.takedowns}`, `TD def ${c.td_def}`,
     `Durability ${c.durability}`].join(" • ");
   let flag = "";
-  if (f.debut) flag = ` <span class="ufc-debut" title="UFC debut — no Octagon box scores yet. Striking/grappling are league-average estimates; finishing & durability are seeded from the pro record (regional competition is softer than the UFC, so it's shrunk).">⚠️ UFC debut · pro ${f.career_record}</span>`;
-  else if (f.defaulted) flag = ` <span class="ufc-debut" title="No fight history at all — a league-average placeholder (rating 50), not a real read">⚠️ no data</span>`;
-  else if (f.thin) flag = ` <span class="ufc-debut" title="Few UFC fights — rating shrunk hard toward league average, treat with caution${f.career_record ? "; pro record " + f.career_record : ""}">⚠️ thin${f.career_record ? " · pro " + f.career_record : ""}</span>`;
+  if (f.debut) flag = ` <span class="ufc-debut" title="UFC debut - no Octagon box scores yet. Striking/grappling are league-average estimates; finishing & durability are seeded from the pro record (regional competition is softer than the UFC, so it's shrunk).">⚠️ UFC debut · pro ${f.career_record}</span>`;
+  else if (f.defaulted) flag = ` <span class="ufc-debut" title="No fight history at all - a league-average placeholder (rating 50), not a real read">⚠️ no data</span>`;
+  else if (f.thin) flag = ` <span class="ufc-debut" title="Few UFC fights - rating shrunk hard toward league average, treat with caution${f.career_record ? "; pro record " + f.career_record : ""}">⚠️ thin${f.career_record ? " · pro " + f.career_record : ""}</span>`;
   return ` <span class="ufc-rating" style="border-color:${rc};color:${rc}" title="${tip}">⚡${f.rating}</span>${flag}`;
 }
 function _fighterRow(f) {
-  const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "—";
+  const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "-";
   const fair = f.fair_win != null && f.fair_win !== f.win_pct
     ? ` <span class="small" style="color:var(--muted)" title="confidence-blended with the market">→${f.fair_win}%</span>` : "";
   const recTxt = f.fights > 0
     ? `${f.record} · ${f.fights}f`
     : (f.career_record ? `pro ${f.career_record}` : `${f.record} · ${f.fights}f`);
-  // Our pick disagrees with the book on who wins — the picks most likely to be
+  // Our pick disagrees with the book on who wins - the picks most likely to be
   // model error rather than edge, so say so on the card instead of hiding it.
   const fade = f.fades_market
-    ? ` <span class="ufc-debut" title="Our model favours this fighter but the market has him as the underdog. Disagreeing with a liquid market is where model error shows up first — treat as a flag, not an edge, until the model has graded results behind it.">⚠️ fades the book</span>` : "";
+    ? ` <span class="ufc-debut" title="Our model favours this fighter but the market has him as the underdog. Disagreeing with a liquid market is where model error shows up first - treat as a flag, not an edge, until the model has graded results behind it.">⚠️ fades the book</span>` : "";
   return `<div class="ufc-fighter">
       <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)}${fade} <span class="small" style="color:var(--muted)">${recTxt}</span></div>
       <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
@@ -3454,7 +3454,7 @@ function _tnEdge(e) {
   return `<span class="ev ${e >= 0 ? "pos" : "neg"}">${e >= 0 ? "+" : ""}${e}</span>`;
 }
 // Surface, said honestly. A court we could not identify is shown as unknown
-// rather than guessed, because the model genuinely does not use one there — it
+// rather than guessed, because the model genuinely does not use one there - it
 // falls back to the player's surface-agnostic profile. Silently printing a
 // surface we are not modelling on would be the misleading option.
 function surfTag(m) {
@@ -3465,25 +3465,25 @@ function surfTag(m) {
 }
 
 function _tnPlayer(p, served) {
-  const px = p.cents != null ? `${p.cents}¢` : "—";
+  const px = p.cents != null ? `${p.cents}¢` : "-";
   // HEADLINE = fair_win: the confidence-blended number we actually believe and
   // that the Lean uses. (fair_win already equals the market when we have no
   // model, or the model when there's no market.) Leading with the raw serve
-  // sim was the bug — on thin data it can wildly favor the wrong player.
+  // sim was the bug - on thin data it can wildly favor the wrong player.
   const believe = p.fair_win != null ? p.fair_win
     : (p.model_win != null ? p.model_win : p.mkt_win);
   const mktTag = (p.model_win == null && p.mkt_win != null)
     ? `<span class="small" style="color:var(--muted)"> mkt</span>` : "";
-  const headline = believe != null ? `${believe}%${mktTag}` : "—";
+  const headline = believe != null ? `${believe}%${mktTag}` : "-";
   // Secondary: the raw serve-model read, shown ONLY when it meaningfully
   // differs from the fair number (i.e. thin data pulled us to the market), so
   // the number and the story never silently contradict each other.
   const raw = (p.model_win != null && p.fair_win != null
     && Math.abs(p.model_win - p.fair_win) > 3)
-    ? ` <span class="small" style="color:var(--faint)" title="raw serve-model read before blending toward the market — differs when charting is thin, so we trust the blended number above">serve ${p.model_win}%</span>` : "";
+    ? ` <span class="small" style="color:var(--faint)" title="raw serve-model read before blending toward the market - differs when charting is thin, so we trust the blended number above">serve ${p.model_win}%</span>` : "";
   // Variance reality check on a strong favorite (from the number we believe).
   const risk = (believe != null && believe >= 70 && believe < 100)
-    ? ` <span class="tn-risk" title="even a heavy favorite loses this often — single tennis matches are high-variance">1 in ${Math.round(100 / (100 - believe))} loses</span>` : "";
+    ? ` <span class="tn-risk" title="even a heavy favorite loses this often - single tennis matches are high-variance">1 in ${Math.round(100 / (100 - believe))} loses</span>` : "";
   const hold = p.hold != null ? `<span class="tn-hold" title="probability of holding serve">hold ${p.hold}%</span>` : "";
   const elo = p.elo != null ? `<span class="tn-hold" title="our Elo rating from recent match results (${p.elo_n} matches)">Elo ${p.elo}</span>` : "";
   return `<div class="tn-player">
@@ -3524,11 +3524,11 @@ function renderTennisMaker() {
     + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
   box.innerHTML = `<div class="combomaker">
     🎯 <b>Tennis combo maker</b>
-    ${n != null ? `<div class="small" style="margin:4px 0 2px">Drawing from the <b>${n}</b> match${n === 1 ? "" : "es"} Kalshi has actually opened for combos and that have a real book. <b>ITF counts</b> — eligibility is per match, not per tour, and Kalshi publishes it.</div>` : ""}
+    ${n != null ? `<div class="small" style="margin:4px 0 2px">Drawing from the <b>${n}</b> match${n === 1 ? "" : "es"} Kalshi has actually opened for combos and that have a real book. <b>ITF counts</b> - eligibility is per match, not per tour, and Kalshi publishes it.</div>` : ""}
     <div style="margin-top:8px">each leg ≥
       <input id="tnComboTarget" type="number" min="20" max="97" value="${tnComboTarget}" style="width:54px"/>%
-      and ≤ <input id="tnComboCap" type="number" min="0" max="99" value="${tnComboCap || ""}" placeholder="—" style="width:54px"/>% likely</div>
-    <div class="small" style="margin-top:2px;color:var(--muted)">Set a ceiling. Without one a live board hands you three matches that are already decided — 97-99¢ legs, 91% combined, paying 1.1×, all technically true and none of them a bet you want.</div>
+      and ≤ <input id="tnComboCap" type="number" min="0" max="99" value="${tnComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Set a ceiling. Without one a live board hands you three matches that are already decided - 97-99¢ legs, 91% combined, paying 1.1×, all technically true and none of them a bet you want.</div>
     <div class="small" style="margin-top:6px">
       ${sel("tnComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], tnComboLegsMode)}
       <input id="tnComboN" type="number" min="2" max="12" value="${tnComboLegs}" style="width:50px"/> legs
@@ -3542,15 +3542,15 @@ function renderTennisMaker() {
                               ["3h", "within 3 hours" + (_tnWinCounts ? ` (${_tnWinCounts["3h"]})` : "")],
                               ["1h", "within the hour" + (_tnWinCounts ? ` (${_tnWinCounts["1h"]})` : "")]], tnComboWindow)}
     </div>
-    <div class="small" style="margin-top:2px;color:var(--muted)"><b>today only</b> is enforceable for every match — the day is in Kalshi's own event ticker. The hour windows need a published start time, which is ATP/WTA only${_tnWinCounts && _tnWinCounts.no_clock ? `, so <b>${_tnWinCounts.no_clock}</b> otherwise-eligible matches can't qualify for one` : ""}. Kalshi's own timing field was checked as a substitute and is off by anywhere from 28 hours early to 15 hours late.</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)"><b>today only</b> is enforceable for every match - the day is in Kalshi's own event ticker. The hour windows need a published start time, which is ATP/WTA only${_tnWinCounts && _tnWinCounts.no_clock ? `, so <b>${_tnWinCounts.no_clock}</b> otherwise-eligible matches can't qualify for one` : ""}. Kalshi's own timing field was checked as a substitute and is off by anywhere from 28 hours early to 15 hours late.</div>
     <div class="small" style="margin-top:8px">Leg types <span style="color:var(--muted)">(none selected = all)</span>: <span class="ptchips">${_TN_TYPES.map(([v, l]) => `<span class="ptchip${_tnTypes.has(v) ? " on" : ""}" onclick="toggleTnType(this,'${v}')">${l}</span>`).join("")}</span></div>
     <label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="tnComboLive"${tnComboLive ? " checked" : ""} style="width:auto"/> 🔴 include matches already on court</label>
-    <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere — ESPN publishes ATP/WTA only — so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Off by default: a match in progress is priced off a score we may be seconds behind, while our win% is a pre-match read. ITF has no scoreboard anywhere - ESPN publishes ATP/WTA only - so those are detected from <b>Kalshi's own trade tape</b> instead: a match being played trades continuously (its last 40 trades span a minute or two) and a scheduled one does not (half an hour to a day).</div>
     <div style="margin-top:8px">
       <button class="track-mini primary-mini" onclick="buildTennisCombo()">Build</button>
       <button class="track-mini" style="margin-left:6px" onclick="buildTennisCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
     </div>
-    <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices — total games, straight sets, aces — so a slip stays internally consistent. Pick <b>Match winner</b> alone for a plain winners-only parlay.</div>
+    <div class="small" style="margin-top:4px">Match winners plus the derived markets the same simulation prices - total games, straight sets, aces - so a slip stays internally consistent. Pick <b>Match winner</b> alone for a plain winners-only parlay.</div>
     <div id="tnComboOut"></div>
   </div>`;
   if (prev) { const el = $("tnComboOut"); if (el) el.innerHTML = prev; }
@@ -3590,7 +3590,7 @@ async function buildTennisCombo(maxBet) {
     if (!d.combo) {
       const n = d.n_combo_matches;
       if (d.hint === "max_bet_unreachable" || d.hint === "max_bet_needs_priced_legs") {
-        put(`<div class="empty">No tennis slip can pay <b>${d.cap_x || MAX_BET_X}×</b> right now. A max bet only uses matches with a real, traded Kalshi quote on both sides — most of the board is listed but barely quoted, so there usually aren't enough to multiply that far.</div>`);
+        put(`<div class="empty">No tennis slip can pay <b>${d.cap_x || MAX_BET_X}×</b> right now. A max bet only uses matches with a real, traded Kalshi quote on both sides - most of the board is listed but barely quoted, so there usually aren't enough to multiply that far.</div>`);
         return;
       }
       put(`<div class="empty">No slip fits those targets.${n === 0
@@ -3616,7 +3616,7 @@ function tnDayTag(m) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const days = Math.round((when - today) / 86400000);
   if (days === 0) return `<span class="tn-day today" title="playing today">Today</span>`;
-  if (days === 1) return `<span class="tn-day soon" title="NOT today — tomorrow">Tomorrow</span>`;
+  if (days === 1) return `<span class="tn-day soon" title="NOT today - tomorrow">Tomorrow</span>`;
   if (days < 0) return `<span class="tn-day past" title="scheduled before today">${when.toLocaleDateString([], { month: "short", day: "numeric" })}</span>`;
   return `<span class="tn-day soon" title="${days} days out">${when.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}</span>`;
 }
@@ -3670,7 +3670,7 @@ function renderTennis() {
   const d = _tnData; if (!d) return;
   let matches = (d.matches || []).slice();
   // The default view. A 264-match board where ~40 can go in a slip is not a
-  // board, it's a haystack — Kalshi refuses ITF as a parlay leg, and plenty of
+  // board, it's a haystack - Kalshi refuses ITF as a parlay leg, and plenty of
   // what's left is listed without being quoted.
   if (_tnSub === "combo") matches = matches.filter((m) => m.combo_ok);
   else if (_tnSub === "atp") matches = matches.filter((m) => m.tour === "ATP");
@@ -3691,7 +3691,7 @@ function renderTennis() {
     matches.sort((x, y) => (y.upset_score || 0) - (x.upset_score || 0));
   } else if (_tnSub === "dips") {
     matches = matches.filter((m) => m.dip);
-    // Verified dips first — dip_score is deliberately deeply negative for the
+    // Verified dips first - dip_score is deliberately deeply negative for the
     // unverified ones, so a bigger unknown can never outrank a real edge.
     matches.sort((x, y) => (y.dip_score || 0) - (x.dip_score || 0));
   }
@@ -3708,16 +3708,16 @@ function renderTennis() {
     ? ` · <b style="color:#3ad17a">🎲 ${d.n_combo} combo-ready</b>` : "";
   const dipBit = d.n_dips ? ` · <b style="color:#3ad17a">📉 ${d.n_dips} dip${d.n_dips > 1 ? "s" : ""}</b>` : "";
   $("tnSummary").innerHTML = _tnSub === "dips"
-    ? `<b>${matches.length}</b> match${matches.length === 1 ? "" : "es"} where the market has marked a favourite down mid-match. A <b>verified</b> dip re-runs the point-by-point sim <b>from the current score</b> and is only shown when that number still beats the ask by ${8}+ — a real edge on a number we computed. An <b>unverified</b> one is in play on a tour with no scoreboard, so the price drop is the only thing we can see, and a collapse looks identical to a comeback from here: those are listed last and are not a recommendation. <b>Hit ↻ Refresh before acting</b> — a live price moves while you read it.`
+    ? `<b>${matches.length}</b> match${matches.length === 1 ? "" : "es"} where the market has marked a favourite down mid-match. A <b>verified</b> dip re-runs the point-by-point sim <b>from the current score</b> and is only shown when that number still beats the ask by ${8}+ - a real edge on a number we computed. An <b>unverified</b> one is in play on a tour with no scoreboard, so the price drop is the only thing we can see, and a collapse looks identical to a comeback from here: those are listed last and are not a recommendation. <b>Hit ↻ Refresh before acting</b> - a live price moves while you read it.`
     : _tnSub === "combo"
-    ? `<b>${matches.length} of ${d.n_matches}</b> matches can actually be a <b>parlay leg</b>${liveBit}${upBit}. Kalshi decides this <b>per match</b> — not per tour, so plenty of <b>ITF</b> qualifies — and it also needs a <b>real book</b>, not just a listed price. Each card that missed says which. Everything else is one click away under <b>All</b>, where it's fine as a single bet. Edge = fair win% − Kalshi ask.`
-    : `<b>${d.n_matches} matches</b>${comboBit}${liveBit}${upBit}${dipBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes — the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
+    ? `<b>${matches.length} of ${d.n_matches}</b> matches can actually be a <b>parlay leg</b>${liveBit}${upBit}. Kalshi decides this <b>per match</b> - not per tour, so plenty of <b>ITF</b> qualifies - and it also needs a <b>real book</b>, not just a listed price. Each card that missed says which. Everything else is one click away under <b>All</b>, where it's fine as a single bet. Edge = fair win% − Kalshi ask.`
+    : `<b>${d.n_matches} matches</b>${comboBit}${liveBit}${upBit}${dipBit}${playBit}. Model = serve/return rates from charted matches → point-by-point sim (with <b>recent-match fatigue</b>), <b>ensembled with our own Elo</b>. Each card shows <b>where to find it on Kalshi</b> (series + tournament). A heavy favorite still loses sometimes - the <b>1-in-N</b> tag is the real single-match upset rate. The green <b>✅ Lean</b> is the side to look at. Edge = fair win% − Kalshi ask.`;
   appendCalNote("tnSummary", "tennis", "tennis");
   if (!matches.length) {
     const msg = _tnSub === "live" ? "No tracked matches on court right now."
-      : _tnSub === "upsets" ? "No big favorites trailing right now — check back during play."
+      : _tnSub === "upsets" ? "No big favorites trailing right now - check back during play."
       : _tnSub === "dips" ? "No favourite is being marked down right now. This fills up mid-match when a big name drops a set and the price overshoots."
-      : _tnSub === "combo" ? "No match on the board can be a parlay leg right now — Kalshi only takes ATP/WTA in a slip, and none are quoted. Check <b>All</b> for singles."
+      : _tnSub === "combo" ? "No match on the board can be a parlay leg right now - Kalshi only takes ATP/WTA in a slip, and none are quoted. Check <b>All</b> for singles."
       : q ? `No matches for “${q}”.` : "No matches in this view.";
     $("tnResults").innerHTML = `<div class="empty">${msg}</div>`; return;
   }
@@ -3743,10 +3743,10 @@ function renderTennis() {
     const strong = L && L.strength >= 6;
     const lean = L
       ? `<div class="tn-lean${strong ? " strong" : ""}" title="best edge, discounted by how much charting backs it">
-           ${strong ? "⭐ " : ""}✅ Lean: <b>${L.pick}</b> to win — ${L.fair_win}% vs ${L.cents}¢ <span class="ev pos">+${L.edge}</span></div>`
+           ${strong ? "⭐ " : ""}✅ Lean: <b>${L.pick}</b> to win - ${L.fair_win}% vs ${L.cents}¢ <span class="ev pos">+${L.edge}</span></div>`
       : (m.modeled === false
-        ? `<div class="tn-lean none">Market-priced — no charting data on these players, so we defer to Kalshi's odds</div>`
-        : `<div class="tn-lean none">No edge — model agrees with the market</div>`);
+        ? `<div class="tn-lean none">Market-priced - no charting data on these players, so we defer to Kalshi's odds</div>`
+        : `<div class="tn-lean none">No edge - model agrees with the market</div>`);
     const lv = m.live;
     // A tape-detected live match has NO score -- that is the honest limit of
     // reading "in play" off trade velocity -- so the chip must not render one.
@@ -3754,38 +3754,38 @@ function renderTennis() {
     const liveChip = lv
       ? (lv.sets_a != null
         ? `<span class="tn-livechip">🔴 LIVE ${lv.sets_a}–${lv.sets_b}${lv.cur ? ` (${lv.cur[0]}-${lv.cur[1]})` : ""} · ${lv.detail || lv.score}</span>`
-        : `<span class="tn-livechip" title="in play, detected from Kalshi's trade tape — no scoreboard covers this tour, so we have no score">🔴 LIVE · in play<span style="opacity:.7"> (no score feed)</span></span>`)
+        : `<span class="tn-livechip" title="in play, detected from Kalshi's trade tape - no scoreboard covers this tour, so we have no score">🔴 LIVE · in play<span style="opacity:.7"> (no score feed)</span></span>`)
       : "";
     // Live in-match win probability from the current score (the point-by-point
     // sim re-run from here) + the live edge vs Kalshi's current ask.
     const liveWin = (lv && lv.p_a != null)
-      ? `<div class="tn-liveprob" title="win probability from the CURRENT score — the sim re-run live">⏱️ Live: <b>${a.name.split(" ").pop()} ${lv.p_a}%</b> · <b>${b.name.split(" ").pop()} ${lv.p_b}%</b>${
+      ? `<div class="tn-liveprob" title="win probability from the CURRENT score - the sim re-run live">⏱️ Live: <b>${a.name.split(" ").pop()} ${lv.p_a}%</b> · <b>${b.name.split(" ").pop()} ${lv.p_b}%</b>${
           (lv.edge_a != null && Math.abs(lv.edge_a) >= 5) ? ` <span class="ev ${lv.edge_a >= 0 ? "pos" : "neg"}">${a.name.split(" ").pop()} ${lv.edge_a >= 0 ? "+" : ""}${lv.edge_a}</span>` : ""}${
           (lv.edge_b != null && Math.abs(lv.edge_b) >= 5) ? ` <span class="ev ${lv.edge_b >= 0 ? "pos" : "neg"}">${b.name.split(" ").pop()} ${lv.edge_b >= 0 ? "+" : ""}${lv.edge_b}</span>` : ""}</div>` : "";
     const up = m.upset;
     const liveNote = up && up.fav_live_pct != null
-      ? `still <b>${up.fav_live_pct}% live</b> vs ${up.fav_cents}¢ — market overshot`
+      ? `still <b>${up.fav_live_pct}% live</b> vs ${up.fav_cents}¢ - market overshot`
       : `the market overshoots on a big name dropping a set`;
     const upBanner = up
       ? (up.price_only
-        ? `<div class="tn-upset">🚨 <b>${up.fav}</b> ${up.note} — in play with no scoreboard for this tour, so the price drop is all we can see. Worth a look, not a read.</div>`
+        ? `<div class="tn-upset">🚨 <b>${up.fav}</b> ${up.note} - in play with no scoreboard for this tour, so the price drop is all we can see. Worth a look, not a read.</div>`
         : `<div class="tn-upset">🚨 <b>${up.fav}</b> is ${up.note}${up.sets ? ` (sets ${up.sets}` : " ("}${up.fav_cents != null ? ` · ${up.fav_cents}¢` : ""}) but ${liveNote}.</div>`)
       : "";
     const dp = m.dip;
     const dipBanner = dp
       ? (dp.tier === "verified"
-        ? `<div class="tn-dip verified" title="the sim re-run from the CURRENT score still has this player ahead of what the market is charging">📉 <b>Dip:</b> <b>${dp.player}</b> is <b>${dp.cents}¢</b> but the sim run from the current score${dp.sets ? ` (${dp.sets})` : ""} still has him <b>${dp.live_pct}%</b> — <span class="ev pos">+${dp.edge}</span>. Pre-match read was ${dp.model_pct}%.</div>`
-        : `<div class="tn-dip unverified" title="in play with no scoreboard for this tour — the price drop is the only observation we have">⚠️ <b>Unverified dip:</b> <b>${dp.player}</b> has fallen to <b>${dp.cents}¢</b> from a ${dp.model_pct}% pre-match read (−${dp.drop}). <b>No score feed for this tour</b>, so we cannot tell a comeback from a collapse — this is a place to look, not a number.</div>`)
+        ? `<div class="tn-dip verified" title="the sim re-run from the CURRENT score still has this player ahead of what the market is charging">📉 <b>Dip:</b> <b>${dp.player}</b> is <b>${dp.cents}¢</b> but the sim run from the current score${dp.sets ? ` (${dp.sets})` : ""} still has him <b>${dp.live_pct}%</b> - <span class="ev pos">+${dp.edge}</span>. Pre-match read was ${dp.model_pct}%.</div>`
+        : `<div class="tn-dip unverified" title="in play with no scoreboard for this tour - the price drop is the only observation we have">⚠️ <b>Unverified dip:</b> <b>${dp.player}</b> has fallen to <b>${dp.cents}¢</b> from a ${dp.model_pct}% pre-match read (−${dp.drop}). <b>No score feed for this tour</b>, so we cannot tell a comeback from a collapse - this is a place to look, not a number.</div>`)
       : "";
     const unopened = m.tier === "unopened";
     const leanBlock = unopened
-      ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet — both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
+      ? `<div class="tn-lean none">⚪ Market not open on Kalshi yet - both sides quoted high (no two-sided price). Shown so you can find it; check back closer to match time.</div>`
       : lean;
     const startTag = (!m.live && m.start && fmtStartTime(m.start))
       ? `<span class="starttime" title="scheduled start (Mountain Time)">🕒 ${fmtStartTime(m.start)}</span> ` : "";
     return `<div class="tn-match${up ? " upsetcard" : ""}${unopened ? " tn-unopened" : ""}">
         <div class="tn-mhead">${m.tour} · ${surfTag(m)} · Bo${m.best_of} ${tnDayTag(m)} ${startTag}${liveChip}
-          <span class="tn-tier" title="${tText} — how much charted history backs this read">${tEmoji} ${tText}</span></div>
+          <span class="tn-tier" title="${tText} - how much charted history backs this read">${tEmoji} ${tText}</span></div>
         ${kalshiWhere(m)}
         ${liveWin}
         ${upBanner}
@@ -3823,12 +3823,12 @@ function initLoL() {
 async function loadLoL(attempt) {
   attempt = attempt || 0;
   const box = $("lolResults");
-  if (!attempt) box.innerHTML = `<div class="empty">Building the pro slate + per-player history in the background — the Leaguepedia API is rate-limited, so the first load takes ~30–60s. This refreshes automatically.</div>`;
+  if (!attempt) box.innerHTML = `<div class="empty">Building the pro slate + per-player history in the background - the Leaguepedia API is rate-limited, so the first load takes ~30–60s. This refreshes automatically.</div>`;
   try {
     const d = await (await fetch("/api/lol")).json();
     if (d.error || !(d.matches && d.matches.length)) {
       if (attempt < 9) {
-        if (attempt >= 1) box.innerHTML = `<div class="empty">Still assembling the slate… (the wiki API pages slowly) — auto-retrying.</div>`;
+        if (attempt >= 1) box.innerHTML = `<div class="empty">Still assembling the slate… (the wiki API pages slowly) - auto-retrying.</div>`;
         setTimeout(() => loadLoL(attempt + 1), 9000);
         return;
       }
@@ -3850,9 +3850,9 @@ function renderLoL() {
   const ms = (_lolData && _lolData.matches) || [];
   $("lolSummary").innerHTML = ms.length
     ? `<span class="leanchip">${ms.length} matches</span> <span class="leanchip">${(_lolp6.picks || []).length} Pick 6 leans</span>` : "";
-  if (!ms.length) { box.innerHTML = `<div class="empty">No matches loaded yet — retry in a moment (the wiki API rate-limits cold loads).</div>`; return; }
+  if (!ms.length) { box.innerHTML = `<div class="empty">No matches loaded yet - retry in a moment (the wiki API rate-limits cold loads).</div>`; return; }
   const side = (r) => (r || []).map((p) => `<div class="lol-prow">
-      <span class="lol-role">${p.role || "—"}</span>
+      <span class="lol-role">${p.role || "-"}</span>
       <span class="lol-pname">${p.player}${p.champs && p.champs.length ? `<span class="lol-champs">${p.champs.slice(0, 3).join(" · ")}</span>` : ""}</span>
       <span class="lol-stat">K <b>${p.kills}</b></span>
       <span class="lol-stat">A <b>${p.assists}</b></span>
@@ -3861,7 +3861,7 @@ function renderLoL() {
   box.innerHTML = ms.map((m) => {
     const wp = (m.win1 != null)
       ? `<div class="lol-wp"><span class="lol-wpbar"><span style="width:${m.win1}%"></span></span>
-         <span class="small"><b>${m.team1}</b> ${m.win1}% — ${m.win2}% <b>${m.team2}</b> · win the bo${m.bo}</span></div>` : "";
+         <span class="small"><b>${m.team1}</b> ${m.win1}% vs ${m.win2}% <b>${m.team2}</b> · win the bo${m.bo}</span></div>` : "";
     return `<div class="lol-match">
       <div class="lol-mhead"><span class="legtag">${m.league}</span> <b>${m.team1}</b> <span class="small">vs</span> <b>${m.team2}</b> <span class="small">· bo${m.bo} · ${m.date}</span></div>
       ${wp}
@@ -3876,10 +3876,10 @@ let _lolFutWired = false;
 function initLoLFutures() {
   const sel = $("lolFutSel");
   const ts = (_lolData && _lolData.tournaments) || [];
-  if (!ts.length) { sel.innerHTML = `<option value="">— load the slate first —</option>`; return; }
+  if (!ts.length) { sel.innerHTML = `<option value="">- load the slate first -</option>`; return; }
   if (sel.dataset.filled === "1") return;
   sel.dataset.filled = "1";
-  sel.innerHTML = ts.map((t) => `<option value="${encodeURIComponent(t.page)}">${t.league} — ${t.label}</option>`).join("");
+  sel.innerHTML = ts.map((t) => `<option value="${encodeURIComponent(t.page)}">${t.league} - ${t.label}</option>`).join("");
 }
 async function loadLoLFutures() {
   const box = $("lolFutResults"), page = $("lolFutSel").value;
@@ -3910,7 +3910,7 @@ function toggleLoLPick6(i) {
 }
 function renderLoLPick6() {
   const box = $("lolPick6");
-  if (!_lolp6.picks.length) { box.innerHTML = `<div class="empty">No Pick 6 leans yet — load the slate first.</div>`; return; }
+  if (!_lolp6.picks.length) { box.innerHTML = `<div class="empty">No Pick 6 leans yet - load the slate first.</div>`; return; }
   const rows = _lolp6.picks.map((p, i) => {
     const on = _lolp6.sel.has(i);
     return `<label class="p6row${on ? " on" : ""}">
@@ -3921,7 +3921,7 @@ function renderLoLPick6() {
       <span class="p6prob"><b>${p.prob}%</b><span class="p6proj">proj ${p.proj}</span></span>
     </label>`;
   }).join("");
-  box.innerHTML = `<div id="lolP6tally" class="p6tally"></div><div class="small" style="margin:2px 0 8px">Kills / assists / CS from a correlated per-map sim (kills zero-sum across the two teams). DK &amp; PrizePicks set the line — take our More/Less where it clears theirs.</div><div class="p6list">${rows}</div>`;
+  box.innerHTML = `<div id="lolP6tally" class="p6tally"></div><div class="small" style="margin:2px 0 8px">Kills / assists / CS from a correlated per-map sim (kills zero-sum across the two teams). DK &amp; PrizePicks set the line - take our More/Less where it clears theirs.</div><div class="p6list">${rows}</div>`;
   renderLoLP6Tally();
 }
 function renderLoLP6Tally() {
@@ -3935,13 +3935,13 @@ function renderLoLP6Tally() {
   const pay = _lolp6.payouts[String(n)] || null;
   const ev = pay ? Math.round((prob * pay - 1) * 100) : null;
   const corr = Object.values(sameM).some((c) => c > 1)
-    ? ` <span class="small" style="color:var(--muted)">⚠ picks share a match — correlation shifts the true chance</span>` : "";
+    ? ` <span class="small" style="color:var(--muted)">⚠ picks share a match - correlation shifts the true chance</span>` : "";
   t.innerHTML = `<b>${n}-pick</b> · all-hit chance <b>${(prob * 100).toFixed(1)}%</b>${pay ? ` · pays <b>${pay}×</b> · EV <b class="${ev >= 0 ? "ev pos" : "ev neg"}">${ev >= 0 ? "+" : ""}${ev}%</b>` : ""}${corr}`;
 }
 
-function _pxCells(x) {  // Kalshi ¢ + edge cells (— when unmatched)
-  const k = x.kalshi_cents != null ? `${x.kalshi_cents}¢` : "—";
-  const e = x.edge != null ? `<span class="${x.edge >= 0 ? "ev pos" : "ev neg"}">${x.edge >= 0 ? "+" : ""}${x.edge}</span>` : "—";
+function _pxCells(x) {  // Kalshi ¢ + edge cells ( - when unmatched)
+  const k = x.kalshi_cents != null ? `${x.kalshi_cents}¢` : "-";
+  const e = x.edge != null ? `<span class="${x.edge >= 0 ? "ev pos" : "ev neg"}">${x.edge >= 0 ? "+" : ""}${x.edge}</span>` : "-";
   return `<span class="fr-num">${k}</span><span class="fr-num">${e}</span>`;
 }
 
@@ -3967,12 +3967,12 @@ function renderRaceMarket() {
     const [kind, idx] = m.split(":");
     const race = d.races[+idx];
     const list = kind === "pole" ? race.pole : race.winner;
-    const note = race.priced ? "" : ` <span class="small" style="color:var(--muted)">— model only; Kalshi prices appear once it's the next race</span>`;
+    const note = race.priced ? "" : ` <span class="small" style="color:var(--muted)">- model only; Kalshi prices appear once it's the next race</span>`;
     const wx = race.wet_prob != null
       ? `<div class="small" style="color:var(--muted);margin:-2px 0 6px">🌧️ ${Math.round(race.wet_prob * 100)}% wet-race risk${race.avg_wind ? ` · 💨 ${race.avg_wind} km/h avg` : ""}${race.circuit ? ` · ${race.circuit}` : ""} <span style="color:var(--faint)">(historical race-day climate; wet races scramble the order)</span></div>` : "";
     const rt = fmtStartTime(race.start);
     const startLine = rt ? `<div class="starttime" style="margin:0 0 5px">🕒 Green flag ${rt}</div>` : "";
-    html = `<div class="teamhdr" style="margin:0 0 2px">${race.name} — ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>${startLine}${wx}`
+    html = `<div class="teamhdr" style="margin:0 0 2px">${race.name} - ${kind === "pole" ? "🏁 Pole" : "🏆 Race winner"} odds${note}</div>${startLine}${wx}`
       + `<div class="futrow rcrowR rchead"><span class="fr-rank">#</span><span class="fr-team">Driver</span><span class="fr-num">Model</span><span class="fr-num">Kalshi</span><span class="fr-num">Edge</span></div>`
       + list.map((x, i) => `<div class="futrow rcrowR"><span class="fr-rank">${i + 1}</span>
           <span class="fr-team"><b>${x.name}</b>${x.team ? `<span class="small"> ${x.team}</span>` : ""}</span>
@@ -3992,7 +3992,7 @@ function deepBar(s) {
   const pct = Math.max(0, Math.min(100, s.pct || 0));
   const eta = s.eta_sec != null ? `~${Math.max(1, Math.ceil(s.eta_sec / 60))} min left` : "estimating…";
   return `<div class="deepbar-wrap">
-    <div class="small">⚡ <b>Deep pitch-by-pitch sim running</b> — every pitch, hit &amp; walk across <b>${(s.total || 0).toLocaleString()}</b> seasons.
+    <div class="small">⚡ <b>Deep pitch-by-pitch sim running</b> - every pitch, hit &amp; walk across <b>${(s.total || 0).toLocaleString()}</b> seasons.
       <span style="color:var(--muted)">Keep using the app; it runs in the background and caches when done.</span></div>
     <div class="deepbar"><div class="deepbar-fill" style="width:${pct}%"></div></div>
     <div class="small" style="display:flex;justify-content:space-between">
@@ -4001,7 +4001,7 @@ function deepBar(s) {
 }
 
 // ---------------------------------------------------------------------------
-// "What happened" — day-over-day history of the nightly deep run.
+// "What happened" - day-over-day history of the nightly deep run.
 //
 // Every stored day describes the move from the PREVIOUS run to itself, so the
 // day you are looking at always answers "what changed to get here", including
@@ -4042,7 +4042,7 @@ let _histDates = [];
 
 function _histLine(s) {
   // Colour only the measured effect, so the sentence itself stays readable.
-  // Matches "+4.1pp" and "+4.1 ± 0.5pp" — the error bar is part of the figure.
+  // Matches "+4.1pp" and "+4.1 ± 0.5pp" - the error bar is part of the figure.
   const m = String(s).match(/^(.*?)\s\s([+-][\d.]+(?:\s±\s[\d.]+)?pp)$/);
   if (!m) return `<li>${escapeHtml(s)}</li>`;
   const up = m[2].startsWith("+");
@@ -4102,11 +4102,11 @@ function renderDeepHistory(d) {
           <ul class="histwhat">${(t.what || []).map(_histLine).join("")}</ul>
         </div>`;
       }).join("")
-    : `<div class="small" style="color:var(--muted)">Nothing moved between these two runs — no roster changes and no games played.</div>`;
+    : `<div class="small" style="color:var(--muted)">Nothing moved between these two runs - no roster changes and no games played.</div>`;
 
   const a = d.attribution || {};
   const note = a.priced
-    ? `${a.priced} change${a.priced === 1 ? "" : "s"} priced by re-running the season with that one player reverted, on the same seeds — ${a.batches}×${(a.per_batch || 0).toLocaleString()} paired seasons each. The ± on a figure is measured from the spread across those runs, so it reflects that change rather than an assumed constant; anything not clearly separated from zero reads "no measurable effect" instead of a number.${a.skipped ? ` ${a.skipped} more change${a.skipped === 1 ? " is" : "s are"} listed without a figure.` : ""}`
+    ? `${a.priced} change${a.priced === 1 ? "" : "s"} priced by re-running the season with that one player reverted, on the same seeds - ${a.batches}×${(a.per_batch || 0).toLocaleString()} paired seasons each. The ± on a figure is measured from the spread across those runs, so it reflects that change rather than an assumed constant; anything not clearly separated from zero reads "no measurable effect" instead of a number.${a.skipped ? ` ${a.skipped} more change${a.skipped === 1 ? " is" : "s are"} listed without a figure.` : ""}`
     : `Changes are listed; measured pp figures appear once a run has priced them.`;
 
   box.innerHTML = `<div class="histwrap">
@@ -4133,7 +4133,7 @@ function _featuredVisible() {
 }
 
 // Watch the current sport's sim: drive the MLB deep progress bar while a run is in
-// flight, and — crucially — reload the board whenever a NEWER run lands (kicked by
+// flight, and - crucially - reload the board whenever a NEWER run lands (kicked by
 // the button or the nightly scheduler), so the page updates itself without a manual
 // refresh. Keeps a slow heartbeat when idle so a midnight rerun is picked up.
 async function watchFeatured() {
@@ -4171,7 +4171,7 @@ async function watchFeatured() {
 function renderFeatured(d) {
   if (d.sport === "nfl") {
     $("featuredSummary").innerHTML =
-      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>roster-aware model</b> (projected wins → game-by-game season + full playoff bracket). Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
+      `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · <b>roster-aware model</b> (projected wins → game-by-game season + full playoff bracket). Pick a market and search any team - the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>`;
     const groupsN = {};
     d.order.forEach((k) => { const m = d.markets[k]; (groupsN[m.group] = groupsN[m.group] || []).push([k, m.label]); });
     const ogN = Object.entries(groupsN).map(([g, items]) =>
@@ -4192,7 +4192,7 @@ function renderFeatured(d) {
     return;
   }
   const engineNote = d.engine === "deep"
-    ? `<b>deep pitch-by-pitch engine</b> — game-by-game, run-by-run`
+    ? `<b>deep pitch-by-pitch engine</b> - game-by-game, run-by-run`
     : `fast model (expected runs → Pythagorean)`;
   const deepCtl = d.engine === "deep"
     ? `<span class="deepbadge">⚡ deep engine · ${d.n_sims.toLocaleString()} seasons</span>
@@ -4200,7 +4200,7 @@ function renderFeatured(d) {
        <button class="track-mini" style="margin-left:6px" onclick="startDeepRun()">↻ rerun now</button>`
     : `<button class="track-mini" id="deepBtn" onclick="startDeepRun()">⚡ Run deep pitch-by-pitch sim (~4,000 seasons)</button>`;
   $("featuredSummary").innerHTML =
-    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team — the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
+    `<div class="small" style="margin-bottom:6px">Simulated <b>${d.n_sims.toLocaleString()}</b> seasons · ${d.n_games_left} games left · ${engineNote}. Pick a market and search any team - the count is how many of the ${d.n_sims.toLocaleString()} simulated seasons that team won it, next to our model %, Kalshi and Polymarket.</div>
      <div style="margin-bottom:8px">${deepCtl}</div>
      <div id="deepProg" style="margin-bottom:8px"></div>
      <div id="deepHistory" style="margin-bottom:8px"></div>`;
@@ -4235,7 +4235,7 @@ function _divChip(r) {
   const dv = _MLB_DIV[r.division] || (typeof r.division === "string" ? r.division : null);
   if (!dv) return "";
   const al = r.league === 103 || dv.startsWith("AL") || dv.startsWith("AFC");
-  return ` <span class="divchip ${al ? "al" : "nl"}" title="division — only ONE team per division can win it, so never put two same-division teams in the same division-winner slip">${dv}</span>`;
+  return ` <span class="divchip ${al ? "al" : "nl"}" title="division - only ONE team per division can win it, so never put two same-division teams in the same division-winner slip">${dv}</span>`;
 }
 function renderFeaturedTable() {
   const d = _boardData; if (!d) return;
@@ -4246,7 +4246,7 @@ function renderFeaturedTable() {
   // Bold the cheaper book (the one you'd buy our side on).
   const bk = (r, book) => {
     const c = book === "Kalshi" ? r.kalshi_cents : r.poly_cents;
-    if (c == null) return "—";
+    if (c == null) return "-";
     return r.best_book === book ? `<b>${c}¢</b>` : `${c}¢`;
   };
   const maxc = Math.max(1, ...m.teams.map((r) => r.count));
@@ -4266,14 +4266,14 @@ function renderFeaturedTable() {
       <span class="fr-num"><b>${r.model_pct}%</b></span>
       <span class="fr-num">${bk(r, "Kalshi")}</span>
       <span class="fr-num">${bk(r, "Polymarket")}</span>
-      <span class="fr-num ${ecls}">${r.edge == null ? "—" : (r.edge >= 0 ? "+" : "") + r.edge}</span>
+      <span class="fr-num ${ecls}">${r.edge == null ? "-" : (r.edge >= 0 ? "+" : "") + r.edge}</span>
     </div>`;
   }).join("");
   const nflB = d.sport === "nfl";
   const mx = _featMarket === "division"
-    ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One winner per division — two teams with the <b>same division chip</b> can never both hit. Don't pair them in a slip.</div>`
+    ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ One winner per division - two teams with the <b>same division chip</b> can never both hit. Don't pair them in a slip.</div>`
     : _featMarket === "pennant"
-      ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ ${nflB ? "One champion per conference — two <b>AFC</b> (or two <b>NFC</b>) teams can never both hit." : "One pennant per league — two <b>AL</b> (or two <b>NL</b>) teams can never both hit."} Don't pair them in a slip.</div>`
+      ? `<div class="small" style="color:var(--muted);margin:2px 0 6px">⚠️ ${nflB ? "One champion per conference - two <b>AFC</b> (or two <b>NFC</b>) teams can never both hit." : "One pennant per league - two <b>AL</b> (or two <b>NL</b>) teams can never both hit."} Don't pair them in a slip.</div>`
       : "";
   $("futTable").innerHTML = mx + head + (body || `<div class="empty">No team matches “${q}”.</div>`);
 }
@@ -4302,7 +4302,7 @@ function renderNflSeasonTeam(d) {
       <td>${cell(p, "rush_yd")}</td><td>${cell(p, "rush_td")}</td>
       <td>${cell(p, "rec")}</td><td>${cell(p, "rec_yd")}</td><td>${cell(p, "rec_td")}</td></tr>`).join("");
   return `<div class="teamdetail">
-    <div class="teamdetailhead"><b>${d.team}</b> — projected <b>season-end</b> player stat lines <span class="small" style="color:var(--muted)">· ${d.source}${d.weeks_played ? ` · real stats through week ${d.weeks_played} in <span class="rp">(parentheses)</span>` : ""}</span>
+    <div class="teamdetailhead"><b>${d.team}</b> - projected <b>season-end</b> player stat lines <span class="small" style="color:var(--muted)">· ${d.source}${d.weeks_played ? ` · real stats through week ${d.weeks_played} in <span class="rp">(parentheses)</span>` : ""}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls"><div><table class="seasontbl"><thead><tr><th>Player</th><th>FPTS</th>
       <th>PaYd</th><th>PaTD</th><th>INT</th><th>RuYd</th><th>RuTD</th><th>Rec</th><th>ReYd</th><th>ReTD</th></tr></thead>
@@ -4312,21 +4312,21 @@ window.openTeamDetail = openTeamDetail;
 window.closeTeamDetail = () => { const b = $("futTeamDetail"); if (b) b.innerHTML = ""; };
 
 function renderTeamDetail(d) {
-  const av = (x) => (x == null ? "—" : x.toFixed(3).replace(/^0/, ""));
+  const av = (x) => (x == null ? "-" : x.toFixed(3).replace(/^0/, ""));
   const rp = (v) => (v == null ? "" : ` <span class="rp">(${v})</span>`);   // real in parens
   const ilTag = (r) => r.il ? ` <span class="iltag" title="On the injured list${r.status ? " (" + r.status + ")" : ""}">🏥 IL</span>` : "";
   const bnTag = (b) => b.role === "bench"
-    ? ` <span class="small" style="color:var(--faint)" title="bench — enters as a pinch hitter or fill-in starter${b.ph_g ? ` (~${b.ph_g} simulated PH appearances/season)` : ""}">BN</span>`
+    ? ` <span class="small" style="color:var(--faint)" title="bench - enters as a pinch hitter or fill-in starter${b.ph_g ? ` (~${b.ph_g} simulated PH appearances/season)` : ""}">BN</span>`
     : b.role === "taxi"
-      ? ` <span class="small" style="color:var(--faint)" title="taxi squad (optioned to the minors) — the sim called him up when injuries drained the MLB bench">AAA</span>` : "";
+      ? ` <span class="small" style="color:var(--faint)" title="taxi squad (optioned to the minors) - the sim called him up when injuries drained the MLB bench">AAA</span>` : "";
   const bat = d.batting.map((b) => {
     const r = b.real || {};
-    if (!b.has_sim) {   // injured, no simulated line — real stats only
-      return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.ops ? av(r.ops) : "—"}</td><td>${r.h ?? "—"}</td>
-        <td>${r.hr ?? "—"}</td><td>${r.r ?? "—"}</td><td>${r.rbi ?? "—"}</td><td>${r.sb ?? "—"}</td><td>${r.bb ?? "—"}</td><td>${r.k ?? "—"}</td></tr>`;
+    if (!b.has_sim) {   // injured, no simulated line - real stats only
+      return `<tr class="ilrow"><td>${b.name}${ilTag(b)}</td><td>${av(r.avg)}</td><td>${r.ops ? av(r.ops) : "-"}</td><td>${r.h ?? "-"}</td>
+        <td>${r.hr ?? "-"}</td><td>${r.r ?? "-"}</td><td>${r.rbi ?? "-"}</td><td>${r.sb ?? "-"}</td><td>${r.bb ?? "-"}</td><td>${r.k ?? "-"}</td></tr>`;
     }
     return `<tr${b.il ? ' class="ilrow"' : ""}><td>${b.name}${bnTag(b)}${ilTag(b)}</td>
-      <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.ops != null ? av(b.ops) : "—"}${r.ops ? rp(av(r.ops)) : ""}</td><td>${b.h}${rp(r.h)}</td>
+      <td>${av(b.avg)}${b.real ? rp(av(r.avg)) : ""}</td><td>${b.ops != null ? av(b.ops) : "-"}${r.ops ? rp(av(r.ops)) : ""}</td><td>${b.h}${rp(r.h)}</td>
       <td>${b.hr}${rp(r.hr)}</td><td>${b.r}${rp(r.r)}</td><td>${b.rbi}${rp(r.rbi)}</td>
       <td>${b.sb ?? 0}${rp(r.sb)}</td><td>${b.bb}${rp(r.bb)}</td><td>${b.k}${rp(r.k)}</td></tr>`;
   }).join("");
@@ -4334,18 +4334,18 @@ function renderTeamDetail(d) {
     const r = p.real || {};
     if (!p.has_sim) {
       return `<tr class="ilrow"><td>${p.name} <span class="small">${p.role || "P"}</span>${ilTag(p)}</td>
-        <td>${r.ip ?? "—"}</td><td>${r.era != null ? r.era : "—"}</td><td>${r.whip ?? "—"}</td><td>${r.fip ?? "—"}</td><td>${r.k ?? "—"}</td>
-        <td>${r.bb ?? "—"}</td><td>${r.h ?? "—"}</td><td>${r.hr ?? "—"}</td></tr>`;
+        <td>${r.ip ?? "-"}</td><td>${r.era != null ? r.era : "-"}</td><td>${r.whip ?? "-"}</td><td>${r.fip ?? "-"}</td><td>${r.k ?? "-"}</td>
+        <td>${r.bb ?? "-"}</td><td>${r.h ?? "-"}</td><td>${r.hr ?? "-"}</td></tr>`;
     }
     return `<tr${p.il ? ' class="ilrow"' : ""}><td>${p.name} <span class="small">${p.role}</span>${ilTag(p)}</td>
-      <td>${p.ip}${rp(r.ip)}</td><td>${p.era != null ? p.era : "—"}${p.real && r.era != null ? rp(r.era) : ""}</td>
-      <td>${p.whip != null ? p.whip : "—"}${r.whip ? rp(r.whip) : ""}</td><td>${p.fip != null ? p.fip : "—"}${r.fip ? rp(r.fip) : ""}</td>
+      <td>${p.ip}${rp(r.ip)}</td><td>${p.era != null ? p.era : "-"}${p.real && r.era != null ? rp(r.era) : ""}</td>
+      <td>${p.whip != null ? p.whip : "-"}${r.whip ? rp(r.whip) : ""}</td><td>${p.fip != null ? p.fip : "-"}${r.fip ? rp(r.fip) : ""}</td>
       <td>${p.k}${rp(r.k)}</td><td>${p.bb}${rp(r.bb)}</td><td>${p.h}${rp(r.h)}</td><td>${p.hr}${rp(r.hr)}</td></tr>`;
   }).join("");
   const phNote = d.ph_primary
     ? ` · primary pinch hitter (simmed): <b>${d.ph_primary.name}</b> ~${d.ph_primary.ph_g} PH apps/season` : "";
   return `<div class="teamdetail">
-    <div class="teamdetailhead"><b>${d.team}</b> — projected <b>season-end</b> totals (current + simulated remainder, averaged over ${d.n_sims.toLocaleString()} deep seasons) <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
+    <div class="teamdetailhead"><b>${d.team}</b> - projected <b>season-end</b> totals (current + simulated remainder, averaged over ${d.n_sims.toLocaleString()} deep seasons) <span class="small" style="color:var(--muted)">· current-season stats in <span class="rp">(parentheses)</span> · 🏥 IL players at the bottom · BN = bench${phNote}</span>
       <span class="tdclose" onclick="closeTeamDetail()">✕</span></div>
     <div class="tdtbls">
       <div><div class="tdcap">⚾ Batting <span class="small" style="color:var(--muted)">season-end projection (current)</span></div><table class="seasontbl"><thead><tr><th>Hitter</th><th>AVG</th><th>OPS</th><th>H</th><th>HR</th><th>R</th><th>RBI</th><th>SB</th><th>BB</th><th>K</th></tr></thead><tbody>${bat}</tbody></table></div>
@@ -4390,7 +4390,7 @@ function renderSports() {
       : d.grid.form_used ? "grid + recent form" : "grid";
     banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
   } else if (d.grid && !d.grid.available) {
-    banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} — showing market-favorite picks until qualifying posts.</div>`;
+    banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} - showing market-favorite picks until qualifying posts.</div>`;
   }
   // Summary: how many tradeable, the best value (lowest vig among liquid), arbs.
   const liquid = d.events.filter((e) => e.liquidity === "ok");
@@ -4441,9 +4441,9 @@ async function loadWeather() {
     d = Object.assign({}, d, { events: pickDate ? d.events.filter((ev) => ev.date === pickDate) : d.events });
     const cur = d.current;
     const curBox = cur ? `<div class="volbox">
-      <div class="sellhead"><span class="sellaction">🌡️ ${d.city} — live now</span>
+      <div class="sellhead"><span class="sellaction">🌡️ ${d.city} - live now</span>
         <span class="small">${cur.temp_f != null ? `<b>${cur.temp_f}°F</b>` : ""}${cur.high_so_far_f != null ? ` · high so far <b>${cur.high_so_far_f}°</b>` : ""}</span></div>
-      <div class="small">dew point <b>${cur.dew_point_f ?? "—"}°</b> · humidity <b>${cur.humidity_pct ?? "—"}%</b> · wind <b>${cur.wind_mph ?? "—"} mph</b> · pressure <b>${cur.pressure_hpa ?? "—"} hPa</b></div>
+      <div class="small">dew point <b>${cur.dew_point_f ?? "-"}°</b> · humidity <b>${cur.humidity_pct ?? "-"}%</b> · wind <b>${cur.wind_mph ?? "-"} mph</b> · pressure <b>${cur.pressure_hpa ?? "-"} hPa</b></div>
     </div>` : "";
     box.innerHTML = curBox + d.events.map((ev) => {
       const rows = collapseRows(ev.outcomes.map((o) => {
@@ -4452,7 +4452,7 @@ async function loadWeather() {
         return `<div class="sportout">
           <div class="left">
             <span class="oname">${o.name}</span>
-            <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "—"}</b> · model fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "—"}</b>${ec != null ? ` · edge <b class="${cls}">${ec >= 0 ? "+" : ""}${ec}¢</b>` : ""}</span>
+            <span class="small">Kalshi <b>${o.yes_ask != null ? o.yes_ask + "¢" : "-"}</b> · model fair <b>${o.fair_pct != null ? o.fair_pct + "%" : "-"}</b>${ec != null ? ` · edge <b class="${cls}">${ec >= 0 ? "+" : ""}${ec}¢</b>` : ""}</span>
           </div>
         </div>`;
       }), "ranges");
@@ -4467,7 +4467,7 @@ async function loadWeather() {
         : "";
       return `<div class="bbgame">
         <div class="top">
-          <div class="matchup">${d.city} — high temp ${ev.date}</div>
+          <div class="matchup">${d.city} - high temp ${ev.date}</div>
           <div class="small" style="text-align:right">forecast high<br><b style="color:var(--text);font-size:1.1rem">${m.forecast_high != null ? m.forecast_high + "°F" : "n/a"}</b>${adj}</div>
         </div>
         ${detail}
@@ -4525,7 +4525,7 @@ async function initSim() {
       if (cb && !cb.dataset.wired) { cb.dataset.wired = "1"; cb.checked = nflPreseason; }
     }
     // Showdown vs Classic. Left on auto by default because the CSV already says
-    // which it is — a showdown export lists every player twice, once as CPT.
+    // which it is - a showdown export lists every player twice, once as CPT.
     if ($("dfsNflMode")) $("dfsNflMode").classList.toggle("hidden", !isNfl);
     const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
     if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb || isLol);
@@ -4588,9 +4588,9 @@ async function runGameSim() {
             <span class="small">~<b>${p.exp_k}</b> K · ${p.avg_ip} IP · <b>${p.avg_pitches}</b> pitches before relief · bullpen ~${p.bullpen_exp_k} K</span>
             <span class="small">Ks: ${dist}</span></div></div>`;
         }).join("");
-        pitBlock = `<div class="small" style="margin:10px 0 4px"><b>🎲 Starting pitchers</b> — simulated (pitch count, relief, bullpen):</div><div class="sportouts">${prows}</div>`;
+        pitBlock = `<div class="small" style="margin:10px 0 4px"><b>🎲 Starting pitchers</b> - simulated (pitch count, relief, bullpen):</div><div class="sportouts">${prows}</div>`;
       }
-      playerBlock = pitBlock + `<div class="small" style="margin:10px 0 4px"><b>🎲 Player-level sim</b> (lineups posted) — expected per game, sorted by DraftKings points:</div>
+      playerBlock = pitBlock + `<div class="small" style="margin:10px 0 4px"><b>🎲 Player-level sim</b> (lineups posted) - expected per game, sorted by DraftKings points:</div>
         <div class="teamhdr">${d.away}</div><div class="sportouts">${tbl(ps.players.away)}</div>
         <div class="teamhdr" style="margin-top:8px">${d.home}</div><div class="sportouts">${tbl(ps.players.home)}</div>`;
     } else {
@@ -4623,7 +4623,7 @@ async function runWxSim() {
     const thLine = d.prob_threshold != null
       ? `<div class="note" style="border:1px solid var(--accent);color:var(--accent)">🎯 Chance the high is ${dir} ${th}°: <b>${d.prob_threshold}%</b></div>` : "";
     box.innerHTML = `<div class="bbgame">
-      <div class="matchup">${d.city} — high ${d.date}</div>
+      <div class="matchup">${d.city} - high ${d.date}</div>
       <div class="kv" style="margin-top:6px"><span>Forecast <b>${d.forecast_high}°</b></span>
         <span>Median <b>${d.median}°</b></span><span>Likely <b>${d.p10}°–${d.p90}°</b></span><span>Range ${d.low}°–${d.high}°</span></div>
       ${thLine}</div>`;
@@ -4638,7 +4638,7 @@ function renderMlbDfs(d) {
     const star = p.sim ? "🎲" : "·";
     const own = p.own != null ? `<span class="dfs-own">${p.own}%</span>` : "";
     const unconf = p.confirmed === false
-      ? ` <span class="ufc-debut" title="Not confirmed in a posted lineup — projected from DraftKings' season average, not our sim. Re-run closer to first pitch.">⚠️ unconfirmed</span>` : "";
+      ? ` <span class="ufc-debut" title="Not confirmed in a posted lineup - projected from DraftKings' season average, not our sim. Re-run closer to first pitch.">⚠️ unconfirmed</span>` : "";
     return `<div class="dfs-prow">
       <div class="dfs-pmain"><span class="legtag">${p.pos}</span> <b>${p.name}</b>
         ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}${unconf}</div>
@@ -4665,7 +4665,7 @@ function renderMlbDfs(d) {
     </div>`;
   };
 
-  // Leverage board — Vigil's edge: production the field under-rosters + the
+  // Leverage board - Vigil's edge: production the field under-rosters + the
   // betting market's read (sharp).
   let boardHtml = "";
   if (d.leverage_board && d.leverage_board.length) {
@@ -4685,7 +4685,7 @@ function renderMlbDfs(d) {
   }
 
   const padWarn = d.auto_padded
-    ? `<div class="dfs-note" style="border-color:#e0a23a;color:#e0a23a">⚠️ Not enough confirmed starters to fill a roster (lineups may not be posted yet), so gaps were filled from DraftKings' season averages — those players are flagged <b>⚠️ unconfirmed</b> below. Re-run closer to first pitch for a fully sim-driven lineup.</div>`
+    ? `<div class="dfs-note" style="border-color:#e0a23a;color:#e0a23a">⚠️ Not enough confirmed starters to fill a roster (lineups may not be posted yet), so gaps were filled from DraftKings' season averages - those players are flagged <b>⚠️ unconfirmed</b> below. Re-run closer to first pitch for a fully sim-driven lineup.</div>`
     : "";
 
   let csHead = "";
@@ -4702,7 +4702,7 @@ function renderMlbDfs(d) {
 
   return `<div class="dfs-wrap">
     <div class="dfs-top">
-      <div class="dfs-title">⚾ MLB DFS — ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}${d.engine === "deep" ? ` <span class="dfs-chip" style="background:rgba(91,140,255,0.15);color:var(--accent)">deep engine</span>` : ""}</div>
+      <div class="dfs-title">⚾ MLB DFS - ${d.objective === "ceiling" ? "GPP (ceiling)" : "Cash (median)"}${d.engine === "deep" ? ` <span class="dfs-chip" style="background:rgba(91,140,255,0.15);color:var(--accent)">deep engine</span>` : ""}</div>
       <div class="dfs-meta">${d.n_lineups} lineup${d.n_lineups > 1 ? "s" : ""} · ${d.sim_players} sim-projected players in pool of ${d.pool}</div>
     </div>
     ${padWarn}
@@ -4745,7 +4745,7 @@ function renderLolDfs(d) {
     </div>`;
   }).join("");
   return `<div class="combo hl prop">
-    <div class="chead"><span class="ctag">🎮 LoL lineup — ${objName}</span></div>
+    <div class="chead"><span class="ctag">🎮 LoL lineup - ${objName}</span></div>
     <div class="cnums" style="margin:4px 0">
       <span>salary <b>$${nf(d.salary)}</b>/$${nf(d.cap)}</span>
       <span>proj <b>${d.proj}</b></span>
@@ -4781,7 +4781,7 @@ function renderNflDfs(d) {
     </div>`;
   }).join("");
   const un = (d.unmatched && d.unmatched.length)
-    ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection — used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
+    ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection - used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
   // A silently-disabled availability filter is worse than none: it puts an IR
   // player in a lineup with nothing on screen to say it could not check.
   const stWarn = d.status_warning
@@ -4789,7 +4789,7 @@ function renderNflDfs(d) {
   const flatNote = d.flat_note
     ? `<div class="small" style="margin-top:6px;color:var(--muted)">${escapeHtml(d.flat_note)}</div>` : "";
   return `<div class="combo hl prop">
-    <div class="chead"><span class="ctag">🏈 NFL ${d.mode === "showdown" ? "showdown" : "lineup"} — ${objName}</span>
+    <div class="chead"><span class="ctag">🏈 NFL ${d.mode === "showdown" ? "showdown" : "lineup"} - ${objName}</span>
       <span class="small">Week ${d.week}${d.mode === "showdown" ? " · CPT + 5 FLEX" : ` · ${d.stack ? "QB stack" : "no stack"}`}</span></div>
     ${stWarn}
     <div class="cnums" style="margin:4px 0">
@@ -4856,9 +4856,9 @@ async function runDfsSim() {
         if (p.fights > 0 && p.record) parts.push(`UFC ${p.record}`);
         else if (p.career_record) parts.push(`pro ${p.career_record}`);
         ufcBits = ` <span class="small" style="color:var(--muted)">· ${parts.join(" · ")}</span>`;
-        if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut — striking/grappling are league-average; finishing & durability seeded from the pro record">⚠️ UFC debut (pro ${p.career_record})</span>`;
-        else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all — pure league-average placeholder">⚠️ no data</span>`;
-        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights — rating shrunk toward league average">⚠️ thin</span>`;
+        if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut - striking/grappling are league-average; finishing & durability seeded from the pro record">⚠️ UFC debut (pro ${p.career_record})</span>`;
+        else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all - pure league-average placeholder">⚠️ no data</span>`;
+        else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights - rating shrunk toward league average">⚠️ thin</span>`;
       }
       const own = p.own != null ? ` · <span title="projected field ownership">own ${p.own}%</span>` : "";
       return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${own}${pd}${ufcBits}</span></div></div>`;
@@ -4872,16 +4872,16 @@ async function runDfsSim() {
         ? `expected finish from the <b>race simulator</b> (${g.sim_drivers} drivers)`
         : (g.form_used ? "recent form" : "salary-deserved finish");
       const gridName = g.manual ? `<b>your pasted starting grid</b>` : `<b>${g.race}</b> (${g.series}, ${g.field}-car field)`;
-      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: ${gridName} — ${g.matched} drivers matched${un}. Place differential off the ${g.manual ? "pasted starting order" : "actual qualifying order"}, using ${basis}.${g.sim_used ? "" : " <span style=\"color:var(--muted)\">(simulator warming up — rerun in ~1 min for sim-driven finishes)</span>"}</div>`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 Grid: ${gridName} - ${g.matched} drivers matched${un}. Place differential off the ${g.manual ? "pasted starting order" : "actual qualifying order"}, using ${basis}.${g.sim_used ? "" : " <span style=\"color:var(--muted)\">(simulator warming up - rerun in ~1 min for sim-driven finishes)</span>"}</div>`;
     } else if (g && !g.available) {
-      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} — using season points only (no place-differential adjustment yet).</div>`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🏁 ${g.reason} - using season points only (no place-differential adjustment yet).</div>`;
     }
     const u = d.ufc;
     if (u && u.available) {
       const mode = d.objective === "ceiling"
-        ? `<b style="color:#3ad17a">GPP / ceiling</b> — optimizing each fighter's 90th-pct (boom) night, so finishers with knockout upside are favored`
-        : `<b>Cash / projection</b> — optimizing mean points for a steady floor`;
-      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> — ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points). Mode: ${mode}.</div>`;
+        ? `<b style="color:#3ad17a">GPP / ceiling</b> - optimizing each fighter's 90th-pct (boom) night, so finishers with knockout upside are favored`
+        : `<b>Cash / projection</b> - optimizing mean points for a steady floor`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> - ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points). Mode: ${mode}.</div>`;
     } else if (u && !u.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🥊 ${u.reason}.</div>`;
     }
@@ -4922,7 +4922,7 @@ async function runDfsSim() {
       <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span><span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>` : ""}
       <div class="dfs-lineups" style="margin-top:8px">${lineupCards}</div>
       ${expHtml}
-      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-pct totals over the SAME simulated races/fights (correlated — one winner per race, wrecks take out several cars at once, one fighter per bout banks the win bonus).${g && g.available ? " <b>PD</b> = place-differential adjustment." : ""} Ownership is a model estimate of what the field rosters.</div>
+      <div class="small" style="margin-top:6px">Floor/ceiling are the 10th/90th-pct totals over the SAME simulated races/fights (correlated - one winner per race, wrecks take out several cars at once, one fighter per bout banks the win bonus).${g && g.available ? " <b>PD</b> = place-differential adjustment." : ""} Ownership is a model estimate of what the field rosters.</div>
     </div>`;
   } catch (e) { box.innerHTML = `<div class="empty">Failed.</div>`; }
 }
@@ -5047,7 +5047,7 @@ function renderCmbCatCounts() {
   const boxes = cats.map((c) => {
     const v = _cmbCounts[c] == null ? "" : _cmbCounts[c];
     return `<label class="cmbcount">${_cmbCatLabels[c] || c}
-      <input type="number" min="0" max="40" value="${v}" placeholder="—"
+      <input type="number" min="0" max="40" value="${v}" placeholder="-"
         title="legs from this sport (blank = use the % floor, 0 = all, N = top N)"
         oninput="setCmbCount('${c}', this.value)"/></label>`;
   }).join(" ");
@@ -5119,7 +5119,7 @@ async function buildRecommended() {
     if (d.counts && Object.keys(d.counts).length)
       html += `<div class="small" style="margin-bottom:8px">Legs available: ${Object.entries(d.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</div>`;
     if (d.same_game_only)
-      html += `<div class="small" style="margin-bottom:8px;color:var(--muted)">Only one game on the slate today, so these are <b>same-game</b> parlays — legs from that game are correlated, priced with the correlation-aware sim (not a naive product).</div>`;
+      html += `<div class="small" style="margin-bottom:8px;color:var(--muted)">Only one game on the slate today, so these are <b>same-game</b> parlays - legs from that game are correlated, priced with the correlation-aware sim (not a naive product).</div>`;
     const seen = new Set();
     const blocks = [
       ["best", "⭐ Best (all-around)", "hl value"],
@@ -5144,7 +5144,7 @@ async function buildRecommended() {
     if (!any) html += `<div class="empty">Not enough legs to build a combo from those sports right now. Try checking more sports.</div>`;
     out.innerHTML = html;
   } catch (e) {
-    out.innerHTML = `<div class="empty">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="empty">Build failed - try again.</div>`;
   }
 }
 // Mega maker's live opt-in. Same rule as the baseball tab: off unless ticked,
@@ -5159,11 +5159,11 @@ window.renderCmbLiveWarn = () => {
   if (!el) return;
   const on = $("cmbLive") && $("cmbLive").checked;
   el.innerHTML = on ? `<div class="livewarn">
-    <b>\u26a0\ufe0f Live pricing is on</b> — games already under way are simulated forward from the
+    <b>\u26a0\ufe0f Live pricing is on</b> - games already under way are simulated forward from the
     current score, count and base-out state, with what each player has banked counted toward his line.
     Prices come from the live Kalshi market.
     <div style="margin-top:4px">This is a <b>snapshot</b>: one pitch can move it. Re-build right before you place.</div>
-    <div style="margin-top:4px">In a <b>multi-sport parlay</b>, a live leg can settle long before the rest — the slip is only decided when every event finishes.</div>
+    <div style="margin-top:4px">In a <b>multi-sport parlay</b>, a live leg can settle long before the rest - the slip is only decided when every event finishes.</div>
   </div>` : "";
 };
 
@@ -5200,9 +5200,9 @@ async function buildCombine() {
           `${(_cmbCatLabels[k] || k)} ${v}`).join(" + ");
         title = `🎰 ${c.legs_used}-leg parlay → ${c.fair_payout_x}× (${breakdown})`;
         if (c.capped)
-          note += `<div class="small">⚠️ Capped at ${c.legs_used} legs — the highest-probability legs were kept.</div>`;
+          note += `<div class="small">⚠️ Capped at ${c.legs_used} legs - the highest-probability legs were kept.</div>`;
         if (c.target_payout_x && c.payout_reached === false)
-          note += `<div class="small">⚠️ Couldn't reach ${c.target_payout_x}× — with these sports/counts and the ${t}% floor the most is <b>${c.fair_payout_x}×</b>. Raise a count, lower the floor, or add a sport.</div>`;
+          note += `<div class="small">⚠️ Couldn't reach ${c.target_payout_x}× - with these sports/counts and the ${t}% floor the most is <b>${c.fair_payout_x}×</b>. Raise a count, lower the floor, or add a sport.</div>`;
         else if (c.target_payout_x)
           note += `<div class="small">🎯 Reached your ${c.target_payout_x}× target (steered the free-to-choose sports toward it while keeping the safest legs that get there).</div>`;
         note += `<div class="small">Built from your per-sport counts (${breakdown}). At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}).</div>`;
@@ -5211,11 +5211,11 @@ async function buildCombine() {
         if (c.expanded && c.legs_used !== c.requested_legs)
           note += `<div class="small">Used <b>${c.legs_used}</b> legs (you set ${c.requested_legs}) to best fit your targets while keeping every leg ≥ ${t}%.</div>`;
         if (c.legs_met === false && legsMode === "require")
-          note += `<div class="small">⚠️ Couldn't field exactly ${c.legs_target} legs ≥ ${t}% — showing the closest (${c.legs_used}).</div>`;
+          note += `<div class="small">⚠️ Couldn't field exactly ${c.legs_target} legs ≥ ${t}% - showing the closest (${c.legs_used}).</div>`;
         if (wantPayout && c.payout_reached === false)
-          note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% — the best at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor, drop the leg-count requirement, or add categories.</div>`;
+          note += `<div class="small">⚠️ Couldn't reach ${p}× with every leg ≥ ${t}% - the best at that floor is <b>${c.fair_payout_x}×</b>. Lower the floor, drop the leg-count requirement, or add categories.</div>`;
         if (c.hard_ok === false)
-          note += `<div class="small" style="color:#e0566a">⚠️ Your required target(s) couldn't both be met${conn === "and" ? " (AND)" : ""} — showing the closest parlay. Try switching AND→OR or relaxing one target to <b>recommend</b>.</div>`;
+          note += `<div class="small" style="color:#e0566a">⚠️ Your required target(s) couldn't both be met${conn === "and" ? " (AND)" : ""} - showing the closest parlay. Try switching AND→OR or relaxing one target to <b>recommend</b>.</div>`;
         note += `<div class="small">At ${c.fair_payout_x}× the chance is ~<b>${c.combined_prob_pct}%</b> (≈1 in ${Math.round(c.fair_payout_x)}). ${c.legs_meeting_target}/${c.legs_used} legs meet the ${t}% target.</div>`;
       }
       html += renderCombo(c, title, "hl prop") + note;
@@ -5225,7 +5225,7 @@ async function buildCombine() {
     }
     out.innerHTML = html;
   } catch (e) {
-    out.innerHTML = `<div class="empty">Build failed — try again.</div>`;
+    out.innerHTML = `<div class="empty">Build failed - try again.</div>`;
   }
 }
 
@@ -5251,12 +5251,12 @@ async function loadValue() {
         <div class="scanhead"><div class="strike">${p.label}</div>
           <div class="small">Kalshi ${p.side} <b>${p.cost_cents}¢</b> · recent <b>${p.recent_pct}%</b> in ${p.games}g${seas}${streak}</div></div>
         <div class="actionline"><span class="edgeval pos">+${p.edge_cents}¢ edge</span>
-          <span class="plain">✅ Buy <b>${p.side}</b> @ <b>${p.cost_cents}¢</b> — model from recent form ${p.recent_pct}%</span></div>
+          <span class="plain">✅ Buy <b>${p.side}</b> @ <b>${p.cost_cents}¢</b> - model from recent form ${p.recent_pct}%</span></div>
       </div>`;
     }).join("");
     box.innerHTML = `<div class="small" style="margin-bottom:6px">${d.plays.length} value plays from ${d.markets_scanned} Kalshi player-prop markets (last ${d.n_games} games):</div>` + rows;
   } catch (e2) {
-    box.innerHTML = `<div class="empty">Scan failed — try again.</div>`;
+    box.innerHTML = `<div class="empty">Scan failed - try again.</div>`;
   }
 }
 
@@ -5294,8 +5294,8 @@ async function loadBaseballRecord() {
     // Blend components graded separately: does the deep engine earn its weight?
     const ms = r.model_split;
     if (ms && (ms.factor || ms.deep)) {
-      const f = (x, nm) => x ? `${nm} <b>${x.acc_pct}%</b> <span style="color:var(--muted)">(Brier ${x.brier}, ${x.n})</span>` : `${nm} —`;
-      extra.push(`🧬 Split: ${f(ms.factor, "factor")} · ${f(ms.deep, "deep")} · ${f(ms.blend, "blend")} — the blend weight auto-tunes on this once 40+ games carry both.`);
+      const f = (x, nm) => x ? `${nm} <b>${x.acc_pct}%</b> <span style="color:var(--muted)">(Brier ${x.brier}, ${x.n})</span>` : `${nm} - `;
+      extra.push(`🧬 Split: ${f(ms.factor, "factor")} · ${f(ms.deep, "deep")} · ${f(ms.blend, "blend")} - the blend weight auto-tunes on this once 40+ games carry both.`);
     }
     // Live calibration: temperature reining in high-end overconfidence, fit on
     // this record. T=1.00 = no correction yet (too little data); >1 = active.
@@ -5304,12 +5304,12 @@ async function loadBaseballRecord() {
       const bits = [];
       if (ct.win_t > 1.03) bits.push(`win 80%→<b>${ct.win_ex80}%</b> <span style="color:var(--muted)">(${ct.win_n})</span>`);
       if (ct.prop_t > 1.03) bits.push(`props 80%→<b>${ct.prop_ex80}%</b> <span style="color:var(--muted)">(${ct.prop_n})</span>`);
-      extra.push(`🎯 Calibrating overconfidence: ${bits.join(" · ")} — <b>only</b> high-confidence picks are pulled toward their real hit-rate; moderate favorites (≤~60%) are left as-is, so the correction never manufactures a fake negative edge (auto-fit on this record).`);
+      extra.push(`🎯 Calibrating overconfidence: ${bits.join(" · ")} - <b>only</b> high-confidence picks are pulled toward their real hit-rate; moderate favorites (≤~60%) are left as-is, so the correction never manufactures a fake negative edge (auto-fit on this record).`);
     }
     if (extra.length)
       html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
     if (r.graded < 50)
-      html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ Only ${r.graded} graded — too few to judge; W-L is mostly noise until ~100+. Watch Brier (&lt;0.25 = real signal) and CLV.</div>`;
+      html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ Only ${r.graded} graded - too few to judge; W-L is mostly noise until ~100+. Watch Brier (&lt;0.25 = real signal) and CLV.</div>`;
     el.innerHTML = html;
   } catch (e) { /* ignore */ }
 }
@@ -5325,10 +5325,10 @@ async function loadPropLog() {
     if (r.error) { el.innerHTML = `<div class="empty">${r.error}</div>`; return; }
     const rec = r.recorder || {};
     if (!r.graded) {
-      el.innerHTML = `<div class="empty">${rec.logged || 0} props logged, ${r.pending || 0} awaiting results. Keep the app open — the recorder logs each game's props and grades them once finals post.</div>`;
+      el.innerHTML = `<div class="empty">${rec.logged || 0} props logged, ${r.pending || 0} awaiting results. Keep the app open - the recorder logs each game's props and grades them once finals post.</div>`;
       return;
     }
-    const briercell = (v, n) => v == null ? "—" :
+    const briercell = (v, n) => v == null ? "-" :
       `<b style="color:${v < 0.25 ? "#3ad17a" : "#e0566a"}">${v}</b>`;
     const roiline = (label, o) => {
       if (!o) return `${label}: <span style="color:var(--muted)">no qualifying bets yet</span>`;
@@ -5348,15 +5348,15 @@ async function loadPropLog() {
       const cls = clv.avg_clv_cents >= 0 ? "ev pos" : "ev neg";
       html += `<div class="small" style="margin-top:6px" title="Closing-line value: for props the model flagged at first sight, did Kalshi's CLOSING price move toward our number? Beating the close consistently proves edge independent of win/loss luck.">📐 <b>CLV</b> (beat-the-close): <b class="${cls}">${clv.avg_clv_cents >= 0 ? "+" : ""}${clv.avg_clv_cents}¢</b> avg · beat close <b>${clv.beat_close_pct}%</b>${clv.push_pct ? ` (push ${clv.push_pct}%)` : ""} · won ${clv.win_pct}% <span style="color:var(--muted)">(${clv.picks} flagged picks)</span></div>`;
       if (clv.picks < 50)
-        html += `<div class="small" style="color:var(--muted)">CLV needs ~50+ picks to mean much — it accumulates as the recorder runs.</div>`;
+        html += `<div class="small" style="color:var(--muted)">CLV needs ~50+ picks to mean much - it accumulates as the recorder runs.</div>`;
     } else {
-      html += `<div class="small" style="color:var(--muted);margin-top:6px">📐 CLV (beat-the-close) starts tracking from today's props — the recorder now snapshots each prop's ENTRY price and compares it to the close.</div>`;
+      html += `<div class="small" style="color:var(--muted);margin-top:6px">📐 CLV (beat-the-close) starts tracking from today's props - the recorder now snapshots each prop's ENTRY price and compares it to the close.</div>`;
     }
     if (r.graded < 100)
-      html += `<div class="small" style="color:var(--muted);margin-top:3px">⚠️ Only ${r.graded} graded — too few to trust the ROI; watch the Brier scores converge first (~100+ needed).</div>`;
+      html += `<div class="small" style="color:var(--muted);margin-top:3px">⚠️ Only ${r.graded} graded - too few to trust the ROI; watch the Brier scores converge first (~100+ needed).</div>`;
     el.innerHTML = html;
   } catch (e) {
-    el.innerHTML = `<div class="empty">Couldn't load the prop record — try again.</div>`;
+    el.innerHTML = `<div class="empty">Couldn't load the prop record - try again.</div>`;
   }
 }
 
@@ -5420,7 +5420,7 @@ async function init() {
 
   // Baseball setup
   setupTabs();
-  // Best Bets is the landing tab — kick off its scan without waiting for a click.
+  // Best Bets is the landing tab - kick off its scan without waiting for a click.
   if ($("tab-bestbets") && !$("tab-bestbets").classList.contains("hidden")) {
     $("bbetsResults").dataset.loaded = "1";
     loadBestBets();
@@ -5491,7 +5491,7 @@ async function _checkForUpdate() {
     if (!d || !d.v) return;
     if (_buildToken == null) { _buildToken = d.v; return; }   // first read = baseline
     if (d.v !== _buildToken && !$("updateBanner")) _showUpdateBanner();
-  } catch (e) { /* offline / server restarting — ignore */ }
+  } catch (e) { /* offline / server restarting - ignore */ }
 }
 function _showUpdateBanner() {
   const bar = document.createElement("div");

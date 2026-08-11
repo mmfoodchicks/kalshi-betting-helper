@@ -349,7 +349,7 @@ def build(csv_text, objective="projection", contest=None, contest_size=None,
     note = ("Projection = our Leaguepedia K/D/A/CS model (per-map, converted to DK scoring "
             "incl. the series-sweep bonus) blended 35/65 with DK's AvgPointsPerGame."
             if n_model else "Projections are DK's AvgPointsPerGame (our model was rate-limited "
-            "— open the LoL tab first to warm it).")
+            "- open the LoL tab first to warm it).")
     return {"objective": objective, "salary": sal, "cap": CAP, "n_model": n_model,
             "proj": round(sum(r["proj"] for r in rows), 1),
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),

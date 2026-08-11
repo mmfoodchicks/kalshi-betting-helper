@@ -130,7 +130,7 @@ def _no_legs(legs):
             continue
         if l.get("side") == "no":
             continue                     # don't negate a NO leg back into a YES
-        if (l.get("event_id"), f"NO — {l.get('label')}") in have_no:
+        if (l.get("event_id"), f"NO - {l.get('label')}") in have_no:
             continue                     # its NO side is already on the board
         lab = (l.get("label") or "").lower()
         if any(w in lab for w in _NO_SKIP_WORDS):
@@ -139,7 +139,7 @@ def _no_legs(legs):
         if p is None or not (0.02 < p < 0.98):
             continue
         out.append({**l,
-                    "label": f"NO — {l.get('label')}",
+                    "label": f"NO - {l.get('label')}",
                     "prob": 1.0 - p,
                     "price_cents": l.get("no_cents"),
                     "type": f"{typ} (NO)",
@@ -1005,7 +1005,7 @@ def _mlb_same_game_items(date, season):
             out.append({"legs": legs, "n_legs": it.get("n_legs") or len(legs),
                         "combined_prob_pct": it.get("combined_prob_pct"),
                         "fair_payout_x": it.get("fair_payout_x"),
-                        "same_game": True, "reasons": ["Same-game parlay — one game on the slate today; legs are correlated, so this is priced with the correlation-aware sim, not a naive product."]})
+                        "same_game": True, "reasons": ["Same-game parlay - one game on the slate today; legs are correlated, so this is priced with the correlation-aware sim, not a naive product."]})
     out.sort(key=lambda c: -(c.get("combined_prob_pct") or 0))
     return out
 

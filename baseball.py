@@ -995,11 +995,11 @@ def _confirm_status(g, lu):
     note, level = "", "ok"
     if scratched:
         who = ", ".join(f"{s['listed'] or 'listed SP'} → {s['actual'] or 'new SP'}" for s in scratched)
-        note, level = f"Starter changed: {who} — model still on the listed arm, refresh before betting.", "scratch"
+        note, level = f"Starter changed: {who} - model still on the listed arm, refresh before betting.", "scratch"
     elif h == "tbd" or a == "tbd":
-        note, level = "Starter TBD — pitching read is league-average until it's announced.", "provisional"
+        note, level = "Starter TBD - pitching read is league-average until it's announced.", "provisional"
     elif not final and not (lu.get("home_posted") and lu.get("away_posted")):
-        note, level = "Lineups not posted yet — offense assumes the regulars play; may shift once cards are out.", "provisional"
+        note, level = "Lineups not posted yet - offense assumes the regulars play; may shift once cards are out.", "provisional"
     return {"level": level, "note": note,
             "home_lineup": "confirmed" if lu.get("home_posted") else "projected",
             "away_lineup": "confirmed" if lu.get("away_posted") else "projected",
@@ -2459,7 +2459,7 @@ def _mirror_no(variants):
             continue
         if lab.startswith("under ") or lab.startswith("no "):
             continue
-        out.append({**v, "label": f"NO — {v.get('label')}", "prob": 1.0 - p,
+        out.append({**v, "label": f"NO - {v.get('label')}", "prob": 1.0 - p,
                     # Kalshi quotes a separate no_ask the sim layer doesn't carry
                     # yet; better model-only than a faked 100-yes_ask that would
                     # ignore the spread and overstate EV.
@@ -2546,7 +2546,7 @@ def _single_game_fallback(games, n_legs, target_pct, target_payout, max_legs, ty
         item["target_payout_x"] = target_payout
         item["payout_reached"] = bool((item.get("fair_payout_x") or 0) >= target_payout)
     item["note"] = ("Only one game left on the slate, so this is a same-game "
-                    "parlay — the legs are correlated, and the combined odds come "
+                    "parlay - the legs are correlated, and the combined odds come "
                     "from the simulation rather than multiplying the legs.")
     return item
 
