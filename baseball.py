@@ -41,11 +41,20 @@ import mlb_form
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
 PYTH_EXP = 1.83
-# Home-plate umpire zone -> run-environment multiplier (net of ABS-challenge
-# corrections). cs_bias 0.03 (a notably big zone) => ~3% fewer runs; hits both
-# offenses so it moves the total but cancels in the moneyline. 0.0 = no ump data.
-_UMP_RUN = 1.0
+# Home-plate umpire zone -> run-environment multiplier, and the share of a
+# game's strikeout change that lands on the STARTER.
+#
+# Both effects are sized from the regression ump_build runs when it builds the
+# tendency table (meta.r_per_bias / meta.k_per_bias: whole-game runs and Ks per
+# unit of bias, measured across a season of finished games), so these are
+# fallbacks for a board running before the first table exists. The multiplier is
+# 1 - bias * r_per_bias / lg_runs; the 0.72 here is that quantity at the measured
+# 2026 values, replacing a hand-set 1.0 that overstated it by ~40%.
+_UMP_RUN = 0.72
 SP_INNINGS_WEIGHT = 0.60   # share of game the starter is responsible for
+# A starter throws SP_INNINGS_WEIGHT of his side's innings, and a game's K change
+# is split across the two staffs, so one starter's share of it is w/2.
+_UMP_K_STARTER_SHARE = SP_INNINGS_WEIGHT / 2.0
 
 # Home-field edge, expressed as the RATIO of home to away expected runs. 1.08 is
 # reverse-engineered from the win rate: through PYTH_EXP it yields ~53.5% home
@@ -1648,15 +1657,27 @@ def _analyze_slate_uncached(date, season):
         # so it cancels in the Pythagorean moneyline but shifts the total + run
         # props. 0.0 (no ump posted / no tendency on file) is a no-op. The deep sim
         # gets the full per-PA challenge mechanic; here we use the net run effect.
-        ump_bias = 0.0
+        ump_bias, ump_prof = 0.0, None
         if (g.get("live") or {}).get("state") == "Preview":
             try:
                 import umpires
-                ump_bias = umpires.cs_bias(g["game_pk"])
+                ump_prof = umpires.game_profile(g["game_pk"])
+                ump_bias = float((ump_prof or {}).get("bias") or 0.0)
             except Exception:
-                ump_bias = 0.0
+                ump_bias, ump_prof = 0.0, None
         if ump_bias:
-            umpf = max(0.90, min(1.10, 1.0 - _UMP_RUN * ump_bias))
+            # Prefer the slope MEASURED when the tendency table was built (runs
+            # per unit of bias, over a season of finished games) and fall back to
+            # the constant only when no table exists yet.
+            umpr = _UMP_RUN
+            try:
+                rb = umpires.slope("r")          # None unless it is significant
+                lgr = umpires.meta().get("lg_r_per_game")
+                if rb is not None and lgr:
+                    umpr = -rb / lgr
+            except Exception:
+                pass
+            umpf = max(0.90, min(1.10, 1.0 - umpr * ump_bias))
             er_home *= umpf
             er_away *= umpf
 
@@ -1829,12 +1850,33 @@ def _analyze_slate_uncached(date, season):
         # Starter strikeout props, sized to THIS pitcher's expected workload
         # (season/recent IP per start), not a one-size 5.6-inning template.
         wl_h, wl_a = _starter_workload(h_sp), _starter_workload(a_sp)
-        ks_home = (props_mod.pitcher_k_props(_regressed_k9((h_sp or {}).get("season")),
-                                             (wl_h or {}).get("est_ip") or _exp_ip_per_start(h_sp),
-                                             est_pitches=(wl_h or {}).get("est_pitches")) if h_sp else None)
-        ks_away = (props_mod.pitcher_k_props(_regressed_k9((a_sp or {}).get("season")),
-                                             (wl_a or {}).get("est_ip") or _exp_ip_per_start(a_sp),
-                                             est_pitches=(wl_a or {}).get("est_pitches")) if a_sp else None)
+        # THE UMPIRE MOVES STRIKEOUTS, not just runs. A bigger zone is more
+        # called strikes, and the K ladder is the market that feels it most
+        # directly -- it used to see nothing at all, so a Doug Eddings start and
+        # a Willie Traynor start priced identically. `k_per_bias` is the measured
+        # whole-game slope; one starter owns w/2 of it.
+        ump_k = 0.0
+        if ump_bias:
+            try:
+                kb = umpires.slope("k")          # None unless it is significant
+                if kb is not None:
+                    ump_k = kb * ump_bias * _UMP_K_STARTER_SHARE
+            except Exception:
+                ump_k = 0.0
+
+        def _k_props(sp, wl):
+            if not sp:
+                return None
+            ip = (wl or {}).get("est_ip") or _exp_ip_per_start(sp)
+            k9 = _regressed_k9(sp.get("season"))
+            if ump_k and k9 and ip > 0:
+                # Fold the umpire's Ks into the RATE, so the whole ladder moves
+                # with it rather than only the headline expectation.
+                k9 = max(2.0, k9 + ump_k * 9.0 / ip)
+            return props_mod.pitcher_k_props(k9, ip,
+                                             est_pitches=(wl or {}).get("est_pitches"))
+        ks_home = _k_props(h_sp, wl_h)
+        ks_away = _k_props(a_sp, wl_a)
         game_props = {"run_line": gp["run_line"], "totals": gp["totals"],
                       "totals_ladder": gp["totals_ladder"],
                       "model_total": gp["model_total"], "rfi_pct": gp.get("rfi_pct"),
@@ -1907,6 +1949,7 @@ def _analyze_slate_uncached(date, season):
             "exp_runs_away_talent": round(er_away * _HOME_SPLIT, 4),
             "exp_total": exp_total, "park_factor": park,
             "weather": _weather_block(winfo),
+            "umpire": ump_prof,
             "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),
             "away_sp": sp_block(g["away_sp_name"], a_sp, a_hand),
             "home_sp_ks": sp_ks(h_sp, g.get("home_sp_id"), ks_home),

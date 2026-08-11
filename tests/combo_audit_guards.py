@@ -2745,6 +2745,128 @@ ck("the dawg sort ranks by margin over his own average, not the raw high",
 
 print()
 print("=" * 72)
+print("The umpire behind the plate: measured, shrunk, and challenge-netted")
+print("=" * 72)
+import umpires as _UMP, ump_build as _UB
+
+# --- the geometry that decides what counts as a judgment call -----------------
+# strikeZoneWidth arrives in INCHES (17.0). The first measurement written for
+# this read it as feet -> a half-width of 8.5 FEET -> every pitch "horizontally
+# inside" -> the shell collapsed to a vertical band -> the conclusion that
+# umpire bias was indistinguishable from noise. Units are the whole ballgame.
+ck("the zone half-width converts inches to feet",
+   abs(17.0 / 24.0 - 0.7083) < 1e-3,
+   "17 inches wide -> 0.708 ft half-width, NOT 8.5")
+ck("a pitch down the middle is deep inside the zone",
+   _UB._zone_dist(0.0, 2.3, 3.1, 1.6, 0.83) < -0.3)
+ck("a pitch a foot off the plate is well outside",
+   _UB._zone_dist(1.9, 2.3, 3.1, 1.6, 0.83) > 1.0)
+ck("a pitch clipping the edge is borderline",
+   abs(_UB._zone_dist(0.85, 2.3, 3.1, 1.6, 0.83)) <= _UB.SHELL_FT)
+ck("high and low are judged too, not just wide",
+   _UB._zone_dist(0.0, 3.30, 3.1, 1.6, 0.83) > 0
+   and _UB._zone_dist(0.0, 1.40, 3.1, 1.6, 0.83) > 0,
+   "the units bug made vertical distance the ONLY thing that mattered; it must "
+   "not become the only thing that does not")
+
+# --- shrinkage ---------------------------------------------------------------
+_m = _UMP.meta()
+if _m:
+    ck("the table records its own noise floor, not just the spread",
+       _m.get("sd_observed") and _m.get("sd_noise") and _m.get("sd_true"),
+       f"observed {_m.get('sd_observed')} / noise {_m.get('sd_noise')} "
+       f"/ true {_m.get('sd_true')}")
+    ck("true spread is what survives removing the noise",
+       abs(_m["sd_true"] ** 2 - (_m["sd_observed"] ** 2 - _m["sd_noise"] ** 2)) < 1e-5)
+    ck("most of the raw spread between umpires IS noise",
+       _m["sd_noise"] > 0.5 * _m["sd_observed"],
+       "which is exactly why nobody's zone is taken at face value")
+    ck("no umpire keeps his full raw read",
+       all(abs(r["bias"]) < abs(r["raw"]) for r in
+           ((_UMP.table() or {}).get("umps") or {}).values() if r.get("raw")),
+       "shrunk = raw * n/(n+K); K is a thousand-odd calls, so a season halves it")
+    ck("shrinkage preserves the sign",
+       all((r["bias"] >= 0) == (r["raw"] >= 0) for r in
+           ((_UMP.table() or {}).get("umps") or {}).values() if r.get("raw")))
+    ck("challenges are measured, and they are a real fraction of the shell",
+       1.0 < (_m.get("challenged_pct") or 0) < 20.0,
+       f"{_m.get('challenged_pct')}% of borderline calls get challenged")
+
+# --- significance gate -------------------------------------------------------
+_saved_meta = _UMP._TABLE["v"]
+try:
+    _UMP._TABLE["t"] = _tm.time()
+    _UMP._TABLE["v"] = {"meta": {"k_per_bias": 20.0, "k_t": 3.2,
+                                 "r_per_bias": -1.0, "r_t": 0.15,
+                                 "lg_r_per_game": 9.0}, "umps": {}}
+    ck("a slope inside its own error bar is NOT applied",
+       _UMP.slope("r") is None,
+       "the run slope came out -1.06 +/- 7.1 on a full season -- an interval "
+       "spanning both signs. Pricing that point estimate would be fitting a "
+       "coincidence")
+    ck("...but a slope that clears it is",
+       _UMP.slope("k") == 20.0, "the K slope is t ~ 3.2 and real")
+    ck("the bar is a genuine significance bar", _UMP.MIN_T >= 2.0)
+    _UMP._TABLE["v"] = {"meta": {}, "umps": {}}
+    ck("no table means no slope, not a default one",
+       _UMP.slope("k") is None and _UMP.slope("r") is None)
+finally:
+    _UMP._TABLE["v"] = _saved_meta
+
+# --- wiring ------------------------------------------------------------------
+_bb4 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("the umpire finally moves the STRIKEOUT ladder, not only runs",
+   "ump_k = kb * ump_bias * _UMP_K_STARTER_SHARE" in _bb4
+   and "k9 = max(2.0, k9 + ump_k * 9.0 / ip)" in _bb4,
+   "a Doug Eddings start and a Willie Traynor start used to price identically "
+   "on Ks -- the market the zone hits hardest saw nothing at all")
+ck("it moves the RATE, so the whole ladder shifts, not just the headline",
+   _bb4.index("k9 = max(2.0, k9 + ump_k") < _bb4.index("props_mod.pitcher_k_props(k9, ip"))
+ck("one starter gets his share of a whole-game effect, not all of it",
+   abs(B._UMP_K_STARTER_SHARE - B.SP_INNINGS_WEIGHT / 2.0) < 1e-9,
+   "the game's K change is split across two staffs and a starter throws 60% of "
+   "his side's innings")
+ck("the run multiplier prefers the measured slope, falls back to the constant",
+   'rb = umpires.slope("r")' in _bb4 and "umpr = _UMP_RUN" in _bb4)
+ck("the fallback constant is derived, not hand-set",
+   abs(B._UMP_RUN - 0.72) < 0.01,
+   "borderline calls/game x run value per call / league runs; the 1.0 it "
+   "replaced overstated the effect by about 40%")
+ck("a big zone SUPPRESSES runs",
+   (1.0 - B._UMP_RUN * 0.03) < 1.0)
+ck("the umpire hits both offenses, so it cancels in the moneyline",
+   _bb4.count("er_home *= umpf") == 1 and _bb4.count("er_away *= umpf") == 1,
+   "applying it to one side would move the winner, which an umpire does not")
+ck("only PREGAME games get an umpire read",
+   'ump_bias, ump_prof = 0.0, None' in _bb4
+   and _bb4.index("ump_bias, ump_prof = 0.0, None") < _bb4.index('ump_prof = umpires.game_profile'))
+ck("the umpire rides on the game payload for the card",
+   '"umpire": ump_prof,' in _bb4)
+_js5 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "static", "app.js")).read()
+ck("the card names the umpire", "HP umpire" in _js5 and "g.umpire" in _js5)
+ck("an unknown umpire is shown as neutral rather than hidden",
+   "no tracked sample yet, treated as neutral" in _js5,
+   "who is calling it is the question; 'this one is average' is a real answer")
+_app4 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                           "app.py")).read()
+ck("the table rebuilds nightly off the deep run", "ump_build.build()" in _app4)
+ck("a rebuild failure cannot cost the night's numbers",
+   "import ump_build" in _app4 and "except Exception:\n            pass" in _app4)
+
+# --- the double-discount trap ------------------------------------------------
+ck("the tendency is NOT discounted again for challenges",
+   "post-review" in _insp.getsource(_UMP).lower()
+   and "twice" in _insp.getsource(_UMP).lower(),
+   "StatsAPI reports post-review call codes, so an overturned call is already "
+   "counted the way it finally stood -- a further ABS discount would take the "
+   "corrections twice, and the module's old comment promised exactly that")
+ck("a hand override still beats the measured table",
+   "if key in TENDENCIES" in _insp.getsource(_UMP.profile))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

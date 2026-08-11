@@ -858,6 +858,26 @@ function renderGame(g) {
     const pct = Math.round((f.factor - 1) * 100);
     return `<div class="small" style="color:var(--no)" title="${arms}">🔋 Bullpen fatigue: <b>${f.count}</b> arm${f.count > 1 ? "s" : ""} gassed (+${pct}% pen RA9 → leans OVER)</div>`;
   };
+  // Home-plate umpire. Shown whenever the crew is posted, even at a neutral
+  // zone — "who is calling it" is the question, and "this one is average" is a
+  // real answer. The effects are the measured whole-game slopes, already shrunk
+  // toward league by his sample and already net of ABS challenges.
+  const u = g.umpire;
+  let umpLine = "";
+  if (u && u.name) {
+    if (!u.known) {
+      umpLine = `<div class="small" style="color:var(--muted)">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> — no tracked sample yet, treated as neutral</div>`;
+    } else {
+      const b = u.bias || 0;
+      const lean = b > 0.008 ? "big zone" : b < -0.008 ? "tight zone" : "neutral zone";
+      const cls = Math.abs(b) < 0.008 ? "" : (b > 0 ? "ev neg" : "ev pos");  // big zone = fewer runs
+      const eff = [];
+      if (u.k_effect) eff.push(`${u.k_effect > 0 ? "+" : ""}${u.k_effect} K`);
+      if (u.r_effect) eff.push(`${u.r_effect > 0 ? "+" : ""}${u.r_effect} runs`);
+      const effTxt = eff.length ? ` → <b class="${cls}">${eff.join(", ")}</b> on the game` : "";
+      umpLine = `<div class="small" title="Called-strike rate on borderline pitches vs league, shrunk toward average by his own sample (${u.n || 0} tracked borderline calls; raw ${u.raw != null ? (u.raw > 0 ? "+" : "") + (100 * u.raw).toFixed(1) + "pp" : "—"}). Built from POST-REVIEW call codes, so ABS challenges are already netted out. A big zone means more strikeouts and fewer runs; it hits both offenses, so it moves the total and the K ladder but cancels in the moneyline.">⚖️ HP umpire <b>${escapeHtml(u.name)}</b> — ${lean} (${b > 0 ? "+" : ""}${(100 * b).toFixed(1)}pp)${effTxt}</div>`;
+    }
+  }
   const w = g.weather;
   let wxLine = "";
   if (w && w.roof === "fixed") {
@@ -888,6 +908,7 @@ function renderGame(g) {
     <div id="lf-${g.game_pk}" class="livefeed"></div>` : ""}
     <div class="small">Expected runs: <b>${g.exp_runs_away}</b> ${g.away_abbr} — <b>${g.exp_runs_home}</b> ${g.home_abbr} · total <b>${g.exp_total}</b> (park ${g.park_factor})</div>
     ${wxLine}
+    ${umpLine}
     <div class="matchgrid">
       <div>
         <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>

@@ -233,6 +233,16 @@ def _init_deep_sims():
             coherence.snapshot(season)
         except Exception:
             pass
+        # Refresh the umpire zone table off the season's finished games. Same
+        # best-effort rule; a stale table is a slightly old tendency, a failed
+        # deep run is the night's numbers.
+        try:
+            import ump_build
+            t = ump_build.build()
+            if t:
+                ump_build.save(t)
+        except Exception:
+            pass
         return {"agg": agg, "season": season}
 
     def run_f1():

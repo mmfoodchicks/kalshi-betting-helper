@@ -1,0 +1,571 @@
+{
+ "meta": {
+  "borderline": 84051,
+  "borderline_per_game": 47.5,
+  "built": "2026-08-11T08:03:02-04:00",
+  "challenged_pct": 5.92,
+  "end": "2026-08-07",
+  "games": 1774,
+  "k_per_bias": 20.2,
+  "k_se": 9.85,
+  "k_t": 2.05,
+  "league_cs_rate": 0.55183,
+  "lg_k_per_game": 16.76,
+  "lg_r_per_game": 8.97,
+  "mean_calls": 933,
+  "n_games_regressed": 1766,
+  "n_umps": 90,
+  "r_per_bias": -1.06,
+  "r_se": 10.73,
+  "r_t": -0.1,
+  "reliability_at_mean_n": 0.461,
+  "sd_noise": 0.01682,
+  "sd_observed": 0.02258,
+  "sd_true": 0.01506,
+  "shrink_k": 1090,
+  "start": "2026-03-26",
+  "taken_pitches": 259365
+ },
+ "umps": {
+  "adam beck": {
+   "bias": -0.00293,
+   "n": 1108,
+   "name": "Adam Beck",
+   "raw": -0.0058
+  },
+  "adam hamari": {
+   "bias": -0.01602,
+   "n": 1102,
+   "name": "Adam Hamari",
+   "raw": -0.03187
+  },
+  "adrian johnson": {
+   "bias": -0.0006,
+   "n": 696,
+   "name": "Adrian Johnson",
+   "raw": -0.00154
+  },
+  "alan porter": {
+   "bias": -0.00838,
+   "n": 1027,
+   "name": "Alan Porter",
+   "raw": -0.01726
+  },
+  "alex mackay": {
+   "bias": 0.00788,
+   "n": 953,
+   "name": "Alex MacKay",
+   "raw": 0.0169
+  },
+  "alex tosi": {
+   "bias": -0.00712,
+   "n": 934,
+   "name": "Alex Tosi",
+   "raw": -0.01543
+  },
+  "alfonso mrquez": {
+   "bias": -0.00376,
+   "n": 1115,
+   "name": "Alfonso M\u00e1rquez",
+   "raw": -0.00744
+  },
+  "andy fletcher": {
+   "bias": 0.00852,
+   "n": 683,
+   "name": "Andy Fletcher",
+   "raw": 0.02211
+  },
+  "austin jones": {
+   "bias": 0.01527,
+   "n": 810,
+   "name": "Austin Jones",
+   "raw": 0.03582
+  },
+  "ben may": {
+   "bias": 0.00058,
+   "n": 1047,
+   "name": "Ben May",
+   "raw": 0.00118
+  },
+  "bill miller": {
+   "bias": 0.01483,
+   "n": 965,
+   "name": "Bill Miller",
+   "raw": 0.03159
+  },
+  "brennan miller": {
+   "bias": 0.01046,
+   "n": 981,
+   "name": "Brennan Miller",
+   "raw": 0.02207
+  },
+  "brian onora": {
+   "bias": 0.01087,
+   "n": 736,
+   "name": "Brian O'Nora",
+   "raw": 0.02697
+  },
+  "brian walsh": {
+   "bias": -0.0021,
+   "n": 981,
+   "name": "Brian Walsh",
+   "raw": -0.00443
+  },
+  "brock ballou": {
+   "bias": -0.00275,
+   "n": 703,
+   "name": "Brock Ballou",
+   "raw": -0.00702
+  },
+  "bruce dreckman": {
+   "bias": 0.01451,
+   "n": 1058,
+   "name": "Bruce Dreckman",
+   "raw": 0.02945
+  },
+  "carlos torres": {
+   "bias": 0.00072,
+   "n": 927,
+   "name": "Carlos Torres",
+   "raw": 0.00157
+  },
+  "chad fairchild": {
+   "bias": -0.00451,
+   "n": 981,
+   "name": "Chad Fairchild",
+   "raw": -0.00953
+  },
+  "chad whitson": {
+   "bias": -0.01591,
+   "n": 956,
+   "name": "Chad Whitson",
+   "raw": -0.03405
+  },
+  "charlie ramos": {
+   "bias": -0.0066,
+   "n": 745,
+   "name": "Charlie Ramos",
+   "raw": -0.01626
+  },
+  "chris conroy": {
+   "bias": -0.00332,
+   "n": 1064,
+   "name": "Chris Conroy",
+   "raw": -0.00672
+  },
+  "chris guccione": {
+   "bias": -0.00812,
+   "n": 969,
+   "name": "Chris Guccione",
+   "raw": -0.01726
+  },
+  "chris segal": {
+   "bias": 0.01035,
+   "n": 1049,
+   "name": "Chris Segal",
+   "raw": 0.02109
+  },
+  "clint vondrak": {
+   "bias": 0.00764,
+   "n": 995,
+   "name": "Clint Vondrak",
+   "raw": 0.01601
+  },
+  "cory blaser": {
+   "bias": 0.00622,
+   "n": 891,
+   "name": "Cory Blaser",
+   "raw": 0.01382
+  },
+  "dan bellino": {
+   "bias": -0.00721,
+   "n": 1050,
+   "name": "Dan Bellino",
+   "raw": -0.01469
+  },
+  "dan iassogna": {
+   "bias": 0.01372,
+   "n": 1038,
+   "name": "Dan Iassogna",
+   "raw": 0.02813
+  },
+  "dan merzel": {
+   "bias": 0.00221,
+   "n": 1010,
+   "name": "Dan Merzel",
+   "raw": 0.0046
+  },
+  "david rackley": {
+   "bias": 0.01618,
+   "n": 1020,
+   "name": "David Rackley",
+   "raw": 0.03346
+  },
+  "derek thomas": {
+   "bias": -0.00613,
+   "n": 890,
+   "name": "Derek Thomas",
+   "raw": -0.01363
+  },
+  "dexter kelley": {
+   "bias": 0.00758,
+   "n": 652,
+   "name": "Dexter Kelley",
+   "raw": 0.02025
+  },
+  "dillon wilson": {
+   "bias": -0.00572,
+   "n": 363,
+   "name": "Dillon Wilson",
+   "raw": -0.02291
+  },
+  "dj reyburn": {
+   "bias": 0.01005,
+   "n": 833,
+   "name": "D.J. Reyburn",
+   "raw": 0.0232
+  },
+  "doug eddings": {
+   "bias": 0.02653,
+   "n": 1022,
+   "name": "Doug Eddings",
+   "raw": 0.05482
+  },
+  "edwin jimenez": {
+   "bias": 0.0073,
+   "n": 415,
+   "name": "Edwin Jimenez",
+   "raw": 0.02648
+  },
+  "edwin moscoso": {
+   "bias": -0.01007,
+   "n": 969,
+   "name": "Edwin Moscoso",
+   "raw": -0.02139
+  },
+  "emil jimenez": {
+   "bias": -0.00244,
+   "n": 975,
+   "name": "Emil Jimenez",
+   "raw": -0.00516
+  },
+  "erich bacchus": {
+   "bias": 0.0088,
+   "n": 1021,
+   "name": "Erich Bacchus",
+   "raw": 0.0182
+  },
+  "felix neon": {
+   "bias": -0.01637,
+   "n": 334,
+   "name": "Felix Neon",
+   "raw": -0.0698
+  },
+  "gabe morales": {
+   "bias": 0.01828,
+   "n": 921,
+   "name": "Gabe Morales",
+   "raw": 0.03992
+  },
+  "hunter wendelstedt": {
+   "bias": -0.009,
+   "n": 1011,
+   "name": "Hunter Wendelstedt",
+   "raw": -0.0187
+  },
+  "jacob metz": {
+   "bias": 0.00521,
+   "n": 663,
+   "name": "Jacob Metz",
+   "raw": 0.01378
+  },
+  "james hoye": {
+   "bias": -0.00985,
+   "n": 1018,
+   "name": "James Hoye",
+   "raw": -0.0204
+  },
+  "james jean": {
+   "bias": -0.01828,
+   "n": 877,
+   "name": "James Jean",
+   "raw": -0.041
+  },
+  "jansen visconti": {
+   "bias": -0.01113,
+   "n": 949,
+   "name": "Jansen Visconti",
+   "raw": -0.02391
+  },
+  "jen pawol": {
+   "bias": -0.00291,
+   "n": 576,
+   "name": "Jen Pawol",
+   "raw": -0.00843
+  },
+  "jeremie rehak": {
+   "bias": -0.00897,
+   "n": 963,
+   "name": "Jeremie Rehak",
+   "raw": -0.01912
+  },
+  "jim wolf": {
+   "bias": 0.01033,
+   "n": 953,
+   "name": "Jim Wolf",
+   "raw": 0.02215
+  },
+  "john bacon": {
+   "bias": 0.01412,
+   "n": 593,
+   "name": "John Bacon",
+   "raw": 0.04007
+  },
+  "john libka": {
+   "bias": -0.00609,
+   "n": 932,
+   "name": "John Libka",
+   "raw": -0.01321
+  },
+  "john tumpane": {
+   "bias": 0.01472,
+   "n": 1036,
+   "name": "John Tumpane",
+   "raw": 0.03021
+  },
+  "jonathan parra": {
+   "bias": -0.01091,
+   "n": 547,
+   "name": "Jonathan Parra",
+   "raw": -0.03264
+  },
+  "jordan baker": {
+   "bias": -0.00323,
+   "n": 1091,
+   "name": "Jordan Baker",
+   "raw": -0.00646
+  },
+  "junior valentine": {
+   "bias": 0.00066,
+   "n": 958,
+   "name": "Junior Valentine",
+   "raw": 0.0014
+  },
+  "lance barksdale": {
+   "bias": -0.00983,
+   "n": 1112,
+   "name": "Lance Barksdale",
+   "raw": -0.01946
+  },
+  "lance barrett": {
+   "bias": 0.00197,
+   "n": 1159,
+   "name": "Lance Barrett",
+   "raw": 0.00382
+  },
+  "laz diaz": {
+   "bias": -0.00329,
+   "n": 1073,
+   "name": "Laz Diaz",
+   "raw": -0.00663
+  },
+  "louie krupa": {
+   "bias": -0.00579,
+   "n": 517,
+   "name": "Louie Krupa",
+   "raw": -0.01798
+  },
+  "malachi moore": {
+   "bias": 0.00845,
+   "n": 1133,
+   "name": "Malachi Moore",
+   "raw": 0.01657
+  },
+  "manny gonzalez": {
+   "bias": 0.00449,
+   "n": 1014,
+   "name": "Manny Gonzalez",
+   "raw": 0.00931
+  },
+  "mark ripperger": {
+   "bias": -0.00118,
+   "n": 1190,
+   "name": "Mark Ripperger",
+   "raw": -0.00225
+  },
+  "mark wegner": {
+   "bias": 0.00231,
+   "n": 1080,
+   "name": "Mark Wegner",
+   "raw": 0.00465
+  },
+  "marvin hudson": {
+   "bias": 0.00805,
+   "n": 822,
+   "name": "Marvin Hudson",
+   "raw": 0.01873
+  },
+  "mike estabrook": {
+   "bias": 0.00354,
+   "n": 1041,
+   "name": "Mike Estabrook",
+   "raw": 0.00725
+  },
+  "mike muchlinski": {
+   "bias": -0.00255,
+   "n": 1081,
+   "name": "Mike Muchlinski",
+   "raw": -0.00512
+  },
+  "nate tomlinson": {
+   "bias": -0.00824,
+   "n": 986,
+   "name": "Nate Tomlinson",
+   "raw": -0.01735
+  },
+  "nestor ceja": {
+   "bias": -0.01184,
+   "n": 1098,
+   "name": "Nestor Ceja",
+   "raw": -0.0236
+  },
+  "nic lentz": {
+   "bias": -0.00475,
+   "n": 1055,
+   "name": "Nic Lentz",
+   "raw": -0.00965
+  },
+  "nick mahrley": {
+   "bias": 0.00747,
+   "n": 942,
+   "name": "Nick Mahrley",
+   "raw": 0.01611
+  },
+  "paul clemons": {
+   "bias": 0.0081,
+   "n": 979,
+   "name": "Paul Clemons",
+   "raw": 0.01712
+  },
+  "quinn wolcott": {
+   "bias": -0.00181,
+   "n": 1109,
+   "name": "Quinn Wolcott",
+   "raw": -0.00359
+  },
+  "ramon de jesus": {
+   "bias": 0.00717,
+   "n": 927,
+   "name": "Ramon De Jesus",
+   "raw": 0.01559
+  },
+  "rob drake": {
+   "bias": 0.02185,
+   "n": 1095,
+   "name": "Rob Drake",
+   "raw": 0.0436
+  },
+  "roberto ortiz": {
+   "bias": -0.0146,
+   "n": 951,
+   "name": "Roberto Ortiz",
+   "raw": -0.03133
+  },
+  "ron kulpa": {
+   "bias": 0.00634,
+   "n": 715,
+   "name": "Ron Kulpa",
+   "raw": 0.016
+  },
+  "ryan additon": {
+   "bias": 0.00069,
+   "n": 1128,
+   "name": "Ryan Additon",
+   "raw": 0.00136
+  },
+  "ryan blakney": {
+   "bias": -0.00755,
+   "n": 807,
+   "name": "Ryan Blakney",
+   "raw": -0.01775
+  },
+  "ryan wills": {
+   "bias": -0.00366,
+   "n": 1069,
+   "name": "Ryan Wills",
+   "raw": -0.0074
+  },
+  "scott barry": {
+   "bias": 0.01051,
+   "n": 915,
+   "name": "Scott Barry",
+   "raw": 0.02303
+  },
+  "sean barber": {
+   "bias": -0.01432,
+   "n": 1056,
+   "name": "Sean Barber",
+   "raw": -0.0291
+  },
+  "shane livensparger": {
+   "bias": -0.01204,
+   "n": 845,
+   "name": "Shane Livensparger",
+   "raw": -0.02757
+  },
+  "steven jaschinski": {
+   "bias": 0.00175,
+   "n": 515,
+   "name": "Steven Jaschinski",
+   "raw": 0.00545
+  },
+  "stu scheurwater": {
+   "bias": -0.00868,
+   "n": 1065,
+   "name": "Stu Scheurwater",
+   "raw": -0.01756
+  },
+  "todd tichenor": {
+   "bias": 0.00412,
+   "n": 1001,
+   "name": "Todd Tichenor",
+   "raw": 0.00861
+  },
+  "tom hanahan": {
+   "bias": 0.00868,
+   "n": 984,
+   "name": "Tom Hanahan",
+   "raw": 0.01829
+  },
+  "tripp gibson": {
+   "bias": -0.00499,
+   "n": 1098,
+   "name": "Tripp Gibson",
+   "raw": -0.00994
+  },
+  "tyler jones": {
+   "bias": -0.00675,
+   "n": 773,
+   "name": "Tyler Jones",
+   "raw": -0.01626
+  },
+  "vic carapazza": {
+   "bias": 0.0018,
+   "n": 1138,
+   "name": "Vic Carapazza",
+   "raw": 0.00353
+  },
+  "will little": {
+   "bias": -0.01259,
+   "n": 1114,
+   "name": "Will Little",
+   "raw": -0.0249
+  },
+  "willie traynor": {
+   "bias": -0.02772,
+   "n": 1191,
+   "name": "Willie Traynor",
+   "raw": -0.05309
+  }
+ }
+}
