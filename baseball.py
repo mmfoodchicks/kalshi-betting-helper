@@ -138,6 +138,16 @@ def _cached(key, ttl, producer):
     return val
 
 
+def _peek(key):
+    """A cache READ that never builds. For work worth showing when it happens to
+    be free and not worth paying for on its own — `_cached` would run the
+    producer, which is exactly what the caller is trying to avoid."""
+    hit = _cache.get(key)
+    if hit and _time.time() - hit[0] < hit[2]:
+        return hit[1]
+    return None
+
+
 def _get(url):
     return kalshi._get_json(url)
 
@@ -456,6 +466,62 @@ def _pitcher_stats(pid, season):
         except Exception:
             return None
     return _cached(("sp", pid, season), 600, fetch)
+
+
+# A start has to clear this many Ks ABOVE the pitcher's own season average
+# before it counts as a genuine outlier rather than a good night. Fitted to
+# taste rather than measured: at +4 a typical starter's season shows one or two
+# such games, which is what "he had a night" should mean. Lowering it to +3
+# tagged a third of every rotation and the callout stopped carrying information.
+_DAWG_OVER_AVG = 4.0
+_DAWG_MIN_K = 9          # ...and it has to be a big number in absolute terms too
+
+
+def _k_log(pid, season):
+    """A starter's per-START strikeout log: {avg, high, gs, dawg}.
+
+    The card shows what the model expects tonight; this is what he has actually
+    DONE. `dawg` is his best start of the year when it clears both bars in
+    _DAWG_OVER_AVG / _DAWG_MIN_K -- the "he was an absolute dawg that night"
+    game, with the date, the opponent and the line, so a 13-K ceiling read isn't
+    an abstraction. Relief appearances are excluded: a one-inning cameo would
+    drag the per-start average down and it is not what he is doing tonight."""
+    if not pid:
+        return None
+
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/people/{pid}/stats?stats=gameLog"
+                     f"&group=pitching&season={season}")
+        except Exception:
+            return None
+        starts = []
+        for s in (d.get("stats") or [{}])[0].get("splits") or []:
+            st = s.get("stat") or {}
+            if not _f(st.get("gamesStarted")):        # relief outing -> not a start
+                continue
+            starts.append({
+                "k": int(_f(st.get("strikeOuts"))),
+                "ip": _ip_float(st.get("inningsPitched")),
+                "date": s.get("date"),
+                "opp": (s.get("opponent") or {}).get("name"),
+                "home": bool(s.get("isHome")),
+            })
+        if not starts:
+            return None
+        ks = [x["k"] for x in starts]
+        avg = sum(ks) / len(ks)
+        best = max(starts, key=lambda x: x["k"])
+        out = {"avg": round(avg, 1), "high": best["k"], "gs": len(starts),
+               "recent": [x["k"] for x in starts[-5:]]}
+        if best["k"] >= _DAWG_MIN_K and best["k"] - avg >= _DAWG_OVER_AVG:
+            out["dawg"] = {"k": best["k"], "ip": best["ip"], "date": best["date"],
+                           "opp": best["opp"], "home": best["home"],
+                           "over_avg": round(best["k"] - avg, 1)}
+        return out
+    # A finished start never changes, so the only thing this can go stale on is
+    # TONIGHT's start landing in it -- an hour is well inside that.
+    return _cached(("klog", pid, season), 3600, fetch)
 
 
 def _league_avgs(hit, pit, bp, hitplat):
@@ -1521,6 +1587,19 @@ def _analyze_slate_uncached(date, season):
     games = []
     _predlog_rows = []
     import predlog as predlog_mod
+    # Per-start K logs for every listed starter, fetched once for the slate and
+    # concurrently — one call per pitcher, the same shape as the sp_stats fan-out
+    # right above. Best-effort: a card without one just omits the season line.
+    klogs = {}
+    _kpids = [p for p in ({g.get("home_sp_id") for g in schedule}
+                          | {g.get("away_sp_id") for g in schedule}) if p]
+    if _kpids:
+        try:
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                for pid, kl in zip(_kpids, ex.map(lambda p: _k_log(p, season), _kpids)):
+                    klogs[pid] = kl
+        except Exception:
+            klogs = {}
     for g in schedule:
         h_sp = sp_stats.get(g["home_sp_id"]); a_sp = sp_stats.get(g["away_sp_id"])
         h_hand = hand.get(g["home_sp_id"], "R"); a_hand = hand.get(g["away_sp_id"], "R")
@@ -1697,6 +1776,15 @@ def _analyze_slate_uncached(date, season):
                     "recent_whip": round(r["whip"], 2) if r.get("ip") else None,
                     "recent_ip": r.get("ip")}
 
+        def sp_ks(sp, pid, ks):
+            """His real per-start K log plus the closed-form projection for
+            tonight. The SIMULATED number is merged in by _attach_sim_ks below,
+            once the game dict exists for the sim to read."""
+            out = dict(klogs.get(pid) or {})
+            if ks and ks.get("expected") is not None:
+                out["proj"] = ks["expected"]        # closed form behind the K ladder
+            return out or None
+
         rh = rec.get(g["home_id"], {}); ra = rec.get(g["away_id"], {})
         bph = tbp(g["home_id"]); bpa = tbp(g["away_id"])
 
@@ -1821,6 +1909,8 @@ def _analyze_slate_uncached(date, season):
             "weather": _weather_block(winfo),
             "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),
             "away_sp": sp_block(g["away_sp_name"], a_sp, a_hand),
+            "home_sp_ks": sp_ks(h_sp, g.get("home_sp_id"), ks_home),
+            "away_sp_ks": sp_ks(a_sp, g.get("away_sp_id"), ks_away),
             "home_team": {"ops": round(th(g['home_id']).get("ops", 0), 3),
                           "ops_vs_opp_hand": round(ops_hand(g['home_id'], a_hand) or 0, 3),
                           "rpg": round(th(g['home_id']).get("rpg", 0), 2),
@@ -1851,8 +1941,58 @@ def _analyze_slate_uncached(date, season):
             predlog_mod.log_many("mlb", _predlog_rows)
         except Exception:
             pass          # a logging hiccup must never cost the user his slate
+    _attach_sim_ks(games)
     games.sort(key=lambda x: x["pick_prob"], reverse=True)
     return games
+
+
+def _attach_sim_ks(games):
+    """Merge each starter's SIMULATED strikeout line onto his card block — but
+    ONLY for games whose sim is already in the cache.
+
+    The first cut of this ran the slate's sims itself, concurrently. It worked on
+    a warm box and got the process OOM-killed on a cold one: a 4,000-iteration
+    game sim is ~26 MB of retained arrays, six in flight is most of the
+    instance's headroom, and the failure is a dead worker rather than a slow one.
+    This module had already learned that lesson once -- build_combos was taken
+    off the slate load for the same reason, in the same units -- and this walked
+    straight back into it.
+
+    So the sim is never built here. It is read when the edge finder or the combo
+    maker has already paid for it, which is the common case once the user does
+    anything, and the card falls back to the closed-form projection until then.
+    The two agree within about half a strikeout (measured across a slate), so the
+    fallback is a rounding difference, not a different answer."""
+    import mlb_sim
+    for g in games:
+        if _game_state(g) != "Preview":
+            continue
+        gs = _peek(("game_sim", g.get("game_pk")))
+        if not gs:
+            continue
+        try:
+            lines = mlb_sim._pitchers(g, gs["sim"])
+        except Exception:
+            continue
+        for p in lines or []:
+            if not p:
+                continue
+            for side in ("home", "away"):
+                blk = g.get(f"{side}_sp_ks")
+                if not blk or (g.get(f"{side}_sp") or {}).get("name") != p["name"]:
+                    continue
+                blk["sim_k"] = p["exp_k"]
+                blk["sim_ip"] = p["avg_ip"]
+                blk["sim_pitches"] = p["avg_pitches"]
+                blk["k_dist"] = p["k_dist"]
+    # vs_avg is measured against whatever number the card actually leads with,
+    # so it has to be recomputed once a sim value is in.
+    for g in games:
+        for side in ("home", "away"):
+            blk = g.get(f"{side}_sp_ks") or {}
+            shown = blk.get("sim_k", blk.get("proj"))
+            if shown is not None and blk.get("avg") is not None:
+                blk["vs_avg"] = round(shown - blk["avg"], 1)
 
 
 def _game_state(g):

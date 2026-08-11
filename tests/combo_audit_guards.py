@@ -5,7 +5,7 @@ fallback, display/refresh stability, fee accounting, and monotonicity laws that
 must hold for ANY slate (raising the floor can't lower a leg; adding legs can't
 raise the combined chance).
 """
-import os, sys, datetime, collections
+import os, sys, datetime, collections, time as _tm
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
 
@@ -2637,6 +2637,111 @@ _fake_g = None   # source-level guards above; the live-fire proof ran on today's
                  # the whole maker would re-test mlb_sim, not the filter.
 ck("max bet path unchanged: stackable already required a price",
    "combo_engine.stackable(c[\"marg\"], c.get(\"price_cents\"))" in _bb2)
+
+print()
+print("=" * 72)
+print("Strikeouts on the card: projected tonight vs what he has actually done")
+print("=" * 72)
+_LOG = [{"k": k, "ip": 6.0, "date": f"2026-0{1+i//9}-{1+i%9:02d}",
+         "opp": "Some Team", "home": bool(i % 2)} for i, k in
+        enumerate([5, 6, 4, 7, 5, 6, 5, 4, 6, 11, 5, 6, 4, 5, 7])]
+
+
+def _klog_from(starts):
+    """Re-run _k_log's arithmetic on a fixture (the function itself is a network
+    fetch); keeps the dawg rule and the guard reading the same numbers."""
+    ks = [x["k"] for x in starts]
+    avg = sum(ks) / len(ks)
+    best = max(starts, key=lambda x: x["k"])
+    out = {"avg": round(avg, 1), "high": best["k"], "gs": len(starts)}
+    if best["k"] >= B._DAWG_MIN_K and best["k"] - avg >= B._DAWG_OVER_AVG:
+        out["dawg"] = {"k": best["k"], "over_avg": round(best["k"] - avg, 1)}
+    return out
+
+
+_k1 = _klog_from(_LOG)
+ck("a real ceiling start is called out", "dawg" in _k1,
+   f"11 K against a {_k1['avg']} average")
+ck("the season high and the start count come through",
+   _k1["high"] == 11 and _k1["gs"] == 15)
+ck("a BIG number that is normal for him is NOT a dawg game",
+   "dawg" not in _klog_from([{"k": k, "ip": 6.0, "date": "d", "opp": "o", "home": True}
+                             for k in [9, 10, 11, 9, 10, 12, 9, 10, 11, 10]]),
+   "a 12-K night from someone who fans 10 a start is his Tuesday — the callout "
+   "has to mean a real outlier or it stops carrying information")
+ck("and a modest high over a modest average is not one either",
+   "dawg" not in _klog_from([{"k": k, "ip": 6.0, "date": "d", "opp": "o", "home": True}
+                             for k in [4, 5, 3, 8, 4, 5]]),
+   "8 K clears neither bar: below _DAWG_MIN_K in absolute terms")
+ck("both bars are required, not either",
+   B._DAWG_MIN_K >= 9 and B._DAWG_OVER_AVG >= 4.0)
+_bb3 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("relief outings are excluded from the per-start average",
+   'if not _f(st.get("gamesStarted")):' in _bb3,
+   "a one-inning cameo would drag the average down and is not what he is doing "
+   "tonight")
+ck("innings in the K log are read base-3",
+   '"ip": _ip_float(st.get("inningsPitched"))' in _bb3)
+ck("the SIMULATED K number is what the card leads with",
+   'blk["sim_k"] = p["exp_k"]' in _bb3
+   and 'shown = blk.get("sim_k", blk.get("proj"))' in _bb3,
+   "the sim is pitch-count aware, so an arm that burns its budget early is "
+   "capped where the closed form keeps counting")
+ck("...and the closed-form projection still rides along",
+   'out["proj"] = ks["expected"]' in _bb3)
+ck("vs_avg is measured against the number actually shown",
+   _bb3.index('blk["sim_k"] = p["exp_k"]')
+   < _bb3.index('shown = blk.get("sim_k", blk.get("proj"))'),
+   "computing it before the sim lands would compare the season average to a "
+   "number the card doesn't display")
+ck("the card NEVER builds a sim of its own — it reads one already paid for",
+   '_peek(("game_sim", g.get("game_pk")))' in _insp.getsource(B._attach_sim_ks)
+   and "_game_sim(g)" not in _insp.getsource(B._attach_sim_ks),
+   "the first cut ran the slate's sims concurrently and OOM-killed the process: "
+   "a 4,000-run game sim retains ~26 MB and six in flight is most of the "
+   "instance. build_combos was taken off the slate load for the same reason, in "
+   "the same units, and this walked straight back into it")
+_peek_calls = []
+B._cache.pop(("guard_peek_key",), None)
+ck("_peek returns None for a cold key and runs no builder",
+   B._peek(("guard_peek_key",)) is None and ("guard_peek_key",) not in B._cache,
+   "_cached would run the builder AND store the result; _peek must do neither")
+B._cache[("guard_peek_key",)] = (_tm.time(), "warm", 300)
+ck("...and returns the value once something else has paid for it",
+   B._peek(("guard_peek_key",)) == "warm")
+B._cache[("guard_peek_key",)] = (0.0, "stale", 1)
+ck("...but not a stale one", B._peek(("guard_peek_key",)) is None,
+   "an expired sim is not a free sim")
+B._cache.pop(("guard_peek_key",), None)
+ck("a sim that isn't cached leaves the closed-form projection standing",
+   "if not gs:\n            continue" in _bb3)
+ck("only PREGAME games get a sim line",
+   '_game_state(g) != "Preview"' in _insp.getsource(B._attach_sim_ks),
+   "a live game's sim is resumed from the current score — its K mean is not a "
+   "pregame projection and must not be shown as one")
+
+_js4 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "static", "app.js")).read()
+ck("the card renders the K line for both starters",
+   _js4.count("spKs(g.away_sp_ks)") == 1 and _js4.count("spKs(g.home_sp_ks)") == 1)
+ck("a thin sample is flagged rather than read as a tendency",
+   "k.gs < 5" in _js4 and "not a tendency" in _js4,
+   "an average and a 'high' off one start is a stat line, not a trend")
+ck("the dawg callout only renders when there IS one",
+   "const d = k && k.dawg;\n  if (!d) return \"\";" in _js4)
+for _sort in ("ks", "kshigh", "kdawg"):
+    ck(f"sort '{_sort}' is wired in the UI",
+       f"{_sort}:" in _js4 and f'value="{_sort}"' in open(
+           _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                         "templates", "index.html")).read())
+ck("the K sorts read BOTH starters and take the bigger",
+   "const simK = (x) => Math.max(" in _js4,
+   "a game is worth a K angle if EITHER arm is")
+ck("the dawg sort ranks by margin over his own average, not the raw high",
+   "over_avg" in _js4.split("const dawgOf")[1][:220],
+   "a 10-K game from someone who fans 9 a start would otherwise outrank a "
+   "genuine ceiling night")
 
 print()
 print("=" * 72)

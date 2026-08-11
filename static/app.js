@@ -680,6 +680,45 @@ function spLine(sp) {
   return `${sp.name} (${hand}) — <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}`;
 }
 
+// Tonight's simulated strikeouts against what he has actually done all year.
+// The sim number leads because it is the one that knows his pitch budget; the
+// season average and high say whether that projection is a normal night for him
+// or a reach.
+function spKs(k) {
+  if (!k) return "";
+  const shown = k.sim_k != null ? k.sim_k : k.proj;
+  if (shown == null) return "";
+  const src = k.sim_k != null
+    ? `title="Mean strikeouts across the game simulations — pitch-count aware, so an arm that burns its budget early is capped rather than projected forward. Poisson model says ${k.proj != null ? k.proj : "—"}."`
+    : `title="Closed-form projection (regressed K/9 × expected innings). The simulation hasn't run for this game yet."`;
+  // Thin season: an average and a "high" off one or two starts is a stat line,
+  // not a tendency. Say the sample instead of implying a trend.
+  const thin = k.gs != null && k.gs < 5;
+  let season = "";
+  if (k.avg != null) {
+    const v = k.vs_avg;
+    const tag = (v != null && Math.abs(v) >= 1.0)
+      ? ` <span class="${v > 0 ? "ev pos" : "ev neg"}" title="tonight's projection vs his own season average">${v > 0 ? "+" : ""}${v}</span>` : "";
+    season = ` · season <b>${k.avg}</b> avg${tag}, high <b>${k.high}</b>`
+      + `<span style="color:var(--muted)" title="${thin ? "Only " : ""}${k.gs} start${k.gs === 1 ? "" : "s"} behind these numbers${thin ? " — treat the average and the high as a sample, not a tendency" : ""}"> (${k.gs} GS${thin ? " ⚠" : ""})</span>`;
+  }
+  const ipTag = k.sim_ip != null
+    ? `<span style="color:var(--muted)" title="simulated innings / pitches"> · ~${k.sim_ip} IP, ${k.sim_pitches}p</span>` : "";
+  const last5 = (k.recent && k.recent.length)
+    ? `<span style="color:var(--muted)" title="strikeouts in his last ${k.recent.length} starts, oldest first"> · last${k.recent.length}: ${k.recent.join("·")}</span>` : "";
+  return `<div class="small" ${src}>⚾ Ks tonight <b>${shown}</b>${season}${ipTag}${last5}${dawgTag(k)}</div>`;
+}
+
+// "He was an absolute dawg that night" — his best start of the year, when it
+// clears both bars (a big number AND well clear of his own average). Only shown
+// when it's real, so it keeps meaning something.
+function dawgTag(k) {
+  const d = k && k.dawg;
+  if (!d) return "";
+  const where = d.home ? "vs" : "at";
+  return `<div class="small" style="color:#f0b429" title="His ceiling game this season: ${d.k} K in ${d.ip} IP, ${d.over_avg} above his season average. The K ladder's top rungs are priced off nights like this being possible.">🐕 <b>DAWG GAME</b> — ${d.k} K in ${d.ip} IP ${where} ${d.opp} on ${d.date} <span style="color:var(--muted)">(+${d.over_avg} over his avg)</span></div>`;
+}
+
 // ---- Live game feedback feed (pitch counts, AB-by-AB, live model odds) -----
 const _liveFeedTimers = {};
 window.toggleLiveFeed = (pk) => {
@@ -853,12 +892,14 @@ function renderGame(g) {
       <div>
         <div class="teamhdr">${g.away_abbr} ${rec(at)} · away</div>
         <div class="small">SP: ${spLine(g.away_sp)}</div>
+        ${spKs(g.away_sp_ks)}
         <div class="small">Team OPS <b>${at.ops}</b>${plat(at, g.home_sp)} · ${at.rpg} R/G · bullpen <b>${at.bullpen_era}</b> ERA, ${at.bullpen_whip} WHIP${lf(at)}</div>
         ${bpf(at)}
       </div>
       <div>
         <div class="teamhdr">${g.home_abbr} ${rec(ht)} · home</div>
         <div class="small">SP: ${spLine(g.home_sp)}</div>
+        ${spKs(g.home_sp_ks)}
         <div class="small">Team OPS <b>${ht.ops}</b>${plat(ht, g.away_sp)} · ${ht.rpg} R/G · bullpen <b>${ht.bullpen_era}</b> ERA, ${ht.bullpen_whip} WHIP${lf(ht)}</div>
         ${bpf(ht)}
       </div>
@@ -877,10 +918,27 @@ let bbSlateSort = "confidence";
 function sortSlateGames(games) {
   const g = games.slice();
   const isLive = (x) => (x.live && (x.live.is_live || x.live.state === "Live")) ? 0 : 1;
+  // Strikeout sorts read BOTH starters and take the bigger — the card is a game,
+  // and a game is interesting for a K angle if either arm is.
+  const kOf = (x, field) => Math.max(
+    ((x.home_sp_ks || {})[field] ?? -1),
+    ((x.away_sp_ks || {})[field] ?? -1));
+  const simK = (x) => Math.max(
+    ((x.home_sp_ks || {}).sim_k ?? (x.home_sp_ks || {}).proj ?? -1),
+    ((x.away_sp_ks || {}).sim_k ?? (x.away_sp_ks || {}).proj ?? -1));
+  // "Dawg" ranks by how far a starter's best night sits above his own average,
+  // not by the raw high — a 10-K game from someone who fans 9 a start is his
+  // Tuesday, and the point of the sort is finding the arms with a real ceiling.
+  const dawgOf = (x) => Math.max(
+    (((x.home_sp_ks || {}).dawg || {}).over_avg ?? -1),
+    (((x.away_sp_ks || {}).dawg || {}).over_avg ?? -1));
   const cmp = {
     confidence: (a, b) => (b.pick_prob || 0) - (a.pick_prob || 0),
     total:      (a, b) => (b.exp_total || 0) - (a.exp_total || 0),
     edge:       (a, b) => (b.edge_cents ?? -999) - (a.edge_cents ?? -999),
+    ks:         (a, b) => simK(b) - simK(a),
+    kshigh:     (a, b) => kOf(b, "high") - kOf(a, "high"),
+    kdawg:      (a, b) => dawgOf(b) - dawgOf(a) || simK(b) - simK(a),
     start:      (a, b) => isLive(a) - isLive(b)
                           || (Date.parse(a.start || 0) || 0) - (Date.parse(b.start || 0) || 0),
   }[bbSlateSort] || null;
