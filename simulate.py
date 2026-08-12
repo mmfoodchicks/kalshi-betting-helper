@@ -233,29 +233,33 @@ def apply_grid(players, sport, date=None, grid_text=None):
             form = racing.get_f1_form() or {}
     except Exception:
         form = {}
-    # F1: real qualifying is done, so RE-SIMULATE the race thousands of times
-    # FROM THE ACTUAL GRID. Expected finish is conditioned on where each driver
-    # actually starts, and place differential is computed exactly per simulated
-    # race inside the DK samples (F1 leans hard on the grid — conditioning beats
-    # any linear PD adjustment). Falls back to the marginal profile on failure.
-    f1_prof, cond_meta = {}, {}
-    if sport == "f1" and grid:
+    # Real qualifying done: RE-SIMULATE the race thousands of times WITH THE
+    # ACTUAL GRID. F1 races START FROM that grid — expected finish is
+    # conditioned on where each driver actually starts (F1 leans hard on the
+    # grid; conditioning beats any linear PD adjustment). NASCAR keeps its
+    # grid-independent finish model but scores place differential exactly, per
+    # simulated race, inside the DK samples — the wreck that costs finish
+    # points costs PD in the same sample, so ceilings and floors carry the
+    # start spot instead of a constant pasted onto every draw. Falls back to
+    # the marginal profile (+ constant PD) on failure.
+    cond_prof, cond_meta = {}, {}
+    if sport in ("f1", "nascar") and grid:
         try:
             import racing_sim
             # Fixed seed so rerunning the DFS on the SAME grid reproduces the same
             # projections (and lineups) instead of drifting on fresh Monte Carlo
             # noise each build; output still changes when the grid or form does.
-            cond = racing_sim.next_race_sim("f1", n=1500, fixed_grid=grid["grid"], seed=1_000_003)
+            cond = racing_sim.next_race_sim(sport, n=1500, fixed_grid=grid["grid"], seed=1_000_003)
             if cond and cond.get("grid_conditioned"):
                 for nm2, s2 in (cond.get("drivers") or {}).items():
                     key = _norm_name(nm2)
-                    f1_prof[key] = s2
+                    cond_prof[key] = s2
                     if key.split():
-                        f1_prof.setdefault(key.split()[-1], s2)
+                        cond_prof.setdefault(key.split()[-1], s2)
                 cond_meta = {k: cond.get(k) for k in
                              ("laps", "dominator_pool", "grid_conditioned", "n_sims")}
         except Exception:
-            f1_prof = {}
+            cond_prof = {}
 
     lam = 0.55                                  # partial mean-reversion of the grid
     matched, unmatched, form_hits, sim_hits = 0, [], 0, 0
@@ -267,10 +271,10 @@ def apply_grid(players, sport, date=None, grid_text=None):
             continue
         if start is not None:
             matched += 1
-        # F1 grid-conditioned DK projection (PD already inside the samples).
-        if f1_prof:
+        # Grid-conditioned DK projection (PD already inside the samples).
+        if cond_prof:
             nm = _norm_name(p["name"])
-            s2 = f1_prof.get(nm) or (f1_prof.get(nm.split()[-1]) if nm.split() else None)
+            s2 = cond_prof.get(nm) or (cond_prof.get(nm.split()[-1]) if nm.split() else None)
             if s2 and s2.get("dk_mean") is not None:
                 p["base_proj"] = p["proj"]
                 p["start"] = start

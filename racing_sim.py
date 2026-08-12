@@ -1350,9 +1350,12 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
     (dk_mean / dk_q90 for true per-player means and GPP ceilings).
 
     NASCAR: finish points + a dominator model (laps led x0.25 + fastest x0.45)
-    sized to THIS race's length and track type. Grid-independent by design (Cup
-    start position barely predicts the finish); place differential is applied
-    by the DFS layer off the real grid.
+    sized to THIS race's length and track type. The finishing-order model is
+    grid-independent by design (Cup start position barely predicts the finish),
+    but when `fixed_grid` is given, place differential is scored exactly, per
+    simulated race, inside the DK samples -- the same simulated wreck that
+    costs finish points costs PD in the same sample, which a constant PD
+    pasted onto every draw (the old DFS-layer approach) erased.
 
     F1: finish points + laps led x0.1 + the 5-pt fastest lap + the defeated-
     teammate +5. When `fixed_grid` ({normalized name: start pos}) is given --
@@ -1528,12 +1531,22 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
                 drivers = adj
         # Real historical laps-led share per driver AT THIS TRACK TYPE.
         led_prop = {d["id"]: (d.get("led_by_type") or {}).get(ttype, 0.0) for d in drivers}
+        # Real qualifying in hand -> PD joins each sample; the finish sim itself
+        # stays grid-independent (in Cup the car's pace, not the starting spot,
+        # decides where it ends up). Unmatched drivers start at the back.
+        fg_order = _resolve_grid_order(fixed_grid, drivers)
+        start_of = {did: i + 1 for i, did in enumerate(fg_order)} if fg_order else None
+        grid_conditioned = start_of is not None
+        back = len(drivers)
         for _ in range(n):
             order = _sim_cup_race(drivers, rng, wet=rng.random() < wet_p, ttype=ttype)
             _tally_finish(order, fin, win, t5, t10, t20)
             dom = _alloc_dominators(order, laps, ttype, rng, led_prop)
             for pos, did in enumerate(order, 1):
-                dk_samples[did].append(_dk_nascar_fin(pos) + dom.get(did, 0.0))
+                pts = _dk_nascar_fin(pos) + dom.get(did, 0.0)
+                if start_of is not None:
+                    pts += start_of.get(did, back) - pos    # exact in-sim PD
+                dk_samples[did].append(pts)
     else:
         return None
 

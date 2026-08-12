@@ -3814,6 +3814,73 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
+print("The Cup grid rides inside every DK sample, not pasted on top of them")
+print("=" * 72)
+import racing_sim as _RS
+import racing as _RC
+import statistics as _stats
+
+_ns_saved, _pr_saved = _RS.nascar_state, _RC.get_nascar_practice
+_FIELD_N = 12
+# norm_name strips digits, so numbered fixture names would collapse into one key
+_G_NAMES = ["Alpha", "Bravo", "Chase", "Delta", "Echo", "Fox", "Golf", "Hotel",
+            "India", "Julie", "Kilo", "Lima"]
+def _guard_state(year=None, series=1):
+    dmap = {i: {"id": i, "name": f"Guard {_G_NAMES[i]}", "race_pace": 2.0 + 2.5 * i,
+                "pace_by_type": {}, "led_by_type": {}, "dnf": 0.02}
+            for i in range(_FIELD_N)}
+    return {"drivers": dmap,
+            "remaining": [{"name": "Guard 400", "type": "intermediate",
+                           "laps": 200, "wet_prob": 0.0}]}
+try:
+    _RS.nascar_state = _guard_state
+    _RC.get_nascar_practice = lambda *a, **k: None
+    _marg = _RS.next_race_sim("nascar", n=600, seed=11)
+    # fast cars buried deep, slow cars up front — the sharpest PD test there is
+    _fg = {_RC.norm_name(f"Guard {_G_NAMES[i]}"): _FIELD_N - i for i in range(_FIELD_N)}
+    _cond = _RS.next_race_sim("nascar", n=600, seed=11, fixed_grid=_fg)
+    ck("without a grid the NASCAR sim reports itself unconditioned",
+       _marg and _marg["grid_conditioned"] is False)
+    ck("with a real grid it reports conditioned",
+       _cond and _cond["grid_conditioned"] is True)
+    _shifts = []
+    _ok_pd = True
+    for _nm, _row in _marg["drivers"].items():
+        _c = _cond["drivers"][_nm]
+        _start = _fg[_RC.norm_name(_nm)]
+        _shift = _c["dk_mean"] - _row["dk_mean"]
+        _shifts.append(_shift)
+        # same seed => identical simulated races, so the mean shift must be
+        # EXACTLY the expected place differential (rounding aside)
+        if abs(_shift - (_start - _row["avg_finish"])) > 0.25:
+            _ok_pd = False
+    ck("each driver's mean shift is exactly his expected place differential",
+       _ok_pd)
+    ck("place differential conserves: the field's shifts sum to zero",
+       abs(sum(_shifts)) < 0.3 * _FIELD_N * 0.05 + 0.6,
+       "every spot gained is a spot someone lost")
+    _fast = min(_marg["drivers"], key=lambda nm: _marg["drivers"][nm]["avg_finish"])
+    _sd_m = _stats.pstdev(_marg["drivers"][_fast]["dk_arr"])
+    _sd_c = _stats.pstdev(_cond["drivers"][_fast]["dk_arr"])
+    ck("a fast car buried deep gets a WIDER sample spread, not a shifted copy",
+       _sd_c > _sd_m,
+       "finish points and PD move together inside one race; the old constant "
+       "add-on kept the marginal spread (%.1f) instead of %.1f" % (_sd_m, _sd_c))
+    _thin = _RS.next_race_sim("nascar", n=200, seed=11, fixed_grid=dict(list(_fg.items())[:3]))
+    ck("a grid matching under 8 drivers is refused, falling back to marginal",
+       _thin and _thin["grid_conditioned"] is False)
+finally:
+    _RS.nascar_state, _RC.get_nascar_practice = _ns_saved, _pr_saved
+
+_sm_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "simulate.py")).read()
+ck("the DFS layer grid-conditions BOTH racing sports",
+   'if sport in ("f1", "nascar") and grid:' in _sm_src)
+ck("the conditioned sim is called with the slate's own sport, not a literal",
+   "next_race_sim(sport, n=1500, fixed_grid=" in _sm_src)
+
+print()
+print("=" * 72)
 print("Settled games grade the same night, not when the 72-hour backstop lapses")
 print("=" * 72)
 import predlog as _PL2
