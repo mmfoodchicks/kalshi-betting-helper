@@ -331,6 +331,28 @@ _MODELS = {
     "cfb":    (lambda: _predlog_pairs("cfb"),    300),
 }
 
+# PER-MARKET MLB prop calibrators, fed from the per-market predlog buckets the
+# sim logger files (baseball._PREDLOG_TYPES). The pooled "prop" model above
+# averages markets that disagree in SIGN -- hit1 measured 13.8pp overconfident
+# while hit3 ran slightly under -- so one temperature over-corrects one end of
+# the ladder to fix the other. These give each market its own correction, but
+# only once it is EARNED: the same row floor as the pool plus a 30-day floor,
+# so every one of them is a no-op today and phases in as slates settle. The
+# consumer (mlb_sim) prefers a measured per-market fit and falls back to the
+# pooled one until then.
+for _mkt in ("mlb_total", "mlb_ks", "mlb_runline", "mlb_hit", "mlb_bases",
+             "mlb_hr", "mlb_hrr", "mlb_rfi", "mlb_sb", "mlb_rbi"):
+    _MODELS[_mkt] = ((lambda m=_mkt: _predlog_pairs(m)), 400, 30)
+
+
+def prop_market(p, model):
+    """Per-market prop calibration when that market has EARNED a fit; the pooled
+    batter-prop correction otherwise. `model` is the predlog bucket name."""
+    t, _q0, b, _n = _params(model)
+    if t != 1.0 or b != 0.0:
+        return apply(model, p)
+    return batter_prop(p)
+
 _cache = {}          # model -> (params, fitted_at)
 _TTL = 6 * 3600      # refit a few times a day; graded history changes slowly
 

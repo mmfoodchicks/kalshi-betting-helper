@@ -135,12 +135,22 @@ def devig(own_cents, opp_cents):
 
 
 def pairs(model):
-    """(prob, outcome 0/1) for every graded prediction of a model — the evidence
-    calibrate.py fits its temperature on."""
+    """(prob, outcome 0/1, day) for every graded prediction of a model — the
+    evidence calibrate.py fits its temperature on.
+
+    The DAY (from the market's close time) rides along for calibrate's
+    day-floor damping: rows that settle on one slate share that slate's
+    conditions and are far from independent, so a correction has to be earned
+    across days, not rows. calibrate._fit accepts bare (prob, outcome) too, so
+    older callers are unaffected."""
     with _lock, _conn() as c:
-        return [(r["prob"], float(r["outcome"])) for r in c.execute(
-            "SELECT prob, outcome FROM predictions "
-            "WHERE model=? AND graded=1 AND outcome IS NOT NULL", (model,)).fetchall()]
+        return [(r["prob"], float(r["outcome"]),
+                 time.strftime("%Y-%m-%d", time.gmtime(r["close_time"]))
+                 if r["close_time"] else None)
+                for r in c.execute(
+                    "SELECT prob, outcome, close_time FROM predictions "
+                    "WHERE model=? AND graded=1 AND outcome IS NOT NULL",
+                    (model,)).fetchall()]
 
 
 def vs_market(model):
@@ -283,8 +293,13 @@ _started = False
 
 
 def _loop(interval):
+    # RESOLVE FIRST, SLEEP AFTER. The loop used to sleep its full interval
+    # before doing anything, so a short-lived process -- the common case for a
+    # locally run app that is opened, used and closed -- never graded a single
+    # prediction. That is how MLB sat at 120 logged, 0 graded while its
+    # calibration starved: every open finished before the first 15-minute
+    # alarm. Grading work that is already due should not wait behind a timer.
     while True:
-        time.sleep(interval)
         try:
             harvest()
         except Exception:
@@ -293,6 +308,7 @@ def _loop(interval):
             resolve_due()
         except Exception:
             pass
+        time.sleep(interval)
 
 
 def start(interval=900):

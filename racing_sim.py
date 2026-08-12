@@ -615,8 +615,13 @@ def sim_f1(n=2000, seed=None):
             "exp_podiums": round(pod_sum[did] / n, 1),
         })
     drivers.sort(key=lambda x: x["title_pct"], reverse=True)
-    constructors = sorted(({"name": c, "title_pct": round(100 * v / n, 1)}
-                           for c, v in con_champ.items()),
+    # EVERY constructor appears, zeros included. con_champ only counts teams
+    # that won at least one simulated season, so in a dominant year the
+    # constructors table rendered two rows and looked broken -- "Ferrari 0.0%"
+    # is an answer, an eight-team hole is not.
+    all_cons = {d["constructor"] for d in profiles.values() if d.get("constructor")}
+    constructors = sorted(({"name": c, "title_pct": round(100 * con_champ.get(c, 0) / n, 1)}
+                           for c in all_cons),
                           key=lambda x: x["title_pct"], reverse=True)
     return {"sport": "f1", "n_sims": n, "races_left": len(remaining),
             "next_grid_conditioned": grid_conditioned,

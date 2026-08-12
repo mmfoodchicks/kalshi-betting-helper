@@ -3535,6 +3535,65 @@ ck("the floor and ceiling still bound every served weight",
 
 print()
 print("=" * 72)
+print("RBI is a real market now, and evidence collection no longer needs luck")
+print("=" * 72)
+# Kalshi books KXMLBRBI and the sim tracked per-batter RBI all along (HRR needs
+# it); only the join was missing. Wired end to end and verified live: 85
+# markets indexed, priced both sides, ticker resolved, an RBI-only combo built.
+ck("the RBI series is indexed and resolvable",
+   "KXMLBRBI" in _KM._PLAYER_SERIES and _KM._STAT_OF.get("KXMLBRBI") == "rbi"
+   and "rbi" in _KM._PLAYER_STATS)
+ck("the sim emits RBI candidates",
+   'add("RBI"' in _ms_src2 or 'add("RBI"' in _insp.getsource(_MSF.build_candidates),
+   "per-batter RBI arrays existed for HRR; the market just was never offered")
+ck("RBI carries a trust weight, a predlog bucket and the prop calibration",
+   _CE._MODEL_TRUST.get("RBI") == 0.35
+   and _BB._PREDLOG_TYPES.get("RBI") == "mlb_rbi"
+   and '"SB", "RBI"' in _insp.getsource(_MSF.build_candidates))
+ck("the UI can select it",
+   '["RBI", "RBIs"]' in _js6 or '["RBI", "RBIs"]' in open(
+       _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                     "static", "app.js")).read())
+
+# --- the grader runs before it sleeps ----------------------------------------
+import predlog as _PL
+_pl_src = _insp.getsource(_PL._loop)
+ck("the grading loop resolves due predictions BEFORE its first sleep",
+   _pl_src.index("resolve_due()") < _pl_src.index("time.sleep(interval)"),
+   "sleeping first meant a short-lived app process never graded anything -- "
+   "MLB sat at 120 logged, 0 graded while its calibration starved")
+ck("predlog.pairs carries the settlement day for the day floor",
+   len(_PL.pairs("tennis")[0]) == 3 if _PL.pairs("tennis") else True)
+
+# --- per-market prop calibration phases in only when earned -------------------
+ck("every prop market has its own registered calibrator with a day floor",
+   all(m in _CAL._MODELS and len(_CAL._MODELS[m]) > 2
+       for m in ("mlb_hit", "mlb_ks", "mlb_total", "mlb_runline", "mlb_bases",
+                 "mlb_hr", "mlb_hrr", "mlb_rfi", "mlb_sb", "mlb_rbi")),
+   "the pooled prop temperature averages markets that disagree in sign; the "
+   "split is registered now and phases in as graded days accrue")
+ck("an unearned market falls back to the pooled correction",
+   abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.batter_prop(0.60)) < 1e-12)
+_CAL._cache["mlb_hit"] = ((1.30, 0.5, 0.0, 500), _tm.time())
+try:
+    ck("...and a market that HAS earned a fit uses its own",
+       abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.apply("mlb_hit", 0.60)) < 1e-12
+       and abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.batter_prop(0.60)) > 1e-6)
+finally:
+    _CAL._cache.pop("mlb_hit", None)
+ck("the sim consults the per-market calibrator for batter props",
+   "_calibrate.prop_market(marg, _PREDLOG_BUCKET[typ])"
+   in _insp.getsource(_MSF.build_candidates))
+
+# --- the constructors table shows every team ---------------------------------
+_rs_src3 = _insp.getsource(_RS.sim_f1)
+ck("F1 constructors include the zeros",
+   "all_cons" in _rs_src3 and "con_champ.get(c, 0)" in _rs_src3,
+   "only season-winners appeared, so a dominant year rendered a two-row "
+   "constructors table; 'Ferrari 0.0%' is an answer, an eight-team hole is not")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

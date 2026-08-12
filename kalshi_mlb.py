@@ -27,9 +27,12 @@ _GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI")
 # legs stopped reaching slips every one of them was silently dropped. Kalshi does
 # list the market, in the same "Name: 1+" shape as every other player prop.
 _PLAYER_SERIES = ("KXMLBKS", "KXMLBHIT", "KXMLBTB", "KXMLBHR", "KXMLBHRR",
-                  "KXMLBSB")
+                  "KXMLBSB", "KXMLBRBI")
 _STAT_OF = {"KXMLBKS": "ks", "KXMLBHIT": "hit", "KXMLBTB": "tb",
-            "KXMLBHR": "hr", "KXMLBHRR": "hrr", "KXMLBSB": "sb"}
+            "KXMLBHR": "hr", "KXMLBHRR": "hrr", "KXMLBSB": "sb",
+            # RBI books in the same "Name: N+" shape. The sim tracked per-batter
+            # RBI all along (the HRR market needs it); only the join was missing.
+            "KXMLBRBI": "rbi"}
 
 # The player-prop stat codes, derived from the series map so a new market
 # cannot be indexed but left unresolvable (which is exactly how SB failed).

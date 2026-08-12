@@ -235,7 +235,7 @@ def _clamp_to_market(p, mid):
 # team/pitcher rates vs low-base-rate props. Mirrors baseball._edge_confidence.
 _MODEL_TRUST = {"ML": 1.0, "Total": 0.7, "Ks": 0.7, "Run line": 0.7,
                 "RFI": 0.5, "Hit": 0.5, "Bases": 0.5, "SB": 0.4,
-                "HR": 0.35, "HRR": 0.35}
+                "HR": 0.35, "HRR": 0.35, "RBI": 0.35}
 
 
 def market_reference(q):

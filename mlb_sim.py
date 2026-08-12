@@ -32,6 +32,12 @@ import random
 import calibrate as _calibrate
 import props as _props
 
+# Candidate type -> the predlog bucket its graded forecasts are filed under
+# (mirrors baseball._PREDLOG_TYPES for the batter markets). This is what lets a
+# market graduate from the pooled prop temperature to its own measured one.
+_PREDLOG_BUCKET = {"Hit": "mlb_hit", "Bases": "mlb_bases", "HR": "mlb_hr",
+                   "HRR": "mlb_hrr", "SB": "mlb_sb", "RBI": "mlb_rbi"}
+
 # Linear-weight run values per offensive event (relative to an out). The
 # lineup's raw run-units are rescaled each game so the mean matches the model's
 # expected runs, which keeps the run marginal calibrated to the rest of the app.
@@ -1774,8 +1780,12 @@ def build_candidates(g, sim, types=None):
             marg = marg_override
         elif typ == "ML":
             marg = _calibrate.win_prob(marg)
-        elif typ in ("Hit", "Bases", "HR", "HRR", "SB"):
-            marg = _calibrate.batter_prop(marg)
+        elif typ in ("Hit", "Bases", "HR", "HRR", "SB", "RBI"):
+            # Per-market correction once that market has EARNED one on its own
+            # graded predlog bucket (row + day floors); the pooled batter-prop
+            # temperature until then. The pool averages markets that disagree
+            # in sign, which is exactly what the per-market split is for.
+            marg = _calibrate.prop_market(marg, _PREDLOG_BUCKET[typ])
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
                           "group": group or typ, "model_pct": model, "kref": kref,
@@ -1882,6 +1892,13 @@ def build_candidates(g, sim, types=None):
                 add("HRR", f"{nm} {m}+ H+R+RBI",
                     lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp,
                     None, {"t": "hrr", "player": nm, "line": m}, avg=a_hrr, unit="H+R+RBI")
+            # RBI -- Kalshi books it (KXMLBRBI, "Name: N+") and the sim has
+            # tracked per-batter RBI all along because HRR needs it; the market
+            # was simply never offered. No closed form, like HRR/SB.
+            a_rbi = round(_mean(rbi), 2)
+            for m in (1, 2, 3):
+                add("RBI", f"{nm} {m}+ RBIs", lambda i, a=rbi, m=m: a[i] >= m, grp,
+                    None, {"t": "rbi", "player": nm, "line": m}, avg=a_rbi, unit="RBI")
             # Stolen bases -- the base-out engine attempts steals off each runner's
             # real speed/steal rate, so SB props read straight off the sim. The
             # marginal filter naturally keeps this to players who actually run.
