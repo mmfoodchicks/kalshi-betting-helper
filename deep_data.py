@@ -34,7 +34,13 @@ def _f(x, d=0.0):
 # Short-IL availability: fraction of the rest of the season a player on each IL
 # is expected to be available (they miss ~the next couple of weeks, then return).
 # 60-day is treated as out for the season; the nightly rerun re-checks all of this.
-SHORT_IL = {"D7": 0.93, "D10": 0.88, "D15": 0.82}
+SHORT_IL = {"D7": 0.93, "D10": 0.88, "D15": 0.82,
+            # Not injuries at all, but they land here for the same reason: the
+            # player is briefly unavailable and then back. Paternity is capped at
+            # 3 days by rule and bereavement at 7, so they cost almost nothing
+            # over a rest-of-season horizon. They were being treated like a
+            # 60-day IL and dropped for the year.
+            "PL": 0.99, "BRV": 0.98}
 
 
 def _is_il(code):
@@ -138,6 +144,74 @@ _MLE_PIT = {
 # translation, cap the pool so a hot Triple-A line cannot promote someone into a
 # better hitter than the regulars he is covering for.
 _MLE_CAP = 1.00
+
+# How much an MLE plate appearance is worth against a real major-league one.
+#
+# The translation is a fitted average, so a translated PA carries the level's
+# noise ON TOP of the sampling noise a real PA has. Counting it at full weight
+# would let a big Triple-A season outvote a genuine MLB book; counting it at
+# zero is what the code used to do, and that is what this fixes. A half-weight
+# is the conventional treatment of minor-league equivalencies and sits between
+# the two failure modes. This is a judgment call, not a measurement: pinning it
+# properly needs a same-season predictive test on dual-level players, which the
+# translation sample (127 hitters / 154 arms) is too thin to support cleanly.
+_MLE_PA_WEIGHT = 0.50
+
+# Counting stats that carry the sample. Summing these merges two stat lines, and
+# because the MLE line has already been rescaled to major-league equivalence the
+# sum is in one consistent unit.
+_MERGE_BAT = ("plateAppearances", "atBats", "hits", "doubles", "triples",
+              "homeRuns", "baseOnBalls", "hitByPitch", "strikeOuts")
+
+
+def _merge_bat(mlb_st, milb_st, weight=_MLE_PA_WEIGHT):
+    """One hitting line from an MLB line plus a translated minor-league line.
+
+    Both sides are counts, so they simply add, with the minor-league side scaled
+    down by `weight` to reflect that a translated PA is weaker evidence. Scaling
+    numerator and denominator together leaves the RATES untouched and moves only
+    the sample size, which is exactly what the shrinkage downstream reads."""
+    if not milb_st:
+        return dict(mlb_st or {}), 0.0
+    out = dict(mlb_st or {})
+    for key in _MERGE_BAT:
+        base = _f((mlb_st or {}).get(key))
+        add = _f(milb_st.get(key)) * weight
+        if (mlb_st or {}).get(key) is not None or milb_st.get(key) is not None:
+            out[key] = base + add
+    eff = _f(milb_st.get("plateAppearances")) * weight
+    tot = _f(out.get("plateAppearances"))
+    return out, (eff / tot if tot > 0 else 0.0)
+
+
+def _merge_pit(mlb_st, milb_st, weight=_MLE_PA_WEIGHT):
+    """Same merge for arms. Innings carry the sample here, and the per-9 fields
+    have to be recomputed from the merged counts: _pit_rates_from PREFERS the
+    derived rates, so leaving them at the MLB line's values would silently
+    discard everything the minor-league line just contributed."""
+    if not milb_st:
+        return dict(mlb_st or {}), 0.0
+    out = dict(mlb_st or {})
+    mlb_ip = _f((mlb_st or {}).get("inningsPitched"))
+    milb_ip = _f(milb_st.get("inningsPitched")) * weight
+    tot_ip = mlb_ip + milb_ip
+    for key in ("strikeOuts", "baseOnBalls", "homeRuns", "hits", "earnedRuns",
+                "battersFaced"):
+        base = _f((mlb_st or {}).get(key))
+        add = _f(milb_st.get(key)) * weight
+        if (mlb_st or {}).get(key) is not None or milb_st.get(key) is not None:
+            out[key] = base + add
+    out["inningsPitched"] = tot_ip
+    if tot_ip > 0:
+        # Recompute the derived fields the reader actually prefers.
+        for key, cnt in (("strikeoutsPer9Inn", "strikeOuts"),
+                         ("walksPer9Inn", "baseOnBalls"),
+                         ("homeRunsPer9", "homeRuns")):
+            if out.get(cnt) is not None:
+                out[key] = _f(out[cnt]) * 9.0 / tot_ip
+        if out.get("earnedRuns") is not None:
+            out["era"] = _f(out["earnedRuns"]) * 9.0 / tot_ip
+    return out, (milb_ip / tot_ip if tot_ip > 0 else 0.0)
 
 
 def milb_hitting(season):
@@ -472,11 +546,27 @@ def team_profile(team_id, season=None):
             # A career book with no current season is still a projection: _pitcher
             # shrinks an empty season toward the career prior, so passing {} gives
             # exactly the career rates. These used to be dropped outright.
+            # MERGED, not gated. This used to fire only for an optioned player
+            # with NO major-league record at all, which meant any career book --
+            # 8 innings from two years ago -- blocked a full current Triple-A
+            # season from being seen. Measured on the real 40-mans: the fallback
+            # reached 25 of 281 optioned players, while 34 more sat on a career
+            # book too thin to clear _pitcher's own 20-IP prior bar AND a real
+            # minor-league season that was thrown away. They came out as league
+            # average. It also dropped ACTIVE players outright when their only
+            # line was a minor-league one, because the gate asked for is_depth.
+            #
+            # Weighting by sample instead of gating on absence handles every one
+            # of those cases without a special branch: a regular's rehab start
+            # adds a few effective innings to a full season and changes nothing,
+            # a prospect's whole Triple-A year is most of what we know about him.
             pst_eff, pmilb_lvl = pst, None
-            if is_depth and not pst and not pcar:
-                got = milb_p.get(pid)
-                if got:
-                    pst_eff, pmilb_lvl = got
+            got = milb_p.get(pid)
+            if got:
+                merged, share = _merge_pit(pst, got[0])
+                pst_eff = merged
+                if share >= 0.5:          # the translated line is the main source
+                    pmilb_lvl = got[1]
             if is_pitcher_pos and (pst_eff or pcar):
                 arm = _pitcher(per, pst_eff or {}, pcar, avail)
                 if pmilb_lvl:
@@ -490,10 +580,12 @@ def team_profile(team_id, season=None):
             # line, which is the difference between a call-up pool of shuttle
             # veterans and one that contains the actual prospects.
             hst_eff, milb_lvl = hst, None
-            if is_depth and not hst and not hcar:
-                got = milb.get(pid)
-                if got:
-                    hst_eff, milb_lvl = got
+            got = milb.get(pid)          # merged by sample, see the arms above
+            if got:
+                merged, share = _merge_bat(hst, got[0])
+                hst_eff = merged
+                if share >= 0.5:
+                    milb_lvl = got[1]
             if (not is_pitcher_pos or two_way) and (hst_eff or hcar):
                 mults = (1.0, 1.0)
                 try:

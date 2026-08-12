@@ -3125,6 +3125,100 @@ ck("...and that ordering claim is still true upstream",
 
 print()
 print("=" * 72)
+print("The minors reach the engine by SAMPLE WEIGHT, not through a gate")
+print("=" * 72)
+# The old fallback fired only for an optioned player with no MLB record at all,
+# so any career book -- 8 innings two years ago -- blocked a full current
+# Triple-A season. On the real 40-mans it reached 25 of 281 optioned players
+# while 34 more sat on a career book too thin to clear the engine's OWN prior
+# bars (50 PA / 20 IP) plus a minor-league season that was discarded.
+import deep_data as _DD
+
+_MILB_BAT = {"plateAppearances": 400, "atBats": 360, "hits": 90, "doubles": 18,
+             "triples": 2, "homeRuns": 10, "baseOnBalls": 30, "hitByPitch": 4,
+             "strikeOuts": 100}
+_MLB_REG = {"plateAppearances": 500, "atBats": 450, "hits": 130, "doubles": 28,
+            "triples": 3, "homeRuns": 25, "baseOnBalls": 45, "hitByPitch": 5,
+            "strikeOuts": 110}
+_MLB_THIN = {"plateAppearances": 12, "atBats": 11, "hits": 1, "doubles": 0,
+             "triples": 0, "homeRuns": 0, "baseOnBalls": 1, "hitByPitch": 0,
+             "strikeOuts": 6}
+
+_m_pro, _s_pro = _DD._merge_bat(None, _MILB_BAT)
+ck("a prospect with no MLB book is no longer invisible",
+   _m_pro.get("plateAppearances", 0) > 0 and _s_pro == 1.0)
+ck("down-weighting moves the SAMPLE, never the rates",
+   abs(_DD._bat_rates_from(_m_pro, _m_pro["plateAppearances"])["k"]
+       - _DD._bat_rates_from(_MILB_BAT, 400)["k"]) < 1e-12,
+   "scaling numerator and denominator together is what keeps the translated "
+   "line's meaning while telling the shrinkage it is weaker evidence")
+ck("...and it really is discounted, not taken at face value",
+   _m_pro["plateAppearances"] == 400 * _DD._MLE_PA_WEIGHT)
+
+_m_thin, _s_thin = _DD._merge_bat(_MLB_THIN, _MILB_BAT)
+ck("a 12-PA career book no longer outvotes a full Triple-A season",
+   _s_thin > 0.9,
+   "this is the exact population the old gate dropped: Nick Morabito's 12 "
+   "career PA beat his 439 translated minor-league PA")
+
+_m_reg, _s_reg = _DD._merge_bat(_MLB_REG, {"plateAppearances": 20, "atBats": 18,
+                                           "hits": 3, "doubles": 0, "triples": 0,
+                                           "homeRuns": 0, "baseOnBalls": 2,
+                                           "hitByPitch": 0, "strikeOuts": 8})
+_r_before = _DD._bat_rates_from(_MLB_REG, 500)
+_r_after = _DD._bat_rates_from(_m_reg, _m_reg["plateAppearances"])
+ck("a regular's rehab stint barely touches him",
+   _s_reg < 0.05 and abs(_r_after["k"] / _r_before["k"] - 1) < 0.05,
+   "weighting by sample means no special case is needed to protect the "
+   "established player: 20 rehab PA against 500 is 2%% of the evidence")
+
+# --- arms: the derived per-9 fields are what the reader actually reads --------
+_PM = {"inningsPitched": 40.0, "strikeOuts": 38, "baseOnBalls": 14, "homeRuns": 6,
+       "earnedRuns": 20, "strikeoutsPer9Inn": 8.55, "walksPer9Inn": 3.15,
+       "homeRunsPer9": 1.35, "era": 4.50}
+_PMILB = {"inningsPitched": 60.0, "strikeOuts": 72, "baseOnBalls": 18,
+          "homeRuns": 12, "earnedRuns": 34, "strikeoutsPer9Inn": 10.8,
+          "walksPer9Inn": 2.7, "homeRunsPer9": 1.8, "era": 5.10}
+_pm, _ps = _DD._merge_pit(_PM, _PMILB)
+ck("merged innings are MLB + discounted minor-league",
+   abs(_pm["inningsPitched"] - (40.0 + 60.0 * _DD._MLE_PA_WEIGHT)) < 1e-9)
+ck("the DERIVED per-9 fields are recomputed, not left stale",
+   abs(_pm["strikeoutsPer9Inn"] - (38 + 72 * 0.5) * 9 / 70) < 1e-6,
+   "_pit_rates_from PREFERS strikeoutsPer9Inn over the raw counts, so leaving "
+   "it at the MLB value would have silently discarded the whole merge")
+ck("...and so is ERA", abs(_pm["era"] - (20 + 34 * 0.5) * 9 / 70) < 1e-6)
+ck("a missing minor-league line is a clean no-op",
+   _DD._merge_pit(_PM, None)[0] == _PM and _DD._merge_bat(_MLB_REG, None)[1] == 0.0)
+
+# --- the level tag only flies when the translation really is the source ------
+ck("the minor-league TAG follows the share, not the mere existence of a line",
+   _s_reg < 0.5 <= _s_thin,
+   "the tag drives the Statcast cap, so tagging a rehabbing regular would "
+   "wrongly cap a full major-league season")
+
+# --- short absences that are not injuries ------------------------------------
+ck("paternity leave is not a season-ending injury",
+   "PL" in _DD.SHORT_IL and _DD.SHORT_IL["PL"] > 0.95,
+   "PL was neither 'A' nor in SHORT_IL, so it fell through to the same branch "
+   "as a 60-day IL and the player was dropped for the year")
+ck("bereavement likewise", "BRV" in _DD.SHORT_IL and _DD.SHORT_IL["BRV"] > 0.95)
+ck("the real ILs are untouched",
+   (_DD.SHORT_IL["D7"], _DD.SHORT_IL["D10"], _DD.SHORT_IL["D15"])
+   == (0.93, 0.88, 0.82))
+ck("a 60-day IL is still out",
+   "D60" not in _DD.SHORT_IL and _DD._is_il("D60"))
+
+# --- the gate is gone --------------------------------------------------------
+_dd_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "deep_data.py")).read()
+ck("no branch still asks for is_depth before looking at the minors",
+   "if is_depth and not pst and not pcar" not in _dd_src
+   and "if is_depth and not hst and not hcar" not in _dd_src,
+   "that gate also dropped ACTIVE players whose only line was a minor-league "
+   "one, which is how two arms with translated lines available vanished")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
