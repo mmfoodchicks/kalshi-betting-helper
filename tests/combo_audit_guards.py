@@ -734,10 +734,10 @@ ck("the moneyline anchor removes the ENGINE's home edge, not the league's",
    "the market's price already contains a real home edge; what has to come out "
    "is only what the engine will add back")
 ck("and the engine's edge is measured, not assumed",
-   0.0 < _G._ENGINE_HFA_PTS < 0.5,
-   f"{_G._ENGINE_HFA_PTS} points -- two identical teams give exp 20.40 vs 20.20, "
-   "not the ~0.6 points _HFA_SCORE's comment claimed; subtracting the league's "
-   "0.78 put the simulated home side 1.7pp under the market on 15 of 16 games")
+   1.0 < _G._ENGINE_HFA_PTS < 1.6,
+   f"{_G._ENGINE_HFA_PTS} points -- what the split 1.05 bump realizes through "
+   "the script at a preseason total; subtracting a LEAGUE number instead of the "
+   "engine's own put the simulated home side under the market on 15 of 16 games")
 ck("team abbreviations are canonicalized before reading a win probability",
    "kalshi_canon" in _gs,
    "p_win is keyed WSH/JAX/LAR and the schedule is keyed WAS/JAC/LA, so those "
@@ -3860,6 +3860,33 @@ ck("the tilt is opposite-signed on the two sides",
    "math.exp(g_ - form_sd * form_sd / 2.0)" in _ng_src
    and "math.exp(-g_ - form_sd * form_sd / 2.0)" in _ng_src,
    "e^{+g} for one side, e^{-g} for the other, both mean-preserving")
+
+# --- home field is the ENGINE's job, because the projections carry none ------
+ck("the home bump is split so the total does not move with the venue",
+   "1.0 / _HFA_SCORE" in _ng_src,
+   "home x1.05 and visitor /1.05; a one-sided bump raises the total of every "
+   "home slate")
+_ng_rh2 = _NG2._rates(_ng_prof, True)
+_ng_ra2 = _NG2._rates(_ng_prof, False)
+_ng_r = _rnd2.Random(31)
+_ng_m2 = []
+for _ in range(12000):
+    _g2 = _NG2._play_game(_ng_rh2, _ng_ra2, _ng_r)
+    _ng_m2.append(_g2[0]["pts"] - _g2[1]["pts"])
+_ng_ph = sum(1 for x in _ng_m2 if x > 0) / len(_ng_m2) \
+    + 0.5 * sum(1 for x in _ng_m2 if x == 0) / len(_ng_m2)
+ck("equal teams give the home side its measured real-world win rate",
+   0.522 < _ng_ph < 0.562,
+   "%.4f against a real 0.5423 (2023-25, n=816). Sleeper's projections carry "
+   "ZERO venue signal (same team home-minus-away: -0.07 +/- 0.27 pts), so the "
+   "old +0.20-point engine edge was the board's ENTIRE home field -- every "
+   "home team underpriced by ~2 points" % _ng_ph)
+_ng_edge = _st2.mean(_ng_m2)
+ck("and about a point and a half of margin, not the skewed +2.13",
+   0.9 < _ng_edge < 2.1,
+   "%+.2f -- real margins are right-skewed by blowouts, so matching the mean "
+   "would overshoot the win rate by ~2pp; the moneyline is the market that "
+   "gets logged, calibrated and combo-built" % _ng_edge)
 
 print()
 print("=" * 72)

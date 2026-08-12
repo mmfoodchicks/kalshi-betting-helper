@@ -27,7 +27,19 @@ import random
 
 # ---- Engine constants -------------------------------------------------------
 _DRIVES = 10.7            # nominal possessions per team per game
-_HFA_SCORE = 1.03         # home bump on per-drive scoring (~+0.6 pts/game)
+# Home field, fitted to the MEASURED home win rate. Sleeper's projections carry
+# ZERO venue signal (same team, home weeks minus away weeks, 32 teams over four
+# 2026 weeks: -0.07 +/- 0.27 points), so whatever home edge the board shows has
+# to come from the engine -- and the old one-sided 1.03 bump realized +0.20
+# points against a real +2.13 (2023-25, n=816), underpricing every home side by
+# ~2 points. The bump is now SPLIT (home x1.05, visitor /1.05) so the total
+# stays put, and 1.05 is fitted so equal teams give p_home 0.5415 against the
+# real 0.5423 home win rate. That realizes +1.5 points of margin, not +2.13,
+# deliberately: real margins are right-skewed by blowouts, so matching the mean
+# would overshoot the win rate by ~2pp -- and the moneyline is the market that
+# gets logged, calibrated and built into combos, while spreads price off the
+# center of the distribution, not its skewed mean.
+_HFA_SCORE = 1.05
 # Structural calibration (measured over a full slate): short fields, hurry-up
 # possessions and OT add ~3.3% points beyond the per-drive rates, so the rates
 # are trimmed to land the simulated total on the expected total.
@@ -104,7 +116,7 @@ def _rates(prof, home, def_mult=1.0):
     defence it is actually facing."""
     e = prof["exp"]
     tds = e["pass_td"] + e["rush_td"]
-    hfa = _HFA_SCORE if home else 1.0
+    hfa = _HFA_SCORE if home else 1.0 / _HFA_SCORE
     p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _CAL * def_mult))
     p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _CAL * def_mult))
     # Takeaways belong to the DEFENCE forcing them, so a good defence raises the
@@ -564,37 +576,37 @@ def current_week(preseason=False):
 # player, his ladder overrides the model for that stat: the market prices THIS
 # player in THIS exhibition, which no positional model can match.
 #
-# The drive engine realizes slightly more than the points it is asked for --
+# The drive engine realizes slightly less than the points it is asked for --
 # stable across the range, so it is a bias and not noise, and it is divided out
-# rather than left for the caller to wonder about. REMEASURED after the TD:FG mix
-# moved to the preseason's own 0.82 (see nfl_preseason.TD_FG), because the old
-# 1.0533 was fitted at the regular season's 0.55 and a different mix reaches the
-# same points through a different number of touchdowns:
+# rather than left for the caller to wonder about. REMEASURED after the
+# game-control tilt and the split home bump landed (the split is x1.05 up and
+# /1.05 down, which nets a hair under 1.0, and the tilt's clamps shave a little
+# more), raw response under preseason conditions:
 #
 #     asked   30.0   35.0   40.0   46.0   52.0
-#     got     29.7   34.5   39.8   46.2   52.2
-#     ratio  0.990  0.986  0.995  1.004  1.004
+#     got     28.8   33.6   38.4   44.4   50.4
+#     ratio  0.960  0.960  0.960  0.965  0.969
 #
-# Under a point across the whole range and no longer one-signed, because the
-# preseason TD:FG mix puts more of the scoring through field goals -- which the
-# drive engine models directly rather than through the touchdown rate the old
-# +5.3% bias was absorbing.
-_ENGINE_BIAS = 0.990
+# Flat 0.960 through the preseason's working range (36-44 totals), drifting
+# toward 0.969 only at totals August never sees; 0.961 splits the difference
+# where the games actually live.
+_ENGINE_BIAS = 0.961
 
 # What the engine's own home-field bump is WORTH, in points, measured by running
-# two identically-specified teams against each other (re-measured with the
-# game-control tilt in place -- the tilt is symmetric, so the points are
-# unchanged; only p_home compresses, as a fixed edge over a wider spread must):
+# two identically-specified teams against each other under preseason conditions
+# (player shock + preseason tilt -- this constant is only used on the preseason
+# path). With the split 1.05 bump:
 #
-#     equal points both sides -> p_home 0.5032, exp 20.40 vs 20.20
+#     equal points both sides (40-41 totals) -> exp 20.7 vs 19.3, p_home ~0.538
 #
-# +0.20 points, not the "~+0.6" _HFA_SCORE's comment claims. It matters when a
+# +1.35 points (the bump is a multiplier, so its point value scales with the
+# level: +1.0 at a 30 total, +1.6 at 52; 1.35 is the working-range value). It matters when a
 # margin is read off a MONEYLINE, because the market's price already contains a
 # real home-field edge and the engine then adds its own on top. Subtracting the
 # league's measured +0.78 there over-corrected by more than half a point and put
 # the simulated home side 1.7pp under the market on 15 of 16 games -- one-signed,
 # so a bias rather than noise. What has to come out is what the ENGINE adds.
-_ENGINE_HFA_PTS = 0.20
+_ENGINE_HFA_PTS = 1.35
 
 
 def profile_from_points(abbr, name, points, home, roster=None, props=None):
