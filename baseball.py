@@ -2131,6 +2131,72 @@ def _ml_margin(g):
     return round(diff if g.get("pick_is_home") else -diff, 1)
 
 
+# Markets whose forecasts are worth grading, mapped to the predlog model key
+# they are filed under. Kept SEPARATE per market on purpose: combo_engine trusts
+# the model differently per market (_MODEL_TRUST runs 1.0 for the moneyline down
+# to 0.35 for home runs), so the evidence that would justify changing any one of
+# those numbers has to be per market too. A single pooled "props" bucket could
+# not tell us which trust value was wrong.
+_PREDLOG_TYPES = {"Total": "mlb_total", "Ks": "mlb_ks", "Run line": "mlb_runline",
+                  "Hit": "mlb_hit", "Bases": "mlb_bases", "HR": "mlb_hr",
+                  "HRR": "mlb_hrr", "RFI": "mlb_rfi"}
+
+
+def _log_prop_predictions(g, cands):
+    """File each pregame prop forecast against the price it disagreed with.
+
+    Only the MONEYLINE was ever logged, so the only market we could ever prove
+    anything about was the one market the blend already trusts at 1.0. Props are
+    where the model disagrees most (median raw edge 5.6pp on hit legs against
+    2.4pp on run lines) and where it is trusted least, and none of that
+    disagreement was being scored.
+
+    Called from the sim builder, where the marginals are the model's OWN numbers:
+    _price_cands blends the market into `marg` in place on these same cached
+    dicts, so reading them later would log the market's opinion back to itself.
+
+    Best-effort throughout. This is bookkeeping, and a board must never fail to
+    render because a log write did not work."""
+    if (g.get("live") or {}).get("state") != "Preview":
+        return                                  # a live prob is a different quantity
+    suffix = g.get("kalshi_suffix")
+    if not suffix:
+        return
+    try:
+        import kalshi_mlb
+        import predlog as predlog_mod
+        idx = kalshi_mlb.index()
+    except Exception:
+        return
+    rows = []
+    for c in cands:
+        model = _PREDLOG_TYPES.get(c.get("type"))
+        kref = c.get("kref")
+        p = c.get("marg")
+        if not model or not kref or p is None or not (0.0 < p < 1.0):
+            continue
+        try:
+            tk, close = kalshi_mlb.ticker_leg(idx, suffix, kref)
+            if not tk:
+                continue
+            own = kalshi_mlb.price_leg(idx, suffix, kref)
+            opp = kalshi_mlb.price_leg(idx, suffix, dict(kref, no=not kref.get("no")))
+            if own is None or opp is None:
+                continue           # one-sided: no honest de-vig, so no market row
+            rows.append((model, tk, p, close, predlog_mod.devig(own, opp)))
+        except Exception:
+            continue
+    if not rows:
+        return
+    try:
+        predlog_mod.init_db()
+        for model in {r[0] for r in rows}:
+            predlog_mod.log_many(model, [(r[1], r[2], r[3], r[4])
+                                         for r in rows if r[0] == model])
+    except Exception:
+        pass
+
+
 def _game_sim(g):
     """The shared 4000-run game simulation + its candidate legs, cached per game
     (~3 min). Everything that prices a leg reads this, so combos, edges and SGPs
@@ -2140,7 +2206,15 @@ def _game_sim(g):
 
     def build():
         sim = mlb_sim.simulate(g, _SIM_N)
-        return {"sim": sim, "cands": mlb_sim.build_candidates(g, sim)}
+        cands = mlb_sim.build_candidates(g, sim)
+        # Log BEFORE anything can blend these dicts in place. predlog dedups by
+        # ticker (first write wins), so the sim rebuilding every few minutes
+        # records each leg once, at the first price we saw it at.
+        try:
+            _log_prop_predictions(g, cands)
+        except Exception:
+            pass
+        return {"sim": sim, "cands": cands}
     if pk is None:
         return build()
     return _cached(("game_sim", pk), 180, build)

@@ -1296,6 +1296,25 @@ function legProb(l, nsim) {
       ? ` <span class="kmkt" style="opacity:.55">Kalshi <b>${l.market_cents}¢</b> <span style="color:var(--muted)">thin</span></span>`
       : ` <span class="kmkt">Kalshi <b>${l.market_cents}¢</b>${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` +
         ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span></span>`;
+    // WHAT THE MODEL ACTUALLY SAID, before the market blend.
+    //
+    // prob_pct above is a precision-weighted blend of our number and Kalshi's,
+    // and the market usually takes about 72% of the weight - so the edge beside
+    // the price is roughly a third of the disagreement and nearly every leg
+    // reads +0/+1/-1. That is the blend working as designed, but with only the
+    // blended number on screen there was no way to tell a leg we truly agree on
+    // from one where we were overruled. Shown only when the blend actually moved
+    // the leg by a cent or more.
+    if (l.sim_pct != null) {
+      const rawEdge = Math.round(l.sim_pct - l.market_cents);
+      if (Math.abs(rawEdge - edge) >= 1) {
+        const w = (l.model_weight != null)
+          ? ` market took <b>${Math.round((1 - l.model_weight) * 100)}%</b>` : "";
+        const tip = `Our simulation alone said ${l.sim_pct}%, an edge of ${rawEdge >= 0 ? "+" : ""}${rawEdge} on this price. The shown ${l.prob_pct}% is that number blended toward the market, which is what the slip's odds are built from. The blend is deliberate: it was set when the model had a measured bias, and it shrinks real disagreements along with spurious ones.`;
+        mkt += ` <span class="kmkt" style="opacity:.7" title="${tip}">pre-blend <b>${l.sim_pct}%</b>` +
+          ` <span class="${rawEdge >= 0 ? "ev pos" : "ev neg"}">${rawEdge >= 0 ? "+" : ""}${rawEdge}</span>${w}</span>`;
+      }
+    }
   } else if (l.market_cents === null && l.kref) {
     mkt = ` <span class="kmkt" style="opacity:.55">no Kalshi market</span>`;
   }

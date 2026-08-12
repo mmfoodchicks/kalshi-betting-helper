@@ -3219,6 +3219,91 @@ ck("no branch still asks for is_depth before looking at the minors",
 
 print()
 print("=" * 72)
+print("You can see what the model said, and props are finally being graded")
+print("=" * 72)
+# Every leg read +0/+1/-1 because the displayed probability is a blend that
+# keeps only ~0.28 weight on the model. Measured over 360 priced legs on one
+# slate: 46.9% of RAW model edges exceed 3pp, but only 8.3% survive the blend,
+# which removes 66% of the average absolute edge. None of that was visible.
+_js6 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "static", "app.js")).read()
+ck("the leg shows the PRE-BLEND number, not just the blended one",
+   "pre-blend" in _js6 and "l.sim_pct" in _js6,
+   "sim_pct rode out to the browser all along and was never rendered")
+ck("...and the raw edge against the same price",
+   "rawEdge" in _js6 and "l.sim_pct - l.market_cents" in _js6)
+ck("...and how much of the number the market took",
+   "1 - l.model_weight" in _js6)
+ck("it is only shown when the blend actually moved the leg",
+   "Math.abs(rawEdge - edge) >= 1" in _js6,
+   "a leg we genuinely agree on should not grow a second number saying so")
+ck("the slip's own odds still use the blended probability",
+   "const edge = Math.round(l.prob_pct - l.market_cents)" in _js6,
+   "showing the raw number is a disclosure, not a re-pricing: the parlay math "
+   "must keep using what it was computed from")
+
+# --- tickers: the thing that makes a forecast gradable ----------------------
+import kalshi_mlb as _KM
+_km_src = _insp.getsource(_KM)
+ck("the market index keeps each leg's TICKER",
+   '"tick": {}' in _km_src and "def ticker_leg" in _km_src,
+   "only the moneyline was gradable because it was the one leg whose ticker "
+   "survived indexing")
+ck("totals record theirs too, despite skipping both()",
+   'g["tick"][("total", n)]' in _km_src,
+   "their two sides are one market, so they never reach the shared helper")
+ck("close time is stored as an epoch, like every other predlog row",
+   "kalshi._parse_time(m.get(\"close_time\"))" in _km_src,
+   "resolve_due compares close_time to time.time(); an ISO string never "
+   "compares less than a float and the row would never come due")
+
+_fake_idx = {"SUF": {"tick": {("ml", "AAA"): ("KXMLBGAME-SUF-AAA", 123.0),
+                              ("total", 9): ("KXMLBTOTAL-SUF-9", 456.0),
+                              ("ks", "someguy", 6): ("KXMLBKS-SUF-X6", 789.0)}}}
+ck("a moneyline ticker resolves",
+   _KM.ticker_leg(_fake_idx, "SUF", {"t": "ml", "team": "AAA"})[0]
+   == "KXMLBGAME-SUF-AAA")
+ck("both sides of a total share ONE ticker",
+   _KM.ticker_leg(_fake_idx, "SUF", {"t": "total", "n": 9, "over": True})
+   == _KM.ticker_leg(_fake_idx, "SUF", {"t": "total", "n": 9, "over": False}),
+   "a market has one ticker; the side is not part of its identity")
+ck("a NO leg resolves to the same market as its YES",
+   _KM.ticker_leg(_fake_idx, "SUF", {"t": "ks", "player": "Some Guy", "line": 6,
+                                     "no": True})[0] == "KXMLBKS-SUF-X6")
+ck("an unknown leg is (None, None), not a crash",
+   _KM.ticker_leg(_fake_idx, "SUF", {"t": "hr", "player": "nobody", "line": 1})
+   == (None, None)
+   and _KM.ticker_leg({}, None, None) == (None, None))
+
+# --- what gets logged, and from where ---------------------------------------
+_bb6 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("props are filed PER MARKET, not in one pooled bucket",
+   "_PREDLOG_TYPES" in _bb6 and _bb6.count('"mlb_') >= 6,
+   "combo_engine trusts the model differently per market, so evidence that "
+   "could change any one of those numbers has to be per market too")
+ck("every market the blend discounts is represented",
+   set(_BB._PREDLOG_TYPES) >= {"Total", "Ks", "Hit", "HR", "HRR", "Run line"})
+_gs_src = _insp.getsource(_BB._game_sim)
+ck("logging happens where the marginals are still the MODEL's",
+   ("cands = mlb_sim.build_candidates(g, sim)" in _gs_src
+    and _gs_src.index("_log_prop_predictions(g, cands)")
+    > _gs_src.index("cands = mlb_sim.build_candidates(g, sim)")),
+   "_price_cands blends the market into `marg` IN PLACE on these same cached "
+   "dicts, so logging later would record the market's opinion back to itself")
+ck("a one-sided market is not logged",
+   "if own is None or opp is None:" in _bb6,
+   "with no opposing quote there is no honest de-vig, and a vig-inflated "
+   "'market probability' would make us look better than we are")
+ck("live games are excluded, as they are for the moneyline",
+   '!= "Preview"' in _insp.getsource(_BB._log_prop_predictions),
+   "an in-game probability has the score in it and grading it as a pregame "
+   "call would flatter the model")
+ck("a logging failure cannot take the board down",
+   "except Exception:\n            pass" in _insp.getsource(_BB._game_sim))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

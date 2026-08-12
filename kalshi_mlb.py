@@ -123,8 +123,14 @@ def _build_index():
         # keyed exactly as price_leg resolves them plus the side. The flat cent
         # maps above stay as they are -- every existing caller keeps working and
         # keeps getting the ask, which is what it should pay.
+        # "tick" maps a leg key to the Kalshi TICKER and close time. A market has
+        # one ticker covering both sides, so the key carries no yes/no flag. The
+        # prediction log needs it: a logged forecast is graded by looking its
+        # ticker up after settlement, which is why only the moneyline was ever
+        # gradable -- it was the only leg whose ticker survived indexing.
         return idx.setdefault(suf, {"ml": {}, "spread": {}, "total": {},
                                     "rfi": None, "players": {}, "q": {},
+                                    "tick": {},
                                     "no": {"ml": {}, "spread": {}, "rfi": None,
                                            "players": {}}})
 
@@ -142,6 +148,7 @@ def _build_index():
                     q = _q(m, side)
                     if q:
                         g["q"][key + (tag,)] = q
+                g["tick"][key] = (tk, kalshi._parse_time(m.get("close_time")))
             if series == "KXMLBGAME":
                 team = tk.rsplit("-", 1)[-1]
                 g["ml"][team] = _yes(m)
@@ -167,6 +174,9 @@ def _build_index():
                     q = _q(m, side)
                     if q:
                         g["q"][("total", n, over)] = q
+                # Totals skip both() because their two sides are one market, so
+                # the ticker has to be recorded here or it goes missing.
+                g["tick"][("total", n)] = (tk, kalshi._parse_time(m.get("close_time")))
             elif series == "KXMLBRFI":
                 g["rfi"] = _yes(m)
                 g["no"]["rfi"] = _no(m)
@@ -255,6 +265,25 @@ def _qkey(kref):
     if t in ("ks", "hit", "tb", "hr", "hrr"):
         return (t, _norm(kref.get("player")), kref.get("line"), no)
     return None
+
+
+def ticker_leg(idx, suffix, kref):
+    """(kalshi ticker, close_time epoch) for one leg's market, or (None, None).
+
+    Both sides of a market share one ticker, so the yes/no flag on `kref` is
+    ignored. This is what lets a forecast be GRADED later: predlog stores the
+    ticker and asks Kalshi for the settled result once the market closes."""
+    if not suffix or not kref:
+        return None, None
+    g = idx.get(suffix)
+    key = _qkey(kref)
+    if not g or not key:
+        return None, None
+    base = key[:-1] if key and isinstance(key[-1], bool) else key
+    if kref.get("t") == "total":
+        base = ("total", kref.get("n"))
+    got = (g.get("tick") or {}).get(base)
+    return got if got else (None, None)
 
 
 def quote_leg(idx, suffix, kref):
