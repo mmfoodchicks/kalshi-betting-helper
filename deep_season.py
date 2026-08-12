@@ -214,7 +214,15 @@ def _sim_one_season(seed):
         ("bf", "outs", "k", "bb", "h", "hr", "r"), 0))
 
     wins = {tid: stand[tid]["wins"] for tid in stand}
+    # Rotation PHASE from reality. ridx used to start at 0 for all 30 clubs, so
+    # every simulated remaining season opened with every team's ACE on the
+    # mound -- a bias for exactly the near-term games that series odds and the
+    # calendar's next few days care about. rotation.next_starter_ids() names
+    # each club's actual next arm (announced probable, else rest-cadence
+    # projection) and the cycle starts there. Shared read-only across workers.
     ridx = defaultdict(int)
+    for tid, phase in (_G.get("rot_phase") or {}).items():
+        ridx[tid] = phase
     # Each game draws from its OWN stream, seeded from (season seed, game index).
     #
     # This is what makes deep_history's attribution possible. With one shared
@@ -556,8 +564,26 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
     profs = _profiles(season, tids) if profiles is None else profiles
     if ret_profiles is not None:
         ret_profiles.update(profs)
+    # Each club's rotation phase: the index (in its profile's rotation list) of
+    # the arm actually lined up to start next, from announced probables backed
+    # by rest-cadence projection. Best-effort: an empty map reproduces the old
+    # ace-first behaviour rather than failing the run.
+    rot_phase = {}
+    try:
+        import rotation
+        nxt = rotation.next_starter_ids()
+        for tid, prof in profs.items():
+            pid = nxt.get(tid)
+            rot = prof.get("rotation") or []
+            for i, arm in enumerate(rot):
+                if arm.get("id") == pid:
+                    rot_phase[tid] = i
+                    break
+    except Exception:
+        rot_phase = {}
+
     shared = {"standings": stand, "schedule": games, "profiles": profs,
-              "leagues": dict(leagues)}
+              "leagues": dict(leagues), "rot_phase": rot_phase}
 
     workers = workers or default_workers()
     _prog(running=True, done=0, total=n_seasons, started=time.time(), season=season)

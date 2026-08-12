@@ -1288,6 +1288,32 @@ def api_baseball_parlay():
     return jsonify({"combo": combo})
 
 
+@app.route("/api/baseball/rotations")
+def api_baseball_rotations():
+    """Projected starting pitchers for the coming days, per team: announced
+    probables where MLB has named them (89% at D+1, zero at D+5), rest-cadence
+    order-cycling where it hasn't. Point-in-time backtested: the pure projection
+    beats a naive repeat-the-order baseline at every horizon, and live use only
+    improves on that because announcements anchor the front."""
+    import rotation
+    try:
+        horizon = max(2, min(14, int(request.args.get("days", 8))))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    try:
+        proj = rotation.project(horizon=horizon)
+    except Exception as e:
+        return jsonify({"error": f"rotation projection failed: {e}"}), 502
+    abbr = {}
+    try:
+        abbr = baseball._abbr_map(str(clock.today_et().year))
+    except Exception:
+        pass
+    return jsonify({"days": horizon,
+                    "teams": {str(tid): {"abbr": abbr.get(tid), "starts": rows}
+                              for tid, rows in proj.items()}})
+
+
 @app.route("/api/baseball/season")
 def api_baseball_season():
     """Our season Monte Carlo (division/playoff/pennant/WS odds + win totals) and
