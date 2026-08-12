@@ -2139,7 +2139,7 @@ def _ml_margin(g):
 # not tell us which trust value was wrong.
 _PREDLOG_TYPES = {"Total": "mlb_total", "Ks": "mlb_ks", "Run line": "mlb_runline",
                   "Hit": "mlb_hit", "Bases": "mlb_bases", "HR": "mlb_hr",
-                  "HRR": "mlb_hrr", "RFI": "mlb_rfi"}
+                  "HRR": "mlb_hrr", "RFI": "mlb_rfi", "SB": "mlb_sb"}
 
 
 def _log_prop_predictions(g, cands):

@@ -197,21 +197,44 @@ def _cv_loss(pairs, fitter, k=5):
 _CV_MARGIN = 0.001
 
 
-def _fit(pairs, n_floor):
-    """Fit the calibration from graded (prob, outcome) pairs. Returns (t, q0, b, n).
+def _fit(pairs, n_floor, day_floor=None):
+    """Fit the calibration from graded (prob, outcome[, day]) rows.
+    Returns (t, q0, b, n).
 
     Three candidate families — identity, anchored temperature, Platt — are each
     cross-validated, and the winner must beat identity out-of-sample by _CV_MARGIN
     to be used at all. The winner is then refit on ALL the data (CV chooses the
     family; the final parameters should see every row) and REGULARIZED toward
     no-op by sample size, so a thin history can never earn a full correction.
+
+    ROWS ARE NOT INDEPENDENT, AND COUNTING THEM AS IF THEY WERE IS HOW THIS WENT
+    WRONG. Every batter prop on one night shares a weather front, a set of
+    starting pitchers and whatever the league's offence happened to do that day,
+    so a slate contributes something much closer to ONE observation of the bias
+    than to four hundred. The prop calibrator was fitted on 1,489 graded rows
+    that spanned FOUR DATES, sailed past an 800-ROW floor, and earned a
+    full-strength -0.5 log-odds correction: it took a raw 63% chance of a hit,
+    against a real 59.7%, and priced it at 48%. When a row carries its day, the
+    damping is limited by the number of distinct days as well.
     """
-    pairs = [(float(p), 1.0 if o else 0.0) for p, o in pairs
-             if p is not None and o is not None and 0.0 < float(p) < 1.0]
+    rows = []
+    for row in pairs:
+        p, o = row[0], row[1]
+        day = row[2] if len(row) > 2 else None
+        if p is None or o is None:
+            continue
+        p = float(p)
+        if not (0.0 < p < 1.0):
+            continue
+        rows.append((p, 1.0 if o else 0.0, day))
+    pairs = [(p, o) for p, o, _d in rows]
     n = len(pairs)
     if n < 40:                       # too little to say anything — leave it alone
         return 1.0, 0.5, 0.0, n
     w = min(1.0, n / float(n_floor))
+    days = {d for _p, _o, d in rows if d is not None}
+    if day_floor and days:
+        w = min(w, len(days) / float(day_floor))
 
     def as_temp(tr):
         t, q0 = _fit_temp(tr)
@@ -273,8 +296,16 @@ _MODELS = {
     # slowly, so they sit lower (enough to require a season+ of settled markets for a
     # full correction, without stalling activation forever). Crypto's GBM fair value
     # is a smooth continuous number that settles by the thousands, so 400 is ample.
-    "win":    (_win_pairs,                        800),
-    "prop":   (_prop_pairs,                       800),
+    #
+    # A THIRD entry is the minimum number of distinct DAYS the sample must span
+    # (see _fit). It matters wherever many rows settle on the same slate, which
+    # is exactly where the row floor is easiest to satisfy and least meaningful.
+    # Player props are the extreme case: a full slate grades several hundred
+    # rows, so four dates cleared an 800-row floor outright. 30 days is a month
+    # of baseball, which is a judgment call, not a measurement -- it is set where
+    # day-to-day swings in league offence have had a real chance to average out.
+    "win":    (_win_pairs,                        800, 30),
+    "prop":   (_prop_pairs,                       800, 30),
     "crypto": (_crypto_pairs,                     400),
     "tennis": (lambda: _predlog_pairs("tennis"), 400),
     "ufc":    (lambda: _predlog_pairs("ufc"),    300),
@@ -314,7 +345,7 @@ def _params(model):
     spec = _MODELS.get(model)
     if spec:
         try:
-            out = _fit(spec[0](), spec[1])
+            out = _fit(spec[0](), spec[1], spec[2] if len(spec) > 2 else None)
         except Exception:
             out = (1.0, 0.5, 0.0, 0)
     _cache[model] = (out, _t.time())

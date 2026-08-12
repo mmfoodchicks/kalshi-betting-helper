@@ -3304,6 +3304,97 @@ ck("a logging failure cannot take the board down",
 
 print()
 print("=" * 72)
+print("Every chip in the combo maker reaches a real, priced market")
+print("=" * 72)
+# Traced all ten selectable types end to end on a live slate. Two were broken
+# in ways nothing surfaced: SB produced 255 candidates a slate and could not be
+# priced at all, and the NO side of RFI was suppressed on a false premise.
+_km2 = _insp.getsource(_KM)
+ck("the stolen-base series is indexed",
+   "KXMLBSB" in _KM._PLAYER_SERIES and _KM._STAT_OF.get("KXMLBSB") == "sb",
+   "the sim built SB legs on every slate, none could be priced, and once "
+   "unlisted legs stopped reaching slips the whole chip went dead")
+ck("...and the price lookup knows the stat, not just the index",
+   "sb" in _KM._PLAYER_STATS,
+   "indexing a market whose code price_leg cannot resolve is exactly how SB "
+   "failed: half-wired reads as no market at all")
+ck("the stat codes are DERIVED from the series map, not repeated by hand",
+   "_PLAYER_STATS = frozenset(_STAT_OF.values())" in _km2,
+   "the two lists drifting apart is the bug; deriving one from the other "
+   "makes that impossible rather than merely unlikely")
+ck("every indexed player series can be resolved",
+   set(_KM._STAT_OF.values()) == set(_KM._PLAYER_STATS))
+
+ck("the NO side of the first-inning run is offered",
+   "RFI" not in _MSF._NO_SKIP_TYPES,
+   "it was skipped as 'a YES-only market'. Every open RFI market quotes both "
+   "sides, our index stores the no ask for all of them, and price_leg has "
+   "always resolved it -- a fully priced leg refused on every game")
+ck("the markets that really do carry their own other side still skip it",
+   _MSF._NO_SKIP_TYPES == {"ML", "Total"},
+   "the moneyline pairs both teams and Under IS the NO of Over")
+ck("stolen bases are graded now that they can be priced",
+   _BB._PREDLOG_TYPES.get("SB") == "mlb_sb")
+ck("every UI-selectable type is trusted by the blend",
+   {"ML", "Total", "Run line", "Hit", "HR", "Bases", "Ks", "RFI", "HRR", "SB"}
+   <= set(_CE._MODEL_TRUST),
+   "a type with no trust value would silently take the 0.6 default")
+
+print()
+print("=" * 72)
+print("A correction has to be earned on DAYS, not on rows")
+print("=" * 72)
+# The prop calibrator was knocking every batter prop down by 0.5 in log-odds:
+# a raw 63% chance of a hit, against a measured 59.7%, was being priced at 48%.
+# It had earned that from 1,489 graded rows spanning FOUR DATES, because the
+# floor counted rows and a single slate grades hundreds of them at once.
+import calibrate as _CAL
+import store as _ST
+
+_DAYS = ["2026-08-%02d" % d for d in range(1, 41)]
+
+
+def _fit_rows(n_per_day, n_days, p=0.65, hit_rate=0.50):
+    """Synthetic graded rows: the model says p, reality delivers hit_rate."""
+    out = []
+    for d in range(n_days):
+        for i in range(n_per_day):
+            out.append((p, 1 if (i / float(n_per_day)) < hit_rate else 0,
+                        _DAYS[d % len(_DAYS)]))
+    return out
+
+
+_t_few, _q_few, _b_few, _n_few = _CAL._fit(_fit_rows(400, 4), 800, 30)
+_t_many, _q_many, _b_many, _n_many = _CAL._fit(_fit_rows(40, 40), 800, 30)
+ck("1,600 rows over 4 days cannot earn a full correction",
+   abs(_b_few) < 0.5 * abs(_b_many) or abs(_b_few) < 0.05,
+   "this is the shape of the real failure: rows cleared the floor while the "
+   "sample spanned four slates of one league's offence")
+ck("...while the same evidence spread over 40 days can",
+   abs(_b_many) > abs(_b_few))
+ck("the row floor still applies on its own",
+   _CAL._fit(_fit_rows(10, 40), 800, 30)[2] == 0.0
+   or abs(_CAL._fit(_fit_rows(10, 40), 800, 30)[2]) < abs(_b_many),
+   "400 rows over 40 days is thin in the other direction")
+ck("a sample with no dates behaves exactly as before",
+   _CAL._fit([(p, o) for p, o, _d in _fit_rows(400, 4)], 800, 30)[2]
+   == _CAL._fit([(p, o) for p, o, _d in _fit_rows(400, 4)], 800)[2],
+   "day damping must not silently change every OTHER calibrated model")
+ck("the prop and win models both carry a day floor",
+   len(_CAL._MODELS["prop"]) > 2 and len(_CAL._MODELS["win"]) > 2)
+ck("the evidence loaders actually supply the day",
+   len(_ST.prop_grade_pairs()[0]) == 3 if _ST.prop_grade_pairs() else True)
+
+# --- and the effect on the market it was breaking ---------------------------
+ck("the shipped prop correction is now a nudge, not a hammer",
+   _CAL.batter_prop(0.60) > 0.55,
+   "it was mapping 0.60 to 0.456, which took a 63%% raw chance of a hit -- "
+   "against a measured 59.7%% -- and priced it at 48%%")
+ck("...and it still corrects in the right direction",
+   _CAL.batter_prop(0.60) <= 0.60)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

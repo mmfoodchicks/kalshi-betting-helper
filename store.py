@@ -200,19 +200,27 @@ def win_grade_pairs():
     """(RAW pick probability, won 0/1) for every graded game pick — the evidence the
     win-model calibrator fits its temperature on. Uses the uncalibrated prob so the
     fit isn't trained on its own calibrated output; legacy rows (prob_raw NULL) fall
-    back to prob, which for pre-calibration history already IS the raw number."""
+    back to prob, which for pre-calibration history already IS the raw number.
+
+    Carries the DATE for the same reason the prop pairs do: a slate's fifteen
+    games share a day, so days are the unit that actually accumulates evidence."""
     with _lock, _conn() as c:
-        return [(r["p"], r["won"]) for r in c.execute(
-            "SELECT COALESCE(prob_raw, prob) AS p, won FROM mlb_picks "
+        return [(r["p"], r["won"], r["date"]) for r in c.execute(
+            "SELECT COALESCE(prob_raw, prob) AS p, won, date FROM mlb_picks "
             "WHERE graded=1 AND won IS NOT NULL AND COALESCE(prob_raw, prob) IS NOT NULL").fetchall()]
 
 
 def prop_grade_pairs():
-    """(model probability 0-1, hit 0/1) for every graded batter prop — the
-    evidence the prop calibrator fits its temperature on."""
+    """(model probability 0-1, hit 0/1, date) for every graded batter prop — the
+    evidence the prop calibrator fits its temperature on.
+
+    The DATE rides along because these rows are not independent: one slate
+    grades several hundred of them under a single day's weather, pitching and
+    league-wide offence. Counting them as several hundred observations let four
+    dates clear an 800-row floor and earn a full-strength correction."""
     with _lock, _conn() as c:
-        return [(r["model_pct"] / 100.0, r["actual"]) for r in c.execute(
-            "SELECT model_pct, actual FROM prop_log "
+        return [(r["model_pct"] / 100.0, r["actual"], r["date"]) for r in c.execute(
+            "SELECT model_pct, actual, date FROM prop_log "
             "WHERE graded=1 AND model_pct IS NOT NULL AND actual IS NOT NULL "
             "AND COALESCE(model_version, 0) = ?", (MODEL_VERSION,)).fetchall()]
 

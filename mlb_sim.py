@@ -1895,9 +1895,16 @@ def build_candidates(g, sim, types=None):
 
 
 # Markets that already carry their own other side, so a NO leg would just
-# duplicate one: the moneyline pairs both teams, Under IS the NO of Over, and
-# Kalshi lists RFI as a YES-only market.
-_NO_SKIP_TYPES = {"ML", "Total", "RFI"}
+# duplicate one: the moneyline pairs both teams, and Under IS the NO of Over.
+#
+# RFI used to sit here too, on the stated grounds that "Kalshi lists RFI as a
+# YES-only market". That was simply not true: every open RFI market quotes both
+# sides, our own index has been storing the no ask for all 38 of them, and
+# price_leg has always been able to resolve it. So "no run in the 1st" was a
+# fully priced, two-sided leg the maker refused to offer on every game of every
+# slate. It is a wide market (a ~23c spread), which the blend already handles by
+# leaning on the market -- that is a reason to price it carefully, not to hide it.
+_NO_SKIP_TYPES = {"ML", "Total"}
 
 # A NO leg is only worth offering where it is a real position. The YES floor goes
 # down to 4% because a longshot is a legitimate payout play, but the mirror of one

@@ -21,9 +21,18 @@ import time
 import kalshi
 
 _GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI")
-_PLAYER_SERIES = ("KXMLBKS", "KXMLBHIT", "KXMLBTB", "KXMLBHR", "KXMLBHRR")
+# KXMLBSB was missing here, which made "Stolen bases" a dead chip: the sim built
+# 255 SB legs on a 15-game slate, none of them could be priced, and once unlisted
+# legs stopped reaching slips every one of them was silently dropped. Kalshi does
+# list the market, in the same "Name: 1+" shape as every other player prop.
+_PLAYER_SERIES = ("KXMLBKS", "KXMLBHIT", "KXMLBTB", "KXMLBHR", "KXMLBHRR",
+                  "KXMLBSB")
 _STAT_OF = {"KXMLBKS": "ks", "KXMLBHIT": "hit", "KXMLBTB": "tb",
-            "KXMLBHR": "hr", "KXMLBHRR": "hrr"}
+            "KXMLBHR": "hr", "KXMLBHRR": "hrr", "KXMLBSB": "sb"}
+
+# The player-prop stat codes, derived from the series map so a new market
+# cannot be indexed but left unresolvable (which is exactly how SB failed).
+_PLAYER_STATS = frozenset(_STAT_OF.values())
 
 _TTL = 60
 _cache = {"ts": 0.0, "data": None}
@@ -241,7 +250,7 @@ def price_leg(idx, suffix, kref):
         return _quote(tot.get("over" if over else "under")) if tot else None
     if t == "rfi":
         return _quote(src.get("rfi"))
-    if t in ("ks", "hit", "tb", "hr", "hrr"):
+    if t in _PLAYER_STATS:
         return _quote((src.get("players") or {}).get(
             (t, _norm(kref.get("player")), kref.get("line"))))
     return None
@@ -262,7 +271,7 @@ def _qkey(kref):
         return ("total", kref.get("n"), bool(kref.get("over")) != no)
     if t == "rfi":
         return ("rfi", no)
-    if t in ("ks", "hit", "tb", "hr", "hrr"):
+    if t in _PLAYER_STATS:
         return (t, _norm(kref.get("player")), kref.get("line"), no)
     return None
 
