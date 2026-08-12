@@ -38,6 +38,12 @@ _TWO_PT = 0.06            # share of TDs that go for 2 (converts ~48%)
 _HURRY_TILT = 0.30        # Q4 trailing pass tilt (leader gets the mirror run tilt)
 _YD_SD = 0.16             # team yardage noise beyond volume/script effects
 _PLAYER_SD = 0.28         # per-player volume noise around his team share
+_FORM_SD = 0.20           # zero-sum game-control tilt (see _play_game); fitted
+                          # so the engine's margin SD lands on the measured 13.3
+_FORM_SD_PRE = 0.26       # preseason tilt: roster churn scatters results wider
+                          # at a LOWER scoring level (real margin SD 13.70 on a
+                          # 38.6 total against 14.37 on 45.2; n=147/801 2023-25),
+                          # so the same 13.5-ish conditional SD needs more tilt
 
 
 def _pois(lam, rng):
@@ -120,9 +126,38 @@ def _drive(p_td, p_fg, p_to, boost, rng):
     return "punt"
 
 
-def _play_game(rh, ra, rng):
+def _play_game(rh, ra, rng, form_sd=None):
     """One simulated game. Returns (pts_h, pts_a, stats) where stats carries each
-    side's realized TD/FG counts, possession count and pass/run tilt."""
+    side's realized TD/FG counts, possession count and pass/run tilt.
+
+    `form_sd` (default _FORM_SD) draws a ZERO-SUM game-control tilt: one team's
+    good day is, in part, the other team's bad day -- the line play, the field
+    position and the clock are all adversarial. Playing every simulated game at
+    the same rates left all variance to drive-level dice, and the measured
+    margin SD came out 10.90 against a real 13.3 (conditional; 2023-25, n=801,
+    unconditional 14.37 less a ~5.4-SD spread distribution) while the total SD
+    was already right -- so the missing variance is ANTI-correlated between the
+    sides, and a symmetric widening would have ruined totals to fix margins.
+    The tilt multiplies each side's TD/FG rates by e^{+/-g}, mean-preserving,
+    adding variance to the margin and, linearized, none to the total."""
+    if form_sd is None:
+        form_sd = _FORM_SD
+    if form_sd:
+        g_ = rng.gauss(0.0, form_sd)
+        th = math.exp(g_ - form_sd * form_sd / 2.0)
+        ta = math.exp(-g_ - form_sd * form_sd / 2.0)
+        rh = (rh[0] * th, rh[1] * th, rh[2])
+        ra = (ra[0] * ta, ra[1] * ta, ra[2])
+        # keep each side a proper probability row even at extreme draws
+        for r_ in (rh, ra):
+            s_ = r_[0] + r_[1] + r_[2]
+            if s_ > 0.95:
+                rh_is = r_ is rh
+                r_ = (r_[0] * 0.95 / s_, r_[1] * 0.95 / s_, r_[2] * 0.95 / s_)
+                if rh_is:
+                    rh = r_
+                else:
+                    ra = r_
     sides = ({"r": rh, "pts": 0, "td": 0, "fg": 0, "drv": 0, "tilt": 0.0},
              {"r": ra, "pts": 0, "td": 0, "fg": 0, "drv": 0, "tilt": 0.0})
 
@@ -228,7 +263,8 @@ def simulate_game(home, away, n=2400, seed=None, ladders=None, prop_lad=None,
              for _ in range(n_ply)]
 
     for s in range(n):
-        g = _play_game(rh, ra, rng)
+        # `shock` set means the preseason path -- wider game-control tilt there.
+        g = _play_game(rh, ra, rng, form_sd=_FORM_SD_PRE if shock else None)
         ph, pa = g[0]["pts"], g[1]["pts"]
         if ph > pa:
             hw += 1
@@ -546,9 +582,11 @@ def current_week(preseason=False):
 _ENGINE_BIAS = 0.990
 
 # What the engine's own home-field bump is WORTH, in points, measured by running
-# two identically-specified teams against each other:
+# two identically-specified teams against each other (re-measured with the
+# game-control tilt in place -- the tilt is symmetric, so the points are
+# unchanged; only p_home compresses, as a fixed edge over a wider spread must):
 #
-#     equal points both sides -> p_home 0.5103, exp 20.70 vs 20.50
+#     equal points both sides -> p_home 0.5032, exp 20.40 vs 20.20
 #
 # +0.20 points, not the "~+0.6" _HFA_SCORE's comment claims. It matters when a
 # margin is read off a MONEYLINE, because the market's price already contains a
@@ -832,13 +870,14 @@ def _build_board(season, week, n=2400, preseason=False):
             # calibrate exhibitions, but the record side did not, so every
             # August game was being graded into the regular-season model's
             # evidence -- and the two are not the same distribution. Measured
-            # off last preseason: margin SD 15.40 against roughly 13.5 in the
-            # regular season, home edge +0.78 against roughly 2.5. Fitting one
-            # temperature across both would learn a blend of two shapes and
-            # apply it to games that only ever have one of them. ~65 exhibition
-            # games a year against ~285 regular ones, so the contamination
-            # would have been steady rather than dramatic, which is worse: it
-            # never gets big enough to look obviously wrong.
+            # over 2023-25 (n=147/801): total 38.6 against 45.2, home edge
+            # -0.2 against +2.1, and the probability SOURCE differs (Kalshi's
+            # own ladder against Sleeper projections). Fitting one temperature
+            # across both would learn a blend of two shapes and apply it to
+            # games that only ever have one of them. ~65 exhibition games a
+            # year against ~285 regular ones, so the contamination would have
+            # been steady rather than dramatic, which is worse: it never gets
+            # big enough to look obviously wrong.
             predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)
         except Exception:
             pass

@@ -713,14 +713,17 @@ ck("the conversion is symmetric",
    abs(_P.margin_from_prob(0.62) + _P.margin_from_prob(0.38)) < 0.01)
 ck("it is monotone in the price",
    _P.margin_from_prob(0.70) > _P.margin_from_prob(0.60) > _P.margin_from_prob(0.55))
-ck("a 62c home price is about 4.7 points in August",
-   4.2 < _P.margin_from_prob(0.62) < 5.2,
-   f"{_P.margin_from_prob(0.62):.2f} against 4.1 at a regular-season sigma -- a "
-   "WIDER outcome distribution needs MORE points to buy the same win probability")
-ck("preseason margins scatter wider than regular-season ones",
-   _P.MARGIN_SD > 13.5, f"{_P.MARGIN_SD} against roughly 13.5 in September")
-ck("and preseason home-field advantage is nearly nothing",
-   _P.HFA_PTS < 1.5, f"{_P.HFA_PTS} points, against roughly 2.5 in September")
+ck("a 62c home price is about 4.2 points in August",
+   3.8 < _P.margin_from_prob(0.62) < 4.6,
+   f"{_P.margin_from_prob(0.62):.2f} -- a WIDER outcome distribution needs MORE "
+   "points to buy the same win probability")
+ck("preseason sigma is the three-season measurement, not the one-year 15.40",
+   13.0 <= _P.MARGIN_SD <= 14.5,
+   f"{_P.MARGIN_SD} against a measured 13.70 (n=147, 2023-25); the first fit "
+   "read one preseason's noise as a fact about August")
+ck("and preseason home-field advantage is nothing at all",
+   abs(_P.HFA_PTS) < 0.5,
+   f"{_P.HFA_PTS} points, measured -0.19 +/- 1.1 over three preseasons")
 ck("an absurd price is clamped rather than sent to infinity",
    abs(_P.margin_from_prob(0.0)) < 40 and abs(_P.margin_from_prob(1.0)) < 40)
 
@@ -732,9 +735,9 @@ ck("the moneyline anchor removes the ENGINE's home edge, not the league's",
    "is only what the engine will add back")
 ck("and the engine's edge is measured, not assumed",
    0.0 < _G._ENGINE_HFA_PTS < 0.5,
-   f"{_G._ENGINE_HFA_PTS} points -- two identical teams give p_home 0.5103, not "
-   "the ~0.6 points _HFA_SCORE's comment claimed; subtracting the league's 0.78 "
-   "put the simulated home side 1.7pp under the market on 15 of 16 games")
+   f"{_G._ENGINE_HFA_PTS} points -- two identical teams give exp 20.40 vs 20.20, "
+   "not the ~0.6 points _HFA_SCORE's comment claimed; subtracting the league's "
+   "0.78 put the simulated home side 1.7pp under the market on 15 of 16 games")
 ck("team abbreviations are canonicalized before reading a win probability",
    "kalshi_canon" in _gs,
    "p_win is keyed WSH/JAX/LAR and the schedule is keyed WAS/JAC/LA, so those "
@@ -3811,6 +3814,52 @@ ck("the retention penalty is reserved for below-any-starter usage",
    "spa / g < 3.15" in _insp.getsource(_PR.batter_props),
    "the measured table already carries the AVERAGE substitution loss; "
    "penalizing a normal nine-hitter again would count it twice")
+
+print()
+print("=" * 72)
+print("An NFL margin scatters like a real one, and the total never hears it")
+print("=" * 72)
+import nfl_game_sim as _NG2
+import random as _rnd2
+import statistics as _st2
+
+_ng_prof = {"exp": {"pass_td": 1.55, "rush_td": 1.0, "fgm": 1.55,
+                    "pass_int": 0.85, "fum_lost": 0.45}}
+_ng_rh = _NG2._rates(_ng_prof, True)
+_ng_ra = _NG2._rates(_ng_prof, False)
+def _ng_run(sd, n=8000, seed=17):
+    r = _rnd2.Random(seed)
+    m, t = [], []
+    for _ in range(n):
+        g = _NG2._play_game(_ng_rh, _ng_ra, r, form_sd=sd)
+        m.append(g[0]["pts"] - g[1]["pts"]); t.append(g[0]["pts"] + g[1]["pts"])
+    return m, t
+_m0, _t0 = _ng_run(0.0)
+_m1, _t1 = _ng_run(_NG2._FORM_SD)
+ck("the game-control tilt widens margins to the measured 13.3",
+   12.3 < _st2.pstdev(_m1) < 14.3,
+   "%.2f -- fixed rates left every game's variance to drive dice (10.90)"
+   % _st2.pstdev(_m1))
+ck("bare rates still under-scatter, so the tilt is load-bearing",
+   _st2.pstdev(_m0) < 11.6, "%.2f without the tilt" % _st2.pstdev(_m0))
+ck("the tilt is ZERO-SUM: the total's spread does not hear it",
+   abs(_st2.pstdev(_t1) - _st2.pstdev(_t0)) < 1.0,
+   "%.2f vs %.2f -- engine totals were already right, so a symmetric widening "
+   "would have ruined them to fix margins" % (_st2.pstdev(_t0), _st2.pstdev(_t1)))
+ck("and mean-preserving: the scoring level does not move",
+   abs(_st2.mean(_t1) - _st2.mean(_t0)) < 0.8,
+   "%.1f vs %.1f" % (_st2.mean(_t0), _st2.mean(_t1)))
+ck("preseason tilts wider than the regular season",
+   _NG2._FORM_SD_PRE > _NG2._FORM_SD,
+   "the same 13.5-ish margin SD on a 38.6-point total needs more tilt, and "
+   "roster churn is real extra variance")
+_ng_src = open(_NG2.__file__).read()
+ck("simulate_game switches to the preseason tilt on the preseason path",
+   "form_sd=_FORM_SD_PRE if shock else None" in _ng_src)
+ck("the tilt is opposite-signed on the two sides",
+   "math.exp(g_ - form_sd * form_sd / 2.0)" in _ng_src
+   and "math.exp(-g_ - form_sd * form_sd / 2.0)" in _ng_src,
+   "e^{+g} for one side, e^{-g} for the other, both mean-preserving")
 
 print()
 print("=" * 72)

@@ -314,8 +314,8 @@ _MODELS = {
     "nfl":    (lambda: _predlog_pairs("nfl"),    250),
     # Preseason NFL is a SEPARATE model, not more of the same one. The engine is
     # anchored to Kalshi's de-vigged ladder rather than to a projection source,
-    # and the games themselves scatter differently -- margin SD 15.40 against
-    # roughly 13.5, home edge +0.78 against roughly 2.5. Registered so its record
+    # and the games themselves differ -- total 38.6 against 45.2, home edge
+    # -0.2 against +2.1 (2023-25, n=147/801). Registered so its record
     # is measurable in report(); nfl_game_sim deliberately does NOT apply it,
     # because a market-anchored probability has no error of its own to correct.
     # If that record ever shows a real, stable bias, THAT is the evidence for

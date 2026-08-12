@@ -251,31 +251,34 @@ _ROLE = {
 #     2025 regular    272 games   mean total 46.03   ->  0.891
 PRESEASON_SCORING = 0.891
 
-# The shape of a preseason RESULT, measured off the same 49 completed games.
-# Needed because Kalshi opens the moneyline on a game long before it opens a
-# spread ladder -- every game of preseason week 2 was moneyline-only two days
-# before week 1 kicked off -- so a win probability has to be convertible into
-# points or those games cannot be simulated at all.
+# The shape of a preseason RESULT. Needed because Kalshi opens the moneyline on
+# a game long before it opens a spread ladder -- every game of preseason week 2
+# was moneyline-only two days before week 1 kicked off -- so a win probability
+# has to be convertible into points or those games cannot be simulated at all.
 #
-#     mean total       41.02  (the same number PRESEASON_SCORING was fitted on)
-#     margin SD        15.40  against roughly 13.5 in the regular season
-#     home advantage   +0.78  against roughly 2.5 in the regular season
+# First fitted on ONE preseason (49 games): margin SD 15.40, home edge +0.78.
+# Three seasons (2023-25, n=147 preseason / 801 regular) say the single year
+# was noise on both counts:
 #
-# Both differences are the same fact from two sides: rosters are unstable, so
-# results scatter wider, and nobody's crowd or travel matters when the players on
-# the field in the fourth quarter will be cut on Tuesday.
-MARGIN_SD = 15.40
-HFA_PTS = 0.78
+#     margin SD        13.70  against 14.37 in the regular season
+#     home advantage   -0.19 +/- 1.1  against +2.13 in the regular season
+#
+# So preseason margins do NOT scatter wider in raw points -- they scatter wider
+# RELATIVE to a much lower scoring level (38.6 total against 45.2) -- and the
+# home edge really is nothing: nobody's crowd or travel matters when the
+# players on the field in the fourth quarter will be cut on Tuesday.
+MARGIN_SD = 13.70
+HFA_PTS = 0.0
 
 
 def margin_from_prob(p_home):
     """Expected home margin implied by a home win probability.
 
     Inverts P(margin > 0) = Phi(mu / sigma) at the measured preseason sigma. A
-    62c home moneyline is a 4.7-point favourite in August against 4.1 in the
-    regular season: the wider the outcome distribution, the MORE points it takes
-    to buy the same win probability, because a wider distribution means more of
-    the underdog's mass sits on the winning side of any given spread."""
+    62c home moneyline is a 4.2-point favourite: the wider the outcome
+    distribution, the MORE points it takes to buy the same win probability,
+    because a wider distribution means more of the underdog's mass sits on the
+    winning side of any given spread."""
     p = min(0.97, max(0.03, float(p_home or 0.5)))
     return MARGIN_SD * _phi_inv(p)
 
