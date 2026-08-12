@@ -850,13 +850,16 @@ function renderGame(g) {
     const arrow = t.lineup_factor > 1.02 ? " ▲" : t.lineup_factor < 0.98 ? " ▼" : "";
     return ` · lineup OPS <b>${t.lineup_ops}</b>${arrow}`;
   };
-  // Bullpen fatigue: gassed arms from the last 1-2 days -> weaker pen tonight (leans OVER)
+  // Bullpen fatigue: arms scored on recent PITCH LOAD, not on having appeared.
+  // Those over the line sit out tonight's sim, so the pen loses those specific
+  // pitchers and keeps the rest of its pecking order.
   const bpf = (t) => {
     const f = t.bullpen_fatigue;
     if (!f || !f.count) return "";
     const arms = (f.arms || []).join(", ");
     const pct = Math.round((f.factor - 1) * 100);
-    return `<div class="small" style="color:var(--no)" title="${arms}">🔋 Bullpen fatigue: <b>${f.count}</b> arm${f.count > 1 ? "s" : ""} gassed (+${pct}% pen RA9 → leans OVER)</div>`;
+    const tip = `Sitting tonight: ${arms || "none named"}. Scored on pitches thrown over the last 3 days, weighted toward yesterday, so a short outing on back-to-back days is not treated as a heavy workload.`;
+    return `<div class="small" style="color:var(--no)" title="${tip}">🔋 Bullpen fatigue: <b>${f.count}</b> arm${f.count > 1 ? "s" : ""} gassed (+${pct}% pen RA9 → leans OVER)</div>`;
   };
   // Home-plate umpire. Shown whenever the crew is posted, even at a neutral
   // zone - "who is calling it" is the question, and "this one is average" is a

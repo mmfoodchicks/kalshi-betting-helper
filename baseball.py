@@ -612,6 +612,69 @@ def _bullpen_ra9(team_bp, lg):
     return 0.70 * era + 0.30 * whip_ra9
 
 
+# How tired an arm is, as a function of PITCHES rather than appearances. The
+# old rule fired a full "gassed" flag on any back-to-back regardless of load, so
+# a reliever who threw 9 pitches one night and 4 the next was scored exactly as
+# tired as one who threw 30 and 28 -- and more tired than a single 27-pitch
+# outing, which only scored 0.4. Measured over 14 days that was 20.7% of all
+# flags (126 of 610), median two-day load 29 pitches, lightest 6 pitches across
+# three days. These ramps make the score monotone in workload: an appearance
+# costs nothing on its own, and every trigger below scales with pitches thrown.
+_PEN_LOAD_FREE = 10.0      # weighted pitches an arm carries with no penalty
+_PEN_LOAD_FULL = 45.0      # weighted pitches at which he is fully down
+_B2B_FREE = 8.0            # a back-to-back this light is not a usage constraint
+_B2B_FULL = 22.0           # a back-to-back this heavy sits him tonight
+_MULTI_BASE = 0.35         # 3-of-4 days is a real constraint even when light
+# Where "tired" becomes "not pitching tonight", read off usage rather than
+# picked. Scoring every reliever from his prior days and then checking whether
+# he actually appeared (2,431 arm-days) gives a cleanly monotone curve:
+#
+#   fatigue   0.0-0.1  0.2-0.3  0.4-0.5  0.5-0.6  0.6-0.7  0.7-0.8  0.8+
+#   appeared    42.6%    25.8%    14.2%     6.1%     3.2%     2.4%   0.0%
+#
+# against a 32.9% baseline for all arms with recent work. At 0.60 the arms we
+# sit went on to pitch 1.5% of the time, 22x below baseline, so calling them
+# unavailable is right about 98.5% of the time. A stricter 0.75 is never wrong
+# (0 of 101) but misses the 0.6-0.75 band, which is just as absent in practice.
+_PEN_OUT_AT = 0.60
+_PEN_DAY_DECAY = (1.0, 0.60, 0.30)   # yesterday, 2 days ago, 3 days ago
+
+
+def _ramp(x, lo, hi):
+    """0 below lo, 1 above hi, linear between. Monotone by construction."""
+    if x <= lo:
+        return 0.0
+    if x >= hi:
+        return 1.0
+    return (x - lo) / (hi - lo)
+
+
+def _arm_fatigue(days, pitches):
+    """How unavailable one reliever is tonight, in [0, 1].
+
+    `days` is the set of days-ago he appeared, `pitches` maps day -> pitch count.
+    Three routes to tired, each a ramp on pitches so none of them can rank a
+    light night above a heavy one:
+
+      workload   recency-weighted pitches over the last three days
+      b2b        pitched both of the last two days -- governed by the LIGHTER of
+                 the two outings, because that is what decides whether a manager
+                 treats it as a real back-to-back
+      multi      three of the last four days, a usage constraint on its own but
+                 one that still scales with how much he actually threw
+    """
+    d1, d2, d3 = (pitches.get(i, 0) for i in (1, 2, 3))
+    w1, w2, w3 = _PEN_DAY_DECAY
+    load = w1 * d1 + w2 * d2 + w3 * d3
+    f = _ramp(load, _PEN_LOAD_FREE, _PEN_LOAD_FULL)
+    if {1, 2} <= days:
+        f = max(f, _ramp(min(d1, d2), _B2B_FREE, _B2B_FULL))
+    if len(days) >= 3:
+        f = max(f, _MULTI_BASE + (1.0 - _MULTI_BASE)
+                * _ramp(load, _PEN_LOAD_FREE, _PEN_LOAD_FULL))
+    return max(0.0, min(1.0, f))
+
+
 def _pen_boxscore_pitchers(game_pk):
     """Relievers who appeared in a finished game -> {team_id: [(pid, name, pitches), ...]}.
     The first pitcher in each side's `pitchers` list is the starter and is skipped."""
@@ -691,23 +754,21 @@ def _bullpen_fatigue(date, season):
         out = {}
         for tid, tu in usage.items():
             score = 0.0
-            gassed = []
+            down = []                                   # (fatigue, pid, name)
             for pid, a in tu.items():
-                p = a["pitches"]
-                py = p.get(1, 0)                        # pitches yesterday
-                p3 = py + p.get(2, 0) + p.get(3, 0)     # 3-day pitch load
-                back_to_back = {1, 2} <= a["days"]      # pitched both of the last 2 days
-                heavy_y = py >= 28                      # heavy single outing yesterday
-                multi = len(a["days"]) >= 3             # 3 of the last 4 days -> gassed
-                grind = p3 >= 45                        # heavy 3-day cumulative load
-                mod_y = 15 <= py < 28
-                if back_to_back or heavy_y or multi or grind:
-                    score += 1.0
-                    gassed.append(a["name"])
-                elif mod_y:
-                    score += 0.4
+                f = _arm_fatigue(a["days"], a["pitches"])
+                score += f                              # continuous, not 1.0/0.4 buckets
+                if f >= _PEN_OUT_AT:
+                    down.append((f, pid, a["name"]))
+            down.sort(reverse=True)                     # most tired first
             factor = 1.0 + min(0.15, 0.025 * score)     # a touch more headroom for a truly gassed pen
-            out[tid] = {"factor": round(factor, 3), "count": len(gassed), "arms": gassed[:4]}
+            out[tid] = {"factor": round(factor, 3), "count": len(down),
+                        "arms": [nm for _f, _p, nm in down[:4]],
+                        # WHICH arms, not just how many. The sim used to sit
+                        # `count` pitchers off the good end of the pen, so a
+                        # mop-up man's back-to-back benched the closer.
+                        "out_ids": [pid for _f, pid, _nm in down],
+                        "score": round(score, 2)}
         return out
     return _cached(("penfatigue", date, season), 1800, fetch)
 
@@ -1556,7 +1617,18 @@ def _analyze_slate_uncached(date, season):
         try:
             import deep_data
             prof = deep_data.team_profile(tid, season)
-            return [{"kpa": r["kpa"], "era": r["era"]} for r in prof.get("bullpen", [])][:8]
+            # deep_data ranks relievers WORST-FIRST (best arm last, so the sim
+            # holds the closer back for late innings). A plain [:8] therefore
+            # kept the eight WORST arms and threw the closer away: on a 10-deep
+            # pen the modelled bullpen had no Munoz, no Bender, no Diaz. Half the
+            # teams sampled were missing their best arm entirely, which quietly
+            # inflated every run total against a deep pen. [-8:] keeps the eight
+            # BEST and leaves them worst-first, which is the order the sim wants.
+            #
+            # `id` rides along so the fatigue layer can sit the arm that is
+            # actually gassed rather than a count off the top of the pen.
+            return [{"kpa": r["kpa"], "era": r["era"], "id": r.get("id"),
+                     "name": r.get("name")} for r in prof.get("bullpen", [])][-8:]
         except Exception:
             return None
     try:

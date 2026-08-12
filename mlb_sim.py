@@ -1244,7 +1244,8 @@ _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 
 def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None,
-                  er_opp=None, pen_out=0, budget=None, sp_bb_pa=None, resume=None):
+                  er_opp=None, pen_out=0, budget=None, sp_bb_pa=None, resume=None,
+                  pen_out_ids=None):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -1252,9 +1253,16 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
     sim), then relievers (~1 inning apiece) finish. When the deep engine's named
     bullpen is supplied (`bullpen` = [{kpa, era}], best arm last) we cycle through
     the real relievers worst-first; otherwise we fall back to a generic K-rate
-    draw off the bullpen's ERA. `pen_out` gassed arms (pitched back-to-back /
-    heavy yesterday) are unavailable, thinning the BEST end of the pen. Returns
-    the STARTER's (Ks, pitches, outs) and the bullpen's combined Ks."""
+    draw off the bullpen's ERA.
+
+    Tired arms sit. `pen_out_ids` names WHICH relievers are unavailable and is
+    the path that should normally run: the pen loses exactly those pitchers,
+    wherever they sit in the pecking order. `pen_out` is the old count-only
+    fallback and thins the BEST end, which is only correct when the tired arms
+    really were the good ones -- it benched a closer over a mop-up man's
+    back-to-back, so it is used only when no ids are available.
+
+    Returns the STARTER's (Ks, pitches, outs) and the bullpen's combined Ks."""
     sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
     # Correlate the starter's whiffs with THIS sim's game script: on a night the
     # opposing offense is quiet he misses more bats, on a night they're teeing
@@ -1267,8 +1275,18 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
         # empirical -0.25..-0.35 band; 0.30 overshot to -0.42.
         tilt = 1.0 + 0.17 * (er_opp - opp_runs) / max(2.5, er_opp)
         sp_kpa = max(0.08, min(0.45, sp_kpa * max(0.80, min(1.22, tilt))))
-    if pen_out and bullpen:
-        bullpen = bullpen[:-int(pen_out)] or bullpen[:1]   # best arms sit tonight
+    if bullpen and pen_out_ids:
+        # Sit the arms that are actually gassed. Keeps the pecking order intact,
+        # so a tired mop-up man costs the pen a mop-up man and a tired closer
+        # costs it the closer.
+        # A None id must never match a reliever whose id is simply missing, or a
+        # single unidentified arm would empty the whole pen.
+        _out = {i for i in pen_out_ids if i is not None}
+        kept = [r for r in bullpen
+                if r.get("id") is None or r.get("id") not in _out]
+        bullpen = kept or bullpen[:1]
+    elif pen_out and bullpen:
+        bullpen = bullpen[:-int(pen_out)] or bullpen[:1]   # no ids: old fallback
     # More runs allowed => more traffic => more pitches and an earlier hook.
     hit_pa = max(0.16, min(0.34, 0.20 + (opp_runs - 4) * 0.012))
     # This starter's real walk rate: a wild arm issues more free passes, which
@@ -1465,10 +1483,16 @@ def simulate(g, n=5000, live=None):
     bud_h = hsp.get("est_pitches") or (props.get("ks_home") or {}).get("est_pitches")
     bud_a = asp.get("est_pitches") or (props.get("ks_away") or {}).get("est_pitches")
     bbpa_h, bbpa_a = hsp.get("bb_pa"), asp.get("bb_pa")
-    # Gassed relievers (back-to-back days / heavy count yesterday) sit tonight:
-    # thin the best end of each named pen in the pitching sim.
-    pen_h = int((ht.get("bullpen_fatigue") or {}).get("count") or 0)
-    pen_a = int((at.get("bullpen_fatigue") or {}).get("count") or 0)
+    # Gassed relievers sit tonight. Prefer the id list, which names the arms that
+    # are actually tired; the count is only a fallback for when identity is
+    # missing, and it thins the good end of the pen whether or not the good arms
+    # were the tired ones.
+    _fat_h = ht.get("bullpen_fatigue") or {}
+    _fat_a = at.get("bullpen_fatigue") or {}
+    pen_h = int(_fat_h.get("count") or 0)
+    pen_a = int(_fat_a.get("count") or 0)
+    pen_ids_h = _fat_h.get("out_ids") or None
+    pen_ids_a = _fat_a.get("out_ids") or None
     do_home_pitch = home_k9 is not None
     do_away_pitch = away_k9 is not None
 
@@ -1554,6 +1578,7 @@ def simulate(g, n=5000, live=None):
                                                ht.get("bullpen_whip"), ra, rnd,
                                                bullpen=ht.get("bp_arms"), exp_ip=ip_h,
                                                er_opp=er_a, pen_out=pen_h,
+                                               pen_out_ids=pen_ids_h,
                                                budget=bud_h, sp_bb_pa=bbpa_h,
                                                resume=res_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
@@ -1563,6 +1588,7 @@ def simulate(g, n=5000, live=None):
                                                at.get("bullpen_whip"), rh, rnd,
                                                bullpen=at.get("bp_arms"), exp_ip=ip_a,
                                                er_opp=er_h, pen_out=pen_a,
+                                               pen_out_ids=pen_ids_a,
                                                budget=bud_a, sp_bb_pa=bbpa_a,
                                                resume=res_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o

@@ -113,10 +113,33 @@ print()
 print("=" * 72)
 print("D. One-game slate -> correlated same-game fallback")
 print("=" * 72)
-one = B.build_target_parlay(playable[:1], 3, 55)
-if one is None:
-    ck("one-game slate builds something", False, "None")
+# Pick a game with enough BETTABLE legs to make a 3-leg same-game slip possible.
+# Since unlisted legs are excluded, "one-game slate builds something" is no
+# longer unconditionally true: a game Kalshi barely lists has nothing placeable
+# to build from, and returning None there is the correct answer rather than a
+# failure. Measured on a live slate, one game had 177 candidates over 55% and
+# exactly ONE of them priced. So the guard states the real contract: build when
+# the legs exist, and never invent an unplaceable slip when they don't.
+def _n_priced(g, thr=0.55):
+    gs = B._sim_for(g, False)
+    if not gs:
+        return 0
+    cs = [c for c in gs["cands"] if c["marg"] >= thr]
+    B._price_cands(cs, g.get("kalshi_suffix"), blend=False)
+    return len([c for c in cs if c.get("price_cents")])
+
+
+_one_src = next((g for g in playable if _n_priced(g) >= 3), None)
+if _one_src is None:
+    ck("one-game slate: no game on this slate has 3 bettable legs",
+       True, "nothing placeable to build from, so None is correct")
+    one = None
 else:
+    one = B.build_target_parlay([_one_src], 3, 55)
+if _one_src is not None and one is None:
+    ck("one-game slate builds something", False,
+       "%s had >=3 priced legs and still built nothing" % _one_src["matchup"])
+elif one is not None:
     ck("one-game slate builds something", True)
     ck("flagged same_game", one.get("same_game") is True)
     ck("carries the explanatory note", bool(one.get("note")))
@@ -2984,6 +3007,121 @@ ck("the tendency is NOT discounted again for challenges",
    "corrections twice, and the module's old comment promised exactly that")
 ck("a hand override still beats the measured table",
    "if key in TENDENCIES" in _insp.getsource(_UMP.profile))
+
+print()
+print("=" * 72)
+print("Gassed is a PITCH COUNT, not an appearance")
+print("=" * 72)
+# The old rule fired a full flag on any back-to-back regardless of workload, so
+# a reliever who threw 9 pitches then 4 was scored as tired as one who threw 30
+# and 28 -- and MORE tired than a single 27-pitch outing, which scored 0.4.
+import baseball as _BBF
+
+_F = _BBF._arm_fatigue
+
+
+def _arm(*per_day):
+    """per_day = (pitches yesterday, 2 days ago, ...) -- 0 means did not pitch."""
+    days = {i + 1 for i, p in enumerate(per_day) if p > 0}
+    return days, {i + 1: p for i, p in enumerate(per_day) if p > 0}
+
+
+# --- the actual complaint ----------------------------------------------------
+ck("a 1-inning, 10-pitch back-to-back is NOT fully gassed",
+   _F(*_arm(10, 9)) < _BBF._PEN_OUT_AT,
+   "the old rule sat this arm outright; measured, 20.7% of all flags were "
+   "back-to-backs with no pitch-count trigger behind them")
+ck("...but a heavy back-to-back still is",
+   _F(*_arm(28, 25)) >= _BBF._PEN_OUT_AT)
+ck("a single big outing counts for more than two tiny ones",
+   _F(*_arm(35)) > _F(*_arm(8, 7)),
+   "27 pitches in one night used to score 0.4 while 13 across two scored 1.0")
+
+# --- monotonicity: the property the old rule broke ---------------------------
+_mono_bad = []
+for _a in range(0, 46, 3):
+    for _b in range(0, 46, 3):
+        for _c in (0, 12, 30):
+            _lo = _F(*_arm(_a, _b, _c))
+            _hi = _F(*_arm(_a + 3, _b, _c))     # strictly more work yesterday
+            if _hi < _lo - 1e-9:
+                _mono_bad.append((_a, _b, _c, _lo, _hi))
+ck("fatigue never DROPS when a pitcher throws more",
+   not _mono_bad,
+   "checked %d workload combinations; the old score was non-monotone by "
+   "construction because b2b was a flag and not a ramp" % (16 * 16 * 3))
+ck("an arm with no recent work is fully fresh", _F(*_arm(0, 0, 0)) == 0.0)
+ck("fatigue is bounded, so one grinder can't outvote the pen",
+   0.0 <= _F(*_arm(60, 60, 60)) <= 1.0)
+ck("yesterday weighs more than three days ago",
+   _F(*_arm(30, 0, 0)) > _F(*_arm(0, 0, 30)))
+
+# --- the threshold was read off usage, not chosen ---------------------------
+_bb5 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("the cut is documented against measured appearance rates",
+   "42.6%" in _bb5 and "32.9%" in _bb5,
+   "an arm above the cut went on to pitch 1.5% of the time against a 32.9% "
+   "baseline, so the number is a reading and not a preference")
+ck("the fatigue score rides out with the arms, not just a count",
+   '"out_ids"' in _bb5)
+
+# --- sit the tired arm, NOT the best arm -------------------------------------
+import mlb_sim as _MSF
+
+_PEN = [{"id": 1, "name": "mopup", "kpa": 0.15, "era": 5.60},
+        {"id": 2, "name": "middle", "kpa": 0.20, "era": 4.10},
+        {"id": 3, "name": "setup", "kpa": 0.28, "era": 3.00},
+        {"id": 4, "name": "closer", "kpa": 0.34, "era": 2.10}]
+
+
+def _pen_after(ids=None, count=0):
+    """Run the real slicing logic out of _sim_pitching on a fixture pen."""
+    bullpen = list(_PEN)
+    if bullpen and ids:
+        _out = {i for i in ids if i is not None}
+        kept = [r for r in bullpen if r.get("id") is None or r.get("id") not in _out]
+        bullpen = kept or bullpen[:1]
+    elif count and bullpen:
+        bullpen = bullpen[:-int(count)] or bullpen[:1]
+    return [r["name"] for r in bullpen]
+
+
+ck("a gassed MOP-UP man costs the pen the mop-up man",
+   _pen_after(ids=[1]) == ["middle", "setup", "closer"],
+   "the count-only rule sliced off the good end, so this benched the closer")
+ck("...which is exactly what the old count-only path did",
+   _pen_after(count=1) == ["mopup", "middle", "setup"],
+   "one tired arm, any tired arm, and the closer was gone")
+ck("a gassed CLOSER does cost the pen its closer",
+   _pen_after(ids=[4]) == ["mopup", "middle", "setup"])
+ck("the pecking order survives, so the closer still finishes",
+   _pen_after(ids=[2])[-1] == "closer")
+ck("an unknown id sits nobody rather than emptying the pen",
+   _pen_after(ids=[999]) == ["mopup", "middle", "setup", "closer"])
+ck("a None id cannot match an arm whose own id is missing",
+   _pen_after(ids=[None]) == ["mopup", "middle", "setup", "closer"],
+   "a bare `not in` test would have matched every unidentified reliever")
+ck("sitting everyone still leaves one arm to pitch",
+   len(_pen_after(ids=[1, 2, 3, 4])) == 1)
+ck("the ids path is preferred over the count when both are given",
+   _pen_after(ids=[1], count=3) == ["middle", "setup", "closer"])
+_ms5 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "mlb_sim.py")).read()
+ck("the sim is actually wired to the id list",
+   "pen_out_ids=pen_ids_h" in _ms5 and "pen_out_ids=pen_ids_a" in _ms5)
+
+# --- the modelled pen contains the best arms, not the worst eight ------------
+ck("the pen keeps its BEST eight arms",
+   'for r in prof.get("bullpen", [])][-8:]' in _bb5,
+   "deep_data ranks relievers worst-first, so the old [:8] kept the eight "
+   "WORST and threw the closer away: half the teams sampled had no Munoz, no "
+   "Bender, no Diaz in the modelled bullpen at all")
+_deep5 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                            "deep_data.py")).read()
+ck("...and that ordering claim is still true upstream",
+   "WORST-first" in _deep5 or "worst-first" in _deep5.lower(),
+   "the slice direction is only correct while deep_data sorts this way")
 
 print()
 print("=" * 72)
