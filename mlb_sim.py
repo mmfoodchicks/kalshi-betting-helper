@@ -98,7 +98,10 @@ def _rates(batters):
 _SBR_ADJ = 1.85
 
 
-_PA_SLOT = (4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8)  # expected PA by lineup spot
+# Expected PA for the SLOT (starter + whoever inherits it) -- the right
+# number for sizing pinch-hit losses, measured over the same 190 games as
+# props.PA_BY_SLOT (which carries the STARTER's own, lower, figures).
+_PA_SLOT = (4.63, 4.51, 4.40, 4.30, 4.19, 4.09, 3.97, 3.85, 3.73)
 
 # TIMES THROUGH THE ORDER. A starter gets worse each time he faces a lineup --
 # hitters have seen his stuff, his sequencing and his velocity that day. It is one

@@ -3766,6 +3766,125 @@ ck("batter handedness comes from one bulk call, cached",
 
 print()
 print("=" * 72)
+print("A prop settles on the PLAYER, so his plate appearances are the starter's")
+print("=" * 72)
+# PA_BY_SLOT assumed 4.7..3.8 -- a fair description of the SLOT, which keeps
+# batting after a substitution, but 4-14% high for the STARTER a prop settles
+# on (measured: 190 games, 3,416 starter-slot observations). And the old
+# integer round() made 4.5 and 4.7 the same 5-trial game while the exp_* means
+# used the fractional value -- two PA models in one function. Live effect of
+# the fix: the slate's closed-form hit ladder moved 65.2/23.9/5.6 ->
+# 63.1/22.0/4.1 against a measured real 59.7/20.5/4.2.
+import props as _PR
+
+ck("the PA table is the measured starter one",
+   _PR.PA_BY_SLOT == [4.50, 4.41, 4.29, 4.16, 4.07, 3.95, 3.74, 3.52, 3.34])
+ck("...monotone down the order, as the real table is",
+   all(a > b for a, b in zip(_PR.PA_BY_SLOT, _PR.PA_BY_SLOT[1:])))
+ck("the sim's SLOT table stays higher than the starter's at every spot",
+   all(s2 > p2 for s2, p2 in zip(_MSF._PA_SLOT, _PR.PA_BY_SLOT)),
+   "the slot keeps batting after the starter is lifted; the gap IS the "
+   "substitution cost")
+
+_BAT_FIX = {"name": "X", "pa": 400, "g": 100, "hits": 100, "doubles": 20,
+            "triples": 2, "hr": 15, "bb": 40, "hbp": 4, "sb": 5}
+_p_top = _PR.batter_props(dict(_BAT_FIX), 0)
+_p_bot = _PR.batter_props(dict(_BAT_FIX), 8)
+ck("the same hitter's 1+ hit odds fall batting 9th instead of leadoff",
+   _p_bot["hit1"] < _p_top["hit1"],
+   "%s vs %s" % (_p_bot["hit1"], _p_top["hit1"]))
+# fractional PA: leadoff (4.50) must sit BETWEEN pure 4-trial and 5-trial games
+_saved_tab = _PR.PA_BY_SLOT
+try:
+    _PR.PA_BY_SLOT = [4.0] + _saved_tab[1:]
+    _h4 = _PR.batter_props(dict(_BAT_FIX), 0)["hit1"]
+    _PR.PA_BY_SLOT = [5.0] + _saved_tab[1:]
+    _h5 = _PR.batter_props(dict(_BAT_FIX), 0)["hit1"]
+finally:
+    _PR.PA_BY_SLOT = _saved_tab
+ck("fractional plate appearances interpolate between whole games",
+   _h4 < _p_top["hit1"] < _h5,
+   "%.1f < %.1f < %.1f -- round() used to snap to one end" % (_h4, _p_top["hit1"], _h5))
+ck("the TB ladder rides the same mixture (still a proper distribution)",
+   0 <= _p_top["tb7"] <= _p_top["tb2"] <= 100)
+ck("the retention penalty is reserved for below-any-starter usage",
+   "spa / g < 3.15" in _insp.getsource(_PR.batter_props),
+   "the measured table already carries the AVERAGE substitution loss; "
+   "penalizing a normal nine-hitter again would count it twice")
+
+print()
+print("=" * 72)
+print("Settled games grade the same night, not when the 72-hour backstop lapses")
+print("=" * 72)
+import predlog as _PL2
+_rd_src = _insp.getsource(_PL2.resolve_due)
+ck("the early probe exists and keys off 66h before close",
+   "close_time - 237600 <= ?" in _rd_src,
+   "Kalshi's close_time on game markets is a 72h legal backstop; waiting for "
+   "it graded a Tuesday game on Friday and starved every calibration")
+ck("a pregame-logged row cannot be probed until a game's length has passed",
+   "ts + 21600 <= ?" in _rd_src,
+   "RBI markets close on a 48h backstop, so the close-window alone opens 18 "
+   "HOURS before first pitch — the ts gate is what keeps probes post-game")
+ck("only game sports are probed early — tennis/UFC close at event time",
+   "model LIKE 'mlb%' OR model LIKE 'nfl%'" in _rd_src)
+ck("the main due query is untouched beside the probe",
+   "close_time IS NULL OR close_time <= ?" in _rd_src)
+
+# functional round-trip: real resolve_due, scratch DB, scripted Kalshi book
+_tmp2 = tempfile.mkdtemp()
+_os.environ["PREDLOG_DB"] = _os.path.join(_tmp2, "t.db")
+importlib.reload(_PL2)
+import kalshi as _K2
+_saved_get = _K2.get_market
+_probe_calls = []
+_BOOK = {
+    "EP-SETTLED": {"status": "finalized", "result": "yes"},
+    "EP-MIDSETL": {"status": "closed", "result": ""},
+    "EP-PASTDUE": {"status": "closed", "result": ""},
+}
+def _fake_get(tk):
+    _probe_calls.append(tk)
+    return _BOOK.get(tk, {"status": "active", "result": ""})
+try:
+    _K2.get_market = _fake_get
+    _PL2.init_db()
+    import time as _tm
+    _now2 = int(_tm.time())
+    _in_window = _now2 + 50 * 3600          # inside close-66h, outside close<=now
+    _PL2.log_many("mlb", [("EP-SETTLED", 0.6, _in_window, 0.55),
+                          ("EP-MIDSETL", 0.6, _in_window, 0.55),
+                          ("EP-FRESH",   0.6, _in_window, 0.55),
+                          ("EP-PASTDUE", 0.6, _now2 - 60, 0.55)])
+    _PL2.log_many("tennis", [("EP-TENNIS", 0.6, _in_window, 0.55)])
+    with _PL2._conn() as _c3:
+        _c3.execute("UPDATE predictions SET ts=? WHERE ticker != 'EP-FRESH'",
+                    (_now2 - 7 * 3600,))
+        _c3.execute("UPDATE predictions SET ts=? WHERE ticker='EP-FRESH'",
+                    (_now2 - 2 * 3600,))
+    _graded_n = _PL2.resolve_due(limit=50)
+    with _PL2._conn() as _c3:
+        _st = {r["ticker"]: (r["graded"], r["outcome"]) for r in
+               _c3.execute("SELECT ticker, graded, outcome FROM predictions")}
+    ck("a settled market 2 days shy of its backstop grades tonight",
+       _st["EP-SETTLED"] == (1, 1) and _graded_n == 1)
+    ck("an early probe caught mid-settlement is retried, never abandoned",
+       _st["EP-MIDSETL"] == (0, None),
+       "graded=2 is permanent; before close_time a result-less 'closed' can "
+       "be a rain-suspended game or a settlement in flight")
+    ck("past its own close_time the same state still means scratched",
+       _st["EP-PASTDUE"][0] == 2)
+    ck("a row logged two hours ago is not probed — its game hasn't been played",
+       "EP-FRESH" not in _probe_calls and _st["EP-FRESH"] == (0, None))
+    ck("tennis in the identical window is left alone",
+       "EP-TENNIS" not in _probe_calls and _st["EP-TENNIS"] == (0, None))
+finally:
+    _K2.get_market = _saved_get
+    del _os.environ["PREDLOG_DB"]
+    importlib.reload(_PL2)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

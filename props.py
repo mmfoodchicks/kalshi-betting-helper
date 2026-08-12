@@ -13,7 +13,13 @@ appearances and a per-PA hit rate adjusted for the opposing pitching.
 import math
 
 LEAGUE_HIT_RATE = 0.225          # ~ hits per plate appearance, league-ish
-PA_BY_SLOT = [4.7, 4.6, 4.5, 4.3, 4.2, 4.1, 4.0, 3.9, 3.8]  # expected PA by lineup spot
+# Expected plate appearances for the STARTER at each lineup spot -- measured,
+# not assumed. 190 real games / 3,416 starter-slot observations (Aug 2026):
+# the old table [4.7 .. 3.8] described the SLOT (which keeps batting after a
+# substitution), not the player a prop settles on, overstating the starter by
+# 4% at the top of the order and 13-14% at the bottom. Substitution costs the
+# starter 3-10% of his slot's PAs and the cost grows down the order.
+PA_BY_SLOT = [4.50, 4.41, 4.29, 4.16, 4.07, 3.95, 3.74, 3.52, 3.34]
 # Cap on the runs grid. Raised from 22 when the run model moved from Poisson to
 # a negative binomial: the fatter tail is the whole point of the change, and at
 # 22 a Coors-type game (10-12 expected runs a side) lost 1.2-3.2% of its
@@ -369,8 +375,15 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     spa = b.get("pa") or 0
     if spa <= 0:
         return None
-    pa = PA_BY_SLOT[slot] if slot < 9 else 3.8
-    k = max(1, int(round(pa)))
+    pa = PA_BY_SLOT[slot] if slot < 9 else 3.34
+    # FRACTIONAL plate appearances via a binomial mixture: 4.29 PA is 71%% of a
+    # 4-trial game and 29%% of a 5-trial one. The old integer round() made 4.5
+    # and 4.7 the same game and put a cliff between slots 2 and 3 -- and it
+    # quietly disagreed with the exp_* means below, which always used the
+    # fractional value.
+    k_lo = max(1, int(pa))
+    k_hi = k_lo + 1
+    w_hi = max(0.0, min(1.0, pa - k_lo))
     # Substitution retention: a batter whose season PA-per-game runs below even a
     # full-retention #9 hitter (3.8) is getting pinch-hit for / lifted late, and
     # today's slot won't change that. Only that unambiguous deficit is penalized
@@ -378,8 +391,12 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     # small samples. The game sim uses this to sub him out late; stars stay 1.0.
     g = b.get("g") or 0
     ret = 1.0
-    if g >= 10 and spa / g < 3.55:
-        ret = max(0.80, (spa / g) / 3.8)
+    # The measured PA table above already carries the AVERAGE substitution
+    # loss per slot, so this penalty is reserved for players who demonstrably
+    # lose even more than that -- true platoon/defensive-sub types running
+    # below what even a typical nine-hitter keeps (3.34).
+    if g >= 10 and spa / g < 3.15:
+        ret = max(0.80, (spa / g) / 3.34)
         ret = 1.0 + (ret - 1.0) * min(1.0, g / 40.0)
     f = max(0.7, min(1.3, opp_hit_factor))
     # Statcast luck adjustment: power_mult scales extra-base rates toward xSLG,
@@ -410,31 +427,46 @@ def batter_props(b, slot, opp_hit_factor=1.0, contact_mult=1.0, power_mult=1.0, 
     r_bb = _reg(((b.get("bb") or 0) + (b.get("hbp") or 0)) / spa, "bb", spa)
     r_hit = min(0.95, r_1b + r_2b + r_3b + r_hr)
 
-    # Exact hit-count distribution (binomial) -> 1+/2+/3+/4+ hits.
-    q = 1 - r_hit
-    p0 = q ** k
-    p1 = k * r_hit * q ** (k - 1) if r_hit < 1 else 0
-    p2 = (k * (k - 1) / 2) * r_hit ** 2 * q ** (k - 2) if (r_hit < 1 and k >= 2) else 0
-    p3 = (k * (k - 1) * (k - 2) / 6) * r_hit ** 3 * q ** (k - 3) if (r_hit < 1 and k >= 3) else 0
-    hit1 = 1 - p0
-    hit2 = max(0.0, 1 - p0 - p1)
-    hit3 = max(0.0, 1 - p0 - p1 - p2)
-    hit4 = max(0.0, 1 - p0 - p1 - p2 - p3)
-    # HR count (binomial) -> 1+/2+ HR (the multi-HR line is a real long-odds market).
-    q_hr = 1 - min(0.6, r_hr)
-    hr1 = 1 - q_hr ** k
-    hr2 = max(0.0, 1 - q_hr ** k - k * min(0.6, r_hr) * q_hr ** (k - 1)) if k >= 2 else 0.0
+    # Exact hit-count ladder: the binomial tail at k_lo and k_hi trials, mixed.
+    def _hit_tail(k):
+        q = 1 - r_hit
+        p0 = q ** k
+        p1 = k * r_hit * q ** (k - 1) if r_hit < 1 else 0
+        p2 = (k * (k - 1) / 2) * r_hit ** 2 * q ** (k - 2) if (r_hit < 1 and k >= 2) else 0
+        p3 = (k * (k - 1) * (k - 2) / 6) * r_hit ** 3 * q ** (k - 3) if (r_hit < 1 and k >= 3) else 0
+        return (1 - p0, max(0.0, 1 - p0 - p1), max(0.0, 1 - p0 - p1 - p2),
+                max(0.0, 1 - p0 - p1 - p2 - p3))
+
+    _lo, _hi = _hit_tail(k_lo), _hit_tail(k_hi)
+    hit1, hit2, hit3, hit4 = ((1 - w_hi) * a + w_hi * b for a, b in zip(_lo, _hi))
+
+    # HR count -> 1+/2+ HR (the multi-HR line is a real long-odds market).
+    def _hr_tail(k):
+        q_hr = 1 - min(0.6, r_hr)
+        h1 = 1 - q_hr ** k
+        h2 = max(0.0, 1 - q_hr ** k - k * min(0.6, r_hr) * q_hr ** (k - 1)) if k >= 2 else 0.0
+        return h1, h2
+
+    (_h1l, _h2l), (_h1h, _h2h) = _hr_tail(k_lo), _hr_tail(k_hi)
+    hr1 = (1 - w_hi) * _h1l + w_hi * _h1h
+    hr2 = (1 - w_hi) * _h2l + w_hi * _h2h
 
     # Exact total-bases distribution by convolving the per-PA TB pmf k times.
     pmf = {0: 1 - (r_1b + r_2b + r_3b + r_hr), 1: r_1b, 2: r_2b, 3: r_3b, 4: r_hr}
     dist = {0: 1.0}
-    for _ in range(k):
+    dist_lo = dist
+    for _i in range(k_hi):
         nd = {}
         for tb, pr in dist.items():
             for add, qq in pmf.items():
                 if qq > 0:
                     nd[tb + add] = nd.get(tb + add, 0.0) + pr * qq
         dist = nd
+        if _i + 1 == k_lo:
+            dist_lo = dist
+    # the fractional-PA mixture, same as the hit ladder
+    dist = {tb: (1 - w_hi) * dist_lo.get(tb, 0.0) + w_hi * dist.get(tb, 0.0)
+            for tb in set(dist) | set(dist_lo)}
     tb2 = sum(p for tb, p in dist.items() if tb >= 2)
     tb3 = sum(p for tb, p in dist.items() if tb >= 3)
     tb4 = sum(p for tb, p in dist.items() if tb >= 4)

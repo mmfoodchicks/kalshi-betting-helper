@@ -206,6 +206,30 @@ def resolve_due(limit=150):
             "SELECT ticker FROM predictions WHERE graded=0 "
             "AND (close_time IS NULL OR close_time <= ?) "
             "ORDER BY close_time IS NULL, close_time LIMIT ?", (now, limit)).fetchall()]
+        # EARLY PROBE for game markets. Kalshi closes MLB/NFL markets on a
+        # BACKSTOP long after first pitch (72h on game/most prop series, 48h on
+        # RBI) -- a legal formality, not the settlement time. Waiting for
+        # close_time graded a Tuesday game on Friday, which starved every
+        # calibration that feeds on these rows (2,198 prop forecasts sat at
+        # zero graded while their markets were settled). Two signals gate the
+        # probe, and BOTH must hold, because neither alone is safe:
+        #   close_time - 66h <= now  : within 66h of close. On a 72h backstop
+        #     that is first pitch + 6h; on RBI's 48h backstop it would open 18
+        #     HOURS BEFORE first pitch, which is what the second signal stops.
+        #   ts + 6h <= now           : rows are logged pregame on slate day, so
+        #     log time + a full game's length means the game has been played.
+        # A market probed before settlement just reports itself open and is
+        # retried next pass, at the cost of one lookup. Tennis/UFC close at
+        # event time, so they are excluded -- probing them early would poll
+        # matches that haven't been played.
+        early = [r["ticker"] for r in c.execute(
+            "SELECT ticker FROM predictions WHERE graded=0 "
+            "AND close_time > ? AND close_time - 237600 <= ? "
+            "AND ts + 21600 <= ? "
+            "AND (model LIKE 'mlb%' OR model LIKE 'nfl%') "
+            "ORDER BY close_time LIMIT ?", (now, now, now, limit)).fetchall()]
+        due += early
+        early = set(early)
     graded = 0
     for tk in due:
         try:
@@ -221,8 +245,13 @@ def resolve_due(limit=150):
         if result in ("yes", "no"):
             _mark(tk, 1, 1 if result == "yes" else 0, now)
             graded += 1
-        elif status in ("finalized", "settled", "determined", "closed") and result not in ("yes", "no"):
-            _mark(tk, 2)                             # settled void / scratched -> abandon
+        elif (status in ("finalized", "settled", "determined", "closed")
+              and result not in ("yes", "no") and tk not in early):
+            # Settled void / scratched -> abandon. But NEVER on an early probe:
+            # before close_time a result-less "closed" can be a market caught
+            # mid-settlement (or a suspended game), and graded=2 is permanent.
+            # Past close_time the same state really does mean scratched.
+            _mark(tk, 2)
     return graded
 
 
