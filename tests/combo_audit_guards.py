@@ -3395,6 +3395,76 @@ ck("...and it still corrects in the right direction",
 
 print()
 print("=" * 72)
+print("Deep dive round 2: the numbers themselves, not just the wiring")
+print("=" * 72)
+
+# --- a thin leg can neither add edge NOR inflate the payout -----------------
+# bundle_cost charged an unfillable-but-quoted leg at model-fair, which was
+# EV-neutral (good) but advertised a payout the asks would not give: a live slip
+# showed 1.79x / +1.4% EV whose fill-at-ask truth was 1.75x / -0.7%.
+_L_FILL = {"price_cents": 60.0, "marg": 0.70, "fillable": True}
+_L_THIN_GOOD = {"price_cents": 60.0, "marg": 0.70, "fillable": False}   # model>ask
+_L_THIN_BAD = {"price_cents": 92.0, "marg": 0.905, "fillable": False}   # ask>model
+_L_UNPRICED = {"price_cents": None, "marg": 0.70, "fillable": False}
+_c_fill, _pF, _tF = _CE.bundle_cost([_L_FILL])
+_c_good, _p1, _t1 = _CE.bundle_cost([_L_THIN_GOOD])
+_c_bad, _p2, _t2 = _CE.bundle_cost([_L_THIN_BAD])
+_c_unp, _p3, _t3 = _CE.bundle_cost([_L_UNPRICED])
+ck("a thin leg the model LIKES is charged at fair, not at its cheap ask",
+   abs(_c_good - 0.70) < 1e-9,
+   "max(ask_cost, marg): the model claiming 70% on a 60c thin book gets EV "
+   "exactly 0 from that leg -- the fantasy-edge protection is intact")
+ck("a thin leg the model DISLIKES is charged at its real ask",
+   _c_bad is not None and _c_bad > 0.92,
+   "this is the case that overstated the payout: fair 0.905 vs the 0.925 a "
+   "fill actually costs")
+ck("...so the advertised payout can never beat the fill-at-ask payout",
+   _c_bad >= _CE.leg_cost(92.0, net=True) - 1e-9
+   and _c_good >= _CE.leg_cost(60.0, net=True) - 1e-9)
+ck("a leg with no ask at all is still charged at fair",
+   abs(_c_unp - 0.70) < 1e-9)
+ck("a fillable leg still pays the ask plus fee",
+   abs(_c_fill - _CE.leg_cost(60.0, net=True)) < 1e-9)
+ck("thin legs still do not count as priced",
+   _p1 == 0 and _p2 == 0 and _pF == 1,
+   "priced_frac gates the max-bet pool; a thin book must not slip in")
+
+# --- one moneyline per game, everywhere -------------------------------------
+_ms_src2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                              "mlb_sim.py")).read()
+ck("pregame combo ML defers to the board's official p_home",
+   "marg_override=ph if (_pre and ph) else None" in _ms_src2,
+   "the deep-season blend reaches p_home but never reached the sim, so the "
+   "game card and the combo leg disagreed by 11pp on PIT@MIA")
+ck("...but a LIVE resume keeps the sim's own frequency",
+   '_pre = not sim.get("live")' in _ms_src2,
+   "a live win probability has the score in it; the pregame number is stale")
+ck("the sim declares whether it resumed a live game",
+   '"live": bool(live)' in _ms_src2)
+ck("RFI already followed this principle, and still does",
+   "Recalibrate the simulated RFI marginal" in _ms_src2,
+   "one number per question: the sim owns correlations, the board owns levels")
+
+# --- name normalization survives a feed dropping accents --------------------
+ck("accented and plain spellings normalize identically",
+   _KM._norm("José Ramírez") == _KM._norm("Jose Ramirez") == "joseramirez",
+   "the strip-only version depended on BOTH feeds carrying the accent; one "
+   "feed folding to ASCII would have silently unpriced the player's props")
+ck("...and ordinary names are untouched",
+   _KM._norm("Bryce Miller") == "brycemiller")
+
+# --- line semantics, pinned as verified against live market rules -----------
+# KXMLBTOTAL-...-9 is "Over 8.5"; our kn = int(ln + 0.5) maps Over 8.5 -> 9.
+ck("the totals ticker mapping is the verified one",
+   "kn = int(ln + 0.5)" in _ms_src2,
+   "verified against live rules text: ticker -9 pays on 'more than 8.5 runs'")
+ck("run-line masks use >= margin, matching 'wins by over (m-0.5)'",
+   "lambda i, m=mgn: hr_runs[i] - ar_runs[i] >= m" in _ms_src2
+   and "lambda i, m=mgn: ar_runs[i] - hr_runs[i] >= m" in _ms_src2,
+   "SF4 resolves YES on a win by more than 3.5 runs, i.e. a margin of 4+")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

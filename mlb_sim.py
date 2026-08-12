@@ -1603,7 +1603,7 @@ def simulate(g, n=5000, live=None):
         # The 1st is already in the book -- there is nothing left to simulate and
         # nothing to calibrate. The market is decided at 0% or 100%.
         done = bool(live.get("rfi_runs"))
-        return _pack(n, home_runs, away_runs, home_k, away_k, home_win,
+        return _pack(n, home_runs, away_runs, home_k, away_k, home_win, live,
                      home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
                      home_bull_k, away_bull_k, [done] * n, bat_h, bat_a)
     p_sim = sum(f1_raw) / n if n else 0.0
@@ -1618,12 +1618,12 @@ def simulate(g, n=5000, live=None):
     else:
         rfi = f1_raw
 
-    return _pack(n, home_runs, away_runs, home_k, away_k, home_win,
+    return _pack(n, home_runs, away_runs, home_k, away_k, home_win, live,
                  home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
                  home_bull_k, away_bull_k, rfi, bat_h, bat_a)
 
 
-def _pack(n, home_runs, away_runs, home_k, away_k, home_win, home_sp_pitch,
+def _pack(n, home_runs, away_runs, home_k, away_k, home_win, live, home_sp_pitch,
           away_sp_pitch, home_sp_outs, away_sp_outs, home_bull_k, away_bull_k,
           rfi, bat_h, bat_a):
     """The shared per-sim arrays every consumer reads."""
@@ -1632,6 +1632,11 @@ def _pack(n, home_runs, away_runs, home_k, away_k, home_win, home_sp_pitch,
             "home_sp_pitch": home_sp_pitch, "away_sp_pitch": away_sp_pitch,
             "home_sp_outs": home_sp_outs, "away_sp_outs": away_sp_outs,
             "home_bull_k": home_bull_k, "away_bull_k": away_bull_k,
+            # Whether this run RESUMED a live game. build_candidates keys on it:
+            # a live sim's win frequency has the actual score in it and is the
+            # right moneyline; a pregame sim's should defer to the board's
+            # official p_home instead of re-deriving a second opinion.
+            "live": bool(live),
             "rfi": rfi, "bat": {"home": bat_h, "away": bat_a}}
 
 
@@ -1748,7 +1753,8 @@ def build_candidates(g, sim, types=None):
     mean_total = round(_mean([hr_runs[i] + ar_runs[i] for i in range(n)]), 1)
     mean_margin = round(_mean([hr_runs[i] - ar_runs[i] for i in range(n)]), 1)
 
-    def add(typ, label, pred, group=None, model=None, kref=None, avg=None, unit=None):
+    def add(typ, label, pred, group=None, model=None, kref=None, avg=None, unit=None,
+            marg_override=None):
         if types is not None and typ not in types:
             return
         # `group` = the underlying market (a player, or ML/Total/Run line); a
@@ -1764,7 +1770,9 @@ def build_candidates(g, sim, types=None):
         # so temperature scaling reins the tails toward what actually happens
         # (self-tuning; a no-op until enough games have graded). Totals / run line
         # / RFI / starter Ks are left as the raw sim marginal.
-        if typ == "ML":
+        if marg_override is not None:
+            marg = marg_override
+        elif typ == "ML":
             marg = _calibrate.win_prob(marg)
         elif typ in ("Hit", "Bases", "HR", "HRR", "SB"):
             marg = _calibrate.batter_prop(marg)
@@ -1773,15 +1781,29 @@ def build_candidates(g, sim, types=None):
                           "group": group or typ, "model_pct": model, "kref": kref,
                           "sim_avg": avg, "avg_unit": unit, "side": "yes"})
 
-    # Moneyline (both sides; contradictory pairs are pruned in the search). The
-    # closed-form win prob (g.p_home/p_away) rides along as the model number.
+    # Moneyline (both sides; contradictory pairs are pruned in the search).
+    #
+    # PREGAME, THE BOARD'S p_home IS THE MONEYLINE — not a re-derived one. The
+    # shipped pick probability already carries everything the win model knows:
+    # calibration AND the deep-season engine's blend, which the sim never sees.
+    # Letting the sim's raw win frequency ride as the marginal meant the combo
+    # maker and the game card could disagree on the SAME game by 11pp whenever
+    # the deep engine had a strong opinion (PIT@MIA: card 43.0%, combo leg
+    # 54.5%). The mask keeps doing its real job — correlations with totals, run
+    # lines and props — exactly as RFI already recalibrates its marginal to the
+    # closed form; the bundle machinery rescales joints onto marginals anyway.
+    # LIVE, the sim's own frequency is the right number (the score is in it) and
+    # the pregame p_home is stale, so the override only applies pregame.
     ph, pa = g.get("p_home"), g.get("p_away")
+    _pre = not sim.get("live")
     add("ML", f"{g.get('home_name', ha)} to win", lambda i: hwin[i],
         model=round(ph * 100, 1) if ph is not None else None,
-        kref={"t": "ml", "team": ha}, avg=mean_margin, unit="run margin")
+        kref={"t": "ml", "team": ha}, avg=mean_margin, unit="run margin",
+        marg_override=ph if (_pre and ph) else None)
     add("ML", f"{g.get('away_name', aa)} to win", lambda i: not hwin[i],
         model=round(pa * 100, 1) if pa is not None else None,
-        kref={"t": "ml", "team": aa}, avg=round(-mean_margin, 1), unit="run margin")
+        kref={"t": "ml", "team": aa}, avg=round(-mean_margin, 1), unit="run margin",
+        marg_override=pa if (_pre and pa) else None)
     # Run line -- Kalshi's adjustable "win by X+" for each side. analyze_slate has
     # trimmed the spread ladders to the margins Kalshi books, so iterate those (with
     # a sane 2/3 fallback for a bare game dict). The marginal filter below still
@@ -1819,8 +1841,9 @@ def build_candidates(g, sim, types=None):
         add("Total", f"Under {ln} runs", lambda i, ln=ln: (hr_runs[i] + ar_runs[i]) < ln,
             model=(t["under_pct"] if t else None), kref={"t": "total", "n": kn, "over": False},
             avg=mean_total, unit="runs")
-    # RFI -- a run in the 1st inning (either team). Kalshi lists only the YES
-    # side (you pick "yes there's a run"), so we don't offer a "No" leg. The
+    # RFI -- a run in the 1st inning (either team). Kalshi quotes BOTH sides
+    # (verified against the live rules text), so the NO leg comes from
+    # _no_candidates like every other prop; only the YES is added here. The
     # closed-form rfi_pct rides along as the model number.
     rfi = sim.get("rfi")
     rfi_pct = g.get("props", {}).get("rfi_pct") if isinstance(g.get("props"), dict) else None

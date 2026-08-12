@@ -17,6 +17,7 @@ shows a partial/none Kalshi payout rather than breaking.
 
 import re
 import time
+import unicodedata
 
 import kalshi
 
@@ -42,7 +43,13 @@ _SPREAD_TEAM = re.compile(r"^([A-Za-z]+?)(\d+)$")  # "STL3" -> ("STL", 3)
 
 
 def _norm(name):
-    return re.sub(r"[^a-z]", "", (name or "").lower())
+    """Accent-FOLDED before stripping, so 'José Ramírez' and 'Jose Ramirez'
+    normalize identically. The old strip-only version depended on BOTH feeds
+    carrying the accent: MLB StatsAPI does and today's Kalshi subtitles do, so
+    nothing mismatched on the audited slate -- but one feed quietly dropping
+    diacritics would have silently unpriced every accented player's props."""
+    s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z]", "", s.lower())
 
 
 def _suffix(event_ticker):

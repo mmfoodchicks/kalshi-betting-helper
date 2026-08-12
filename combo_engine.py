@@ -135,7 +135,21 @@ def bundle_cost(legs, net=True):
             p = l.get("marg") or l.get("prob") or 0.0
             if not (0 < p < 1):
                 return None, priced, len(legs)
-            cost *= p                       # fair -> EV neutral
+            # An unfillable leg that still shows an ASK is charged at the WORSE
+            # of that ask and fair value. Charging plain fair was EV-neutral --
+            # which stopped a thin book from manufacturing edge, but it also
+            # advertised a payout the asks would not give: a live slip showed
+            # 1.79x / +1.4% EV while filling its one thin leg at the visible ask
+            # returned 1.75x / -0.7%. The max() keeps both protections at once:
+            # a thin leg can never ADD edge (its EV contribution is min(0, real))
+            # and can never inflate the payout past what a fill would pay.
+            thin_ask = (leg_cost(l.get("price_cents", l.get("market_cents")),
+                                 net=net)
+                        if not l.get("fillable", True) else None)
+            if thin_ask is not None:
+                cost *= max(thin_ask, p)    # pessimistic: worst of ask and fair
+                continue
+            cost *= p                       # no ask at all -> fair, EV neutral
         else:
             cost *= c
             priced += 1
