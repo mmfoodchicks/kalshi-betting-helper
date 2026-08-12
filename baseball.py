@@ -415,6 +415,44 @@ def _bullpen_map(season):
     return _cached(("bp", season), 600, fetch)
 
 
+def _sb_defense_map(season):
+    """{team_id: stolen-base success rate ALLOWED} plus '_lg' -- the catcher's
+    arm (and the staff's hold game), measured by what actually happens on their
+    watch. Feeds the sim's steal-success shift: the same runner succeeds less
+    against the club that throws people out."""
+    def fetch():
+        data = _get(f"{STATS_BASE}/teams/stats?sportId=1&season={season}"
+                    f"&group=fielding&stats=season")
+        out, tot_sb, tot_cs = {}, 0.0, 0.0
+        for s in data["stats"][0]["splits"]:
+            st = s["stat"]
+            sb, cs = _f(st.get("stolenBases")), _f(st.get("caughtStealing"))
+            if sb + cs >= 20:                     # enough attempts to mean anything
+                out[s["team"]["id"]] = round(sb / (sb + cs), 4)
+            tot_sb += sb; tot_cs += cs
+        if tot_sb + tot_cs > 0:
+            out["_lg"] = round(tot_sb / (tot_sb + tot_cs), 4)
+        return out
+    return _cached(("sbdef", season), 6 * 3600, fetch) or {}
+
+
+def _bat_sides(pids):
+    """{pid: 'L'|'R'|'S'} for a set of batter ids, one bulk call, cached."""
+    pids = tuple(sorted(p for p in pids if p))
+    if not pids:
+        return {}
+    def fetch():
+        try:
+            d = _get(f"{STATS_BASE}/people?personIds="
+                     + ",".join(str(p) for p in pids)
+                     + "&fields=people,id,batSide,code")
+            return {p["id"]: (p.get("batSide") or {}).get("code")
+                    for p in d.get("people", [])}
+        except Exception:
+            return {}
+    return _cached(("batside", pids), 24 * 3600, fetch) or {}
+
+
 def _records_map(season):
     def fetch():
         data = _get(f"{STATS_BASE}/standings?leagueId=103,104&season={season}")
@@ -1583,6 +1621,11 @@ def _analyze_slate_uncached(date, season):
     lg = _league_avgs(hit, pit, bp, hitplat)
     try:
         pen_fatigue = _bullpen_fatigue(date, season)   # {team_id: {factor, count, arms}}
+        sb_def = _sb_defense_map(season)               # {team_id: SB%% allowed, "_lg": lg}
+        try:
+            park_hand = savant.handed_hr_factors()     # {club: {"L": res, "R": res}}
+        except Exception:
+            park_hand = {}
     except Exception:
         pen_fatigue = {}
     def_map = _defense_map(season)                     # {team_id: hit/run multiplier}
@@ -1897,13 +1940,37 @@ def _analyze_slate_uncached(date, season):
         # home bats vs away pitching + away defense (and vice versa).
         ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env * def_a
         ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env * def_h
-        def bat_list(lineup, ohf):
+        # PARK GEOMETRY BY HANDEDNESS. Statcast splits each park's HR factor by
+        # batter side; dividing by the park's own two-side mean leaves only the
+        # residual (Orioles: LHB 1.18, RHB 0.82 of the park average), so the
+        # park's overall level -- already in hr_env -- is not counted twice. A
+        # switch hitter bats opposite the starter's hand. Missing park or side
+        # degrades to 1.0.
+        res = {}
+        for club, r in (park_hand or {}).items():
+            key = "Diamondbacks" if club == "D-backs" else club
+            if g.get("home_name", "").endswith(key):
+                res = r
+                break
+
+        def _hr_env_for(b, opp_hand):
+            side = b.get("bat_side")
+            if side == "S":
+                side = "L" if opp_hand == "R" else "R"
+            f = (res or {}).get(side or "")
+            return hr_env * f if f else hr_env
+
+        def bat_list(lineup, ohf, opp_hand="R"):
+            sides = _bat_sides([b.get("id") for b in lineup])
             out = []
             for i, b in enumerate(lineup):
                 pid = str(b.get("id"))
+                b["bat_side"] = sides.get(b.get("id"))
                 cm, pm = savant.quality_mults(xstats.get(pid))
-                bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid), hr_env=hr_env)
+                bp_ = props_mod.batter_props(b, i, ohf, cm, pm, sprint=speed.get(pid),
+                                             hr_env=_hr_env_for(b, opp_hand))
                 if bp_:
+                    bp_["bat_side"] = b.get("bat_side")   # ride through for the UI/audits
                     out.append(bp_)
             return out
         # Posted lineup when it's out; otherwise the team's last posted order
@@ -1915,10 +1982,10 @@ def _analyze_slate_uncached(date, season):
                              form_map)
         if lu_home:
             hit_home = props_mod.hit_props(lu_home, ohf_home)
-            bat_home = bat_list(lu_home, ohf_home)
+            bat_home = bat_list(lu_home, ohf_home, opp_hand=a_hand)
         if lu_away:
             hit_away = props_mod.hit_props(lu_away, ohf_away)
-            bat_away = bat_list(lu_away, ohf_away)
+            bat_away = bat_list(lu_away, ohf_away, opp_hand=h_hand)
         # Starter strikeout props, sized to THIS pitcher's expected workload
         # (season/recent IP per start), not a one-size 5.6-inning template.
         wl_h, wl_a = _starter_workload(h_sp), _starter_workload(a_sp)
@@ -2031,6 +2098,8 @@ def _analyze_slate_uncached(date, season):
                           "rpg": round(th(g['home_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bph.get("era", 0), 2), "bullpen_whip": round(bph.get("whip", 0), 2),
                           "bp_arms": bp_arms.get(g['home_id']),
+                          "sb_allow_pct": sb_def.get(g['home_id']),
+                          "sb_lg_pct": sb_def.get("_lg"),
                           "bullpen_fatigue": fat_h or None,
                           "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
@@ -2039,6 +2108,8 @@ def _analyze_slate_uncached(date, season):
                           "rpg": round(th(g['away_id']).get("rpg", 0), 2),
                           "bullpen_era": round(bpa.get("era", 0), 2), "bullpen_whip": round(bpa.get("whip", 0), 2),
                           "bp_arms": bp_arms.get(g['away_id']),
+                          "sb_allow_pct": sb_def.get(g['away_id']),
+                          "sb_lg_pct": sb_def.get("_lg"),
                           "bullpen_fatigue": fat_a or None,
                           "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},

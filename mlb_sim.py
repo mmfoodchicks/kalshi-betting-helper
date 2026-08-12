@@ -257,6 +257,10 @@ def _build_setup(rows, mult):
         slot_pa = _PA_SLOT[i] if i < 9 else 3.8
         lost = slot_pa * (1.0 - min(1.0, ret))
         setup.append({"name": name, "thresh": by_turn[0], "thresh_tto": by_turn,
+                      # Slugging-shaped danger, for the intentional-walk call:
+                      # who a manager refuses to pitch to is about extra-base
+                      # threat, not on-base skill.
+                      "dang": rates[0] + 2 * rates[1] + 3 * rates[2] + 4 * rates[3],
                       "spd": spd, "sbr": min(0.6, sbr * _SBR_ADJ),
                       # Cumulative so one draw picks the out type: k, then
                       # ground, then air by remainder.
@@ -423,6 +427,25 @@ _SB3_FRAC = 0.12
 _SB2_OK = 0.815
 _SB3_OK = 0.688
 _SB_SPD = 0.7                        # sprint-speed sensitivity (unfitted, kept)
+# Intentional walks. The gate (late, 1st open, RISP, 1+ out, danger ratio) picks
+# the situations; _IBB_P then fires often enough to land near the real ~0.3
+# intentional passes per team-game on league-shaped lineups.
+# The gate: he must out-threaten the man on deck (ratio) AND be a real power
+# threat in absolute terms (floor -- league-average slugging proxy sits near
+# 0.34, so 0.42 marks a genuine middle-order bat). A 1.35 ratio was
+# unreachable: adjacent hitters in a real order are never 35% apart.
+#
+# CALIBRATED TO THE UNIVERSAL-DH ERA, not to memory. Intentional walks
+# collapsed when the pitcher spot vanished: the modern league issues ~0.10
+# per team-game, a third of the number the old rule-of-thumb carries. The
+# classic spot (late, first open, runner in scoring position, slugger up
+# over a weaker on-deck man) arises ~0.13 times a team-game in the sim, and
+# managers who face it point to first most of the time -- so the honest
+# shape is a HIGH fire rate on a RARE gate: 0.72 x 0.13 lands ~0.10.
+_IBB_RATIO = 1.10
+_IBB_DANG = 0.42
+_IBB_P = 0.72
+_IBB_N = [0]                         # counted for the calibration probe
 # Structural calibration for the real-rules matchup engine (measured): a lineup
 # calibrated to er over a solo 9-inning game realizes less as the HOME side
 # (bottom-9 skip + walk-off truncation, minus the extras bump) and a touch more
@@ -880,8 +903,13 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
         if bases[0] is not None and bases[0] >= 0 and bases[1] is None and outs < 2:
             rr = bases[0]
             if rnd() < setup[rr]["sbr"]:
+                # The catcher finally has an arm: sb_adj is the opposing club's
+                # stolen-base-percentage-allowed vs league (set in simulate()),
+                # so running on a cannon costs real success probability and a
+                # turnstile pays it back. Same clamp as always.
                 if rnd() < max(0.60, min(0.93,
-                                         _SB2_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD)):
+                                         _SB2_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD
+                                         + setup[rr].get("sb_adj", 0.0))):
                     bases[1] = rr; bases[0] = None
                     stats[rr][5] += 1; stats[rr][6] += 5            # SB +5
                 else:
@@ -893,7 +921,8 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
             rr = bases[1]
             if rnd() < setup[rr]["sbr"] * _SB3_FRAC:
                 if rnd() < max(0.50, min(0.88,
-                                         _SB3_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD)):
+                                         _SB3_OK + (setup[rr]["spd"] - 1.0) * _SB_SPD
+                                         + setup[rr].get("sb_adj", 0.0))):
                     bases[2] = rr; bases[1] = None
                     stats[rr][5] += 1; stats[rr][6] += 5
                 else:
@@ -912,18 +941,36 @@ def _half_inning(setup, stats, idx, rnd, ghost=False, lead_target=None, base_run
                 phantom = True
             elif setup[bi]["psub"] and rnd() < setup[bi]["psub"]:
                 subbed.add(bi); phantom = True                     # lifted right now
-        u = rnd()
-        code = 0
+        # THE INTENTIONAL WALK. Late, first base open, a runner in scoring
+        # position, at least one out, and the man at the plate is a far bigger
+        # extra-base threat than the man on deck: the manager points to first.
+        # _IBB_P is calibrated so league-shaped lineups produce roughly the
+        # real ~0.10 intentional passes per team-game of the universal-DH era
+        # (see the calibration probe); the danger gate keeps it pointed at
+        # actual sluggers rather than making late innings a free-pass parade.
+        if (late and outs >= 1 and bases[0] is None
+                and (bases[1] is not None or bases[2] is not None)
+                and not phantom
+                and setup[bi]["dang"] >= _IBB_DANG
+                and setup[bi]["dang"] > _IBB_RATIO * setup[(bi + 1) % L]["dang"]
+                and rnd() < _IBB_P):
+            code = 5                              # a walk, without the at-bat
+            u = -1.0
+            _IBB_N[0] += 1                        # calibration/diagnostics counter
+        else:
+            u = rnd()
+            code = 0
         _tt = setup[bi].get("thresh_tto")
         if _tt:
             # Last slot is the bullpen ladder; otherwise the turn's own, capped.
             _row = _tt[-1] if pen else _tt[min(turn, len(_tt) - 2)]
         else:
             _row = setup[bi]["thresh"]
-        for acc, c in _row:
-            if u < acc:
-                code = c
-                break
+        if u >= 0.0:                          # an IBB (u = -1) skips the at-bat
+            for acc, c in _row:
+                if u < acc:
+                    code = c
+                    break
         s = [0, 0, 0, 0, 0, 0, 0] if phantom else stats[bi]        # discard row for PH
         onb = -1 if phantom else bi                                # what goes on base
         if code == 0:                         # out
@@ -1489,6 +1536,21 @@ def simulate(g, n=5000, live=None):
     bud_h = hsp.get("est_pitches") or (props.get("ks_home") or {}).get("est_pitches")
     bud_a = asp.get("est_pitches") or (props.get("ks_away") or {}).get("est_pitches")
     bbpa_h, bbpa_a = hsp.get("bb_pa"), asp.get("bb_pa")
+    # STEAL DEFENSE. Each offense's steal-success shift is the OPPOSING club's
+    # stolen-base-percentage-allowed vs league (catchers' arms + staff hold
+    # games, measured by what actually happens on their watch). Clamped small:
+    # the spread between the best and worst clubs is ~12-15 points of success.
+    def _sb_adj(off_setup, def_team):
+        pct = (def_team or {}).get("sb_allow_pct")
+        lg = (def_team or {}).get("sb_lg_pct")
+        if pct is None or lg is None:
+            return
+        adj = max(-0.12, min(0.12, float(pct) - float(lg)))
+        for row in off_setup:
+            row["sb_adj"] = adj
+    _sb_adj(setup_h, at)
+    _sb_adj(setup_a, ht)
+
     # Gassed relievers sit tonight. Prefer the id list, which names the arms that
     # are actually tired; the count is only a fallback for when identity is
     # missing, and it thins the good end of the pen whether or not the good arms

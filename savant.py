@@ -163,3 +163,46 @@ def pitch_arsenals(season):
             bat[pid] = m
         return {"pit": pit, "bat": bat}
     return _cached(("arsenal", season), 12 * 3600, build) or {"pit": {}, "bat": {}}
+
+def handed_hr_factors(year=None):
+    """{club_display_name: {"L": residual, "R": residual}} -- how much MORE a
+    park rewards home runs from one batter side than its own average.
+
+    Statcast publishes park HR factors split by batter side (the Yankee Stadium
+    short porch is a lefty effect, not a park-wide one). The park's OVERALL
+    level is already inside the model's run-environment factor, so shipping the
+    raw index would double-count it; each side's index is divided by the park's
+    two-side mean, leaving only the handedness RESIDUAL (Yankee LHB ~1.1, RHB
+    ~0.9). Best-effort: any failure returns {} and nothing downstream changes.
+    """
+    import clock
+    year = year or (clock.today_et().year - 1)     # last FULL season's factors
+
+    def build():
+        import json as _json
+        import re as _re
+        import urllib.request as _rq
+        out = {}
+        sides = {}
+        for side in ("L", "R"):
+            url = ("https://baseballsavant.mlb.com/leaderboard/statcast-park-factors"
+                   f"?type=year&year={year}&batSide={side}&stat=index_hr"
+                   "&condition=All&rolling=")
+            req = _rq.Request(url, headers={"User-Agent": _UA})
+            body = _rq.urlopen(req, timeout=25).read().decode()
+            m = _re.search(r"var data = (\[.*?\]);", body, _re.S)
+            if not m:
+                return {}
+            for r in _json.loads(m.group(1)):
+                club = r.get("name_display_club")
+                idx = _f(r.get("index_hr"))
+                if club and idx:
+                    sides.setdefault(club, {})[side] = idx
+        for club, d in sides.items():
+            if "L" in d and "R" in d:
+                mean = (d["L"] + d["R"]) / 2.0
+                if mean > 0:
+                    out[club] = {"L": round(d["L"] / mean, 3),
+                                 "R": round(d["R"] / mean, 3)}
+        return out
+    return _cached(("park_hand_hr", year), 24 * 3600, build) or {}

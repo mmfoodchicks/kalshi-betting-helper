@@ -3679,6 +3679,93 @@ ck("the projection is served at /api/baseball/rotations",
 
 print()
 print("=" * 72)
+print("The catcher has an arm, the manager can point to first, parks have shape")
+print("=" * 72)
+import random as _rnd2
+
+
+def _gbat(i, pow_=None, con=None, spd=1.0, sbr=0.0):
+    _POW = [0.035, 0.032, 0.045, 0.058, 0.038, 0.028, 0.022, 0.016, 0.012]
+    _CON = [0.155, 0.150, 0.145, 0.135, 0.140, 0.135, 0.130, 0.120, 0.115]
+    return {"name": "B%d" % i, "r1": con if con is not None else _CON[i],
+            "r2": 0.045, "r3": 0.004, "rhr": pow_ if pow_ is not None else _POW[i],
+            "rbb": 0.085, "spd": spd, "sbr": sbr, "ret": 1.0,
+            "ok": 0.4, "og": 0.3, "of": 0.3}
+
+
+# --- catcher arm -------------------------------------------------------------
+_su = _MSF._build_setup(_MSF._rates(
+    [_gbat(i, spd=1.15, sbr=0.18) for i in range(9)]), 1.0)
+
+
+def _sb_per_game(adj, n=6000, seed=5):
+    for row in _su:
+        row["sb_adj"] = adj
+    r = _rnd2.Random(seed)
+    return sum(sum(x[5] for x in _MSF._play_game(_su, r.random)[1])
+               for _ in range(n)) / n
+
+
+_sb_cannon, _sb_lg, _sb_open = _sb_per_game(-0.10), _sb_per_game(0.0), _sb_per_game(0.10)
+ck("a cannon behind the plate suppresses steals",
+   _sb_cannon < _sb_lg * 0.95, "%.3f vs %.3f" % (_sb_cannon, _sb_lg))
+ck("...and a turnstile allows more (asymmetric: the clamp caps the upside)",
+   _sb_open >= _sb_lg, "%.3f vs %.3f" % (_sb_open, _sb_lg))
+ck("the sim wires each offense to the OPPOSING club's steal defense",
+   '_sb_adj(setup_h, at)' in _ms_src2 or '_sb_adj(setup_h, at)'
+   in _insp.getsource(_MSF.simulate),
+   "home bats run on the away catcher, not their own")
+ck("the shift is clamped to the real between-club spread",
+   "max(-0.12, min(0.12" in _insp.getsource(_MSF.simulate))
+_bb7 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                          "baseball.py")).read()
+ck("steal defense is measured from team fielding (SB allowed vs CS)",
+   "_sb_defense_map" in _bb7 and '"sb_allow_pct"' in _bb7 and '"sb_lg_pct"' in _bb7)
+
+# --- intentional walks -------------------------------------------------------
+_su2 = _MSF._build_setup(_MSF._rates([_gbat(i) for i in range(9)]), 1.0)
+_MSF._IBB_N[0] = 0
+_r2 = _rnd2.Random(11)
+_N2 = 12000
+for _ in range(_N2):
+    _MSF._play_game(_su2, _r2.random)
+_ibb_rate = _MSF._IBB_N[0] / _N2
+ck("intentional walks happen at the universal-DH era's real rate (~0.10)",
+   0.05 <= _ibb_rate <= 0.18, "%.3f" % _ibb_rate)
+ck("the gate is the classic spot: late, 1st open, RISP, 1+ out, a slugger up",
+   "bases[0] is None" in _insp.getsource(_MSF._half_inning)
+   and "_IBB_DANG" in _insp.getsource(_MSF._half_inning))
+ck("an IBB is a walk, not an at-bat: it skips the outcome draw",
+   "u = -1.0" in _insp.getsource(_MSF._half_inning)
+   and "if u >= 0.0:" in _insp.getsource(_MSF._half_inning),
+   "it must not consume a hit/K chance from the thresholds")
+# a uniform lineup (no slugger sticking out) issues almost none
+_su3 = _MSF._build_setup(_MSF._rates(
+    [_gbat(i, pow_=0.03, con=0.14) for i in range(9)]), 1.0)
+_MSF._IBB_N[0] = 0
+_r3 = _rnd2.Random(11)
+for _ in range(6000):
+    _MSF._play_game(_su3, _r3.random)
+ck("a lineup with nobody worth walking issues almost none",
+   _MSF._IBB_N[0] / 6000 < 0.03, "%.3f" % (_MSF._IBB_N[0] / 6000))
+
+# --- park geometry by handedness --------------------------------------------
+import savant as _SV
+ck("park HR factors are RESIDUALS around each park's own mean",
+   "d[\"L\"] / mean" in _insp.getsource(_SV.handed_hr_factors),
+   "the park's overall level is already in hr_env; shipping the raw index "
+   "would count it twice")
+ck("the slate resolves the home park and applies the residual per batter side",
+   "_hr_env_for" in _bb7 and '"Diamondbacks" if club == "D-backs"' in _bb7)
+ck("a switch hitter bats opposite the starter's hand",
+   'if side == "S":' in _bb7 and '"L" if opp_hand == "R" else "R"' in _bb7)
+ck("a missing park or side degrades to exactly the old behaviour",
+   "return hr_env * f if f else hr_env" in _bb7)
+ck("batter handedness comes from one bulk call, cached",
+   "_bat_sides" in _bb7 and "personIds=" in _bb7)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
