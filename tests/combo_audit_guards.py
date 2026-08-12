@@ -729,10 +729,11 @@ ck("an absurd price is clamped rather than sent to infinity",
 
 # --- the engine's own HFA is what gets subtracted --------------------------
 _gs = open(_G.__file__).read()
-ck("the moneyline anchor removes the ENGINE's home edge, not the league's",
-   "_ENGINE_HFA_PTS" in _gs and "pre.margin_from_prob(p_home) - _ENGINE_HFA_PTS" in _gs,
+ck("the market anchor removes the ENGINE's home edge, not the league's",
+   "_ENGINE_HFA_PTS" in _gs and "(edge - _ENGINE_HFA_PTS) / _EDGE_KEEP" in _gs,
    "the market's price already contains a real home edge; what has to come out "
-   "is only what the engine will add back")
+   "is only what the engine will add back -- and now BOTH anchor grades "
+   "(moneyline and spread ladder) come through the same subtraction")
 ck("and the engine's edge is measured, not assumed",
    1.0 < _G._ENGINE_HFA_PTS < 1.6,
    f"{_G._ENGINE_HFA_PTS} points -- what the split 1.05 bump realizes through "
@@ -3887,6 +3888,28 @@ ck("and about a point and a half of margin, not the skewed +2.13",
    "%+.2f -- real margins are right-skewed by blowouts, so matching the mean "
    "would overshoot the win rate by ~2pp; the moneyline is the market that "
    "gets logged, calibrated and combo-built" % _ng_edge)
+
+# --- the market-anchored path returns the market's own number ---------------
+ck("the injected edge is pre-amplified for the script's compression",
+   "(edge - _ENGINE_HFA_PTS) / _EDGE_KEEP" in _ng_src,
+   "the script realizes ~80% of a points split; without the amplifier a 33c "
+   "home side came off the sim at 44c, and the ladder path never removed the "
+   "engine's own home edge at all")
+ck("the keep ratio is a measurement, not a round number guess",
+   0.7 <= _NG2._EDGE_KEEP <= 0.9)
+_ng_imp = {"total": 39.0, "p_win": {_NG2.kalshi_canon("AAA"): 0.33}}
+_ng_sim = _NG2.simulate_preseason("AAA", "BBB", "Alphas", "Betas", _ng_imp,
+                                  n=6000, seed=41)
+ck("a 33c moneyline anchor comes back off the sim as ~33c",
+   0.29 < _ng_sim["p_home"] < 0.37,
+   "%.3f -- the preseason board's whole claim on the moneyline is to MATCH "
+   "the market, and it was returning 0.443" % _ng_sim["p_home"])
+_ng_imp2 = {"total": 39.0, "margin": 4.5, "favourite": _NG2.kalshi_canon("AAA")}
+_ng_sim2 = _NG2.simulate_preseason("AAA", "BBB", "Alphas", "Betas", _ng_imp2,
+                                   n=6000, seed=41)
+ck("a 4.5-point spread anchor realizes ~4.5 points of margin",
+   3.6 < _ng_sim2["mean_margin"] < 5.4,
+   "%+.2f" % _ng_sim2["mean_margin"])
 
 print()
 print("=" * 72)

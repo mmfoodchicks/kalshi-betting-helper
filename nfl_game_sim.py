@@ -608,6 +608,12 @@ _ENGINE_BIAS = 0.961
 # so a bias rather than noise. What has to come out is what the ENGINE adds.
 _ENGINE_HFA_PTS = 1.35
 
+# Share of an injected points split the engine's script lets survive to the
+# realized mean margin (comebacks press, leaders kneel). Measured under
+# preseason conditions at 0.775/0.787/0.808/0.819/0.795 for asked edges of
+# 2/4/6/8/10 -- flat enough for one constant.
+_EDGE_KEEP = 0.80
+
 
 def profile_from_points(abbr, name, points, home, roster=None, props=None):
     """A synthetic team profile that scores `points` a game through the drive
@@ -684,18 +690,26 @@ def simulate_preseason(home_ab, away_ab, home_name, away_name, implied, n=2400,
     total = max(20.0, float(total)) if total else 2.0 * pre.PRE_TEAM["points"]
     margin, fav = implied.get("margin"), implied.get("favourite")
     if margin is None:
-        # No spread ladder: read the margin off the moneyline instead. The
-        # market's price already contains a home-field edge and the engine adds
-        # its OWN on top, so the engine's is what comes back out first --
-        # otherwise the home side is favoured twice.
+        # No spread ladder: read the margin off the moneyline instead.
         p_win = implied.get("p_win") or {}
         p_home = p_win.get(kalshi_canon(home_ab))
         if p_home is None and p_win:
             p_home = 1.0 - (p_win.get(kalshi_canon(away_ab)) or 0.5)
-        edge = (pre.margin_from_prob(p_home) - _ENGINE_HFA_PTS) if p_home else 0.0
+        edge = pre.margin_from_prob(p_home) if p_home else 0.0
     else:
         margin = float(margin)
         edge = margin if fav == home_ab else (-margin if fav == away_ab else 0.0)
+    # The market's number already contains the real home-field edge and the
+    # engine will add its OWN on top, so the engine's comes back out first --
+    # otherwise the home side is favoured twice. (Both anchor grades need this;
+    # the ladder path used to skip it.) Then the asked edge is pre-amplified:
+    # the script's comebacks and kneel-outs realize only ~80% of an injected
+    # points split (measured 0.775-0.819 across the 2-10 point range), which
+    # sent every market favourite back compressed toward a coin flip -- a 33c
+    # home side came off the sim at 44c on a board whose whole claim on the
+    # moneyline is to MATCH the market.
+    if edge:
+        edge = (edge - _ENGINE_HFA_PTS) / _EDGE_KEEP
     ph = max(6.0, (total + edge) / 2.0)
     pa = max(6.0, (total - edge) / 2.0)
     ros = rosters or {}
