@@ -714,6 +714,50 @@ def best_max_bet(build, floors=MAX_BET_FLOORS):
     return best
 
 
+# One user input -- "the number I want to win" -- and everything else is the
+# optimizer's problem: the leg count, the per-leg confidence, which games. The
+# per-leg floor still exists mechanically (it trims the candidate pool before
+# the frontier), so the honest way to free it is to SWEEP it: a 3x target lives
+# among 70-90% legs, a 100x target needs 25% legs, and no single floor serves
+# both. Three floors cover the range; the frontier + EV gate decide the rest.
+OPTIMAL_FLOORS = (55, 35, 15)
+
+
+def _opt_key(it):
+    """Order two optimal-mode slips. Reaching the payout target beats not;
+    among those that reach it, EV-viable beats EV-gated-out, then the likelier
+    slip wins; among those that miss, the one whose payout got closest."""
+    reached = bool(it.get("payout_reached"))
+    return (1 if reached else 0,
+            1 if it.get("ev_ok") is not False else 0,
+            (it.get("combined_prob_pct") or 0.0) if reached
+            else (it.get("fair_payout_x") or 0.0),
+            it.get("ev_pct") or 0.0)
+
+
+def best_target(build, floors=OPTIMAL_FLOORS):
+    """Best slip for a hard payout target across several per-leg floors.
+    `build(floor_pct)` returns a finished slip or None. Mirrors best_max_bet:
+    the floors tried travel back on the slip so the UI can say "looked at
+    three pools and kept this one" rather than implying one pass decided."""
+    best, tried = None, []
+    for f in floors:
+        try:
+            it = build(f)
+        except Exception:
+            continue
+        if not it or not isinstance(it, dict) or not it.get("n_legs"):
+            continue
+        tried.append({"floor_pct": f, "reached": bool(it.get("payout_reached")),
+                      "payout_x": it.get("fair_payout_x"),
+                      "prob_pct": it.get("combined_prob_pct")})
+        if best is None or _opt_key(it) > _opt_key(best):
+            best = it
+    if best is not None:
+        best["optimal_floors_tried"] = tried
+    return best
+
+
 def compare(states, chosen, **kw):
     """What the other objectives would have picked, for the slip's own diagnostics.
 

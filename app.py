@@ -2251,19 +2251,44 @@ def api_baseball_mixed():
     if cap is not None and not (0 < cap <= 100):
         cap = None
     max_bet = request.args.get("max_bet") == "1"
+    # Optimal mode: ONE input (the payout target). The leg count, the per-leg
+    # confidence and the game mix are all outputs -- legs_mode off, payout
+    # required, "balanced" objective (likeliest slip that isn't -EV and is
+    # actually fillable), per-leg floor swept. See combo_engine.best_target.
+    optimal = request.args.get("optimal") == "1"
+    if optimal and not (payout and payout > 1):
+        return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
 
-    def _build(target_pct, _mb=False):
+    def _build(target_pct, _mb=False, _opt=False):
         return baseball.build_mixed_parlay(
             games, n_legs=legs, target_pct=target_pct,
-            cap_pct=None if _mb else cap,
+            cap_pct=None if (_mb or _opt) else cap,
             target_payout=0 if _mb else payout, n_sims=sims,
             max_legs_per_game=max_total if same_game else 1,
             max_total_legs=max_total,
-            legs_mode=legs_mode, payout_mode=payout_mode,
+            legs_mode="off" if _opt else legs_mode,
+            payout_mode="require" if _opt else payout_mode,
             conn=conn, game_sel=sel or None,
             include_live=include_live, types=_prop_types(),
-            objective=objective, max_bet=_mb)
+            objective="balanced" if _opt else objective, max_bet=_mb)
 
+    if optimal:
+        # A target past the exchange ceiling is not reachable in real money;
+        # clamp and say so rather than optimizing toward a payout Kalshi caps.
+        capped = payout > combo_engine.MAX_PAYOUT_X
+        payout = min(payout, combo_engine.MAX_PAYOUT_X)
+        item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+        if item:
+            item["objective"] = "optimal"
+            item["target_payout_x"] = payout
+            item["target_capped"] = capped
+            return jsonify({"parlay": item})
+        pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+        if pre and not any(g.get("pick_price_cents") for g in pre):
+            return jsonify({"parlay": None, "hint": "kalshi_unpriced",
+                            "n_pregame": len(pre)})
+        return jsonify({"parlay": None, "hint": "optimal_unbuildable",
+                        "target_payout_x": payout})
     if max_bet:
         # The band and the payout target are dropped and the per-leg floor is
         # swept: reaching the MARKET payout cap needs room the maker's own

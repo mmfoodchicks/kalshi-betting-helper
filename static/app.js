@@ -1050,7 +1050,7 @@ window.renderLiveWarn = () => {
 
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
-window.buildCombo = async (maxBet) => {
+window.buildCombo = async (maxBet, optimal) => {
   const out = $("comboOut");
   if (!out) return;
   let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
@@ -1060,6 +1060,10 @@ window.buildCombo = async (maxBet) => {
   // than silently building nothing.
   if (c && c < t) c = 0;
   let p = parseFloat(($("comboPayout") || {}).value) || 0;
+  if (optimal && !(p > 1)) {
+    out.innerHTML = `<div class="small">⚡ Optimal mode needs the one thing it optimizes for: type the payout you want in the <b>×</b> box (e.g. <b>10</b>), then hit the button again. Legs, confidence and games are chosen for you.</div>`;
+    return;
+  }
   parlayLegs = n; parlayTarget = t; parlayPayout = p; parlayCap = c;
   // Persist the control choices so the auto-refresh re-renders them as-set.
   comboSameGamePref = !!($("comboSameGame") && $("comboSameGame").checked);
@@ -1072,13 +1076,15 @@ window.buildCombo = async (maxBet) => {
   // same_game on may stack correlated legs from one game; off = one leg per game.
   comboBuilding = true;
   simLoader(out, maxBet ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : optimal ? `Solving for the likeliest slip that pays ${p}×…`
     : comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
       + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
       + (c ? `&cap=${c}` : "")
-      + (maxBet ? "&max_bet=1" : "");
+      + (maxBet ? "&max_bet=1" : "")
+      + (optimal ? "&optimal=1" : "");
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
@@ -1093,6 +1099,8 @@ window.buildCombo = async (maxBet) => {
       }
       out.innerHTML = (d.hint === "max_bet_unreachable")
         ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
+        : (d.hint === "optimal_unbuildable")
+        ? `<div class="small">Couldn't build anything toward <b>${d.target_payout_x}×</b> - the priced pool is too thin (lines post near game time, and only pregame games count unless live is on). Try again closer to first pitch or with more games selected.</div>`
         : `<div class="small">Couldn't build - no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
       return;
     }
@@ -1480,10 +1488,11 @@ function renderMixed(m) {
   const unpriced = (m.priced_frac != null && m.priced_frac < 1)
     ? `<div class="small" style="margin-top:4px;color:var(--muted)">${Math.round(m.priced_frac * 100)}% of these legs have a live Kalshi quote; the rest are priced at fair value, so the EV above only reflects the ones you can actually place.</div>` : "";
   const alts = renderAlternatives(m);
-  const maxNote = maxBetNote(m);
+  const maxNote = maxBetNote(m) + optimalNote(m);
   return `<div class="combo hl prop">
     <div class="chead">
       <span class="ctag">${m.objective === "max_bet" ? "🎰 Max bet"
+        : m.objective === "optimal" ? "⚡ Optimal"
         : stacked ? "🔀 Mixed parlay" : "🎯 Cross-game parlay"}</span>
       <span class="small">${m.n_legs} legs · ${m.n_games} games · ${(m.n_sims || 0).toLocaleString()} sims</span>
     </div>
@@ -1541,6 +1550,30 @@ function maxBetNote(m) {
       <span>🎰 <b>Max bet</b> - pays the ${cap}× ceiling</span>
       ${mk}${opt}
     </div>${over}${warn}${floors}`;
+}
+
+// The optimal-mode block. One user input (the payout target); the leg count and
+// per-leg confidence were the OPTIMIZER's choices, so the note reports them as
+// results, not settings. Honest about the two failure shades: target missed
+// (here's the closest), and target reached but only by -EV slips (the market
+// prices the whole path against us today).
+function optimalNote(m) {
+  if (m.objective !== "optimal") return "";
+  const t = m.target_payout_x;
+  if (!m.payout_reached) {
+    return `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ <b>${t}× isn't reachable from today's priced pool.</b>`
+      + ` The closest fully-quoted slip pays <b>${m.fair_payout_x}×</b> - that's what's shown above. Lower the target, add games, or wait for more lines to post.</div>`;
+  }
+  const capped = m.target_capped
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">Your target was above Kalshi's ${MAX_BET_X}× ceiling, so it was optimized to the ceiling instead - past it you can't be paid.</div>` : "";
+  const evwarn = (m.ev_ok === false)
+    ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Every slip that reaches ${t}× today is priced against us (negative EV after Kalshi's cut). This is the likeliest of them - shown so you can see the board, not a recommendation to bet it.</div>` : "";
+  const floors = (m.optimal_floors_tried || []).length > 1
+    ? `<div class="small" style="margin-top:4px;color:var(--muted)">Solved from ${m.optimal_floors_tried.map((f) => f.floor_pct + "%").join(", ")} confidence pools and kept the best.</div>` : "";
+  return `<div class="cnums" style="margin-top:4px">
+      <span>⚡ <b>Optimal</b> - likeliest slip paying ≥ <b>${t}×</b> that the price doesn't refute</span>
+      <span>It chose <b>${m.n_legs} legs</b> on its own</span>
+    </div>${capped}${evwarn}${floors}`;
 }
 
 // The same frontier ranked the other two ways. Shown so "the price mattered" is
@@ -1728,6 +1761,7 @@ async function loadBaseball(silent) {
         <div style="margin-top:6px">
           <button class="track-mini primary-mini" onclick="buildCombo()">Build</button>
           <button class="track-mini" style="margin-left:6px" onclick="buildCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+          <button class="track-mini" style="margin-left:6px" onclick="buildCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the games on its own - the likeliest slip that reaches your number and isn't priced against you.">⚡ Optimal for my ×</button>
         </div>
         <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         ${modelLegend()}

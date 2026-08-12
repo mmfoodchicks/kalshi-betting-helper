@@ -3818,6 +3818,52 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
+print("One number in, one slip out: the optimizer owns the legs and the floor")
+print("=" * 72)
+import combo_engine as _CE2
+
+ck("best_target exists beside best_max_bet, same sweep-and-keep shape",
+   callable(getattr(_CE2, "best_target", None)) and len(_CE2.OPTIMAL_FLOORS) >= 3,
+   "one per-leg floor cannot serve both a 3x and a 100x target -- the pool "
+   "each target needs lives at a different confidence level")
+_ok = {"n_legs": 4, "payout_reached": True, "ev_ok": True,
+       "combined_prob_pct": 25.0, "fair_payout_x": 4.1, "ev_pct": 3.0}
+_near = {"n_legs": 6, "payout_reached": False, "ev_ok": True,
+         "combined_prob_pct": 60.0, "fair_payout_x": 3.2, "ev_pct": 9.0}
+_gated = {"n_legs": 5, "payout_reached": True, "ev_ok": False,
+          "combined_prob_pct": 40.0, "fair_payout_x": 4.5, "ev_pct": -8.0}
+ck("reaching the target beats a likelier slip that missed it",
+   _CE2._opt_key(_ok) > _CE2._opt_key(_near),
+   "the one thing the user asked for is the payout; a 60% slip at 3.2x is an "
+   "answer to a different question")
+ck("among reachers, the EV-viable slip beats the EV-gated one",
+   _CE2._opt_key(_ok) > _CE2._opt_key(_gated))
+_seq = iter([_near, _ok, None])
+_got = _CE2.best_target(lambda f: next(_seq), floors=(55, 35, 15))
+ck("the sweep keeps the best floor's slip and reports every floor tried",
+   _got is _ok and len(_got["optimal_floors_tried"]) == 2,
+   "an exception or empty floor is skipped, not fatal")
+
+_ap_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "app.py")).read()
+ck("optimal mode frees the leg count and requires the payout",
+   '"off" if _opt else legs_mode' in _ap_src
+   and '"require" if _opt else payout_mode' in _ap_src)
+ck("and pins the EV-gated objective regardless of the dropdown",
+   '"balanced" if _opt else objective' in _ap_src,
+   "'specially chosen to make money' means the -EV states are never selectable")
+ck("a target past Kalshi's ceiling is clamped, not chased",
+   "payout = min(payout, combo_engine.MAX_PAYOUT_X)" in _ap_src)
+ck("optimal without a target is a 400, not a silent default",
+   "optimal mode needs a payout target above 1x" in _ap_src)
+_js_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "static", "app.js")).read()
+ck("the UI has the one-input button and its honest result note",
+   "Optimal for my ×" in _js_src and "function optimalNote(" in _js_src
+   and "optimal_unbuildable" in _js_src)
+
+print()
+print("=" * 72)
 print("An NFL margin scatters like a real one, and the total never hears it")
 print("=" * 72)
 import nfl_game_sim as _NG2
