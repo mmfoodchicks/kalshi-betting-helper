@@ -723,9 +723,31 @@ def nascar_type_skill(year=None, series=1, n_back=2):
 # Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
 # approximately via the real playoff-point totals we read from the feeds.
 def _cup_points(pos):
+    # 2026: a win pays 55 (up from 40) -- part of the Chase-format overhaul.
+    # The rest of the scale is unchanged (2nd 35, 3rd 34, ... floor 1).
     if pos <= 1:
-        return 40
+        return 55
     return max(1, 37 - pos)
+
+
+# Stage points: the top ten of each of two stages score 10..1. The sim doesn't
+# run stages, so the stage order is approximated as the finishing order with
+# positional noise (a driver's stage running position tracks his finish but not
+# perfectly -- crashes late, pit cycles, stage strategy). Mean stage haul for a
+# race winner comes out ~13-14 of the 20 available, consistent with how the
+# points leaders actually accumulate them.
+def _stage_points(order, rng, pts, n_stages=2):
+    for _ in range(n_stages):
+        noisy = sorted(range(len(order)),
+                       key=lambda i: i + rng.gauss(0.0, 4.0))
+        for rank, oi in enumerate(noisy[:10]):
+            pts[order[oi]] += 10 - rank
+
+
+# The Chase points reset, from NASCAR's published 2026 table: the regular-season
+# champion starts the 10-race Chase on 2100, second on 2075, third on 2065, and
+# each spot after that 5 lower down to 2000 for the sixteenth seed.
+_CHASE_SEED = [2100, 2075] + [2065 - 5 * i for i in range(14)]
 
 
 def nascar_state(year=None, series=1):
@@ -824,16 +846,10 @@ _SIGMA_CUP = 7.5     # Cup field is flat (pole win rate low) -> high race varian
 
 
 def _round_of(idx):
-    """Playoff round for the i-th points race of a 36-race Cup season (1-indexed)."""
-    if idx <= 26:
-        return "regular"
-    if idx <= 29:
-        return "ro16"
-    if idx <= 32:
-        return "ro12"
-    if idx <= 35:
-        return "ro8"
-    return "final"
+    """Phase for the i-th points race of a 36-race Cup season (1-indexed).
+    2026: a 26-race regular season, then the 10-race Chase -- no elimination
+    rounds any more, so there are only two phases."""
+    return "regular" if idx <= 26 else "chase"
 
 
 def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
@@ -884,18 +900,29 @@ def _sim_cup_race(drivers, rng, wet=False, ttype="intermediate"):
 
 
 def _sim_nascar_season(drivers, phases, schedule, rng):
-    """One season forward through the remaining schedule + the playoff bracket.
-    `schedule` is the ordered remaining race list ({name, wet_prob}), so per-race
-    pole/winner are logged and rain events fire per the track's climate."""
+    """One season forward through the remaining schedule + THE CHASE.
+
+    2026 scrapped the elimination playoff this simulated for years. The real
+    format now (announced Jan 2026, "The Chase" returns): the top 16 in POINTS
+    after the 26-race regular season -- no win-and-in -- have their points reset
+    to a staggered seed (_CHASE_SEED) and race the final 10 races straight up.
+    Most points at the end is the champion. No elimination rounds, no
+    winner-take-all finale. Simulating the old bracket priced a different
+    lottery: eliminations and a one-race final add variance the Chase does not
+    have, so a dominant season now converts to the title far more often.
+
+    `schedule` is the ordered remaining race list ({name, wet_prob}), so
+    per-race pole/winner are logged and rain fires per the track's climate."""
     pts = {d["id"]: d["points"] for d in drivers}
     wins = {d["id"]: d["wins"] for d in drivers}
-    ppts = {d["id"]: d["playoff_points"] for d in drivers}
     season_wins = defaultdict(int); top5 = defaultdict(int); top10 = defaultdict(int)
     poles = defaultdict(int)
     race_iter = iter(schedule)
     race_out = []
 
-    def run_race():
+    def run_race(book=None):
+        """One race. Points post to `pts` and, when given, to `book` (the Chase
+        standings) -- stage points included in both."""
         r = next(race_iter, None)
         ttype = (r or {}).get("type", "intermediate")
         wet = bool(r) and rng.random() < (r.get("wet_prob") or 0.0)
@@ -906,12 +933,18 @@ def _sim_nascar_season(drivers, phases, schedule, rng):
                    + d.get("pace_by_type", {}).get(ttype, 0.0) + rng.gauss(0, psig))
         poles[pole["id"]] += 1
         order = _sim_cup_race(drivers, rng, wet=wet, ttype=ttype)
+        race_pts = defaultdict(int)
         for pos, did in enumerate(order, 1):
-            pts[did] += _cup_points(pos)
+            race_pts[did] += _cup_points(pos)
             if pos <= 5:
                 top5[did] += 1
             if pos <= 10:
                 top10[did] += 1
+        _stage_points(order, rng, race_pts)
+        for did, p in race_pts.items():
+            pts[did] += p
+            if book is not None and did in book:
+                book[did] += p
         season_wins[order[0]] += 1
         if r is not None:
             race_out.append((r["name"], pole["id"], order[0]))
@@ -919,44 +952,17 @@ def _sim_nascar_season(drivers, phases, schedule, rng):
 
     for _ in range(phases.get("regular", 0)):
         w = run_race()[0]
-        wins[w] += 1; ppts[w] += 5            # a win = playoff lock + playoff points
+        wins[w] += 1                          # display only; entry is pure points
 
-    # Seed the 16-car playoff field: race winners first (by playoff pts), then fill
-    # the rest on regular-season points.
-    field = sorted((d for d in drivers if wins[d["id"]] > 0),
-                   key=lambda d: (ppts[d["id"]], pts[d["id"]]), reverse=True)
-    if len(field) < 16:
-        rest = sorted((d for d in drivers if wins[d["id"]] == 0),
-                      key=lambda d: pts[d["id"]], reverse=True)
-        field += rest[:16 - len(field)]
-    field = field[:16]
+    # The Chase field: top 16 by points, full stop.
+    field = sorted(drivers, key=lambda d: pts[d["id"]], reverse=True)[:16]
     made_playoffs = {d["id"] for d in field}
+    book = {d["id"]: _CHASE_SEED[i] for i, d in enumerate(field)}
 
-    survivors = field
-    base = 2000
-    for rnd, advance_to in (("ro16", 12), ("ro12", 8), ("ro8", 4)):
-        if not phases.get(rnd) or not survivors:
-            continue
-        rpts = {d["id"]: base + ppts[d["id"]] for d in survivors}
-        auto = set()
-        for _ in range(phases[rnd]):
-            order = run_race()
-            for pos, did in enumerate(order, 1):
-                if did in rpts:
-                    rpts[did] += _cup_points(pos)
-            if order[0] in rpts:
-                auto.add(order[0])            # a round win auto-advances
-        survivors = sorted(survivors, key=lambda d: (d["id"] in auto, rpts[d["id"]]),
-                           reverse=True)[:advance_to]
-        base += 1000
+    for _ in range(phases.get("chase", 0)):
+        run_race(book=book)
 
-    if phases.get("final") and survivors:
-        finalists = {d["id"] for d in survivors[:4]}
-        order = run_race()
-        champ = next((did for did in order if did in finalists), survivors[0]["id"])
-    else:
-        champ = max(survivors, key=lambda d: pts[d["id"]])["id"] if survivors \
-            else max(pts, key=pts.get)
+    champ = max(book, key=book.get) if book else max(pts, key=pts.get)
     return champ, made_playoffs, season_wins, top5, top10, pts, poles, race_out
 
 

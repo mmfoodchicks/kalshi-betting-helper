@@ -28,7 +28,16 @@ import time
 import deep_cache
 
 _KEY = "model_trust"
-_DEFAULT = 0.50          # no measurement yet -> half model, half market
+# The docstring above says the no-measurement default is "deliberately
+# market-leaning" -- and then this constant sat at 0.50, which is not leaning
+# anywhere. The mismatch had a real cost: UFC's backtest FIT 0.05 on 59 graded
+# bouts (the model demonstrably loses to the close, logloss 0.685 vs 0.615),
+# and the shrink toward 0.50 served an effective weight of 0.37 -- the less
+# evidence, the harder we faded a market that beats us. The prior for an
+# unproven model against real-money prices belongs near the market, and the
+# asymmetry seals it: overweighting a losing model realises losses, while
+# underweighting a winning one only forgoes edge until the sample grows.
+_DEFAULT = 0.20
 _PRIOR_N = 150           # backtest samples needed before a fit is taken at face value
 _FLOOR, _CEIL = 0.05, 0.85
 

@@ -3465,6 +3465,76 @@ ck("run-line masks use >= margin, matching 'wins by over (m-0.5)'",
 
 print()
 print("=" * 72)
+print("NASCAR sims the championship NASCAR actually runs in 2026")
+print("=" * 72)
+# NASCAR scrapped the elimination playoff for 2026 and brought back The Chase:
+# top 16 in POINTS (no win-and-in), one points reset to a staggered seed, ten
+# races straight up, most points wins. The sim was still running 16/12/8/4
+# eliminations into a winner-take-all finale -- a different lottery, whose
+# variance suppressed a dominant season's title odds (Hamlin 49.8% under the
+# dead bracket, 91.8% under the real format).
+import racing_sim as _RS
+import random as _random
+
+ck("a race win pays 55 points, not the old 40",
+   _RS._cup_points(1) == 55 and _RS._cup_points(2) == 35,
+   "2026's scoring change; the rest of the scale is untouched")
+ck("the Chase seed table matches NASCAR's published reset",
+   _RS._CHASE_SEED[:4] == [2100, 2075, 2065, 2060]
+   and _RS._CHASE_SEED[-1] == 2000 and len(_RS._CHASE_SEED) == 16)
+ck("the seeds descend monotonically",
+   all(a > b for a, b in zip(_RS._CHASE_SEED, _RS._CHASE_SEED[1:])))
+ck("the season has exactly two phases now",
+   _RS._round_of(26) == "regular" and _RS._round_of(27) == "chase"
+   and _RS._round_of(36) == "chase",
+   "ro16/ro12/ro8/final are dead rounds; simulating them priced eliminations "
+   "that will not happen")
+_rs_src = _insp.getsource(_RS._sim_nascar_season)
+ck("Chase entry is pure points -- no win-and-in",
+   "top 16 by points" in _rs_src.lower() or
+   'sorted(drivers, key=lambda d: pts[d["id"]], reverse=True)[:16]' in _rs_src,
+   "the old seeding put race winners first; 2026 qualification is standings only")
+ck("the champion is most points, not a one-race showdown",
+   "max(book, key=book.get)" in _rs_src)
+ck("stage points reach the projection",
+   "_stage_points" in _rs_src,
+   "wins pay 55 and both stages pay 10..1; projecting remaining races without "
+   "stages compressed every gap the Chase is decided by")
+# stage-point arithmetic on a fixed order: two stages, top ten each, 110 total
+_sp = {i: 0 for i in range(20)}
+_RS._stage_points(list(range(20)), _random.Random(1), _sp)
+ck("a race hands out exactly 110 stage points",
+   sum(_sp.values()) == 110,
+   "two stages x (10+9+...+1); anything else is invented points")
+ck("stage points lean toward the front of the field",
+   sum(v for k, v in _sp.items() if k < 10) > sum(v for k, v in _sp.items() if k >= 10))
+
+print()
+print("=" * 72)
+print("A model that loses to the market does not get half the vote")
+print("=" * 72)
+# model_trust's docstring called its default "deliberately market-leaning" while
+# the constant sat at 0.50. UFC's backtest fit 0.05 on 59 graded bouts (model
+# logloss 0.685 vs the market's 0.615) and the shrink toward 0.50 served an
+# effective 0.37 -- the thinner the evidence, the harder we faded a market that
+# demonstrably beats us.
+import model_trust as _MT
+
+ck("the no-measurement default actually leans toward the market",
+   _MT._DEFAULT <= 0.25,
+   "overweighting a losing model realises losses; underweighting a winning one "
+   "only forgoes edge until the sample grows")
+ck("a measured 'model loses' verdict stays market-heavy after shrinkage",
+   _MT.weight("ufc") < 0.25,
+   "fitted 0.05 on 59 bouts must not be inflated past the market's side of the "
+   "blend by a generous prior")
+ck("an unmeasured sport gets the cautious default",
+   _MT.weight("no_such_sport") == _MT._DEFAULT)
+ck("the floor and ceiling still bound every served weight",
+   _MT._FLOOR <= _MT.weight("mlb") <= _MT._CEIL)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
