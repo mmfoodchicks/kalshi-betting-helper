@@ -1005,7 +1005,8 @@ let comboBuilding = false; // true while a build is in flight -> pauses auto-ref
 let _mlbTypes = new Set();
 const _MLB_TYPES = [["ML", "Moneyline"], ["Total", "Totals"], ["Run line", "Run line"],
   ["Hit", "Hits"], ["HR", "Home runs"], ["Bases", "Total bases"], ["Ks", "Strikeouts"],
-  ["RFI", "1st-inn run"], ["HRR", "H+R+RBI"], ["SB", "Stolen bases"], ["RBI", "RBIs"]];
+  ["RFI", "1st-inn run"], ["HRR", "H+R+RBI"], ["SB", "Stolen bases"], ["RBI", "RBIs"],
+  ["Extras", "Extra innings"]];
 function mlbTypeChipsHTML() {
   return `<span class="ptchips">` + _MLB_TYPES.map(([v, l]) =>
     `<span class="ptchip${_mlbTypes.has(v) ? " on" : ""}" onclick="toggleMlbType(this,'${v}')">${l}</span>`).join("") + `</span>`;
@@ -1618,7 +1619,7 @@ function liveTag(l) {
 
 function sideTag(l) {
   const t = (l.type || "");
-  if (t === "RFI" || /1st-inn/i.test(t)) return "";
+  if (t === "RFI" || t === "Extras" || /1st-inn/i.test(t)) return "";
   const lab = (l.pick || "");
   // Legs built from the sim carry their own side; fall back to reading the
   // label for the live-recomputed legs, which don't.

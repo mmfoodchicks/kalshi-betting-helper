@@ -21,7 +21,8 @@ import unicodedata
 
 import kalshi
 
-_GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI")
+_GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI",
+                "KXMLBEXTRAS")
 # KXMLBSB was missing here, which made "Stolen bases" a dead chip: the sim built
 # 255 SB legs on a 15-game slate, none of them could be priced, and once unlisted
 # legs stopped reaching slips every one of them was silently dropped. Kalshi does
@@ -148,10 +149,11 @@ def _build_index():
         # ticker up after settlement, which is why only the moneyline was ever
         # gradable -- it was the only leg whose ticker survived indexing.
         return idx.setdefault(suf, {"ml": {}, "spread": {}, "total": {},
-                                    "rfi": None, "players": {}, "q": {},
+                                    "rfi": None, "extras": None, "players": {},
+                                    "q": {},
                                     "tick": {},
                                     "no": {"ml": {}, "spread": {}, "rfi": None,
-                                           "players": {}}})
+                                           "extras": None, "players": {}}})
 
     for series in _GAME_SERIES + _PLAYER_SERIES:
         for m in _fetch(series):
@@ -200,6 +202,10 @@ def _build_index():
                 g["rfi"] = _yes(m)
                 g["no"]["rfi"] = _no(m)
                 both(("rfi",))
+            elif series == "KXMLBEXTRAS":
+                g["extras"] = _yes(m)
+                g["no"]["extras"] = _no(m)
+                both(("extras",))
             else:                                          # player props
                 stat = _STAT_OF[series]
                 sub = m.get("yes_sub_title") or m.get("title") or ""
@@ -260,6 +266,8 @@ def price_leg(idx, suffix, kref):
         return _quote(tot.get("over" if over else "under")) if tot else None
     if t == "rfi":
         return _quote(src.get("rfi"))
+    if t == "extras":
+        return _quote(src.get("extras"))
     if t in _PLAYER_STATS:
         return _quote((src.get("players") or {}).get(
             (t, _norm(kref.get("player")), kref.get("line"))))
@@ -281,6 +289,8 @@ def _qkey(kref):
         return ("total", kref.get("n"), bool(kref.get("over")) != no)
     if t == "rfi":
         return ("rfi", no)
+    if t == "extras":
+        return ("extras", no)
     if t in _PLAYER_STATS:
         return (t, _norm(kref.get("player")), kref.get("line"), no)
     return None

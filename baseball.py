@@ -2238,7 +2238,8 @@ def _ml_margin(g):
 # not tell us which trust value was wrong.
 _PREDLOG_TYPES = {"Total": "mlb_total", "Ks": "mlb_ks", "Run line": "mlb_runline",
                   "Hit": "mlb_hit", "Bases": "mlb_bases", "HR": "mlb_hr",
-                  "HRR": "mlb_hrr", "RFI": "mlb_rfi", "SB": "mlb_sb", "RBI": "mlb_rbi"}
+                  "HRR": "mlb_hrr", "RFI": "mlb_rfi", "SB": "mlb_sb", "RBI": "mlb_rbi",
+                  "Extras": "mlb_extras"}
 
 
 def _log_prop_predictions(g, cands):
@@ -2951,7 +2952,7 @@ def _edge_confidence(typ):
     weaker on low-base-rate or combined-stat props (HR, H+R+RBI)."""
     return {"ML": "high", "Total": "high", "Ks": "high",
             "Run line": "med", "Hit": "med", "Bases": "med",
-            "RFI": "med", "HR": "low", "HRR": "low"}.get(typ, "med")
+            "RFI": "med", "HR": "low", "HRR": "low", "Extras": "med"}.get(typ, "med")
 
 
 def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):

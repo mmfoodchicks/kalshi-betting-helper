@@ -341,7 +341,8 @@ _MODELS = {
 # consumer (mlb_sim) prefers a measured per-market fit and falls back to the
 # pooled one until then.
 for _mkt in ("mlb_total", "mlb_ks", "mlb_runline", "mlb_hit", "mlb_bases",
-             "mlb_hr", "mlb_hrr", "mlb_rfi", "mlb_sb", "mlb_rbi"):
+             "mlb_hr", "mlb_hrr", "mlb_rfi", "mlb_sb", "mlb_rbi",
+             "mlb_extras"):
     _MODELS[_mkt] = ((lambda m=_mkt: _predlog_pairs(m)), 400, 30)
 
 

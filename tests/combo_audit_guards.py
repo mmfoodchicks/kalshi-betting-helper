@@ -3849,6 +3849,52 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("Extra innings stop being computed and thrown away")
+print("=" * 72)
+import mlb_sim as _MSX
+import kalshi_mlb as _KMX
+import random as _xrnd
+
+_km_src = _insp.getsource(_KMX)
+ck("the EXTRAS series is indexed, priced and keyed",
+   "KXMLBEXTRAS" in _KMX._GAME_SERIES
+   and 'if t == "extras":' in _km_src and '("extras", no)' in _km_src,
+   "Kalshi lists a market on every game (flat ~8-10c) that the sim already "
+   "computed and discarded")
+_ms_src4 = _insp.getsource(_MSX)
+ck("the matchup's extras flag survives into the sim payload",
+   "xtra[i] = _x > 0" in _ms_src4 and '"extras": xtra' in _ms_src4)
+ck("and becomes a candidate with the structured key",
+   '{"t": "extras"}' in _ms_src4)
+_xr = _xrnd.Random(4)
+_xbats = [{"name": "B%d" % i, "r1": 0.155, "r2": 0.045, "r3": 0.004,
+           "rhr": 0.030, "rbb": 0.082} for i in range(9)]
+def _xrate(er_a, er_h, n=6000):
+    sa = _MSX._team(_xbats, er_a, _xr.random, opp_sp_ip=5.2)
+    sh = _MSX._team(_xbats, er_h, _xr.random, opp_sp_ip=5.2)
+    x = 0
+    for _ in range(n):
+        r = _MSX._play_matchup(sa, sh, _xr.random, ip_h=5.2, ip_a=5.2)
+        x += 1 if r[5] else 0
+    return x / n
+_even = _xrate(4.4, 4.6)
+ck("the league-average extras rate sits on the ghost-runner-era ~9%",
+   0.06 < _even < 0.13, "%.3f" % _even)
+_low = _xrate(3.5, 3.7, n=9000)
+_high = _xrate(5.5, 5.7, n=9000)
+ck("a low-scoring matchup goes to extras more than a slugfest",
+   _low > _high,
+   "%.4f vs %.4f -- discrete scores overlap more when runs are scarce; the "
+   "sim's rate MOVES with the matchup (10.0-11.5%% across one live slate), "
+   "which is the whole edge over Kalshi's flat ~10c" % (_low, _high))
+ck("extras forecasts get logged and can earn their own calibration",
+   '"Extras": "mlb_extras"' in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "baseball.py")).read()
+   and '"mlb_extras"' in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "calibrate.py")).read())
+
+print()
+print("=" * 72)
 print("The Twins' bullpen and an elite one stop being the same bullpen")
 print("=" * 72)
 import mlb_sim as _MSP

@@ -1648,6 +1648,7 @@ def simulate(g, n=5000, live=None):
     away_bull_k = [0] * n
     home_win = [False] * n
     rfi = [False] * n                       # a run scored in the 1st inning (either team)
+    xtra = [False] * n                      # the game needed extra innings
     keys = ("hit", "tb", "hr", "r", "rbi", "sb", "dk")
     bat_h = {b["name"]: {k: [0] * n for k in keys} for b in setup_h}
     bat_a = {b["name"]: {k: [0] * n for k in keys} for b in setup_a}
@@ -1691,6 +1692,7 @@ def simulate(g, n=5000, live=None):
             ra, rh, sa, sh, f1, _x = _play_matchup(setup_a, setup_h, rnd, state=state,
                                                    ip_h=ip_h, ip_a=ip_a)
             store(sa, idx_a, i); store(sh, idx_h, i)
+            xtra[i] = _x > 0
             home_runs[i] = rh
             away_runs[i] = ra
             f1_raw[i] = f1 > 0
@@ -1745,7 +1747,7 @@ def simulate(g, n=5000, live=None):
         done = bool(live.get("rfi_runs"))
         return _pack(n, home_runs, away_runs, home_k, away_k, home_win, live,
                      home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
-                     home_bull_k, away_bull_k, [done] * n, bat_h, bat_a)
+                     home_bull_k, away_bull_k, [done] * n, bat_h, bat_a, xtra=xtra)
     p_sim = sum(f1_raw) / n if n else 0.0
     if p_sim > p_target > 0:
         keep = p_target / p_sim
@@ -1760,12 +1762,12 @@ def simulate(g, n=5000, live=None):
 
     return _pack(n, home_runs, away_runs, home_k, away_k, home_win, live,
                  home_sp_pitch, away_sp_pitch, home_sp_outs, away_sp_outs,
-                 home_bull_k, away_bull_k, rfi, bat_h, bat_a)
+                 home_bull_k, away_bull_k, rfi, bat_h, bat_a, xtra=xtra)
 
 
 def _pack(n, home_runs, away_runs, home_k, away_k, home_win, live, home_sp_pitch,
           away_sp_pitch, home_sp_outs, away_sp_outs, home_bull_k, away_bull_k,
-          rfi, bat_h, bat_a):
+          rfi, bat_h, bat_a, xtra=None):
     """The shared per-sim arrays every consumer reads."""
     return {"n": n, "home_runs": home_runs, "away_runs": away_runs,
             "home_k": home_k, "away_k": away_k, "home_win": home_win,
@@ -1777,7 +1779,8 @@ def _pack(n, home_runs, away_runs, home_k, away_k, home_win, live, home_sp_pitch
             # right moneyline; a pregame sim's should defer to the board's
             # official p_home instead of re-deriving a second opinion.
             "live": bool(live),
-            "rfi": rfi, "bat": {"home": bat_h, "away": bat_a}}
+            "rfi": rfi, "extras": xtra,
+            "bat": {"home": bat_h, "away": bat_a}}
 
 
 def _ge_pct(arr, n, lines):
@@ -1993,6 +1996,17 @@ def build_candidates(g, sim, types=None):
     rfi_pct = g.get("props", {}).get("rfi_pct") if isinstance(g.get("props"), dict) else None
     if rfi is not None:
         add("RFI", "Run in the 1st inning", lambda i: rfi[i], "RFI", rfi_pct, {"t": "rfi"})
+    # EXTRA INNINGS -- computed by the real-rules matchup all along and thrown
+    # away, while Kalshi lists a market on it for every game (KXMLBEXTRAS,
+    # flat ~8-10c). The sim's rate MOVES with the matchup -- tight low-scoring
+    # games tie more often than lopsided slugfests -- which is exactly what a
+    # flat market price cannot see. League-average sim rate 0.099 against the
+    # real ghost-runner-era ~0.09.
+    xtra = sim.get("extras")
+    if xtra is not None and any(xtra):
+        x_pct = round(sum(1 for x in xtra if x) / max(1, len(xtra)) * 100, 1)
+        add("Extras", "Extra innings", lambda i: xtra[i], "Extras", x_pct,
+            {"t": "extras"})
     # Hitter props -- the WHOLE posted lineup (ranked best-first for display), so
     # combos and DK Pick 6 can reach a lower-order value bat, not just the top of
     # the order. The marginal filter below drops any line too unlikely to matter,
