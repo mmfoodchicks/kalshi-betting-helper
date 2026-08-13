@@ -1283,9 +1283,21 @@ def _play_matchup(setup_a, setup_h, rnd, state=None, ip_h=None, ip_a=None):
 
 
 _PA_PER_9 = 38.5   # plate appearances a staff faces over a 9-inning game
-_KFORM_SD = 0.35   # per-start K-rate lognormal sd (see _sim_pitching): real
+_KFORM_SD = 0.34   # per-start K-rate lognormal sd (see _sim_pitching): real
                    # arms swing ~+/-33% night to night, and without it the
-                   # K-per-start distribution is 20% too narrow
+                   # K-per-start distribution is 20% too narrow. Trimmed from
+                   # the fitted 0.35 when the opponent factor went explicit:
+                   # lineup whiff-proneness used to hide inside this noise
+                   # (~0.09 of it), and modeling it twice would over-disperse.
+# OPPONENT WHIFF-PRONENESS. The same arm fans a quarter of the whiffiest
+# lineup and a sixth of the best bat-to-ball club (2026 team SO/PA runs .188
+# to .254 around .221). Transfer measured on 1,227 pitcher-relative starts:
+# log-log slope 1.44 +/- 0.21 -- MORE than proportional (whiffy teams chase
+# when behind; a dealing starter gets the longer leash) -- precision-blended
+# with the odds-ratio theory value of ~1.0 down to 1.2. Clamp covers the
+# real team spread at that exponent and no more.
+_OPP_K_ALPHA = 1.2
+_OPP_K_CLAMP = (0.78, 1.25)
 
 
 def _rel_kpa(bp_era, rnd):
@@ -1304,7 +1316,7 @@ _PITCH = (4.7, 5.0, 3.4, 3.6)
 
 def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=None,
                   er_opp=None, pen_out=0, budget=None, sp_bb_pa=None, resume=None,
-                  pen_out_ids=None):
+                  pen_out_ids=None, opp_k_mult=1.0):
     """One game for a pitching staff against the opposing lineup.
 
     The starter throws until a sampled pitch limit (pulled earlier when he's
@@ -1322,7 +1334,7 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
     back-to-back, so it is used only when no ids are available.
 
     Returns the STARTER's (Ks, pitches, outs) and the bullpen's combined Ks."""
-    sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
+    sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9 * (opp_k_mult or 1.0)))
     # DAY-TO-DAY STUFF. A fixed per-PA rate leaves only binomial noise, and the
     # measured K-per-start sd came out 2.00 against a real 2.58 (560 starts,
     # Jul-Aug 2026) -- the sim almost never rolled the shelled-in-the-3rd start
@@ -1386,8 +1398,8 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
         if bullpen:
             arm = bullpen[min(pen_i[0], len(bullpen) - 1)]
             pen_i[0] += 1
-            return max(0.12, min(0.45, arm["kpa"]))
-        return _rel_kpa(bp_era, rnd)
+            return max(0.12, min(0.45, arm["kpa"] * (opp_k_mult or 1.0)))
+        return _rel_kpa(bp_era, rnd) * (opp_k_mult or 1.0)
     if resume:
         # Pick the staff up where it stands: the starter's line is already in the
         # book, and if he has been pulled his K total is FINAL -- only the pen
@@ -1568,6 +1580,19 @@ def simulate(g, n=5000, live=None):
     _sb_adj(setup_h, at)
     _sb_adj(setup_a, ht)
 
+    # Opponent whiff factor for each STAFF: the home staff faces the away
+    # lineup and vice versa. Missing data means 1.0 -- the sim behaves exactly
+    # as it did before the factor existed.
+    def _opp_k_mult(def_team):
+        pct = (def_team or {}).get("bat_k_pct")
+        lg = (def_team or {}).get("bat_k_lg")
+        if not pct or not lg:
+            return 1.0
+        lo, hi = _OPP_K_CLAMP
+        return max(lo, min(hi, (float(pct) / float(lg)) ** _OPP_K_ALPHA))
+    okm_h = _opp_k_mult(at)
+    okm_a = _opp_k_mult(ht)
+
     # Gassed relievers sit tonight. Prefer the id list, which names the arms that
     # are actually tired; the count is only a fallback for when identity is
     # missing, and it thins the good end of the pen whether or not the good arms
@@ -1665,7 +1690,7 @@ def simulate(g, n=5000, live=None):
                                                er_opp=er_a, pen_out=pen_h,
                                                pen_out_ids=pen_ids_h,
                                                budget=bud_h, sp_bb_pa=bbpa_h,
-                                               resume=res_h)
+                                               resume=res_h, opp_k_mult=okm_h)
             home_k[i] = sk; home_sp_pitch[i] = sp_p; home_sp_outs[i] = sp_o
             home_bull_k[i] = bk
         if do_away_pitch:
@@ -1675,7 +1700,7 @@ def simulate(g, n=5000, live=None):
                                                er_opp=er_h, pen_out=pen_a,
                                                pen_out_ids=pen_ids_a,
                                                budget=bud_a, sp_bb_pa=bbpa_a,
-                                               resume=res_a)
+                                               resume=res_a, opp_k_mult=okm_a)
             away_k[i] = sk; away_sp_pitch[i] = sp_p; away_sp_outs[i] = sp_o
             away_bull_k[i] = bk
 

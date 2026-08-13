@@ -436,6 +436,28 @@ def _sb_defense_map(season):
     return _cached(("sbdef", season), 6 * 3600, fetch) or {}
 
 
+def _team_k_map(season):
+    """{team_id: batting strikeout rate (SO/PA)} plus '_lg' -- how whiff-prone
+    each LINEUP is. Feeds the staff sim's opponent factor: the same starter
+    striking out a fifth of the league fans a quarter of the whiffiest lineup
+    and a sixth of the best bat-to-ball club. 2026 spread: .188 to .254 around
+    a .221 league."""
+    def fetch():
+        data = _get(f"{STATS_BASE}/teams/stats?sportId=1&season={season}"
+                    f"&group=hitting&stats=season")
+        out, tot_so, tot_pa = {}, 0.0, 0.0
+        for s in data["stats"][0]["splits"]:
+            st = s["stat"]
+            so, pa = _f(st.get("strikeOuts")), _f(st.get("plateAppearances"))
+            if pa >= 500:
+                out[s["team"]["id"]] = round(so / pa, 4)
+            tot_so += so; tot_pa += pa
+        if tot_pa > 0:
+            out["_lg"] = round(tot_so / tot_pa, 4)
+        return out
+    return _cached(("teamk", season), 6 * 3600, fetch) or {}
+
+
 def _bat_sides(pids):
     """{pid: 'L'|'R'|'S'} for a set of batter ids, one bulk call, cached."""
     pids = tuple(sorted(p for p in pids if p))
@@ -1623,6 +1645,7 @@ def _analyze_slate_uncached(date, season):
     try:
         pen_fatigue = _bullpen_fatigue(date, season)   # {team_id: {factor, count, arms}}
         sb_def = _sb_defense_map(season)               # {team_id: SB%% allowed, "_lg": lg}
+        team_k = _team_k_map(season)                   # {team_id: lineup SO/PA, "_lg": lg}
         try:
             park_hand = savant.handed_hr_factors()     # {club: {"L": res, "R": res}}
         except Exception:
@@ -2101,6 +2124,8 @@ def _analyze_slate_uncached(date, season):
                           "bp_arms": bp_arms.get(g['home_id']),
                           "sb_allow_pct": sb_def.get(g['home_id']),
                           "sb_lg_pct": sb_def.get("_lg"),
+                          "bat_k_pct": team_k.get(g['home_id']),
+                          "bat_k_lg": team_k.get("_lg"),
                           "bullpen_fatigue": fat_h or None,
                           "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
@@ -2111,6 +2136,8 @@ def _analyze_slate_uncached(date, season):
                           "bp_arms": bp_arms.get(g['away_id']),
                           "sb_allow_pct": sb_def.get(g['away_id']),
                           "sb_lg_pct": sb_def.get("_lg"),
+                          "bat_k_pct": team_k.get(g['away_id']),
+                          "bat_k_lg": team_k.get("_lg"),
                           "bullpen_fatigue": fat_a or None,
                           "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},

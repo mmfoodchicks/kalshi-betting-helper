@@ -3849,6 +3849,61 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The K ladder knows who is standing in the batter's box")
+print("=" * 72)
+import mlb_sim as _MSO
+import random as _ornd
+import statistics as _ost
+
+ck("the opponent exponent is the measured-blended 1.2 and the clamp fits the league",
+   1.0 <= _MSO._OPP_K_ALPHA <= 1.5
+   and _MSO._OPP_K_CLAMP[0] <= (0.188 / 0.221) ** _MSO._OPP_K_ALPHA
+   and _MSO._OPP_K_CLAMP[1] >= (0.254 / 0.221) ** _MSO._OPP_K_ALPHA,
+   "log-log slope 1.44 +/- 0.21 on 1,227 pitcher-relative starts, blended "
+   "with the odds-ratio theory value ~1.0; the clamp covers the real .188-.254 "
+   "team spread and no more")
+_ms_src2 = _insp.getsource(_MSO)
+ck("the home STAFF faces the AWAY lineup, not its own",
+   "okm_h = _opp_k_mult(at)" in _ms_src2 and "okm_a = _opp_k_mult(ht)" in _ms_src2,
+   "crossing the sides is the classic bug here")
+ck("relievers face the same lineup the starter does",
+   'arm["kpa"] * (opp_k_mult or 1.0)' in _ms_src2)
+ck("the form noise shrank when the opponent went explicit",
+   _MSO._KFORM_SD < 0.35,
+   "lineup whiff-proneness used to hide inside the 0.35; modeling it twice "
+   "would over-disperse the ladder")
+_bb_src3 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                              "baseball.py")).read()
+ck("both team blocks carry the lineup K rate for the sim to read",
+   _bb_src3.count('"bat_k_pct": team_k.get') == 2
+   and _bb_src3.count('"bat_k_lg": team_k.get("_lg")') == 2)
+
+def _kdist(mult, seed=13, n=6000):
+    _r = _ornd.Random(seed)
+    _ornd.seed(seed)
+    out = []
+    for _ in range(n):
+        opp = max(0, _r.gauss(4.3, 3.0))
+        s = _MSO._sim_pitching(11.0, 4.0, 1.30, opp, _r.random, exp_ip=5.9,
+                               er_opp=4.3, sp_bb_pa=0.075, opp_k_mult=mult)
+        out.append(s[0])
+    return out
+_soft = _kdist((0.188 / 0.221) ** _MSO._OPP_K_ALPHA)
+_hard = _kdist((0.254 / 0.221) ** _MSO._OPP_K_ALPHA)
+ck("an ace's expected Ks swing ~2 between the extreme lineups",
+   1.5 < _ost.mean(_hard) - _ost.mean(_soft) < 2.8,
+   "%.2f vs %.2f -- the matchup used to be invisible"
+   % (_ost.mean(_soft), _ost.mean(_hard)))
+ck("and the spike tail moves the way the question was asked",
+   sum(1 for k in _hard if k >= 8) / len(_hard)
+   > 1.6 * (sum(1 for k in _soft if k >= 8) / len(_soft)),
+   "P(8+) roughly doubles from the bat-to-ball club to the whiff-happy one")
+ck("missing lineup data is a clean no-op",
+   abs(_ost.mean(_kdist(1.0, seed=17)) - _ost.mean(_kdist(None, seed=17))) < 1e-9,
+   "opp_k_mult None must behave exactly like 1.0")
+
+print()
+print("=" * 72)
 print("A starter's strikeouts scatter like a real arm's, not a coin machine's")
 print("=" * 72)
 import mlb_sim as _MSK
