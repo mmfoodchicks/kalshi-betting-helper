@@ -210,6 +210,28 @@ _TTO_MAX_TURN = 2                    # 0-indexed: 1st, 2nd, 3rd-and-later
 _PEN_MULT = 1.00
 _PEN_EXIT_SD = 1.15                  # innings of spread around a starter's expected exit
 
+# WHICH bullpen, though. _PEN_MULT = 1.00 is the LEAGUE-average reset; the pens
+# themselves are not interchangeable -- team bullpen WHIP runs ~1.15 to ~1.55 --
+# and resetting every lineup to the same baseline handed the Twins' pen the
+# same respect as an elite one. The team factor converts the opposing pen's
+# WHIP to an on-base ratio (WHIP ~= 3p/(1-p), so p = W/(3+W)) against the
+# league pen, clamped to the real spread. The LEVEL of a bad pen is already in
+# the run target (bullpen ERA feeds expected runs) and the closed-form hit
+# ladder (bullpen WHIP feeds the opponent hit factor), and the calibration
+# loop re-anchors totals -- so this factor changes the SHAPE: against a bad
+# pen the hits cluster in innings 6-9, where that pen actually pitches.
+_LG_PEN_WHIP = 1.30
+_PEN_QUAL_CLAMP = (0.88, 1.12)
+
+
+def _pen_quality_mult(bp_whip):
+    if not bp_whip or bp_whip <= 0:
+        return 1.0
+    p_team = bp_whip / (3.0 + bp_whip)
+    p_lg = _LG_PEN_WHIP / (3.0 + _LG_PEN_WHIP)
+    lo, hi = _PEN_QUAL_CLAMP
+    return max(lo, min(hi, p_team / p_lg))
+
 
 def _tto_mult(turn):
     """On-base multiplier for the `turn`-th time through the order (0-based)."""
@@ -230,7 +252,7 @@ def _sample_exit(exp_ip, rnd):
     return max(2, min(8, int(round(exp_ip + jitter))))
 
 
-def _build_setup(rows, mult):
+def _build_setup(rows, mult, pen_mult=1.0):
     """Cumulative outcome thresholds with on-base rates scaled by `mult`,
     carrying each batter's speed factor, steal rate, and late-sub probability
     (`psub`: chance per late-inning PA of being lifted for a pinch hitter, sized
@@ -246,7 +268,7 @@ def _build_setup(rows, mult):
         # once the starter hands off, so a reliever is not charged the tiring
         # starter's accumulated penalty.
         for t in list(range(_TTO_MAX_TURN + 1)) + ["pen"]:
-            f = _PEN_MULT if t == "pen" else _tto_mult(t)
+            f = _PEN_MULT * (pen_mult or 1.0) if t == "pen" else _tto_mult(t)
             sr = [x * mult * f for x in rates]
             tot = sum(sr)
             if tot > 0.95:
@@ -347,7 +369,7 @@ def calibration_error(setup, er, rnd, opp_sp_ip=None, n=900):
     return mean / er - 1.0
 
 
-def _team(batters, er, rnd, opp_sp_ip=None):
+def _team(batters, er, rnd, opp_sp_ip=None, opp_pen_mult=1.0):
     """Lineup setup with on-base rates EMPIRICALLY calibrated so the simulated
     runs land near `er` (the matchup-adjusted model total). Returns [] if no
     lineup is posted.
@@ -359,7 +381,7 @@ def _team(batters, er, rnd, opp_sp_ip=None):
     if not rows:
         return []
     if not er:
-        return _build_setup(rows, 1.0)
+        return _build_setup(rows, 1.0, opp_pen_mult)
     mult = 1.0
     # Converge the rate multiplier until simulated mean runs sit within ~1.5% of
     # er. Two things made the old loop leave a systematic few-percent bias on the
@@ -370,7 +392,7 @@ def _team(batters, er, rnd, opp_sp_ip=None):
     # LEARN the local exponent from successive iterations (secant method).
     k_exp, prev = 0.45, None                 # 1/2.2 starting guess
     for _ in range(6):
-        setup = _build_setup(rows, mult)
+        setup = _build_setup(rows, mult, opp_pen_mult)
         mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(500)) / 500.0
         if mean <= 0.3:
             mult *= 1.5
@@ -389,14 +411,14 @@ def _team(batters, er, rnd, opp_sp_ip=None):
     # Final centering pass: acceptance still fires on a noisy estimate, so one
     # more measurement plus a single corrective nudge (never re-checked, so it
     # can't oscillate) centers the residual around ~1%.
-    setup = _build_setup(rows, mult)
+    setup = _build_setup(rows, mult, opp_pen_mult)
     mean = sum(_play_game(setup, rnd, opp_sp_ip)[0] for _ in range(700)) / 700.0
     if mean > 0.3:
         mult = _clamp_mult(mult * (er / mean) ** k_exp)
     # PARTIALLY. See _CAL_SHRINK: `mult` is the multiplier that would land the
     # lineup exactly on er, and going all the way there is measurably worse than
     # going most of the way back toward the rates it was handed.
-    return _build_setup(rows, _clamp_mult(mult ** _CAL_SHRINK))
+    return _build_setup(rows, _clamp_mult(mult ** _CAL_SHRINK), opp_pen_mult)
 
 
 _N_INNINGS = 9
@@ -1549,8 +1571,16 @@ def simulate(g, n=5000, live=None):
     ip_h = (props.get("ks_home") or {}).get("exp_ip") or 5.4
     ip_a = (props.get("ks_away") or {}).get("exp_ip") or 5.4
     # Each lineup's handoff is governed by the OPPOSING starter.
-    setup_h = _team(props.get("batters_home"), er_h * _CAL_HOME, rnd, opp_sp_ip=ip_a)
-    setup_a = _team(props.get("batters_away"), er_a * _CAL_AWAY, rnd, opp_sp_ip=ip_h)
+    # Each lineup bats against the OTHER club's bullpen once the starter is
+    # gone -- the home hitters' late-inning ladder carries the away pen's
+    # quality, and vice versa.
+    _ht_pre, _at_pre = g.get("home_team") or {}, g.get("away_team") or {}
+    pm_h = _pen_quality_mult(_at_pre.get("bullpen_whip"))
+    pm_a = _pen_quality_mult(_ht_pre.get("bullpen_whip"))
+    setup_h = _team(props.get("batters_home"), er_h * _CAL_HOME, rnd, opp_sp_ip=ip_a,
+                    opp_pen_mult=pm_h)
+    setup_a = _team(props.get("batters_away"), er_a * _CAL_AWAY, rnd, opp_sp_ip=ip_h,
+                    opp_pen_mult=pm_a)
     lam_h = (props.get("ks_home") or {}).get("expected")   # home starter, faces away
     lam_a = (props.get("ks_away") or {}).get("expected")   # away starter, faces home
 

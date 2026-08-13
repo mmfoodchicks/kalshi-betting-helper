@@ -3849,6 +3849,47 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The Twins' bullpen and an elite one stop being the same bullpen")
+print("=" * 72)
+import mlb_sim as _MSP
+import random as _prnd
+import statistics as _pst
+
+ck("the pen-quality multiplier exists with a WHIP-derived clamp",
+   callable(getattr(_MSP, "_pen_quality_mult", None))
+   and _MSP._PEN_QUAL_CLAMP == (0.88, 1.12),
+   "_PEN_MULT = 1.00 reset every lineup to the same baseline whichever pen "
+   "came in; team bullpen WHIP actually runs ~1.15-1.55")
+ck("a bad pen raises the late-game ladder and a good one lowers it",
+   _MSP._pen_quality_mult(1.55) > 1.05 > 1.0 > 0.95 > _MSP._pen_quality_mult(1.12))
+ck("no bullpen data is a clean no-op", _MSP._pen_quality_mult(None) == 1.0)
+_ms_src3 = _insp.getsource(_MSP)
+ck("each lineup bats against the OTHER club's pen",
+   "pm_h = _pen_quality_mult(_at_pre.get(\"bullpen_whip\"))" in _ms_src3
+   and "pm_a = _pen_quality_mult(_ht_pre.get(\"bullpen_whip\"))" in _ms_src3)
+ck("the factor rides through every calibration rebuild",
+   _ms_src3.count("_build_setup(rows, mult, opp_pen_mult)") >= 2
+   and "_build_setup(rows, _clamp_mult(mult ** _CAL_SHRINK), opp_pen_mult)" in _ms_src3,
+   "a rebuild that dropped it would calibrate one shape and play another")
+
+_pr = _prnd.Random(11)
+_pbats = [{"name": "B%d" % i, "r1": 0.155, "r2": 0.045, "r3": 0.004,
+           "rhr": 0.030, "rbb": 0.082} for i in range(9)]
+def _f1_share(pm, n=7000):
+    s = _MSP._team(_pbats, 4.5, _pr.random, opp_sp_ip=5.2, opp_pen_mult=pm)
+    tot = f1 = 0.0
+    for _ in range(n):
+        r, _, first = _MSP._play_game(s, _pr.random, 5.2)
+        tot += r; f1 += 1 if first else 0
+    return (f1 / n) / max(0.1, tot / n)
+_sh_good, _sh_bad = _f1_share(0.88), _f1_share(1.12)
+ck("against a bad pen the scoring migrates OUT of the starter's innings",
+   _sh_bad < _sh_good,
+   "1st-inning share %.4f vs %.4f -- the level was already in the run target "
+   "and the hit ladder; what was missing was WHEN the hits come" % (_sh_good, _sh_bad))
+
+print()
+print("=" * 72)
 print("The K ladder knows who is standing in the batter's box")
 print("=" * 72)
 import mlb_sim as _MSO
