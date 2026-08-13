@@ -3818,6 +3818,46 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
+print("A starter's strikeouts scatter like a real arm's, not a coin machine's")
+print("=" * 72)
+import mlb_sim as _MSK
+import random as _krnd
+import statistics as _kst
+
+ck("the per-start K-form shock exists and is mean-preserving",
+   getattr(_MSK, "_KFORM_SD", 0) > 0
+   and "math.exp(_kf - _KFORM_SD * _KFORM_SD / 2)" in _insp.getsource(_MSK._sim_pitching),
+   "predlog graded 124 K rungs: model 0.58 -> realized 0.30 at every bucket -- "
+   "a fixed rate left only binomial noise, sd 2.00 against a real 2.58")
+_krnd.seed(5)
+_kr = _krnd.Random(3)
+_kks = []
+for _ in range(8000):
+    _opp = max(0, _kr.gauss(4.5, 3.0))
+    _r = _MSK._sim_pitching(8.3, 4.0, 1.30, _opp, _kr.random, exp_ip=5.15,
+                            er_opp=4.5, sp_bb_pa=0.081)
+    _kks.append(_r[0])
+_kn = len(_kks)
+ck("K-per-start dispersion matches the measured 2.58",
+   2.3 < _kst.pstdev(_kks) < 2.8, "%.2f" % _kst.pstdev(_kks))
+ck("the shelled-early start exists again: P(4+ Ks) is near the real 0.655",
+   0.62 < sum(1 for k in _kks if k >= 4) / _kn < 0.69,
+   "%.3f -- the sim used to say 0.738, pricing every low rung too confident"
+   % (sum(1 for k in _kks if k >= 4) / _kn))
+ck("and so does the 8-K gem: P(8+) near the real 0.143",
+   0.11 < sum(1 for k in _kks if k >= 8) / _kn < 0.17,
+   "%.3f -- it used to say 0.094" % (sum(1 for k in _kks if k >= 8) / _kn))
+ck("the K level itself stays on the measured 4.71 per start",
+   4.4 < _kst.mean(_kks) < 5.0, "%.2f" % _kst.mean(_kks))
+_bbsrc2 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "baseball.py")).read()
+ck("workload anchors carry the measured season, not the remembered one",
+   "5.15" in _bbsrc2 and "PRIOR_BUDGET = 85.0" in _bbsrc2,
+   "real 2026 starters: 5.11 IP and 83 pitches a start (n=560); the old "
+   "5.3/88 ran every ladder a third of an inning hot")
+
+print()
+print("=" * 72)
 print("College teams are rated on the season being played, not last year's")
 print("=" * 72)
 import cfb as _CFB

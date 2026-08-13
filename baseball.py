@@ -1133,14 +1133,14 @@ def _lineup_factor(batters, team_ops, lg):
 def _exp_ip_per_start(sp):
     """A starter's expected innings THIS start, from his own workload history —
     a workhorse (6.3 IP/GS) and an opener (3.5) should not share one K ladder.
-    Season IP-per-start regressed toward the league ~5.3 by starts (k=5), with a
+    Season IP-per-start regressed toward the league ~5.15 by starts (k=5), with a
     30% blend toward recent form when available. Clamped to a sane range."""
     s = (sp or {}).get("season") or {}
     ip, gs = s.get("ip") or 0.0, s.get("gs") or 0
     if not gs:
-        return 5.3
+        return 5.15
     per = ip / gs
-    per = (gs * per + 5 * 5.3) / (gs + 5)          # shrink small samples
+    per = (gs * per + 5 * 5.15) / (gs + 5)          # shrink small samples
     r = (sp or {}).get("recent") or {}
     rip, rgs = r.get("ip") or 0.0, r.get("gs") or 0
     if rgs >= 2:                                    # recent workload (last 5)
@@ -1180,7 +1180,8 @@ def _regressed_k9(season):
 # hold a stamina "budget," and derive expected innings = budget / pitches-per-inning.
 LG_BB9 = 3.1           # ~league-average starter walks per 9
 REF_PIP = 15.8         # pitches per inning at league-average command
-PRIOR_BUDGET = 88.0    # default pitch budget a listed starter gets (rookie-safe)
+PRIOR_BUDGET = 85.0    # default pitch budget a listed starter gets (rookie-safe;
+                       # real starters average 83 pitches, n=560 Jul-Aug 2026)
 _BF_PER_9 = 38.0       # batters faced per 9 innings, to turn /9 rates into per-PA
 
 
@@ -1200,7 +1201,7 @@ def _starter_workload(sp):
            if ip > 0 else LG_BB9)
     pip = REF_PIP + 0.85 * (bb9 - LG_BB9) + 0.30 * (k9 - LG_K9)
     pip = max(14.5, min(20.5, pip))
-    emp_ip = _exp_ip_per_start(sp) if ip > 0 else 5.3
+    emp_ip = _exp_ip_per_start(sp) if ip > 0 else 5.15
     w = ip / (ip + K9_REGRESS_IP) if ip > 0 else 0.0     # sample reliability
     budget = w * (emp_ip * REF_PIP) + (1 - w) * PRIOR_BUDGET
     est_ip = max(3.0, min(7.6, budget / pip))

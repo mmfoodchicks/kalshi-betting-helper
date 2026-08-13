@@ -1283,6 +1283,9 @@ def _play_matchup(setup_a, setup_h, rnd, state=None, ip_h=None, ip_a=None):
 
 
 _PA_PER_9 = 38.5   # plate appearances a staff faces over a 9-inning game
+_KFORM_SD = 0.35   # per-start K-rate lognormal sd (see _sim_pitching): real
+                   # arms swing ~+/-33% night to night, and without it the
+                   # K-per-start distribution is 20% too narrow
 
 
 def _rel_kpa(bp_era, rnd):
@@ -1320,6 +1323,17 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
 
     Returns the STARTER's (Ks, pitches, outs) and the bullpen's combined Ks."""
     sp_kpa = max(0.10, min(0.42, (sp_k9 or 8.0) / _PA_PER_9))
+    # DAY-TO-DAY STUFF. A fixed per-PA rate leaves only binomial noise, and the
+    # measured K-per-start sd came out 2.00 against a real 2.58 (560 starts,
+    # Jul-Aug 2026) -- the sim almost never rolled the shelled-in-the-3rd start
+    # OR the 10-K gem, so every "N+ Ks" rung it priced above its own mean was
+    # too confident (predlog: model 0.58 -> realized 0.30). One start's rate is
+    # the season rate times how the arm shows up that night (stuff, the zone,
+    # the opposing lineup's whiff-proneness, all bundled): mean-preserving
+    # lognormal, sigma fitted so the simulated ladder lands on the measured
+    # 0.655/0.489/0.341/0.225/0.143 for 4+..8+.
+    _kf = random.gauss(0.0, _KFORM_SD)
+    sp_kpa = max(0.08, min(0.45, sp_kpa * math.exp(_kf - _KFORM_SD * _KFORM_SD / 2)))
     # Correlate the starter's whiffs with THIS sim's game script: on a night the
     # opposing offense is quiet he misses more bats, on a night they're teeing
     # off he misses fewer. The tilt is mean-preserving (E[opp_runs] = er_opp) so
@@ -1352,7 +1366,7 @@ def _sim_pitching(sp_k9, bp_era, bp_whip, opp_runs, rnd, bullpen=None, exp_ip=No
     # This start's pitch-count cap: his stamina "budget" (walk-aware -- already
     # reflects that a wild arm won't be trusted as deep), else derived from his
     # expected innings at ~16.2 P/IP, else a league-ish 88.
-    center = budget if budget else max(60.0, min(112.0, (exp_ip or 5.4) * 16.2))
+    center = budget if budget else max(60.0, min(112.0, (exp_ip or 5.15) * 16.2))
     center = max(60.0, min(112.0, center))
     limit = max(52, min(120, random.gauss(center, 10)))
     pk, pbb, phit, pout = _PITCH
