@@ -103,7 +103,11 @@ def run_factor(wx, cf_bearing_deg, roof):
     weight = 0.5 if roof == "retractable" else 1.0
 
     temp = wx.get("temp_f")
-    temp_factor = 1.0 + (temp - 70) * 0.0015 if temp is not None else 1.0
+    # MEASURED, not folklore: 1,460 outdoor 2026 games, temperature binned --
+    # 8.22 runs under 60F rising monotonically to 10.30 above 90F. That is
+    # ~0.55%/F, and the old 0.15%/F was underweighting the single biggest
+    # weather effect in the sport by nearly 4x.
+    temp_factor = 1.0 + (temp - 70) * 0.0055 if temp is not None else 1.0
 
     out_component = 0.0
     wind_factor = 1.0
@@ -111,7 +115,11 @@ def run_factor(wx, cf_bearing_deg, roof):
         wind_to = (wx["wind_from_deg"] + 180) % 360  # direction wind blows toward
         angle = math.radians(wind_to - cf_bearing_deg)
         out_component = math.cos(angle) * wx["wind_mph"]  # +out / -in (toward CF)
-        wind_factor = 1.0 + out_component * 0.004
+        # Asymmetric, as measured (temp-residualized): wind IN at 8+ mph costs
+        # ~6% of runs; wind OUT adds only ~3%. Blowing in beats the ball down
+        # harder than blowing out carries it.
+        slope = 0.006 if out_component < 0 else 0.003
+        wind_factor = 1.0 + out_component * slope
 
     precip = wx.get("precip_pct") or 0
     precip_factor = 1.0 - (precip / 100.0) * 0.04
@@ -125,3 +133,20 @@ def run_factor(wx, cf_bearing_deg, roof):
     raw = temp_factor * wind_factor * precip_factor * humidity_factor
     factor = 1.0 + (raw - 1.0) * weight
     return max(0.90, min(1.12, factor)), round(out_component, 1)
+
+
+def hr_extra(wx, roof):
+    """EXTRA home-run multiplier beyond the run factor. Homers feel weather
+    harder than runs do: measured over the same 1,460 games, HR/game runs 1.65
+    under 60F to 3.01 above 90F (~1.3%/F) against runs' 0.55%/F -- so after the
+    run environment takes its share, HR ladders need the difference
+    (~0.75%/F). Wind's HR signal is confounded at current sample sizes, so
+    temperature carries this alone; wind reaches HR through the run factor."""
+    if roof == "fixed" or not wx:
+        return 1.0
+    temp = wx.get("temp_f")
+    if temp is None:
+        return 1.0
+    weight = 0.5 if roof == "retractable" else 1.0
+    extra = 1.0 + (temp - 70) * 0.0075 * weight
+    return max(0.85, min(1.20, extra))

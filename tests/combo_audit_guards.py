@@ -3849,6 +3849,46 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("Weather at measured strength, and homers feel it harder than runs")
+print("=" * 72)
+import weather as _WX
+
+_hotwx = {"temp_f": 92, "wind_from_deg": None, "wind_mph": 0, "precip_pct": 0, "humidity": 50}
+_coldwx = {"temp_f": 55, "wind_from_deg": None, "wind_mph": 0, "precip_pct": 0, "humidity": 50}
+_fh, _ = _WX.run_factor(_hotwx, 45, "open")
+_fc, _ = _WX.run_factor(_coldwx, 45, "open")
+ck("temperature moves runs at the measured 0.55%/F, not the old 0.15%",
+   _fh >= 1.09 and _fc <= 0.94,
+   "1,460 outdoor 2026 games: 8.22 runs under 60F to 10.30 above 90F; the old "
+   "slope underweighted the biggest weather effect in the sport by ~4x")
+ck("homers get their own extra on top (measured 1.3%/F total)",
+   _WX.hr_extra(_hotwx, "open") > 1.12 > 1.0 > _WX.hr_extra(_coldwx, "open"),
+   "HR/game ran 1.65 to 3.01 across the same bins")
+_winwx = {"temp_f": 70, "wind_from_deg": 45, "wind_mph": 12, "precip_pct": 0, "humidity": 50}
+_woutwx = {"temp_f": 70, "wind_from_deg": 225, "wind_mph": 12, "precip_pct": 0, "humidity": 50}
+_fi, _ = _WX.run_factor(_winwx, 45, "open")
+_fo, _ = _WX.run_factor(_woutwx, 45, "open")
+ck("wind is asymmetric: blowing in hurts more than blowing out helps",
+   (1.0 - _fi) > (_fo - 1.0) > 0,
+   "%.3f in vs %.3f out at 12 mph -- measured, temp-residualized: in 8+ costs "
+   "~6%% of runs, out adds ~3%%" % (_fi, _fo))
+ck("a fixed roof silences all of it",
+   _WX.run_factor(_hotwx, 45, "fixed") == (1.0, 0.0)
+   and _WX.hr_extra(_hotwx, "fixed") == 1.0)
+_bb_wx = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                            "baseball.py")).read()
+ck("the HR extra reaches the HR ladders, beyond the run environment's share",
+   'hr_env = env ** 0.45 * (winfo.get("hr_extra") or 1.0)' in _bb_wx
+   and '"hr_extra": weather_mod.hr_extra(wx, s["roof"])' in _bb_wx)
+_msk_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "mlb_sim.py")).read()
+ck("the K prop's label carries the simulated mean where the odds are",
+   "+ Ks (avg {mean_hk})" in _msk_src and "+ Ks (avg {mean_ak})" in _msk_src,
+   "a 5+ line reads differently on a 3.6-mean night than a 7.7 one, and the "
+   "reader shouldn't have to infer it")
+
+print()
+print("=" * 72)
 print("Extra innings stop being computed and thrown away")
 print("=" * 72)
 import mlb_sim as _MSX

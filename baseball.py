@@ -1313,6 +1313,7 @@ def _weather_block(winfo):
         "cf_bearing_deg": s.get("cf_bearing_deg"),
         "precip_pct": wx.get("precip_pct"), "summary": wx.get("summary"),
         "run_factor": round(factor, 3),
+        "hr_extra": round(winfo.get("hr_extra") or 1.0, 3),
         "run_pct": round((factor - 1.0) * 100, 1),   # net weather nudge to runs
         "source": wx.get("source"),
     }
@@ -1711,7 +1712,8 @@ def _analyze_slate_uncached(date, season):
             return None
         wx = weather_mod.get_weather(s["lat"], s["lon"], g["start_epoch"] or _time.time())
         factor, wind_comp = weather_mod.run_factor(wx, s["cf_bearing_deg"], s["roof"])
-        return {"stadium": s, "wx": wx, "factor": factor, "wind_out_mph": wind_comp}
+        return {"stadium": s, "wx": wx, "factor": factor, "wind_out_mph": wind_comp,
+                "hr_extra": weather_mod.hr_extra(wx, s["roof"])}
     weather_by_pk = {}
     with ThreadPoolExecutor(max_workers=8) as ex:
         for g, w in zip(schedule, ex.map(fetch_weather, schedule)):
@@ -1960,7 +1962,9 @@ def _analyze_slate_uncached(date, season):
         # HR carry is steeper than contact: singles ride env^0.55, homers ~env^1.0.
         # hr_env is the EXTRA multiplier (env^0.45) applied on top of the hit-scale
         # already in ohf, so a hot/thin-air park lifts homers about twice as much.
-        hr_env = env ** 0.45
+        # Weather hits homers harder than it hits runs (measured 1.3%/F vs
+        # 0.55%/F), so after env takes the run share, HR ladders get the rest.
+        hr_env = env ** 0.45 * (winfo.get("hr_extra") or 1.0)
         # home bats vs away pitching + away defense (and vice versa).
         ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env * def_a
         ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env * def_h

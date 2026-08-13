@@ -2068,13 +2068,13 @@ def build_candidates(g, sim, types=None):
     mean_hk, mean_ak = round(_mean(hk), 1), round(_mean(ak), 1)
     if ks_h and props.get("home_sp_name"):
         for line in K_LINES:
-            add("Ks", f"{props['home_sp_name']} {line}+ Ks",
+            add("Ks", f"{props['home_sp_name']} {line}+ Ks (avg {mean_hk})",
                 lambda i, L=line: hk[i] >= L, f"K:{props['home_sp_name']}", ks_h.get(str(line)),
                 {"t": "ks", "player": props["home_sp_name"], "line": line, "sp_ip": hsp_ip},
                 avg=mean_hk, unit="K")
     if ks_a and props.get("away_sp_name"):
         for line in K_LINES:
-            add("Ks", f"{props['away_sp_name']} {line}+ Ks",
+            add("Ks", f"{props['away_sp_name']} {line}+ Ks (avg {mean_ak})",
                 lambda i, L=line: ak[i] >= L, f"K:{props['away_sp_name']}", ks_a.get(str(line)),
                 {"t": "ks", "player": props["away_sp_name"], "line": line, "sp_ip": asp_ip},
                 avg=mean_ak, unit="K")
