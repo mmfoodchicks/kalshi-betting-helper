@@ -3818,6 +3818,66 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
+print("College teams are rated on the season being played, not last year's")
+print("=" * 72)
+import cfb as _CFB
+
+ck("the prior is light and the cap is loose, as measured",
+   _CFB._PRIOR_K <= 3 and _CFB._MARGIN_CAP >= 38 and 2.0 <= _CFB._HFA_MARGIN <= 4.5,
+   "k=1.5/cap=50/hfa=3.0 backtested 0.579 log-loss vs 0.754 for the prior-only "
+   "model, 71.2% vs 57.6% winners, on 2025 with 2024 agreeing")
+ck("college games tilt harder than pro ones",
+   _CFB._FORM_SD_CFB > _NG2._FORM_SD,
+   "at CFB scoring the NFL tilt left margin SD 14.1 against a measured 18.0")
+_cfb_src = open(_CFB.__file__).read()
+ck("the season sim runs on the learning ratings",
+   "R = inseason_ratings(season)" in _cfb_src,
+   "ratings() is the preseason prior now, not the season-long truth")
+ck("the college engine passes its own tilt",
+   "form_sd=_FORM_SD_CFB" in _cfb_src)
+ck("the schedule keeps the margin it always downloaded",
+   '"margin"' in _cfb_src and '"neutral"' in _cfb_src and '"week": wk' in _cfb_src,
+   "scores were fetched and thrown away, keeping only won/lost -- the solver "
+   "feeds on margins and the backtest on weeks")
+
+# functional: synthetic league, patched data layer, real solver
+_sv_t, _sv_s = _CFB.teams, _CFB.schedule
+def _g(h, a, m, neutral=False, wk=1):
+    return {"home": h, "away": a, "margin": m, "final": True,
+            "neutral": neutral, "week": wk, "home_won": m > 0}
+try:
+    _CFB.teams = lambda season=None: {
+        "A": {"diff_pg": 10.0}, "B": {"diff_pg": 0.0},
+        "C": {"diff_pg": 0.0}, "D": {"diff_pg": -10.0}}
+    _CFB.schedule = lambda season=None: []
+    _pri = _CFB.ratings(2099)
+    ck("with no games played the in-season rating IS the prior",
+       _CFB.inseason_ratings(2099) == _pri,
+       "week 1 must behave exactly as the old model did")
+    # B (rated even) beats everyone by 20; D (rated worst) beats A
+    _CFB.schedule = lambda season=None: [
+        _g("B", "A", 20), _g("B", "C", 20, neutral=True), _g("D", "A", 7),
+        _g("C", "D", 3), _g("A", "C", 10)]
+    _R = _CFB.inseason_ratings(2099)
+    ck("a team that wins big rises past its preseason reputation",
+       _R["B"] > _R["A"] and _R["B"] > _pri["B"] + 5,
+       "B came in rated even with C and beat the field by 20 a game")
+    ck("losses to bad teams pull a big reputation down",
+       _R["A"] < _pri["A"],
+       "A arrived +10 from last season and lost twice")
+    # home field only credited where a crowd exists: flip one game to neutral
+    _CFB.schedule = lambda season=None: [_g("B", "C", 10)]
+    _home = _CFB.inseason_ratings(2099)["B"]
+    _CFB.schedule = lambda season=None: [_g("B", "C", 10, neutral=True)]
+    _neut = _CFB.inseason_ratings(2099)["B"]
+    ck("the same margin is worth more on a neutral field than at home",
+       _neut > _home,
+       "a 10-point home win contains ~3 points of crowd; a neutral one doesn't")
+finally:
+    _CFB.teams, _CFB.schedule = _sv_t, _sv_s
+
+print()
+print("=" * 72)
 print("One number in, one slip out: the optimizer owns the legs and the floor")
 print("=" * 72)
 import combo_engine as _CE2

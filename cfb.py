@@ -4,10 +4,13 @@ season engine.
   DATA   ESPN public JSON: the FBS standings tree (conferences + last-season
          record and point differential) and the week-by-week scoreboard (the
          full upcoming schedule, with completed games locked to their result).
-  MODEL  Each team's strength is last season's point differential per game,
-         regressed hard toward the mean (college rosters churn year to year via
-         recruiting and the transfer portal). A matchup turns two ratings into
-         an expected points-for for each side.
+  MODEL  Preseason, each team's strength is last season's point differential
+         per game regressed hard toward the mean (college rosters churn year to
+         year via recruiting and the transfer portal). In season the ratings
+         LEARN: a Massey-style solver re-rates every team from the margins of
+         the games actually played, with the preseason number fading to a
+         ~1.5-game prior (measured: 57.6% -> 71.2% winner accuracy). A matchup
+         turns two ratings into an expected points-for for each side.
   SIM    Every game is played DRIVE BY DRIVE with the shared football engine
          (nfl_game_sim._play_game): alternating possessions with game script,
          short fields and overtime. Across N simulated seasons we tally each
@@ -31,8 +34,33 @@ _WEB = "https://site.web.api.espn.com/apis/v2/sports/football/college-football"
 
 _REG = 0.58           # regress last season's differential toward the mean
 _BASE_PPG = 27.5      # FBS average points/game
-_HFA_MARGIN = 2.4     # home-field edge in points of margin
 _REG_WEEKS = 15       # regular-season scoreboard weeks to sweep
+
+# In-season rating constants, all fitted by point-in-time backtest on 2025 and
+# validated on 2024 (739/741 FBS-vs-FBS finals; predict each week from only the
+# weeks before it). Ratings solve margin ~= R_home - R_away + HFA over played
+# games with the preseason prior worth _PRIOR_K games of evidence:
+#
+#     prior only (old behavior)   log-loss 0.754   winner accuracy 57.6%
+#     solver, k=1.5, cap 50       log-loss 0.579   winner accuracy 71.2%
+#
+# _PRIOR_K 1.5: college seasons re-rate FAST -- by week 3 last year's number is
+#   nearly irrelevant, and every heavier prior tested worse on both seasons.
+# _MARGIN_CAP 50: blowouts are INFORMATION in college (a 45-point margin says
+#   real things about both rosters); capping at 21 or 28 tested strictly worse.
+#   50 clamps only the genuinely silly scores.
+# _HFA_MARGIN 3.0: fitted jointly with the solver (the raw +5.06 home margin is
+#   strength-confounded -- big programs host the buy games).
+# _SIGMA 18.0: the backtest's residual SD -- the honest predictive spread of a
+#   margin around the rating difference, rating error included.
+_PRIOR_K = 1.5
+_MARGIN_CAP = 50.0
+_HFA_MARGIN = 3.0
+_SIGMA = 18.0
+# The shared football engine's game-control tilt, refit for college: at CFB
+# scoring the NFL default leaves margin SD 14.1 against the measured 18.0 --
+# college games swing harder than pro ones. 0.33 lands ~18.2.
+_FORM_SD_CFB = 0.33
 
 
 def _season():
@@ -76,12 +104,49 @@ def teams(season=None):
 
 def ratings(season=None):
     """{team_id: rating} in margin points/game — last season's differential
-    regressed toward the mean (heavy: college is high-variance year to year)."""
+    regressed toward the mean (heavy: college is high-variance year to year).
+    This is the PRESEASON PRIOR; inseason_ratings() is what the sim runs on."""
     tm = teams(season)
     if not tm:
         return {}
     mean = sum(t["diff_pg"] for t in tm.values()) / len(tm)
     return {tid: (t["diff_pg"] - mean) * (1 - _REG) for tid, t in tm.items()}
+
+
+def inseason_ratings(season=None):
+    """{team_id: rating} that LEARNS from the season being played.
+
+    Massey-style fixed point over this season's completed FBS-vs-FBS games:
+
+        R_i = (k * prior_i + sum over games (adj_margin + R_opp)) / (k + n_i)
+
+    where adj_margin is the (capped) margin from team i's side with home field
+    removed, and the preseason prior counts as _PRIOR_K games of evidence. Week
+    1 this IS the prior (no games yet, old behavior exactly); by November the
+    prior has faded to noise and teams are rated on the season everyone just
+    watched instead of the one that ended a year ago. Constants and the
+    measured improvement are documented at the top of the file."""
+    season = season or _season()
+    prior = ratings(season)
+    if not prior:
+        return {}
+    played = [g for g in schedule(season)
+              if g.get("final") and g.get("margin") is not None
+              and g["home"] in prior and g["away"] in prior]
+    if not played:
+        return prior
+    R = dict(prior)
+    for _ in range(25):
+        acc = {t: 0.0 for t in R}
+        cnt = {t: 0 for t in R}
+        for g in played:
+            h, a = g["home"], g["away"]
+            m = max(-_MARGIN_CAP, min(_MARGIN_CAP, g["margin"])) \
+                - (0.0 if g.get("neutral") else _HFA_MARGIN)
+            acc[h] += m + R[a]; cnt[h] += 1
+            acc[a] += -m + R[h]; cnt[a] += 1
+        R = {t: (_PRIOR_K * prior[t] + acc[t]) / (_PRIOR_K + cnt[t]) for t in R}
+    return R
 
 
 # ---- Schedule (week-by-week scoreboard, results locked) ---------------------
@@ -105,7 +170,7 @@ def schedule(season=None):
         seen = {}
         with _cf.ThreadPoolExecutor(max_workers=8) as ex:
             weeks = list(ex.map(week, range(1, _REG_WEEKS + 1)))
-        for d in weeks:
+        for wk, d in enumerate(weeks, 1):
             if not d:
                 continue
             for e in d.get("events", []):
@@ -125,17 +190,25 @@ def schedule(season=None):
                         away, as_ = tid, sc
                 if not home or not away:
                     continue
-                g = {"id": e.get("id"),
+                g = {"id": e.get("id"), "week": wk,
                      "home": home if home in fbs else None,
                      "away": away if away in fbs else None,
-                     "final": state == "post"}
+                     "final": state == "post",
+                     # Neutral-site flag rides along so home field is only
+                     # credited where a home crowd actually exists (bowls,
+                     # kickoff classics and the whole postseason are neutral).
+                     "neutral": bool(comp.get("neutralSite"))}
                 if g["home"] is None and g["away"] is None:
                     continue                      # both non-FBS: ignore entirely
                 if g["final"] and hs is not None and as_ is not None:
                     g["home_won"] = hs > as_
+                    # The MARGIN was always in the payload and used to be thrown
+                    # away, keeping only won/lost -- the in-season rating solver
+                    # feeds on it.
+                    g["margin"] = hs - as_
                 seen[g["id"]] = g
         return list(seen.values())
-    return racing._cached(("cfb_sched", season), 12 * 3600, build) or []
+    return racing._cached(("cfb_sched", season, 3), 12 * 3600, build) or []
 
 
 # ---- Drive-engine game resolution -------------------------------------------
@@ -157,7 +230,7 @@ def _rates_for(ra, rb, host_edge):
 
 def _play(rh, ra, rng):
     import nfl_game_sim
-    g = nfl_game_sim._play_game(rh, ra, rng)
+    g = nfl_game_sim._play_game(rh, ra, rng, form_sd=_FORM_SD_CFB)
     return g[0]["pts"], g[1]["pts"]
 
 
@@ -206,7 +279,7 @@ def run_season(season=None, n=4000, seed=None, workers=None):
         par["teams"].sort(key=lambda r: r["champ_pct"], reverse=True)
         return par
     tm = teams(season)
-    R = ratings(season)
+    R = inseason_ratings(season)
     sched = schedule(season)
     if not tm or not R or not sched:
         return None
