@@ -1570,10 +1570,15 @@ function optimalNote(m) {
     ? `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Every slip that reaches ${t}× today is priced against us (negative EV after Kalshi's cut). This is the likeliest of them - shown so you can see the board, not a recommendation to bet it.</div>` : "";
   const floors = (m.optimal_floors_tried || []).length > 1
     ? `<div class="small" style="margin-top:4px;color:var(--muted)">Solved from ${m.optimal_floors_tried.map((f) => f.floor_pct + "%").join(", ")} confidence pools and kept the best.</div>` : "";
+  // The ceiling, said out loud: fair payout is 1 ÷ probability, so a slip that
+  // truly pays P× can be at most 1/P likely. Without this line a ~33% chance at
+  // 3× reads as a weak pick when it is actually the arithmetic maximum.
+  const ceilPct = Math.round(1000 / t) / 10;
+  const ceiling = `<div class="small" style="margin-top:4px;color:var(--muted)">A real ${t}× can't be likelier than ~<b>${ceilPct}%</b> (fair odds are 1÷payout) - this slip's ${m.combined_prob_pct}% is ${(m.combined_prob_pct || 0) >= ceilPct - 1 ? "right at that ceiling; beating it takes a mispriced leg (a green edge tag), not a different combo" : "below the ceiling because the priced pool is thin - more lines may close the gap"}.</div>`;
   return `<div class="cnums" style="margin-top:4px">
       <span>⚡ <b>Optimal</b> - likeliest slip paying ≥ <b>${t}×</b> that the price doesn't refute</span>
       <span>It chose <b>${m.n_legs} legs</b> on its own</span>
-    </div>${capped}${evwarn}${floors}`;
+    </div>${ceiling}${capped}${evwarn}${floors}`;
 }
 
 // The same frontier ranked the other two ways. Shown so "the price mattered" is
