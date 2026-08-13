@@ -3818,6 +3818,37 @@ ck("the retention penalty is reserved for below-any-starter usage",
 
 print()
 print("=" * 72)
+print("The crypto tab stops recommending trades its own record says lose")
+print("=" * 72)
+import odds as _OD
+
+ck("recommendation bars are per-timeframe and hourly is OFF",
+   _OD._MIN_EDGE_TF.get("hourly") is None and (_OD._MIN_EDGE_TF.get("15M") or 0) >= 8,
+   "backtest of 429 recommended trades at recorded asks: hourly lost at EVERY "
+   "edge size (-8.4/-9.6/-6.2c per contract by bucket) -- no threshold fixes a "
+   "fair value that gets wronger as it gets more confident; 15M turns positive "
+   "at an 8c bar (+2.7/+5.2c)")
+ck("the timeframe is read off the series, not guessed",
+   _OD._timeframe_of({"series_ticker": "KXBTC15M"}) == "15M"
+   and _OD._timeframe_of({"series_ticker": "KXBTCD"}) == "daily"
+   and _OD._timeframe_of({"series_ticker": "KXBTC"}) == "hourly")
+_oc = [{"close": 100 + 0.01 * i} for i in range(130)]
+_om = {"strike_type": "greater_or_equal", "floor": 60.0, "cap": None,
+       "yes_ask": 50, "no_ask": 60, "series_ticker": "KXBTC"}
+_s1 = _OD.kalshi_signal(101.3, _oc, _om, 40)
+ck("an hourly market with a screaming 'edge' still gets HOLD, and says why",
+   _s1["recommendation"] == "HOLD" and "paused" in _s1["rationale"])
+_s2 = _OD.kalshi_signal(101.3, _oc, dict(_om, series_ticker="KXBTC15M"), 10)
+ck("the same market as a 15M series is recommendable",
+   _s2["recommendation"] == "BUY YES")
+_s3 = _OD.kalshi_signal(101.3, _oc, dict(_om, series_ticker="KXBTC15M", yes_ask=93), 10)
+ck("a 6-cent 15M edge sits below the measured 8-cent bar",
+   _s3["recommendation"] == "HOLD",
+   "the 5-8c bucket LOST 6.4c a contract; the old 5c bar was inside the "
+   "model's own error")
+
+print()
+print("=" * 72)
 print("A starter's strikeouts scatter like a real arm's, not a coin machine's")
 print("=" * 72)
 import mlb_sim as _MSK

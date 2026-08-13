@@ -589,11 +589,36 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
     }
 
 
+# Per-timeframe recommendation bars, set by the recorder's own resolved-trade
+# backtest (429 recommended trades at the recorded asks, fees included):
+#
+#     15M     edge 5-8c: -6.4c/ct   8-12c: +2.7   12c+: +5.2
+#     hourly  edge 5-8c: -8.4c/ct   8-12c: -9.6   12c+: -6.2
+#
+# 15M makes money once the bar is 8 cents -- below that the "edge" is inside
+# the model's own error. Hourly loses at EVERY claimed edge size, and the
+# bigger the claim the wronger the model, so no threshold fixes it: its
+# recommendations are OFF (None) until the hourly fair value itself is
+# reworked. Quotes and fair values still display; the tab just stops telling
+# people to buy with a record of -8c a contract.
+_MIN_EDGE_TF = {"15M": 8.0, "hourly": None, "daily": 8.0}
+
+
+def _timeframe_of(market):
+    s = ((market or {}).get("series_ticker") or (market or {}).get("ticker") or "").split("-")[0]
+    if s.endswith("15M"):
+        return "15M"
+    if s.endswith("D"):
+        return "daily"
+    return "hourly"
+
+
 def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
     """Edge signal for a live Kalshi market (from kalshi.get_open_markets).
 
     Compares the model's fair value to the market's live YES/NO ask prices and
-    recommends whichever side (if any) is underpriced by at least MIN_EDGE_CENTS.
+    recommends whichever side (if any) is underpriced by at least the
+    timeframe's measured bar (_MIN_EDGE_TF; hourly recommendations are off).
     """
     mu, sigma, n = estimate_params(candles)
     prob_yes = max(0.0, min(1.0, probability_yes_for_strike(
@@ -622,11 +647,14 @@ def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
     net_yes = round(edge_yes - taker_fee_cents(yes_ask), 1) if edge_yes is not None else None
     net_no = round(edge_no - taker_fee_cents(no_ask), 1) if edge_no is not None else None
 
+    tf = _timeframe_of(market)
+    min_edge = _MIN_EDGE_TF.get(tf, MIN_EDGE_CENTS)
     best_side, best_edge = None, None
-    if edge_yes is not None and edge_yes >= MIN_EDGE_CENTS:
-        best_side, best_edge = "YES", edge_yes
-    if edge_no is not None and edge_no >= MIN_EDGE_CENTS and (best_edge is None or edge_no > best_edge):
-        best_side, best_edge = "NO", edge_no
+    if min_edge is not None:
+        if edge_yes is not None and edge_yes >= min_edge:
+            best_side, best_edge = "YES", edge_yes
+        if edge_no is not None and edge_no >= min_edge and (best_edge is None or edge_no > best_edge):
+            best_side, best_edge = "NO", edge_no
 
     mom = momentum(candles, window=10)
     if best_side == "YES":
@@ -643,7 +671,11 @@ def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
                     if prob_yes <= (1 - LEAN_PROB) and mom > 0.0008 else None)
     else:
         rec, strength = "HOLD", "flat"
-        rationale = "No side offers a clear edge over the live market price."
+        rationale = ("Hourly recommendations are paused: 283 recorded trades "
+                     "lost 8c a contract at every claimed edge size, so the "
+                     "hourly fair value doesn't earn a buy signal yet."
+                     if min_edge is None else
+                     "No side offers a clear edge over the live market price.")
         dip_note = None
 
     # Near-settlement convergence: in the final minutes the outcome is nearly
