@@ -1321,6 +1321,22 @@ _KFORM_SD = 0.34   # per-start K-rate lognormal sd (see _sim_pitching): real
 _OPP_K_ALPHA = 1.2
 _OPP_K_CLAMP = (0.78, 1.25)
 
+# CATCHER FRAMING. A club's catchers steal (or leak) strikes for their OWN
+# staff: Savant's framing run values span about -2.0 to +1.8 runs per 1000
+# pitches across 2026 catchers, pitch-weighted to the team. Pre-ABS the elite
+# end of that spread was worth ~5% of a staff's strikeout rate; the 2026
+# challenge system claws back the worst calls, so the effect ships HALVED
+# (the same damping philosophy as the umpire module) and clamped at 3%.
+_FRAME_COEF = 0.017          # K-rate multiplier per rv/1000, ABS-damped
+_FRAME_CLAMP = (0.97, 1.03)
+
+
+def _framing_k_mult(rv):
+    if rv is None:
+        return 1.0
+    lo, hi = _FRAME_CLAMP
+    return max(lo, min(hi, 1.0 + _FRAME_COEF * float(rv)))
+
 
 def _rel_kpa(bp_era, rnd):
     """K-per-PA for a fresh relief pitcher sampled around the bullpen's quality
@@ -1620,8 +1636,10 @@ def simulate(g, n=5000, live=None):
             return 1.0
         lo, hi = _OPP_K_CLAMP
         return max(lo, min(hi, (float(pct) / float(lg)) ** _OPP_K_ALPHA))
-    okm_h = _opp_k_mult(at)
-    okm_a = _opp_k_mult(ht)
+    # The staff's K rate carries the OPPOSING lineup's whiff-proneness and its
+    # OWN catcher's framing -- home staff: away bats, home glove.
+    okm_h = _opp_k_mult(at) * _framing_k_mult((ht or {}).get("frame_k"))
+    okm_a = _opp_k_mult(ht) * _framing_k_mult((at or {}).get("frame_k"))
 
     # Gassed relievers sit tonight. Prefer the id list, which names the arms that
     # are actually tired; the count is only a fallback for when identity is

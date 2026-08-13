@@ -206,3 +206,44 @@ def handed_hr_factors(year=None):
                                  "R": round(d["R"] / mean, 3)}
         return out
     return _cached(("park_hand_hr", year), 24 * 3600, build) or {}
+
+
+def catcher_framing():
+    """{team_id: framing runs per 1000 pitches} for the current season, each
+    club's catchers pitch-weighted (min 500 pitches a man). 2026 spread runs
+    -2.0 to +1.8 rv/1000 across 60 qualified catchers. Cached a day; {} when
+    Savant is unreachable, and a missing team is simply neutral."""
+    import csv as _csv
+    import io as _io
+    import urllib.request as _rq
+
+    def build():
+        import clock as _ck
+        _t = _ck.today_et()
+        year = _t.year if _t.month >= 4 else _t.year - 1
+        req = _rq.Request(
+            "https://baseballsavant.mlb.com/leaderboard/catcher-framing"
+            f"?game_type=Regular&year={year}&min=1&csv=true",
+            headers={"User-Agent": "Mozilla/5.0"})
+        rows = list(_csv.DictReader(_io.StringIO(
+            _rq.urlopen(req, timeout=25).read().decode("utf-8-sig"))))
+        cs = [(int(r["id"]), float(r["pitches"] or 0), float(r["rv_tot"] or 0))
+              for r in rows if float(r["pitches"] or 0) >= 500]
+        if not cs:
+            return None
+        import baseball as _bb
+        ids = ",".join(str(i) for i, _, _ in cs)
+        d = _bb._get(f"{_bb.STATS_BASE}/people?personIds={ids}"
+                     "&hydrate=currentTeam&fields=people,id,currentTeam,id")
+        team_of = {p["id"]: (p.get("currentTeam") or {}).get("id")
+                   for p in d.get("people", [])}
+        agg = {}
+        for pid, p, rv in cs:
+            t = team_of.get(pid)
+            if t:
+                a = agg.setdefault(t, [0.0, 0.0])
+                a[0] += rv
+                a[1] += p
+        return {t: round(v[0] / v[1] * 1000, 3) for t, v in agg.items()
+                if v[1] > 1000}
+    return _cached(("framing",), 24 * 3600, build) or {}

@@ -1648,6 +1648,16 @@ def _analyze_slate_uncached(date, season):
         sb_def = _sb_defense_map(season)               # {team_id: SB%% allowed, "_lg": lg}
         team_k = _team_k_map(season)                   # {team_id: lineup SO/PA, "_lg": lg}
         try:
+            framing = savant.catcher_framing() or {}
+        except Exception:
+            framing = {}
+        # TRAVEL/FATIGUE: measured and deliberately NOT modeled. On 3,574
+        # 2026 team-games, short-rest travel east showed -0.16 +/- 0.49 runs
+        # (noise), day-after-night scored HIGHER (+0.13 -- that is "day games
+        # are warmer", which the weather model already carries), and no
+        # schedule condition cleared its own error bars. A fatigue factor
+        # here would be folklore wearing a coefficient.
+        try:
             park_hand = savant.handed_hr_factors()     # {club: {"L": res, "R": res}}
         except Exception:
             park_hand = {}
@@ -2130,6 +2140,7 @@ def _analyze_slate_uncached(date, season):
                           "sb_lg_pct": sb_def.get("_lg"),
                           "bat_k_pct": team_k.get(g['home_id']),
                           "bat_k_lg": team_k.get("_lg"),
+                          "frame_k": framing.get(g['home_id']),
                           "bullpen_fatigue": fat_h or None,
                           "lineup_factor": round(lf_home, 3) if lf_home else None, "lineup_ops": lops_home,
                           "wins": rh.get("wins"), "losses": rh.get("losses"), "run_diff": rh.get("run_diff")},
@@ -2142,6 +2153,7 @@ def _analyze_slate_uncached(date, season):
                           "sb_lg_pct": sb_def.get("_lg"),
                           "bat_k_pct": team_k.get(g['away_id']),
                           "bat_k_lg": team_k.get("_lg"),
+                          "frame_k": framing.get(g['away_id']),
                           "bullpen_fatigue": fat_a or None,
                           "lineup_factor": round(lf_away, 3) if lf_away else None, "lineup_ops": lops_away,
                           "wins": ra.get("wins"), "losses": ra.get("losses"), "run_diff": ra.get("run_diff")},

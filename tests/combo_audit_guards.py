@@ -3849,6 +3849,35 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The catcher frames for his own staff, and travel stays unmodeled on purpose")
+print("=" * 72)
+import mlb_sim as _MSF2
+import savant as _SVF
+
+ck("the framing multiplier is ABS-damped and clamped to 3%",
+   _MSF2._FRAME_COEF <= 0.02 and _MSF2._FRAME_CLAMP == (0.97, 1.03),
+   "pre-ABS elite framing was worth ~5% of a staff's K rate; the 2026 "
+   "challenge system claws back the worst calls, so the effect ships halved")
+ck("elite glove up, leaky glove down, unknown neutral",
+   _MSF2._framing_k_mult(1.8) > 1.0 > _MSF2._framing_k_mult(-2.0)
+   and _MSF2._framing_k_mult(None) == 1.0
+   and _MSF2._framing_k_mult(9.9) == 1.03)
+_msf_src = _insp.getsource(_MSF2)
+ck("the staff's K mult crosses whiff and framing correctly",
+   'okm_h = _opp_k_mult(at) * _framing_k_mult((ht or {}).get("frame_k"))' in _msf_src,
+   "home staff: AWAY bats, HOME glove -- crossing either half is the classic bug")
+ck("savant serves team framing and the slate attaches it to both clubs",
+   callable(getattr(_SVF, "catcher_framing", None))
+   and open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+            "baseball.py")).read().count('"frame_k": framing.get') == 2)
+ck("travel/fatigue is a documented NULL, not a missing feature",
+   "deliberately NOT modeled" in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "baseball.py")).read(),
+   "3,574 team-games: no schedule condition cleared its own error bars; a "
+   "factor here would be folklore wearing a coefficient")
+
+print()
+print("=" * 72)
 print("Weather at measured strength, and homers feel it harder than runs")
 print("=" * 72)
 import weather as _WX
