@@ -5578,3 +5578,40 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
+
+
+// ---- DFS CSV: file picker + drag-and-drop -----------------------------------
+// The salaries file used to require open-the-file-copy-everything-paste; on a
+// phone that is misery. The button routes through the OS file picker (Files /
+// Drive on Android, the Files app on iOS) and drop works on desktop; both land
+// the text in the SAME textarea the paste flow reads, so nothing downstream
+// changes. Reading client-side via FileReader -- the file never uploads
+// anywhere, exactly like pasting.
+(function () {
+  const ta = document.getElementById("dfsCsv");
+  const fi = document.getElementById("dfsFile");
+  const nameEl = document.getElementById("dfsFileName");
+  if (!ta) return;
+  const load = (file) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      ta.value = String(r.result || "");
+      if (nameEl) nameEl.textContent = `\u2713 ${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB, ${ta.value.split("\n").filter(Boolean).length - 1} players)`;
+    };
+    r.onerror = () => { if (nameEl) nameEl.textContent = "Couldn't read that file - try paste instead."; };
+    r.readAsText(file);
+  };
+  if (fi) fi.addEventListener("change", () => { load(fi.files && fi.files[0]); fi.value = ""; });
+  ["dragenter", "dragover"].forEach((ev) => ta.addEventListener(ev, (e) => {
+    e.preventDefault();
+    ta.style.borderColor = "#7aa2ff";
+  }));
+  ta.addEventListener("dragleave", () => { ta.style.borderColor = ""; });
+  ta.addEventListener("drop", (e) => {
+    e.preventDefault();
+    ta.style.borderColor = "";
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) load(f);
+  });
+})();

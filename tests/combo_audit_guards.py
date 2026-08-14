@@ -3849,6 +3849,23 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The salaries CSV is a tap or a drop, not a copy-paste ritual")
+print("=" * 72)
+_js_dfs = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "static", "app.js")).read()
+_html_dfs = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                               "templates", "index.html")).read()
+ck("the file button exists and accepts CSVs",
+   'id="dfsFile" type="file"' in _html_dfs and 'accept=".csv' in _html_dfs)
+ck("picked and dropped files land in the SAME textarea the paste flow reads",
+   "FileReader" in _js_dfs and 'ta.addEventListener("drop"' in _js_dfs
+   and "ta.value = String(r.result" in _js_dfs,
+   "one input path downstream; the file is read client-side and never uploads")
+ck("a failed read says so instead of silently doing nothing",
+   "Couldn't read that file" in _js_dfs)
+
+print()
+print("=" * 72)
 print("The umpire's zone reaches the K ladders, and both of them at once")
 print("=" * 72)
 _bb_ump = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",

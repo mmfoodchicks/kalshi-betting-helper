@@ -555,7 +555,13 @@
           <label class="small" title="How many opponent lineups to simulate as a SAMPLE to gauge your lineup's strength. This is then scaled to your real entry count above - it is NOT the contest size. Bigger sample = steadier estimate, slower.">sample <input id="dfsField" type="number" value="600" min="100" max="1200" style="width:64px"/></label>
         </div>
         <p id="dfsMlbHint" class="sub hidden" style="margin:6px 0 0;font-size:0.78rem">💡 <b>entries</b> = your contest's real size (11,437, or 100k+ for a milly-maker) - win% &amp; ROI scale to this · <b>sample</b> = opponents simulated to gauge lineup strength (not the contest size) · <b>1st $ / pool $</b> = leave 0 to auto-estimate · <b>unique</b> = how many players each lineup must differ by (only with 2+ lineups).</p>
-        <p class="sub" style="margin:6px 0 4px">Paste the <b>DKSalaries.csv</b> from your contest. Lineups are built under the cap with projected <b>ownership + leverage</b>, and can be <b>simulated against a field</b> for win% &amp; ROI. <span id="dfsLock"></span></p>
+        <div style="margin:6px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label class="track-mini" style="cursor:pointer;display:inline-block">📁 Load CSV file
+            <input id="dfsFile" type="file" accept=".csv,text/csv,text/plain" style="display:none"/>
+          </label>
+          <span id="dfsFileName" class="small" style="color:var(--muted)"></span>
+        </div>
+        <p class="sub" style="margin:2px 0 4px">Tap <b>Load CSV file</b> (or drag the file onto the box below) - or paste the <b>DKSalaries.csv</b> from your contest. Lineups are built under the cap with projected <b>ownership + leverage</b>, and can be <b>simulated against a field</b> for win% &amp; ROI. <span id="dfsLock"></span></p>
         <textarea id="dfsCsv" rows="6" placeholder="Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame&#10;..." style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:monospace;font-size:0.8rem"></textarea>
         <div id="dfsGridBox" class="hidden" style="margin-top:8px">
           <p class="sub" style="margin:0 0 4px;font-size:0.78rem">🏁 <b>Starting grid</b> (optional) - the results feed lags a round and shows <i>qualifying</i> order, not the penalty-adjusted <i>starting</i> grid. Paste the real grid here to override it (one driver per line; "1st Antonelli", "P4 Russell", or just names in order). This is what place-differential + the grid-conditioned sim run on.</p>
