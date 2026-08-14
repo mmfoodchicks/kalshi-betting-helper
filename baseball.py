@@ -1831,6 +1831,17 @@ def _analyze_slate_uncached(date, season):
             umpf = max(0.90, min(1.10, 1.0 - umpr * ump_bias))
             er_home *= umpf
             er_away *= umpf
+        # The same zone reaches the STRIKEOUT ladders directly. game_profile
+        # already carries k_effect -- whole-game Ks (both staffs) per the slope
+        # MEASURED when the tendency table was built -- and only the run side
+        # was being consumed. Half the effect to each staff over a ~8.5 K/game
+        # baseline, clamped small; one ump serves both ladders, so the two
+        # starters' K lines move TOGETHER (a K-over stack under a tight zone
+        # is doubly wrong, and now prices that way).
+        ump_k_mult = 1.0
+        _ke = (ump_prof or {}).get("k_effect")
+        if _ke:
+            ump_k_mult = max(0.95, min(1.05, 1.0 + (float(_ke) / 2.0) / 8.5))
 
         p_home = er_home ** PYTH_EXP / (er_home ** PYTH_EXP + er_away ** PYTH_EXP)
         p_home = max(0.04, min(0.96, p_home))
@@ -2127,6 +2138,7 @@ def _analyze_slate_uncached(date, season):
             "exp_total": exp_total, "park_factor": park,
             "weather": _weather_block(winfo),
             "umpire": ump_prof,
+            "ump_k_mult": round(ump_k_mult, 4),
             "home_sp": sp_block(g["home_sp_name"], h_sp, h_hand),
             "away_sp": sp_block(g["away_sp_name"], a_sp, a_hand),
             "home_sp_ks": sp_ks(h_sp, g.get("home_sp_id"), ks_home),

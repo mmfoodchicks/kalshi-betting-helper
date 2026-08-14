@@ -3849,6 +3849,28 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The umpire's zone reaches the K ladders, and both of them at once")
+print("=" * 72)
+_bb_ump = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "baseball.py")).read()
+ck("the measured k_effect stops being computed-and-ignored",
+   'ump_prof or {}).get("k_effect")' in _bb_ump
+   and "/ 2.0) / 8.5" in _bb_ump,
+   "game_profile carried whole-game Ks per unit of zone bias off a measured "
+   "slope; only the run side was consumed. Half to each staff over the ~8.5 "
+   "K/game baseline")
+ck("and it is clamped small",
+   "max(0.95, min(1.05, 1.0 + (float(_ke)" in _bb_ump)
+_msu_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                              "mlb_sim.py")).read()
+ck("one ump multiplies BOTH staffs' K ladders",
+   _msu_src.count("* _ukm") == 2
+   and '_ukm = float(g.get("ump_k_mult") or 1.0)' in _msu_src,
+   "the correlation matters as much as the level: a K-over stack under a "
+   "tight zone is doubly wrong, and now prices that way")
+
+print()
+print("=" * 72)
 print("The catcher frames for his own staff, and travel stays unmodeled on purpose")
 print("=" * 72)
 import mlb_sim as _MSF2

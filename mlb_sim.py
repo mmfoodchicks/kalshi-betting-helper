@@ -1638,8 +1638,11 @@ def simulate(g, n=5000, live=None):
         return max(lo, min(hi, (float(pct) / float(lg)) ** _OPP_K_ALPHA))
     # The staff's K rate carries the OPPOSING lineup's whiff-proneness and its
     # OWN catcher's framing -- home staff: away bats, home glove.
-    okm_h = _opp_k_mult(at) * _framing_k_mult((ht or {}).get("frame_k"))
-    okm_a = _opp_k_mult(ht) * _framing_k_mult((at or {}).get("frame_k"))
+    # One plate umpire serves both staffs, so his zone multiplies BOTH K
+    # ladders -- the correlation matters as much as the level.
+    _ukm = float(g.get("ump_k_mult") or 1.0)
+    okm_h = _opp_k_mult(at) * _framing_k_mult((ht or {}).get("frame_k")) * _ukm
+    okm_a = _opp_k_mult(ht) * _framing_k_mult((at or {}).get("frame_k")) * _ukm
 
     # Gassed relievers sit tonight. Prefer the id list, which names the arms that
     # are actually tired; the count is only a fallback for when identity is
