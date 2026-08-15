@@ -8,7 +8,24 @@ certificate; they differ in cost, effort, and how "your own server" it feels.
 |------|------|--------|-----------|-----------------|--------------------|
 | **Render (free)** | $0 | clicks | ❌ sleeps when idle | ❌ resets on deploy | ❌ no disk |
 | **Render (Starter)** | ~$7/mo | clicks | ✅ | ✅ (1 GB disk) | ✅ ~1 worker, overnight |
+| **Render (Standard)** | ~$25/mo | clicks | ✅ | ✅ (1 GB disk) | ✅ more headroom, 2 GB |
 | **VPS + Docker + Caddy** | ~$5–12/mo | some CLI | ✅ | ✅ (volume) | ✅ faster, 2–4 workers |
+
+All paid plans are a FLAT monthly fee, not metered by traffic or uptime: an
+always-on service that is busy costs exactly what an idle one costs. Memory,
+not billing, is what limits how much the box can do at once.
+
+### Never run one web worker
+
+`WEB_CONCURRENCY` must be ≥ 2 on any always-on deploy. When a request outlives
+gunicorn's `--timeout` the arbiter kills the worker serving it; with a single
+worker there is then nothing alive to answer `/healthz`, so the platform's probe
+times out and it restarts an instance that was only ever busy — surfacing as
+"HTTP health check failed (timed out after 5 seconds)". Measured on one CPU with
+every thread tied up in long builds: **1 worker failed 7/7 probes, 2 workers
+failed 0/89.** The recorders, the prediction grader and the nightly sims stay
+singular regardless, claimed by one worker through a file lock
+(`app._own_background_jobs`), so extra workers duplicate no background work.
 
 ### Sizing the box — measured
 

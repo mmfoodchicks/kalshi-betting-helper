@@ -4730,6 +4730,39 @@ ck("it can neither race a request's build nor the nightly season sim",
 ck("and it is switchable off without a code change",
    'os.environ.get("VIGIL_WARM_WINDOW")' in _appsrc)
 
+# The health-check restarts. When a request outlives gunicorn's --timeout the
+# arbiter kills its worker; with ONE worker nothing is left to answer /healthz,
+# the probe times out at 5s and the platform restarts a box that was only busy.
+# Measured on one CPU, every thread tied up in long builds: 1 worker failed 7/7
+# probes, 2 workers failed 0/89.
+_root = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..")
+_dockerfile = open(_os.path.join(_root, "Dockerfile")).read()
+_procfile = open(_os.path.join(_root, "Procfile")).read()
+_renderyml = open(_os.path.join(_root, "render.yaml")).read()
+ck("the server never runs a single web worker",
+   "-w 1 " not in _dockerfile and "-w 1 " not in _procfile
+   and "WEB_CONCURRENCY" in _dockerfile and "WEB_CONCURRENCY" in _procfile,
+   "one worker means one killed request takes the health check down with it")
+ck("the deployed blueprint asks for more than one too",
+   'key: WEB_CONCURRENCY' in _renderyml
+   and int(_renderyml.split("key: WEB_CONCURRENCY")[1].split('value: "')[1].split('"')[0]) >= 2)
+ck("workers recycle, so a slate build's fragmented arenas come back",
+   "--max-requests" in _dockerfile and "--max-requests-jitter" in _procfile,
+   "a worker that has simulated a slate plateaus ~140 MB fatter and only grows")
+# Extra workers must not multiply the background work: N graders double-writing
+# the prediction log would corrupt the track record the calibrator is fitted on.
+ck("exactly one worker owns the recorders, the grader and the sims",
+   "_BG_OWNER = _own_background_jobs()" in _appsrc
+   and "if not _BG_OWNER:" in _appsrc
+   and "fcntl.LOCK_EX | fcntl.LOCK_NB" in _appsrc,
+   "N workers each starting the recorders is why the server ran one worker")
+ck("the owner lock is held for the process lifetime, not released on return",
+   "_BG_LOCK_FD = fd" in _appsrc,
+   "a closed descriptor drops the flock and a second worker claims the jobs too")
+ck("and the health probe still never triggers the bootstrap",
+   "if request.path in _PROBE_PATHS:" in _appsrc,
+   "hanging the recorders off the first request means the probe pays for them")
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

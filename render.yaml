@@ -1,13 +1,11 @@
 # Render blueprint. Deploy: push to GitHub, then New → Blueprint on render.com.
-# Defaults to the FREE plan (zero cost) — note: free services sleep when idle
-# (the background recorders pause) and have no persistent disk (the SQLite data
-# resets on each deploy/restart). For 24/7 recording + persistence, switch to
-# the Starter plan and uncomment the `disk:` block (see DEPLOY.md).
+# Free sleeps when idle and has no disk; Starter and above are always-on. This
+# tracks the live service, which runs on Standard (2 GB) -- see DEPLOY.md.
 services:
   - type: web
     name: vigil
     runtime: docker
-    plan: starter
+    plan: standard
     # Track the branch our work is pushed to, so every push auto-deploys and the
     # live site updates with nothing to do but refresh. Change this (or the
     # dashboard's Settings → Branch) if the work ever moves to main.
@@ -21,6 +19,16 @@ services:
         sync: false                  # set your own in the dashboard to require login
       - key: TIERS_ENFORCED
         value: "0"
+      # MORE THAN ONE WEB WORKER, and this is the setting that stops the
+      # "HTTP health check failed (timed out after 5 seconds)" restarts.
+      # When a request outlives gunicorn's --timeout the arbiter KILLS its
+      # worker; with a single worker there is then nothing alive to answer
+      # /healthz, the probe times out, and the platform restarts an instance
+      # that was only ever busy. Measured on one CPU with every thread tied up
+      # in long builds: 1 worker failed 7/7 probes, 2 workers failed 0/89.
+      # Background jobs stay singular via a file lock (app._own_background_jobs).
+      - key: WEB_CONCURRENCY
+        value: "3"
       # With the disk below, point ALL THREE stores at it. Leaving any one at its
       # in-image default means it is thrown away on every restart and redeploy --
       # and the deep-sim run history is the one thing that cannot be recomputed.
@@ -38,8 +46,10 @@ services:
     # SIZING, MEASURED as peak PSS (what a cgroup limit enforces; summed RSS
     # double-counts the pages forked workers share and reads several times
     # higher): app idle 35 MB, +336 MB with one sim worker, +613 MB with two.
-    # So Starter's 512 MB is enough at ONE worker, and a 4,000-season run takes
-    # about an hour -- fine for a job that runs at midnight.
-    # The app sizes its own pool from the cgroup CPU and memory limits, so it
-    # will pick 1 worker here rather than following the host core count off a
-    # cliff; VIGIL_SIM_WORKERS overrides. See DEPLOY.md.
+    # A web worker that has simulated a slate plateaus near 175 MB (fragmented
+    # arenas no collection returns), which --max-requests recycling hands back.
+    # Standard's 2 GB therefore carries 3 web workers (~525 MB worst case) plus
+    # a deep-sim run, with room to spare; on Starter's 512 MB set
+    # WEB_CONCURRENCY back to 1-2.
+    # The app sizes its SIM pool from the cgroup CPU and memory limits rather
+    # than the host core count; VIGIL_SIM_WORKERS overrides. See DEPLOY.md.

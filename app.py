@@ -54,12 +54,60 @@ def _asset_version():
 app.json.sort_keys = False
 store.init_db()
 
+
+# ---- one worker owns the background work -----------------------------------
+# The server ran a SINGLE gunicorn worker specifically so the recorders would
+# start once. That is what made the platform's health check fail: /healthz is a
+# static 200, but a static 200 still needs a thread, and Python's GIL means any
+# CPU-bound work anywhere in the process -- a DFS optimize at 2,500 restarts, a
+# contest sim, a combo build -- starves every other thread in it. The probe
+# times out at five seconds, the platform calls the instance dead and restarts
+# it. Nothing was actually broken; the box was just busy doing what you asked.
+#
+# The fix is more than one worker PROCESS, so a health check lands on a worker
+# that isn't holding a GIL. That reintroduces the original problem -- N workers
+# would each start the recorders and each grade the prediction log -- so the
+# background jobs are claimed by exactly one of them via an exclusive file lock.
+# Whoever wins holds the descriptor for the life of the process; the rest serve
+# requests only. If the owner dies, the kernel drops the lock and the next
+# worker to boot takes it over.
+_BG_LOCK_FD = None
+
+
+def _own_background_jobs():
+    """True in exactly one worker process. Falls back to True where flock is
+    unavailable (a single-process dev run has nothing to contend with)."""
+    global _BG_LOCK_FD
+    if _BG_LOCK_FD is not None:
+        return True
+    try:
+        import fcntl
+        path = os.path.join(os.environ.get("VIGIL_RUN_DIR") or "/tmp",
+                            "vigil-background.lock")
+        fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            os.close(fd)
+            return False              # another worker already owns them
+        os.write(fd, str(os.getpid()).encode())
+        _BG_LOCK_FD = fd              # held for the process lifetime, never closed
+        return True
+    except Exception:
+        return True
+
 # Optional: auto-pull the branch + restart when new commits land, so a push goes
 # live with no manual step (set VIGIL_SELFUPDATE=1). No-ops on Render / anywhere
 # without a git checkout — that path uses the platform's own autoDeploy.
+# These two run at import time, which means once per WORKER -- so both are
+# claimed by the background owner. A second self-updater would race the first
+# into a git reset, and a second grader would double-write the prediction log.
+_BG_OWNER = _own_background_jobs()
+
 try:
     import selfupdate
-    selfupdate.start()
+    if _BG_OWNER:
+        selfupdate.start()
 except Exception:
     pass
 
@@ -68,7 +116,8 @@ except Exception:
 # history the calibrator needs. Background, cheap (boards are cached).
 try:
     import predlog
-    predlog.start()
+    if _BG_OWNER:
+        predlog.start()
 except Exception:
     pass
 
@@ -164,6 +213,8 @@ def _ensure_recorder():
         if _rec_started:
             return
         _rec_started = True
+        if not _BG_OWNER:
+            return          # a sibling worker owns the recorders and the sims
         try:
             import recorder
             recorder.start_background()

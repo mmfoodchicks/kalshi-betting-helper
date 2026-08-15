@@ -26,5 +26,19 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','8080')+'/healthz')" || exit 1
 
-# Single worker (so the background recorders run once), threads for concurrency.
-CMD ["sh", "-c", "gunicorn -w 1 --threads 8 --timeout 120 -b 0.0.0.0:$PORT app:app"]
+# TWO worker processes, not one. A single worker meant the platform's health
+# check shared a GIL with whatever the app was computing: a DFS optimize or a
+# contest sim pegs the CPU in pure Python, the static-200 probe can't get a
+# slice, it times out at five seconds and the instance is restarted as "failed"
+# while it was merely busy. Separate processes don't share a GIL, so the probe
+# always lands somewhere responsive. Background jobs are claimed by one worker
+# via a file lock (see app._own_background_jobs), so they still run exactly once.
+#
+# --max-requests recycles a worker periodically: simulating a slate leaves the
+# process permanently ~140 MB fatter (fragmented pymalloc arenas that no
+# collection returns), so a long-lived worker only ever grows. Recycling hands
+# that memory back. The jitter keeps the two workers from recycling together.
+ENV WEB_CONCURRENCY=3
+CMD ["sh", "-c", "gunicorn -w ${WEB_CONCURRENCY:-2} --threads 8 --timeout 120 \
+     --graceful-timeout 30 --max-requests 600 --max-requests-jitter 120 \
+     -b 0.0.0.0:$PORT app:app"]
