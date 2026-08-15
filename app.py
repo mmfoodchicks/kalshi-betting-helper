@@ -1789,6 +1789,12 @@ def api_nfl_slate():
         return jsonify({"error": f"nfl slate failed: {e}"}), 502
     if not data:
         return jsonify({"error": "simulating the slate in the background - retry shortly"}), 502
+    # A week that genuinely has no games is an ANSWER, not something to retry
+    # forever. Preseason week 1 has a single Hall of Fame game that is played and
+    # gone by mid-August, which is exactly when someone opens the tab.
+    if data.get("empty"):
+        return jsonify({"error": data.get("note") or "No games for this week.",
+                        "week": week, "preseason": bool(pre), "games": []})
     return jsonify(data)
 
 

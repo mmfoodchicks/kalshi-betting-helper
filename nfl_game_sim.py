@@ -757,8 +757,30 @@ def board(week=1, preseason=False):
         def _bg():
             try:
                 val = _build_board(season, week, preseason=preseason)
-                if val is not None:
+                if val is None:
+                    # A week with no games (or a feed that came back empty) used
+                    # to cache NOTHING, so board() returned None forever and the
+                    # route answered "simulating in the background - retry
+                    # shortly" for all eternity. Every poll also started ANOTHER
+                    # build, so an empty week quietly turned into a thundering
+                    # herd of rebuilds. Cache the emptiness, briefly, and say so.
+                    val = {"season": season, "week": week, "preseason": bool(preseason),
+                           "games": [], "n_games": 0, "empty": True,
+                           "note": ("No games found for this week. Preseason runs "
+                                    "weeks 1-4 in August; the regular season starts "
+                                    "in September.")}
+                    _cache[key] = (_time.time() - 1500, val)   # short TTL: retry in ~5m
+                else:
                     _cache[key] = (_time.time(), val)
+            except Exception as e:
+                # An exception used to vanish into the thread, leaving the board
+                # None with nothing anywhere saying why.
+                print(f"[nfl] board build failed (season={season} week={week} "
+                      f"pre={preseason}): {e!r}", flush=True)
+                _cache[key] = (_time.time() - 1680, {
+                    "season": season, "week": week, "preseason": bool(preseason),
+                    "games": [], "n_games": 0, "empty": True, "error": str(e),
+                    "note": "The slate could not be built; retrying shortly."})
             finally:
                 _inflight.discard(key)
         _threading.Thread(target=_bg, daemon=True).start()

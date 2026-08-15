@@ -4774,6 +4774,29 @@ ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
 print()
 print("=" * 72)
+print("An empty NFL week answers; it does not poll forever")
+print("=" * 72)
+import nfl_game_sim as _NGS
+_nb = _insp.getsource(_NGS.board)
+ck("a week with no games caches its emptiness instead of returning None",
+   '"empty": True' in _nb and "_cache[key] = (_time.time() - 1500" in _nb,
+   "returning None cached nothing, so board() answered None forever AND every "
+   "poll started another build -- an empty week became a herd of rebuilds")
+ck("a failed build says why instead of vanishing into the thread",
+   "except Exception as e:" in _nb and "[nfl] board build failed" in _nb,
+   "the old _bg had try/finally and no except, so the board stayed None with "
+   "nothing anywhere explaining it")
+ck("the route treats an empty week as an answer, not a 502 to retry",
+   'if data.get("empty")' in _appsrc,
+   "preseason week 1 is a single Hall of Fame game, played and gone by "
+   "mid-August -- exactly when someone opens the tab")
+ck("current_week knows preseason weeks differ from regular ones",
+   "seasontype=1 if preseason else 2" in _insp.getsource(_NGS.current_week)
+   and "nfl_game_sim.current_week(pre)" in _appsrc,
+   "on 15 Aug the live games are preseason WEEK 2; week 1 finished on the 7th")
+
+print()
+print("=" * 72)
 print("An NFL defense is scored by the game it is in")
 print("=" * 72)
 import nfl_dfs_sim as _NDS2
