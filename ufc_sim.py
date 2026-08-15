@@ -17,15 +17,19 @@ import ufc_data
 
 _LG_DEF = 0.55             # league-average striking defence (1 - opp accuracy)
 _SCALE = 3.6               # dominance -> win-prob logistic scale
-# DraftKings MMA scoring (Classic): sig strikes +0.2, control time +0.03/sec,
-# takedown +5, reversal/sweep +5, knockdown +10, advance +3. Fight conclusion:
-# R1 win +90, R2 +70, R3 +45, R4/R5 +40, decision +30, quick win (<60s) +25.
-_SS_PTS = 0.2
-_CTRL_PTS = 0.03           # per second of control
-_ADV_PTS = 3
-_WIN_PTS = {1: 90, 2: 70, 3: 45, 4: 40, 5: 40}
-_DEC_PTS = 30
-_QUICK_PTS = 25
+# DraftKings MMA scoring, read from the one shared table (dk_scoring.UFC) rather
+# than re-typed here. Reversals/sweeps used to pay 3 against DK's 5, which
+# under-projected every grappler; keeping one copy is how that stops recurring.
+import dk_scoring as _dks
+
+_SS_PTS = _dks.UFC["strike"]
+_CTRL_PTS = _dks.UFC["control_sec"]        # per second of control
+_TD_PTS = _dks.UFC["takedown"]
+_KD_PTS = _dks.UFC["knockdown"]
+_ADV_PTS = _dks.UFC["reversal"]
+_WIN_PTS = _dks.UFC["win_round"]
+_DEC_PTS = _dks.UFC["win_decision"]
+_QUICK_PTS = _dks.UFC["quick_win"]
 
 
 def _landed_pm(att, opp):
@@ -132,7 +136,7 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
             ctrl = sum(rng.uniform(30, 110) for _ in range(td))
             ctrl = min(ctrl, end_min * 60 * 0.7)
             adv = _pois(0.6 * td, rng)
-            pts = (_SS_PTS * ss + 5 * td + 10 * kd
+            pts = (_SS_PTS * ss + _TD_PTS * td + _KD_PTS * kd
                    + _CTRL_PTS * ctrl + _ADV_PTS * adv)
             if f is win:
                 pts += _WIN_PTS[rd] if (finish and method != "dec") else _DEC_PTS

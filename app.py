@@ -173,6 +173,16 @@ def _slow_finish(resp):
     return resp
 
 
+@app.route("/api/dfs/scoring")
+def _api_dfs_scoring():
+    """The DraftKings scoring card for a sport, rendered from the SAME constants
+    the simulator scores with -- so what the card says and what the projection
+    was built from cannot disagree."""
+    import dk_scoring
+    sport = (request.args.get("sport") or "ufc").lower()
+    return jsonify({"sport": sport, "groups": dk_scoring.card(sport)})
+
+
 @app.route("/api/diag/slow")
 def _api_diag_slow():
     """The slowest requests this worker has served, worst first."""

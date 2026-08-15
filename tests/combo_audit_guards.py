@@ -4774,6 +4774,102 @@ ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
 print()
 print("=" * 72)
+print("Every DFS sim scores with DraftKings' real table")
+print("=" * 72)
+import dk_scoring as _DKS
+import ufc_sim as _UFCS
+import nfl_dfs_sim as _NDS
+import mlb_dfs as _MDFS
+import racing_sim as _RS
+
+# UFC: reversals/sweeps paid 3 against DK's 5 -- every grappler was short.
+ck("UFC pays reversals/sweeps what DK pays",
+   _DKS.UFC["reversal"] == 5 and _UFCS._ADV_PTS == 5,
+   "a takedown and a reversal are both +5; ours paid 3 for the reversal")
+ck("and the rest of the UFC card matches the published table",
+   (_DKS.UFC["strike"], _DKS.UFC["control_sec"], _DKS.UFC["takedown"],
+    _DKS.UFC["knockdown"], _DKS.UFC["win_decision"], _DKS.UFC["quick_win"])
+   == (0.2, 0.03, 5, 10, 30, 25)
+   and _DKS.UFC["win_round"] == {1: 90, 2: 70, 3: 45, 4: 40, 5: 40})
+ck("the UFC sim reads those constants rather than its own copies",
+   _UFCS._TD_PTS == _DKS.UFC["takedown"] and _UFCS._KD_PTS == _DKS.UFC["knockdown"]
+   and "_TD_PTS * td" in _insp.getsource(_UFCS.simulate_bout),
+   "hardcoded 5s and 10s in the scoring line are how a table drifts")
+
+# NFL: the two scoring paths disagreed with each other AND with DK.
+ck("NFL turnovers cost 1, not 2 -- and both scoring paths agree now",
+   _DKS.NFL_OFF["int"] == -1 and _DKS.NFL_OFF["fumble_lost"] == -1
+   and _NDS._DK["int"] == -1 and _NDS._DK["fum"] == -1,
+   "the projection on screen used -1 while the simulation the lineup was built "
+   "from used -2")
+_qb = _NDS._ppr(310, 2, 1, 15, 0, 0, 0, 0, 0)
+_qb_under = _NDS._ppr(290, 2, 1, 15, 0, 0, 0, 0, 0)
+ck("the 300-yard passing bonus exists and fires only over the line",
+   abs((_qb - _qb_under) - (0.8 + 3)) < 1e-6,
+   f"310yd {_qb:.2f} vs 290yd {_qb_under:.2f} -- the +3 was missing entirely")
+_rb = _NDS._ppr(0, 0, 0, 105, 0, 0, 0, 0, 0)
+_wr = _NDS._ppr(0, 0, 0, 0, 0, 5, 101, 0, 0)
+ck("...as do the 100-yard rushing and receiving bonuses",
+   abs(_rb - (10.5 + 3)) < 1e-6 and abs(_wr - (5 + 10.1 + 3)) < 1e-6)
+ck("the yardage bonuses are applied per SAMPLE, not to the mean",
+   "a mean cannot say how often" in _insp.getsource(_NDS).split("_DK = {")[0][-700:]
+   or "per SAMPLE" in _insp.getsource(_NDS._ppr),
+   "an 85-yard-average back clears 100 sometimes; the mean never does")
+
+# NASCAR + F1: both finish tables were invented.
+ck("the NASCAR finish table has DK's steps at 11th, 21st and 31st",
+   (_DKS.nascar_finish(10), _DKS.nascar_finish(11)) == (34.0, 32.0)
+   and (_DKS.nascar_finish(20), _DKS.nascar_finish(21)) == (23.0, 21.0)
+   and (_DKS.nascar_finish(30), _DKS.nascar_finish(31)) == (12.0, 10.0)
+   and _DKS.nascar_finish(1) == 45.0 and _DKS.nascar_finish(40) == 1.0,
+   "a straight 44-pos line scored the back half up to 3 points rich")
+ck("and the sim uses it",
+   _RS._dk_nascar_fin(21) == 21.0 and _RS._dk_nascar_fin(31) == 10.0)
+ck("the F1 finish table is DK's, not an invented curve",
+   [_DKS.f1_finish(p) for p in (1, 2, 3, 4, 10, 15, 21, 22)]
+   == [40.0, 37.0, 35.0, 32.0, 20.0, 10.0, 1.0, 0.0],
+   "ours paid 43/40/38 then 41-pos; 4th alone was 5 points rich")
+ck("F1 laps led and the fastest lap are DK's values",
+   _DKS.F1["lap_led"] == 0.25 and _DKS.F1["fastest_lap"] == 3,
+   "0.1/lap understated the dominator pool by 2.5x while the fastest lap "
+   "overpaid at 5")
+ck("and the F1 sim reads them",
+   'dk_scoring.F1["lap_led"]' in _insp.getsource(_RS._f1_dk_race)
+   and 'dk_scoring.F1["fastest_lap"]' in _insp.getsource(_RS._f1_dk_race)
+   and _RS._dk_f1_fin(4) == 32.0)
+
+# MLB was right on every rate, but was throwing away a modelled stat.
+ck("MLB hitter scoring counts the stolen bases the engine simulates",
+   _DKS.MLB_HIT["sb"] == 5
+   and _MDFS._hitter_dk({"h": 1, "2b": 0, "3b": 0, "hr": 0, "rbi": 0, "r": 0,
+                         "bb": 0, "sb": 1}) == 8,
+   "the box line has carried sb since the catcher-arm work and DK pays +5; "
+   "speed bats were projected without it")
+ck("MLB rates match the published table",
+   (_DKS.MLB_HIT["single"], _DKS.MLB_HIT["double"], _DKS.MLB_HIT["triple"],
+    _DKS.MLB_HIT["hr"]) == (3, 5, 8, 10)
+   and (_DKS.MLB_PIT["out"], _DKS.MLB_PIT["k"], _DKS.MLB_PIT["er"],
+        _DKS.MLB_PIT["hit"]) == (0.75, 2, -2, -0.6))
+ck("a missing sb/hbp key can never crash an older box line",
+   _MDFS._hitter_dk({"h": 1, "2b": 0, "3b": 0, "hr": 0, "rbi": 0, "r": 0,
+                     "bb": 0}) == 3)
+
+# The card the user reads is generated FROM those constants.
+for _sp, _want in (("ufc", "Reversal/Sweep"), ("mlb", "Stolen Base"),
+                   ("nfl", "300+ Yard Passing Game"), ("nascar", "Laps Led"),
+                   ("f1", "Defeated Teammate")):
+    _rows = [r for g in _DKS.card(_sp) for r in g["rows"]]
+    ck(f"the {_sp.upper()} scoring card renders and lists {_want}",
+       any(r[0] == _want for r in _rows) and len(_rows) >= 5)
+ck("the card is generated from the constants, never re-typed",
+   "UFC['reversal']" in _insp.getsource(_DKS.card).replace('"', "'"),
+   "a hand-typed card drifts from the sim and is worse than no card")
+ck("the app serves the card and the DFS maker can show it",
+   '"/api/dfs/scoring"' in _appsrc and "dfsShowScoring" in _appjs
+   and "dfsScoreToggle" in open(_os.path.join(_root, "templates", "index.html")).read())
+
+print()
+print("=" * 72)
 print("UFC DFS runs on the blended board, not the raw power rating")
 print("=" * 72)
 import simulate as _SIMU

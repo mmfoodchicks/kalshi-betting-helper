@@ -5665,6 +5665,62 @@ if ("serviceWorker" in navigator) {
 }
 
 
+// ---- DraftKings scoring card ------------------------------------------------
+// Served from dk_scoring.py, which is the SAME table the simulators score with.
+// Showing a hand-typed copy would be worse than showing nothing: it would drift,
+// and the reader would trust it. Auditing the real constants against DK's
+// published tables is what turned up the UFC reversal (3 vs 5), the NFL turnover
+// penalty (-2 vs -1) and its missing yardage bonuses, and the invented F1 and
+// NASCAR finishing tables.
+let _dfsScoreFor = null;
+async function dfsShowScoring() {
+  const box = $("dfsScoreBox"), sport = $("dfsSport").value;
+  if (!box) return;
+  if (_dfsScoreFor !== sport) {
+    box.innerHTML = `<div class="small" style="color:var(--muted)">Loading scoring…</div>`;
+    try {
+      const d = await (await fetch("/api/dfs/scoring?sport=" + encodeURIComponent(sport))).json();
+      const groups = (d && d.groups) || [];
+      box.innerHTML = groups.length
+        ? `<div class="combomaker" style="padding:8px">
+             <div class="small" style="margin-bottom:6px">📋 <b>DraftKings scoring - ${sport.toUpperCase()}</b>
+               <span style="color:var(--muted)">· every simulated result is converted with exactly these values</span></div>
+             <div style="display:flex;flex-wrap:wrap;gap:14px">
+               ${groups.map((g) => `<div style="min-width:210px">
+                 <div class="small" style="font-weight:600;margin-bottom:2px">${escapeHtml(g.group)}</div>
+                 ${g.rows.map(([lbl, val]) => `<div class="small" style="display:flex;justify-content:space-between;gap:10px">
+                    <span style="color:var(--muted)">${escapeHtml(lbl)}</span><b>${escapeHtml(val)}</b></div>`).join("")}
+               </div>`).join("")}
+             </div></div>`
+        : `<div class="small" style="color:var(--muted)">No scoring table for this sport yet.</div>`;
+      _dfsScoreFor = sport;
+    } catch (e) {
+      box.innerHTML = `<div class="small" style="color:var(--muted)">Couldn't load the scoring table.</div>`;
+    }
+  }
+  box.classList.remove("hidden");
+}
+(function () {
+  const a = document.getElementById("dfsScoreToggle");
+  if (!a) return;
+  a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const box = $("dfsScoreBox");
+    if (box && !box.classList.contains("hidden")) {
+      box.classList.add("hidden");
+      a.textContent = "📋 Show DraftKings scoring";
+      return;
+    }
+    a.textContent = "📋 Hide DraftKings scoring";
+    dfsShowScoring();
+  });
+  const sel = document.getElementById("dfsSport");
+  if (sel) sel.addEventListener("change", () => {
+    const box = $("dfsScoreBox");
+    if (box && !box.classList.contains("hidden")) dfsShowScoring();   // re-fetch for the new sport
+  });
+})();
+
 // ---- DFS CSV: file picker + drag-and-drop -----------------------------------
 // The salaries file used to require open-the-file-copy-everything-paste; on a
 // phone that is misery. The button routes through the OS file picker (Files /

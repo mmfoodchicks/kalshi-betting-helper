@@ -11,6 +11,7 @@ Kalshi and Polymarket futures.
 
 import math
 import clock
+import dk_scoring
 import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -1263,14 +1264,16 @@ def _f1_longrun_pace():
 # unlike NASCAR the GPP question is finish position + place differential — which
 # is why we re-simulate the race FROM THE REAL GRID once qualifying is done.
 def _dk_f1_fin(pos):
-    if pos <= 1:
-        return 43.0
-    if pos == 2:
-        return 40.0
-    return max(1.0, 41.0 - pos)
+    """DK's published F1 finishing table (dk_scoring.F1_FINISH).
+
+    This was invented before: 43/40/38 and then a straight 41-pos line, against
+    DK's actual 40/37/35/32/30/27/25/23/22/20/17/... The error grew with
+    position -- 4th paid 37 against DK's 32 -- so the midfield scored rich and
+    the optimizer's sense of who was worth paying up for was skewed."""
+    return dk_scoring.f1_finish(pos)
 
 
-_F1_LAPS = 57                      # typical race distance; 0.1/lap keeps this minor
+_F1_LAPS = 57                      # typical race distance
 
 
 def _f1_dk_race(order, laps, rng):
@@ -1285,11 +1288,11 @@ def _f1_dk_race(order, laps, rng):
     shares = sorted((rng.expovariate(1.0) for _ in picks), reverse=True)
     tot = sum(shares) or 1.0
     for idx, sh in zip(picks, shares):
-        dom[leaders[idx]] = 0.1 * laps * sh / tot
+        dom[leaders[idx]] = dk_scoring.F1["lap_led"] * laps * sh / tot
     fl_pool = order[:8]
     fw = [math.exp(-i / 2.5) for i in range(len(fl_pool))]
     fl = rng.choices(fl_pool, weights=fw)[0]
-    dom[fl] = dom.get(fl, 0.0) + 5.0
+    dom[fl] = dom.get(fl, 0.0) + dk_scoring.F1["fastest_lap"]
     return dom
 
 
@@ -1299,7 +1302,13 @@ def _f1_dk_race(order, laps, rng):
 # dominator pool, a 90-lap road course only ~63 — which is why "who leads laps"
 # is the whole GPP question at ovals and nearly irrelevant on streets.
 def _dk_nascar_fin(pos):
-    return 45.0 if pos <= 1 else max(1.0, 44.0 - pos)
+    """DK's published NASCAR finishing table (dk_scoring.NASCAR_FINISH).
+
+    A straight 44-pos line looks right at the front and is wrong everywhere
+    else: DK steps down an EXTRA point at 11th, 21st and 31st, so 11th pays 32
+    (not 33), 21st pays 21 (not 23) and 31st pays 10 (not 13). Every mid-pack
+    and back-half driver scored up to 3 points rich -- most of a 40-car field."""
+    return dk_scoring.nascar_finish(pos)
 
 
 _DEFAULT_LAPS = {"road": 90, "superspeedway": 170, "short": 400, "intermediate": 300}

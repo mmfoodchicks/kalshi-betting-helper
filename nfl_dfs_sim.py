@@ -16,6 +16,7 @@ mean-0), so the sim only adds shape + correlation, it doesn't invent new means.
 
 import urllib.request
 import clock
+import dk_scoring
 import json as _json
 import gzip as _gzip
 import random as _random
@@ -48,9 +49,32 @@ def _cached(key, ttl, fn):
 
 # ---- PPR scoring ------------------------------------------------------------
 def _ppr(pass_yd, pass_td, ints, rush_yd, rush_td, rec, rec_yd, rec_td, fum):
-    return (pass_yd * 0.04 + pass_td * 4 - ints * 2
-            + rush_yd * 0.1 + rush_td * 6
-            + rec * 1.0 + rec_yd * 0.1 + rec_td * 6 - fum * 2)
+    """DraftKings NFL Classic scoring for one SIMULATED stat line.
+
+    Two things were wrong here, and both mattered because this function scores
+    the sample arrays the optimizer and the contest sim actually run on:
+
+    - Interceptions and lost fumbles were -2. DraftKings pays -1. The projection
+      shown next to each player already used -1 (dk_points/_DK), so the number on
+      screen and the number the lineup was built from disagreed.
+    - The yardage bonuses were missing entirely. DK pays +3 for 300 passing, 100
+      rushing or 100 receiving yards, and they are not a rounding error: a
+      workhorse back clears 100 often enough that the bonus is a real part of his
+      distribution, and it is worth more to a boom game than a whole reception.
+      Applied per SAMPLE (not to the mean), so a player who averages 85 yards
+      collects it exactly as often as he clears the line."""
+    s = dk_scoring.NFL_OFF
+    pts = (pass_yd * s["pass_yd"] + pass_td * s["pass_td"] + ints * s["int"]
+           + rush_yd * s["rush_yd"] + rush_td * s["rush_td"]
+           + rec * s["rec"] + rec_yd * s["rec_yd"] + rec_td * s["rec_td"]
+           + fum * s["fumble_lost"])
+    if pass_yd >= 300:
+        pts += s["pass_300"]
+    if rush_yd >= 100:
+        pts += s["rush_100"]
+    if rec_yd >= 100:
+        pts += s["rec_100"]
+    return pts
 
 
 # ---- Weekly projections (Sleeper), grouped by game --------------------------
@@ -99,9 +123,17 @@ def weekly_games(season, week):
     return _cached(("nfl_sleeper", season, week), 3600, build)
 
 
-# DraftKings scoring, for turning a projected stat line into projected points.
-_DK = {"pass_yd": 0.04, "pass_td": 4.0, "int": -1.0, "rush_yd": 0.1,
-       "rush_td": 6.0, "rec": 1.0, "rec_yd": 0.1, "rec_td": 6.0, "fum": -1.0}
+# DraftKings scoring, for turning a MEAN stat line into a projected-points seed.
+# Read from the shared table so it cannot drift from _ppr (it had: this said -1
+# for turnovers while _ppr, which scores the simulations the optimizer actually
+# runs on, charged -2). The 300/100/100 bonuses are deliberately absent here:
+# they are threshold events, and a mean cannot say how often a 85-yard-average
+# back clears 100. _ppr applies them per SAMPLE, which is where they belong.
+_DK = {"pass_yd": dk_scoring.NFL_OFF["pass_yd"], "pass_td": dk_scoring.NFL_OFF["pass_td"],
+       "int": dk_scoring.NFL_OFF["int"], "rush_yd": dk_scoring.NFL_OFF["rush_yd"],
+       "rush_td": dk_scoring.NFL_OFF["rush_td"], "rec": dk_scoring.NFL_OFF["rec"],
+       "rec_yd": dk_scoring.NFL_OFF["rec_yd"], "rec_td": dk_scoring.NFL_OFF["rec_td"],
+       "fum": dk_scoring.NFL_OFF["fumble_lost"]}
 
 
 def dk_points(means):

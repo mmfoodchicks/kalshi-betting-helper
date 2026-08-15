@@ -21,6 +21,8 @@ import random
 import statistics
 import unicodedata
 
+import dk_scoring
+
 import simulate as _sim   # parse_dk_csv
 
 ROSTER = ["P", "P", "C", "1B", "2B", "3B", "SS", "OF", "OF", "OF"]
@@ -183,10 +185,22 @@ def _match_sp(prof, name):
 
 
 def _hitter_dk(l):
-    """DraftKings hitter points from a deep box line (no SB/HBP — not modeled)."""
+    """DraftKings hitter points from a deep box line (dk_scoring.MLB_HIT).
+
+    STOLEN BASES were being thrown away. The comment here said SB was "not
+    modeled", but the engine has simulated steals since the catcher-arm work --
+    the box line carries `sb` -- and DK pays +5 for one, more than a double is
+    worth over a single. Discarding them cost every speed bat real projection,
+    and the fastest players are exactly the cheap ones a lineup leans on.
+
+    HBP folds into the walk path upstream and pays the same +2, so it needs no
+    separate term; `.get` keeps this safe against an older line dict."""
+    s = dk_scoring.MLB_HIT
     singles = l["h"] - l["2b"] - l["3b"] - l["hr"]
-    return (3 * singles + 5 * l["2b"] + 8 * l["3b"] + 10 * l["hr"]
-            + 2 * l["rbi"] + 2 * l["r"] + 2 * l["bb"])
+    return (s["single"] * singles + s["double"] * l["2b"] + s["triple"] * l["3b"]
+            + s["hr"] * l["hr"] + s["rbi"] * l["rbi"] + s["run"] * l["r"]
+            + s["bb"] * l["bb"] + s["hbp"] * l.get("hbp", 0)
+            + s["sb"] * l.get("sb", 0))
 
 
 def _pitcher_dk(l, won):
@@ -195,14 +209,16 @@ def _pitcher_dk(l, won):
     (+2.5), CG-shutout (+2.5) and no-hitter (+5) bonuses are rare, but the deep
     engine actually produces them (it rides gems deep) and they're pure ceiling —
     exactly what a GPP pitcher pick is for."""
-    win = 4 if (won and l["outs"] >= 15) else 0
-    pts = 0.75 * l["outs"] + 2 * l["k"] - 2 * l["r"] - 0.6 * l["h"] - 0.6 * l["bb"] + win
+    s = dk_scoring.MLB_PIT
+    win = s["win"] if (won and l["outs"] >= 15) else 0
+    pts = (s["out"] * l["outs"] + s["k"] * l["k"] + s["er"] * l["r"]
+           + s["hit"] * l["h"] + s["bb"] * l["bb"] + win)
     if l["outs"] >= 27:
-        pts += 2.5                                  # complete game
+        pts += s["cg"]                              # complete game
         if l["r"] == 0:
-            pts += 2.5                              # CG shutout
+            pts += s["cg_shutout"]                  # CG shutout
         if l["h"] == 0:
-            pts += 5.0                              # no-hitter
+            pts += s["no_hitter"]                   # no-hitter
     return pts
 
 

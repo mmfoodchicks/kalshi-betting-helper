@@ -555,6 +555,10 @@
           <label class="small" title="How many opponent lineups to simulate as a SAMPLE to gauge your lineup's strength. This is then scaled to your real entry count above - it is NOT the contest size. Bigger sample = steadier estimate, slower.">sample <input id="dfsField" type="number" value="600" min="100" max="3000" style="width:64px"/></label>
         </div>
         <div id="dfsRecoBox"></div>
+        <div class="small" style="margin-top:6px">
+          <a href="#" id="dfsScoreToggle" title="The exact DraftKings scoring this sport's simulator converts its simulated results with. These are the same constants the projections are built from, not a separate copy.">📋 Show DraftKings scoring</a>
+        </div>
+        <div id="dfsScoreBox" class="hidden" style="margin-top:6px"></div>
         <p id="dfsMlbHint" class="sub hidden" style="margin:6px 0 0;font-size:0.78rem">💡 <b>entries</b> = your contest's real size (11,437, or 100k+ for a milly-maker) - win% &amp; ROI scale to this · <b>sample</b> = opponents simulated to gauge lineup strength (not the contest size) · <b>1st $ / pool $</b> = leave 0 to auto-estimate · <b>unique</b> = how many players each lineup must differ by (only with 2+ lineups).</p>
         <div style="margin:6px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <label class="track-mini" style="cursor:pointer;display:inline-block">📁 Load CSV file
