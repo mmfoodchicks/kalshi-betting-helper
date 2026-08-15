@@ -4710,6 +4710,26 @@ ck("the endpoint serves the stale board and says it is refreshing",
    and "if (d.refreshing)" in _appjs,
    "the client has to poll the fresh build in behind the stale one")
 
+# The warmer keeps the BOARD hot while the app is in use. The instance never
+# sleeps, but a 300s cache is shorter than a trip to the exchange, so the
+# process stayed hot while the data went cold.
+ck("the warmer only runs while someone is actually using the app",
+   "_WARM_WINDOW" in _appsrc and "time.time() - seen > _WARM_WINDOW" in _appsrc
+   and "_note_slate_use(date, season)" in _appsrc,
+   "rebuilding every 5 minutes around the clock spawns a ~175 MB child forever "
+   "on a 512 MB box for nobody's benefit")
+ck("it rebuilds just BEFORE the board expires, not after",
+   "age < baseball._SLATE_TTL - 90" in _appsrc,
+   "warming after expiry means the returning user still gets a stale board")
+ck("it can neither race a request's build nor the nightly season sim",
+   "if key in _slate_inflight:" in _appsrc
+   and "HEAVY_BUILD" in open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                           "..", "deep_cache.py")).read(),
+   "three concurrent slate builds is 547 MB, which is how a 512 MB instance "
+   "dies while every individual piece looks affordable")
+ck("and it is switchable off without a code change",
+   'os.environ.get("VIGIL_WARM_WINDOW")' in _appsrc)
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

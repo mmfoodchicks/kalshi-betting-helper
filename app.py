@@ -178,6 +178,64 @@ def _ensure_recorder():
             _init_deep_sims()
         except Exception:
             pass
+        try:
+            _start_slate_warmer()
+        except Exception:
+            pass
+
+
+# ---- keeping the board warm while you're actually using it -----------------
+# The instance never sleeps (Render Starter is always-on), but the SLATE does:
+# its cache lives 300s, which is shorter than a trip to the exchange. So the
+# process stayed hot and the data still went cold, and every return paid for a
+# rebuild. Stale-while-revalidate hides that; this removes it.
+#
+# Warming only while the app is IN USE is the whole point. Rebuilding every five
+# minutes around the clock would spawn a ~175 MB child forever on a 512 MB box
+# for nobody's benefit; a 30-minute window means an evening of place-a-bet /
+# come-back stays instant and the box idles overnight. The build takes
+# deep_cache.HEAVY_BUILD, so it can never race the nightly season sim -- it
+# waits its turn instead of pushing the instance into an OOM.
+_WARM_WINDOW = int(os.environ.get("VIGIL_WARM_WINDOW") or 1800)   # 0 disables
+_warm_seen = {"ts": 0.0, "key": None}
+
+
+def _note_slate_use(date, season):
+    _warm_seen["ts"] = time.time()
+    _warm_seen["key"] = (date, season)
+
+
+def _start_slate_warmer():
+    if _WARM_WINDOW <= 0:
+        return
+
+    def _loop():
+        while True:
+            time.sleep(60)
+            try:
+                key, seen = _warm_seen["key"], _warm_seen["ts"]
+                if not key or time.time() - seen > _WARM_WINDOW:
+                    continue          # nobody's looking; let the box idle
+                date, season = key
+                _, age = baseball.stale_slate(date, season, max_age=None)
+                # Rebuild just BEFORE it expires, so a user who returns at any
+                # moment finds a board that is fresh rather than one that is
+                # merely recent.
+                if age is not None and age < baseball._SLATE_TTL - 90:
+                    continue
+                with _slate_lock:
+                    if key in _slate_inflight:
+                        continue      # a request already kicked this build
+                    _slate_inflight.add(key)
+                try:
+                    baseball.analyze_slate(date, season)
+                finally:
+                    with _slate_lock:
+                        _slate_inflight.discard(key)
+            except Exception:
+                pass                  # a warmer must never take the app down
+
+    threading.Thread(target=_loop, daemon=True).start()
 
 
 # A healthy build sits near 0.96 career coverage. Below this the roster
@@ -879,6 +937,7 @@ def api_baseball_today():
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
     key = (date, season)
+    _note_slate_use(date, season)   # keep this board warm while it's in use
     games = _slate_ready(date, season)
     if games is None:
         with _slate_lock:
