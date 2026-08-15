@@ -4774,6 +4774,58 @@ ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
 print()
 print("=" * 72)
+print("An NFL defense is scored by the game it is in")
+print("=" * 72)
+import nfl_dfs_sim as _NDS2
+import dk_scoring as _DKS          # also used by the block below; import locally
+import random as _dstrng
+_dr = _dstrng.Random(5)
+# A defense facing a juggernaut and one facing a dud must not score alike. The
+# regular-season model drew Normal(projection, 0.7*proj+4) -- an independent
+# bell curve with no link to the game, so a DST opposite a 40-burger scored
+# exactly like one pitching a shutout, and pairing a defense with the shootout
+# it was in looked fine to the optimizer.
+_n = 3000
+_big_td = [3] * _n            # opponent scores 3 offensive TDs every iteration
+_dud_td = [0] * _n            # opponent never finds the end zone
+_gv = [1] * _n
+_yd = [380.0] * _n
+_pa = [250.0] * _n
+_vs_big = _NDS2._dst_from_components(_big_td, _gv, _yd, _pa, _dr)
+_vs_dud = _NDS2._dst_from_components(_dud_td, _gv, [180.0] * _n, _pa, _dr)
+_mb = sum(_vs_big) / len(_vs_big)
+_md = sum(_vs_dud) / len(_vs_dud)
+ck("shutting an offense out pays far more than being run over",
+   _md > _mb + 6, f"vs 0 TDs {_md:.2f} vs 3 TDs {_mb:.2f}")
+ck("the points-allowed tiers come from dk_scoring, not a re-typed ladder",
+   "dk_scoring.nfl_dst_pa_points" in _insp.getsource(_NDS2._dst_from_components)
+   and _DKS.nfl_dst_pa_points(0) == 10 and _DKS.nfl_dst_pa_points(3) == 7
+   and _DKS.nfl_dst_pa_points(13) == 4 and _DKS.nfl_dst_pa_points(20) == 1
+   and _DKS.nfl_dst_pa_points(27) == 0 and _DKS.nfl_dst_pa_points(30) == -1
+   and _DKS.nfl_dst_pa_points(45) == -4)
+ck("takeaways are the offense's OWN giveaways, not a fresh roll",
+   "opp_gv[i]" in _insp.getsource(_NDS2._dst_from_components)
+   and "gvs[t] += ints + fums" in _insp.getsource(_NDS2.simulate_game),
+   "re-rolling turnovers would let both sides of the ball disagree about "
+   "whether the quarterback threw a pick")
+ck("a passing TD and its receiving TD are one touchdown on the scoreboard",
+   "tds[t] += pass_td + rush_td" in _insp.getsource(_NDS2.simulate_game)
+   and "rec_td" not in _insp.getsource(_NDS2.simulate_game).split("tds[t] +=")[1][:40],
+   "counting both would double every passing score and bury the defense")
+ck("the DST ceiling includes return touchdowns",
+   "_ST_TD_P" in _insp.getsource(_NDS2._dst_from_components)
+   and _NDS2._ST_TD_P > 0,
+   "a defense's boom week is a return score; without one the tail was ~4% "
+   "against a real rate near 11% and GPP never rostered a DST for the right "
+   "reason")
+ck("the simulated shape is kept but the LEVEL still respects the projection",
+   "shift = d[\"proj\"] - raw" in _insp.getsource(_NDS2.player_pool),
+   "the component model knows the matchup but carries no personnel, so it "
+   "cannot say how good the unit itself is; a shift preserves the lumpy "
+   "points-allowed thresholds that a rescale would smear")
+
+print()
+print("=" * 72)
 print("Every DFS sim scores with DraftKings' real table")
 print("=" * 72)
 import dk_scoring as _DKS

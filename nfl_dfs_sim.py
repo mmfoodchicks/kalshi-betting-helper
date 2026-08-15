@@ -265,10 +265,25 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
     # that -- so the two defenses in a game were drawn independently, as if a
     # shootout could punish one and spare the other.
     team_fp = {t: [] for t in teams}
+    # Per-iteration DEFENSIVE raw material, collected inside the same iteration
+    # the offense was simulated in. A DST used to be a Normal drawn around a
+    # Sleeper projection with no connection to the game at all -- the defense
+    # facing a 40-point shootout scored exactly like the one pitching a shutout.
+    # Now the components DK actually pays for are counted as they happen:
+    # offensive touchdowns conceded, interceptions thrown, fumbles lost, and the
+    # yardage that drives field goals and sacks.
+    team_td = {t: [] for t in teams}       # offensive TDs scored BY this team
+    team_gv = {t: [] for t in teams}       # giveaways BY this team (INT + fumbles)
+    team_yd = {t: [] for t in teams}       # total offensive yards BY this team
+    team_pa = {t: [] for t in teams}       # pass attempts proxy, for sack volume
     gauss = _random.gauss
 
     for _ in range(n):
         by_team = {t: 0.0 for t in teams}
+        tds = {t: 0 for t in teams}
+        gvs = {t: 0 for t in teams}
+        yds = {t: 0.0 for t in teams}
+        patt = {t: 0.0 for t in teams}
         env = max(0.4, gauss(1.0, _ENV_SD))                 # shared game pace/total
         qb_lat = {t: max(0.0, gauss(1.0, _QB_SD)) for t in teams}
         script = {t: gauss(0.0, _SCRIPT_SD) for t in teams}
@@ -285,17 +300,31 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
             pass_td = _pois(m["pass_td"] * env * ql)
             rush_td = _pois(m["rush_td"] * env * (1 + _SCRIPT_RUSH * sc))
             rec_td = _pois(m["rec_td"] * env * ql)
-            fp = _ppr(pass_yd, pass_td, _pois(m["int"]), rush_yd, rush_td,
-                      rec, rec_yd, rec_td, _pois(m["fum"]))
+            ints = _pois(m["int"])
+            fums = _pois(m["fum"])
+            fp = _ppr(pass_yd, pass_td, ints, rush_yd, rush_td,
+                      rec, rec_yd, rec_td, fums)
             pts[i].append(fp)
             fp_raw[i].append(fp)
             if t in by_team:
                 by_team[t] += fp
+            if t in tds:
+                # A passing TD and its receiving TD are the SAME touchdown, so
+                # only the thrower's is counted -- summing both would double the
+                # scoreboard. Rushing TDs are counted for whoever ran it in.
+                tds[t] += pass_td + rush_td
+                gvs[t] += ints + fums
+                yds[t] += pass_yd + rush_yd
+                patt[t] += pass_yd
             c = comp[i]
             c["pass_yd"].append(pass_yd); c["rush_yd"].append(rush_yd)
             c["rec_yd"].append(rec_yd); c["rec"].append(rec)
         for t, v in by_team.items():
             team_fp[t].append(v)
+            team_td[t].append(tds[t])
+            team_gv[t].append(gvs[t])
+            team_yd[t].append(yds[t])
+            team_pa[t].append(patt[t])
 
     def pct(arr, q):
         s = sorted(arr)
@@ -343,7 +372,70 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
             "props": props, "stacks": stacks, "n_sims": n,
             # Per-iteration offensive output by team, so a defense can be scored
             # against what it actually faced in that same iteration.
-            "team_fp": team_fp if with_samples else None}
+            "team_fp": team_fp if with_samples else None,
+            # The DK components each offense conceded, same iteration alignment.
+            "team_def": ({t: {"td": team_td[t], "gv": team_gv[t],
+                              "yd": team_yd[t], "pa": team_pa[t]} for t in teams}
+                         if with_samples else None)}
+
+
+# League-average rates the DST component model is anchored on, so a simulated
+# defense averages roughly what a real one does (~7 DK points) while its SPREAD
+# and its ORDERING come from the game it is actually in.
+_LG_SACKS = 2.3            # team sacks per game
+_LG_PASS_YD = 235.0        # team passing yards per game (sack volume scales on it)
+_LG_YD = 335.0             # team total yards per game (FG volume scales on it)
+_LG_FG = 1.7               # team field goals per game
+_DEF_TD_P = 0.075          # P(a defensive TD) per takeaway forced
+# DK pays the DST for punt/kick/FG RETURN touchdowns too, and those do not need
+# a turnover to happen. Leaving them out is what made the simulated ceiling far
+# too thin: a defense's boom week is a return score, and without one the model
+# put 15+ point games at ~4% against a real rate near 11%. A DST is a
+# threshold-and-tail asset -- if the tail is missing, GPP never rosters one for
+# the right reason.
+_ST_TD_P = 0.035           # P(a special-teams return TD) per game
+_SAFETY_P = 0.007          # P(a safety) per game
+
+
+def _dst_from_components(opp_td, opp_gv, opp_yd, opp_pa, rng):
+    """DK points for a defense, per iteration, from what the opposing offense
+    actually did in THAT iteration.
+
+    The old regular-season model drew a defense from Normal(projection, 0.7*proj
+    + 4) -- an independent bell curve. Nothing tied it to the game, so the DST
+    opposite a 40-burger scored like the one pitching a shutout, and a lineup
+    that paired a defense with the shootout it was in looked perfectly fine to
+    the optimizer. Preseason already scored defenses against the offense they
+    faced; the regular season, which is the one people play, did not.
+
+    Every term below is a DraftKings category (dk_scoring.NFL_DST): points
+    allowed off the touchdowns and field goals conceded in this very iteration,
+    sacks scaled by how much the opponent threw, takeaways straight from the
+    interceptions and fumbles the offensive sim already sampled, and the
+    occasional return touchdown or safety."""
+    s, out = dk_scoring.NFL_DST, []
+    n = len(opp_td)
+    for i in range(n):
+        # Points allowed: touchdowns are worth 7 with the extra point, and field
+        # goals scale with how much yardage the offense actually moved.
+        fg = _pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD))
+        pa = 7 * opp_td[i] + 3 * fg
+        pts = dk_scoring.nfl_dst_pa_points(pa)
+        # Sacks: more dropbacks, more chances.
+        pts += s["sack"] * _pois(_LG_SACKS * max(0.3, opp_pa[i] / _LG_PASS_YD))
+        # Takeaways are NOT re-rolled -- they are the same interceptions and
+        # fumbles the offense lost in this iteration, so the two sides of the
+        # ball agree with each other.
+        gv = opp_gv[i]
+        pts += s["int"] * gv                      # int and fumble_rec both pay 2
+        if gv and rng.random() < _DEF_TD_P * gv:
+            pts += s["int_td"]                    # returned a takeaway
+        if rng.random() < _ST_TD_P:
+            pts += s["return_td"]                 # punt / kick / FG return
+        if rng.random() < _SAFETY_P:
+            pts += s["safety"]
+        out.append(round(pts, 2))
+    return out
 
 
 def _corr(a, b):
@@ -414,6 +506,7 @@ def player_pool(week, n=3000, preseason=False):
             return None
         pool = {}
         pre_dst = {}
+        sim_dst = {}
         for gid, g in games.items():
             sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
             for p in sim["players"]:
@@ -426,6 +519,7 @@ def player_pool(week, n=3000, preseason=False):
             # which dst_projections asks for unconditionally -- knows nothing
             # about either.
             tfp = sim.get("team_fp") or {}
+            tdef = sim.get("team_def") or {}
             if preseason and len(tfp) >= 2:
                 import nfl_preseason as _np
                 ts = list(tfp)
@@ -433,11 +527,33 @@ def player_pool(week, n=3000, preseason=False):
                     arr = _np.dst_from_offense(tfp[opp], n, _random)
                     if arr:
                         pre_dst[me] = arr
+            elif len(tdef) >= 2:
+                # Regular season: score each defense off the DK categories the
+                # OTHER offense produced in the same iteration.
+                ts = list(tdef)
+                for me, opp in ((ts[0], ts[1]), (ts[1], ts[0])):
+                    d = tdef[opp]
+                    arr = _dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], _random)
+                    if arr:
+                        sim_dst[me] = arr
         dst = dst_projections(str(season), week) or {}
         for team, d in dst.items():
             arr = pre_dst.get(team)
             if arr:
                 proj = round(sum(arr) / len(arr), 2)
+            elif sim_dst.get(team):
+                # Shape from the game, LEVEL from Sleeper: the component model
+                # knows this defense is in a shootout, but it does not know the
+                # unit's own quality (it carries no personnel). Shifting to
+                # Sleeper's mean keeps the good defenses good while the spread
+                # and the game-by-game ordering stay the simulation's. A shift,
+                # not a rescale -- multiplying would distort the points-allowed
+                # tiers that give a DST its lumpy, threshold-shaped upside.
+                arr = sim_dst[team]
+                raw = sum(arr) / len(arr)
+                shift = d["proj"] - raw
+                arr = [round(x + shift, 2) for x in arr]
+                proj = d["proj"]
             else:
                 proj = d["proj"]
                 sd = 0.7 * proj + 4.0                    # DST scoring is high-variance
