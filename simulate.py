@@ -541,6 +541,38 @@ def _set_values(players, objective, cv):
             p["value"] = ceil * (1.0 - 0.007 * own)
         elif objective == "ceiling":
             p["value"] = ceil
+        elif objective == "confidence":
+            # "Build me the slate we're most SURE of." Distinct from projection,
+            # which happily rosters a 50/50 bout whose median outcome scores
+            # well: in UFC the loser's night is mostly worthless, so certainty of
+            # the WIN is what a cash-game lineup is buying.
+            #
+            # The projection already carries the blended win probability, so the
+            # tilt here is deliberately gentle (a square root, not a second full
+            # multiplication) and the rest is a trust discount: fade the picks
+            # where our rating disagrees with the exchange, and the ones drawn
+            # from almost no fight history. Unpriced bouts get a small haircut
+            # because we have only one opinion instead of two.
+            # An unpriced fighter goes through the SAME transform on our own win
+            # probability, then takes a haircut for being a single opinion. It
+            # must not skip the transform: a flat discount put an unpriced
+            # coin-flip ABOVE a fighter the model and the market both liked,
+            # because 0.90 beats sqrt(0.70) -- the two branches were not on the
+            # same scale, and the objective quietly preferred ignorance.
+            fw, lone = p.get("fair_win"), 1.0
+            if fw is None:
+                fw, lone = p.get("win_pct"), 0.90
+            if fw is None:
+                p["value"] = p["proj"] * 0.55      # no read at all
+            else:
+                m = ((max(0.0, min(100.0, fw)) / 100.0) ** 0.5) * lone
+                if p.get("fades_market"):
+                    m *= 0.75          # our read is the minority one
+                if p.get("thin"):
+                    m *= 0.85          # rated off almost nothing
+                if p.get("defaulted"):
+                    m *= 0.60          # we know nothing about this fighter
+                p["value"] = p["proj"] * m
         else:
             p["value"] = p["proj"]
 
@@ -856,11 +888,57 @@ def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fe
             "lineups": out, "best_lineup_index": best}
 
 
+def _reblend_bout(fa, fb, seed=0):
+    """Move a bout's DK samples onto the Kalshi-BLENDED win probability.
+
+    ufc_prices.attach already computes `fair_win` -- our power rating blended
+    with the de-vig'd Kalshi price, weighted by how much the model has actually
+    proven on graded fights (measured at 0.05 for UFC: the rating loses to the
+    close, so the market carries most of the answer). Every other UFC surface
+    used that number; DFS did not, so the builder was rostering fighters off a
+    raw power rating the rest of the app had already decided to distrust.
+
+    Reweighting the mean would be wrong here: DK scoring is not linear in win
+    probability -- the win bonus, the finish bonus and the round bonus all live
+    in the winning branch. So instead RESAMPLE the bout, drawing win-branch and
+    loss-branch samples in the blended proportion. Because both fighters' arrays
+    are index-aligned (entry i is the same simulated fight), applying one index
+    list to both preserves the joint structure the contest sim depends on:
+    exactly one fighter still cashes the win bonus in any given sample.
+    """
+    aw, bw = fa.get("won_arr"), fb.get("won_arr")
+    aa, ba = fa.get("dk_arr"), fb.get("dk_arr")
+    if not (aw and aa and ba) or len(aw) != len(aa) or len(aa) != len(ba):
+        return False
+    target = fa.get("fair_win")
+    if target is None or fa.get("kalshi_cents") is None:
+        return False
+    win_idx = [i for i, w in enumerate(aw) if w]
+    loss_idx = [i for i, w in enumerate(aw) if not w]
+    if not win_idx or not loss_idx:
+        return False                      # a branch the sim never produced
+    n = len(aa)
+    n_win = max(0, min(n, int(round(n * (target / 100.0)))))
+    rng = random.Random(seed)
+    idx = ([win_idx[rng.randrange(len(win_idx))] for _ in range(n_win)]
+           + [loss_idx[rng.randrange(len(loss_idx))] for _ in range(n - n_win)])
+    for f, arr in ((fa, aa), (fb, ba)):
+        res = [arr[i] for i in idx]
+        s = sorted(res)
+        q = lambda t: s[min(len(s) - 1, int(t * len(s)))]
+        f["blend_proj"] = round(sum(s) / len(s), 1)
+        f["blend_ceil"] = round(q(0.9), 1)
+        f["blend_floor"] = round(q(0.1), 1)
+        f["blend_arr"] = [round(v, 1) for v in res]
+    return True
+
+
 def apply_ufc(players):
     """UFC DFS: replace each fighter's CSV projection with OUR fight-simulator
-    projection (win prob + method/round -> DraftKings points). Non-blocking — the
-    board computes in the background on a cold start, falling back to the CSV
-    numbers until it's ready, then upgrading on the next build."""
+    projection (win prob + method/round -> DraftKings points), BLENDED with the
+    live Kalshi price. Non-blocking — the board computes in the background on a
+    cold start, falling back to the CSV numbers until it's ready, then upgrading
+    on the next build."""
     try:
         import ufc_sim
         board = ufc_sim.board()
@@ -869,6 +947,21 @@ def apply_ufc(players):
     if not board:
         return {"available": False,
                 "reason": "fighter sim warming up (rating every fighter from history) - using CSV projections; rerun in ~1 min"}
+    # Hang live Kalshi prices, the blended fair win % and the edge off the board.
+    # Best-bets, the fight board, the combo maker and the prediction logger all
+    # already did this; the DFS builder was the one surface still running on the
+    # unblended rating.
+    priced = blended = 0
+    try:
+        import ufc_prices
+        ufc_prices.attach(board)
+        for i, bt in enumerate(board.get("bouts", [])):
+            if bt["a"].get("kalshi_cents") is not None:
+                priced += 1
+            if _reblend_bout(bt["a"], bt["b"], seed=i):
+                blended += 1
+    except Exception:
+        pass
     idx = {}
     for bt in board.get("bouts", []):
         for side in ("a", "b"):
@@ -881,11 +974,22 @@ def apply_ufc(players):
         f = idx.get(_norm_name(p["name"])) or idx.get(_norm_name(p["name"]).split()[-1])
         if f:
             p["base_proj"] = p["proj"]
-            p["proj"] = f["proj"]
-            p["ceil_proj"] = f["ceil"]
-            if f.get("dk_arr"):
-                p["arr"] = f["dk_arr"]      # joint bout samples (winner/loser aligned)
+            # The Kalshi-blended board when the fight is priced, the raw sim
+            # when it isn't (an unlisted prelim still gets a projection).
+            p["proj"] = f.get("blend_proj", f["proj"])
+            p["ceil_proj"] = f.get("blend_ceil", f["ceil"])
+            p["floor_proj"] = f.get("blend_floor", f.get("floor"))
+            arr = f.get("blend_arr") or f.get("dk_arr")
+            if arr:
+                p["arr"] = arr              # joint bout samples (winner/loser aligned)
             p["win_pct"] = f["win_pct"]
+            # What the blend actually did, so the slip can show its work.
+            p["model_proj"] = f["proj"]
+            p["kalshi_cents"] = f.get("kalshi_cents")
+            p["fair_win"] = f.get("fair_win")
+            p["edge"] = f.get("edge")
+            p["model_weight"] = f.get("confidence")
+            p["fades_market"] = f.get("fades_market")
             p["rating"] = f.get("rating")
             p["record"] = f.get("record")
             p["career_record"] = f.get("career_record")
@@ -894,8 +998,14 @@ def apply_ufc(players):
             p["defaulted"] = f.get("defaulted")
             p["debut"] = f.get("debut")
             matched += 1
+    nb = len(board.get("bouts", []))
     return {"available": True, "event": board.get("event"), "matched": matched,
-            "sim_used": matched > 0, "fighters": sum(len(b) for b in [board.get("bouts", [])]) * 2}
+            "sim_used": matched > 0, "fighters": nb * 2,
+            "bouts_priced": priced, "bouts_blended": blended, "bouts": nb,
+            "blend_note": (
+                f"projections blend the power rating with live Kalshi prices on "
+                f"{blended} of {nb} bouts" if blended else
+                "no Kalshi UFC market open for this card - power rating only")}
 
 
 def _lineup_player(p):
@@ -908,7 +1018,13 @@ def _lineup_player(p):
             "win_pct": p.get("win_pct"), "rating": p.get("rating"),
             "record": p.get("record"), "career_record": p.get("career_record"),
             "fights": p.get("fights"), "thin": p.get("thin"),
-            "defaulted": p.get("defaulted"), "debut": p.get("debut")}
+            "defaulted": p.get("defaulted"), "debut": p.get("debut"),
+            # The blend, shown rather than hidden: what we thought, what the
+            # exchange thinks, and where the projection landed between them.
+            "model_proj": round(p["model_proj"], 1) if p.get("model_proj") is not None else None,
+            "kalshi_cents": p.get("kalshi_cents"), "fair_win": p.get("fair_win"),
+            "edge": p.get("edge"), "model_weight": p.get("model_weight"),
+            "fades_market": p.get("fades_market")}
 
 
 def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",

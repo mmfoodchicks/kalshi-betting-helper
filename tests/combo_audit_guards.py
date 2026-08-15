@@ -4772,6 +4772,92 @@ ck("slow requests name themselves in the log",
    "health check, and it was invisible")
 ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
+print()
+print("=" * 72)
+print("UFC DFS runs on the blended board, not the raw power rating")
+print("=" * 72)
+import simulate as _SIMU
+import random as _urand
+_ufc_src = _insp.getsource(_SIMU.apply_ufc)
+ck("the DFS builder prices the card off Kalshi like every other UFC surface",
+   "ufc_prices" in _ufc_src and "attach(board)" in _ufc_src,
+   "best-bets, the fight board, the combo maker and the prediction logger all "
+   "blended toward the market; DFS alone rostered off a rating the rest of the "
+   "app had already measured as losing to the close")
+ck("the sim records WHICH samples were wins, so the blend can be exact",
+   "won_arr" in open(_os.path.join(_root, "ufc_sim.py")).read(),
+   "a high-volume loss can outscore a quick decision win, so the branch cannot "
+   "be recovered from the points alone")
+
+def _mkbout(model_a, fair_a, n=400, seed=1):
+    r = _urand.Random(seed)
+    won = [1 if k < int(n * model_a) else 0 for k in range(n)]
+    r.shuffle(won)
+    a = {"dk_arr": [85.0 if w else 22.0 for w in won], "won_arr": won,
+         "win_pct": 100 * model_a, "fair_win": fair_a, "kalshi_cents": int(fair_a)}
+    b = {"dk_arr": [22.0 if w else 85.0 for w in won]}
+    for f in (a, b):
+        f["proj"] = sum(f["dk_arr"]) / len(f["dk_arr"])
+    return a, b
+
+# The blend has to move the WIN PROBABILITY, not just scale the mean: the win,
+# finish and round bonuses all live in the winning branch, so DK points are not
+# linear in win%.
+_ba, _bb = _mkbout(0.75, 37.0)
+_before = _ba["proj"]
+ck("a fight the exchange disagrees with is repriced, hard",
+   _SIMU._reblend_bout(_ba, _bb, seed=2) and _ba["blend_proj"] < _before - 15,
+   f"{_before:.1f} -> {_ba.get('blend_proj')}; our 75% pick at a 37c market must "
+   "not keep a 75%-confidence projection")
+_aw = sum(1 for v in _ba["blend_arr"] if v > 50) / len(_ba["blend_arr"])
+ck("the resampled win rate lands on the blend",
+   0.34 <= _aw <= 0.40, f"{_aw:.3f} vs target 0.370")
+ck("and the bout stays a bout: exactly one fighter wins each sample",
+   all((x > 50) != (y > 50) for x, y in zip(_ba["blend_arr"], _bb["blend_arr"])),
+   "the contest sim scores lineups off these arrays; if both fighters can win "
+   "the same sample, a lineup rostering both looks fine")
+_ua, _ub = _mkbout(0.60, 60.0)
+_ua["fair_win"] = _ua["kalshi_cents"] = None
+ck("an unpriced bout is left exactly as the sim made it",
+   _SIMU._reblend_bout(_ua, _ub, seed=3) is False and "blend_proj" not in _ua,
+   "a prelim with no Kalshi market still deserves its projection")
+
+# The confidence objective. Its whole job is to separate fighters that
+# projection alone rates identically.
+_cpool = [
+    {"name": "agreed", "proj": 60.0, "ceil_proj": 85.0, "fair_win": 70.0, "win_pct": 72.0},
+    {"name": "fades", "proj": 60.0, "ceil_proj": 85.0, "fair_win": 40.0, "win_pct": 75.0,
+     "fades_market": True},
+    {"name": "thin", "proj": 60.0, "ceil_proj": 85.0, "fair_win": 55.0, "win_pct": 55.0,
+     "thin": True},
+    {"name": "nodata", "proj": 60.0, "ceil_proj": 85.0, "fair_win": 50.0, "win_pct": 50.0,
+     "thin": True, "defaulted": True},
+    {"name": "unpriced", "proj": 60.0, "ceil_proj": 85.0, "fair_win": None, "win_pct": 70.0},
+]
+_SIMU._set_values(_cpool, "confidence", 0.6)
+_rank = [p["name"] for p in sorted(_cpool, key=lambda x: -x["value"])]
+ck("'most confident' prefers the pick the model and the market agree on",
+   _rank[0] == "agreed" and _rank[-1] == "nodata", " > ".join(_rank))
+ck("an unpriced read never outranks a confirmed one",
+   next(p for p in _cpool if p["name"] == "unpriced")["value"]
+   < next(p for p in _cpool if p["name"] == "agreed")["value"],
+   "a flat discount instead of the same transform put an unpriced coin flip "
+   "above a fighter both sources liked -- the objective preferred ignorance")
+_SIMU._set_values(_cpool, "projection", 0.6)
+ck("...which projection alone cannot do at all",
+   len({p["value"] for p in _cpool}) == 1,
+   "identical projections are identical to the cash objective; that is exactly "
+   "why 'most confident' is a separate mode")
+ck("the blend is shown on the slip and in the banner, not hidden",
+   '"kalshi_cents": p.get("kalshi_cents")' in _insp.getsource(_SIMU._lineup_player)
+   and "bouts_blended" in _ufc_src
+   and "p.fair_win != null && p.kalshi_cents != null" in _appjs,
+   "a projection moved by the exchange should say so")
+
+print()
+print("=" * 72)
+print("Leaving the app and coming back is not a failure state (cont.)")
+print("=" * 72)
 ck("background CPU work yields to the web worker",
    "os.nice(10)" in open(_os.path.join(_root, "baseball.py")).read()
    and "os.nice(10)" in open(_os.path.join(_root, "deep_season.py")).read(),

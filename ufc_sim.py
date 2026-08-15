@@ -83,6 +83,12 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
     p_finish = max(0.15, min(0.8, (ft_a + ft_b) * 0.7))
     # Share of finishes that are KOs vs subs, from the winner's striking-vs-grappling.
     dk = {a["id"]: [], b["id"]: []}
+    # Which samples this fighter WON, index-aligned with dk. Blending the board
+    # toward a market price needs to move win probability without disturbing the
+    # method/round mix inside each branch, and that requires knowing which
+    # branch a sample came from -- it cannot be recovered from the points alone
+    # (a high-volume loss can outscore a quick decision win).
+    won = {a["id"]: [], b["id"]: []}
     wins = {a["id"]: 0, b["id"]: 0}
     methods = {"ko": 0, "sub": 0, "dec": 0}
     rounds_hist = {}
@@ -133,6 +139,7 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
                 if finish and end_min <= 1.0:
                     pts += _QUICK_PTS        # sub-60-second win
             dk[f["id"]].append(pts)
+            won[f["id"]].append(1 if f is win else 0)
 
     # Index-aligned per-fighter DK samples: entry i of both arrays is the SAME
     # simulated fight, so lineup/contest scoring sees the true joint outcome
@@ -143,6 +150,7 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
     def fighter_out(f):
         d = _dist(dk[f["id"]])
         d["dk_arr"] = [round(dk[f["id"]][i], 1) for i in keep if i < len(dk[f["id"]])]
+        d["won_arr"] = [won[f["id"]][i] for i in keep if i < len(won[f["id"]])]
         nf = f.get("fights", 0)
         car = f.get("career")
         return {"id": f["id"], "name": f["name"], "fights": nf,

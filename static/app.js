@@ -4957,7 +4957,14 @@ async function runDfsSim() {
           const rc = p.rating >= 60 ? "#3ad17a" : p.rating <= 40 ? "#e0566a" : "var(--muted)";
           parts.push(`rating <b style="color:${rc}">${p.rating}</b>`);
         }
-        if (p.win_pct != null) parts.push(`win ${p.win_pct}%`);
+        // Show the blend, not just its output: our rating, the exchange's
+        // price, and where the projection landed between the two.
+        if (p.fair_win != null && p.kalshi_cents != null) {
+          parts.push(`win <b>${p.fair_win}%</b> <span title="our power rating alone">(model ${p.win_pct}%</span>`
+                   + ` <span title="Kalshi ask">· Kalshi ${p.kalshi_cents}¢)</span>`);
+        } else if (p.win_pct != null) {
+          parts.push(`win ${p.win_pct}%`);
+        }
         if (p.ceil_proj != null) parts.push(`ceil ${p.ceil_proj}`);
         if (p.fights > 0 && p.record) parts.push(`UFC ${p.record}`);
         else if (p.career_record) parts.push(`pro ${p.career_record}`);
@@ -4965,6 +4972,11 @@ async function runDfsSim() {
         if (p.debut) ufcBits += ` <span class="ufc-debut" title="UFC debut - striking/grappling are league-average; finishing & durability seeded from the pro record">⚠️ UFC debut (pro ${p.career_record})</span>`;
         else if (p.defaulted) ufcBits += ` <span class="ufc-debut" title="No fight history at all - pure league-average placeholder">⚠️ no data</span>`;
         else if (p.thin) ufcBits += ` <span class="ufc-debut" title="Few UFC fights - rating shrunk toward league average">⚠️ thin</span>`;
+        if (p.fades_market) ufcBits += ` <span class="ufc-debut" title="Our rating picks this fighter, the exchange has him as the underdog. The projection already blends toward the price - this flags that the two disagree on WHO WINS.">⚡ fades market</span>`;
+        if (p.model_proj != null && p.proj != null && Math.abs(p.model_proj - p.proj) >= 0.6) {
+          const d2 = p.proj - p.model_proj;
+          ufcBits += ` <span class="small" style="color:var(--muted)" title="Kalshi moved this projection off the raw power rating">(${d2 > 0 ? "+" : ""}${d2.toFixed(1)} vs rating-only ${p.model_proj})</span>`;
+        }
       }
       const own = p.own != null ? ` · <span title="projected field ownership">own ${p.own}%</span>` : "";
       return `<div class="sportout"><div class="left"><span class="oname">${startTag}${p.captain ? "⭐ " : ""}${p.name}${p.captain ? " (CPT 1.5×)" : ""}</span><span class="small">$${p.salary.toLocaleString()} · proj ${p.proj}${own}${pd}${ufcBits}</span></div></div>`;
@@ -4986,8 +4998,18 @@ async function runDfsSim() {
     if (u && u.available) {
       const mode = d.objective === "ceiling"
         ? `<b style="color:#3ad17a">GPP / ceiling</b> - optimizing each fighter's 90th-pct (boom) night, so finishers with knockout upside are favored`
+        : d.objective === "confidence"
+        ? `<b style="color:#3ad17a">Most confident</b> - the slate we're surest of: favours fights where our rating and the Kalshi price agree, and fades thin-data coin flips`
+        : d.objective === "leverage"
+        ? `<b>GPP leverage</b> - ceiling discounted by projected ownership`
         : `<b>Cash / projection</b> - optimizing mean points for a steady floor`;
-      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> - ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points). Mode: ${mode}.</div>`;
+      // Say plainly whether the exchange is in these numbers. A card with no
+      // open Kalshi market is running on the power rating alone, and that
+      // should never be silent.
+      const blend = u.bouts_blended
+        ? ` Projections <b>blend the power rating with live Kalshi prices</b> on ${u.bouts_blended}/${u.bouts} bouts, weighted by how much the rating has actually proven on graded fights.`
+        : ` <span style="color:var(--muted)">No open Kalshi market for this card - power rating only.</span>`;
+      gridBanner = `<div class="small" style="margin:4px 0 0">🥊 <b>${u.event}</b> - ${u.matched} fighters projected by our <b>fight simulator</b> (ratings built from each fighter's past-fight history → win prob + method/round → DK points).${blend} Mode: ${mode}.</div>`;
     } else if (u && !u.available) {
       gridBanner = `<div class="small" style="margin:4px 0 0">🥊 ${u.reason}.</div>`;
     }
