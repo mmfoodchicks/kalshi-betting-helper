@@ -3908,6 +3908,12 @@ _stud = _ndmk("Stud", "RB", "DET", "NO", 8500, 22)
 _punt = _ndmk("Punt", "RB", "NO", "DET", 4000, 10.4)
 _ND._set_ownership([_stud, _punt] + [_ndmk(f"f{i}", "WR", "KC", "BUF", 5000, 9)
                                      for i in range(30)])
+ck("the build SAYS which season it read, so a wrong toggle is visible",
+   '"slate_mode": slate_note' in _insp.getsource(_ND.build)
+   and "slate_mode" in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "static", "app.js")).read(),
+   "the user swore the box was checked; whether it was should never matter, "
+   "and what the builder decided should never be a mystery")
 ck("equal value no longer means equal chalk: the stud draws the field",
    _stud["_vw"] > 1.8 * _punt["_vw"],
    "a $4k punt and an $8.5k star at the same points-per-dollar do not get "

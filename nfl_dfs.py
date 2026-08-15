@@ -744,11 +744,19 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
         preseason = _sp
         if _sw is not None:
             week = _sw
+        slate_note = ("preseason (read from your CSV's game dates)" if _sp else
+                      f"Week {week} regular season (read from your CSV's game dates)")
+    else:
+        slate_note = (("preseason" if preseason else f"Week {week} regular season")
+                      + " (from the toggle - this CSV carries no game dates)")
     detected = detect_mode(csv_players)
     use = detected if mode in (None, "", "auto") else mode
     if use == "showdown":
-        return _build_showdown(csv_players, week, objective, contest, contest_size,
-                               entry_fee, prize_pool, first_prize, preseason)
+        res = _build_showdown(csv_players, week, objective, contest, contest_size,
+                              entry_fee, prize_pool, first_prize, preseason)
+        if isinstance(res, dict) and "error" not in res:
+            res["slate_mode"] = slate_note
+        return res
     if len(csv_players) < len(ROSTER):
         return {"error": f"need at least {len(ROSTER)} players in the CSV (got {len(csv_players)})"}
     csv_players = [c for c in csv_players if _playable(c)]
@@ -832,6 +840,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
              "could NOT be excluded - check every name is active before you "
              "enter. Copy the whole CSV including its header row."),
             "week": week, "objective": objective, "stack": bool(stack_min),
+            "slate_mode": slate_note,
             "salary": sum(p["salary"] for p in lineup), "cap": CAP,
             "proj": round(sum(p["proj"] for p in lineup), 1),
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),

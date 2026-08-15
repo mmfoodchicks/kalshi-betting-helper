@@ -4955,6 +4955,8 @@ async function runDfsSim() {
     }
     // Contest simulation banner (win% / cash% / ROI at the real field size).
     let csBanner = "";
+    const slateNote = d.slate_mode
+      ? `<div class="dfs-note" style="margin-top:4px">\ud83d\udccb Slate read as <b>${d.slate_mode}</b></div>` : "";
     const cs = d.contest_sim;
     if (cs && !cs.error) {
       const money = (v) => "$" + Math.round(v).toLocaleString();
@@ -4985,7 +4987,7 @@ async function runDfsSim() {
     box.innerHTML = `<div class="bbgame">
       <div class="matchup">${lineups.length > 1 ? `${lineups.length}-lineup portfolio` : `Optimal ${d.roster}-player lineup`} (${d.pool} in pool)</div>
       ${gridBanner}
-      ${csBanner}
+      ${slateNote}${csBanner}
       ${lineups.length === 1 ? `<div class="kv" style="margin-top:6px"><span>Salary <b>$${lineups[0].total_salary.toLocaleString()}</b> / $${d.cap.toLocaleString()}</span><span>Projected <b>${lineups[0].total_proj}</b> pts</span></div>
       <div class="kv"><span>🔴 Floor <b>${d.sim.floor}</b></span><span>Median <b>${d.sim.median}</b></span><span>🟢 Ceiling <b class="ev pos">${d.sim.ceiling}</b></span><span>Max <b>${d.sim.max}</b></span></div>` : ""}
       <div class="dfs-lineups" style="margin-top:8px">${lineupCards}</div>
