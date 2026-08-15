@@ -3849,6 +3849,72 @@ ck("a 6-cent 15M edge sits below the measured 8-cent bar",
 
 print()
 print("=" * 72)
+print("The NFL DFS slate decides its own season, stacks, and loyalty")
+print("=" * 72)
+import nfl_dfs as _ND
+import random as _ndr
+
+ck("a September CSV is Week 1 regular season even when today is August",
+   _ND.slate_season_type([{"game": "DET@NO 09/13/2026 01:00PM ET"}]) == (False, 1)
+   and _ND.slate_season_type([{"game": "LV@SF 08/16/2026 04:00PM ET"}]) == (True, None)
+   and _ND.slate_season_type([{"game": "KC@BUF 10/04/2026 01:00PM ET"}]) == (False, 4)
+   and _ND.slate_season_type([{"game": ""}]) == (None, None),
+   "the calendar said preseason and ran DK's early Week 1 slate through the "
+   "inverted exhibition model: Gibbs 7.6% owned, a third-string TE at 14%")
+ck("the override sits in build(), ahead of everything the flag feeds",
+   "The slate's own dates outrank the calendar" in _insp.getsource(_ND.build))
+ck("every objective stacks now, deeper for the GPP shapes",
+   '(2 if objective in ("ceiling", "leverage") else 1) if stack else 0'
+   in _insp.getsource(_ND.build),
+   "stacks are the whole point of NFL DFS and the default objective built "
+   "stackless")
+ck("opponents parse off DK's own Game Info",
+   _ND._opp_of("DET", "DET@NO 09/13/2026") == "NO"
+   and _ND._opp_of("NO", "DET@NO 09/13/2026") == "DET"
+   and _ND._opp_of("KC", "DET@NO 09/13/2026") is None)
+
+def _ndmk(nm, pos, team, opp, sal, proj):
+    return {"name": nm, "pos": pos, "team": team, "opp": opp, "salary": sal,
+            "proj": proj, "value": proj / (sal / 1000), "elig": _ND._elig(pos)}
+_ndp = []
+for _t, _o in (("DET", "NO"), ("NO", "DET"), ("KC", "BUF"), ("BUF", "KC")):
+    _ndp.append(_ndmk(f"QB_{_t}", "QB", _t, _o, 6500, 20))
+    for _i in range(3):
+        _ndp.append(_ndmk(f"RB_{_t}{_i}", "RB", _t, _o, 5500 - 300 * _i, 14 - _i))
+        _ndp.append(_ndmk(f"WR_{_t}{_i}", "WR", _t, _o, 6000 - 400 * _i, 15 - _i))
+        _ndp.append(_ndmk(f"TE_{_t}{_i}", "TE", _t, _o, 3500 - 200 * _i, 8 - _i))
+    _ndp.append(_ndmk(f"DST_{_t}", "DST", _t, _o, 3000, 8))
+_ok_st = _ok_dst = _nruns = 0
+for _s in range(6):
+    _ndr.seed(_s)
+    _lu = _ND.optimize(_ndp, 50000, "projection", stack_min=1, restarts=1500)
+    if not _lu:
+        continue
+    _nruns += 1
+    _qb = next(p for p in _lu if p["pos"] == "QB")
+    _dst = next(p for p in _lu if p["pos"] == "DST")
+    _off = {p["team"] for p in _lu if p["pos"] != "DST"}
+    if any(p["team"] == _qb["team"] and p["pos"] in ("WR", "TE") for p in _lu):
+        _ok_st += 1
+    if _dst["opp"] not in _off:
+        _ok_dst += 1
+ck("the default build stacks the QB with a pass-catcher",
+   _nruns >= 4 and _ok_st == _nruns, f"{_ok_st}/{_nruns}")
+ck("and never rosters offense against its own defense",
+   _nruns >= 4 and _ok_dst == _nruns,
+   f"{_ok_dst}/{_nruns} -- a DST scores off the exact failures your opposing "
+   "skill player needs to succeed")
+_stud = _ndmk("Stud", "RB", "DET", "NO", 8500, 22)
+_punt = _ndmk("Punt", "RB", "NO", "DET", 4000, 10.4)
+_ND._set_ownership([_stud, _punt] + [_ndmk(f"f{i}", "WR", "KC", "BUF", 5000, 9)
+                                     for i in range(30)])
+ck("equal value no longer means equal chalk: the stud draws the field",
+   _stud["_vw"] > 1.8 * _punt["_vw"],
+   "a $4k punt and an $8.5k star at the same points-per-dollar do not get "
+   "rostered alike; pure value^3.2 undercut every star")
+
+print()
+print("=" * 72)
 print("The salaries CSV is a tap or a drop, not a copy-paste ritual")
 print("=" * 72)
 _js_dfs = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",

@@ -60,6 +60,55 @@ def _value(p, objective):
     return p["proj"]
 
 
+def _slate_dates(csv_players):
+    """Game dates parsed off the CSV's own Game Info column (MM/DD/YYYY)."""
+    import re as _re
+    import datetime as _dt
+    out = []
+    for c in csv_players:
+        m = _re.search(r"\b(\d{2})/(\d{2})/(\d{4})\b", c.get("game") or "")
+        if m:
+            try:
+                out.append(_dt.date(int(m.group(3)), int(m.group(1)), int(m.group(2))))
+            except ValueError:
+                pass
+    return out
+
+
+def slate_season_type(csv_players):
+    """(preseason, week) read off the SLATE, or (None, None) when undatable.
+
+    The old behavior asked the calendar -- "it is August, so this must be
+    preseason" -- which ran DK's early-posted WEEK 1 slates through the
+    inverted exhibition usage model: Jahmyr Gibbs projected to sit (7.6%
+    owned) while a third-string TE drew 14%. The CSV says which games these
+    are; the CSV decides. NFL regular seasons start after Labor Day, so an
+    August slate is exhibition and a September-or-later one is real, with the
+    week counted from the first Thursday on or after Sep 4."""
+    import datetime as _dt
+    dates = _slate_dates(csv_players)
+    if not dates:
+        return None, None
+    d = sorted(dates)[len(dates) // 2]
+    if d.month < 9 and not (d.month == 1 or d.month == 2):
+        return True, None                       # August (or earlier): exhibition
+    anchor = _dt.date(d.year if d.month >= 9 else d.year - 1, 9, 4)
+    while anchor.weekday() != 3:                # first Thursday on/after Sep 4
+        anchor += _dt.timedelta(days=1)
+    week = max(1, min(18, (d - anchor).days // 7 + 1))
+    return False, week
+
+
+def _opp_of(team, game):
+    """The opponent abbr from a DK Game Info string ("DET@NO 09/13/2026...")."""
+    pair = (game or "").split(" ")[0]
+    if "@" not in pair:
+        return None
+    a, _, h = pair.partition("@")
+    t = (team or "").upper()
+    return h.upper() if a.upper() == t else (a.upper() if h.upper() == t else None)
+
+
 def detect_mode(csv_players):
     """'showdown' or 'classic', read off the export itself.
 
@@ -303,9 +352,21 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random)
     """One greedy-randomized valid lineup. With a stack, WR/TE/FLEX slots seed from
     the QB's team so the QB and his pass-catchers boom together."""
     used, lineup, sal, stacked = set(), [], 0, 0
+    dst_opps, off_teams = set(), set()
     for si in sorted(range(len(ROSTER)), key=lambda i: len(by_pos[ROSTER[i]])):
         pos = ROSTER[si]
         pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
+        # NEVER oppose your own defense: a DST scores off the exact failures
+        # your opposing skill player needs to succeed. DST slots skip defenses
+        # facing a rostered offense; offense slots skip players the rostered
+        # DST is trying to shut out. Both directions, because the slot order
+        # here is smallest-pool-first and DST usually goes FIRST.
+        if pos == "DST":
+            pool = [p for p in pool
+                    if not (p.get("opp") and p["opp"] in off_teams)]
+        else:
+            pool = [p for p in pool
+                    if (p.get("team") or "").upper() not in dst_opps]
         if not pool:
             return None
         cand = pool
@@ -321,6 +382,11 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random)
         if stack_team and pick.get("team") == stack_team and pick["pos"] in ("WR", "TE"):
             stacked += 1
         used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
+        if pick["pos"] == "DST":
+            if pick.get("opp"):
+                dst_opps.add(pick["opp"])
+        elif pick.get("team"):
+            off_teams.add((pick["team"] or "").upper())
     if len(lineup) != len(ROSTER) or sal > cap or (stack_team and stacked < stack_min):
         return None
     return lineup, sal
@@ -355,7 +421,11 @@ def _set_ownership(players, n_slots=None):
     n_slots = len(ROSTER) if n_slots is None else n_slots
     for p in players:
         v = p["proj"] / max(1.0, p["salary"] / 1000.0)
-        p["_vw"] = max(0.01, v) ** 3.2
+        # Chalk is value AND absolute production: a $4k punt and an $8.5k stud
+        # at the same points-per-dollar do not draw the same field -- the crowd
+        # rosters the stud. Pure value^3.2 undercut every star (it had Gibbs at
+        # 7.6%); the proj term restores the mass where the field actually goes.
+        p["_vw"] = max(0.01, v) ** 2.4 * max(0.5, p["proj"]) ** 1.2
     tot = sum(p["_vw"] for p in players) or 1.0
     # Ownership across all players sums to ~n_slots x 100%; chalk (high value)
     # gets the bulk. Capped so no single player looks impossibly owned.
@@ -667,6 +737,13 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
+    # The slate's own dates outrank the calendar: a Week 1 CSV in August is a
+    # REGULAR-season contest and must not run the inverted preseason model.
+    _sp, _sw = slate_season_type(csv_players)
+    if _sp is not None:
+        preseason = _sp
+        if _sw is not None:
+            week = _sw
     detected = detect_mode(csv_players)
     use = detected if mode in (None, "", "auto") else mode
     if use == "showdown":
@@ -688,6 +765,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     players, unmatched = [], []
     for c in csv_players:
         nm = c["name"]
+        c["opp"] = _opp_of(c.get("team"), c.get("game"))
         pos = (c.get("pos") or "").upper().split("/")[0]
         elig = _elig(pos)
         if not elig:
@@ -705,14 +783,19 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             samp = [max(0.0, random.gauss(proj, proj * 0.5 + 2)) for _ in range(1500)]
             ceiling, floor = round(_pct(samp, 0.9), 1), round(_pct(samp, 0.1), 1)
             unmatched.append(nm)
-        players.append({"name": nm, "pos": pos, "team": c.get("team"), "salary": int(c["salary"]),
+        players.append({"name": nm, "pos": pos, "team": c.get("team"), "opp": c.get("opp"),
+                        "salary": int(c["salary"]),
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
     if _by_pos(players) is None:
         return {"error": "the CSV doesn't cover every roster slot (need QB/RB/WR/TE/DST)"}
 
     _set_ownership(players)
-    stack_min = 1 if (stack and objective in ("ceiling", "leverage")) else 0
+    # Stacks are the whole point of NFL DFS -- a QB and his pass-catchers boom
+    # together -- and they used to switch on only for the GPP objectives, so a
+    # default build came back stackless. Every objective stacks now; the
+    # top-heavy ones stack deeper.
+    stack_min = (2 if objective in ("ceiling", "leverage") else 1) if stack else 0
     lineup = optimize(players, CAP, objective, stack_min=stack_min)
     if not lineup:
         return {"error": "no valid lineup under the cap"}
