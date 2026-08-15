@@ -3973,6 +3973,46 @@ ck("equal value no longer means equal chalk: the stud draws the field",
    _stud["_vw"] > 1.8 * _punt["_vw"],
    "a $4k punt and an $8.5k star at the same points-per-dollar do not get "
    "rostered alike; pure value^3.2 undercut every star")
+ck("TE never fills the FLEX",
+   _ND.FLEX_OK == ("RB", "WR") and _ND._elig("TE") == ["TE"]
+   and "FLEX" in _ND._elig("RB") and "FLEX" in _ND._elig("WR"),
+   "the slot swaps ~2 points of RB/WR scoring for a second tight end; the "
+   "elite-TE double build is a deliberate choice, not an optimizer default")
+ck("leverage never fades the defense",
+   _ND._value({"pos": "DST", "ceiling": 8.0, "own": 2.0}, "leverage") == 8.0
+   and _ND._value({"pos": "WR", "ceiling": 8.0, "own": 2.0}, "leverage") < 8.0,
+   "the DST slot's range is too small for contrarianism to differentiate a "
+   "lineup -- fading the chalk defense bought a 2%-owned Titans unit")
+# Full-gradient pool: within a position the field sorts by PROJECTION, so the
+# best RB on the slate is the chalk, not whichever punt shows the best
+# points-per-dollar ratio. And EVERY player leaves with an "own" -- the
+# redistribution rewrite briefly returned pools where capped-out positions
+# left the remainder unassigned.
+_ownp = []
+for _pos, _n, _top, _tsal, _flr, _fsal in (
+        ("QB", 22, 22.0, 8000, 8.0, 4500), ("RB", 45, 22.5, 8600, 3.0, 4000),
+        ("WR", 70, 19.5, 8800, 2.5, 3000), ("TE", 28, 14.0, 6800, 2.0, 2500),
+        ("DST", 20, 9.5, 3800, 4.0, 2000)):
+    for _i in range(_n):
+        _f = (_n - 1 - _i) / (_n - 1)
+        _ownp.append({"name": f"{_pos}{_i}", "pos": _pos,
+                      "proj": _flr + (_top - _flr) * _f ** 1.6,
+                      "salary": int(_fsal + (_tsal - _fsal) * _f ** 1.3)})
+_ND._set_ownership(_ownp)
+_top_rb = max((p for p in _ownp if p["pos"] == "RB"), key=lambda p: p["proj"])
+_min_te = min((p for p in _ownp if p["pos"] == "TE"), key=lambda p: p["proj"])
+ck("the best RB on the slate is the chalk, the punt TE is not",
+   _top_rb["own"] >= 20.0 and _min_te["own"] <= 8.0,
+   f'Gibbs-shape RB at {_top_rb["own"]}%, punt TE at {_min_te["own"]}% -- '
+   "7.6% on the league's best back against its worst run defense was the bug")
+ck("every player leaves _set_ownership owned, capped at 45",
+   all(0.1 <= p.get("own", -1) <= 45.0 for p in _ownp))
+_mono = [{"pos": "RB", "proj": 30.0, "salary": 9000},
+         {"pos": "RB", "proj": 1.0, "salary": 3000}]
+_ND._set_ownership(_mono)
+ck("a degenerate two-man position still assigns everyone",
+   all("own" in p for p in _mono),
+   "when every pass re-capped, the remainder never got an own at all")
 
 print()
 print("=" * 72)

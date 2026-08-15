@@ -18,7 +18,10 @@ import nfl_dfs_sim
 from mlb_dfs import _gpp_curve, _rank_grid, _ncdf, _npdf   # roster-agnostic helpers
 
 ROSTER = ["QB", "RB", "RB", "WR", "WR", "WR", "TE", "FLEX", "DST"]
-FLEX_OK = {"RB", "WR", "TE"}
+FLEX_OK = ("RB", "WR")   # TE is DK-legal at FLEX and almost always wrong there:
+                         # the slot swaps ~2 points of RB/WR scoring for a
+                         # second tight end, and the niche elite-TE double
+                         # build is not what an optimizer should default into
 CAP = 50000
 
 # --- Showdown Captain Mode ---------------------------------------------------
@@ -56,6 +59,11 @@ def _value(p, objective):
     if objective == "ceiling":
         return p["ceiling"]
     if objective == "leverage":
+        # DST is exempt: the slot's score range is too small for contrarianism
+        # to differentiate a lineup, so fading the chalk defense costs real
+        # points to buy nothing -- leverage lives in the skill slots.
+        if p.get("pos") == "DST":
+            return p["ceiling"]
         return p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
     return p["proj"]
 
@@ -448,16 +456,46 @@ def _set_ownership(players, n_slots=None):
     n_slots = len(ROSTER) if n_slots is None else n_slots
     for p in players:
         v = p["proj"] / max(1.0, p["salary"] / 1000.0)
-        # Chalk is value AND absolute production: a $4k punt and an $8.5k stud
-        # at the same points-per-dollar do not draw the same field -- the crowd
-        # rosters the stud. Pure value^3.2 undercut every star (it had Gibbs at
-        # 7.6%); the proj term restores the mass where the field actually goes.
-        p["_vw"] = max(0.01, v) ** 2.4 * max(0.5, p["proj"]) ** 1.2
-    tot = sum(p["_vw"] for p in players) or 1.0
-    # Ownership across all players sums to ~n_slots x 100%; chalk (high value)
-    # gets the bulk. Capped so no single player looks impossibly owned.
+        # WITHIN a position the field sorts near-substitutes mostly by
+        # PROJECTION (the best RB against the worst run defense is the obvious
+        # play at any salary), with value as a mild tiebreaker -- proj^3.0 x
+        # value^0.6, tuned on realistic slate gradients to land the shapes a
+        # real GPP sheet shows: clear top RB ~25%, his shadow ~22%, a $2.5k
+        # punt TE ~4%, chalk DST ~18%.
+        p["_vw"] = max(0.5, p["proj"]) ** 3.0 * max(0.01, v) ** 0.6
+    budgets = ({"QB": 1.0, "RB": 2.5, "WR": 3.5, "TE": 1.0, "DST": 1.0}
+               if n_slots == len(ROSTER) else None)
+    groups = {}
     for p in players:
-        p["own"] = round(min(45.0, 100.0 * n_slots * p["_vw"] / tot), 1)
+        pos = p.get("pos") if budgets else None
+        groups.setdefault(pos if budgets and pos in budgets else "ALL", []).append(p)
+    for pos, grp in groups.items():
+        bud = (budgets[pos] if pos != "ALL" else float(n_slots)) * 100.0
+        # Cap at 45% and REDISTRIBUTE the overflow to the rest of the position,
+        # so two mega-chalk backs don't silently delete the budget the field
+        # actually spends on everyone else.
+        capped = set()
+        for _ in range(3):
+            rem = [p for p in grp if id(p) not in capped]
+            tot = sum(p["_vw"] for p in rem) or 1.0
+            left = bud - 45.0 * len(capped)
+            over = False
+            for p in rem:
+                if left * p["_vw"] / tot > 45.0:
+                    capped.add(id(p))
+                    over = True
+            if not over:
+                break
+        # Assignment happens OUTSIDE the capping passes so every player gets an
+        # "own" even if the passes exhaust before converging (min() backstops).
+        rem = [p for p in grp if id(p) not in capped]
+        tot = sum(p["_vw"] for p in rem) or 1.0
+        left = bud - 45.0 * len(capped)
+        for p in rem:
+            p["own"] = round(min(45.0, max(0.1, left * p["_vw"] / tot)), 1)
+        for p in grp:
+            if id(p) in capped:
+                p["own"] = 45.0
 
 
 # ---- contest sim (win% / cash% / ROI, any field size) ----------------------
