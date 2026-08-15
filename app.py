@@ -758,6 +758,8 @@ def api_simulate_dfs():
                 first_prize=(_ni("first_prize", 0.0) or None),
                 preseason=_nfl_pre_flag(d),
                 field_size=int(_ni("field_size", 0, int)) or None,
+                n_lineups=max(1, min(20, int(_ni("lineups", 1, int)))),
+                uniq=max(1, min(6, int(_ni("uniq", 0, int) or _ni("min_uniq", 2, int)))),
                 # auto reads it off the CSV (a showdown export carries CPT rows);
                 # the explicit values are the override for when DK posts a
                 # one-game CLASSIC slate, which auto cannot tell apart by size.

@@ -3875,7 +3875,8 @@ ck("opponents parse off DK's own Game Info",
 
 def _ndmk(nm, pos, team, opp, sal, proj):
     return {"name": nm, "pos": pos, "team": team, "opp": opp, "salary": sal,
-            "proj": proj, "value": proj / (sal / 1000), "elig": _ND._elig(pos)}
+            "proj": proj, "value": proj / (sal / 1000), "elig": _ND._elig(pos),
+            "ceiling": proj * 1.6, "floor": proj * 0.5, "own": 10.0}
 _ndp = []
 for _t, _o in (("DET", "NO"), ("NO", "DET"), ("KC", "BUF"), ("BUF", "KC")):
     _ndp.append(_ndmk(f"QB_{_t}", "QB", _t, _o, 6500, 20))
@@ -3928,6 +3929,40 @@ ck("the route parses field_size and the input allows the deep sample",
    and 'max="3000"' in open(_os.path.join(
        _os.path.dirname(_os.path.abspath(__file__)), "..", "templates",
        "index.html")).read())
+_nd_src2 = _insp.getsource(_ND)
+ck("a stack is anchored to its QUARTERBACK, not just his teammates",
+   'if stack_team and pos == "QB":' in _nd_src2,
+   "the QB slot never respected the stack team, so a 'stack' could be Lions "
+   "receivers with the Chiefs' QB -- catchers without their quarterback are "
+   "not a stack")
+ck("GPP shapes bring back a catcher from the QB's opponent",
+   'bring_min = 1 if (stack and objective in ("ceiling", "leverage")) else 0' in _nd_src2
+   and "brought < bring_min" in _nd_src2,
+   "a shootout lifts both sides; the game-stack owns that outcome")
+ck("portfolios exist: unique tickets with an exposure cap",
+   "n_lineups=1, uniq=2" in _insp.getsource(_ND.build)
+   and "> 0.6 for nm in names" in _insp.getsource(_ND.build)
+   and "exclude=(rosters, uniq)" in _insp.getsource(_ND.build),
+   "more unique tickets is the one honest way to raise the chance of hitting "
+   "a huge field")
+ck("one sampled field scores the whole portfolio",
+   "all_lineups = [your_lineup] + list(extra_lineups or [])"
+   in _insp.getsource(_ND.contest_sim))
+ck("the simulated field stacks like a real tournament field",
+   "rng.random() < 0.65" in _insp.getsource(_ND._field_lineup),
+   "a field of independent picks is thinner-tailed than the real one, which "
+   "flattered our win%")
+_lev = None
+for _s2 in range(4):
+    _ndr.seed(100 + _s2)
+    _lev = _ND.optimize(_ndp, 50000, "leverage", stack_min=2, bring_min=1, restarts=2500)
+    if _lev:
+        break
+if _lev:
+    _lqb = next(p for p in _lev if p["pos"] == "QB")
+    ck("a leverage build carries QB + 2 mates + the bring-back",
+       sum(1 for p in _lev if p["team"] == _lqb["team"] and p["pos"] in ("WR", "TE")) >= 2
+       and sum(1 for p in _lev if p["team"] == _lqb["opp"] and p["pos"] in ("WR", "TE")) >= 1)
 ck("the build SAYS which season it read, so a wrong toggle is visible",
    '"slate_mode": slate_note' in _insp.getsource(_ND.build)
    and "slate_mode" in open(_os.path.join(

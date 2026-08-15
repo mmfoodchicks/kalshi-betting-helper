@@ -348,10 +348,15 @@ def _by_pos(players):
     return by
 
 
-def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random):
-    """One greedy-randomized valid lineup. With a stack, WR/TE/FLEX slots seed from
-    the QB's team so the QB and his pass-catchers boom together."""
-    used, lineup, sal, stacked = set(), [], 0, 0
+def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
+               bring_min=0):
+    """One greedy-randomized valid lineup. With a stack, the QB slot is HELD to
+    the stack team (catchers without their quarterback are not a stack) and
+    WR/TE/FLEX slots seed from his team so they boom together. `bring_min`
+    additionally requires a pass-catcher from the QB's OPPONENT -- the
+    bring-back: a shootout lifts both sides, and the game-stack owns it."""
+    used, lineup, sal, stacked, brought = set(), [], 0, 0, 0
+    stack_opp = None
     dst_opps, off_teams = set(), set()
     for si in sorted(range(len(ROSTER)), key=lambda i: len(by_pos[ROSTER[i]])):
         pos = ROSTER[si]
@@ -372,27 +377,44 @@ def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random)
         cand = pool
         # A real NFL stack is QB + a pass-catcher (WR/TE) from his team -- that's
         # where the sim's correlation lives (a QB's day lifts his receivers).
-        if stack_team and pos in ("WR", "TE", "FLEX") and stacked < stack_min:
+        if stack_team and pos == "QB":
+            qb_pool = [p for p in pool if p.get("team") == stack_team]
+            if not qb_pool:
+                return None
+            cand = qb_pool
+        elif stack_team and pos in ("WR", "TE", "FLEX") and stacked < stack_min:
             team_pool = [p for p in pool if p.get("team") == stack_team and p["pos"] in ("WR", "TE")]
             if team_pool:
                 cand = team_pool
+        elif (bring_min and stack_opp and pos in ("WR", "TE", "FLEX")
+              and stacked >= stack_min and brought < bring_min):
+            bpool = [p for p in pool if p.get("team") == stack_opp and p["pos"] in ("WR", "TE")]
+            if bpool:
+                cand = bpool
         top = cand[:14]
         weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
         pick = rng.choices(top, weights=weights)[0]
+        if stack_team and pick["pos"] == "QB":
+            stack_opp = pick.get("opp")
         if stack_team and pick.get("team") == stack_team and pick["pos"] in ("WR", "TE"):
             stacked += 1
+        if stack_opp and pick.get("team") == stack_opp and pick["pos"] in ("WR", "TE"):
+            brought += 1
         used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
         if pick["pos"] == "DST":
             if pick.get("opp"):
                 dst_opps.add(pick["opp"])
         elif pick.get("team"):
             off_teams.add((pick["team"] or "").upper())
-    if len(lineup) != len(ROSTER) or sal > cap or (stack_team and stacked < stack_min):
+    if (len(lineup) != len(ROSTER) or sal > cap
+            or (stack_team and stacked < stack_min)
+            or (bring_min and brought < bring_min)):
         return None
     return lineup, sal
 
 
-def optimize(players, cap, objective, stack_min=0, restarts=8000):
+def optimize(players, cap, objective, stack_min=0, restarts=8000, bring_min=0,
+             exclude=None):
     by_pos = _by_pos(players)
     if by_pos is None:
         return None
@@ -400,7 +422,12 @@ def optimize(players, cap, objective, stack_min=0, restarts=8000):
     best = None
     for _ in range(restarts):
         st = random.choice(teams) if (stack_min and teams) else None
-        r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min, rng=random)
+        r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min,
+                       rng=random, bring_min=bring_min)
+        if r and exclude:
+            names = frozenset(p["name"] for p in r[0])
+            if any(len(names & x) > len(ROSTER) - exclude[1] for x in exclude[0]):
+                continue
         if not r:
             continue
         lineup, sal = r
@@ -437,13 +464,22 @@ def _set_ownership(players, n_slots=None):
 def _field_lineup(by_pos, cap, own_w, rng, tries=8):
     for _ in range(tries):
         used, names, sal, ok = set(), [], 0, True
+        fqb_team = None
         for pos in sorted(ROSTER, key=lambda p: len(by_pos[p])):
             pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
             if not pool:
                 ok = False
                 break
             w = [own_w.get(p["name"], 1.0) for p in pool]
+            # Real GPP fields stack: roughly two-thirds of tournament lineups
+            # pair the QB with his catchers. A field of independent picks is
+            # thinner-tailed than the real one, which flattered our win%%.
+            if fqb_team and pos in ("WR", "TE", "FLEX") and rng.random() < 0.65:
+                w = [wt * (4.0 if p.get("team") == fqb_team and p["pos"] in ("WR", "TE") else 1.0)
+                     for wt, p in zip(w, pool)]
             pick = rng.choices(pool, weights=w)[0]
+            if pick["pos"] == "QB":
+                fqb_team = pick.get("team")
             used.add(pick["name"]); names.append(pick["name"]); sal += pick["salary"]
         if ok and len(names) == len(ROSTER):
             return names
@@ -451,7 +487,8 @@ def _field_lineup(by_pos, cap, own_w, rng, tries=8):
 
 
 def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size=None,
-                prize_pool=None, first_prize=None, sample_size=500, n_iter=400):
+                prize_pool=None, first_prize=None, sample_size=500, n_iter=400,
+                extra_lineups=None):
     by_pos = _by_pos(players)
     arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
     if by_pos is None or not arr:
@@ -487,33 +524,45 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
     def score(names, it):
         return sum((arr.get(nm) or [0])[it % L] for nm in names)
 
-    ynames = [p["name"] for p in your_lineup]
-    win = cash = ret = top1 = 0.0
+    # One sampled field, every portfolio lineup scored against it -- cheaper
+    # than a field per lineup and statistically consistent across the set.
+    all_lineups = [your_lineup] + list(extra_lineups or [])
+    name_sets = [[p["name"] for p in lu] for lu in all_lineups]
+    K = len(all_lineups)
+    win = [0.0] * K; cash = [0.0] * K; ret = [0.0] * K; top1 = [0.0] * K
     top1_line = max(1, int(0.01 * C))
     for it in range(n_iter):
         fs = [score(f, it) for f in field]
         mu = statistics.fmean(fs); sd = statistics.pstdev(fs) or 1.0
-        ys = score(ynames, it)
-        q = max(1e-12, min(1.0, 1.0 - _ncdf((ys - mu) / sd)))
-        winp = math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
-        win += winp
-        mr = 1.0 + (C - 1) * q
-        sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
-        cash += _ncdf((places - mr) / sr)
-        top1 += _ncdf((top1_line - mr) / sr)
-        if contest == "double_up":
-            ret += each * _ncdf((places - mr) / sr)
-        else:
-            ev = first * winp
-            for r, wd in grid:
-                ev += payout(r) * _npdf((r - mr) / sr) / sr * wd
-            ret += ev
-    ret /= n_iter
-    return {"win_pct": round(100 * win / n_iter, 4), "cash_pct": round(100 * cash / n_iter, 1),
-            "top1_pct": round(100 * top1 / n_iter, 2), "roi_pct": round(100 * (ret - entry_fee) / entry_fee, 1),
-            "avg_return": round(ret, 2), "sample_size": len(field), "entries": C,
-            "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
-            "first_prize": round(first), "places_paid": places}
+        for k, ynames in enumerate(name_sets):
+            ys = score(ynames, it)
+            q = max(1e-12, min(1.0, 1.0 - _ncdf((ys - mu) / sd)))
+            winp = math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
+            win[k] += winp
+            mr = 1.0 + (C - 1) * q
+            sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
+            cash[k] += _ncdf((places - mr) / sr)
+            top1[k] += _ncdf((top1_line - mr) / sr)
+            if contest == "double_up":
+                ret[k] += each * _ncdf((places - mr) / sr)
+            else:
+                ev = first * winp
+                for r, wd in grid:
+                    ev += payout(r) * _npdf((r - mr) / sr) / sr * wd
+                ret[k] += ev
+    per = [{"win_pct": round(100 * win[k] / n_iter, 4),
+            "cash_pct": round(100 * cash[k] / n_iter, 1),
+            "top1_pct": round(100 * top1[k] / n_iter, 2),
+            "roi_pct": round(100 * (ret[k] / n_iter - entry_fee) / entry_fee, 1)}
+           for k in range(K)]
+    out = dict(per[0])
+    out.update({"avg_return": round(ret[0] / n_iter, 2), "sample_size": len(field),
+                "entries": C, "contest": contest, "entry_fee": entry_fee,
+                "prize_pool": round(pool), "first_prize": round(first),
+                "places_paid": places})
+    if K > 1:
+        out["lineups"] = per
+    return out
 
 
 # ---- public build -----------------------------------------------------------
@@ -734,7 +783,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
 
 def build(csv_text, week=1, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
-          preseason=False, mode="auto", field_size=None):
+          preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2):
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
@@ -806,9 +855,41 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     # default build came back stackless. Every objective stacks now; the
     # top-heavy ones stack deeper.
     stack_min = (2 if objective in ("ceiling", "leverage") else 1) if stack else 0
-    lineup = optimize(players, CAP, objective, stack_min=stack_min)
+    # The GPP shapes also bring back one catcher from the QB's opponent: a
+    # shootout lifts both sides, and the game-stack owns that outcome.
+    bring_min = 1 if (stack and objective in ("ceiling", "leverage")) else 0
+    lineup = optimize(players, CAP, objective, stack_min=stack_min, bring_min=bring_min)
+    if not lineup and bring_min:
+        lineup = optimize(players, CAP, objective, stack_min=stack_min)
     if not lineup:
         return {"error": "no valid lineup under the cap"}
+
+    # PORTFOLIO: more unique tickets is the one honest way to raise the chance
+    # of hitting a huge field. Each extra lineup must differ from every
+    # accepted one by >= `uniq` players, and no player may appear in more than
+    # ~60% of them once there are enough for that to mean something.
+    n_lineups = max(1, min(20, int(n_lineups or 1)))
+    uniq = max(1, min(6, int(uniq or 2)))
+    lineups = [lineup]
+    if n_lineups > 1:
+        import collections as _cl
+        rosters = [frozenset(p["name"] for p in lineup)]
+        expo = _cl.Counter(p["name"] for p in lineup)
+        tries = 0
+        while len(lineups) < n_lineups and tries < n_lineups * 12:
+            tries += 1
+            cand = optimize(players, CAP, objective, stack_min=stack_min,
+                            bring_min=bring_min, restarts=2500,
+                            exclude=(rosters, uniq))
+            if not cand:
+                continue
+            names = frozenset(p["name"] for p in cand)
+            if len(lineups) >= 3 and any(
+                    (expo[nm] + 1) / (len(lineups) + 1) > 0.6 for nm in names):
+                continue
+            lineups.append(cand)
+            rosters.append(names)
+            expo.update(names)
 
     # lineup distribution from the correlated arrays
     L = min(len(p["arr"]) for p in lineup)
@@ -819,27 +900,31 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             # The sample box NEVER REACHED this call -- every NFL contest sim
             # ran at 500 opponents whatever the user typed, and a million-entry
             # GPP is decided in a tail 500 lineups cannot map. Clamped, because
-            # the cost is linear and 3000 is already a ~20s build.
+            # the cost is linear and 3000 is already a ~20s build. One FIELD is
+            # sampled and every portfolio lineup is scored against it.
             csim = contest_sim(lineup, players, contest=contest, entry_fee=entry_fee,
                                contest_size=contest_size, prize_pool=prize_pool,
                                first_prize=first_prize,
-                               sample_size=max(200, min(3000, int(field_size or 500))))
+                               sample_size=max(200, min(3000, int(field_size or 500))),
+                               extra_lineups=lineups[1:])
         except Exception:
             csim = None
-    slot_of, order = [], {"QB": 0, "RB": 1, "WR": 2, "TE": 3, "FLEX": 4, "DST": 5}
-    # label FLEX: the extra RB/WR/TE beyond the required count
-    need = {"RB": 2, "WR": 3, "TE": 1}
-    seen = {"RB": 0, "WR": 0, "TE": 0}
-    rows = []
-    for p in sorted(lineup, key=lambda x: (order.get(x["pos"], 9), -x["proj"])):
-        slot = p["pos"]
-        if p["pos"] in need:
-            seen[p["pos"]] += 1
-            if seen[p["pos"]] > need[p["pos"]]:
-                slot = "FLEX"
-        rows.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
-                     "salary": p["salary"], "proj": p["proj"], "ceiling": p["ceiling"],
-                     "floor": p["floor"], "own": p.get("own")})
+    def _rows(lu):
+        order = {"QB": 0, "RB": 1, "WR": 2, "TE": 3, "FLEX": 4, "DST": 5}
+        need = {"RB": 2, "WR": 3, "TE": 1}
+        seen = {"RB": 0, "WR": 0, "TE": 0}
+        out = []
+        for p in sorted(lu, key=lambda x: (order.get(x["pos"], 9), -x["proj"])):
+            slot = p["pos"]
+            if p["pos"] in need:
+                seen[p["pos"]] += 1
+                if seen[p["pos"]] > need[p["pos"]]:
+                    slot = "FLEX"
+            out.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
+                        "salary": p["salary"], "proj": p["proj"], "ceiling": p["ceiling"],
+                        "floor": p["floor"], "own": p.get("own")})
+        return out
+    rows = _rows(lineup)
     _sk = _status_seen(csv_players)
     return {"mode": "classic", "roster": ROSTER,
             "status_known": _sk,
@@ -848,7 +933,13 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
              "could NOT be excluded - check every name is active before you "
              "enter. Copy the whole CSV including its header row."),
             "week": week, "objective": objective, "stack": bool(stack_min),
+            "bring_back": bool(bring_min),
             "slate_mode": slate_note,
+            "lineups": ([{"lineup": _rows(lu),
+                          "total_salary": sum(p["salary"] for p in lu),
+                          "total_proj": round(sum(p["proj"] for p in lu), 1)}
+                         for lu in lineups] if len(lineups) > 1 else None),
+            "n_lineups": len(lineups),
             "salary": sum(p["salary"] for p in lineup), "cap": CAP,
             "proj": round(sum(p["proj"] for p in lineup), 1),
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),
