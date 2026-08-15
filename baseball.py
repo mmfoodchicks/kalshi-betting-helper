@@ -1511,6 +1511,27 @@ def deep_blend_info():
             "w_prior": _DEEP_WP_WEIGHT}
 
 
+def stale_slate(date, season, max_age=3600):
+    """The cached slate even if the TTL has lapsed, with its age in seconds, as
+    (games, age) -- or (None, None) when there is nothing worth showing.
+
+    The TTL is five minutes, which is exactly the length of an errand: leave the
+    app to place a bet on the exchange, come back, and the board has always
+    expired. Rebuilding from cold takes about a minute, and answering 202 in the
+    meantime means the user stares at "simulating every game" every single time
+    they return. A five-minute-old board is a much better answer than no board:
+    serve it immediately, refresh it underneath, and let the next poll swap in
+    the new numbers. Past `max_age` the staleness stops being cosmetic (lineups
+    and prices have really moved), so it is withheld."""
+    hit = _cache.get(("slate", date, season))
+    if not hit:
+        return None, None
+    age = _time.time() - hit[0]
+    if max_age is not None and age > max_age:
+        return None, None
+    return hit[1], age
+
+
 def analyze_slate(date, season, cached_only=False):
     """The day's modelled slate. Cached, because a cold build simulates every game
     and takes ~54s on four fast cores -- minutes on a small instance.

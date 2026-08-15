@@ -4645,6 +4645,73 @@ finally:
 
 print()
 print("=" * 72)
+print("Leaving the app and coming back is not a failure state")
+print("=" * 72)
+_swp = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "static", "sw.js")
+_sw = open(_swp).read()
+# The bug: a failed /api/ fetch was answered with a 200 and an empty body, so
+# every caller sailed past its error check and died on the first field it
+# touched. On the MLB board that was `d.games.length` on undefined -> the catch
+# -> "Failed to load slate", which is exactly what the user saw every time they
+# came back from placing a bet.
+ck("a failed API call is a real failure, never a fake 200 with an empty body",
+   'new Response("{}"' not in _sw and "status: 503" in _sw and "offline: true" in _sw,
+   "{} is not an error: it passes `if (d.error)` and then throws on d.games")
+ck("a dropped request is retried once before giving up",
+   "setTimeout(r, 700)" in _sw and _sw.count("fetch(e.request)") >= 3,
+   "resuming a backgrounded phone drops exactly one request; the second lands")
+ck("a gateway error never replaces or poisons the cached app shell",
+   "if (!res.ok) return shellFallback()" in _sw,
+   "a 502 is a RESOLVED fetch, so the old code cached the host's error page "
+   "under '/' and served it back as the app")
+ck("the shell cache version was bumped so the fix actually activates",
+   "vigil-shell-v50" in _sw,
+   "an unchanged SHELL constant leaves every installed phone on the old worker")
+
+_appjs = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                            "static", "app.js")).read()
+ck("the slate retries itself instead of stranding a dead screen",
+   "_slateFails" in _appjs and "Failed to load slate - retrying" in _appjs
+   and "if (r.status >= 500)" in _appjs,
+   "the poll chain only re-armed inside the 202 branch, so one blink meant a "
+   "manual refresh -- the user's actual complaint")
+ck("a transient failure does not wipe a board that is already rendered",
+   'gamesBox.querySelector(".game, .gamecard, table")' in _appjs,
+   "showing five-minute-old numbers beats replacing them with an error")
+ck("the slate is validated before it is indexed",
+   "if (!Array.isArray(d.games)) { throw new Error" in _appjs)
+ck("background tabs stop polling, and returning refreshes once",
+   "if (document.hidden || uiBusy()) return;" in _appjs
+   and 'document.addEventListener("visibilitychange"' in _appjs,
+   "polling every 5s while the user is on Kalshi, then firing every stalled "
+   "timer at once on return, is what overloaded a single-worker server")
+
+# Stale-while-revalidate: the TTL is shorter than a trip to the exchange, so
+# "come back to the app" and "the cache just expired" are the same event.
+import baseball as _bbsw
+import time as _bbtime
+_bbsw._cache[("slate", "2099-01-01", "2099")] = (_bbtime.time() - 400, [{"g": 1}], 300)
+_sg, _sa = _bbsw.stale_slate("2099-01-01", "2099")
+ck("a board that expired during an errand is served, not rebuilt from cold",
+   _sg is not None and 390 < _sa < 410,
+   "a five-minute-old board beats a one-minute wait for numbers we already had")
+_bbsw._cache[("slate", "2099-01-01", "2099")] = (_bbtime.time() - 7200, [{"g": 1}], 300)
+ck("but a genuinely old board is withheld",
+   _bbsw.stale_slate("2099-01-01", "2099")[0] is None,
+   "past an hour the staleness stops being cosmetic -- lineups and prices moved")
+ck("serving stale never poisons the fresh path",
+   _bbsw.analyze_slate("2099-01-01", "2099", cached_only=True) is None,
+   "cached_only must still refuse an expired entry or the board never refreshes")
+_bbsw._cache.pop(("slate", "2099-01-01", "2099"), None)
+_appsrc = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                             "app.py")).read()
+ck("the endpoint serves the stale board and says it is refreshing",
+   '"stale": True' in _appsrc and '"refreshing": True' in _appsrc
+   and "if (d.refreshing)" in _appjs,
+   "the client has to poll the fresh build in behind the stale one")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

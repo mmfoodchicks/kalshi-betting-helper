@@ -896,6 +896,20 @@ def api_baseball_today():
                     with _slate_lock:
                         _slate_inflight.discard(key)
             threading.Thread(target=_bg, daemon=True).start()
+        # Stale-while-revalidate: if we have a recent-but-expired board, answer
+        # with it NOW rather than making the user watch a rebuild. The five
+        # minute TTL is shorter than a trip to the exchange, so "come back to
+        # the app" and "the cache just expired" are the same event; 202 turned
+        # every return into a one-minute wait for numbers we already had.
+        stale, age = baseball.stale_slate(date, season)
+        if stale:
+            try:
+                combos = baseball.combo_context(stale, allow_live=_allow_live())
+            except Exception:
+                combos = {}
+            return jsonify({"date": date, "games": stale, "combos": combos,
+                            "stale": True, "stale_age_s": int(age or 0),
+                            "refreshing": True})
         return jsonify({"status": "computing", "date": date,
                         "message": "simulating every game on the slate…"}), 202
     try:

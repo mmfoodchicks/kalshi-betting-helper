@@ -1688,6 +1688,7 @@ function renderCombo(c, tag, extraCls) {
 }
 
 let _slatePoll = null;   // poll handle while the MLB slate builds
+let _slateFails = 0;     // consecutive transient failures, for the backoff
 async function loadBaseball(silent) {
   const gamesBox = $("bbGames");
   const combosBox = $("bbCombos");
@@ -1698,6 +1699,21 @@ async function loadBaseball(silent) {
   }
   try {
     const r = await fetch("/api/baseball/today?date=" + date);
+    // A 5xx (or the service worker's offline marker) is the network blinking,
+    // not an answer. Retry on a backoff and KEEP whatever board is already on
+    // screen -- wiping a rendered slate to say "failed" is strictly worse than
+    // showing yesterday's numbers for another six seconds.
+    if (r.status >= 500) {
+      _slateFails += 1;
+      const wait = Math.min(30000, 3000 * _slateFails);
+      const already = gamesBox.querySelector(".game, .gamecard, table");
+      if (!already) {
+        gamesBox.innerHTML = `<div class="empty">Reconnecting… (attempt ${_slateFails})</div>`;
+      }
+      clearTimeout(_slatePoll);
+      _slatePoll = setTimeout(() => loadBaseball(!!already), wait);
+      return;
+    }
     // 202 = the slate is still simulating. A cold build runs every game through
     // the engine, which is far longer than a request should be held open, so the
     // server answers immediately and we poll. Without this the request outlived
@@ -1713,7 +1729,9 @@ async function loadBaseball(silent) {
       return;
     }
     const d = await r.json();
+    _slateFails = 0;
     if (d.error) { if (!silent) { gamesBox.innerHTML = `<div class="empty">${d.error}</div>`; combosBox.innerHTML = ""; } return; }
+    if (!Array.isArray(d.games)) { throw new Error("malformed slate"); }
     if (!d.games.length) {
       gamesBox.innerHTML = `<div class="empty">No MLB games scheduled for ${date}.</div>`;
       combosBox.innerHTML = `<div class="empty">No games, no combos.</div>`;
@@ -1723,6 +1741,12 @@ async function loadBaseball(silent) {
     // preserves which games have their props panel expanded across refreshes).
     bbSlateGames = d.games;
     renderSlateGames();
+    // The server handed us a recent-but-expired board so the screen fills
+    // instantly; the fresh build is running behind it. Poll it in, quietly.
+    if (d.refreshing) {
+      clearTimeout(_slatePoll);
+      _slatePoll = setTimeout(() => loadBaseball(true), 8000);
+    }
     loadBaseballRecord();
     loadPropLog();
 
@@ -1787,8 +1811,22 @@ async function loadBaseball(silent) {
     // Keep the Pick 6 board in sync with the loaded slate/date.
     if ($("bbPick6") && $("bbPick6").dataset.loaded && !$("bbPick6").classList.contains("hidden")) loadPick6();
   } catch (e) {
-    gamesBox.innerHTML = `<div class="empty">Failed to load slate.</div>`;
-    combosBox.innerHTML = "";
+    // Same reasoning as the 5xx branch: a throw here is almost always a dropped
+    // connection, and the old behaviour (paint "Failed to load slate", stop) had
+    // no way back -- the poll chain only re-armed inside the 202 branch, so one
+    // blink stranded the page until the user refreshed by hand. Retry.
+    _slateFails += 1;
+    const already = gamesBox.querySelector(".game, .gamecard, table");
+    if (!already) {
+      gamesBox.innerHTML = `<div class="empty">Failed to load slate - retrying…</div>`;
+      combosBox.innerHTML = "";
+    }
+    if (_slateFails <= 10) {
+      clearTimeout(_slatePoll);
+      _slatePoll = setTimeout(() => loadBaseball(!!already), Math.min(30000, 3000 * _slateFails));
+    } else if (!already) {
+      gamesBox.innerHTML = `<div class="empty">Failed to load slate. <a href="#" onclick="_slateFails=0;loadBaseball();return false">Try again</a></div>`;
+    }
   }
 }
 
@@ -5537,15 +5575,38 @@ async function init() {
   });
 
   refreshMarkets();
-  // Auto-refresh ticks skip while the user is typing / has a form open.
-  setInterval(() => { if (!uiBusy()) refreshMarkets(); }, 5000);
-  setInterval(() => { if (!uiBusy()) refreshPreview(); }, 5000);
-  setInterval(() => { if (lastScan.coin && !uiBusy()) runScan(); }, 8000);
-  setInterval(() => {
-    if (!uiBusy() && !$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
+  // Auto-refresh ticks skip while the user is typing / has a form open, and
+  // while the app is in the BACKGROUND. Backgrounded ticks are pure damage: a
+  // phone freezes and un-freezes them at will, so the server was being polled
+  // every 5s the whole time the user was over on Kalshi, and the moment they
+  // came back every stalled timer fired at once -- a burst of requests at a
+  // single-worker server, on connections the OS had already torn down. Those
+  // are the failures that painted "Failed to load slate".
+  const tick = (fn, ms) => setInterval(() => {
+    if (document.hidden || uiBusy()) return;
+    fn();
+  }, ms);
+  tick(refreshMarkets, 5000);
+  tick(refreshPreview, 5000);
+  tick(() => { if (lastScan.coin) runScan(); }, 8000);
+  tick(() => {
+    if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
       loadBaseball(true);
     }
   }, 20000);
+
+  // Coming back to the app is the one moment everything on screen is stale, so
+  // do a single deliberate refresh of what's actually visible rather than
+  // letting a pile of resumed timers do it eight times over.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    _slateFails = 0;                       // a fresh start, not a continued backoff
+    if (uiBusy()) return;
+    refreshMarkets();
+    if (!$("tab-baseball").classList.contains("hidden") && $("bbGames").dataset.loaded) {
+      loadBaseball(true);
+    }
+  });
 }
 
 init();
