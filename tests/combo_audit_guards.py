@@ -4762,6 +4762,21 @@ ck("the owner lock is held for the process lifetime, not released on return",
 ck("and the health probe still never triggers the bootstrap",
    "if request.path in _PROBE_PATHS:" in _appsrc,
    "hanging the recorders off the first request means the probe pays for them")
+# When a worker is killed for outliving --timeout, nothing said WHICH request
+# did it: the platform reports a failed health check and the app's log is
+# silent, so the box looks like it crashed at random.
+ck("slow requests name themselves in the log",
+   "[slow]" in _appsrc and "_SLOW_LOG_S" in _appsrc
+   and 'request.path in _PROBE_PATHS' in _appsrc.split("def _slow_finish")[1][:400],
+   "a request that outlives the worker timeout is the one that fails the "
+   "health check, and it was invisible")
+ck("the worst offenders survive for inspection",
+   '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
+ck("background CPU work yields to the web worker",
+   "os.nice(10)" in open(_os.path.join(_root, "baseball.py")).read()
+   and "os.nice(10)" in open(_os.path.join(_root, "deep_season.py")).read(),
+   "a nightly run that saturates the CPU for an hour must never outrank the "
+   "request that keeps the instance alive")
 
 print()
 print("=" * 72)

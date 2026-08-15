@@ -18,7 +18,7 @@ import hmac
 import time
 import threading
 
-from flask import Flask, jsonify, request, render_template, Response
+from flask import Flask, g, jsonify, request, render_template, Response
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import prices
@@ -134,6 +134,53 @@ def _security_headers(resp):
         resp.headers.setdefault("Strict-Transport-Security",
                                 "max-age=31536000; includeSubDomains")
     return resp
+
+
+# ---- slow-request log ------------------------------------------------------
+# When the arbiter kills a worker for outliving --timeout, NOTHING says which
+# request did it: the platform reports a failed health check and the app's own
+# logs are silent, so the instance looks like it crashed at random. Time every
+# request, name the slow ones, and keep the worst few in memory for /api/diag/slow.
+# A request nearing the worker timeout is logged as the danger it is -- that is
+# the one that takes the health check down with it.
+_KILL_TIMEOUT = float(os.environ.get("VIGIL_WORKER_TIMEOUT") or 120)
+_SLOW_LOG_S = float(os.environ.get("VIGIL_SLOW_LOG_S") or 10)
+_slow_recent = []
+_slow_lock = threading.Lock()
+
+
+@app.before_request
+def _slow_start():
+    g._t0 = time.time()
+
+
+@app.after_request
+def _slow_finish(resp):
+    t0 = getattr(g, "_t0", None)
+    if t0 is None or request.path in _PROBE_PATHS:
+        return resp
+    dt = time.time() - t0
+    if dt >= _SLOW_LOG_S:
+        risky = dt >= _KILL_TIMEOUT * 0.5
+        print(f"[slow] {dt:7.1f}s  {request.method} {request.full_path}"
+              + ("   <-- over half the worker timeout; this is what kills a worker "
+                 "and fails the health check" if risky else ""), flush=True)
+        with _slow_lock:
+            _slow_recent.append({"path": request.full_path, "seconds": round(dt, 1),
+                                 "at": int(time.time()), "risky": risky})
+            _slow_recent.sort(key=lambda r: -r["seconds"])
+            del _slow_recent[12:]
+    return resp
+
+
+@app.route("/api/diag/slow")
+def _api_diag_slow():
+    """The slowest requests this worker has served, worst first."""
+    with _slow_lock:
+        rows = list(_slow_recent)
+    return jsonify({"worker_timeout_s": _KILL_TIMEOUT, "logged_over_s": _SLOW_LOG_S,
+                    "pid": os.getpid(), "owns_background": bool(_BG_OWNER),
+                    "slowest": rows})
 
 
 @app.route("/healthz")

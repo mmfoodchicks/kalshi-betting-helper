@@ -1623,7 +1623,17 @@ def _analyze_slate_isolated(date, season):
     import sys
     try:
         out = subprocess.run(
+            # The child NICES ITSELF before importing anything. A slate build
+            # saturates a CPU for the better part of a minute, and on a
+            # one-core box that is in direct competition with the web worker --
+            # including the platform's health probe, which is killed at five
+            # seconds and takes the whole instance down with it. At +10 the
+            # rebuild only ever gets the CPU nobody else wants, so warming the
+            # board can never cost a request. (The child nices itself rather
+            # than the parent using preexec_fn, which is documented as unsafe
+            # in a threaded process -- and this runs from a background thread.)
             [sys.executable, "-c",
+             "import os; os.nice(10)\n"
              "import sys, baseball; sys.stdout.buffer.write("
              "baseball._slate_blob(sys.argv[1], sys.argv[2]))",
              str(date), str(season)],

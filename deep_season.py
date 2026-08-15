@@ -306,6 +306,15 @@ def _build_po_rot(profiles):
 
 
 def _init_worker(shared):
+    # Same reasoning as the slate child: a 4,000-season run saturates every CPU
+    # it is given for the better part of an hour. Niced, it yields instantly to
+    # the web worker, so the nightly job cannot starve the health probe into a
+    # five-second timeout and get the instance restarted mid-run -- which also
+    # means the run actually finishes.
+    try:
+        os.nice(10)
+    except Exception:
+        pass
     _G.update(shared)
     _G["po_rot"] = _build_po_rot(_G["profiles"])
 
