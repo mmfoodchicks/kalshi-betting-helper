@@ -5617,3 +5617,52 @@ if ("serviceWorker" in navigator) {
     if (f) load(f);
   });
 })();
+
+
+// ---- DFS contest coach ------------------------------------------------------
+// Which objective and how big a field sample, from the two numbers the user
+// already typed. The logic the tooltip can't fit: a double-up pays half the
+// field, so the MEDIAN wins it -- max projection. A small GPP is won by a
+// high score -- ceiling. A 100k+ monster is won by being different AND right
+// (thousands of entries already hold the chalk ceiling build) -- leverage.
+// The sample maps the FIELD's score distribution; your placement in a huge
+// contest lives in its extreme tail, and 600 points cannot draw a tail. It is
+// an accuracy knob, not an edge knob: raise it if win%/ROI jump between
+// identical runs, lower it if the build feels slow.
+function dfsRecommend() {
+  const box = $("dfsRecoBox");
+  if (!box) return;
+  const contest = ($("dfsContest") || {}).value || "";
+  const entries = parseInt(($("dfsEntries") || {}).value, 10) || 0;
+  if (!contest) { box.innerHTML = ""; return; }
+  let obj, sample, why;
+  if (contest === "double_up") {
+    obj = "projection"; sample = 600;
+    why = "a double-up pays half the field, so the median score wins it - build for the highest average, not the boom";
+  } else if (entries >= 100000) {
+    obj = "leverage"; sample = 2500;
+    why = `${entries.toLocaleString()} entries: thousands already hold the chalk ceiling build, so winning takes being different AND right - and a field this size is decided deep in the score distribution's tail, which a small sample can't map`;
+  } else if (entries >= 1000) {
+    obj = "ceiling"; sample = 1200;
+    why = "a mid-size GPP is won by a boom score - chase ceiling; a moderate sample steadies the payout-curve estimate";
+  } else {
+    obj = "ceiling"; sample = 600;
+    why = "small GPP: ceiling wins it, and a modest sample resolves a small field fine";
+  }
+  const curObj = ($("dfsObjective") || {}).value;
+  const curSm = parseInt(($("dfsField") || {}).value, 10) || 0;
+  const already = curObj === obj && Math.abs(curSm - sample) < 100;
+  const objLabel = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[obj];
+  box.innerHTML = `<div class="dfs-note" style="margin:6px 0 2px">\ud83d\udca1 Recommended: <b>${objLabel}</b> + sample <b>${sample.toLocaleString()}</b>${already ? " \u2713 (set)" : ` <button class="track-mini" style="margin-left:6px" onclick="dfsApplyReco('${obj}',${sample})">Use these</button>`}<div class="small" style="color:var(--muted);margin-top:2px">${why}. Raise the sample if win%/ROI swing between identical runs; lower it for speed.</div></div>`;
+}
+window.dfsApplyReco = (obj, sample) => {
+  if ($("dfsObjective")) $("dfsObjective").value = obj;
+  if ($("dfsField")) $("dfsField").value = sample;
+  dfsRecommend();
+};
+(function () {
+  ["dfsContest", "dfsEntries"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("change", dfsRecommend); el.addEventListener("input", dfsRecommend); }
+  });
+})();

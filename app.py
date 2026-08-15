@@ -757,6 +757,7 @@ def api_simulate_dfs():
                 prize_pool=(_ni("prize_pool", 0.0) or None),
                 first_prize=(_ni("first_prize", 0.0) or None),
                 preseason=_nfl_pre_flag(d),
+                field_size=int(_ni("field_size", 0, int)) or None,
                 # auto reads it off the CSV (a showdown export carries CPT rows);
                 # the explicit values are the override for when DK posts a
                 # one-game CLASSIC slate, which auto cannot tell apart by size.

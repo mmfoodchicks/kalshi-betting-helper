@@ -643,7 +643,7 @@ def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
 
 
 def _build_showdown(csv_players, week, objective, contest, contest_size,
-                    entry_fee, prize_pool, first_prize, preseason):
+                    entry_fee, prize_pool, first_prize, preseason, field_size=None):
     ents = showdown_pool(csv_players)
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
@@ -683,7 +683,8 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     if contest:
         try:
             csim = _showdown_contest_sim(slots, ents, contest, entry_fee, contest_size,
-                                         prize_pool, first_prize)
+                                         prize_pool, first_prize,
+                                         sample_size=max(150, min(2000, int(field_size or 400))))
         except Exception:
             csim = None
     rows = []
@@ -733,7 +734,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
 
 def build(csv_text, week=1, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
-          preseason=False, mode="auto"):
+          preseason=False, mode="auto", field_size=None):
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
@@ -753,7 +754,8 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     use = detected if mode in (None, "", "auto") else mode
     if use == "showdown":
         res = _build_showdown(csv_players, week, objective, contest, contest_size,
-                              entry_fee, prize_pool, first_prize, preseason)
+                              entry_fee, prize_pool, first_prize, preseason,
+                              field_size=field_size)
         if isinstance(res, dict) and "error" not in res:
             res["slate_mode"] = slate_note
         return res
@@ -814,8 +816,14 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     csim = None
     if contest:
         try:
+            # The sample box NEVER REACHED this call -- every NFL contest sim
+            # ran at 500 opponents whatever the user typed, and a million-entry
+            # GPP is decided in a tail 500 lineups cannot map. Clamped, because
+            # the cost is linear and 3000 is already a ~20s build.
             csim = contest_sim(lineup, players, contest=contest, entry_fee=entry_fee,
-                               contest_size=contest_size, prize_pool=prize_pool, first_prize=first_prize)
+                               contest_size=contest_size, prize_pool=prize_pool,
+                               first_prize=first_prize,
+                               sample_size=max(200, min(3000, int(field_size or 500))))
         except Exception:
             csim = None
     slot_of, order = [], {"QB": 0, "RB": 1, "WR": 2, "TE": 3, "FLEX": 4, "DST": 5}

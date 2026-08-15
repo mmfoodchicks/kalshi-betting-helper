@@ -3908,6 +3908,26 @@ _stud = _ndmk("Stud", "RB", "DET", "NO", 8500, 22)
 _punt = _ndmk("Punt", "RB", "NO", "DET", 4000, 10.4)
 _ND._set_ownership([_stud, _punt] + [_ndmk(f"f{i}", "WR", "KC", "BUF", 5000, 9)
                                      for i in range(30)])
+_nd_src = _insp.getsource(_ND)
+ck("the sample box finally reaches the NFL contest sim, clamped not ignored",
+   "field_size=None" in _insp.getsource(_ND.build)
+   and "sample_size=max(200, min(3000, int(field_size or 500)))" in _nd_src,
+   "every NFL contest sim ran at 500 opponents whatever the user typed, and a "
+   "million-entry GPP is decided in a tail 500 lineups cannot map")
+_js_reco = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                              "static", "app.js")).read()
+ck("the contest coach recommends objective + sample from the field size",
+   "function dfsRecommend()" in _js_reco and "entries >= 100000" in _js_reco
+   and '"leverage"; sample = 2500' in _js_reco
+   and '"projection"; sample = 600' in _js_reco,
+   "a milly-maker wants leverage and a deep sample; a double-up wants the "
+   "median. The reasons render with the numbers, and Use-these applies them")
+ck("the route parses field_size and the input allows the deep sample",
+   'field_size=int(_ni("field_size"' in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "app.py")).read()
+   and 'max="3000"' in open(_os.path.join(
+       _os.path.dirname(_os.path.abspath(__file__)), "..", "templates",
+       "index.html")).read())
 ck("the build SAYS which season it read, so a wrong toggle is visible",
    '"slate_mode": slate_note' in _insp.getsource(_ND.build)
    and "slate_mode" in open(_os.path.join(
