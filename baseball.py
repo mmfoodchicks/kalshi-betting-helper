@@ -2443,6 +2443,64 @@ def progress_done(token):
         _progress.pop(token, None)
 
 
+# The per-game sim cache has to be SHARED BETWEEN WORKERS and SINGLE-FLIGHT.
+# Both were broken at once, and together they made the maker slower than before:
+#
+#   * Running three gunicorn workers (needed, so a killed worker cannot take the
+#     health check down) gave each its own in-process cache. The warmer runs in
+#     exactly ONE worker, so roughly two builds in three landed on a worker that
+#     had never seen the game and re-simulated it from cold.
+#   * _cached() has no single-flight: two callers who miss both run the
+#     producer. So the warmer and the user's build would simulate the SAME game
+#     concurrently, and on a one-CPU box they simply halve each other's speed.
+#
+# A finished sim is ~1.5 MB pickled. Writing it where every worker can read it
+# makes one simulation serve all of them, and an in-process wait makes the
+# second caller queue behind the first instead of duplicating the work.
+_SIM_DISK = _os.environ.get("VIGIL_SIM_CACHE_DIR") or _os.path.join(
+    _os.environ.get("DEEP_CACHE_DIR") or "/tmp", "gamesim")
+_sim_flight = {}
+_sim_flight_lock = _threading.Lock()
+
+
+def _sim_disk_get(pk):
+    """A sibling worker's simulation, if one is on disk and still fresh."""
+    try:
+        path = _os.path.join(_SIM_DISK, f"{pk}.pkl")
+        if _time.time() - _os.stat(path).st_mtime > _GAME_SIM_TTL:
+            return None
+        import pickle
+        with open(path, "rb") as fh:
+            return pickle.load(fh)
+    except Exception:
+        return None
+
+
+def _sim_disk_put(pk, val):
+    """Publish a simulation for the other workers. Written to a temp file and
+    renamed, so a reader never sees a half-written pickle."""
+    try:
+        import pickle
+        import tempfile
+        _os.makedirs(_SIM_DISK, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_SIM_DISK, suffix=".tmp")
+        with _os.fdopen(fd, "wb") as fh:
+            pickle.dump(val, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        _os.replace(tmp, _os.path.join(_SIM_DISK, f"{pk}.pkl"))
+        # Yesterday's games are never coming back. Drop anything well past its
+        # TTL so the cache directory cannot creep across the disk.
+        cutoff = _time.time() - 2 * _GAME_SIM_TTL
+        for name in _os.listdir(_SIM_DISK):
+            path = _os.path.join(_SIM_DISK, name)
+            try:
+                if _os.stat(path).st_mtime < cutoff:
+                    _os.remove(path)
+            except OSError:
+                pass
+    except Exception:
+        pass                    # a cache that cannot write is slow, never broken
+
+
 def _game_sim_cached(g):
     """True when this game's sim is already in cache -- i.e. it costs nothing.
     Lets the progress bar distinguish 'simulating 15 games' from 'reading 15
@@ -2451,7 +2509,13 @@ def _game_sim_cached(g):
     if pk is None:
         return False
     hit = _cache.get(("game_sim", pk))
-    return bool(hit and _time.time() - hit[0] < _GAME_SIM_TTL)
+    if hit and _time.time() - hit[0] < _GAME_SIM_TTL:
+        return True
+    try:                        # a sibling worker may already have done it
+        path = _os.path.join(_SIM_DISK, f"{pk}.pkl")
+        return _time.time() - _os.stat(path).st_mtime <= _GAME_SIM_TTL
+    except Exception:
+        return False
 
 
 def _game_sim(g):
@@ -2474,7 +2538,41 @@ def _game_sim(g):
         return {"sim": sim, "cands": cands}
     if pk is None:
         return build()
-    return _cached(("game_sim", pk), _GAME_SIM_TTL, build)
+    key = ("game_sim", pk)
+    hit = _cache.get(key)
+    if hit and _time.time() - hit[0] < hit[2]:
+        return hit[1]
+    disk = _sim_disk_get(pk)                 # another worker already did it
+    if disk is not None:
+        _cache[key] = (_time.time(), disk, _GAME_SIM_TTL)
+        return disk
+    # SINGLE-FLIGHT. Without this the warmer and a user's build run the same
+    # 200-second simulation side by side and each takes twice as long.
+    with _sim_flight_lock:
+        ev = _sim_flight.get(pk)
+        leader = ev is None
+        if leader:
+            ev = _threading.Event()
+            _sim_flight[pk] = ev
+    if not leader:
+        ev.wait(timeout=_SLATE_BUILD_TIMEOUT)
+        hit = _cache.get(key)
+        if hit:
+            return hit[1]
+        disk = _sim_disk_get(pk)
+        if disk is not None:
+            _cache[key] = (_time.time(), disk, _GAME_SIM_TTL)
+            return disk
+        return build()                       # the leader failed; do it ourselves
+    try:
+        val = build()
+        _cache[key] = (_time.time(), val, _GAME_SIM_TTL)
+        _sim_disk_put(pk, val)               # share it with the other workers
+        return val
+    finally:
+        with _sim_flight_lock:
+            _sim_flight.pop(pk, None)
+        ev.set()
 
 
 def _live_state_sig(snap):

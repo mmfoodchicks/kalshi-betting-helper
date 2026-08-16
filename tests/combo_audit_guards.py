@@ -4722,6 +4722,33 @@ ck("the warmer only runs while someone is actually using the app",
 # run simulation: ~32s a game on a fast desktop, over 200s on a shared cloud
 # CPU. Nothing about it depends on the user's floors/legs/payout -- those filter
 # candidates it has already produced -- so it must not be on the click.
+# Running three workers (so a killed one cannot take the health check down) gave
+# each its own in-process cache, and the warmer runs in only ONE of them -- so
+# most builds landed on a worker that had never seen the game. Worse, _cached()
+# has no single-flight, so the warmer and the build simulated the SAME game side
+# by side and halved each other's speed on a one-CPU box. Together they made the
+# maker slower than before any of this.
+import baseball as _bbttl          # also used below; import locally to be safe
+ck("a finished game sim is shared with the other workers, via disk",
+   "_sim_disk_put" in _insp.getsource(_bbttl._game_sim)
+   and "_sim_disk_get" in _insp.getsource(_bbttl._game_sim),
+   "three workers with three private caches means the warmer warms a cache "
+   "two builds in three will never see")
+ck("the shared write is atomic, so no reader sees half a pickle",
+   "_os.replace(tmp" in _insp.getsource(_bbttl._sim_disk_put))
+ck("a second caller WAITS for the first instead of re-simulating",
+   "_sim_flight" in _insp.getsource(_bbttl._game_sim)
+   and "ev.wait(" in _insp.getsource(_bbttl._game_sim),
+   "two 200-second simulations of the same game on one CPU take 400 seconds "
+   "and produce one answer")
+ck("...and still builds if the leader died rather than hanging",
+   "return build()" in _insp.getsource(_bbttl._game_sim).split("if not leader:")[1])
+ck("the cached-check knows about the shared copy too",
+   "_SIM_DISK" in _insp.getsource(_bbttl._game_sim_cached),
+   "otherwise the warmer re-simulates games a sibling already published")
+ck("the shared cache prunes itself",
+   "2 * _GAME_SIM_TTL" in _insp.getsource(_bbttl._sim_disk_put),
+   "yesterday's games are never coming back and the disk is 1 GB")
 ck("the per-game sims the COMBO MAKER needs are warmed too, not just the slate",
    "_warm_game_sims" in _appsrc and "baseball._game_sim(g)" in _appsrc,
    "the board's engine and the maker's engine are different; warming only the "
