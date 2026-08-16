@@ -149,6 +149,13 @@ def _security_headers(resp):
 _combo_jobs = {}
 _combo_lock = threading.Lock()
 
+# When this worker process started. A health-check alert has two very different
+# causes that look identical from outside: the instance was RESTARTED (a deploy,
+# a platform move) or it was genuinely STALLED. Uptime separates them -- if the
+# worker answering is only seconds old, the probe that failed was aimed at a
+# process that was being replaced, and nothing was wrong with the app.
+_PROC_START = time.time()
+
 _KILL_TIMEOUT = float(os.environ.get("VIGIL_WORKER_TIMEOUT") or 120)
 _SLOW_LOG_S = float(os.environ.get("VIGIL_SLOW_LOG_S") or 10)
 _slow_recent = []
@@ -208,8 +215,16 @@ def _api_diag_slow():
     """The slowest requests this worker has served, worst first."""
     with _slow_lock:
         rows = list(_slow_recent)
+    up = time.time() - _PROC_START
     return jsonify({"worker_timeout_s": _KILL_TIMEOUT, "logged_over_s": _SLOW_LOG_S,
                     "pid": os.getpid(), "owns_background": bool(_BG_OWNER),
+                    "uptime_s": round(up, 1),
+                    "uptime_human": (f"{up/3600:.1f}h" if up >= 3600
+                                     else f"{up/60:.1f}m" if up >= 60 else f"{up:.0f}s"),
+                    # The question every health-check alert raises. A worker only
+                    # minutes old means the probe hit an instance being replaced
+                    # (a deploy), not an app that hung.
+                    "recently_restarted": up < 300,
                     "slowest": rows})
 
 
@@ -333,6 +348,41 @@ def _note_slate_use(date, season):
     _warm_seen["key"] = (date, season)
 
 
+def _warm_game_sims(date, season):
+    """Pre-run the per-game simulations the COMBO MAKER needs.
+
+    The slate board and the combo maker use different engines: the board's
+    per-game work is a few seconds, the maker's is a full 4,000-run
+    correlated simulation. Measured, that is ~32s a game on a fast desktop and
+    over 200s on a single shared cloud CPU -- so the first Build after opening
+    the app paid minutes of simulation while the user watched a progress bar,
+    even on a one-game slate.
+
+    Nothing about that work depends on the user's settings: the floors, the leg
+    count and the payout target all filter candidates the simulation has already
+    produced. So it does not belong on the click. Warming it here moves the wait
+    off the button entirely -- by the time anyone presses Build the sims are
+    cached and the answer is about a second.
+
+    Deliberately serial and unhurried: one game at a time, checking between each
+    that somebody is still using the app."""
+    try:
+        games = baseball.analyze_slate(date, season, cached_only=True) or []
+    except Exception:
+        return
+    for g in games:
+        if time.time() - _warm_seen["ts"] > _WARM_WINDOW:
+            return                      # nobody's looking any more
+        try:
+            if (g.get("live") or {}).get("state") == "Final":
+                continue
+            if baseball._game_sim_cached(g):
+                continue
+            baseball._game_sim(g)       # the expensive bit, done off the click
+        except Exception:
+            continue
+
+
 def _start_slate_warmer():
     if _WARM_WINDOW <= 0:
         return
@@ -349,17 +399,23 @@ def _start_slate_warmer():
                 # Rebuild just BEFORE it expires, so a user who returns at any
                 # moment finds a board that is fresh rather than one that is
                 # merely recent.
-                if age is not None and age < baseball._SLATE_TTL - 90:
-                    continue
-                with _slate_lock:
-                    if key in _slate_inflight:
-                        continue      # a request already kicked this build
-                    _slate_inflight.add(key)
-                try:
-                    baseball.analyze_slate(date, season)
-                finally:
+                if age is None or age >= baseball._SLATE_TTL - 90:
+                    kicked = False
                     with _slate_lock:
-                        _slate_inflight.discard(key)
+                        if key not in _slate_inflight:
+                            _slate_inflight.add(key)
+                            kicked = True
+                    if kicked:
+                        try:
+                            baseball.analyze_slate(date, season)
+                        finally:
+                            with _slate_lock:
+                                _slate_inflight.discard(key)
+                # Warm the COMBO MAKER's per-game sims on every tick, not only
+                # after a slate rebuild. They are the expensive thing and they
+                # expire on their own schedule; gating them behind the slate's
+                # refresh left the first Build paying for all of them.
+                _warm_game_sims(date, season)
             except Exception:
                 pass                  # a warmer must never take the app down
 

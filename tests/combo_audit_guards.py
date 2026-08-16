@@ -4718,11 +4718,36 @@ ck("the warmer only runs while someone is actually using the app",
    and "_note_slate_use(date, season)" in _appsrc,
    "rebuilding every 5 minutes around the clock spawns a ~175 MB child forever "
    "on a 512 MB box for nobody's benefit")
+# The expensive thing is not the slate, it is the combo maker's per-game 4,000
+# run simulation: ~32s a game on a fast desktop, over 200s on a shared cloud
+# CPU. Nothing about it depends on the user's floors/legs/payout -- those filter
+# candidates it has already produced -- so it must not be on the click.
+ck("the per-game sims the COMBO MAKER needs are warmed too, not just the slate",
+   "_warm_game_sims" in _appsrc and "baseball._game_sim(g)" in _appsrc,
+   "the board's engine and the maker's engine are different; warming only the "
+   "board left the first Build paying minutes of simulation")
+ck("...on every tick, not only when the slate happens to expire",
+   _appsrc.split("_warm_game_sims(date, season)")[0].rstrip().endswith("# refresh left the first Build paying for all of them.")
+   or "Warm the COMBO MAKER's per-game sims on every tick" in _appsrc,
+   "gating the sims behind the slate's refresh means a fresh slate never warms "
+   "them, which is exactly the case where a user opens the app and builds")
+ck("warming stops the moment nobody is using the app",
+   'time.time() - _warm_seen["ts"] > _WARM_WINDOW' in
+   _insp.getsource(__import__("app")._warm_game_sims),
+   "simulating a slate forever for an empty browser is pure waste on a box "
+   "with one CPU")
+ck("an already-cached game is skipped",
+   "_game_sim_cached(g)" in _insp.getsource(__import__("app")._warm_game_sims))
+# A health-check alert has two causes that look identical from outside.
+ck("the diagnostics say whether the box was RESTARTED or genuinely stalled",
+   '"recently_restarted"' in _appsrc and "_PROC_START" in _appsrc,
+   "a worker only seconds old means the probe hit an instance being replaced "
+   "by a deploy, not an app that hung -- that distinction ends the guessing")
 ck("it rebuilds just BEFORE the board expires, not after",
-   "age < baseball._SLATE_TTL - 90" in _appsrc,
+   "age >= baseball._SLATE_TTL - 90" in _appsrc,
    "warming after expiry means the returning user still gets a stale board")
 ck("it can neither race a request's build nor the nightly season sim",
-   "if key in _slate_inflight:" in _appsrc
+   "if key not in _slate_inflight:" in _appsrc
    and "HEAVY_BUILD" in open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
                                            "..", "deep_cache.py")).read(),
    "three concurrent slate builds is 547 MB, which is how a 512 MB instance "
