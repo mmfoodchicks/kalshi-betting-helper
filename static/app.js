@@ -1078,18 +1078,20 @@ window.buildCombo = async (maxBet, optimal) => {
   comboBuilding = true;
   // Each mode is timed separately -- "optimal" sweeps three per-leg floors and a
   // plain build does one, so pacing them off a shared average would mis-time both.
+  const ptok = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const _stopLoader = simLoader(out,
     maxBet ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
     : optimal ? `Solving for the likeliest slip that pays ${p}×…`
     : comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…",
-    maxBet ? "combo:maxbet" : optimal ? "combo:optimal" : "combo:build");
+    maxBet ? "combo:maxbet" : optimal ? "combo:optimal" : "combo:build", ptok);
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
       + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
       + (c ? `&cap=${c}` : "")
       + (maxBet ? "&max_bet=1" : "")
-      + (optimal ? "&optimal=1" : "");
+      + (optimal ? "&optimal=1" : "")
+      + `&ptok=${ptok}`;
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
@@ -1282,9 +1284,22 @@ function _simRecord(kind, secs) {
   } catch (e) { /* storage full or blocked - the bar just falls back to default */ }
 }
 
-function simLoader(el, msg, kind) {
+// When a build reports REAL progress (games simulated / games to simulate), the
+// bar follows that instead of the clock. `token` is minted by the caller and
+// passed to the server, which counts games as it finishes each one.
+function simLoader(el, msg, kind, token) {
   kind = kind || "sim";
   const est = _simEst(kind) || 25;        // no history yet: assume a cold build
+  let real = null;                        // latest server-reported counts
+  let pollId = null;
+  if (token) {
+    pollId = setInterval(async () => {
+      try {
+        const d = await (await fetch("/api/progress?token=" + encodeURIComponent(token))).json();
+        if (d && d.known && d.total > 0) real = d;
+      } catch (e) { /* a missed poll just falls back to the clock for a beat */ }
+    }, 600);
+  }
   el.innerHTML = `<div class="simloader">
     <div class="small simloader-msg">${msg}</div>
     <div class="simloader-track"><div class="simloader-fill"></div></div>
@@ -1302,7 +1317,22 @@ function simLoader(el, msg, kind) {
     // means "this fraction of the time this normally takes". Past that it
     // creeps 90->99 and the text stops claiming everything is normal.
     let pct, note;
-    if (dt <= est) {
+    if (real) {
+      // TRUE progress: games actually finished, out of games to do. The bar
+      // counts COMPLETED games; the text names the one in flight, so the first
+      // (slowest) game doesn't read as a frozen 0/N for half a minute.
+      const at = Math.max(real.done, Math.min(real.at || 0, real.total));
+      pct = Math.min(99, 100 * (real.done + (at > real.done ? 0.5 : 0)) / real.total);
+      const left = real.total - real.done;
+      const fresh = real.done - real.cached;
+      note = at > real.done
+        ? ` - simulating game ${at} of ${real.total}` + (real.done ? ` (${real.done} done)` : "")
+        : ` - simulated ${real.done}/${real.total} games`;
+      if (real.cached) note += `, ${real.cached} were cached`;
+      if (left && fresh && dt > 3) {
+        note += `, ~${Math.max(1, Math.round(left * (dt / Math.max(1, fresh))))}s left`;
+      }
+    } else if (dt <= est) {
       pct = 90 * (dt / est);
       note = ` of ~${est.toFixed(0)}s expected`;
     } else {
@@ -1316,6 +1346,7 @@ function simLoader(el, msg, kind) {
   }, 100);
   return () => {
     clearInterval(id);
+    if (pollId) clearInterval(pollId);
     _simRecord(kind, (performance.now() - t0) / 1000);
   };
 }

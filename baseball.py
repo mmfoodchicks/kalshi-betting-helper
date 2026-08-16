@@ -2371,6 +2371,89 @@ def _log_prop_predictions(g, cands):
 _GAME_SIM_TTL = int(_os.environ.get("VIGIL_GAME_SIM_TTL") or 900)
 
 
+# ---- real build progress ----------------------------------------------------
+# The combo build is one HTTP request, so the browser cannot see inside it -- the
+# old bar just eased along a curve and hoped. But the work decomposes exactly:
+# it is N games, each costing one ~32s simulation (or nothing, when the game is
+# already cached). So count the games as they are actually finished and let the
+# client read the count. That is true progress, not an animation.
+_progress = {}
+_progress_lock = _threading.Lock()
+
+
+def progress_start(token, total, phase="simulating games"):
+    """Begin (or EXTEND) a build's progress.
+
+    Optimal mode sweeps three per-leg floors, so it calls the builder three
+    times on one token. Resetting the counter each pass would send the bar
+    0->100 three times over; adding to the total instead keeps one honest
+    denominator across the whole build. Passes 2 and 3 run against a warm cache
+    and fly, so the bar advances slowly through the first third and then
+    finishes quickly -- which is exactly what is happening."""
+    if not token:
+        return
+    with _progress_lock:
+        p = _progress.get(token)
+        if p:
+            p["total"] += int(total)
+            return
+        _progress[token] = {"done": 0, "at": 0, "total": int(total), "phase": phase,
+                            "cached": 0, "started": _time.time()}
+        # Keep the table from growing without bound if a client abandons a build.
+        if len(_progress) > 40:
+            for k in sorted(_progress, key=lambda k: _progress[k]["started"])[:20]:
+                _progress.pop(k, None)
+
+
+def progress_enter(token):
+    """A game is about to be simulated. Reported separately from `done` because
+    the FIRST game takes ~32s to finish, and counting only completions left the
+    bar frozen at 0/N for that whole time -- which reads exactly like the frozen
+    bar this was meant to replace. `at` lets the client say 'simulating game 1
+    of 14' the instant the work starts."""
+    if not token:
+        return
+    with _progress_lock:
+        p = _progress.get(token)
+        if p:
+            p["at"] += 1
+
+
+def progress_step(token, cached=False):
+    if not token:
+        return
+    with _progress_lock:
+        p = _progress.get(token)
+        if p:
+            p["done"] += 1
+            if cached:
+                p["cached"] += 1
+
+
+def progress_get(token):
+    with _progress_lock:
+        p = _progress.get(token)
+        return dict(p) if p else None
+
+
+def progress_done(token):
+    if not token:
+        return
+    with _progress_lock:
+        _progress.pop(token, None)
+
+
+def _game_sim_cached(g):
+    """True when this game's sim is already in cache -- i.e. it costs nothing.
+    Lets the progress bar distinguish 'simulating 15 games' from 'reading 15
+    cached ones', which are two very different waits."""
+    pk = g.get("game_pk")
+    if pk is None:
+        return False
+    hit = _cache.get(("game_sim", pk))
+    return bool(hit and _time.time() - hit[0] < _GAME_SIM_TTL)
+
+
 def _game_sim(g):
     """The shared 4000-run game simulation + its candidate legs, cached per game
     (see _GAME_SIM_TTL). Everything that prices a leg reads this, so combos,
@@ -3213,7 +3296,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        n_sims=5000, max_legs_per_game=3, max_total_legs=8,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
-                       net_fees=True, cap_pct=None, max_bet=False, cap_x=None):
+                       net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
+                       progress_token=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -3273,12 +3357,21 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
 
     games_bundles = []
     excluded_unpriced = 0
+    # Count what this build will actually simulate BEFORE starting, so the bar
+    # has a real denominator rather than a guess.
+    _todo = [g for g in games
+             if _game_state(g) != "Final"
+             and not (game_sel and g["game_pk"] not in game_sel)
+             and (include_live or _game_state(g) != "Live")]
+    progress_start(progress_token, len(_todo))
     for g in games:
         state = _game_state(g)
         if state == "Final":
             continue
         if game_sel and g["game_pk"] not in game_sel:
             continue
+        _was_cached = _game_sim_cached(g)
+        progress_enter(progress_token)
         live_gs = None
         if state == "Live":
             if not include_live:
@@ -3309,6 +3402,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                 games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
                 continue
         gs = live_gs or _game_sim(g)    # shared with the edge finder + combos
+        progress_step(progress_token, cached=_was_cached)
         sim = gs["sim"]
         side = team_side(g)
         cands = [c for c in gs["cands"]

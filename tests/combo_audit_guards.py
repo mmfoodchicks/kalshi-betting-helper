@@ -4786,10 +4786,41 @@ ck("the per-game sim cache outlives the time it takes to fill",
    f"TTL is {_bbttl._GAME_SIM_TTL}s; a 15-game slate takes ~480s of simulation, "
    "so anything under that guarantees a permanently cold cache")
 ck("and it is tunable without a code change",
-   'VIGIL_GAME_SIM_TTL' in _insp.getsource(_bbttl).split("def _game_sim")[0][-900:])
+   'VIGIL_GAME_SIM_TTL' in open(_os.path.join(_root, "baseball.py")).read())
 ck("live games still get their own short-lived path",
    "_live_game_sim" in _insp.getsource(_bbttl.build_mixed_parlay),
    "raising the pre-game TTL must not staleness-freeze a game in progress")
+# Real progress: the build is one HTTP request, so the browser cannot observe
+# it -- unless the builder counts games as it goes and something serves that.
+_pt = "guardtok"
+_bbttl.progress_start(_pt, 5)
+_bbttl.progress_enter(_pt)
+ck("a build reports the game it is ON, not only the ones it finished",
+   (_bbttl.progress_get(_pt) or {}).get("at") == 1
+   and (_bbttl.progress_get(_pt) or {}).get("done") == 0,
+   "the first game takes ~32s, so counting only completions left the bar "
+   "frozen at 0/N -- exactly the frozen bar this replaced")
+_bbttl.progress_step(_pt, cached=True)
+_p = _bbttl.progress_get(_pt) or {}
+ck("finished games and cache hits are counted separately",
+   _p.get("done") == 1 and _p.get("cached") == 1,
+   "'15 games simulated' and '15 games read from cache' are very different waits")
+_bbttl.progress_start(_pt, 5)          # optimal mode's second floor pass
+ck("sweeping another floor EXTENDS the total instead of resetting it",
+   (_bbttl.progress_get(_pt) or {}).get("total") == 10
+   and (_bbttl.progress_get(_pt) or {}).get("done") == 1,
+   "optimal runs the builder three times on one token; resetting would send "
+   "the bar 0->100 three times over")
+_bbttl.progress_done(_pt)
+ck("and the token is dropped when the build ends",
+   _bbttl.progress_get(_pt) is None)
+ck("the endpoint serves the count and the client polls it",
+   '"/api/progress"' in _appsrc and "/api/progress?token=" in _appjs
+   and "&ptok=" in _appjs,
+   "without a poll the browser has no way to see inside a single request")
+ck("real counts win over the time-based estimate when they exist",
+   "if (real) {" in _appjs and "100 * (real.done" in _appjs,
+   "a measured count beats a curve every time; the curve is only the fallback")
 ck("the progress bar is paced by MEASURED runs, not a fixed curve",
    "_simRecord" in _appjs and "_simEst" in _appjs
    and "92 * (1 - Math.exp(-dt / 5))" not in _appjs,

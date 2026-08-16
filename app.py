@@ -173,6 +173,20 @@ def _slow_finish(resp):
     return resp
 
 
+@app.route("/api/progress")
+def _api_progress():
+    """How far a long build has actually got. The combo maker is one request, so
+    the browser cannot observe it directly; the builder counts games as it
+    finishes simulating each one and this reports that count."""
+    tok = (request.args.get("token") or "")[:64]
+    p = baseball.progress_get(tok) if tok else None
+    if not p:
+        return jsonify({"known": False})
+    return jsonify({"known": True, "done": p["done"], "at": p.get("at", 0),
+                    "total": p["total"], "cached": p["cached"], "phase": p["phase"],
+                    "elapsed_s": round(time.time() - p["started"], 1)})
+
+
 @app.route("/api/dfs/scoring")
 def _api_dfs_scoring():
     """The DraftKings scoring card for a sport, rendered from the SAME constants
@@ -2448,6 +2462,10 @@ def api_baseball_mixed():
     optimal = request.args.get("optimal") == "1"
     if optimal and not (payout and payout > 1):
         return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
+    # Real progress: the client mints a token, we count games as they finish
+    # simulating, and /api/progress reports it. One build = one HTTP request, so
+    # this is the only way the browser can see inside it.
+    ptok = (request.args.get("ptok") or "")[:64] or None
 
     def _build(target_pct, _mb=False, _opt=False):
         return baseball.build_mixed_parlay(
@@ -2460,7 +2478,8 @@ def api_baseball_mixed():
             payout_mode="require" if _opt else payout_mode,
             conn=conn, game_sel=sel or None,
             include_live=include_live, types=_prop_types(),
-            objective="balanced" if _opt else objective, max_bet=_mb)
+            objective="balanced" if _opt else objective, max_bet=_mb,
+            progress_token=ptok)
 
     if optimal:
         # A target past the exchange ceiling is not reachable in real money;
