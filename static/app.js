@@ -1095,7 +1095,21 @@ window.buildCombo = async (maxBet, optimal) => {
     const selParam = comboSelParam();
     if (selParam) q += `&sel=${encodeURIComponent(selParam)}`;
     q += mlbTypesParam();
-    const d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
+    // The build runs in the BACKGROUND: a full slate is minutes of simulation
+    // and no HTTP request may live that long (the worker gets killed, which is
+    // what took the whole instance down). The server answers 202 immediately and
+    // we re-ask until the job is finished, while the progress bar polls the
+    // game count. Up to 20 minutes, since a fully cold slate genuinely takes it.
+    let d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
+    for (let i = 0; d && d.status === "building" && i < 800; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const rr = await fetch(`/api/baseball/mixed?date=${date}&${q}`);
+      d = await rr.json();
+    }
+    if (d && d.status === "building") {
+      out.innerHTML = `<div class="small">Still simulating after 20 minutes - the slate is unusually large or the server is busy. Try fewer games from the grid above.</div>`;
+      return;
+    }
     noteMaxBetCap(d);
     if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
     if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }

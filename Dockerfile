@@ -38,7 +38,14 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # process permanently ~140 MB fatter (fragmented pymalloc arenas that no
 # collection returns), so a long-lived worker only ever grows. Recycling hands
 # that memory back. The jitter keeps the two workers from recycling together.
+# The worker count is FLOORED AT TWO on purpose. WEB_CONCURRENCY is a name the
+# hosting platform may set itself, and if it ever arrives as 1 we would silently
+# be back to a single worker -- the exact configuration whose killed worker takes
+# the health check, and the whole instance, down with it. VIGIL_WEB_WORKERS wins
+# when set; otherwise WEB_CONCURRENCY; otherwise 3. Never fewer than 2.
 ENV WEB_CONCURRENCY=3
-CMD ["sh", "-c", "gunicorn -w ${WEB_CONCURRENCY:-2} --threads 8 --timeout 120 \
-     --graceful-timeout 30 --max-requests 600 --max-requests-jitter 120 \
-     -b 0.0.0.0:$PORT app:app"]
+CMD ["sh", "-c", "W=${VIGIL_WEB_WORKERS:-${WEB_CONCURRENCY:-3}}; \
+     case \"$W\" in ''|*[!0-9]*) W=3 ;; esac; [ \"$W\" -lt 2 ] && W=2; \
+     echo \"[vigil] starting $W gunicorn workers\"; \
+     exec gunicorn -w \"$W\" --threads 8 --timeout 120 --graceful-timeout 30 \
+     --max-requests 600 --max-requests-jitter 120 -b 0.0.0.0:$PORT app:app"]

@@ -4743,6 +4743,38 @@ ck("the server never runs a single web worker",
    "-w 1 " not in _dockerfile and "-w 1 " not in _procfile
    and "WEB_CONCURRENCY" in _dockerfile and "WEB_CONCURRENCY" in _procfile,
    "one worker means one killed request takes the health check down with it")
+ck("...and the worker count is FLOORED at two, whatever the platform sets",
+   "-lt 2 ] && W=2" in _dockerfile.replace('\\"', '"')
+   and "-lt 2 ] && W=2" in _procfile
+   and "VIGIL_WEB_WORKERS" in _dockerfile and "VIGIL_WEB_WORKERS" in _procfile,
+   "WEB_CONCURRENCY is a name the host may set itself; arriving as 1 would put "
+   "us silently back on the configuration that fails the health check")
+ck("a non-numeric worker count cannot break the start command",
+   "*[!0-9]*) W=3" in _dockerfile and "*[!0-9]*) W=3" in _procfile)
+# The build is minutes of simulation; a request must never be. One game's sim is
+# ~32s on a fast desktop and >100s on a shared cloud CPU, so a 14-game slate
+# could not finish inside gunicorn's 120s timeout -- and the killed worker is
+# what failed the platform's probe.
+ck("a combo build runs in the background, not inside the request",
+   "_combo_jobs" in _appsrc and '"status": "building"' in _appsrc
+   and "threading.Thread(target=_bg" in _appsrc.split("_combo_jobs")[1],
+   "a 14-game slate is minutes of work against a 120s worker timeout: the "
+   "request was killed every time and took the instance with it")
+ck("the client re-asks until the job is done",
+   'd.status === "building"' in _appjs,
+   "202 means come back; the browser has to actually come back")
+# Scoped to the mixed endpoint: the other four endpoints call _prop_types() on
+# the request thread, which is correct. Only the backgrounded one must not.
+_mixed_src = _appsrc.split("def api_baseball_mixed")[1].split("\n@app.route")[0]
+ck("request-scoped values are read BEFORE the background thread starts",
+   "prop_types = _prop_types()" in _mixed_src
+   and "types=prop_types" in _mixed_src
+   and "types=_prop_types()" not in _mixed_src,
+   "_prop_types() reads `request`; called from the background thread it raises "
+   "'Working outside of request context' and the build dies instantly -- which "
+   "it did, finishing in 3s with nothing built")
+ck("abandoned builds are reaped rather than piling up",
+   "len(_combo_jobs) > 24" in _appsrc)
 ck("the deployed blueprint asks for more than one too",
    'key: WEB_CONCURRENCY' in _renderyml
    and int(_renderyml.split("key: WEB_CONCURRENCY")[1].split('value: "')[1].split('"')[0]) >= 2)

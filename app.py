@@ -143,6 +143,12 @@ def _security_headers(resp):
 # request, name the slow ones, and keep the worst few in memory for /api/diag/slow.
 # A request nearing the worker timeout is logged as the danger it is -- that is
 # the one that takes the health check down with it.
+# Background combo builds, keyed by the progress token the client already mints.
+# A build is minutes of simulation and a request must never be, so the two are
+# decoupled: the request starts a job and returns 202, the client polls.
+_combo_jobs = {}
+_combo_lock = threading.Lock()
+
 _KILL_TIMEOUT = float(os.environ.get("VIGIL_WORKER_TIMEOUT") or 120)
 _SLOW_LOG_S = float(os.environ.get("VIGIL_SLOW_LOG_S") or 10)
 _slow_recent = []
@@ -2467,6 +2473,12 @@ def api_baseball_mixed():
     # this is the only way the browser can see inside it.
     ptok = (request.args.get("ptok") or "")[:64] or None
 
+    # EVERY request-dependent value has to be read here, on the request thread.
+    # The build runs in a background thread where `request` does not exist, and
+    # _prop_types() reads it -- called from in there it raises "Working outside
+    # of request context" and the build dies instantly instead of running.
+    prop_types = _prop_types()
+
     def _build(target_pct, _mb=False, _opt=False):
         return baseball.build_mixed_parlay(
             games, n_legs=legs, target_pct=target_pct,
@@ -2477,49 +2489,97 @@ def api_baseball_mixed():
             legs_mode="off" if _opt else legs_mode,
             payout_mode="require" if _opt else payout_mode,
             conn=conn, game_sel=sel or None,
-            include_live=include_live, types=_prop_types(),
+            include_live=include_live, types=prop_types,
             objective="balanced" if _opt else objective, max_bet=_mb,
             progress_token=ptok)
 
-    if optimal:
-        # A target past the exchange ceiling is not reachable in real money;
-        # clamp and say so rather than optimizing toward a payout Kalshi caps.
-        capped = payout > combo_engine.MAX_PAYOUT_X
-        payout = min(payout, combo_engine.MAX_PAYOUT_X)
-        item = combo_engine.best_target(lambda f: _build(f, _opt=True))
-        if item:
-            item["objective"] = "optimal"
-            item["target_payout_x"] = payout
-            item["target_capped"] = capped
-            return jsonify({"parlay": item})
-        pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
-        if pre and not any(g.get("pick_price_cents") for g in pre):
-            return jsonify({"parlay": None, "hint": "kalshi_unpriced",
-                            "n_pregame": len(pre)})
-        return jsonify({"parlay": None, "hint": "optimal_unbuildable",
-                        "target_payout_x": payout})
-    if max_bet:
-        # The band and the payout target are dropped and the per-leg floor is
-        # swept: reaching the MARKET payout cap needs room the maker's own
-        # settings would not give it. See combo_engine.MAX_BET_FLOORS.
-        item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+    def _core():
+        """The build itself, as a plain dict. Split out so it can run in the
+        background instead of holding an HTTP request open."""
+        nonlocal payout
+        if optimal:
+            # A target past the exchange ceiling is not reachable in real money;
+            # clamp and say so rather than optimizing toward a payout Kalshi caps.
+            capped = payout > combo_engine.MAX_PAYOUT_X
+            payout = min(payout, combo_engine.MAX_PAYOUT_X)
+            item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+            if item:
+                item["objective"] = "optimal"
+                item["target_payout_x"] = payout
+                item["target_capped"] = capped
+                return {"parlay": item}
+            pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+            if pre and not any(g.get("pick_price_cents") for g in pre):
+                return {"parlay": None, "hint": "kalshi_unpriced",
+                        "n_pregame": len(pre)}
+            return {"parlay": None, "hint": "optimal_unbuildable",
+                    "target_payout_x": payout}
+        if max_bet:
+            # The band and the payout target are dropped and the per-leg floor is
+            # swept: reaching the MARKET payout cap needs room the maker's own
+            # settings would not give it. See combo_engine.MAX_BET_FLOORS.
+            item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+            if not item:
+                return {"parlay": None, "hint": "max_bet_unreachable",
+                        "cap_x": combo_engine.MAX_PAYOUT_X}
+        else:
+            item = _build(target)
         if not item:
-            return jsonify({"parlay": None, "hint": "max_bet_unreachable",
-                            "cap_x": combo_engine.MAX_PAYOUT_X})
-    else:
-        item = _build(target)
-    if not item:
-        # Say WHY nothing built. "No eligible games for that selection" sends the
-        # user to loosen filters that were never the problem: the common cause is
-        # that the slate carries no Kalshi prices yet (lines post near game time,
-        # or the exchange is unreachable), and the maker only builds legs you can
-        # actually place. pick_price_cents is already on every game, so this
-        # costs nothing.
-        pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
-        if pre and not any(g.get("pick_price_cents") for g in pre):
-            return jsonify({"parlay": None, "hint": "kalshi_unpriced",
-                            "n_pregame": len(pre)})
-    return jsonify({"parlay": item})
+            # Say WHY nothing built. "No eligible games for that selection" sends
+            # the user to loosen filters that were never the problem: the common
+            # cause is that the slate carries no Kalshi prices yet (lines post
+            # near game time, or the exchange is unreachable), and the maker only
+            # builds legs you can actually place.
+            pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+            if pre and not any(g.get("pick_price_cents") for g in pre):
+                return {"parlay": None, "hint": "kalshi_unpriced",
+                        "n_pregame": len(pre)}
+        return {"parlay": item}
+
+    # ---- run it in the BACKGROUND when the client gave us a token ----------
+    # A full slate is 14 games and one game's 4,000-run simulation costs ~32s on
+    # a fast desktop and well over 100s on a single shared cloud CPU. That is
+    # minutes of work, against a 120s gunicorn worker timeout -- so the request
+    # was killed every time, and killing a worker is exactly what fails the
+    # platform's 5-second health probe. The build could not have completed and
+    # took the instance down trying.
+    #
+    # So the build no longer runs inside the request. The token the progress bar
+    # already mints keys a background job; the request returns immediately and
+    # the client polls /api/progress, which it was doing anyway.
+    if ptok:
+        with _combo_lock:
+            job = _combo_jobs.get(ptok)
+            if job and job.get("status") == "done":
+                _combo_jobs.pop(ptok, None)
+                baseball.progress_done(ptok)
+                return jsonify(job["result"])
+            if job and job.get("status") == "error":
+                _combo_jobs.pop(ptok, None)
+                baseball.progress_done(ptok)
+                return jsonify({"error": job["error"]}), 502
+            if job:
+                return jsonify({"status": "building", "token": ptok}), 202
+            _combo_jobs[ptok] = {"status": "running", "started": time.time()}
+            if len(_combo_jobs) > 24:      # abandoned builds must not pile up
+                for k in sorted(_combo_jobs,
+                                key=lambda k: _combo_jobs[k]["started"])[:12]:
+                    _combo_jobs.pop(k, None)
+
+        def _bg():
+            try:
+                res = _core()
+                with _combo_lock:
+                    _combo_jobs[ptok] = {"status": "done", "result": res,
+                                         "started": time.time()}
+            except Exception as e:
+                print(f"[combo] build failed ({ptok}): {e!r}", flush=True)
+                with _combo_lock:
+                    _combo_jobs[ptok] = {"status": "error", "error": str(e),
+                                         "started": time.time()}
+        threading.Thread(target=_bg, daemon=True).start()
+        return jsonify({"status": "building", "token": ptok}), 202
+    return jsonify(_core())
 
 
 @app.route("/api/baseball/value")
