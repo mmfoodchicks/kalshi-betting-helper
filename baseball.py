@@ -2356,10 +2356,25 @@ def _log_prop_predictions(g, cands):
         pass
 
 
+# A cache whose TTL is SHORTER THAN THE TIME IT TAKES TO FILL cannot ever be
+# warm. One game's 4,000-run sim is ~32s, so a 15-game slate is ~8 minutes of
+# work -- against a 180s TTL, game 1 had already expired before game 15 was
+# simulated, and every combo build re-ran however many had lapsed. That is where
+# "Optimal for my x" spent 67 seconds: not on the optimisation, on re-simulating
+# games it had just simulated.
+#
+# This path serves PRE-GAME states only (a game under way goes through
+# _live_game_sim), and a pre-game state moves slowly: lineups are posted once and
+# Kalshi's pre-game prices drift, they do not jump. Fifteen minutes is still far
+# fresher than the lines it prices against, and it is comfortably longer than a
+# full slate takes to build, so the cache actually holds.
+_GAME_SIM_TTL = int(_os.environ.get("VIGIL_GAME_SIM_TTL") or 900)
+
+
 def _game_sim(g):
     """The shared 4000-run game simulation + its candidate legs, cached per game
-    (~3 min). Everything that prices a leg reads this, so combos, edges and SGPs
-    are the SAME simulation."""
+    (see _GAME_SIM_TTL). Everything that prices a leg reads this, so combos,
+    edges and SGPs are the SAME simulation."""
     import mlb_sim
     pk = g.get("game_pk")
 
@@ -2376,7 +2391,7 @@ def _game_sim(g):
         return {"sim": sim, "cands": cands}
     if pk is None:
         return build()
-    return _cached(("game_sim", pk), 180, build)
+    return _cached(("game_sim", pk), _GAME_SIM_TTL, build)
 
 
 def _live_state_sig(snap):

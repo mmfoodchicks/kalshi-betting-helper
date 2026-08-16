@@ -4774,6 +4774,43 @@ ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
 print()
 print("=" * 72)
+print("A cache shorter than its own fill time is never warm")
+print("=" * 72)
+import baseball as _bbttl
+# One game's 4,000-run sim is ~32s, so a 15-game slate is ~8 minutes of work.
+# Against the old 180s TTL, game 1 expired before game 15 was simulated and every
+# combo build re-ran whatever had lapsed -- which is where "Optimal for my x"
+# spent 67 seconds. Measured after the fix: 43.9s cold, 0.6s warm.
+ck("the per-game sim cache outlives the time it takes to fill",
+   _bbttl._GAME_SIM_TTL >= 600,
+   f"TTL is {_bbttl._GAME_SIM_TTL}s; a 15-game slate takes ~480s of simulation, "
+   "so anything under that guarantees a permanently cold cache")
+ck("and it is tunable without a code change",
+   'VIGIL_GAME_SIM_TTL' in _insp.getsource(_bbttl).split("def _game_sim")[0][-900:])
+ck("live games still get their own short-lived path",
+   "_live_game_sim" in _insp.getsource(_bbttl.build_mixed_parlay),
+   "raising the pre-game TTL must not staleness-freeze a game in progress")
+ck("the progress bar is paced by MEASURED runs, not a fixed curve",
+   "_simRecord" in _appjs and "_simEst" in _appjs
+   and "92 * (1 - Math.exp(-dt / 5))" not in _appjs,
+   "the old curve hit 92% in ~15s and crawled, so a 67s build showed '92%' for "
+   "nearly a minute -- a spinner that lied about its position")
+ck("each build mode is timed separately",
+   '"combo:optimal"' in _appjs and '"combo:build"' in _appjs
+   and '"combo:maxbet"' in _appjs,
+   "optimal sweeps three per-leg floors and a plain build does one; a shared "
+   "average mis-times both")
+ck("the bar admits when a run is running long",
+   "longer than the usual" in _appjs,
+   "past the expected time the extra seconds are not progress and should not "
+   "be drawn as progress")
+ck("and the duration is recorded even when the build fails",
+   "_stopLoader();" in _appjs
+   and "_stopLoader();" in _appjs.split("comboBuilding = false;")[-1][:200],
+   "recording only on success would bias the estimate toward fast runs")
+
+print()
+print("=" * 72)
 print("An empty NFL week answers; it does not poll forever")
 print("=" * 72)
 import nfl_game_sim as _NGS

@@ -1076,9 +1076,13 @@ window.buildCombo = async (maxBet, optimal) => {
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
   comboBuilding = true;
-  simLoader(out, maxBet ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+  // Each mode is timed separately -- "optimal" sweeps three per-leg floors and a
+  // plain build does one, so pacing them off a shared average would mis-time both.
+  const _stopLoader = simLoader(out,
+    maxBet ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
     : optimal ? `Solving for the likeliest slip that pays ${p}×…`
-    : comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…");
+    : comboSameGamePref ? "Simulating games (correlated same-game odds)…" : "Simulating every game…",
+    maxBet ? "combo:maxbet" : optimal ? "combo:optimal" : "combo:build");
   try {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
@@ -1110,6 +1114,7 @@ window.buildCombo = async (maxBet, optimal) => {
     out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   } finally {
     comboBuilding = false;
+    _stopLoader();      // records how long this actually took, to pace the next bar
   }
 };
 
@@ -1245,29 +1250,74 @@ window.buildSGP = async () => {
   }
 };
 
-// Animated progress bar for the long simulations. There's no real per-sim
-// progress from the server (it's one request), so the bar eases asymptotically
-// toward ~95% and shows a live elapsed timer - enough to prove it's working and
-// not frozen. It self-clears once the caller replaces the container's contents.
-function simLoader(el, msg) {
+// Progress bar for the long simulations.
+//
+// The old curve was 92*(1-exp(-dt/5)): it reached 92% in about fifteen seconds
+// and then crawled, so a 67-second build sat at "92%" for nearly a minute. That
+// is not a progress bar, it is a spinner that lies about how far along it is.
+//
+// The server answers in ONE request, so there is no true per-sim progress to
+// read. What there IS is history: this same build, on this same device, took a
+// measurable time the last few runs. So pace the bar against the MEASURED median
+// of recent runs of the same kind, and when a run exceeds that estimate, say so
+// rather than pretending the extra time is progress.
+const _SIM_EST_KEY = "vigilSimDur";
+
+function _simEst(kind) {
+  try {
+    const all = JSON.parse(localStorage.getItem(_SIM_EST_KEY) || "{}");
+    const runs = all[kind] || [];
+    if (!runs.length) return null;
+    const s = runs.slice().sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];             // median of recent runs
+  } catch (e) { return null; }
+}
+
+function _simRecord(kind, secs) {
+  try {
+    const all = JSON.parse(localStorage.getItem(_SIM_EST_KEY) || "{}");
+    const runs = (all[kind] || []).concat([secs]).slice(-5);   // last 5 runs
+    all[kind] = runs;
+    localStorage.setItem(_SIM_EST_KEY, JSON.stringify(all));
+  } catch (e) { /* storage full or blocked - the bar just falls back to default */ }
+}
+
+function simLoader(el, msg, kind) {
+  kind = kind || "sim";
+  const est = _simEst(kind) || 25;        // no history yet: assume a cold build
   el.innerHTML = `<div class="simloader">
     <div class="small simloader-msg">${msg}</div>
     <div class="simloader-track"><div class="simloader-fill"></div></div>
-    <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span> elapsed - crunching the simulation…</div>
+    <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span><span class="slnote"> elapsed</span></div>
   </div>`;
   const fill = el.querySelector(".simloader-fill");
   const pctEl = el.querySelector(".slpct");
   const timeEl = el.querySelector(".sltime");
+  const noteEl = el.querySelector(".slnote");
   const t0 = performance.now();
   const id = setInterval(() => {
     if (!document.body.contains(fill)) { clearInterval(id); return; }  // results replaced it
     const dt = (performance.now() - t0) / 1000;
-    const pct = Math.min(95, 92 * (1 - Math.exp(-dt / 5)));  // asymptotic, never "done" early
+    // Linear to 90% across the expected duration, so the position genuinely
+    // means "this fraction of the time this normally takes". Past that it
+    // creeps 90->99 and the text stops claiming everything is normal.
+    let pct, note;
+    if (dt <= est) {
+      pct = 90 * (dt / est);
+      note = ` of ~${est.toFixed(0)}s expected`;
+    } else {
+      pct = 90 + 9 * (1 - Math.exp(-(dt - est) / Math.max(8, est)));
+      note = ` - longer than the usual ${est.toFixed(0)}s; simulating games that weren't cached`;
+    }
     fill.style.width = pct.toFixed(1) + "%";
     pctEl.textContent = pct.toFixed(0) + "%";
     timeEl.textContent = dt.toFixed(1) + "s";
+    noteEl.textContent = note;
   }, 100);
-  return () => clearInterval(id);
+  return () => {
+    clearInterval(id);
+    _simRecord(kind, (performance.now() - t0) / 1000);
+  };
 }
 
 // Plain-English legend for every number the model shows. Reused wherever model
