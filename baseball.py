@@ -2380,6 +2380,95 @@ _GAME_SIM_TTL = int(_os.environ.get("VIGIL_GAME_SIM_TTL") or 900)
 _progress = {}
 _progress_lock = _threading.Lock()
 
+# ...and the same state has to be SHARED BETWEEN WORKERS, for the same reason
+# the sim cache does. Held only in one worker's memory, a build was invisible to
+# the other two: the browser's poll round-robins, so a poll landing elsewhere
+# found no job, started a SECOND build, and the progress bar read whichever
+# worker answered -- climbing to "game 10 of 11" and then dropping back to
+# "game 1 of 11". Three full simulations of the same slate then fought over one
+# CPU. One JSON file per token, written by the builder and readable by all.
+_JOB_DIR = _os.path.join(
+    _os.environ.get("VIGIL_SIM_CACHE_DIR")
+    or _os.environ.get("DEEP_CACHE_DIR") or "/tmp", "combojobs")
+
+
+def _job_path(token):
+    return _os.path.join(_JOB_DIR, f"{token}.json")
+
+
+def _job_write(token, data):
+    try:
+        import json
+        import tempfile
+        _os.makedirs(_JOB_DIR, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_JOB_DIR, suffix=".tmp")
+        with _os.fdopen(fd, "w") as fh:
+            json.dump(data, fh)
+        _os.replace(tmp, _job_path(token))
+    except Exception:
+        pass
+
+
+def job_claim(token):
+    """True in exactly ONE worker -- whoever creates the file wins. O_EXCL is the
+    whole point: without an atomic claim every polling request that lands on a
+    cold worker starts its own duplicate build."""
+    if not token:
+        return True
+    try:
+        _os.makedirs(_JOB_DIR, exist_ok=True)
+        fd = _os.open(_job_path(token),
+                      _os.O_CREAT | _os.O_EXCL | _os.O_WRONLY, 0o644)
+    except FileExistsError:
+        return False
+    except Exception:
+        return True             # cannot share -> single-process behaviour
+    import json
+    with _os.fdopen(fd, "w") as fh:
+        json.dump({"status": "running", "at": 0, "done": 0, "total": 0,
+                   "cached": 0, "started": _time.time()}, fh)
+    # Old tokens from abandoned builds must not accumulate.
+    try:
+        cutoff = _time.time() - 3600
+        for name in _os.listdir(_JOB_DIR):
+            p = _os.path.join(_JOB_DIR, name)
+            if _os.stat(p).st_mtime < cutoff:
+                _os.remove(p)
+    except Exception:
+        pass
+    return True
+
+
+def job_read(token):
+    if not token:
+        return None
+    try:
+        import json
+        with open(_job_path(token)) as fh:
+            return json.load(fh)
+    except Exception:
+        return None
+
+
+def job_update(token, **fields):
+    if not token:
+        return
+    d = job_read(token) or {"status": "running", "at": 0, "done": 0,
+                            "total": 0, "cached": 0, "started": _time.time()}
+    d.update(fields)
+    _job_write(token, d)
+
+
+def job_finish(token, status, result=None, error=None):
+    job_update(token, status=status, result=result, error=error)
+
+
+def job_drop(token):
+    try:
+        _os.remove(_job_path(token))
+    except Exception:
+        pass
+
 
 def progress_start(token, total, phase="simulating games"):
     """Begin (or EXTEND) a build's progress.
@@ -2396,13 +2485,17 @@ def progress_start(token, total, phase="simulating games"):
         p = _progress.get(token)
         if p:
             p["total"] += int(total)
-            return
-        _progress[token] = {"done": 0, "at": 0, "total": int(total), "phase": phase,
-                            "cached": 0, "started": _time.time()}
+        else:
+            _progress[token] = {"done": 0, "at": 0, "total": int(total),
+                                "phase": phase, "cached": 0,
+                                "started": _time.time()}
         # Keep the table from growing without bound if a client abandons a build.
         if len(_progress) > 40:
             for k in sorted(_progress, key=lambda k: _progress[k]["started"])[:20]:
                 _progress.pop(k, None)
+    j = job_read(token)                      # extend the SHARED total too
+    job_update(token, total=int((j or {}).get("total") or 0) + int(total),
+               phase=phase)
 
 
 def progress_enter(token):
@@ -2417,6 +2510,9 @@ def progress_enter(token):
         p = _progress.get(token)
         if p:
             p["at"] += 1
+    j = job_read(token)
+    if j is not None:
+        job_update(token, at=int(j.get("at") or 0) + 1)
 
 
 def progress_step(token, cached=False):
@@ -2428,19 +2524,33 @@ def progress_step(token, cached=False):
             p["done"] += 1
             if cached:
                 p["cached"] += 1
+    j = job_read(token)
+    if j is not None:
+        job_update(token, done=int(j.get("done") or 0) + 1,
+                   cached=int(j.get("cached") or 0) + (1 if cached else 0))
 
 
 def progress_get(token):
     with _progress_lock:
         p = _progress.get(token)
-        return dict(p) if p else None
+        if p:
+            return dict(p)
+    j = job_read(token)                      # a sibling worker owns this build
+    if j:
+        j.setdefault("phase", "simulating games")
+        return j
+    return None
 
 
 def progress_done(token):
+    """Forget a build entirely -- memory AND the shared file. Dropping only the
+    in-memory copy left the token alive on disk, where progress_get would keep
+    finding it and any worker would keep reporting a finished build as live."""
     if not token:
         return
     with _progress_lock:
         _progress.pop(token, None)
+    job_drop(token)
 
 
 # The per-game sim cache has to be SHARED BETWEEN WORKERS and SINGLE-FLIGHT.

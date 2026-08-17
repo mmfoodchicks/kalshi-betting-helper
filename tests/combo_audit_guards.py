@@ -4807,6 +4807,35 @@ ck("a non-numeric worker count cannot break the start command",
 # ~32s on a fast desktop and >100s on a shared cloud CPU, so a 14-game slate
 # could not finish inside gunicorn's 120s timeout -- and the killed worker is
 # what failed the platform's probe.
+# The job and its progress must be shared too, for the same reason the sim cache
+# is: the browser's poll round-robins across workers. A poll landing on a worker
+# that had never seen the token started a SECOND build, so the bar climbed to
+# "game 10 of 11" and then dropped back to "game 1 of 11" -- it was reading a
+# different worker's duplicate, and three simulations fought over one CPU.
+import shutil as _sh
+_sh.rmtree(_bbttl._JOB_DIR, ignore_errors=True)
+_tokx = "guardclaim"
+_wins = [_bbttl.job_claim(_tokx) for _ in range(4)]
+ck("exactly one worker may claim a build",
+   _wins.count(True) == 1,
+   "without an atomic O_EXCL claim every polling request that lands on a cold "
+   "worker starts its own duplicate build")
+_bbttl.progress_start(_tokx, 11)
+_bbttl.progress_enter(_tokx)
+_bbttl.progress_step(_tokx)
+_bbttl._progress.clear()                    # a worker that never saw this build
+_pg = _bbttl.progress_get(_tokx) or {}
+ck("a sibling worker reads the SAME progress, not a fresh zero",
+   _pg.get("total") == 11 and _pg.get("at") == 1 and _pg.get("done") == 1,
+   "per-worker counters are why the bar reset to 'game 1 of 11' after reaching 10")
+_bbttl.job_finish(_tokx, "done", result={"parlay": {"ok": 1}})
+ck("and the finished result is visible to whichever worker is polled",
+   (_bbttl.job_read(_tokx) or {}).get("status") == "done"
+   and "baseball.job_read(ptok)" in _appsrc and "baseball.job_claim(ptok)" in _appsrc,
+   "the result lived in one worker's memory, so two polls in three never saw it")
+_bbttl.job_drop(_tokx)
+ck("abandoned job files are reaped",
+   "_time.time() - 3600" in _insp.getsource(_bbttl.job_claim))
 ck("a combo build runs in the background, not inside the request",
    "_combo_jobs" in _appsrc and '"status": "building"' in _appsrc
    and "threading.Thread(target=_bg" in _appsrc.split("_combo_jobs")[1],
@@ -4826,7 +4855,8 @@ ck("request-scoped values are read BEFORE the background thread starts",
    "'Working outside of request context' and the build dies instantly -- which "
    "it did, finishing in 3s with nothing built")
 ck("abandoned builds are reaped rather than piling up",
-   "len(_combo_jobs) > 24" in _appsrc)
+   "_time.time() - 3600" in _insp.getsource(_bbttl.job_claim),
+   "job files outlive their build; without a sweep the directory grows forever")
 ck("the deployed blueprint asks for more than one too",
    'key: WEB_CONCURRENCY' in _renderyml
    and int(_renderyml.split("key: WEB_CONCURRENCY")[1].split('value: "')[1].split('"')[0]) >= 2)

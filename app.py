@@ -2604,35 +2604,32 @@ def api_baseball_mixed():
     # already mints keys a background job; the request returns immediately and
     # the client polls /api/progress, which it was doing anyway.
     if ptok:
-        with _combo_lock:
-            job = _combo_jobs.get(ptok)
-            if job and job.get("status") == "done":
-                _combo_jobs.pop(ptok, None)
-                baseball.progress_done(ptok)
-                return jsonify(job["result"])
-            if job and job.get("status") == "error":
-                _combo_jobs.pop(ptok, None)
-                baseball.progress_done(ptok)
-                return jsonify({"error": job["error"]}), 502
-            if job:
-                return jsonify({"status": "building", "token": ptok}), 202
-            _combo_jobs[ptok] = {"status": "running", "started": time.time()}
-            if len(_combo_jobs) > 24:      # abandoned builds must not pile up
-                for k in sorted(_combo_jobs,
-                                key=lambda k: _combo_jobs[k]["started"])[:12]:
-                    _combo_jobs.pop(k, None)
+        # The job lives on SHARED STORAGE, not in this worker's memory. With
+        # three workers the browser's poll round-robins, so a poll landing on a
+        # worker that had never seen the token used to start a SECOND build --
+        # the progress bar climbed to "game 10 of 11" and then dropped back to
+        # "game 1 of 11" because it was reading a different worker's duplicate,
+        # and three simulations of the same slate fought over one CPU.
+        job = baseball.job_read(ptok)
+        if job and job.get("status") == "done":
+            baseball.job_drop(ptok)
+            baseball.progress_done(ptok)
+            return jsonify(job.get("result") or {})
+        if job and job.get("status") == "error":
+            baseball.job_drop(ptok)
+            baseball.progress_done(ptok)
+            return jsonify({"error": job.get("error") or "build failed"}), 502
+        # Exactly one worker wins the claim; everyone else just reports 202.
+        if not baseball.job_claim(ptok):
+            return jsonify({"status": "building", "token": ptok}), 202
 
         def _bg():
             try:
                 res = _core()
-                with _combo_lock:
-                    _combo_jobs[ptok] = {"status": "done", "result": res,
-                                         "started": time.time()}
+                baseball.job_finish(ptok, "done", result=res)
             except Exception as e:
                 print(f"[combo] build failed ({ptok}): {e!r}", flush=True)
-                with _combo_lock:
-                    _combo_jobs[ptok] = {"status": "error", "error": str(e),
-                                         "started": time.time()}
+                baseball.job_finish(ptok, "error", error=str(e))
         threading.Thread(target=_bg, daemon=True).start()
         return jsonify({"status": "building", "token": ptok}), 202
     return jsonify(_core())
