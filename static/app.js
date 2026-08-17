@@ -5760,6 +5760,47 @@ if ("serviceWorker" in navigator) {
 }
 
 
+// ---- Warm-up status bar -----------------------------------------------------
+// The app keeps its game simulations hot in the background. Whether that has
+// finished used to be invisible: you opened the app, pressed Build, and only
+// then found out the board was cold and you were in for a wait. This says so up
+// front, counts the games as they come ready, and tells you when it is done.
+let _warmWasCold = false;
+async function pollWarm() {
+  const bar = $("warmBar");
+  if (!bar) return;
+  try {
+    const date = ($("bbDate") && $("bbDate").value) || "";
+    const d = await (await fetch("/api/warm" + (date ? "?date=" + date : ""))).json();
+    if (!d || d.ready || d.total === 0) {
+      // Only announce readiness if the user actually saw it warming.
+      if (_warmWasCold && d && d.ready) {
+        bar.className = "warmbar ready";
+        bar.innerHTML = `<b>✅ Ready</b> - all ${d.total} games simulated. Builds are instant now.`;
+        setTimeout(() => bar.classList.add("hidden"), 6000);
+        _warmWasCold = false;
+      } else {
+        bar.classList.add("hidden");
+      }
+      return;
+    }
+    _warmWasCold = true;
+    bar.classList.remove("hidden");
+    bar.className = "warmbar";
+    const pct = d.total ? Math.round(100 * d.warm / d.total) : 0;
+    const at = d.at ? ` <span class="warmat">${escapeHtml(String(d.at))}</span>` : "";
+    bar.innerHTML = `<div class="warmrow"><b>⏳ Warming up</b>
+        <span>${d.warm}/${d.total} games ready${at}</span></div>
+      <div class="warmtrack"><div class="warmfill" style="width:${pct}%"></div></div>
+      <div class="warmnote">${d.slate_ready
+        ? "You can build now, but it'll be quicker once this finishes."
+        : "Building today's board…"}</div>`;
+  } catch (e) { /* offline - say nothing rather than something wrong */ }
+}
+setInterval(() => { if (!document.hidden) pollWarm(); }, 5000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) pollWarm(); });
+pollWarm();
+
 // ---- DraftKings scoring card ------------------------------------------------
 // Served from dk_scoring.py, which is the SAME table the simulators score with.
 // Showing a hand-typed copy would be worse than showing nothing: it would drift,

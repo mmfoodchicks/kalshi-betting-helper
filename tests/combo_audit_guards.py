@@ -4758,6 +4758,33 @@ ck("...on every tick, not only when the slate happens to expire",
    or "Warm the COMBO MAKER's per-game sims on every tick" in _appsrc,
    "gating the sims behind the slate's refresh means a fresh slate never warms "
    "them, which is exactly the case where a user opens the app and builds")
+# Picking the phone up after a break must not mean a cold board. The activity
+# window meant the warmer had long since stopped, so "open the app" and "wait
+# minutes" were the same event.
+ck("the board is kept warm all the time, not only just after someone looks",
+   "_WARM_ALWAYS" in _appsrc and 'os.environ.get("VIGIL_WARM_ALWAYS") or "1"' in _appsrc,
+   "a 30-minute activity window is exactly as long as a break, so every return "
+   "landed on a cold cache")
+ck("with nobody having asked yet, it warms TODAY's board anyway",
+   "d = clock.today_et().isoformat()" in _appsrc and "key = (d, d[:4])" in _appsrc,
+   "after a restart nobody has requested a slate, and that is precisely when "
+   "the first person to open the app needs it ready")
+ck("the sim TTL outlives a full warm cycle",
+   _bbttl._GAME_SIM_TTL >= 3600,
+   "a warm pass over a slate takes longer than 15 minutes on one CPU, so a "
+   "15-minute TTL could never leave the cache full")
+ck("...which is safe because prices are NOT baked into the cached sim",
+   "_price_cands(cands" in _insp.getsource(_bbttl.build_mixed_parlay),
+   "the cache holds the matchup simulation; Kalshi prices are fetched fresh at "
+   "build time, so a longer TTL costs no price accuracy")
+ck("the app says whether it is ready, instead of letting you find out",
+   '"/api/warm"' in _appsrc and "pollWarm" in _appjs and 'id="warmBar"' in
+   open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
+                      "templates", "index.html")).read(),
+   "you pressed Build and only then discovered the board was cold")
+ck("the banner reports real counts and announces when it finishes",
+   '"warm": warm' in _appsrc and "all ${d.total} games simulated" in _appjs,
+   "a spinner that never resolves is what this replaces")
 ck("warming stops the moment nobody is using the app",
    'time.time() - _warm_seen["ts"] > _WARM_WINDOW' in
    _insp.getsource(__import__("app")._warm_game_sims),

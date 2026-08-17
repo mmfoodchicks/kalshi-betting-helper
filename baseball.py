@@ -2368,7 +2368,14 @@ def _log_prop_predictions(g, cands):
 # Kalshi's pre-game prices drift, they do not jump. Fifteen minutes is still far
 # fresher than the lines it prices against, and it is comfortably longer than a
 # full slate takes to build, so the cache actually holds.
-_GAME_SIM_TTL = int(_os.environ.get("VIGIL_GAME_SIM_TTL") or 900)
+# An hour, not fifteen minutes. The cached object is the MATCHUP SIMULATION and
+# nothing else -- Kalshi prices are fetched fresh at build time by _price_cands
+# and were never baked in. So this only goes stale when the lineup or the
+# starter changes, which is hours of warning, not minutes. Fifteen minutes cost
+# a full re-simulation several times an hour for no added accuracy, and on a
+# one-CPU box a warm cycle takes longer than that, so the cache could never
+# actually be full.
+_GAME_SIM_TTL = int(_os.environ.get("VIGIL_GAME_SIM_TTL") or 3600)
 
 
 # ---- real build progress ----------------------------------------------------

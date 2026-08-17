@@ -186,6 +186,33 @@ def _slow_finish(resp):
     return resp
 
 
+@app.route("/api/warm")
+def _api_warm():
+    """Is the app ready to build instantly, or is it still simulating?
+
+    The answer used to be invisible: you opened the app, pressed Build, and
+    only then discovered the board was cold. This reports the same counts the
+    warmer is working through, so the page can say so up front."""
+    date = request.args.get("date") or clock.today_et().isoformat()
+    season = request.args.get("season") or date[:4]
+    try:
+        games = baseball.analyze_slate(date, season, cached_only=True)
+    except Exception:
+        games = None
+    if games is None:
+        return jsonify({"ready": False, "slate_ready": False, "total": 0,
+                        "warm": 0, "note": "building today's board…"})
+    todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
+    warm = sum(1 for g in todo if baseball._game_sim_cached(g))
+    return jsonify({"ready": bool(todo) and warm >= len(todo),
+                    "slate_ready": True, "total": len(todo), "warm": warm,
+                    "at": _warm_state.get("at"),
+                    "always_warm": bool(_WARM_ALWAYS),
+                    "note": ("ready" if todo and warm >= len(todo)
+                             else "no games today" if not todo
+                             else f"simulating {warm}/{len(todo)} games")})
+
+
 @app.route("/api/progress")
 def _api_progress():
     """How far a long build has actually got. The combo maker is one request, so
@@ -340,7 +367,15 @@ def _ensure_recorder():
 # deep_cache.HEAVY_BUILD, so it can never race the nightly season sim -- it
 # waits its turn instead of pushing the instance into an OOM.
 _WARM_WINDOW = int(os.environ.get("VIGIL_WARM_WINDOW") or 1800)   # 0 disables
+# KEEP IT WARM ALL THE TIME, not just for half an hour after someone looks.
+# The activity window meant that picking the phone up after a break landed on a
+# completely cold cache and a wait measured in minutes -- the warmer had stopped
+# long before. The instance is always-on and paid for by the month either way;
+# the only real cost is CPU it would otherwise spend idling, and games that have
+# finished are skipped, so an empty overnight slate costs nothing.
+_WARM_ALWAYS = (os.environ.get("VIGIL_WARM_ALWAYS") or "1") != "0"
 _warm_seen = {"ts": 0.0, "key": None}
+_warm_state = {"total": 0, "warm": 0, "at": None, "checked": 0.0}
 
 
 def _note_slate_use(date, season):
@@ -370,17 +405,25 @@ def _warm_game_sims(date, season):
         games = baseball.analyze_slate(date, season, cached_only=True) or []
     except Exception:
         return
-    for g in games:
-        if time.time() - _warm_seen["ts"] > _WARM_WINDOW:
+    todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
+    _warm_state["total"] = len(todo)
+    _warm_state["warm"] = sum(1 for g in todo if baseball._game_sim_cached(g))
+    _warm_state["checked"] = time.time()
+    for g in todo:
+        if not _WARM_ALWAYS and time.time() - _warm_seen["ts"] > _WARM_WINDOW:
+            _warm_state["at"] = None
             return                      # nobody's looking any more
         try:
-            if (g.get("live") or {}).get("state") == "Final":
-                continue
             if baseball._game_sim_cached(g):
                 continue
+            _warm_state["at"] = g.get("matchup") or g.get("game_pk")
             baseball._game_sim(g)       # the expensive bit, done off the click
+            _warm_state["warm"] = sum(1 for x in todo
+                                      if baseball._game_sim_cached(x))
+            _warm_state["checked"] = time.time()
         except Exception:
             continue
+    _warm_state["at"] = None
 
 
 def _start_slate_warmer():
@@ -392,8 +435,14 @@ def _start_slate_warmer():
             time.sleep(60)
             try:
                 key, seen = _warm_seen["key"], _warm_seen["ts"]
-                if not key or time.time() - seen > _WARM_WINDOW:
-                    continue          # nobody's looking; let the box idle
+                if not key or (not _WARM_ALWAYS
+                               and time.time() - seen > _WARM_WINDOW):
+                    if not _WARM_ALWAYS:
+                        continue      # nobody's looking; let the box idle
+                    # Nobody has asked yet since boot -- warm TODAY's board so
+                    # the first person to open the app finds it ready.
+                    d = clock.today_et().isoformat()
+                    key = (d, d[:4])
                 date, season = key
                 _, age = baseball.stale_slate(date, season, max_age=None)
                 # Rebuild just BEFORE it expires, so a user who returns at any

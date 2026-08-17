@@ -1102,3 +1102,29 @@ body.tier-locked .owner-only { display: none !important; }
 /* Unidentified court: shown, not guessed — the model uses the surface-agnostic
    profile for these, so the label is muted rather than presented as a fact. */
 .tn-surfunk { opacity: .6; font-style: italic; cursor: help; }
+
+/* ---- Warm-up status bar --------------------------------------------------
+   Pinned above the header so it is the first thing you see when the board is
+   still simulating, and gone entirely once it is ready. */
+.warmbar {
+  position: sticky; top: 0; z-index: 60;
+  padding: 8px 12px;
+  background: linear-gradient(90deg, #1b2a4a, #16233d);
+  border-bottom: 1px solid #2a3d63;
+  font-size: 13px; color: #cfe0ff;
+}
+.warmbar.ready {
+  background: linear-gradient(90deg, #14361f, #123018);
+  border-bottom-color: #1f5c33; color: #b9f0cb;
+}
+.warmrow { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.warmat { color: #8fa8d8; }
+.warmtrack {
+  height: 4px; margin: 6px 0 3px; border-radius: 3px;
+  background: #24314f; overflow: hidden;
+}
+.warmfill {
+  height: 100%; border-radius: 3px; background: #4c8dff;
+  transition: width .4s ease;
+}
+.warmnote { font-size: 12px; color: #8fa8d8; }
