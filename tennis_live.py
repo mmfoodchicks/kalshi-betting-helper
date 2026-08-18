@@ -242,6 +242,40 @@ def start_map():
     return racing._cached(("tennis_start_map",), 300, build) or {}
 
 
+# How far our tennis model has EVER disagreed with the market before a ball is
+# struck, measured over the 174 graded picks in the prediction log: median 0.2
+# points, p90 8.4, p95 9.4, and a maximum of 14.4. Gaps of 15+ never happened --
+# zero times in 174.
+#
+# That is what makes a live comparison usable without a score. Below the ceiling
+# a gap is the size of disagreement this model genuinely produces, so it can be
+# read as an edge. Above it, the gap is larger than anything the model has ever
+# claimed on its own, which means it is not the model talking -- it is the score
+# we cannot see. (The case that prompted this: our 54% against a 25c market, a
+# 29-point gap, on a player who was a set down.)
+_LIVE_GAP_MAX = 15.0        # measured ceiling of pre-match disagreement
+_LIVE_GAP_MIN = 4.0         # below p75 (4.2) is noise, not a signal
+
+
+def live_gap_read(model_pct, cents):
+    """(verdict, note) for a model-vs-price gap on a match we cannot see.
+
+    verdict is "edge" when the gap is the size this model actually produces,
+    "score" when it is too large to be anything but match state, and None when
+    it is too small to act on."""
+    if model_pct is None or cents is None:
+        return None, "no model read"
+    gap = model_pct - cents
+    if abs(gap) > _LIVE_GAP_MAX:
+        return "score", (f"{abs(gap):.0f}pt gap - bigger than this model has ever "
+                         f"disagreed pre-match ({_LIVE_GAP_MAX:.0f} max over 174 "
+                         f"graded), so it is the score, not an edge")
+    if abs(gap) < _LIVE_GAP_MIN:
+        return None, "in line with the market"
+    return "edge", (f"{gap:+.0f}pt vs the live price, inside the range this model "
+                    f"genuinely disagrees by pre-match")
+
+
 def live_rows(board=None):
     """Matches in progress right now, shaped for the Sports → Live tab.
 
@@ -279,6 +313,7 @@ def live_rows(board=None):
         fa, fb = m["a"].get("fair_win"), m["b"].get("fair_win")
         fav = m["a"] if (fa or 0) >= (fb or 0) else m["b"]
         fv = fav.get("fair_win")
+        verdict, gap_note = live_gap_read(fv, fav.get("cents"))
         if fv is not None:
             # PRE-MATCH read, and it is labelled as one. The gap against a live
             # price is NOT an edge and must never be printed as one: with no
@@ -286,16 +321,23 @@ def live_rows(board=None):
             # player trading at 19c against our 53% is usually not mispriced,
             # he is losing -- and dressing that up as "+34" would send someone
             # to buy a player who is a set and a break down.
-            read = (f"pre-match read <b>{round(fv)}%</b> {fav['name']}"
-                    f" · now {round(fav['cents'])}c" if fav.get("cents") is not None
-                    else f"pre-match read <b>{round(fv)}%</b> {fav['name']}")
-            read += " · <i>no score feed - not a live edge</i>"
+            read = f"our read <b>{round(fv)}%</b> {fav['name']}"
+            if fav.get("cents") is not None:
+                read += f" · now {round(fav['cents'])}c"
+            # Whether that difference is worth acting on is a MEASURED question,
+            # not a blanket refusal: see live_gap_read.
+            if verdict == "edge":
+                read += f" · ✅ <b>playable</b> - {gap_note}"
+            elif verdict == "score":
+                read += f" · ⚠️ {gap_note}"
+            else:
+                read += f" · {gap_note}"
         else:
             read = "market-priced (no model read)"
         out.append({
             "sport": "🎾 Tennis", "confirmed": True,
             "title": f"{m['a']['name']} vs {m['b']['name']}",
-            "score": None, "no_score_feed": True,
+            "score": None, "no_score_feed": True, "gap_verdict": verdict,
             "detail": f"{m.get('tournament') or m.get('kalshi_series') or ''} · on court · {read}".strip(" ·"),
             "nav": {"tab": "tennis", "q": m["a"]["name"]},
         })

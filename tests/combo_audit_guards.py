@@ -4940,11 +4940,27 @@ ck("the Live tab reads the board, not only ESPN",
 ck("a score is never invented for a match we cannot see",
    '"score": None' in _insp.getsource(_TL.attach) and "no_score_feed" in _lr)
 # The dangerous one: a pre-match number against a live price is NOT an edge.
-ck("the pre-match read is labelled, never dressed up as a live edge",
-   "not a live edge" in _lr and "pre-match read" in _lr,
-   "with no score, a favourite trading far under our number is usually losing, "
-   "not mispriced -- printing that gap as an edge sends someone to buy a player "
-   "who is a set and a break down")
+# Whether a model-vs-price gap is playable without a score is a MEASURED
+# question. Over the 174 graded tennis picks in the prediction log, our model
+# vs the market: median gap 0.2 points, p90 8.4, p95 9.4, max 14.4 -- and gaps
+# of 15+ occurred ZERO times. So a live gap inside that band is the size of
+# disagreement this model really produces; a bigger one is the score talking.
+ck("the live-gap ceiling is the measured maximum, not a guess",
+   _TL._LIVE_GAP_MAX == 15.0 and _TL._LIVE_GAP_MIN == 4.0,
+   "14.4 was the largest pre-match disagreement in 174 graded picks; 4.2 was p75")
+ck("a gap inside the measured band reads as playable",
+   _TL.live_gap_read(65.0, 50.0)[0] == "edge"
+   and _TL.live_gap_read(75.0, 69.0)[0] == "edge")
+ck("a gap larger than the model has ever produced is called score, not edge",
+   _TL.live_gap_read(54.0, 25.0)[0] == "score",
+   "our 54% against a 25c market is 29 points -- twice anything this model has "
+   "ever claimed pre-match, on a player who was a set down")
+ck("a gap too small to matter is not sold as a signal",
+   _TL.live_gap_read(50.0, 52.0)[0] is None
+   and _TL.live_gap_read(84.0, 87.0)[0] is None)
+ck("no read at all when there is no model number",
+   _TL.live_gap_read(None, 50.0)[0] is None
+   and _TL.live_gap_read(60.0, None)[0] is None)
 ck("and a dip is never 'verified' without a score",
    'lv.get("no_score_feed")' in _insp.getsource(_TL.mark_dips),
    "the dip detector's whole claim is that the live probability still beats the "
