@@ -15,6 +15,31 @@ All paid plans are a FLAT monthly fee, not metered by traffic or uptime: an
 always-on service that is busy costs exactly what an idle one costs. Memory,
 not billing, is what limits how much the box can do at once.
 
+### Staying logged in
+
+`APP_PASSWORD` uses HTTP Basic auth, which phones forget constantly — the
+browser drops cached credentials whenever it evicts the tab. So a successful
+login also sets a signed cookie (`vigil_auth`) and that carries you afterwards.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `VIGIL_REMEMBER_DAYS` | `90` | How long a device stays logged in. |
+| `VIGIL_TRUSTED_IPS` | unset | Comma-separated IPs/CIDRs that skip the password entirely. |
+
+The cookie is an HMAC over its own expiry, keyed by `SECRET_KEY` — there is no
+password in it and nothing to forge. It is HttpOnly, Secure over HTTPS, and
+SameSite=Lax. **Rotating `SECRET_KEY` signs every device out**, which is the
+revoke button if a phone is lost; `/logout` signs out just the current device.
+
+Set `SECRET_KEY`. Without it the signing key is derived from the password so
+that all workers still agree — but then changing the password also signs
+everyone out, and you lose the ability to revoke without changing it.
+
+**On `VIGIL_TRUSTED_IPS`:** reasonable for a home connection with a stable
+address, and a bad idea for a phone. Mobile IPs rotate and sit behind
+carrier-grade NAT, so an allowlist would both break often and admit everyone
+sharing that carrier pool. Use the cookie for the phone.
+
 ### Never run one web worker
 
 `WEB_CONCURRENCY` must be ≥ 2 on any always-on deploy. When a request outlives

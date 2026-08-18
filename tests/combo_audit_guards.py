@@ -4972,6 +4972,66 @@ ck("the price-collapse radar, which IS for these, still fires",
 
 print()
 print("=" * 72)
+print("Logging in once is enough")
+print("=" * 72)
+import os as _o2, importlib as _il, base64 as _b64
+_had_pw, _had_sk, _had_ip = (_o2.environ.get("APP_PASSWORD"),
+                             _o2.environ.get("SECRET_KEY"),
+                             _o2.environ.get("VIGIL_TRUSTED_IPS"))
+try:
+    _o2.environ["APP_PASSWORD"] = "guardpw"
+    _o2.environ.pop("SECRET_KEY", None)
+    _o2.environ.pop("VIGIL_TRUSTED_IPS", None)
+    import app as _AU
+    _il.reload(_AU)
+    _cl = _AU.app.test_client()
+    ck("a password is still required to get in the first time",
+       _cl.get("/api/tiers").status_code == 401)
+    _h = {"Authorization": "Basic " + _b64.b64encode(b"kalshi:guardpw").decode()}
+    _r = _cl.get("/api/tiers", headers=_h)
+    _sc = _r.headers.get("Set-Cookie") or ""
+    ck("logging in remembers the device",
+       _r.status_code == 200 and "vigil_auth" in _sc,
+       "basic auth alone re-prompts every time a phone evicts the tab")
+    ck("the cookie is HttpOnly and same-site",
+       "HttpOnly" in _sc and "Lax" in _sc,
+       "script must not be able to read it and it must not ride cross-site")
+    ck("the next visit needs no password",
+       _cl.get("/api/tiers").status_code == 200)
+    _tok = _AU._mint_remember()
+    ck("a tampered signature is rejected",
+       not _AU._remember_ok(_tok.split(".")[0] + "." + "0" * 64),
+       "the cookie is an HMAC over its own expiry -- there is nothing to forge")
+    ck("an expired cookie is rejected",
+       not _AU._remember_ok(_AU._mint_remember(days=-1))
+       and not _AU._remember_ok("nonsense"))
+    ck("the signing key does not depend on a per-process random",
+       "hashlib.sha256" in _insp.getsource(_AU._auth_key),
+       "app.secret_key falls back to os.urandom, and three workers would then "
+       "sign with three different keys -- the login would appear not to stick")
+    # IP allowlist: opt-in, and OFF unless set.
+    ck("the IP allowlist is off unless explicitly configured",
+       not _AU._trusted_ip("203.0.113.4"))
+    _o2.environ["VIGIL_TRUSTED_IPS"] = "203.0.113.4,192.168.1.0/24"
+    _il.reload(_AU)
+    ck("...and matches single addresses and CIDRs when it is",
+       _AU._trusted_ip("203.0.113.4") and _AU._trusted_ip("192.168.1.77")
+       and not _AU._trusted_ip("192.168.2.5") and not _AU._trusted_ip("8.8.8.8"))
+    ck("a malformed address can never be trusted",
+       not _AU._trusted_ip("not-an-ip") and not _AU._trusted_ip(""))
+    ck("there is a way to sign a device back out",
+       "/logout" in _insp.getsource(_AU))
+finally:
+    for _k, _v in (("APP_PASSWORD", _had_pw), ("SECRET_KEY", _had_sk),
+                   ("VIGIL_TRUSTED_IPS", _had_ip)):
+        if _v is None:
+            _o2.environ.pop(_k, None)
+        else:
+            _o2.environ[_k] = _v
+    _il.reload(_AU)
+
+print()
+print("=" * 72)
 print("A cache shorter than its own fill time is never warm")
 print("=" * 72)
 import baseball as _bbttl

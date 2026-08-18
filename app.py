@@ -15,6 +15,7 @@ This is a decision-support tool. The odds are model estimates, not guarantees.
 import os
 import clock
 import hmac
+import hashlib
 import time
 import threading
 
@@ -279,11 +280,89 @@ APP_USER = os.environ.get("APP_USER", "kalshi")
 APP_PASSWORD = os.environ.get("APP_PASSWORD")
 
 
+# ---- staying logged in ------------------------------------------------------
+# Basic auth alone means the phone re-prompts constantly: browsers drop the
+# cached credentials whenever the tab is evicted, which on a phone is every time
+# you switch apps for a while. So a successful login also mints a signed cookie
+# and that carries you afterwards.
+#
+# The cookie is an HMAC over its own expiry, keyed by the server secret -- there
+# is nothing in it to forge and nothing to steal a password from. HttpOnly keeps
+# script away from it, Secure keeps it off plaintext, SameSite=Lax keeps it off
+# cross-site requests. Rotating SECRET_KEY invalidates every outstanding cookie,
+# which is the revoke button if a device is ever lost.
+_REMEMBER_COOKIE = "vigil_auth"
+_REMEMBER_DAYS = int(os.environ.get("VIGIL_REMEMBER_DAYS") or 90)
+
+
+def _auth_key():
+    """Signing key EVERY WORKER agrees on.
+
+    app.secret_key falls back to os.urandom when SECRET_KEY is unset, and with
+    three workers that is three different keys -- a cookie minted by one would
+    be rejected by the other two and the login would appear to 'not stick'.
+    Deriving from the password instead keeps every worker in agreement."""
+    k = os.environ.get("SECRET_KEY")
+    if k:
+        return k.encode()
+    return hashlib.sha256(("vigil-remember:" + (APP_PASSWORD or "")).encode()).digest()
+
+
+def _mint_remember(days=None):
+    exp = int(time.time() + (days or _REMEMBER_DAYS) * 86400)
+    sig = hmac.new(_auth_key(), str(exp).encode(), hashlib.sha256).hexdigest()
+    return f"{exp}.{sig}"
+
+
+def _remember_ok(tok):
+    try:
+        exp_s, sig = (tok or "").split(".", 1)
+        exp = int(exp_s)
+    except (ValueError, AttributeError):
+        return False
+    if exp < time.time():
+        return False
+    want = hmac.new(_auth_key(), str(exp).encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(sig, want)
+
+
+def _trusted_ip(addr):
+    """True for an address inside VIGIL_TRUSTED_IPS (comma-separated IPs or
+    CIDRs, e.g. "203.0.113.4,192.168.1.0/24").
+
+    Sensible for a home connection with a stable address. NOT sensible for a
+    phone: carrier IPs rotate constantly and sit behind carrier-grade NAT, so
+    the allowlist would both break often and hand access to everyone sharing
+    that pool. Off unless explicitly set."""
+    nets = (os.environ.get("VIGIL_TRUSTED_IPS") or "").strip()
+    if not nets or not addr:
+        return False
+    import ipaddress
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    for part in nets.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            if ip in ipaddress.ip_network(part, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 @app.before_request
 def _auth():
     if not APP_PASSWORD:
         return
     if request.path in ("/healthz", "/robots.txt"):   # platform probes, no creds
+        return
+    if _trusted_ip(request.remote_addr or ""):
+        return
+    if _remember_ok(request.cookies.get(_REMEMBER_COOKIE)):
         return
     a = request.authorization
     # Constant-time compare so a wrong password can't be teased out by timing.
@@ -292,6 +371,24 @@ def _auth():
     if not ok:
         return Response("Login required", 401,
                         {"WWW-Authenticate": 'Basic realm="Vigil"'})
+    g._mint_remember = True        # logged in properly -> remember this device
+
+
+@app.after_request
+def _set_remember(resp):
+    if getattr(g, "_mint_remember", False):
+        resp.set_cookie(_REMEMBER_COOKIE, _mint_remember(),
+                        max_age=_REMEMBER_DAYS * 86400, httponly=True,
+                        secure=bool(request.is_secure), samesite="Lax")
+    return resp
+
+
+@app.route("/logout")
+def _logout():
+    """Forget this device. The password still works; this just drops the cookie."""
+    resp = Response("Signed out of this device.", mimetype="text/plain")
+    resp.delete_cookie(_REMEMBER_COOKIE)
+    return resp
 
 
 def _tier():
