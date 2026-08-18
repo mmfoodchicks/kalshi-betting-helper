@@ -1314,18 +1314,27 @@ function simLoader(el, msg, kind, token) {
       } catch (e) { /* a missed poll just falls back to the clock for a beat */ }
     }, 600);
   }
-  el.innerHTML = `<div class="simloader">
+  // A unique id, so the ticker can find its bar again by LOOKUP rather than
+  // holding a node reference. Anything that rewrites this container -- an
+  // auto-refresh, a restored snapshot -- replaces the element, and a held
+  // reference would then point at a detached node while a dead copy sat on
+  // screen frozen. Re-finding it each tick means the bar keeps moving no matter
+  // who redraws around it.
+  const uid = "sl" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  el.innerHTML = `<div class="simloader" id="${uid}">
     <div class="small simloader-msg">${msg}</div>
     <div class="simloader-track"><div class="simloader-fill"></div></div>
     <div class="small simloader-meta"><span class="slpct">0%</span> · <span class="sltime">0.0s</span><span class="slnote"> elapsed</span></div>
   </div>`;
-  const fill = el.querySelector(".simloader-fill");
-  const pctEl = el.querySelector(".slpct");
-  const timeEl = el.querySelector(".sltime");
-  const noteEl = el.querySelector(".slnote");
   const t0 = performance.now();
   const id = setInterval(() => {
-    if (!document.body.contains(fill)) { clearInterval(id); return; }  // results replaced it
+    const root = document.getElementById(uid);
+    if (!root) { clearInterval(id); return; }        // genuinely gone from the page
+    const fill = root.querySelector(".simloader-fill");
+    const pctEl = root.querySelector(".slpct");
+    const timeEl = root.querySelector(".sltime");
+    const noteEl = root.querySelector(".slnote");
+    if (!fill || !pctEl || !timeEl || !noteEl) return;
     const dt = (performance.now() - t0) / 1000;
     // Linear to 90% across the expected duration, so the position genuinely
     // means "this fraction of the time this normally takes". Past that it
@@ -1900,9 +1909,20 @@ async function loadBaseball(silent) {
     // builds the same slips on demand from whatever you select.
     // Preserve a built combo slip across the auto-refresh so it isn't wiped while
     // you're reading/screenshotting it. (Control values are restored from prefs.)
-    const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
-    combosBox.innerHTML = html;
-    if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
+    // NEVER re-render the maker while a build is running. The progress bar is a
+    // LIVE element inside this container, and the innerHTML snapshot-and-restore
+    // below copies its markup as TEXT: the real element is destroyed, its
+    // interval sees itself detached and stops, and what gets pasted back is a
+    // dead photograph of the bar frozen at whatever it said that instant. The
+    // rebuild also blows away the focused button, which is why the blue ring
+    // around "Optimal for my x" vanished at the same moment the timer stuck.
+    // Nothing in the maker needs refreshing mid-build anyway -- the slate cards
+    // above it still update.
+    if (!comboBuilding) {
+      const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
+      combosBox.innerHTML = html;
+      if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
+    }
     // Keep the Pick 6 board in sync with the loaded slate/date.
     if ($("bbPick6") && $("bbPick6").dataset.loaded && !$("bbPick6").classList.contains("hidden")) loadPick6();
   } catch (e) {

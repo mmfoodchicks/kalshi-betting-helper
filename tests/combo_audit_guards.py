@@ -5029,6 +5029,22 @@ ck("each build mode is timed separately",
    and '"combo:maxbet"' in _appjs,
    "optimal sweeps three per-leg floors and a plain build does one; a shared "
    "average mis-times both")
+# The bar froze mid-build and the button's focus ring vanished at the same
+# instant -- one event, not two. loadBaseball snapshots #comboOut's innerHTML,
+# rewrites the container, and pastes the markup back as TEXT: the live bar is
+# destroyed and a dead photograph of it is restored, while the ticker sees its
+# node detached and stops.
+ck("the combo maker is never re-rendered while a build is running",
+   "if (!comboBuilding) {" in _appjs
+   and _appjs.split("if (!comboBuilding) {")[1][:400].count("combosBox.innerHTML = html") == 1,
+   "the snapshot-and-restore copies the progress bar as markup, so the live "
+   "element dies and a frozen copy takes its place")
+ck("the ticker finds its bar by id instead of holding the node",
+   "document.getElementById(uid)" in _appjs and "const uid = \"sl\"" in _appjs,
+   "a held reference points at a detached node after any redraw, leaving a "
+   "frozen copy on screen while the timer runs invisibly")
+ck("...and stops cleanly when the bar is genuinely gone",
+   "if (!root) { clearInterval(id); return; }" in _appjs)
 ck("the bar admits when a run is running long",
    "longer than the usual" in _appjs,
    "past the expected time the extra seconds are not progress and should not "
