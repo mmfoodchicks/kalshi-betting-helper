@@ -41,9 +41,16 @@ _SERVE_CAP, _SERVE_K = 0.30, 40.0
 # Charting Project, so those matches show market-priced (de-vig) with no model
 # edge rather than a fabricated one. ITF men use the men's serve model, ITF women
 # the women's.
+# Challenger is a SEPARATE Kalshi series and was simply never fetched, so the
+# whole tier -- 38 matches on an ordinary day, the ATP Challenger events the
+# exchange promotes on its own live tab -- was invisible here while being fully
+# tradeable there. Challenger players are thinly covered by the Match Charting
+# Project, so like ITF they lean on Elo rather than a charted serve model.
 _TOURS = [
     ("ATP", "KXATPMATCH", "m"),
     ("WTA", "KXWTAMATCH", "w"),
+    ("ATP-CH", "KXATPCHALLENGERMATCH", "m"),
+    ("WTA-CH", "KXWTACHALLENGERMATCH", "w"),
     ("ITF", "KXITFMATCH", "m"),
     ("ITF-W", "KXITFWMATCH", "w"),
 ]
@@ -259,6 +266,13 @@ def _match_markets(series):
                 # close_time NULL, which made the resolver treat all of them as
                 # due immediately and poll matches that were days from settling.
                 "close_epoch": kalshi._parse_time(m.get("close_time")),
+                # When the match is SCHEDULED TO START. Kalshi carries no live
+                # score, but it does say when play begins -- and a start time
+                # that has passed on a market still open is a match on court.
+                # For Challenger and ITF that is the only in-progress signal
+                # there is: ESPN's scoreboards cover the main tour only.
+                "start_epoch": (kalshi._parse_time(m.get("occurrence_datetime"))
+                                if m.get("occurrence_datetime") else None),
                 # Depth, so a LISTED market can be told from a QUOTED one. The
                 # board carried only the ask, which every open market has, so all
                 # 264 matches looked equally live when barely half had a book
@@ -474,6 +488,10 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # due before it has settled).
     _closes = [p.get("close_epoch") for p in players[:2] if p.get("close_epoch")]
     close_epoch = max(_closes) if _closes else None
+    # Scheduled start, taken as the EARLIER of the two sides (they agree; min
+    # keeps one odd value from hiding a match that is already under way).
+    _starts = [p.get("start_epoch") for p in players[:2] if p.get("start_epoch")]
+    start_epoch = min(_starts) if _starts else None
     # recent-load fatigue per player (differential drives the sim)
     fidx = fatigue_idx or {}
     fa = fidx.get(_norm(a["name"]))
@@ -682,9 +700,15 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
     # tournament (host city, or the ITF tier-city from the title) is the
     # sub-tab — exactly how Kalshi navigates (ATP → Gstaad, WTA → Athens).
     kalshi_series = {"ATP": "ATP", "WTA": "WTA",
+                     "ATP-CH": "Challenger ATP", "WTA-CH": "Challenger WTA",
                      "ITF": "ITF", "ITF-W": "ITF Women"}.get(tour_label, "Tennis")
     match = {"event": ev, "tour": tour_label, "date": date, "start": start,
-             "close_epoch": close_epoch,
+             "close_epoch": close_epoch, "start_epoch": start_epoch,
+             # On court now: Kalshi says when play begins and the market is
+             # still open, so the match has started and has not settled. It is
+             # a liveness flag WITHOUT a score -- the only one available below
+             # the main tour, where no scoreboard feed reaches.
+             "in_play": bool(start_epoch and start_epoch <= time.time()),
              # None when the stop couldn't be identified -- say so rather than
              # printing a confident "Hard" the model isn't actually using.
              "surface": surface or "Unknown",

@@ -4915,6 +4915,47 @@ ck("the worst offenders survive for inspection",
    '"/api/diag/slow"' in _appsrc and "_slow_recent" in _appsrc)
 print()
 print("=" * 72)
+print("Tennis below the main tour is on the board, and on court")
+print("=" * 72)
+import tennis_prices as _TP
+import tennis_live as _TL
+_tours = {t[1] for t in _TP._TOURS}
+ck("the Challenger series is fetched at all",
+   "KXATPCHALLENGERMATCH" in _tours,
+   "a whole tier -- 37 matches on an ordinary day, the events Kalshi promotes "
+   "on its own live tab -- was invisible because we only asked for KXATPMATCH")
+ck("and the tier is labelled for the Kalshi tab hint",
+   "Challenger ATP" in _insp.getsource(_TP))
+ck("a match carries when it STARTS, not just when it closes",
+   "start_epoch" in _insp.getsource(_TP) and "occurrence_datetime" in _insp.getsource(_TP),
+   "Kalshi publishes no score, but it does say when play begins -- the only "
+   "in-progress signal that exists below the main tour")
+ck("a started market still open counts as on court",
+   "\"in_play\": bool(start_epoch and start_epoch <= time.time())" in _insp.getsource(_TP))
+_lr = _insp.getsource(_TL.live_rows)
+ck("the Live tab reads the board, not only ESPN",
+   "board" in _lr and "in_play" in _lr,
+   "ESPN publishes scores for the main tour only, so Challenger and ITF -- most "
+   "of what is on court on an evening -- never reached the Live tab")
+ck("a score is never invented for a match we cannot see",
+   '"score": None' in _insp.getsource(_TL.attach) and "no_score_feed" in _lr)
+# The dangerous one: a pre-match number against a live price is NOT an edge.
+ck("the pre-match read is labelled, never dressed up as a live edge",
+   "not a live edge" in _lr and "pre-match read" in _lr,
+   "with no score, a favourite trading far under our number is usually losing, "
+   "not mispriced -- printing that gap as an edge sends someone to buy a player "
+   "who is a set and a break down")
+ck("and a dip is never 'verified' without a score",
+   'lv.get("no_score_feed")' in _insp.getsource(_TL.mark_dips),
+   "the dip detector's whole claim is that the live probability still beats the "
+   "ask; with no score there is no live probability to check")
+ck("the price-collapse radar, which IS for these, still fires",
+   "price_only" in _insp.getsource(_TL.mark_price_upsets),
+   "that detector was written for no-score matches and could never fire, "
+   "because those matches never carried a live block to begin with")
+
+print()
+print("=" * 72)
 print("A cache shorter than its own fill time is never warm")
 print("=" * 72)
 import baseball as _bbttl

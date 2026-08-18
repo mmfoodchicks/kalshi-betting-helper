@@ -242,12 +242,20 @@ def start_map():
     return racing._cached(("tennis_start_map",), 300, build) or {}
 
 
-def live_rows():
-    """Matches in progress right now, shaped for the Sports → Live tab."""
+def live_rows(board=None):
+    """Matches in progress right now, shaped for the Sports → Live tab.
+
+    Two sources, because one does not cover the tour. ESPN publishes scores for
+    the MAIN tour only, so Challenger and ITF -- most of what the exchange has
+    on court on a given evening -- never appeared here at all. Those come from
+    the Kalshi board instead, which knows when a match starts even though it
+    carries no score."""
     out = []
+    seen = set()
     for r in snapshot():
         if r["state"] != "in":
             continue
+        seen.add(frozenset((r["na"], r["nb"])))
         cur = f" ({r['cur'][0]}-{r['cur'][1]})" if r["cur"] else ""
         out.append({
             "sport": "🎾 Tennis", "confirmed": True,
@@ -255,6 +263,41 @@ def live_rows():
             "score": f"{r['sets_a']}–{r['sets_b']} sets{cur}",
             "detail": f"{r['tournament']} · {r['detail']}".strip(" ·"),
             "nav": {"tab": "tennis", "q": r["a"]},
+        })
+    # Everything below the main tour: on court per Kalshi's own start time, with
+    # our pre-match read instead of a score we have no feed for.
+    for m in ((board or {}).get("matches") or []):
+        if not m.get("in_play"):
+            continue
+        na, nb = _norm(m["a"]["name"]), _norm(m["b"]["name"])
+        if frozenset((na, nb)) in seen:
+            continue                      # ESPN already covered it, with a score
+        # The model read lives on fair_win (elo-driven below the main tour),
+        # with the live Kalshi ask alongside so a swing is visible even without
+        # a score: "our read 71% Magadan, market 82c" is the whole point of
+        # showing these at all.
+        fa, fb = m["a"].get("fair_win"), m["b"].get("fair_win")
+        fav = m["a"] if (fa or 0) >= (fb or 0) else m["b"]
+        fv = fav.get("fair_win")
+        if fv is not None:
+            # PRE-MATCH read, and it is labelled as one. The gap against a live
+            # price is NOT an edge and must never be printed as one: with no
+            # score feed the model does not know a set has already gone. A
+            # player trading at 19c against our 53% is usually not mispriced,
+            # he is losing -- and dressing that up as "+34" would send someone
+            # to buy a player who is a set and a break down.
+            read = (f"pre-match read <b>{round(fv)}%</b> {fav['name']}"
+                    f" · now {round(fav['cents'])}c" if fav.get("cents") is not None
+                    else f"pre-match read <b>{round(fv)}%</b> {fav['name']}")
+            read += " · <i>no score feed - not a live edge</i>"
+        else:
+            read = "market-priced (no model read)"
+        out.append({
+            "sport": "🎾 Tennis", "confirmed": True,
+            "title": f"{m['a']['name']} vs {m['b']['name']}",
+            "score": None, "no_score_feed": True,
+            "detail": f"{m.get('tournament') or m.get('kalshi_series') or ''} · on court · {read}".strip(" ·"),
+            "nav": {"tab": "tennis", "q": m["a"]["name"]},
         })
     return out
 
@@ -275,6 +318,19 @@ def attach(board):
     for m in board.get("matches") or []:
         m = dict(m)
         r = idx.get(frozenset((_norm(m["a"]["name"]), _norm(m["b"]["name"]))))
+        if not r and m.get("in_play"):
+            # ON COURT, NO SCOREBOARD. ESPN publishes scores for the main tour
+            # only, so every Challenger and ITF match -- the ones the exchange
+            # itself lists as LIVE -- showed as "nothing on court". Kalshi does
+            # not carry a score either (checked: its market and event payloads
+            # are pricing metadata, and its app reads scores from a feed the
+            # public API does not expose). What Kalshi DOES give is the start
+            # time, so we can say the match is under way and put our pre-match
+            # read next to the live price. No fabricated score: score stays
+            # None and the UI says the scoreboard is unavailable.
+            m["live"] = {"detail": "in progress", "tournament": m.get("tournament"),
+                         "score": None, "no_score_feed": True,
+                         "sets_a": None, "sets_b": None, "cur": None}
         if r:
             aligned = _norm(m["a"]["name"]) == r["na"]
             sa, sb = (r["sets_a"], r["sets_b"]) if aligned else (r["sets_b"], r["sets_a"])
@@ -378,7 +434,12 @@ def mark_dips(board):
     for m in board.get("matches") or []:
         m = dict(m)
         lv = m.get("live") or {}
-        if not lv:
+        # A match with no scoreboard feed cannot have a dip VERIFIED, and an
+        # unverified one is worse than none here: with no score, a favourite
+        # trading far below our pre-match number is almost always losing, not
+        # mispriced. Flagging that as a dip points the user straight at a player
+        # who is a set down.
+        if not lv or lv.get("no_score_feed"):
             matches.append(m)
             continue
         fa = m["a"].get("fair_win") or 0

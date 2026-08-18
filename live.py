@@ -86,8 +86,14 @@ def confirmed_live():
     # Tennis uses a different (groupings) scoreboard shape, so it has its own
     # parser — it was missing from this tab entirely before.
     try:
-        import tennis_live
-        games.extend(tennis_live.live_rows())
+        import tennis_live, tennis_prices
+        # Pass the cached board so Challenger/ITF matches (no scoreboard feed,
+        # but Kalshi knows they have started) reach the Live tab too.
+        try:
+            _tb = tennis_prices.board()      # cached + non-blocking; None if cold
+        except Exception:
+            _tb = None
+        games.extend(tennis_live.live_rows(_tb))
     except Exception:
         pass
     return games
