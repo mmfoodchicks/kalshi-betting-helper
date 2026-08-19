@@ -15,6 +15,7 @@ return an empty list and the UI says so.
 """
 
 import json
+import random
 import time
 import urllib.request
 import urllib.parse
@@ -45,9 +46,37 @@ def series_ticker(coin, timeframe):
 
 
 def _get_json(url, timeout=10):
+    """GET with two retries on throttling and transient server errors.
+
+    The app now runs three web workers, an always-on board warmer, and slate
+    builds in fresh subprocesses -- an order of magnitude more Kalshi requests
+    than when this was written, from one egress IP. A single 429 used to raise
+    straight through, and one throttled response inside a slate build shipped a
+    board with NO prices to every worker: the user stared at "no Kalshi prices
+    on the slate" while the exchange was quoting every moneyline on their
+    phone. Honour Retry-After when it is sane, back off briefly when it is
+    absent, and only then give up."""
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    last = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code not in (429, 500, 502, 503, 504) or attempt == 2:
+                raise
+            try:
+                wait = min(5.0, float(e.headers.get("Retry-After") or 0))
+            except (TypeError, ValueError):
+                wait = 0.0
+            time.sleep(wait if wait > 0 else 0.7 * (attempt + 1) + random.random() * 0.4)
+        except (urllib.error.URLError, TimeoutError) as e:
+            last = e
+            if attempt == 2:
+                raise
+            time.sleep(0.5 * (attempt + 1))
+    raise last
 
 
 def _parse_time(s):

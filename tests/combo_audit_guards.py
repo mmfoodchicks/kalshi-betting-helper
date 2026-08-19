@@ -5055,6 +5055,53 @@ finally:
 
 print()
 print("=" * 72)
+print("A throttled Kalshi window cannot unprice the board")
+print("=" * 72)
+import kalshi as _KTH
+import kalshi_mlb as _KMB
+import shutil as _kthsh, time as _ktht
+# Three workers, an always-on warmer, and slate subprocesses with cold caches
+# multiplied the app's Kalshi request rate from one egress IP; one throttled
+# response inside a slate build shipped a board with NO prices to every worker
+# via the shared board -- "no Kalshi prices on the slate" while the exchange
+# was quoting every moneyline on the user's phone.
+ck("the fetch layer retries 429s and honours Retry-After",
+   "429" in _insp.getsource(_KTH._get_json)
+   and "Retry-After" in _insp.getsource(_KTH._get_json)
+   and "for attempt in range(3)" in _insp.getsource(_KTH._get_json),
+   "a single throttled response used to raise straight through")
+_kthsh.rmtree(_KMB._IDX_DISK, ignore_errors=True)
+_KMB._idx_disk_put({"26TESTAAA": {"x": 1}, "26TESTBBB": {"x": 2}})
+_KMB._cache["data"], _KMB._cache["ts"] = None, 0.0
+_saved_build = _KMB._build_index
+try:
+    _KMB._build_index = lambda: (_ for _ in ()).throw(RuntimeError("throttled"))
+    ck("a raising fetch falls back to the last GOOD index, not {}",
+       len(_KMB.index()) == 2)
+    _KMB._cache["data"], _KMB._cache["ts"] = None, 0.0
+    _KMB._build_index = lambda: {}
+    ck("an EMPTY build is treated as the same failure",
+       len(_KMB.index()) == 2,
+       "_build_index swallows per-series errors and returns {} when fully "
+       "throttled -- an empty index IS the failure the fallback exists for")
+    _kthsh.rmtree(_KMB._IDX_DISK, ignore_errors=True)   # no sibling copy now
+    _KMB._cache["data"], _KMB._cache["ts"] = {"KEEP": 1}, _ktht.time() - 999
+    ck("with a last-good copy in memory and no disk, a bad build keeps it",
+       _KMB.index() == {"KEEP": 1})
+finally:
+    _KMB._build_index = _saved_build
+    _KMB._cache["data"], _KMB._cache["ts"] = None, 0.0
+    _kthsh.rmtree(_KMB._IDX_DISK, ignore_errors=True)
+ck("the slate subprocess warm-starts from the shared disk index",
+   "_idx_disk_get(_TTL)" in _insp.getsource(_KMB.index),
+   "the child's module cache is cold on every rebuild, and a full fresh fetch "
+   "per rebuild is the request volume that got the IP throttled")
+ck("stale last-good prices are capped, not eternal",
+   _KMB._IDX_STALE_MAX <= 3600,
+   "40-minute-old real prices beat an unpriced board; 3-hour-old ones do not")
+
+print()
+print("=" * 72)
 print("The market blend earns its weights from the graded record")
 print("=" * 72)
 import calibrate as _CBW

@@ -16,6 +16,7 @@ shows a partial/none Kalshi payout rather than breaking.
 """
 
 import re
+import os
 import time
 import unicodedata
 
@@ -219,16 +220,73 @@ def _build_index():
     return idx
 
 
+# The index is shared ON DISK across workers and -- crucially -- with the slate
+# subprocess, which starts with a cold module cache on every rebuild (~4 min)
+# and used to pay a full fresh fetch each time. Three workers plus those
+# children, all fetching independently from one egress IP, is how the app got
+# itself throttled; and one throttled child built a priceless board that the
+# shared-board cache then served to everyone. One fetch per _TTL now serves
+# every process, and the LAST GOOD index survives a throttled window instead of
+# collapsing to {} -- 40-minute-old real prices beat "no Kalshi prices on the
+# slate" while the exchange is visibly quoting every moneyline.
+_IDX_DISK = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
+                         or os.environ.get("DEEP_CACHE_DIR") or "/tmp", "kalshi_idx")
+_IDX_STALE_MAX = 45 * 60      # past this, old prices are worse than honesty
+
+
+def _idx_disk_get(max_age):
+    try:
+        path = os.path.join(_IDX_DISK, "mlb.pkl")
+        if time.time() - os.stat(path).st_mtime > max_age:
+            return None
+        import pickle
+        with open(path, "rb") as fh:
+            return pickle.load(fh)
+    except Exception:
+        return None
+
+
+def _idx_disk_put(data):
+    try:
+        import pickle
+        import tempfile
+        os.makedirs(_IDX_DISK, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_IDX_DISK, suffix=".tmp")
+        with os.fdopen(fd, "wb") as fh:
+            pickle.dump(data, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, os.path.join(_IDX_DISK, "mlb.pkl"))
+    except Exception:
+        pass
+
+
 def index():
-    """Cached market index (refreshed every _TTL seconds)."""
+    """Cached market index: memory, then a sibling process's disk copy, then a
+    fresh fetch -- and on a failed fetch, the last GOOD copy up to 45 minutes
+    old rather than an empty dict."""
     now = time.time()
-    if _cache["data"] is None or now - _cache["ts"] > _TTL:
-        try:
-            _cache["data"] = _build_index()
-            _cache["ts"] = now
-        except Exception:
-            if _cache["data"] is None:
-                _cache["data"] = {}
+    if _cache["data"] is not None and now - _cache["ts"] <= _TTL:
+        return _cache["data"]
+    disk = _idx_disk_get(_TTL)              # a sibling already fetched recently
+    if disk:
+        _cache["data"], _cache["ts"] = disk, now
+        return disk
+    # _build_index swallows per-series fetch errors internally, so a fully
+    # throttled window comes back as an EMPTY dict, not an exception -- and an
+    # empty index is exactly the failure the fallback exists for. Treat empty
+    # and raised identically: keep the last good memory copy if there is one,
+    # else the last good disk copy up to 45 minutes old.
+    try:
+        built = _build_index()
+    except Exception:
+        built = None
+    if built:
+        _cache["data"], _cache["ts"] = built, now
+        _idx_disk_put(built)
+    elif not _cache["data"]:
+        _cache["data"] = _idx_disk_get(_IDX_STALE_MAX) or {}
+        _cache["ts"] = now
+    else:
+        _cache["ts"] = now      # keep last-good memory; retry after the TTL
     return _cache["data"]
 
 
