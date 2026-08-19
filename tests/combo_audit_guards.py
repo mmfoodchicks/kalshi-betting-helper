@@ -276,9 +276,11 @@ for g in playable:
         groups_seen[(g["matchup"], v.get("label"), v.get("side"))] += 1
         if v.get("side") != "no":
             yes_by_label[v["label"]] = v["prob"]
-    # a NO leg must be the complement of the YES leg IT NAMES ("NO — X" vs "X")
+    # a NO leg must be the complement of the YES leg IT NAMES ("NO - X" vs "X").
+    # ASCII hyphen: that IS the label production writes -- this filter once used
+    # an em-dash, matched nothing, and the whole check passed without running.
     for v in vs:
-        if v.get("side") == "no" and v["label"].startswith("NO — "):
+        if v.get("side") == "no" and v["label"].startswith("NO - "):
             y = yes_by_label.get(v["label"][5:])
             if y is not None and abs((1 - y) - v["prob"]) > 0.02:
                 no_mismatch.append((g["matchup"], v["label"], round(y, 4), round(v["prob"], 4)))
@@ -5546,6 +5548,105 @@ ck("background CPU work yields to the web worker",
    and "os.nice(10)" in open(_os.path.join(_root, "deep_season.py")).read(),
    "a nightly run that saturates the CPU for an hour must never outrank the "
    "request that keeps the instance alive")
+
+print()
+print("=" * 72)
+print("The optimizer really is optimal: DP vs brute force")
+print("=" * 72)
+# The frontier DP once kept only the max-prob state per (legs, cost-bucket)
+# cell. A cell is ~5% wide in cost, and near break-even that width straddles
+# EV=0: on a live slate a 78.8%/-1.3% state overwrote the 77.7%/+0.1% state in
+# its cell, the balanced objective then found nothing +EV in the neighbourhood
+# and settled for a 29% slip when a 78% one existed. Cells now keep the Pareto
+# set over (prob, cost, priced) so no state any objective could want is lost.
+# Guarded two ways: the exact collision, and a seeded brute-force sweep.
+import combo_engine as _gce
+import itertools as _it
+import random as _grnd
+
+
+def _gb_leg(prob, cents, fillable=True):
+    return {"marg": prob, "type": "ML", "price_cents": cents,
+            "fillable": fillable}
+
+
+def _gb_bundle(prob, cents):
+    return {"size": 1, "prob": prob, "legs": [_gb_leg(prob, cents)]}
+
+
+_gcoll = [("A", [_gb_bundle(0.90, 95.0)], "a"),
+          ("B", [_gb_bundle(0.863, 81.7), _gb_bundle(0.875, 84.0)], "b"),
+          ("C", [_gb_bundle(0.55, 50.0)], "c")]
+_gk1 = int(round(_math.log(0.95 * 0.817) / _gce._COST_RES))
+_gk2 = int(round(_math.log(0.95 * 0.84) / _gce._COST_RES))
+ck("the collision pair really shares a cost bucket", _gk1 == _gk2,
+   f"{_gk1} vs {_gk2}; if resolution changed, rebuild the pair so the "
+   "collision case still exists")
+_gst = _gce.frontier(_gcoll, max_total_legs=4, net=False)
+_gtwo = [s for s in _gst if s["legs"] == 2]
+ck("a +EV state survives a likelier -EV cellmate",
+   any(abs(s["prob"] - 0.90 * 0.863) < 1e-9 for s in _gtwo),
+   "max-prob-per-cell deleted the only +EV slip in the bucket; the balanced "
+   "objective then skipped the whole 78% neighbourhood")
+_gbest, _gmeta = _gce.choose(_gst, objective="balanced", legs_target=2,
+                             legs_mode="require")
+ck("and balanced picks it", abs(_gbest["prob"] - 0.90 * 0.863) < 1e-9
+   and _gmeta["ev_ok"] is True,
+   f"picked {_gbest['prob']*100:.2f}%, expected 77.67%")
+
+# Seeded sweep: DP output must contain, per legs count, the max-prob state,
+# the max-EV state, and the likeliest state passing balanced's gates -- each
+# checked against exhaustive enumeration. Unpriced legs are in the mix because
+# they once broke this a second way: dominance judged on (prob, cost) alone
+# let a slip carrying unpriced legs eclipse an all-priced one that the
+# priced_frac gate would have accepted.
+_gfail = None
+for _gt in range(40):
+    _gr = _grnd.Random(4200 + _gt)
+    _ggames = []
+    for _gi in range(_gr.randint(3, 4)):
+        _gbs = []
+        for _ in range(_gr.randint(1, 3)):
+            _gp = _gr.uniform(0.30, 0.95)
+            _gc = max(3.0, min(97.0, _gp / (1.0 + _gr.uniform(-0.08, 0.08))
+                               * 100.0))
+            _gbs.append({"size": 1, "prob": _gp,
+                         "legs": [_gb_leg(_gp, None if _gr.random() < 0.15
+                                          else _gc)]})
+        _ggames.append((f"G{_gi}", _gbs, f"g{_gi}"))
+    _gstates = _gce.frontier(_ggames, max_total_legs=4, net=True)
+    _gbf = {}
+    for _gpick in _it.product(*[[None] + list(b) for _, b, _ in _ggames]):
+        _gch = [b for b in _gpick if b]
+        _gnl = sum(b["size"] for b in _gch)
+        if _gnl < 2 or _gnl > 4:
+            continue
+        _gpp, _gcc, _gpr, _gtt = 1.0, 1.0, 0, 0
+        for _gb in _gch:
+            _gbc, _gbpr, _gbtt = _gce.bundle_cost(_gb["legs"], net=True)
+            _gpp, _gcc = _gpp * _gb["prob"], _gcc * _gbc
+            _gpr, _gtt = _gpr + _gbpr, _gtt + _gbtt
+        _ge = _gpp / _gcc - 1.0
+        _grec = _gbf.setdefault(_gnl, [0.0, -9e9, None])
+        _grec[0] = max(_grec[0], _gpp)
+        _grec[1] = max(_grec[1], _ge)
+        if _ge >= 0.0 and (_gpr / _gtt if _gtt else 0) >= _gce.MIN_PRICED_FRAC:
+            _grec[2] = max(_grec[2] or 0.0, _gpp)
+    for _gnl, (_gbp, _gbe, _gbb) in _gbf.items():
+        _gat = [s for s in _gstates if s["legs"] == _gnl]
+        if max((s["prob"] for s in _gat), default=0) + 1e-9 < _gbp:
+            _gfail = f"trial {_gt} legs {_gnl}: lost the max-prob state"
+        if max((s["ev"] for s in _gat if s["ev"] is not None),
+               default=-9e9) + 1e-9 < _gbe:
+            _gfail = f"trial {_gt} legs {_gnl}: lost the max-EV state"
+        if _gbb is not None and max(
+                (s["prob"] for s in _gat if s["ev"] is not None
+                 and s["ev"] >= 0.0
+                 and s["priced_frac"] >= _gce.MIN_PRICED_FRAC),
+                default=0) + 1e-9 < _gbb:
+            _gfail = f"trial {_gt} legs {_gnl}: lost balanced's best state"
+ck("40 seeded slates: the DP never loses a state brute force can find",
+   _gfail is None, _gfail or "")
 
 print()
 print("=" * 72)

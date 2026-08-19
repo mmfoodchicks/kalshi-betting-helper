@@ -118,7 +118,7 @@ v = [{"label": "X 1+ hits", "prob": 0.36, "type": "Hit", "game_pk": 1, "matchup"
      {"label": "Under 8.5 runs", "prob": 0.5, "type": "Total", "game_pk": 1, "matchup": "M"}]
 out = B._mirror_no(v)
 nos = [x for x in out if x.get("side") == "no"]
-ck("NO created for Hit", any(n["label"] == "NO — X 1+ hits" for n in nos))
+ck("NO created for Hit", any(n["label"] == "NO - X 1+ hits" for n in nos))
 ck("NO prob = 1 - YES", any(abs(n["prob"] - 0.64) < 1e-12 for n in nos))
 ck("ML skipped (both sides already exist)", not any("to win" in n["label"] for n in nos))
 ck("RFI skipped (no NO market on Kalshi)", not any("1st inning" in n["label"] for n in nos))

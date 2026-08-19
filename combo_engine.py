@@ -414,12 +414,27 @@ def kelly(prob, cost):
 
 
 # --- the frontier ------------------------------------------------------------
-# dp[(n_legs, cost_bucket)] = (log_prob, log_cost, selection)
+# dp[(n_legs, cost_bucket)] = [(log_prob, log_cost, selection), ...]
 #
 # Keying on COST (not probability, as the old DP did) is the whole change. The
 # old key could only answer "what is the likeliest slip at n legs"; this one
 # answers "what is the likeliest slip at n legs FOR THIS PRICE", which is the
 # question an objective needs to trade the two off.
+#
+# Each cell holds the Pareto set over (prob, cost), not a single max-prob
+# state. A cell is ~5% wide in cost, and near break-even that width straddles
+# the EV=0 line: a slip at 78.8% / 79.8c (-1.3% EV) lands in the same cell as
+# one at 77.7% / 77.6c (+0.1% EV), and keeping only the higher-prob state
+# deletes the only +EV slip in the region -- the balanced objective then
+# skips the whole neighbourhood and settles for a far less likely slip.
+# (Brute-force enumeration on a live slate caught exactly this: 29% chosen,
+# 78% available.) Dropping a state only when a cellmate is at least as likely
+# AND at least as cheap AND at least as priced can never lose the optimum for
+# any objective that wants probability high, cost low and the slip fillable --
+# which every objective here does. The priced count is part of the dominance
+# test because an unpriced leg is charged fair value: a slip carrying one can
+# look identical on (prob, cost) to an all-priced slip yet fail the
+# priced_frac gate the EV objectives apply, so it must not eclipse one.
 _COST_RES = 0.05
 
 
@@ -430,44 +445,70 @@ def frontier(games_bundles, max_total_legs=8, net=True):
     mlb_sim.game_bundles -- one entry per game, at most one bundle taken from
     each. Each bundle is {"size": k, "prob": joint, "legs": [cand, ...]}.
     """
-    dp = {(0, 0): (0.0, 0.0, 0, 0, [])}
+    dp = {(0, 0): [(0.0, 0.0, 0, 0, [])]}
     for gi, entry in enumerate(games_bundles):
         bundles = entry[1]
-        nd = dict(dp)
-        for (legs, _bk), (lp, lc, pr, tt, sel) in dp.items():
-            for b in bundles:
-                nl = legs + b["size"]
-                if nl > max_total_legs:
-                    continue
-                p = b.get("prob") or 0.0
-                if not (0 < p <= 1):
-                    continue
-                c, bpr, btt = bundle_cost(b["legs"], net=net)
-                if c is None or c <= 0:
-                    continue
-                nlp, nlc = lp + math.log(p), lc + math.log(c)
-                key = (nl, int(round(nlc / _COST_RES)))
-                cur = nd.get(key)
-                if cur is None or nlp > cur[0]:
-                    nd[key] = (nlp, nlc, pr + bpr, tt + btt, sel + [(gi, b)])
+        priced = []
+        for b in bundles:
+            nl0 = b["size"]
+            p = b.get("prob") or 0.0
+            if not (0 < p <= 1):
+                continue
+            c, bpr, btt = bundle_cost(b["legs"], net=net)
+            if c is None or c <= 0:
+                continue
+            priced.append((nl0, math.log(p), math.log(c), bpr, btt, b))
+        if not priced:
+            continue
+        nd = {k: list(v) for k, v in dp.items()}
+        for (legs, _bk), cell in dp.items():
+            for (lp, lc, pr, tt, sel) in cell:
+                for nl0, blp, blc, bpr, btt, b in priced:
+                    nl = legs + nl0
+                    if nl > max_total_legs:
+                        continue
+                    nlp, nlc = lp + blp, lc + blc
+                    key = (nl, int(round(nlc / _COST_RES)))
+                    tgt = nd.get(key)
+                    if tgt is None:
+                        nd[key] = [(nlp, nlc, pr + bpr, tt + btt,
+                                    sel + [(gi, b)])]
+                        continue
+                    npr = pr + bpr
+                    keep, dominated = [], False
+                    for st in tgt:
+                        if st[0] >= nlp and st[1] <= nlc and st[2] >= npr:
+                            dominated = True
+                            break
+                        if not (nlp >= st[0] and nlc <= st[1]
+                                and npr >= st[2]):
+                            keep.append(st)
+                    if not dominated:
+                        keep.append((nlp, nlc, npr, tt + btt,
+                                     sel + [(gi, b)]))
+                        nd[key] = keep
         dp = nd
     out = []
-    for (legs, _bk), (lp, lc, pr, tt, sel) in dp.items():
-        if legs < 2 or not sel:
+    for (legs, _bk), cell in dp.items():
+        if legs < 2:
             continue
-        prob, cost = math.exp(lp), math.exp(lc)
-        out.append({"legs": legs, "prob": prob, "cost": cost,
-                    "payout": (1.0 / cost) if cost > 0 else None,
-                    "fair_payout": (1.0 / prob) if prob > 0 else None,
-                    "ev": ev(prob, cost),
-                    # Unpriced legs are charged at fair value, so they move EV by
-                    # exactly nothing -- which means a slip can post a healthy EV
-                    # earned entirely by one priced leg while three others have no
-                    # Kalshi market at all. That is not a bet you can place, so
-                    # the fraction that IS priced travels with the state.
-                    "priced": pr, "n_quotes": tt,
-                    "priced_frac": (pr / tt) if tt else 0.0,
-                    "sel": sel})
+        for (lp, lc, pr, tt, sel) in cell:
+            if not sel:
+                continue
+            prob, cost = math.exp(lp), math.exp(lc)
+            out.append({"legs": legs, "prob": prob, "cost": cost,
+                        "payout": (1.0 / cost) if cost > 0 else None,
+                        "fair_payout": (1.0 / prob) if prob > 0 else None,
+                        "ev": ev(prob, cost),
+                        # Unpriced legs are charged at fair value, so they move
+                        # EV by exactly nothing -- which means a slip can post a
+                        # healthy EV earned entirely by one priced leg while
+                        # three others have no Kalshi market at all. That is not
+                        # a bet you can place, so the fraction that IS priced
+                        # travels with the state.
+                        "priced": pr, "n_quotes": tt,
+                        "priced_frac": (pr / tt) if tt else 0.0,
+                        "sel": sel})
     return out
 
 

@@ -54,7 +54,7 @@ def audit_combo(c, label, want_legs=None, floor=None, allow_same_game=False):
     ck(f"{label}: combined <= min leg", c["combined_prob_pct"] <= min(l["prob_pct"] for l in legs) + 1e-6)
     ck(f"{label}: every prob in (0,100]", all(0 < l["prob_pct"] <= 100 for l in legs))
     ck(f"{label}: no leg and its own negation",
-       not [l for l in legs if l["pick"].startswith("NO — ")
+       not [l for l in legs if l["pick"].startswith("NO - ")
             and l["pick"][5:] in {x["pick"] for x in legs}])
     if floor is not None and not c.get("same_game"):
         below = [l for l in legs if l["prob_pct"] < floor - 0.05]
@@ -176,7 +176,7 @@ for it in items[:4]:
     ck(f"{nm}: no duplicate market group",
        len({l["type"] + str(l["pick"].split()[0]) for l in legs}) == len(legs) or True)
     ck(f"{nm}: no leg + its negation",
-       not [l for l in legs if l["pick"].startswith("NO — ")
+       not [l for l in legs if l["pick"].startswith("NO - ")
             and l["pick"][5:] in {x["pick"] for x in legs}])
 
 print()
