@@ -1434,7 +1434,7 @@ function legProb(l, nsim) {
       if (Math.abs(rawEdge - edge) >= 1) {
         const w = (l.model_weight != null)
           ? ` market took <b>${Math.round((1 - l.model_weight) * 100)}%</b>` : "";
-        const tip = `Our simulation alone said ${l.sim_pct}%, an edge of ${rawEdge >= 0 ? "+" : ""}${rawEdge} on this price. The shown ${l.prob_pct}% is that number blended toward the market, which is what the slip's odds are built from. The blend is deliberate: it was set when the model had a measured bias, and it shrinks real disagreements along with spurious ones.`;
+        const tip = `Our simulation alone said ${l.sim_pct}%, an edge of ${rawEdge >= 0 ? "+" : ""}${rawEdge} on this price. The shown ${l.prob_pct}% is that number blended toward the market, which is what the slip's odds are built from. How much weight our number gets is now FITTED per market from the graded record: a model that beats the close earns its disagreements back, one that loses to it gets flattened. Until a market has enough graded history the cautious prior rules.`;
         mkt += ` <span class="kmkt" style="opacity:.7" title="${tip}">pre-blend <b>${l.sim_pct}%</b>` +
           ` <span class="${rawEdge >= 0 ? "ev pos" : "ev neg"}">${rawEdge >= 0 ? "+" : ""}${rawEdge}</span>${w}</span>`;
       }

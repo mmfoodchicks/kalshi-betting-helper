@@ -457,3 +457,68 @@ def report():
             row["logged"] = logged[m]["logged"]
         out[m] = row
     return out
+
+# ---- fitted market-blend weights --------------------------------------------
+# How much weight the combo maker's blend gives the model per market type was a
+# HAND-SET table (combo_engine._MODEL_TRUST) -- a prior, never confronted with
+# the graded record. The record disagrees with it in both directions: the raw
+# totals model BEATS the de-vigged close over hundreds of graded picks and was
+# being shrunk anyway, while Ks kept high trust through a losing stretch. The
+# result the user actually sees: every displayed edge collapses toward zero by
+# the same fixed factor regardless of whether that model has earned trust.
+#
+# So fit the weight the same way everything else here is fitted: from predlog's
+# own graded rows, which carry the RAW model probability and the de-vigged
+# market probability at log time. Grid-search w in the same logit blend the
+# live code uses and keep whatever minimises log-loss, behind the same floors
+# as the calibrations (enough rows AND enough distinct days).
+_BLEND_N_FLOOR = 150
+_BLEND_DAY_FLOOR = 10
+_blend_cache = {}
+
+
+def _blend_rows(model):
+    import sqlite3
+    import predlog
+    con = sqlite3.connect(predlog._DB)
+    con.row_factory = sqlite3.Row
+    try:
+        return [(r["prob"], r["mkt"], int(r["outcome"]), int(r["ts"] // 86400))
+                for r in con.execute(
+                    "SELECT prob, mkt, outcome, ts FROM predictions "
+                    "WHERE model=? AND graded=1 AND outcome IN (0,1) "
+                    "AND mkt IS NOT NULL AND prob > 0 AND prob < 1 "
+                    "AND mkt > 0 AND mkt < 1", (model,))]
+    finally:
+        con.close()
+
+
+def blend_weight(model):
+    """(w, n) -- the weight on the MODEL (0..1) that minimises log-loss when its
+    logged probabilities are logit-blended against the de-vigged market it was
+    logged next to, over this model's own graded record. None before the floors
+    (>= 150 graded across >= 10 distinct days) are met."""
+    hit = _blend_cache.get(model)
+    if hit and _t.time() - hit[1] < _TTL:
+        return hit[0]
+    out = None
+    try:
+        rows = _blend_rows(model)
+        days = {d for _p, _m, _o, d in rows}
+        if len(rows) >= _BLEND_N_FLOOR and len(days) >= _BLEND_DAY_FLOOR:
+            import math
+            def loss(w):
+                tot = 0.0
+                for p, m, y, _d in rows:
+                    z = w * math.log(p / (1 - p)) + (1 - w) * math.log(m / (1 - m))
+                    z = max(-12.0, min(12.0, z))
+                    pb = 1.0 / (1.0 + math.exp(-z))
+                    pb = min(max(pb, 1e-9), 1 - 1e-9)
+                    tot += -(y * math.log(pb) + (1 - y) * math.log(1 - pb))
+                return tot / len(rows)
+            best = min((round(k * 0.05, 2) for k in range(21)), key=loss)
+            out = (best, len(rows))
+    except Exception:
+        out = None
+    _blend_cache[model] = (out, _t.time())
+    return out

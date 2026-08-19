@@ -231,11 +231,60 @@ def _clamp_to_market(p, mid):
     """Keep a blended probability within _MAX_EDGE of the market's midpoint."""
     return max(mid - _MAX_EDGE, min(mid + _MAX_EDGE, p))
 
-# How much this model is trusted per market, from where it leans on stable
-# team/pitcher rates vs low-base-rate props. Mirrors baseball._edge_confidence.
+# How much this model is trusted per market. The table below is the PRIOR --
+# hand-set from where each model leans on stable team/pitcher rates vs
+# low-base-rate props -- and it is now confronted with the graded record:
+# calibrate.blend_weight fits, per market type, the weight that would have
+# minimised log-loss over that model's own graded picks against the de-vigged
+# close it was logged next to. Where the floors are met (150 graded across 10
+# days) the fitted weight takes over, shrunk toward the prior by sample size.
+#
+# This cuts both ways, which is the point. The raw totals model BEAT the close
+# over hundreds of graded picks and was being flattened to a ~0.19 weight by
+# the prior anyway -- every real edge it found displayed as "+1". Ks kept a
+# 0.7-trust prior through a measured losing stretch. A fixed table cannot be
+# right in both directions; a fitted one is whatever the record says.
 _MODEL_TRUST = {"ML": 1.0, "Total": 0.7, "Ks": 0.7, "Run line": 0.7,
                 "RFI": 0.5, "Hit": 0.5, "Bases": 0.5, "SB": 0.4,
                 "HR": 0.35, "HRR": 0.35, "RBI": 0.35}
+# candidate type -> the predlog bucket its graded record lives under
+_TRUST_BUCKET = {"ML": "mlb", "Total": "mlb_total", "Ks": "mlb_ks",
+                 "Run line": "mlb_runline", "RFI": "mlb_rfi", "Hit": "mlb_hit",
+                 "Bases": "mlb_bases", "SB": "mlb_sb", "HR": "mlb_hr",
+                 "HRR": "mlb_hrr", "RBI": "mlb_rbi", "Extras": "mlb_extras"}
+_Q_REF = 0.6            # the market quality the fitted weight is anchored at
+_BLEND_SHRINK_N = 300   # graded rows for the fit to fully displace the prior
+_tau_cache = {}
+
+
+def _effective_tau(typ):
+    """The trust the blend actually uses: the fitted weight where earned, the
+    hand-set prior where not, converted back into the tau the quality-weighted
+    formula expects (w = tau / (tau + K*qual))."""
+    import time as _t2
+    hit = _tau_cache.get(typ)
+    if hit and _t2.time() - hit[1] < 21600:
+        return hit[0]
+    tau_prior = _MODEL_TRUST.get(typ, 0.6)
+    tau = tau_prior
+    try:
+        bucket = _TRUST_BUCKET.get(typ)
+        fit = None
+        if bucket:
+            import calibrate
+            fit = calibrate.blend_weight(bucket)
+        if fit:
+            w_fit, n = fit
+            w_prior = tau_prior / (tau_prior + _MARKET_K * _Q_REF)
+            lam = min(1.0, n / float(_BLEND_SHRINK_N))
+            w = lam * w_fit + (1.0 - lam) * w_prior
+            w = min(max(w, 0.02), 0.90)          # never all-market, never all-model
+            tau = _MARKET_K * _Q_REF * w / (1.0 - w)
+            tau = min(max(tau, 0.05), 4.0)
+    except Exception:
+        tau = tau_prior
+    _tau_cache[typ] = (tau, _t2.time())
+    return tau
 
 
 def market_reference(q):
@@ -312,7 +361,7 @@ def blend_prob(p_model, q, typ):
     # model intact -- but it must still CAP it. Returning early here (as this did)
     # skipped the clamp precisely on the worthless markets where the model runs
     # furthest, which is how an 85% claim against a 54c ask survived untouched.
-    tau_m = _MODEL_TRUST.get(typ, 0.6)
+    tau_m = _effective_tau(typ)
     w = tau_m / (tau_m + _MARKET_K * qual)
     z = w * math.log(p_model / (1 - p_model)) + (1 - w) * math.log(mid / (1 - mid))
     z = max(-12.0, min(12.0, z))

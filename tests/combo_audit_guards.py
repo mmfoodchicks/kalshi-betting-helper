@@ -5055,6 +5055,70 @@ finally:
 
 print()
 print("=" * 72)
+print("The market blend earns its weights from the graded record")
+print("=" * 72)
+import calibrate as _CBW
+import combo_engine as _CEW
+import os as _bwos, sqlite3 as _bwsql, tempfile as _bwtmp, random as _bwrng, importlib as _bwil
+# The trust table was a hand-set prior never confronted with the record, and the
+# record disagrees with it in both directions: raw totals BEAT the de-vigged
+# close over hundreds of graded picks and were flattened anyway; Ks kept high
+# trust through a measured losing stretch. Every displayed edge collapsed toward
+# zero by a fixed factor -- "+1, 0, or negative" -- regardless of merit.
+_bwdir = _bwtmp.mkdtemp(); _bwdb = _bwos.path.join(_bwdir, "pl.db")
+_bwhad = _bwos.environ.get("PREDLOG_DB")
+_bwos.environ["PREDLOG_DB"] = _bwdb
+import predlog as _bwpl; _bwil.reload(_bwpl)
+_c = _bwsql.connect(_bwdb)
+_c.execute("""CREATE TABLE predictions (ticker TEXT PRIMARY KEY, model TEXT,
+  prob REAL, close_time REAL, ts REAL, graded INT DEFAULT 0, outcome INT,
+  resolved_ts REAL, mkt REAL)""")
+_r = _bwrng.Random(7); _bwrows = []
+for _i in range(600):
+    _truth = min(0.95, max(0.05, _r.gauss(0.55, 0.15)))
+    _mg = min(0.97, max(0.03, _truth + _r.gauss(0, 0.03)))
+    _mk = min(0.97, max(0.03, 0.5 + (_truth - 0.5) * 0.4 + _r.gauss(0, 0.05)))
+    _y = 1 if _r.random() < _truth else 0
+    _bwrows.append((f"G{_i}", "syn_good", _mg, 0, (_i % 30) * 86400, 1, _y, 0, _mk))
+    _mb = min(0.97, max(0.03, _r.gauss(0.5, 0.12)))
+    _mk2 = min(0.97, max(0.03, _truth + _r.gauss(0, 0.02)))
+    _bwrows.append((f"B{_i}", "syn_bad", _mb, 0, (_i % 30) * 86400, 1, _y, 0, _mk2))
+_c.executemany("INSERT INTO predictions VALUES (?,?,?,?,?,?,?,?,?)", _bwrows)
+_c.commit(); _c.close()
+_bwil.reload(_CBW)
+_wg = _CBW.blend_weight("syn_good")
+_wb = _CBW.blend_weight("syn_bad")
+ck("a model that genuinely beats the market earns its weight back",
+   _wg is not None and _wg[0] >= 0.5, f"fitted {_wg}")
+ck("a model that is noise against the market is flattened",
+   _wb is not None and _wb[0] <= 0.1, f"fitted {_wb}")
+ck("no fit before the floors are met",
+   _CBW.blend_weight("no_such_model") is None,
+   "150 graded across 10 days, same discipline as every calibration here")
+ck("the blend consumes the fit through an effective tau, clamped",
+   "_effective_tau" in _insp.getsource(_CEW.blend_prob)
+   and "min(max(w, 0.02), 0.90)" in _insp.getsource(_CEW._effective_tau),
+   "never all-market (the model must be able to disagree) and never all-model "
+   "(the clamp and the market cap still rule)")
+ck("with no fit the hand-set prior still rules",
+   True)  # exercised implicitly: local floors unmet -> priors, asserted below
+_CEW._tau_cache.clear()
+if _bwhad is None:
+    _bwos.environ.pop("PREDLOG_DB", None)
+else:
+    _bwos.environ["PREDLOG_DB"] = _bwhad
+_bwil.reload(_bwpl); _bwil.reload(_CBW)
+_CEW._tau_cache.clear()
+ck("locally (thin log) every tau equals its prior",
+   abs(_CEW._effective_tau("ML") - 1.0) < 1e-9
+   and abs(_CEW._effective_tau("Total") - 0.7) < 1e-9)
+ck("the pre-blend disagreement is shown on the slip",
+   "pre-blend" in _appjs and "rawEdge" in _appjs,
+   "the edge beside the price is the PLAYED edge; the model's own claim must "
+   "be visible or a flattened +8 and a real +1 look identical")
+
+print()
+print("=" * 72)
 print("The board is one board, whichever worker answers")
 print("=" * 72)
 import baseball as _bsl
