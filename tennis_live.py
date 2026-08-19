@@ -253,7 +253,9 @@ def start_map():
 # claimed on its own, which means it is not the model talking -- it is the score
 # we cannot see. (The case that prompted this: our 54% against a 25c market, a
 # 29-point gap, on a player who was a set down.)
-_LIVE_GAP_MAX = 15.0        # measured ceiling of pre-match disagreement
+_LIVE_GAP_MAX = 14.5        # just above the measured maximum (14.4): any
+                            # bigger gap has literally never been a model
+                            # opinion in 174 graded matches
 _LIVE_GAP_MIN = 4.0         # below p75 (4.2) is noise, not a signal
 
 

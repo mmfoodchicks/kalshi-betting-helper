@@ -40,6 +40,12 @@ address, and a bad idea for a phone. Mobile IPs rotate and sit behind
 carrier-grade NAT, so an allowlist would both break often and admit everyone
 sharing that carrier pool. Use the cookie for the phone.
 
+**Only enable the allowlist behind a real proxy** (Render or Caddy — both
+paths here). The client IP is read via `X-Forwarded-For`, which those proxies
+set. An app exposed directly to the internet can be sent a forged
+`X-Forwarded-For: <your-ip>` and the allowlist would wave it through. The
+cookie has no such weakness.
+
 ### Never run one web worker
 
 `WEB_CONCURRENCY` must be ≥ 2 on any always-on deploy. When a request outlives

@@ -1572,11 +1572,26 @@ def analyze_slate(date, season, cached_only=False):
             return hit[1]
         return _analyze_slate_uncached(date, season)   # the leader failed
     try:
-        with deep_cache_gate():
-            out = _analyze_slate_isolated(date, season)
-        _cache[key] = (_time.time(), out, _SLATE_TTL)
-        _slate_disk_put(date, season, out)     # share it with the other workers
-        return out
+        if not _slate_claim(date, season):
+            # A SIBLING WORKER is already building this board. Wait for its
+            # publish instead of spawning a duplicate ~175 MB child on the same
+            # CPU; if it dies, the stale claim is taken over next call.
+            deadline = _time.time() + _SLATE_BUILD_TIMEOUT
+            while _time.time() < deadline:
+                disk, age = _slate_disk_get(date, season, _SLATE_TTL)
+                if disk is not None:
+                    _cache[key] = (_time.time() - age, disk, _SLATE_TTL)
+                    return disk
+                _time.sleep(5)
+            return _analyze_slate_uncached(date, season)   # builder died mid-run
+        try:
+            with deep_cache_gate():
+                out = _analyze_slate_isolated(date, season)
+            _cache[key] = (_time.time(), out, _SLATE_TTL)
+            _slate_disk_put(date, season, out)     # share it with the other workers
+            return out
+        finally:
+            _slate_release(date, season)
     finally:
         with _slate_guard:
             _slate_building.pop(key, None)
@@ -2649,6 +2664,37 @@ def _slate_disk_get(date, season, max_age):
             return pickle.load(fh), age
     except Exception:
         return None, None
+
+
+def _slate_claim(date, season):
+    """True in the ONE worker that should build this board.
+
+    The in-process _slate_building guard stops threads duplicating a build, but
+    with three workers a cold start had every worker spawn its own ~175 MB
+    build child for the same board on the same CPU. O_EXCL on a claim file
+    settles it across processes; a claim older than the build timeout is a dead
+    builder and may be taken over."""
+    try:
+        _os.makedirs(_SLATE_DISK, exist_ok=True)
+        path = _os.path.join(_SLATE_DISK, f"{date}_{season}.lock")
+        try:
+            fd = _os.open(path, _os.O_CREAT | _os.O_EXCL | _os.O_WRONLY)
+            _os.close(fd)
+            return True
+        except FileExistsError:
+            if _time.time() - _os.stat(path).st_mtime > _SLATE_BUILD_TIMEOUT:
+                _os.utime(path, None)          # take over the stale claim
+                return True
+            return False
+    except Exception:
+        return True             # cannot coordinate -> single-worker behaviour
+
+
+def _slate_release(date, season):
+    try:
+        _os.remove(_os.path.join(_SLATE_DISK, f"{date}_{season}.lock"))
+    except Exception:
+        pass
 
 
 def _slate_disk_put(date, season, out):

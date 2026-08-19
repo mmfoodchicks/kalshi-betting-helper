@@ -552,7 +552,10 @@ def player_pool(week, n=3000, preseason=False):
                 arr = sim_dst[team]
                 raw = sum(arr) / len(arr)
                 shift = d["proj"] - raw
-                arr = [round(x + shift, 2) for x in arr]
+                # -4 is the WORST score DK's rules can produce (the 35+ points
+                # allowed tier; every other category only adds). A negative
+                # shift must not manufacture scores below it.
+                arr = [round(max(-4.0, x + shift), 2) for x in arr]
                 proj = d["proj"]
             else:
                 proj = d["proj"]

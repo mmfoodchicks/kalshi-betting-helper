@@ -1101,10 +1101,21 @@ window.buildCombo = async (maxBet, optimal) => {
     // we re-ask until the job is finished, while the progress bar polls the
     // game count. Up to 20 minutes, since a fully cold slate genuinely takes it.
     let d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
+    // A blinked poll must not abort the whole build. The job keeps running
+    // server-side, so bailing to "Build failed" here invited a second click --
+    // and a second, concurrent build fighting the first for one CPU. Ride out
+    // up to 8 consecutive failures (the result is idempotent server-side, so a
+    // poll after recovery still collects it); only a dead connection gives up.
+    let misses = 0;
     for (let i = 0; d && d.status === "building" && i < 800; i++) {
       await new Promise((r) => setTimeout(r, 1500));
-      const rr = await fetch(`/api/baseball/mixed?date=${date}&${q}`);
-      d = await rr.json();
+      try {
+        const rr = await fetch(`/api/baseball/mixed?date=${date}&${q}`);
+        d = await rr.json();
+        misses = 0;
+      } catch (e) {
+        if (++misses > 8) throw e;
+      }
     }
     if (d && d.status === "building") {
       out.innerHTML = `<div class="small">Still simulating after 20 minutes - the slate is unusually large or the server is busy. Try fewer games from the grid above.</div>`;
@@ -5792,7 +5803,12 @@ async function pollWarm() {
   try {
     const date = ($("bbDate") && $("bbDate").value) || "";
     const d = await (await fetch("/api/warm" + (date ? "?date=" + date : ""))).json();
-    if (!d || d.ready || d.total === 0) {
+    // Hidden only when there is truly nothing to say: ready, or a real slate
+    // with zero games. total===0 alone is NOT that -- during the slate build
+    // (the LONGEST wait) total is 0 and slate_ready is false, and hiding then
+    // made the "Building today's board" state unreachable: the bar appeared
+    // only after the board existed, skipping the very wait it was built for.
+    if (!d || d.ready || (d.total === 0 && d.slate_ready)) {
       // Only announce readiness if the user actually saw it warming.
       if (_warmWasCold && d && d.ready) {
         bar.className = "warmbar ready";

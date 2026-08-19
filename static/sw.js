@@ -2,7 +2,7 @@
 // picked up immediately when online (the previous cache-first version could
 // serve a stale app.js after an update). The cache is only an offline fallback.
 // Live /api/ data is always network. Bumping SHELL purges every older cache.
-const SHELL = "vigil-shell-v50";
+const SHELL = "vigil-shell-v51";
 const PRECACHE = ["/", "/static/style.css", "/static/app.js",
                   "/static/icon-192.png", "/static/manifest.json"];
 
@@ -36,9 +36,14 @@ self.addEventListener("fetch", (e) => {
   // "the network blinked" from "the server said no" and retry instead of
   // painting a dead screen.
   if (url.pathname.startsWith("/api/")) {
+    // Clone BEFORE the first fetch: a request body is single-use, so retrying
+    // with the same object throws "body already used" on every POST -- the DFS
+    // builds among them -- and the retry silently never happened for exactly
+    // the requests that carry data.
+    const retryReq = e.request.clone();
     e.respondWith(
       fetch(e.request)
-        .catch(() => new Promise((r) => setTimeout(r, 700)).then(() => fetch(e.request)))
+        .catch(() => new Promise((r) => setTimeout(r, 700)).then(() => fetch(retryReq)))
         .catch(() => new Response(
           JSON.stringify({ error: "network unavailable", offline: true }),
           { status: 503, headers: { "Content-Type": "application/json" } })));

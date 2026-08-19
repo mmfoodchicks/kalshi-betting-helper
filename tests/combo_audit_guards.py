@@ -4658,14 +4658,20 @@ ck("a failed API call is a real failure, never a fake 200 with an empty body",
    'new Response("{}"' not in _sw and "status: 503" in _sw and "offline: true" in _sw,
    "{} is not an error: it passes `if (d.error)` and then throws on d.games")
 ck("a dropped request is retried once before giving up",
-   "setTimeout(r, 700)" in _sw and _sw.count("fetch(e.request)") >= 3,
-   "resuming a backgrounded phone drops exactly one request; the second lands")
+   "setTimeout(r, 700)" in _sw and "fetch(retryReq)" in _sw
+   and "e.request.clone()" in _sw.split('startsWith("/api/")')[1][:600],
+   "resuming a backgrounded phone drops exactly one request; the second lands. "
+   "The retry must use a CLONE taken before the first attempt -- a request body "
+   "is single-use, so retrying the same object throws on every POST and the "
+   "retry silently never happened for exactly the requests that carry data")
 ck("a gateway error never replaces or poisons the cached app shell",
    "if (!res.ok) return shellFallback()" in _sw,
    "a 502 is a RESOLVED fetch, so the old code cached the host's error page "
    "under '/' and served it back as the app")
-ck("the shell cache version was bumped so the fix actually activates",
-   "vigil-shell-v50" in _sw,
+import re as _swre
+_swv = int((_swre.search(r"vigil-shell-v(\d+)", _sw) or [0, "0"])[1])
+ck("the shell cache version was bumped so the fixes actually activate",
+   _swv >= 51,
    "an unchanged SHELL constant leaves every installed phone on the old worker")
 
 _appjs = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
@@ -4863,6 +4869,20 @@ ck("and the finished result is visible to whichever worker is polled",
 _bbttl.job_drop(_tokx)
 ck("abandoned job files are reaped",
    "_time.time() - 3600" in _insp.getsource(_bbttl.job_claim))
+# Delivery of a finished build must be idempotent. It used to job_drop on the
+# first read -- BEFORE the response was known to have reached the phone. One
+# lost response (a backgrounded tab, a dropped socket) and the next poll found
+# no job, won a fresh claim, and silently rebuilt everything: the bar finished,
+# then snapped back to "building". Verified live: four reads of one finished
+# token now return the identical parlay with no phantom rebuild.
+_mixed_src2 = _appsrc.split("def api_baseball_mixed")[1].split("\n@app.route")[0]
+ck("a finished result can be read as many times as it is asked for",
+   "job_drop" not in _mixed_src2.split('if job and job.get("status") == "done"')[1][:300],
+   "destroy-on-first-read turns one lost response into a full rebuild")
+ck("the client poll rides out network blinks instead of aborting",
+   "misses" in _appjs and "++misses > 8" in _appjs,
+   "bailing to 'Build failed' while the job still runs invites a second click "
+   "and a second, concurrent build fighting the first for one CPU")
 ck("a combo build runs in the background, not inside the request",
    "_combo_jobs" in _appsrc and '"status": "building"' in _appsrc
    and "threading.Thread(target=_bg" in _appsrc.split("_combo_jobs")[1],
@@ -4945,12 +4965,15 @@ ck("a score is never invented for a match we cannot see",
 # vs the market: median gap 0.2 points, p90 8.4, p95 9.4, max 14.4 -- and gaps
 # of 15+ occurred ZERO times. So a live gap inside that band is the size of
 # disagreement this model really produces; a bigger one is the score talking.
-ck("the live-gap ceiling is the measured maximum, not a guess",
-   _TL._LIVE_GAP_MAX == 15.0 and _TL._LIVE_GAP_MIN == 4.0,
-   "14.4 was the largest pre-match disagreement in 174 graded picks; 4.2 was p75")
+ck("the live-gap ceiling sits just above the measured maximum",
+   _TL._LIVE_GAP_MAX == 14.5 and _TL._LIVE_GAP_MIN == 4.0,
+   "14.4 was the largest pre-match disagreement in 174 graded picks; a 15-point "
+   "gap has literally never been a model opinion and must read as score")
 ck("a gap inside the measured band reads as playable",
-   _TL.live_gap_read(65.0, 50.0)[0] == "edge"
+   _TL.live_gap_read(64.0, 50.0)[0] == "edge"
    and _TL.live_gap_read(75.0, 69.0)[0] == "edge")
+ck("a gap just past everything ever observed reads as score",
+   _TL.live_gap_read(65.0, 50.0)[0] == "score")
 ck("a gap larger than the model has ever produced is called score, not edge",
    _TL.live_gap_read(54.0, 25.0)[0] == "score",
    "our 54% against a 25c market is 29 points -- twice anything this model has "

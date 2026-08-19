@@ -337,7 +337,14 @@ def _trusted_ip(addr):
     Sensible for a home connection with a stable address. NOT sensible for a
     phone: carrier IPs rotate constantly and sit behind carrier-grade NAT, so
     the allowlist would both break often and hand access to everyone sharing
-    that pool. Off unless explicitly set."""
+    that pool. Off unless explicitly set.
+
+    SECURITY: remote_addr comes through ProxyFix, which trusts ONE
+    X-Forwarded-For hop. Behind Render or Caddy that header is set by the
+    proxy and this is sound. Exposed DIRECTLY to the internet (no proxy),
+    any client can send X-Forwarded-For: <your-ip> and walk straight in --
+    so only enable this behind a real proxy. The cookie path does not have
+    this problem."""
     nets = (os.environ.get("VIGIL_TRUSTED_IPS") or "").strip()
     if not nets or not addr:
         return False
@@ -2761,13 +2768,19 @@ def api_baseball_mixed():
         # "game 1 of 11" because it was reading a different worker's duplicate,
         # and three simulations of the same slate fought over one CPU.
         job = baseball.job_read(ptok)
+        # Serving a finished result must be IDEMPOTENT. It used to job_drop
+        # before the response was known to have reached the phone; if that one
+        # response was lost (a backgrounded tab, a dropped socket -- the normal
+        # weather of mobile), the next poll found no job, WON a fresh claim,
+        # and silently started the whole build over. From the phone that looks
+        # like the bar finishing and then snapping back to "building" -- and
+        # the service worker's transparent retry could trigger it all by
+        # itself. Tokens are unique per click and job files are swept after an
+        # hour, so the stored result can safely be served as many times as it
+        # is asked for.
         if job and job.get("status") == "done":
-            baseball.job_drop(ptok)
-            baseball.progress_done(ptok)
             return jsonify(job.get("result") or {})
         if job and job.get("status") == "error":
-            baseball.job_drop(ptok)
-            baseball.progress_done(ptok)
             return jsonify({"error": job.get("error") or "build failed"}), 502
         # Exactly one worker wins the claim; everyone else just reports 202.
         if not baseball.job_claim(ptok):
