@@ -201,8 +201,12 @@ def _api_warm():
     except Exception:
         games = None
     if games is None:
+        # Same shape as the ready branch -- a cold start must not answer with
+        # fewer fields than a warm one, or the client special-cases it.
         return jsonify({"ready": False, "slate_ready": False, "total": 0,
-                        "warm": 0, "note": "building today's board…"})
+                        "warm": 0, "at": _warm_state.get("at"),
+                        "always_warm": bool(_WARM_ALWAYS),
+                        "note": "building today's board…"})
     todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
     warm = sum(1 for g in todo if baseball._game_sim_cached(g))
     return jsonify({"ready": bool(todo) and warm >= len(todo),
