@@ -1524,12 +1524,12 @@ def stale_slate(date, season, max_age=3600):
     the new numbers. Past `max_age` the staleness stops being cosmetic (lineups
     and prices have really moved), so it is withheld."""
     hit = _cache.get(("slate", date, season))
-    if not hit:
+    if hit:
+        age = _time.time() - hit[0]
+        if max_age is None or age <= max_age:
+            return hit[1], age
         return None, None
-    age = _time.time() - hit[0]
-    if max_age is not None and age > max_age:
-        return None, None
-    return hit[1], age
+    return _slate_disk_get(date, season, max_age)   # a sibling may have it
 
 
 def analyze_slate(date, season, cached_only=False):
@@ -1543,6 +1543,13 @@ def analyze_slate(date, season, cached_only=False):
     hit = _cache.get(key)
     if hit and _time.time() - hit[0] < _SLATE_TTL:
         return hit[1]
+    # A sibling worker may already have built this board. Adopt it WITH ITS AGE,
+    # so the TTL and stale_slate's cosmetics stay honest rather than restarting
+    # the clock on a board that is minutes old.
+    disk, age = _slate_disk_get(date, season, _SLATE_TTL)
+    if disk is not None:
+        _cache[key] = (_time.time() - age, disk, _SLATE_TTL)
+        return disk
     if cached_only:
         return None
 
@@ -1568,6 +1575,7 @@ def analyze_slate(date, season, cached_only=False):
         with deep_cache_gate():
             out = _analyze_slate_isolated(date, season)
         _cache[key] = (_time.time(), out, _SLATE_TTL)
+        _slate_disk_put(date, season, out)     # share it with the other workers
         return out
     finally:
         with _slate_guard:
@@ -2618,6 +2626,49 @@ def _sim_disk_put(pk, val):
         pass                    # a cache that cannot write is slow, never broken
 
 
+# The BOARD needs sharing between workers just like the game sims do. It lived
+# only in each worker's memory, so with three workers the same /api/warm poll
+# flickered between "15/15 ready" and "0/0 building today's board" depending on
+# which worker answered -- and every worker paid its own ~90s slate build for a
+# board a sibling already had. Same cure as the sims: publish the finished board
+# (~0.5 MB pickled) where every worker can read it.
+_SLATE_DISK = _os.path.join(
+    _os.environ.get("VIGIL_SIM_CACHE_DIR")
+    or _os.environ.get("DEEP_CACHE_DIR") or "/tmp", "slates")
+
+
+def _slate_disk_get(date, season, max_age):
+    """(board, age_seconds) from a sibling worker, or (None, None)."""
+    try:
+        path = _os.path.join(_SLATE_DISK, f"{date}_{season}.pkl")
+        age = _time.time() - _os.stat(path).st_mtime
+        if max_age is not None and age > max_age:
+            return None, None
+        import pickle
+        with open(path, "rb") as fh:
+            return pickle.load(fh), age
+    except Exception:
+        return None, None
+
+
+def _slate_disk_put(date, season, out):
+    try:
+        import pickle
+        import tempfile
+        _os.makedirs(_SLATE_DISK, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_SLATE_DISK, suffix=".tmp")
+        with _os.fdopen(fd, "wb") as fh:
+            pickle.dump(out, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        _os.replace(tmp, _os.path.join(_SLATE_DISK, f"{date}_{season}.pkl"))
+        cutoff = _time.time() - 6 * 3600          # yesterday's boards are dead weight
+        for name in _os.listdir(_SLATE_DISK):
+            fp = _os.path.join(_SLATE_DISK, name)
+            if _os.stat(fp).st_mtime < cutoff:
+                _os.remove(fp)
+    except Exception:
+        pass                    # a cache that cannot write is slow, never broken
+
+
 def _game_sim_cached(g):
     """True when this game's sim is already in cache -- i.e. it costs nothing.
     Lets the progress bar distinguish 'simulating 15 games' from 'reading 15
@@ -3584,6 +3635,11 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         if state == "Final":
             continue
         if game_sel and g["game_pk"] not in game_sel:
+            continue
+        # Count the game only if it will actually be worked on. Live games are
+        # skipped a few lines down when include_live is off, and entering them
+        # here made `at` outrun `total` (the bar clamps, but the count lied).
+        if state == "Live" and not include_live:
             continue
         _was_cached = _game_sim_cached(g)
         progress_enter(progress_token)

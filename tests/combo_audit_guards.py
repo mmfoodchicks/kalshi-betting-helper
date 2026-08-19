@@ -5032,6 +5032,42 @@ finally:
 
 print()
 print("=" * 72)
+print("The board is one board, whichever worker answers")
+print("=" * 72)
+import baseball as _bsl
+import time as _bt2
+import shutil as _bsh
+# The game SIMS were shared between workers but the BOARD was not, so the same
+# /api/warm poll flickered between "15/15 ready" and "0/0 building today's
+# board" depending on which worker answered -- measured live on a 3-worker
+# server -- and every worker paid its own ~90s slate build for a board a
+# sibling already had.
+_bsh.rmtree(_bsl._SLATE_DISK, ignore_errors=True)
+_bsl._slate_disk_put("2099-02-01", "2099", [{"g": 1}])
+_g, _a = _bsl._slate_disk_get("2099-02-01", "2099", 300)
+ck("a built board is published where every worker can read it",
+   _g == [{"g": 1}] and _a is not None and _a < 5,
+   "per-worker memory is why the warm bar blinked in and out on the phone")
+_bsl._cache.pop(("slate", "2099-02-01", "2099"), None)
+ck("a cold worker adopts the sibling's board instead of rebuilding",
+   _bsl.analyze_slate("2099-02-01", "2099", cached_only=True) == [{"g": 1}])
+ck("...and adopts it WITH ITS AGE, not a reset clock",
+   "_cache[key] = (_time.time() - age, disk, _SLATE_TTL)"
+   in _insp.getsource(_bsl.analyze_slate),
+   "restarting the TTL on adoption would let a board live forever by hopping "
+   "between workers")
+ck("stale_slate falls back to the shared copy too",
+   "_slate_disk_get" in _insp.getsource(_bsl.stale_slate))
+_bsl._cache.pop(("slate", "2099-02-01", "2099"), None)
+_bsh.rmtree(_bsl._SLATE_DISK, ignore_errors=True)
+ck("live games skipped by the build are not counted as entered",
+   'if state == "Live" and not include_live:' in
+   _insp.getsource(_bsl.build_mixed_parlay).split("progress_start(progress_token")[1][:600],
+   "entering games the loop then skips made `at` outrun `total` -- the bar "
+   "clamps, but the count lied")
+
+print()
+print("=" * 72)
 print("A cache shorter than its own fill time is never warm")
 print("=" * 72)
 import baseball as _bbttl
