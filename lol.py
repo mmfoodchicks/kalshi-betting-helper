@@ -489,7 +489,6 @@ def _picks_from_poisson(picks, proj, team, m):
                           "matchup": f"{m['team1']} vs {m['team2']}", "league": m["league"]})
 
 
-import threading as _threading
 _board_inflight = set()
 
 
@@ -500,22 +499,11 @@ def board(max_matches=6):
     kick a single paced background build (guarded so retries don't pile on) and
     return None for now -- the frontend polls until it lands. Individual team pulls
     are cached 6h, so successive builds converge fast."""
-    key = ("lol_board", max_matches)
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < 900:
-        return hit[1]
-    if max_matches not in _board_inflight:
-        _board_inflight.add(max_matches)
-
-        def _bg():
-            try:
-                val = _build_board(max_matches)
-                if val is not None:
-                    _cache[key] = (time.time(), val)
-            finally:
-                _board_inflight.discard(max_matches)
-        _threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    import boardshare
+    return boardshare.nonblocking(f"lol_{max_matches}", 900, _cache,
+                                  ("lol_board", max_matches),
+                                  lambda: _build_board(max_matches),
+                                  "LOL-board-build")
 
 
 def _build_board(max_matches):

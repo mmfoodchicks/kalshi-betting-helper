@@ -4767,7 +4767,7 @@ ck("the shared cache prunes itself",
    "2 * _GAME_SIM_TTL" in _insp.getsource(_bbttl._sim_disk_put),
    "yesterday's games are never coming back and the disk is 1 GB")
 ck("the per-game sims the COMBO MAKER needs are warmed too, not just the slate",
-   "_warm_game_sims" in _appsrc and "baseball._game_sim(g)" in _appsrc,
+   "_warm_game_sims" in _appsrc and "baseball._game_sim(gm)" in _appsrc,
    "the board's engine and the maker's engine are different; warming only the "
    "board left the first Build paying minutes of simulation")
 _wtick_src = _insp.getsource(__import__("app")._warm_tick)
@@ -6162,6 +6162,92 @@ ck("every preseason checkbox is re-synced from the shared flag",
 ck("no checkbox writes the flag directly any more",
    "nflPreseason = pre.checked" not in _appjs2
    and "nflPreseason = cb.checked" not in _appjs2)
+
+print()
+print("=" * 72)
+print("Mega sweep: every board shares, the lint stays clean")
+print("=" * 72)
+# Seven more boards ran the build-into-per-worker-memory pattern (golf, LoL,
+# NBA, NHL, tennis, UFC, modeled futures). All now route through ONE helper.
+import boardshare as _bs3
+for _mod, _fn in (("golf", "board"), ("lol", "board"), ("basket", "board"),
+                  ("hockey", "board"), ("tennis_prices", "board"),
+                  ("ufc_sim", "board")):
+    _srcb = _insp.getsource(getattr(__import__(_mod), _fn))
+    ck(f"{_mod}.{_fn} serves through the shared store",
+       "boardshare.nonblocking" in _srcb,
+       "per-worker memory is why boards flapped between 'building' and results")
+ck("the modeled-futures board publishes its partials to every worker",
+   "boardshare.put" in _insp.getsource(__import__("mfutures").rows),
+   "a poll landing on a sibling mid-build should see the growing board, "
+   "not a 202")
+
+# The helper itself: adopt-before-build, one claim, stale-while-revalidate,
+# and a build that raises is recorded rather than lost.
+import shutil as _bsu3
+_bsu3.rmtree(_bs3._DIR, ignore_errors=True)
+_gmem = {}
+_calls = []
+
+
+def _gbuild():
+    _calls.append(1)
+    return {"n": len(_calls)}
+
+
+_gv = _bs3.nonblocking("guard_nb", 300, _gmem, "k", _gbuild)
+ck("cold call returns None and kicks exactly one build", _gv is None)
+import time as _gt3
+for _ in range(50):
+    if _gmem.get("k"):
+        break
+    _gt3.time() and __import__("time").sleep(0.1)
+ck("the build lands in memory AND on the shared disk",
+   _gmem.get("k") and _bs3.get("guard_nb", 300)[0] == {"n": 1})
+_gmem2 = {}
+ck("a second worker ADOPTS instead of rebuilding",
+   _bs3.nonblocking("guard_nb", 300, _gmem2, "k", _gbuild) == {"n": 1}
+   and len(_calls) == 1,
+   "the whole point: one build serves every worker")
+
+
+def _gboom():
+    raise RuntimeError("guard boom")
+
+
+import errlog as _errl3
+_bs3.nonblocking("guard_boom", 300, {}, "k", _gboom, "GUARD-boom")
+for _ in range(50):
+    if _errl3.recent(code="GUARD-boom", limit=1):
+        break
+    __import__("time").sleep(0.1)
+ck("a build that raises is recorded under its ID, not swallowed",
+   bool(_errl3.recent(code="GUARD-boom", limit=1)),
+   "half these threads had no exception handler at all")
+_bsu3.rmtree(_bs3._DIR, ignore_errors=True)
+
+# Routine file races stay OUT of the ledger: an already-removed job file or
+# lockfile is normal operation, and noise trains the reader to ignore errors.
+for _fn2, _pat in ((_bbttl.job_drop, "except OSError:"),
+                   (_bbttl._slate_release, "except OSError:")):
+    ck(f"{_fn2.__name__} treats a missing file as routine",
+       _pat in _insp.getsource(_fn2))
+
+# The lint gate. bestbets carried an undefined name (_SPREAD_UNIT) armed to
+# NameError on the first NBA/NHL spread edge of the season -- opening night.
+# Zero pyflakes findings is now the baseline; this fails if anyone reintroduces
+# an undefined name, a shadowed import, or dead assignments.
+import subprocess as _gsp
+import glob as _gg
+import sys as _gsy
+_pyf = _gsp.run([_gsy.executable, "-m", "pyflakes",
+                 *_gg.glob(_os.path.join(_root, "*.py"))],
+                capture_output=True, text=True)
+if "No module named" in (_pyf.stderr or ""):
+    ck("pyflakes lint gate (skipped: pyflakes not installed)", True)
+else:
+    _hits = [l for l in _pyf.stdout.splitlines() if l.strip()]
+    ck("pyflakes finds NOTHING across all modules", not _hits, _hits[:4])
 
 print()
 print("=" * 72)

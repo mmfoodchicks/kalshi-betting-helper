@@ -577,6 +577,8 @@ def progress_read():
                 disk = json.load(fh) or {}
             if disk.get("running"):
                 return disk
+    except OSError:
+        pass                # no mirror yet (fresh boot) -- the normal cold case
     except Exception as _e:
         errlog.note("DS-progress_read", _e)
     return dict(PROGRESS)

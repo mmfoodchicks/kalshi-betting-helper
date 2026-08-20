@@ -42,7 +42,6 @@ def _dk_player_points(pr, p_map, bo=3):
     e_maps, p_sweep = 0.0, 0.0
     for w in (True, False):                       # our team wins / loses
         for losses in range(need):
-            import math
             pr_ = math.comb(need - 1 + losses, losses) * (p if w else 1 - p) ** need * ((1 - p) if w else p) ** losses
             e_maps += pr_ * (need + losses)
             if w and losses == 0:

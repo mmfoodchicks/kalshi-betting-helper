@@ -184,7 +184,6 @@ def game_profile(game_pk):
     p = profile(name)
     if not p:
         return {"name": name, "bias": 0.0, "known": False}
-    m = meta()
     out = {"name": p["name"], "bias": p["bias"], "raw": p.get("raw"),
            "n": p.get("n"), "known": True, "source": p.get("source")}
     kb, rb = slope("k"), slope("r")

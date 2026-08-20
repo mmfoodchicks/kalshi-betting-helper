@@ -780,15 +780,15 @@ def _warm_game_sims(date, season):
     todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
     warm = sum(1 for g in todo if baseball._game_sim_cached(g))
     _warm_status(phase="sim", date=date, total=len(todo), warm=warm, at=None)
-    for g in todo:
+    for gm in todo:
         if not _WARM_ALWAYS and _warm_pick_key() is None:
             _warm_status(phase="idle", at=None)
             return True                 # nobody's looking any more
         try:
-            if baseball._game_sim_cached(g):
+            if baseball._game_sim_cached(gm):
                 continue
-            _warm_status(phase="sim", at=g.get("matchup") or g.get("game_pk"))
-            baseball._game_sim(g)       # the expensive bit, done off the click
+            _warm_status(phase="sim", at=gm.get("matchup") or gm.get("game_pk"))
+            baseball._game_sim(gm)       # the expensive bit, done off the click
             warm = sum(1 for x in todo if baseball._game_sim_cached(x))
             _warm_status(phase="sim", warm=warm, at=None)
         except Exception as e:
@@ -796,11 +796,11 @@ def _warm_game_sims(date, season):
             # looked exactly like one that was working: 0/9 forever with the
             # errors thrown away. Still continue -- one broken game must not
             # strand the other eight -- but the LAST error travels to the bar.
-            _warm_status(err=f"{g.get('matchup') or g.get('game_pk')}: "
+            _warm_status(err=f"{gm.get('matchup') or gm.get('game_pk')}: "
                              f"{type(e).__name__}: {e}"[:300],
                          err_ts=time.time())
             errlog.note("WARM-game-sim", e,
-                        path=str(g.get("matchup") or g.get("game_pk")))
+                        path=str(gm.get("matchup") or gm.get("game_pk")))
             continue
     # Sim writes that failed (a full data disk, most likely) surface the same
     # way; without this the sims complete, land nowhere, and the count reads 0.
@@ -1645,17 +1645,17 @@ def api_baseball_today():
         return jsonify({"error": f"baseball data failed: {e}"}), 502
     # Record the model's pre-game picks (only for games not yet final) so we can
     # grade the model's real track record later.
-    for g in games:
-        if (g.get("live") or {}).get("state") != "Final":
-            store.record_mlb_pick(g["game_pk"], date,
-                                  "home" if g["pick_is_home"] else "away",
-                                  g["pick"], g["pick_prob"], g.get("pick_price_cents"),
-                                  pred_total=g.get("exp_total"),
-                                  p_home_model=g.get("p_home_model"),
-                                  p_home_deep=g.get("p_home_deep"),
-                                  prob_raw=g.get("pick_prob_raw"))
+    for gm in games:
+        if (gm.get("live") or {}).get("state") != "Final":
+            store.record_mlb_pick(gm["game_pk"], date,
+                                  "home" if gm["pick_is_home"] else "away",
+                                  gm["pick"], gm["pick_prob"], gm.get("pick_price_cents"),
+                                  pred_total=gm.get("exp_total"),
+                                  p_home_model=gm.get("p_home_model"),
+                                  p_home_deep=gm.get("p_home_deep"),
+                                  prob_raw=gm.get("pick_prob_raw"))
             # Track the latest pre-game price of our side for closing-line value.
-            store.update_mlb_close(g["game_pk"], g.get("pick_price_cents"))
+            store.update_mlb_close(gm["game_pk"], gm.get("pick_price_cents"))
     # The auto-built suggestion slips (safest / best value / mixed / live) are no
     # longer produced on every slate load: they cost ~26 MB and seconds of work
     # per request whether or not anyone looked at them, on an instance with no
@@ -1792,15 +1792,15 @@ def api_sports_live():
     # MLB: richer dedicated feed (inning + score).
     try:
         today = clock.today_et().isoformat()
-        for g in baseball._schedule(today, today[:4]):
-            lv = g.get("live") or {}
+        for gm in baseball._schedule(today, today[:4]):
+            lv = gm.get("live") or {}
             if lv.get("state") == "Live":
                 out.append({
                     "sport": "⚾ MLB", "confirmed": True,
-                    "title": f"{g['away_name']} @ {g['home_name']}",
+                    "title": f"{gm['away_name']} @ {gm['home_name']}",
                     "detail": f"{lv.get('inning_state', '')} {lv.get('inning', '')}".strip(),
                     "score": f"{lv.get('away_runs', 0)}–{lv.get('home_runs', 0)}",
-                    "nav": {"tab": "baseball", "pk": g["game_pk"]},
+                    "nav": {"tab": "baseball", "pk": gm["game_pk"]},
                 })
     except Exception as _e:
         errlog.note("APP-api_sports_live", _e)

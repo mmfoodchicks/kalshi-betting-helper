@@ -38,7 +38,6 @@ import os
 import time
 
 import clock
-import kalshi
 import season_sim
 
 # Believable band for P(champion A beats champion B in a best of seven).

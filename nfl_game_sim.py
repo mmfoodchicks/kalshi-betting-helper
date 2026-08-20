@@ -901,7 +901,6 @@ def _build_board(season, week, n=2400, preseason=False):
         # Kalshi moneyline + edge (net of the calibrated prob).
         if kx:
             try:
-                import kalshi_nfl
                 px = kalshi_nfl.game_prices(sim["home"], sim["away"])
             except Exception:
                 px = None
@@ -1017,7 +1016,6 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     slip that still collects the full capped payout. See combo_engine.max_bet."""
     import combo_engine
     import mlb_sim
-    import kalshi_nfl
 
     floor = max(0.05, min(0.97, target_pct / 100.0))
     ceil = 1.0

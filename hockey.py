@@ -26,8 +26,6 @@ standings points (2 win / 1 OT loss).
 import predlog
 import random
 import re
-import threading
-import time
 
 import clock
 import racing
@@ -473,22 +471,11 @@ def board(date=None):
     except Exception:
         pass
     date = date or clock.today_et().isoformat()
-    key = ("nhl_board", date)
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < 600:
-        return hit[1]
-    if key not in _inflight:
-        _inflight.add(key)
-
-        def _bg():
-            try:
-                val = _build_board(date)
-                if val is not None:
-                    _cache[key] = (time.time(), val)
-            finally:
-                _inflight.discard(key)
-        threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    import boardshare
+    return boardshare.nonblocking(f"nhl_{date}", 600, _cache,
+                                  ("nhl_board", date),
+                                  lambda: _build_board(date),
+                                  "NHL-board-build")
 
 
 def _build_board(date, n=3000):

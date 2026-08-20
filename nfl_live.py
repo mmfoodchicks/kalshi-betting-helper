@@ -223,7 +223,6 @@ def _build_board(week, season):
     sched = schedule(week, season)
     if not rtg or not sched:
         return None
-    lg_pf = sum(r["pf_pg"] for r in rtg.values()) / len(rtg)
     lg_pa = sum(r["pa_pg"] for r in rtg.values()) / len(rtg)
 
     # Pre-fetch offense + leaders for every team on the slate, concurrently.

@@ -37,7 +37,6 @@ An umpire with few calls barely moves; nobody's zone is taken at face value.
 import json
 import math
 import os
-import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 

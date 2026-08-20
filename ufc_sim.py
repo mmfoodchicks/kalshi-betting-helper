@@ -229,8 +229,6 @@ def _compute_board(n):
             "n_sims": n, "bouts": bouts}
 
 
-import threading as _threading
-import time as _time
 _board_inflight = [False]
 
 
@@ -239,17 +237,8 @@ def board(n=15000):
     else kicks a background compute (rating every fighter from history is slow the
     first time) and returns None until it's ready. Cached 6h."""
     import racing
-    key = ("ufc_board",)
-    hit = racing._form_cache.get(key)
-    if hit and (_time.time() - hit[0]) < 6 * 3600 and hit[1] is not None:
-        return hit[1]
-    if not _board_inflight[0]:
-        _board_inflight[0] = True
-
-        def _bg():
-            try:
-                racing._cached(key, 6 * 3600, lambda: _compute_board(n))
-            finally:
-                _board_inflight[0] = False
-        _threading.Thread(target=_bg, daemon=True).start()
-    return None
+    import boardshare
+    return boardshare.nonblocking("ufc_board", 6 * 3600, racing._form_cache,
+                                  ("ufc_board",),
+                                  lambda: _compute_board(n),
+                                  "UFC-board-build")

@@ -184,7 +184,6 @@ def simulate(rates_a, rates_b, lg, best_of=3, n=12000, seed=None, fatigue=None,
     set_win = [0] * max_sets        # P(A wins set k)
     set_played = [0] * max_sets
     a_straight = 0                  # A wins and drops no set
-    a_sweep_possible = 0
     a_serve_games_tot = b_serve_games_tot = 0.0
 
     PPG = 6.3                       # avg points per service game (for ace expectation)

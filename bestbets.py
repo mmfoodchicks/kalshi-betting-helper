@@ -244,8 +244,13 @@ def _board_rows(b, sport_label):
                 rows.append(row)
         for s in (g.get("spread_edges") or [])[:3]:
             import combo_engine as _ce
+            # "points" for basketball, "goals" for hockey -- the two engines
+            # that share this board shape. This referenced an undefined
+            # _SPREAD_UNIT dict: a NameError armed to fire on the first day an
+            # NBA/NHL board carried a spread edge, i.e. opening night.
+            unit = "goals" if "NHL" in sport_label else "points"
             row = _row(sport_label, "Spread",
-                       _ce.spread_label(s["team"], s["line"], _SPREAD_UNIT.get(sport_label, "")),
+                       _ce.spread_label(s["team"], s["line"], unit),
                        mu, s["model_pct"], s["cents"], "med")
             if row:
                 rows.append(row)

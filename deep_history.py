@@ -230,6 +230,8 @@ def prune(keep=KEEP_DAYS):
     for d in dates()[keep:]:
         try:
             os.remove(os.path.join(deep_cache.CACHE_DIR, f"{_key(d)}.pkl"))
+        except OSError:
+            pass                # already pruned -- routine
         except Exception as _e:
             errlog.note("DH-prune", _e)
 

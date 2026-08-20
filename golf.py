@@ -271,8 +271,6 @@ def simulate(tour="pga", n=3000, seed=None):
 
     n_rounds, cut_round = fd["n_rounds"], fd["cut_round"]
     round_now = fd["round_now"]
-    units = _units(round_now, min(p["thru"] for p in ps) if ps else 0,
-                   n_rounds, cut_round)
     # Per-player remaining units (thru can differ across players mid-round).
     per_unit = [_units(round_now, p["thru"], n_rounds, cut_round) for p in ps]
     cut_ahead = any(ri <= cut_round for u in per_unit for ri, _w in u)
@@ -427,29 +425,17 @@ def _price_board(sim):
 
 
 # ---- Non-blocking board (cached; built in the background) --------------------
-import threading as _threading
 
 _cache = {}
 _inflight = set()
 
 
 def board(tour="pga"):
-    key = ("golf_board", tour)
-    hit = _cache.get(key)
-    if hit and _t.time() - hit[0] < 900:
-        return hit[1]
-    if key not in _inflight:
-        _inflight.add(key)
-
-        def _bg():
-            try:
-                val = _build_board(tour)
-                if val is not None:
-                    _cache[key] = (_t.time(), val)
-            finally:
-                _inflight.discard(key)
-        _threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    import boardshare
+    return boardshare.nonblocking(f"golf_{tour}", 900, _cache,
+                                  ("golf_board", tour),
+                                  lambda: _build_board(tour),
+                                  "GOLF-board-build")
 
 
 def _build_board(tour="pga", n=3000):

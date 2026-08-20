@@ -2467,6 +2467,8 @@ def job_claim(token):
             p = _os.path.join(_JOB_DIR, name)
             if _os.stat(p).st_mtime < cutoff:
                 _os.remove(p)
+    except OSError:
+        pass                    # a sibling swept the same file first -- routine
     except Exception as _e:
         errlog.note("BB-job_claim", _e)
     return True
@@ -2499,6 +2501,8 @@ def job_finish(token, status, result=None, error=None):
 def job_drop(token):
     try:
         _os.remove(_job_path(token))
+    except OSError:
+        pass                    # already gone -- job_drop is called defensively
     except Exception as _e:
         errlog.note("BB-job_drop", _e)
 
@@ -2737,6 +2741,8 @@ def _slate_claim(date, season):
 def _slate_release(date, season):
     try:
         _os.remove(_os.path.join(_SLATE_DISK, f"{date}_{season}.lock"))
+    except OSError:
+        pass                    # no claim to release -- routine on the wait path
     except Exception as _e:
         errlog.note("BB-slate_release", _e)
 

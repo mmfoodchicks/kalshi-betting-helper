@@ -136,7 +136,7 @@ def fighter_rating(fid, name=None, as_of=None):
             return _default(fid, name, 0)
 
         tot_min = sum(f["mins"] for f in fights) or 1.0
-        ssl = sum(f["ssl"] for f in fights); ssa = sum(f["ssa"] for f in fights)
+        ssl = sum(f["ssl"] for f in fights)
         opp_ssl = sum(f["opp_ssl"] for f in fights); opp_ssa = sum(f["opp_ssa"] for f in fights)
         tdl = sum(f["tdl"] for f in fights)
         opp_tda = sum(f["opp_tda"] for f in fights); opp_tdl = sum(f["opp_tdl"] for f in fights)

@@ -15,7 +15,6 @@ run the hierarchical sim (tennis_sim) on their charted serve/return profiles, an
 
 import datetime
 import clock
-import threading
 import time
 import unicodedata
 
@@ -383,7 +382,6 @@ def _insights(a, b, sim, surface, trusted=True):
             if abs(gap) < 40:               # below this it is not a specialism
                 continue
             last = p["name"].split()[-1]
-            word = "stronger" if gap > 0 else "weaker"
             out.append(f"🎾 {last} is a {surface.lower()}-court {'specialist' if gap > 0 else 'weak spot'}: "
                        f"{gap:+.0f} Elo vs their other surfaces "
                        f"({here['n']} matches on {surface.lower()})")
@@ -814,17 +812,7 @@ def _compute(n_sims=12000):
 def board():
     """Cached tennis board. Non-blocking: returns the cached board if fresh, else
     kicks off a background compute and returns None until ready."""
-    key = ("tennis_board",)
-    hit = _form.get(key)
-    if hit and (time.time() - hit[0]) < 1200 and hit[1] is not None:
-        return hit[1]
-    if not _inflight.get("b"):
-        _inflight["b"] = True
-
-        def _bg():
-            try:
-                racing._cached(key, 1200, _compute)
-            finally:
-                _inflight["b"] = False
-        threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    import boardshare
+    return boardshare.nonblocking("tennis_board", 1200, _form,
+                                  ("tennis_board",), _compute,
+                                  "TEN-board-build")

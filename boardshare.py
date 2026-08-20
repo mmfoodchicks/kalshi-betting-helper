@@ -100,3 +100,44 @@ def release(name):
         os.remove(_path(name, "lock"))
     except OSError:
         pass
+
+
+def nonblocking(name, ttl, mem, key, build, note_id=None):
+    """The whole shared non-blocking board pattern in one call:
+    memory-fresh -> adopt a sibling's disk copy with its age -> claimed
+    background build -> stale value (or None) meanwhile.
+
+    Seven modules (golf, LoL, NBA, NHL, tennis, UFC, futures) each hand-rolled
+    this dance into per-worker memory, so every worker built its own copy of
+    the same board and the browser's polls flapped between "building" and
+    results depending on which worker answered. `mem` stays the module's own
+    cache dict {key: (ts, val)} so its other readers are untouched; `build`
+    returns the payload or None. A build that RAISES is recorded under
+    `note_id` -- half of these threads had no exception handler, which is how
+    a board could stay "building..." forever with the reason lost."""
+    import threading
+    now = time.time()
+    hit = mem.get(key)
+    if hit and now - hit[0] < ttl and hit[1] is not None:
+        return hit[1]
+    disk, age = get(name, ttl)
+    if disk is not None:                     # a sibling already built it
+        mem[key] = (now - age, disk)
+        return disk
+    flight = ("_bs_flight", name)
+    if not mem.get(flight) and claim(name):
+        mem[flight] = (now, True)
+
+        def _bg():
+            try:
+                val = build()
+                if val is not None:
+                    mem[key] = (time.time(), val)
+                    put(name, val)
+            except Exception as e:
+                errlog.note(note_id or f"BOARD-build-{name}"[:60], e)
+            finally:
+                mem.pop(flight, None)
+                release(name)
+        threading.Thread(target=_bg, daemon=True).start()
+    return hit[1] if hit else None

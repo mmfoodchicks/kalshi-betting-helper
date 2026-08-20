@@ -26,8 +26,6 @@ import math
 import predlog
 import random
 import re
-import threading
-import time
 
 import clock
 import racing                       # shared cached-JSON getter
@@ -576,22 +574,11 @@ def board(lg, date=None):
     except Exception:
         pass
     date = date or clock.today_et().isoformat()
-    key = ("bk_board", lg, date)
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < 600:
-        return hit[1]
-    if key not in _inflight:
-        _inflight.add(key)
-
-        def _bg():
-            try:
-                val = _build_board(lg, date)
-                if val is not None:
-                    _cache[key] = (time.time(), val)
-            finally:
-                _inflight.discard(key)
-        threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    import boardshare
+    return boardshare.nonblocking(f"bk_{lg}_{date}", 600, _cache,
+                                  ("bk_board", lg, date),
+                                  lambda: _build_board(lg, date),
+                                  "BK-board-build")
 
 
 def _build_board(lg, date, n=3000):

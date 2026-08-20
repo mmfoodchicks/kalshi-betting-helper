@@ -37,6 +37,7 @@ import time as _t
 
 import futures as _fut
 import model_trust
+import errlog
 
 # Season simulators, in the order they're most likely to be in season. Each
 # entry says how to pull its board and how to read the rows out of it, because
@@ -594,6 +595,7 @@ def rows(block=False):
     """Every modeled future, costed. Non-blocking: the season sims behind this
     take tens of seconds cold, so it builds off-thread and serves the last good
     board meanwhile."""
+    import boardshare
     key = ("mfut",)
     hit = _cache.get(key)
     if hit and (_t.time() - hit[0]) < _TTL:
@@ -601,31 +603,44 @@ def rows(block=False):
     if block:
         val = _build()
         _cache[key] = (_t.time(), val)
+        boardshare.put("mfut", val)
         return val
-    if key not in _inflight:
+    disk, age = boardshare.get("mfut", _TTL)
+    if disk is not None:                    # a sibling already built (or is
+        _cache[key] = (_t.time() - age, disk)   # mid-build publishing as it goes)
+        return disk
+    if key not in _inflight and boardshare.claim("mfut"):
         _inflight.add(key)
 
         def _bg():
             # Publish as we go. A cold build runs several season simulations and
             # takes minutes end to end; holding every row back until the slowest
             # one finishes is what made the board look stuck behind a wall of
-            # 202s. Each source that lands is merged in and served immediately.
+            # 202s. Each source that lands is merged in and served immediately --
+            # to EVERY worker: the partials go to the shared disk too, so a poll
+            # landing on a sibling shows the same growing board, not a 202.
             try:
                 acc, done = [], []
                 for name, fn in _sources():
                     try:
                         got = fn()
-                    except Exception:
+                    except Exception as _e:
+                        errlog.note("MFUT-source", _e, path=name)
                         got = []
                     acc += got
                     done.append(name)
                     if acc:
                         _cache[key] = (_t.time(), list(acc))
                         _progress[key] = list(done)
+                        boardshare.put("mfut", list(acc))
                 _cache[key] = (_t.time(), acc)
+                boardshare.put("mfut", acc)
                 _progress.pop(key, None)
+            except Exception as _e:
+                errlog.note("MFUT-board-build", _e)
             finally:
                 _inflight.discard(key)
+                boardshare.release("mfut")
         threading.Thread(target=_bg, daemon=True).start()
     return hit[1] if hit else None
 

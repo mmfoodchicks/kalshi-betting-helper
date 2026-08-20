@@ -906,7 +906,7 @@ def _reblend_bout(fa, fb, seed=0):
     list to both preserves the joint structure the contest sim depends on:
     exactly one fighter still cashes the win bonus in any given sample.
     """
-    aw, bw = fa.get("won_arr"), fb.get("won_arr")
+    aw = fa.get("won_arr")                # B's outcomes are A's complement
     aa, ba = fa.get("dk_arr"), fb.get("dk_arr")
     if not (aw and aa and ba) or len(aw) != len(aa) or len(aa) != len(ba):
         return False
