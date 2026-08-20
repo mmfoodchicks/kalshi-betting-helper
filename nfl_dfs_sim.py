@@ -17,6 +17,7 @@ mean-0), so the sim only adds shape + correlation, it doesn't invent new means.
 import urllib.request
 import clock
 import dk_scoring
+import errlog
 import json as _json
 import gzip as _gzip
 import random as _random
@@ -89,7 +90,8 @@ def weekly_games(season, week):
         url = f"{_PROJ.format(season=season, week=week)}?season_type=regular&{q}&order_by=pts_ppr"
         try:
             rows = _get(url)
-        except Exception:
+        except Exception as _e:
+            errlog.note("NFLDFS-sleeper-fetch", _e)
             return None
         games = {}
         for r in rows:
@@ -152,15 +154,18 @@ def preseason_games(season, week):
         import nfl_live, nfl_preseason, kalshi_nfl, nfl_game_sim
         try:
             sched = nfl_live.schedule(week, int(season), seasontype=1) or []
-        except Exception:
+        except Exception as _e:
+            errlog.note("NFLDFS-espn-schedule", _e)
             return None
         try:
             ros = nfl_preseason.rosters(season) or {}
-        except Exception:
+        except Exception as _e:
+            errlog.note("NFLDFS-rosters", _e)
             return None
         try:
             idx = kalshi_nfl.index()
-        except Exception:
+        except Exception as _e:
+            errlog.note("NFLDFS-kalshi-index", _e)
             idx = {}
         games = {}
         for gm in sched:
@@ -587,24 +592,59 @@ def _season():
 _board_inflight = set()
 
 
+_BOARD_TTL = 1800
+
+
 def board(week=1, preseason=False):
     """Non-blocking week sim board: cached if fresh, else kick a background build
-    (Sleeper fetch + 16 correlated game sims) and return None while it runs."""
+    (Sleeper fetch + 16 correlated game sims) and return None while it runs.
+
+    Shared across workers via boardshare (one build serves every worker), and
+    the two failure shapes are cached briefly instead of dropped: a None build
+    used to cache NOTHING, so every poll spawned another build forever, and an
+    exception in the thread had no handler at all -- the board just stayed
+    "simulating..." with the reason lost."""
+    import boardshare
     season = _season()
     key = ("nfl_sim_board", season, week, bool(preseason))
+    name = f"nfl_sim_board_{season}_w{week}_{int(bool(preseason))}"
     hit = _cache.get(key)
-    if hit and _time.time() - hit[0] < 1800:
+    if hit and _time.time() - hit[0] < _BOARD_TTL:
         return hit[1]
-    if key not in _board_inflight:
+    disk, age = boardshare.get(name, _BOARD_TTL)
+    if disk is not None:                     # a sibling already built it
+        _cache[key] = (_time.time() - age, disk)
+        return disk
+    if key not in _board_inflight and boardshare.claim(name):
         _board_inflight.add(key)
 
         def _bg():
             try:
                 val = _build_board(season, week, preseason=preseason)
-                if val is not None:
+                if val is None:
+                    val = {"season": season, "week": week,
+                           "preseason": bool(preseason), "games": [],
+                           "empty": True,
+                           "note": ("No games found for this week. Preseason "
+                                    "runs weeks 1-4 in August; the regular "
+                                    "season starts in September.")}
+                    _cache[key] = (_time.time() - 1500, val)   # retry in ~5m
+                    boardshare.put(name, val, age=1500)
+                else:
                     _cache[key] = (_time.time(), val)
+                    boardshare.put(name, val)
+            except Exception as e:
+                errlog.note("NFLDFS-board-build", e,
+                            path=f"s{season} w{week} pre={int(bool(preseason))}")
+                val = {"season": season, "week": week,
+                       "preseason": bool(preseason), "games": [], "empty": True,
+                       "error": str(e),
+                       "note": "The sim board could not be built; retrying shortly."}
+                _cache[key] = (_time.time() - 1680, val)
+                boardshare.put(name, val, age=1680)
             finally:
                 _board_inflight.discard(key)
+                boardshare.release(name)
         _threading.Thread(target=_bg, daemon=True).start()
     return hit[1] if hit else None
 

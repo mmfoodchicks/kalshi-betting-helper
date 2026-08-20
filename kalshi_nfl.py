@@ -40,6 +40,7 @@ import time
 import unicodedata
 
 import kalshi
+import errlog
 
 _ML_SERIES = "KXNFLGAME"
 _SPREAD_SERIES = "KXNFLSPREAD"
@@ -79,7 +80,8 @@ def _fetch(series):
             url += f"&cursor={cursor}"
         try:
             d = kalshi._get_json(url)
-        except Exception:
+        except Exception as _e:
+            errlog.note("KNFL-markets-fetch", _e)
             break
         out.extend(d.get("markets") or [])
         cursor = d.get("cursor")
@@ -348,15 +350,45 @@ def prop_ladders(suffix):
     return {k: v for k, v in out.items() if v["rungs"]}
 
 
+# How stale a shared last-good index may be before an empty answer is more
+# honest than an old one. Same figure the MLB index uses.
+_IDX_STALE_MAX = 45 * 60
+
+
 def index():
+    """The Kalshi NFL index, shared across workers with a last-good fallback.
+
+    Three failure modes previously collapsed into "the board has no prices":
+    a raised build kept {} forever if it was the first, an EMPTY build (the
+    throttled window returns no markets, not an error) was cached as if it
+    were good, and each worker paid its own build. The preseason board is
+    ANCHORED to this ladder, so an empty index doesn't just lose edges there --
+    it changes the projections. Now: fresh build -> publish; failed or empty
+    build -> keep memory, else a sibling's disk copy up to 45 minutes old."""
+    import boardshare
     now = time.time()
-    if _cache["data"] is None or now - _cache["ts"] > _TTL:
-        try:
-            _cache["data"] = _build()
-            _cache["ts"] = now
-        except Exception:
-            if _cache["data"] is None:
-                _cache["data"] = {}
+    if _cache["data"] and now - _cache["ts"] <= _TTL:
+        return _cache["data"]
+    disk, age = boardshare.get("kalshi_nfl_idx", _TTL)
+    if disk:                                  # a sibling built one recently
+        _cache["data"], _cache["ts"] = disk, now - age
+        return disk
+    try:
+        built = _build()
+    except Exception as _e:
+        errlog.note("KNFL-index-build", _e)
+        built = None
+    if built:
+        _cache["data"], _cache["ts"] = built, now
+        boardshare.put("kalshi_nfl_idx", built)
+    elif not _cache["data"]:
+        stale, _sa = boardshare.get("kalshi_nfl_idx", _IDX_STALE_MAX)
+        _cache["data"], _cache["ts"] = (stale or {}), now
+        if not _cache["data"]:
+            errlog.note("KNFL-index-empty",
+                        msg="index build failed/empty with no usable fallback")
+    else:
+        _cache["ts"] = now                    # keep last-good memory; retry later
     return _cache["data"]
 
 

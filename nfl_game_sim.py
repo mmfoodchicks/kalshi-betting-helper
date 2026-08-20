@@ -744,15 +744,30 @@ def kalshi_canon(ab):
         return (ab or "").upper()
 
 
+_BOARD_TTL = 1800
+
+
 def board(week=1, preseason=False):
     """Non-blocking weekly slate: cached if fresh, else built in the background
-    (Sleeper fetch + 16 drive-engine sims + Kalshi pricing)."""
+    (Sleeper fetch + 16 drive-engine sims + Kalshi pricing).
+
+    The finished board is published through boardshare so all gunicorn workers
+    serve ONE build: kept per-worker, three workers ran three duplicate builds
+    of the same slate (tripling the Kalshi fetch load) and the browser's polls
+    flapped between "simulating..." and results depending on which worker
+    answered."""
+    import boardshare
     season = _season()
     key = ("nfl_slate", season, week, bool(preseason))
+    name = f"nfl_slate_{season}_w{week}_{int(bool(preseason))}"
     hit = _cache.get(key)
-    if hit and _time.time() - hit[0] < 1800:
+    if hit and _time.time() - hit[0] < _BOARD_TTL:
         return hit[1]
-    if key not in _inflight:
+    disk, age = boardshare.get(name, _BOARD_TTL)
+    if disk is not None:                     # a sibling already built it
+        _cache[key] = (_time.time() - age, disk)
+        return disk
+    if key not in _inflight and boardshare.claim(name):
         _inflight.add(key)
 
         def _bg():
@@ -771,19 +786,25 @@ def board(week=1, preseason=False):
                                     "weeks 1-4 in August; the regular season starts "
                                     "in September.")}
                     _cache[key] = (_time.time() - 1500, val)   # short TTL: retry in ~5m
+                    boardshare.put(name, val, age=1500)
                 else:
                     _cache[key] = (_time.time(), val)
+                    boardshare.put(name, val)
             except Exception as e:
                 # An exception used to vanish into the thread, leaving the board
                 # None with nothing anywhere saying why.
+                errlog.note("NFLG-board-build", e,
+                            path=f"s{season} w{week} pre={int(bool(preseason))}")
                 print(f"[nfl] board build failed (season={season} week={week} "
                       f"pre={preseason}): {e!r}", flush=True)
-                _cache[key] = (_time.time() - 1680, {
-                    "season": season, "week": week, "preseason": bool(preseason),
-                    "games": [], "n_games": 0, "empty": True, "error": str(e),
-                    "note": "The slate could not be built; retrying shortly."})
+                val = {"season": season, "week": week, "preseason": bool(preseason),
+                       "games": [], "n_games": 0, "empty": True, "error": str(e),
+                       "note": "The slate could not be built; retrying shortly."}
+                _cache[key] = (_time.time() - 1680, val)
+                boardshare.put(name, val, age=1680)
             finally:
                 _inflight.discard(key)
+                boardshare.release(name)
         _threading.Thread(target=_bg, daemon=True).start()
     return hit[1] if hit else None
 

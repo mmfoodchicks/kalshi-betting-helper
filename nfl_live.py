@@ -22,6 +22,7 @@ import time as _time
 import concurrent.futures as _cf
 
 import racing                       # reuse racing._get_json (ESPN-friendly getter)
+import errlog
 
 _CORE = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
@@ -42,7 +43,8 @@ def _cached(key, ttl, fn):
 def _get(url):
     try:
         return racing._get_json(url, timeout=15)
-    except Exception:
+    except Exception as _e:
+        errlog.note("NFL-espn-fetch", _e, path=url.split("?")[0][-120:])
         return None
 
 

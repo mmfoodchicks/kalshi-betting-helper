@@ -6081,6 +6081,90 @@ ck("40 seeded slates: the DP never loses a state brute force can find",
 
 print()
 print("=" * 72)
+print("The NFL boards are ONE board, whichever worker answers")
+print("=" * 72)
+# The NFL slate and DFS boards kept their finished product in per-worker memory
+# with a background build per worker: three duplicate ~10s builds per board
+# (tripling the Kalshi/Sleeper fetch load) and a browser whose polls flapped
+# between "simulating..." and results depending on which worker answered -- the
+# "testy" NFL tab. Same disease the MLB slate had, cured the same way.
+import boardshare as _bsh2
+import shutil as _bshu
+_bshu.rmtree(_bsh2._DIR, ignore_errors=True)
+_bsh2.put("guard_board", {"games": [1, 2, 3]})
+_gv, _ga = _bsh2.get("guard_board", 300)
+ck("a published board is readable with its age",
+   _gv == {"games": [1, 2, 3]} and _ga is not None and _ga < 5)
+_bsh2.put("guard_stale", {"empty": True}, age=1500)
+_gv2, _ga2 = _bsh2.get("guard_stale", 1800)
+ck("a placeholder can be published ALREADY OLD, so it expires for everyone",
+   _gv2 is not None and 1490 < _ga2 < 1520,
+   "an empty week is cached briefly; backdating the shared copy makes the "
+   "retry clock global instead of per-worker")
+ck("...and reads as expired past its shortened life",
+   _bsh2.get("guard_stale", 900)[0] is None)
+_claims = [_bsh2.claim("guard_claim") for _ in range(4)]
+ck("exactly one worker may claim a board build", _claims.count(True) == 1,
+   "without the O_EXCL claim every cold worker starts its own duplicate build")
+_bsh2.release("guard_claim")
+ck("a released claim can be taken again", _bsh2.claim("guard_claim") is True)
+_bsh2.release("guard_claim")
+_bshu.rmtree(_bsh2._DIR, ignore_errors=True)
+
+import inspect as _insp2
+import nfl_game_sim as _ngs
+import nfl_dfs_sim as _nds
+import kalshi_nfl as _knf
+for _mod, _nm in ((_ngs, "slate"), (_nds, "DFS")):
+    _src = _insp2.getsource(_mod.board)
+    ck(f"the NFL {_nm} board adopts a sibling's build before starting its own",
+       _src.index("boardshare.get") < _src.index("boardshare.claim"),
+       "disk first, claim second: the cheap answer beats the duplicate build")
+    ck(f"...publishes what it builds", "boardshare.put" in _src)
+    ck(f"...and releases its claim on every path",
+       "boardshare.release" in _src.split("finally:")[-1])
+ck("a failed DFS build is cached briefly and recorded, not dropped",
+   "NFLDFS-board-build" in _insp2.getsource(_nds.board)
+   and "empty" in _insp2.getsource(_nds.board),
+   "an exception in the build thread had NO handler: the board stayed "
+   "'simulating...' forever with the reason lost, and every poll spawned "
+   "another doomed build")
+ck("a failed slate build is recorded under its ID",
+   "NFLG-board-build" in _insp2.getsource(_ngs.board))
+_ksrc = _insp2.getsource(_knf.index)
+ck("the NFL Kalshi index treats an EMPTY build as a failure",
+   "if built:" in _ksrc and "elif not _cache" in _ksrc.replace('["data"]', ""),
+   "a throttled window returns no markets rather than an error; caching that "
+   "as good un-prices the whole board -- and the preseason board is ANCHORED "
+   "to this ladder, so it changes the projections too")
+ck("...with a shared last-good fallback up to 45 minutes old",
+   "boardshare.get" in _ksrc and "_IDX_STALE_MAX" in _ksrc
+   and _knf._IDX_STALE_MAX == 45 * 60)
+ck("NFL feed failures land in the ledger with stable IDs",
+   all(x in open(_os.path.join(_root, f)).read() for f, x in
+       (("nfl_live.py", "NFL-espn-fetch"),
+        ("kalshi_nfl.py", "KNFL-markets-fetch"),
+        ("nfl_dfs_sim.py", "NFLDFS-sleeper-fetch"),
+        ("nfl_dfs_sim.py", "NFLDFS-rosters"))),
+   "an empty NFL board should say WHICH feed failed, not just look dead")
+
+# One preseason flag, three checkboxes. Each kept its own copy wired its own
+# way; toggling one moved at most one sibling and the DFS box never followed.
+_appjs2 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the preseason flag changes in exactly one place",
+   _appjs2.count("setNflPreseason(") >= 4
+   and "function setNflPreseason" in _appjs2,
+   "three checkboxes, one variable: every change listener reports to the "
+   "same setter")
+ck("every preseason checkbox is re-synced from the shared flag",
+   all(f'"{i}"' in _appjs2.split("function syncNflPreBoxes")[1][:220]
+       for i in ("nflPre", "nflSimPre", "dfsNflPre")))
+ck("no checkbox writes the flag directly any more",
+   "nflPreseason = pre.checked" not in _appjs2
+   and "nflPreseason = cb.checked" not in _appjs2)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

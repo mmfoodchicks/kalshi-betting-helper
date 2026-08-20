@@ -3015,6 +3015,30 @@ let nflPreseason = (() => {
   return m === 8 || (m === 7 && new Date().getDate() >= 25);
 })();
 function nflPreQuery() { return nflPreseason ? "&preseason=1" : "&preseason=0"; }
+// THE one place the flag changes. Three checkboxes show it (week board, sim
+// board, DFS builder) and they used to each keep their own copy wired their own
+// way: toggling one moved at most one sibling, and the DFS box never followed
+// at all -- so the tab could be simulating exhibitions while the lineup builder
+// quietly built a regular-season slate. Every box now reports here, and every
+// box is re-synced from the single variable.
+function setNflPreseason(v) {
+  v = !!v;
+  if (v === nflPreseason) { syncNflPreBoxes(); return; }
+  nflPreseason = v;
+  syncNflPreBoxes();
+  _nflWeekData = null;
+  if (typeof _nflSimData !== "undefined") _nflSimData = null;
+  const wkBox = $("nflWeekResults"), simBox = $("nflSimResults");
+  if (wkBox) { wkBox.dataset.loaded = "1"; loadNFLWeek(0); }
+  if (simBox) { simBox.dataset.loaded = "1"; loadNFLSim(0); }
+  renderNFLComboMaker();
+}
+function syncNflPreBoxes() {
+  for (const id of ["nflPre", "nflSimPre", "dfsNflPre"]) {
+    const cb = $(id);
+    if (cb) cb.checked = nflPreseason;
+  }
+}
 function initNFLWeek() {
   const sel = $("nflWeek");
   if (sel && !sel.dataset.filled) {
@@ -3032,15 +3056,9 @@ function initNFLWeek() {
   const pre = $("nflPre");
   if (pre && !pre.dataset.wired) {
     pre.dataset.wired = "1";
-    pre.checked = nflPreseason;
-    pre.addEventListener("change", () => {
-      nflPreseason = pre.checked;
-      _nflWeekData = null;
-      $("nflWeekResults").dataset.loaded = "1";
-      loadNFLWeek(0);
-      renderNFLComboMaker();
-    });
+    pre.addEventListener("change", () => setNflPreseason(pre.checked));
   }
+  if (pre) pre.checked = nflPreseason;   // re-sync on every init, not just once
   if (!$("nflWeekResults").dataset.loaded) { $("nflWeekResults").dataset.loaded = "1"; loadNFLWeek(0); }
   renderNFLComboMaker();
 }
@@ -3409,15 +3427,7 @@ function initNFLSim() {
   const pre = $("nflSimPre");
   if (pre && !pre.dataset.wired) {
     pre.dataset.wired = "1";
-    pre.addEventListener("change", () => {
-      nflPreseason = pre.checked;
-      const wk = $("nflPre"); if (wk) wk.checked = pre.checked;
-      _nflSimData = null; _nflWeekData = null;
-      $("nflSimResults").dataset.loaded = "1";
-      $("nflWeekResults").dataset.loaded = "";
-      loadNFLSim(0);
-      renderNFLComboMaker();
-    });
+    pre.addEventListener("change", () => setNflPreseason(pre.checked));
   }
   if (pre) pre.checked = nflPreseason;
   if (_nflSimData) { renderNFLSim(); return; }
@@ -3431,7 +3441,7 @@ async function loadNFLSim(attempt) {
     const d = await (await fetch(`/api/nfl/sim?week=${wk}${nflPreQuery()}`)).json();
     if (d.error || !(d.games && d.games.length)) {
       if (attempt < 9) { setTimeout(() => loadNFLSim(attempt + 1), 6000); return; }
-      box.innerHTML = `<div class="empty">${d.error || "No sim available."}</div>`;
+      box.innerHTML = `<div class="empty">${d.error || d.note || "No sim available."}</div>`;
       return;
     }
     _nflSimData = d;
@@ -4768,7 +4778,11 @@ async function initSim() {
     if (preLbl) {
       preLbl.classList.toggle("hidden", !isNfl);
       const cb = $("dfsNflPre");
-      if (cb && !cb.dataset.wired) { cb.dataset.wired = "1"; cb.checked = nflPreseason; }
+      if (cb && !cb.dataset.wired) {
+        cb.dataset.wired = "1";
+        cb.addEventListener("change", () => setNflPreseason(cb.checked));
+      }
+      if (cb) cb.checked = nflPreseason;   // follow the shared flag on re-init
     }
     // Showdown vs Classic. Left on auto by default because the CSV already says
     // which it is - a showdown export lists every player twice, once as CPT.
