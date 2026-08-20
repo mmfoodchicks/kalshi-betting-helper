@@ -2616,10 +2616,38 @@ def _sim_disk_get(pk):
         return None
 
 
+# The last sim-cache write failure, for the warm bar to surface. A cache that
+# cannot write is slow, never broken -- but SILENTLY slow is how a full data
+# disk read as "0/9 warming up" for an hour: every sim completed, landed
+# nowhere, and the count (derived from the disk) never moved.
+_SIM_DISK_ERR = {"ts": 0.0, "msg": None}
+
+
+def sim_disk_health():
+    """The last cache-write error if it is recent, else None."""
+    if _SIM_DISK_ERR["msg"] and _time.time() - _SIM_DISK_ERR["ts"] < 1800:
+        return _SIM_DISK_ERR["msg"]
+    return None
+
+
+def _sim_disk_prune(max_age):
+    """Drop cached sims older than max_age. Expired files are pure dead weight,
+    and on a small data disk they are the first thing to shed when a write
+    fails for space."""
+    cutoff = _time.time() - max_age
+    for name in _os.listdir(_SIM_DISK):
+        path = _os.path.join(_SIM_DISK, name)
+        try:
+            if _os.stat(path).st_mtime < cutoff:
+                _os.remove(path)
+        except OSError:
+            pass
+
+
 def _sim_disk_put(pk, val):
     """Publish a simulation for the other workers. Written to a temp file and
     renamed, so a reader never sees a half-written pickle."""
-    try:
+    def _write():
         import pickle
         import tempfile
         _os.makedirs(_SIM_DISK, exist_ok=True)
@@ -2627,16 +2655,28 @@ def _sim_disk_put(pk, val):
         with _os.fdopen(fd, "wb") as fh:
             pickle.dump(val, fh, protocol=pickle.HIGHEST_PROTOCOL)
         _os.replace(tmp, _os.path.join(_SIM_DISK, f"{pk}.pkl"))
+    try:
+        _write()
         # Yesterday's games are never coming back. Drop anything well past its
         # TTL so the cache directory cannot creep across the disk.
-        cutoff = _time.time() - 2 * _GAME_SIM_TTL
-        for name in _os.listdir(_SIM_DISK):
-            path = _os.path.join(_SIM_DISK, name)
-            try:
-                if _os.stat(path).st_mtime < cutoff:
-                    _os.remove(path)
-            except OSError:
-                pass
+        try:
+            _sim_disk_prune(2 * _GAME_SIM_TTL)
+        except Exception:
+            pass
+        _SIM_DISK_ERR["msg"] = None
+    except OSError as e:
+        # Most likely the disk is full. Shed everything already expired and
+        # try once more -- and if it still fails, say so where the warm bar
+        # can see it instead of letting 200 seconds of simulation vanish.
+        try:
+            _sim_disk_prune(_GAME_SIM_TTL)
+            _write()
+            _SIM_DISK_ERR["msg"] = None
+            return
+        except Exception:
+            pass
+        _SIM_DISK_ERR.update(ts=_time.time(),
+                             msg=f"{type(e).__name__}: {e}"[:200])
     except Exception:
         pass                    # a cache that cannot write is slow, never broken
 

@@ -4722,7 +4722,8 @@ ck("the endpoint serves the stale board and says it is refreshing",
 # sleeps, but a 300s cache is shorter than a trip to the exchange, so the
 # process stayed hot while the data went cold.
 ck("the warmer only runs while someone is actually using the app",
-   "_WARM_WINDOW" in _appsrc and "time.time() - seen > _WARM_WINDOW" in _appsrc
+   "_WARM_WINDOW" in _appsrc
+   and "time.time() - (v.get(\"ts\") or 0) <= max(_WARM_WINDOW" in _appsrc
    and "_note_slate_use(date, season)" in _appsrc,
    "rebuilding every 5 minutes around the clock spawns a ~175 MB child forever "
    "on a 512 MB box for nobody's benefit")
@@ -4761,11 +4762,13 @@ ck("the per-game sims the COMBO MAKER needs are warmed too, not just the slate",
    "_warm_game_sims" in _appsrc and "baseball._game_sim(g)" in _appsrc,
    "the board's engine and the maker's engine are different; warming only the "
    "board left the first Build paying minutes of simulation")
-ck("...on every tick, not only when the slate happens to expire",
-   _appsrc.split("_warm_game_sims(date, season)")[0].rstrip().endswith("# refresh left the first Build paying for all of them.")
-   or "Warm the COMBO MAKER's per-game sims on every tick" in _appsrc,
-   "gating the sims behind the slate's refresh means a fresh slate never warms "
-   "them, which is exactly the case where a user opens the app and builds")
+_wtick_src = _insp.getsource(__import__("app")._warm_tick)
+ck("...and the SIMS go first, the board refresh second",
+   _wtick_src.index("_warm_game_sims(") < _wtick_src.index("stale_slate("),
+   "the old order rebuilt the slate before warming, in the same thread; when "
+   "the board build waited on the one-heavy-build gate (the nightly season sim "
+   "can hold it for most of an hour) the sims silently queued behind it and "
+   "the bar froze at 0/N with no explanation")
 # Picking the phone up after a break must not mean a cold board. The activity
 # window meant the warmer had long since stopped, so "open the app" and "wait
 # minutes" were the same event.
@@ -4774,7 +4777,7 @@ ck("the board is kept warm all the time, not only just after someone looks",
    "a 30-minute activity window is exactly as long as a break, so every return "
    "landed on a cold cache")
 ck("with nobody having asked yet, it warms TODAY's board anyway",
-   "d = clock.today_et().isoformat()" in _appsrc and "key = (d, d[:4])" in _appsrc,
+   "return today, today[:4]" in _insp.getsource(__import__("app")._warm_pick_key),
    "after a restart nobody has requested a slate, and that is precisely when "
    "the first person to open the app needs it ready")
 ck("the sim TTL outlives a full warm cycle",
@@ -4794,7 +4797,7 @@ ck("the banner reports real counts and announces when it finishes",
    '"warm": warm' in _appsrc and "all ${d.total} games simulated" in _appjs,
    "a spinner that never resolves is what this replaces")
 ck("warming stops the moment nobody is using the app",
-   'time.time() - _warm_seen["ts"] > _WARM_WINDOW' in
+   "_warm_pick_key() is None" in
    _insp.getsource(__import__("app")._warm_game_sims),
    "simulating a slate forever for an empty browser is pure waste on a box "
    "with one CPU")
@@ -5548,6 +5551,109 @@ ck("background CPU work yields to the web worker",
    and "os.nice(10)" in open(_os.path.join(_root, "deep_season.py")).read(),
    "a nightly run that saturates the CPU for an hour must never outrank the "
    "request that keeps the instance alive")
+
+print()
+print("=" * 72)
+print("The warm bar can tell WORKING from STUCK, whichever worker answers")
+print("=" * 72)
+# "Sitting at 0/9 warming up for a while" had at least four causes that all
+# looked identical: the warmer mid-way through a 200s sim (fine), the warmer
+# queued behind the nightly sim's heavy-build gate (fine, eventually), the
+# warmer dead or erroring every game (not fine), and sims completing but never
+# landing on a full data disk (not fine, and invisible by construction since
+# the count is derived FROM the disk). The status now lives in a shared file
+# every worker can read -- the same cure as the sims, the board and the jobs --
+# and carries the current game, the phase, a heartbeat and the last error.
+import app as _apw
+import json as _json2
+import os as _os2
+import time as _tw
+_apw._warm_json_write(_apw._WARM_STATUS, {})
+_apw._warm_status(phase="sim", date="2099-03-01", at="AAA @ BBB",
+                  warm=3, total=9)
+_wst = _json2.load(open(_apw._WARM_STATUS))
+ck("the warmer's status is readable from ANY worker (it is a file, not memory)",
+   _wst.get("at") == "AAA @ BBB" and _wst.get("phase") == "sim"
+   and _wst.get("warm") == 3 and _tw.time() - _wst.get("ts", 0) < 5,
+   "the old _warm_state dict lived in the warming worker's memory, so the "
+   "worker answering /api/warm reported at=None forever")
+_apw._warm_status(warm=4)
+_wst = _json2.load(open(_apw._WARM_STATUS))
+ck("updates merge rather than replace, and every write beats the heart",
+   _wst.get("warm") == 4 and _wst.get("at") == "AAA @ BBB",
+   "a partial update that dropped `at` would blank the bar mid-sim")
+
+# The date being LOOKED AT reaches the warmer through a file too.
+_tomorrow = (_apw.clock.today_et() + _apw.datetime.timedelta(days=1)).isoformat()
+_apw._warm_json_write(_apw._WARM_VIEWED, {})
+_apw._note_slate_use(_tomorrow, _tomorrow[:4])
+ck("the viewed date reaches the warmer across workers",
+   _apw._warm_pick_key() == (_tomorrow, _tomorrow[:4]),
+   "kept in per-worker memory, a user parked on tomorrow's slate only warmed "
+   "tomorrow on a 1-in-workers coincidence -- everyone else warmed today")
+_apw._warm_json_write(_apw._WARM_VIEWED,
+                      {"date": "2020-01-01", "season": "2020", "ts": _tw.time()})
+_today_k = _apw.clock.today_et().isoformat()
+ck("a picker abandoned on a PAST date falls back to today",
+   _apw._warm_pick_key() == (_today_k, _today_k[:4]),
+   "every game on a past board is Final; warming it is pure waste and the "
+   "build to fetch it is minutes of simulation")
+_apw._warm_json_write(_apw._WARM_VIEWED, {})
+
+# A sim-cache write failure is recorded, not swallowed: this is the "disk
+# full" case where every sim completes, lands nowhere, and 0/N never moves.
+import baseball as _bwd
+_old_simdisk = _bwd._SIM_DISK
+try:
+    _scratchf = _os2.path.join(_apw.os.environ.get("VIGIL_RUN_DIR") or "/tmp",
+                               "vigil-guard-notadir")
+    open(_scratchf, "w").write("x")
+    _bwd._SIM_DISK = _os2.path.join(_scratchf, "gamesim")   # parent is a FILE
+    _bwd._SIM_DISK_ERR.update(ts=0.0, msg=None)
+    _bwd._sim_disk_put(999999, {"sim": 1})
+    ck("a cache write that fails is RECORDED where the bar can see it",
+       _bwd.sim_disk_health() is not None,
+       "silently-slow is how a full 1 GB data disk read as '0/9 warming up'")
+finally:
+    _bwd._SIM_DISK = _old_simdisk
+    try:
+        _os2.remove(_scratchf)
+    except OSError:
+        pass
+_bwd._sim_disk_put(999999, {"sim": 1})
+ck("...and a later successful write clears it",
+   _bwd.sim_disk_health() is None,
+   "a stale error banner outliving the problem teaches the user to ignore it")
+try:
+    _os2.remove(_os2.path.join(_bwd._SIM_DISK, "999999.pkl"))
+except OSError:
+    pass
+ck("on failure it sheds expired sims and retries before giving up",
+   "_sim_disk_prune(_GAME_SIM_TTL)" in _insp.getsource(_bwd._sim_disk_put),
+   "expired files are the first thing to shed when the disk fills")
+ck("the warmer surfaces that health check after every pass",
+   "sim_disk_health" in _insp.getsource(_apw._warm_game_sims))
+
+# /api/warm answers with the SAME fields in both branches, now including the
+# liveness fields, and calls a long-silent warmer what it is.
+_apw._warm_json_write(_apw._WARM_STATUS,
+                      {"ts": _tw.time() - 2000, "phase": "sim"})
+with _apw.app.test_client() as _wc:
+    _wr = _wc.get("/api/warm?date=2099-03-01").get_json()
+_wkeys = {"ready", "slate_ready", "total", "warm", "at", "phase",
+          "always_warm", "stalled", "warm_err", "beat_s", "note"}
+ck("the cold branch carries every field the warm branch does",
+   _wkeys <= set(_wr.keys()), sorted(_wkeys - set(_wr.keys())))
+ck("a warmer silent past any legitimate build is reported as stalled",
+   _wr.get("stalled") is True,
+   "a 200s sim and a 600s board build are silence; 2000s is a dead warmer, "
+   "and the bar now says so instead of freezing at 0/N")
+ck("...and the page says Build still works rather than just looking broken",
+   "Warming looks stuck" in _appjs and "warm_err" in _appjs,
+   "the bar must never present a stall as an outage: builds pay their own "
+   "simulation and succeed")
+_apw._warm_json_write(_apw._WARM_STATUS, {})
+_apw._warm_json_write(_apw._WARM_VIEWED, {})
 
 print()
 print("=" * 72)

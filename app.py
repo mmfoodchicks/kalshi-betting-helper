@@ -14,8 +14,10 @@ This is a decision-support tool. The odds are model estimates, not guarantees.
 
 import os
 import clock
+import datetime
 import hmac
 import hashlib
+import json
 import time
 import threading
 
@@ -196,24 +198,56 @@ def _api_warm():
     warmer is working through, so the page can say so up front."""
     date = request.args.get("date") or clock.today_et().isoformat()
     season = request.args.get("season") or date[:4]
+    # The date being POLLED is the date being LOOKED AT -- tell the warmer, so
+    # a user parked on tomorrow's slate gets tomorrow warmed, not today's.
+    try:
+        _note_slate_use(date, season)
+    except Exception:
+        pass
     try:
         games = baseball.analyze_slate(date, season, cached_only=True)
     except Exception:
         games = None
+
+    # What the warmer says it is doing, readable from EVERY worker. `at` only
+    # counts when the warmer is on this same date; a heartbeat is only "alive"
+    # while it is younger than the longest legitimately silent stretch (a board
+    # build can hold the thread ~600s), and a recent error is worth showing.
+    st = _warm_json_read(_WARM_STATUS)
+    now = time.time()
+    beat_s = round(now - st["ts"], 1) if st.get("ts") else None
+    same_date = st.get("date") == date
+    at = st.get("at") if same_date else None
+    phase = st.get("phase") if same_date else None
+    err = (st.get("err")
+           if st.get("err") and now - (st.get("err_ts") or 0) < 1800 else None)
+    # No status file at all is normal for a young instance (the warmer's first
+    # tick is a minute out) -- only call it stalled once this process is old
+    # enough that a working warmer would certainly have written something.
+    alive = (beat_s < 900 if beat_s is not None
+             else now - _PROC_START < 900)
+
     if games is None:
         # Same shape as the ready branch -- a cold start must not answer with
         # fewer fields than a warm one, or the client special-cases it.
         return jsonify({"ready": False, "slate_ready": False, "total": 0,
-                        "warm": 0, "at": _warm_state.get("at"),
+                        "warm": 0, "at": at, "phase": phase,
                         "always_warm": bool(_WARM_ALWAYS),
+                        "stalled": not alive, "warm_err": err,
+                        "beat_s": beat_s,
                         "note": "building today's board…"})
     todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
     warm = sum(1 for g in todo if baseball._game_sim_cached(g))
-    return jsonify({"ready": bool(todo) and warm >= len(todo),
+    ready = bool(todo) and warm >= len(todo)
+    return jsonify({"ready": ready,
                     "slate_ready": True, "total": len(todo), "warm": warm,
-                    "at": _warm_state.get("at"),
+                    "at": at, "phase": phase,
                     "always_warm": bool(_WARM_ALWAYS),
-                    "note": ("ready" if todo and warm >= len(todo)
+                    # Cold with no live warmer is the state that used to be
+                    # invisible: the count sat at 0/N and nothing said why.
+                    "stalled": (not ready and bool(todo) and not alive),
+                    "warm_err": err, "beat_s": beat_s,
+                    "note": ("ready" if ready
                              else "no games today" if not todo
                              else f"simulating {warm}/{len(todo)} games")})
 
@@ -248,8 +282,34 @@ def _api_diag_slow():
     with _slow_lock:
         rows = list(_slow_recent)
     up = time.time() - _PROC_START
+    # The state of the sim cache and its disk, because "warming stuck at 0/N"
+    # has looked exactly like "the data disk is full" -- sims completing and
+    # landing nowhere. One screenshot of this answers which it is.
+    disk = {}
+    try:
+        import shutil
+        d = getattr(baseball, "_SIM_DISK", None)
+        if d and os.path.isdir(d):
+            u = shutil.disk_usage(d)
+            names = os.listdir(d)
+            newest = max((os.stat(os.path.join(d, n)).st_mtime
+                          for n in names), default=None)
+            disk = {"sim_cache_dir": d,
+                    "disk_free_mb": round(u.free / 1e6, 1),
+                    "disk_total_mb": round(u.total / 1e6, 1),
+                    "sim_files": len(names),
+                    "newest_sim_age_s": (round(time.time() - newest, 1)
+                                         if newest else None)}
+        elif d:
+            disk = {"sim_cache_dir": d, "note": "not created yet"}
+    except Exception as e:
+        disk = {"error": f"{type(e).__name__}: {e}"}
     return jsonify({"worker_timeout_s": _KILL_TIMEOUT, "logged_over_s": _SLOW_LOG_S,
                     "pid": os.getpid(), "owns_background": bool(_BG_OWNER),
+                    "warm_status": _warm_json_read(_WARM_STATUS),
+                    "sim_disk": disk,
+                    "sim_disk_err": getattr(baseball, "sim_disk_health",
+                                            lambda: None)(),
                     "uptime_s": round(up, 1),
                     "uptime_human": (f"{up/3600:.1f}h" if up >= 3600
                                      else f"{up/60:.1f}m" if up >= 60 else f"{up:.0f}s"),
@@ -482,13 +542,84 @@ _WARM_WINDOW = int(os.environ.get("VIGIL_WARM_WINDOW") or 1800)   # 0 disables
 # the only real cost is CPU it would otherwise spend idling, and games that have
 # finished are skipped, so an empty overnight slate costs nothing.
 _WARM_ALWAYS = (os.environ.get("VIGIL_WARM_ALWAYS") or "1") != "0"
-_warm_seen = {"ts": 0.0, "key": None}
-_warm_state = {"total": 0, "warm": 0, "at": None, "checked": 0.0}
+
+# EVERYTHING THE WARMER REPORTS LIVES ON DISK, like everything else that has to
+# cross workers. The status used to sit in each worker's memory, so the worker
+# doing the warming knew which game it was on and whether anything had failed --
+# and the worker answering /api/warm knew none of it. The bar showed a count
+# (disk-derived, honest) and nothing else, and when warming stalled the count
+# just sat there with no way to tell "still simulating game one" from "the
+# warmer died an hour ago". Same fix as the sims, the board and the jobs:
+# publish it where every worker can read it. /tmp deliberately -- it is shared
+# by the workers, wiped with the instance, and immune to the data disk filling.
+_WARM_STATUS = os.path.join(os.environ.get("VIGIL_RUN_DIR") or "/tmp",
+                            "vigil-warm-status.json")
+_WARM_VIEWED = os.path.join(os.environ.get("VIGIL_RUN_DIR") or "/tmp",
+                            "vigil-warm-viewed.json")
+
+
+def _warm_json_read(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh) or {}
+    except Exception:
+        return {}
+
+
+def _warm_json_write(path, data):
+    try:
+        import tempfile
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path) or ".",
+                                   suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(data, fh)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
+def _warm_status(**kw):
+    """Merge-update the shared warm status. Every write refreshes the heartbeat,
+    so 'how stale is ts' answers 'is the warmer alive'."""
+    st = _warm_json_read(_WARM_STATUS)
+    st.update(kw)
+    st["ts"] = time.time()
+    st["pid"] = os.getpid()
+    _warm_json_write(_WARM_STATUS, st)
 
 
 def _note_slate_use(date, season):
-    _warm_seen["ts"] = time.time()
-    _warm_seen["key"] = (date, season)
+    """Record which board is being LOOKED AT, for the warmer to follow.
+
+    On disk, not in memory: the request lands on whichever worker gunicorn
+    picks, and the warmer runs in exactly one. Kept in memory this only ever
+    reached the warmer on a ~1-in-workers coincidence -- a user watching
+    tomorrow's slate was warming today's."""
+    v = _warm_json_read(_WARM_VIEWED)
+    if v.get("date") == date and time.time() - (v.get("ts") or 0) < 120:
+        return                      # polled every 5s; don't rewrite a fresh note
+    _warm_json_write(_WARM_VIEWED, {"date": date, "season": str(season),
+                                    "ts": time.time()})
+
+
+def _warm_pick_key():
+    """(date, season) the warmer should work on, or None to idle.
+
+    The board someone is viewing wins while the note is fresh; always-warm
+    falls back to today so the first visitor finds it ready. Only today or the
+    near future is honoured -- a stale picker left on last week warms nothing
+    (every game is Final) but would still pay to build that dead board."""
+    v = _warm_json_read(_WARM_VIEWED)
+    today = clock.today_et().isoformat()
+    horizon = (clock.today_et() + datetime.timedelta(days=7)).isoformat()
+    fresh = v and time.time() - (v.get("ts") or 0) <= max(_WARM_WINDOW, 1800)
+    if fresh and today <= (v.get("date") or "") <= horizon:
+        return v["date"], (v.get("season") or v["date"][:4])
+    if _WARM_ALWAYS:
+        return today, today[:4]
+    if fresh:                       # window mode: recent look at today
+        return today, today[:4]
+    return None                     # window mode, nobody's looking
 
 
 def _warm_game_sims(date, season):
@@ -508,30 +639,83 @@ def _warm_game_sims(date, season):
     cached and the answer is about a second.
 
     Deliberately serial and unhurried: one game at a time, checking between each
-    that somebody is still using the app."""
+    that somebody is still using the app. Returns True when a board existed to
+    warm from, so the caller knows a build would help."""
     try:
-        games = baseball.analyze_slate(date, season, cached_only=True) or []
+        games = baseball.analyze_slate(date, season, cached_only=True)
     except Exception:
-        return
+        games = None
+    if games is None:
+        return False
     todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
-    _warm_state["total"] = len(todo)
-    _warm_state["warm"] = sum(1 for g in todo if baseball._game_sim_cached(g))
-    _warm_state["checked"] = time.time()
+    warm = sum(1 for g in todo if baseball._game_sim_cached(g))
+    _warm_status(phase="sim", date=date, total=len(todo), warm=warm, at=None)
     for g in todo:
-        if not _WARM_ALWAYS and time.time() - _warm_seen["ts"] > _WARM_WINDOW:
-            _warm_state["at"] = None
-            return                      # nobody's looking any more
+        if not _WARM_ALWAYS and _warm_pick_key() is None:
+            _warm_status(phase="idle", at=None)
+            return True                 # nobody's looking any more
         try:
             if baseball._game_sim_cached(g):
                 continue
-            _warm_state["at"] = g.get("matchup") or g.get("game_pk")
+            _warm_status(phase="sim", at=g.get("matchup") or g.get("game_pk"))
             baseball._game_sim(g)       # the expensive bit, done off the click
-            _warm_state["warm"] = sum(1 for x in todo
-                                      if baseball._game_sim_cached(x))
-            _warm_state["checked"] = time.time()
-        except Exception:
+            warm = sum(1 for x in todo if baseball._game_sim_cached(x))
+            _warm_status(phase="sim", warm=warm, at=None)
+        except Exception as e:
+            # The old bare `continue` is how a warmer that failed every game
+            # looked exactly like one that was working: 0/9 forever with the
+            # errors thrown away. Still continue -- one broken game must not
+            # strand the other eight -- but the LAST error travels to the bar.
+            _warm_status(err=f"{g.get('matchup') or g.get('game_pk')}: "
+                             f"{type(e).__name__}: {e}"[:300],
+                         err_ts=time.time())
             continue
-    _warm_state["at"] = None
+    # Sim writes that failed (a full data disk, most likely) surface the same
+    # way; without this the sims complete, land nowhere, and the count reads 0.
+    dh = getattr(baseball, "sim_disk_health", lambda: None)()
+    if dh:
+        _warm_status(err=f"sim cache write failed: {dh}"[:300],
+                     err_ts=time.time())
+    _warm_status(phase="idle", at=None)
+    return True
+
+
+def _warm_tick():
+    """One pass of the warmer: sims first, board freshness second.
+
+    The old order rebuilt the slate before warming, in the same thread -- so
+    whenever the board build ran long (it waits on the one-heavy-build gate,
+    which the nightly season sim can hold for the better part of an hour) the
+    expensive game sims silently queued behind it and the bar froze at 0/N
+    with no explanation. Sims need only SOME board naming today's games, not a
+    fresh one, so they go first; the rebuild still happens, labelled, after."""
+    key = _warm_pick_key()
+    if key is None:
+        return                        # window mode and nobody's looking
+    date, season = key
+    warmed = _warm_game_sims(date, season)
+    _, age = baseball.stale_slate(date, season, max_age=None)
+    # Rebuild just BEFORE it expires, so a user who returns at any moment
+    # finds a board that is fresh rather than one that is merely recent.
+    if age is None or age >= baseball._SLATE_TTL - 90:
+        _warm_status(phase="board", date=date, at=None)
+        kicked = False
+        with _slate_lock:
+            if key not in _slate_inflight:
+                _slate_inflight.add(key)
+                kicked = True
+        if kicked:
+            try:
+                baseball.analyze_slate(date, season)
+            except Exception as e:
+                _warm_status(err=f"board build: {type(e).__name__}: {e}"[:300],
+                             err_ts=time.time())
+            finally:
+                with _slate_lock:
+                    _slate_inflight.discard(key)
+        if not warmed:                # cold boot: board just arrived, use it
+            _warm_game_sims(date, season)
+    _warm_status(phase="idle", at=None)
 
 
 def _start_slate_warmer():
@@ -542,39 +726,16 @@ def _start_slate_warmer():
         while True:
             time.sleep(60)
             try:
-                key, seen = _warm_seen["key"], _warm_seen["ts"]
-                if not key or (not _WARM_ALWAYS
-                               and time.time() - seen > _WARM_WINDOW):
-                    if not _WARM_ALWAYS:
-                        continue      # nobody's looking; let the box idle
-                    # Nobody has asked yet since boot -- warm TODAY's board so
-                    # the first person to open the app finds it ready.
-                    d = clock.today_et().isoformat()
-                    key = (d, d[:4])
-                date, season = key
-                _, age = baseball.stale_slate(date, season, max_age=None)
-                # Rebuild just BEFORE it expires, so a user who returns at any
-                # moment finds a board that is fresh rather than one that is
-                # merely recent.
-                if age is None or age >= baseball._SLATE_TTL - 90:
-                    kicked = False
-                    with _slate_lock:
-                        if key not in _slate_inflight:
-                            _slate_inflight.add(key)
-                            kicked = True
-                    if kicked:
-                        try:
-                            baseball.analyze_slate(date, season)
-                        finally:
-                            with _slate_lock:
-                                _slate_inflight.discard(key)
-                # Warm the COMBO MAKER's per-game sims on every tick, not only
-                # after a slate rebuild. They are the expensive thing and they
-                # expire on their own schedule; gating them behind the slate's
-                # refresh left the first Build paying for all of them.
-                _warm_game_sims(date, season)
-            except Exception:
-                pass                  # a warmer must never take the app down
+                _warm_tick()
+            except Exception as e:
+                # A warmer must never take the app down -- but a warmer that
+                # dies every tick must not be indistinguishable from one that
+                # is working. Record, then keep going.
+                try:
+                    _warm_status(err=f"tick: {type(e).__name__}: {e}"[:300],
+                                 err_ts=time.time())
+                except Exception:
+                    pass
 
     threading.Thread(target=_loop, daemon=True).start()
 

@@ -5824,13 +5824,25 @@ async function pollWarm() {
     bar.classList.remove("hidden");
     bar.className = "warmbar";
     const pct = d.total ? Math.round(100 * d.warm / d.total) : 0;
-    const at = d.at ? ` <span class="warmat">${escapeHtml(String(d.at))}</span>` : "";
+    // What the warmer is on RIGHT NOW -- a matchup while simulating, or the
+    // board rebuild -- so a slow stretch reads as progress, not a freeze.
+    const doing = d.at ? `simulating ${escapeHtml(String(d.at))}`
+      : d.phase === "board" ? "refreshing the board" : "";
+    const at = doing ? ` <span class="warmat">${doing}</span>` : "";
+    // Two states that used to be indistinguishable from "working": the warmer
+    // hasn't been heard from in a long time, and warming is erroring out.
+    let extra = "";
+    if (d.stalled) {
+      extra = `<div class="warmnote">⚠️ Warming looks stuck — Build still works, the first one just pays for its own simulation.</div>`;
+    } else if (d.warm_err) {
+      extra = `<div class="warmnote">⚠️ last warm error: ${escapeHtml(String(d.warm_err))}</div>`;
+    }
     bar.innerHTML = `<div class="warmrow"><b>⏳ Warming up</b>
         <span>${d.warm}/${d.total} games ready${at}</span></div>
       <div class="warmtrack"><div class="warmfill" style="width:${pct}%"></div></div>
       <div class="warmnote">${d.slate_ready
         ? "You can build now, but it'll be quicker once this finishes."
-        : "Building today's board…"}</div>`;
+        : "Building today's board…"}</div>${extra}`;
   } catch (e) { /* offline - say nothing rather than something wrong */ }
 }
 setInterval(() => { if (!document.hidden) pollWarm(); }, 5000);
