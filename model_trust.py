@@ -26,6 +26,7 @@ market-leaning: an unvalidated model should not be fading a liquid price.
 import time
 
 import deep_cache
+import errlog
 
 _KEY = "model_trust"
 # The docstring above says the no-measurement default is "deliberately
@@ -112,8 +113,8 @@ def refresh(sports=("ufc", "nhl", "nba", "mlb", "nfl"), quick=True):
                                      r.get("bouts_scored", 0), "ufc_backtest",
                                      {"model_logloss": (r.get("model") or {}).get("logloss"),
                                       "market_logloss": (r.get("market") or {}).get("logloss")})
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("MT-refresh", _e)
     import team_backtest
     for lg in [s for s in sports if s in team_backtest.LEAGUES]:
         try:

@@ -22,6 +22,7 @@ import kalshi
 import value
 import baseball
 import store
+import errlog
 
 SAMPLE_INTERVAL = 600  # seconds (props drift slowly; no need to hammer the APIs)
 
@@ -94,8 +95,8 @@ def record_once():
                                    ("hit3", ("hits", 3)), ("hr1", ("hr", 1))):
                         if b.get(mk) is not None:
                             d[sl] = b[mk]
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("MREC-record_once", _e)
 
     forms, n = {}, 0
     for m in prices:
@@ -128,8 +129,8 @@ def _final_pks(date):
         d0 = datetime.date.fromisoformat(date)
         for off in (1, -1):
             pks |= set(baseball._final_winners((d0 + datetime.timedelta(days=off)).isoformat()).keys())
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("MREC-final_pks", _e)
     return pks
 
 
@@ -195,8 +196,8 @@ def _loop():
         try:
             record_once()
             grade_due()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("MREC-loop", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

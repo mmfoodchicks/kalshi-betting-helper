@@ -16,6 +16,7 @@ return an empty list and the UI says so.
 
 import json
 import random
+import errlog
 import time
 import urllib.request
 import urllib.parse
@@ -76,6 +77,9 @@ def _get_json(url, timeout=10):
             if attempt == 2:
                 raise
             time.sleep(0.5 * (attempt + 1))
+    # All three attempts spent. Callers have their own fallbacks, but the
+    # ledger should show a throttling storm as itself, not as its symptoms.
+    errlog.note("KAL-fetch", last, path=url.split("?")[0][-120:])
     raise last
 
 

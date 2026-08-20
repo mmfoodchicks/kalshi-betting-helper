@@ -24,6 +24,7 @@ import racing
 import tennis_data as td
 import tennis_elo
 import tennis_sim as ts
+import errlog
 
 _ELO_MIN = 8              # min settled matches before an Elo-only read is trusted
 # How hard the model defers to a liquid market, by source. Charting is reliable
@@ -669,8 +670,8 @@ def _build_match(tour_label, ev, players, n_sims, fatigue_idx=None, tcode="m",
             p["fair_win"] = cal
             if p.get("edge") is not None and p.get("cents") is not None:
                 p["edge"] = round(cal - p["cents"], 1)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("TP-build_match", _e)
 
     # Confidence tier (how much backs the read) so the user knows what to trust.
     # serve charting -> high/medium/thin; Elo-only -> "elo"; nothing -> "market".

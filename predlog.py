@@ -21,6 +21,7 @@ import os
 import sqlite3
 import threading
 import time
+import errlog
 
 _DB = os.environ.get("PREDLOG_DB") or os.path.join(os.path.dirname(__file__), "predlog.db")
 _lock = threading.Lock()
@@ -58,8 +59,8 @@ def init_db():
         if "mkt" not in cols:
             try:                   # several workers migrate at once on boot
                 c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
-            except Exception:
-                pass               # a sibling worker just added it
+            except Exception as _e:
+                errlog.note("PRED-init_db", _e)  # a sibling worker just added it
         # Repair: NFL exhibitions logged before the nfl_pre split carried
         # model='nfl', and first-write-wins means the corrected router could
         # never re-file them — so August games would grade into the REGULAR
@@ -334,12 +335,12 @@ def _loop(interval):
     while True:
         try:
             harvest()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("PRED-loop", _e)
         try:
             resolve_due()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("PRED-loop-2", _e)
         time.sleep(interval)
 
 

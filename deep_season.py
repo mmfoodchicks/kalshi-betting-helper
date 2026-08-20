@@ -24,6 +24,7 @@ from collections import defaultdict
 import deep_data
 import deep_sim
 import season_sim
+import errlog
 
 # Postseason series lengths (wins needed): WC bo3, DS bo5, LCS/WS bo7.
 _WC, _DS, _LCS, _WS = 2, 3, 4, 4
@@ -313,8 +314,8 @@ def _init_worker(shared):
     # means the run actually finishes.
     try:
         os.nice(10)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DS-init_worker", _e)
     _G.update(shared)
     _G["po_rot"] = _build_po_rot(_G["profiles"])
 
@@ -559,8 +560,8 @@ def _prog_flush(final=False):
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(PROGRESS, fh)
         os.replace(tmp, _PROG_DISK)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DS-prog_flush", _e)
 
 
 def progress_read():
@@ -576,8 +577,8 @@ def progress_read():
                 disk = json.load(fh) or {}
             if disk.get("running"):
                 return disk
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DS-progress_read", _e)
     return dict(PROGRESS)
 
 

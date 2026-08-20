@@ -24,6 +24,7 @@ from math import comb
 
 import baseball
 import kalshi
+import errlog
 
 # Kalshi futures series. Winner-style series have one YES market per team
 # (ticker ...-{ABBR}); we map each to one of our simulated probabilities.
@@ -375,8 +376,8 @@ def simulate(season=None, n=4000):
     abbr = {}
     try:
         abbr = baseball._abbr_map(season)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("SS-simulate", _e)
     tids = list(stand.keys())
     leagues = defaultdict(list)
     divisions = defaultdict(list)
@@ -530,8 +531,8 @@ def _winner_markets(series):
             if m.get("yes_ask") is None:
                 continue
             out.append((m["ticker"].rsplit("-", 1)[-1], m))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("SS-winner_markets", _e)
     return out
 
 
@@ -749,8 +750,8 @@ def deep_board(agg, season=None):
     abbr = {}
     try:
         abbr = baseball._abbr_map(season)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("SS-deep_board", _e)
     # The deep run freezes each team's W-L at run time; overlay TODAY's standings so
     # the record shown is current (the sim can be up to a day old between reruns).
     cur = {}

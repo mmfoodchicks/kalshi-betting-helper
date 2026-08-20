@@ -14,6 +14,7 @@ import os
 import sqlite3
 import time
 import threading
+import errlog
 
 DB_PATH = os.environ.get("KALSHI_DB", os.path.join(os.path.dirname(__file__), "markets.db"))
 
@@ -73,8 +74,8 @@ def init_db():
                 # with "duplicate column name" and the boot loops.
                 try:
                     c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
-                except Exception:
-                    pass               # a sibling worker just added it
+                except Exception as _e:
+                    errlog.note("DB-init_db", _e)  # a sibling worker just added it
 
         # Model's MLB picks, recorded pre-game and graded after finals.
         c.execute("""
@@ -96,8 +97,8 @@ def init_db():
             if col not in mcols:
                 try:               # same boot race as the markets migration
                     c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
-                except Exception:
-                    pass           # a sibling worker just added it
+                except Exception as _e:
+                    errlog.note("DB-init_db-2", _e)  # a sibling worker just added it
 
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,
@@ -118,6 +119,7 @@ def init_db():
         # Additive migration: entry-time snapshot for closing-line-value (CLV).
         # log_prop refreshes price/model in place while ungraded, so without
         # these the entry read is lost by grading time.
+        pcols = {r["name"] for r in c.execute("PRAGMA table_info(prop_log)")}
         for col in ("entry_cents REAL", "entry_model_pct REAL", "entry_ts INTEGER",
                     # Which generation of the run model produced model_pct. A
                     # calibration is a correction for a SPECIFIC model's errors;
@@ -130,10 +132,16 @@ def init_db():
                     # Stamping the version lets the fitter use only rows its own
                     # model produced. Rows predating this column read as version 0.
                     "model_version INTEGER"):
-            try:
-                c.execute(f"ALTER TABLE prop_log ADD COLUMN {col}")
-            except Exception:
-                pass                       # column already exists
+            # The PRAGMA check keeps the routine already-migrated boot silent;
+            # the try keeps a sibling worker winning the race from crashing us.
+            # Without the check this ALTERed unconditionally and logged a
+            # "duplicate column" error on EVERY boot -- noise that trains the
+            # reader to ignore the ledger.
+            if col.split()[0] not in pcols:
+                try:
+                    c.execute(f"ALTER TABLE prop_log ADD COLUMN {col}")
+                except Exception as _e:
+                    errlog.note("DB-init_db-3", _e)
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""

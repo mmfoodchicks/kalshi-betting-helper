@@ -37,6 +37,7 @@ import weather as weather_mod
 import stadiums as stadiums_mod
 import props as props_mod
 import mlb_form
+import errlog
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 
@@ -191,8 +192,8 @@ def _slate_game(game_pk):
         for g in analyze_slate(date, date[:4]):
             if g.get("game_pk") == game_pk:
                 return g
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-slate_game", _e)
     return None
 
 
@@ -1494,8 +1495,8 @@ def _deep_wp_weight():
                     best = (b, cand)
             fit = best[1]
             w = (n * fit + _DEEP_W_SHRINK_N * _DEEP_WP_WEIGHT) / (n + _DEEP_W_SHRINK_N)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-deep_wp_weight", _e)
     _DEEP_W_CACHE.update(t=_t.time(), w=w, n=n, fit=fit)
     return w
 
@@ -1665,8 +1666,10 @@ def _analyze_slate_isolated(date, season):
             timeout=_SLATE_BUILD_TIMEOUT)
         if out.returncode == 0 and out.stdout:
             return pickle.loads(out.stdout)
-    except Exception:
-        pass
+        errlog.note("SLATE-child", msg=f"build child exited rc={out.returncode}"
+                    f" with {len(out.stdout or b'')} bytes; building in-process")
+    except Exception as _e:
+        errlog.note("SLATE-child", _e)
     return _analyze_slate_uncached(date, season)
 
 
@@ -1880,8 +1883,8 @@ def _analyze_slate_uncached(date, season):
                 lgr = umpires.meta().get("lg_r_per_game")
                 if rb is not None and lgr:
                     umpr = -rb / lgr
-            except Exception:
-                pass
+            except Exception as _e:
+                errlog.note("BB-analyze_slate_uncached", _e)
             umpf = max(0.90, min(1.10, 1.0 - umpr * ump_bias))
             er_home *= umpf
             er_away *= umpf
@@ -2235,8 +2238,8 @@ def _analyze_slate_uncached(date, season):
         try:
             predlog_mod.init_db()
             predlog_mod.log_many("mlb", _predlog_rows)
-        except Exception:
-            pass          # a logging hiccup must never cost the user his slate
+        except Exception as _e:
+            errlog.note("BB-analyze_slate_uncached-2", _e)  # a logging hiccup must never cost the user his slate
     _attach_sim_ks(games)
     games.sort(key=lambda x: x["pick_prob"], reverse=True)
     return games
@@ -2375,8 +2378,8 @@ def _log_prop_predictions(g, cands):
         for model in {r[0] for r in rows}:
             predlog_mod.log_many(model, [(r[1], r[2], r[3], r[4])
                                          for r in rows if r[0] == model])
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-log_prop_predictions", _e)
 
 
 # A cache whose TTL is SHORTER THAN THE TIME IT TAKES TO FILL cannot ever be
@@ -2435,8 +2438,8 @@ def _job_write(token, data):
         with _os.fdopen(fd, "w") as fh:
             json.dump(data, fh)
         _os.replace(tmp, _job_path(token))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-job_write", _e)
 
 
 def job_claim(token):
@@ -2464,8 +2467,8 @@ def job_claim(token):
             p = _os.path.join(_JOB_DIR, name)
             if _os.stat(p).st_mtime < cutoff:
                 _os.remove(p)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-job_claim", _e)
     return True
 
 
@@ -2496,8 +2499,8 @@ def job_finish(token, status, result=None, error=None):
 def job_drop(token):
     try:
         _os.remove(_job_path(token))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-job_drop", _e)
 
 
 def progress_start(token, total, phase="simulating games"):
@@ -2661,8 +2664,8 @@ def _sim_disk_put(pk, val):
         # TTL so the cache directory cannot creep across the disk.
         try:
             _sim_disk_prune(2 * _GAME_SIM_TTL)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("BB-sim_disk_put", _e)
         _SIM_DISK_ERR["msg"] = None
     except OSError as e:
         # Most likely the disk is full. Shed everything already expired and
@@ -2673,12 +2676,13 @@ def _sim_disk_put(pk, val):
             _write()
             _SIM_DISK_ERR["msg"] = None
             return
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("BB-sim_disk_put-2", _e)
         _SIM_DISK_ERR.update(ts=_time.time(),
                              msg=f"{type(e).__name__}: {e}"[:200])
-    except Exception:
-        pass                    # a cache that cannot write is slow, never broken
+        errlog.note("SIM-disk-write", e)
+    except Exception as _e:
+        errlog.note("BB-sim_disk_put-3", _e)  # a cache that cannot write is slow, never broken
 
 
 # The BOARD needs sharing between workers just like the game sims do. It lived
@@ -2733,8 +2737,8 @@ def _slate_claim(date, season):
 def _slate_release(date, season):
     try:
         _os.remove(_os.path.join(_SLATE_DISK, f"{date}_{season}.lock"))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BB-slate_release", _e)
 
 
 def _slate_disk_put(date, season, out):
@@ -2751,8 +2755,8 @@ def _slate_disk_put(date, season, out):
             fp = _os.path.join(_SLATE_DISK, name)
             if _os.stat(fp).st_mtime < cutoff:
                 _os.remove(fp)
-    except Exception:
-        pass                    # a cache that cannot write is slow, never broken
+    except Exception as _e:
+        errlog.note("BB-slate_disk_put", _e)  # a cache that cannot write is slow, never broken
 
 
 def _game_sim_cached(g):
@@ -2787,8 +2791,8 @@ def _game_sim(g):
         # records each leg once, at the first price we saw it at.
         try:
             _log_prop_predictions(g, cands)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("BB-build", _e)
         return {"sim": sim, "cands": cands}
     if pk is None:
         return build()
@@ -3888,8 +3892,8 @@ def grade_picks():
             d0 = _dt.date.fromisoformat(date)
             for off in (1, -1):
                 results.update(_final_winners((d0 + _dt.timedelta(days=off)).isoformat()))
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("BB-grade_picks", _e)
         for p in ps:
             res = results.get(p["game_pk"])
             if res:

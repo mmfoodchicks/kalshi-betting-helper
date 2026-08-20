@@ -40,6 +40,7 @@ import time
 
 import clock
 import deep_cache
+import errlog
 
 _PREFIX = "mlbhist_"
 _PREV_PROFILES = "mlb_prev_profiles"
@@ -229,8 +230,8 @@ def prune(keep=KEEP_DAYS):
     for d in dates()[keep:]:
         try:
             os.remove(os.path.join(deep_cache.CACHE_DIR, f"{_key(d)}.pkl"))
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("DH-prune", _e)
 
 
 def previous_date(date):
@@ -559,8 +560,8 @@ def build_day(agg, season, cur_profiles, attribute_events=True, log=None):
     # the snapshot it belongs to.
     try:
         deep_cache.save(_PREV_PROFILES, cur_profiles)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DH-build_day", _e)
     return rec
 
 

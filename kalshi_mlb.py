@@ -21,6 +21,7 @@ import time
 import unicodedata
 
 import kalshi
+import errlog
 
 _GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI",
                 "KXMLBEXTRAS")
@@ -255,8 +256,8 @@ def _idx_disk_put(data):
         with os.fdopen(fd, "wb") as fh:
             pickle.dump(data, fh, protocol=pickle.HIGHEST_PROTOCOL)
         os.replace(tmp, os.path.join(_IDX_DISK, "mlb.pkl"))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("KIDX-idx_disk_put", _e)
 
 
 def index():
@@ -277,7 +278,8 @@ def index():
     # else the last good disk copy up to 45 minutes old.
     try:
         built = _build_index()
-    except Exception:
+    except Exception as _e:
+        errlog.note("KIDX-build", _e)
         built = None
     if built:
         _cache["data"], _cache["ts"] = built, now
@@ -285,6 +287,11 @@ def index():
     elif not _cache["data"]:
         _cache["data"] = _idx_disk_get(_IDX_STALE_MAX) or {}
         _cache["ts"] = now
+        if not _cache["data"]:
+            # No fresh build, no memory, no disk young enough: the board will
+            # show "no Kalshi prices" and THIS is why.
+            errlog.note("KIDX-empty",
+                        msg="index build failed with no usable fallback")
     else:
         _cache["ts"] = now      # keep last-good memory; retry after the TTL
     return _cache["data"]

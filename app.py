@@ -30,6 +30,7 @@ import store
 import kalshi
 import baseball
 import tiers
+import errlog
 
 app = Flask(__name__)
 # Respect the X-Forwarded-* headers from the hosting platform's reverse proxy so
@@ -56,6 +57,42 @@ def _asset_version():
 # key types (e.g. integer prop lines alongside string keys).
 app.json.sort_keys = False
 store.init_db()
+
+
+# ---- central error capture --------------------------------------------------
+# The guarded failure points all note() themselves with stable IDs; these two
+# hooks catch what nothing guarded. Together: nothing fails silently anymore.
+@app.errorhandler(Exception)
+def _unhandled(e):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e                          # 404s and friends are not failures
+    code = f"HTTP-{request.endpoint or request.path}"
+    errlog.note(code, e, path=request.path)
+    return jsonify({"error": f"{type(e).__name__}: {e}", "error_id": code}), 500
+
+
+def _thread_hook(args):
+    """Uncaught exception in ANY background thread -- the recorders, the
+    warmer, the scheduler, a build worker. These died in total silence."""
+    try:
+        name = getattr(args.thread, "name", None) or "unnamed"
+        errlog.note(f"THREAD-{name}", args.exc_value)
+    except Exception as e:
+        # Meta-errors can't go to the ledger (that's what just failed), but
+        # they must not vanish either -- stdout reaches the platform's logs.
+        print(f"[errlog] thread hook could not record: {e!r}", flush=True)
+    _orig_thread_hook(args)
+
+
+_orig_thread_hook = threading.excepthook
+if getattr(_orig_thread_hook, "_vigil_hook", False):
+    # This module was RELOADED (tests do; a future dev server might): the
+    # current hook is our own previous incarnation. Chaining to it recurses
+    # forever, so fall back to the interpreter's pristine hook instead.
+    _orig_thread_hook = threading.__excepthook__
+_thread_hook._vigil_hook = True
+threading.excepthook = _thread_hook
 
 
 # ---- one worker owns the background work -----------------------------------
@@ -111,8 +148,8 @@ try:
     import selfupdate
     if _BG_OWNER:
         selfupdate.start()
-except Exception:
-    pass
+except Exception as _e:
+    errlog.note("APP-mod", _e)
 
 # Prediction logger: capture each sim's Kalshi predictions and grade them when the
 # market settles, so tennis/UFC (and more as they're wired) accrue the graded
@@ -121,8 +158,8 @@ try:
     import predlog
     if _BG_OWNER:
         predlog.start()
-except Exception:
-    pass
+except Exception as _e:
+    errlog.note("APP-mod-2", _e)
 
 
 @app.after_request
@@ -202,8 +239,8 @@ def _api_warm():
     # a user parked on tomorrow's slate gets tomorrow warmed, not today's.
     try:
         _note_slate_use(date, season)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_warm", _e)
     try:
         games = baseball.analyze_slate(date, season, cached_only=True)
     except Exception:
@@ -306,6 +343,9 @@ def _api_diag_slow():
         disk = {"error": f"{type(e).__name__}: {e}"}
     return jsonify({"worker_timeout_s": _KILL_TIMEOUT, "logged_over_s": _SLOW_LOG_S,
                     "pid": os.getpid(), "owns_background": bool(_BG_OWNER),
+                    # The top of the error ledger, so this one screenshot also
+                    # answers "did anything actually break".
+                    "errors_24h": errlog.summary(hours=24)[:8],
                     "warm_status": _warm_json_read(_WARM_STATUS),
                     "sim_disk": disk,
                     "sim_disk_err": getattr(baseball, "sim_disk_health",
@@ -318,6 +358,50 @@ def _api_diag_slow():
                     # (a deploy), not an app that hung.
                     "recently_restarted": up < 300,
                     "slowest": rows})
+
+
+@app.route("/api/errors")
+def _api_errors():
+    """The error ledger, readable from the phone: per-code rollup plus the
+    newest raw entries. ?hours=24 ?code=SLATE-build ?limit=50 filter it."""
+    hours = request.args.get("hours", type=float) or 24
+    return jsonify({"summary": errlog.summary(hours=hours),
+                    "recent": errlog.recent(
+                        limit=request.args.get("limit", type=int) or 50,
+                        code=request.args.get("code"), hours=hours)})
+
+
+@app.route("/api/errors/export")
+def _api_errors_export():
+    """The whole recent ledger as JSON, for the scheduled GitHub Action to
+    commit under errors/ on the sim-history branch. Same PULL direction as the
+    history snapshot: the app holds no GitHub credentials."""
+    try:
+        return jsonify(errlog.export_bundle(days=7))
+    except Exception as e:
+        return jsonify({"error": f"export failed: {e}"}), 502
+
+
+# Browser-side errors were completely invisible: a JS exception broke a page
+# feature and the server never heard about it. The front end reports its own
+# uncaught errors here (rate-limited client-side, deduped server-side).
+_CLIENT_ERR_MAX = 2000
+
+
+@app.route("/api/errors/client", methods=["POST"])
+def _api_errors_client():
+    try:
+        d = request.get_json(silent=True) or {}
+        code = str(d.get("code") or "JS-error")[:40]
+        if not code.startswith("JS-"):
+            code = "JS-" + code
+        msg = str(d.get("msg") or "")[:_CLIENT_ERR_MAX]
+        src = str(d.get("src") or "")[:300]
+        errlog.note(code, msg=f"{msg} @ {src}" if src else msg,
+                    path=str(d.get("page") or "")[:200])
+    except Exception as e:
+        errlog.note("APP-client-err-intake", e)
+    return jsonify({"ok": True})
 
 
 @app.route("/healthz")
@@ -425,12 +509,24 @@ def _trusted_ip(addr):
     return False
 
 
+# Shared secret for the GitHub Actions workflows (history snapshot, error-log
+# snapshot, sim trigger). The nightly workflow has SENT an X-Sim-Token header
+# since it was written -- but nothing ever CHECKED it, so once APP_PASSWORD was
+# set every workflow fetch got a silent 401 and the snapshots quietly stopped.
+# Set the same value as a Render env var (SIM_TOKEN) and a GitHub Actions
+# secret (SIM_TOKEN) and the automation authenticates itself.
+_SIM_TOKEN = os.environ.get("SIM_TOKEN") or ""
+
+
 @app.before_request
 def _auth():
     if not APP_PASSWORD:
         return
     if request.path in ("/healthz", "/robots.txt"):   # platform probes, no creds
         return
+    tok = request.headers.get("X-Sim-Token") or ""
+    if _SIM_TOKEN and tok and hmac.compare_digest(tok, _SIM_TOKEN):
+        return                                        # the workflows' door
     if _trusted_ip(request.remote_addr or ""):
         return
     if _remember_ok(request.cookies.get(_REMEMBER_COOKIE)):
@@ -505,28 +601,28 @@ def _ensure_recorder():
             # the rerun button, the status poll and the board itself land on
             # whichever worker gunicorn picks. Only the RUNNING stays singular.
             _register_deep_sims()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder", _e)
         if not _BG_OWNER:
             return          # a sibling worker owns the recorders and the sims
         try:
             import recorder
             recorder.start_background()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-2", _e)
         try:
             import mlb_recorder
             mlb_recorder.start_background()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-3", _e)
         try:
             _init_deep_sims()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-4", _e)
         try:
             _start_slate_warmer()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-5", _e)
 
 
 # An instance that sees only health probes must STILL run its nightlies. The
@@ -541,11 +637,19 @@ def _bootstrap_unprompted():
     time.sleep(90)                 # well past boot and the first health probes
     try:
         _ensure_recorder()
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-bootstrap_unprompted", _e)
 
 
-threading.Thread(target=_bootstrap_unprompted, daemon=True).start()
+# Only in a real SERVER process. Anything that merely imports app -- the test
+# suites, a one-off script, a REPL -- must not sprout recorders and schedulers
+# ninety seconds in (the guard suite caught exactly that: background threads
+# churning the caches mid-assertion). gunicorn's arbiter stamps SERVER_SOFTWARE
+# into the workers' environment; the dev server still bootstraps on its first
+# real request like always.
+if ("gunicorn" in (os.environ.get("SERVER_SOFTWARE") or "")
+        and (os.environ.get("VIGIL_AUTOBOOT") or "1") != "0"):
+    threading.Thread(target=_bootstrap_unprompted, daemon=True).start()
 
 
 # ---- keeping the board warm while you're actually using it -----------------
@@ -600,8 +704,8 @@ def _warm_json_write(path, data):
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(data, fh)
         os.replace(tmp, path)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-warm_json_write", _e)
 
 
 def _warm_status(**kw):
@@ -695,6 +799,8 @@ def _warm_game_sims(date, season):
             _warm_status(err=f"{g.get('matchup') or g.get('game_pk')}: "
                              f"{type(e).__name__}: {e}"[:300],
                          err_ts=time.time())
+            errlog.note("WARM-game-sim", e,
+                        path=str(g.get("matchup") or g.get("game_pk")))
             continue
     # Sim writes that failed (a full data disk, most likely) surface the same
     # way; without this the sims complete, land nowhere, and the count reads 0.
@@ -736,6 +842,7 @@ def _warm_tick():
             except Exception as e:
                 _warm_status(err=f"board build: {type(e).__name__}: {e}"[:300],
                              err_ts=time.time())
+                errlog.note("WARM-board-build", e)
             finally:
                 with _slate_lock:
                     _slate_inflight.discard(key)
@@ -760,8 +867,8 @@ def _start_slate_warmer():
                 try:
                     _warm_status(err=f"tick: {type(e).__name__}: {e}"[:300],
                                  err_ts=time.time())
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("APP-loop", _e)
 
     threading.Thread(target=_loop, daemon=True).start()
 
@@ -818,16 +925,16 @@ def _register_deep_sims():
         try:
             import deep_history
             deep_history.build_day(agg, season, profs)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-run_mlb", _e)
         # Futures snapshot + market-coherence flags: write down what the model
         # AND both venues said tonight, so October grades against a record
         # instead of a memory. Same best-effort rule.
         try:
             import coherence
             coherence.snapshot(season)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-run_mlb-2", _e)
         # Refresh the umpire zone table off the season's finished games. Same
         # best-effort rule; a stale table is a slightly old tendency, a failed
         # deep run is the night's numbers.
@@ -836,8 +943,8 @@ def _register_deep_sims():
             t = ump_build.build()
             if t:
                 ump_build.save(t)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-run_mlb-3", _e)
         return {"agg": agg, "season": season}
 
     def run_f1():
@@ -919,8 +1026,8 @@ def _init_deep_sims():
         try:
             import deep_history
             deep_history.restore_from_github()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-restore_history", _e)
     threading.Thread(target=_restore_history, daemon=True).start()
     # The scheduler alone decides when heavy work runs, and it runs it one job at
     # a time after a startup grace period. There used to be an eager warm-up loop
@@ -1090,8 +1197,8 @@ def api_list_markets():
                 try:
                     live = kalshi.get_market(m["kalshi_ticker"])
                     item["kalshi_live"] = live
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("APP-api_list_markets", _e)
 
             # Sell guidance for a held position.
             if sig and m.get("position_side") and m.get("entry_cost_cents") is not None:
@@ -1241,8 +1348,8 @@ def api_simulate_game():
         try:
             import mlb_sim
             res["player_sim"] = mlb_sim.summary(mlb_sim.simulate(g, min(8000, n)), g=g)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("APP-api_simulate_game", _e)
     return jsonify(res)
 
 
@@ -1510,8 +1617,8 @@ def api_baseball_today():
             def _bg():
                 try:
                     baseball.analyze_slate(date, season)
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("APP-bg", _e)
                 finally:
                     with _slate_lock:
                         _slate_inflight.discard(key)
@@ -1695,14 +1802,14 @@ def api_sports_live():
                     "score": f"{lv.get('away_runs', 0)}–{lv.get('home_runs', 0)}",
                     "nav": {"tab": "baseball", "pk": g["game_pk"]},
                 })
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_sports_live", _e)
     # Every other tracked team sport, confirmed live from its ESPN scoreboard.
     try:
         import live as _live
         out.extend(_live.confirmed_live())
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_sports_live-2", _e)
     data = {"games": out, "confirmed_count": sum(1 for g in out if g["confirmed"])}
     _live_cache.update(ts=now, data=data)
     return jsonify(data)
@@ -1944,8 +2051,8 @@ def api_baseball_rotations():
     abbr = {}
     try:
         abbr = baseball._abbr_map(str(clock.today_et().year))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_baseball_rotations", _e)
     return jsonify({"days": horizon,
                     "teams": {str(tid): {"abbr": abbr.get(tid), "starts": rows}
                               for tid, rows in proj.items()}})
@@ -2034,8 +2141,8 @@ def api_racing_season(sport):
     try:
         import racing_prices
         racing_prices.attach(data)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_racing_season", _e)
     return jsonify(data)
 
 
@@ -2061,8 +2168,8 @@ def api_pro_league(league):
     try:
         import pro_prices
         pro_prices.attach(league, data)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_pro_league", _e)
     return jsonify(data)
 
 
@@ -2136,8 +2243,8 @@ def api_ufc():
     try:
         import ufc_prices
         ufc_prices.attach(board)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_ufc", _e)
     return jsonify(board)
 
 
@@ -2394,23 +2501,23 @@ def api_tennis():
     try:
         import tennis_live
         board = tennis_live.attach(board)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_tennis", _e)
     # ESPN covers atp and wta only, and ITF is over 90% of this board. The trade
     # tape fills that in -- see tennis_tape -- so an in-progress ITF match is
     # marked live everywhere instead of nowhere.
     try:
         import tennis_tape
         board = tennis_tape.attach(board)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_tennis-2", _e)
     # Alarms and dips run LAST, after both live sources, so a match the tape
     # found is judged the same way as one ESPN found.
     try:
         board = tennis_live.mark_price_upsets(board)
         board = tennis_live.mark_dips(board)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_tennis-3", _e)
     return jsonify(board)
 
 
@@ -2502,8 +2609,8 @@ def api_tennis_parlay():
         out["n_combo_matches"] = b.get("n_combo")
         out["window"] = window
         out["window_counts"] = combine.window_counts(allow_live=_allow_live())
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_tennis_parlay", _e)
     return jsonify(out)
 
 
@@ -3042,6 +3149,7 @@ def api_baseball_mixed():
                 baseball.job_finish(ptok, "done", result=res)
             except Exception as e:
                 print(f"[combo] build failed ({ptok}): {e!r}", flush=True)
+                errlog.note("COMBO-build", e, path=ptok)
                 baseball.job_finish(ptok, "error", error=str(e))
         threading.Thread(target=_bg, daemon=True).start()
         return jsonify({"status": "building", "token": ptok}), 202
@@ -3071,8 +3179,8 @@ def api_baseball_value():
 def api_baseball_record():
     try:
         baseball.grade_picks()
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_baseball_record", _e)
     return jsonify(store.mlb_record())
 
 
@@ -3087,8 +3195,8 @@ def api_baseball_proplog():
         return jsonify({"error": "bad params"}), 400
     try:
         mlb_recorder.grade_due()   # grade any games that just went final
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_baseball_proplog", _e)
     report = store.prop_report(min_edge=edge)
     report["recorder"] = mlb_recorder.status()
     return jsonify(report)
@@ -3104,8 +3212,8 @@ def api_baseball_hits():
         date = clock.today_et().isoformat()
     try:
         mlb_recorder.grade_due()   # grade any games that just went final
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("APP-api_baseball_hits", _e)
     res = store.prop_hit_combos(date=date)
     res["recorder"] = mlb_recorder.status()
     return jsonify(res)

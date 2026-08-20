@@ -84,14 +84,20 @@ jobs:
         id: fetch
         env:
           APP_URL: ${{ vars.APP_URL }}
+          SIM_TOKEN: ${{ secrets.SIM_TOKEN }}
         run: |
           mkdir -p "$HISTORY_DIR"
+          # Authenticate like the trigger step always has. Without this, setting
+          # APP_PASSWORD on the app 401'd this fetch and the snapshots quietly
+          # stopped -- the retry loop read it as "app asleep" five times and gave up.
+          AUTH=()
+          [ -n "$SIM_TOKEN" ] && AUTH=(-H "X-Sim-Token: $SIM_TOKEN")
           # The host sleeps when idle, so the first request may only be waking it.
           # Retry before treating an empty response as "nothing to snapshot".
           ok=0
           for attempt in 1 2 3 4 5; do
             code=$(curl -sS -o /tmp/bundle.json -w '%{http_code}' --max-time 90 \
-                   "$APP_URL/api/baseball/futures/deep/history/export" || echo 000)
+                   "${AUTH[@]}" "$APP_URL/api/baseball/futures/deep/history/export" || echo 000)
             if [ "$code" = "200" ] && python3 -c "import json,sys; sys.exit(0 if json.load(open('/tmp/bundle.json')).get('days') else 1)" 2>/dev/null; then
               ok=1; break
             fi

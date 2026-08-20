@@ -38,6 +38,17 @@ services:
         value: /data/predlog.db
       - key: DEEP_CACHE_DIR
         value: /data/deep
+      # The error ledger (every failure point notes itself here with a stable
+      # ID; /api/errors reads it, the error-log workflow commits it to the
+      # sim-history branch). On the disk so a restart doesn't erase the trail.
+      - key: ERRLOG_DB
+        value: /data/errlog.db
+      # Shared secret for the GitHub Actions workflows (history + error-log
+      # snapshots, sim trigger). Set the SAME value as a repo Actions secret
+      # named SIM_TOKEN; without it those workflows 401 once APP_PASSWORD is
+      # set. sync:false = set it in the dashboard, never in the repo.
+      - key: SIM_TOKEN
+        sync: false
     disk:                          # persistent storage (requires a paid plan)
       name: vigil-data
       mountPath: /data

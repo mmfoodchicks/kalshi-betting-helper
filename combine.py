@@ -19,6 +19,7 @@ import kalshi
 import odds
 import prices
 import sports
+import errlog
 
 CRYPTO_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "BCH", "LTC", "AVAX", "LINK"]
 # Only the categories Kalshi actually allows in multi-leg parlays.
@@ -391,13 +392,13 @@ def _tennis_legs(tours=None, eligible_only=True, allow_live=False, window=None):
         try:
             import tennis_live
             board = tennis_live.attach(board) or board
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("CMB-tennis_legs", _e)
         try:
             import tennis_tape          # ITF, which no scoreboard covers
             board = tennis_tape.attach(board) or board
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("CMB-tennis_legs-2", _e)
     # Eligibility is per MATCH and Kalshi publishes it, so ask rather than infer
     # from the tour. `tours` is kept for callers that genuinely want one tour.
     elig = set()

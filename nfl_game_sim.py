@@ -24,6 +24,7 @@ parlays honest. Leg masks feed the same bitmask machinery MLB uses
 import math
 import predlog
 import random
+import errlog
 
 # ---- Engine constants -------------------------------------------------------
 _DRIVES = 10.7            # nominal possessions per team per game
@@ -927,8 +928,8 @@ def _build_board(season, week, n=2400, preseason=False):
             # been steady rather than dramatic, which is worse: it never gets
             # big enough to look obviously wrong.
             predlog.log_many("nfl_pre" if preseason else "nfl", log_rows)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("NFLG-build_board", _e)
     out.sort(key=lambda g: g["date"] or "")
     note = ("Drive-level Monte Carlo seeded by Sleeper's matchup-adjusted "
             "projections: alternating possessions with game script, short "

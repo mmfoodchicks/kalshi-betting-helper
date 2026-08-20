@@ -1,0 +1,137 @@
+name: Error log snapshot
+
+# Pulls the app's error ledger (/api/errors/export) into the repo so failures
+# can be read WITHOUT touching the server: every guarded failure point in the
+# app carries a stable ID (SLATE-build, KAL-fetch, DEEP-mlb_deep, JS-error...),
+# and this commits the rolled-up ledger under errors/ on the sim-history
+# branch -- errors/latest.json is always the freshest picture.
+#
+# Same direction and same rules as the nightly history snapshot: the app holds
+# no GitHub credentials; this workflow PULLS and commits with its own token.
+# It authenticates to the app with the shared SIM_TOKEN secret (set the same
+# value as a Render env var and a repo Actions secret). The sim-history branch
+# is data-only and NOT the deploy branch, so these commits never redeploy the
+# app. NOTE: the repo is public, so the ledger is public -- errlog.note()
+# stores messages, tracebacks and route paths only, never headers, cookies or
+# request bodies.
+#
+# Setup: repo variable APP_URL + repo secret SIM_TOKEN.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"     # every 6 hours, offset to dodge the top-of-hour
+  workflow_dispatch:            # the "pull it now" button
+
+concurrency:
+  group: sim-history            # serializes with the nightly history snapshot:
+  cancel-in-progress: false     # both push to the same branch
+
+permissions:
+  contents: write
+
+env:
+  HISTORY_BRANCH: sim-history
+  ERRORS_DIR: errors
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check config
+        id: cfg
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL not set — add it as a repo Actions variable. Skipping."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out
+        if: steps.cfg.outputs.ok == '1'
+        uses: actions/checkout@v4
+
+      - name: Switch to the history branch (creating it if new)
+        if: steps.cfg.outputs.ok == '1'
+        run: |
+          if git ls-remote --exit-code --heads origin "$HISTORY_BRANCH" >/dev/null 2>&1; then
+            git fetch -q --depth 1 origin "$HISTORY_BRANCH"
+            git checkout -q -B "$HISTORY_BRANCH" "origin/$HISTORY_BRANCH"
+          else
+            git checkout -q --orphan "$HISTORY_BRANCH"
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+            printf '%s\n' \
+              '# Sim history' '' \
+              'Data snapshots written by the workflows on the default branch.' \
+              '`history/` holds the nightly deep-sim history; `errors/` holds' \
+              'the app error ledger (`errors/latest.json` is the freshest).' \
+              > README.md
+          fi
+
+      - name: Fetch the error ledger from the running app
+        if: steps.cfg.outputs.ok == '1'
+        id: fetch
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          SIM_TOKEN: ${{ secrets.SIM_TOKEN }}
+        run: |
+          mkdir -p "$ERRORS_DIR"
+          AUTH=()
+          [ -n "$SIM_TOKEN" ] && AUTH=(-H "X-Sim-Token: $SIM_TOKEN")
+          ok=0
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /tmp/errors.json -w '%{http_code}' --max-time 60 \
+                   "${AUTH[@]}" "$APP_URL/api/errors/export" || echo 000)
+            if [ "$code" = "200" ] && python3 -c "import json;json.load(open('/tmp/errors.json'))['summary']" 2>/dev/null; then
+              ok=1; break
+            fi
+            echo "attempt $attempt: HTTP $code; waiting..."
+            sleep 20
+          done
+          if [ "$ok" != "1" ]; then
+            echo "Could not fetch the ledger (app down, or SIM_TOKEN missing/wrong while APP_PASSWORD is set)."
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import datetime, json, os, pathlib
+          d = json.load(open("/tmp/errors.json"))
+          out = pathlib.Path(os.environ["ERRORS_DIR"])
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "latest.json").write_text(json.dumps(d, indent=1, sort_keys=True))
+          # One readable file per day, so the ledger is browsable and diffs
+          # show what NEW errors appeared since the last snapshot.
+          today = datetime.date.today().isoformat()
+          (out / f"{today}.json").write_text(json.dumps(d, indent=1, sort_keys=True))
+          # A quick human summary at the top of the folder.
+          lines = [f"# Error ledger — updated {today}", ""]
+          lines.append("| id | count (7d) | last seen (UTC) | last message |")
+          lines.append("|---|---|---|---|")
+          for s in d.get("summary", []):
+              last = datetime.datetime.utcfromtimestamp(
+                  s.get("last_ts") or 0).strftime("%m-%d %H:%M")
+              msg = (s.get("last_msg") or "").replace("|", "\\|")[:120]
+              lines.append(f"| `{s['code']}` | {s['n']} | {last} | {msg} |")
+          if not d.get("summary"):
+              lines.append("| _no errors in the window_ | | | |")
+          (out / "README.md").write_text("\n".join(lines) + "\n")
+          print(f"{len(d.get('summary', []))} error code(s) in the window")
+          PY
+          echo "changed=1" >> "$GITHUB_OUTPUT"
+
+      - name: Commit
+        if: steps.cfg.outputs.ok == '1' && steps.fetch.outputs.changed == '1'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A "$ERRORS_DIR"
+          [ -f README.md ] && git add README.md
+          if git diff --cached --quiet; then
+            echo "Ledger unchanged since the last snapshot."
+            exit 0
+          fi
+          git commit -q -m "error log: snapshot $(date -u +%Y-%m-%dT%H:%M)"
+          git push origin "HEAD:$HISTORY_BRANCH"

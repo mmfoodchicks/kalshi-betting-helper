@@ -22,6 +22,7 @@ YES price to produce a BUY YES / BUY NO / HOLD recommendation.
 
 import math
 import statistics
+import errlog
 
 # How much to trust raw short-term drift. Short windows produce wild drift
 # estimates; we damp them so the model leans on volatility + threshold distance
@@ -633,8 +634,8 @@ def kalshi_signal(spot, candles, market, minutes_to_close, calibrated=False):
         try:
             import calibrate
             prob_yes = max(0.0, min(1.0, calibrate.crypto(prob_yes)))
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("ODDS-kalshi_signal", _e)
     fair_yes = round(prob_yes * 100, 1)
     fair_no = round((1 - prob_yes) * 100, 1)
 

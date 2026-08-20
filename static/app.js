@@ -6003,3 +6003,34 @@ window.dfsApplyReco = (obj, sample) => {
     if (el) { el.addEventListener("change", dfsRecommend); el.addEventListener("input", dfsRecommend); }
   });
 })();
+
+// ---- client-side error reporting -------------------------------------------
+// A JS exception used to break a page feature in total silence: the server
+// never heard, the user saw a button that "did nothing", and the hunt started
+// from zero. Uncaught errors and rejected promises now report themselves to
+// /api/errors/client, where they land in the same ledger as everything else
+// (IDs JS-error / JS-promise). Capped per page load so a render loop cannot
+// spam the server; the server dedups and rate-limits on top.
+let _errSent = 0;
+function reportClientError(code, msg, src) {
+  try {
+    if (_errSent >= 8) return;
+    _errSent++;
+    fetch("/api/errors/client", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, msg: String(msg).slice(0, 1500),
+                             src: String(src || "").slice(0, 300),
+                             page: location.pathname + location.hash }),
+    }).catch(() => {});
+  } catch (e) { /* the error reporter must never throw */ }
+}
+window.addEventListener("error", (e) => {
+  reportClientError("JS-error", e.message || e.error,
+                    `${e.filename || ""}:${e.lineno || 0}:${e.colno || 0}`);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const r = e.reason || {};
+  reportClientError("JS-promise", r.message || String(r),
+                    (r.stack || "").split("\n")[1] || "");
+});

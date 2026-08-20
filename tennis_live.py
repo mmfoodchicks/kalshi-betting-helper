@@ -17,6 +17,7 @@ import unicodedata
 
 import clock
 import racing
+import errlog
 
 _SLAMS = ("wimbledon", "us open", "australian open", "french open", "roland garros")
 
@@ -400,8 +401,8 @@ def attach(board):
                     for side, plive in (("a", pa_live), ("b", 100.0 - pa_live)):
                         c = m[side].get("cents")
                         m["live"][f"edge_{side}"] = round(plive - c, 1) if c is not None else None
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("TL-attach", _e)
             # Lopsided radar: the higher-Elo (fallback: higher fair-win) player
             # is behind. Kalshi over-reacts to a dropped set on a big name —
             # that's the moment the favorite's price is cheapest.

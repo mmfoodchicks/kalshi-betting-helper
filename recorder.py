@@ -19,6 +19,7 @@ import store
 import prices
 import odds
 import kalshi
+import errlog
 
 # Coins/timeframes we passively record while the app runs.
 WATCH = [("BTC", "15M"), ("BTC", "hourly"), ("ETH", "15M"),
@@ -239,8 +240,8 @@ def _loop():
         try:
             sample_once()
             resolve_due()
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("REC-loop", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

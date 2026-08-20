@@ -17,6 +17,7 @@ import os
 import pickle
 import threading
 import time
+import errlog
 
 CACHE_DIR = os.environ.get("DEEP_CACHE_DIR") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "data", "deep")
@@ -140,8 +141,8 @@ def _json_write(path, data):
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(data, fh)
         os.replace(tmp, path)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DC-json_write", _e)
 
 
 def request_rerun(key):
@@ -241,6 +242,7 @@ def run_job(key, force=False):
             # was indistinguishable from one that never started.
             _note_run(key, phase="error", ended=time.time(),
                       err=f"{type(e).__name__}: {e}"[:300])
+            errlog.note(f"DEEP-{key}", e)
         finally:
             job["running"] = False
     threading.Thread(target=_worker, daemon=True).start()

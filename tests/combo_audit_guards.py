@@ -3002,7 +3002,11 @@ _app4 = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
                            "app.py")).read()
 ck("the table rebuilds nightly off the deep run", "ump_build.build()" in _app4)
 ck("a rebuild failure cannot cost the night's numbers",
-   "import ump_build" in _app4 and "except Exception:\n            pass" in _app4)
+   "import ump_build" in _app4
+   and "except Exception" in _app4.split("import ump_build", 1)[1][:400]
+   and "errlog.note" in _app4.split("import ump_build", 1)[1][:400],
+   "still swallowed (the deep run is the product), but now RECORDED -- the "
+   "silent version is what every incident here grew from")
 
 # --- the double-discount trap ------------------------------------------------
 ck("the tendency is NOT discounted again for challenges",
@@ -3306,7 +3310,11 @@ ck("live games are excluded, as they are for the moneyline",
    "an in-game probability has the score in it and grading it as a pregame "
    "call would flatter the model")
 ck("a logging failure cannot take the board down",
-   "except Exception:\n            pass" in _insp.getsource(_BB._game_sim))
+   "except Exception" in _insp.getsource(_BB._game_sim).split(
+       "_log_prop_predictions", 1)[1][:300]
+   and "errlog.note" in _insp.getsource(_BB._game_sim).split(
+       "_log_prop_predictions", 1)[1][:300],
+   "still swallowed, now recorded")
 
 print()
 print("=" * 72)
@@ -5554,6 +5562,163 @@ ck("background CPU work yields to the web worker",
 
 print()
 print("=" * 72)
+print("Nothing fails silently: every failure point has an ID and a ledger")
+print("=" * 72)
+# Every incident this app has had started as a silent `except: pass`. Now:
+# guarded failures note() themselves under stable IDs into a shared SQLite
+# ledger, uncaught request/thread exceptions are hooked centrally, the browser
+# reports its own JS errors, /api/errors serves the ledger, and a scheduled
+# workflow commits it to the sim-history branch under errors/ -- authenticated
+# by the X-Sim-Token door (which the nightly workflow SENT for months while
+# nothing checked it, so its fetches 401'd the moment a password was set).
+import ast as _gast
+import errlog as _gel
+import tempfile as _gtmp2
+import time as _gtime
+_gel_old_db, _gel_old_init = _gel._DB, _gel._init_done
+_gel._DB = _os.path.join(_gtmp2.mkdtemp(prefix="guard-errlog-"), "errlog.db")
+_gel._init_done = False
+try:
+    for _gi in range(30):
+        try:
+            raise RuntimeError("same failure")
+        except Exception as _ge:
+            _gel.note("GUARD-dedup", _ge)
+    _gtime.sleep(2.1)
+    try:
+        raise RuntimeError("same failure")
+    except Exception as _ge:
+        _gel.note("GUARD-dedup", _ge)
+    _grows = _gel.recent(code="GUARD-dedup")
+    ck("a broken loop becomes ONE row with a count, not a flood",
+       len(_grows) == 1 and _grows[0]["n"] == 31,
+       f"{len(_grows)} rows, n={_grows and _grows[0]['n']}; an error ledger "
+       "that can fill the data disk is itself an outage")
+    with _gel.guard("GUARD-swallow"):
+        raise KeyError("swallowed")
+    ck("guard() records AND swallows, exactly like the old bare pass",
+       _gel.recent(code="GUARD-swallow")
+       and "swallowed" in _gel.recent(code="GUARD-swallow")[0]["msg"])
+    _gel_broken_db = _gel._DB
+    _gel._DB = "/proc/no-such-dir/errlog.db"
+    _gel.note("GUARD-unwritable", msg="must not raise")
+    _gel._DB = _gel_broken_db
+    ck("note() NEVER raises, even with an unwritable ledger", True,
+       "an error log that errors is worse than silence")
+    ck("the export bundle has the shape the workflow commits",
+       {"generated_at", "summary", "errors"} <= set(_gel.export_bundle()))
+
+    # The central hooks, live.
+    _gapp2 = __import__("app")
+
+    @_gapp2.app.route("/api/_guard_boom_ledger")
+    def _guard_boom_ledger():
+        raise ValueError("deliberate")
+
+    with _gapp2.app.test_client() as _gc:
+        _gr = _gc.get("/api/_guard_boom_ledger")
+        ck("an unhandled route exception returns its error ID and is ledgered",
+           _gr.status_code == 500
+           and _gr.get_json()["error_id"] == "HTTP-_guard_boom_ledger"
+           and any(x["code"] == "HTTP-_guard_boom_ledger"
+                   for x in _gel.recent(30)),
+           "a 500 with no ID restarts the hunt from zero")
+        ck("a plain 404 is NOT treated as a failure",
+           _gc.get("/api/_no_such_guard_route").status_code == 404
+           and not any("_no_such_guard_route" in (x.get("path") or "")
+                       for x in _gel.recent(30)),
+           "logging every bad URL buries the real errors")
+        _gd = _gc.get("/api/errors").get_json()
+        ck("/api/errors serves the ledger from the phone",
+           "summary" in _gd and "recent" in _gd)
+        _gc.post("/api/errors/client",
+                 json={"code": "error", "msg": "TypeError: x is undefined",
+                       "src": "app.js:5:1", "page": "/"})
+        _gtime.sleep(0.1)
+        ck("the browser's own errors land in the same ledger",
+           any(x["code"] == "JS-error" for x in _gel.recent(30)),
+           "a JS exception used to break a page feature in total silence")
+
+    import threading as _gth
+    def _gdie():
+        raise RuntimeError("thread kaput")
+    _gt2 = _gth.Thread(target=_gdie, name="guard-ledger-thread", daemon=True)
+    _gt2.start(); _gt2.join(); _gtime.sleep(0.2)
+    ck("an uncaught background-thread exception is ledgered by thread name",
+       any(x["code"] == "THREAD-guard-ledger-thread" for x in _gel.recent(30)),
+       "the recorders, the warmer and the scheduler all die silently without "
+       "this hook")
+
+    # The workflows' door.
+    _gapp2.APP_PASSWORD, _gapp2._SIM_TOKEN = "guard-pw", "guard-tok"
+    try:
+        with _gapp2.app.test_client() as _gc:
+            ck("with a password set, the export needs the token",
+               _gc.get("/api/errors/export").status_code == 401
+               and _gc.get("/api/errors/export",
+                           headers={"X-Sim-Token": "wrong"}).status_code == 401
+               and _gc.get("/api/errors/export",
+                           headers={"X-Sim-Token": "guard-tok"}).status_code == 200,
+               "the nightly workflow sent X-Sim-Token for months while nothing "
+               "checked it -- every fetch 401'd once APP_PASSWORD was set")
+    finally:
+        _gapp2.APP_PASSWORD, _gapp2._SIM_TOKEN = None, ""
+finally:
+    _gel._DB, _gel._init_done = _gel_old_db, _gel_old_init
+
+# No silent swallows can creep back in: zero pass-only Exception handlers
+# remain in any service module.
+_gswept = ["app.py", "baseball.py", "combine.py", "deep_season.py",
+           "deep_history.py", "tennis_prices.py", "tennis_live.py",
+           "mlb_recorder.py", "recorder.py", "predlog.py", "kalshi_mlb.py",
+           "kalshi.py", "deep_cache.py", "store.py", "odds.py", "ufc_sim.py",
+           "nfl_game_sim.py", "season_sim.py", "model_trust.py",
+           "tennis_elo.py"]
+_gbad = []
+for _gm in _gswept:
+    _gtree = _gast.parse(open(_os.path.join(_root, _gm)).read())
+    for _gn in _gast.walk(_gtree):
+        if isinstance(_gn, _gast.ExceptHandler):
+            _gexc = (_gn.type is None or (isinstance(_gn.type, _gast.Name)
+                                          and _gn.type.id == "Exception"))
+            if _gexc and len(_gn.body) == 1 and isinstance(_gn.body[0], _gast.Pass):
+                _gbad.append(f"{_gm}:{_gn.lineno}")
+ck("no silent `except Exception: pass` remains in any service module",
+   not _gbad, _gbad[:6])
+
+# The named seams that have actually bitten us each carry their ID.
+for _gid, _gfile in (("KAL-fetch", "kalshi.py"), ("KIDX-build", "kalshi_mlb.py"),
+                     ("KIDX-empty", "kalshi_mlb.py"), ("SLATE-child", "baseball.py"),
+                     ("SIM-disk-write", "baseball.py"), ("WARM-game-sim", "app.py"),
+                     ("WARM-board-build", "app.py"), ("COMBO-build", "app.py")):
+    ck(f"seam ID {_gid} is wired",
+       f'"{_gid}"' in open(_os.path.join(_root, _gfile)).read())
+ck("a failed deep run is ledgered under DEEP-<job>",
+   'errlog.note(f"DEEP-{key}"' in open(_os.path.join(_root, "deep_cache.py")).read())
+
+# The pipeline to GitHub.
+_gwf = open(_os.path.join(_root, ".github", "workflows", "error-log.yml")).read()
+_gnh = open(_os.path.join(_root, ".github", "workflows", "nightly-history.yml")).read()
+ck("the error-log workflow pulls the export on a schedule",
+   "cron:" in _gwf and "/api/errors/export" in _gwf and "X-Sim-Token" in _gwf)
+ck("...into the data branch, serialized with the history snapshot",
+   "sim-history" in _gwf and "group: sim-history" in _gwf,
+   "two workflows pushing the same branch concurrently reject each other's "
+   "pushes")
+ck("the nightly history fetch now authenticates too",
+   _gnh.count("X-Sim-Token") >= 2,
+   "it always sent the token on the trigger step and never on the fetch")
+ck("prod persists the ledger and knows about the token",
+   "ERRLOG_DB" in open(_os.path.join(_root, "render.yaml")).read()
+   and "SIM_TOKEN" in open(_os.path.join(_root, "render.yaml")).read())
+_gjs = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the browser reports uncaught errors and rejected promises, capped",
+   'window.addEventListener("error"' in _gjs
+   and '"unhandledrejection"' in _gjs and "_errSent >= 8" in _gjs
+   and "/api/errors/client" in _gjs)
+
+print()
+print("=" * 72)
 print("The deep engine answers every worker: rerun, status, board")
 print("=" * 72)
 # "It hasn't run in 32 hours and rerun does nothing." Three worker-lottery
@@ -5673,6 +5838,11 @@ ck("an instance seeing only health probes still bootstraps its nightlies",
    "gunicorn recycles workers every few hundred requests -- probes included -- "
    "and the replacement owner waited for a human; nobody browses at midnight, "
    "so the nightly quietly never ran and the board aged 32 hours")
+ck("...but ONLY in a real server process",
+   'SERVER_SOFTWARE' in _appsrc and 'VIGIL_AUTOBOOT' in _appsrc,
+   "a test suite or one-off script that imports app must not sprout "
+   "recorders and schedulers ninety seconds in -- this suite caught its own "
+   "caches being churned by exactly that")
 ck("the deep board adopts a run a sibling worker finished",
    "_deep_refresh" in _insp.getsource(_appmod._register_deep_sims)
    and "st_mtime" in _insp.getsource(_appmod._deep_refresh),

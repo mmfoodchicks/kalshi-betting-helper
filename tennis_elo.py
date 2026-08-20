@@ -21,6 +21,7 @@ import unicodedata
 import urllib.request
 
 import racing
+import errlog
 
 _BASE = "https://api.elections.kalshi.com/trade-api/v2"
 # (series, gender pool, tier start Elo). Tour players start well above ITF players
@@ -164,8 +165,8 @@ def _surface_of(tournament):
         s = tennis_live.surface_of(tournament)
         if s:
             return s
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("TE-surface_of", _e)
     try:
         import deep_cache
         cache = deep_cache.load("tennis_surface_lookups")[0] or {}
@@ -233,12 +234,12 @@ def _build():
     for series, g, tier_start in _SERIES:
         try:
             store.update(_harvest(series, g, tier_start))
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("TE-build", _e)
     try:
         deep_cache.save(_STORE_KEY, store)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("TE-build-2", _e)
 
     by_gender = {"m": [], "w": []}
     seen = set()
@@ -368,8 +369,8 @@ def _build_isolated():
             timeout=_BUILD_TIMEOUT_S)
         if out.returncode == 0 and out.stdout:
             return pickle.loads(out.stdout)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("TE-build_isolated", _e)
     return _build()
 
 
@@ -394,8 +395,8 @@ def _pools_from_disk_or_build():
         cached, ts = deep_cache.load(_POOLS_KEY)
         if cached and ts and (time.time() - ts) < _POOLS_TTL:
             return cached
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("TE-pools_from_disk_or_build", _e)
     # Through the same app-wide gate as the MLB slate: both are large
     # out-of-process builds, and overlapping them is what puts a small instance
     # over its limit even though each fits on its own.
@@ -411,8 +412,8 @@ def _pools_from_disk_or_build():
         try:
             import deep_cache
             deep_cache.save(_POOLS_KEY, built)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("TE-pools_from_disk_or_build-2", _e)
     return built
 
 

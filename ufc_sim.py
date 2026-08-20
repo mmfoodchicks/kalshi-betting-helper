@@ -21,6 +21,7 @@ _SCALE = 3.6               # dominance -> win-prob logistic scale
 # than re-typed here. Reversals/sweeps used to pay 3 against DK's 5, which
 # under-projected every grappler; keeping one copy is how that stops recurring.
 import dk_scoring as _dks
+import errlog
 
 _SS_PTS = _dks.UFC["strike"]
 _CTRL_PTS = _dks.UFC["control_sec"]        # per second of control
@@ -219,8 +220,8 @@ def _compute_board(n):
         rb = dict(ufc_data.fighter_rating(bt["b_id"], bt["b_name"]))
         try:
             _apply_bio(ra, rb)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("UFC-compute_board", _e)
         res = simulate_bout(ra, rb, rounds=bt.get("rounds", 3), n=n)
         res["weight"] = bt.get("weight")
         bouts.append(res)
