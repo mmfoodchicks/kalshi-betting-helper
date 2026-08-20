@@ -500,6 +500,13 @@ def _ensure_recorder():
         if _rec_started:
             return
         _rec_started = True
+        try:
+            # EVERY worker registers the deep jobs and loads the deep board --
+            # the rerun button, the status poll and the board itself land on
+            # whichever worker gunicorn picks. Only the RUNNING stays singular.
+            _register_deep_sims()
+        except Exception:
+            pass
         if not _BG_OWNER:
             return          # a sibling worker owns the recorders and the sims
         try:
@@ -520,6 +527,25 @@ def _ensure_recorder():
             _start_slate_warmer()
         except Exception:
             pass
+
+
+# An instance that sees only health probes must STILL run its nightlies. The
+# bootstrap above fires on the first real request precisely so probes never pay
+# for it -- but gunicorn recycles workers every few hundred requests, probes
+# included, so overnight the background owner was replaced by a fresh worker
+# that then waited for a human. Nobody browses at midnight; the scheduler was
+# simply not running when the nightly came due, and the deep board quietly aged
+# 32 hours. A delayed thread bootstraps each worker shortly after it starts:
+# probes still never pay, and the heavy jobs keep their own startup grace.
+def _bootstrap_unprompted():
+    time.sleep(90)                 # well past boot and the first health probes
+    try:
+        _ensure_recorder()
+    except Exception:
+        pass
+
+
+threading.Thread(target=_bootstrap_unprompted, daemon=True).start()
 
 
 # ---- keeping the board warm while you're actually using it -----------------
@@ -745,11 +771,20 @@ def _start_slate_warmer():
 _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
 
 
-def _init_deep_sims():
-    """Register the heavy season sims with the nightly cache/scheduler, reload any
-    persisted result from disk, and start the background refresh (reruns each job
-    once per day just after local midnight)."""
+def _register_deep_sims():
+    """Register the heavy season sims and load the persisted MLB result.
+
+    Runs in EVERY worker, not just the background owner. Registration only
+    fills a dict with closures -- the expensive part is running them, and that
+    stays with the owner's scheduler. What registration buys the other workers
+    is correctness: the rerun button, the status poll and the deep board all
+    land on whichever worker gunicorn picks, and a worker with an empty job
+    table answered them with "started: false", "running: false" and a 409 --
+    which is how "I hit rerun now and nothing happens" happened 2 clicks in 3."""
     import deep_cache
+    if "mlb_deep" in deep_cache._jobs:      # already registered in this worker;
+        _deep_refresh()                     # re-registering would blank a live
+        return                              # job's running flag
 
     def run_mlb():
         import deep_season
@@ -848,10 +883,34 @@ def _init_deep_sims():
     for _lg in ("nfl", "nba", "nhl"):
         deep_cache.register(_lg, run_pro(_lg))
     # Restore the MLB deep run from disk so a restart doesn't lose it.
+    _deep_refresh()
+
+
+def _deep_refresh():
+    """Adopt a newer on-disk deep run into this worker's memory.
+
+    The nightly saves in whichever worker ran it; every other worker's copy
+    would serve yesterday's board forever without this. One os.stat when
+    nothing changed; the multi-MB unpickle only when the file really moved."""
+    import deep_cache
+    try:
+        m = os.stat(deep_cache._path("mlb_deep")).st_mtime
+    except OSError:
+        return
+    if _deep.get("mtime") == m and _deep.get("agg"):
+        return
     payload, _ts = deep_cache.load("mlb_deep")
     if payload:
         _deep["agg"] = payload.get("agg")
         _deep["season"] = payload.get("season")
+        _deep["mtime"] = m
+
+
+def _init_deep_sims():
+    """Owner-only: restore the run history and start the nightly scheduler.
+    (Job registration happens in every worker via _register_deep_sims.)"""
+    import deep_cache
+    _register_deep_sims()
     # This host has no persistent disk, so the deep cache starts empty after every
     # restart and redeploy. Pull the repo's copy of the run history back before
     # the scheduler starts, so a restart doesn't silently empty the calendar.
@@ -1930,6 +1989,7 @@ def api_baseball_futures():
     # default whenever a completed run is cached. Only ?engine=fast forces the
     # instant Pythagorean board (the cold-start fallback before the first deep run).
     if request.args.get("engine") != "fast":
+        _deep_refresh()             # adopt a run a sibling worker finished
         agg = _deep.get("agg")
         if agg and _deep.get("season") == season:
             try:
@@ -2486,15 +2546,27 @@ def api_sim_status():
 
 @app.route("/api/sim/rerun", methods=["POST"])
 def api_sim_rerun():
-    """Force a fresh run of one cached season sim (manual weekly-style refresh)."""
+    """Force a fresh run of one cached season sim (manual weekly-style refresh).
+
+    The run itself belongs to the scheduler-owning worker, but THIS request
+    lands on whichever worker gunicorn picks -- so anything but the owner
+    queues the request through the shared file and the owner starts it within
+    seconds. run_job directly on a non-owner returned {"started": false}: the
+    literal "I hit rerun now and nothing happens"."""
     import deep_cache
     key = {"mlb": "mlb_deep", "f1": "f1", "nascar": "nascar",
            "nfl": "nfl", "nba": "nba", "nhl": "nhl"}.get(
         (request.args.get("sport") or "").lower())
     if not key:
         return jsonify({"error": "unknown sport"}), 400
-    started = deep_cache.run_job(key, force=True)
-    return jsonify({"started": started, "status": deep_cache.status(key)})
+    if deep_cache.running_anywhere(key):
+        return jsonify({"started": False, "already_running": True,
+                        "status": deep_cache.status(key)})
+    started = bool(_BG_OWNER and key in deep_cache._jobs
+                   and deep_cache.run_job(key, force=True))
+    queued = False if started else deep_cache.request_rerun(key)
+    return jsonify({"started": started or queued, "queued": queued,
+                    "status": deep_cache.status(key)})
 
 
 # Latest completed deep-season run, kept in-process. {agg, season}.
@@ -2507,12 +2579,18 @@ def api_baseball_deep_start():
     Poll /deep/status; when ready, GET /futures?engine=deep for the deep board."""
     import deep_season
     import deep_cache
-    if deep_season.PROGRESS.get("running"):
+    if (deep_season.progress_read().get("running")
+            or deep_cache.running_anywhere("mlb_deep")):
         return jsonify({"started": False, "already_running": True,
-                        "progress": deep_season.PROGRESS})
+                        "progress": deep_season.progress_read()})
     # Force a fresh run; result is persisted to disk and reused for everyone.
-    started = deep_cache.run_job("mlb_deep", force=True)
-    return jsonify({"started": started, "season": str(clock.today_et().year)})
+    # Same worker-lottery rule as /api/sim/rerun: the owner starts it directly,
+    # anyone else queues it for the owner to pick up within seconds.
+    started = bool(_BG_OWNER and "mlb_deep" in deep_cache._jobs
+                   and deep_cache.run_job("mlb_deep", force=True))
+    queued = False if started else deep_cache.request_rerun("mlb_deep")
+    return jsonify({"started": started or queued, "queued": queued,
+                    "season": str(clock.today_et().year)})
 
 
 @app.route("/api/baseball/live/<int:game_pk>")
@@ -2532,6 +2610,7 @@ def api_baseball_team():
     import deep_season
     season = request.args.get("season") or str(clock.today_et().year)
     abbr = (request.args.get("abbr") or "").upper()
+    _deep_refresh()                 # adopt a run a sibling worker finished
     agg = _deep.get("agg")
     if not agg or _deep.get("season") != season:
         return jsonify({"error": "Run the deep simulation first to get player lines."}), 409
@@ -2549,16 +2628,26 @@ def api_baseball_team():
 def api_baseball_deep_status():
     import deep_season
     season = request.args.get("season") or str(clock.today_et().year)
-    p = dict(deep_season.PROGRESS)
+    # progress_read, not PROGRESS: the run happens in ONE worker and this poll
+    # lands on any of them -- read from memory, two of three polls denied a run
+    # was in flight and the loading bar flickered or never appeared.
+    p = deep_season.progress_read()
     if p.get("running") and p.get("started"):
         import time as _t
         done, total = p.get("done", 0), p.get("total", 1) or 1
         elapsed = _t.time() - p["started"]
         p["pct"] = round(100 * done / total, 1)
         p["eta_sec"] = round(elapsed / done * (total - done)) if done else None
-    p["ready"] = bool(_deep.get("agg") and _deep.get("season") == season)
     import deep_cache
+    _deep_refresh()
+    p["ready"] = bool(_deep.get("agg") and _deep.get("season") == season)
     p["age_sec"] = deep_cache.age("mlb_deep")
+    # Queued-but-not-started (a rerun clicked during the startup grace, or in
+    # the seconds before the owner picks it up) and how the LAST attempt ended
+    # (done / empty / error+why) -- so "nothing happens" and "it ran and was
+    # rejected" and "it crashed" finally look different from the phone.
+    p["queued"] = "mlb_deep" in deep_cache._json_read(deep_cache._RERUN_REQ)
+    p["last"] = deep_cache.run_state("mlb_deep")
     import deep_history
     p["history_dates"] = deep_history.dates()[:60]
     return jsonify(p)

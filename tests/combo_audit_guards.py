@@ -5554,6 +5554,161 @@ ck("background CPU work yields to the web worker",
 
 print()
 print("=" * 72)
+print("The deep engine answers every worker: rerun, status, board")
+print("=" * 72)
+# "It hasn't run in 32 hours and rerun does nothing." Three worker-lottery
+# bugs, one recycling bug, one silent-failure bug: the deep jobs were only
+# REGISTERED in the background-owner worker, so a rerun click landing anywhere
+# else hit an empty job table and returned {"started": false} (2 clicks in 3);
+# progress lived in the running worker's memory, so most status polls denied a
+# run was in flight; the deep board was only loaded from disk in the owner;
+# gunicorn recycles workers every few hundred requests (health probes count)
+# and the replacement waited for a HUMAN request to bootstrap, so overnight no
+# scheduler existed when the nightly came due; and a run that crashed or
+# declined to publish recorded nothing anywhere.
+import deep_cache as _gdc
+import deep_season as _gds
+import time as _gtime
+import tempfile as _gtmp
+_gtdir = _gtmp.mkdtemp(prefix="guard-deep-")
+_old_req, _old_state = _gdc._RERUN_REQ, _gdc._RUN_STATE
+_old_cache_dir = _gdc.CACHE_DIR
+_gdc._RERUN_REQ = _os.path.join(_gtdir, "rerun.json")
+_gdc._RUN_STATE = _os.path.join(_gtdir, "runstate.json")
+_gdc.CACHE_DIR = _os.path.join(_gtdir, "deep")
+try:
+    def _gwait(key):
+        for _ in range(200):
+            if not _gdc._jobs[key]["running"]:
+                return
+            _gtime.sleep(0.05)
+
+    def _gboom():
+        raise RuntimeError("kaput")
+    _gdc.register("g_boom", _gboom)
+    _gdc.register("g_none", lambda: None)
+    _gdc.register("g_good", lambda: {"x": 1})
+    ck("a rapid double-start is refused, not doubled",
+       _gdc.run_job("g_boom", force=True) is True
+       and _gdc.run_job("g_boom", force=True) is False,
+       "running used to be flagged from inside the thread; two clicks in the "
+       "gap both started a 4,000-season sim")
+    _gwait("g_boom")
+    for _gk in ("g_none", "g_good"):
+        _gdc.run_job(_gk, force=True)
+        _gwait(_gk)
+    _gtime.sleep(0.3)
+    ck("a crashed run records the error where any worker can read it",
+       _gdc.run_state("g_boom").get("phase") == "error"
+       and "kaput" in (_gdc.run_state("g_boom").get("err") or ""),
+       "the old bare `except: pass` made a nightly that failed every attempt "
+       "indistinguishable from one that never started")
+    ck("a run that declines to publish says so too",
+       _gdc.run_state("g_none").get("phase") == "empty",
+       "the MLB run keeps the previous board on partial rosters -- that must "
+       "look different from a crash and from a success")
+    ck("a finished run records done and lands in the cache",
+       _gdc.run_state("g_good").get("phase") == "done"
+       and _gdc.load("g_good")[0] == {"x": 1})
+    ck("age() reads the file clock, not the multi-MB pickle",
+       "os.stat" in _insp.getsource(_gdc.age),
+       "status polls every few seconds were unpickling the whole deep payload "
+       "to subtract a timestamp")
+
+    _gdc.request_rerun("g_good")
+    ck("any worker can queue a rerun through the shared file",
+       "g_good" in _gdc._json_read(_gdc._RERUN_REQ))
+    _gdc.run_job("g_good", force=True)
+    ck("a starting run consumes the queued request instead of encoring",
+       "g_good" not in _gdc._json_read(_gdc._RERUN_REQ),
+       "two clicks on different workers wanted ONE fresh run, not a run and "
+       "an identical rerun after it")
+    _gwait("g_good")
+    _gdc._note_run("g_ghost", phase="running", started=_gtime.time())
+    ck("a run is visible as running from every worker",
+       _gdc.running_anywhere("g_ghost") is True)
+    _gdc._note_run("g_ghost", phase="running", started=_gtime.time() - 4 * 3600)
+    ck("...but a dead worker's leftover 'running' expires",
+       _gdc.running_anywhere("g_ghost") is False,
+       "a worker killed mid-run would otherwise pin 'already running' forever "
+       "and block every future rerun")
+    ck("the scheduler drains queued requests within seconds, not half-hours",
+       "_drain_requests" in _insp.getsource(_gdc.start_scheduler)
+       and "time.sleep(10)" in _insp.getsource(_gdc.start_scheduler),
+       "a rerun clicked from a non-owner worker must not wait for the next "
+       "30-minute pass")
+finally:
+    _gdc._RERUN_REQ, _gdc._RUN_STATE = _old_req, _old_state
+    _gdc.CACHE_DIR = _old_cache_dir
+    for _gk in ("g_boom", "g_none", "g_good"):
+        _gdc._jobs.pop(_gk, None)
+
+# The progress mirror: a run in ONE worker is visible from all of them.
+_old_prog_disk = _gds._PROG_DISK
+_gds._PROG_DISK = _os.path.join(_gtdir, "progress.json")
+try:
+    _gds.PROGRESS.update(running=True, done=120, total=4000,
+                         started=_gtime.time(), season="2026")
+    _gds._prog_flush(final=True)
+    _gds.PROGRESS["running"] = False          # now pretend we're another worker
+    _gp = _gds.progress_read()
+    ck("a running deep sim is visible from a worker that isn't running it",
+       _gp.get("running") is True and _gp.get("done") == 120,
+       "read from memory, two of three status polls denied a run was in "
+       "flight and the loading bar flickered or never appeared")
+finally:
+    _gds.PROGRESS["running"] = False
+    _gds._PROG_DISK = _old_prog_disk
+
+# App wiring: every worker registers; nobody waits for a human overnight.
+_appmod = __import__("app")
+_ens_src = _insp.getsource(_appmod._ensure_recorder)
+ck("EVERY worker registers the deep jobs, not just the background owner",
+   _ens_src.index("_register_deep_sims()") < _ens_src.index("if not _BG_OWNER"),
+   "a worker with an empty job table answered the rerun button with "
+   "'started: false' -- the literal 'I hit rerun and nothing happens'")
+ck("an instance seeing only health probes still bootstraps its nightlies",
+   "_bootstrap_unprompted" in _appsrc
+   and "_ensure_recorder()" in _insp.getsource(_appmod._bootstrap_unprompted),
+   "gunicorn recycles workers every few hundred requests -- probes included -- "
+   "and the replacement owner waited for a human; nobody browses at midnight, "
+   "so the nightly quietly never ran and the board aged 32 hours")
+ck("the deep board adopts a run a sibling worker finished",
+   "_deep_refresh" in _insp.getsource(_appmod._register_deep_sims)
+   and "st_mtime" in _insp.getsource(_appmod._deep_refresh),
+   "non-owner workers either 409'd the deep board or served yesterday's "
+   "forever, depending on when they booted")
+ck("the deep status endpoint reads the shared progress, not local memory",
+   "progress_read()" in _appsrc and "deep_season.PROGRESS)" not in _appsrc)
+ck("rerun endpoints queue for the owner instead of no-opping",
+   _appsrc.count("request_rerun") >= 2 and "running_anywhere" in _appsrc)
+ck("the page shows queued and failed runs instead of a dead button",
+   "Deep sim queued" in _appjs and "last deep run" in _appjs,
+   "a rerun click that queues, a run that crashed, and a run that declined "
+   "to publish all looked like nothing happening")
+def _alters_guarded(path):
+    """Every ALTER TABLE ... ADD COLUMN sits inside a try: (within the three
+    preceding lines), so a sibling worker winning the migration race can't
+    crash this one."""
+    lines = open(path).read().splitlines()
+    bad = []
+    for i, l in enumerate(lines):
+        if "ADD COLUMN" in l and "execute" in l:
+            if not any("try:" in lines[j] for j in range(max(0, i - 3), i)):
+                bad.append(i + 1)
+    return bad
+
+
+ck("every ADD COLUMN migration tolerates a sibling worker winning the race",
+   not _alters_guarded(_os.path.join(_root, "store.py"))
+   and not _alters_guarded(_os.path.join(_root, "predlog.py")),
+   "three workers migrating one fresh database at the same moment: the loser "
+   "crashed its worker with 'duplicate column name' and the boot looped "
+   f"(unguarded lines: store {_alters_guarded(_os.path.join(_root, 'store.py'))}, "
+   f"predlog {_alters_guarded(_os.path.join(_root, 'predlog.py'))})")
+
+print()
+print("=" * 72)
 print("The warm bar can tell WORKING from STUCK, whichever worker answers")
 print("=" * 72)
 # "Sitting at 0/9 warming up for a while" had at least four causes that all

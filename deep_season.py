@@ -536,6 +536,50 @@ def _ip_num(r):
 # Live progress shared with the API while a run is in flight.
 PROGRESS = {"running": False, "done": 0, "total": 0, "started": 0.0, "season": None}
 
+# ...and mirrored to a file, because "the API" is three workers and the run
+# happens in one of them. Read from memory, two of every three status polls
+# reported no run in flight while 4,000 seasons were simulating -- the loading
+# bar flickered or never appeared, and a just-clicked rerun looked like a dead
+# button. Same disk-not-memory cure as everything else that crosses workers.
+_PROG_DISK = os.path.join(os.environ.get("VIGIL_RUN_DIR") or "/tmp",
+                          "vigil-deep-progress.json")
+_PROG_FLUSHED = [0.0]
+
+
+def _prog_flush(final=False):
+    now = time.time()
+    if not final and now - _PROG_FLUSHED[0] < 1.0:
+        return                       # a chunk lands every few seconds; that's enough
+    _PROG_FLUSHED[0] = now
+    try:
+        import json
+        import tempfile
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(_PROG_DISK) or ".",
+                                   suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(PROGRESS, fh)
+        os.replace(tmp, _PROG_DISK)
+    except Exception:
+        pass
+
+
+def progress_read():
+    """The freshest progress from ANY worker: this process's if it is the one
+    running, else the mirror -- ignoring a mirror stale enough to be a dead
+    run's leftover (a live run updates it every few seconds)."""
+    if PROGRESS.get("running"):
+        return dict(PROGRESS)
+    try:
+        if time.time() - os.stat(_PROG_DISK).st_mtime < 300:
+            import json
+            with open(_PROG_DISK, encoding="utf-8") as fh:
+                disk = json.load(fh) or {}
+            if disk.get("running"):
+                return disk
+    except Exception:
+        pass
+    return dict(PROGRESS)
+
 
 def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
              track_progress=True, ret_profiles=None):
@@ -560,6 +604,7 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
     def _prog(**kw):
         if track_progress:
             PROGRESS.update(**kw)
+            _prog_flush()
     # Flag running immediately so the loading bar appears during the (network)
     # roster/standings prep, not only once the sim chunks start.
     _prog(running=True, done=0, total=n_seasons, started=time.time(), season=season)
@@ -622,6 +667,7 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
     finally:
         if track_progress:
             PROGRESS["running"] = False
+            _prog_flush(final=True)
     # Convert to plain dicts so the result is picklable for the disk cache
     # (defaultdicts with lambda factories — wins_hist/bat/pit — can't pickle).
     agg = _plainify(agg)

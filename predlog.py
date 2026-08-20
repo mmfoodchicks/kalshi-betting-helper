@@ -56,7 +56,10 @@ def init_db():
         # tolerate an older table that predates it.
         cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)")}
         if "mkt" not in cols:
-            c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
+            except Exception:
+                pass               # a sibling worker just added it
         # Repair: NFL exhibitions logged before the nfl_pre split carried
         # model='nfl', and first-write-wins means the corrected router could
         # never re-file them — so August games would grade into the REGULAR

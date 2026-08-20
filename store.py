@@ -66,7 +66,15 @@ def init_db():
         for col, decl in (("kalshi_ticker", "TEXT"), ("position_side", "TEXT"),
                           ("entry_cost_cents", "REAL")):
             if col not in cols:
-                c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
+                # try/except, not just the PRAGMA check: several gunicorn
+                # workers run this migration at the same moment on boot, and on
+                # a fresh database two of them can both see the column missing
+                # before either adds it -- the loser then crashes the worker
+                # with "duplicate column name" and the boot loops.
+                try:
+                    c.execute(f"ALTER TABLE markets ADD COLUMN {col} {decl}")
+                except Exception:
+                    pass               # a sibling worker just added it
 
         # Model's MLB picks, recorded pre-game and graded after finals.
         c.execute("""
@@ -86,7 +94,10 @@ def init_db():
                     # (a feedback loop). Legacy rows have it NULL -> fall back to prob.
                     "prob_raw"):
             if col not in mcols:
-                c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
+                try:               # same boot race as the markets migration
+                    c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
+                except Exception:
+                    pass           # a sibling worker just added it
 
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,

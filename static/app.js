@@ -4378,8 +4378,22 @@ async function watchFeatured() {
       if (s.running) {
         if (prog) prog.innerHTML = deepBar(s);
         delay = 3000;
+      } else if (s.queued) {
+        // Clicked, accepted, not yet started (the sim owner picks it up within
+        // seconds; on a fresh boot it waits out the startup grace first).
+        if (prog) prog.innerHTML = `<div class="small">⏳ <b>Deep sim queued</b> — starting shortly…</div>`;
+        delay = 3000;
       } else {
-        if (prog) prog.innerHTML = "";
+        // A run that ended badly used to be indistinguishable from one that
+        // never started: the calendar just didn't move. Say what happened.
+        const last = s.last || {};
+        const endedAgo = last.ended ? (Date.now() / 1000 - last.ended) : null;
+        if (prog && endedAgo != null && endedAgo < 86400 &&
+            (last.phase === "error" || last.phase === "empty")) {
+          prog.innerHTML = `<div class="small" style="color:var(--muted)">⚠️ last deep run ${
+            last.phase === "error" ? `failed: ${escapeHtml(String(last.err || "unknown error"))}`
+            : "finished but declined to publish (kept the previous board — usually partial roster data)"} · ${agoStr(endedAgo)}</div>`;
+        } else if (prog) prog.innerHTML = "";
         const newGen = s.age_sec != null ? _genTime(s.age_sec) : 0;
         const firstDeep = !_boardData || _boardData.engine !== "deep";
         const newer = newGen > _featGenTime + 20;      // a fresh run finished
