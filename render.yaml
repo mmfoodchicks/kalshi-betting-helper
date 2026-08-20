@@ -43,12 +43,12 @@ services:
       # sim-history branch). On the disk so a restart doesn't erase the trail.
       - key: ERRLOG_DB
         value: /data/errlog.db
-      # Shared secret for the GitHub Actions workflows (history + error-log
-      # snapshots, sim trigger). Set the SAME value as a repo Actions secret
-      # named SIM_TOKEN; without it those workflows 401 once APP_PASSWORD is
-      # set. sync:false = set it in the dashboard, never in the repo.
-      - key: SIM_TOKEN
-        sync: false
+      # NOTE: one more env var, SIM_TOKEN, is added by hand in the dashboard
+      # (Environment tab), paired with a GitHub Actions secret of the same
+      # value -- it authenticates the snapshot workflows once APP_PASSWORD is
+      # set. It is deliberately NOT declared here: a Blueprint that introduces
+      # a new sync:false variable stalls the deploy waiting for its value,
+      # which failed a deploy for real. See DEPLOY.md.
     disk:                          # persistent storage (requires a paid plan)
       name: vigil-data
       mountPath: /data

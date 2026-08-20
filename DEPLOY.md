@@ -116,6 +116,26 @@ HTTP login via `APP_PASSWORD`.
 
 ---
 
+### The SIM_TOKEN pair (workflow authentication)
+
+The two scheduled workflows — the nightly sim-history snapshot and the
+6-hourly error-log snapshot — fetch data from the app. Once `APP_PASSWORD` is
+set they need credentials, and they authenticate with an `X-Sim-Token` header.
+Setup is one value in two places:
+
+1. Generate a long random string
+   (`python -c "import secrets;print(secrets.token_hex(24))"`).
+2. Render dashboard → your service → **Environment** → add `SIM_TOKEN` = that
+   value.
+3. GitHub repo → **Settings → Secrets and variables → Actions → Secrets** →
+   add `SIM_TOKEN` = the same value.
+
+Deliberately NOT declared in `render.yaml`: a Blueprint update that introduces
+a new `sync: false` variable stalls the deploy waiting for its value in the
+dashboard — which failed a deploy for real. Adding it by hand skips that.
+Without the pair, the workflows fail their fetch step with an explanatory log
+line (not silently) and commit nothing.
+
 ## Path A — Render (easiest)
 
 1. Push this repo to GitHub (already your setup).
