@@ -545,17 +545,35 @@ def current_week(preseason=False):
     board read "no games" until the user guessed the dropdown."""
     import clock
     import nfl_live
+    import time as _t2
     today = clock.today_et().isoformat()
     last = 4 if preseason else 18
+    first_bad = None
     for wk in range(1, last + 1):
-        try:
-            sch = nfl_live.schedule(wk, int(_season()),
-                                    seasontype=1 if preseason else 2) or []
-        except Exception:
-            sch = []
-        if any((g.get("date") or "")[:10] >= today for g in sch):
-            return wk
-    return last
+        sch = None
+        for attempt in (0, 1):
+            try:
+                sch = nfl_live.schedule(wk, int(_season()),
+                                        seasontype=1 if preseason else 2) or []
+                break
+            except Exception as _e:
+                if attempt:
+                    # A single failed fetch used to read as "this week has no
+                    # games left" and silently skipped it -- one ESPN blip on
+                    # week 3 sent the tab to week 4 and an empty board while
+                    # sixteen games sat ready to play tonight.
+                    errlog.note("NFLG-current-week", _e, path=f"wk{wk}")
+                    if first_bad is None:
+                        first_bad = wk
+                else:
+                    _t2.sleep(0.5)
+        if sch and any((g.get("date") or "")[:10] >= today for g in sch):
+            # An EARLIER week that failed to answer cannot be ruled out, and it
+            # wins over this later confirmed one: its board build re-fetches
+            # the schedule (usually recovered by then), and being one week
+            # early for a few minutes beats skipping sixteen live games.
+            return first_bad if first_bad is not None else wk
+    return first_bad if first_bad is not None else last
 
 
 # --- PRESEASON ----------------------------------------------------------------
@@ -832,15 +850,26 @@ def _preseason_sims(season, week, n):
     for gm in sched:
         h, a = gm.get("home"), gm.get("away")
         suffix = _suffix_for(idx, h, a)
-        if not suffix:
-            continue
-        try:
-            imp = kalshi_nfl.implied(suffix)
-            lad = kalshi_nfl.ladders(suffix)
-        except Exception:
-            continue
+        imp, lad = None, None
+        if suffix:
+            try:
+                imp = kalshi_nfl.implied(suffix)
+                lad = kalshi_nfl.ladders(suffix)
+            except Exception as _e:
+                errlog.note("NFLG-implied", _e, path=str(suffix))
         if not imp:
-            continue
+            # THIRD grade of anchor: no market at all. Skipping these is how a
+            # full 16-game ESPN week rendered as "No games found for this
+            # week" whenever the Kalshi index came back empty (a throttled
+            # window returns no markets, and a cold instance has no last-good
+            # copy to fall back on). The measured league-average exhibition is
+            # a real level, and 0.5415 is the engine's own fitted home rate --
+            # the game shows up at a neutral prior, marked unpriced, instead
+            # of vanishing while the user stares at a checked preseason box.
+            ch, ca = kalshi_nfl._canon(h), kalshi_nfl._canon(a)
+            imp = {"total": None, "margin": None, "favourite": None,
+                   "p_win": {ch: 0.5415, ca: 0.4585}, "source": "none"}
+            suffix, lad = None, None
         sim = simulate_preseason(h, a, gm.get("home_name") or h,
                                  gm.get("away_name") or a, imp, n=n, ladders=lad,
                                  rosters={h: ros.get(h), a: ros.get(a)},

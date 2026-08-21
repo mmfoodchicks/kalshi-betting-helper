@@ -6198,10 +6198,10 @@ def _gbuild():
 _gv = _bs3.nonblocking("guard_nb", 300, _gmem, "k", _gbuild)
 ck("cold call returns None and kicks exactly one build", _gv is None)
 import time as _gt3
-for _ in range(50):
-    if _gmem.get("k"):
+for _ in range(150):
+    if _gmem.get("k") and _bs3.get("guard_nb", 300)[0] is not None:
         break
-    _gt3.time() and __import__("time").sleep(0.1)
+    _gt3.sleep(0.1)
 ck("the build lands in memory AND on the shared disk",
    _gmem.get("k") and _bs3.get("guard_nb", 300)[0] == {"n": 1})
 _gmem2 = {}
@@ -6248,6 +6248,79 @@ if "No module named" in (_pyf.stderr or ""):
 else:
     _hits = [l for l in _pyf.stdout.splitlines() if l.strip()]
     ck("pyflakes finds NOTHING across all modules", not _hits, _hits[:4])
+
+print()
+print("=" * 72)
+print("A preseason week never vanishes: no market and no blip can empty it")
+print("=" * 72)
+# Two failures stacked into "no slate for today even though the preseason box
+# is checked": a single failed ESPN fetch made current_week() read a live week
+# as finished and skip to the next one, and an empty Kalshi index (a throttled
+# window returns no markets) made _preseason_sims skip EVERY game -- sixteen
+# scheduled exhibitions rendered as "No games found for this week".
+import nfl_game_sim as _ngs2
+import nfl_live as _nlv2
+import kalshi_nfl as _knf2
+import clock as _gck
+
+_gtoday = _gck.today_et().isoformat()
+_fake_sched = {
+    1: [{"home": "DAL", "away": "SEA", "date": "2000-01-01T00:00Z"}],
+    2: [{"home": "BUF", "away": "PIT", "date": "2000-01-02T00:00Z"}],
+    3: [{"home": "KC", "away": "DEN", "date": _gtoday + "T23:00Z"},
+        {"home": "SF", "away": "LAR", "date": _gtoday + "T23:00Z"}],
+    4: [{"home": "NYJ", "away": "NYG", "date": "2099-01-01T00:00Z"}],
+}
+_orig_sched = _nlv2.schedule
+
+
+def _sched_ok(week, season, seasontype=2):
+    return list(_fake_sched.get(week, []))
+
+
+def _sched_blip(week, season, seasontype=2):
+    if week == 3:
+        raise RuntimeError("guard: simulated ESPN blip")
+    return list(_fake_sched.get(week, []))
+
+
+try:
+    _nlv2.schedule = _sched_ok
+    ck("auto-week lands on the first week with games left",
+       _ngs2.current_week(True) == 3)
+    _nlv2.schedule = _sched_blip
+    ck("a week whose fetch FAILS is pointed at, never skipped",
+       _ngs2.current_week(True) == 3,
+       "one ESPN blip on week 3 used to send the tab to week 4 and an empty "
+       "board while sixteen games sat ready to play tonight")
+finally:
+    _nlv2.schedule = _orig_sched
+
+_orig_idx2, _orig_ros = _knf2.index, None
+import nfl_preseason as _npre2
+_orig_ros = _npre2.rosters
+try:
+    _nlv2.schedule = _sched_ok
+    _knf2.index = lambda: {}                    # the throttled-empty window
+    _npre2.rosters = lambda season: {}
+    _sims = _ngs2._preseason_sims(2026, 3, 300)
+    ck("an EMPTY Kalshi index still yields every scheduled game",
+       len(_sims) == 2 and all(suf is None for _s, suf in _sims),
+       f"got {len(_sims)} of 2; a game with no market plays at the measured "
+       "league-average level, marked unpriced, instead of vanishing")
+    if _sims:
+        _tot = _sims[0][0].get("exp_total") or (
+            (_sims[0][0].get("exp_home") or 0) + (_sims[0][0].get("exp_away") or 0))
+        ck("...at the measured exhibition level, not an invented one",
+           _tot and 34.0 <= _tot <= 48.0, f"total {_tot} vs measured ~41")
+finally:
+    _nlv2.schedule = _orig_sched
+    _knf2.index = _orig_idx2
+    _npre2.rosters = _orig_ros
+ck("a per-game market read that raises is recorded, not swallowed",
+   "NFLG-implied" in _insp.getsource(_ngs2._preseason_sims))
+ck("the auto-week fetch failure is recorded too",
+   "NFLG-current-week" in _insp.getsource(_ngs2.current_week))
 
 print()
 print("=" * 72)
