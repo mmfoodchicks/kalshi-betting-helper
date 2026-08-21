@@ -45,6 +45,7 @@ projections, so an error scales a number rather than inventing one.
 import math
 
 import clock
+import errlog
 import racing
 
 # ---- What a preseason team-game actually looks like --------------------------
@@ -295,12 +296,37 @@ def role_factor(pos, reg_per_game):
     return 1.0
 
 
-def expected_usage(pos, reg_per_game):
-    """Projected preseason touches (or pass attempts) per game."""
+# How much evidence the role PRIOR is worth, in games, when a player has real
+# exhibition usage from THIS preseason. Measured out of sample, twice:
+#
+#     2025 preseason, wk1 -> wk2 (n=580):   prior 2.50   observed 2.64   K=2: 2.34
+#     2025 preseason, wk1+2 -> wk3 (n=536): prior 2.56   observed 2.60   K=2: 2.42
+#     2026 preseason, wk1 -> wk2 (n=65):    prior 2.02   observed 2.62   K=2: 1.82
+#
+# Two lessons the numbers force. Observed usage ALONE is WORSE than the role
+# prior every time -- one exhibition is a noisy read and clubs alternate who
+# plays week to week. And the blend beats both every time, flat across K=1..3
+# with the minimum at 2, so the prior is treated as exactly two games of
+# evidence: a player with one game played is 1/3 his own August, and with two
+# games he is half.
+_OBS_K = 2.0
+
+
+def expected_usage(pos, reg_per_game, obs_use_pg=None, obs_gp=0):
+    """Projected preseason touches (or pass attempts) per game.
+
+    With `obs_use_pg` (this preseason's measured usage per game over `obs_gp`
+    played games) the projection is the measured blend of the two -- direct
+    evidence of who is actually taking August snaps, shrunk by how little of
+    it one or two exhibitions provide."""
     base = _BASE.get(pos)
     if base is None:
         return None
-    return round(base * role_factor(pos, reg_per_game), 2)
+    prior = base * role_factor(pos, reg_per_game)
+    gp = obs_gp or 0
+    if obs_use_pg is not None and gp > 0:
+        return round((gp * obs_use_pg + _OBS_K * prior) / (gp + _OBS_K), 2)
+    return round(prior, 2)
 
 
 def is_preseason(date=None):
@@ -319,9 +345,13 @@ _STARTER_AT = {"QB": 20.0, "RB": 10.0, "WR": 10.0, "TE": 10.0}
 _ROTATIONAL_AT = {"QB": 1.0, "RB": 4.0, "WR": 4.0, "TE": 4.0}
 
 
-def usage_note(pos, reg_per_game):
+def usage_note(pos, reg_per_game, obs_use_pg=None, obs_gp=0):
     """Why this player's preseason number is what it is, in one line, so a lineup
     can be argued with rather than just trusted."""
+    if obs_use_pg is not None and (obs_gp or 0) > 0:
+        u = "att" if pos == "QB" else "touches"
+        return (f"measured THIS preseason: {obs_use_pg:g} {u}/g over "
+                f"{obs_gp} game{'s' if obs_gp > 1 else ''} (blended with the role prior)")
     if pos in ("WR", "TE"):
         return "preseason target share is flat across roles - no edge from depth"
     r = reg_per_game or 0.0
@@ -335,6 +365,36 @@ def usage_note(pos, reg_per_game):
 
 
 # ---- Roster -> preseason stat lines ------------------------------------------
+def observed_usage(season):
+    """{player_id: (use_per_game, games_played)} from THIS preseason's played
+    exhibitions -- Sleeper's stats feed at season_type=pre, the same feed the
+    league-average table was measured from. Empty when nothing has been played
+    (or the feed is down), which leaves every projection exactly on its prior."""
+    def build():
+        q = "&".join(f"position[]={p}" for p in _POS)
+        try:
+            rows = racing._get_json(
+                f"{_STATS.format(season=season)}?season_type=pre&{q}"
+                "&order_by=pts_ppr", timeout=60) or []
+        except Exception as _e:
+            errlog.note("NFLPRE-observed-fetch", _e)
+            return None
+        out = {}
+        for r in rows:
+            st = r.get("stats") or {}
+            p = r.get("player") or {}
+            pos = p.get("position")
+            gp = st.get("gp") or 0
+            if pos not in _POS or gp < 1:
+                continue
+            use = ((st.get("pass_att") or 0.0) if pos == "QB" else
+                   (st.get("rush_att") or 0.0) + (st.get("rec_tgt") or 0.0))
+            out[r.get("player_id")] = (round(use / gp, 2), int(gp))
+        return out or None
+    # 3h: box lines land on game nights and are static in between.
+    return racing._cached(("nfl_pre_observed", str(season)), 3 * 3600, build) or {}
+
+
 def rosters(season):
     """{abbr: [{name, pos, reg_per_game, exp}]} for every team, in Sleeper's own
     depth order.
@@ -369,6 +429,7 @@ def rosters(season):
         except Exception:
             rank, norm = {}, (lambda s: s)
         prev = {r.get("player_id"): (r.get("stats") or {}) for r in st}
+        obs = observed_usage(season)
         out = {}
         for r in ros:
             ab = r.get("team")
@@ -385,8 +446,10 @@ def rosters(season):
                         + (s.get("rec_tgt") or 0.0)) / gp if gp else 0.0
             nm = (p.get("first_name", "") + " " + p.get("last_name", "")).strip()
             sr = (rank.get(norm(nm)) or {}).get("rank")
+            o_use, o_gp = obs.get(r.get("player_id")) or (None, 0)
             out.setdefault(ab, []).append(
                 {"name": nm, "pos": pos, "reg_per_game": round(work, 2),
+                 "obs_use_pg": o_use, "obs_gp": o_gp,
                  "rank": sr if isinstance(sr, (int, float)) else None,
                  "exp": p.get("years_exp")})
         return out or None
@@ -441,7 +504,9 @@ def stat_lines(players, scale=1.0, force=()):
     groups = _keep(players, force)
     rows = []
     for pos, ps in groups.items():
-        w = [max(0.01, expected_usage(pos, p.get("reg_per_game")) or 0.01) for p in ps]
+        w = [max(0.01, expected_usage(pos, p.get("reg_per_game"),
+                                      p.get("obs_use_pg"), p.get("obs_gp") or 0)
+                 or 0.01) for p in ps]
         tot = sum(w) or 1.0
         for p, wi in zip(ps, w):
             f = wi / tot                        # this player's share of his group
@@ -463,7 +528,8 @@ def stat_lines(players, scale=1.0, force=()):
             r["rec_td"] = tgt * RTD_TGT[pos]
             r["carries"] = round(car, 2)
             r["targets"] = round(tgt, 2)
-            r["note"] = usage_note(pos, p.get("reg_per_game"))
+            r["note"] = usage_note(pos, p.get("reg_per_game"),
+                                   p.get("obs_use_pg"), p.get("obs_gp") or 0)
             r["reg_per_game"] = p.get("reg_per_game")
             rows.append({k: (round(v, 3) if isinstance(v, float) else v)
                          for k, v in r.items()})

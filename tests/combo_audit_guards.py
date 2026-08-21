@@ -6551,6 +6551,46 @@ ck("the maker re-renders when the week data lands",
 
 print()
 print("=" * 72)
+print("This preseason's own games inform the projections, shrunk as measured")
+print("=" * 72)
+# Sleeper publishes real box lines for played exhibitions (707 players carried
+# 2026 usage when this landed). Measured out of sample on two seasons: observed
+# usage ALONE is WORSE than the role prior every time (one exhibition is
+# noise), and the K=2 blend beats both every time --
+#   2025 wk1->wk2 (n=580): prior 2.50, observed 2.64, K=2 2.34
+#   2025 wk1+2->wk3 (n=536): prior 2.56, observed 2.60, K=2 2.42
+#   2026 wk1->wk2 (n=65):  prior 2.02, observed 2.62, K=2 1.82
+import nfl_preseason as _npz
+ck("the prior is worth exactly the two games the measurement says",
+   _npz._OBS_K == 2.0)
+_zp = _npz.expected_usage("RB", 0.0)
+ck("no observed usage leaves the prior untouched",
+   _npz.expected_usage("RB", 0.0, None, 0) == _zp
+   and _npz.expected_usage("QB", 25.0, None, 0) == _npz.expected_usage("QB", 25.0))
+_z1 = _npz.expected_usage("RB", 0.0, 12.0, 1)
+_z2 = _npz.expected_usage("RB", 0.0, 12.0, 2)
+ck("one loud game moves the number by exactly its K=2 share",
+   abs(_z1 - (1 * 12.0 + 2.0 * _zp) / 3.0) < 0.01, f"{_z1}")
+ck("a second game pulls harder, monotonically", _zp < _z1 < _z2 < 12.0,
+   "observed evidence accumulates but never fully displaces the prior")
+ck("a projection built on observed games says so on the card",
+   "measured THIS preseason" in _npz.usage_note("QB", 0.0, 13.0, 1))
+ck("rosters thread the observed numbers through by player_id",
+   "observed_usage(season)" in _insp.getsource(_npz.rosters)
+   and '"obs_use_pg"' in _insp.getsource(_npz.rosters))
+ck("...and the stat-line shares consume them",
+   'p.get("obs_use_pg")' in _insp.getsource(_npz.stat_lines))
+_orig_gj = _npz.racing._get_json
+try:
+    _npz.racing._get_json = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down"))
+    _npz.racing._form_cache.pop(("nfl_pre_observed", "2099"), None)
+    ck("a dead stats feed degrades to the prior, recorded, never a crash",
+       _npz.observed_usage("2099") == {})
+finally:
+    _npz.racing._get_json = _orig_gj
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
