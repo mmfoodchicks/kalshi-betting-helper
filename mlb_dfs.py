@@ -825,10 +825,44 @@ def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp
 
 
 # ---- Public build ----------------------------------------------------------
+def _assign_slots(lineup):
+    """{id(player): slot} -- which roster slot each player actually fills.
+
+    The optimizer proves a legal assignment exists when it accepts a lineup;
+    this reconstructs one, scarcest player first, so the card can read like
+    DraftKings' own (Gelof shows as the 3B he is filling, not as "3B/OF")."""
+    remaining = list(ROSTER)
+    out = {}
+    for p in sorted(lineup, key=lambda x: len(x["elig"])):
+        pick = next((sl for sl in remaining if sl in p["elig"]), None)
+        if pick is None:
+            # A flexible player already took the only slot this one fits;
+            # move him to another slot he is eligible for and take his.
+            for q in lineup:
+                if id(q) not in out:
+                    continue
+                sq = out[id(q)]
+                alt = next((sl for sl in remaining if sl in q["elig"]), None)
+                if alt is not None and sq in p["elig"]:
+                    out[id(q)] = alt
+                    remaining.remove(alt)
+                    pick = sq
+                    break
+        else:
+            remaining.remove(pick)
+        if pick is not None:
+            out[id(p)] = pick
+    return out
+
+
 def _lineup_payload(lineup, sal, cap, objective):
-    ls = sorted(lineup, key=lambda p: ROSTER.index(_primary_pos(p["elig"])))
+    slot_of = _assign_slots(lineup)
+    ls = sorted(lineup, key=lambda p: (ROSTER.index(slot_of[id(p)])
+                                       if id(p) in slot_of else
+                                       ROSTER.index(_primary_pos(p["elig"]))))
     return {
         "players": [{"name": p["name"], "salary": int(p["salary"]),
+                     "slot": slot_of.get(id(p)),
                      "pos": "/".join(sorted(p["elig"])), "team": p.get("team"),
                      "proj": round(p["proj"], 1), "floor": round(p["floor"], 1),
                      "ceil": round(p["ceil"], 1), "own": p.get("own"),

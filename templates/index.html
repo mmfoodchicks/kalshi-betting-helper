@@ -543,6 +543,7 @@
           <select id="dfsMode" title="Classic = a full roster from the whole slate. Showdown = one game, a 1.5× captain plus flex."><option value="classic">Classic</option><option value="showdown">Showdown (Captain)</option></select>
           <select id="dfsObjective" title="Cash = maximize the average score (safe, for double-ups). GPP = maximize the ceiling/boom score (for top-heavy tournaments). Leverage = ceiling discounted by projected ownership - being different AND right, the way huge fields are actually won. Most confident (UFC) = the slate we're surest of, favouring fights where our rating and the Kalshi price agree."><option value="projection">Cash (max projection)</option><option value="ceiling">GPP (max ceiling)</option><option value="leverage">GPP leverage (ceiling + low own)</option><option value="confidence">🥊 Most confident (UFC)</option></select>
           <label class="small" title="How many players make up one lineup (DraftKings sets this per contest).">roster <input id="dfsRoster" type="number" value="6" style="width:48px"/></label>
+          <span id="dfsRosterAuto" class="small hidden" style="color:var(--muted)"></span>
           <label class="small" title="The salary cap a lineup must fit under.">cap $<input id="dfsCap" type="number" value="50000" style="width:80px"/></label>
         </div>
         <div id="dfsMlbOpts" class="scan-controls ctl-row hidden" style="margin-top:8px">

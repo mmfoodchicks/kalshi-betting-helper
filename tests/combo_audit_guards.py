@@ -6664,6 +6664,72 @@ ck("the screen is held awake while Vigil is visible",
 
 print()
 print("=" * 72)
+print("MLB DFS: the roster is DraftKings' choice, made automatically")
+print("=" * 72)
+# The audit found the auto-slate loader dead end to end: the UI refused an
+# empty CSV (while the server was built to pull tonight's slate itself), the
+# slate picker compared DK's EASTERN start times against the server's UTC
+# clock (tonight's games read as past, next Tuesday's playerless group won),
+# an empty player pool ended the search instead of trying the next group, an
+# empty lobby response was CACHED as "nothing posted" for 15 minutes, and the
+# auto-load note never reached the MLB/NFL/LoL responses because those
+# branches returned early.
+import dk as _dk9
+import inspect as _in9
+_sf9 = _in9.getsource(_dk9.slate_for)
+ck("slate picking compares Eastern to Eastern",
+   "clock.now_et()" in _sf9 and "time.strftime" not in _sf9,
+   "DK's StartDateEst against the server's UTC clock read tonight's slate "
+   "as already started")
+ck("tonight's slates outrank a bigger one next Tuesday",
+   "tonight" in _sf9)
+ck("a playerless draft group does not end the search",
+   "for cand in candidates" in _sf9,
+   "DK lists future groups before posting their pools")
+ck("an empty lobby answer is a retryable failure, not a cached fact",
+   "DK-lobby-empty" in _in9.getsource(_dk9.slates))
+_apy9 = open(_os.path.join(_root, "app.py")).read()
+_dfs9 = _apy9.split("def api_simulate_dfs")[1].split("\n@app.route")[0]
+ck("the auto-loaded slate note reaches every sport's response",
+   _dfs9.count('res["dk_slate"] = auto_slate') >= 3
+   and 'built["dk_slate"] = auto_slate' in _dfs9,
+   "the MLB/NFL/LoL branches returned before the attach")
+ck("the MLB branch enforces DK's own ten-man shape",
+   __import__("mlb_dfs").ROSTER == ["P", "P", "C", "1B", "2B", "3B", "SS",
+                                    "OF", "OF", "OF"],
+   "the generic roster-size box never applies to baseball")
+_js9 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("an empty CSV auto-loads tonight's slate instead of refusing",
+   "Loading tonight's DraftKings" in _js9
+   and "Paste your DraftKings salaries CSV first" not in
+   _js9.split("async function runDfsSim")[1][:900])
+ck("a pasted CSV names its own sport and the picker follows",
+   "dfsDetectSport" in _js9 and '"SP", "RP"' in _js9,
+   "an MLB slate pasted with the picker on UFC built a six-man lineup "
+   "out of ballplayers")
+ck("the fixed roster shape is SAID, not hidden",
+   "dfsRosterAuto" in _js9 and "P·2, C, 1B, 2B, 3B, SS, OF·3" in _js9
+   and 'id="dfsRosterAuto"' in open(_os.path.join(_root, "templates",
+                                                  "index.html")).read())
+ck("the auto-loaded slate is announced on the result",
+   "Auto-loaded tonight's DraftKings slate" in _js9)
+# The card shows the slot each player FILLS, not his eligibility string --
+# and the assigner survives the case where a flexible player must move.
+import mlb_dfs as _md9
+_lu9 = [
+    {"name": "A", "elig": {"2B", "SS"}},   # flexible, assigned first (fewest? both 2)
+    {"name": "B", "elig": {"SS"}},          # rigid: must displace A if A took SS
+]
+_as9 = _md9._assign_slots(_lu9)
+_slots9 = {p["name"]: _as9.get(id(p)) for p in _lu9}
+ck("a rigid player displaces a flexible one from his only slot",
+   _slots9["B"] == "SS" and _slots9["A"] == "2B", _slots9)
+ck("the payload carries the assigned slot",
+   '"slot": slot_of.get(id(p))' in _insp.getsource(_md9._lineup_payload)
+   and "p.slot || p.pos" in _js9)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -25,8 +25,8 @@ What we take from DK, and what we deliberately don't:
 
 import csv
 import io
-import time
 
+import errlog
 import racing
 
 _LOBBY = "https://www.draftkings.com/lobby/getcontests?sport={sport}"
@@ -68,6 +68,15 @@ def slates(sport):
                         "games": g.get("GameCount"),
                         "tag": (g.get("ContestStartTimeSuffix") or "").strip() or None})
         out.sort(key=lambda s: (str(s["starts"] or ""), -(s["games"] or 0)))
+        if not out:
+            # A throttled or mangled lobby response parses to an EMPTY list,
+            # and an empty list is a cacheable "success" -- which pinned "DK
+            # has nothing posted" for 15 minutes over a one-request blink.
+            # In August, mid-slate, that is never the truth; treat empty as a
+            # failed fetch so the next call retries.
+            errlog.note("DK-lobby-empty",
+                        msg=f"{sport}: lobby answered with no draft groups")
+            return None
         return out
     return racing._cached(("dk_slates", sport), 900, build) or []
 
@@ -183,12 +192,31 @@ def slate_for(sport, draft_group_id=None, exclude_games=None):
     sl = slates(sport)
     if not sl:
         return None
-    dg = draft_group_id
-    if dg is None:
-        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    candidates = [draft_group_id] if draft_group_id else []
+    if not candidates:
+        # DK's StartDateEst strings are EASTERN time. Comparing them against
+        # the server's local clock (UTC on the host) read tonight's entire
+        # slate as already started and picked next week's -- whose player pool
+        # DK had not posted yet, so the auto-load returned nothing at all.
+        import clock
+        now = clock.now_et().strftime("%Y-%m-%dT%H:%M:%S")
+        today = now[:10]
         upcoming = [s for s in sl if str(s.get("starts") or "") >= now] or sl
-        dg = max(upcoming, key=lambda s: (s.get("games") or 0))["draft_group_id"]
-    pool = players(dg)
+        # Tonight first: the biggest slate STARTING TODAY beats a bigger one
+        # next Tuesday. Then walk the list -- a group with no players posted
+        # yet (DK lists future groups early) must not end the search.
+        tonight = [s for s in upcoming if str(s.get("starts") or "")[:10] == today]
+        ordered = (sorted(tonight, key=lambda s: -(s.get("games") or 0))
+                   + sorted((s for s in upcoming if s not in tonight),
+                            key=lambda s: (str(s.get("starts") or ""),
+                                           -(s.get("games") or 0))))
+        candidates = [s["draft_group_id"] for s in ordered[:6]]
+    pool, dg = None, None
+    for cand in candidates:
+        pool = players(cand)
+        if pool:
+            dg = cand
+            break
     if not pool:
         return None
     csv_text = salaries_csv(dg, exclude_games=exclude_games)

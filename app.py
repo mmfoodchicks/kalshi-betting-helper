@@ -1454,12 +1454,15 @@ def api_simulate_dfs():
         obj = obj if obj in ("projection", "ceiling", "leverage") else "projection"
         contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
         try:
-            return jsonify(lol_dfs.build(
+            res = lol_dfs.build(
                 text, objective=obj, contest=contest,
                 contest_size=(int(_li("contest_size", 0, int)) or None),
                 entry_fee=max(0.01, _li("entry_fee", 1.0)),
                 prize_pool=(_li("prize_pool", 0.0) or None),
-                first_prize=(_li("first_prize", 0.0) or None)))
+                first_prize=(_li("first_prize", 0.0) or None))
+            if auto_slate and isinstance(res, dict):
+                res["dk_slate"] = auto_slate
+            return jsonify(res)
         except Exception as e:
             return jsonify({"error": f"lol dfs failed: {e}"}), 502
     if d.get("sport") == "nfl":
@@ -1475,7 +1478,7 @@ def api_simulate_dfs():
         obj = obj if obj in ("projection", "ceiling", "leverage") else "projection"
         contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
         try:
-            return jsonify(nfl_dfs.build(
+            res = nfl_dfs.build(
                 text, week=max(1, min(18, int(_ni("week", 1, int)))), objective=obj,
                 stack=d.get("stack", True) is not False, contest=contest,
                 contest_size=(int(_ni("contest_size", 0, int)) or None),
@@ -1493,7 +1496,10 @@ def api_simulate_dfs():
                 # `mode` for the racing/UFC builders and reusing it would let a
                 # NASCAR setting decide an NFL roster.
                 mode=(d.get("nfl_mode") if d.get("nfl_mode") in ("showdown", "classic")
-                      else "auto")))
+                      else "auto"))
+            if auto_slate and isinstance(res, dict):
+                res["dk_slate"] = auto_slate
+            return jsonify(res)
         except Exception as e:
             return jsonify({"error": f"nfl dfs failed: {e}"}), 502
     if d.get("sport") == "mlb":
@@ -1517,7 +1523,7 @@ def api_simulate_dfs():
 
         n_lineups = _i("lineups", 1, 1, 150)
         contest = d.get("contest") if d.get("contest") in ("gpp", "double_up") else None
-        return jsonify(mlb_dfs.build(
+        res = mlb_dfs.build(
             date, text, cap=cap, objective=objective, n_sims=min(6000, n),
             n_lineups=n_lineups, max_exposure=_f("max_exposure", 60, 5, 100),
             min_uniq=_i("min_uniq", 2, 1, 6), stack_min=_i("stack_min", 4, 0, 5),
@@ -1527,7 +1533,10 @@ def api_simulate_dfs():
             contest_size=_i("contest_size", 0, 0, 5000000) or None,
             prize_pool=(_f("prize_pool", 0, 0, 1e9) or None),
             first_prize=(_f("first_prize", 0, 0, 1e9) or None),
-            include_unconfirmed=bool(d.get("include_unconfirmed"))))
+            include_unconfirmed=bool(d.get("include_unconfirmed")))
+        if auto_slate and isinstance(res, dict):
+            res["dk_slate"] = auto_slate
+        return jsonify(res)
     # UFC / F1 / NASCAR: single or multi-lineup portfolio + large-field contest sim.
     def _num(key, default, cast=float):
         try:

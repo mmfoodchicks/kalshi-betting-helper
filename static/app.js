@@ -4952,10 +4952,35 @@ async function initSim() {
     // which it is - a showdown export lists every player twice, once as CPT.
     if ($("dfsNflMode")) $("dfsNflMode").classList.toggle("hidden", !isNfl);
     const rosterLbl = $("dfsRoster") ? $("dfsRoster").closest("label") : null;
-    if (rosterLbl) rosterLbl.classList.toggle("hidden", isNfl || isMlb || isLol);
-    if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", isNfl || isMlb || isLol);
+    const fixed = isNfl || isMlb || isLol;
+    if (rosterLbl) rosterLbl.classList.toggle("hidden", fixed);
+    if ($("dfsMode")) $("dfsMode").classList.toggle("hidden", fixed);
+    // The roster SIZE is DraftKings' choice per sport, not the user's: say
+    // what it is instead of hiding a number box and hoping.
+    const auto = $("dfsRosterAuto");
+    if (auto) {
+      const shapes = {
+        mlb: "10 players - P·2, C, 1B, 2B, 3B, SS, OF·3 (set automatically)",
+        nfl: "9 players - QB, RB·2, WR·3, TE, FLEX, DST (set automatically)",
+        lol: "7 - CPT, TOP, JNG, MID, ADC, SUP, TEAM (set automatically)",
+      };
+      auto.textContent = shapes[sp] || "";
+      auto.classList.toggle("hidden", !shapes[sp]);
+    }
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
+  // A pasted CSV names its own sport; follow it so a baseball slate can never
+  // be built with another sport's roster shape.
+  if ($("dfsCsv") && !$("dfsCsv").dataset.detect) {
+    $("dfsCsv").dataset.detect = "1";
+    $("dfsCsv").addEventListener("input", () => {
+      const det = dfsDetectSport($("dfsCsv").value);
+      if (det && $("dfsSport").value !== det) {
+        $("dfsSport").value = det;
+        dfsMlbToggle();
+      }
+    });
+  }
   // populate weather cities + baseball game list lazily
   try {
     const wx = await (await fetch("/api/weather/meta")).json();
@@ -5064,7 +5089,7 @@ function renderMlbDfs(d) {
     const unconf = p.confirmed === false
       ? ` <span class="ufc-debut" title="Not confirmed in a posted lineup - projected from DraftKings' season average, not our sim. Re-run closer to first pitch.">⚠️ unconfirmed</span>` : "";
     return `<div class="dfs-prow">
-      <div class="dfs-pmain"><span class="legtag">${p.pos}</span> <b>${p.name}</b>
+      <div class="dfs-pmain"><span class="legtag" title="${p.slot && p.slot !== p.pos ? `eligible: ${p.pos}` : ""}">${p.slot || p.pos}</span> <b>${p.name}</b>
         ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}${unconf}</div>
       <div class="dfs-pmeta">$${p.salary.toLocaleString()} · <span title="simulated">${star}</span> proj <b>${p.proj}</b> · ceil ${p.ceil} · own ${own} ${lev(p.lev)}</div>
     </div>`;
@@ -5230,11 +5255,32 @@ function renderNflDfs(d) {
   </div>`;
 }
 
+// Which sport a pasted DraftKings CSV belongs to, read off its Position
+// column. Pasting an MLB slate with the picker still on UFC built a six-man
+// "lineup" out of ballplayers -- the CSV always knew what it was.
+function dfsDetectSport(text) {
+  const pos = new Set();
+  for (const line of (text || "").split("\n").slice(1, 30)) {
+    (line.split(",")[0] || "").trim().toUpperCase().split("/").forEach((x) => x && pos.add(x));
+  }
+  const has = (...xs) => xs.some((x) => pos.has(x));
+  if (has("SP", "RP") || (has("C") && has("SS") && has("OF"))) return "mlb";
+  if (has("QB", "DST")) return "nfl";
+  if (has("TOP", "JNG", "MID", "ADC", "SUP")) return "lol";
+  return null;
+}
+
 async function runDfsSim() {
   const box = $("simResults");
   const csv = $("dfsCsv").value;
-  if (!csv.trim()) { box.innerHTML = `<div class="empty">Paste your DraftKings salaries CSV first.</div>`; return; }
-  box.innerHTML = `<div class="empty">Optimizing + simulating lineup…</div>`;
+  const sp = $("dfsSport").value;
+  if (!csv.trim()) {
+    // No CSV is not a dead end: the server pulls tonight's slate straight
+    // from DraftKings' public lobby (and drops everyone DK has scratched).
+    box.innerHTML = `<div class="empty">Loading tonight's DraftKings ${sp.toUpperCase()} slate + optimizing…</div>`;
+  } else {
+    box.innerHTML = `<div class="empty">Optimizing + simulating lineup…</div>`;
+  }
   try {
     const d = await (await fetch("/api/simulate/dfs", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -5258,9 +5304,13 @@ async function runDfsSim() {
     })).json();
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    if (d.total_ceil != null) { box.innerHTML = renderMlbDfs(d); return; }   // sim-driven MLB
-    if (d.is_lol) { box.innerHTML = renderLolDfs(d); return; }
-    if (d.lineup && d.lineup[0] && d.lineup[0].slot) { box.innerHTML = renderNflDfs(d); return; }
+    // The slate that was auto-pulled from DK's lobby, and who DK scratched.
+    const dkNote = d.dk_slate
+      ? `<div class="small" style="margin:0 0 6px">📥 Auto-loaded tonight's DraftKings slate: <b>${d.dk_slate.n_players}</b> players available${d.dk_slate.n_dropped ? `, <b>${d.dk_slate.n_dropped}</b> scratched/inactive dropped` : ""}.</div>`
+      : "";
+    if (d.total_ceil != null) { box.innerHTML = dkNote + renderMlbDfs(d); return; }   // sim-driven MLB
+    if (d.is_lol) { box.innerHTML = dkNote + renderLolDfs(d); return; }
+    if (d.lineup && d.lineup[0] && d.lineup[0].slot) { box.innerHTML = dkNote + renderNflDfs(d); return; }
     const dfsRow = (p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
       let pd = "";
