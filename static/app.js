@@ -5088,9 +5088,13 @@ function renderMlbDfs(d) {
     const own = p.own != null ? `<span class="dfs-own">${p.own}%</span>` : "";
     const unconf = p.confirmed === false
       ? ` <span class="ufc-debut" title="Not confirmed in a posted lineup - projected from DraftKings' season average, not our sim. Re-run closer to first pitch.">⚠️ unconfirmed</span>` : "";
+    const role = p.role === "opener"
+      ? ` <span class="ufc-debut" title="DraftKings lists this pitcher as an OPENER (the PO badge): a reliever scripted for 1-2 innings before handing off. Tiny ceiling, no win eligibility - usually a trap at the P slot.">🚫 opener</span>`
+      : p.role === "bulk"
+        ? ` <span class="dfs-chip" title="DraftKings lists this pitcher as the probable LONG RELIEVER (the PLR badge): the bulk arm expected to inherit the real innings behind an opener.">bulk arm</span>` : "";
     return `<div class="dfs-prow">
       <div class="dfs-pmain"><span class="legtag" title="${p.slot && p.slot !== p.pos ? `eligible: ${p.pos}` : ""}">${p.slot || p.pos}</span> <b>${p.name}</b>
-        ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}${unconf}</div>
+        ${p.team ? `<span class="dfs-team">${p.team}</span>` : ""} ${sharpBadge(p.sharp)}${role}${unconf}</div>
       <div class="dfs-pmeta">$${p.salary.toLocaleString()} · <span title="simulated">${star}</span> proj <b>${p.proj}</b> · ceil ${p.ceil} · own ${own} ${lev(p.lev)}</div>
     </div>`;
   };

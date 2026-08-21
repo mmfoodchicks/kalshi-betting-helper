@@ -6924,6 +6924,89 @@ ck("the card surfaces the new stack truth",
 
 print()
 print("=" * 72)
+print("Openers are 1-2 inning arms, not 6-inning starters")
+print("=" * 72)
+# A reliever with 51 IP over 67 appearances opened his 3rd game of the year
+# and every layer priced him like a workhorse: ip/gs read 17 innings a start
+# (relief innings divided over opener starts), the workload chain clamped
+# that to a 7.2-IP ace, and the deep sim's gs>=3 starter test rode him 26
+# batters -- an 18.9 DK projection for a 2-out lefty whose real average is
+# 2.5. The user rostered him. Every layer now reads the arm's own workload.
+import baseball as _bb11
+import statistics as _st11
+import mlb_dfs as _md11
+import deep_sim as _ds11
+_fl11 = {"season": {"ip": 51.0, "gs": 3, "g": 67, "era": 3.93, "whip": 1.18,
+                    "k9": 8.8, "bb": 18}}
+_so11 = {"season": {"ip": 139.1, "gs": 25, "g": 25, "era": 3.2, "whip": 1.1,
+                    "k9": 9.5, "bb": 40}}
+_eo11 = _bb11._exp_ip_per_start(_fl11)
+_es11 = _bb11._exp_ip_per_start(_so11)
+ck("an opener's expected innings are his per-APPEARANCE workload",
+   _eo11 <= 1.5,
+   f"got {_eo11} -- ip/gs counted his relief innings and invented 7.2")
+ck("a real starter's expected innings are untouched",
+   5.3 <= _es11 <= 5.7, f"got {_es11:.2f}")
+_wf11 = _bb11._starter_workload(_fl11)
+ck("the outing budget keeps the opener short instead of re-flooring him at 3",
+   _wf11["est_ip"] <= 1.5,
+   f"est_ip {_wf11['est_ip']} -- the rookie-prior blend and the 3.0 floor "
+   "used to re-invent the workhorse the guard removed")
+import random as _rnd11
+_rnd11.seed(77)
+_ao11 = _md11._pitcher_dk_arr({"era": 3.93, "whip": 1.18, "k9": 8.8, "ip": 51.0,
+                               "gs": 3, "est_ip": _wf11["est_ip"]}, 0.55, n=3000)
+_aa11 = _md11._pitcher_dk_arr({"era": 3.2, "whip": 1.1, "k9": 9.5, "ip": 139.1,
+                               "gs": 25, "est_ip": 5.5}, 0.55, n=3000)
+ck("the fast path prices an opener near his real average, win bonus off",
+   _st11.fmean(_ao11) < 6.0,
+   f"mean {_st11.fmean(_ao11):.1f} vs DK's own 2.5 FPPG -- a starter needs "
+   "5 IP for a win, so a scripted 1-2 inning arm can never earn one")
+ck("...and a real starter still projects like one",
+   12.0 <= _st11.fmean(_aa11) <= 22.0, f"mean {_st11.fmean(_aa11):.1f}")
+# Deep sim leash: the opener is hooked on his own workload, the true starter
+# keeps the validated 26-BF performance leash (byte-identical else-branch).
+_arm11 = lambda pid, gs, g, ip: {"id": pid, "gs": gs, "g": g, "ip": ip}
+_prof11 = {"bullpen": [_arm11(9, 0, 40, 38.0)]}
+_stf11 = _ds11._Staff(_prof11, _arm11(1, 3, 67, 51.0))
+_stf11.outing_bf = 4
+_stf11.maybe_hook(1, 0)
+ck("the deep sim hooks an opener after his real workload (~4 batters)",
+   _stf11.cur["id"] == 9,
+   "gs>=3 called him a starter and rode him 26 batters")
+_stf12 = _ds11._Staff(_prof11, _arm11(2, 25, 25, 139.1))
+_stf12.outing_bf = 4
+_stf12.maybe_hook(1, 0)
+_still11 = _stf12.cur["id"] == 2
+_stf12.outing_bf = 26
+_stf12.maybe_hook(5, 0)
+ck("a true starter keeps the 26-batter performance leash",
+   _still11 and _stf12.cur["id"] == 9,
+   "4 BF must not hook him; 26 BF must")
+_hs11 = _insp.getsource(_ds11._Staff.maybe_hook)
+ck("the gem extensions survive for real starters only",
+   "limit = 42" in _hs11 and "ipg" in _hs11
+   and _hs11.index("ipg") < _hs11.index("limit = 42"),
+   "an opener with a perfect inning still leaves; a starter's no-hitter "
+   "still buys him rope")
+# DK's own badge data: attribute 135 is the app's "PO" (opener) tag and 136
+# the "PLR" (bulk / long reliever) -- verified against the live app's labels.
+import dk as _dk11
+_dsrc11 = _insp.getsource(_dk11)
+ck("the DK loader reads the opener/bulk badges and ships them with the slate",
+   "_OPENER_ATTR = 135" in _dsrc11 and "_BULK_ATTR = 136" in _dsrc11
+   and '"roles"' in _insp.getsource(_dk11.slate_for),
+   "the CSV format cannot carry the badge, so it rides the slate payload")
+_ap11 = open(_os.path.join(_root, "app.py")).read()
+ck("the roles reach the builder and the card",
+   'roles=(auto_slate or {}).get("roles")' in _ap11
+   and '"role": p.get("role")' in _insp.getsource(_md11._lineup_payload)
+   and "🚫 opener" in _js10,
+   "a PO arm at the P slot renders with a warning instead of passing as "
+   "a starter")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

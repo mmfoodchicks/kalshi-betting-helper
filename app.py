@@ -1533,7 +1533,10 @@ def api_simulate_dfs():
             contest_size=_i("contest_size", 0, 0, 5000000) or None,
             prize_pool=(_f("prize_pool", 0, 0, 1e9) or None),
             first_prize=(_f("first_prize", 0, 0, 1e9) or None),
-            include_unconfirmed=bool(d.get("include_unconfirmed")))
+            include_unconfirmed=bool(d.get("include_unconfirmed")),
+            # DK's opener/bulk pitcher badges ride the auto-loaded slate (the
+            # CSV format can't carry them) so the card can flag a "PO" trap.
+            roles=(auto_slate or {}).get("roles"))
         if auto_slate and isinstance(res, dict):
             res["dk_slate"] = auto_slate
         return jsonify(res)

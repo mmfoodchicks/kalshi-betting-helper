@@ -39,6 +39,8 @@ SPORTS = {
 }
 _AVG_PPG_ATTR = 408          # DK's "AvgPointsPerGame" stat id
 _OPP_PITCHER_ATTR = 112      # MLB: opposing starter + handedness
+_OPENER_ATTR = 135           # MLB: "PO" badge -- listed pitcher is an OPENER
+_BULK_ATTR = 136             # MLB: "PLR" badge -- the probable long reliever
 _UNAVAILABLE = {"IL", "OUT", "NA", "SUSP"}
 
 
@@ -134,6 +136,14 @@ def players(draft_group_id):
             pattrs = {a.get("name"): a.get("value") for a in (x.get("playerAttributes") or [])}
             comp = x.get("competition") or {}
             status = (x.get("status") or "").upper()
+            # DK's pitcher-role badges, verified against the app's own labels:
+            # game attribute 135 = "PO" (OPENER -- a reliever scripted for 1-2
+            # innings before handing off) and 136 = "PLR" (the probable LONG
+            # reliever / bulk arm who inherits the real innings behind him).
+            # An opener at the P slot is a trap the lineup card must call out.
+            role = ("opener" if str(gattrs.get(_OPENER_ATTR)).lower() == "true"
+                    else "bulk" if str(gattrs.get(_BULK_ATTR)).lower() == "true"
+                    else None)
             seen[nm] = {
                 "name": nm, "salary": x.get("salary"),
                 "position": x.get("position"), "roster_pos": x.get("position"),
@@ -143,6 +153,7 @@ def players(draft_group_id):
                 "avg_ppg": attrs.get(_AVG_PPG_ATTR),
                 "status": status or None,
                 "opp_pitcher": gattrs.get(_OPP_PITCHER_ATTR),
+                "role": role,
                 "hand": pattrs.get("Handedness"),
                 "bats": pattrs.get("Bat-Handedness"),
                 "dk_id": x.get("playerDkId"),
@@ -226,5 +237,8 @@ def slate_for(sport, draft_group_id=None, exclude_games=None):
     return {"csv": csv_text, "draft_group_id": dg, "sport": sport,
             "n_players": sum(1 for p in pool if p["available"]),
             "dropped": dropped[:40], "n_dropped": len(dropped),
+            # Pitcher roles the CSV format can't carry (opener / bulk badges);
+            # the DFS builder tags its pool from this so the card can warn.
+            "roles": {p["name"]: p["role"] for p in pool if p.get("role")},
             "contests": contests(sport, dg)[:10],
             "slates": sl[:10]}

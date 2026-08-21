@@ -114,16 +114,22 @@ def _pitcher_dk_arr(sp, team_win_prob, n=3000):
         exp_ip = max(4.5, min(6.7, ip_total / starts))
     else:
         exp_ip = 5.7
+    # OPENER: an est_ip under 3 is a relief arm listed as the day's starter
+    # (the workload chain recognizes him now). His samples must not be floored
+    # up to 3 innings, and a starter needs 5 IP for a win -- an opener's
+    # scripted 1-2 innings can never qualify, so the win bonus is off.
+    short = exp_ip < 3.0
+    lo, sd = (max(0.5, exp_ip * 0.6), 0.45) if short else (3.0, 1.0)
     out = []
     for _ in range(n):
-        ip = max(3.0, min(8.0, random.gauss(exp_ip, 1.0)))
+        ip = max(lo, min(8.0, random.gauss(exp_ip, sd)))
         outs = ip * 3
         k = _pois(k9 / 9.0 * ip)
         er = _pois(era / 9.0 * ip)
         br = whip * ip
         h = _pois(br * 0.74)
         bb = _pois(br * 0.26)
-        win = 4 if random.random() < (team_win_prob or 0.5) * 0.62 else 0
+        win = 0 if short else (4 if random.random() < (team_win_prob or 0.5) * 0.62 else 0)
         out.append(outs * 0.75 + 2 * k - 2 * er - 0.6 * h - 0.6 * bb + win)
     return out
 
@@ -991,7 +997,8 @@ def _lineup_payload(lineup, sal, cap, objective):
                      "proj": round(p["proj"], 1), "floor": round(p["floor"], 1),
                      "ceil": round(p["ceil"], 1), "own": p.get("own"),
                      "lev": p.get("lev"), "mkt_boom": p.get("mkt_boom"),
-                     "sharp": p.get("sharp"), "sim": p["sim"], "confirmed": p.get("confirmed")}
+                     "sharp": p.get("sharp"), "sim": p["sim"],
+                     "role": p.get("role"), "confirmed": p.get("confirmed")}
                     for p in ls],
         "salary": int(sal), "cap": cap,
         "proj": round(sum(p["proj"] for p in lineup), 1),
@@ -1024,11 +1031,13 @@ def _biggest_stack(lineup):
     return out
 
 
-def _assemble_pool(players_raw, proj, include_unconfirmed):
+def _assemble_pool(players_raw, proj, include_unconfirmed, roles=None):
     """CSV rows -> roster pool. We prefer players the sim confirms as starting;
     `include_unconfirmed` pads the rest off DraftKings' season average so a lineup
-    can still be built when lineups aren't fully posted yet."""
+    can still be built when lineups aren't fully posted yet. `roles` carries DK's
+    pitcher badges (opener / bulk) from the auto-loaded slate."""
     players, unmatched = [], []
+    roles = roles or {}
     for p in players_raw:
         elig = _eligible(p.get("pos"))
         if not elig:
@@ -1051,6 +1060,7 @@ def _assemble_pool(players_raw, proj, include_unconfirmed):
                         # "CWS" where the model says "CHW") and one game as one.
                         "dk_team": (p.get("team") or "").strip() or None,
                         "game": (p.get("game") or "").strip() or None,
+                        "role": roles.get(p["name"]),
                         "arr": pr.get("arr"), "confirmed": confirmed,
                         "sim": pr.get("kind") in ("bat", "pit")})
     return players, unmatched
@@ -1071,7 +1081,7 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
           n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
           contest=None, field_size=200, contest_iters=400, entry_fee=1.0,
           include_unconfirmed=False, contest_size=None, prize_pool=None,
-          first_prize=None):
+          first_prize=None, roles=None):
     import baseball
     players_raw = _sim.parse_dk_csv(csv_text)
     if len(players_raw) < 10:
@@ -1113,14 +1123,14 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         return optimize_portfolio(players, cap, objective, n_lineups,
                                   max_exposure, min_uniq, stack_min)
 
-    players, unmatched = _assemble_pool(players_raw, proj, include_unconfirmed)
+    players, unmatched = _assemble_pool(players_raw, proj, include_unconfirmed, roles)
     lineups = _build_lineups(players)
     auto_padded = False
     # If the sim-confirmed pool alone can't field a roster (common when lineups
     # aren't fully posted yet), fall back to padding the gaps from the CSV's
     # season averages so the user still gets a lineup -- flagged as unconfirmed.
     if not lineups and not include_unconfirmed:
-        players, unmatched = _assemble_pool(players_raw, proj, True)
+        players, unmatched = _assemble_pool(players_raw, proj, True, roles)
         lineups = _build_lineups(players)
         auto_padded = bool(lineups)
 

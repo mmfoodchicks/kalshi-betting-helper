@@ -525,6 +525,10 @@ def _pitcher_stats(pid, season):
                 rec = {"era": _f(st.get("era")), "whip": _f(st.get("whip")),
                        "ip": _ip_float(st.get("inningsPitched")),
                        "gs": _f(st.get("gamesStarted")),
+                       # Games PITCHED, not just started: g >> gs is how an
+                       # OPENER is recognized (a reliever whose season innings
+                       # would otherwise be divided over his handful of starts).
+                       "g": _f(st.get("gamesPitched")),
                        "k9": _f(st.get("strikeoutsPer9Inn")),
                        "hr": _f(st.get("homeRuns")), "bb": _f(st.get("baseOnBalls")),
                        "k": _f(st.get("strikeOuts")), "hbp": _f(st.get("hitByPitch"))}
@@ -1162,6 +1166,15 @@ def _exp_ip_per_start(sp):
     ip, gs = s.get("ip") or 0.0, s.get("gs") or 0
     if not gs:
         return 5.15
+    # OPENER GUARD: season ip counts RELIEF innings too, so ip/gs invents a
+    # workhorse out of a reliever who has opened a few games -- 51 IP over 67
+    # appearances with 3 opener starts "averaged" 17 innings a start and
+    # clamped to 7.2, pricing a 2-out lefty like an ace on the K ladder and
+    # the DFS slate. When he has pitched far more games than he has started,
+    # his real outing is his per-APPEARANCE workload.
+    g = s.get("g") or gs
+    if g >= 8 and g > gs * 1.5:
+        return max(1.0, min(3.0, ip / g))
     per = ip / gs
     per = (gs * per + 5 * 5.15) / (gs + 5)          # shrink small samples
     r = (sp or {}).get("recent") or {}
@@ -1225,6 +1238,15 @@ def _starter_workload(sp):
     pip = REF_PIP + 0.85 * (bb9 - LG_BB9) + 0.30 * (k9 - LG_K9)
     pip = max(14.5, min(20.5, pip))
     emp_ip = _exp_ip_per_start(sp) if ip > 0 else 5.15
+    if emp_ip < 3.0:
+        # An OPENER (the guard in _exp_ip_per_start fired): his outing length
+        # is his measured per-appearance workload over a big relief sample --
+        # blending a rookie-starter prior back in, or flooring at 3 innings,
+        # would re-invent exactly the workhorse the guard just removed.
+        return {"bb9": round(bb9, 2), "pip": round(pip, 1),
+                "est_ip": round(emp_ip, 2),
+                "est_pitches": int(round(emp_ip * pip)),
+                "bb_pa": max(0.045, min(0.16, bb9 / _BF_PER_9))}
     w = ip / (ip + K9_REGRESS_IP) if ip > 0 else 0.0     # sample reliability
     budget = w * (emp_ip * REF_PIP) + (1 - w) * PRIOR_BUDGET
     est_ip = max(3.0, min(7.6, budget / pip))
