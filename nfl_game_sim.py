@@ -428,11 +428,15 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
     best_same_game / game_bundles run unchanged."""
     cands = []
 
-    def add(typ, label, mask, group, kref=None, avg=None, unit=None):
+    def add(typ, label, mask, group, kref=None, avg=None, unit=None, team=None):
         marg = bin(mask).count("1") / n
         if 0.05 <= marg <= 0.96:
             cands.append({"type": typ, "label": label, "mask": mask, "marg": marg,
                           "group": group, "model_pct": None, "kref": kref,
+                          # Which club the leg belongs to, for the grid's
+                          # one-team selection. ML/spread carry it in the kref;
+                          # player props carry it here; totals stay game-level.
+                          "side_team": team or (kref or {}).get("team"),
                           "sim_avg": avg, "avg_unit": unit})
 
     h, a = home["abbr"], away["abbr"]
@@ -482,6 +486,7 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
     for i, p in enumerate(all_ps):
         L = lines[i]
         nm = p["name"]
+        p_team = h if i < len(hp) else a
         key_nm = _nkey(nm)
         for key, lab, step in (("pass_yd", "pass yds", 25), ("rush_yd", "rush yds", 15),
                                ("rec_yd", "rec yds", 15), ("rec", "receptions", 1)):
@@ -492,7 +497,7 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
                 for ln, _p in booked:
                     add(lab.title(), f"{nm} {ln}+ {lab}",
                         _mask_of(lambda i2, A=arr, l2=ln: A[i2] > l2, n),
-                        f"{nm}:{key}", avg=round(mean, 1), unit=lab,
+                        f"{nm}:{key}", avg=round(mean, 1), unit=lab, team=p_team,
                         kref={"t": "prop", "stat": key, "player": nm, "line": ln})
                 continue
             if mean < (3 if key == "rec" else 30):
@@ -500,18 +505,19 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
             line = (math.floor(mean / step) * step) + 0.5
             add(lab.title(), f"{nm} {line}+ {lab}",
                 _mask_of(lambda i2, A=arr, ln=line: A[i2] > ln, n),
-                f"{nm}:{key}", avg=round(mean, 1), unit=lab)
+                f"{nm}:{key}", avg=round(mean, 1), unit=lab, team=p_team)
         td_booked = (prop_lad.get(("td", key_nm)) or {}).get("rungs") or []
         if td_booked:
             for ln, _p in td_booked:
                 k = int(math.ceil(ln))
                 add("TD", f"{nm} {k}+ TD",
                     _mask_of(lambda i2, A=L["td"], k2=k: A[i2] >= k2, n),
-                    f"{nm}:td",
+                    f"{nm}:td", team=p_team,
                     kref={"t": "prop", "stat": "td", "player": nm, "line": ln})
         elif sum(1 for x in L["td"] if x >= 1) / n >= 0.15:
             add("TD", f"{nm} anytime TD",
-                _mask_of(lambda i2, A=L["td"]: A[i2] >= 1, n), f"{nm}:td")
+                _mask_of(lambda i2, A=L["td"]: A[i2] >= 1, n), f"{nm}:td",
+                team=p_team)
     return cands
 
 
@@ -1075,18 +1081,33 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     games = [g for g in games if not _started(g)]
     if not games:
         return {"error_hint": "all_started", "n_started": n_started}
+    # Grid selection: "base" keeps the whole game, "base:TEAM" keeps one club's
+    # legs only -- exactly baseball's semantics. `base` may be the Kalshi suffix
+    # or the AWY@HOM pair, because a game with no market yet has no suffix but
+    # is still pickable.
+    sel_map = {}
+    for tok in (game_sel or ()):
+        base, _, team = str(tok).partition(":")
+        if base:
+            sel_map[base] = team or True
     games_bundles = []
     for g in games:
-        # Selection accepts the Kalshi suffix or the AWY@HOM pair, because a
-        # game with no market yet has no suffix but is still pickable.
-        if game_sel and g["suffix"] not in game_sel \
-                and g.get("pair") not in game_sel:
-            continue
+        team_only = None
+        if sel_map:
+            v = sel_map.get(g["suffix"] or "", sel_map.get(g.get("pair") or ""))
+            if v is None:
+                continue
+            if v is not True:
+                team_only = v
         cands = [c for c in g["cands"]
                  if (types is None or c["type"] in types)]
         if not cands:
             continue
         price_cands(cands, g["suffix"])
+        if team_only:
+            # One club selected: keep that club's legs. Totals and other
+            # game-level legs drop with the other side, matching baseball.
+            cands = [c for c in cands if c.get("side_team") == team_only]
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
         # The NFL ladder is WIDE -- Kalshi books two dozen spreads and nineteen
         # totals a side -- and same-game bundling is combinatorial in the
@@ -1182,7 +1203,7 @@ def _slate_sims(week, preseason, n_sims):
     import nfl_live
     import time as _t3
     season = _season()
-    name = f"nfl_parlay_sims_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
+    name = f"nfl_parlay_sims3_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
     disk, _age = boardshare.get(name, _SIMS_TTL)
     if disk is not None:
         return disk

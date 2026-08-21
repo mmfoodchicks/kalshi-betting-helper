@@ -3166,6 +3166,10 @@ function renderNFLWeek() {
   if (d.engine === "drive") {
     $("nflWeekSummary").innerHTML = `<b>${d.n_games}</b> games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · <i style="color:var(--muted)">${d.note}</i>`;
     $("nflWeekResults").innerHTML = d.games.map(nflSlateCard).join("");
+    // The maker's game grid is built FROM this data, and the maker usually
+    // renders before the first slate load lands -- without this the grid
+    // simply never appeared, however long you stared at the maker.
+    if (!document.querySelector("#nflComboMaker .gamegrid")) renderNFLComboMaker();
     return;
   }
   $("nflWeekSummary").innerHTML = `<b>${d.n}</b> games · Week ${d.week} · ratings from ${d.ratings_season} season. <i style="color:var(--muted)">${d.note}</i>`;
@@ -3179,34 +3183,64 @@ function renderNFLWeek() {
 let nflComboLegs = 3, nflComboTarget = 55, nflComboCap = 0, nflComboPayout = 0;
 let nflComboObjective = "balanced", nflComboLegsMode = "prefer";
 let nflComboPayoutMode = "off", nflComboConn = "or", nflComboSameGame = true;
-// null = ALL games; else a Set of "AWY@HOM" pairs -- same picker baseball has,
-// so a slip can be built from the two games you actually care about.
+// null/empty = ALL games; else {key: true|teamAbbr} where key = "AWY@HOM" --
+// exactly baseball's picker: tap a card for the whole game, tap one team for
+// that club's legs only.
 let nflComboGameSel = null;
 function nflGameGridHtml() {
   const d = _nflWeekData;
   if (!d || d.engine !== "drive" || !(d.games || []).length) return "";
-  const allOn = !nflComboGameSel || !nflComboGameSel.size;
-  const chips = d.games.map((g) => {
+  const allOn = !nflComboGameSel || !Object.keys(nflComboGameSel).length;
+  const esc = (s) => (s || "").replace(/'/g, "\\'");
+  let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="nflComboAllGames()">ALL<br>GAMES</div>`;
+  cards += d.games.map((g) => {
     const key = `${g.away}@${g.home}`;
     const started = g.state === "post" || g.state === "in";
-    const on = allOn || (nflComboGameSel && nflComboGameSel.has(key));
-    const badge = g.state === "post" ? " ✓" : g.state === "in" ? " 🔴" : "";
+    const sel = nflComboGameSel ? nflComboGameSel[key] : undefined;
+    const aOn = sel === true || sel === g.away;
+    const hOn = sel === true || sel === g.home;
+    let when = "";
+    try {
+      when = g.date ? new Date(g.date).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
+    } catch (e) { when = ""; }
     if (started) {
-      return `<span class="track-mini" style="opacity:.4;cursor:default" title="already started - excluded from pre-game combos">${escapeHtml(key)}${badge}</span>`;
+      return `<div class="gg-card" style="opacity:.4" title="already started - excluded from pre-game combos">
+        ${g.state === "in" ? '<span class="gg-live">🔴 LIVE</span>' : ""}
+        <span class="gg-team">${escapeHtml(g.away)}</span><span class="gg-vs">@</span><span class="gg-team">${escapeHtml(g.home)}</span>
+        <span class="gg-when">${g.state === "post" ? "final" : "live"}</span>
+      </div>`;
     }
-    return `<span class="track-mini${on ? " primary-mini" : ""}" style="cursor:pointer" onclick="nflComboToggleGame('${key}')">${escapeHtml(key)}</span>`;
-  }).join(" ");
-  return `<div class="gamegrid small" style="margin-top:6px">games:
-    <span class="track-mini${allOn ? " primary-mini" : ""}" style="cursor:pointer" onclick="nflComboAllGames()">ALL</span>
-    ${chips}</div>`;
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="nflComboToggleGame('${esc(key)}')" title="${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)}${when ? ` - ${when}` : ""}">
+      <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();nflComboToggleTeam('${esc(key)}','${esc(g.away)}')">${escapeHtml(g.away)}</span>
+      <span class="gg-vs">@</span>
+      <span class="gg-team${hOn ? " on" : ""}" onclick="event.stopPropagation();nflComboToggleTeam('${esc(key)}','${esc(g.home)}')">${escapeHtml(g.home)}</span>
+      ${when ? `<span class="gg-when">${when}</span>` : ""}
+    </div>`;
+  }).join("");
+  return `<div class="gamegrid">${cards}</div>`;
 }
 window.nflComboToggleGame = (key) => {
-  if (!nflComboGameSel) nflComboGameSel = new Set();
-  if (nflComboGameSel.has(key)) nflComboGameSel.delete(key);
-  else nflComboGameSel.add(key);
+  if (!nflComboGameSel) nflComboGameSel = {};
+  if (nflComboGameSel[key] === true) delete nflComboGameSel[key];
+  else nflComboGameSel[key] = true;
+  renderNFLComboMaker();
+};
+window.nflComboToggleTeam = (key, team) => {
+  if (!nflComboGameSel) nflComboGameSel = {};
+  if (nflComboGameSel[key] === team) delete nflComboGameSel[key];
+  else nflComboGameSel[key] = team;
   renderNFLComboMaker();
 };
 window.nflComboAllGames = () => { nflComboGameSel = null; renderNFLComboMaker(); };
+function nflComboSelParam() {
+  if (!nflComboGameSel) return "";
+  const parts = [];
+  for (const k in nflComboGameSel) {
+    const v = nflComboGameSel[k];
+    parts.push(v === true ? k : `${k}:${v}`);
+  }
+  return parts.join(",");
+}
 function renderNFLComboMaker() {
   const box = $("nflComboMaker");
   if (!box) return;
@@ -3269,8 +3303,7 @@ async function buildNFLCombo(maxBet, optimal) {
     + `&payout=${nflComboPayout}&objective=${nflComboObjective}`
     + `&legs_mode=${nflComboLegsMode}&payout_mode=${nflComboPayoutMode}`
     + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`
-    + (nflComboGameSel && nflComboGameSel.size
-       ? `&sel=${encodeURIComponent([...nflComboGameSel].join(","))}` : "")
+    + (nflComboSelParam() ? `&sel=${encodeURIComponent(nflComboSelParam())}` : "")
     + (maxBet ? "&max_bet=1" : "")
     + (optimal ? "&optimal=1" : "");
   try {

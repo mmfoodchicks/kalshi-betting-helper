@@ -6420,7 +6420,7 @@ ck("started games are excluded from pre-game combos",
    and "excluded_started" in _bp_src,
    "a finished Thursday game sat in Friday's builds at pre-game prices")
 ck("game selection accepts the AWY@HOM pair as well as the Kalshi suffix",
-   'g.get("pair") not in game_sel' in _bp_src,
+   'sel_map.get(g.get("pair")' in _bp_src,
    "a game with no market yet has no suffix but is still pickable")
 ck("the per-game pool is capped before bundling",
    "cands[:40]" in _bp_src,
@@ -6521,6 +6521,33 @@ ck("the optimal slip renders through the shared note",
    'm.objective !== "optimal"' in _appjs5,
    "renderMixed and optimalNote are shared, so the ceiling arithmetic and the "
    "-EV warning arrive on NFL slips for free")
+
+print()
+print("=" * 72)
+print("The NFL maker's game grid is baseball's: whole games, single teams")
+print("=" * 72)
+# Two findings from the user seeing NO grid at all: the maker rendered before
+# the week data arrived and nothing ever re-rendered it (so the grid never
+# appeared, however long you stared), and the picker had no team halves.
+_bp2 = _insp.getsource(__import__("nfl_game_sim").build_parlay)
+ck("the builder parses base and base:TEAM selections",
+   "partition(\":\")" in _bp2.replace("'", '"') and "team_only" in _bp2)
+ck("a one-team selection keeps only that club's legs",
+   'c.get("side_team") == team_only' in _bp2,
+   "totals and the other side drop, exactly as baseball's picker behaves")
+import nfl_game_sim as _ngs5
+ck("player props know which club they belong to",
+   "team=p_team" in _insp.getsource(_ngs5._build_masks),
+   "ML and spreads carry the team in their kref; props needed their own tag")
+_js5 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the NFL grid uses the same split cards as baseball's",
+   "nflComboToggleTeam" in _js5 and 'class="gg-card' in _js5.split("function nflGameGridHtml")[1][:2000]
+   and "gg-all" in _js5.split("function nflGameGridHtml")[1][:2000])
+ck("selection serializes as pair or pair:team",
+   "nflComboSelParam" in _js5 and "`${k}:${v}`" in _js5)
+ck("the maker re-renders when the week data lands",
+   'document.querySelector("#nflComboMaker .gamegrid")' in _js5,
+   "the maker rendered before the first slate load and the grid never appeared")
 
 print()
 print("=" * 72)
