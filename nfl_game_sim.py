@@ -1026,7 +1026,7 @@ def price_cands(cands, suffix, blend=True):
         # reported priced_frac 0.0 against a board of live asks.
         quotes[id(c)] = q
     if blend:
-        combo_engine.blend_candidates(cands, quotes)
+        combo_engine.blend_candidates(cands, quotes, sport="nfl")
     return cands
 
 
@@ -1052,9 +1052,35 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
         ceil = min(1.0, cap_pct / 100.0)
 
     games = _slate_sims(week, preseason, n_sims)
+    # A game that has kicked off cannot be a pre-game leg: its sim is stale and
+    # its quotes are live-market. Baseball excludes these unless explicitly
+    # opted into its live engine; NFL has no live engine yet, so they are
+    # excluded outright -- previously a finished Thursday game sat in Friday's
+    # builds at its pre-game probabilities.
+    import time as _t5
+    import datetime as _dt5
+    _now = _t5.time()
+
+    def _started(g):
+        if (g.get("state") or "").lower() in ("post", "in"):
+            return True
+        d = g.get("date") or ""
+        try:
+            return bool(d) and _dt5.datetime.fromisoformat(
+                d.replace("Z", "+00:00")).timestamp() + 300 < _now
+        except ValueError:
+            return False
+
+    n_started = sum(1 for g in games if _started(g))
+    games = [g for g in games if not _started(g)]
+    if not games:
+        return {"error_hint": "all_started", "n_started": n_started}
     games_bundles = []
     for g in games:
-        if game_sel and g["suffix"] not in game_sel:
+        # Selection accepts the Kalshi suffix or the AWY@HOM pair, because a
+        # game with no market yet has no suffix but is still pickable.
+        if game_sel and g["suffix"] not in game_sel \
+                and g.get("pair") not in game_sel:
             continue
         cands = [c for c in g["cands"]
                  if (types is None or c["type"] in types)]
@@ -1062,6 +1088,19 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
             continue
         price_cands(cands, g["suffix"])
         cands = [c for c in cands if floor <= c["marg"] <= ceil]
+        # The NFL ladder is WIDE -- Kalshi books two dozen spreads and nineteen
+        # totals a side -- and same-game bundling is combinatorial in the
+        # per-game pool: an uncapped pool put C(100+,4) mask-ANDs inside one
+        # Build click and hung it for minutes. Keep the most bettable forty:
+        # priced legs first, then the biggest model-vs-price gap, then the
+        # likeliest. MLB never needed this cap because its ladders are a
+        # quarter the width.
+        if len(cands) > 40:
+            cands.sort(key=lambda c: (
+                c.get("price_cents") is None,
+                -abs((c.get("marg") or 0) * 100 - (c.get("price_cents") or 50.0)),
+                -(c.get("marg") or 0)))
+            cands = cands[:40]
         # Same optimism bound as baseball: a max bet multiplies prices, so a leg
         # the model likes far more than the market can carry the slip alone.
         if max_bet:
@@ -1111,6 +1150,7 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item["leg_floor_pct"] = round(floor * 100, 1)
     item["leg_cap_pct"] = round(ceil * 100, 1) if ceil < 1.0 else None
     item["preseason"] = bool(preseason)
+    item["excluded_started"] = n_started or None
     item["cost_x"] = round(best["cost"], 4)
     item["market_payout_x"] = round(best["payout"], 2) if best["payout"] else None
     item["ev_pct"] = round(best["ev"] * 100, 1) if best["ev"] is not None else None
@@ -1123,56 +1163,100 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     return item
 
 
+_SIMS_TTL = 1800
+
+
 def _slate_sims(week, preseason, n_sims):
     """[{label, suffix, cands, n}] for the week -- market-anchored in preseason,
-    profile-driven in the regular season."""
+    profile-driven in the regular season.
+
+    SHARED AND CACHED, which is baseball's biggest combo-maker lesson ported
+    over: this used to re-simulate all sixteen games inside every Build click,
+    in whichever worker caught the request -- ~17s a click, times three workers
+    each paying their own. The finished sims go to the shared store with the
+    board TTL, so the first Build (or the warmer) pays once and every
+    subsequent Build on every worker answers in about a second. Prices are NOT
+    baked in: price_cands fetches live Kalshi quotes at build time, exactly
+    like baseball's cached game sims."""
+    import boardshare
     import nfl_live
+    import time as _t3
     season = _season()
-    out = []
+    name = f"nfl_parlay_sims_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
+    disk, _age = boardshare.get(name, _SIMS_TTL)
+    if disk is not None:
+        return disk
+    if not boardshare.claim(name):
+        # A sibling is already simulating this exact slate. Waiting for its
+        # answer beats running a duplicate 17-second build on the same CPU.
+        deadline = _t3.time() + 120
+        while _t3.time() < deadline:
+            disk, _age = boardshare.get(name, _SIMS_TTL)
+            if disk is not None:
+                return disk
+            _t3.sleep(1.5)
+        # the builder died; fall through and build it ourselves
     try:
-        sched = nfl_live.schedule(week, season,
-                                  seasontype=1 if preseason else 2) or []
-    except Exception:
-        sched = []
-    idx = {}
-    try:
-        idx = kalshi_index()
-    except Exception:
-        idx = {}
-    for gm in sched:
-        h, a = gm.get("home"), gm.get("away")
-        suffix = _suffix_for(idx, h, a)
-        if not suffix:
-            continue
+        out = []
         try:
-            import kalshi_nfl
-            imp = kalshi_nfl.implied(suffix)
-            lad = kalshi_nfl.ladders(suffix)
-        except Exception:
+            sched = nfl_live.schedule(week, season,
+                                      seasontype=1 if preseason else 2) or []
+        except Exception as _e:
+            errlog.note("NFLG-parlay-sched", _e)
+            sched = []
+        idx = {}
+        try:
+            idx = kalshi_index()
+        except Exception as _e:
+            errlog.note("NFLG-parlay-index", _e)
+            idx = {}
+        for gm in sched:
+            h, a = gm.get("home"), gm.get("away")
+            suffix = _suffix_for(idx, h, a)
             imp = lad = None
-        if preseason:
-            if not imp:
-                continue                       # no market -> nothing to anchor to
-            import nfl_preseason
-            try:
-                ros = nfl_preseason.rosters(season) or {}
-            except Exception:
-                ros = {}
-            sim = simulate_preseason(h, a, gm.get("home_name") or h,
-                                     gm.get("away_name") or a, imp,
-                                     n=n_sims, ladders=lad,
-                                     rosters={h: ros.get(h), a: ros.get(a)},
-                                     props=(lad or {}).get("props"))
-        else:
-            import nfl_data
-            pair = next(((th, ta) for th, ta in
-                         (nfl_data.week_games(str(season), week) or [])
-                         if th.get("abbr") == h and ta.get("abbr") == a), None)
-            if not pair:
-                continue
-            sim = simulate_game(pair[0], pair[1], n=n_sims, ladders=lad)
-        out.append({"label": f"{gm.get('away_name') or a} @ {gm.get('home_name') or h}",
-                    "suffix": suffix, "cands": sim["_masks"], "n": sim["n_sims"]})
+            if suffix:
+                try:
+                    import kalshi_nfl
+                    imp = kalshi_nfl.implied(suffix)
+                    lad = kalshi_nfl.ladders(suffix)
+                except Exception as _e:
+                    errlog.note("NFLG-implied", _e, path=str(suffix))
+            if preseason:
+                if not imp:
+                    # Same third-grade anchor as the board: a game with no
+                    # market plays at the measured league-average level,
+                    # unpriced, instead of silently vanishing from the maker.
+                    import kalshi_nfl
+                    ch, ca = kalshi_nfl._canon(h), kalshi_nfl._canon(a)
+                    imp = {"total": None, "margin": None, "favourite": None,
+                           "p_win": {ch: 0.5415, ca: 0.4585}, "source": "none"}
+                    suffix, lad = None, None
+                import nfl_preseason
+                try:
+                    ros = nfl_preseason.rosters(season) or {}
+                except Exception:
+                    ros = {}
+                sim = simulate_preseason(h, a, gm.get("home_name") or h,
+                                         gm.get("away_name") or a, imp,
+                                         n=n_sims, ladders=lad,
+                                         rosters={h: ros.get(h), a: ros.get(a)},
+                                         props=(lad or {}).get("props"))
+            else:
+                import nfl_data
+                pair = next(((th, ta) for th, ta in
+                             (nfl_data.week_games(str(season), week) or [])
+                             if th.get("abbr") == h and ta.get("abbr") == a), None)
+                if not pair:
+                    continue
+                sim = simulate_game(pair[0], pair[1], n=n_sims, ladders=lad)
+            out.append({"label": f"{gm.get('away_name') or a} @ {gm.get('home_name') or h}",
+                        "suffix": suffix, "pair": f"{a}@{h}",
+                        "state": gm.get("state"), "date": gm.get("date"),
+                        "cands": sim["_masks"], "n": sim["n_sims"]})
+        if out:
+            boardshare.put(name, out)
+    finally:
+        boardshare.release(name)
     return out
 
 

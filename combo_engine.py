@@ -244,31 +244,42 @@ def _clamp_to_market(p, mid):
 # the prior anyway -- every real edge it found displayed as "+1". Ks kept a
 # 0.7-trust prior through a measured losing stretch. A fixed table cannot be
 # right in both directions; a fitted one is whatever the record says.
+# Keys are bare types for MLB (the original tenant) and "sport:type" for every
+# other sport. That prefix is not cosmetic: NFL candidates also use the type
+# strings "ML" and "Total", and before the blend was sport-aware an NFL
+# moneyline looked up its fitted weight -- and its prior -- from BASEBALL's
+# graded record. Cross-sport contamination, quiet by construction.
 _MODEL_TRUST = {"ML": 1.0, "Total": 0.7, "Ks": 0.7, "Run line": 0.7,
                 "RFI": 0.5, "Hit": 0.5, "Bases": 0.5, "SB": 0.4,
-                "HR": 0.35, "HRR": 0.35, "RBI": 0.35}
+                "HR": 0.35, "HRR": 0.35, "RBI": 0.35,
+                "nfl:ML": 1.0, "nfl:Spread": 0.7, "nfl:Total": 0.7,
+                "nfl:TD": 0.4}
 # candidate type -> the predlog bucket its graded record lives under
 _TRUST_BUCKET = {"ML": "mlb", "Total": "mlb_total", "Ks": "mlb_ks",
                  "Run line": "mlb_runline", "RFI": "mlb_rfi", "Hit": "mlb_hit",
                  "Bases": "mlb_bases", "SB": "mlb_sb", "HR": "mlb_hr",
-                 "HRR": "mlb_hrr", "RBI": "mlb_rbi", "Extras": "mlb_extras"}
+                 "HRR": "mlb_hrr", "RBI": "mlb_rbi", "Extras": "mlb_extras",
+                 # Only the moneyline has a graded NFL record so far; the other
+                 # types run on their priors until predlog grades them.
+                 "nfl:ML": "nfl"}
 _Q_REF = 0.6            # the market quality the fitted weight is anchored at
 _BLEND_SHRINK_N = 300   # graded rows for the fit to fully displace the prior
 _tau_cache = {}
 
 
-def _effective_tau(typ):
+def _effective_tau(typ, sport="mlb"):
     """The trust the blend actually uses: the fitted weight where earned, the
     hand-set prior where not, converted back into the tau the quality-weighted
     formula expects (w = tau / (tau + K*qual))."""
     import time as _t2
-    hit = _tau_cache.get(typ)
+    key = typ if sport == "mlb" else f"{sport}:{typ}"
+    hit = _tau_cache.get(key)
     if hit and _t2.time() - hit[1] < 21600:
         return hit[0]
-    tau_prior = _MODEL_TRUST.get(typ, 0.6)
+    tau_prior = _MODEL_TRUST.get(key, 0.6)
     tau = tau_prior
     try:
-        bucket = _TRUST_BUCKET.get(typ)
+        bucket = _TRUST_BUCKET.get(key)
         fit = None
         if bucket:
             import calibrate
@@ -283,7 +294,7 @@ def _effective_tau(typ):
             tau = min(max(tau, 0.05), 4.0)
     except Exception:
         tau = tau_prior
-    _tau_cache[typ] = (tau, _t2.time())
+    _tau_cache[key] = (tau, _t2.time())
     return tau
 
 
@@ -346,7 +357,7 @@ def market_quality(q):
     return market_reference(q)[1]
 
 
-def blend_prob(p_model, q, typ):
+def blend_prob(p_model, q, typ, sport="mlb"):
     """Precision-weighted blend of the model and the market mid, in log-odds.
 
     Returns (p_used, weight_on_model, quality). With no usable quote this is the
@@ -361,14 +372,14 @@ def blend_prob(p_model, q, typ):
     # model intact -- but it must still CAP it. Returning early here (as this did)
     # skipped the clamp precisely on the worthless markets where the model runs
     # furthest, which is how an 85% claim against a 54c ask survived untouched.
-    tau_m = _effective_tau(typ)
+    tau_m = _effective_tau(typ, sport)
     w = tau_m / (tau_m + _MARKET_K * qual)
     z = w * math.log(p_model / (1 - p_model)) + (1 - w) * math.log(mid / (1 - mid))
     z = max(-12.0, min(12.0, z))
     return _clamp_to_market(1.0 / (1.0 + math.exp(-z)), mid), w, qual
 
 
-def blend_candidates(cands, quotes):
+def blend_candidates(cands, quotes, sport="mlb"):
     """Replace each candidate's marginal with its market-blended one, in place.
 
     `quotes` maps id(cand) -> quote dict. The ORIGINAL model number is kept as
@@ -379,9 +390,13 @@ def blend_candidates(cands, quotes):
     changes there. That machinery was built for calibration and is exactly the
     right shape for this."""
     for c in cands:
-        p = c.get("marg")
+        # The MODEL's number, not whatever is currently in marg: cached sims
+        # are re-priced on every build, and blending the previous blend walked
+        # the number toward the market a step per rebuild. marg_model is only
+        # ever written here, so its presence means marg is already a blend.
+        p = c.get("marg_model") if c.get("marg_model") is not None else c.get("marg")
         q = quotes.get(id(c))
-        used, w, qual = blend_prob(p, q, c.get("type"))
+        used, w, qual = blend_prob(p, q, c.get("type"), sport)
         c["marg_model"] = p
         c["marg"] = used
         c["model_weight"] = round(w, 3)
@@ -436,6 +451,18 @@ def kelly(prob, cost):
 # look identical on (prob, cost) to an all-priced slip yet fail the
 # priced_frac gate the EV objectives apply, so it must not eclipse one.
 _COST_RES = 0.05
+# How many Pareto members one cell may hold. Unbounded, a wide board blew the
+# DP up: the NFL ladder feeds ~24 bundles a game across 16 games, and with the
+# leg ceiling at 30 the state count went combinatorial -- a Build click hung in
+# frontier for minutes (caught by faulthandler, combo_engine.py:495). Six keeps
+# every case the optimality guards exercise intact (their cells never exceed
+# three members) while bounding the worst case; members are evicted likeliest-
+# last, so the max-prob state a cell exists to answer for always survives.
+_CELL_CAP = 6
+# Legs beyond the UI's own maximum only pad the state space -- nobody can ask
+# for a 30-leg slip, and every leg count the payout chaser can actually use
+# lives at or below this.
+_MAX_DP_LEGS = 12
 
 
 def frontier(games_bundles, max_total_legs=8, net=True):
@@ -445,6 +472,7 @@ def frontier(games_bundles, max_total_legs=8, net=True):
     mlb_sim.game_bundles -- one entry per game, at most one bundle taken from
     each. Each bundle is {"size": k, "prob": joint, "legs": [cand, ...]}.
     """
+    max_total_legs = min(max_total_legs, _MAX_DP_LEGS)
     dp = {(0, 0): [(0.0, 0.0, 0, 0, [])]}
     for gi, entry in enumerate(games_bundles):
         bundles = entry[1]
@@ -486,6 +514,9 @@ def frontier(games_bundles, max_total_legs=8, net=True):
                     if not dominated:
                         keep.append((nlp, nlc, npr, tt + btt,
                                      sel + [(gi, b)]))
+                        if len(keep) > _CELL_CAP:
+                            keep.sort(key=lambda st: -st[0])
+                            del keep[_CELL_CAP:]
                         nd[key] = keep
         dp = nd
     out = []

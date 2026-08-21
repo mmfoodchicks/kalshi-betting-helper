@@ -1283,14 +1283,22 @@ if _off:
 else:
     ck("a same-game-OFF mixed parlay puts at most one leg in each game",
        False, "no slip built at all -- the fix must not have emptied the board")
-# The other half of the same guard: turning it ON must still stack, or the fix
-# traded one wrong answer for another.
-_on = B.build_mixed_parlay(playable, n_legs=6, target_pct=45,
-                           max_legs_per_game=4, max_total_legs=12)
-if _on:
+# The other half of the same guard: turning it ON must still be ABLE to stack.
+# Asserted by pigeonhole, not by taste: on a full slate the balanced objective
+# may legitimately prefer six singles (it did, the night the honest blend
+# landed) -- but three games cannot carry five required legs without stacking
+# somewhere, so this fails only if stacking itself is broken.
+_rich = sorted(playable, key=lambda g: -len((B._game_sim(g) or {}).get("cands", [])))[:3]
+_on = B.build_mixed_parlay(_rich, n_legs=5, target_pct=45,
+                           max_legs_per_game=4, max_total_legs=12,
+                           legs_mode="require")
+if _on and _on.get("groups"):
     ck("same-game ON still stacks (the fix did not disable stacking)",
        max(g["size"] for g in _on["groups"]) > 1,
        [(g["matchup"], g["size"]) for g in _on["groups"]][:4])
+else:
+    ck("same-game ON still stacks (the fix did not disable stacking)",
+       False, "no 5-leg slip built from the three richest games")
 
 # One game on the board plus one leg per game cannot reach two legs. Returning
 # a bare None left the NFL tab saying "no combo" with no reason, on a preseason
@@ -1299,8 +1307,10 @@ _hint = _insp.getsource(_NFS.build_parlay)
 ck("the one-leg-per-game / one-game dead end is named, not shrugged at",
    "single_game_no_stack" in _hint,
    "None is indistinguishable from 'the slate is dry'")
-ck("and the API forwards that hint", "single_game_no_stack" in open(
-   os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.py")).read())
+ck("and the API forwards that hint", 'item.get("error_hint")' in open(
+   os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.py")).read(),
+   "the endpoint forwards EVERY builder hint generically now, so a new dead-end "
+   "name reaches the UI without another endpoint edit")
 ck("and the UI explains it in words",
    "single_game_no_stack" in _js and "same-game parlays are off" in _js)
 # `put` is a local of buildTennisCombo. It leaked into the NFL maker on the
@@ -6396,6 +6406,88 @@ ck("a Kalshi suffix parses into a real away/home game with names",
 ck("garbage suffixes and out-of-window dates are skipped, not crashed",
    len(_gks) == 2,
    "an unparseable listing must cost itself, not the slate")
+
+print()
+print("=" * 72)
+print("The NFL combo maker is baseball's, feature for feature")
+print("=" * 72)
+import nfl_game_sim as _ngs3
+import combo_engine as _ce4
+import random as _rnd4
+_bp_src = _insp.getsource(_ngs3.build_parlay)
+ck("started games are excluded from pre-game combos",
+   '"post", "in"' in _bp_src and "all_started" in _bp_src
+   and "excluded_started" in _bp_src,
+   "a finished Thursday game sat in Friday's builds at pre-game prices")
+ck("game selection accepts the AWY@HOM pair as well as the Kalshi suffix",
+   'g.get("pair") not in game_sel' in _bp_src,
+   "a game with no market yet has no suffix but is still pickable")
+ck("the per-game pool is capped before bundling",
+   "cands[:40]" in _bp_src,
+   "Kalshi books two dozen spreads and nineteen totals a side; C(100+,4) "
+   "mask-ANDs hung a Build click for minutes")
+ck("the parlay sims are cached on the shared store",
+   "boardshare.get" in _insp.getsource(_ngs3._slate_sims)
+   and "boardshare.put" in _insp.getsource(_ngs3._slate_sims),
+   "every Build used to re-simulate sixteen games in whichever worker caught "
+   "the request: ~38s a click, times three workers")
+ck("...and the maker falls back to the league-average anchor too",
+   '"source": "none"' in _insp.getsource(_ngs3._slate_sims),
+   "an empty Kalshi index emptied the maker exactly as it emptied the board")
+
+# The frontier stays bounded on a board as wide as the NFL's.
+_rw = _rnd4.Random(99)
+_wide = []
+for _gi in range(16):
+    _bs4 = []
+    for _ in range(24):
+        _sz = _rw.choice([1, 1, 2, 3])
+        _p4 = _rw.uniform(0.35, 0.95)
+        _c4 = max(3.0, min(97.0, _p4 / (1.0 + _rw.uniform(-0.06, 0.06)) * 100.0))
+        _bs4.append({"size": _sz, "prob": _p4,
+                     "legs": [{"marg": _p4 ** (1.0 / _sz), "type": "ML",
+                               "price_cents": 100.0 * (_c4 / 100.0) ** (1.0 / _sz),
+                               "fillable": True}] * _sz})
+    _wide.append((f"G{_gi}", _bs4, f"g{_gi}"))
+import time as _tf4
+_t04 = _tf4.time()
+_wst4 = _ce4.frontier(_wide, max_total_legs=30, net=True)
+_dt4 = _tf4.time() - _t04
+ck("a 16-game x 24-bundle board finishes its frontier in seconds",
+   _dt4 < 20.0 and len(_wst4) > 0,
+   f"{_dt4:.1f}s, {len(_wst4)} states; unbounded cells hung a Build for minutes")
+ck("the DP explores no deeper than the UI can ask",
+   _ce4._MAX_DP_LEGS == 12 and max(s["legs"] for s in _wst4) <= 12)
+ck("cells hold a bounded Pareto set", 1 <= _ce4._CELL_CAP <= 12)
+
+# Re-pricing must not blend a blend: cached sims are priced on every Build.
+_bc4 = {"marg": 0.70, "type": "ML"}
+_q4 = {"ask": 55.0, "bid": 53.0, "mid": 54.0, "spread": 2.0,
+       "size": 500.0, "vol": 1000.0, "oi": 500.0}
+_ce4.blend_candidates([_bc4], {id(_bc4): _q4})
+_m1 = _bc4["marg"]
+_ce4.blend_candidates([_bc4], {id(_bc4): _q4})
+ck("blending twice with the same quote is a no-op the second time",
+   abs(_bc4["marg"] - _m1) < 1e-12 and abs(_bc4["marg_model"] - 0.70) < 1e-12,
+   "each rebuild walked the number one more step toward the market")
+
+# The sports never share a record: NFL legs must not read MLB's fitted weights.
+ck("NFL types are their own tenants in the trust maps",
+   "nfl:ML" in _ce4._MODEL_TRUST and _ce4._TRUST_BUCKET.get("nfl:ML") == "nfl"
+   and 'sport="nfl"' in _insp.getsource(_ngs3.price_cands),
+   "NFL candidates also use the type strings ML and Total; unprefixed, an NFL "
+   "moneyline read its blend weight from BASEBALL's graded record")
+_ce4._tau_cache.clear()
+ck("...and the tau cache keys them apart",
+   _ce4._effective_tau("Spread", "nfl") is not None
+   and ("nfl:Spread" in _ce4._tau_cache) and ("Spread" not in _ce4._tau_cache))
+
+_appjs4 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the maker has baseball's game picker",
+   "nflGameGridHtml" in _appjs4 and "nflComboToggleGame" in _appjs4
+   and "&sel=" in _appjs4)
+ck("...and explains an all-started week instead of shrugging",
+   "all_started" in _appjs4 and "excluded_started" in _appjs4)
 
 print()
 print("=" * 72)

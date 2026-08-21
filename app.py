@@ -2457,9 +2457,10 @@ def api_nfl_parlay():
     if max_bet and not item:
         return jsonify({"parlay": None, "hint": "max_bet_unreachable",
                         "cap_x": combo_engine.MAX_PAYOUT_X})
-    if isinstance(item, dict) and item.get("error_hint") == "single_game_no_stack":
+    if isinstance(item, dict) and item.get("error_hint"):
         return jsonify({"parlay": None, "hint": item["error_hint"],
-                        "n_games_available": item.get("n_games_available")})
+                        "n_games_available": item.get("n_games_available"),
+                        "n_started": item.get("n_started")})
     return jsonify({"parlay": item})
 
 

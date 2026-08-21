@@ -3179,6 +3179,34 @@ function renderNFLWeek() {
 let nflComboLegs = 3, nflComboTarget = 55, nflComboCap = 0, nflComboPayout = 0;
 let nflComboObjective = "balanced", nflComboLegsMode = "prefer";
 let nflComboPayoutMode = "off", nflComboConn = "or", nflComboSameGame = true;
+// null = ALL games; else a Set of "AWY@HOM" pairs -- same picker baseball has,
+// so a slip can be built from the two games you actually care about.
+let nflComboGameSel = null;
+function nflGameGridHtml() {
+  const d = _nflWeekData;
+  if (!d || d.engine !== "drive" || !(d.games || []).length) return "";
+  const allOn = !nflComboGameSel || !nflComboGameSel.size;
+  const chips = d.games.map((g) => {
+    const key = `${g.away}@${g.home}`;
+    const started = g.state === "post" || g.state === "in";
+    const on = allOn || (nflComboGameSel && nflComboGameSel.has(key));
+    const badge = g.state === "post" ? " ✓" : g.state === "in" ? " 🔴" : "";
+    if (started) {
+      return `<span class="track-mini" style="opacity:.4;cursor:default" title="already started - excluded from pre-game combos">${escapeHtml(key)}${badge}</span>`;
+    }
+    return `<span class="track-mini${on ? " primary-mini" : ""}" style="cursor:pointer" onclick="nflComboToggleGame('${key}')">${escapeHtml(key)}</span>`;
+  }).join(" ");
+  return `<div class="gamegrid small" style="margin-top:6px">games:
+    <span class="track-mini${allOn ? " primary-mini" : ""}" style="cursor:pointer" onclick="nflComboAllGames()">ALL</span>
+    ${chips}</div>`;
+}
+window.nflComboToggleGame = (key) => {
+  if (!nflComboGameSel) nflComboGameSel = new Set();
+  if (nflComboGameSel.has(key)) nflComboGameSel.delete(key);
+  else nflComboGameSel.add(key);
+  renderNFLComboMaker();
+};
+window.nflComboAllGames = () => { nflComboGameSel = null; renderNFLComboMaker(); };
 function renderNFLComboMaker() {
   const box = $("nflComboMaker");
   if (!box) return;
@@ -3202,6 +3230,7 @@ function renderNFLComboMaker() {
       reach <input id="nflComboPayout" type="number" min="0" step="any" value="${nflComboPayout}" style="width:60px"/>× payout
     </div>
     <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="nflComboSameGame"${nflComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+    ${nflGameGridHtml()}
     <div style="margin-top:6px">
       <button class="track-mini primary-mini" onclick="buildNFLCombo()">Build</button>
       <button class="track-mini" style="margin-left:6px" onclick="buildNFLCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
@@ -3234,6 +3263,8 @@ async function buildNFLCombo(maxBet) {
     + `&payout=${nflComboPayout}&objective=${nflComboObjective}`
     + `&legs_mode=${nflComboLegsMode}&payout_mode=${nflComboPayoutMode}`
     + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`
+    + (nflComboGameSel && nflComboGameSel.size
+       ? `&sel=${encodeURIComponent([...nflComboGameSel].join(","))}` : "")
     + (maxBet ? "&max_bet=1" : "");
   try {
     const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
@@ -3242,12 +3273,17 @@ async function buildNFLCombo(maxBet) {
     if (!d.parlay) {
       out.innerHTML = (d.hint === "single_game_no_stack")
         ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game on this board, and <b>same-game parlays are off</b> - one leg per game can't make a multi-leg slip. Tick <b>allow same-game parlays</b>, or wait for more of the week to open.</div>`
+        : (d.hint === "all_started")
+        ? `<div class="empty">Every game on this week's board has already kicked off (${d.n_started || "all"} started). Pre-game combos need games that haven't begun - try the next week.</div>`
         : (d.hint === "max_bet_unreachable")
         ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, and a thin board runs out of them long before the ceiling.</div>`
         : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow - widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
     }
-    out.innerHTML = renderMixed(d.parlay);
+    out.innerHTML = renderMixed(d.parlay)
+      + (d.parlay.excluded_started
+         ? `<div class="small" style="color:var(--muted);margin-top:4px">🔴 ${d.parlay.excluded_started} game${d.parlay.excluded_started > 1 ? "s" : ""} already under way - excluded (pre-game pricing only).</div>`
+         : "");
   } catch (e) {
     out.innerHTML = `<div class="empty">Combo build failed.</div>`;
   }
