@@ -13,7 +13,10 @@ On top of raw projections it adds the things the big DFS sites charge for:
 
 ...plus an edge they don't have: every player is cross-checked against Kalshi's
 betting-market odds, so "SHARP leverage" = under-owned by the field AND liked by
-the money. Classic roster: P,P,C,1B,2B,3B,SS,OF,OF,OF under a $50,000 cap.
+the money. Classic roster: P,P,C,1B,2B,3B,SS,OF,OF,OF under a $50,000 cap, with
+DK's own legality enforced (max 5 hitters from a team, players from 2+ games)
+and stacks built the way sharp rooms build them: primary + secondary shapes,
+batting-order-adjacent bats, and a deliberate share of low-owned stacks.
 """
 
 import math
@@ -136,12 +139,20 @@ def projections(games, n_sims=4000):
         if (g.get("live") or {}).get("state") == "Final":
             continue
         sim = mlb_sim.simulate(g, n_sims)
+        # Lineup spot per hitter (batters_home/away are in posted batting order):
+        # the stack builder prefers bats within 2 spots of each other.
+        order_of = {}
+        for bk in ("batters_home", "batters_away"):
+            for bi, b in enumerate((g.get("props") or {}).get(bk) or []):
+                order_of[_norm(b.get("name") or "")] = bi + 1
         for side, abbr in (("home", g.get("home_abbr")), ("away", g.get("away_abbr"))):
             for name, arr in (sim["bat"][side] or {}).items():
                 d = _dist(arr["dk"])
                 if d:
                     proj[_norm(name)] = {"kind": "bat", "team": abbr or side,
-                                         "game": g.get("game_pk"), "arr": list(arr["dk"]), **d}
+                                         "game": g.get("game_pk"),
+                                         "order": order_of.get(_norm(name)),
+                                         "arr": list(arr["dk"]), **d}
         for sp, wp, abbr in ((g.get("home_sp"), g.get("p_home"), g.get("home_abbr")),
                              (g.get("away_sp"), g.get("p_away"), g.get("away_abbr"))):
             if sp and sp.get("name"):
@@ -263,15 +274,18 @@ def deep_projections(games, season, n=3000):
         # stores abbreviated ones ("Witt, B"). Index the posted names by
         # (last, initial) so we can both (a) tell who's actually starting and
         # (b) re-key our projection to the full name DraftKings uses.
-        posted_full, posted_last = {}, {}
+        posted_full, posted_last, posted_ord = {}, {}, {}
         for _k in ("batters_home", "batters_away"):
-            for b in (gprops.get(_k) or []):
+            for _bi, b in enumerate(gprops.get(_k) or []):
                 full = b.get("name") or ""
                 if not full:
                     continue
                 last, init = _name_parts(full)
                 posted_full[(last, init)] = full
                 posted_last.setdefault(last, []).append(full)
+                # Lineup spot 1-9 (the lists are in posted batting order): lets
+                # the stack builder prefer bats within 2 spots of each other.
+                posted_ord[full] = _bi + 1
         posted = bool(posted_full)
 
         def _posted_name(profile_name):
@@ -349,7 +363,9 @@ def deep_projections(games, season, n=3000):
             d = _dist(arr)
             if d:
                 proj[_norm(nm)] = {"kind": "bat", "team": abbr or "",
-                                   "game": g.get("game_pk"), "arr": arr, **d}
+                                   "game": g.get("game_pk"),
+                                   "order": posted_ord.get(nm),
+                                   "arr": arr, **d}
     return proj
 
 
@@ -514,55 +530,123 @@ def add_ownership_leverage(players, market_boom):
 
 
 # ---- Optimizer (single lineup) ---------------------------------------------
+_DK_MAX_HITTERS = 5     # DraftKings MLB classic: at most 5 non-pitchers per team
+_ADJ_BOOST = 1.35       # stack picks prefer bats within 2 lineup spots
+
+
 def _value(p, objective):
     return p["ceil"] if objective == "ceiling" else p["median"]
 
 
-def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random):
+def _ord_gap(a, b):
+    """Batting-order distance with wraparound: the lineup is a cycle, so the
+    9-hole and leadoff hitters are adjacent (a 9-1-2 mini-stack is a real
+    construction -- the 9th spot turns the order over to the top)."""
+    d = abs(a - b)
+    return min(d, 9 - d)
+
+
+def _build_one(by_pos, cap, objective, stack_team=None, stack_min=0, rng=random,
+               stack2_team=None, stack2_min=0):
     """One greedy-randomized valid lineup. If a stack is requested, hitter slots
-    are seeded from that team first so the lineup actually stacks."""
+    are seeded from that team first (then the secondary team) so the lineup
+    actually stacks; within a stack, bats hitting within 2 lineup spots of an
+    already-picked teammate are preferred -- adjacent bats double-dip on the
+    same rally, scattered ones don't.
+
+    DraftKings LEGALITY is enforced here, not hoped for: at most
+    _DK_MAX_HITTERS hitters from one team (counted on DK's own team label so
+    padded players count too), and players from at least two games -- a 5-3
+    stack of both sides of one game plus its two starters is a lineup DK
+    rejects at entry."""
     used, lineup, sal = set(), [], 0
     slots = ROSTER
     order = sorted(range(len(slots)), key=lambda i: len(by_pos[slots[i]]))
-    # Seed the stack: take the cheapest-by-value path by trying stack-team hitters
-    # for the earliest hitter slots.
-    stacked = 0
+    stacked = stacked2 = 0
+    hit_ct = {}                    # DK team label -> hitters rostered (the 5-cap)
+    ords = {}                      # model team -> batting orders already picked
     for si in order:
         pos = slots[si]
         pool = [p for p in by_pos[pos] if p["name"] not in used and sal + p["salary"] <= cap]
+        if pos != "P":
+            pool = [p for p in pool if not p.get("dk_team")
+                    or hit_ct.get(p["dk_team"], 0) < _DK_MAX_HITTERS]
         if not pool:
             return None
         cand = pool
-        if stack_team and pos != "P" and stacked < stack_min:
-            team_pool = [p for p in pool if p.get("team") == stack_team]
-            if team_pool:
-                cand = team_pool
+        if pos != "P":
+            if stack_team and stacked < stack_min:
+                team_pool = [p for p in pool if p.get("team") == stack_team]
+                if team_pool:
+                    cand = team_pool
+            elif stack2_team and stacked2 < stack2_min:
+                team_pool = [p for p in pool if p.get("team") == stack2_team]
+                if team_pool:
+                    cand = team_pool
         top = cand[:12]
-        weights = [max(0.1, _value(x, objective)) ** 2 for x in top]
+        weights = []
+        for x in top:
+            w = max(0.1, _value(x, objective)) ** 2
+            o, picked = x.get("order"), ords.get(x.get("team"))
+            if o and picked and min(_ord_gap(o, t) for t in picked) <= 2:
+                w *= _ADJ_BOOST
+            weights.append(w)
         pick = rng.choices(top, weights=weights)[0]
-        if stack_team and pick.get("team") == stack_team and pos != "P":
-            stacked += 1
+        if pos != "P":
+            if stack_team and pick.get("team") == stack_team:
+                stacked += 1
+            elif stack2_team and pick.get("team") == stack2_team:
+                stacked2 += 1
+            if pick.get("dk_team"):
+                hit_ct[pick["dk_team"]] = hit_ct.get(pick["dk_team"], 0) + 1
+            if pick.get("order") and pick.get("team"):
+                ords.setdefault(pick["team"], []).append(pick["order"])
         used.add(pick["name"]); lineup.append(pick); sal += pick["salary"]
     if len(lineup) != len(slots) or sal > cap:
         return None
     if stack_team and stacked < stack_min:
         return None
+    if stack2_team and stacked2 < stack2_min:
+        return None
+    games = {p.get("game") for p in lineup}
+    if None not in games and len(games) < 2:
+        return None                # DK requires players from at least two games
     return lineup, sal
 
 
-def optimize(players, cap, objective, restarts=6000):
+def _stackable_teams(players, need):
+    """Teams with enough sim-confirmed hitters in the pool to fill a need-stack."""
+    ct = {}
+    for p in players:
+        if p.get("kind") == "bat" and p.get("team"):
+            ct[p["team"]] = ct.get(p["team"], 0) + 1
+    return sorted(t for t, n in ct.items() if n >= need)
+
+
+def optimize(players, cap, objective, restarts=6000, stack_min=0):
+    """Best single lineup. stack_min >= 2 seeds every restart with a stack team
+    (rotating through the viable ones, best total score wins) so the default
+    4-stack applies to a SINGLE build too -- the portfolio path was stacking
+    while the lone lineup everyone actually builds came out scattered, because
+    a sum-of-medians objective can't feel correlation. Falls back to unstacked
+    (still DK-legal) if no stacked lineup fills, rather than returning nothing."""
     by_pos = _by_pos(players)
     if by_pos is None:
         return None
+    teams = _stackable_teams(players, stack_min) if stack_min >= 2 else []
     best = None
     for _ in range(restarts):
-        r = _build_one(by_pos, cap, objective)
+        st = random.choice(teams) if teams else None
+        r = _build_one(by_pos, cap, objective, stack_team=st,
+                       stack_min=stack_min if st else 0)
         if not r:
             continue
         lineup, sal = r
         score = sum(_value(p, objective) for p in lineup)
         if best is None or score > best[0]:
             best = (score, lineup, sal)
+    if best is None and teams:
+        return optimize(players, cap, objective, restarts // 2, 0)
     return best
 
 
@@ -584,27 +668,67 @@ def _lineup_key(lineup):
     return frozenset(p["name"] for p in lineup)
 
 
+def _stack_team_weights(players, teams):
+    """(quality_weights, contrarian_weights) for drawing a primary stack team.
+    Quality = the team's best four hitters' medians (a stack IS its best bats);
+    contrarian = the same quality discounted by the field's projected ownership
+    of those bats. Winning GPP lineups overwhelmingly carry a NON-popular stack,
+    so a deliberate share of builds draws from the contrarian weights instead of
+    letting chalk teams take every lineup."""
+    if not teams:
+        return [], []
+    q, contra = [], []
+    for t in teams:
+        bats = sorted((p for p in players if p.get("team") == t and p.get("kind") == "bat"),
+                      key=lambda p: -p["median"])[:4]
+        quality = max(0.1, sum(p["median"] for p in bats)) ** 1.5
+        own = sum(p.get("own", 0.0) for p in bats) / max(1, len(bats))
+        q.append(quality)
+        contra.append(quality / (own + 8.0))
+    return q, contra
+
+
 def optimize_portfolio(players, cap, objective, n_lineups=20,
                        max_exposure=60.0, min_uniq=2, stack_min=4):
     """Build a diversified set of lineups with exposure caps, a uniqueness floor,
-    and team stacking -- what GPP mass-multi-entry actually needs."""
+    and team stacking -- what GPP mass-multi-entry actually needs.
+
+    Stack teams aren't drawn flat: most builds draw the primary by stack quality
+    and about a third draw quality discounted by projected ownership (the
+    "always carry a low-owned stack" rule, made concrete). Most builds also
+    seed a SECONDARY 2-3 bat mini-stack from another team -- the classic 5-3 /
+    5-2-1 shapes -- while the primary minimum stays the only hard filter, so
+    thin slates still fill."""
     by_pos = _by_pos(players)
     if by_pos is None:
         return None
-    teams = sorted({p.get("team") for p in players if p.get("team")})
+    enforce_stack = stack_min >= 2
+    teams = _stackable_teams(players, stack_min) if enforce_stack else []
+    enforce_stack = enforce_stack and bool(teams)
+    q_w, contra_w = _stack_team_weights(players, teams)
+    teams2 = _stackable_teams(players, 2)
     max_count = max(1, math.ceil(max_exposure / 100.0 * n_lineups))
 
     # Large candidate pool: a mix of stacked builds (rotating the stack team) and
     # free builds, so we have variety to select a diversified portfolio from.
-    enforce_stack = stack_min >= 2 and bool(teams)
     pool, seen = [], set()
     target = max(400, n_lineups * 40)
     attempts = 0
     while len(pool) < target and attempts < target * 5:
         attempts += 1
-        # When stacking, always seed a (rotating) stack team; otherwise free build.
-        st = random.choice(teams) if enforce_stack else None
-        r = _build_one(by_pos, cap, objective, stack_team=st, stack_min=stack_min if st else 0)
+        # When stacking, seed a drawn primary team, usually plus a secondary.
+        st = st2 = None
+        s2 = 0
+        if enforce_stack:
+            w = contra_w if random.random() < 0.35 else q_w
+            st = random.choices(teams, weights=w)[0]
+            others = [t for t in teams2 if t != st]
+            if others and random.random() < 0.7:
+                st2 = random.choice(others)
+                s2 = random.choice((2, 3))
+        r = _build_one(by_pos, cap, objective, stack_team=st,
+                       stack_min=stack_min if st else 0,
+                       stack2_team=st2, stack2_min=s2)
         if not r:
             continue
         lineup, sal = r
@@ -879,14 +1003,25 @@ def _lineup_payload(lineup, sal, cap, objective):
 
 
 def _biggest_stack(lineup):
+    """{team, n, own?, team2?, n2?} -- the lineup's primary stack with the
+    field's projected ownership of those bats (a 5-stack at 8% owned is the
+    play the guide books call a low-owned stack), plus the secondary mini-stack
+    when one exists. None when nothing reaches 2."""
     teams = {}
     for p in lineup:
         if p["sim"] and p.get("kind") != "pit" and p.get("team"):
-            teams[p["team"]] = teams.get(p["team"], 0) + 1
-    if not teams:
+            teams.setdefault(p["team"], []).append(p)
+    ranked = sorted(teams.items(), key=lambda kv: -len(kv[1]))
+    if not ranked or len(ranked[0][1]) < 2:
         return None
-    tm = max(teams, key=teams.get)
-    return {"team": tm, "n": teams[tm]} if teams[tm] >= 2 else None
+    tm, grp = ranked[0]
+    out = {"team": tm, "n": len(grp)}
+    owns = [p.get("own") for p in grp if p.get("own") is not None]
+    if owns:
+        out["own"] = round(sum(owns) / len(owns), 1)
+    if len(ranked) > 1 and len(ranked[1][1]) >= 2:
+        out["team2"], out["n2"] = ranked[1][0], len(ranked[1][1])
+    return out
 
 
 def _assemble_pool(players_raw, proj, include_unconfirmed):
@@ -909,6 +1044,13 @@ def _assemble_pool(players_raw, proj, include_unconfirmed):
         players.append({"name": p["name"], "salary": p["salary"], "elig": elig,
                         "median": pr["median"], "ceil": pr["ceil"], "floor": pr["floor"],
                         "proj": pr["proj"], "team": pr.get("team"), "kind": pr.get("kind"),
+                        "order": pr.get("order"),
+                        # DraftKings' OWN team/game labels off the CSV, uniform
+                        # across confirmed and padded players -- the legality
+                        # checks must count one real team as one team (DK says
+                        # "CWS" where the model says "CHW") and one game as one.
+                        "dk_team": (p.get("team") or "").strip() or None,
+                        "game": (p.get("game") or "").strip() or None,
                         "arr": pr.get("arr"), "confirmed": confirmed,
                         "sim": pr.get("kind") in ("bat", "pit")})
     return players, unmatched
@@ -961,8 +1103,12 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
     n_lineups = max(1, min(150, n_lineups))
 
     def _build_lineups(players):
+        # Ownership BEFORE building: the portfolio's contrarian stack draws and
+        # the stack chip's own% need it annotated on the pool, not bolted on
+        # after the lineups already exist.
+        add_ownership_leverage(players, market_boom)
         if n_lineups == 1:
-            res = optimize(players, cap, objective)
+            res = optimize(players, cap, objective, stack_min=stack_min)
             return [res] if res else None
         return optimize_portfolio(players, cap, objective, n_lineups,
                                   max_exposure, min_uniq, stack_min)
@@ -986,8 +1132,6 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         return {"error": f"couldn't fill a valid roster ({why}). "
                 f"Matched {n_conf} confirmed starters of {len(players_raw)} CSV players - "
                 "if lineups aren't posted yet, try again closer to first pitch."}
-
-    add_ownership_leverage(players, market_boom)
 
     # Slate-wide leverage board (the unique selling point): best sharp + raw plays.
     sim_players = [p for p in players if p["sim"]]
@@ -1021,6 +1165,13 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
         "cap": cap, "total_proj": payloads[0]["proj"],
         "total_ceil": payloads[0]["ceil"], "total_floor": payloads[0]["floor"],
     }
+    # Honest about a relaxed stack: a thin pool can make the requested stack
+    # unfillable and optimize() falls back to unstacked rather than nothing --
+    # say so instead of silently handing back a scattered lineup.
+    if stack_min >= 2 and n_lineups == 1:
+        got = (_biggest_stack(lineups[0][1]) or {}).get("n", 0)
+        if got < stack_min:
+            out["stack_relaxed"] = stack_min
     if contest:
         try:
             out["contest_sim"] = contest_sim(

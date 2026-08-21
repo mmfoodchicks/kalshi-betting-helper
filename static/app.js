@@ -5104,7 +5104,7 @@ function renderMlbDfs(d) {
         <span title="chance this lineup finishes 1st in the full field">win <b>${winTxt}</b></span>
         <span title="chance you finish in the paid places">cash <b>${cs.cash_pct}%</b></span>
         <span title="modeled return on your entry fee in this contest">ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span></div>` : "";
-    const stk = ln.stack ? `<span class="dfs-chip">${ln.stack.team} ${ln.stack.n}-stack</span>` : "";
+    const stk = ln.stack ? `<span class="dfs-chip" title="primary stack${ln.stack.own != null ? ` · the field rosters these bats at ~${ln.stack.own}% (low = contrarian leverage)` : ""}">${ln.stack.team} ${ln.stack.n}-stack${ln.stack.n2 ? ` + ${ln.stack.team2} ${ln.stack.n2}` : ""}${ln.stack.own != null ? ` · ~${ln.stack.own}% owned` : ""}</span>` : "";
     const isBest = d.contest_sim && d.contest_sim.best_lineup_index === i;
     return `<div class="dfs-lineup${isBest ? " best" : ""}">
       <div class="dfs-lhead"><b>Lineup ${i + 1}${isBest ? " 👑" : ""}</b> ${stk}
@@ -5136,6 +5136,9 @@ function renderMlbDfs(d) {
   const padWarn = d.auto_padded
     ? `<div class="dfs-note" style="border-color:#e0a23a;color:#e0a23a">⚠️ Not enough confirmed starters to fill a roster (lineups may not be posted yet), so gaps were filled from DraftKings' season averages - those players are flagged <b>⚠️ unconfirmed</b> below. Re-run closer to first pitch for a fully sim-driven lineup.</div>`
     : "";
+  const stackWarn = d.stack_relaxed
+    ? `<div class="dfs-note" style="border-color:#e0a23a;color:#e0a23a">⚠️ No ${d.stack_relaxed}-stack could be filled from tonight's pool (thin slate or too few confirmed bats per team), so this lineup was built without the stack rule. It is still DK-legal.</div>`
+    : "";
 
   let csHead = "";
   if (d.contest_sim && !d.contest_sim.error) {
@@ -5155,6 +5158,7 @@ function renderMlbDfs(d) {
       <div class="dfs-meta">${d.n_lineups} lineup${d.n_lineups > 1 ? "s" : ""} · ${d.sim_players} sim-projected players in pool of ${d.pool}</div>
     </div>
     ${padWarn}
+    ${stackWarn}
     ${boardHtml}
     ${csHead}
     <div class="dfs-lineups">${d.lineups.map(lineupCard).join("")}</div>
@@ -5162,7 +5166,7 @@ function renderMlbDfs(d) {
     ${un}
     <div class="small" style="margin-top:8px;color:var(--muted)">🎲 ${d.engine === "deep"
       ? "every game is played out by the deep pitch-by-pitch engine (the same one behind the 4,000-season run): pitchers face the real opposing lineup, same-game hitters are correlated for stacking, and park + weather scale the run environment"
-      : "hitters come from the correlated game sim; pitchers from rate stats"}. Ownership/leverage are model estimates. Needs posted lineups (a few hours pre-game).</div>
+      : "hitters come from the correlated game sim; pitchers from rate stats"}. Stacks prefer bats within 2 lineup spots; every lineup is DK-legal (≤5 hitters/team, 2+ games). Ownership/leverage are model estimates. Needs posted lineups (a few hours pre-game).</div>
   </div>`;
 }
 

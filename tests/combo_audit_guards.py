@@ -6730,6 +6730,200 @@ ck("the payload carries the assigned slot",
 
 print()
 print("=" * 72)
+print("MLB DFS: DK legality, stacking shapes, batting-order adjacency")
+print("=" * 72)
+# The guide-book strategies the builder claimed but didn't do: the single
+# lineup ignored the stack knob entirely, nothing enforced DraftKings' own
+# entry rules (max 5 hitters a team, players from 2+ games), stacks had no
+# secondary shape or low-owned steering, and batting order was ignored.
+import random as _rnd10
+import mlb_dfs as _md10
+
+
+def _mk10(name, team, elig, med, sal=4000, order=None, game=None, kind="bat"):
+    return {"name": name, "salary": sal, "elig": set(elig), "median": med,
+            "ceil": med * 1.6, "floor": med * 0.5, "proj": med, "team": team,
+            "dk_team": team, "game": game, "order": order,
+            "kind": kind, "arr": None, "confirmed": True, "sim": True}
+
+
+_POS10 = ["C", "1B", "2B", "3B", "SS", "OF", "OF", "OF", "OF"]
+
+
+def _team10(team, game, med, jitter=0.0):
+    rnd = _rnd10.Random(sum(map(ord, team)))          # NOT hash(): stable per run
+    out = [_mk10(f"{team}-b{i+1}", team, {pos},
+                 med + (rnd.uniform(-jitter, jitter) if jitter else 0),
+                 order=i + 1, game=game)
+           for i, pos in enumerate(_POS10)]
+    out.append(_mk10(f"{team}-P", team, {"P"}, med + 5, sal=4200, game=game,
+                     kind="pit"))
+    return out
+
+
+_poolA = (_team10("AAA", "G1", 10, 1.5) + _team10("BBB", "G1", 10, 1.5)
+          + _team10("CCC", "G2", 10, 1.5) + _team10("DDD", "G2", 10, 1.5))
+_rnd10.seed(11)
+_r10 = _md10.optimize(_poolA, 50000, "median", restarts=800, stack_min=4)
+_stk10 = _md10._biggest_stack(_r10[1]) if _r10 else None
+ck("a SINGLE lineup honors the stack knob",
+   _r10 is not None and _stk10 is not None and _stk10["n"] >= 4,
+   f"got {_stk10} -- the UI default is 1 lineup + stack 4, and the single "
+   "path silently ignored stack_min; the lineup everyone actually builds "
+   "came out scattered")
+
+_poolB = (_team10("AAA", "G1", 30) + _team10("BBB", "G1", 5)
+          + _team10("CCC", "G2", 5) + _team10("DDD", "G2", 5))
+_rnd10.seed(12)
+_r10 = _md10.optimize(_poolB, 50000, "median", restarts=800)
+_naaa = (sum(1 for p in _r10[1] if p["kind"] == "bat" and p["team"] == "AAA")
+         if _r10 else 99)
+ck("DraftKings' 5-hitters-per-team cap binds on a dominant team",
+   _naaa == 5,
+   f"{_naaa} AAA bats rostered -- 8 hitter slots and one hot offense used to "
+   "produce a 6+ stack that DK rejects at entry")
+
+_poolC = (_team10("AAA", "G1", 30) + _team10("BBB", "G1", 28)
+          + _team10("CCC", "G2", 3) + _team10("DDD", "G2", 3))
+_rnd10.seed(13)
+_r10 = _md10.optimize(_poolC, 50000, "median", restarts=800)
+_gm10 = {p["game"] for p in _r10[1]} if _r10 else set()
+ck("DK's players-from-two-games rule binds when one game dominates",
+   len(_gm10) >= 2,
+   f"games {_gm10} -- a 5-3 of both sides of one game plus its two starters "
+   "maximized points and was an illegal entry")
+
+# No team can positionally field 5 of its own bats (4 OF-only + a C each, and
+# only 3 OF slots exist) -> every stacked restart fails -> the fallback must
+# still deliver a legal unstacked lineup instead of nothing.
+_poolD = []
+for _t10, _g10 in (("AAA", "G1"), ("BBB", "G1"), ("CCC", "G2"), ("DDD", "G2")):
+    _tr10 = _rnd10.Random(sum(map(ord, _t10)))
+    for _i10 in range(4):
+        _poolD.append(_mk10(f"{_t10}-of{_i10}", _t10, {"OF"},
+                            10 + _tr10.uniform(-1, 1), order=_i10 + 1, game=_g10))
+    _poolD.append(_mk10(f"{_t10}-c", _t10, {"C"}, 9, order=5, game=_g10))
+    _poolD.append(_mk10(f"{_t10}-P", _t10, {"P"}, 15, sal=4200, game=_g10,
+                        kind="pit"))
+for _t10, _g10, _p10 in (("UT1", "G1", "1B"), ("UT2", "G1", "2B"),
+                         ("UT3", "G2", "3B"), ("UT4", "G2", "SS")):
+    _poolD.append(_mk10(f"{_t10}-{_p10}", _t10, {_p10}, 9, order=6, game=_g10))
+_rnd10.seed(21)
+_r10 = _md10.optimize(_poolD, 50000, "median", restarts=400, stack_min=5)
+_stk10 = _md10._biggest_stack(_r10[1]) if _r10 else None
+ck("an unfillable stack falls back to a legal lineup, not to nothing",
+   _r10 is not None and (_stk10 is None or _stk10["n"] < 5),
+   f"got {_stk10} -- a thin slate with the stack knob up must not return "
+   "an error")
+ck("...and the response owns up to relaxing the stack",
+   "stack_relaxed" in _insp.getsource(_md10.build),
+   "silently handing back a scattered lineup breaks trust in the knob")
+
+# Batting-order adjacency: with a real choice of stack bats (multi-eligible,
+# equal value), the second stack pick lands within 2 lineup spots of the first
+# measurably more often than an unboosted build. Fixed seeds -> deterministic.
+_UTIL10 = {"C", "1B", "2B", "3B", "SS", "OF"}
+_poolE = [_mk10(f"SSS-b{_i10+1}", "SSS", _UTIL10, 10.0, order=_i10 + 1, game="G1")
+          for _i10 in range(9)]
+for _t10, _g10 in (("BBB", "G1"), ("CCC", "G2"), ("DDD", "G2")):
+    for _i10, _p10 in enumerate(_POS10):
+        _poolE.append(_mk10(f"{_t10}-b{_i10+1}", _t10, {_p10}, 10.0,
+                            order=_i10 + 1, game=_g10))
+    _poolE.append(_mk10(f"{_t10}-P", _t10, {"P"}, 15, sal=4200, game=_g10,
+                        kind="pit"))
+_poolE.append(_mk10("SSS-P", "SSS", {"P"}, 15, sal=4200, game="G1", kind="pit"))
+_bp10 = _md10._by_pos(_poolE)
+
+
+def _near2_rate10(boost):
+    old = _md10._ADJ_BOOST
+    _md10._ADJ_BOOST = boost
+    hit = tot = 0
+    try:
+        for _i in range(600):
+            rng = _rnd10.Random(5000 + _i)
+            r = _md10._build_one(_bp10, 50000, "median", stack_team="SSS",
+                                 stack_min=5, rng=rng)
+            if not r:
+                continue
+            ords = [p["order"] for p in r[0]
+                    if p["team"] == "SSS" and p["kind"] == "bat"]
+            if len(ords) >= 2:
+                tot += 1
+                hit += 1 if _md10._ord_gap(ords[0], ords[1]) <= 2 else 0
+    finally:
+        _md10._ADJ_BOOST = old
+    return hit / max(1, tot)
+
+
+_adj_on10, _adj_off10 = _near2_rate10(_md10._ADJ_BOOST), _near2_rate10(1.0)
+ck("stack picks measurably prefer bats within 2 lineup spots",
+   _adj_on10 - _adj_off10 > 0.03,
+   f"boosted {_adj_on10:.3f} vs baseline {_adj_off10:.3f} -- adjacent bats "
+   "double-dip on the same rally; measured +0.075 on this exact pool and "
+   "seed set when it shipped")
+ck("the batting order wraps: the 9-hole and leadoff are adjacent",
+   _md10._ord_gap(1, 9) == 1 and _md10._ord_gap(2, 5) == 3
+   and _md10._ord_gap(4, 4) == 0,
+   "a 9-1-2 mini-stack is a real construction -- the order is a cycle")
+
+# Portfolio: primary stack enforced on every chosen lineup, secondary 2-3 bat
+# shapes appear (the 5-3 / 5-2-1 builds), the stack chip knows its ownership,
+# and every lineup obeys DK legality.
+_md10.add_ownership_leverage(_poolA, {})
+_rnd10.seed(15)
+_ch10 = _md10.optimize_portfolio(_poolA, 50000, "median", n_lineups=8,
+                                 stack_min=4)
+_ok_primary10 = _ch10 and all(
+    (_md10._biggest_stack(lu) or {}).get("n", 0) >= 4 for _s, lu, _x in _ch10)
+_n2ct10 = sum(1 for _s, lu, _x in _ch10 or []
+              if (_md10._biggest_stack(lu) or {}).get("n2"))
+_legal10 = True
+for _s, lu, _x in _ch10 or []:
+    _bt10 = {}
+    for p in lu:
+        if p["kind"] == "bat":
+            _bt10[p["dk_team"]] = _bt10.get(p["dk_team"], 0) + 1
+    if max(_bt10.values()) > 5 or len({p["game"] for p in lu}) < 2:
+        _legal10 = False
+ck("every portfolio lineup hits the primary stack", bool(_ok_primary10))
+ck("secondary 2-3 bat shapes appear across the portfolio", _n2ct10 >= 1,
+   f"{_n2ct10} of {len(_ch10 or [])} carry one -- the guide's 5-3 / 5-2-1 "
+   "constructions, not eight copies of one stack")
+ck("every portfolio lineup is DK-legal", _legal10)
+ck("the stack chip knows the field's ownership of it",
+   any((_md10._biggest_stack(lu) or {}).get("own") is not None
+       for _s, lu, _x in _ch10 or []),
+   "a 5-stack at 8% owned IS the low-owned-stack play; the chip must say so")
+_pfsrc10 = _insp.getsource(_md10.optimize_portfolio)
+ck("a deliberate share of stack draws is contrarian (ownership-discounted)",
+   "contra_w" in _pfsrc10 and "_stack_team_weights" in _pfsrc10,
+   "winning GPP lineups overwhelmingly carry a NON-popular stack; drawing "
+   "teams flat let chalk take every build")
+
+# Plumbing: ownership is annotated BEFORE lineups are built (the contrarian
+# draw and the chip both read it), and batting order + DK labels survive the
+# pool assembly and both projection engines.
+_bsrc10 = _insp.getsource(_md10.build)
+ck("ownership is annotated before building, not bolted on after",
+   _bsrc10.index("add_ownership_leverage") < _bsrc10.index("optimize("),
+   "the contrarian stack draw read own% that did not exist yet")
+_apsrc10 = _insp.getsource(_md10._assemble_pool)
+ck("the pool carries DK's own team/game labels and the lineup spot",
+   '"dk_team"' in _apsrc10 and '"game"' in _apsrc10
+   and '"order": pr.get("order")' in _apsrc10,
+   'legality must count "CWS" and "CHW" as one team; only DK\'s label is '
+   "uniform across confirmed and padded players")
+ck("both projection engines thread the posted batting order through",
+   'posted_ord.get(nm)' in _insp.getsource(_md10.deep_projections)
+   and "order_of" in _insp.getsource(_md10.projections))
+_js10 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the card surfaces the new stack truth",
+   "% owned" in _js10 and "ln.stack.n2" in _js10 and "stack_relaxed" in _js10,
+   "own%, the secondary stack, and the relaxed-stack warning all render")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
