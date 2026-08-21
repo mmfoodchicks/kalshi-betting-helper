@@ -137,32 +137,112 @@ def team_leaders(season, tid, games):
 
 
 # ---- Schedule ---------------------------------------------------------------
+def _parse_events(events):
+    out = []
+    for e in events or []:
+        comp = (e.get("competitions") or [{}])[0]
+        cs = comp.get("competitors", [])
+        home = next((c for c in cs if c.get("homeAway") == "home"), None)
+        away = next((c for c in cs if c.get("homeAway") == "away"), None)
+        if not home or not away:
+            continue
+        out.append({
+            "date": e.get("date"),
+            "state": comp.get("status", {}).get("type", {}).get("state"),
+            "home": home["team"]["abbreviation"], "away": away["team"]["abbreviation"],
+            "home_id": home["team"].get("id"), "away_id": away["team"].get("id"),
+            "home_name": home["team"].get("shortDisplayName"),
+            "away_name": away["team"].get("shortDisplayName")})
+    return out
+
+
+# For the Kalshi-derived fallback: suffix team codes -> display names.
+_TEAM_NAME = {
+    "ARI": "Cardinals", "ATL": "Falcons", "BAL": "Ravens", "BUF": "Bills",
+    "CAR": "Panthers", "CHI": "Bears", "CIN": "Bengals", "CLE": "Browns",
+    "DAL": "Cowboys", "DEN": "Broncos", "DET": "Lions", "GB": "Packers",
+    "HOU": "Texans", "IND": "Colts", "JAX": "Jaguars", "KC": "Chiefs",
+    "LAC": "Chargers", "LAR": "Rams", "LV": "Raiders", "MIA": "Dolphins",
+    "MIN": "Vikings", "NE": "Patriots", "NO": "Saints", "NYG": "Giants",
+    "NYJ": "Jets", "PHI": "Eagles", "PIT": "Steelers", "SEA": "Seahawks",
+    "SF": "49ers", "TB": "Buccaneers", "TEN": "Titans", "WSH": "Commanders",
+    # Kalshi-native spellings that differ from the app's canon.
+    "WAS": "Commanders", "JAC": "Jaguars", "LA": "Rams",
+}
+_MON = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+        "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
+
+
+def _kalshi_schedule():
+    """The exchange's own game list as a schedule of last resort.
+
+    Kalshi's event suffix carries everything a slate needs -- 26AUG21LVHOU is
+    a date and an away/home pair -- and the exchange listing 48 games is not
+    affected by ESPN's WAF deciding it dislikes this host. Weeks are unknown
+    here, so this returns the upcoming window and every requested week gets
+    the same real games: a degraded mode that shows tonight's slate beats an
+    honest empty tab."""
+    import re as _re
+    import kalshi_nfl
+    try:
+        idx = kalshi_nfl.index() or {}
+    except Exception:
+        return []
+    today = clock.today_et()
+    lo = (today - __import__("datetime").timedelta(days=1)).isoformat()
+    hi = (today + __import__("datetime").timedelta(days=6)).isoformat()
+    out = []
+    for suffix in idx:
+        m = _re.match(r"^(\d{2})([A-Z]{3})(\d{2})([A-Z]+)$", suffix or "")
+        if not m or m.group(2) not in _MON:
+            continue
+        date = f"20{m.group(1)}-{_MON[m.group(2)]:02d}-{int(m.group(3)):02d}"
+        if not (lo <= date <= hi):
+            continue
+        pair = m.group(4)
+        split = None
+        for i in range(2, min(4, len(pair) - 1) + 1):
+            aw, hm = pair[:i], pair[i:]
+            if aw in _TEAM_NAME and hm in _TEAM_NAME:
+                split = (aw, hm)
+                break
+        if not split:
+            continue
+        aw, hm = split
+        out.append({"date": date + "T23:00Z", "state": "pre",
+                    "home": hm, "away": aw, "home_id": None, "away_id": None,
+                    "home_name": _TEAM_NAME[hm], "away_name": _TEAM_NAME[aw]})
+    out.sort(key=lambda g: g["date"])
+    return out
+
+
 def schedule(week, season, seasontype=2):
     """Week `week` of `season`. `seasontype` 2 = regular season, 1 = PRESEASON.
 
     Preseason used to be unreachable here, which made the whole NFL board look
     dead through August -- the Hall of Fame game and three weeks of exhibitions
     are real games that Kalshi books moneylines, spreads and totals on. Cached 1h,
-    keyed on the season type so the two do not collide."""
+    keyed on the season type so the two do not collide.
+
+    THREE SOURCES, in order. ESPN's site API is the normal one. Its cdn mirror
+    (same events schema inside content.sbData) answers when the site API's WAF
+    refuses this host -- which it did for a whole evening, 403 on every fetch,
+    emptying the NFL tab. And when ESPN is dark entirely, the slate is derived
+    from Kalshi's own listings: real games, unknown weeks."""
     def build():
         d = _get(f"{_SITE}/scoreboard?seasontype={seasontype}&week={week}&dates={season}")
-        if not d:
-            return None
-        out = []
-        for e in d.get("events", []):
-            comp = (e.get("competitions") or [{}])[0]
-            cs = comp.get("competitors", [])
-            home = next((c for c in cs if c.get("homeAway") == "home"), None)
-            away = next((c for c in cs if c.get("homeAway") == "away"), None)
-            if not home or not away:
-                continue
-            out.append({
-                "date": e.get("date"),
-                "state": comp.get("status", {}).get("type", {}).get("state"),
-                "home": home["team"]["abbreviation"], "away": away["team"]["abbreviation"],
-                "home_id": home["team"].get("id"), "away_id": away["team"].get("id"),
-                "home_name": home["team"].get("shortDisplayName"),
-                "away_name": away["team"].get("shortDisplayName")})
+        out = _parse_events((d or {}).get("events"))
+        if not out:
+            d2 = _get(f"https://cdn.espn.com/core/nfl/scoreboard?xhr=1"
+                      f"&year={season}&seasontype={seasontype}&week={week}")
+            sb = ((d2 or {}).get("content") or {}).get("sbData") or {}
+            out = _parse_events(sb.get("events"))
+        if not out:
+            out = _kalshi_schedule()
+            if out:
+                errlog.note("NFL-sched-kalshi-fallback",
+                            msg=f"ESPN dark; serving {len(out)} Kalshi-derived "
+                                f"games for wk{week} st{seasontype}")
         return out or None
     return _cached(("nfl_sched", week, season, seasontype), 3600, build)
 

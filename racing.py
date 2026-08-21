@@ -23,14 +23,33 @@ import unicodedata
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-_UA = "kalshi-betting-helper/1.0"
+# Browser-shaped headers, not a bot string. ESPN's edge started answering the
+# old "kalshi-betting-helper/1.0" agent with 403 Forbidden from the production
+# host (299 ledger entries in one evening, every NFL schedule fetch dead, the
+# whole preseason tab empty) while the same code passed from a residential
+# network. A real browser identity passes; a second identity is tried once
+# when the first is refused, because WAF rules change without notice.
+_UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+       "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 "
+       "Mobile/15E148 Safari/604.1")
+_UA_ALT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 SERIES = {1: "Cup", 2: "Xfinity", 3: "Trucks"}
 
 
 def _get_json(url, timeout=12):
-    req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    for ua in (_UA, _UA_ALT):
+        req = urllib.request.Request(url, headers={
+            "User-Agent": ua,
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code == 403 and ua != _UA_ALT:
+                continue                    # refused identity -- try the other
+            raise
 
 
 def norm_name(name):

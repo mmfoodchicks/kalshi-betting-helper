@@ -6324,6 +6324,81 @@ ck("the auto-week fetch failure is recorded too",
 
 print()
 print("=" * 72)
+print("ESPN refusing this host does not empty the NFL tab")
+print("=" * 72)
+# The ledger caught ESPN's WAF answering the app's bot user-agent with 403
+# Forbidden from the production host -- 299 entries in one evening, every
+# schedule fetch dead, both NFL boards empty while sixteen games sat listed on
+# Kalshi. Three defences, each verified synthetically.
+import racing as _rcg
+import urllib.error as _uerr
+import io as _gio
+ck("the ESPN getter identifies as a browser, not a bot",
+   _rcg._UA.startswith("Mozilla/5.0") and "kalshi-betting-helper" not in _rcg._UA,
+   "the bot string is what the WAF keyed on")
+_ua_calls = []
+_orig_open2 = _rcg.urllib.request.urlopen
+
+
+def _open403(req, timeout=None):
+    _ua_calls.append(req.get_header("User-agent"))
+    if len(_ua_calls) == 1:
+        raise _uerr.HTTPError(req.full_url, 403, "Forbidden", {},
+                              _gio.BytesIO(b""))
+
+    class _R:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b'{"ok": 1}'
+    return _R()
+
+
+try:
+    _rcg.urllib.request.urlopen = _open403
+    _gd = _rcg._get_json("https://guard.example/x")
+finally:
+    _rcg.urllib.request.urlopen = _orig_open2
+ck("a 403 is retried once under a second identity",
+   _gd == {"ok": 1} and len(set(_ua_calls)) == 2,
+   "WAF rules change without notice; two identities beat one")
+
+import nfl_live as _nlv3
+_ssrc = _insp.getsource(_nlv3.schedule)
+ck("the schedule has three sources: site API, cdn mirror, Kalshi's own list",
+   "cdn.espn.com" in _ssrc and "_kalshi_schedule" in _ssrc
+   and "NFL-sched-kalshi-fallback" in _ssrc,
+   "one host's WAF must never be able to empty the tab by itself")
+
+# The Kalshi-derived slate: suffixes really do parse into games.
+import kalshi_nfl as _knf3
+import clock as _gck2
+_gtd = _gck2.today_et().isoformat()
+_gsfx = _gtd[2:4] + ("JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"
+                     [(int(_gtd[5:7]) - 1) * 3:(int(_gtd[5:7]) - 1) * 3 + 3]) + _gtd[8:10]
+_orig_idx3 = _knf3.index
+try:
+    _knf3.index = lambda: {f"{_gsfx}LVHOU": {}, f"{_gsfx}SFLAC": {},
+                           f"{_gsfx}XQZW": {}, "99ZZZ99BAD": {},
+                           "25JAN01KCDEN": {}}
+    _gks = _nlv3._kalshi_schedule()
+finally:
+    _knf3.index = _orig_idx3
+_gpairs = {(g["away"], g["home"]) for g in _gks}
+ck("a Kalshi suffix parses into a real away/home game with names",
+   ("LV", "HOU") in _gpairs and ("SF", "LAC") in _gpairs
+   and all(g["home_name"] and g["away_name"] for g in _gks),
+   f"got {_gpairs}")
+ck("garbage suffixes and out-of-window dates are skipped, not crashed",
+   len(_gks) == 2,
+   "an unparseable listing must cost itself, not the slate")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
