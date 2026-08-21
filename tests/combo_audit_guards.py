@@ -6491,6 +6491,39 @@ ck("...and explains an all-started week instead of shrugging",
 
 print()
 print("=" * 72)
+print("Optimal-for-my-x exists on the NFL maker too")
+print("=" * 72)
+# One input -- the payout x -- and the maker chooses legs, confidence and
+# games itself, sweeping per-leg floors through combo_engine.best_target.
+# Verified live at 10x (10 legs, 10.0% -- the arithmetic ceiling for a true
+# 10x -- against a 12.49x market payout) and 50x (12 legs, 2.0%).
+_apy = open(_os.path.join(_root, "app.py")).read()
+_nflopt = _apy.split("def api_nfl_parlay")[1].split("def api_nfl_sim")[0]
+ck("the NFL endpoint has baseball's optimal branch",
+   'request.args.get("optimal")' in _nflopt
+   and "combo_engine.best_target" in _nflopt
+   and "optimal_unbuildable" in _nflopt
+   and "target_capped" in _nflopt)
+ck("optimal overrides the manual targets exactly as baseball does",
+   '"off" if _opt else legs_mode' in _nflopt
+   and '"require" if _opt else payout_mode' in _nflopt
+   and '"balanced" if _opt else objective' in _nflopt,
+   "the whole point is one input: the leg count and confidence are OUTPUTS")
+ck("a target past Kalshi's ceiling is clamped, not chased",
+   "min(payout, combo_engine.MAX_PAYOUT_X)" in _nflopt)
+_appjs5 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the maker has the button, the param, and the empty-target coaching",
+   "buildNFLCombo(false, true)" in _appjs5
+   and '(optimal ? "&optimal=1" : "")' in _appjs5
+   and _appjs5.count("Optimal mode needs the one thing it optimizes for") >= 2,
+   "the MLB button posts optimal=1 and explains a missing x; the NFL one must too")
+ck("the optimal slip renders through the shared note",
+   'm.objective !== "optimal"' in _appjs5,
+   "renderMixed and optimalNote are shared, so the ceiling arithmetic and the "
+   "-EV warning arrive on NFL slips for free")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

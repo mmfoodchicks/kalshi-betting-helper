@@ -3234,13 +3234,14 @@ function renderNFLComboMaker() {
     <div style="margin-top:6px">
       <button class="track-mini primary-mini" onclick="buildNFLCombo()">Build</button>
       <button class="track-mini" style="margin-left:6px" onclick="buildNFLCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+      <button class="track-mini" style="margin-left:6px" onclick="buildNFLCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the games on its own - the likeliest slip that reaches your number and isn't priced against you.">⚡ Optimal for my ×</button>
     </div>
     <div class="small" style="margin-top:4px">Moneylines, every booked spread and total, and${nflPreseason ? "" : " (once Kalshi lists them)"} player props are all candidates. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
     <div id="nflComboOut"></div>
   </div>`;
   if (prev) { const el = $("nflComboOut"); if (el) el.innerHTML = prev; }
 }
-async function buildNFLCombo(maxBet) {
+async function buildNFLCombo(maxBet, optimal) {
   const out = $("nflComboOut");
   if (!out) return;
   const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
@@ -3249,6 +3250,10 @@ async function buildNFLCombo(maxBet) {
   let cap = parseInt(($("nflComboCap") || {}).value, 10);
   nflComboCap = (isNaN(cap) || cap <= 0) ? 0 : cap;
   nflComboPayout = num("nflComboPayout", 0);
+  if (optimal && !(nflComboPayout > 1)) {
+    out.innerHTML = `<div class="small">⚡ Optimal mode needs the one thing it optimizes for: type the payout you want in the <b>×</b> box (e.g. <b>10</b>), then hit the button again. Legs, confidence and games are chosen for you.</div>`;
+    return;
+  }
   nflComboObjective = ($("nflComboObjective") || {}).value || "balanced";
   nflComboLegsMode = ($("nflComboLegsMode") || {}).value || "prefer";
   nflComboPayoutMode = ($("nflComboPayoutMode") || {}).value || "off";
@@ -3257,6 +3262,7 @@ async function buildNFLCombo(maxBet) {
   const wk = ($("nflWeek") || {}).value || 1;
   out.innerHTML = `<div class="empty">${maxBet
     ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : optimal ? `Solving for the likeliest slip that pays ${nflComboPayout}×…`
     : "Simulating the slate and searching combos…"}</div>`;
   const q = `week=${wk}${nflPreQuery()}&legs=${nflComboLegs}&target=${nflComboTarget}`
     + (nflComboCap ? `&cap=${nflComboCap}` : "")
@@ -3265,7 +3271,8 @@ async function buildNFLCombo(maxBet) {
     + `&conn=${nflComboConn}&same_game=${nflComboSameGame ? 1 : 0}`
     + (nflComboGameSel && nflComboGameSel.size
        ? `&sel=${encodeURIComponent([...nflComboGameSel].join(","))}` : "")
-    + (maxBet ? "&max_bet=1" : "");
+    + (maxBet ? "&max_bet=1" : "")
+    + (optimal ? "&optimal=1" : "");
   try {
     const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
     noteMaxBetCap(d);
@@ -3277,6 +3284,8 @@ async function buildNFLCombo(maxBet) {
         ? `<div class="empty">Every game on this week's board has already kicked off (${d.n_started || "all"} started). Pre-game combos need games that haven't begun - try the next week.</div>`
         : (d.hint === "max_bet_unreachable")
         ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, and a thin board runs out of them long before the ceiling.</div>`
+        : (d.hint === "optimal_unbuildable")
+        ? `<div class="empty">Couldn't build anything toward <b>${d.target_payout_x}×</b> - this week's priced pool is too thin (Kalshi fills the ladders as games approach). Try closer to kickoff, or with more games in the week.</div>`
         : `<div class="empty">No combo fits those targets on this week's board.${nflComboCap ? " The band may be too narrow - widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
       return;
     }

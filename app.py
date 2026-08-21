@@ -2430,20 +2430,41 @@ def api_nfl_parlay():
         objective = "balanced"
     sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
     max_bet = request.args.get("max_bet") == "1"
+    # Optimal mode, exactly as baseball has it: ONE input (the payout target).
+    # The leg count, the per-leg confidence and the game mix are all outputs --
+    # legs_mode off, payout required, balanced objective, per-leg floor swept.
+    optimal = request.args.get("optimal") == "1"
+    if optimal and not (payout and payout > 1):
+        return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
     try:
         import nfl_game_sim
 
-        def _build(target_pct, _mb=False):
+        def _build(target_pct, _mb=False, _opt=False):
             return nfl_game_sim.build_parlay(
                 week=week, preseason=_nfl_preseason(), n_legs=legs,
                 target_pct=target_pct,
-                cap_pct=None if _mb else cap, target_payout=0 if _mb else payout,
+                cap_pct=None if (_mb or _opt) else cap,
+                target_payout=0 if _mb else payout,
                 n_sims=sims,
                 max_legs_per_game=max_total if same_game else 1,
-                max_total_legs=max_total, legs_mode=legs_mode,
-                payout_mode=payout_mode, conn=conn, objective=objective,
+                max_total_legs=max_total,
+                legs_mode="off" if _opt else legs_mode,
+                payout_mode="require" if _opt else payout_mode,
+                conn=conn,
+                objective="balanced" if _opt else objective,
                 types=_prop_types(), game_sel=sel or None, max_bet=_mb)
 
+        if optimal:
+            capped = payout > combo_engine.MAX_PAYOUT_X
+            payout = min(payout, combo_engine.MAX_PAYOUT_X)
+            item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+            if item:
+                item["objective"] = "optimal"
+                item["target_payout_x"] = payout
+                item["target_capped"] = capped
+                return jsonify({"parlay": item})
+            return jsonify({"parlay": None, "hint": "optimal_unbuildable",
+                            "target_payout_x": payout})
         if max_bet:
             # A max bet has to be free to go deep and to use unlikely legs --
             # that is what the MARKET payout cap costs. Holding it to the maker's
