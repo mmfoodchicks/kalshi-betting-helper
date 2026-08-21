@@ -1,0 +1,721 @@
+{
+ "attribution": {
+  "batches": 5,
+  "per_batch": 200,
+  "priced": 6,
+  "seasons": 1000,
+  "skipped": 26
+ },
+ "date": "2026-08-06",
+ "events": {
+  "108": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Saucedo",
+    "pid": 642048,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Bachman",
+    "pid": 696147,
+    "pos": "P",
+    "to": "D15"
+   }
+  ],
+  "109": [
+   {
+    "frm": "PL",
+    "kind": "status",
+    "name": "Moreno",
+    "pid": 672515,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Del Castillo",
+    "pid": 680728,
+    "pos": "DH",
+    "to": "RM"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Abner",
+    "pid": 691769,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.7,
+    "delta_se": 0.49,
+    "frm": "A",
+    "kind": "il_in",
+    "measured_on": 1000,
+    "name": "Thompson, R",
+    "pid": 657044,
+    "pos": "P",
+    "to": "D15"
+   }
+  ],
+  "110": [
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Hoppe",
+    "pid": 695380,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Nunez",
+    "pid": 689296,
+    "pos": "P",
+    "to": "RM"
+   }
+  ],
+  "112": [
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Kelly",
+    "pid": 681520,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Gausman",
+    "pid": 592332,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "113": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Mey",
+    "pid": 682825,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Greene, H",
+    "pid": 668881,
+    "pos": "P",
+    "to": "D15"
+   }
+  ],
+  "114": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Genao",
+    "pid": 694197,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Arias, G",
+    "pid": 672356,
+    "pos": "3B"
+   }
+  ],
+  "120": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Lord",
+    "pid": 695418,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Littell",
+    "pid": 641793,
+    "pos": "P"
+   }
+  ],
+  "134": [
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.4,
+    "delta_se": 0.66,
+    "frm": "D15",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Sisk",
+    "pid": 681895,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 0.0,
+    "delta_se": 0.0,
+    "kind": "added",
+    "measured_on": 1000,
+    "name": "Simon",
+    "pid": 682927,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Dotel",
+    "pid": 696062,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 1.1,
+    "delta_se": 0.8,
+    "frm": "A",
+    "kind": "removed",
+    "measured_on": 1000,
+    "name": "Ozuna",
+    "pid": 542303,
+    "pos": "DH"
+   }
+  ],
+  "135": [
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Ray",
+    "pid": 592662,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "M\u00e1rquez",
+    "pid": 608566,
+    "pos": "P"
+   }
+  ],
+  "140": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Gore",
+    "pid": 669022,
+    "pos": "P",
+    "to": "PL"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Bradford",
+    "pid": 674003,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "141": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Estrada, L",
+    "pid": 681751,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Yesavage",
+    "pid": 702056,
+    "pos": "P",
+    "to": "D15"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Lee, C",
+    "pid": 695445,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Corbin",
+    "pid": 571578,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Dallas",
+    "pid": 689149,
+    "pos": "P",
+    "to": "RM"
+   }
+  ],
+  "143": [
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.1,
+    "delta_se": 1.0,
+    "era_from": 4.17,
+    "era_to": 4.93,
+    "ip": 0.3,
+    "kind": "blowup",
+    "measured_on": 1000,
+    "name": "Kilian",
+    "pid": 668873,
+    "pos": "P",
+    "runs": 5
+   }
+  ],
+  "158": [
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 1.3,
+    "delta_se": 1.91,
+    "frm": "D15",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Harrison",
+    "pid": 690986,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Anderson, G",
+    "pid": 681982,
+    "pos": "P",
+    "to": "RM"
+   }
+  ]
+ },
+ "generated_at": 1785996361.9925544,
+ "moves": {
+  "108": 0.0,
+  "109": 0.47,
+  "110": 0.0,
+  "111": 2.4,
+  "112": 0.5,
+  "113": 0.0,
+  "114": -0.6,
+  "115": 0.0,
+  "116": -0.42,
+  "117": -0.18,
+  "118": 0.0,
+  "119": -4.03,
+  "120": 0.0,
+  "121": 0.0,
+  "133": 0.0,
+  "134": 1.9,
+  "135": 0.07,
+  "136": 1.69,
+  "137": 0.0,
+  "138": 0.0,
+  "139": 0.05,
+  "140": 0.45,
+  "141": 0.03,
+  "142": -0.23,
+  "143": -1.32,
+  "144": -0.87,
+  "145": -0.09,
+  "146": -0.05,
+  "147": -1.47,
+  "158": 1.7
+ },
+ "n": 4000,
+ "n_games_left": 710,
+ "prev_date": "2026-08-05",
+ "roster_shed": true,
+ "season": "2026",
+ "teams": {
+  "108": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 71,
+   "mean_wins": 60.0,
+   "name": "Angels",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 43,
+   "ws": 0.0
+  },
+  "109": {
+   "div": 0.2,
+   "division": 203,
+   "league": 104,
+   "losses": 54,
+   "mean_wins": 85.7,
+   "name": "D-backs",
+   "pennant": 4.08,
+   "playoffs": 52.4,
+   "wins": 60,
+   "ws": 1.27
+  },
+  "110": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 75.7,
+   "name": "Orioles",
+   "pennant": 0.0,
+   "playoffs": 1.05,
+   "wins": 56,
+   "ws": 0.0
+  },
+  "111": {
+   "div": 43.15,
+   "division": 201,
+   "league": 103,
+   "losses": 51,
+   "mean_wins": 93.9,
+   "name": "Red Sox",
+   "pennant": 36.9,
+   "playoffs": 99.78,
+   "wins": 62,
+   "ws": 23.45
+  },
+  "112": {
+   "div": 3.55,
+   "division": 205,
+   "league": 104,
+   "losses": 49,
+   "mean_wins": 88.4,
+   "name": "Cubs",
+   "pennant": 3.85,
+   "playoffs": 81.12,
+   "wins": 66,
+   "ws": 1.12
+  },
+  "113": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 58,
+   "mean_wins": 76.0,
+   "name": "Reds",
+   "pennant": 0.03,
+   "playoffs": 0.4,
+   "wins": 55,
+   "ws": 0.0
+  },
+  "114": {
+   "div": 59.9,
+   "division": 202,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 85.9,
+   "name": "Guardians",
+   "pennant": 16.48,
+   "playoffs": 78.72,
+   "wins": 57,
+   "ws": 8.75
+  },
+  "115": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 70,
+   "mean_wins": 58.7,
+   "name": "Rockies",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 45,
+   "ws": 0.0
+  },
+  "116": {
+   "div": 9.5,
+   "division": 202,
+   "league": 103,
+   "losses": 59,
+   "mean_wins": 80.9,
+   "name": "Tigers",
+   "pennant": 1.98,
+   "playoffs": 22.6,
+   "wins": 55,
+   "ws": 0.85
+  },
+  "117": {
+   "div": 16.52,
+   "division": 200,
+   "league": 103,
+   "losses": 57,
+   "mean_wins": 81.2,
+   "name": "Astros",
+   "pennant": 0.88,
+   "playoffs": 26.82,
+   "wins": 59,
+   "ws": 0.2
+  },
+  "118": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 67,
+   "mean_wins": 67.3,
+   "name": "Royals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 48,
+   "ws": 0.0
+  },
+  "119": {
+   "div": 99.8,
+   "division": 203,
+   "league": 104,
+   "losses": 46,
+   "mean_wins": 99.2,
+   "name": "Dodgers",
+   "pennant": 34.05,
+   "playoffs": 100.0,
+   "wins": 69,
+   "ws": 17.57
+  },
+  "120": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 60,
+   "mean_wins": 74.9,
+   "name": "Nationals",
+   "pennant": 0.0,
+   "playoffs": 0.07,
+   "wins": 56,
+   "ws": 0.0
+  },
+  "121": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 66,
+   "mean_wins": 73.5,
+   "name": "Mets",
+   "pennant": 0.0,
+   "playoffs": 0.03,
+   "wins": 49,
+   "ws": 0.0
+  },
+  "133": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 69,
+   "mean_wins": 62.5,
+   "name": "Athletics",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 45,
+   "ws": 0.0
+  },
+  "134": {
+   "div": 0.62,
+   "division": 205,
+   "league": 104,
+   "losses": 59,
+   "mean_wins": 86.0,
+   "name": "Pirates",
+   "pennant": 12.45,
+   "playoffs": 55.9,
+   "wins": 57,
+   "ws": 7.25
+  },
+  "135": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 55,
+   "mean_wins": 81.9,
+   "name": "Padres",
+   "pennant": 0.55,
+   "playoffs": 13.22,
+   "wins": 59,
+   "ws": 0.17
+  },
+  "136": {
+   "div": 55.27,
+   "division": 200,
+   "league": 103,
+   "losses": 59,
+   "mean_wins": 84.2,
+   "name": "Mariners",
+   "pennant": 10.05,
+   "playoffs": 66.42,
+   "wins": 56,
+   "ws": 4.92
+  },
+  "137": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 67,
+   "mean_wins": 63.8,
+   "name": "Giants",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 48,
+   "ws": 0.0
+  },
+  "138": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 58,
+   "mean_wins": 81.8,
+   "name": "Cardinals",
+   "pennant": 0.5,
+   "playoffs": 13.18,
+   "wins": 57,
+   "ws": 0.07
+  },
+  "139": {
+   "div": 20.4,
+   "division": 201,
+   "league": 103,
+   "losses": 46,
+   "mean_wins": 91.9,
+   "name": "Rays",
+   "pennant": 3.95,
+   "playoffs": 99.35,
+   "wins": 68,
+   "ws": 1.1
+  },
+  "140": {
+   "div": 28.2,
+   "division": 200,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 82.4,
+   "name": "Rangers",
+   "pennant": 3.12,
+   "playoffs": 41.9,
+   "wins": 57,
+   "ws": 1.0
+  },
+  "141": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 61,
+   "mean_wins": 75.9,
+   "name": "Blue Jays",
+   "pennant": 0.03,
+   "playoffs": 1.0,
+   "wins": 54,
+   "ws": 0.03
+  },
+  "142": {
+   "div": 3.48,
+   "division": 202,
+   "league": 103,
+   "losses": 59,
+   "mean_wins": 79.1,
+   "name": "Twins",
+   "pennant": 0.25,
+   "playoffs": 9.97,
+   "wins": 56,
+   "ws": 0.1
+  },
+  "143": {
+   "div": 7.15,
+   "division": 204,
+   "league": 104,
+   "losses": 54,
+   "mean_wins": 87.3,
+   "name": "Phillies",
+   "pennant": 8.93,
+   "playoffs": 72.25,
+   "wins": 61,
+   "ws": 3.8
+  },
+  "144": {
+   "div": 92.65,
+   "division": 204,
+   "league": 104,
+   "losses": 45,
+   "mean_wins": 94.9,
+   "name": "Braves",
+   "pennant": 11.72,
+   "playoffs": 99.62,
+   "wins": 69,
+   "ws": 3.88
+  },
+  "145": {
+   "div": 27.12,
+   "division": 202,
+   "league": 103,
+   "losses": 54,
+   "mean_wins": 83.5,
+   "name": "White Sox",
+   "pennant": 3.45,
+   "playoffs": 52.58,
+   "wins": 59,
+   "ws": 1.23
+  },
+  "146": {
+   "div": 0.2,
+   "division": 204,
+   "league": 104,
+   "losses": 57,
+   "mean_wins": 81.6,
+   "name": "Marlins",
+   "pennant": 0.6,
+   "playoffs": 11.82,
+   "wins": 58,
+   "ws": 0.1
+  },
+  "147": {
+   "div": 36.45,
+   "division": 201,
+   "league": 103,
+   "losses": 51,
+   "mean_wins": 93.4,
+   "name": "Yankees",
+   "pennant": 22.93,
+   "playoffs": 99.8,
+   "wins": 64,
+   "ws": 12.93
+  },
+  "158": {
+   "div": 95.83,
+   "division": 205,
+   "league": 104,
+   "losses": 43,
+   "mean_wins": 97.4,
+   "name": "Brewers",
+   "pennant": 23.25,
+   "playoffs": 99.97,
+   "wins": 71,
+   "ws": 10.2
+  }
+ }
+}

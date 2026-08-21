@@ -1,0 +1,1953 @@
+{
+ "attribution": {
+  "batches": 5,
+  "per_batch": 200,
+  "priced": 6,
+  "seasons": 1000,
+  "skipped": 189
+ },
+ "date": "2026-08-05",
+ "events": {
+  "108": [
+   {
+    "kind": "added",
+    "name": "Weiman",
+    "pid": 676620,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Anderson, S",
+    "pid": 641312,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Frazier",
+    "pid": 624428,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Joyce",
+    "pid": 690829,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Ballesteros",
+    "pid": 694208,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Johnson, R",
+    "pid": 696270,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Zeferjahn",
+    "pid": 666171,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Adell",
+    "pid": 666176,
+    "pos": "RF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Soriano, J",
+    "pid": 667755,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Soler",
+    "pid": 624585,
+    "pos": "DH"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Suter",
+    "pid": 608718,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Yates",
+    "pid": 489446,
+    "pos": "P"
+   }
+  ],
+  "109": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Moreno",
+    "pid": 672515,
+    "pos": "C",
+    "to": "PL"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Gallen",
+    "pid": 668678,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Nootbaar",
+    "pid": 663457,
+    "pos": "LF",
+    "to": "A"
+   }
+  ],
+  "110": [
+   {
+    "kind": "added",
+    "name": "Franklin, C",
+    "pid": 681047,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Povich",
+    "pid": 700249,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Narv\u00e1ez",
+    "pid": 665966,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Wells, T",
+    "pid": 669330,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Ward, T",
+    "pid": 621493,
+    "pos": "LF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Rogers",
+    "pid": 668670,
+    "pos": "C"
+   }
+  ],
+  "111": [
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Gonzalez, R",
+    "pid": 663853,
+    "pos": "DH",
+    "to": "RM"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 3.9,
+    "delta_se": 2.62,
+    "kind": "added",
+    "measured_on": 1000,
+    "name": "Miller, E",
+    "pid": 669062,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 2.3,
+    "delta_se": 0.25,
+    "kind": "added",
+    "measured_on": 1000,
+    "name": "White, E",
+    "pid": 642201,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 0.0,
+    "delta_se": 0.0,
+    "kind": "added",
+    "measured_on": 1000,
+    "name": "Rogers",
+    "pid": 668670,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 8.3,
+    "delta_se": 0.62,
+    "frm": "A",
+    "kind": "removed",
+    "measured_on": 1000,
+    "name": "Watson, R",
+    "pid": 670245,
+    "pos": "P"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 4.8,
+    "delta_se": 1.21,
+    "frm": "A",
+    "kind": "removed",
+    "measured_on": 1000,
+    "name": "Narv\u00e1ez",
+    "pid": 665966,
+    "pos": "C"
+   }
+  ],
+  "112": [
+   {
+    "kind": "added",
+    "name": "Zeferjahn",
+    "pid": 666171,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Brown, Be",
+    "pid": 676962,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Taylor, T",
+    "pid": 621438,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Dean",
+    "pid": 681909,
+    "pos": "CF",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Woodford",
+    "pid": 663765,
+    "pos": "P"
+   }
+  ],
+  "113": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rodr\u00edguez, H",
+    "pid": 699302,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Petty",
+    "pid": 695534,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Ferguson, C",
+    "pid": 657571,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Lowe, N",
+    "pid": 663993,
+    "pos": "DH"
+   }
+  ],
+  "114": [
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Manzardo",
+    "pid": 700932,
+    "pos": "1B",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Adell",
+    "pid": 666176,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Fry",
+    "pid": 681807,
+    "pos": "RF",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Griffin",
+    "pid": 656492,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Armstrong",
+    "pid": 542888,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Lowe, N",
+    "pid": 663993,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Aleman",
+    "pid": 680916,
+    "pos": "P",
+    "to": "RM"
+   }
+  ],
+  "115": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Frasso",
+    "pid": 693308,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "il_in",
+    "name": "Sullivan, S",
+    "pid": 807743,
+    "pos": "P",
+    "to": "D15"
+   },
+   {
+    "kind": "added",
+    "name": "Mushinski",
+    "pid": 656786,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Beck",
+    "pid": 687597,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Senzatela",
+    "pid": 622608,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Vodnik",
+    "pid": 680767,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Doyle, B",
+    "pid": 686668,
+    "pos": "CF"
+   }
+  ],
+  "116": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "D\u00edaz, Y",
+    "pid": 700270,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -1.6,
+    "delta_se": 0.64,
+    "frm": "A",
+    "kind": "removed",
+    "measured_on": 1000,
+    "name": "Mize",
+    "pid": 663554,
+    "pos": "P"
+   }
+  ],
+  "117": [
+   {
+    "kind": "added",
+    "name": "Varsho",
+    "pid": 662139,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Spence",
+    "pid": 828599,
+    "pos": "CF",
+    "to": "RM"
+   }
+  ],
+  "118": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Witt Jr.",
+    "pid": 677951,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Seabold",
+    "pid": 657756,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Cuas",
+    "pid": 621016,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Strahm",
+    "pid": 621381,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Velazquez, A",
+    "pid": 623205,
+    "pos": "SS"
+   }
+  ],
+  "119": [
+   {
+    "kind": "added",
+    "name": "Rortvedt",
+    "pid": 666163,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Feduccia",
+    "pid": 676439,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Alfonzo",
+    "pid": 672613,
+    "pos": "C",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Rushing",
+    "pid": 687221,
+    "pos": "C",
+    "to": "D10"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Sheehan",
+    "pid": 686218,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Skubal",
+    "pid": 669373,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Hern\u00e1ndez, J",
+    "pid": 642546,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Mills, W",
+    "pid": 670090,
+    "pos": "P"
+   }
+  ],
+  "120": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Alvarez",
+    "pid": 674841,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Wood",
+    "pid": 695578,
+    "pos": "RF",
+    "to": "D10"
+   },
+   {
+    "frm": "NYR",
+    "kind": "il_in",
+    "name": "Early",
+    "pid": 813349,
+    "pos": "P",
+    "to": "D15"
+   },
+   {
+    "kind": "added",
+    "name": "Dion",
+    "pid": 702021,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ortiz, A",
+    "pid": 694673,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Cruz, Y",
+    "pid": 672442,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Yean",
+    "pid": 678868,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Poulin",
+    "pid": 676571,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Pinckney",
+    "pid": 687605,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Cornelio",
+    "pid": 683000,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Garc\u00eda Jr., L",
+    "pid": 671277,
+    "pos": "1B"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Griffin",
+    "pid": 656492,
+    "pos": "P"
+   }
+  ],
+  "121": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Yan",
+    "pid": 642376,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "N\u00fa\u00f1ez, D",
+    "pid": 673380,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Lavender",
+    "pid": 681320,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "McDermott",
+    "pid": 694646,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Pache",
+    "pid": 665506,
+    "pos": "OF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Curry",
+    "pid": 675540,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Raley, B",
+    "pid": 548384,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Brazob\u00e1n",
+    "pid": 623211,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Taylor, T",
+    "pid": 621438,
+    "pos": "CF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Weaver",
+    "pid": 596133,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Conley",
+    "pid": 676785,
+    "pos": "P"
+   }
+  ],
+  "133": [
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Springs",
+    "pid": 605488,
+    "pos": "P",
+    "to": "D15"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Muncy",
+    "pid": 691777,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Kurtz",
+    "pid": 701762,
+    "pos": "1B",
+    "to": "D10"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Leiter Jr.",
+    "pid": 643410,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Johnson, S",
+    "pid": 686751,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Ginn",
+    "pid": 669372,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Bowden",
+    "pid": 641386,
+    "pos": "P"
+   }
+  ],
+  "134": [
+   {
+    "kind": "added",
+    "name": "Bachar",
+    "pid": 669199,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Murdock",
+    "pid": 668716,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Weaver",
+    "pid": 596133,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "il_in",
+    "name": "Keller, M",
+    "pid": 656605,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "kind": "added",
+    "name": "Yates",
+    "pid": 489446,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Marinaccio",
+    "pid": 676760,
+    "pos": "P"
+   }
+  ],
+  "135": [
+   {
+    "kind": "added",
+    "name": "Mize",
+    "pid": 663554,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Sears",
+    "pid": 676664,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Workman",
+    "pid": 669398,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Adam",
+    "pid": 592094,
+    "pos": "P",
+    "to": "D60"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Dur\u00e1n",
+    "pid": 660710,
+    "pos": "C",
+    "to": "RM"
+   }
+  ],
+  "136": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Donovan",
+    "pid": 680977,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Pereda",
+    "pid": 640902,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Ward, T",
+    "pid": 621493,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Dom\u00ednguez",
+    "pid": 622554,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Fairchild",
+    "pid": 656413,
+    "pos": "CF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Garver",
+    "pid": 641598,
+    "pos": "C"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Hoppe",
+    "pid": 695380,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Refsnyder",
+    "pid": 608701,
+    "pos": "DH"
+   }
+  ],
+  "137": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Cox",
+    "pid": 813841,
+    "pos": "CF",
+    "to": "RM"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Seymour, C",
+    "pid": 693313,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Sanmartin",
+    "pid": 665665,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Leonard",
+    "pid": 678760,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Kennedy, B",
+    "pid": 671083,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Beck, T",
+    "pid": 663941,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Tidwell",
+    "pid": 694918,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Ray",
+    "pid": 592662,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Mahle",
+    "pid": 641816,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Arraez",
+    "pid": 650333,
+    "pos": "2B"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Miller, E",
+    "pid": 669062,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Kilian",
+    "pid": 668873,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Ramos, H",
+    "pid": 671218,
+    "pos": "LF"
+   }
+  ],
+  "138": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Prieto",
+    "pid": 693409,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Ferguson, C",
+    "pid": 657571,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Mathews",
+    "pid": 687273,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Dobbins",
+    "pid": 690928,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Nootbaar",
+    "pid": 663457,
+    "pos": "LF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "May",
+    "pid": 669160,
+    "pos": "P"
+   }
+  ],
+  "139": [
+   {
+    "kind": "added",
+    "name": "Hicks, L",
+    "pid": 689414,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Cook",
+    "pid": 702047,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Wells, T",
+    "pid": 669330,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Peralta, F",
+    "pid": 642547,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Feduccia",
+    "pid": 676439,
+    "pos": "C"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Kimbrel",
+    "pid": 518886,
+    "pos": "P"
+   }
+  ],
+  "140": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Freeman, C",
+    "pid": 683227,
+    "pos": "3B",
+    "to": "RM"
+   }
+  ],
+  "141": [
+   {
+    "kind": "added",
+    "name": "Smith",
+    "pid": 669701,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Soriano, J",
+    "pid": 667755,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Taillon",
+    "pid": 592791,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Varsho",
+    "pid": 662139,
+    "pos": "CF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Hoffman, J",
+    "pid": 656546,
+    "pos": "P"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Gausman",
+    "pid": 592332,
+    "pos": "P"
+   }
+  ],
+  "142": [
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Rojas, K",
+    "pid": 696070,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Hoffman, J",
+    "pid": 656546,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "143": [
+   {
+    "kind": "added",
+    "name": "Raley, B",
+    "pid": 548384,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Arraez",
+    "pid": 650333,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Backhus",
+    "pid": 679775,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Rincones Jr.",
+    "pid": 687282,
+    "pos": "RF",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Kilian",
+    "pid": 668873,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Johnson, S",
+    "pid": 686751,
+    "pos": "P"
+   }
+  ],
+  "144": [
+   {
+    "kind": "added",
+    "name": "Mahle",
+    "pid": 641816,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Murphy, S",
+    "pid": 669221,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Ritchie",
+    "pid": 702275,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Karinchak",
+    "pid": 675916,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Thomas, L",
+    "pid": 657041,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Suter",
+    "pid": 608718,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Kim, Ha",
+    "pid": 673490,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Bart",
+    "pid": 663698,
+    "pos": "C"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "White, E",
+    "pid": 642201,
+    "pos": "RF"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Mateo",
+    "pid": 622761,
+    "pos": "SS"
+   }
+  ],
+  "145": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Gilbert, T",
+    "pid": 656457,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Doyle, B",
+    "pid": 686668,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Brazob\u00e1n",
+    "pid": 623211,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Bart",
+    "pid": 663698,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Castillo, L",
+    "pid": 622491,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Quero",
+    "pid": 700337,
+    "pos": "C",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Schweitzer",
+    "pid": 805326,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Pereira",
+    "pid": 677592,
+    "pos": "RF"
+   }
+  ],
+  "146": [
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Ekness",
+    "pid": 694795,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Fulton",
+    "pid": 690978,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Vodnik",
+    "pid": 680767,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ram\u00edrez",
+    "pid": 682663,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Hicks, L",
+    "pid": 689414,
+    "pos": "C"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Bachar",
+    "pid": 669199,
+    "pos": "P"
+   }
+  ],
+  "147": [
+   {
+    "kind": "added",
+    "name": "Lombard Jr.",
+    "pid": 806146,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Volpe",
+    "pid": 683011,
+    "pos": "SS",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Schuemann",
+    "pid": 680474,
+    "pos": "LF",
+    "to": "RM"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Castro, K",
+    "pid": 665645,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Garc\u00eda Jr., L",
+    "pid": 671277,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "De los Santos",
+    "pid": 660787,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Chivilli",
+    "pid": 683409,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "era_from": 0.57,
+    "era_to": 3.78,
+    "ip": 1.0,
+    "kind": "blowup",
+    "name": "Chivilli",
+    "pid": 683409,
+    "pos": "P",
+    "runs": 6
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Dom\u00ednguez",
+    "pid": 691176,
+    "pos": "RF",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "Ramos, H",
+    "pid": 671218,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Cruz, Y",
+    "pid": 672442,
+    "pos": "P"
+   }
+  ],
+  "158": [
+   {
+    "kind": "added",
+    "name": "Senzatela",
+    "pid": 622608,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Stallings",
+    "pid": 668831,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "frm": "A",
+    "kind": "optioned",
+    "name": "Sproat",
+    "pid": 687075,
+    "pos": "P",
+    "to": "RM"
+   },
+   {
+    "kind": "added",
+    "name": "May",
+    "pid": 669160,
+    "pos": "P",
+    "to": "A"
+   }
+  ]
+ },
+ "generated_at": 1785912834.000212,
+ "moves": {
+  "108": 0.0,
+  "109": -0.22,
+  "110": -0.03,
+  "111": 7.87,
+  "112": -0.23,
+  "113": -0.12,
+  "114": 4.07,
+  "115": 0.0,
+  "116": -6.35,
+  "117": -0.4,
+  "118": 0.0,
+  "119": -3.7,
+  "120": 0.0,
+  "121": 0.0,
+  "133": 0.0,
+  "134": 3.83,
+  "135": 0.0,
+  "136": 0.81,
+  "137": 0.0,
+  "138": -0.4,
+  "139": -1.15,
+  "140": -0.33,
+  "141": -0.15,
+  "142": -0.47,
+  "143": 3.87,
+  "144": -0.97,
+  "145": -1.53,
+  "146": -1.65,
+  "147": -0.15,
+  "158": -2.6
+ },
+ "n": 4000,
+ "n_games_left": 725,
+ "prev_date": "2026-08-02",
+ "roster_shed": true,
+ "season": "2026",
+ "teams": {
+  "108": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 70,
+   "mean_wins": 61.4,
+   "name": "Angels",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 43,
+   "ws": 0.0
+  },
+  "109": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 54,
+   "mean_wins": 84.0,
+   "name": "D-backs",
+   "pennant": 2.38,
+   "playoffs": 38.45,
+   "wins": 60,
+   "ws": 0.8
+  },
+  "110": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 74.4,
+   "name": "Orioles",
+   "pennant": 0.0,
+   "playoffs": 0.35,
+   "wins": 55,
+   "ws": 0.0
+  },
+  "111": {
+   "div": 36.35,
+   "division": 201,
+   "league": 103,
+   "losses": 51,
+   "mean_wins": 93.5,
+   "name": "Red Sox",
+   "pennant": 34.27,
+   "playoffs": 99.5,
+   "wins": 61,
+   "ws": 21.05
+  },
+  "112": {
+   "div": 2.3,
+   "division": 205,
+   "league": 104,
+   "losses": 49,
+   "mean_wins": 86.7,
+   "name": "Cubs",
+   "pennant": 2.4,
+   "playoffs": 71.17,
+   "wins": 65,
+   "ws": 0.62
+  },
+  "113": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 58,
+   "mean_wins": 77.2,
+   "name": "Reds",
+   "pennant": 0.03,
+   "playoffs": 1.65,
+   "wins": 54,
+   "ws": 0.0
+  },
+  "114": {
+   "div": 60.92,
+   "division": 202,
+   "league": 103,
+   "losses": 57,
+   "mean_wins": 86.5,
+   "name": "Guardians",
+   "pennant": 18.43,
+   "playoffs": 80.75,
+   "wins": 57,
+   "ws": 9.35
+  },
+  "115": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 69,
+   "mean_wins": 59.4,
+   "name": "Rockies",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 45,
+   "ws": 0.0
+  },
+  "116": {
+   "div": 13.1,
+   "division": 202,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 82.3,
+   "name": "Tigers",
+   "pennant": 3.12,
+   "playoffs": 32.35,
+   "wins": 55,
+   "ws": 1.27
+  },
+  "117": {
+   "div": 32.95,
+   "division": 200,
+   "league": 103,
+   "losses": 56,
+   "mean_wins": 82.4,
+   "name": "Astros",
+   "pennant": 1.48,
+   "playoffs": 41.02,
+   "wins": 59,
+   "ws": 0.38
+  },
+  "118": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 67,
+   "mean_wins": 66.8,
+   "name": "Royals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 47,
+   "ws": 0.0
+  },
+  "119": {
+   "div": 100.0,
+   "division": 203,
+   "league": 104,
+   "losses": 45,
+   "mean_wins": 100.2,
+   "name": "Dodgers",
+   "pennant": 39.83,
+   "playoffs": 100.0,
+   "wins": 69,
+   "ws": 21.6
+  },
+  "120": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 60,
+   "mean_wins": 73.4,
+   "name": "Nationals",
+   "pennant": 0.0,
+   "playoffs": 0.03,
+   "wins": 55,
+   "ws": 0.0
+  },
+  "121": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 66,
+   "mean_wins": 73.6,
+   "name": "Mets",
+   "pennant": 0.0,
+   "playoffs": 0.07,
+   "wins": 48,
+   "ws": 0.0
+  },
+  "133": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 68,
+   "mean_wins": 63.3,
+   "name": "Athletics",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 45,
+   "ws": 0.0
+  },
+  "134": {
+   "div": 0.78,
+   "division": 205,
+   "league": 104,
+   "losses": 58,
+   "mean_wins": 85.2,
+   "name": "Pirates",
+   "pennant": 10.38,
+   "playoffs": 54.62,
+   "wins": 57,
+   "ws": 5.35
+  },
+  "135": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 55,
+   "mean_wins": 81.7,
+   "name": "Padres",
+   "pennant": 0.28,
+   "playoffs": 16.73,
+   "wins": 59,
+   "ws": 0.1
+  },
+  "136": {
+   "div": 43.67,
+   "division": 200,
+   "league": 103,
+   "losses": 59,
+   "mean_wins": 83.3,
+   "name": "Mariners",
+   "pennant": 7.08,
+   "playoffs": 52.65,
+   "wins": 55,
+   "ws": 3.23
+  },
+  "137": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 66,
+   "mean_wins": 64.7,
+   "name": "Giants",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 48,
+   "ws": 0.0
+  },
+  "138": {
+   "div": 0.07,
+   "division": 205,
+   "league": 104,
+   "losses": 58,
+   "mean_wins": 81.1,
+   "name": "Cardinals",
+   "pennant": 0.45,
+   "playoffs": 12.38,
+   "wins": 56,
+   "ws": 0.07
+  },
+  "139": {
+   "div": 14.65,
+   "division": 201,
+   "league": 103,
+   "losses": 46,
+   "mean_wins": 91.1,
+   "name": "Rays",
+   "pennant": 3.55,
+   "playoffs": 98.2,
+   "wins": 67,
+   "ws": 1.05
+  },
+  "140": {
+   "div": 23.38,
+   "division": 200,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 81.7,
+   "name": "Rangers",
+   "pennant": 1.62,
+   "playoffs": 32.67,
+   "wins": 56,
+   "ws": 0.55
+  },
+  "141": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 61,
+   "mean_wins": 75.6,
+   "name": "Blue Jays",
+   "pennant": 0.03,
+   "playoffs": 0.5,
+   "wins": 53,
+   "ws": 0.0
+  },
+  "142": {
+   "div": 5.5,
+   "division": 202,
+   "league": 103,
+   "losses": 58,
+   "mean_wins": 80.7,
+   "name": "Twins",
+   "pennant": 0.93,
+   "playoffs": 17.52,
+   "wins": 56,
+   "ws": 0.33
+  },
+  "143": {
+   "div": 11.9,
+   "division": 204,
+   "league": 104,
+   "losses": 53,
+   "mean_wins": 88.7,
+   "name": "Phillies",
+   "pennant": 12.35,
+   "playoffs": 88.12,
+   "wins": 61,
+   "ws": 5.12
+  },
+  "144": {
+   "div": 87.83,
+   "division": 204,
+   "league": 104,
+   "losses": 45,
+   "mean_wins": 94.6,
+   "name": "Braves",
+   "pennant": 11.78,
+   "playoffs": 99.83,
+   "wins": 68,
+   "ws": 4.75
+  },
+  "145": {
+   "div": 20.48,
+   "division": 202,
+   "league": 103,
+   "losses": 53,
+   "mean_wins": 83.3,
+   "name": "White Sox",
+   "pennant": 3.52,
+   "playoffs": 44.62,
+   "wins": 59,
+   "ws": 1.32
+  },
+  "146": {
+   "div": 0.28,
+   "division": 204,
+   "league": 104,
+   "losses": 56,
+   "mean_wins": 81.8,
+   "name": "Marlins",
+   "pennant": 0.78,
+   "playoffs": 17.0,
+   "wins": 58,
+   "ws": 0.15
+  },
+  "147": {
+   "div": 49.0,
+   "division": 201,
+   "league": 103,
+   "losses": 50,
+   "mean_wins": 94.3,
+   "name": "Yankees",
+   "pennant": 25.98,
+   "playoffs": 99.85,
+   "wins": 64,
+   "ws": 14.4
+  },
+  "158": {
+   "div": 96.85,
+   "division": 205,
+   "league": 104,
+   "losses": 43,
+   "mean_wins": 97.0,
+   "name": "Brewers",
+   "pennant": 19.38,
+   "playoffs": 99.95,
+   "wins": 70,
+   "ws": 8.5
+  }
+ }
+}
