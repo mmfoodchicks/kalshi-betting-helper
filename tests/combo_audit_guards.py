@@ -6591,6 +6591,42 @@ finally:
 
 print()
 print("=" * 72)
+print("Switching apps mid-build costs nothing: the slip is collected, not lost")
+print("=" * 72)
+# The service worker converts a dead fetch into CLEAN JSON ({error: "network
+# unavailable", offline: true}) -- so the build poll saw a "result", exited,
+# and printed it. The 8-miss tolerance never fired; one suspended-tab blink
+# abandoned a build the server went on to finish. Build -> switch to Kalshi ->
+# come back is the app's core loop, so this path is now survivable end to end.
+_appjs7 = open(_os.path.join(_root, "static", "app.js")).read()
+_bc7 = _appjs7.split("window.buildCombo = async")[1].split("function _renderComboResult")[0]
+ck("the offline marker is a MISS, not a verdict",
+   "d.offline" in _bc7 and "++misses" in _bc7,
+   "the SW's fallback JSON looks like a result and used to end the build "
+   "with 'network unavailable' on the first blink")
+ck("a suspended tab never spends the miss budget",
+   _bc7.count("!document.hidden && ++misses") >= 2,
+   "phone timers freeze in the background; whatever half-state the resume "
+   "lands in is not a verdict on the network")
+ck("a severed build offers reattach, never restart",
+   "tap to reattach" in _bc7 and "window._comboResume = resume" in _bc7,
+   "the finished slip waits in the job file for an hour; rebuilding it "
+   "cost a second full simulation")
+ck("...and reattaches BY ITSELF when the user comes back",
+   "window._comboResume && !comboBuilding" in _appjs7,
+   "tapping a link is the fallback, not the price of switching apps")
+ck("a fresh click supersedes any pending reattach",
+   "window._comboResume = null;   // a fresh click supersedes" in _appjs7)
+ck("the result renderer is shared by the normal and reattach paths",
+   "function _renderComboResult" in _appjs7
+   and _appjs7.count("_renderComboResult(d, out, t, c)") >= 2)
+ck("a 0/0 board-adopt no longer flashes 'all games simulated'",
+   "if (d.total > 0) _warmWasCold = true;" in _appjs7,
+   "a fresh deploy reads 0/0 for half a second while the shared board is "
+   "adopted; announcing readiness over that is noise, not news")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

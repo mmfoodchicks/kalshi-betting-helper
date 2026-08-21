@@ -1052,6 +1052,7 @@ window.renderLiveWarn = () => {
 // Unified combo maker: one box, routes to the same-game-aware (mixed) builder
 // when the checkbox is on, else the one-leg-per-game parlay builder.
 window.buildCombo = async (maxBet, optimal) => {
+  window._comboResume = null;   // a fresh click supersedes any pending reattach
   const out = $("comboOut");
   if (!out) return;
   let n = parseInt(($("comboN") || {}).value, 10); if (isNaN(n) || n < 2) n = 2;
@@ -1100,43 +1101,59 @@ window.buildCombo = async (maxBet, optimal) => {
     // what took the whole instance down). The server answers 202 immediately and
     // we re-ask until the job is finished, while the progress bar polls the
     // game count. Up to 20 minutes, since a fully cold slate genuinely takes it.
-    let d = await (await fetch(`/api/baseball/mixed?date=${date}&${q}`)).json();
     // A blinked poll must not abort the whole build. The job keeps running
-    // server-side, so bailing to "Build failed" here invited a second click --
-    // and a second, concurrent build fighting the first for one CPU. Ride out
-    // up to 8 consecutive failures (the result is idempotent server-side, so a
-    // poll after recovery still collects it); only a dead connection gives up.
-    let misses = 0;
-    for (let i = 0; d && d.status === "building" && i < 800; i++) {
-      await new Promise((r) => setTimeout(r, 1500));
-      try {
-        const rr = await fetch(`/api/baseball/mixed?date=${date}&${q}`);
-        d = await rr.json();
-        misses = 0;
-      } catch (e) {
-        if (++misses > 8) throw e;
+    // server-side and its result is idempotent, so a poll after recovery still
+    // collects it. THREE failure shapes have to be survived, and the third was
+    // the one that got through: a thrown fetch (counted, up to 8), a response
+    // carrying the service worker's offline marker (the SW converts a dead
+    // fetch into clean JSON, so it LOOKS like a result and used to end the
+    // build with "network unavailable" on the first blink), and the phone
+    // suspending the tab entirely -- timers freeze, and whatever half-state the
+    // resume lands in must not count against the miss budget, because it is
+    // not a verdict on the network.
+    const poll = () => fetch(`/api/baseball/mixed?date=${date}&${q}`)
+      .then((r) => r.json());
+    let d = null;
+    const attach = async () => {
+      let misses = 0;
+      for (let i = 0; i < 800; i++) {
+        try {
+          d = await poll();
+          if (d && d.offline) {
+            if (!document.hidden && ++misses > 8) return false;
+          } else {
+            misses = 0;
+            if (!(d && d.status === "building")) return true;
+          }
+        } catch (e) {
+          if (!document.hidden && ++misses > 8) return false;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
       }
-    }
-    if (d && d.status === "building") {
-      out.innerHTML = `<div class="small">Still simulating after 20 minutes - the slate is unusually large or the server is busy. Try fewer games from the grid above.</div>`;
+      return d && d.status !== "building";
+    };
+    if (!await attach()) {
+      // The connection is genuinely down (or 20 minutes passed). The build
+      // keeps running server-side and the finished slip waits in the job file
+      // for an hour -- so reattach to it, never restart it.
+      const resume = async () => {
+        out.innerHTML = `<div class="small">Reattaching to the build…</div>`;
+        comboBuilding = true;
+        try {
+          if (await attach() && d) { _renderComboResult(d, out, t, c); }
+          else {
+            window._comboResume = resume;   // the link (and the next tab-return) can try again
+            out.innerHTML = `<div class="small">Still can't reach the server - <a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">try again</a>.</div>`;
+          }
+        } finally { comboBuilding = false; }
+      };
+      window._comboResume = resume;
+      out.innerHTML = `<div class="small">${(d && d.offline)
+        ? "Connection dropped mid-build. The build keeps running on the server - "
+        : "Still simulating after 20 minutes - "}<a href="#" onclick="event.preventDefault();_comboResume()">tap to reattach</a>${(d && d.offline) ? " when you're back online" : ""}.</div>`;
       return;
     }
-    noteMaxBetCap(d);
-    if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
-    if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
-    if (!d.parlay) {
-      if (d.hint === "kalshi_unpriced") {
-        out.innerHTML = `<div class="small">No Kalshi prices on the slate yet - <b>${d.n_pregame}</b> game${d.n_pregame === 1 ? "" : "s"} are listed but none is quoted. The maker only builds legs you can actually place, so there is nothing to pick from. MLB lines usually post closer to first pitch; try again nearer game time.</div>`;
-        return;
-      }
-      out.innerHTML = (d.hint === "max_bet_unreachable")
-        ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
-        : (d.hint === "optimal_unbuildable")
-        ? `<div class="small">Couldn't build anything toward <b>${d.target_payout_x}×</b> - the priced pool is too thin (lines post near game time, and only pregame games count unless live is on). Try again closer to first pitch or with more games selected.</div>`
-        : `<div class="small">Couldn't build - no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
-      return;
-    }
-    out.innerHTML = renderMixed(d.parlay);
+    _renderComboResult(d, out, t, c);
   } catch (e) {
     out.innerHTML = `<div class="small">Build failed - try again.</div>`;
   } finally {
@@ -1144,6 +1161,27 @@ window.buildCombo = async (maxBet, optimal) => {
     _stopLoader();      // records how long this actually took, to pace the next bar
   }
 };
+
+// The finished-build renderer, shared by the normal path and the reattach path
+// (a build that outlived a dropped connection is collected, not rebuilt).
+function _renderComboResult(d, out, t, c) {
+  noteMaxBetCap(d);
+  if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
+  if (d.error) { out.innerHTML = `<div class="small">${d.error}</div>`; return; }
+  if (!d.parlay) {
+    if (d.hint === "kalshi_unpriced") {
+      out.innerHTML = `<div class="small">No Kalshi prices on the slate yet - <b>${d.n_pregame}</b> game${d.n_pregame === 1 ? "" : "s"} are listed but none is quoted. The maker only builds legs you can actually place, so there is nothing to pick from. MLB lines usually post closer to first pitch; try again nearer game time.</div>`;
+      return;
+    }
+    out.innerHTML = (d.hint === "max_bet_unreachable")
+      ? `<div class="small">No slip on today's slate can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, so a short or thin slate runs out before the ceiling. Try again with more games selected, or once more of the board opens.</div>`
+      : (d.hint === "optimal_unbuildable")
+      ? `<div class="small">Couldn't build anything toward <b>${d.target_payout_x}×</b> - the priced pool is too thin (lines post near game time, and only pregame games count unless live is on). Try again closer to first pitch or with more games selected.</div>`
+      : `<div class="small">Couldn't build - no eligible games for that selection.${c ? ` No market on the slate lands between <b>${t}%</b> and <b>${c}%</b>; try widening the band.` : ""} Try ALL GAMES, allow live, or loosen a target.</div>`;
+    return;
+  }
+  out.innerHTML = renderMixed(d.parlay);
+}
 
 // Serialize the game grid selection as "pk" (whole game) or "pk:Team" (one team)
 // entries joined by commas. Empty -> all games.
@@ -5926,7 +5964,11 @@ async function pollWarm() {
       }
       return;
     }
-    _warmWasCold = true;
+    // Only arm the "✅ Ready" flash when a REAL warm count was shown. A fresh
+    // deploy briefly reads 0/0 while the board is adopted from the shared disk
+    // and then lands fully warm -- flashing "all 15 games simulated" over that
+    // half-second read as noise, not news.
+    if (d.total > 0) _warmWasCold = true;
     bar.classList.remove("hidden");
     bar.className = "warmbar";
     const pct = d.total ? Math.round(100 * d.warm / d.total) : 0;
@@ -5952,7 +5994,19 @@ async function pollWarm() {
   } catch (e) { /* offline - say nothing rather than something wrong */ }
 }
 setInterval(() => { if (!document.hidden) pollWarm(); }, 5000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) pollWarm(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  pollWarm();
+  // A build whose polling was severed while the phone had the tab suspended
+  // reattaches by itself the moment the user comes back -- the finished slip
+  // is waiting in the job file, and tapping a link should be the fallback,
+  // not the price of switching apps.
+  if (window._comboResume && !comboBuilding) {
+    const r = window._comboResume;
+    window._comboResume = null;
+    r();
+  }
+});
 pollWarm();
 
 // ---- DraftKings scoring card ------------------------------------------------
