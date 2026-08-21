@@ -6627,6 +6627,43 @@ ck("a 0/0 board-adopt no longer flashes 'all games simulated'",
 
 print()
 print("=" * 72)
+print("Always running: the phone carries nothing and turns nothing off")
+print("=" * 72)
+# The owner's contract, verbatim: the phone must never carry a build (the
+# server does, under a per-click token, served idempotently) and must not
+# switch the screen off while Vigil is up (Wake Lock, re-acquired on return).
+_apy8 = open(_os.path.join(_root, "app.py")).read()
+_nfl8 = _apy8.split("def api_nfl_parlay")[1].split("def api_nfl_sim")[0]
+ck("the NFL build runs server-side under the click's token",
+   "baseball.job_claim(ptok)" in _nfl8 and "job_finish(ptok" in _nfl8
+   and '"status": "building"' in _nfl8,
+   "a synchronous build died with the phone; a job survives it")
+ck("the finished NFL slip is served idempotently",
+   'job.get("status") == "done"' in _nfl8
+   and "return jsonify(job.get(\"result\")" in _nfl8.replace("'", '"'),
+   "destroy-on-first-read is how a lost response became a silent rebuild")
+ck("every request-dependent value is read on the request thread",
+   "pre_flag = _nfl_preseason()" in _nfl8 and "prop_types = _prop_types()" in _nfl8,
+   "_prop_types reads the request; called from the build thread it raises "
+   "'Working outside of request context' and the build dies instantly")
+ck("a failed NFL build lands in the ledger under its ID",
+   "NFL-COMBO-build" in _nfl8)
+_js8 = open(_os.path.join(_root, "static", "app.js")).read()
+_bn8 = _js8.split("async function buildNFLCombo")[1].split("function _renderNflComboResult")[0]
+ck("the NFL maker polls with the same three-shape tolerance as baseball's",
+   "d.offline" in _bn8 and _bn8.count("!document.hidden && ++misses") >= 2
+   and "ptok" in _bn8)
+ck("...and its reattach shares the one resume slot",
+   "window._comboResume = resume" in _bn8,
+   "the visibility handler fires whichever maker was severed")
+ck("the screen is held awake while Vigil is visible",
+   "navigator.wakeLock.request" in _js8 and "_wakeAcquire()" in _js8
+   and _js8.count("_wakeAcquire") >= 3,
+   "acquired at load, re-acquired on every return; the OS releases it on "
+   "backgrounding and that part is not optional")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -3344,8 +3344,58 @@ async function buildNFLCombo(maxBet, optimal) {
     + (nflComboSelParam() ? `&sel=${encodeURIComponent(nflComboSelParam())}` : "")
     + (maxBet ? "&max_bet=1" : "")
     + (optimal ? "&optimal=1" : "");
+  // The build runs SERVER-SIDE under this click's token and the result is
+  // served idempotently -- the phone only watches, so suspending the tab
+  // costs nothing: reattach (automatic on return) collects the finished slip.
+  const ptok = "nfl" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  window._comboResume = null;
   try {
-    const d = await (await fetch(`/api/nfl/parlay?${q}`)).json();
+    const poll = () => fetch(`/api/nfl/parlay?${q}&ptok=${ptok}`).then((r) => r.json());
+    let d = null;
+    const attach = async () => {
+      let misses = 0;
+      for (let i = 0; i < 400; i++) {
+        try {
+          d = await poll();
+          if (d && d.offline) {
+            if (!document.hidden && ++misses > 8) return false;
+          } else {
+            misses = 0;
+            if (!(d && d.status === "building")) return true;
+          }
+        } catch (e) {
+          if (!document.hidden && ++misses > 8) return false;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      return d && d.status !== "building";
+    };
+    const finish = (dd) => { _renderNflComboResult(dd, out); };
+    if (!await attach()) {
+      const resume = async () => {
+        out.innerHTML = `<div class="empty">Reattaching to the build…</div>`;
+        if (await attach() && d) { finish(d); }
+        else {
+          window._comboResume = resume;
+          out.innerHTML = `<div class="empty">Still can't reach the server - <a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">try again</a>.</div>`;
+        }
+      };
+      window._comboResume = resume;
+      out.innerHTML = `<div class="empty">${(d && d.offline)
+        ? "Connection dropped mid-build. The build keeps running on the server - "
+        : "Still building - "}<a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">tap to reattach</a>.</div>`;
+      return;
+    }
+    finish(d);
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Combo build failed.</div>`;
+  }
+}
+
+// The NFL maker's finished-build renderer, shared by the watched and the
+// reattached paths exactly like baseball's.
+function _renderNflComboResult(d, out) {
+  {
     noteMaxBetCap(d);
     if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
     if (!d.parlay) {
@@ -3364,8 +3414,6 @@ async function buildNFLCombo(maxBet, optimal) {
       + (d.parlay.excluded_started
          ? `<div class="small" style="color:var(--muted);margin-top:4px">🔴 ${d.parlay.excluded_started} game${d.parlay.excluded_started > 1 ? "s" : ""} already under way - excluded (pre-game pricing only).</div>`
          : "");
-  } catch (e) {
-    out.innerHTML = `<div class="empty">Combo build failed.</div>`;
   }
 }
 
@@ -5994,8 +6042,25 @@ async function pollWarm() {
   } catch (e) { /* offline - say nothing rather than something wrong */ }
 }
 setInterval(() => { if (!document.hidden) pollWarm(); }, 5000);
+// ---- screen wake lock -------------------------------------------------------
+// The owner's explicit wish: the phone must not turn anything off while Vigil
+// is on screen. The Wake Lock API holds the screen awake whenever the tab is
+// visible; the OS releases it on backgrounding (that part is not optional) and
+// it is re-acquired the moment the tab returns. Battery is the owner's to
+// spend. Silently a no-op on browsers without the API or in power-save mode.
+let _wakeLock = null;
+async function _wakeAcquire() {
+  try {
+    if (_wakeLock || !("wakeLock" in navigator) || document.hidden) return;
+    _wakeLock = await navigator.wakeLock.request("screen");
+    _wakeLock.addEventListener("release", () => { _wakeLock = null; });
+  } catch (e) { _wakeLock = null; }
+}
+_wakeAcquire();
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) return;
+  _wakeAcquire();
   pollWarm();
   // A build whose polling was severed while the phone had the tab suspended
   // reattaches by itself the moment the user comes back -- the finished slip

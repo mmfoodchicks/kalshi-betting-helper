@@ -2436,12 +2436,18 @@ def api_nfl_parlay():
     optimal = request.args.get("optimal") == "1"
     if optimal and not (payout and payout > 1):
         return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
+    # The build may run in a background thread where `request` does not exist,
+    # so EVERY request-dependent value is read here, on the request thread --
+    # baseball learned this the hard way (_prop_types reads the request).
+    ptok = (request.args.get("ptok") or "")[:64] or None
+    pre_flag = _nfl_preseason()
+    prop_types = _prop_types()
     try:
         import nfl_game_sim
 
         def _build(target_pct, _mb=False, _opt=False):
             return nfl_game_sim.build_parlay(
-                week=week, preseason=_nfl_preseason(), n_legs=legs,
+                week=week, preseason=pre_flag, n_legs=legs,
                 target_pct=target_pct,
                 cap_pct=None if (_mb or _opt) else cap,
                 target_payout=0 if _mb else payout,
@@ -2452,37 +2458,63 @@ def api_nfl_parlay():
                 payout_mode="require" if _opt else payout_mode,
                 conn=conn,
                 objective="balanced" if _opt else objective,
-                types=_prop_types(), game_sel=sel or None, max_bet=_mb)
+                types=prop_types, game_sel=sel or None, max_bet=_mb)
 
-        if optimal:
-            capped = payout > combo_engine.MAX_PAYOUT_X
-            payout = min(payout, combo_engine.MAX_PAYOUT_X)
-            item = combo_engine.best_target(lambda f: _build(f, _opt=True))
-            if item:
-                item["objective"] = "optimal"
-                item["target_payout_x"] = payout
-                item["target_capped"] = capped
-                return jsonify({"parlay": item})
-            return jsonify({"parlay": None, "hint": "optimal_unbuildable",
-                            "target_payout_x": payout})
-        if max_bet:
-            # A max bet has to be free to go deep and to use unlikely legs --
-            # that is what the MARKET payout cap costs. Holding it to the maker's
-            # band would guarantee the answer "can't be done", so the ceiling and
-            # the payout target are dropped and the floor is swept.
-            item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
-        else:
-            item = _build(target)
+        def _core():
+            """The whole build as a plain dict, runnable off-request -- the
+            phone only WATCHES a build, it never carries one."""
+            if optimal:
+                tgt = min(payout, combo_engine.MAX_PAYOUT_X)
+                capped = payout > combo_engine.MAX_PAYOUT_X
+                item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+                if item:
+                    item["objective"] = "optimal"
+                    item["target_payout_x"] = tgt
+                    item["target_capped"] = capped
+                    return {"parlay": item}
+                return {"parlay": None, "hint": "optimal_unbuildable",
+                        "target_payout_x": tgt}
+            if max_bet:
+                # A max bet has to be free to go deep and to use unlikely legs --
+                # that is what the MARKET payout cap costs. Holding it to the
+                # maker's band would guarantee the answer "can't be done", so the
+                # ceiling and the payout target are dropped and the floor swept.
+                item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+                if not item:
+                    return {"parlay": None, "hint": "max_bet_unreachable",
+                            "cap_x": combo_engine.MAX_PAYOUT_X}
+            else:
+                item = _build(target)
+            if isinstance(item, dict) and item.get("error_hint"):
+                return {"parlay": None, "hint": item["error_hint"],
+                        "n_games_available": item.get("n_games_available"),
+                        "n_started": item.get("n_started")}
+            return {"parlay": item}
+
+        if ptok:
+            # Baseball's job pattern, verbatim: the result is stored under the
+            # click's token and served idempotently, so a phone that suspends
+            # the tab mid-build collects the finished slip whenever it returns.
+            job = baseball.job_read(ptok)
+            if job and job.get("status") == "done":
+                return jsonify(job.get("result") or {})
+            if job and job.get("status") == "error":
+                return jsonify({"error": job.get("error") or "build failed"}), 502
+            if not baseball.job_claim(ptok):
+                return jsonify({"status": "building", "token": ptok}), 202
+
+            def _bg():
+                try:
+                    res = _core()
+                    baseball.job_finish(ptok, "done", result=res)
+                except Exception as e:
+                    errlog.note("NFL-COMBO-build", e, path=ptok)
+                    baseball.job_finish(ptok, "error", error=str(e))
+            threading.Thread(target=_bg, daemon=True).start()
+            return jsonify({"status": "building", "token": ptok}), 202
+        return jsonify(_core())
     except Exception as e:
         return jsonify({"error": f"nfl parlay failed: {e}"}), 502
-    if max_bet and not item:
-        return jsonify({"parlay": None, "hint": "max_bet_unreachable",
-                        "cap_x": combo_engine.MAX_PAYOUT_X})
-    if isinstance(item, dict) and item.get("error_hint"):
-        return jsonify({"parlay": None, "hint": item["error_hint"],
-                        "n_games_available": item.get("n_games_available"),
-                        "n_started": item.get("n_started")})
-    return jsonify({"parlay": item})
 
 
 @app.route("/api/nfl/sim")
