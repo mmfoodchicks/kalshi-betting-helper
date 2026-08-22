@@ -1,22 +1,18 @@
 @echo off
-rem Vigil PC compute worker bootstrap. This file is DELIBERATELY dumb: it only
-rem pulls the latest code and runs one cycle, forever. All real logic lives in
-rem pc_worker.py, which this pull keeps fresh automatically -- you should never
-rem need to edit or update this file.
+rem Vigil PC worker bootstrap, v2 -- FROZEN. This file must never be updated
+rem again: cmd reads a running .bat by byte offset, so a git pull that
+rem rewrites it mid-run can corrupt the loop. All logic (fast git checks,
+rem pulls, sim cadence) lives in pc_loop.py, which updates ITSELF and exits;
+rem this loop just restarts it on the fresh code.
 rem
-rem Setup (once): install Python 3.11+ and Git for Windows, clone the repo,
-rem copy vigil-pc.cfg.example to vigil-pc.cfg and fill in your app URL and
-rem SIM_TOKEN, then double-click this file (or add it to Task Scheduler).
+rem Setup: see DEPLOY.md ("PC compute worker"). Close this window to stop.
 cd /d "%~dp0"
 title Vigil PC worker
-echo [vigil-pc] bootstrap starting in %CD%
+echo [vigil-pc] bootstrap v2 starting in %CD%
+git pull --ff-only
 
 :loop
-git pull --ff-only
-if exist requirements.txt (
-  python -m pip install -q -r requirements.txt
-)
-python pc_worker.py
-echo [vigil-pc] sleeping 10 minutes (Ctrl+C or close window to stop)...
-timeout /t 600 /nobreak >nul
+python pc_loop.py
+echo [vigil-pc] loop exited (update restart or error) - relaunching in 15s...
+timeout /t 15 /nobreak >nul
 goto loop

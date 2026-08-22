@@ -266,9 +266,11 @@ One-time setup on the PC (Windows):
 4. In the cloned folder, copy `vigil-pc.cfg.example` to `vigil-pc.cfg` and
    fill in your app URL and the same SIM_TOKEN value used above. This file is
    gitignored — it never leaves the machine.
-5. Double-click **vigil-pc.bat**. It pulls the latest code, runs one sim
-   cycle, uploads, sleeps 10 minutes, repeats. Close the window to stop —
-   Render instantly goes back to computing everything itself.
+5. Double-click **vigil-pc.bat**. It launches pc_loop.py, which checks git
+   for updates **every minute** (pulling and restarting itself on fresh code
+   within ~60s of any push) and runs a sim+upload cycle every 10 minutes or
+   immediately after an update. Close the window to stop — Render instantly
+   goes back to computing everything itself.
 6. Optional, to make it fully hands-off: Task Scheduler → Create Basic Task →
    trigger *At log on* → action *Start a program* → browse to vigil-pc.bat.
 

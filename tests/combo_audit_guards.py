@@ -7430,10 +7430,19 @@ ck("the worker asks what the server needs before simulating",
    and 'state") != "Final"' in _pw20.replace("'", '"'),
    "re-uploading what the server already has fresh is pure waste; simming "
    "finished games is worse")
-ck("the bootstrap is dumb and self-updating",
-   "git pull" in open(_os.path.join(_root, "vigil-pc.bat")).read()
-   and "pc_worker.py" in open(_os.path.join(_root, "vigil-pc.bat")).read(),
-   "all logic lives in the repo the pull refreshes; the .bat never goes stale")
+_bat20 = open(_os.path.join(_root, "vigil-pc.bat")).read()
+_loop20 = open(_os.path.join(_root, "pc_loop.py")).read()
+ck("the bootstrap is frozen and delegates every brain to the repo",
+   "FROZEN" in _bat20 and "pc_loop.py" in _bat20
+   and "pc_worker.py" not in _bat20.replace("rem", ""),
+   "cmd reads a running .bat by byte offset; a bat that git-pulls itself "
+   "mid-loop can corrupt its own execution -- so the bat never changes again")
+ck("the loop checks git every minute but sims on its own cadence",
+   "CHECK_S = 60" in _loop20 and "CYCLE_S = 600" in _loop20
+   and 'rev-parse", "@{u}"' in _loop20 and "sys.exit(0)" in _loop20,
+   "an update pulls, reinstalls and EXITS for a clean restart on fresh "
+   "code -- the PC is current within a minute of a push, without burning "
+   "CPU on a slate rebuild every minute")
 ck("the token config can never be committed",
    "vigil-pc.cfg" in open(_os.path.join(_root, ".gitignore")).read()
    and not _os.path.exists(_os.path.join(_root, "vigil-pc.cfg")),
