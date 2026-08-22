@@ -278,3 +278,15 @@ Safety model: uploads require SIM_TOKEN, are schema-versioned (a stale
 checkout gets a 409 and simply waits for its next `git pull`), and land
 atomically in the same cache the workers already share. The server never
 depends on the PC — worst case is always "compute it myself, like before."
+
+### Full offload (v3 worker)
+
+The PC worker now carries every simulator: MLB game sims, all the boardshare
+boards (NFL game/DFS/parlay sims, Kalshi NFL index, golf, LoL, NBA/WNBA, NHL,
+tennis, UFC, futures), and the nightly deep season sims (MLB 4,000 seasons
+plus F1/NASCAR/NFL/CFB/pro-league season runs when in season). Uploading a
+fresh nightly makes the server's own scheduler see "already ran today" and
+skip its multi-hour rebuild. model_trust and the coherence/ump extras stay
+server-side (they need the server's own prediction log and the GitHub history
+flow). Nothing to configure — the worker picks all of this up on its next
+git pull.

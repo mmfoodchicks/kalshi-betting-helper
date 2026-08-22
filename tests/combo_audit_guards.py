@@ -7502,6 +7502,49 @@ ck("the show is seconds, not a mode",
 
 print()
 print("=" * 72)
+print("Full offload: every simulator's artifacts flow through one door")
+print("=" * 72)
+# The three stores (gamesim / boards / deep) are all flat mtime-adopted
+# pickle dirs, so the whole offload is: the PC runs the SAME builders, then
+# syncs fresher files. The server's daily scheduler judges "already ran
+# today" from the saved file's timestamp, so an uploaded deep run makes it
+# skip its own multi-hour rebuild with no scheduler changes.
+import artifacts as _ar23
+ck("artifact names are flat, bounded, and traversal-proof",
+   _ar23.valid_name("nfl_parlay_sims3_2026_w1_pre_4000.pkl")
+   and not _ar23.valid_name("../evil.pkl")
+   and not _ar23.valid_name("a/b.pkl") and not _ar23.valid_name("x.py"),
+   "a name is a filename in one of three known dirs, never a path")
+ck("the three stores resolve through the consumers' own env vars",
+   "baseball._SIM_DISK" in _insp.getsource(_ar23.dir_for)
+   and "boardshare._DIR" in _insp.getsource(_ar23.dir_for)
+   and "deep_cache.CACHE_DIR" in _insp.getsource(_ar23.dir_for),
+   "uploading to a path the readers don't read is not adoption")
+_apy23 = open(_os.path.join(_root, "app.py")).read()
+ck("the generalized door carries the same three gates as the sim door",
+   '"/api/art/upload"' in _apy23 and "schema != artifacts.SCHEMA" in _apy23
+   and "artifacts.valid_name(name)" in _apy23 and "_pc_auth_ok" in _apy23)
+ck("coherence + ump keep running on the server when the PC does the nightly",
+   '"mlb_nightly_extras"' in _apy23,
+   "a fresh uploaded mlb_deep.pkl makes the daily scheduler skip run_mlb "
+   "entirely -- the GitHub-history extras must not vanish with it")
+_pw23 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC carries every offloadable nightly, with the exact server shapes",
+   all(f'"{k}"' in _pw23 for k in ("mlb_deep", "f1", "nascar", "nfl_season",
+                                   "cfb", "nfl", "nba", "nhl"))
+   and '{"agg": agg, "season": season}' in _pw23
+   and "career_frac" in _pw23,
+   "mlb_deep is saved as the run_mlb wrapper and behind the same quality "
+   "gate; model_trust stays server-side (it replays the server's own "
+   "prediction log)")
+ck("the PC builds every boardshare board with the server's own builders",
+   all(s in _pw23 for s in ("golf", "tennis_prices", "ufc_sim", "lol",
+                            "basket", "hockey", "mfutures", "kalshi_nfl",
+                            "nfl_dfs_sim", "_slate_sims")),
+   "one broken sport never strands the rest (each task is guarded)")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

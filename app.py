@@ -439,6 +439,60 @@ def _pc_auth_ok():
     return bool(_SIM_TOKEN and tok and hmac.compare_digest(tok, _SIM_TOKEN))
 
 
+@app.route("/api/art/have")
+def api_art_have():
+    """{name: age_s} for one artifact store (gamesim | boards | deep), plus the
+    contract schema — the PC worker's inventory question, generalized."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    import artifacts
+    kind = request.args.get("kind") or ""
+    if artifacts.dir_for(kind) is None:
+        return jsonify({"error": "bad kind"}), 400
+    return jsonify({"have": artifacts.ages(kind), "schema": artifacts.SCHEMA})
+
+
+@app.route("/api/art/upload", methods=["POST"])
+def api_art_upload():
+    """Adopt one externally-computed artifact into any of the three stores.
+    Same trust model and gates as the game-sim door (see api_sim_upload):
+    token required even with no app password, schema-versioned so a stale
+    checkout is ignored, flat sanitized filenames only, size-capped."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    import artifacts
+    kind = request.args.get("kind") or ""
+    name = request.args.get("name") or ""
+    try:
+        schema = int(request.args.get("schema") or 0)
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    if schema != artifacts.SCHEMA:
+        errlog.note("PCUP-art-schema",
+                    msg=f"{kind}/{name}: schema {schema} vs {artifacts.SCHEMA}")
+        return jsonify({"error": "schema mismatch", "adopted": False,
+                        "want": artifacts.SCHEMA}), 409
+    if artifacts.dir_for(kind) is None or not artifacts.valid_name(name):
+        return jsonify({"error": "bad kind/name"}), 400
+    data = request.get_data(cache=False)
+    if request.headers.get("Content-Encoding") == "gzip":
+        import gzip as _gz
+        try:
+            data = _gz.decompress(data)
+        except OSError:
+            return jsonify({"error": "bad gzip"}), 400
+    if not data or len(data) > 64_000_000:
+        return jsonify({"error": "bad size"}), 400
+    try:
+        artifacts.write_raw(kind, name, data)
+    except Exception as e:
+        errlog.note("PCUP-art-write", e)
+        return jsonify({"error": f"write failed: {type(e).__name__}",
+                        "adopted": False}), 500
+    return jsonify({"ok": True, "adopted": True, "kind": kind, "name": name,
+                    "bytes": len(data)})
+
+
 @app.route("/api/sim/have")
 def api_sim_have():
     """{pk: age_s} of fresh sims on this server, plus the schema and commit it
@@ -1140,6 +1194,30 @@ def _register_deep_sims():
         return model_trust.load()
 
     deep_cache.register("mlb_deep", run_mlb)
+
+    def run_nightly_extras():
+        """The light nightly work that must run on the SERVER even when the PC
+        worker delivered the heavy deep run (a fresh uploaded mlb_deep.pkl
+        makes the daily scheduler skip run_mlb entirely): the futures
+        coherence snapshot and the umpire table write into the repo directory
+        and the GitHub history flow, which the PC's artifact sync doesn't
+        carry. Cheap (fetch + write), idempotent per date, so running it on a
+        night run_mlb ALSO ran costs nothing."""
+        season = str(clock.today_et().year)
+        try:
+            import coherence
+            coherence.snapshot(season)
+        except Exception as _e:
+            errlog.note("APP-extras-coherence", _e)
+        try:
+            import ump_build
+            t = ump_build.build()
+            if t:
+                ump_build.save(t)
+        except Exception as _e:
+            errlog.note("APP-extras-ump", _e)
+        return {"at": time.time()}
+    deep_cache.register("mlb_nightly_extras", run_nightly_extras)
     deep_cache.register("f1", run_f1)
     deep_cache.register("nascar", run_nascar)
     deep_cache.register("nfl_season", run_nfl_season)
