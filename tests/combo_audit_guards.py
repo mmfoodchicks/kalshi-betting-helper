@@ -7007,6 +7007,80 @@ ck("the roles reach the builder and the card",
 
 print()
 print("=" * 72)
+print("Racing: fitted win models, sprint weekends, and the right grid")
+print("=" * 72)
+# F1's tau and NASCAR's per-track-type constants are FITTED (winner
+# max-likelihood over 2023-2025 F1 / 2024-2026 Cup) instead of eyeballed;
+# sprint weekends produce a provisional grid + sprint-result form instead of
+# a blank model; and a Cup market can no longer be modeled off the Trucks
+# grid that shares its weekend.
+import racing as _rc12
+
+ck("F1 tau is the fitted 1.2, with the chaos floor",
+   _rc12._TAU["f1"] == 1.2 and _rc12._CHAOS.get("f1") == 0.03,
+   "avg winner log-lik -1.19 vs -1.51 at the old tau=3.0 over 70 races; the "
+   "2023-2025 sample has no P11+ winner, so eps carries the tail")
+ck("NASCAR taus keep their ordering but at the fitted scale",
+   _rc12._NASCAR_TAU == {"road": 3.0, "short": 3.0, "intermediate": 4.0,
+                         "superspeedway": 7.0}
+   and _rc12._NASCAR_CHAOS["intermediate"] == 0.15,
+   "the old values had the right shape and were ~2x too flat everywhere "
+   "(fitted on 109 Cup races); intermediate chaos matches its observed 9% "
+   "P21+ winner rate")
+_g12 = _rc12._finalize({f"driver {i}": i for i in range(1, 21)}, "test", "F1")
+_p12 = _rc12.win_probs(_g12, "f1")
+_rows12 = sorted(_p12.items(), key=lambda kv: -kv[1])
+ck("the chaos floor keeps a back-marker unlikely, never impossible",
+   abs(sum(_p12.values()) - 1.0) < 1e-9 and 0.001 < _rows12[-1][1] < 0.01
+   and _rows12[0][1] > 0.5,
+   f"P1 {100*_rows12[0][1]:.1f}%, P20 {100*_rows12[-1][1]:.2f}% -- a fitted "
+   "model alone called a back-of-grid charge exactly 0.0%")
+ck("DNF risk is measured per starting spot, and deep starts pay ~2.5x",
+   _rc12.f1_dnf_pct(1) == 6.6 and _rc12.f1_dnf_pct(8) == 11.7
+   and _rc12.f1_dnf_pct(14) == 16.9 and _rc12.f1_dnf_pct(20) == 16.4,
+   "1,398 classified 2023-2025 entries; 'Lapped' is a finish, not a DNF -- "
+   "counting it as one had the back row crashing out of half its races")
+_f1src12 = _insp.getsource(_rc12._openf1_f1_grid)
+ck("sprint weekends produce a grid instead of a blank model",
+   '"Sprint Qualifying"' in _f1src12 and "sprint_result" in _f1src12
+   and "provisional" in _f1src12,
+   "the whole Zandvoort sprint weekend showed no model at all -- the code "
+   "only knew the word 'Qualifying'")
+ck("a lagging OpenF1 endpoint degrades instead of blanking the build",
+   "_get_json_opt" in _f1src12,
+   "OpenF1 answers 404 while a session has no rows; one raised 404 killed "
+   "the grid build before its fallbacks ran")
+ck("the penalty-adjusted race grid outranks raw qualifying order",
+   _f1src12.index('_rows(race_key, "starting_grid")')
+   < _f1src12.index('_rows(key, "session_result")'),
+   "a back-of-grid engine penalty only exists in the race session's grid")
+_rbsrc12 = _insp.getsource(_rc12.race_board)
+ck("Saturday's sprint result feeds Sunday's form",
+   "0.5 * r + 0.5 * sr[nm]" in _rbsrc12 and "dnf_pct" in _rbsrc12
+   and '"provisional"' in _rbsrc12,
+   "same-track same-weekend pace is the freshest form there is")
+ck("a null NASCAR weekend feed yields an empty grid, not a crash",
+   _rc12._grid_from_feed({"weekend_runs": None}) == {},
+   'found sweeping the archive: some races serve "weekend_runs": null and '
+   "iterating None killed the whole board model")
+_races12 = [{"race_name": "Dollar Tree 301", "race_date": "2026-08-23", "race_id": 1}]
+ck("Saturday finds Sunday's race (3-day window), not another series' grid",
+   (_rc12._pick_race(_races12, None, "2026-08-22") or {}).get("race_id") == 1
+   and _rc12._pick_race(_races12, None, "2026-08-18") is None,
+   "date-matching only exactly-today made the Trucks race answer for the "
+   "Cup market on shared weekends")
+ck("a grid must cover the market it models",
+   "coverage(best) >= 0.3" in _insp.getsource(_rc12.get_nascar_grid)
+   and "names=names or None" in _rbsrc12,
+   "a Cup winner board was one name-mismatch away from being priced off "
+   "the Trucks qualifying order")
+_js12 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the board SHOWS the start spot, DNF risk and provisional grid",
+   "DNF ~" in _js12 and "provisional" in _js12 and "start_pos" in _js12,
+   "the user's ask: visible consequences of starting deep")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

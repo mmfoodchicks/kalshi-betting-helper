@@ -52,6 +52,17 @@ def _get_json(url, timeout=12):
             raise
 
 
+def _get_json_opt(url, timeout=12):
+    """_get_json, but 'no data' is None instead of an exception. OpenF1 answers
+    404 for a session that has no rows YET (a beta endpoint that lags the
+    session) -- one raised 404 killed the entire grid build before its
+    fallbacks could run, which is how a sprint weekend showed no model at all."""
+    try:
+        return _get_json(url, timeout=timeout)
+    except Exception:
+        return None
+
+
 def norm_name(name):
     """Normalize a driver name for matching across data sources (drop accents,
     punctuation, suffixes, case)."""
@@ -148,7 +159,10 @@ def nascar_track_type(name):
 # --- NASCAR ------------------------------------------------------------------
 
 def _pick_race(races, race_name, date):
-    """Choose the race by name (preferred) or by date."""
+    """Choose the race by name (preferred), by date, or the next race within 3
+    days. The 3-day window matters on shared weekends: Saturday's board for
+    SUNDAY'S Cup race used to date-match nothing in Cup — and then the Trucks
+    race running that same day would answer for it from another series."""
     if race_name:
         target = norm_name(race_name)
         for r in races:
@@ -159,16 +173,33 @@ def _pick_race(races, race_name, date):
         for r in races:
             if (r.get("race_date") or "")[:10] == date:
                 return r
+        upcoming = sorted((r for r in races
+                           if date <= (r.get("race_date") or "")[:10] <= _plus_days(date, 3)),
+                          key=lambda r: r.get("race_date") or "")
+        if upcoming:
+            return upcoming[0]
     return None
 
 
+def _plus_days(date, n):
+    try:
+        d = datetime.date.fromisoformat(date[:10])
+        return (d + datetime.timedelta(days=n)).isoformat()
+    except ValueError:
+        return date
+
+
 def _grid_from_feed(feed):
-    """Map normalized driver name -> qualifying (starting) position."""
+    """Map normalized driver name -> qualifying (starting) position.
+
+    `or []` everywhere: NASCAR's feed serves "weekend_runs": null on some
+    races (found sweeping the 2024-2026 archive), and iterating None raised
+    out of the board build -- one null race killed the whole model."""
     grid = {}
-    for run in feed.get("weekend_runs", []):
+    for run in (feed.get("weekend_runs") or []):
         if run.get("run_type") != 2:        # 2 == qualifying
             continue
-        for res in run.get("results", []):
+        for res in (run.get("results") or []):
             pos = res.get("finishing_position")
             nm = norm_name(res.get("driver_name", ""))
             if pos and nm:
@@ -176,8 +207,17 @@ def _grid_from_feed(feed):
     return grid
 
 
-def get_nascar_grid(race_name=None, date=None, year=None):
+def get_nascar_grid(race_name=None, date=None, year=None, names=None):
+    """The starting grid for the race the caller is actually asking about.
+
+    `names`: the market's outcome (driver) names. On a shared weekend all three
+    series run at the same track within a day of each other, and the first
+    series with a date-matching grid used to answer for ANY market — a Cup
+    winner board built on the Trucks grid. When names are given, every series'
+    candidate grid is scored by how much of the market it covers and the best
+    one wins; a grid covering under 30% of the field is the wrong race."""
     year = year or (date[:4] if date else str(clock.today_et().year))
+    candidates = []
     for series in (1, 2, 3):
         try:
             races = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/race_list_basic.json")
@@ -193,9 +233,18 @@ def get_nascar_grid(race_name=None, date=None, year=None):
             continue
         grid = _grid_from_feed(feed)
         if grid:
-            return _finalize(grid, race.get("race_name", "race"), SERIES[series],
-                             series_id=series, track=race.get("track_name"))
-    return None
+            g = _finalize(grid, race.get("race_name", "race"), SERIES[series],
+                          series_id=series, track=race.get("track_name"))
+            if not names:
+                return g                       # no market context -> first match
+            candidates.append(g)
+    if not candidates:
+        return None
+    def coverage(g):
+        hits = sum(1 for n in names if lookup(g, n) is not None)
+        return hits / max(1, len(names))
+    best = max(candidates, key=coverage)
+    return best if coverage(best) >= 0.3 else None
 
 
 def get_nascar_practice(race_name=None, date=None, year=None):
@@ -238,13 +287,25 @@ def get_nascar_practice(race_name=None, date=None, year=None):
 def _openf1_f1_grid():
     """The CURRENT weekend's real starting grid from OpenF1 (live timing), or None.
 
-    This is the fix for the lagging Ergast/Jolpica feed: OpenF1 posts qualifying
-    within minutes, so we take the latest completed Qualifying session, but only
+    This is the fix for the lagging Ergast/Jolpica feed: OpenF1 posts sessions
+    within minutes. We take the latest completed grid-setting session, but only
     when it belongs to THIS weekend and its race HASN'T RUN YET — i.e. exactly the
     window where the grid should condition the sim. Once the race runs (or the
     quali is more than a few days old) it returns None, so a spent grid can never
-    leak onto the next event. Prefers /starting_grid (penalty-adjusted) and falls
-    back to /session_result (raw qualifying order)."""
+    leak onto the next event.
+
+    SPRINT WEEKENDS: "Sprint Qualifying" counts too — before Saturday's GP
+    qualifying runs, the sprint-quali order is the only read on this weekend's
+    pace, so it serves as a PROVISIONAL Sunday grid (flagged as such); the real
+    GP Qualifying supersedes it the moment it completes. A completed Sprint
+    race's finishing order rides along as `sprint_result` — same-track,
+    same-weekend pace, the freshest form signal there is.
+
+    Grid source order: /starting_grid on the RACE session (the penalty-adjusted
+    official grid, when posted) -> /starting_grid on the quali session ->
+    /session_result of the quali session (raw order). Every OpenF1 endpoint may
+    answer 404 while a session has no rows yet, so each fetch is optional —
+    one lagging beta endpoint must not blank the whole model."""
     import datetime as _dt
 
     def build():
@@ -257,39 +318,65 @@ def _openf1_f1_grid():
                 return _dt.datetime.fromisoformat(s["date_start"].replace("Z", "+00:00"))
             except Exception:
                 return None
-        qualis, races_by_meeting = [], {}
+        qualis, races_by_meeting, sprints_by_meeting = [], {}, {}
         for s in sessions:
             t = when(s)
             if not t:
                 continue
-            if s.get("session_name") == "Qualifying" and t < now:
-                qualis.append((t, s))
-            elif s.get("session_name") == "Race":
-                races_by_meeting[s.get("meeting_key")] = t
+            nm = s.get("session_name")
+            if nm in ("Qualifying", "Sprint Qualifying") and t < now:
+                # GP Qualifying outranks Sprint Qualifying at equal freshness:
+                # sort by (time, is_gp_quali) so the real grid wins once it runs.
+                qualis.append((t, nm == "Qualifying", s))
+            elif nm == "Race":
+                races_by_meeting[s.get("meeting_key")] = (t, s.get("session_key"))
+            elif nm == "Sprint":
+                sprints_by_meeting[s.get("meeting_key")] = (t, s.get("session_key"))
         if not qualis:
             return None
-        qualis.sort()
-        t, s = qualis[-1]
+        qualis.sort(key=lambda x: (x[0], x[1]))
+        t, is_gp_quali, s = qualis[-1]
         if (now - t).total_seconds() > 4 * 86400:
             return None                              # previous weekend -> pre-quali
-        race_t = races_by_meeting.get(s.get("meeting_key"))
+        meeting = s.get("meeting_key")
+        race_t, race_key = races_by_meeting.get(meeting) or (None, None)
         if race_t and race_t < now:
             return None                              # race already ran -> grid spent
+
+        def _rows(session_key, endpoint):
+            return _get_json_opt(
+                f"https://api.openf1.org/v1/{endpoint}?session_key={session_key}") or []
+
         key = s["session_key"]
         drivers = _get_json(f"https://api.openf1.org/v1/drivers?session_key={key}")
         name_of = {d["driver_number"]: (d.get("full_name") or d.get("broadcast_name"))
                    for d in drivers}
-        rows = _get_json(f"https://api.openf1.org/v1/starting_grid?session_key={key}") or []
-        if len(rows) < 8:
-            rows = _get_json(f"https://api.openf1.org/v1/session_result?session_key={key}") or []
+
+        def _parse(rows):
+            grid = {}
+            for r in rows:
+                dn, pos = r.get("driver_number"), r.get("position")
+                if dn in name_of and pos and not r.get("dsq") and not r.get("dns"):
+                    grid[norm_name(name_of[dn])] = int(pos)
+            return grid
         grid = {}
-        for r in rows:
-            dn, pos = r.get("driver_number"), r.get("position")
-            if dn in name_of and pos and not r.get("dsq") and not r.get("dns"):
-                grid[norm_name(name_of[dn])] = int(pos)
+        if race_key:                                 # penalty-adjusted official grid
+            grid = _parse(_rows(race_key, "starting_grid"))
+        if len(grid) < 8:
+            grid = _parse(_rows(key, "starting_grid"))
+        if len(grid) < 8:
+            grid = _parse(_rows(key, "session_result"))
         if len(grid) < 8:
             return None
-        return _finalize(grid, f"{s.get('circuit_short_name') or 'Grand Prix'} GP", "F1")
+        out = _finalize(grid, f"{s.get('circuit_short_name') or 'Grand Prix'} GP", "F1")
+        if not is_gp_quali:
+            out["provisional"] = "sprint qualifying order (GP qualifying not run yet)"
+        sprint_t, sprint_key = sprints_by_meeting.get(meeting) or (None, None)
+        if sprint_key and sprint_t and sprint_t < now:
+            sr = _parse(_rows(sprint_key, "session_result"))
+            if len(sr) >= 8:
+                out["sprint_result"] = sr
+        return out
     return _cached(("f1_openf1_grid",), 900, build)
 
 
@@ -324,11 +411,11 @@ def get_f1_grid(race_name=None):
     return _finalize(grid, r.get("raceName", "Grand Prix"), "F1")
 
 
-def get_grid(sport, race_name=None, date=None):
+def get_grid(sport, race_name=None, date=None, names=None):
     """Top-level: fetch the starting grid for a racing sport, or None."""
     sport = (sport or "").lower()
     if sport == "nascar":
-        return get_nascar_grid(race_name=race_name, date=date)
+        return get_nascar_grid(race_name=race_name, date=date, names=names)
     if sport == "f1":
         return get_f1_grid(race_name=race_name)
     return None
@@ -385,7 +472,7 @@ def _race_results(year, series, race_id):
     """{normalized name: finishing position} for a completed race."""
     feed = _get_json(f"https://cf.nascar.com/cacher/{year}/{series}/{race_id}/weekend-feed.json")
     out = {}
-    for r in (feed.get("weekend_race") or [{}])[0].get("results", []):
+    for r in ((feed.get("weekend_race") or [{}])[0].get("results") or []):
         nm = norm_name(r.get("driver_fullname") or r.get("driver_name") or "")
         fp = r.get("finishing_position")
         if nm and fp:
@@ -477,14 +564,52 @@ def get_f1_form():
 # decay -- an independent model we can compare against Kalshi's prices to find
 # an actual edge, rather than just echoing the market favorite.
 
-# Larger tau == flatter field (more random). Calibrated to rough pole win rates.
-_TAU = {"f1": 3.0, "nascar": 11.0, "motogp": 4.0}
+# Larger tau == flatter field (more random). F1's tau is FITTED, not eyeballed:
+# max-likelihood on the winner over every 2023-2025 Grand Prix (70 races, with
+# the entering championship standings as the form input at fw=0.5) lands at
+# tau=1.2 -- avg winner log-lik -1.19 vs -1.51 for the old tau=3.0. Modern F1
+# is far steeper than the old guess: the winner started P1-P3 in 88% of those
+# races. The chaos floor below carries the tail the sample can't show.
+_TAU = {"f1": 1.2, "nascar": 4.5, "motogp": 4.0}
+# A small share of win equity spread flat across the field: safety cars, rain,
+# first-lap pileups. The 2023-2025 sample contains NO winner from P11+, so a
+# fitted model alone would call a back-of-grid charge exactly 0.0% -- history
+# (Gasly Monza '20 class of race) says it's rare, not impossible. Costs 0.013
+# log-lik in-sample; buys the tail. NASCAR's fat taus already encode chaos.
+_CHAOS = {"f1": 0.03}
+# Measured DNF rate by STARTING SPOT, 2023-2025 (1,398 classified entries;
+# "Lapped" is a finish, not a DNF): the midfield/back crashes out at ~2.5x the
+# front's rate -- starting deep means passing through the accidents.
+_F1_DNF_BANDS = ((5, 6.6), (10, 11.7), (15, 16.9), (99, 16.4))
+
+
+def f1_dnf_pct(grid_pos):
+    """Historical DNF% for a starting spot (measured 2023-2025)."""
+    if not grid_pos:
+        return None
+    for hi, pct in _F1_DNF_BANDS:
+        if grid_pos <= hi:
+            return pct
+    return _F1_DNF_BANDS[-1][1]
 # NASCAR randomness varies hugely by track type: superspeedways are drafting
 # lotteries (anyone can win), road/street courses are skill-deterministic — the
 # ace converts. Grid/form weights shift too: road results are about the driver,
 # so form (same-type!) dominates the starting spot.
-_NASCAR_TAU = {"road": 6.0, "short": 9.5, "intermediate": 11.0, "superspeedway": 17.0}
-_NASCAR_FORM_W = {"road": 0.65, "short": 0.5, "intermediate": 0.5, "superspeedway": 0.5}
+#
+# FITTED, not eyeballed: max-likelihood on the winner over the 2024-2026 Cup
+# seasons (109 races with grid + result, form reconstructed exactly as
+# get_nascar_form computes it). The old taus had the right ORDERING but were
+# ~2x too flat everywhere -- winners start P1-P5 in ~60% of road/short/
+# intermediate races (avg winner log-lik: road -2.63 vs -2.82, short -2.50 vs
+# -2.83, intermediate -2.84 vs -3.06, superspeedway -3.29 vs -3.36). The
+# chaos share below is tail-CALIBRATED: observed P21+ winners are 9% at
+# intermediates (wrecks and strategy flips) and 19% at superspeedways --
+# though most of the drafting-lottery tail is carried by form blending, which
+# lifts a fast car buried deep. Short tracks have produced zero P21+ winners
+# in the sample; their eps is insurance, not observation.
+_NASCAR_TAU = {"road": 3.0, "short": 3.0, "intermediate": 4.0, "superspeedway": 7.0}
+_NASCAR_FORM_W = {"road": 0.6, "short": 0.5, "intermediate": 0.4, "superspeedway": 0.6}
+_NASCAR_CHAOS = {"road": 0.05, "short": 0.03, "intermediate": 0.15, "superspeedway": 0.05}
 
 
 def win_probs(grid_info, sport, form=None, track_type=None):
@@ -497,9 +622,12 @@ def win_probs(grid_info, sport, form=None, track_type=None):
     sp = (sport or "").lower()
     tau = _TAU.get(sp, 8.0)
     fw = 0.5
-    if sp == "nascar" and track_type:
-        tau = _NASCAR_TAU.get(track_type, tau)
-        fw = _NASCAR_FORM_W.get(track_type, fw)
+    eps = _CHAOS.get(sp, 0.0)
+    if sp == "nascar":
+        eps = _NASCAR_CHAOS.get(track_type, 0.10)
+        if track_type:
+            tau = _NASCAR_TAU.get(track_type, tau)
+            fw = _NASCAR_FORM_W.get(track_type, fw)
     form = form or {}
     strengths = {}
     for nm, pos in grid_info["grid"].items():
@@ -509,7 +637,10 @@ def win_probs(grid_info, sport, form=None, track_type=None):
     total = sum(strengths.values())
     if total <= 0:
         return {}
-    return {nm: s / total for nm, s in strengths.items()}
+    # Chaos floor: a slice of win equity spread flat across the field, so a
+    # back-of-grid ace reads "very unlikely", never "impossible".
+    n = len(strengths)
+    return {nm: (1 - eps) * s / total + eps / n for nm, s in strengths.items()}
 
 
 def _match_prob(probs, grid_info, name):
@@ -535,7 +666,11 @@ def race_board(sport, events, date=None):
     Returns (events, grid_meta). On no grid, events are returned unchanged.
     """
     race_name = events[0]["title"] if events else None
-    grid = get_grid(sport, race_name=race_name, date=date)
+    # The market's own driver names anchor grid selection: on shared NASCAR
+    # weekends they are what tells a Cup board apart from the Trucks race
+    # running the same day at the same track.
+    names = [o.get("name", "") for e in events for o in e.get("outcomes", [])]
+    grid = get_grid(sport, race_name=race_name, date=date, names=names or None)
     if not grid:
         return events, {"available": False,
                         "reason": "no qualifying grid posted yet"}
@@ -552,6 +687,16 @@ def race_board(sport, events, date=None):
                                    series=grid.get("series_id") or 1, track_type=ttype)
         elif sp == "f1":
             form = get_f1_form()
+            # Sprint weekends: Saturday's sprint FINISH is same-track,
+            # same-weekend pace -- fresher than the championship table. Blend
+            # it evenly with the standings rank for drivers who ran it (a
+            # sprint DNF is noise, not a pace read: those keep standings only).
+            sr = grid.get("sprint_result") or {}
+            if form and sr:
+                form = {nm: (0.5 * r + 0.5 * sr[nm]) if nm in sr else r
+                        for nm, r in form.items()}
+            elif sr:
+                form = dict(sr)
     except Exception:
         form = None
     probs = win_probs(grid, sport, form, track_type=ttype)
@@ -560,6 +705,11 @@ def race_board(sport, events, date=None):
         for o in e.get("outcomes", []):
             mp = _match_prob(probs, grid, o.get("name", ""))
             o["model_pct"] = round(mp * 100, 1) if mp is not None else None
+            if sp == "f1":
+                # Measured 2023-2025 DNF risk for his STARTING SPOT -- the
+                # visible cost of starting deep (passing through the chaos).
+                o["start_pos"] = lookup(grid, o.get("name", ""))
+                o["dnf_pct"] = f1_dnf_pct(o["start_pos"])
             ask = o.get("yes_ask")
             if mp is not None and ask is not None:
                 o["edge_cents"] = round(mp * 100 - ask, 1)
@@ -572,5 +722,7 @@ def race_board(sport, events, date=None):
         e["model_pick"] = best if (best and best["edge_cents"] >= 2) else None
     return events, {"available": True, "race": grid["race"],
                     "series": grid["series"], "field": grid["field"],
-                    "track_type": ttype, "form_used": bool(form)}
+                    "track_type": ttype, "form_used": bool(form),
+                    "provisional": grid.get("provisional"),
+                    "sprint_form": bool(grid.get("sprint_result"))}
 

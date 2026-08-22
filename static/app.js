@@ -2780,6 +2780,12 @@ function renderSportEvent(e, sportKey) {
       const ecls = ec > 0 ? "ev pos" : ec < 0 ? "ev neg" : "";
       modelStr = ` · model <b>${o.model_pct}%</b>${ec != null ? ` · edge <b class="${ecls}">${ec > 0 ? "+" : ""}${ec}¢</b>` : ""}`;
     }
+    // F1: where he starts and what starting there historically costs — a deep
+    // start means passing through the accidents (measured 2023-2025 DNF rates).
+    if (o.start_pos != null) {
+      modelStr += ` · <span title="starting position">P${o.start_pos}</span>`;
+      if (o.dnf_pct != null) modelStr += ` · <span class="${o.dnf_pct >= 15 ? "ev neg" : ""}" title="historical DNF rate for this starting spot (2023-2025): the midfield/back crashes out at ~2.5x the front's rate">DNF ~${o.dnf_pct}%</span>`;
+    }
     // Spread chip: flags a wide/untradeable quote behind the "fair %".
     const sp = o.spread;
     const spStr = (sp != null)
@@ -4808,7 +4814,10 @@ function renderSports() {
   } else if (d.grid && d.grid.available) {
     const basis = d.grid.sim_used ? `race simulator (${d.grid.sim_drivers} drivers) + grid place-differential`
       : d.grid.form_used ? "grid + recent form" : "grid";
-    banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>`;
+    const spr = d.grid.sprint_form ? " + Saturday's sprint result (freshest same-track pace)" : "";
+    const prov = d.grid.provisional
+      ? `<div class="small" style="margin:2px 0 8px;color:#e0a23a">⚠️ Grid is <b>provisional</b>: ${d.grid.provisional}. Penalties and the official starting order land once the real grid posts - the model updates automatically.</div>` : "";
+    banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis}${spr} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>${prov}`;
   } else if (d.grid && !d.grid.available) {
     banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} - showing market-favorite picks until qualifying posts.</div>`;
   }
