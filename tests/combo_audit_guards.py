@@ -7441,6 +7441,33 @@ ck("the token config can never be committed",
 
 print()
 print("=" * 72)
+print("Typed combo settings survive the board re-rendering itself")
+print("=" * 72)
+# Reported verbatim with a screenshot: "whenever I enter an integer or change
+# anything it always reverts back". The board re-renders while warming, and
+# the makers' controls were rebuilt from globals that only update when Build
+# is pressed -- typing 55 into the payout box and watching a refresh erase it.
+# One delegated listener records every keystroke into comboFormVals; both
+# makers render map-first, defaults second.
+_js21 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("every keystroke in either maker is recorded as typed",
+   "comboFormVals[t.id]" in _js21
+   and "(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|"
+       "PayoutMode|SameGame)" in _js21,
+   "the listener is delegated so it survives any innerHTML rebuild")
+ck("both makers render what the user typed over the stale default",
+   'cfv("comboPayout", parlayPayout)' in _js21
+   and 'cfv("comboN", def)' in _js21
+   and 'cfv("nflComboPayout", nflComboPayout)' in _js21
+   and 'cfv("nflComboTarget", nflComboTarget)' in _js21,
+   "a re-render must reproduce the form the user was looking at")
+ck("selects and the same-game checkbox are covered too",
+   'cfv("comboObjective", comboObjectivePref)' in _js21
+   and 'cfv("comboSameGame", comboSameGamePref || sgOnly)' in _js21,
+   '"or change anything" included the dropdowns')
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

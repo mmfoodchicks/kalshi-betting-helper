@@ -1008,6 +1008,22 @@ let parlayLegs = 3;
 let parlayTarget = 65;
 let parlayCap = 0;          // 0 = no ceiling; >0 turns the floor into a band
 let parlayPayout = 0;
+// What the user has TYPED into the combo makers, keyed by control id. The
+// board re-renders itself while warming ("refreshing the board"), and the
+// maker's inputs used to be rebuilt from globals that only update when Build
+// is pressed -- so typing 55 into the payout box and watching a refresh put
+// it back was the reported bug, verbatim. One delegated listener catches
+// every keystroke; the renderers read this map first, defaults second.
+const comboFormVals = {};
+for (const evName of ["input", "change"]) {
+  document.addEventListener(evName, (ev) => {
+    const t = ev.target;
+    if (t && t.id && /^(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|PayoutMode|SameGame)$/.test(t.id)) {
+      comboFormVals[t.id] = t.type === "checkbox" ? t.checked : t.value;
+    }
+  });
+}
+const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
 // the maker, so without this the selects snap back to defaults - which used to
 // revert AND→OR and detach the in-flight result. See comboBuilding guard below.)
@@ -1944,20 +1960,20 @@ async function loadBaseball(silent) {
         <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from - or <b>ALL GAMES</b>:</div>
         ${renderGameGrid(d.games)}
         <div style="margin-top:8px">each leg ≥
-        <input id="comboTarget" type="number" min="20" max="97" value="${parlayTarget}" style="width:54px"/>%
-        and ≤ <input id="comboCap" type="number" min="0" max="99" value="${parlayCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+        <input id="comboTarget" type="number" min="20" max="97" value="${cfv("comboTarget", parlayTarget)}" style="width:54px"/>%
+        and ≤ <input id="comboCap" type="number" min="0" max="99" value="${cfv("comboCap", parlayCap || "")}" placeholder="-" style="width:54px"/>% likely</div>
         <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each market walks to the line that lands in the band - Over 3.5 at 90% becomes Over 4.5 or 5.5, and a run line at 40% becomes the NO side.</div>
         <div class="small" style="margin-top:6px">goal
-          ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], comboObjectivePref)}
+          ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfv("comboObjective", comboObjectivePref))}
         </div>
         <div class="small" style="margin-top:6px">
-          ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], comboLegsModePref)}
-          <input id="comboN" type="number" min="2" max="12" value="${def}" style="width:50px"/> legs
-          &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], comboConnPref)}&nbsp;
-          ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], comboPayoutModePref)}
-          reach <input id="comboPayout" type="number" min="0" step="any" value="${parlayPayout}" style="width:60px"/>× payout
+          ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfv("comboLegsMode", comboLegsModePref))}
+          <input id="comboN" type="number" min="2" max="12" value="${cfv("comboN", def)}" style="width:50px"/> legs
+          &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], cfv("comboConn", comboConnPref))}&nbsp;
+          ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfv("comboPayoutMode", comboPayoutModePref))}
+          reach <input id="comboPayout" type="number" min="0" step="any" value="${cfv("comboPayout", parlayPayout)}" style="width:60px"/>× payout
         </div>
-        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${(comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today - combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
+        <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="comboSameGame"${cfv("comboSameGame", comboSameGamePref || sgOnly) ? " checked" : ""}${sgOnly ? " disabled" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>${sgOnly ? `<div class="small" style="margin-top:4px;color:var(--muted)">Only one game on the slate today - combos stack correlated legs from that game, priced with the correlation-aware sim.</div>` : ""}
         &nbsp;<label class="small" style="display:inline-block"><input type="checkbox" id="comboLive"${comboIncludeLive ? " checked" : ""} style="width:auto" onchange="comboIncludeLive=this.checked;renderLiveWarn()"/> 🔴 include games in progress</label>
         <div id="liveWarn">${liveWarnHtml()}</div>
         ${mlbTypeChipRow()}
@@ -3341,20 +3357,20 @@ function renderNFLComboMaker() {
   box.innerHTML = `<div class="combomaker">
     🎯 <b>Combo maker</b>${nflPreseason ? ` <span class="chip">🏟️ preseason</span>` : ""}
     <div style="margin-top:8px">each leg ≥
-      <input id="nflComboTarget" type="number" min="20" max="97" value="${nflComboTarget}" style="width:54px"/>%
-      and ≤ <input id="nflComboCap" type="number" min="0" max="99" value="${nflComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+      <input id="nflComboTarget" type="number" min="20" max="97" value="${cfv("nflComboTarget", nflComboTarget)}" style="width:54px"/>%
+      and ≤ <input id="nflComboCap" type="number" min="0" max="99" value="${cfv("nflComboCap", nflComboCap || "")}" placeholder="-" style="width:54px"/>% likely</div>
     <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band - Kalshi books two dozen spreads and nineteen totals a game, so there is almost always a line that fits.</div>
     <div class="small" style="margin-top:6px">goal
-      ${sel("nflComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], nflComboObjective)}
+      ${sel("nflComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfv("nflComboObjective", nflComboObjective))}
     </div>
     <div class="small" style="margin-top:6px">
-      ${sel("nflComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], nflComboLegsMode)}
-      <input id="nflComboN" type="number" min="2" max="12" value="${nflComboLegs}" style="width:50px"/> legs
-      &nbsp;${sel("nflComboConn", [["or", "OR"], ["and", "AND"]], nflComboConn)}&nbsp;
-      ${sel("nflComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], nflComboPayoutMode)}
-      reach <input id="nflComboPayout" type="number" min="0" step="any" value="${nflComboPayout}" style="width:60px"/>× payout
+      ${sel("nflComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfv("nflComboLegsMode", nflComboLegsMode))}
+      <input id="nflComboN" type="number" min="2" max="12" value="${cfv("nflComboN", nflComboLegs)}" style="width:50px"/> legs
+      &nbsp;${sel("nflComboConn", [["or", "OR"], ["and", "AND"]], cfv("nflComboConn", nflComboConn))}&nbsp;
+      ${sel("nflComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfv("nflComboPayoutMode", nflComboPayoutMode))}
+      reach <input id="nflComboPayout" type="number" min="0" step="any" value="${cfv("nflComboPayout", nflComboPayout)}" style="width:60px"/>× payout
     </div>
-    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="nflComboSameGame"${nflComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="nflComboSameGame"${cfv("nflComboSameGame", nflComboSameGame) ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
     ${nflGameGridHtml()}
     <div style="margin-top:6px">
       <button class="track-mini primary-mini" onclick="buildNFLCombo()">Build</button>
