@@ -215,30 +215,30 @@ def price_move(ticker, hours=24):
     exist."""
     if not ticker:
         return None
-    hit = _move_cache.get(ticker)
-    if hit and time.time() - hit[0] < 600:
-        return hit[1]
-    out = None
-    try:
-        series = ticker.split("-")[0]
-        end = int(time.time())
-        d = _get_json(f"{BASE}/series/{series}/markets/{ticker}/candlesticks"
-                      f"?start_ts={end - hours * 3600}&end_ts={end}"
-                      "&period_interval=60", timeout=15)
-        mids = []
-        for c in d.get("candlesticks") or []:
-            a = _f((c.get("yes_ask") or {}).get("close_dollars"))
-            b = _f((c.get("yes_bid") or {}).get("close_dollars"))
-            if a and b and 0 < b <= a < 1 and (a - b) <= 0.20:
-                mids.append((a + b) / 2.0 * 100.0)
-        if len(mids) >= 2:
-            out = {"from": round(mids[0], 1), "to": round(mids[-1], 1),
-                   "move": round(mids[-1] - mids[0], 1), "n": len(mids)}
-    except Exception as e:
-        errlog.note("KAL-candles", e)
-        out = None
-    _move_cache[ticker] = (time.time(), out)
-    return out
+    # ttlcache sweep: tickers rotate constantly (a tennis week is hundreds),
+    # so a per-ticker cache without eviction only ever grows.
+    import ttlcache
+
+    def build():
+        try:
+            series = ticker.split("-")[0]
+            end = int(time.time())
+            d = _get_json(f"{BASE}/series/{series}/markets/{ticker}/candlesticks"
+                          f"?start_ts={end - hours * 3600}&end_ts={end}"
+                          "&period_interval=60", timeout=15)
+            mids = []
+            for c in d.get("candlesticks") or []:
+                a = _f((c.get("yes_ask") or {}).get("close_dollars"))
+                b = _f((c.get("yes_bid") or {}).get("close_dollars"))
+                if a and b and 0 < b <= a < 1 and (a - b) <= 0.20:
+                    mids.append((a + b) / 2.0 * 100.0)
+            if len(mids) >= 2:
+                return {"from": round(mids[0], 1), "to": round(mids[-1], 1),
+                        "move": round(mids[-1] - mids[0], 1), "n": len(mids)}
+        except Exception as e:
+            errlog.note("KAL-candles", e)
+        return None
+    return ttlcache.cached(_move_cache, ticker, 600, build)
 
 
 # ---- Taker fee -------------------------------------------------------------

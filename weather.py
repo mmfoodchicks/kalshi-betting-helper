@@ -18,7 +18,6 @@ neutral.
 
 import json
 import math
-import time
 import urllib.request
 from datetime import datetime, timezone
 
@@ -82,20 +81,21 @@ def _open_meteo(lat, lon, when_epoch):
 
 
 def get_weather(lat, lon, when_epoch):
+    # Sweep-on-insert (ttlcache): this cache keys on the HOUR, so it mints new
+    # keys forever -- the old read-only TTL check never dropped one.
+    import ttlcache
     key = (round(lat, 2), round(lon, 2), int(when_epoch // 3600))
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < 1800:
-        return hit[1]
-    wx = None
-    for fn in (_noaa, _open_meteo):
-        try:
-            wx = fn(lat, lon, when_epoch)
-            if wx and wx.get("temp_f") is not None:
-                break
-        except Exception:
-            wx = None
-    _cache[key] = (time.time(), wx)
-    return wx
+
+    def build():
+        for fn in (_noaa, _open_meteo):
+            try:
+                wx = fn(lat, lon, when_epoch)
+                if wx and wx.get("temp_f") is not None:
+                    return wx
+            except Exception:
+                continue
+        return None
+    return ttlcache.cached(_cache, key, 1800, build)
 
 
 # --- Retractable roofs: predicted state, not a shrug -------------------------

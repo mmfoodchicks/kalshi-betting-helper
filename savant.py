@@ -12,30 +12,33 @@ falls straight back to plain MLB-API stats if Savant is unreachable.
 
 import csv
 import io
-import time
 import urllib.request
+
+import ttlcache
 
 _UA = "kalshi-betting-helper/1.0"
 _cache = {}
 
 
-def _get_csv(url, timeout=20):
+def _get_csv(url, timeout=20, keep=None):
+    """Fetch a CSV as row dicts. `keep`: keep ONLY these columns per row —
+    a statcast_search row carries ~90 columns and a batter's season is 1,400
+    rows; parsing all of it as string dicts is several MB of transient garbage
+    per player, multiplied by eight worker threads. Prune at parse."""
     req = urllib.request.Request(url, headers={"User-Agent": _UA})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         text = r.read().decode("utf-8-sig")
-    return list(csv.DictReader(io.StringIO(text)))
+    rows = csv.DictReader(io.StringIO(text))
+    if keep:
+        return [{k: r.get(k) for k in keep} for r in rows]
+    return list(rows)
 
 
 def _cached(key, ttl, fn):
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < ttl:
-        return hit[1]
-    try:
-        val = fn()
-    except Exception:
-        val = None
-    _cache[key] = (time.time(), val)
-    return val
+    # Sweep-on-insert (ttlcache): the velocity flag keys on (pitcher, DATE)
+    # and the x-splits on (batter, season) -- growing keys that the old
+    # read-only TTL check kept forever, in every worker.
+    return ttlcache.cached(_cache, key, ttl, fn)
 
 
 def _f(x):
@@ -197,7 +200,8 @@ def last_start_velo(pid, since_date):
         url = ("https://baseballsavant.mlb.com/statcast_search/csv?all=true"
                f"&player_type=pitcher&pitchers_lookup%5B%5D={pid}"
                f"&game_date_gt={since_date}&type=details&min_results=0")
-        rows = _get_csv(url, timeout=60)
+        rows = _get_csv(url, timeout=60,
+                        keep=("game_date", "pitch_type", "release_speed"))
         if not rows:
             return None
         last_day = max((r.get("game_date") or "") for r in rows)
@@ -232,7 +236,9 @@ def batter_x_splits(pid, season):
         url = ("https://baseballsavant.mlb.com/statcast_search/csv?all=true"
                f"&hfSea={season}%7C&player_type=batter"
                f"&batters_lookup%5B%5D={pid}&type=details&csv=true")
-        rows = _get_csv(url, timeout=60)
+        rows = _get_csv(url, timeout=60,
+                        keep=("events", "p_throws", "woba_value",
+                              "estimated_woba_using_speedangle"))
         acc = {"L": [0.0, 0], "R": [0.0, 0]}
         for r in rows:
             if not (r.get("events") or "").strip():

@@ -7360,6 +7360,47 @@ ck("the drift chip and maker suggestion render with their caveats",
 
 print()
 print("=" * 72)
+print("Memory: one shared cache sweeper, pruned CSVs, a mem diagnostic")
+print("=" * 72)
+# The instance was killed for exceeded memory; the ledger's smoking gun was a
+# slate-build child dying (SLATE-child rc=1) while the new per-batter
+# statcast fetches ran: 1,400 rows x ~90 string columns of transient dicts
+# per player, eight threads at a time -- plus the SAME read-only-TTL cache
+# leak found for the third and fourth time (savant, value, weather, and the
+# new price-move cache). The sweep pattern is now a shared module.
+import time as _tm19
+import ttlcache as _tc19
+_c19 = {}
+for _i19 in range(70):
+    _tc19.cached(_c19, ("old", _i19), 0.01, lambda: 1)
+_tm19.sleep(0.05)
+for _i19 in range(70):
+    _tc19.cached(_c19, ("new", _i19), 60, lambda: 1)
+ck("the shared sweeper evicts expired entries nobody reads again",
+   sum(1 for k in _c19 if k[0] == "old") == 0,
+   "the read-only TTL check kept them forever, in every worker, times three")
+for _mod19, _lbl19 in (("savant", "savant"), ("value", "value"),
+                       ("weather", "weather"), ("kalshi", "kalshi")):
+    pass
+_srcs19 = {m: open(_os.path.join(_root, f"{m}.py")).read()
+           for m in ("savant", "value", "weather", "kalshi")}
+ck("all four leaking caches route through it",
+   all("ttlcache" in s for s in _srcs19.values()),
+   "weather keys on the HOUR and price-move on rotating tickers -- growing "
+   "keys with no eviction")
+ck("statcast CSV rows are pruned to the columns actually used",
+   "keep=" in _srcs19["savant"]
+   and 'keep=("events", "p_throws", "woba_value"' in _srcs19["savant"]
+   and 'keep=("game_date", "pitch_type", "release_speed")' in _srcs19["savant"],
+   "~90 string columns x 1,400 rows x 8 threads of transient dicts per "
+   "batter is how a build child gets OOM-killed")
+ck("a memory diagnostic answers 'which worker, which cache'",
+   '"/api/diag/mem"' in open(_os.path.join(_root, "app.py")).read()
+   and "VmRSS" in open(_os.path.join(_root, "app.py")).read(),
+   "the first question after an exceeded-memory kill")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

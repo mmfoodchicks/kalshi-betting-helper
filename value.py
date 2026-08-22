@@ -13,7 +13,6 @@ warn when recent form and the model disagree (it may just be a hot/cold streak).
 
 import clock
 import re
-import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 
@@ -24,15 +23,10 @@ _STATS = "https://statsapi.mlb.com/api/v1"
 
 
 def _cached(key, ttl, fn):
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < ttl:
-        return hit[1]
-    try:
-        val = fn()
-    except Exception:
-        val = None
-    _cache[key] = (time.time(), val)
-    return val
+    # Sweep-on-insert (ttlcache): the old read-only TTL check kept every
+    # expired entry forever -- the fourth home of the same cache leak.
+    import ttlcache
+    return ttlcache.cached(_cache, key, ttl, fn)
 
 
 def _norm(name):

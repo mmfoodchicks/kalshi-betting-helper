@@ -360,6 +360,38 @@ def _api_diag_slow():
                     "slowest": rows})
 
 
+@app.route("/api/diag/mem")
+def _api_diag_mem():
+    """THIS worker's memory picture: RSS plus the entry count of every
+    in-process cache big enough to matter. Built after an instance-level
+    'exceeded memory' kill: the first question is which worker and which
+    cache, and this one screenshot answers both (refresh a few times --
+    gunicorn rotates workers across requests)."""
+    rss_mb = None
+    try:
+        with open("/proc/self/status") as f:
+            for ln in f:
+                if ln.startswith("VmRSS"):
+                    rss_mb = round(int(ln.split()[1]) / 1024, 1)
+                    break
+    except Exception as e:
+        rss_mb = f"err {type(e).__name__}"     # diag must still answer
+    caches = {"baseball": len(getattr(baseball, "_cache", {}) or {})}
+    import importlib
+    for mod, attr, label in (("racing", "_form_cache", "racing_form"),
+                             ("savant", "_cache", "savant"),
+                             ("value", "_cache", "value"),
+                             ("weather", "_cache", "weather"),
+                             ("kalshi", "_move_cache", "kalshi_moves")):
+        try:
+            caches[label] = len(getattr(importlib.import_module(mod), attr))
+        except Exception as e:
+            caches[label] = f"err {type(e).__name__}"
+    return jsonify({"pid": os.getpid(), "rss_mb": rss_mb,
+                    "uptime_s": round(time.time() - _PROC_START, 1),
+                    "cache_entries": caches})
+
+
 @app.route("/api/errors")
 def _api_errors():
     """The error ledger, readable from the phone: per-code rollup plus the
