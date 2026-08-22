@@ -1,6 +1,17 @@
 {
  "errors": [
   {
+   "code": "SLATE-child",
+   "id": 9,
+   "last_ts": 1787410446.9769533,
+   "msg": "build child exited rc=1 with 0 bytes; building in-process",
+   "n": 1,
+   "path": null,
+   "pid": 7,
+   "tb": "",
+   "ts": 1787410446.9769533
+  },
+  {
    "code": "NFL-espn-fetch",
    "id": 8,
    "last_ts": 1787283907.2356293,
@@ -89,7 +100,7 @@
    "ts": 1787268877.5871236
   }
  ],
- "generated_at": 1787403578.1005886,
+ "generated_at": 1787411308.739092,
  "summary": [
   {
    "code": "NFL-espn-fetch",
@@ -106,6 +117,14 @@
    "last_ts": 1787276540.3430567,
    "n": 3,
    "variants": 2
+  },
+  {
+   "code": "SLATE-child",
+   "first_ts": 1787410446.9769533,
+   "last_msg": "build child exited rc=1 with 0 bytes; building in-process",
+   "last_ts": 1787410446.9769533,
+   "n": 1,
+   "variants": 1
   }
  ],
  "window_days": 7
