@@ -4134,7 +4134,7 @@ _bb_wx = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
                             "baseball.py")).read()
 ck("the HR extra reaches the HR ladders, beyond the run environment's share",
    'hr_env = env ** 0.45 * (winfo.get("hr_extra") or 1.0)' in _bb_wx
-   and '"hr_extra": weather_mod.hr_extra(wx, s["roof"])' in _bb_wx)
+   and '"hr_extra": weather_mod.hr_extra(wx, s["roof"], home_id=g["home_id"])' in _bb_wx)
 _msk_src = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
                              "mlb_sim.py")).read()
 ck("the K prop's label carries the simulated mean where the odds are",
@@ -7078,6 +7078,53 @@ _js12 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the board SHOWS the start spot, DNF risk and provisional grid",
    "DNF ~" in _js12 and "provisional" in _js12 and "start_pos" in _js12,
    "the user's ask: visible consequences of starting deep")
+
+print()
+print("=" * 72)
+print("Retractable roofs: predicted state, not a shrug")
+print("=" * 72)
+# Every 2026 home game at the seven retractable parks carries its actual roof
+# state in the MLB boxscore; joined to OUTDOOR archive temps (453 games), each
+# park's real policy replaced the flat 0.5 weight that was applying half of a
+# cold-weather penalty to Toronto games played indoors at 72F and half of a
+# desert-heat boost to Phoenix games under a closed, air-conditioned roof.
+import weather as _wx13
+_mk13 = lambda t, pr=0: {"temp_f": t, "wind_mph": 8, "wind_from_deg": 180,
+                         "precip_pct": pr, "humidity": 50}
+ck("a cold Toronto night is played indoors: weather neutral",
+   _wx13.roof_closed_pct(141, _mk13(45)) == 100.0
+   and _wx13.run_factor(_mk13(45), 0, "retractable", home_id=141)[0] == 1.0,
+   "TOR closed 23/23 games under 55F in 2026; the flat weight cut runs 5.8% "
+   "for cold that never touched the game")
+ck("a 98F Phoenix day is mostly muted; a 78F desert evening applies",
+   _wx13.roof_closed_pct(109, _mk13(98)) == 85.0
+   and _wx13.roof_closed_pct(109, _mk13(78)) == 18.0,
+   "ARI: 85% closed above 88F but OPEN at 80-90% of cooler games -- the "
+   "surprise the measurement caught")
+ck("Houston is a de facto dome",
+   _wx13.roof_closed_pct(117, _mk13(75)) == 100.0
+   and _wx13.run_factor(_mk13(75), 0, "retractable", home_id=117)[0] == 1.0,
+   "65/65 home games closed in 2026 at every temperature")
+ck("rain closes any roof",
+   _wx13.roof_closed_pct(158, _mk13(75, 80)) == 85.0,
+   "raining 65-82F games at the cold parks ran 2/3 closed vs 14% dry")
+ck("Seattle's umbrella still lets half the weather through when covered",
+   0.9 < _wx13.run_factor(_mk13(50, 80), 0, "retractable", home_id=136)[0] < 1.0,
+   "the park is open-air under the cover -- closed does not mean indoors")
+ck("an unknown park keeps the honest old shrug",
+   _wx13._roof_weight("retractable", None, _mk13(75)) == 0.5)
+ck("HR ladders feel the roof too",
+   _wx13.hr_extra(_mk13(98), "retractable", home_id=109) < 1.05
+   < _wx13.hr_extra(_mk13(98), "retractable", home_id=158),
+   "a 98F closed-roof Chase game was boosting HR props ~10% for heat the "
+   "ball never sees; the same day at open-roof Milwaukee keeps the boost")
+_bb13 = _insp.getsource(__import__("baseball")._weather_block)
+_js13 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the board SAYS the predicted roof state",
+   '"roof_closed_pct"' in _bb13 and "roof likely CLOSED" in _js13
+   and "weather at half weight)`" not in _js13.replace(
+       "state unknown - weather at half weight)`", ""),
+   "the old line shrugged 'weather at half weight' at every retractable park")
 
 print()
 print("=" * 72)

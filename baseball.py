@@ -1338,6 +1338,7 @@ def _weather_block(winfo):
         "run_factor": round(factor, 3),
         "hr_extra": round(winfo.get("hr_extra") or 1.0, 3),
         "run_pct": round((factor - 1.0) * 100, 1),   # net weather nudge to runs
+        "roof_closed_pct": winfo.get("roof_closed_pct"),
         "source": wx.get("source"),
     }
 
@@ -1800,9 +1801,13 @@ def _analyze_slate_uncached(date, season):
         if not s:
             return None
         wx = weather_mod.get_weather(s["lat"], s["lon"], g["start_epoch"] or _time.time())
-        factor, wind_comp = weather_mod.run_factor(wx, s["cf_bearing_deg"], s["roof"])
+        factor, wind_comp = weather_mod.run_factor(wx, s["cf_bearing_deg"], s["roof"],
+                                                   home_id=g["home_id"])
         return {"stadium": s, "wx": wx, "factor": factor, "wind_out_mph": wind_comp,
-                "hr_extra": weather_mod.hr_extra(wx, s["roof"])}
+                "hr_extra": weather_mod.hr_extra(wx, s["roof"], home_id=g["home_id"]),
+                # P(roof closed) for retractable parks -- the board says it
+                # instead of silently half-weighting the weather.
+                "roof_closed_pct": weather_mod.roof_closed_pct(g["home_id"], wx)}
     weather_by_pk = {}
     with ThreadPoolExecutor(max_workers=8) as ex:
         for g, w in zip(schedule, ex.map(fetch_weather, schedule)):

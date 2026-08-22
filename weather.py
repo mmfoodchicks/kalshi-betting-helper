@@ -10,8 +10,10 @@ precipitation chance closest to the game's start hour, plus a multiplicative
   - Heavy rain chance -> slightly fewer runs.
 
 Weather mainly informs the expected TOTAL (over/under); its moneyline impact is
-small since it affects both offenses. Retractable roofs get half weight (roof
-state unknown); fixed domes are neutral.
+small since it affects both offenses. Retractable roofs get a PREDICTED state
+(each park's real closure policy, measured from a season of boxscore roof
+observations vs outdoor temperature -- see _ROOF_CLOSE); fixed domes are
+neutral.
 """
 
 import json
@@ -96,11 +98,74 @@ def get_weather(lat, lon, when_epoch):
     return wx
 
 
-def run_factor(wx, cf_bearing_deg, roof):
+# --- Retractable roofs: predicted state, not a shrug -------------------------
+# MEASURED per-park closure policy, not folklore. Every 2026 home game at the
+# seven retractable parks (453 games) carries its actual roof state in the MLB
+# boxscore ("95 degrees, Roof Closed."); joined to the OUTDOOR game-time
+# temperature from the weather archive (the boxscore temp is the indoor 72 when
+# closed -- fitting on it would be circular), each park's real policy appears:
+#   HOU  never opened once in 2026 (65/65 closed) -- a de facto dome.
+#   TEX  92% closed at every temperature; open is the rare mild-evening treat.
+#   MIA  92% closed; 100% above 82F.
+#   ARI  the surprise: OPEN at 80-90% of games below 88F (desert evenings),
+#        then 85% closed above 88F.
+#   TOR/MIL  close for COLD, not heat: 100% closed under 55F, ~always open
+#        above 82F -- the flat 0.5 weight was applying half of a cold-weather
+#        run penalty to games played indoors at 72F.
+#   SEA  an umbrella, not a seal: covered only in cold/rain (never above 65F),
+#        and the park stays open-air underneath -- weather half-applies even
+#        when covered.
+# Rain closes any roof: raining 65-82F games at the cold parks ran 2/3 closed
+# vs 14% dry.
+# {team_id: ((temp_upper_bound_F, P(closed)), ...)} evaluated on outdoor temp.
+_ROOF_CLOSE = {
+    109: ((82, 0.18), (88, 0.12), (999, 0.85)),                        # ARI
+    117: ((999, 1.00),),                                               # HOU
+    140: ((65, 0.90), (75, 0.75), (999, 0.95)),                        # TEX
+    146: ((82, 0.80), (999, 1.00)),                                    # MIA
+    141: ((55, 1.00), (65, 0.70), (75, 0.30), (82, 0.10), (999, 0.02)),  # TOR
+    158: ((55, 1.00), (65, 0.75), (75, 0.50), (82, 0.10), (999, 0.02)),  # MIL
+    136: ((55, 0.45), (65, 0.12), (999, 0.02)),                        # SEA
+}
+_SEA = 136          # umbrella roof: open-air even when covered
+
+
+def roof_closed_pct(home_id, wx):
+    """P(roof closed) for a retractable park given the OUTDOOR forecast, as a
+    0-100 percent -- None when the park isn't in the measured table."""
+    curve = _ROOF_CLOSE.get(home_id)
+    if not curve or not wx or wx.get("temp_f") is None:
+        return None
+    t = wx["temp_f"]
+    p = curve[-1][1]
+    for hi, pc in curve:
+        if t < hi:
+            p = pc
+            break
+    if (wx.get("precip_pct") or 0) >= 60:
+        p = max(p, 0.85)                     # rain closes any roof
+    return round(100 * p, 0)
+
+
+def _roof_weight(roof, home_id, wx):
+    """How much of the outdoor weather actually reaches the game."""
+    if roof != "retractable":
+        return 1.0
+    p = roof_closed_pct(home_id, wx)
+    if p is None:
+        return 0.5                           # unknown park -> the old shrug
+    # Closed and sealed = indoor at 72F, zero weather; Seattle's umbrella
+    # leaves the park open-air underneath, so half the weather still applies.
+    w_closed = 0.5 if home_id == _SEA else 0.0
+    p /= 100.0
+    return (1 - p) * 1.0 + p * w_closed
+
+
+def run_factor(wx, cf_bearing_deg, roof, home_id=None):
     """Multiplicative run-scoring factor from the conditions (1.0 = neutral)."""
     if roof == "fixed" or not wx:
         return 1.0, 0.0
-    weight = 0.5 if roof == "retractable" else 1.0
+    weight = _roof_weight(roof, home_id, wx)
 
     temp = wx.get("temp_f")
     # MEASURED, not folklore: 1,460 outdoor 2026 games, temperature binned --
@@ -135,7 +200,7 @@ def run_factor(wx, cf_bearing_deg, roof):
     return max(0.90, min(1.12, factor)), round(out_component, 1)
 
 
-def hr_extra(wx, roof):
+def hr_extra(wx, roof, home_id=None):
     """EXTRA home-run multiplier beyond the run factor. Homers feel weather
     harder than runs do: measured over the same 1,460 games, HR/game runs 1.65
     under 60F to 3.01 above 90F (~1.3%/F) against runs' 0.55%/F -- so after the
@@ -147,6 +212,6 @@ def hr_extra(wx, roof):
     temp = wx.get("temp_f")
     if temp is None:
         return 1.0
-    weight = 0.5 if roof == "retractable" else 1.0
+    weight = _roof_weight(roof, home_id, wx)
     extra = 1.0 + (temp - 70) * 0.0075 * weight
     return max(0.85, min(1.20, extra))

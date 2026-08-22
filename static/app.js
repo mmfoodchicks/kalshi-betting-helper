@@ -890,7 +890,18 @@ function renderGame(g) {
     const rp = w.run_pct;
     const runTag = (rp != null && Math.abs(rp) >= 0.3)
       ? ` → <b class="${rp > 0 ? "ev pos" : "ev neg"}">${rp > 0 ? "+" : ""}${rp}% runs</b>` : "";
-    const roofTag = w.roof === "retractable" ? ` · <b>retractable roof</b> (weather at half weight)` : "";
+    // Retractable roof: say what the PREDICTED state is (measured per-park
+    // policy vs outdoor temp), not a vague "half weight". A closed roof means
+    // indoor 72° and calm — the outdoor numbers on this line mostly don't reach
+    // the game.
+    let roofTag = "";
+    if (w.roof === "retractable") {
+      const rc = w.roof_closed_pct;
+      roofTag = rc == null ? ` · <b>retractable roof</b> (state unknown - weather at half weight)`
+        : rc >= 60 ? ` · <b title="each park's real closure policy, measured from a season of observed roof states vs outdoor temperature">roof likely CLOSED (${rc}%)</b> - weather mostly neutralized`
+        : rc <= 25 ? ` · <b title="each park's real closure policy, measured from a season of observed roof states vs outdoor temperature">roof likely open (${100 - rc}%)</b> - weather applies`
+        : ` · <b>roof ~${rc}% to be closed</b> - weather partially applied`;
+    }
     wxLine = `<div class="small">🌤️ ${w.stadium}: <b>${w.temp_f}°F</b>, wind ${w.wind_mph}mph ${w.wind_dir} - ${w.wind_effect}${runTag}${w.precip_pct ? ` · ${w.precip_pct}% precip` : ""}${w.summary ? ` · ${w.summary}` : ""}${roofTag} <span style="color:var(--border)">[${w.source}]</span></div>`;
   }
   return `<div class="${cls}" data-pk="${g.game_pk}">
