@@ -75,7 +75,6 @@ def _sync_kind(url, tok, kind, min_fresher_s=60):
     server = have.get("have") or {}
     local_dir = artifacts.dir_for(kind)
     sent = 0
-    now = time.time()
     for name, l_age in sorted(artifacts.ages(kind).items()):
         s_age = server.get(name)
         if s_age is not None and (s_age - l_age) < min_fresher_s:

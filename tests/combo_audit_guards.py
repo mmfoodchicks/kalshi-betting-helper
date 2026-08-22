@@ -7426,7 +7426,7 @@ ck("adopted sims land atomically where every worker reads",
    "pk can never be a path")
 _pw20 = open(_os.path.join(_root, "pc_worker.py")).read()
 ck("the worker asks what the server needs before simulating",
-   "/api/sim/have" in _pw20 and "schema" in _pw20
+   "/api/art/have?kind=gamesim" in _pw20 and "schema" in _pw20
    and 'state") != "Final"' in _pw20.replace("'", '"'),
    "re-uploading what the server already has fresh is pure waste; simming "
    "finished games is worse")
