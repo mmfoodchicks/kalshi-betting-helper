@@ -7184,6 +7184,35 @@ ck("...and every consumer reads it: pitching blend, platoon exposure, hits",
 
 print()
 print("=" * 72)
+print("Stadium geometry comes from MLB's survey, not eyeballs")
+print("=" * 72)
+# The venues API carries surveyed coordinates and the official
+# home-plate-to-CF azimuth. The eyeballed table had FIFTEEN of thirty
+# bearings wrong by 15+ degrees -- wind priced as "blowing out" at Truist
+# (30 vs the real 145) and Comerica (30 vs 150) was actually blowing across
+# or in -- and the Athletics' park four miles from its real location.
+import stadiums as _st15
+_official15 = {144: 145, 116: 150, 147: 75, 158: 129, 142: 129, 146: 128,
+               136: 49, 138: 62, 118: 46, 108: 44, 111: 45}
+ck("bearings match the official azimuth at every spot-checked park",
+   all(_st15.STADIUMS[tid]["cf_bearing_deg"] == az
+       for tid, az in _official15.items()),
+   "Truist 145, Comerica 150, Yankee 75 -- the old values pointed wind "
+   "models 45-120 degrees off")
+ck("the Athletics' park is where the Athletics play",
+   abs(_st15.STADIUMS[133]["lat"] - 38.5799) < 0.005,
+   "weather was fetched four miles from Sutter Health Park")
+ck("every team still has a row and a sane roof",
+   len(_st15.STADIUMS) == 30
+   and all(v["roof"] in ("open", "retractable", "fixed")
+           for v in _st15.STADIUMS.values())
+   and sum(1 for v in _st15.STADIUMS.values() if v["roof"] == "retractable") == 7)
+ck("the table records its provenance",
+   "azimuthAngle" in open(_os.path.join(_root, "stadiums.py")).read(),
+   "the next editor must know these are surveyed, not vibes")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
