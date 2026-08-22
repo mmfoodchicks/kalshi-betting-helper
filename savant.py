@@ -163,6 +163,97 @@ def pitcher_expected_stats(season):
     return _cached(("pitcher_xstats", season), 6 * 3600, build) or {}
 
 
+def velo_baselines(season):
+    """{pitcher_id(str): {"FF": mph, "SI": mph, "FC": mph}} — every pitcher's
+    SEASON-average velocity by fastball type, one leaderboard fetch. The
+    baseline half of the velocity-drop fatigue flag."""
+    def build():
+        rows = _get_csv("https://baseballsavant.mlb.com/leaderboard/pitch-arsenals"
+                        f"?year={season}&min=100&type=avg_speed&hand=&csv=true", timeout=40)
+        out = {}
+        for r in rows:
+            pid = r.get("pitcher") or r.get("player_id")
+            if not pid:
+                continue
+            d = {}
+            for pt, col in (("FF", "ff_avg_speed"), ("SI", "si_avg_speed"),
+                            ("FC", "fc_avg_speed")):
+                v = _f(r.get(col))
+                if v:
+                    d[pt] = v
+            if d:
+                out[str(pid)] = d
+        return out
+    return _cached(("velo_base", season), 12 * 3600, build) or {}
+
+
+def last_start_velo(pid, since_date):
+    """The pitcher's fastball velocity in his MOST RECENT outing since
+    `since_date` -- {"type", "velo", "n", "date"} or None. One small
+    statcast_search fetch (a start is ~100 pitches). Velocity is the signal
+    that moves BEFORE results do: a starter down 1.5 mph is tired or hurt,
+    and his ERA hasn't heard yet."""
+    def build():
+        url = ("https://baseballsavant.mlb.com/statcast_search/csv?all=true"
+               f"&player_type=pitcher&pitchers_lookup%5B%5D={pid}"
+               f"&game_date_gt={since_date}&type=details&min_results=0")
+        rows = _get_csv(url, timeout=60)
+        if not rows:
+            return None
+        last_day = max((r.get("game_date") or "") for r in rows)
+        if not last_day:
+            return None
+        by_type = {}
+        for r in rows:
+            if r.get("game_date") != last_day:
+                continue
+            pt, v = r.get("pitch_type"), _f(r.get("release_speed"))
+            if pt in ("FF", "SI", "FC") and v:
+                by_type.setdefault(pt, []).append(v)
+        if not by_type:
+            return None
+        # His primary fastball that day = the type he threw most.
+        pt = max(by_type, key=lambda t: len(by_type[t]))
+        vs = by_type[pt]
+        return {"type": pt, "velo": round(sum(vs) / len(vs), 1),
+                "n": len(vs), "date": last_day}
+    return _cached(("last_velo", str(pid), since_date), 6 * 3600, build)
+
+
+def batter_x_splits(pid, season):
+    """{"L": {"xwoba": f, "pa": n}, "R": {...}} — the batter's xwOBA split by
+    the pitcher's hand, from his own season of Statcast plate appearances
+    (one small fetch; the rows carry p_throws). Raw platoon splits are
+    notoriously noisy; the x-version judges each PA by contact quality
+    instead of outcome, so it stabilizes roughly twice as fast. Per-PA value:
+    estimated wOBA on contact, actual wOBA value on K/BB/HBP (the standard
+    xwOBA construction)."""
+    def build():
+        url = ("https://baseballsavant.mlb.com/statcast_search/csv?all=true"
+               f"&hfSea={season}%7C&player_type=batter"
+               f"&batters_lookup%5B%5D={pid}&type=details&csv=true")
+        rows = _get_csv(url, timeout=60)
+        acc = {"L": [0.0, 0], "R": [0.0, 0]}
+        for r in rows:
+            if not (r.get("events") or "").strip():
+                continue                       # not the PA-ending pitch
+            hand = r.get("p_throws")
+            if hand not in acc:
+                continue
+            est = _f(r.get("estimated_woba_using_speedangle"))
+            val = est if est is not None else _f(r.get("woba_value"))
+            if val is None:
+                continue
+            acc[hand][0] += val
+            acc[hand][1] += 1
+        out = {}
+        for hand, (s, n) in acc.items():
+            if n >= 20:
+                out[hand] = {"xwoba": round(s / n, 4), "pa": n}
+        return out or None
+    return _cached(("xsplit", str(pid), season), 6 * 3600, build)
+
+
 def quality_mults(xs):
     """Contact + power multipliers (dampened, clamped) that nudge a hitter's
     rates toward his expected stats -- crediting hard-hit bad luck and fading

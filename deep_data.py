@@ -456,13 +456,37 @@ def _attach_platoon(batters, season):
     line. Multipliers are shrunk by side sample and NORMALIZED so the exposure-
     weighted mean is exactly 1.0 (0.28 L / 0.72 R): a lefty-masher gets hot vs
     southpaws and correspondingly cooler vs righties, and the season-long
-    engine calibration is untouched in expectation."""
+    engine calibration is untouched in expectation.
+
+    The HIT and HR components blend the raw-outcome split evenly with the
+    batter's Statcast x-SPLIT (xwOBA by pitcher hand): the x-version judges
+    each PA by contact quality instead of outcome, so it stabilizes roughly
+    twice as fast — which is why its shrink constant is HALF the raw one. HR
+    gets the x-ratio amplified (^1.8: power splits swing harder than overall
+    wOBA splits). K stays raw-only — strikeouts are inside xwOBA's value, not
+    separable from it, and the raw K split stabilizes fastest anyway. Both
+    reads flow through the same normalization, so calibration holds no matter
+    the mix; no x data at all reproduces the raw-only behavior exactly."""
     from concurrent.futures import ThreadPoolExecutor
+    import errlog
+    import savant
 
     def one(b):
         sp = _platoon_one(b["id"], season)
         if not sp or "vl" not in sp or "vr" not in sp:
             return
+        xs = None
+        try:
+            xs = savant.batter_x_splits(b["id"], season)
+        except Exception as e:
+            errlog.note("SAV-xsplit", e)
+        x_ratio = {}
+        if xs and xs.get("L") and xs.get("R"):
+            xtot = sum(v["xwoba"] * v["pa"] for v in xs.values())
+            xpa = sum(v["pa"] for v in xs.values())
+            x_over = xtot / xpa if xpa else 0.0
+            if x_over > 0:
+                x_ratio = {h: xs[h]["xwoba"] / x_over for h in ("L", "R")}
         plat = {"L": {}, "R": {}}
         for comp in ("k", "hit", "hr"):
             tot_pa = sp["vl"]["pa"] + sp["vr"]["pa"]
@@ -476,7 +500,14 @@ def _attach_platoon(batters, season):
             for code, hand in (("vl", "L"), ("vr", "R")):
                 side = sp[code]
                 raw = (side[comp] / side["pa"]) / overall if side["pa"] else 1.0
-                mults[hand] = (side["pa"] * raw + k_shrink) / (side["pa"] + k_shrink)
+                m = (side["pa"] * raw + k_shrink) / (side["pa"] + k_shrink)
+                if comp in ("hit", "hr") and hand in x_ratio:
+                    xr = x_ratio[hand] ** (1.8 if comp == "hr" else 1.0)
+                    xpa_h = xs[hand]["pa"]
+                    kx = k_shrink / 2.0            # x stabilizes ~2x faster
+                    xm = (xpa_h * xr + kx) / (xpa_h + kx)
+                    m = 0.5 * m + 0.5 * xm
+                mults[hand] = m
             norm = _LHP_EXPOSURE * mults["L"] + (1 - _LHP_EXPOSURE) * mults["R"]
             for hand in ("L", "R"):
                 plat[hand][comp] = round(max(0.75, min(1.30, mults[hand] / (norm or 1.0))), 3)

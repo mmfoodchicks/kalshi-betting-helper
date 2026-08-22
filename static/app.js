@@ -677,7 +677,16 @@ function spLine(sp) {
   const fip = sp.fip != null ? `, <b>${sp.fip}</b> FIP` : "";
   const wl = sp.exp_ip != null ? ` · <span title="expected innings this start, from his workload history - sizes the K ladder">~${sp.exp_ip} IP tonight</span>` : "";
   const ip = sp.ip != null && isFinite(+sp.ip) ? Math.round(+sp.ip * 10) / 10 : sp.ip;
-  return `${sp.name} (${hand}) - <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}`;
+  // Fastball-velocity fatigue flag: velocity moves BEFORE results do. A last
+  // start 1+ mph under his season average = dead arm / injury risk the ERA
+  // hasn't priced; the model already docked him for it.
+  let velo = "";
+  const v = sp.velo;
+  if (v && v.delta != null) {
+    if (v.delta <= -1.0) velo = ` · <b style="color:var(--no)" title="${v.type} averaged ${v.recent} mph in his last start (${v.date}, ${v.n} thrown) vs ${v.season} season avg - velocity drops predict blowups before ERA does; the model docks him ~3% runs allowed per mph">🔻 velo ${v.delta} mph</b>`;
+    else if (v.delta >= 1.0) velo = ` · <b style="color:var(--yes)" title="${v.type} averaged ${v.recent} mph in his last start vs ${v.season} season avg - the arm is live">▲ velo +${v.delta}</b>`;
+  }
+  return `${sp.name} (${hand}) - <b>${sp.era}</b> ERA${fip}, <b>${sp.whip}</b> WHIP, ${ip} IP${recent}${wl}${velo}`;
 }
 
 // Tonight's simulated strikeouts against what he has actually done all year.

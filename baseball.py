@@ -709,10 +709,32 @@ def _starter_ra9(sp, lg):
         xera = s.get("xera")
         if xera and xera > 0:
             xera_eff = rel_s * xera + (1 - rel_s) * lg["era"]
-            return (0.25 * era_eff + 0.30 * fip_eff + 0.25 * xera_eff
-                    + 0.20 * whip_ra9)
-        return 0.35 * era_eff + 0.40 * fip_eff + 0.25 * whip_ra9
-    return 0.65 * era_eff + 0.35 * whip_ra9   # no FIP inputs -> ERA+WHIP only
+            ra9 = (0.25 * era_eff + 0.30 * fip_eff + 0.25 * xera_eff
+                   + 0.20 * whip_ra9)
+        else:
+            ra9 = 0.35 * era_eff + 0.40 * fip_eff + 0.25 * whip_ra9
+    else:
+        ra9 = 0.65 * era_eff + 0.35 * whip_ra9  # no FIP inputs -> ERA+WHIP only
+    return _velo_adjust(ra9, sp)
+
+
+def _velo_adjust(ra9, sp):
+    """Fastball-velocity fatigue term. A last start 1+ mph under his season
+    average is the signal that moves BEFORE results do (dead arm, injury,
+    age cliff): +3% RA9 per mph down, capped at 3 mph — roughly the
+    +0.13 ERA/mph the public research converges on. A dead zone under 0.8
+    mph absorbs ordinary start-to-start noise (cold nights, pitch counts),
+    and a clearly LIVE arm (+1 mph) earns a modest 3% credit — drops are
+    the reliable side of the signal, so the credit stays half-sized."""
+    v = (sp or {}).get("velo") or {}
+    d = v.get("delta")
+    if d is None:
+        return ra9
+    if d <= -0.8:
+        return ra9 * (1 + 0.03 * min(3.0, -d))
+    if d >= 1.0:
+        return ra9 * 0.97
+    return ra9
 
 
 def _bullpen_ra9(team_bp, lg):
@@ -1834,6 +1856,32 @@ def _analyze_slate_uncached(date, season):
                     st["season"]["xera"] = pxs[str(pid)]["xera"]
         except Exception as e:
             errlog.note("MLB-pitcher-xera", e)
+        # VELOCITY-DROP FATIGUE FLAG: each starter's last-start fastball velo
+        # vs his season average. Velocity moves BEFORE results do -- a starter
+        # down 1.5 mph is tired or hurt and his ERA hasn't heard yet. Attached
+        # to the record (idempotent), applied in _starter_ra9, shown on the
+        # card. Needs 8+ fastballs in the outing to beat start-to-start noise.
+        try:
+            vb = savant.velo_baselines(season)
+            since = (_dt.fromisoformat(str(date)[:10]) - _td(days=16)).date().isoformat()
+
+            def _velo_one(pid):
+                base = vb.get(str(pid))
+                if not base:
+                    return None
+                last = savant.last_start_velo(pid, since)
+                if not last or last["n"] < 8 or last["type"] not in base:
+                    return None
+                d = round(last["velo"] - base[last["type"]], 1)
+                return {"delta": d, "recent": last["velo"],
+                        "season": base[last["type"]], "type": last["type"],
+                        "n": last["n"], "date": last["date"]}
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                for pid, v in zip(sp_ids, ex.map(_velo_one, sp_ids)):
+                    if v and sp_stats.get(pid):
+                        sp_stats[pid]["velo"] = v
+        except Exception as e:
+            errlog.note("MLB-velo-flag", e)
 
     # Posted lineups (rest/injuries) and game-time weather, fetched in parallel.
     pks = [g["game_pk"] for g in schedule if g["game_pk"]]
@@ -2116,6 +2164,7 @@ def _analyze_slate_uncached(date, season):
             k9_mod = _regressed_k9(s)
             wl = _starter_workload(st) or {}
             return {"name": name, "hand": h, "era": round(s["era"], 2), "whip": round(s["whip"], 2),
+                    "velo": st.get("velo"),
                     "ip": s["ip"], "k9": round(k9_mod, 1) if k9_mod else k9_raw, "k9_raw": k9_raw,
                     "exp_ip": round(_exp_ip_per_start(st), 1),
                     "est_ip": wl.get("est_ip"), "est_pitches": wl.get("est_pitches"),

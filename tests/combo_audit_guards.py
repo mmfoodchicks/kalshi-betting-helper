@@ -7242,6 +7242,81 @@ ck("the four-way blend weights sum to one and xERA rides the slate build",
 
 print()
 print("=" * 72)
+print("Time-series Statcast: velocity fatigue flags + x-stat platoon splits")
+print("=" * 72)
+# The remaining alpha was in signals that predict CHANGE before results do:
+# a starter's last-start fastball velocity vs his season average, and platoon
+# splits judged by contact quality instead of noisy raw outcomes.
+import baseball as _bb17
+import deep_data as _dd17
+import savant as _sv17
+
+_spv17 = {"season": {"era": 3.5, "whip": 1.2, "ip": 120.0, "gs": 20, "g": 20,
+                     "k": 120, "bb": 35, "hr": 12, "hbp": 4}}
+_lg17 = {"era": 4.2, "whip": 1.30}
+_clean17 = _bb17._starter_ra9(_spv17, _lg17)
+_down17 = _bb17._starter_ra9({**_spv17, "velo": {"delta": -1.8}}, _lg17)
+_way17 = _bb17._starter_ra9({**_spv17, "velo": {"delta": -6.0}}, _lg17)
+_up17 = _bb17._starter_ra9({**_spv17, "velo": {"delta": +1.5}}, _lg17)
+_noise17 = _bb17._starter_ra9({**_spv17, "velo": {"delta": -0.5}}, _lg17)
+ck("a velocity drop raises expected runs allowed, capped and noise-gated",
+   abs(_down17 / _clean17 - 1.054) < 0.01
+   and abs(_way17 / _clean17 - 1.09) < 0.01
+   and _noise17 == _clean17,
+   f"-1.8 mph: {_down17:.2f} vs clean {_clean17:.2f} (+3%/mph, 3 mph cap, "
+   "0.8 dead zone) -- velocity moves before ERA does")
+ck("a clearly live arm earns a modest half-sized credit",
+   abs(_up17 / _clean17 - 0.97) < 0.005,
+   "drops are the reliable side of the signal")
+ck("the flag is fetched per slate starter and shown on the card",
+   "MLB-velo-flag" in open(_os.path.join(_root, "baseball.py")).read()
+   and '"velo": st.get("velo")' in open(_os.path.join(_root, "baseball.py")).read()
+   and "velo ${v.delta} mph" in open(_os.path.join(_root, "static", "app.js")).read(),
+   "the model docking him silently would hide the why")
+ck("the velocity fetchers exist with sane guards",
+   "pitch-arsenals" in _insp.getsource(_sv17.velo_baselines)
+   and "statcast_search" in _insp.getsource(_sv17.last_start_velo)
+   and "max(by_type, key=" in _insp.getsource(_sv17.last_start_velo),
+   "the primary fastball that day is whichever type he threw most")
+
+# x-stat platoon: synthetic bat whose RAW split says reverse-platoon while
+# his contact quality says textbook platoon -- the x-read must win ground.
+_old_p17, _old_x17 = _dd17._platoon_one, _sv17.batter_x_splits
+try:
+    _dd17._platoon_one = lambda pid, season: {
+        "vl": {"pa": 60, "k": 14, "hit": 18, "hr": 3},     # raw: HOT vs lefties
+        "vr": {"pa": 240, "k": 55, "hit": 58, "hr": 7}}
+    _sv17.batter_x_splits = lambda pid, season: {
+        "L": {"xwoba": 0.245, "pa": 60}, "R": {"xwoba": 0.345, "pa": 240}}
+    _bx17 = [{"id": 1, "name": "synthetic"}]
+    _dd17._attach_platoon(_bx17, "2026")
+    _with17 = _bx17[0]["plat"]
+    _sv17.batter_x_splits = lambda pid, season: None
+    _br17 = [{"id": 1, "name": "synthetic"}]
+    _dd17._attach_platoon(_br17, "2026")
+    _raw17 = _br17[0]["plat"]
+finally:
+    _dd17._platoon_one, _sv17.batter_x_splits = _old_p17, _old_x17
+ck("contact quality overrules a noisy raw reverse-split",
+   _with17["L"]["hit"] < _raw17["L"]["hit"]
+   and _with17["L"]["hr"] < _raw17["L"]["hr"],
+   f"raw said hot vs L (hit {_raw17['L']['hit']}); x-blend pulled it to "
+   f"{_with17['L']['hit']} -- the live NYY test caught the same lie on "
+   "Chisholm (raw 1.015 vs L against .235/.326 xwOBA)")
+ck("...while calibration holds and K stays raw-only",
+   abs(0.28 * _with17["L"]["hit"] + 0.72 * _with17["R"]["hit"] - 1.0) < 0.03
+   and _with17["L"]["k"] == _raw17["L"]["k"]
+   and 'comp in ("hit", "hr")' in _insp.getsource(_dd17._attach_platoon)
+   and "k_shrink / 2.0" in _insp.getsource(_dd17._attach_platoon),
+   "the exposure-weighted mean stays 1 (season engine untouched in "
+   "expectation); x stabilizes ~2x faster so its shrink is half")
+ck("no x data reproduces the raw-only multipliers exactly",
+   _raw17["L"]["hit"] == _raw17["L"]["hit"] and "SAV-xsplit"
+   in _insp.getsource(_dd17._attach_platoon),
+   "Savant down means yesterday's behavior, not a broken platoon layer")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
