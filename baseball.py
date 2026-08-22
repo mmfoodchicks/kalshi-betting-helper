@@ -86,8 +86,14 @@ SP_IP_REGRESS = 50.0       # innings constant for regressing a starter's season 
 RECENT_IP_REGRESS = 25.0   # innings constant for the recent-form blend
 RECENT_WEIGHT = 0.25       # how much recent form pulls the season number
 
-# Multiplicative run park factors by home team id (~1.0 = neutral). Approximate,
-# directionally-standard values; affects expected TOTAL runs, not the moneyline.
+# Multiplicative run park factors by home team id (~1.0 = neutral).
+# FALLBACK ONLY: the live numbers come from Statcast's measured 3-year rolling
+# park factors (savant.park_factors -- runs AND homers per park); this static
+# table serves when Savant is unreachable. It is kept deliberately, but know
+# its history: these were eyeballed "directionally-standard" values, and the
+# measurement caught them badly wrong in places -- Dodger Stadium sat at 0.97
+# (run-suppressing) against a measured 102 runs / 127 HR, and Coors at 1.15
+# against a measured 1.25.
 PARK_FACTORS = {
     115: 1.15,  # COL Coors Field
     113: 1.06,  # CIN Great American
@@ -109,6 +115,36 @@ PARK_FACTORS = {
     137: 0.94,  # SF Oracle
     136: 0.93,  # SEA T-Mobile
 }
+
+
+def _park_factor(home_id, season):
+    """Measured run park factor (Statcast 3-yr rolling), static table fallback."""
+    try:
+        import savant
+        pf = (savant.park_factors(season) or {}).get(home_id)
+        if pf and pf.get("runs"):
+            # Clamp is a sanity rail, wide enough for the real extremes:
+            # T-Mobile measures 0.83, Coors 1.25.
+            return max(0.80, min(1.30, pf["runs"]))
+    except Exception as e:
+        errlog.note("MLB-park-factor", e)
+    return PARK_FACTORS.get(home_id, 1.0)
+
+
+def _park_hr_ratio(home_id, season):
+    """How much MORE (or less) a park boosts homers than its run factor alone
+    implies -- hr_factor / run_factor. Yankee Stadium's short porch and Dodger
+    Stadium's carry are HR parks beyond their run levels; Oracle is the
+    opposite. Feeds the HR ladders on top of the run environment. 1.0 when
+    Savant is unreachable (the static table has no HR dimension)."""
+    try:
+        import savant
+        pf = (savant.park_factors(season) or {}).get(home_id)
+        if pf and pf.get("runs") and pf.get("hr"):
+            return max(0.80, min(1.30, pf["hr"] / pf["runs"]))
+    except Exception as e:
+        errlog.note("MLB-park-hr-ratio", e)
+    return 1.0
 
 # ---- tiny TTL cache -------------------------------------------------------
 _cache = {}
@@ -855,24 +891,45 @@ def _defense_map(season):
     return _cached(("defense", season), 6 * 3600, build) or {}
 
 
+def _sp_share(sp):
+    """THIS starter's share of his side's innings, from his own expected
+    workload -- not the league-flat 0.60. A 6.5-inning workhorse owns 72% of
+    the game and leaves his (possibly bad) bullpen only a fifth of it; a
+    4.7-inning fifth starter hands 48% to the pen; an opener hands nearly all
+    of it. The flat weight blunted exactly the games where the starter/bullpen
+    quality gap is the story. Falls back to the flat weight without workload
+    data."""
+    try:
+        wl = _starter_workload(sp) or {}
+        est = wl.get("est_ip")
+        if est:
+            return max(0.15, min(0.78, est / 9.0))
+    except Exception as e:
+        errlog.note("MLB-sp-share", e)
+    return SP_INNINGS_WEIGHT
+
+
 def _pitching_factor(sp, team_bp, lg, bp_fatigue=1.0):
     sp_ra9 = _starter_ra9(sp, lg)
     bp_ra9 = _bullpen_ra9(team_bp, lg) * bp_fatigue    # gassed pen -> higher RA9
+    w = _sp_share(sp)
     if sp_ra9 is None:
         game_ra9 = bp_ra9
     else:
-        game_ra9 = SP_INNINGS_WEIGHT * sp_ra9 + (1 - SP_INNINGS_WEIGHT) * bp_ra9
+        game_ra9 = w * sp_ra9 + (1 - w) * bp_ra9
     return game_ra9 / lg["era"] if lg["era"] else 1.0, sp_ra9, bp_ra9
 
 
-def _offense_factor(team_hit, ops_vs_hand, opp_hand, lg):
-    """Offense relative to league, platoon-adjusted for the starter's hand."""
+def _offense_factor(team_hit, ops_vs_hand, opp_hand, lg, sp_share=SP_INNINGS_WEIGHT):
+    """Offense relative to league, platoon-adjusted for the starter's hand --
+    weighted by how long THAT starter actually pitches (his platoon hand only
+    matters while he is in the game)."""
     off_runs = team_hit["rpg"] / lg["rpg"] if lg["rpg"] else 1.0
     lg_ops_hand = lg["ops_vl"] if opp_hand == "L" else lg["ops_vr"]
     ops_overall = team_hit["ops"]
     # OPS the offense actually faces: starter's hand for his innings, overall for the bullpen.
-    ops_eff = SP_INNINGS_WEIGHT * (ops_vs_hand or ops_overall) + (1 - SP_INNINGS_WEIGHT) * ops_overall
-    lg_ops_eff = SP_INNINGS_WEIGHT * lg_ops_hand + (1 - SP_INNINGS_WEIGHT) * lg["ops"]
+    ops_eff = sp_share * (ops_vs_hand or ops_overall) + (1 - sp_share) * ops_overall
+    lg_ops_eff = sp_share * lg_ops_hand + (1 - sp_share) * lg["ops"]
     off_ops = ops_eff / lg_ops_eff if lg_ops_eff else 1.0
     return 0.6 * off_runs + 0.4 * off_ops
 
@@ -1267,7 +1324,10 @@ def _opp_hit_factor(opp_sp, opp_bp, lg):
         rel = s["ip"] / (s["ip"] + SP_IP_REGRESS) if s["ip"] > 0 else 0.0
         sp_whip = rel * s["whip"] + (1 - rel) * lg["whip"]
     bp_whip = opp_bp.get("whip") or lg["whip"]
-    whip = SP_INNINGS_WEIGHT * sp_whip + (1 - SP_INNINGS_WEIGHT) * bp_whip
+    # THIS starter's real innings share, not the flat 0.60 -- a workhorse's
+    # WHIP owns more of the hit environment; an opener's owns almost none.
+    w = _sp_share(opp_sp)
+    whip = w * sp_whip + (1 - w) * bp_whip
     return max(0.85, min(1.15, whip / lg["whip"] if lg["whip"] else 1.0))
 
 
@@ -1848,8 +1908,12 @@ def _analyze_slate_uncached(date, season):
         h_sp = sp_stats.get(g["home_sp_id"]); a_sp = sp_stats.get(g["away_sp_id"])
         h_hand = hand.get(g["home_sp_id"], "R"); a_hand = hand.get(g["away_sp_id"], "R")
 
-        off_h = _offense_factor(th(g["home_id"]), ops_hand(g["home_id"], a_hand), a_hand, lg)
-        off_a = _offense_factor(th(g["away_id"]), ops_hand(g["away_id"], h_hand), h_hand, lg)
+        # Each offense faces the OPPOSING starter for however long HE actually
+        # pitches -- his platoon hand and his quality weight both scale with it.
+        off_h = _offense_factor(th(g["home_id"]), ops_hand(g["home_id"], a_hand), a_hand, lg,
+                                sp_share=_sp_share(a_sp))
+        off_a = _offense_factor(th(g["away_id"]), ops_hand(g["away_id"], h_hand), h_hand, lg,
+                                sp_share=_sp_share(h_sp))
         fat_a = pen_fatigue.get(g["away_id"]) or {}
         fat_h = pen_fatigue.get(g["home_id"]) or {}
         pit_a_factor, a_sp_ra9, a_bp_ra9 = _pitching_factor(a_sp, tbp(g["away_id"]), lg, fat_a.get("factor", 1.0))
@@ -1879,7 +1943,7 @@ def _analyze_slate_uncached(date, season):
         # (which calibrates lineups to these ERs), hitter props and the live
         # remaining-runs model all see the same environment. The moneyline is
         # untouched — a common multiplier cancels in the Pythagorean ratio.
-        park = PARK_FACTORS.get(g["home_id"], 1.0)
+        park = _park_factor(g["home_id"], season)
         winfo = weather_by_pk.get(g["game_pk"]) or {}
         wx_factor = winfo.get("factor", 1.0)
         env = max(0.75, min(1.40, park * wx_factor))
@@ -2069,7 +2133,10 @@ def _analyze_slate_uncached(date, season):
         # already in ohf, so a hot/thin-air park lifts homers about twice as much.
         # Weather hits homers harder than it hits runs (measured 1.3%/F vs
         # 0.55%/F), so after env takes the run share, HR ladders get the rest.
-        hr_env = env ** 0.45 * (winfo.get("hr_extra") or 1.0)
+        # Per-park HR beyond the run level: Statcast's hr/runs factor ratio
+        # (Yankee's short porch, Dodger carry vs Oracle's graveyard) -- the run
+        # environment alone can't see a park that turns doubles into homers.
+        hr_env = env ** 0.45 * (winfo.get("hr_extra") or 1.0) * _park_hr_ratio(g["home_id"], season)
         # home bats vs away pitching + away defense (and vice versa).
         ohf_home = _opp_hit_factor(a_sp, tbp(g["away_id"]), lg) * hit_env * def_a
         ohf_away = _opp_hit_factor(h_sp, tbp(g["home_id"]), lg) * hit_env * def_h

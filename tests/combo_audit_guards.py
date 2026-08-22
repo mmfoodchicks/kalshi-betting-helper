@@ -7128,6 +7128,62 @@ ck("the board SAYS the predicted roof state",
 
 print()
 print("=" * 72)
+print("MLB flat-fix hunt: measured park factors and per-starter shares")
+print("=" * 72)
+# Two more flat constants replaced by measurement, same disease as the roof
+# shrug: the park table was eyeballed ("directionally-standard") and had
+# Dodger Stadium run-SUPPRESSING against a measured 102 runs / 125 HR; and
+# every starter owned a flat 60% of his game's innings whether he was a
+# 6.5-inning workhorse, a 4.7-inning fifth starter, or an opener.
+import baseball as _bb14
+import savant as _sv14
+
+_old_pf14 = _sv14.park_factors
+try:
+    _sv14.park_factors = lambda s: {119: {"runs": 1.02, "hr": 1.25},
+                                    115: {"runs": 2.0, "hr": 2.0},
+                                    137: {"runs": 0.5, "hr": 0.5}}
+    ck("Statcast's measured park factor replaces the eyeballed table",
+       _bb14._park_factor(119, "2026") == 1.02
+       and abs(_bb14._park_hr_ratio(119, "2026") - 1.225) < 0.01,
+       "LAD sat at 0.97 in the static table; every Dodger Stadium HR ladder "
+       "was ~25% underpriced")
+    ck("the clamp is a sanity rail wide enough for real extremes",
+       _bb14._park_factor(115, "2026") == 1.30
+       and _bb14._park_factor(137, "2026") == 0.80,
+       "T-Mobile measures 0.83 and Coors 1.25 -- both inside the rails")
+    _sv14.park_factors = lambda s: None
+    ck("Savant down -> the static table still answers",
+       _bb14._park_factor(115, "2026") == 1.15
+       and _bb14._park_hr_ratio(147, "2026") == 1.0,
+       "the fallback keeps the board alive; only the HR dimension is lost")
+finally:
+    _sv14.park_factors = _old_pf14
+_bbsrc14 = open(_os.path.join(_root, "baseball.py")).read()
+ck("the live model consumes the measured factors and the HR ratio",
+   '_park_factor(g["home_id"], season)' in _bbsrc14
+   and 'PARK_FACTORS.get(g["home_id"]' not in _bbsrc14
+   and "* _park_hr_ratio(g[" in _bbsrc14,
+   "measuring and not wiring is the same as not measuring")
+
+_horse14 = {"season": {"ip": 139.1, "gs": 25, "g": 25, "era": 3.2,
+                       "whip": 1.1, "k9": 9.5, "bb": 40}}
+_open14 = {"season": {"ip": 51.0, "gs": 3, "g": 67, "era": 3.93,
+                      "whip": 1.18, "k9": 8.8, "bb": 18}}
+ck("a starter owns HIS share of the game, not a flat 60%",
+   0.58 <= _bb14._sp_share(_horse14) <= 0.68
+   and _bb14._sp_share(_open14) <= 0.20
+   and _bb14._sp_share(None) == _bb14.SP_INNINGS_WEIGHT,
+   "an opener game is a bullpen game; the flat weight blunted exactly the "
+   "games where the starter/pen quality gap is the story")
+ck("...and every consumer reads it: pitching blend, platoon exposure, hits",
+   "w = _sp_share(sp)" in _insp.getsource(_bb14._pitching_factor)
+   and "sp_share=_sp_share(a_sp)" in _bbsrc14
+   and "_sp_share(opp_sp)" in _insp.getsource(_bb14._opp_hit_factor),
+   "his platoon hand and his WHIP only matter while he is actually pitching")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

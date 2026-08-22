@@ -45,6 +45,50 @@ def _f(x):
         return None
 
 
+def park_factors(season):
+    """{home team id: {"runs": mult, "hr": mult}} — Statcast's MEASURED park
+    factors (3-year rolling, PA-weighted, venue-conditioned), replacing the
+    hand-eyeballed table this app shipped with. The gap was real money: the
+    old table had Dodger Stadium run-SUPPRESSING (0.97) where Statcast
+    measures it 102 runs / 127 HR single-year — one of the best HR parks in
+    baseball, discounted on every HR ladder — and carried Coors at 1.15
+    against a measured 1.25.
+
+    The leaderboard page embeds its data as a JS array (the csv param serves
+    HTML), so this parses the `data = [...]` blob. Values are indexes around
+    100. None on any failure — the caller keeps its static fallback table."""
+    def build():
+        import json
+        import re
+        url = ("https://baseballsavant.mlb.com/leaderboard/statcast-park-factors"
+               f"?type=year&year={season}&rolling=3")
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+                          "AppleWebKit/605.1.15"})
+        with urllib.request.urlopen(req, timeout=25) as r:
+            body = r.read().decode("utf-8", "replace")
+        m = re.search(r"data\s*=\s*(\[.*?\]);", body, re.S)
+        if not m:
+            return None
+        rows = json.loads(m.group(1))
+        # Club nickname ("Dodgers") -> team id, from the MLB teams API.
+        treq = urllib.request.Request(
+            f"https://statsapi.mlb.com/api/v1/teams?sportId=1&season={season}",
+            headers={"User-Agent": _UA})
+        with urllib.request.urlopen(treq, timeout=20) as r:
+            teams = json.loads(r.read().decode())
+        id_of = {t.get("teamName"): t["id"] for t in teams.get("teams", [])}
+        out = {}
+        for row in rows:
+            tid = id_of.get(row.get("name_display_club"))
+            runs, hr = _f(row.get("index_runs")), _f(row.get("index_hr"))
+            if tid and runs:
+                out[tid] = {"runs": round(runs / 100.0, 3),
+                            "hr": round((hr or runs) / 100.0, 3)}
+        return out if len(out) >= 20 else None
+    return _cached(("park_factors", season), 24 * 3600, build)
+
+
 def expected_stats(season):
     """{player_id: {ba, xba, slg, xslg, woba, xwoba, pa}} for the season."""
     def build():
