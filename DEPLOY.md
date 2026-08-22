@@ -248,3 +248,31 @@ calendar means the host, not the snapshotting.
 > The repo is **public**, so anything committed here is publicly visible. The
 > history is MLB roster data and sim outputs — nothing personal — and the model
 > code is already public, but it is worth knowing before you turn it on.
+
+## PC compute worker (optional, big speedup)
+
+Your desktop simulates the slate and uploads the results; Render adopts
+whatever is freshest and computes for itself whenever the PC is off. A game
+sim is ~32s on a desktop vs 200s+ on the shared cloud CPU, so with the worker
+running, the combo maker's Build is nearly always instant.
+
+One-time setup on the PC (Windows):
+
+1. Install **Python 3.11+** from python.org — tick **"Add python.exe to
+   PATH"** during install.
+2. Install **Git for Windows** (defaults are fine).
+3. Clone the repo: open a folder, right-click → *Open in Terminal* →
+   `git clone https://github.com/mmfoodchicks/kalshi-betting-helper.git`
+4. In the cloned folder, copy `vigil-pc.cfg.example` to `vigil-pc.cfg` and
+   fill in your app URL and the same SIM_TOKEN value used above. This file is
+   gitignored — it never leaves the machine.
+5. Double-click **vigil-pc.bat**. It pulls the latest code, runs one sim
+   cycle, uploads, sleeps 10 minutes, repeats. Close the window to stop —
+   Render instantly goes back to computing everything itself.
+6. Optional, to make it fully hands-off: Task Scheduler → Create Basic Task →
+   trigger *At log on* → action *Start a program* → browse to vigil-pc.bat.
+
+Safety model: uploads require SIM_TOKEN, are schema-versioned (a stale
+checkout gets a 409 and simply waits for its next `git pull`), and land
+atomically in the same cache the workers already share. The server never
+depends on the PC — worst case is always "compute it myself, like before."

@@ -360,6 +360,72 @@ def _api_diag_slow():
                     "slowest": rows})
 
 
+# ---- PC compute worker: adopt externally-computed sims ----------------------
+# The user's desktop runs pc_worker.py on a loop: it simulates the slate with
+# the SAME baseball._game_sim the warm loop uses (~32s a game there vs 200s+
+# on this shared CPU) and uploads each finished pickle here. Everything
+# downstream -- the combo maker, the warm loop, the boards -- adopts whatever
+# is freshest on the sim disk, so the PC can only ever make things faster; if
+# it is off or stale, this server computes for itself exactly as before.
+def _pc_auth_ok():
+    """The upload door REQUIRES the shared secret even when the app has no
+    password set -- writes must never be open."""
+    tok = request.headers.get("X-Sim-Token") or ""
+    return bool(_SIM_TOKEN and tok and hmac.compare_digest(tok, _SIM_TOKEN))
+
+
+@app.route("/api/sim/have")
+def api_sim_have():
+    """{pk: age_s} of fresh sims on this server, plus the schema and commit it
+    expects -- the PC worker's 'what do you still need' question."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    return jsonify({"have": baseball.sim_disk_ages(),
+                    "schema": baseball.GAME_SIM_SCHEMA,
+                    "commit": os.environ.get("RENDER_GIT_COMMIT", "")[:12]})
+
+
+@app.route("/api/sim/upload", methods=["POST"])
+def api_sim_upload():
+    """Adopt one game sim computed on the PC. Gated three ways: the shared
+    token, the schema version (a stale checkout gets rejected, never adopted),
+    and a numeric game_pk (no path games). The body is the pickled sim, gzip
+    optional. NOTE the trust model, stated plainly: a pickle is code-execution-
+    equivalent when loaded, so this door is only as safe as SIM_TOKEN -- which
+    is the app owner's own secret on the app owner's own machine, the same
+    trust as the server trusting its own disk. Single-user by design."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    try:
+        schema = int(request.args.get("schema") or 0)
+        pk = int(request.args.get("pk") or 0)
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+    if schema != baseball.GAME_SIM_SCHEMA:
+        errlog.note("PCUP-schema", msg=f"pk={pk}: schema {schema} vs "
+                                       f"{baseball.GAME_SIM_SCHEMA} - PC checkout stale?")
+        return jsonify({"error": "schema mismatch", "adopted": False,
+                        "want": baseball.GAME_SIM_SCHEMA}), 409
+    if pk <= 0:
+        return jsonify({"error": "bad pk"}), 400
+    data = request.get_data(cache=False)
+    if request.headers.get("Content-Encoding") == "gzip":
+        import gzip as _gz
+        try:
+            data = _gz.decompress(data)
+        except OSError:
+            return jsonify({"error": "bad gzip"}), 400
+    if not data or len(data) > 16_000_000:
+        return jsonify({"error": "bad size"}), 400
+    try:
+        baseball.sim_disk_write_raw(pk, data)
+    except Exception as e:
+        errlog.note("PCUP-write", e)
+        return jsonify({"error": f"write failed: {type(e).__name__}", "adopted": False}), 500
+    return jsonify({"ok": True, "adopted": True, "pk": pk,
+                    "bytes": len(data)})
+
+
 @app.route("/api/diag/mem")
 def _api_diag_mem():
     """THIS worker's memory picture: RSS plus the entry count of every

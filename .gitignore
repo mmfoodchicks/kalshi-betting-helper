@@ -8,6 +8,12 @@ venv/
 markets.db
 predlog.db
 *.db
+
+# PC compute worker: the config holds SIM_TOKEN and must never be committed;
+# the caches are per-machine scratch.
+vigil-pc.cfg
+pc-simcache/
+pc-deepcache/
 *.db-wal
 *.db-shm
 *.sqlite3

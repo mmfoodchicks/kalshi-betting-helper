@@ -7401,6 +7401,46 @@ ck("a memory diagnostic answers 'which worker, which cache'",
 
 print()
 print("=" * 72)
+print("PC compute worker: the upload door and its gates")
+print("=" * 72)
+# The user's desktop sims the slate (~32s a game vs 200s+ on the shared cloud
+# CPU) and uploads; the server adopts what's freshest and self-computes when
+# the PC is off. The door must be locked three ways: token (even with no app
+# password), schema version (a stale checkout waits for its next git pull),
+# and a numeric pk (no path games).
+import baseball as _bb20
+_apy20 = open(_os.path.join(_root, "app.py")).read()
+ck("the upload door demands the token even when the app has no password",
+   "_pc_auth_ok" in _apy20 and "writes must never be open" in _apy20,
+   "the before_request gate waves everything through when APP_PASSWORD is "
+   "unset; an unauthenticated write path would be a public cache poisoner")
+ck("a stale PC checkout is rejected by schema, not adopted",
+   "schema != baseball.GAME_SIM_SCHEMA" in _apy20
+   and "GAME_SIM_SCHEMA = 1" in open(_os.path.join(_root, "baseball.py")).read(),
+   "bump GAME_SIM_SCHEMA in the SAME commit as any change to what "
+   "_game_sim stores")
+ck("adopted sims land atomically where every worker reads",
+   "os.replace" in _insp.getsource(_bb20.sim_disk_write_raw).replace("_os", "os")
+   and "int(pk)" in _insp.getsource(_bb20.sim_disk_write_raw),
+   "temp+rename so a reader never sees a half-written pickle; int() so a "
+   "pk can never be a path")
+_pw20 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the worker asks what the server needs before simulating",
+   "/api/sim/have" in _pw20 and "schema" in _pw20
+   and 'state") != "Final"' in _pw20.replace("'", '"'),
+   "re-uploading what the server already has fresh is pure waste; simming "
+   "finished games is worse")
+ck("the bootstrap is dumb and self-updating",
+   "git pull" in open(_os.path.join(_root, "vigil-pc.bat")).read()
+   and "pc_worker.py" in open(_os.path.join(_root, "vigil-pc.bat")).read(),
+   "all logic lives in the repo the pull refreshes; the .bat never goes stale")
+ck("the token config can never be committed",
+   "vigil-pc.cfg" in open(_os.path.join(_root, ".gitignore")).read()
+   and not _os.path.exists(_os.path.join(_root, "vigil-pc.cfg")),
+   "the example ships; the real one stays on the PC")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -2767,6 +2767,48 @@ def progress_done(token):
 # second caller queue behind the first instead of duplicating the work.
 _SIM_DISK = _os.environ.get("VIGIL_SIM_CACHE_DIR") or _os.path.join(
     _os.environ.get("DEEP_CACHE_DIR") or "/tmp", "gamesim")
+# Version of the game-sim payload shape. The PC compute worker uploads sims
+# built on ITS checkout; the server only adopts uploads whose schema matches
+# its own, so a stale (or ahead-of-deploy) PC can only be ignored, never
+# poison the cache. BUMP THIS in the same commit as any change to what
+# _game_sim stores.
+GAME_SIM_SCHEMA = 1
+
+
+def sim_disk_write_raw(pk, data):
+    """Adopt an EXTERNALLY-computed game sim: write the pickled bytes where
+    every worker reads (temp + rename, so no reader sees a half-written file).
+    The caller has already authenticated and schema-checked the upload."""
+    import tempfile
+    _os.makedirs(_SIM_DISK, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=_SIM_DISK, suffix=".tmp")
+    with _os.fdopen(fd, "wb") as fh:
+        fh.write(data)
+    _os.replace(tmp, _os.path.join(_SIM_DISK, f"{int(pk)}.pkl"))
+    try:
+        _sim_disk_prune(2 * _GAME_SIM_TTL)
+    except Exception as e:
+        errlog.note("BB-sim-upload-prune", e)
+
+
+def sim_disk_ages():
+    """{game_pk: age_seconds} of every fresh sim on disk — what the PC worker
+    asks before uploading, so it skips what the server already has."""
+    out = {}
+    try:
+        now = _time.time()
+        for name in _os.listdir(_SIM_DISK):
+            if not name.endswith(".pkl"):
+                continue
+            try:
+                age = now - _os.stat(_os.path.join(_SIM_DISK, name)).st_mtime
+                if age < _GAME_SIM_TTL:
+                    out[int(name[:-4])] = round(age, 1)
+            except (OSError, ValueError):
+                continue
+    except OSError:
+        pass
+    return out
 _sim_flight = {}
 _sim_flight_lock = _threading.Lock()
 
