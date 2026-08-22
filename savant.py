@@ -142,6 +142,27 @@ def sprint_speed(season):
     return _cached(("speed", season), 6 * 3600, build) or {}
 
 
+def pitcher_expected_stats(season):
+    """{player_id: {"xera": f, "era": f, "xwoba": f, "pa": f}} — the PITCHER
+    side of the expected-stats leaderboard, which this app fetched for batters
+    only. xERA is Statcast's contact-quality ERA: it sees the exit velo and
+    launch angles a pitcher actually allows, which FIP is structurally blind to
+    (FIP treats every ball in play as league-average) and ERA sees only through
+    sequencing and defense luck. It's the missing fourth read on a starter."""
+    def build():
+        url = ("https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+               f"?type=pitcher&year={season}&filterType=bip&min=50&csv=true")
+        out = {}
+        for r in _get_csv(url):
+            pid = r.get("player_id")
+            if not pid:
+                continue
+            out[str(pid)] = {"xera": _f(r.get("xera")), "era": _f(r.get("era")),
+                             "xwoba": _f(r.get("est_woba")), "pa": _f(r.get("pa"))}
+        return out
+    return _cached(("pitcher_xstats", season), 6 * 3600, build) or {}
+
+
 def quality_mults(xs):
     """Contact + power multipliers (dampened, clamped) that nudge a hitter's
     rates toward his expected stats -- crediting hard-hit bad luck and fading

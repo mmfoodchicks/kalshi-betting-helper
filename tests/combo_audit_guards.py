@@ -7213,6 +7213,35 @@ ck("the table records its provenance",
 
 print()
 print("=" * 72)
+print("Statcast audit: pitchers get their x-stats too")
+print("=" * 72)
+# The expected-stats leaderboard was fetched for BATTERS only -- hitters got
+# luck-stripped while starters were priced off raw ERA (sequencing + defense
+# luck) and FIP (structurally blind to contact quality). xERA is now the
+# fourth read in the starter blend, IP-regressed like the others.
+import baseball as _bb16
+import savant as _sv16
+ck("the pitcher expected-stats fetch exists and parses xERA",
+   "type=pitcher" in _insp.getsource(_sv16.pitcher_expected_stats)
+   and '"xera"' in _insp.getsource(_sv16.pitcher_expected_stats))
+_lg16 = {"era": 4.2, "whip": 1.30}
+_lucky16 = {"season": {"era": 2.90, "whip": 1.28, "ip": 120.0, "gs": 20,
+                       "g": 20, "k": 100, "bb": 40, "hr": 16, "hbp": 5,
+                       "xera": 4.30}}
+_nox16 = {"season": dict(_lucky16["season"])}
+del _nox16["season"]["xera"]
+_w16, _wo16 = _bb16._starter_ra9(_lucky16, _lg16), _bb16._starter_ra9(_nox16, _lg16)
+ck("a luck-flattered ERA gets priced up toward its contact quality",
+   _w16 > _wo16 + 0.05,
+   f"ERA 2.90 / xERA 4.30: ra9 {_w16:.2f} with x-stats vs {_wo16:.2f} without")
+ck("the four-way blend weights sum to one and xERA rides the slate build",
+   "0.25 * era_eff + 0.30 * fip_eff + 0.25 * xera_eff" in
+   _insp.getsource(_bb16._starter_ra9)
+   and "pitcher_expected_stats" in open(_os.path.join(_root, "baseball.py")).read(),
+   "a missing xERA must fall back to the old three-read blend exactly")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

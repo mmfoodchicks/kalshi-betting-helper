@@ -702,6 +702,15 @@ def _starter_ra9(sp, lg):
             rel_r = r["ip"] / (r["ip"] + RECENT_IP_REGRESS)
             recent_fip = rel_r * fip_r + (1 - rel_r) * fip_eff
             fip_eff = (1 - RECENT_WEIGHT) * fip_eff + RECENT_WEIGHT * recent_fip
+        # Statcast xERA as the FOURTH read, when attached: the contact quality
+        # FIP is structurally blind to (it treats every ball in play as
+        # league-average) and ERA sees only through sequencing/defense luck.
+        # Regressed by the same IP reliability as the other reads.
+        xera = s.get("xera")
+        if xera and xera > 0:
+            xera_eff = rel_s * xera + (1 - rel_s) * lg["era"]
+            return (0.25 * era_eff + 0.30 * fip_eff + 0.25 * xera_eff
+                    + 0.20 * whip_ra9)
         return 0.35 * era_eff + 0.40 * fip_eff + 0.25 * whip_ra9
     return 0.65 * era_eff + 0.35 * whip_ra9   # no FIP inputs -> ERA+WHIP only
 
@@ -1816,6 +1825,15 @@ def _analyze_slate_uncached(date, season):
         with ThreadPoolExecutor(max_workers=8) as ex:
             for pid, st in zip(sp_ids, ex.map(lambda i: _pitcher_stats(i, season), sp_ids)):
                 sp_stats[pid] = st
+        # Statcast xERA rides into each starter's record: contact quality FIP
+        # can't see and ERA only sees through luck (idempotent on cached recs).
+        try:
+            pxs = savant.pitcher_expected_stats(season)
+            for pid, st in sp_stats.items():
+                if st and st.get("season") and pxs.get(str(pid), {}).get("xera"):
+                    st["season"]["xera"] = pxs[str(pid)]["xera"]
+        except Exception as e:
+            errlog.note("MLB-pitcher-xera", e)
 
     # Posted lineups (rest/injuries) and game-time weather, fetched in parallel.
     pks = [g["game_pk"] for g in schedule if g["game_pk"]]
