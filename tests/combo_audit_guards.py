@@ -7477,6 +7477,31 @@ ck("selects and the same-game checkbox are covered too",
 
 print()
 print("=" * 72)
+print("Fanfare: a few seconds of team emojis, exactly once per final")
+print("=" * 72)
+_apy22 = open(_os.path.join(_root, "app.py")).read()
+_js22 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the endpoint reports only FRESH finals for both teams",
+   '"/api/fanfare"' in _apy22 and "teamId=108" in _apy22
+   and '"PIT"' in _apy22 and "36 * 3600" in _apy22,
+   "an old result must never trigger a celebration")
+ck("each final fires exactly once per device",
+   "localStorage.getItem(key)" in _js22 and "fanfare_" in _js22
+   and "localStorage.setItem(key" in _js22,
+   "'only on the next open after the final score drops'")
+ck("all four outcomes are staged: mega happy, mega sad, split, single",
+   "BOTH WON" in _js22 and "BOTH LOST" in _js22
+   and '_fanSpawn(_HAPPY, 55, 0, 48' in _js22
+   and '_fanSpawn(_SAD, 55, 52, 100' in _js22,
+   "split result = each half of the screen gets its verdict, team named")
+ck("the show is seconds, not a mode",
+   "el.remove(), 4500" in _js22 and "el.remove(), 5200" in _js22
+   and "fanfly var(--dur)" in open(_os.path.join(_root, "static", "style.css")).read(),
+   "'just for a few seconds not the whole time lol' -- every element "
+   "self-destructs")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

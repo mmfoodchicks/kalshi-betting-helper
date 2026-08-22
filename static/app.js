@@ -2950,6 +2950,93 @@ async function loadLive() {
   }
 }
 
+// ---- Fanfare: a few seconds of emojis when the owner's teams finish -------
+// Angels + Steelers. Fires exactly ONCE per final, on the first open after
+// the score drops (localStorage remembers celebrated game ids). Both won on
+// the same day = extra crazy; split result = each half of the screen gets its
+// verdict with the team named; both lost = a mega rain of sadness. The whole
+// show lasts a few seconds and cleans itself up.
+const _HAPPY = ["🎉", "🎊", "🥳", "🏆", "🙌", "⚡", "🔥", "💛", "❤️", "🎆"];
+const _SAD = ["😢", "😭", "💔", "👎", "🥀", "😞", "🫠", "📉"];
+let _fanfareLast = 0;
+
+function _fanSpawn(emojis, count, xMinPct, xMaxPct, sad) {
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement("span");
+      el.className = "fanfare-emoji";
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const fromLeft = Math.random() < 0.5;
+      const x = (xMinPct + Math.random() * (xMaxPct - xMinPct));
+      el.style.setProperty("--x0", (fromLeft ? -6 : 106) + "vw");
+      el.style.setProperty("--y0", (10 + Math.random() * 70) + "vh");
+      el.style.setProperty("--dx", `calc(${x}vw - ${fromLeft ? -6 : 106}vw)`);
+      // happy floats UP as it crosses; sad sinks DOWN.
+      el.style.setProperty("--dy", (sad ? 25 + Math.random() * 40 : -(20 + Math.random() * 45)) + "vh");
+      el.style.setProperty("--rot", (Math.random() * 540 - 270) + "deg");
+      el.style.setProperty("--dur", (2.2 + Math.random() * 1.8) + "s");
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }, Math.random() * 1500);
+  }
+}
+
+function _fanLabel(text, xPct, cls) {
+  const el = document.createElement("div");
+  el.className = "fanfare-label " + cls;
+  el.textContent = text;
+  el.style.left = xPct + "%";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5200);
+}
+
+function runFanfare(shows) {
+  if (shows.length === 2 && shows[0].won && shows[1].won) {
+    _fanSpawn(_HAPPY, 140, 0, 100, false);              // both won: go nuts
+    _fanLabel(`🥳 ${shows[0].label} AND ${shows[1].label} BOTH WON!`, 50, "happy");
+  } else if (shows.length === 2 && !shows[0].won && !shows[1].won) {
+    _fanSpawn(_SAD, 120, 0, 100, true);                 // both lost: mega sad
+    _fanLabel(`😭 ${shows[0].label} AND ${shows[1].label} BOTH LOST`, 50, "sad");
+  } else if (shows.length === 2) {
+    const w = shows.find((s) => s.won), l = shows.find((s) => !s.won);
+    _fanSpawn(_HAPPY, 55, 0, 48, false);                // winners' half...
+    _fanSpawn(_SAD, 55, 52, 100, true);                 // ...losers' half
+    _fanLabel(`😇 ${w.label} WON ${w.score}`, 25, "happy");
+    _fanLabel(`😭 ${l.label} LOST ${l.score}`, 75, "sad");
+  } else {
+    const s = shows[0];
+    _fanSpawn(s.won ? _HAPPY : _SAD, 70, 0, 100, !s.won);
+    _fanLabel(s.won ? `🎉 ${s.label} WON ${s.score}!` : `💔 ${s.label} LOST ${s.score}`,
+              50, s.won ? "happy" : "sad");
+  }
+}
+
+async function checkFanfare() {
+  if (Date.now() - _fanfareLast < 5 * 60 * 1000) return;   // once per reopen, not per poll
+  _fanfareLast = Date.now();
+  try {
+    const d = await (await fetch("/api/fanfare")).json();
+    const shows = [];
+    for (const [team, r] of Object.entries(d || {})) {
+      if (!r || r.won == null || !r.id) continue;
+      const key = `fanfare_${team}_${r.id}`;
+      let seen = null;
+      try { seen = localStorage.getItem(key); } catch (e) { return; }
+      if (seen) continue;
+      try {
+        localStorage.setItem(key, String(Date.now()));
+        // prune celebration keys older than a week
+        for (const k of Object.keys(localStorage)) {
+          if (k.startsWith("fanfare_") && Date.now() - (+localStorage.getItem(k) || 0) > 7 * 86400 * 1000)
+            localStorage.removeItem(k);
+        }
+      } catch (e) {}
+      shows.push(r);
+    }
+    if (shows.length) runFanfare(shows);
+  } catch (e) {}
+}
+
 // The 🎯 floating button: one tap lands on a combo maker from anywhere. If
 // the tab you're reading has its own maker (baseball, NFL, combos...), scroll
 // to that one; otherwise switch to the baseball board and wait for its maker
@@ -6205,11 +6292,13 @@ async function _wakeAcquire() {
   } catch (e) { _wakeLock = null; }
 }
 _wakeAcquire();
+setTimeout(checkFanfare, 1200);      // first open: let the board start loading first
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) return;
   _wakeAcquire();
   pollWarm();
+  checkFanfare();          // did the Angels/Steelers finish while you were away?
   // A build whose polling was severed while the phone had the tab suspended
   // reattaches by itself the moment the user comes back -- the finished slip
   // is waiting in the job file, and tapping a link should be the fallback,

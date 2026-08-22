@@ -360,6 +360,71 @@ def _api_diag_slow():
                     "slowest": rows})
 
 
+# ---- Fanfare: the owner's teams' latest finals ------------------------------
+@app.route("/api/fanfare")
+def api_fanfare():
+    """The freshest FINAL result for the owner's teams (Angels + Steelers),
+    so the app can throw a few seconds of emojis on the first open after a
+    game ends. Only finals from the last ~36h count -- an old result must
+    never trigger. The client remembers which game ids it has already
+    celebrated (localStorage), so each final fires exactly once per device."""
+    def build():
+        out = {}
+        try:
+            today = clock.today_et()
+            d = baseball._get(
+                f"{baseball.STATS_BASE}/schedule?sportId=1&teamId=108"
+                f"&startDate={(today - datetime.timedelta(days=1)).isoformat()}"
+                f"&endDate={today.isoformat()}")
+            fin = [g for day in d.get("dates", []) for g in day.get("games", [])
+                   if g.get("status", {}).get("abstractGameState") == "Final"]
+            if fin:
+                g = fin[-1]
+                home, away = g["teams"]["home"], g["teams"]["away"]
+                us, them = (home, away) if home["team"]["id"] == 108 else (away, home)
+                if us.get("isWinner") is not None:
+                    out["angels"] = {
+                        "id": g["gamePk"], "won": bool(us.get("isWinner")),
+                        "score": f'{us.get("score")}-{them.get("score")}',
+                        "opp": them["team"].get("name"),
+                        "label": "ANGELS"}
+        except Exception as e:
+            errlog.note("FAN-laa", e)
+        try:
+            import racing
+            sb = racing._get_json(
+                "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+                timeout=12)
+            for ev in sb.get("events") or []:
+                comp = (ev.get("competitions") or [{}])[0]
+                if (comp.get("status") or {}).get("type", {}).get("state") != "post":
+                    continue
+                try:
+                    age = time.time() - datetime.datetime.fromisoformat(
+                        ev["date"].replace("Z", "+00:00")).timestamp()
+                except (KeyError, ValueError):
+                    age = 0
+                if age > 36 * 3600:
+                    continue
+                cs = comp.get("competitors") or []
+                pit = next((c for c in cs
+                            if (c.get("team") or {}).get("abbreviation") == "PIT"), None)
+                if not pit:
+                    continue
+                them = next((c for c in cs if c is not pit), {})
+                out["steelers"] = {
+                    "id": ev.get("id"), "won": bool(pit.get("winner")),
+                    "score": f'{pit.get("score")}-{them.get("score")}',
+                    "opp": (them.get("team") or {}).get("displayName"),
+                    "label": "STEELERS"}
+                break
+        except Exception as e:
+            errlog.note("FAN-pit", e)
+        return out
+    import racing
+    return jsonify(racing._cached(("fanfare",), 300, build) or {})
+
+
 # ---- PC compute worker: adopt externally-computed sims ----------------------
 # The user's desktop runs pc_worker.py on a loop: it simulates the slate with
 # the SAME baseball._game_sim the warm loop uses (~32s a game there vs 200s+
