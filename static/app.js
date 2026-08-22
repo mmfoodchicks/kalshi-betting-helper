@@ -2950,6 +2950,24 @@ async function loadLive() {
   }
 }
 
+// The 🎯 floating button: one tap lands on a combo maker from anywhere. If
+// the tab you're reading has its own maker (baseball, NFL, combos...), scroll
+// to that one; otherwise switch to the baseball board and wait for its maker
+// to render (it may still be loading) before scrolling.
+function jumpToComboMaker() {
+  const visible = document.querySelector('[id^="tab-"]:not(.hidden) .combomaker');
+  if (visible) { visible.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const btn = document.querySelector('.tab[data-tab="baseball"]');
+  if (btn) btn.click();
+  const t0 = Date.now();
+  const find = () => {
+    const mk = document.querySelector("#tab-baseball .combomaker");
+    if (mk) mk.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (Date.now() - t0 < 15000) setTimeout(find, 400);
+  };
+  setTimeout(find, 250);
+}
+
 let _liveNavs = [];
 // Jump from a live row to its game: switch to the right tab, wait for that
 // board to render, then scroll the matching card into view and flash it.

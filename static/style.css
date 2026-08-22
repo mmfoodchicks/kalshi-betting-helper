@@ -888,8 +888,16 @@ body.tier-locked .owner-only { display: none !important; }
   .topbar-inner { padding: 12px 14px 10px; }
   main { padding: 14px 12px 64px; }
 
+  /* The MENU, not the whole header, owns the top of a phone screen. The tall
+     topbar (brand + the settings rows) was sticky at a HIGHER z-index than
+     the tab bar, so scrolling slid the menu underneath it and the nav
+     vanished -- "keep the header menu stuck to the top of my phone". Let the
+     tall part scroll away; pin the swipeable tab bar at the very top. */
+  .topbar { position: static; }
+
   /* Swipeable tab bar pinned to the top. */
   .tabs {
+    top: 0;
     flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
     gap: 6px; padding: 9px 8px; margin: 0;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
@@ -1128,3 +1136,16 @@ body.tier-locked .owner-only { display: none !important; }
   transition: width .4s ease;
 }
 .warmnote { font-size: 12px; color: #8fa8d8; }
+
+/* ---- Floating jump-to-combo-maker button --------------------------------- */
+/* Always within thumb's reach: from any tab, one tap lands on the combo
+   maker (the tab you're on if it has one, the baseball board otherwise). */
+#comboFab {
+  position: fixed; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 60; width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none; font-size: 1.35rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); cursor: pointer;
+}
+#comboFab:active { transform: scale(0.94); }
+/* Land with the maker's title visible below the pinned tab bar. */
+.combomaker { scroll-margin-top: 64px; }
