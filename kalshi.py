@@ -199,6 +199,48 @@ def get_market(ticker):
     }
 
 
+# ---- Price movement (candlesticks) -----------------------------------------
+_move_cache = {}
+
+
+def price_move(ticker, hours=24):
+    """Mid-price drift over the window, in cents: {"from", "to", "move", "n"}.
+
+    Where the market has been moving is information the ask alone can't show:
+    a pick the market has drifted TOWARD is sharp confirmation, one it has
+    drifted away from is the market disagreeing. Hourly candles carry bid/ask
+    OHLC even when nothing traded, so the MID close per hour reads a thin book
+    too; hours without a sane two-sided quote (empty-book sentinels, 20c+
+    spreads) are skipped. Cached 10 minutes; None until two readable hours
+    exist."""
+    if not ticker:
+        return None
+    hit = _move_cache.get(ticker)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    out = None
+    try:
+        series = ticker.split("-")[0]
+        end = int(time.time())
+        d = _get_json(f"{BASE}/series/{series}/markets/{ticker}/candlesticks"
+                      f"?start_ts={end - hours * 3600}&end_ts={end}"
+                      "&period_interval=60", timeout=15)
+        mids = []
+        for c in d.get("candlesticks") or []:
+            a = _f((c.get("yes_ask") or {}).get("close_dollars"))
+            b = _f((c.get("yes_bid") or {}).get("close_dollars"))
+            if a and b and 0 < b <= a < 1 and (a - b) <= 0.20:
+                mids.append((a + b) / 2.0 * 100.0)
+        if len(mids) >= 2:
+            out = {"from": round(mids[0], 1), "to": round(mids[-1], 1),
+                   "move": round(mids[-1] - mids[0], 1), "n": len(mids)}
+    except Exception as e:
+        errlog.note("KAL-candles", e)
+        out = None
+    _move_cache[ticker] = (time.time(), out)
+    return out
+
+
 # ---- Taker fee -------------------------------------------------------------
 # Kalshi charges 0.07 * C * p * (1-p) per order, rounded UP to the cent. This is
 # the smooth per-contract expectation of that, which is the right number for edge

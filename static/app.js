@@ -2833,6 +2833,30 @@ function renderSportEvent(e, sportKey) {
   const arb = (e.arbitrage_pct && !thin)
     ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ - buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
     : "";
+  // Reverse arbitrage: the bids sum over 100¢, so buying NO on EVERY outcome
+  // locks in the excess (exactly one outcome wins; the other NOs all pay).
+  // Only shown when it survives the taker fees.
+  const noArb = (e.no_arbitrage_pct && !thin
+                 && e.no_arbitrage_pct > (e.no_arb_fee_est || 0) + 0.5)
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Reverse arbitrage: the bids sum to ${(100 + e.no_arbitrage_pct).toFixed(1)}¢ - buying <b>NO on every outcome</b> locks in ~${(e.no_arbitrage_pct - (e.no_arb_fee_est || 0)).toFixed(1)}¢ per set after ~${e.no_arb_fee_est}¢ fees.</div>`
+    : "";
+  // 24h drift on the favorite: where the market has been GOING. Confirmation
+  // when it moved toward the pick, a caution when it's fading.
+  let drift = "";
+  const pm = e.pick_move;
+  if (pm && Math.abs(pm.move) >= 3 && e.outcomes && e.outcomes[0]) {
+    const dir = pm.move > 0 ? "toward" : "away from";
+    const cls = pm.move > 0 ? "ev pos" : "ev neg";
+    drift = `<div class="small" style="margin:2px 0"><span class="${cls}" title="mid-price drift over the last 24h of two-sided quotes (${pm.n} hourly closes)">${pm.move > 0 ? "📈" : "📉"} Market moved <b>${pm.move > 0 ? "+" : ""}${pm.move}¢</b> ${dir} <b>${e.outcomes[0].name}</b> in 24h (${pm.from}→${pm.to}¢)</span></div>`;
+  }
+  // Maker suggestion: on a wide spread, posting inside it beats paying the ask
+  // AND skips the taker fee - the price of patience is fill risk.
+  let maker = "";
+  const topo = e.outcomes && e.outcomes[0];
+  if (!thin && topo && topo.spread != null && topo.spread >= 4
+      && topo.yes_bid != null && topo.yes_ask != null) {
+    maker = `<div class="small" style="margin:2px 0;color:var(--muted)">💡 Wide spread on the favorite (${topo.spread}¢): posting a resting bid at <b>${topo.yes_bid + 1}¢</b> instead of taking ${topo.yes_ask}¢ saves <b>${(topo.yes_ask - topo.yes_bid - 1).toFixed(0)}¢ + the taker fee</b> if it fills - the cost is it may not.</div>`;
+  }
   // Racing: the model edge pick beats the market-favorite lean when present.
   const mp = e.model_pick
     ? `<div class="note" style="border:1px solid var(--yes);color:var(--yes)">🏁 Model edge pick: <b>${e.model_pick.name}</b> @ ${e.model_pick.yes_ask}¢ - model <b>${e.model_pick.model_pct}%</b> vs market, <b>+${e.model_pick.edge_cents}¢ edge</b></div>`
@@ -2848,7 +2872,10 @@ function renderSportEvent(e, sportKey) {
     ${liqWarn}
     ${mp}
     ${pick}
+    ${drift}
     ${arb}
+    ${noArb}
+    ${maker}
     <div class="sportouts">${outs}</div>
   </div>`;
 }

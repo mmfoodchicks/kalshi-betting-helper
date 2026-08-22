@@ -7317,6 +7317,49 @@ ck("no x data reproduces the raw-only multipliers exactly",
 
 print()
 print("=" * 72)
+print("Kalshi mechanics: price drift, reverse arb, maker suggestions")
+print("=" * 72)
+# Three market-facing reads the model math can't provide: where the price has
+# been GOING (24h mid drift from candlesticks), books whose BIDS sum over
+# 100c (buy NO everywhere -- the side the YES arb check can't see), and
+# posting inside a wide spread instead of paying the ask plus taker fee.
+import kalshi as _kl18
+_old_get18 = _kl18._get_json
+try:
+    _kl18._move_cache.clear()
+    _kl18._get_json = lambda url, timeout=10: {"candlesticks": [
+        {"yes_ask": {"close_dollars": "0.99"}, "yes_bid": {"close_dollars": "0.00"}},
+        {"yes_ask": {"close_dollars": "0.52"}, "yes_bid": {"close_dollars": "0.48"}},
+        {"yes_ask": {"close_dollars": "0.58"}, "yes_bid": {"close_dollars": "0.54"}},
+    ]}
+    _mv18 = _kl18.price_move("TEST-SYNTH-X")
+    ck("price drift reads the mid of two-sided hours and skips empty-book sentinels",
+       _mv18 is not None and _mv18["from"] == 50.0 and _mv18["to"] == 56.0
+       and _mv18["move"] == 6.0 and _mv18["n"] == 2,
+       f"got {_mv18} -- the 99/0 sentinel hour must not count as a price")
+finally:
+    _kl18._get_json = _old_get18
+    _kl18._move_cache.clear()
+_spsrc18 = open(_os.path.join(_root, "sports.py")).read()
+ck("reverse arbitrage needs a real bid on EVERY outcome",
+   "all(b for b in bids)" in _spsrc18 and "no_arb_fee_est" in _spsrc18,
+   "a missing bid means the NO-everywhere basket cannot actually be bought")
+ck("the drift fetch is bounded and threaded, not one call per market",
+   "[:14]" in _spsrc18 and "price_move" in _spsrc18,
+   "43 tennis events x 1 candlestick fetch each would be a rate-limit gift")
+_js18 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("reverse arb only shows when it survives the taker fees",
+   "e.no_arb_fee_est || 0) + 0.5" in _js18 and "NO on every outcome" in _js18,
+   "the live NFL probe found +1.0c gross against 2.0c of fees -- showing "
+   "that as free money would cost the user real money")
+ck("the drift chip and maker suggestion render with their caveats",
+   "Market moved" in _js18 and "posting a resting bid" in _js18
+   and "may not" in _js18,
+   "a maker order's price is fill risk; saying so is the difference between "
+   "a tip and a trap")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

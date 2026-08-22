@@ -86,6 +86,17 @@ def get_events(sport_key, limit=200):
         # Arbitrage: if the outcome prices sum to < 100¢, buying them all is a
         # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
         e["arbitrage_pct"] = round(100 - ask_total, 1) if (ask_total and ask_total < 100) else None
+        # REVERSE arbitrage (the side the YES check can't see): if the BIDS sum
+        # to over 100¢, buying NO on every outcome costs sum(100-bid) against a
+        # guaranteed (n-1)x100 payout — profit = bid_total - 100, fees aside.
+        # Needs a real bid on EVERY outcome to be executable.
+        bids = [o["yes_bid"] for o in e["outcomes"]]
+        if len(bids) >= 2 and all(b for b in bids) and sum(bids) > 100:
+            e["no_arbitrage_pct"] = round(sum(bids) - 100, 1)
+            e["no_arb_fee_est"] = round(sum(kalshi.taker_fee_cents(100 - b)
+                                            for b in bids), 1)
+        else:
+            e["no_arbitrage_pct"] = None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))
         # Liquidity read for the whole event: is this actually tradeable, or a thin
         # untraded book where the fair % / edge / arbitrage can't be trusted? Based
@@ -111,4 +122,21 @@ def get_events(sport_key, limit=200):
         out.append(e)
 
     out.sort(key=lambda e: (e["close_time"] is None, e["close_time"] or 0))
+    # 24h price movement on each near-term event's favorite: where the market
+    # has been GOING is information the current ask can't show. Bounded to the
+    # next 14 tradeable events (each is one cached candlestick fetch).
+    from concurrent.futures import ThreadPoolExecutor
+    watch = [e for e in out if e.get("liquidity") != "none"][:14]
+
+    def _mv(e):
+        top = e["outcomes"][0] if e.get("outcomes") else None
+        return kalshi.price_move(top.get("ticker")) if top else None
+    try:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for e, mv in zip(watch, ex.map(_mv, watch)):
+                if mv:
+                    e["pick_move"] = mv
+    except Exception as e:
+        import errlog
+        errlog.note("SPORT-move", e)
     return out
