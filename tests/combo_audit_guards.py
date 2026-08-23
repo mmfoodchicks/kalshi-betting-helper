@@ -7784,6 +7784,37 @@ ck("the NFL tab has its record box",
    'id="nflRecord"' in open(_os.path.join(_root, "templates",
                                           "index.html")).read())
 
+# The 892 MB slate child (caught by the memory watchdog on its first night):
+# team profiles were cached in-process only, and the slate builds in a fresh
+# child every few minutes -- each one re-hydrated every slate team from zero,
+# thirteen Statcast x-split searches per club included. Profiles now persist
+# in the deep artifact store so a child reads what a sibling (or the PC
+# worker) already paid for.
+import deep_data as _dd27
+import deep_cache as _dc27
+_oldcd27 = _dc27.CACHE_DIR
+try:
+    import tempfile as _tf27
+    _dc27.CACHE_DIR = _tf27.mkdtemp()
+    _val27 = {"rotation": [1], "bullpen": [2], "lineup": [3], "bench": [],
+              "_quality": {"players": 1, "with_career": 1, "xstats": 0}}
+    _dd27._profile_disk_put(133, "2099", _val27)
+    ck("team profiles round-trip through the deep store",
+       _dd27._profile_disk_get(133, "2099") == _val27)
+    _p27 = _dd27._profile_path(133, "2099")
+    _os.utime(_p27, (_tm.time() - 7 * 3600, _tm.time() - 7 * 3600))
+    ck("...and expire at the same 6h the in-process cache uses",
+       _dd27._profile_disk_get(133, "2099") is None)
+    import artifacts as _ar27
+    ck("the profile files ride the PC sync door as-is",
+       _ar27.valid_name("profile_133_2099.pkl"),
+       "the PC worker hydrates them nightly and uploads; the server's slate "
+       "children then never pay the 30-team hydration at all")
+finally:
+    _dc27.CACHE_DIR = _oldcd27
+ck("team_profile reads the disk before building",
+   "disk_or_build" in _insp.getsource(_dd27.team_profile))
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

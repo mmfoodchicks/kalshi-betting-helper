@@ -701,7 +701,64 @@ def team_profile(team_id, season=None):
                 "depth_bats": taxi,
                 "_quality": {"players": seen_n, "with_career": career_n,
                              "xstats": len(xstats)}}
-    return baseball._cached(("deep_profile4", team_id, season), 21600, build)
+
+    def disk_or_build():
+        got = _profile_disk_get(team_id, season)
+        if got is not None:
+            return got
+        val = build()
+        _profile_disk_put(team_id, season, val)
+        return val
+    return baseball._cached(("deep_profile4", team_id, season), 21600, disk_or_build)
+
+
+# The in-process cache above dies with its process -- and the slate builds in a
+# FRESH niced child every few minutes, so each child re-hydrated every slate
+# team from zero: two roster calls, the xStats CSV, and (since the platoon
+# x-splits landed) THIRTEEN Statcast searches per club. Caught by the memory
+# watchdog on its first night as an 892 MB slate child. Profiles now persist
+# in the deep artifact store, so a child reads what a sibling (or the PC
+# worker, which syncs this store uphill) already hydrated; at most one process
+# per TTL pays the full cost. Plain per-team pickles named by team+season --
+# additive to the store, so no artifact-schema bump: an older server ignores
+# them and an older PC simply doesn't send them.
+_PROFILE_DISK_TTL = 21600     # same 6h as the in-process cache
+
+
+def _profile_path(team_id, season):
+    import os
+    import deep_cache
+    return os.path.join(deep_cache.CACHE_DIR, f"profile_{team_id}_{season}.pkl")
+
+
+def _profile_disk_get(team_id, season):
+    import os
+    import time
+    try:
+        path = _profile_path(team_id, season)
+        if time.time() - os.stat(path).st_mtime > _PROFILE_DISK_TTL:
+            return None
+        import pickle
+        with open(path, "rb") as fh:
+            return pickle.load(fh)
+    except Exception:
+        return None               # no disk copy is a slow build, never a broken one
+
+
+def _profile_disk_put(team_id, season, val):
+    try:
+        import os
+        import pickle
+        import tempfile
+        import deep_cache
+        os.makedirs(deep_cache.CACHE_DIR, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=deep_cache.CACHE_DIR, suffix=".tmp")
+        with os.fdopen(fd, "wb") as fh:
+            pickle.dump(val, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, _profile_path(team_id, season))
+    except Exception as _e:
+        import errlog
+        errlog.note("DD-profile_disk", _e)
 
 
 def _bat_real(st):
