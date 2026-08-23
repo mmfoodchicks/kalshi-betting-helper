@@ -154,6 +154,11 @@ def _task_boards():
     _add("wnba", lambda: __import__("basket").board("wnba", date))
     _add("nhl", lambda: __import__("hockey").board(date))
     _add("futures", lambda: __import__("mfutures").rows())
+    # Racing DFS boards: correlated race sims + DK lineup search. Cheap on a
+    # desktop, and the server then serves the uploaded board instead of
+    # simulating on the shared CPU.
+    _add("dfs-f1", lambda: __import__("racing_dfs").board("f1"))
+    _add("dfs-nascar", lambda: __import__("racing_dfs").board("nascar"))
 
     deadline = time.time() + 300
     pending = dict(builders)

@@ -2125,6 +2125,24 @@ def api_sports(sport_key):
                                       and not tiers.has_feature(_tier(), "racing_picks"))})
 
 
+@app.route("/api/racing/dfs")
+def api_racing_dfs():
+    """Scenario-coherent DK lineups for the next F1/NASCAR race: correlated
+    finish-order sims -> real DK scoring -> per-scenario optimal builds, with
+    duplication estimates (small pools duplicate; uniqueness is equity)."""
+    kind = (request.args.get("kind") or "f1").lower()
+    if kind not in ("f1", "nascar"):
+        return jsonify({"error": "kind must be f1 or nascar"}), 400
+    try:
+        import racing_dfs
+        data = racing_dfs.board(kind)
+    except Exception as e:
+        return jsonify({"error": f"racing dfs failed: {e}"}), 502
+    if data is None:
+        return jsonify({"error": "simulating the race in the background - retry shortly"}), 502
+    return jsonify(data)
+
+
 _live_cache = {"ts": 0.0, "data": None}
 
 

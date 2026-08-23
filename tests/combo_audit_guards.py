@@ -7054,7 +7054,10 @@ ck("the penalty-adjusted race grid outranks raw qualifying order",
    _f1src12.index('_rows(race_key, "starting_grid")')
    < _f1src12.index('_rows(key, "session_result")'),
    "a back-of-grid engine penalty only exists in the race session's grid")
-_rbsrc12 = _insp.getsource(_rc12.race_board)
+# race_board's model half now lives in field_model (shared with the DFS
+# simulator, so both read the identical strengths); the guard follows it.
+_rbsrc12 = (_insp.getsource(_rc12.race_board)
+            + _insp.getsource(_rc12.field_model))
 ck("Saturday's sprint result feeds Sunday's form",
    "0.5 * r + 0.5 * sr[nm]" in _rbsrc12 and "dnf_pct" in _rbsrc12
    and '"provisional"' in _rbsrc12,
@@ -7814,6 +7817,80 @@ finally:
     _dc27.CACHE_DIR = _oldcd27
 ck("team_profile reads the disk before building",
    "disk_or_build" in _insp.getsource(_dd27.team_profile))
+
+print()
+print("=" * 72)
+print("Racing DFS: scenario-coherent lineups for 20-driver pools")
+print("=" * 72)
+# Small-pool DFS is duplication + scenario selection, not ceiling-stacking:
+# place differential is zero-sum, so a lineup's ceiling is one coherent race
+# script, and the chalk build repeats dozens of times at any real field size.
+# The simulator samples correlated finish orders from the SAME Plackett-Luce
+# win model the Kalshi board shows (Gumbel-max), scores real DK points, and
+# candidates are the optimal build PER simulated race.
+import racing_dfs as _rd28
+import math as _m28
+
+_names28 = [f"driver {chr(97 + i)}" for i in range(20)]
+_z28 = sum(_m28.exp(-i / 2.5) for i in range(20))
+_probs28 = {nm: 0.97 * _m28.exp(-i / 2.5) / _z28 + 0.03 / 20
+            for i, nm in enumerate(_names28)}
+_fm28 = {"grid": {"grid": {nm: i + 1 for i, nm in enumerate(_names28)},
+                  "race": "Guard GP", "field": 20},
+         "probs": _probs28, "track_type": None}
+_fld28 = _rd28.simulate_field("f1", _fm28, n=800, seed=3)
+_fav28 = _names28[0]
+_ws28 = sum(1 for s in _fld28["sims"] if s["finish"][_fav28] == 1) / 800
+ck("the sampled winner marginal IS the board's win probability",
+   abs(_ws28 - _probs28[_fav28]) < 0.06,
+   f"modeled {_probs28[_fav28]:.3f} vs simulated {_ws28:.3f} - Gumbel-max "
+   "over log win-prob reproduces Plackett-Luce exactly")
+_tm28 = {_names28[i]: _names28[i + 1 if i % 2 == 0 else i - 1]
+         for i in range(20)}
+_pts28 = _rd28.score_sims("f1", _fld28, teammates=_tm28)
+ck("DK scoring ladders: F1 25-to-the-winner, NASCAR 45, both monotone",
+   _rd28._f1_fin(1) == 25 and _rd28._f1_fin(10) == 1
+   and _rd28._f1_fin(11) < 1
+   and _rd28._nas_fin(1) == 45.0 and _rd28._nas_fin(2) == 42.0
+   and _rd28._nas_fin(3) == 41.0)
+ck("the favorite out-scores the backmarker on average, but not in ceiling "
+   "share alone",
+   sum(_pts28[_fav28]) > sum(_pts28[_names28[-1]]))
+_sal28 = {nm: 12000 - 500 * i for i, nm in enumerate(_names28)}
+_cn28 = {f"Team {i}": {"salary": 8000 - 500 * i, "team": f"T{i}"}
+         for i in range(10)}
+_team28 = {nm: f"T{i // 2}" for i, nm in enumerate(_names28)}
+_lu28 = _rd28._greedy_f1({nm: _pts28[nm][0] for nm in _names28},
+                         _names28, _sal28, _cn28, _team28, 50000)
+_cnteam28 = _cn28[_lu28["constructor"]]["team"]
+_paired28 = [x for x in list(_lu28["drivers"]) + [_lu28["cpt"]]
+             if _team28[x] == _cnteam28]
+_spend28 = (round(1.5 * _sal28[_lu28["cpt"]])
+            + sum(_sal28[nm] for nm in _lu28["drivers"])
+            + _cn28[_lu28["constructor"]]["salary"])
+ck("F1 lineups honor DK's build rules: CPT+4+CNSTR, cap, no team pairing",
+   len(_lu28["drivers"]) == 4 and _lu28["cpt"] not in _lu28["drivers"]
+   and len(_paired28) <= 1 and _spend28 <= 50000,
+   "a constructor may never be stacked with BOTH of its drivers")
+_lun28 = _rd28._greedy_nas({nm: _pts28[nm][0] for nm in _names28},
+                           _names28, _sal28, 50000)
+ck("NASCAR lineups: six drivers under the cap",
+   len(_lun28["drivers"]) == 6
+   and sum(_sal28[nm] for nm in _lun28["drivers"]) <= 50000)
+ck("the board shares one build across workers and the PC",
+   "boardshare.nonblocking" in _insp.getsource(_rd28.board))
+ck("race_board and the DFS sim read the SAME model bundle",
+   "field_model(" in _insp.getsource(__import__("racing").race_board)
+   and "field_model(" in _insp.getsource(_rd28.build))
+_apy28 = open(_os.path.join(_root, "app.py")).read()
+ck("the endpoint + UI panel + PC builders are wired",
+   '"/api/racing/dfs"' in _apy28
+   and "loadRacingDfs" in open(_os.path.join(_root, "static", "app.js")).read()
+   and "dfs-f1" in open(_os.path.join(_root, "pc_worker.py")).read())
+ck("duplication rescales client-side from p_build",
+   '"p_build"' in _insp.getsource(_rd28.build)
+   and "p_build" in open(_os.path.join(_root, "static", "app.js")).read(),
+   "the field-size input re-prices dupes without a server rebuild")
 
 print()
 print("=" * 72)

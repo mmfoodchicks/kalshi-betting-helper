@@ -5008,7 +5008,64 @@ function renderSports() {
   events.sort((a, b) => (rank[a.liquidity] ?? 1) - (rank[b.liquidity] ?? 1)
     || (a.close_time || 1e18) - (b.close_time || 1e18));
   if (!events.length) { box.innerHTML = banner + `<div class="empty">All ${d.events.length} markets are thin/untraded. Uncheck "hide thin" to see them.</div>`; return; }
-  box.innerHTML = banner + events.map((e) => renderSportEvent(e, key)).join("");
+  let html = banner + events.map((e) => renderSportEvent(e, key)).join("");
+  // Racing DFS: scenario-coherent DK lineups live under the win board.
+  if ((key === "f1" || key === "nascar") && !d.racing_locked) {
+    html += `<div id="racingDfs" style="margin-top:10px"></div>`;
+  }
+  box.innerHTML = html;
+  if ((key === "f1" || key === "nascar") && !d.racing_locked) loadRacingDfs(key);
+}
+
+// ---- Racing DFS (scenario-coherent DK lineups) -----------------------------
+// Small pools flip the DFS problem: with ~20 drivers the chalk build repeats
+// dozens of times at any real field size, and place differential is zero-sum,
+// so a lineup's ceiling is one coherent race SCRIPT. The server samples
+// correlated finish orders from the same win model the board above shows,
+// scores real DK points, and surfaces the optimal build per simulated race.
+let _rdfsData = null, _rdfsEntrants = 2000;
+async function loadRacingDfs(kind, attempt = 0) {
+  const el = $("racingDfs");
+  if (!el || _sportsKey !== kind) return;
+  if (!attempt) el.innerHTML = `<div class="empty">Simulating the race for DK lineups…</div>`;
+  try {
+    const d = await (await fetch(`/api/racing/dfs?kind=${kind}`)).json();
+    if (d.error || !d.available) {
+      if (d.error && attempt < 8) { setTimeout(() => loadRacingDfs(kind, attempt + 1), 5000); return; }
+      el.innerHTML = d.reason ? `<div class="small" style="color:var(--muted)">🏎️ DFS sim: ${d.reason}</div>` : "";
+      return;
+    }
+    _rdfsData = d;
+    renderRacingDfs();
+  } catch (e) { el.innerHTML = ""; }
+}
+function renderRacingDfs() {
+  const d = _rdfsData, el = $("racingDfs");
+  if (!d || !el) return;
+  const rows = d.drivers.slice(0, 12).map((dr) =>
+    `<div class="sportout"><div class="left">
+       <span class="oname">${dr.name} <span class="small" style="color:var(--muted)">P${dr.start}${dr.salary ? ` · $${(dr.salary / 1000).toFixed(1)}k` : ""}</span></span>
+       <span class="small">proj <b>${dr.mean}</b> · ceiling <b>${dr.p95}</b> · own~${dr.own_pct}% · DNF ${dr.dnf_pct}% · <span title="ceiling per point of projected ownership - what separates builds in a 20-man pool">lev <b>${dr.leverage}</b></span></span>
+     </div></div>`);
+  let html = `<div class="small" style="margin:6px 0 4px"><b>🏎️ DK lineup sim</b> - ${d.race} · ${d.n_sims.toLocaleString()} correlated race sims. In a pool this small the chalk build duplicates and splits its prize; the lineups below are each the OPTIMAL build for one simulated race script, ranked by ceiling.</div>`;
+  html += collapseRows(rows, "drivers");
+  if (d.lineups && d.lineups.length) {
+    html += `<div class="small" style="margin:8px 0 4px">Field size: <input id="rdfsEntrants" type="number" min="10" step="100" value="${_rdfsEntrants}" style="width:80px" onchange="_rdfsEntrants=Math.max(10,+this.value||2000);renderRacingDfs()"/> entrants <span style="color:var(--muted)">- duplicates rescale live (${d.own_note})</span></div>`;
+    html += d.lineups.slice(0, 5).map((lu) => {
+      const dupes = Math.round((lu.p_build || 0) * _rdfsEntrants * 10) / 10;
+      const dcls = dupes >= 3 ? "ev neg" : dupes <= 0.5 ? "ev pos" : "";
+      const names = (lu.cpt ? [`⭐ ${lu.cpt} (CPT)`] : []).concat(lu.drivers);
+      return `<div class="bbgame" style="padding:8px">
+        <div class="small"><b>${names.join(" · ")}</b>${lu.constructor ? ` · 🔧 ${lu.constructor}` : ""} <span style="color:var(--muted)">$${(lu.salary / 1000).toFixed(1)}k</span></div>
+        <div class="small">proj <b>${lu.mean}</b> · ceiling <b>${lu.p95}</b> · <span class="${dcls}" title="expected copies of this exact build in the field (ownership-model estimate)">≈${dupes} dupes</span></div>
+        <div class="small" style="color:var(--muted)">${lu.story}</div>
+      </div>`;
+    }).join("");
+    if (d.chalk_warning) html += `<div class="small" style="color:var(--muted);margin-top:4px">${d.chalk_warning}</div>`;
+  } else if (d.note) {
+    html += `<div class="small" style="color:var(--muted);margin-top:4px">${d.note}</div>`;
+  }
+  el.innerHTML = html;
 }
 
 // ---- Weather edge ---------------------------------------------------------

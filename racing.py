@@ -657,23 +657,15 @@ def _match_prob(probs, grid_info, name):
     return None
 
 
-def race_board(sport, events, date=None):
-    """Merge an independent grid win model into Kalshi racing events.
-
-    `events` is the de-vig'd output of sports.get_events. For each event we
-    attach each driver's model win % and the edge vs the Kalshi ask, then pick
-    the driver with the best positive edge (a real model lean, not the favorite).
-    Returns (events, grid_meta). On no grid, events are returned unchanged.
-    """
-    race_name = events[0]["title"] if events else None
-    # The market's own driver names anchor grid selection: on shared NASCAR
-    # weekends they are what tells a Cup board apart from the Trucks race
-    # running the same day at the same track.
-    names = [o.get("name", "") for e in events for o in e.get("outcomes", [])]
+def field_model(sport, race_name=None, date=None, names=None):
+    """The full pre-race model in one bundle: the matched grid, the blended
+    form, the track type, and the win probabilities. race_board consumes it for
+    the Kalshi view; the DFS simulator consumes the same bundle so its finish
+    orders come from the identical strengths the win board shows. None when no
+    grid is posted."""
     grid = get_grid(sport, race_name=race_name, date=date, names=names or None)
     if not grid:
-        return events, {"available": False,
-                        "reason": "no qualifying grid posted yet"}
+        return None
     # Blend in recent form (driver/car quality) when we can fetch it. NASCAR form
     # is TRACK-TYPE aware: at a street race the road-course results carry the
     # signal, not last week's oval.
@@ -699,7 +691,30 @@ def race_board(sport, events, date=None):
                 form = dict(sr)
     except Exception:
         form = None
-    probs = win_probs(grid, sport, form, track_type=ttype)
+    return {"grid": grid, "form": form, "track_type": ttype,
+            "probs": win_probs(grid, sport, form, track_type=ttype)}
+
+
+def race_board(sport, events, date=None):
+    """Merge an independent grid win model into Kalshi racing events.
+
+    `events` is the de-vig'd output of sports.get_events. For each event we
+    attach each driver's model win % and the edge vs the Kalshi ask, then pick
+    the driver with the best positive edge (a real model lean, not the favorite).
+    Returns (events, grid_meta). On no grid, events are returned unchanged.
+    """
+    race_name = events[0]["title"] if events else None
+    # The market's own driver names anchor grid selection: on shared NASCAR
+    # weekends they are what tells a Cup board apart from the Trucks race
+    # running the same day at the same track.
+    names = [o.get("name", "") for e in events for o in e.get("outcomes", [])]
+    fm = field_model(sport, race_name=race_name, date=date, names=names)
+    if not fm:
+        return events, {"available": False,
+                        "reason": "no qualifying grid posted yet"}
+    sp = (sport or "").lower()
+    grid, form, ttype = fm["grid"], fm["form"], fm["track_type"]
+    probs = fm["probs"]
     for e in events:
         best = None
         for o in e.get("outcomes", []):
