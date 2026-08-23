@@ -93,12 +93,40 @@ def init_db():
                     # is the calibrated number we display/bet; the temperature must be
                     # fit on the raw one, or the calibrator trains on its own output
                     # (a feedback loop). Legacy rows have it NULL -> fall back to prob.
-                    "prob_raw"):
+                    "prob_raw",
+                    # Which run-model generation predicted pred_total (see
+                    # MODEL_VERSION below). The totals-bias stat is a model-quality
+                    # read, and averaging a retired model's totals into it reports
+                    # a bias nobody can act on. Legacy rows read as version 0.
+                    "model_version"):
             if col not in mcols:
                 try:               # same boot race as the markets migration
                     c.execute(f"ALTER TABLE mlb_picks ADD COLUMN {col} REAL")
                 except Exception as _e:
                     errlog.note("DB-init_db-2", _e)  # a sibling worker just added it
+
+        # NFL picks: the MLB ledger, ported. One row per game, entry price frozen
+        # at first pre-game sight, close refreshed only while still pre-game and
+        # only for the recorded side, graded off the ESPN scoreboard. Preseason
+        # rows carry the flag so the report never blends the two distributions.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS nfl_picks (
+                game_id TEXT PRIMARY KEY,
+                date TEXT, week INTEGER, preseason INTEGER DEFAULT 0,
+                pick_side TEXT, pick_name TEXT,
+                prob REAL, prob_raw REAL, price_cents REAL, close_price REAL,
+                pred_total REAL, actual_total REAL,
+                graded INTEGER DEFAULT 0, won INTEGER, winner_name TEXT,
+                home_won REAL
+            )""")
+        # The CLV reset, dated: every close_price written through 2026-08-23 was
+        # refreshed while games were LIVE (the update only checked "not Final"),
+        # so "closing line value" was really "did our side end up winning" -- a
+        # +14.8c mirage. Unrecoverable retroactively; NULL them so CLV restarts
+        # honest from the first clean close. The date literal keeps this a
+        # no-op for every row recorded after the fix.
+        c.execute("UPDATE mlb_picks SET close_price=NULL "
+                  "WHERE date <= '2026-08-23' AND close_price IS NOT NULL")
 
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,
@@ -121,6 +149,12 @@ def init_db():
         # these the entry read is lost by grading time.
         pcols = {r["name"] for r in c.execute("PRAGMA table_info(prop_log)")}
         for col in ("entry_cents REAL", "entry_model_pct REAL", "entry_ts INTEGER",
+                    # The YES bid, rolling + frozen-at-entry. Without it a NO
+                    # "fill" was approximated at 100-ask, which underprices NO
+                    # by the whole spread -- in these thin books that mirage was
+                    # most of a +47% "ROI". NO bets are only simulated on rows
+                    # that carry a real bid.
+                    "kalshi_bid_cents REAL", "entry_bid_cents REAL",
                     # Which generation of the run model produced model_pct. A
                     # calibration is a correction for a SPECIFIC model's errors;
                     # applied to a different model it is just a bias. When the MLB
@@ -174,21 +208,34 @@ def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred
         c.execute(
             """INSERT OR IGNORE INTO mlb_picks
                (game_pk, date, pick_side, pick_name, prob, price_cents, close_price, pred_total,
-                p_home_model, p_home_deep, prob_raw)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                p_home_model, p_home_deep, prob_raw, model_version)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (game_pk, date, pick_side, pick_name, prob, price_cents, price_cents, pred_total,
-             p_home_model, p_home_deep, prob_raw if prob_raw is not None else prob),
+             p_home_model, p_home_deep, prob_raw if prob_raw is not None else prob,
+             MODEL_VERSION),
         )
 
 
-def update_mlb_close(game_pk, price_cents):
+def update_mlb_close(game_pk, price_cents, pick_side=None):
     """Refresh the closing (latest pre-game) price of our side so we can measure
-    closing-line value once the game is graded."""
+    closing-line value once the game is graded.
+
+    `pick_side` guards against a flipped pick: the recorded pick is first-write-
+    wins, but the board's pick can cross 50% between builds -- and this update
+    was then writing the OTHER team's price onto our recorded side, so the
+    'close' being compared wasn't even the market for the bet. When the caller
+    says which side today's price belongs to, only a matching row updates; a
+    flipped pick keeps its last same-side close instead of a wrong-side one."""
     if price_cents is None:
         return
     with _lock, _conn() as c:
-        c.execute("UPDATE mlb_picks SET close_price=? WHERE game_pk=? AND graded=0",
-                  (price_cents, game_pk))
+        if pick_side is None:
+            c.execute("UPDATE mlb_picks SET close_price=? WHERE game_pk=? AND graded=0",
+                      (price_cents, game_pk))
+        else:
+            c.execute("UPDATE mlb_picks SET close_price=? "
+                      "WHERE game_pk=? AND graded=0 AND pick_side=?",
+                      (price_cents, game_pk, pick_side))
 
 
 def ungraded_mlb_picks():
@@ -244,31 +291,46 @@ def prop_grade_pairs():
             "AND COALESCE(model_version, 0) = ?", (MODEL_VERSION,)).fetchall()]
 
 
-def mlb_record():
-    with _lock, _conn() as c:
-        graded = [dict(r) for r in c.execute(
-            "SELECT * FROM mlb_picks WHERE graded=1").fetchall()]
-        pending = c.execute("SELECT COUNT(*) n FROM mlb_picks WHERE graded=0").fetchone()["n"]
+def _fee_cents(price_cents):
+    """Kalshi's taker fee for one contract at price P, in cents:
+    ceil(0.07 * P * (1-P)), i.e. ~1.75c at 50c, rounded up to the next cent.
+    Charged on the trade itself, win or lose, so an honest ROI subtracts it
+    from every bet. Maker (resting) fills pay none -- this reports the taker
+    case, which is what "bet the number on the screen" actually costs."""
+    import math
+    c = float(price_cents)
+    return math.ceil(7.0 * c * (100.0 - c) / 10000.0)
+
+
+def _pick_stats(graded, pending, edge_threshold=3.0, totals_rows=None):
+    """The shared scoreboard math for a graded game-pick ledger (MLB, NFL):
+    W-L, taker-fee ROI at the recorded entry price, edge-filtered ROI, CLV from
+    pre-game closes, Brier on the shown probability, raw-prob calibration
+    buckets, and predicted-vs-actual totals. Sports add their extras on top.
+    Rows need: won, prob, prob_raw, price_cents, close_price [, pred_total,
+    actual_total]."""
     n = len(graded)
     wins = sum(1 for p in graded if p["won"] == 1)
 
     def roi(picks):
         stake = sum(p["price_cents"] for p in picks)
-        pnl = sum((100 if p["won"] else 0) - p["price_cents"] for p in picks)
+        pnl = sum((100 if p["won"] else 0) - p["price_cents"] - _fee_cents(p["price_cents"])
+                  for p in picks)
         return (round(100 * pnl / stake, 1) if stake else None), len(picks)
 
-    # ROI as if 1 contract bet per pick at the recorded Kalshi price.
+    # ROI as if 1 contract bet per pick at the recorded entry price, fees in.
     priced = [p for p in graded if p["price_cents"]]
     roi_pct, _ = roi(priced)
-    # Edge-filtered ROI: only bets where the model had >=3c edge over the price
-    # (the bets you'd actually place). This is the real test of the model.
-    EDGE = 3.0
+    # Edge-filtered ROI: only bets where the model had >=EDGE cents over the
+    # price (the bets you'd actually place). This is the real test of the model.
     edged = [p for p in priced if p["prob"] is not None
-             and (p["prob"] * 100 - p["price_cents"]) >= EDGE]
+             and (p["prob"] * 100 - p["price_cents"]) >= edge_threshold]
     roi_edge_pct, edge_bets = roi(edged)
 
     # Closing-line value: did the market move toward our side after we picked?
     # Positive CLV (we beat the close) is the strongest early sign of real edge.
+    # Only meaningful because close_price stops updating the moment a game goes
+    # live -- an in-game "close" measures the score, not the model.
     clv = [p["close_price"] - p["price_cents"] for p in graded
            if p.get("close_price") is not None and p["price_cents"] is not None]
     clv_avg = round(sum(clv) / len(clv), 2) if clv else None
@@ -293,9 +355,10 @@ def mlb_record():
                          "n": len(b),
                          "predicted": round(100 * sum(_raw(p) for p in b) / len(b), 1),
                          "actual": round(100 * sum(1 for p in b if p["won"]) / len(b), 1)})
-    # Total-runs accuracy: predicted vs actual, aggregated (a single game is
-    # noise; over many it shows whether the run model is calibrated/biased).
-    tot = [p for p in graded if p.get("pred_total") is not None and p.get("actual_total") is not None]
+    # Totals accuracy: predicted vs actual, aggregated (a single game is noise;
+    # over many it shows whether the scoring model is calibrated/biased).
+    tot = [p for p in (totals_rows if totals_rows is not None else graded)
+           if p.get("pred_total") is not None and p.get("actual_total") is not None]
     if tot:
         tot_pred = sum(p["pred_total"] for p in tot) / len(tot)
         tot_act = sum(p["actual_total"] for p in tot) / len(tot)
@@ -305,6 +368,35 @@ def mlb_record():
                       "mean_abs_error": round(tot_mae, 2)}
     else:
         totals_acc = None
+    return {
+        "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
+        "accuracy_pct": round(100 * wins / n, 1) if n else None,
+        "roi_pct": roi_pct, "roi_bets": len(priced), "fees_included": True,
+        "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets,
+        "edge_threshold": edge_threshold,
+        "clv_avg": clv_avg, "clv_positive_pct": clv_pos_pct, "clv_n": len(clv),
+        "totals_accuracy": totals_acc,
+        "brier": brier, "brier_baseline": 0.25, "calibration": bins,
+    }
+
+
+def mlb_record():
+    with _lock, _conn() as c:
+        graded = [dict(r) for r in c.execute(
+            "SELECT * FROM mlb_picks WHERE graded=1").fetchall()]
+        pending = c.execute("SELECT COUNT(*) n FROM mlb_picks WHERE graded=0").fetchone()["n"]
+    # The totals-bias read is per model GENERATION: a retired run model's totals
+    # tell you about a bias that was already fixed. Once the current version has
+    # a real sample, legacy rows drop out of that stat (W-L/ROI keep them --
+    # a graded bet is a graded bet, whatever model placed it).
+    cur = [p for p in graded if (p.get("model_version") or 0) == MODEL_VERSION
+           and p.get("pred_total") is not None and p.get("actual_total") is not None]
+    out = _pick_stats(graded, pending,
+                      totals_rows=(cur if len(cur) >= 30 else None))
+    if out["totals_accuracy"] is not None:
+        out["totals_accuracy"]["mixed_versions"] = len(cur) < 30
+    out["clv_note"] = "pre-game closes only (restarted 8/24 - earlier closes mixed in-game prices)"
+
     # Model split: grade the two blend components (and the blend) separately on
     # home-perspective probabilities, so the deep engine earns its weight on
     # evidence rather than assumption.
@@ -320,24 +412,74 @@ def mlb_record():
         if p.get("home_won") is not None and p.get("prob") is not None:
             ph = p["prob"] if p.get("pick_side") == "home" else 1 - p["prob"]
             blended.append({"p": ph, "home_won": p["home_won"]})
-    model_split = {"factor": _mstats(graded, "p_home_model"),
-                   "deep": _mstats(graded, "p_home_deep"),
-                   "blend": _mstats(blended, "p")}
+    out["model_split"] = {"factor": _mstats(graded, "p_home_model"),
+                          "deep": _mstats(graded, "p_home_deep"),
+                          "blend": _mstats(blended, "p")}
     try:
         import calibrate
-        cal_temps = calibrate.temps()
+        out["calibration_temps"] = calibrate.temps()
     except Exception:
-        cal_temps = None
-    return {
-        "graded": n, "pending": pending, "wins": wins, "losses": n - wins,
-        "model_split": model_split, "calibration_temps": cal_temps,
-        "accuracy_pct": round(100 * wins / n, 1) if n else None,
-        "roi_pct": roi_pct, "roi_bets": len(priced),
-        "roi_edge_pct": roi_edge_pct, "edge_bets": edge_bets, "edge_threshold": EDGE,
-        "clv_avg": clv_avg, "clv_positive_pct": clv_pos_pct, "clv_n": len(clv),
-        "totals_accuracy": totals_acc,
-        "brier": brier, "brier_baseline": 0.25, "calibration": bins,
-    }
+        out["calibration_temps"] = None
+    return out
+
+
+# ---- NFL model track record (the MLB ledger, ported) -----------------------
+def record_nfl_pick(game_id, date, week, preseason, pick_side, pick_name,
+                    prob, price_cents, pred_total=None, prob_raw=None):
+    """First pre-game sight of a game wins: entry price and probability are
+    frozen here, exactly like record_mlb_pick."""
+    with _lock, _conn() as c:
+        c.execute(
+            """INSERT OR IGNORE INTO nfl_picks
+               (game_id, date, week, preseason, pick_side, pick_name,
+                prob, prob_raw, price_cents, close_price, pred_total)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+            (game_id, date, week, 1 if preseason else 0, pick_side, pick_name,
+             prob, prob_raw if prob_raw is not None else prob,
+             price_cents, price_cents, pred_total))
+
+
+def update_nfl_close(game_id, price_cents, pick_side):
+    """Same contract as update_mlb_close: pre-game only (the caller gates on
+    state) and same-side only, so a flipped pick freezes at its last honest
+    close instead of adopting the other team's price."""
+    if price_cents is None or pick_side is None:
+        return
+    with _lock, _conn() as c:
+        c.execute("UPDATE nfl_picks SET close_price=? "
+                  "WHERE game_id=? AND graded=0 AND pick_side=?",
+                  (price_cents, game_id, pick_side))
+
+
+def ungraded_nfl_picks():
+    with _lock, _conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM nfl_picks WHERE graded=0").fetchall()]
+
+
+def set_nfl_grade(game_id, won, winner_name, actual_total=None, home_won=None):
+    with _lock, _conn() as c:
+        c.execute("UPDATE nfl_picks SET graded=1, won=?, winner_name=?, "
+                  "actual_total=?, home_won=? WHERE game_id=?",
+                  (won, winner_name, actual_total, home_won, game_id))
+
+
+def nfl_record():
+    """Regular season and preseason as SEPARATE scoreboards -- they are
+    different distributions (see nfl_game_sim's predlog split) and averaging
+    them reports a record no single model earned."""
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            "SELECT * FROM nfl_picks WHERE graded=1").fetchall()]
+        pend = {r["k"]: r["n"] for r in c.execute(
+            "SELECT COALESCE(preseason,0) k, COUNT(*) n FROM nfl_picks "
+            "WHERE graded=0 GROUP BY COALESCE(preseason,0)")}
+    reg = [r for r in rows if not r.get("preseason")]
+    pre = [r for r in rows if r.get("preseason")]
+    out = {"regular": _pick_stats(reg, pend.get(0, 0)),
+           "preseason": _pick_stats(pre, pend.get(1, 0))}
+    out["regular"]["clv_note"] = "pre-game closes only"
+    return out
 
 
 # ---- Player-prop log (model vs Kalshi vs recent form, graded) -------------
@@ -353,32 +495,38 @@ MODEL_VERSION = 2
 
 
 def log_prop(game_pk, date, player_id, name, stat, line, market,
-             model_pct, kalshi_cents, recent_pct, season_pct):
-    """Record (or refresh, while still ungraded) one batter prop observation."""
+             model_pct, kalshi_cents, recent_pct, season_pct, kalshi_bid_cents=None):
+    """Record (or refresh, while still ungraded) one batter prop observation.
+    The CALLER gates on game state: only pre-game reads may land here, or the
+    'closing' read is really the score talking (the leak behind the old +47%)."""
     now = int(time.time())
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO prop_log
                (ts, game_pk, date, player_id, name, stat, line, market,
                 model_pct, kalshi_cents, recent_pct, season_pct,
-                entry_cents, entry_model_pct, entry_ts, model_version)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                entry_cents, entry_model_pct, entry_ts, model_version,
+                kalshi_bid_cents, entry_bid_cents)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (now, game_pk, date, player_id, name, stat, line, market,
              model_pct, kalshi_cents, recent_pct, season_pct,
-             kalshi_cents, model_pct, now, MODEL_VERSION),
+             kalshi_cents, model_pct, now, MODEL_VERSION,
+             kalshi_bid_cents, kalshi_bid_cents),
         )
         # Keep the latest pre-game read (price/model/form drift) until it grades —
         # that becomes the CLOSING read. The entry_* snapshot is frozen at first
         # sight (backfilled once if the market had no quote when first logged).
         c.execute(
             """UPDATE prop_log SET kalshi_cents=?, model_pct=?, recent_pct=?, season_pct=?,
-                   model_version=?,
+                   model_version=?, kalshi_bid_cents=?,
                    entry_model_pct=COALESCE(entry_model_pct, ?),
                    entry_ts=CASE WHEN entry_cents IS NULL THEN ? ELSE entry_ts END,
-                   entry_cents=COALESCE(entry_cents, ?)
+                   entry_cents=COALESCE(entry_cents, ?),
+                   entry_bid_cents=COALESCE(entry_bid_cents, ?)
                WHERE game_pk=? AND player_id=? AND market=? AND graded=0""",
             (kalshi_cents, model_pct, recent_pct, season_pct, MODEL_VERSION,
-             model_pct, now, kalshi_cents, game_pk, player_id, market),
+             kalshi_bid_cents, model_pct, now, kalshi_cents, kalshi_bid_cents,
+             game_pk, player_id, market),
         )
 
 
@@ -411,16 +559,30 @@ def prop_report(min_edge=8.0):
         pending = c.execute("SELECT COUNT(*) n FROM prop_log WHERE graded=0").fetchone()["n"]
     n = len(rows)
 
-    def brier(key):
-        b = [r for r in rows if r.get(key) is not None]
+    # EVERY price-anchored stat here runs at ENTRY (the first pre-game sight of
+    # each prop): that is the moment a bettor could actually act, it is the same
+    # moment for model and market (a fair race), and -- decisively -- it is the
+    # one read that history logged cleanly. The rolling kalshi_cents/model_pct
+    # were refreshed while games were LIVE until the recorder was gated, so a
+    # "closing" read from that era is the box score leaking in, not a price.
+    def _entry_model(r):
+        v = r.get("entry_model_pct")
+        return v if v is not None else r.get("model_pct")
+
+    def _entry_price(r):
+        v = r.get("entry_cents")
+        return v if v is not None else r.get("kalshi_cents")
+
+    def brier(get):
+        b = [(get(r), r["actual"]) for r in rows if get(r) is not None]
         if not b:
             return None, 0
-        return round(sum(((r[key] / 100.0) - r["actual"]) ** 2 for r in b) / len(b), 4), len(b)
+        return round(sum(((v / 100.0) - a) ** 2 for v, a in b) / len(b), 4), len(b)
 
-    model_brier, model_n = brier("model_pct")
-    recent_brier, recent_n = brier("recent_pct")
-    # Kalshi's own price as a forecast (the line to beat).
-    market_brier, market_n = brier("kalshi_cents")
+    model_brier, model_n = brier(_entry_model)
+    recent_brier, recent_n = brier(lambda r: r.get("recent_pct"))
+    # Kalshi's own price as a forecast (the line to beat), at the same moment.
+    market_brier, market_n = brier(_entry_price)
 
     # Model calibration: predicted vs actual hit-rate by probability bucket.
     bp = [r for r in rows if r["model_pct"] is not None]
@@ -432,14 +594,15 @@ def prop_report(min_edge=8.0):
                          "predicted": round(sum(r["model_pct"] for r in b) / len(b), 1),
                          "actual": round(100 * sum(r["actual"] for r in b) / len(b), 1)})
 
-    # ROI of following an edge signal: one contract per logged market with a price,
-    # filled at the recorded Kalshi price, settled by the real box score. The NO
-    # cost is approximated as 100-yes (we only store the YES ask).
+    # ROI of following an edge signal: one contract per flagged market, filled
+    # at the ENTRY quote, taker fee included, settled by the real box score.
+    # YES fills at the ask. NO fills at 100 - the YES BID, and only on rows
+    # that recorded one: the old 100-ask approximation handed every fade the
+    # whole spread for free, and in books this thin that mirage was most of
+    # the reported ROI.
     def roi_for(signal):
         bets = []
         for r in rows:
-            if r["kalshi_cents"] is None:
-                continue
             side, cost = signal(r)
             if side is None or not cost or cost <= 0 or cost >= 100:
                 continue
@@ -448,22 +611,24 @@ def prop_report(min_edge=8.0):
         if not bets:
             return None
         staked = sum(c for c, _ in bets)
-        pnl = sum((100 if w else 0) - c for c, w in bets)
+        pnl = sum((100 if w else 0) - c - _fee_cents(c) for c, w in bets)
         wins = sum(1 for _, w in bets if w)
         return {"bets": len(bets), "win_pct": round(100 * wins / len(bets), 1),
                 "roi_pct": round(100 * pnl / staked, 1) if staked else None,
-                "pnl_per_contract_c": round(pnl / len(bets), 1)}
+                "pnl_per_contract_c": round(pnl / len(bets), 1),
+                "fees_included": True}
 
-    def edge_sig(key):
+    def edge_sig(get):
         def sig(r):
-            if r.get(key) is None:
+            v = get(r)
+            yc = _entry_price(r)
+            if v is None or yc is None:
                 return None, None
-            yc = r["kalshi_cents"]
-            ey = r[key] - yc                 # edge on YES
-            if ey >= min_edge:
+            if v - yc >= min_edge:           # our number clears the ask
                 return "YES", yc
-            if -ey >= min_edge:              # the model/form is well below the price -> fade
-                return "NO", 100 - yc
+            bid = r.get("entry_bid_cents")
+            if bid is not None and bid - v >= min_edge:   # the BID clears our number
+                return "NO", 100 - bid
             return None, None
         return sig
 
@@ -473,8 +638,9 @@ def prop_report(min_edge=8.0):
         "model_brier": model_brier, "recent_brier": recent_brier,
         "market_brier": market_brier, "brier_n": model_n,
         "calibration": bins,
-        "model_edge_roi": roi_for(edge_sig("model_pct")),
-        "recent_edge_roi": roi_for(edge_sig("recent_pct")),
+        "model_edge_roi": roi_for(edge_sig(_entry_model)),
+        "recent_edge_roi": roi_for(edge_sig(lambda r: r.get("recent_pct"))),
+        "basis": "entry",
         "clv": clv_report(min_edge),
     }
 
@@ -485,12 +651,17 @@ def clv_report(min_edge=8.0):
     consistently is the gold-standard proof of edge — it isolates model skill
     from short-run win/loss variance. Buying YES: CLV = close − entry (the
     market came up to us). Fading (NO): CLV = entry − close."""
+    # ts >= the recorder-gate fix (2026-08-24 UTC): before it, the "close" was
+    # refreshed while games were live, so rows whose last read predates the fix
+    # would replay the same score-leak CLV the MLB ledger had to reset.
+    _CLV_CLEAN_TS = 1787529600
     with _lock, _conn() as c:
         rows = [dict(r) for r in c.execute(
             """SELECT market, entry_cents, entry_model_pct, kalshi_cents, actual, entry_ts, ts
                FROM prop_log WHERE graded=1
                  AND entry_cents IS NOT NULL AND kalshi_cents IS NOT NULL
-                 AND entry_model_pct IS NOT NULL""").fetchall()]
+                 AND entry_model_pct IS NOT NULL AND ts >= ?""",
+            (_CLV_CLEAN_TS,)).fetchall()]
     picks = []
     for r in rows:
         ey = r["entry_model_pct"] - r["entry_cents"]     # entry-time edge on YES

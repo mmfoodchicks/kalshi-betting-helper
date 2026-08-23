@@ -45,8 +45,14 @@ def _kalshi_prop_prices():
             yc = kalshi._cents(m.get("yes_ask_dollars"))
             if yc is None or yc <= 1 or yc >= 99:    # no real two-sided market yet
                 continue
+            # The bid rides along so a NO "fill" can be priced at what selling
+            # YES actually pays (100 - bid), not at 100 - ask, which pockets
+            # the whole spread. None when the book has no resting YES buyer.
+            bid = kalshi._cents(m.get("yes_bid_dollars"))
+            if bid is not None and bid <= 0:
+                bid = None
             out.append({"nm": value._norm(raw_name), "name": raw_name,
-                        "stat": stat, "line": line, "yes": yc})
+                        "stat": stat, "line": line, "yes": yc, "bid": bid})
     return out
 
 
@@ -70,7 +76,13 @@ def record_once():
         return 0
     pid_by_name, pk_by_name = {}, {}
     for g in schedule:
-        if (g.get("live") or {}).get("is_final"):
+        lv = g.get("live") or {}
+        # PRE-GAME ONLY. This used to skip just finals, so a game in progress
+        # kept refreshing its props' "closing" price and model every ten
+        # minutes -- and a price read in the 7th inning is the box score
+        # talking, not a market opinion. Every price-anchored stat downstream
+        # (market Brier, edge ROI, CLV) inherited the leak.
+        if lv.get("is_final") or lv.get("is_live"):
             continue
         lu = baseball._boxscore_lineup(g["game_pk"]) or {}
         for side in ("home", "away"):
@@ -116,6 +128,7 @@ def record_once():
             mpct, m["yes"],
             round(rate * 100, 1) if rate is not None else None,
             round(srate * 100, 1) if srate is not None else None,
+            kalshi_bid_cents=m.get("bid"),
         )
         n += 1
     return n

@@ -7656,6 +7656,136 @@ ck("the pro schedule fetches ask ESPN for the regular season EXPLICITLY",
 
 print()
 print("=" * 72)
+print("The track-record audit: honest scoreboards (MLB) + the NFL port")
+print("=" * 72)
+# Deep audit of the two scoreboards found five leaks, all variations on one
+# mistake: letting IN-GAME information touch numbers that claim to be
+# pre-game. CLV compared entry to a "close" refreshed during play (+14.8c of
+# pure hindsight), props kept re-pricing while games ran, NO fills pocketed
+# the whole spread (100-ask instead of 100-bid), ROI ignored taker fees, and
+# the totals-bias stat averaged a retired model's predictions. The NFL port
+# reuses the FIXED shared core, so it cannot re-learn the old mistakes.
+import importlib as _il26
+import tempfile as _tmp26
+import store as _st26
+import nfl_track as _nt26
+
+ck("Kalshi taker fees: ceil(7·P·(1-P)) cents",
+   _st26._fee_cents(50) == 2 and _st26._fee_cents(3) == 1
+   and _st26._fee_cents(97) == 1,
+   "~2c at even money; an ROI that skips it flatters every bet")
+
+_olddb26 = _st26.DB_PATH
+try:
+    _st26.DB_PATH = _os.path.join(_tmp26.mkdtemp(), "guard26.db")
+    _st26.init_db()
+    _st26.init_db()          # migrations must be idempotent across boots
+
+    _st26.record_mlb_pick(1, "2026-08-24", "home", "LAA", 0.61, 55.0,
+                          pred_total=9.1, prob_raw=0.66)
+    _st26.update_mlb_close(1, 60.0, pick_side="home")
+    _st26.update_mlb_close(1, 40.0, pick_side="away")
+    _r26 = _st26.ungraded_mlb_picks()[0]
+    ck("a flipped pick can never adopt the other team's close",
+       _r26["close_price"] == 60.0,
+       "the close update matches on pick_side; the recorded side is "
+       "first-write-wins but the board's pick can cross 50% between builds")
+    ck("MLB picks stamp the run-model generation",
+       _r26["model_version"] == _st26.MODEL_VERSION,
+       "a retired model's totals must age out of the bias stat")
+    _st26.set_mlb_grade(1, 1, "LAA", actual_total=8, home_won=1)
+    _rec26 = _st26.mlb_record()
+    ck("MLB ROI is fee-inclusive and says so",
+       _rec26["fees_included"] and _rec26["roi_pct"] == 78.2
+       and bool(_rec26["clv_note"]),
+       "win at 55c = 100-55-2(fee) = 43c on 55 staked = +78.2%")
+
+    _st26.record_nfl_pick("2026-09-13_KC@BUF", "2026-09-13", 1, False,
+                          "home", "BUF", 0.58, 57.0, pred_total=47.5,
+                          prob_raw=0.62)
+    _st26.update_nfl_close("2026-09-13_KC@BUF", 61.0, "home")
+    _st26.update_nfl_close("2026-09-13_KC@BUF", 39.0, "away")
+    _fin26 = {("BUF", "KC"): (27.0, 20.0), ("WAS", "DAL"): (10.0, 10.0)}
+    _g26 = _nt26._grade_rows(_st26.ungraded_nfl_picks(), _fin26)
+    ck("NFL grading: winner, total, home_won from the scoreboard",
+       _g26 == [("2026-09-13_KC@BUF", 1, "BUF", 47.0, 1)], _g26)
+    for _gid26, _w26, _wn26, _t26, _hw26 in _g26:
+        _st26.set_nfl_grade(_gid26, _w26, _wn26, actual_total=_t26,
+                            home_won=_hw26)
+    _st26.record_nfl_pick("2026-09-13_DAL@WAS", "2026-09-13", 1, False,
+                          "away", "DAL", 0.52, 50.0)
+    ck("a TIE grades as a loss for either side (how the market settles)",
+       _nt26._grade_rows(_st26.ungraded_nfl_picks(), _fin26)
+       == [("2026-09-13_DAL@WAS", 0, "TIE", 20.0, None)])
+    ck("ESPN/board abbreviation aliases are canonicalized both ways",
+       _nt26.canon("WSH") == "WAS" and _nt26.canon("jac") == "JAX")
+    _nr26 = _st26.nfl_record()
+    ck("the NFL scoreboard reuses the shared core, preseason separate",
+       _nr26["regular"]["wins"] == 1 and _nr26["regular"]["clv_avg"] == 4.0
+       and _nr26["regular"]["fees_included"]
+       and _nr26["preseason"]["graded"] == 0,
+       "exhibitions are a different distribution (see the predlog split)")
+
+    _st26.log_prop(2, "2026-08-24", 100, "A B", "hits", 1, "hit1",
+                   40.0, 20.0, 35.0, 30.0, kalshi_bid_cents=15.0)
+    _st26.log_prop(2, "2026-08-24", 100, "A B", "hits", 1, "hit1",
+                   45.0, 30.0, 35.0, 30.0, kalshi_bid_cents=22.0)
+    _p26 = _st26.ungraded_props()[0]
+    ck("prop entry ask+bid freeze at first sight; the rolling read moves",
+       _p26["entry_cents"] == 20.0 and _p26["kalshi_cents"] == 30.0
+       and _p26["entry_bid_cents"] == 15.0 and _p26["kalshi_bid_cents"] == 22.0)
+    _st26.grade_prop(_p26["id"], 1)
+    _st26.log_prop(3, "2026-08-24", 101, "C D", "hits", 1, "hit1",
+                   10.0, 40.0, 12.0, 11.0)          # fade candidate, NO bid
+    _p26b = [x for x in _st26.ungraded_props() if x["game_pk"] == 3][0]
+    _st26.grade_prop(_p26b["id"], 0)
+    _rep26 = _st26.prop_report(min_edge=8.0)
+    _m26 = _rep26["model_edge_roi"]
+    ck("prop ROI: entry basis, fees in, and NO needs a real bid",
+       _rep26["basis"] == "entry" and _m26 and _m26["bets"] == 1
+       and _m26["fees_included"] and _m26["pnl_per_contract_c"] == 78.0,
+       "the old 100-ask fade pocketed the whole spread in books this thin -- "
+       "that mirage was most of a +47% 'ROI'")
+    ck("market Brier is scored at the same moment as the model's",
+       _rep26["market_brier"] == 0.4,
+       "(0.20-1)^2 and (0.40-0)^2 over 2 rows; a fair race needs one clock")
+finally:
+    _st26.DB_PATH = _olddb26
+
+# The gates that keep the ledger pre-game, at their source seams.
+_apy26 = open(_os.path.join(_root, "app.py")).read()
+ck("MLB picks record on Preview only, close updates same-side",
+   'in (None, "", "Preview")' in _apy26
+   and "pick_side=side" in _apy26,
+   "'not Final' also let LIVE games through: a first-seen-live game logged "
+   "an in-game entry, and every poll refreshed close_price with the score")
+_mrec26 = open(_os.path.join(_root, "mlb_recorder.py")).read()
+ck("the prop recorder logs pre-game only and carries the bid",
+   "is_live" in _mrec26 and "yes_bid_dollars" in _mrec26
+   and "kalshi_bid_cents=m.get(\"bid\")" in _mrec26)
+_stsrc26 = open(_os.path.join(_root, "store.py")).read()
+ck("the contaminated MLB closes were reset, dated, idempotently",
+   "close_price=NULL" in _stsrc26 and "2026-08-23" in _stsrc26)
+ck("prop CLV starts from the clean era",
+   "_CLV_CLEAN_TS" in _stsrc26)
+ck("the NFL slate records picks and /api/nfl/record grades them",
+   "nfl_track.record_from_board(data)" in _apy26
+   and '"/api/nfl/record"' in _apy26)
+_ntsrc26 = _insp.getsource(_nt26.record_from_board)
+ck("the NFL recorder is gated pre-game like everything else",
+   '!= "pre"' in _ntsrc26 and "continue" in _ntsrc26)
+_js26 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("one shared renderer serves both scoreboards, fees labelled",
+   "function pickRecordHtml" in _js26 and "loadNflRecord" in _js26
+   and "after fees" in _js26
+   and 'pickRecordHtml(r, "runs")' in _js26
+   and 'pickRecordHtml(reg, "points")' in _js26)
+ck("the NFL tab has its record box",
+   'id="nflRecord"' in open(_os.path.join(_root, "templates",
+                                          "index.html")).read())
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

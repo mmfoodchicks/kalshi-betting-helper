@@ -1985,19 +1985,27 @@ def api_baseball_today():
         games = baseball.analyze_slate(date, season)
     except Exception as e:
         return jsonify({"error": f"baseball data failed: {e}"}), 502
-    # Record the model's pre-game picks (only for games not yet final) so we can
-    # grade the model's real track record later.
+    # Record the model's PRE-GAME picks so we can grade the real track record.
+    # Preview only -- "not Final" also let games in progress through, and a
+    # live game poisons the ledger twice over: a first-seen-live game records
+    # an in-game price as its "entry", and every board poll during play
+    # refreshed close_price with the score's opinion, which turned the CLV
+    # stat into a mirror of the win rate (+14.8c of pure hindsight).
     for gm in games:
-        if (gm.get("live") or {}).get("state") != "Final":
-            store.record_mlb_pick(gm["game_pk"], date,
-                                  "home" if gm["pick_is_home"] else "away",
+        if (gm.get("live") or {}).get("state") in (None, "", "Preview"):
+            side = "home" if gm["pick_is_home"] else "away"
+            store.record_mlb_pick(gm["game_pk"], date, side,
                                   gm["pick"], gm["pick_prob"], gm.get("pick_price_cents"),
                                   pred_total=gm.get("exp_total"),
                                   p_home_model=gm.get("p_home_model"),
                                   p_home_deep=gm.get("p_home_deep"),
                                   prob_raw=gm.get("pick_prob_raw"))
-            # Track the latest pre-game price of our side for closing-line value.
-            store.update_mlb_close(gm["game_pk"], gm.get("pick_price_cents"))
+            # Track the latest pre-game price of our side for closing-line
+            # value -- same-side only, so a pick that flips across 50% between
+            # builds freezes at its last honest close instead of adopting the
+            # other team's price.
+            store.update_mlb_close(gm["game_pk"], gm.get("pick_price_cents"),
+                                   pick_side=side)
     # The auto-built suggestion slips (safest / best value / mixed / live) are no
     # longer produced on every slate load: they cost ~26 MB and seconds of work
     # per request whether or not anyone looked at them, on an instance with no
@@ -2698,7 +2706,25 @@ def api_nfl_slate():
     if data.get("empty"):
         return jsonify({"error": data.get("note") or "No games for this week.",
                         "week": week, "preseason": bool(pre), "games": []})
+    # Record pre-game picks + same-side closes for the NFL track record --
+    # exactly the MLB flow, with the same pre-game-only gate.
+    try:
+        import nfl_track
+        nfl_track.record_from_board(data)
+    except Exception as _e:
+        errlog.note("APP-nfl-slate-record", _e)
     return jsonify(data)
+
+
+@app.route("/api/nfl/record")
+def api_nfl_record():
+    """The NFL model's graded track record (regular + preseason buckets)."""
+    try:
+        import nfl_track
+        nfl_track.grade_due()
+    except Exception as _e:
+        errlog.note("APP-api_nfl_record", _e)
+    return jsonify(store.nfl_record())
 
 
 def _nfl_pre_flag(payload):

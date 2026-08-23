@@ -3299,6 +3299,7 @@ async function loadNFLWeek(attempt) {
     }
     _nflWeekData = d;
     renderNFLWeek();
+    loadNflRecord();          // the graded track record rides under the board
   } catch (e) {
     if (attempt < 9) { setTimeout(() => loadNFLWeek(attempt + 1), 6000); return; }
     box.innerHTML = `<div class="empty">NFL week board unavailable.</div>`;
@@ -5954,26 +5955,8 @@ async function loadBaseballRecord() {
       el.innerHTML = r.pending ? `<span>Model track record: ${r.pending} picks awaiting results…</span>` : "";
       return;
     }
-    const pct = (v) => (v >= 0 ? "+" : "") + v + "%";
-    const briefBrier = r.brier != null
-      ? ` · Brier <b style="color:${r.brier < 0.25 ? "#3ad17a" : "#e0566a"}">${r.brier}</b><span style="color:var(--muted)">/${r.brier_baseline}</span>` : "";
-    // Headline: W-L is noisy at small n; the lines below are what actually matter.
-    let html = `Model record: <b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)` +
-      (r.roi_pct != null ? ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_pct)}</b>` : "") +
-      briefBrier + (r.pending ? ` · ${r.pending} pending` : "");
-    // The real tests: edge-filtered ROI (bets you'd actually place) + CLV.
+    let html = pickRecordHtml(r, "runs");
     const extra = [];
-    if (r.roi_edge_pct != null)
-      extra.push(`Edge bets (≥${r.edge_threshold}¢): <b class="${r.roi_edge_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_edge_pct)}</b> ROI <span style="color:var(--muted)">(${r.edge_bets})</span>`);
-    if (r.clv_avg != null)
-      extra.push(`CLV <b class="${r.clv_avg >= 0 ? "ev pos" : "ev neg"}">${r.clv_avg >= 0 ? "+" : ""}${r.clv_avg}¢</b> <span style="color:var(--muted)">(${r.clv_positive_pct}% beat close, ${r.clv_n})</span>`);
-    if (r.totals_accuracy) {
-      const t = r.totals_accuracy;
-      extra.push(`Sim totals: predicted <b>${t.predicted_avg}</b> vs actual <b>${t.actual_avg}</b> (off by <b>${t.mean_abs_error}</b> runs avg, bias ${t.bias >= 0 ? "+" : ""}${t.bias}, ${t.n} games)`);
-    }
-    if (r.calibration && r.calibration.length)
-      extra.push("Calibration " + r.calibration.map((b) =>
-        `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · "));
     // Blend components graded separately: does the deep engine earn its weight?
     const ms = r.model_split;
     if (ms && (ms.factor || ms.deep)) {
@@ -5991,9 +5974,65 @@ async function loadBaseballRecord() {
     }
     if (extra.length)
       html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
-    if (r.graded < 50)
-      html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ Only ${r.graded} graded - too few to judge; W-L is mostly noise until ~100+. Watch Brier (&lt;0.25 = real signal) and CLV.</div>`;
     el.innerHTML = html;
+  } catch (e) { /* ignore */ }
+}
+
+// Shared scoreboard renderer for a graded pick ledger (MLB + NFL): headline
+// W-L / fee-inclusive ROI / Brier / pending, then edge ROI, CLV (pre-game
+// closes), sim totals in the sport's unit, calibration buckets, small-n note.
+function pickRecordHtml(r, unitWord) {
+  const pct = (v) => (v >= 0 ? "+" : "") + v + "%";
+  const briefBrier = r.brier != null
+    ? ` · Brier <b style="color:${r.brier < 0.25 ? "#3ad17a" : "#e0566a"}">${r.brier}</b><span style="color:var(--muted)">/${r.brier_baseline}</span>` : "";
+  // Headline: W-L is noisy at small n; the lines below are what actually matter.
+  let html = `Model record: <b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)` +
+    (r.roi_pct != null ? ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_pct)}</b>${r.fees_included ? `<span style="color:var(--muted)"> after fees</span>` : ""}` : "") +
+    briefBrier + (r.pending ? ` · ${r.pending} pending` : "");
+  // The real tests: edge-filtered ROI (bets you'd actually place) + CLV.
+  const extra = [];
+  if (r.roi_edge_pct != null)
+    extra.push(`Edge bets (≥${r.edge_threshold}¢): <b class="${r.roi_edge_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_edge_pct)}</b> ROI <span style="color:var(--muted)">(${r.edge_bets})</span>`);
+  if (r.clv_avg != null)
+    extra.push(`CLV <b class="${r.clv_avg >= 0 ? "ev pos" : "ev neg"}">${r.clv_avg >= 0 ? "+" : ""}${r.clv_avg}¢</b> <span style="color:var(--muted)">(${r.clv_positive_pct}% beat close, ${r.clv_n}${r.clv_note ? `; ${r.clv_note}` : ""})</span>`);
+  else if (r.clv_note)
+    extra.push(`CLV <span style="color:var(--muted)">accruing - ${r.clv_note}</span>`);
+  if (r.totals_accuracy) {
+    const t = r.totals_accuracy;
+    extra.push(`Sim totals: predicted <b>${t.predicted_avg}</b> vs actual <b>${t.actual_avg}</b> (off by <b>${t.mean_abs_error}</b> ${unitWord} avg, bias ${t.bias >= 0 ? "+" : ""}${t.bias}, ${t.n} games${t.mixed_versions ? "; mixes model versions until the current one has 30+" : ""})`);
+  }
+  if (r.calibration && r.calibration.length)
+    extra.push("Calibration " + r.calibration.map((b) =>
+      `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · "));
+  if (extra.length)
+    html += `<div class="small" style="margin-top:3px">${extra.join(" &nbsp;·&nbsp; ")}</div>`;
+  if (r.graded < 50)
+    html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ Only ${r.graded} graded - too few to judge; W-L is mostly noise until ~100+. Watch Brier (&lt;0.25 = real signal) and CLV.</div>`;
+  return html;
+}
+
+// ---- NFL model track record (the MLB scoreboard, ported) -------------------
+async function loadNflRecord() {
+  if (!isOwner()) return;   // model track record is owner-only data
+  const el = $("nflRecord");
+  if (!el) return;
+  try {
+    const d = await (await fetch("/api/nfl/record")).json();
+    const reg = d.regular || {}, pre = d.preseason || {};
+    let html = "";
+    if (reg.graded) html += pickRecordHtml(reg, "points");
+    else if (reg.pending) html += `<span>Model track record: ${reg.pending} picks awaiting results…</span>`;
+    if (pre.graded || pre.pending) {
+      const line = pre.graded
+        ? `Preseason (separate book - different distribution): <b>${pre.wins}-${pre.losses}</b>` +
+          (pre.roi_pct != null ? ` · ROI ${pre.roi_pct >= 0 ? "+" : ""}${pre.roi_pct}% after fees` : "") +
+          (pre.brier != null ? ` · Brier ${pre.brier}` : "") +
+          (pre.pending ? ` · ${pre.pending} pending` : "")
+        : `Preseason: ${pre.pending} picks awaiting results…`;
+      html += `<div class="small" style="color:var(--muted);margin-top:4px">${line}</div>`;
+    }
+    el.innerHTML = html;
+    el.style.display = html ? "" : "none";
   } catch (e) { /* ignore */ }
 }
 
@@ -6021,8 +6060,8 @@ async function loadPropLog() {
     let html = `Graded <b>${r.graded}</b> props (${r.hit_rate_pct}% hit the line) · ${r.pending} pending`;
     html += `<div class="small" style="margin-top:4px">Brier (lower=better, 0.25=coin flip): ` +
       `model ${briercell(r.model_brier)} · recent-form ${briercell(r.recent_brier)} · Kalshi price ${briercell(r.market_brier)} <span style="color:var(--muted)">(n=${r.brier_n})</span></div>`;
-    html += `<div class="small" style="margin-top:3px">${roiline("Bet model edge ≥" + r.min_edge + "¢", r.model_edge_roi)}</div>`;
-    html += `<div class="small" style="margin-top:2px">${roiline("Bet recent-form edge ≥" + r.min_edge + "¢", r.recent_edge_roi)}</div>`;
+    html += `<div class="small" style="margin-top:3px">${roiline("Bet model edge ≥" + r.min_edge + "¢ (entry price, after fees)", r.model_edge_roi)}</div>`;
+    html += `<div class="small" style="margin-top:2px">${roiline("Bet recent-form edge ≥" + r.min_edge + "¢ (entry price, after fees)", r.recent_edge_roi)}</div>`;
     if (r.calibration && r.calibration.length)
       html += `<div class="small" style="margin-top:3px">Model calibration: ` + r.calibration.map((b) =>
         `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b> <span style="color:var(--muted)">(${b.n})</span>`).join(" · ") + `</div>`;
