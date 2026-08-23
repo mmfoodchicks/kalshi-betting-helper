@@ -7642,6 +7642,18 @@ _gwf24 = open(_os.path.join(_root, ".github", "workflows",
 ck("every ledger snapshot carries the instance memory picture",
    "/api/diag/mem" in _gwf24 and "mem-latest.json" in _gwf24)
 
+# The NFL futures board sat dark through August: ESPN's team-schedule
+# endpoint defaults to the season phase currently underway, so ?season=2026
+# answered with the four preseason games, the regular-season filter dropped
+# every one, and project() returned None right through the Aug-1 window that
+# exists precisely so preseason futures are priceable.
+_pd25 = open(_os.path.join(_root, "pro_data.py")).read()
+ck("the pro schedule fetches ask ESPN for the regular season EXPLICITLY",
+   _pd25.count("seasontype=2") >= 2,
+   "both schedule() and season_state() must pin seasontype=2 -- the "
+   "endpoint's default follows the calendar, and in preseason that is "
+   "type 1")
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

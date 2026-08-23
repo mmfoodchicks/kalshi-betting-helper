@@ -158,8 +158,14 @@ def schedule(league, season):
         tids = [t["id"] for t in teams(league)]
 
         def one(tid):
+            # seasontype=2 must be EXPLICIT: the endpoint defaults to the
+            # season phase currently underway, so through August it answers
+            # with the four preseason games and zero regular-season events --
+            # the schedule read empty, project() returned None, and the NFL
+            # futures board sat dark for exactly the window it exists for.
             try:
-                d = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}/schedule?season={season}")
+                d = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}"
+                         f"/schedule?season={season}&seasontype=2")
             except Exception:
                 return []
             games = []
@@ -211,8 +217,10 @@ def season_state(league, season):
         tids = [t["id"] for t in teams(league)]
 
         def one(tid):
+            # Same explicit seasontype=2 as schedule() above, same reason.
             try:
-                d = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}/schedule?season={season}")
+                d = _get(f"{_SITE}/{cfg['sport']}/{cfg['league']}/teams/{tid}"
+                         f"/schedule?season={season}&seasontype=2")
             except Exception:
                 return []
             out = []
