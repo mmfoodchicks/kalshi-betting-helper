@@ -3928,7 +3928,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
-                       progress_token=None):
+                       progress_token=None, sides=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -3942,6 +3942,13 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     control whether the leg count and the payout are hard requirements or just
     recommendations. `objective` ("balanced"/"safe"/"value") then orders whatever
     satisfies them, with the Kalshi price inside the search.
+
+    `sides` restricts the pool to YES legs, NO legs, or both (None). It exists
+    because the maker is a probability optimizer and a home run is a ~12% event:
+    asked for the likeliest slip it will ALWAYS answer with the fade, so
+    "three home run picks" came back as three NO legs. Wanting the longshot
+    side is a legitimate ask that no confidence target can express -- a floor
+    picks a probability, not a direction. Pair {"yes"} with a low floor.
 
     `cap_pct` turns the confidence floor into a BAND. Ask for 60-70% and a leg
     at 90% is not "safely inside the range", it is out -- so the builder walks
@@ -4017,6 +4024,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             # been banked. Falls back to the win leg alone if the feed is down.
             live_gs = _live_game_sim(g)
             if live_gs is None:
+                if sides is not None and "yes" not in sides:
+                    continue          # the thin live fallback is a YES ML only
                 if not g.get("pick_prob") or not (floor <= g["pick_prob"] <= ceil):
                     continue
                 side = team_side(g)
@@ -4043,6 +4052,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         side = team_side(g)
         cands = [c for c in gs["cands"]
                  if (types is None or c["type"] in types)
+                 and (sides is None or c.get("side", "yes") in sides)
                  and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue

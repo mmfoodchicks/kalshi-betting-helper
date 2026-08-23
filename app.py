@@ -3488,10 +3488,17 @@ def api_baseball_mixed():
     # _prop_types() reads it -- called from in there it raises "Working outside
     # of request context" and the build dies instantly instead of running.
     prop_types = _prop_types()
+    # YES-only / NO-only. A confidence target picks a PROBABILITY, not a
+    # direction, so it cannot express "I want the home runs to happen": a home
+    # run is a ~12% event, and a maker asked for the likeliest slip will always
+    # answer with three fades. This is the control that says which side.
+    sides_pref = (request.args.get("sides") or "both").lower()
+    sides = ({"yes"} if sides_pref == "yes"
+             else {"no"} if sides_pref == "no" else None)
 
     def _build(target_pct, _mb=False, _opt=False):
         return baseball.build_mixed_parlay(
-            games, n_legs=legs, target_pct=target_pct,
+            games, n_legs=legs, target_pct=target_pct, sides=sides,
             cap_pct=None if (_mb or _opt) else cap,
             target_payout=0 if _mb else payout, n_sims=sims,
             max_legs_per_game=max_total if same_game else 1,
@@ -3544,6 +3551,13 @@ def api_baseball_mixed():
             if pre and not any(g.get("pick_price_cents") for g in pre):
                 return {"parlay": None, "hint": "kalshi_unpriced",
                         "n_pregame": len(pre)}
+            # A one-sided pool and a confidence floor fight each other: YES legs
+            # for rare events (home runs, steals) live at 5-20%, so a 55% floor
+            # empties the pool completely. Name that instead of blaming the
+            # game selection.
+            if sides is not None:
+                return {"parlay": None, "hint": "sides_empty",
+                        "sides": sides_pref, "target_pct": target}
         return {"parlay": item}
 
     # ---- run it in the BACKGROUND when the client gave us a token ----------

@@ -7470,11 +7470,17 @@ print("=" * 72)
 # One delegated listener records every keystroke into comboFormVals; both
 # makers render map-first, defaults second.
 _js21 = open(_os.path.join(_root, "static", "app.js")).read()
+# Every control the makers own must appear in the delegated listener's id
+# pattern -- named individually rather than as one frozen literal, so adding a
+# control (Sides was the fourth) cannot quietly opt it out of persistence.
+_pat21 = _re.search(r"\^\(combo\|nflCombo\)\(([A-Za-z|]+)\)\$", _js21)
+_ctl21 = set((_pat21.group(1) if _pat21 else "").split("|"))
 ck("every keystroke in either maker is recorded as typed",
-   "comboFormVals[t.id]" in _js21
-   and "(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|"
-       "PayoutMode|SameGame)" in _js21,
-   "the listener is delegated so it survives any innerHTML rebuild")
+   "comboFormVals[t.id]" in _js21 and _pat21 is not None
+   and {"Target", "Cap", "N", "Payout", "Objective", "LegsMode", "Conn",
+        "PayoutMode", "SameGame", "Sides"} <= _ctl21,
+   f"the listener is delegated so it survives any innerHTML rebuild; "
+   f"pattern covers {sorted(_ctl21)}")
 ck("both makers render what the user typed over the stale default",
    'cfv("comboPayout", parlayPayout)' in _js21
    and 'cfv("comboN", def)' in _js21
@@ -7984,6 +7990,57 @@ ck("the game grid states how many games are selectable today",
    and ".combomaker .ggwrap" in _js29,
    "refreshGameGrid must replace the WRAPPER or every click orphans the "
    "old count line and appends another")
+
+print()
+print("=" * 72)
+print("YES-only / NO-only: asking for the thing to HAPPEN")
+print("=" * 72)
+# Reported live: "3 home run picks... it keeps giving me no's". Correct
+# behaviour from a probability optimizer and useless to the user -- a home run
+# is a ~12% event, so the likeliest home-run slip is always three FADES. A
+# confidence target picks a probability, never a direction, so no existing
+# control could express the ask. `sides` is that control.
+import baseball as _bb30
+_bbsrc30 = _insp.getsource(_bb30.build_mixed_parlay)
+ck("the maker can be restricted to one side of every market",
+   "sides=None" in _bbsrc30
+   and 'sides is None or c.get("side", "yes") in sides' in _bbsrc30,
+   'legs carry side="no"; everything else is a YES by default, which is the '
+   "convention the rest of the engine already uses")
+ck("the thin live-ML fallback respects the side filter too",
+   'if sides is not None and "yes" not in sides' in _bbsrc30,
+   "it bypasses the candidate pool entirely, so it needs its own gate")
+
+# side default: a leg with no explicit tag is a YES bet, so a YES-only build
+# must keep it and a NO-only build must drop it.
+_c30 = [{"type": "HR", "marg": 0.14, "side": "yes"},
+        {"type": "HR", "marg": 0.86, "side": "no"},
+        {"type": "ML", "marg": 0.62}]
+ck("an untagged leg counts as YES, not as neither",
+   len([c for c in _c30 if c.get("side", "yes") in {"yes"}]) == 2
+   and len([c for c in _c30 if c.get("side", "yes") in {"no"}]) == 1)
+
+_apy30 = open(_os.path.join(_root, "app.py")).read()
+ck("the endpoint parses ?sides= and passes it into the build",
+   'request.args.get("sides")' in _apy30 and "sides=sides" in _apy30
+   and '"sides_empty"' in _apy30)
+
+_js30 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the control exists, persists across the auto-refresh, and is sent",
+   'sel("comboSides"' in _js30
+   and "|SameGame|Sides)$/" in _js30
+   and "`&sides=${comboSidesPref}`" in _js30,
+   "without the persistence regex it would snap back to both every 20s -- "
+   "the same bug the combo inputs had")
+ck("the confidence floor reaches the 5% the server actually honours",
+   'id="comboTarget" type="number" min="5"' in _js30,
+   "the box stopped at 20%, and a home run is 8-20% -- YES-only would have "
+   "had an empty pool by construction, which is the whole feature")
+ck("an empty one-sided pool explains itself, before and after the build",
+   "updateComboSidesHint" in _js30 and '"sides_empty"' in _js30
+   and "8-20%" in _js30,
+   "the pre-build hint fires the moment YES-only meets a high floor; the "
+   "post-build one names the floor that emptied the pool")
 
 print()
 print("=" * 72)

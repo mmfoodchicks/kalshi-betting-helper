@@ -1018,10 +1018,32 @@ const comboFormVals = {};
 for (const evName of ["input", "change"]) {
   document.addEventListener(evName, (ev) => {
     const t = ev.target;
-    if (t && t.id && /^(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|PayoutMode|SameGame)$/.test(t.id)) {
+    if (t && t.id && /^(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|PayoutMode|SameGame|Sides)$/.test(t.id)) {
       comboFormVals[t.id] = t.type === "checkbox" ? t.checked : t.value;
+      if (t.id === "comboSides" || t.id === "comboTarget") updateComboSidesHint();
     }
   });
+}
+
+// YES-only asks for a DIRECTION; the confidence floor asks for a probability,
+// and the two silently contradict each other for rare events: a home run is a
+// ~12% shot, so a 55% floor leaves the YES pool empty and the maker can only
+// answer with fades. Say so the moment the combination is set, not after a
+// two-minute build comes back with nothing.
+function updateComboSidesHint() {
+  const el = $("comboSidesHint");
+  if (!el) return;
+  const side = ($("comboSides") || {}).value || comboSidesPref;
+  const floor = parseFloat(($("comboTarget") || {}).value);
+  if (side === "yes" && floor > 25) {
+    el.innerHTML = `⚠️ <b>YES only</b> with <b>each leg ≥ ${floor}%</b>: home runs (8-20%) and steals (5-25%) never clear that, so the pool will be empty or all favorites. Drop it to about <b>5%</b> to rank the likeliest longshots.`;
+  } else if (side === "yes") {
+    el.innerHTML = `✅ YES only - every leg is something HAPPENING, ranked likeliest first within your floor.`;
+  } else if (side === "no") {
+    el.innerHTML = `🚫 NO only - every leg is a fade (the event NOT happening).`;
+  } else {
+    el.innerHTML = "";
+  }
 }
 const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
@@ -1032,6 +1054,7 @@ let comboPayoutModePref = "off";
 let comboConnPref = "or";
 // Which point on the price/probability frontier the maker returns.
 let comboObjectivePref = "balanced";
+let comboSidesPref = "both";   // "both" | "yes" | "no" -- which side of a market may be picked
 let comboSameGamePref = false;
 let comboIncludeLive = false;
 let comboGameSel = null;   // null/empty = ALL games; else {pk: true|teamName} selection
@@ -1109,6 +1132,7 @@ window.buildCombo = async (maxBet, optimal) => {
   comboPayoutModePref = ($("comboPayoutMode") || {}).value || "off";
   comboConnPref = ($("comboConn") || {}).value || "or";
   comboObjectivePref = ($("comboObjective") || {}).value || "balanced";
+  comboSidesPref = ($("comboSides") || {}).value || "both";
   const date = $("bbDate").value;
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
@@ -1125,6 +1149,7 @@ window.buildCombo = async (maxBet, optimal) => {
     let q = `legs=${n}&target=${t}&payout=${p}&same_game=${comboSameGamePref ? 1 : 0}`
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
       + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
+      + (comboSidesPref !== "both" ? `&sides=${comboSidesPref}` : "")
       + (c ? `&cap=${c}` : "")
       + (maxBet ? "&max_bet=1" : "")
       + (optimal ? "&optimal=1" : "")
@@ -1207,6 +1232,14 @@ function _renderComboResult(d, out, t, c) {
   if (!d.parlay) {
     if (d.hint === "kalshi_unpriced") {
       out.innerHTML = `<div class="small">No Kalshi prices on the slate yet - <b>${d.n_pregame}</b> game${d.n_pregame === 1 ? "" : "s"} are listed but none is quoted. The maker only builds legs you can actually place, so there is nothing to pick from. MLB lines usually post closer to first pitch; try again nearer game time.</div>`;
+      return;
+    }
+    if (d.hint === "sides_empty") {
+      const sideWord = d.sides === "yes" ? "YES" : "NO";
+      out.innerHTML = `<div class="small">No <b>${sideWord}</b> leg on the slate is at least <b>${d.target_pct}%</b> likely, so there was nothing to build from.${
+        d.sides === "yes"
+          ? ` YES legs for rare events sit low - a home run is about 8-20%, a stolen base 5-25% - so drop <b>each leg ≥</b> to around <b>5%</b> and the maker will rank the likeliest ones for you.`
+          : ` Raise the ceiling or lower <b>each leg ≥</b>.`}</div>`;
       return;
     }
     out.innerHTML = (d.hint === "max_bet_unreachable")
@@ -1980,12 +2013,15 @@ async function loadBaseball(silent) {
         <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from - or <b>ALL GAMES</b>:</div>
         ${renderGameGrid(d.games)}
         <div style="margin-top:8px">each leg ≥
-        <input id="comboTarget" type="number" min="20" max="97" value="${cfv("comboTarget", parlayTarget)}" style="width:54px"/>%
+        <input id="comboTarget" type="number" min="5" max="97" value="${cfv("comboTarget", parlayTarget)}" style="width:54px"/>%
         and ≤ <input id="comboCap" type="number" min="0" max="99" value="${cfv("comboCap", parlayCap || "")}" placeholder="-" style="width:54px"/>% likely</div>
         <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each market walks to the line that lands in the band - Over 3.5 at 90% becomes Over 4.5 or 5.5, and a run line at 40% becomes the NO side.</div>
         <div class="small" style="margin-top:6px">goal
           ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfv("comboObjective", comboObjectivePref))}
+          &nbsp;side
+          ${sel("comboSides", [["both", "↔️ YES or NO"], ["yes", "✅ YES only"], ["no", "🚫 NO only"]], cfv("comboSides", comboSidesPref))}
         </div>
+        <div class="small" id="comboSidesHint" style="margin-top:2px;color:var(--muted)"></div>
         <div class="small" style="margin-top:6px">
           ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfv("comboLegsMode", comboLegsModePref))}
           <input id="comboN" type="number" min="2" max="30" value="${cfv("comboN", def)}" style="width:50px"/> legs
@@ -2006,6 +2042,7 @@ async function loadBaseball(silent) {
         ${modelLegend()}
         <div id="comboOut"></div>
       </div>`;
+      setTimeout(updateComboSidesHint, 0);   // after this html reaches the DOM
     }
     // The auto-built suggestion slips (safest / best value / best prop / live /
     // mixed) used to render here. They were rebuilt on every slate load whether
