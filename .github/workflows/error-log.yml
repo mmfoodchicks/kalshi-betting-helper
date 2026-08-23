@@ -120,6 +120,15 @@ jobs:
           (out / "README.md").write_text("\n".join(lines) + "\n")
           print(f"{len(d.get('summary', []))} error code(s) in the window")
           PY
+          # The instance's memory picture rides along: per-process RSS plus
+          # the cgroup total, ~1 KB that answers "what was fat" for any
+          # exceeded-memory investigation without touching the server.
+          # Best-effort -- a failed fetch must not cost the error snapshot.
+          curl -sS -o /tmp/mem.json --max-time 30 "${AUTH[@]}" \
+               "$APP_URL/api/diag/mem" || true
+          if python3 -c "import json; json.load(open('/tmp/mem.json'))" 2>/dev/null; then
+            cp /tmp/mem.json "$ERRORS_DIR/mem-latest.json"
+          fi
           echo "changed=1" >> "$GITHUB_OUTPUT"
 
       - name: Commit

@@ -7545,6 +7545,105 @@ ck("the PC builds every boardshare board with the server's own builders",
 
 print()
 print("=" * 72)
+print("The live-sim leak (the Aug 22-23 exceeded-memory kills)")
+print("=" * 72)
+# _live_game_sim keys its cache on the live-state signature, which moves with
+# every at-bat and NEVER repeats -- so each superseded entry (a multi-MB
+# 4,000-run simulation) was dead the moment the next landed. The sweep only
+# ran every 500 puts, and a serving worker does a handful of puts a minute:
+# hours between sweeps, hundreds of MB of dead sims per worker per live
+# window. Both instance kills sat squarely inside live windows. Three locks:
+# eviction at the source, a time floor on the sweep, a watchdog that makes
+# the next kill legible from the ledger.
+import baseball as _bb24
+import mlb_live as _mlv24
+import mlb_sim as _msim24
+
+_snap24a = {"inning": 4, "is_top": True, "outs": 1, "away_runs": 2,
+            "home_runs": 3, "bases": [1, 0, 0],
+            "banked": {"home": {}, "away": {}}, "pitching": {}}
+_snap24b = dict(_snap24a, outs=2)          # the next at-bat: a NEW signature
+_pk24 = 999901
+_olds24 = (_mlv24.snapshot, _msim24.simulate, _msim24.build_candidates)
+try:
+    _mlv24.snapshot = lambda pk: _snap24a
+    _msim24.simulate = lambda g, n, live=None: {"stub": True}
+    _msim24.build_candidates = lambda g, sim: []
+    _bb24._live_game_sim({"game_pk": _pk24})
+    _mlv24.snapshot = lambda pk: _snap24b
+    _bb24._live_game_sim({"game_pk": _pk24})
+    _live24 = [k for k in list(_bb24._cache)
+               if isinstance(k, tuple) and len(k) == 3
+               and k[0] == "game_sim_live" and k[1] == _pk24]
+    ck("a game holds exactly ONE live sim entry, the current situation's",
+       len(_live24) == 1 and _live24[0][2] == _bb24._live_state_sig(_snap24b),
+       f"found {len(_live24)} entries -- superseded situations must be "
+       "evicted the moment the next lands, not left for a sweep hours out")
+finally:
+    _mlv24.snapshot, _msim24.simulate, _msim24.build_candidates = _olds24
+    for _k24 in [k for k in list(_bb24._cache)
+                 if isinstance(k, tuple) and k and k[0] == "game_sim_live"
+                 and k[1] == _pk24]:
+        _bb24._cache.pop(_k24, None)
+
+# The time floor: an expired entry is swept by the NEXT put once
+# _CACHE_SWEEP_S has passed, no matter how few puts have happened.
+_bb24._cache["_guard24_dead"] = (_tm.time() - 999, "x", 1)
+_bb24._cache_swept = 0.0
+_bb24._cached("_guard24_live", 60, lambda: 1)
+ck("the cache sweep has a time floor, not just an every-500-puts trigger",
+   "_guard24_dead" not in _bb24._cache
+   and _bb24._CACHE_SWEEP_S <= 300,
+   "500 puts between sweeps is hours at a serving worker's put rate, and "
+   "the live entries are multi-MB each")
+_bb24._cache.pop("_guard24_live", None)
+
+# The velocity memo: ~30 per-pitcher Statcast searches, and the slate builds
+# in a FRESH child every few minutes -- without a disk memo every rebuild
+# refetched all of them cold (thousands of Savant hits a day, and the slow
+# minutes a returning phone spends on "building today's board").
+import tempfile as _tmp24
+_oldsd24 = _bb24._SLATE_DISK
+try:
+    _bb24._SLATE_DISK = _tmp24.mkdtemp()
+    _memo24 = {101: {"delta": -1.2, "type": "ff"}, 102: None}
+    _bb24._velo_memo_put("2099-01-01", _memo24)
+    ck("the day's velocity answers round-trip through the disk memo",
+       _bb24._velo_memo_get("2099-01-01") == _memo24,
+       "None entries included, so 'no signal' is not re-asked every rebuild")
+    _p24 = _os.path.join(_bb24._SLATE_DISK, "velo_2099-01-01.pkl")
+    _os.utime(_p24, (_tm.time() - 4 * 3600, _tm.time() - 4 * 3600))
+    ck("...and an aged memo expires instead of pinning stale readings",
+       _bb24._velo_memo_get("2099-01-01") == {})
+finally:
+    _bb24._SLATE_DISK = _oldsd24
+_slsrc24 = _insp.getsource(_bb24._analyze_slate_uncached)
+ck("the slate build fetches only pids the memo has never seen",
+   "_velo_memo_get" in _slsrc24 and "missing" in _slsrc24
+   and "ex.map(_velo_one, missing)" in _slsrc24)
+
+# The instrumentation that makes the NEXT kill data instead of guesswork.
+_apy24 = open(_os.path.join(_root, "app.py")).read()
+ck("the memory diagnostic sees the whole instance, not one worker",
+   "_proc_tree_mb" in _apy24 and "_cgroup_mem" in _apy24
+   and '"cgroup_used_mb"' in _apy24,
+   "an instance-level kill is about the SUM of workers + sim children + the "
+   "slate builder, which no single worker's RSS can answer")
+ck("a watchdog ledgers the fat processes before a kill",
+   "_start_mem_watchdog" in _apy24 and '"MEM-high"' in _apy24
+   and '"APP-ensure_recorder-6"' in _apy24,
+   "Render's email says only 'exceeded memory'; the ledger on the persistent "
+   "disk should say which processes were fat minutes before")
+ck("request bodies are bounded before Flask buffers them",
+   'app.config["MAX_CONTENT_LENGTH"]' in _apy24,
+   "the artifact door's 64 MB cap runs AFTER get_data() has read the body")
+_gwf24 = open(_os.path.join(_root, ".github", "workflows",
+                            "error-log.yml")).read()
+ck("every ledger snapshot carries the instance memory picture",
+   "/api/diag/mem" in _gwf24 and "mem-latest.json" in _gwf24)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

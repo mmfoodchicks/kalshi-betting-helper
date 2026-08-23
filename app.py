@@ -36,6 +36,10 @@ app = Flask(__name__)
 # Respect the X-Forwarded-* headers from the hosting platform's reverse proxy so
 # request.is_secure / scheme are correct (needed for HSTS + secure cookies).
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Bound request bodies BEFORE they buffer: without this Flask reads any POST
+# fully into memory before a handler can size-check it. The artifact door's own
+# cap is 64 MB after decompression; this is the transport-level backstop.
+app.config["MAX_CONTENT_LENGTH"] = 96_000_000
 # Used by Flask for signing if we add sessions later; pulled from the env in prod.
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 # Changes every server start so the browser re-fetches CSS/JS after an update.
@@ -545,22 +549,63 @@ def api_sim_upload():
                     "bytes": len(data)})
 
 
+def _cgroup_mem():
+    """(used_bytes, limit_bytes) from the container's cgroup, (None, None)
+    where unavailable. v2 first, v1 fallback; a v1 'unlimited' sentinel
+    (huge number) reads as no limit."""
+    def _read(path):
+        with open(path) as f:
+            return f.read().strip()
+    used = limit = None
+    for u_path, l_path in (("/sys/fs/cgroup/memory.current",
+                            "/sys/fs/cgroup/memory.max"),
+                           ("/sys/fs/cgroup/memory/memory.usage_in_bytes",
+                            "/sys/fs/cgroup/memory/memory.limit_in_bytes")):
+        try:
+            used = int(_read(u_path))
+            raw = _read(l_path)
+            limit = None if raw == "max" else int(raw)
+            if limit is not None and limit > 1 << 48:
+                limit = None                     # v1 "unlimited" sentinel
+            break
+        except (OSError, ValueError):
+            used = limit = None
+    return used, limit
+
+
+def _proc_tree_mb(top=None):
+    """Per-process RSS for EVERYTHING in this container, fattest first --
+    workers, sim children, the slate builder. An instance-level 'exceeded
+    memory' kill is about their SUM, which no single worker's own RSS can
+    answer."""
+    procs = []
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        try:
+            rss = 0
+            with open(f"/proc/{pid}/status") as f:
+                for ln in f:
+                    if ln.startswith("VmRSS"):
+                        rss = int(ln.split()[1])
+                        break
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                cmd = f.read().replace(b"\0", b" ").decode("utf-8", "replace").strip()
+            procs.append({"pid": int(pid), "rss_mb": round(rss / 1024, 1),
+                          "cmd": cmd[:120] or "?"})
+        except OSError:
+            continue                     # raced a process that just exited
+    procs.sort(key=lambda p: p["rss_mb"], reverse=True)
+    return procs[:top] if top else procs
+
+
 @app.route("/api/diag/mem")
 def _api_diag_mem():
-    """THIS worker's memory picture: RSS plus the entry count of every
-    in-process cache big enough to matter. Built after an instance-level
-    'exceeded memory' kill: the first question is which worker and which
-    cache, and this one screenshot answers both (refresh a few times --
-    gunicorn rotates workers across requests)."""
-    rss_mb = None
-    try:
-        with open("/proc/self/status") as f:
-            for ln in f:
-                if ln.startswith("VmRSS"):
-                    rss_mb = round(int(ln.split()[1]) / 1024, 1)
-                    break
-    except Exception as e:
-        rss_mb = f"err {type(e).__name__}"     # diag must still answer
+    """The INSTANCE's memory picture: every process's RSS plus the cgroup
+    total against its limit, and the entry count of each in-process cache big
+    enough to matter (those are per-worker -- refresh a few times, gunicorn
+    rotates workers across requests). Built after an instance-level 'exceeded
+    memory' kill: the first question is which process and which cache."""
     caches = {"baseball": len(getattr(baseball, "_cache", {}) or {})}
     import importlib
     for mod, attr, label in (("racing", "_form_cache", "racing_form"),
@@ -572,9 +617,49 @@ def _api_diag_mem():
             caches[label] = len(getattr(importlib.import_module(mod), attr))
         except Exception as e:
             caches[label] = f"err {type(e).__name__}"
-    return jsonify({"pid": os.getpid(), "rss_mb": rss_mb,
+    try:
+        procs = _proc_tree_mb(top=12)
+    except Exception as e:
+        procs = f"err {type(e).__name__}"      # diag must still answer
+    used, limit = (None, None)
+    try:
+        used, limit = _cgroup_mem()
+    except Exception as _e:
+        errlog.note("APP-diag-cgroup", _e)
+    return jsonify({"pid": os.getpid(),
                     "uptime_s": round(time.time() - _PROC_START, 1),
+                    "cgroup_used_mb": round(used / 1048576, 1) if used else None,
+                    "cgroup_limit_mb": round(limit / 1048576, 1) if limit else None,
+                    "procs": procs,
                     "cache_entries": caches})
+
+
+# The watchdog turns the NEXT kill from guesswork into data: sampled minutes
+# before a death, the ledger (on the persistent disk) holds which processes
+# were fat. Render's own email says only "exceeded memory".
+_MEM_WARN_FRAC = float(os.environ.get("VIGIL_MEM_WARN_FRAC") or 0.80)
+_MEM_WATCH_S = 60
+
+
+def _start_mem_watchdog():
+    def _loop():
+        last = 0.0
+        while True:
+            time.sleep(_MEM_WATCH_S)
+            try:
+                used, limit = _cgroup_mem()
+                if not used or not limit or used / limit < _MEM_WARN_FRAC:
+                    continue
+                if time.time() - last < 600:
+                    continue                   # one note per surge, not sixty
+                last = time.time()
+                top = "; ".join(f"{p['rss_mb']}MB pid{p['pid']} {p['cmd'][:48]}"
+                                for p in _proc_tree_mb(top=6))
+                errlog.note("MEM-high",
+                            msg=f"{used >> 20}/{limit >> 20}MB: {top}")
+            except Exception as _e:
+                errlog.note("APP-memwatch", _e)
+    threading.Thread(target=_loop, daemon=True).start()
 
 
 @app.route("/api/errors")
@@ -840,6 +925,10 @@ def _ensure_recorder():
             _start_slate_warmer()
         except Exception as _e:
             errlog.note("APP-ensure_recorder-5", _e)
+        try:
+            _start_mem_watchdog()
+        except Exception as _e:
+            errlog.note("APP-ensure_recorder-6", _e)
 
 
 # An instance that sees only health probes must STILL run its nightlies. The

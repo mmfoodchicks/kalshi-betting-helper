@@ -153,8 +153,18 @@ _cache = {}
 # ("bvp", batter_id, pitcher_id) are per batter-pitcher PAIR, so a long-running
 # instance accumulated thousands of dead entries it would never look at again.
 # Sweeping on insert keeps the cache proportional to what is actually live.
+#
+# Every-N-puts alone is calibrated for thousands of TINY entries, and that
+# calibration inverts for the live game sims: a serving worker does a handful
+# of puts a minute, each live entry is a multi-MB simulation keyed by a
+# situation that never comes back, and 500 puts between sweeps is hours --
+# measured against a 2 GB instance, an evening of live slates was an
+# "exceeded memory" kill. The time floor makes big-value/low-rate patterns
+# safe: any put more than _CACHE_SWEEP_S after the last sweep sweeps.
 _CACHE_SWEEP_EVERY = 500
+_CACHE_SWEEP_S = 120
 _cache_puts = 0
+_cache_swept = 0.0
 
 
 def _sweep_cache(now):
@@ -171,7 +181,7 @@ def _sweep_cache(now):
 
 
 def _cached(key, ttl, producer):
-    global _cache_puts
+    global _cache_puts, _cache_swept
     now = _time.time()
     hit = _cache.get(key)
     if hit and now - hit[0] < hit[2]:
@@ -179,7 +189,8 @@ def _cached(key, ttl, producer):
     val = producer()
     _cache[key] = (now, val, ttl)
     _cache_puts += 1
-    if _cache_puts % _CACHE_SWEEP_EVERY == 0:
+    if _cache_puts % _CACHE_SWEEP_EVERY == 0 or now - _cache_swept > _CACHE_SWEEP_S:
+        _cache_swept = now
         _sweep_cache(now)
     return val
 
@@ -1876,10 +1887,17 @@ def _analyze_slate_uncached(date, season):
                 return {"delta": d, "recent": last["velo"],
                         "season": base[last["type"]], "type": last["type"],
                         "n": last["n"], "date": last["date"]}
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                for pid, v in zip(sp_ids, ex.map(_velo_one, sp_ids)):
-                    if v and sp_stats.get(pid):
-                        sp_stats[pid]["velo"] = v
+            memo = _velo_memo_get(date)
+            missing = [pid for pid in sp_ids if pid not in memo]
+            if missing:
+                with ThreadPoolExecutor(max_workers=8) as ex:
+                    for pid, v in zip(missing, ex.map(_velo_one, missing)):
+                        memo[pid] = v
+                _velo_memo_put(date, memo)
+            for pid in sp_ids:
+                v = memo.get(pid)
+                if v and sp_stats.get(pid):
+                    sp_stats[pid]["velo"] = v
         except Exception as e:
             errlog.note("MLB-velo-flag", e)
 
@@ -2968,6 +2986,44 @@ def _slate_disk_put(date, season, out):
         errlog.note("BB-slate_disk_put", _e)  # a cache that cannot write is slow, never broken
 
 
+# The per-pitcher last-start velocity lookups are ~30 separate Statcast
+# searches, and the slate rebuilds in a FRESH child process every few minutes
+# -- so without a shared memo every rebuild refetched all of them from a cold
+# cache: thousands of Savant hits a day, and the slowest minutes of every
+# rebuild window a returning phone spends reading "building today's board".
+# A pitcher's last start only changes when he pitches again, so the day's
+# answers (including "no signal", stored as None so it is not re-asked) are
+# memoized on disk beside the shared slate board; only pids the memo has
+# never seen are fetched. Lives in _SLATE_DISK, so the 6h prune there
+# retires stale memos with the dead boards.
+_VELO_MEMO_TTL = 3 * 3600
+
+
+def _velo_memo_get(date):
+    try:
+        path = _os.path.join(_SLATE_DISK, f"velo_{date}.pkl")
+        if _time.time() - _os.stat(path).st_mtime > _VELO_MEMO_TTL:
+            return {}
+        import pickle
+        with open(path, "rb") as fh:
+            return pickle.load(fh) or {}
+    except Exception:
+        return {}                   # no memo is a slow build, never a broken one
+
+
+def _velo_memo_put(date, memo):
+    try:
+        import pickle
+        import tempfile
+        _os.makedirs(_SLATE_DISK, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_SLATE_DISK, suffix=".tmp")
+        with _os.fdopen(fd, "wb") as fh:
+            pickle.dump(memo, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        _os.replace(tmp, _os.path.join(_SLATE_DISK, f"velo_{date}.pkl"))
+    except Exception as _e:
+        errlog.note("BB-velo_memo", _e)
+
+
 def _game_sim_cached(g):
     """True when this game's sim is already in cache -- i.e. it costs nothing.
     Lets the progress bar distinguish 'simulating 15 games' from 'reading 15
@@ -3074,8 +3130,18 @@ def _live_game_sim(g):
     def build():
         sim = mlb_sim.simulate(g, _SIM_N, live=snap)
         return {"sim": sim, "cands": mlb_sim.build_candidates(g, sim), "snap": snap}
-    # Keyed on the situation itself, and short-lived on top of that.
-    return _cached(("game_sim_live", pk, _live_state_sig(snap)), 45, build)
+    # Keyed on the situation itself, and short-lived on top of that. The
+    # signature moves with every at-bat and NEVER repeats, so each superseded
+    # entry is dead the moment the next lands -- and at several MB of
+    # simulation each, waiting for the periodic sweep meant an evening of live
+    # games grew a worker by hundreds of MB. Evict the game's older situations
+    # here, where we know they are dead, keeping exactly one live sim a game.
+    sig = _live_state_sig(snap)
+    for k in [k for k in list(_cache)
+              if isinstance(k, tuple) and len(k) == 3
+              and k[0] == "game_sim_live" and k[1] == pk and k[2] != sig]:
+        _cache.pop(k, None)
+    return _cached(("game_sim_live", pk, sig), 45, build)
 
 
 def _sim_live_legs(g, types=None):
