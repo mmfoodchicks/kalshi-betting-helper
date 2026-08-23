@@ -4090,7 +4090,15 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     if not games_bundles:
         return None
 
-    states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
+    # The DP goes exactly as deep as THIS request needs -- a 4-leg ask no
+    # longer pays for a 12-leg state space, and a 19-leg ask is no longer
+    # silently truncated to 12 (which is what returned a 2-leg slip for a
+    # "require 19" build). A max bet is a payout chase, so it keeps the
+    # default depth rather than the leg control's.
+    _dp = combo_engine.dp_legs(
+        n_legs, "off" if max_bet else legs_mode, max_total_legs,
+        payout_mode="require" if max_bet else payout_mode)
+    states = combo_engine.frontier(games_bundles, max_total_legs=_dp,
                                    net=net_fees)
     if max_bet:
         # The ceiling IS the target, so the leg count and payout controls have

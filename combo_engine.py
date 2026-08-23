@@ -459,10 +459,38 @@ _COST_RES = 0.05
 # three members) while bounding the worst case; members are evicted likeliest-
 # last, so the max-prob state a cell exists to answer for always survives.
 _CELL_CAP = 6
-# Legs beyond the UI's own maximum only pad the state space -- nobody can ask
-# for a 30-leg slip, and every leg count the payout chaser can actually use
-# lives at or below this.
-_MAX_DP_LEGS = 12
+# How deep the DP goes, DEMAND-DRIVEN (see dp_legs). This was a flat 12 on the
+# reasoning that "nobody can ask for a 30-leg slip" -- but the maker accepts up
+# to the tier ceiling of 30, so a genuine "require 19 legs" was structurally
+# impossible: no state on the frontier ever had 19 legs, the hard requirement
+# went unmet, and the ranking fell through to a TWO-leg slip. Measured, the
+# state count grows about linearly in this ceiling (the per-cell Pareto cap is
+# what bounds the blow-up, not the ceiling): on a 15-game board, 12 legs is
+# ~0.6-2.4s of DP and 30 legs ~4-12s. So the ceiling now follows what the
+# request actually needs -- a 4-leg ask costs LESS than it used to, and a
+# 19-leg ask is possible.
+_DP_LEGS_DEFAULT = 12
+_MAX_DP_LEGS = 30
+
+
+def dp_legs(n_legs, legs_mode, max_total_legs, payout_mode="off"):
+    """The frontier's leg ceiling for ONE request.
+
+    A leg target sets it (plus a little headroom, so "the closest achievable"
+    can be found from above as well as below). A payout target never shrinks it
+    below the default: reaching a big payout may need legs the count never
+    asked for, and truncating there would quietly cap the payout chaser."""
+    if legs_mode in ("require", "prefer") and n_legs:
+        want = int(n_legs) + 2
+    else:
+        want = _DP_LEGS_DEFAULT
+    if payout_mode in ("require", "prefer"):
+        want = max(want, _DP_LEGS_DEFAULT)
+    try:
+        allowed = int(max_total_legs or _DP_LEGS_DEFAULT)
+    except (TypeError, ValueError):
+        allowed = _DP_LEGS_DEFAULT
+    return max(2, min(allowed, _MAX_DP_LEGS, want))
 
 
 def frontier(games_bundles, max_total_legs=8, net=True):
@@ -575,6 +603,15 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
         reqs.append(("legs", meets_legs))
     if payout_mode == "require" and want_payout:
         reqs.append(("payout", meets_payout))
+    # Can the requested leg count be hit ANYWHERE on this frontier? When it
+    # cannot, the count must still be APPROACHED rather than abandoned: the
+    # ranking below used to fall straight through to plain probability, so
+    # "require 19 legs" on a board topping out at 12 returned a TWO-leg slip --
+    # the likeliest thing available, and the furthest possible answer from what
+    # was asked. Applies to "recommend" too: a soft target that cannot be met
+    # exactly still means "near it", not "ignore it".
+    legs_reachable = (any(meets_legs(s) for s in states) if want_legs else True)
+
     feasible, hard_ok, unmet = states, True, []
     if reqs:
         combine = all if conn == "and" else any
@@ -618,6 +655,9 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
     def rank(s):
         tier = ((1 if want_payout and meets_payout(s) else 0)
                 + (1 if want_legs and meets_legs(s) else 0))
+        # Unreachable exact count -> rank by CLOSENESS to it first (0 when the
+        # count is reachable or unwanted, so this is inert in the normal case).
+        near = -abs(s["legs"] - X) if (want_legs and not legs_reachable) else 0
         # When nothing on the slate is fillable enough to make an EV claim, the
         # EV ordering is ranking noise -- and ranking BY it surfaces the worst of
         # it, because the largest "edges" are the legs with no real market at all.
@@ -630,8 +670,8 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
             main = s["prob"]
         # Chasing an unmet payout target, reach for the bigger payout first.
         if want_payout and not meets_payout(s):
-            return (tier, s["fair_payout"] or 0, main)
-        return (tier, main, s["ev"] if s["ev"] is not None else 0.0)
+            return (tier, near, s["fair_payout"] or 0, main)
+        return (tier, near, main, s["ev"] if s["ev"] is not None else 0.0)
 
     best = max(pool, key=rank)
     return best, {"hard_ok": hard_ok, "ev_ok": ev_ok, "objective": objective,
@@ -649,6 +689,10 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
                   "best_payout_at_legs": (
                       round(max((s["fair_payout"] or 0) for s in pool), 2)
                       if pool else None),
+                  # The most legs this board could actually assemble, so a
+                  # missed leg count can say "19 asked, 12 was the ceiling"
+                  # instead of leaving the user to guess what went wrong.
+                  "legs_ceiling": max((s["legs"] for s in states), default=0),
                   "n_states": len(states), "n_feasible": len(feasible)}
 
 

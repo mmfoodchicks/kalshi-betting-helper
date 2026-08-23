@@ -1275,11 +1275,25 @@ function renderGameGrid(games) {
       ${(!live && when) ? `<span class="gg-when">${when.replace(" MT", "")}</span>` : ""}
     </div>`;
   }).join("");
-  return `<div class="gamegrid">${cards}</div>`;
+  // How many games are actually selectable today, and how many are picked --
+  // the leg count you can ask for is bounded by this, so it belongs next to
+  // the boxes rather than in the user's head.
+  const nSel = allOn ? elig.length : Object.keys(comboGameSel || {}).length;
+  const live = elig.filter((g) => (g.live || {}).state === "Live").length;
+  const count = `<div class="small gg-count" style="color:var(--muted);margin:-2px 0 2px">`
+    + `<b>${elig.length}</b> game${elig.length === 1 ? "" : "s"} today`
+    + (live ? ` (${live} live)` : "")
+    + ` · <b>${nSel}</b> selected`
+    + (allOn ? " (all)" : "")
+    + `</div>`;
+  return `<div class="ggwrap"><div class="gamegrid">${cards}</div>${count}</div>`;
 }
 
 function refreshGameGrid() {
-  const host = document.querySelector(".combomaker .gamegrid");
+  // Replace the WRAPPER, not the strip: the wrapper carries the count line, so
+  // targeting .gamegrid here would orphan the old count and append a new one
+  // on every click.
+  const host = document.querySelector(".combomaker .ggwrap");
   if (host && bbSlateGames.length) host.outerHTML = renderGameGrid(bbSlateGames);
 }
 window.comboSelectAll = () => { comboGameSel = null; refreshGameGrid(); };
@@ -1859,8 +1873,14 @@ function renderCombo(c, tag, extraCls) {
     const miss = [];
     if (c.legs_met === false) miss.push("the leg count");
     if (c.target_payout_x && !c.payout_reached) miss.push(`a ${c.target_payout_x}× payout`);
+    // Name the actual ceiling when the leg count is what failed. "Asked 19,
+    // this board tops out at 12" is actionable; "couldn't hit it" is not.
+    const legsWhy = (c.legs_met === false && c.legs_ceiling)
+      ? `This board can only assemble <b>${c.legs_ceiling}</b> legs from the games and prop types you selected (${c.legs_target} asked), so you're seeing the ${c.legs_used}-leg slip closest to it. Select more games, turn on more prop types, allow same-game parlays, or widen the confidence band.`
+      : null;
     warn = `<div class="small" style="margin-top:4px;color:#e0566a">⚠️ Couldn't hit ${miss.join(" or ") || "one of your required targets"} on this board - showing the closest slip. ${
-      (c.target_payout_x && !c.payout_reached && c.cap_pct != null)
+      legsWhy ? legsWhy
+      : (c.target_payout_x && !c.payout_reached && c.cap_pct != null)
         ? `A ceiling of ${c.cap_pct}% caps each leg's payout, so ${c.legs_used} of them can reach about ${c.fair_payout_x}× at most: raise the ceiling or add legs.`
         : "Loosen a target or add legs."}</div>`;
   }
@@ -1968,7 +1988,7 @@ async function loadBaseball(silent) {
         </div>
         <div class="small" style="margin-top:6px">
           ${sel("comboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfv("comboLegsMode", comboLegsModePref))}
-          <input id="comboN" type="number" min="2" max="12" value="${cfv("comboN", def)}" style="width:50px"/> legs
+          <input id="comboN" type="number" min="2" max="30" value="${cfv("comboN", def)}" style="width:50px"/> legs
           &nbsp;${sel("comboConn", [["or", "OR"], ["and", "AND"]], cfv("comboConn", comboConnPref))}&nbsp;
           ${sel("comboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfv("comboPayoutMode", comboPayoutModePref))}
           reach <input id="comboPayout" type="number" min="0" step="any" value="${cfv("comboPayout", parlayPayout)}" style="width:60px"/>× payout
@@ -3471,7 +3491,7 @@ function renderNFLComboMaker() {
     </div>
     <div class="small" style="margin-top:6px">
       ${sel("nflComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfv("nflComboLegsMode", nflComboLegsMode))}
-      <input id="nflComboN" type="number" min="2" max="12" value="${cfv("nflComboN", nflComboLegs)}" style="width:50px"/> legs
+      <input id="nflComboN" type="number" min="2" max="30" value="${cfv("nflComboN", nflComboLegs)}" style="width:50px"/> legs
       &nbsp;${sel("nflComboConn", [["or", "OR"], ["and", "AND"]], cfv("nflComboConn", nflComboConn))}&nbsp;
       ${sel("nflComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfv("nflComboPayoutMode", nflComboPayoutMode))}
       reach <input id="nflComboPayout" type="number" min="0" step="any" value="${cfv("nflComboPayout", nflComboPayout)}" style="width:60px"/>× payout

@@ -6457,7 +6457,15 @@ ck("a 16-game x 24-bundle board finishes its frontier in seconds",
    _dt4 < 20.0 and len(_wst4) > 0,
    f"{_dt4:.1f}s, {len(_wst4)} states; unbounded cells hung a Build for minutes")
 ck("the DP explores no deeper than the UI can ask",
-   _ce4._MAX_DP_LEGS == 12 and max(s["legs"] for s in _wst4) <= 12)
+   # The absolute ceiling is the TIER ceiling (what the maker will accept),
+   # and the per-request depth comes from dp_legs. This used to assert a flat
+   # 12, which is precisely what made a "require 19 legs" build impossible.
+   _ce4._MAX_DP_LEGS == max(t["max_combo_legs"]
+                            for t in __import__("tiers").TIERS.values())
+   and max(s["legs"] for s in _wst4) <= _ce4._MAX_DP_LEGS
+   and _ce4.dp_legs(4, "prefer", 30) <= _ce4._DP_LEGS_DEFAULT,
+   "a request never buys depth past its own leg target, and nothing exceeds "
+   "the highest leg count any tier permits")
 ck("cells hold a bounded Pareto set", 1 <= _ce4._CELL_CAP <= 12)
 
 # Re-pricing must not blend a blend: cached sims are priced on every Build.
@@ -7891,6 +7899,91 @@ ck("duplication rescales client-side from p_build",
    '"p_build"' in _insp.getsource(_rd28.build)
    and "p_build" in open(_os.path.join(_root, "static", "app.js")).read(),
    "the field-size input re-prices dupes without a server rebuild")
+
+print()
+print("=" * 72)
+print("The 19-leg build that returned 2 legs")
+print("=" * 72)
+# Reported live: "require 19 legs", strikeouts only, 15 games -> a TWO-leg
+# slip. Two independent faults. (1) The frontier DP clamped every request to
+# 12 legs, so no 19-leg state ever existed while the maker happily accepted
+# 19. (2) With the exact count unreachable, choose() fell through to plain
+# probability -- and the likeliest slip on a frontier is the SHORTEST one, so
+# the answer to "give me 19" was the furthest thing from it.
+import combo_engine as _ce29
+import random as _rnd29
+
+ck("the DP ceiling follows the request instead of a flat 12",
+   _ce29.dp_legs(19, "require", 30) >= 19
+   and _ce29.dp_legs(4, "prefer", 30) < 12
+   and _ce29.dp_legs(99, "require", 30) == 30,
+   "a 19-leg ask must be reachable, a 4-leg ask must not pay for depth it "
+   "never uses, and nothing may exceed the tier ceiling")
+ck("a payout target keeps the default depth even with no leg target",
+   _ce29.dp_legs(0, "off", 30, payout_mode="require") == _ce29._DP_LEGS_DEFAULT
+   and _ce29.dp_legs(3, "require", 30, payout_mode="require")
+   >= _ce29._DP_LEGS_DEFAULT,
+   "reaching a big payout may need legs the count never asked for; "
+   "truncating there would silently cap the payout chaser")
+
+_rng29 = _rnd29.Random(5)
+_gb29 = []
+for _gi29 in range(15):
+    _bl29 = []
+    for _ in range(10):
+        _sz29 = _rng29.randint(1, 3)
+        _p29 = _rng29.uniform(0.80, 0.97) ** _sz29
+        _m29 = _p29 ** (1.0 / _sz29)
+        _bl29.append({"size": _sz29, "prob": _p29,
+                      "legs": [{"marg": _m29,
+                                "price_cents": min(97, max(3, round(_m29 * 100))),
+                                "fillable": True} for _ in range(_sz29)]})
+    _gb29.append((f"g{_gi29}", _bl29, f"S{_gi29}"))
+
+_dp29 = _ce29.dp_legs(19, "require", 30)
+_st29 = _ce29.frontier(_gb29, max_total_legs=_dp29)
+_b29, _m29meta = _ce29.choose(_st29, objective="balanced", legs_target=19,
+                              legs_mode="require", payout_target=0,
+                              payout_mode="off", conn="or")
+ck("a 19-leg board request now actually returns 19 legs",
+   _b29["legs"] == 19 and _m29meta["hard_ok"],
+   f"got {_b29['legs']} legs - this is the exact reported build")
+
+# Genuinely unreachable: the answer must be the CLOSEST slip, not the shortest.
+_st29b = _ce29.frontier(_gb29, max_total_legs=12)
+_b29b, _m29b = _ce29.choose(_st29b, objective="balanced", legs_target=19,
+                            legs_mode="require", payout_target=0,
+                            payout_mode="off", conn="or")
+ck("an unreachable leg count lands ON the ceiling, never back at 2",
+   _b29b["legs"] == _m29b["legs_ceiling"] and _b29b["legs"] > 2
+   and _m29b["hard_ok"] is False and "legs" in _m29b["unmet"],
+   f"got {_b29b['legs']} of a possible {_m29b['legs_ceiling']}")
+ck("the board reports how many legs it could actually assemble",
+   _m29b["legs_ceiling"] >= 2,
+   "so the slip can say '19 asked, 12 was the ceiling' instead of shrugging")
+
+# Both makers that own a frontier must size it the same way, or the widest
+# board on the site (NFL: ~24 bundles a game x 16 games) inherits the raised
+# absolute ceiling with no demand gate and hangs -- the exact failure the
+# per-cell Pareto cap was added for.
+for _mod29, _f29 in (("baseball.py", "baseball.py"),
+                     ("nfl_game_sim.py", "nfl_game_sim.py")):
+    _src29 = open(_os.path.join(_root, _f29)).read()
+    ck(f"{_mod29} sizes its DP from the request",
+       "combo_engine.dp_legs(" in _src29
+       and "max_total_legs=_dp" in _src29)
+_js29 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the leg input no longer stops at the old DP clamp",
+   'id="comboN" type="number" min="2" max="30"' in _js29
+   and 'id="nflComboN" type="number" min="2" max="30"' in _js29,
+   "the box said 12 while the maker accepted 19 and the DP allowed neither")
+ck("a missed leg count explains itself with the real ceiling",
+   "legs_ceiling" in _js29 and "can only assemble" in _js29)
+ck("the game grid states how many games are selectable today",
+   "gg-count" in _js29 and "game${elig.length === 1" in _js29
+   and ".combomaker .ggwrap" in _js29,
+   "refreshGameGrid must replace the WRAPPER or every click orphans the "
+   "old count line and appends another")
 
 print()
 print("=" * 72)

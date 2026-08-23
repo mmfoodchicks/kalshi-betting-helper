@@ -1142,8 +1142,13 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     # sentence the caller should be able to say rather than shrug at.
     if len(games_bundles) < 2 and max_legs_per_game <= 1:
         return {"error_hint": "single_game_no_stack", "n_games_available": len(games_bundles)}
-    states = combo_engine.frontier(games_bundles, max_total_legs=max_total_legs,
-                                   net=True)
+    # Demand-driven DP depth, same as baseball: the NFL ladder is the widest
+    # board here (~24 bundles a game across 16 games), so paying for leg counts
+    # nobody asked for is exactly where this used to hang.
+    _dp = combo_engine.dp_legs(
+        n_legs, "off" if max_bet else legs_mode, max_total_legs,
+        payout_mode="require" if max_bet else payout_mode)
+    states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
     if max_bet:
         # Same reasoning as baseball: the ceiling is the target, so the leg and
         # payout preferences have nothing left to bind.
