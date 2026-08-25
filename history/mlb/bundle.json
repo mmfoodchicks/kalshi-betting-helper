@@ -1,5 +1,6 @@
 {
  "dates": [
+  "2026-08-25",
   "2026-08-24",
   "2026-08-23",
   "2026-08-22",
@@ -26,44 +27,306 @@
  ],
  "days": [
   {
-   "date": "2026-08-24",
-   "events": {},
-   "generated_at": 1787547733.1613302,
+   "attribution": {
+    "batches": 5,
+    "per_batch": 200,
+    "priced": 6,
+    "seasons": 1000,
+    "skipped": 20
+   },
+   "date": "2026-08-25",
+   "events": {
+    "109": [
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 0.2,
+      "delta_se": 0.34,
+      "frm": "A",
+      "kind": "optioned",
+      "measured_on": 1000,
+      "name": "Bratt",
+      "pid": 683352,
+      "pos": "P",
+      "to": "RM"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": -0.2,
+      "delta_se": 0.37,
+      "frm": "RM",
+      "kind": "called_up",
+      "measured_on": 1000,
+      "name": "Burgos",
+      "pid": 686228,
+      "pos": "P",
+      "to": "A"
+     }
+    ],
+    "115": [
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Freeland, K",
+      "pid": 607536,
+      "pos": "P",
+      "to": "D15"
+     },
+     {
+      "kind": "added",
+      "name": "Adams",
+      "pid": 687060,
+      "pos": "P",
+      "to": "A"
+     }
+    ],
+    "116": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Madden",
+      "pid": 680744,
+      "pos": "P",
+      "to": "RM"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 0.1,
+      "delta_se": 0.19,
+      "kind": "added",
+      "measured_on": 1000,
+      "name": "Kinley",
+      "pid": 641755,
+      "pos": "P",
+      "to": "A"
+     }
+    ],
+    "117": [
+     {
+      "kind": "added",
+      "name": "Vel\u00e1zquez, N",
+      "pid": 676369,
+      "pos": "LF",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Delgado",
+      "pid": 669384,
+      "pos": "2B",
+      "to": "RM"
+     }
+    ],
+    "135": [
+     {
+      "frm": "D15",
+      "kind": "status",
+      "name": "Giolito",
+      "pid": 608337,
+      "pos": "P",
+      "to": "D60"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 0.0,
+      "delta_se": 0.0,
+      "kind": "added",
+      "measured_on": 1000,
+      "name": "Harris, D",
+      "pid": 687957,
+      "pos": "LF",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Song",
+      "pid": 823550,
+      "pos": "2B",
+      "to": "RM"
+     }
+    ],
+    "137": [
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 0.0,
+      "delta_se": 0.0,
+      "frm": "A",
+      "kind": "il_in",
+      "measured_on": 1000,
+      "name": "Brubaker",
+      "pid": 664141,
+      "pos": "P",
+      "to": "D10"
+     },
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Wilkinson",
+      "pid": 683363,
+      "pos": "P",
+      "to": "RM"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Whitcomb",
+      "pid": 694376,
+      "pos": "3B",
+      "to": "A"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Molina",
+      "pid": 683627,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Adames",
+      "pid": 642715,
+      "pos": "SS",
+      "to": "D10"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Walker, R",
+      "pid": 676254,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "McCray",
+      "pid": 687529,
+      "pos": "CF",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Bericoto",
+      "pid": 682674,
+      "pos": "LF",
+      "to": "D10"
+     },
+     {
+      "frm": "A",
+      "kind": "status",
+      "name": "Eldridge",
+      "pid": 805811,
+      "pos": "DH",
+      "to": "BRV"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Furman",
+      "pid": 801501,
+      "pos": "2B",
+      "to": "A"
+     }
+    ],
+    "144": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Jarvis",
+      "pid": 805347,
+      "pos": "SS",
+      "to": "RM"
+     }
+    ],
+    "146": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "De Los Santos",
+      "pid": 691277,
+      "pos": "3B",
+      "to": "RM"
+     },
+     {
+      "frm": "D10",
+      "kind": "il_out",
+      "name": "Stowers",
+      "pid": 669065,
+      "pos": "1B",
+      "to": "A"
+     }
+    ],
+    "147": [
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 2.5,
+      "delta_se": 1.51,
+      "frm": "A",
+      "kind": "optioned",
+      "measured_on": 1000,
+      "name": "Beck, B",
+      "pid": 694341,
+      "pos": "P",
+      "to": "RM"
+     }
+    ],
+    "158": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Naylor, B",
+      "pid": 666310,
+      "pos": "C",
+      "to": "RM"
+     }
+    ]
+   },
+   "generated_at": 1787633893.4378357,
    "moves": {
     "108": 0.0,
-    "109": -0.08,
-    "110": 0.0,
-    "111": -2.27,
-    "112": 0.35,
+    "109": -1.24,
+    "110": 0.05,
+    "111": -0.7,
+    "112": 0.38,
     "113": 0.0,
-    "114": 1.1,
+    "114": 0.85,
     "115": 0.0,
-    "116": -0.06,
-    "117": -0.15,
+    "116": -0.2,
+    "117": 0.09,
     "118": 0.0,
-    "119": 3.42,
+    "119": -0.7,
     "120": 0.0,
     "121": 0.0,
     "133": 0.0,
-    "134": -0.25,
-    "135": 0.15,
-    "136": -1.0,
+    "134": -0.08,
+    "135": 1.17,
+    "136": 0.03,
     "137": 0.0,
-    "138": 0.02,
-    "139": 2.18,
-    "140": 0.57,
-    "141": 0.0,
-    "142": -0.12,
-    "143": -1.03,
-    "144": -0.08,
-    "145": 0.07,
-    "146": 0.17,
-    "147": -2.97,
-    "158": -0.05
+    "138": -0.05,
+    "139": 0.76,
+    "140": 0.75,
+    "141": -0.05,
+    "142": -0.04,
+    "143": -0.16,
+    "144": 0.61,
+    "145": -2.62,
+    "146": -0.03,
+    "147": 1.15,
+    "158": 0.05
    },
    "n": 4000,
-   "n_games_left": 466,
-   "prev_date": "2026-08-23",
+   "n_games_left": 456,
+   "prev_date": "2026-08-24",
    "roster": {
     "108": {
      "518595": {
@@ -161,8 +424,8 @@
      },
      "671111": {
       "er": 5,
-      "era": 6.75,
-      "ip": 6.67,
+      "era": 5.19,
+      "ip": 8.67,
       "name": "Peralta, S",
       "pos": "P",
       "status": "A"
@@ -186,9 +449,9 @@
       "status": "A"
      },
      "676620": {
-      "er": 2,
-      "era": 1.29,
-      "ip": 7.0,
+      "er": 3,
+      "era": 2.25,
+      "ip": 8.0,
       "name": "Weiman",
       "pos": "P",
       "status": "A"
@@ -213,8 +476,8 @@
      },
      "684665": {
       "er": 3,
-      "era": 1.86,
-      "ip": 9.67,
+      "era": 1.74,
+      "ip": 10.33,
       "name": "Murphy",
       "pos": "P",
       "status": "A"
@@ -251,9 +514,9 @@
       "status": "A"
      },
      "691946": {
-      "er": 10,
-      "era": 3.74,
-      "ip": 21.67,
+      "er": 13,
+      "era": 3.67,
+      "ip": 27.0,
       "name": "Klassen",
       "pos": "P",
       "status": "A"
@@ -363,9 +626,9 @@
     },
     "109": {
      "518876": {
-      "er": 80,
-      "era": 5.37,
-      "ip": 129.0,
+      "er": 83,
+      "era": 5.35,
+      "ip": 134.67,
       "name": "Kelly, Me",
       "pos": "P",
       "status": "A"
@@ -460,9 +723,9 @@
       "status": "A"
      },
      "664199": {
-      "er": 18,
-      "era": 2.31,
-      "ip": 58.33,
+      "er": 20,
+      "era": 2.61,
+      "ip": 58.67,
       "name": "Clarke, T",
       "pos": "P",
       "status": "A"
@@ -564,7 +827,7 @@
       "ip": 39.67,
       "name": "Bratt",
       "pos": "P",
-      "status": "A"
+      "status": "RM"
      },
      "684442": {
       "er": 10,
@@ -581,16 +844,16 @@
      },
      "686228": {
       "er": 1,
-      "era": 3.38,
-      "ip": 2.67,
+      "era": 2.45,
+      "ip": 3.67,
       "name": "Burgos",
       "pos": "P",
-      "status": "RM"
+      "status": "A"
      },
      "686753": {
-      "er": 9,
-      "era": 4.67,
-      "ip": 17.33,
+      "er": 11,
+      "era": 5.12,
+      "ip": 19.33,
       "name": "Jameson",
       "pos": "P",
       "status": "A"
@@ -977,8 +1240,8 @@
      },
      "547973": {
       "er": 11,
-      "era": 1.85,
-      "ip": 43.67,
+      "era": 1.81,
+      "ip": 44.67,
       "name": "Chapman",
       "pos": "P",
       "status": "A"
@@ -1002,9 +1265,9 @@
       "status": "D60"
      },
      "624133": {
-      "er": 46,
-      "era": 3.41,
-      "ip": 113.33,
+      "er": 47,
+      "era": 3.35,
+      "ip": 118.33,
       "name": "Suarez",
       "pos": "P",
       "status": "A"
@@ -1067,8 +1330,8 @@
      },
      "669062": {
       "er": 11,
-      "era": 2.2,
-      "ip": 41.0,
+      "era": 2.14,
+      "ip": 42.0,
       "name": "Miller, E",
       "pos": "P",
       "status": "A"
@@ -1142,9 +1405,9 @@
       "status": "A"
      },
      "678394": {
-      "er": 51,
-      "era": 4.69,
-      "ip": 88.33,
+      "er": 52,
+      "era": 4.68,
+      "ip": 90.33,
       "name": "Bello",
       "pos": "P",
       "status": "A"
@@ -1290,8 +1553,8 @@
      },
      "573204": {
       "er": 24,
-      "era": 5.22,
-      "ip": 39.67,
+      "era": 5.09,
+      "ip": 40.67,
       "name": "Thielbar",
       "pos": "P",
       "status": "A"
@@ -1303,8 +1566,8 @@
      },
      "592332": {
       "er": 79,
-      "era": 4.58,
-      "ip": 143.33,
+      "era": 4.37,
+      "ip": 150.33,
       "name": "Gausman",
       "pos": "P",
       "status": "A"
@@ -1455,8 +1718,8 @@
      },
      "666171": {
       "er": 29,
-      "era": 4.06,
-      "ip": 57.67,
+      "era": 3.99,
+      "ip": 58.67,
       "name": "Zeferjahn",
       "pos": "P",
       "status": "A"
@@ -1616,8 +1879,8 @@
      },
      "594580": {
       "er": 33,
-      "era": 4.73,
-      "ip": 51.33,
+      "era": 4.61,
+      "ip": 52.67,
       "name": "Moll",
       "pos": "P",
       "status": "A"
@@ -1640,8 +1903,8 @@
      },
      "641941": {
       "er": 14,
-      "era": 4.3,
-      "ip": 29.33,
+      "era": 4.15,
+      "ip": 30.33,
       "name": "Pag\u00e1n",
       "pos": "P",
       "status": "A"
@@ -1726,8 +1989,8 @@
      },
      "670062": {
       "er": 10,
-      "era": 2.67,
-      "ip": 30.33,
+      "era": 2.51,
+      "ip": 32.33,
       "name": "Garcia, J",
       "pos": "P",
       "status": "A"
@@ -1855,9 +2118,9 @@
       "status": "RM"
      },
      "695505": {
-      "er": 42,
-      "era": 2.51,
-      "ip": 136.0,
+      "er": 47,
+      "era": 2.77,
+      "ip": 139.67,
       "name": "Burns, Ch",
       "pos": "P",
       "status": "A"
@@ -1954,8 +2217,8 @@
      },
      "670059": {
       "er": 14,
-      "era": 2.34,
-      "ip": 50.0,
+      "era": 2.29,
+      "ip": 51.0,
       "name": "Holderman",
       "pos": "P",
       "status": "A"
@@ -1969,9 +2232,9 @@
       "status": "A"
      },
      "671922": {
-      "er": 19,
-      "era": 2.33,
-      "ip": 58.0,
+      "er": 20,
+      "era": 2.44,
+      "ip": 59.0,
       "name": "Smith, C",
       "pos": "P",
       "status": "A"
@@ -2064,8 +2327,8 @@
      },
      "683769": {
       "er": 16,
-      "era": 3.3,
-      "ip": 43.67,
+      "era": 3.22,
+      "ip": 44.67,
       "name": "Gaddis",
       "pos": "P",
       "status": "A"
@@ -2124,9 +2387,9 @@
       "status": "RM"
      },
      "800048": {
-      "er": 46,
-      "era": 2.54,
-      "ip": 149.0,
+      "er": 47,
+      "era": 2.5,
+      "ip": 155.0,
       "name": "Messick",
       "pos": "P",
       "status": "A"
@@ -2170,7 +2433,7 @@
       "ip": 124.33,
       "name": "Freeland, K",
       "pos": "P",
-      "status": "A"
+      "status": "D15"
      },
      "608372": {
       "er": 70,
@@ -2202,9 +2465,9 @@
       "status": "A"
      },
      "663372": {
-      "er": 64,
-      "era": 5.97,
-      "ip": 92.0,
+      "er": 71,
+      "era": 6.08,
+      "ip": 97.67,
       "name": "Feltner",
       "pos": "P",
       "status": "A"
@@ -2241,9 +2504,9 @@
       "status": "RM"
      },
      "675848": {
-      "er": 37,
-      "era": 5.63,
-      "ip": 54.33,
+      "er": 38,
+      "era": 5.76,
+      "ip": 54.67,
       "name": "Mejia, J",
       "pos": "P",
       "status": "A"
@@ -2313,6 +2576,14 @@
       "pos": "P",
       "status": "D60"
      },
+     "687060": {
+      "er": 5,
+      "era": 45.0,
+      "ip": 1.0,
+      "name": "Adams",
+      "pos": "P",
+      "status": "A"
+     },
      "687312": {
       "er": 31,
       "era": 6.54,
@@ -2329,7 +2600,7 @@
      "687859": {
       "er": 0,
       "era": 0.0,
-      "ip": 1.0,
+      "ip": 2.0,
       "name": "Johnston, T",
       "pos": "RF",
       "status": "A"
@@ -2482,6 +2753,14 @@
       "pos": "P",
       "status": "A"
      },
+     "641755": {
+      "er": 21,
+      "era": 4.01,
+      "ip": 42.67,
+      "name": "Kinley",
+      "pos": "P",
+      "status": "A"
+     },
      "646241": {
       "er": 21,
       "era": 3.83,
@@ -2514,7 +2793,7 @@
      "663432": {
       "er": 0,
       "era": 0.0,
-      "ip": 4.67,
+      "ip": 6.67,
       "name": "Rainey",
       "pos": "P",
       "status": "A"
@@ -2526,16 +2805,16 @@
      },
      "663947": {
       "er": 26,
-      "era": 3.17,
-      "ip": 59.67,
+      "era": 3.12,
+      "ip": 60.67,
       "name": "Holton",
       "pos": "P",
       "status": "A"
      },
      "664285": {
-      "er": 74,
+      "er": 78,
       "era": 4.35,
-      "ip": 138.67,
+      "ip": 144.67,
       "name": "Valdez, F",
       "pos": "P",
       "status": "A"
@@ -2582,14 +2861,6 @@
       "pos": "P",
       "status": "D60"
      },
-     "676568": {
-      "er": 12,
-      "era": 15.63,
-      "ip": 6.33,
-      "name": "Vanasco",
-      "pos": "P",
-      "status": "RM"
-     },
      "676684": {
       "er": 22,
       "era": 6.08,
@@ -2619,7 +2890,7 @@
       "ip": 39.0,
       "name": "Madden",
       "pos": "P",
-      "status": "A"
+      "status": "RM"
      },
      "681481": {
       "name": "Carpenter",
@@ -2850,7 +3121,7 @@
      "669384": {
       "name": "Delgado",
       "pos": "2B",
-      "status": "A"
+      "status": "RM"
      },
      "669397": {
       "name": "Allen, N",
@@ -2894,6 +3165,11 @@
      "673237": {
       "name": "Diaz, Y",
       "pos": "C",
+      "status": "A"
+     },
+     "676369": {
+      "name": "Vel\u00e1zquez, N",
+      "pos": "LF",
       "status": "A"
      },
      "676694": {
@@ -3679,8 +3955,8 @@
      },
      "656234": {
       "er": 23,
-      "era": 5.65,
-      "ip": 36.67,
+      "era": 5.5,
+      "ip": 37.67,
       "name": "Bird",
       "pos": "P",
       "status": "A"
@@ -3776,9 +4052,9 @@
       "status": "A"
      },
      "676917": {
-      "er": 62,
-      "era": 3.22,
-      "ip": 142.67,
+      "er": 64,
+      "era": 3.21,
+      "ip": 148.67,
       "name": "Cavalli",
       "pos": "P",
       "status": "A"
@@ -3820,7 +4096,7 @@
      "680899": {
       "er": 0,
       "era": 0.0,
-      "ip": 1.0,
+      "ip": 2.0,
       "name": "Tolman",
       "pos": "P",
       "status": "A"
@@ -3912,9 +4188,9 @@
       "status": "RM"
      },
      "690925": {
-      "er": 17,
-      "era": 3.63,
-      "ip": 39.67,
+      "er": 18,
+      "era": 3.76,
+      "ip": 40.67,
       "name": "Beeter",
       "pos": "P",
       "status": "A"
@@ -4274,9 +4550,9 @@
     },
     "133": {
      "605488": {
-      "er": 83,
-      "era": 6.02,
-      "ip": 113.67,
+      "er": 87,
+      "era": 6.08,
+      "ip": 118.33,
       "name": "Springs",
       "pos": "P",
       "status": "A"
@@ -4434,8 +4710,8 @@
      },
      "680723": {
       "er": 8,
-      "era": 6.97,
-      "ip": 10.33,
+      "era": 6.35,
+      "ip": 11.33,
       "name": "Rom",
       "pos": "P",
       "status": "A"
@@ -4519,9 +4795,9 @@
       "status": "RM"
      },
      "695034": {
-      "er": 13,
-      "era": 11.7,
-      "ip": 10.0,
+      "er": 15,
+      "era": 10.66,
+      "ip": 12.67,
       "name": "Morris",
       "pos": "P",
       "status": "A"
@@ -4540,9 +4816,9 @@
       "status": "A"
      },
      "696522": {
-      "er": 13,
-      "era": 7.63,
-      "ip": 15.33,
+      "er": 16,
+      "era": 9.0,
+      "ip": 16.0,
       "name": "Juenger",
       "pos": "P",
       "status": "A"
@@ -4608,16 +4884,16 @@
      },
      "596133": {
       "er": 13,
-      "era": 2.2,
-      "ip": 49.0,
+      "era": 2.17,
+      "ip": 49.67,
       "name": "Weaver",
       "pos": "P",
       "status": "A"
      },
      "642397": {
       "er": 25,
-      "era": 3.44,
-      "ip": 55.0,
+      "era": 3.38,
+      "ip": 56.0,
       "name": "Soto, G",
       "pos": "P",
       "status": "A"
@@ -4709,9 +4985,9 @@
       "status": "RM"
      },
      "677952": {
-      "er": 67,
-      "era": 3.68,
-      "ip": 149.33,
+      "er": 68,
+      "era": 3.59,
+      "ip": 155.33,
       "name": "Ashcraft, B",
       "pos": "P",
       "status": "A"
@@ -4893,9 +5169,9 @@
       "status": "A"
      },
      "592662": {
-      "er": 57,
-      "era": 3.2,
-      "ip": 137.67,
+      "er": 59,
+      "era": 3.21,
+      "ip": 143.0,
       "name": "Ray",
       "pos": "P",
       "status": "A"
@@ -4928,8 +5204,8 @@
      },
      "606996": {
       "er": 26,
-      "era": 4.13,
-      "ip": 52.33,
+      "era": 4.05,
+      "ip": 53.33,
       "name": "Hart",
       "pos": "P",
       "status": "A"
@@ -4940,7 +5216,7 @@
       "ip": 29.67,
       "name": "Giolito",
       "pos": "P",
-      "status": "D15"
+      "status": "D60"
      },
      "609280": {
       "name": "Andujar",
@@ -5078,8 +5354,8 @@
      },
      "673513": {
       "er": 13,
-      "era": 2.17,
-      "ip": 49.67,
+      "era": 2.13,
+      "ip": 50.67,
       "name": "Matsui",
       "pos": "P",
       "status": "A"
@@ -5123,6 +5399,11 @@
       "pos": "RF",
       "status": "A"
      },
+     "687957": {
+      "name": "Harris, D",
+      "pos": "LF",
+      "status": "A"
+     },
      "688158": {
       "er": 12,
       "era": 4.5,
@@ -5154,8 +5435,8 @@
      },
      "699134": {
       "er": 17,
-      "era": 2.04,
-      "ip": 57.33,
+      "era": 2.02,
+      "ip": 58.0,
       "name": "Rodriguez, B",
       "pos": "P",
       "status": "A"
@@ -5168,7 +5449,7 @@
      "823550": {
       "name": "Song",
       "pos": "2B",
-      "status": "A"
+      "status": "RM"
      }
     },
     "136": {
@@ -5192,8 +5473,8 @@
      },
      "622554": {
       "er": 27,
-      "era": 4.73,
-      "ip": 45.67,
+      "era": 4.53,
+      "ip": 47.67,
       "name": "Dom\u00ednguez",
       "pos": "P",
       "status": "A"
@@ -5213,8 +5494,8 @@
      },
      "642100": {
       "er": 12,
-      "era": 2.65,
-      "ip": 34.0,
+      "era": 2.57,
+      "ip": 35.0,
       "name": "Speier",
       "pos": "P",
       "status": "A"
@@ -5301,9 +5582,9 @@
       "status": "RM"
      },
      "669302": {
-      "er": 56,
-      "era": 3.35,
-      "ip": 150.33,
+      "er": 58,
+      "era": 3.36,
+      "ip": 155.33,
       "name": "Gilbert, L",
       "pos": "P",
       "status": "A"
@@ -5328,8 +5609,8 @@
      },
      "672841": {
       "er": 1,
-      "era": 6.75,
-      "ip": 1.33,
+      "era": 3.86,
+      "ip": 2.33,
       "name": "Vargas",
       "pos": "P",
       "status": "A"
@@ -5484,7 +5765,7 @@
      "642715": {
       "name": "Adames",
       "pos": "SS",
-      "status": "A"
+      "status": "D10"
      },
      "646240": {
       "name": "Devers",
@@ -5539,12 +5820,12 @@
       "ip": 60.33,
       "name": "Brubaker",
       "pos": "P",
-      "status": "A"
+      "status": "D10"
      },
      "665665": {
       "er": 9,
-      "era": 6.17,
-      "ip": 11.67,
+      "era": 5.68,
+      "ip": 12.67,
       "name": "Sanmartin",
       "pos": "P",
       "status": "A"
@@ -5577,8 +5858,8 @@
      },
      "671345": {
       "er": 6,
-      "era": 3.86,
-      "ip": 11.67,
+      "era": 3.46,
+      "ip": 13.0,
       "name": "Foley",
       "pos": "P",
       "status": "A"
@@ -5593,11 +5874,11 @@
      },
      "676254": {
       "er": 23,
-      "era": 7.52,
-      "ip": 26.33,
+      "era": 6.99,
+      "ip": 28.33,
       "name": "Walker, R",
       "pos": "P",
-      "status": "RM"
+      "status": "A"
      },
      "676775": {
       "er": 17,
@@ -5624,8 +5905,8 @@
      },
      "681916": {
       "er": 10,
-      "era": 2.96,
-      "ip": 27.33,
+      "era": 2.86,
+      "ip": 28.33,
       "name": "Smith, D",
       "pos": "P",
       "status": "A"
@@ -5633,7 +5914,7 @@
      "682674": {
       "name": "Bericoto",
       "pos": "LF",
-      "status": "A"
+      "status": "D10"
      },
      "683363": {
       "er": 4,
@@ -5641,7 +5922,7 @@
       "ip": 5.67,
       "name": "Wilkinson",
       "pos": "P",
-      "status": "A"
+      "status": "RM"
      },
      "683627": {
       "er": 4,
@@ -5649,7 +5930,7 @@
       "ip": 5.0,
       "name": "Molina",
       "pos": "P",
-      "status": "RM"
+      "status": "A"
      },
      "683679": {
       "name": "Rodriguez, J",
@@ -5675,7 +5956,7 @@
      "687529": {
       "name": "McCray",
       "pos": "CF",
-      "status": "RM"
+      "status": "A"
      },
      "687551": {
       "name": "Gilbert",
@@ -5684,8 +5965,8 @@
      },
      "687931": {
       "er": 26,
-      "era": 7.03,
-      "ip": 32.0,
+      "era": 6.49,
+      "ip": 34.67,
       "name": "Whisenhunt",
       "pos": "P",
       "status": "A"
@@ -5710,8 +5991,8 @@
      },
      "693313": {
       "er": 9,
-      "era": 5.28,
-      "ip": 15.33,
+      "era": 4.96,
+      "ip": 16.33,
       "name": "Seymour, C",
       "pos": "P",
       "status": "A"
@@ -5719,7 +6000,7 @@
      "694376": {
       "name": "Whitcomb",
       "pos": "3B",
-      "status": "RM"
+      "status": "A"
      },
      "694738": {
       "er": 70,
@@ -5753,7 +6034,7 @@
      "801501": {
       "name": "Furman",
       "pos": "2B",
-      "status": "RM"
+      "status": "A"
      },
      "805345": {
       "er": 5,
@@ -5766,7 +6047,7 @@
      "805811": {
       "name": "Eldridge",
       "pos": "DH",
-      "status": "A"
+      "status": "BRV"
      },
      "806185": {
       "name": "Birdsong",
@@ -6086,8 +6367,8 @@
      },
      "641329": {
       "er": 11,
-      "era": 1.59,
-      "ip": 51.0,
+      "era": 1.56,
+      "ip": 52.0,
       "name": "Baker",
       "pos": "P",
       "status": "A"
@@ -6127,6 +6408,9 @@
       "status": "A"
      },
      "655889": {
+      "er": 0,
+      "era": 0.0,
+      "ip": 1.0,
       "name": "Rodr\u00edguez, M",
       "pos": "P",
       "status": "A"
@@ -6137,9 +6421,9 @@
       "status": "A"
      },
      "656876": {
-      "er": 47,
-      "era": 3.01,
-      "ip": 134.33,
+      "er": 48,
+      "era": 2.95,
+      "ip": 140.33,
       "name": "Rasmussen",
       "pos": "P",
       "status": "A"
@@ -6159,8 +6443,8 @@
      },
      "664076": {
       "er": 17,
-      "era": 3.72,
-      "ip": 38.67,
+      "era": 3.63,
+      "ip": 39.67,
       "name": "Cleavinger",
       "pos": "P",
       "status": "A"
@@ -6439,8 +6723,8 @@
      },
      "656756": {
       "er": 7,
-      "era": 7.88,
-      "ip": 8.0,
+      "era": 6.3,
+      "ip": 10.0,
       "name": "Montgomery, J",
       "pos": "P",
       "status": "A"
@@ -6509,9 +6793,9 @@
       "status": "A"
      },
      "677958": {
-      "er": 61,
-      "era": 4.46,
-      "ip": 121.0,
+      "er": 63,
+      "era": 4.41,
+      "ip": 126.67,
       "name": "Rocker",
       "pos": "P",
       "status": "A"
@@ -6620,8 +6904,8 @@
      },
      "695239": {
       "er": 17,
-      "era": 4.97,
-      "ip": 29.0,
+      "era": 4.75,
+      "ip": 30.33,
       "name": "Ahlstrom",
       "pos": "P",
       "status": "A"
@@ -7075,9 +7359,9 @@
       "status": "A"
      },
      "667297": {
-      "er": 18,
-      "era": 3.23,
-      "ip": 47.33,
+      "er": 19,
+      "era": 3.35,
+      "ip": 48.33,
       "name": "Nance",
       "pos": "P",
       "status": "A"
@@ -7120,8 +7404,8 @@
      },
      "672782": {
       "er": 23,
-      "era": 3.2,
-      "ip": 56.33,
+      "era": 3.16,
+      "ip": 57.0,
       "name": "G\u00f3mez, Y",
       "pos": "P",
       "status": "A"
@@ -7252,9 +7536,9 @@
       "status": "D60"
      },
      "805673": {
-      "er": 60,
-      "era": 5.12,
-      "ip": 96.67,
+      "er": 61,
+      "era": 4.86,
+      "ip": 103.67,
       "name": "Matthews",
       "pos": "P",
       "status": "A"
@@ -7288,9 +7572,9 @@
       "status": "A"
      },
      "554430": {
-      "er": 40,
-      "era": 2.92,
-      "ip": 120.33,
+      "er": 48,
+      "era": 3.4,
+      "ip": 124.33,
       "name": "Wheeler",
       "pos": "P",
       "status": "A"
@@ -7323,8 +7607,8 @@
      },
      "621237": {
       "er": 33,
-      "era": 6.07,
-      "ip": 46.0,
+      "era": 5.94,
+      "ip": 47.0,
       "name": "Alvarado",
       "pos": "P",
       "status": "A"
@@ -7408,9 +7692,9 @@
       "status": "A"
      },
      "663767": {
-      "er": 24,
-      "era": 4.71,
-      "ip": 42.0,
+      "er": 25,
+      "era": 4.7,
+      "ip": 44.0,
       "name": "Shugart",
       "pos": "P",
       "status": "A"
@@ -7502,8 +7786,8 @@
      },
      "686934": {
       "er": 3,
-      "era": 1.42,
-      "ip": 6.33,
+      "era": 1.23,
+      "ip": 7.33,
       "name": "McFarlane",
       "pos": "P",
       "status": "A"
@@ -7841,7 +8125,7 @@
      "805347": {
       "name": "Jarvis",
       "pos": "SS",
-      "status": "A"
+      "status": "RM"
      }
     },
     "145": {
@@ -7867,9 +8151,9 @@
       "status": "A"
      },
      "623211": {
-      "er": 22,
-      "era": 3.06,
-      "ip": 61.67,
+      "er": 23,
+      "era": 3.16,
+      "ip": 62.67,
       "name": "Brazob\u00e1n",
       "pos": "P",
       "status": "A"
@@ -7933,9 +8217,9 @@
       "status": "A"
      },
      "664353": {
-      "er": 13,
-      "era": 5.06,
-      "ip": 16.0,
+      "er": 18,
+      "era": 6.63,
+      "ip": 19.0,
       "name": "Urquidy",
       "pos": "P",
       "status": "A"
@@ -7957,9 +8241,9 @@
       "status": "D15"
      },
      "670950": {
-      "er": 25,
-      "era": 3.38,
-      "ip": 61.33,
+      "er": 28,
+      "era": 3.66,
+      "ip": 64.0,
       "name": "Richards, T",
       "pos": "P",
       "status": "A"
@@ -8025,8 +8309,8 @@
      },
      "682668": {
       "er": 1,
-      "era": 4.5,
-      "ip": 2.0,
+      "era": 3.86,
+      "ip": 2.33,
       "name": "Acu\u00f1a",
       "pos": "SS",
       "status": "A"
@@ -8133,9 +8417,9 @@
       "status": "A"
      },
      "805326": {
-      "er": 10,
-      "era": 3.25,
-      "ip": 27.67,
+      "er": 12,
+      "era": 3.64,
+      "ip": 29.67,
       "name": "Schweitzer",
       "pos": "P",
       "status": "A"
@@ -8163,9 +8447,9 @@
       "status": "A"
      },
      "645261": {
-      "er": 73,
-      "era": 3.46,
-      "ip": 176.67,
+      "er": 74,
+      "era": 3.38,
+      "ip": 183.67,
       "name": "Alcantara, S",
       "pos": "P",
       "status": "A"
@@ -8187,8 +8471,8 @@
       "status": "A"
      },
      "664126": {
-      "er": 29,
-      "era": 5.8,
+      "er": 30,
+      "era": 6.02,
       "ip": 40.33,
       "name": "Fairbanks",
       "pos": "P",
@@ -8215,7 +8499,7 @@
      "669065": {
       "name": "Stowers",
       "pos": "1B",
-      "status": "D10"
+      "status": "A"
      },
      "669364": {
       "name": "Edwards, X",
@@ -8252,9 +8536,9 @@
       "status": "A"
      },
      "676604": {
-      "er": 12,
-      "era": 3.33,
-      "ip": 27.0,
+      "er": 13,
+      "era": 3.62,
+      "ip": 27.33,
       "name": "Zuber",
       "pos": "P",
       "status": "A"
@@ -8376,7 +8660,7 @@
      "691277": {
       "name": "De Los Santos",
       "pos": "3B",
-      "status": "A"
+      "status": "RM"
      },
      "691587": {
       "er": 51,
@@ -8413,9 +8697,9 @@
       "status": "RM"
      },
      "694795": {
-      "er": 5,
-      "era": 1.2,
-      "ip": 15.0,
+      "er": 6,
+      "era": 1.69,
+      "ip": 16.0,
       "name": "Ekness",
       "pos": "P",
       "status": "A"
@@ -8440,8 +8724,8 @@
      },
      "806188": {
       "er": 25,
-      "era": 5.4,
-      "ip": 36.67,
+      "era": 5.3,
+      "ip": 37.33,
       "name": "Gibson, C",
       "pos": "P",
       "status": "A"
@@ -8685,7 +8969,7 @@
       "ip": 6.67,
       "name": "Beck, B",
       "pos": "P",
-      "status": "A"
+      "status": "RM"
      },
      "694633": {
       "name": "Hampton",
@@ -8793,7 +9077,7 @@
      "666310": {
       "name": "Naylor, B",
       "pos": "C",
-      "status": "A"
+      "status": "RM"
      },
      "668731": {
       "name": "Baddoo",
@@ -9031,8 +9315,8 @@
      "div": 0.0,
      "division": 200,
      "league": 103,
-     "losses": 79,
-     "mean_wins": 62.4,
+     "losses": 80,
+     "mean_wins": 62.2,
      "name": "Angels",
      "pennant": 0.0,
      "playoffs": 0.0,
@@ -9043,13 +9327,13 @@
      "div": 0.0,
      "division": 203,
      "league": 104,
-     "losses": 62,
-     "mean_wins": 86.0,
+     "losses": 63,
+     "mean_wins": 84.7,
      "name": "D-backs",
-     "pennant": 3.23,
-     "playoffs": 42.0,
+     "pennant": 0.7,
+     "playoffs": 23.1,
      "wins": 69,
-     "ws": 1.4
+     "ws": 0.33
     },
     "110": {
      "div": 0.0,
@@ -9058,34 +9342,754 @@
      "losses": 68,
      "mean_wins": 77.3,
      "name": "Orioles",
-     "pennant": 0.1,
-     "playoffs": 4.28,
+     "pennant": 0.15,
+     "playoffs": 3.58,
+     "wins": 63,
+     "ws": 0.05
+    },
+    "111": {
+     "div": 10.18,
+     "division": 201,
+     "league": 103,
+     "losses": 59,
+     "mean_wins": 90.4,
+     "name": "Red Sox",
+     "pennant": 23.75,
+     "playoffs": 99.8,
+     "wins": 72,
+     "ws": 12.62
+    },
+    "112": {
+     "div": 5.0,
+     "division": 205,
+     "league": 104,
+     "losses": 56,
+     "mean_wins": 90.2,
+     "name": "Cubs",
+     "pennant": 3.77,
+     "playoffs": 93.85,
+     "wins": 76,
+     "ws": 1.23
+    },
+    "113": {
+     "div": 0.0,
+     "division": 205,
+     "league": 104,
+     "losses": 70,
+     "mean_wins": 75.5,
+     "name": "Reds",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 62,
+     "ws": 0.0
+    },
+    "114": {
+     "div": 35.73,
+     "division": 202,
+     "league": 103,
+     "losses": 66,
+     "mean_wins": 83.6,
+     "name": "Guardians",
+     "pennant": 13.1,
+     "playoffs": 74.33,
+     "wins": 66,
+     "ws": 5.0
+    },
+    "115": {
+     "div": 0.0,
+     "division": 203,
+     "league": 104,
+     "losses": 81,
+     "mean_wins": 58.6,
+     "name": "Rockies",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 50,
+     "ws": 0.0
+    },
+    "116": {
+     "div": 1.15,
+     "division": 202,
+     "league": 103,
+     "losses": 70,
+     "mean_wins": 77.3,
+     "name": "Tigers",
+     "pennant": 0.25,
+     "playoffs": 3.7,
+     "wins": 61,
+     "ws": 0.0
+    },
+    "117": {
+     "div": 10.93,
+     "division": 200,
+     "league": 103,
+     "losses": 66,
+     "mean_wins": 79.3,
+     "name": "Astros",
+     "pennant": 0.33,
+     "playoffs": 16.68,
+     "wins": 65,
+     "ws": 0.12
+    },
+    "118": {
+     "div": 0.0,
+     "division": 202,
+     "league": 103,
+     "losses": 74,
+     "mean_wins": 71.0,
+     "name": "Royals",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 58,
+     "ws": 0.0
+    },
+    "119": {
+     "div": 99.92,
+     "division": 203,
+     "league": 104,
+     "losses": 51,
+     "mean_wins": 100.3,
+     "name": "Dodgers",
+     "pennant": 53.05,
+     "playoffs": 100.0,
+     "wins": 80,
+     "ws": 36.05
+    },
+    "120": {
+     "div": 0.0,
+     "division": 204,
+     "league": 104,
+     "losses": 71,
+     "mean_wins": 74.7,
+     "name": "Nationals",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 62,
+     "ws": 0.0
+    },
+    "121": {
+     "div": 0.0,
+     "division": 204,
+     "league": 104,
+     "losses": 72,
+     "mean_wins": 74.7,
+     "name": "Mets",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 59,
+     "ws": 0.0
+    },
+    "133": {
+     "div": 0.0,
+     "division": 200,
+     "league": 103,
+     "losses": 80,
+     "mean_wins": 61.7,
+     "name": "Athletics",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 51,
+     "ws": 0.0
+    },
+    "134": {
+     "div": 0.0,
+     "division": 205,
+     "league": 104,
+     "losses": 69,
+     "mean_wins": 81.1,
+     "name": "Pirates",
+     "pennant": 0.28,
+     "playoffs": 1.62,
+     "wins": 63,
+     "ws": 0.25
+    },
+    "135": {
+     "div": 0.07,
+     "division": 203,
+     "league": 104,
+     "losses": 60,
+     "mean_wins": 88.1,
+     "name": "Padres",
+     "pennant": 6.55,
+     "playoffs": 79.5,
+     "wins": 71,
+     "ws": 2.65
+    },
+    "136": {
+     "div": 35.5,
+     "division": 200,
+     "league": 103,
+     "losses": 69,
+     "mean_wins": 81.5,
+     "name": "Mariners",
+     "pennant": 3.0,
+     "playoffs": 45.98,
+     "wins": 63,
+     "ws": 0.75
+    },
+    "137": {
+     "div": 0.0,
+     "division": 203,
+     "league": 104,
+     "losses": 78,
+     "mean_wins": 62.6,
+     "name": "Giants",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 53,
+     "ws": 0.0
+    },
+    "138": {
+     "div": 0.0,
+     "division": 205,
+     "league": 104,
+     "losses": 66,
+     "mean_wins": 81.8,
+     "name": "Cardinals",
+     "pennant": 0.03,
+     "playoffs": 3.02,
+     "wins": 66,
+     "ws": 0.0
+    },
+    "139": {
+     "div": 40.35,
+     "division": 201,
+     "league": 103,
+     "losses": 53,
+     "mean_wins": 93.2,
+     "name": "Rays",
+     "pennant": 10.68,
+     "playoffs": 100.0,
+     "wins": 78,
+     "ws": 3.88
+    },
+    "140": {
+     "div": 53.58,
+     "division": 200,
+     "league": 103,
+     "losses": 66,
+     "mean_wins": 82.4,
+     "name": "Rangers",
+     "pennant": 6.35,
+     "playoffs": 61.6,
+     "wins": 66,
+     "ws": 1.98
+    },
+    "141": {
+     "div": 0.0,
+     "division": 201,
+     "league": 103,
+     "losses": 68,
+     "mean_wins": 77.6,
+     "name": "Blue Jays",
+     "pennant": 0.07,
+     "playoffs": 4.53,
+     "wins": 64,
+     "ws": 0.0
+    },
+    "142": {
+     "div": 0.93,
+     "division": 202,
+     "league": 103,
+     "losses": 68,
+     "mean_wins": 77.3,
+     "name": "Twins",
+     "pennant": 0.07,
+     "playoffs": 3.8,
+     "wins": 63,
+     "ws": 0.03
+    },
+    "143": {
+     "div": 26.5,
+     "division": 204,
+     "league": 104,
+     "losses": 59,
+     "mean_wins": 90.0,
+     "name": "Phillies",
+     "pennant": 15.03,
+     "playoffs": 93.47,
+     "wins": 73,
+     "ws": 8.12
+    },
+    "144": {
+     "div": 73.38,
+     "division": 204,
+     "league": 104,
+     "losses": 55,
+     "mean_wins": 92.7,
+     "name": "Braves",
+     "pennant": 7.17,
+     "playoffs": 99.03,
+     "wins": 76,
+     "ws": 2.73
+    },
+    "145": {
+     "div": 62.2,
+     "division": 202,
+     "league": 103,
+     "losses": 63,
+     "mean_wins": 84.9,
+     "name": "White Sox",
+     "pennant": 12.05,
+     "playoffs": 86.03,
+     "wins": 68,
+     "ws": 3.83
+    },
+    "146": {
+     "div": 0.12,
+     "division": 204,
+     "league": 104,
+     "losses": 65,
+     "mean_wins": 82.3,
+     "name": "Marlins",
+     "pennant": 0.23,
+     "playoffs": 6.4,
+     "wins": 67,
+     "ws": 0.07
+    },
+    "147": {
+     "div": 49.48,
+     "division": 201,
+     "league": 103,
+     "losses": 56,
+     "mean_wins": 93.7,
+     "name": "Yankees",
+     "pennant": 30.2,
+     "playoffs": 100.0,
+     "wins": 74,
+     "ws": 15.25
+    },
+    "158": {
+     "div": 95.0,
+     "division": 205,
+     "league": 104,
+     "losses": 50,
+     "mean_wins": 97.3,
+     "name": "Brewers",
+     "pennant": 13.2,
+     "playoffs": 100.0,
+     "wins": 81,
+     "ws": 5.08
+    }
+   }
+  },
+  {
+   "attribution": {
+    "batches": 5,
+    "per_batch": 200,
+    "priced": 5,
+    "seasons": 1000,
+    "skipped": 26
+   },
+   "date": "2026-08-24",
+   "events": {
+    "108": [
+     {
+      "frm": "D60",
+      "kind": "il_out",
+      "name": "Kikuchi",
+      "pid": 579328,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "removed",
+      "name": "Fulmer",
+      "pid": 605242,
+      "pos": "P"
+     }
+    ],
+    "109": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Carrillo",
+      "pid": 672629,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "D15",
+      "kind": "il_out",
+      "name": "Jameson",
+      "pid": 686753,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Soroka",
+      "pid": 647336,
+      "pos": "P",
+      "to": "D15"
+     },
+     {
+      "frm": "A",
+      "kind": "removed",
+      "name": "Littell",
+      "pid": 641793,
+      "pos": "P"
+     }
+    ],
+    "113": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Johnson",
+      "pid": 671155,
+      "pos": "2B",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Toglia",
+      "pid": 669911,
+      "pos": "1B",
+      "to": "D10"
+     }
+    ],
+    "115": [
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Karros, K",
+      "pid": 691720,
+      "pos": "3B",
+      "to": "D7"
+     },
+     {
+      "frm": "D10",
+      "kind": "il_out",
+      "name": "Freeman, T",
+      "pid": 671289,
+      "pos": "RF",
+      "to": "RM"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Ritter",
+      "pid": 690022,
+      "pos": "SS",
+      "to": "A"
+     }
+    ],
+    "116": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "De Jesus",
+      "pid": 646241,
+      "pos": "P",
+      "to": "RM"
+     },
+     {
+      "kind": "added",
+      "name": "Sears, A",
+      "pid": 808825,
+      "pos": "P",
+      "to": "A"
+     }
+    ],
+    "134": [
+     {
+      "frm": "A",
+      "kind": "optioned",
+      "name": "Kelly, A",
+      "pid": 699008,
+      "pos": "P",
+      "to": "RM"
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Curtis",
+      "pid": 694753,
+      "pos": "P",
+      "to": "A"
+     }
+    ],
+    "136": [
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 0.0,
+      "delta_se": 0.0,
+      "frm": "A",
+      "kind": "il_in",
+      "measured_on": 1000,
+      "name": "Donovan",
+      "pid": 680977,
+      "pos": "3B",
+      "to": "D7"
+     },
+     {
+      "era_from": 4.3,
+      "era_to": 6.3,
+      "ip": 0.7,
+      "kind": "blowup",
+      "name": "Rucker",
+      "pid": 621074,
+      "pos": "P",
+      "runs": 7
+     },
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Wisdom",
+      "pid": 621550,
+      "pos": "3B",
+      "to": "A"
+     }
+    ],
+    "138": [
+     {
+      "era_from": 2.94,
+      "era_to": 3.93,
+      "ip": 0.7,
+      "kind": "blowup",
+      "name": "O'Brien",
+      "pid": 676617,
+      "pos": "P",
+      "runs": 6
+     },
+     {
+      "frm": "A",
+      "kind": "il_in",
+      "name": "Pereira",
+      "pid": 677592,
+      "pos": "RF",
+      "to": "D10"
+     },
+     {
+      "frm": "D60",
+      "kind": "il_out",
+      "name": "Ur\u00edas, R",
+      "pid": 602104,
+      "pos": "3B",
+      "to": "A"
+     }
+    ],
+    "139": [
+     {
+      "delta_note": "no effect on the simulated roster",
+      "frm": "D60",
+      "kind": "il_out",
+      "name": "Rodr\u00edguez, M",
+      "pid": 655889,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 1.1,
+      "delta_se": 0.71,
+      "frm": "A",
+      "kind": "removed",
+      "measured_on": 1000,
+      "name": "Roycroft",
+      "pid": 688297,
+      "pos": "P"
+     }
+    ],
+    "140": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "O'Hoppe",
+      "pid": 681351,
+      "pos": "C",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "removed",
+      "name": "Kelenic",
+      "pid": 672284,
+      "pos": "RF"
+     }
+    ],
+    "144": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Hicklen",
+      "pid": 676551,
+      "pos": "RF",
+      "to": "A"
+     }
+    ],
+    "146": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Ralston",
+      "pid": 667652,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "frm": "A",
+      "kind": "removed",
+      "name": "King, Jo",
+      "pid": 667463,
+      "pos": "P"
+     }
+    ],
+    "147": [
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": -0.4,
+      "delta_se": 1.69,
+      "frm": "RM",
+      "kind": "called_up",
+      "measured_on": 1000,
+      "name": "Beck, B",
+      "pid": 694341,
+      "pos": "P",
+      "to": "A"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": 1.8,
+      "delta_se": 0.89,
+      "frm": "A",
+      "kind": "il_in",
+      "measured_on": 1000,
+      "name": "Weathers",
+      "pid": 677960,
+      "pos": "P",
+      "to": "D15"
+     },
+     {
+      "batches": 5,
+      "delta_note": "no measurable effect",
+      "delta_pp": -0.2,
+      "delta_se": 1.12,
+      "frm": "D10",
+      "kind": "il_out",
+      "measured_on": 1000,
+      "name": "Bellinger",
+      "pid": 641355,
+      "pos": "LF",
+      "to": "A"
+     }
+    ],
+    "158": [
+     {
+      "frm": "RM",
+      "kind": "called_up",
+      "name": "Naylor, B",
+      "pid": 666310,
+      "pos": "C",
+      "to": "A"
+     }
+    ]
+   },
+   "generated_at": 1787545310.9111507,
+   "moves": {
+    "108": 0.0,
+    "109": 0.34,
+    "110": 0.0,
+    "111": -2.12,
+    "112": 0.12,
+    "113": 0.0,
+    "114": 1.0,
+    "115": 0.0,
+    "116": -0.13,
+    "117": -0.08,
+    "118": 0.0,
+    "119": 3.88,
+    "120": 0.0,
+    "121": 0.0,
+    "133": 0.0,
+    "134": -0.15,
+    "135": 0.0,
+    "136": -0.93,
+    "137": 0.0,
+    "138": 0.02,
+    "139": 1.83,
+    "140": -0.13,
+    "141": -0.02,
+    "142": -0.07,
+    "143": -0.37,
+    "144": 0.29,
+    "145": 0.42,
+    "146": 0.12,
+    "147": -3.13,
+    "158": -0.92
+   },
+   "n": 4000,
+   "n_games_left": 466,
+   "prev_date": "2026-08-23",
+   "roster_shed": true,
+   "season": "2026",
+   "teams": {
+    "108": {
+     "div": 0.0,
+     "division": 200,
+     "league": 103,
+     "losses": 79,
+     "mean_wins": 62.4,
+     "name": "Angels",
+     "pennant": 0.0,
+     "playoffs": 0.0,
+     "wins": 52,
+     "ws": 0.0
+    },
+    "109": {
+     "div": 0.03,
+     "division": 203,
+     "league": 104,
+     "losses": 62,
+     "mean_wins": 86.0,
+     "name": "D-backs",
+     "pennant": 4.05,
+     "playoffs": 41.35,
+     "wins": 69,
+     "ws": 1.82
+    },
+    "110": {
+     "div": 0.0,
+     "division": 201,
+     "league": 103,
+     "losses": 68,
+     "mean_wins": 77.3,
+     "name": "Orioles",
+     "pennant": 0.05,
+     "playoffs": 3.73,
      "wins": 63,
      "ws": 0.0
     },
     "111": {
-     "div": 10.22,
+     "div": 9.47,
      "division": 201,
      "league": 103,
      "losses": 59,
      "mean_wins": 90.3,
      "name": "Red Sox",
-     "pennant": 25.23,
-     "playoffs": 99.88,
+     "pennant": 24.8,
+     "playoffs": 99.85,
      "wins": 71,
-     "ws": 12.7
+     "ws": 12.85
     },
     "112": {
-     "div": 2.85,
+     "div": 3.2,
      "division": 205,
      "league": 104,
      "losses": 56,
      "mean_wins": 89.4,
      "name": "Cubs",
-     "pennant": 3.42,
-     "playoffs": 86.03,
+     "pennant": 2.88,
+     "playoffs": 85.92,
      "wins": 75,
-     "ws": 1.3
+     "ws": 1.07
     },
     "113": {
      "div": 0.0,
@@ -9095,28 +10099,28 @@
      "mean_wins": 75.9,
      "name": "Reds",
      "pennant": 0.0,
-     "playoffs": 0.03,
+     "playoffs": 0.0,
      "wins": 62,
      "ws": 0.0
     },
     "114": {
-     "div": 20.9,
+     "div": 21.05,
      "division": 202,
      "league": 103,
      "losses": 66,
      "mean_wins": 82.8,
      "name": "Guardians",
-     "pennant": 9.9,
-     "playoffs": 65.78,
+     "pennant": 10.65,
+     "playoffs": 65.75,
      "wins": 65,
-     "ws": 3.98
+     "ws": 3.88
     },
     "115": {
      "div": 0.0,
      "division": 203,
      "league": 104,
      "losses": 80,
-     "mean_wins": 59.7,
+     "mean_wins": 59.8,
      "name": "Rockies",
      "pennant": 0.0,
      "playoffs": 0.0,
@@ -9124,35 +10128,35 @@
      "ws": 0.0
     },
     "116": {
-     "div": 1.23,
+     "div": 1.35,
      "division": 202,
      "league": 103,
      "losses": 69,
      "mean_wins": 77.9,
      "name": "Tigers",
-     "pennant": 0.45,
-     "playoffs": 6.58,
+     "pennant": 0.35,
+     "playoffs": 6.17,
      "wins": 61,
-     "ws": 0.17
+     "ws": 0.1
     },
     "117": {
-     "div": 15.05,
+     "div": 13.57,
      "division": 200,
      "league": 103,
      "losses": 66,
      "mean_wins": 79.2,
      "name": "Astros",
-     "pennant": 0.55,
-     "playoffs": 20.0,
+     "pennant": 0.6,
+     "playoffs": 18.45,
      "wins": 65,
-     "ws": 0.1
+     "ws": 0.17
     },
     "118": {
      "div": 0.0,
      "division": 202,
      "league": 103,
      "losses": 74,
-     "mean_wins": 70.4,
+     "mean_wins": 70.3,
      "name": "Royals",
      "pennant": 0.0,
      "playoffs": 0.0,
@@ -9160,7 +10164,7 @@
      "ws": 0.0
     },
     "119": {
-     "div": 99.97,
+     "div": 99.92,
      "division": 203,
      "league": 104,
      "losses": 51,
@@ -9169,7 +10173,7 @@
      "pennant": 53.52,
      "playoffs": 100.0,
      "wins": 80,
-     "ws": 36.27
+     "ws": 36.73
     },
     "120": {
      "div": 0.0,
@@ -9188,7 +10192,7 @@
      "division": 204,
      "league": 104,
      "losses": 72,
-     "mean_wins": 74.1,
+     "mean_wins": 74.2,
      "name": "Mets",
      "pennant": 0.0,
      "playoffs": 0.0,
@@ -9212,36 +10216,36 @@
      "division": 205,
      "league": 104,
      "losses": 69,
-     "mean_wins": 81.6,
+     "mean_wins": 81.7,
      "name": "Pirates",
-     "pennant": 0.42,
-     "playoffs": 2.77,
+     "pennant": 0.45,
+     "playoffs": 3.45,
      "wins": 63,
-     "ws": 0.2
+     "ws": 0.3
     },
     "135": {
-     "div": 0.03,
+     "div": 0.05,
      "division": 203,
      "league": 104,
      "losses": 60,
      "mean_wins": 87.4,
      "name": "Padres",
-     "pennant": 3.12,
-     "playoffs": 65.22,
+     "pennant": 2.9,
+     "playoffs": 64.08,
      "wins": 71,
-     "ws": 1.15
+     "ws": 1.0
     },
     "136": {
-     "div": 33.88,
+     "div": 35.62,
      "division": 200,
      "league": 103,
      "losses": 69,
-     "mean_wins": 80.8,
+     "mean_wins": 80.9,
      "name": "Mariners",
-     "pennant": 2.95,
-     "playoffs": 41.7,
+     "pennant": 2.7,
+     "playoffs": 43.45,
      "wins": 62,
-     "ws": 0.88
+     "ws": 0.95
     },
     "137": {
      "div": 0.0,
@@ -9262,34 +10266,34 @@
      "losses": 66,
      "mean_wins": 82.1,
      "name": "Cardinals",
-     "pennant": 0.23,
-     "playoffs": 3.88,
+     "pennant": 0.28,
+     "playoffs": 4.28,
      "wins": 66,
      "ws": 0.07
     },
     "139": {
-     "div": 40.58,
+     "div": 41.25,
      "division": 201,
      "league": 103,
      "losses": 53,
      "mean_wins": 93.3,
      "name": "Rays",
-     "pennant": 9.22,
+     "pennant": 9.05,
      "playoffs": 100.0,
      "wins": 77,
-     "ws": 3.25
+     "ws": 2.9
     },
     "140": {
-     "div": 51.08,
+     "div": 50.8,
      "division": 200,
      "league": 103,
      "losses": 66,
      "mean_wins": 81.8,
      "name": "Rangers",
-     "pennant": 4.95,
-     "playoffs": 57.17,
+     "pennant": 4.0,
+     "playoffs": 57.77,
      "wins": 65,
-     "ws": 1.75
+     "ws": 1.05
     },
     "141": {
      "div": 0.0,
@@ -9298,94 +10302,94 @@
      "losses": 68,
      "mean_wins": 78.0,
      "name": "Blue Jays",
-     "pennant": 0.35,
-     "playoffs": 6.4,
+     "pennant": 0.17,
+     "playoffs": 6.67,
      "wins": 64,
-     "ws": 0.05
+     "ws": 0.03
     },
     "142": {
-     "div": 0.9,
+     "div": 1.02,
      "division": 202,
      "league": 103,
      "losses": 68,
      "mean_wins": 77.5,
      "name": "Twins",
-     "pennant": 0.1,
-     "playoffs": 4.97,
+     "pennant": 0.15,
+     "playoffs": 4.83,
      "wins": 63,
-     "ws": 0.0
+     "ws": 0.05
     },
     "143": {
-     "div": 30.88,
+     "div": 30.25,
      "division": 204,
      "league": 104,
      "losses": 58,
      "mean_wins": 90.4,
      "name": "Phillies",
-     "pennant": 15.88,
-     "playoffs": 92.88,
+     "pennant": 15.85,
+     "playoffs": 93.28,
      "wins": 73,
-     "ws": 8.12
+     "ws": 8.78
     },
     "144": {
-     "div": 68.95,
+     "div": 69.65,
      "division": 204,
      "league": 104,
      "losses": 55,
      "mean_wins": 92.5,
      "name": "Braves",
      "pennant": 6.55,
-     "playoffs": 98.58,
+     "playoffs": 98.72,
      "wins": 76,
-     "ws": 2.3
+     "ws": 2.67
     },
     "145": {
-     "div": 76.97,
+     "div": 76.58,
      "division": 202,
      "league": 103,
      "losses": 62,
-     "mean_wins": 85.9,
+     "mean_wins": 86.0,
      "name": "White Sox",
-     "pennant": 17.93,
-     "playoffs": 93.25,
+     "pennant": 18.43,
+     "playoffs": 93.33,
      "wins": 68,
-     "ws": 6.12
+     "ws": 6.47
     },
     "146": {
-     "div": 0.17,
+     "div": 0.1,
      "division": 204,
      "league": 104,
      "losses": 64,
-     "mean_wins": 82.7,
+     "mean_wins": 82.8,
      "name": "Marlins",
-     "pennant": 0.45,
-     "playoffs": 8.65,
+     "pennant": 0.65,
+     "playoffs": 8.95,
      "wins": 67,
-     "ws": 0.2
+     "ws": 0.15
     },
     "147": {
-     "div": 49.2,
+     "div": 49.27,
      "division": 201,
      "league": 103,
      "losses": 56,
      "mean_wins": 93.7,
      "name": "Yankees",
-     "pennant": 28.27,
+     "pennant": 29.05,
      "playoffs": 100.0,
      "wins": 74,
-     "ws": 14.28
+     "ws": 14.12
     },
     "158": {
-     "div": 97.15,
+     "div": 96.8,
      "division": 205,
      "league": 104,
      "losses": 50,
-     "mean_wins": 97.6,
+     "mean_wins": 97.5,
      "name": "Brewers",
-     "pennant": 13.18,
+     "pennant": 12.88,
      "playoffs": 99.97,
      "wins": 81,
-     "ws": 5.7
+     "ws": 4.83
     }
    }
   },
@@ -24256,7 +25260,7 @@
    }
   }
  ],
- "exported_at": 1787561234.0740497,
+ "exported_at": 1787647265.2681878,
  "format": 1,
  "sport": "mlb"
 }
