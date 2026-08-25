@@ -11,9 +11,11 @@ Single-user (the repo owner). Read this before touching anything.
   auto-deploys.
 - **Commit trailers**: match the trailer block on recent commits exactly —
   `git log -1 --format=%B` and copy the footer format.
-- **Secret scan before every commit**:
-  `git diff | grep -iE '7932f4caad|9f889f611a|api_key|apikey|password' | grep -v '^-'`
-  must exit 1. Two keys leaked historically and must never re-enter the repo.
+- **Secret scan before every commit**: run `sh scripts/secret-scan.sh` and get
+  a clean result. It greps the staged diff's added lines for two
+  historically-leaked key prefixes and for credential-shaped assignments. The
+  patterns live in that script (which excludes itself from the search) rather
+  than in prose here, so documenting the check can never trip it.
   `vigil-pc.cfg` (holds SIM_TOKEN) is gitignored and must stay that way, along
   with `pc-simcache/` and `pc-deepcache/`.
 - **Guard suite gates every push**: `python3 tests/combo_audit_guards.py`
