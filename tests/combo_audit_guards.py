@@ -8044,6 +8044,99 @@ ck("an empty one-sided pool explains itself, before and after the build",
 
 print()
 print("=" * 72)
+print("The slip ledger: the correlation claim, graded")
+print("=" * 72)
+# A slip's EV lives almost entirely in the JOINT probability -- the
+# correlation lift over the independent product -- and every per-leg number
+# on this site is now disciplined by a graded record while that one was
+# graded by nothing. The ledger logs each built parlay pre-game (first-write-
+# wins on the leg set, every leg ticketed) and grades it as a unit off
+# Kalshi settlement; the report puts claimed, independent-baseline and
+# actual wins side by side.
+import sliplog as _sl31
+import store as _st31
+import kalshi as _k31
+import tempfile as _tf31
+
+_olddb31, _oldgm31 = _st31.DB_PATH, _k31.get_market
+try:
+    _st31.DB_PATH = _os.path.join(_tf31.mkdtemp(), "guard31.db")
+    _st31.init_db()
+    _item31 = {"groups": [
+        {"matchup": "CLE @ LAA", "suffix": "S1", "legs": [
+            {"side": "no", "ticker": "T-A", "close_time": 100},
+            {"side": "yes", "ticker": "T-B", "close_time": 100}]},
+        {"matchup": "MIL @ NYM", "suffix": "S2", "legs": [
+            {"side": "yes", "ticker": "T-C", "close_time": 100}]}],
+        "n_games": 2, "combined_prob_pct": 20.0, "indep_prob_pct": 12.0,
+        "kalshi_payout_net_x": 8.4, "ev_pct": 61.0, "objective": "balanced"}
+    _key31 = _sl31.log_from_item(_item31, date="2026-08-25")
+    ck("a built slip logs once: first-write-wins on its leg set",
+       _key31 is not None
+       and _sl31.log_from_item(_item31, date="2026-08-25") == _key31)
+    ck("live and unticketed slips never enter the ledger",
+       _sl31.log_from_item({"groups": [{"matchup": "X 🔴",
+                                        "legs": _item31["groups"][0]["legs"]}],
+                            "combined_prob_pct": 20, "indep_prob_pct": 12}) is None
+       and _sl31.log_from_item({"groups": [{"matchup": "Y", "legs": [
+            {"side": "yes", "ticker": None},
+            {"side": "yes", "ticker": "T-Z"}]}],
+            "combined_prob_pct": 20, "indep_prob_pct": 12}) is None,
+       "a slip with a live or unpriceable leg cannot be settled as the unit "
+       "whose joint was claimed")
+    _res31 = {"T-A": {"result": "no", "status": "finalized"},
+              "T-B": {"result": "yes", "status": "finalized"},
+              "T-C": {"result": "no", "status": "finalized"}}
+    _k31.get_market = lambda tk: _res31[tk]
+    with _st31._lock, _st31._conn() as _c31:
+        _c31.execute("UPDATE slip_log SET ts = ts - 90000")
+    ck("settlement grades the slip as a unit (NO legs win on 'no')",
+       _sl31.grade_due() == 1)
+    _rep31 = _st31.slip_report()
+    ck("the report carries the three-way verdict",
+       _rep31["graded"] == 1 and _rep31["wins"] == 0
+       and _rep31["avg_legs_hit"] == 2.0
+       and _rep31["expected_wins"] == 0.2
+       and _rep31["expected_wins_indep"] == 0.12
+       and _rep31["stacked"]["claimed_premium"] == 0.08,
+       "expected wins under the claim, under independence, and actual -- "
+       "where actual lands is the verdict on the correlation premium")
+    _sl31.log_from_item({"groups": [{"matchup": "C @ D", "suffix": "S4",
+        "legs": [{"side": "yes", "ticker": "T-F", "close_time": 100},
+                 {"side": "yes", "ticker": "T-G", "close_time": 100}]}],
+        "n_games": 1, "combined_prob_pct": 15.0, "indep_prob_pct": 15.0},
+        date="2026-08-25")
+    _res31.update({"T-F": {"result": "", "status": "finalized"},
+                   "T-G": {"result": "yes", "status": "finalized"}})
+    with _st31._lock, _st31._conn() as _c31:
+        _c31.execute("UPDATE slip_log SET ts = ts - 90000 WHERE graded=0")
+    _sl31.grade_due()
+    ck("a scratched leg voids the whole slip, never grades a different one",
+       _st31.slip_report()["void"] == 1,
+       "a voided leg changes the claimed joint; the slip that remains is "
+       "not the slip that was logged")
+finally:
+    _st31.DB_PATH, _k31.get_market = _olddb31, _oldgm31
+
+ck("every priced leg carries its ticker for slip settlement",
+   'leg["ticker"] = tk' in _insp.getsource(
+       __import__("baseball")._kalshi_payout))
+_apy31 = open(_os.path.join(_root, "app.py")).read()
+ck("the maker files every built slip and the report has a door",
+   _apy31.count("_slip_log_safe(item)") >= 2
+   and '"/api/baseball/sliplog"' in _apy31
+   and "if not item or include_live" in _apy31,
+   "logged at both return sites (optimal + plain/max-bet), live builds never")
+ck("the recorder settles slips on its cadence",
+   "sliplog.grade_due()" in open(_os.path.join(_root, "mlb_recorder.py")).read())
+_js31 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the slip scoreboard renders beside the prop log",
+   "loadSlipLog" in _js31 and "Correlation premium" in _js31
+   and 'id="bbSlipLog"' in open(_os.path.join(_root, "templates",
+                                              "index.html")).read())
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

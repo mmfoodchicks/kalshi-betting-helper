@@ -3496,6 +3496,18 @@ def api_baseball_mixed():
     sides = ({"yes"} if sides_pref == "yes"
              else {"no"} if sides_pref == "no" else None)
 
+    def _slip_log_safe(item):
+        """File the built slip in the slip ledger (best-effort bookkeeping --
+        a build must never fail because a log write did not work). Live builds
+        are a different joint quantity and are never logged."""
+        if not item or include_live:
+            return
+        try:
+            import sliplog
+            sliplog.log_from_item(item, sport="mlb", date=date)
+        except Exception as _e:
+            errlog.note("SLIP-log", _e)
+
     def _build(target_pct, _mb=False, _opt=False):
         return baseball.build_mixed_parlay(
             games, n_legs=legs, target_pct=target_pct, sides=sides,
@@ -3524,6 +3536,7 @@ def api_baseball_mixed():
                 item["objective"] = "optimal"
                 item["target_payout_x"] = payout
                 item["target_capped"] = capped
+                _slip_log_safe(item)
                 return {"parlay": item}
             pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
             if pre and not any(g.get("pick_price_cents") for g in pre):
@@ -3558,6 +3571,7 @@ def api_baseball_mixed():
             if sides is not None:
                 return {"parlay": None, "hint": "sides_empty",
                         "sides": sides_pref, "target_pct": target}
+        _slip_log_safe(item)
         return {"parlay": item}
 
     # ---- run it in the BACKGROUND when the client gave us a token ----------
@@ -3654,6 +3668,18 @@ def api_baseball_proplog():
     report = store.prop_report(min_edge=edge)
     report["recorder"] = mlb_recorder.status()
     return jsonify(report)
+
+
+@app.route("/api/baseball/sliplog")
+def api_baseball_sliplog():
+    """Slip-level calibration: claimed joint probability vs realized wins over
+    every parlay the maker built -- the correlation premium's track record."""
+    try:
+        import sliplog
+        sliplog.grade_due()
+    except Exception as _e:
+        errlog.note("APP-api_baseball_sliplog", _e)
+    return jsonify(store.slip_report())
 
 
 @app.route("/api/baseball/hits")

@@ -177,6 +177,29 @@ def init_db():
                 except Exception as _e:
                     errlog.note("DB-init_db-3", _e)
 
+        # Slip ledger: every parlay the maker BUILDS, logged at first sight with
+        # its claimed joint probability and the independent product of the same
+        # legs. The gap between those two IS the correlation claim -- the number
+        # that carries essentially all of a slip's EV and, until this table, was
+        # graded by nothing. Slips are graded as a unit off Kalshi settlement:
+        # won only if every leg settled the bought way. First-write-wins on the
+        # leg-set key, pre-game only (the caller gates on live state), same
+        # entry discipline as predlog.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS slip_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts INTEGER, date TEXT, sport TEXT,
+                key TEXT UNIQUE,
+                n_legs INTEGER, n_games INTEGER,
+                prob REAL, indep_prob REAL,
+                market_payout_x REAL, ev_pct REAL, objective TEXT,
+                legs TEXT,
+                max_close INTEGER,
+                graded INTEGER DEFAULT 0, won INTEGER, legs_hit INTEGER,
+                resolved_ts INTEGER
+            )""")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_slip_graded ON slip_log(graded)")
+
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
             CREATE TABLE IF NOT EXISTS bets (
@@ -479,6 +502,98 @@ def nfl_record():
     out = {"regular": _pick_stats(reg, pend.get(0, 0)),
            "preseason": _pick_stats(pre, pend.get(1, 0))}
     out["regular"]["clv_note"] = "pre-game closes only"
+    return out
+
+
+# ---- Slip ledger (the correlation claim, graded) ---------------------------
+def log_slip(sport, date, key, n_legs, n_games, prob, indep_prob,
+             market_payout_x, ev_pct, objective, legs_json, max_close):
+    """First build of a leg-set wins: the claim on record is the one made the
+    first time this exact slip was assembled, pre-game."""
+    with _lock, _conn() as c:
+        c.execute(
+            """INSERT OR IGNORE INTO slip_log
+               (ts, date, sport, key, n_legs, n_games, prob, indep_prob,
+                market_payout_x, ev_pct, objective, legs, max_close)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (int(time.time()), date, sport, key, n_legs, n_games, prob,
+             indep_prob, market_payout_x, ev_pct, objective, legs_json,
+             max_close))
+
+
+def ungraded_slips(played_before, limit=40):
+    """Slips old enough that their games should have been played (log time is
+    build time, pre-game on slate day)."""
+    with _lock, _conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM slip_log WHERE graded=0 AND ts <= ? "
+            "ORDER BY ts LIMIT ?", (played_before, limit)).fetchall()]
+
+
+def set_slip_grade(slip_id, graded, won=None, legs_hit=None):
+    with _lock, _conn() as c:
+        c.execute("UPDATE slip_log SET graded=?, won=?, legs_hit=?, resolved_ts=? "
+                  "WHERE id=?",
+                  (graded, won, legs_hit, int(time.time()), slip_id))
+
+
+def slip_report():
+    """Claimed vs realized, at the SLIP level -- the only place the correlation
+    premium (which carries essentially all of a slip's EV) gets scored.
+
+    The decisive comparison is three numbers over the same graded slips:
+      expected wins under the CLAIMED joints   (sum of prob)
+      expected wins treating legs INDEPENDENT  (sum of indep_prob)
+      actual wins
+    If actual tracks the independent sum, the correlation claims are noise and
+    every stacked slip's EV is overstated by exactly the premium."""
+    with _lock, _conn() as c:
+        rows = [dict(r) for r in c.execute(
+            "SELECT * FROM slip_log WHERE graded=1").fetchall()]
+        pending = c.execute(
+            "SELECT COUNT(*) n FROM slip_log WHERE graded=0").fetchone()["n"]
+        void = c.execute(
+            "SELECT COUNT(*) n FROM slip_log WHERE graded=2").fetchone()["n"]
+    n = len(rows)
+    out = {"graded": n, "pending": pending, "void": void}
+    if not n:
+        return out
+    wins = sum(1 for r in rows if r["won"])
+    exp = sum(r["prob"] or 0 for r in rows)
+    exp_ind = sum(r["indep_prob"] or 0 for r in rows)
+    out.update({
+        "wins": wins,
+        "expected_wins": round(exp, 2),
+        "expected_wins_indep": round(exp_ind, 2),
+        "avg_claimed_pct": round(100 * exp / n, 1),
+        "realized_pct": round(100 * wins / n, 1),
+        "avg_legs_hit": round(sum(r["legs_hit"] or 0 for r in rows) / n, 1),
+    })
+    bins = []
+    for lo, hi in ((0, 5), (5, 15), (15, 30), (30, 60), (60, 101)):
+        b = [r for r in rows if lo <= 100 * (r["prob"] or 0) < hi]
+        if b:
+            bins.append({"range": f"{lo}-{min(hi, 100)}%", "n": len(b),
+                         "claimed": round(100 * sum(r["prob"] for r in b) / len(b), 1),
+                         "hit": round(100 * sum(1 for r in b if r["won"]) / len(b), 1)})
+    out["calibration"] = bins
+    # The slips that actually CLAIM correlation: joint above the independent
+    # product. These are where the premium lives; single-leg-per-game slips
+    # grade the marginals, which the prop log already covers.
+    st = [r for r in rows if (r["prob"] or 0) > (r["indep_prob"] or 0) + 1e-9]
+    if st:
+        s_exp = sum(r["prob"] for r in st)
+        s_ind = sum(r["indep_prob"] for r in st)
+        s_act = sum(1 for r in st if r["won"])
+        out["stacked"] = {
+            "n": len(st), "wins": s_act,
+            "expected_wins": round(s_exp, 2),
+            "expected_wins_indep": round(s_ind, 2),
+            # The premium in expected wins: what correlation claimed to add,
+            # vs what showed up over the independent baseline.
+            "claimed_premium": round(s_exp - s_ind, 2),
+            "realized_premium": round(s_act - s_ind, 2),
+        }
     return out
 
 

@@ -209,6 +209,10 @@ def _loop():
         try:
             record_once()
             grade_due()
+            # The slip ledger settles on the same cadence: built parlays grade
+            # off Kalshi settlement once their games are done.
+            import sliplog
+            sliplog.grade_due()
         except Exception as _e:
             errlog.note("MREC-loop", _e)
         time.sleep(SAMPLE_INTERVAL)

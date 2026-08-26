@@ -3855,6 +3855,16 @@ def _kalshi_payout(leg_suffix_pairs):
         except Exception:
             c = None
         leg["market_cents"] = c
+        # The leg's own market ticker + close, so the SLIP can be graded as a
+        # unit later (sliplog): both sides share a ticker, the side rides on
+        # the leg itself. Settlement is the one grader that never argues.
+        try:
+            tk, close = (kalshi_mlb.ticker_leg(idx, suf, leg.get("kref"))
+                         if suf and idx else (None, None))
+        except Exception:
+            tk, close = None, None
+        leg["ticker"] = tk
+        leg["close_time"] = close
         if c and 0 < c < 100:
             leg["market_payout_x"] = round(100.0 / c, 2)
             payout *= 100.0 / c

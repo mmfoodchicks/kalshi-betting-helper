@@ -1311,7 +1311,11 @@ function renderGameGrid(games) {
   // How many games are actually selectable today, and how many are picked --
   // the leg count you can ask for is bounded by this, so it belongs next to
   // the boxes rather than in the user's head.
-  const nSel = allOn ? elig.length : Object.keys(comboGameSel || {}).length;
+  // Count selections against the ELIGIBLE list: a pk selected earlier can
+  // belong to a game that has since gone Final, and counting it would report
+  // more games than the build can actually use.
+  const nSel = allOn ? elig.length
+    : elig.filter((g) => (comboGameSel || {})[g.game_pk] !== undefined).length;
   const live = elig.filter((g) => (g.live || {}).state === "Live").length;
   const count = `<div class="small gg-count" style="color:var(--muted);margin:-2px 0 2px">`
     + `<b>${elig.length}</b> game${elig.length === 1 ? "" : "s"} today`
@@ -1991,6 +1995,7 @@ async function loadBaseball(silent) {
     }
     loadBaseballRecord();
     loadPropLog();
+    loadSlipLog();
 
     const c = d.combos;
     bbCombosData = Object.assign({}, c, { games: d.games || [] });
@@ -6056,6 +6061,37 @@ async function loadValue() {
   } catch (e2) {
     box.innerHTML = `<div class="empty">Scan failed - try again.</div>`;
   }
+}
+
+// ---- Slip-level calibration (the correlation claim, graded) ---------------
+// A slip's EV lives almost entirely in the JOINT probability the sim claims --
+// the correlation lift over the independent product -- and that number had no
+// track record. Every built parlay is now logged pre-game and graded off
+// settlement; this line is where the claim meets reality.
+async function loadSlipLog() {
+  if (!isOwner()) return;
+  const el = $("bbSlipLog");
+  if (!el) return;
+  try {
+    const r = await (await fetch("/api/baseball/sliplog")).json();
+    if (!r.graded) {
+      el.innerHTML = `<div class="small" style="color:var(--muted)">🧪 <b>Slip calibration</b>: every parlay you build is now logged (claimed joint % + the independent product) and graded on settlement${r.pending ? ` - <b>${r.pending}</b> awaiting results` : " - starts with your next build"}. This is the scoreboard for the correlation premium, which is where a slip's EV actually lives.</div>`;
+      return;
+    }
+    const pct = (v) => v == null ? "-" : v + "%";
+    let html = `🧪 <b>Slip calibration</b>: <b>${r.graded}</b> slips graded · claimed avg <b>${pct(r.avg_claimed_pct)}</b> → hit <b>${pct(r.realized_pct)}</b> <span style="color:var(--muted)">(expected ${r.expected_wins} wins vs ${r.expected_wins_indep} if legs were independent; got <b>${r.wins}</b>)</span>${r.pending ? ` · ${r.pending} pending` : ""}`;
+    const st = r.stacked;
+    if (st) {
+      const ok = st.realized_premium >= 0.5 * st.claimed_premium;
+      html += `<div class="small" style="margin-top:3px">🔗 Correlation premium (stacked slips, n=${st.n}): claimed <b>+${st.claimed_premium}</b> extra wins over independent · realized <b class="${ok ? "ev pos" : "ev neg"}">${st.realized_premium >= 0 ? "+" : ""}${st.realized_premium}</b></div>`;
+    }
+    if (r.calibration && r.calibration.length)
+      html += `<div class="small" style="margin-top:2px;color:var(--muted)">` + r.calibration.map((b) =>
+        `${b.range}: ${b.claimed}→${b.hit}% (${b.n})`).join(" · ") + `</div>`;
+    if (r.graded < 30)
+      html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ ${r.graded} slips is far too few to judge - the premium verdict needs ~50+. Until then treat every slip EV as a claim, size small, and let this line decide.</div>`;
+    el.innerHTML = html;
+  } catch (e) { /* ignore */ }
 }
 
 // ---- Baseball model track record ------------------------------------------
