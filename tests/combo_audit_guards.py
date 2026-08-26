@@ -5256,12 +5256,15 @@ _p = _bbttl.progress_get(_pt) or {}
 ck("finished games and cache hits are counted separately",
    _p.get("done") == 1 and _p.get("cached") == 1,
    "'15 games simulated' and '15 games read from cache' are very different waits")
+_bbttl.progress_declare(_pt, 3)        # the sweep announces its pass count
 _bbttl.progress_start(_pt, 5)          # optimal mode's second floor pass
-ck("sweeping another floor EXTENDS the total instead of resetting it",
-   (_bbttl.progress_get(_pt) or {}).get("total") == 10
-   and (_bbttl.progress_get(_pt) or {}).get("done") == 1,
-   "optimal runs the builder three times on one token; resetting would send "
-   "the bar 0->100 three times over")
+_pp = _bbttl.progress_get(_pt) or {}
+ck("sweeping another floor advances the PASS, never the denominator",
+   _pp.get("total") == 5 and _pp.get("pass") == 2 and _pp.get("passes") == 3
+   and _pp.get("done") == 0,
+   "the old scheme EXTENDED the total each re-entry: the bar read 15/15 "
+   "done, then the total grew under it to 30 and 45 -- reported verbatim "
+   "by the owner. One bar, divided by a declared pass count.")
 _bbttl.progress_done(_pt)
 ck("and the token is dropped when the build ends",
    _bbttl.progress_get(_pt) is None)
@@ -5270,7 +5273,7 @@ ck("the endpoint serves the count and the client polls it",
    and "&ptok=" in _appjs,
    "without a poll the browser has no way to see inside a single request")
 ck("real counts win over the time-based estimate when they exist",
-   "if (real) {" in _appjs and "100 * (real.done" in _appjs,
+   "if (real) {" in _appjs and "((ps - 1) + fracPass) / passes" in _appjs,
    "a measured count beats a curve every time; the curve is only the fallback")
 ck("the progress bar is paced by MEASURED runs, not a fixed curve",
    "_simRecord" in _appjs and "_simEst" in _appjs
@@ -7438,7 +7441,7 @@ ck("adopted sims land atomically where every worker reads",
 _pw20 = open(_os.path.join(_root, "pc_worker.py")).read()
 ck("the worker asks what the server needs before simulating",
    "/api/art/have?kind=gamesim" in _pw20 and "schema" in _pw20
-   and 'state") != "Final"' in _pw20.replace("'", '"'),
+   and '("Final", "Live")' in _pw20,
    "re-uploading what the server already has fresh is pure waste; simming "
    "finished games is worse")
 _bat20 = open(_os.path.join(_root, "vigil-pc.bat")).read()
@@ -8134,6 +8137,77 @@ ck("the slip scoreboard renders beside the prop log",
    "loadSlipLog" in _js31 and "Correlation premium" in _js31
    and 'id="bbSlipLog"' in open(_os.path.join(_root, "templates",
                                               "index.html")).read())
+
+print()
+print("=" * 72)
+print("Progress, warm-bar and PC-cycle coherence")
+print("=" * 72)
+# Four irritations reported together, one theme: counters that measure
+# different things (or different eras) shown as if they were one number.
+import baseball as _bb32
+
+_t32 = "guard32tok"
+assert _bb32.job_claim(_t32)
+_bb32.progress_declare(_t32, 3)
+_bb32.progress_start(_t32, 15)
+for _ in range(15):
+    _bb32.progress_enter(_t32); _bb32.progress_step(_t32)
+_bb32.progress_start(_t32, 15)
+_bb32.progress_start(_t32, 15)
+_p32 = _bb32.progress_get(_t32) or {}
+_j32 = _bb32.job_read(_t32) or {}
+ck("three passes over 15 games is 15-per-pass, never 45",
+   _p32.get("total") == 15 and _p32.get("pass") == 3
+   and _j32.get("total") == 15 and _j32.get("passes") == 3,
+   "the shared job file must agree with worker memory, or a sibling "
+   "worker's poll resurrects the growing total")
+_bb32.progress_done(_t32)
+try:
+    _os.remove(_bb32._job_path(_t32))
+except OSError:
+    pass
+
+_apy32 = open(_os.path.join(_root, "app.py")).read()
+ck("both sweeps declare their pass count before building",
+   "progress_declare(ptok, len(combo_engine.OPTIMAL_FLOORS))" in _apy32
+   and "progress_declare(ptok, len(combo_engine.MAX_BET_FLOORS))" in _apy32
+   and '"passes": p.get("passes", 1)' in _apy32)
+_js32 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the bar divides by the declared passes and says which one it is on",
+   "((ps - 1) + fracPass) / passes" in _js32
+   and "pass ${ps}/${passes}" in _js32)
+
+# /api/warm: a routine 5-minute board refresh must not read as a cold start,
+# the counts must measure the same set a Build simulates, and a frozen
+# mid-sim matchup label must not contradict a "building the board" note.
+_warm32 = _insp.getsource(__import__("app")._api_warm)
+ck("an expired board cache serves STALE counts, not 0/0",
+   "stale_slate" in _warm32 and "slate_fresh" in _warm32
+   and "refreshing today" in _warm32,
+   "the sims those counts measure were on disk the whole time; only a "
+   "truly boardless start says building")
+ck("warm counts the pregame set the maker actually simulates",
+   '("Final", "Live")' in _warm32,
+   "13 in the bar vs 9 in the build bar was two denominators for one job")
+ck("a matchup label is only a live claim during the sim phase",
+   'phase == "sim"' in _warm32,
+   "a worker recycled mid-sim freezes the status file with a name inside")
+ck("the warmer and the PC both skip live games' pregame sims",
+   '("Final", "Live")' in _insp.getsource(__import__("app")._warm_game_sims)
+   and '("Final", "Live")' in open(_os.path.join(_root, "pc_worker.py")).read(),
+   "the live path never reads them; each cost ~200s of the shared CPU in "
+   "the exact window that has none to spare")
+
+_pw32 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC re-simulates when its own copy is nearly as stale as the ask",
+   "os.remove(path)" in _pw32 and "> 1500" in _pw32,
+   "answering from an aging local pickle re-stamps old work as fresh at "
+   "the upload door - the 'simmed in 1s' no-op cycles")
+ck("game sims ship BEFORE the boards wait loop, not after",
+   _pw32.index('_sync_kind(url, tok, "gamesim")')
+   < _pw32.index('("boards", _task_boards)'),
+   "the boards task can sit in its wait loop for five minutes while a user "
+   "watches the server re-simulate games the PC already finished")
 
 print()
 print("=" * 72)

@@ -249,6 +249,19 @@ def _api_warm():
         games = baseball.analyze_slate(date, season, cached_only=True)
     except Exception:
         games = None
+    slate_fresh = games is not None
+    if games is None:
+        # The board's 5-minute cache expiring is ROUTINE, but this endpoint
+        # treated it like a cold start: the counts crashed to 0/0 mid-refresh
+        # while seconds earlier they read 4/13, and the sims those counts
+        # measure were still sitting on disk the whole time. The stale board
+        # names the same games, and sims are keyed by game_pk -- so count from
+        # it and say "refreshing", not "nothing exists".
+        try:
+            games, _stale_age = baseball.stale_slate(date, season,
+                                                     max_age=6 * 3600)
+        except Exception:
+            games = None
 
     # What the warmer says it is doing, readable from EVERY worker. `at` only
     # counts when the warmer is on this same date; a heartbeat is only "alive"
@@ -258,8 +271,12 @@ def _api_warm():
     now = time.time()
     beat_s = round(now - st["ts"], 1) if st.get("ts") else None
     same_date = st.get("date") == date
-    at = st.get("at") if same_date else None
+    # `at` is only a live claim while the warmer is IN the sim phase: a worker
+    # recycled mid-sim freezes the file with a matchup name inside, and showing
+    # that beside a "building the board" note put two contradictory truths on
+    # one bar.
     phase = st.get("phase") if same_date else None
+    at = st.get("at") if (same_date and phase == "sim") else None
     err = (st.get("err")
            if st.get("err") and now - (st.get("err_ts") or 0) < 1800 else None)
     # No status file at all is normal for a young instance (the warmer's first
@@ -277,11 +294,17 @@ def _api_warm():
                         "stalled": not alive, "warm_err": err,
                         "beat_s": beat_s,
                         "note": "building today's board…"})
-    todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
+    # PRE-GAME games only -- the same set a Build actually simulates. Counting
+    # live games here (13) while the maker's bar counted pregame ones (9) put
+    # two different denominators for the same work on one screen. A game under
+    # way is priced by the live-resume path, not this cache; it neither needs
+    # warming nor belongs in the count.
+    todo = [g for g in games
+            if (g.get("live") or {}).get("state") not in ("Final", "Live")]
     warm = sum(1 for g in todo if baseball._game_sim_cached(g))
     ready = bool(todo) and warm >= len(todo)
     return jsonify({"ready": ready,
-                    "slate_ready": True, "total": len(todo), "warm": warm,
+                    "slate_ready": slate_fresh, "total": len(todo), "warm": warm,
                     "at": at, "phase": phase,
                     "always_warm": bool(_WARM_ALWAYS),
                     # Cold with no live warmer is the state that used to be
@@ -290,7 +313,9 @@ def _api_warm():
                     "warm_err": err, "beat_s": beat_s,
                     "note": ("ready" if ready
                              else "no games today" if not todo
-                             else f"simulating {warm}/{len(todo)} games")})
+                             else f"simulating {warm}/{len(todo)} games"
+                             if slate_fresh
+                             else "refreshing today's board…")})
 
 
 @app.route("/api/progress")
@@ -304,6 +329,7 @@ def _api_progress():
         return jsonify({"known": False})
     return jsonify({"known": True, "done": p["done"], "at": p.get("at", 0),
                     "total": p["total"], "cached": p["cached"], "phase": p["phase"],
+                    "pass": p.get("pass", 1), "passes": p.get("passes", 1),
                     "elapsed_s": round(time.time() - p["started"], 1)})
 
 
@@ -1083,7 +1109,11 @@ def _warm_game_sims(date, season):
         games = None
     if games is None:
         return False
-    todo = [g for g in games if (g.get("live") or {}).get("state") != "Final"]
+    # Pre-game only: a game under way is priced by the live-resume path, so
+    # warming its pregame sim buys nothing and costs ~200s of the shared CPU
+    # in the evening window that can least afford it.
+    todo = [g for g in games
+            if (g.get("live") or {}).get("state") not in ("Final", "Live")]
     warm = sum(1 for g in todo if baseball._game_sim_cached(g))
     _warm_status(phase="sim", date=date, total=len(todo), warm=warm, at=None)
     for gm in todo:
@@ -3531,6 +3561,9 @@ def api_baseball_mixed():
             # clamp and say so rather than optimizing toward a payout Kalshi caps.
             capped = payout > combo_engine.MAX_PAYOUT_X
             payout = min(payout, combo_engine.MAX_PAYOUT_X)
+            # The floor sweep is N builds on ONE token: declare N up front so
+            # the bar divides by it instead of growing its total mid-flight.
+            baseball.progress_declare(ptok, len(combo_engine.OPTIMAL_FLOORS))
             item = combo_engine.best_target(lambda f: _build(f, _opt=True))
             if item:
                 item["objective"] = "optimal"
@@ -3548,6 +3581,7 @@ def api_baseball_mixed():
             # The band and the payout target are dropped and the per-leg floor is
             # swept: reaching the MARKET payout cap needs room the maker's own
             # settings would not give it. See combo_engine.MAX_BET_FLOORS.
+            baseball.progress_declare(ptok, len(combo_engine.MAX_BET_FLOORS))
             item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
             if not item:
                 return {"parlay": None, "hint": "max_bet_unreachable",

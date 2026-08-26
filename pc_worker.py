@@ -108,11 +108,26 @@ def _task_mlb_sims(url, tok):
     server_has = {n for n, age in have.items() if age < 1800}
     date = clock.today_et().isoformat()
     games = baseball.analyze_slate(date, date[:4])
+    # Pre-game only: a live game is priced by the server's live-resume path,
+    # never by this pregame cache -- simming it here is upload noise.
     todo = [g for g in games
-            if (g.get("live") or {}).get("state") != "Final"
+            if (g.get("live") or {}).get("state") not in ("Final", "Live")
             and g.get("game_pk") and f"{g['game_pk']}.pkl" not in server_has]
     print(f"[vigil-pc] MLB: {len(todo)} game sim(s) needed")
     for i, gm in enumerate(todo, 1):
+        pk = gm.get("game_pk")
+        # The server asked because ITS copy is over 30 minutes old. Answering
+        # from our own aging local pickle takes 1s and re-stamps old work as
+        # fresh at upload (the mtime restarts at the door) -- the "simmed in
+        # 1s" lines that made a whole cycle a no-op. If the local copy is
+        # nearly that old too, drop it so _game_sim really re-simulates.
+        try:
+            path = os.path.join(baseball._SIM_DISK, f"{pk}.pkl")
+            if time.time() - os.stat(path).st_mtime > 1500:
+                os.remove(path)
+                baseball._cache.pop(("game_sim", pk), None)
+        except OSError:
+            pass
         t0 = time.time()
         try:
             baseball._game_sim(gm)
@@ -260,15 +275,28 @@ def _task_deep(url, tok):
 
 def main():
     url, tok = _config()
-    for label, fn in (("MLB sims", lambda: _task_mlb_sims(url, tok)),
-                      ("boards", _task_boards),
+    total = 0
+    try:
+        _task_mlb_sims(url, tok)
+    except Exception as e:
+        print(f"[vigil-pc] task MLB sims failed ({type(e).__name__}: {e}) - "
+              "moving on")
+    # Ship the game sims NOW. The boards task can sit in its wait loop for
+    # five minutes, and the whole point of these sims is beating the server's
+    # own 200s-per-game rebuild to the punch -- a user who pressed Build two
+    # minutes after this cycle started was watching the server re-simulate
+    # games this machine had already finished.
+    try:
+        total += _sync_kind(url, tok, "gamesim")
+    except Exception as e:
+        print(f"[vigil-pc] sync gamesim failed ({type(e).__name__}: {e})")
+    for label, fn in (("boards", _task_boards),
                       ("deep nightly", lambda: _task_deep(url, tok))):
         try:
             fn()
         except Exception as e:
             print(f"[vigil-pc] task {label} failed ({type(e).__name__}: {e}) - "
                   "moving on")
-    total = 0
     for kind in ("gamesim", "boards", "deep"):
         try:
             total += _sync_kind(url, tok, kind)

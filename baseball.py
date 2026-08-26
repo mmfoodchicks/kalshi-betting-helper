@@ -2686,32 +2686,57 @@ def job_drop(token):
         errlog.note("BB-job_drop", _e)
 
 
-def progress_start(token, total, phase="simulating games"):
-    """Begin (or EXTEND) a build's progress.
-
-    Optimal mode sweeps three per-leg floors, so it calls the builder three
-    times on one token. Resetting the counter each pass would send the bar
-    0->100 three times over; adding to the total instead keeps one honest
-    denominator across the whole build. Passes 2 and 3 run against a warm cache
-    and fly, so the bar advances slowly through the first third and then
-    finishes quickly -- which is exactly what is happening."""
+def progress_declare(token, passes):
+    """A sweep announces up front how many passes one build will make (optimal
+    mode tries three per-leg floors, a max bet four), so the bar's denominator
+    is honest from the first pixel. The previous scheme EXTENDED the total on
+    each re-entry instead: the bar reached 15/15 looking finished, then the
+    total grew under it to 30 and 45 -- three separate "done"s per build,
+    reported verbatim by the owner as maddening."""
     if not token:
         return
     with _progress_lock:
         p = _progress.get(token)
         if p:
-            p["total"] += int(total)
+            p["passes"] = int(passes)
+        else:
+            _progress[token] = {"done": 0, "at": 0, "total": 0,
+                                "phase": "simulating games", "cached": 0,
+                                "passes": int(passes), "pass": 0,
+                                "started": _time.time()}
+    job_update(token, passes=int(passes))
+
+
+def progress_start(token, total, phase="simulating games"):
+    """Begin the NEXT PASS of a build's progress.
+
+    Each pass gets its own numerator over a per-pass total; the overall
+    fraction is ((pass-1) + done/total) / passes, computed client-side. Passes
+    after the first run against a warm sim cache and fly, so the tail of the
+    bar moves fast -- but the denominator never changes underneath the user."""
+    if not token:
+        return
+    with _progress_lock:
+        p = _progress.get(token)
+        if p:
+            p["pass"] = int(p.get("pass") or 0) + 1
+            p["total"] = int(total)
+            p["at"] = p["done"] = p["cached"] = 0
         else:
             _progress[token] = {"done": 0, "at": 0, "total": int(total),
                                 "phase": phase, "cached": 0,
+                                "passes": 1, "pass": 1,
                                 "started": _time.time()}
         # Keep the table from growing without bound if a client abandons a build.
         if len(_progress) > 40:
             for k in sorted(_progress, key=lambda k: _progress[k]["started"])[:20]:
                 _progress.pop(k, None)
-    j = job_read(token)                      # extend the SHARED total too
-    job_update(token, total=int((j or {}).get("total") or 0) + int(total),
-               phase=phase)
+        cur = dict(_progress.get(token) or {})
+    # The shared job file gets the same picture, so a poll landing on a
+    # sibling worker reports the true total and pass instead of zeros.
+    job_update(token, total=cur.get("total", int(total)),
+               at=0, done=0, cached=0, phase=phase,
+               passes=cur.get("passes", 1), **{"pass": cur.get("pass", 1)})
 
 
 def progress_enter(token):

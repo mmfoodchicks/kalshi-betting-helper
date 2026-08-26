@@ -1480,14 +1480,21 @@ function simLoader(el, msg, kind, token) {
       // TRUE progress: games actually finished, out of games to do. The bar
       // counts COMPLETED games; the text names the one in flight, so the first
       // (slowest) game doesn't read as a frozen 0/N for half a minute.
+      // Multi-pass builds (optimal sweeps 3 floors, max bet 4) divide ONE bar
+      // by the declared pass count -- the total no longer grows underneath
+      // the user (15/15 -> 30 -> 45 was reported verbatim as maddening).
+      const passes = real.passes || 1, ps = Math.max(1, real.pass || 1);
       const at = Math.max(real.done, Math.min(real.at || 0, real.total));
-      pct = Math.min(99, 100 * (real.done + (at > real.done ? 0.5 : 0)) / real.total);
+      const fracPass = real.total
+        ? (real.done + (at > real.done ? 0.5 : 0)) / real.total : 0;
+      pct = Math.min(99, 100 * ((ps - 1) + fracPass) / passes);
       const left = real.total - real.done;
       const fresh = real.done - real.cached;
       note = at > real.done
         ? ` - simulating game ${at} of ${real.total}` + (real.done ? ` (${real.done} done)` : "")
         : ` - simulated ${real.done}/${real.total} games`;
       if (real.cached) note += `, ${real.cached} were cached`;
+      if (passes > 1) note += ` · pass ${ps}/${passes}`;
       if (left && fresh && dt > 3) {
         note += `, ~${Math.max(1, Math.round(left * (dt / Math.max(1, fresh))))}s left`;
       }
@@ -6462,6 +6469,8 @@ async function pollWarm() {
       <div class="warmtrack"><div class="warmfill" style="width:${pct}%"></div></div>
       <div class="warmnote">${d.slate_ready
         ? "You can build now, but it'll be quicker once this finishes."
+        : d.total > 0
+        ? "Refreshing today's board - you can still build."
         : "Building today's board…"}</div>${extra}`;
   } catch (e) { /* offline - say nothing rather than something wrong */ }
 }
