@@ -8056,7 +8056,7 @@ ck("the endpoint parses ?sides= and passes it into the build",
 _js30 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the control exists, persists across the auto-refresh, and is sent",
    'sel("comboSides"' in _js30
-   and "|SameGame|Sides)$/" in _js30
+   and "SameGame|Sides" in _js30
    and "`&sides=${comboSidesPref}`" in _js30,
    "without the persistence regex it would snap back to both every 20s -- "
    "the same bug the combo inputs had")
@@ -8301,6 +8301,61 @@ _js33 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the bar names the pre-count wait instead of guessing at a curve",
    "if (d && d.known && d.phase) phase = d.phase;" in _js33
    and 'phase !== "simulating games"' in _js33)
+
+print()
+print("=" * 72)
+print("Edge mode: only legs the model genuinely disagrees on")
+print("=" * 72)
+# The ask, verbatim: "if kalshi says 9% and our sim says 16% don't put that
+# in, but if kalshi says 54% and we say 65 or 70% that's something to throw
+# in a combo." Two floors compose: the EDGE floor keeps legs where the
+# pre-blend model beats the leg's own ask by >= X cents (pre-blend is the
+# only yardstick that can show a 54->70 gap -- the blend is anchored to the
+# market and keeps legs within a couple cents of the price by construction),
+# and the existing CONFIDENCE floor is what rules the 16%-vs-9c longshot out.
+import baseball as _bb34
+
+_merrill34 = {"marg_model": 0.162, "marg": 0.11, "price_cents": 9}
+_chalk34 = {"marg_model": 0.65, "marg": 0.56, "price_cents": 54}
+_chalk7034 = {"marg_model": 0.70, "marg": 0.57, "price_cents": 54}
+_flat34 = {"marg_model": 0.55, "marg": 0.54, "price_cents": 55}
+ck("the reported spec, verbatim: 54->65/70 in, fair-priced out",
+   _bb34._edge_ok(_chalk34, 10) and _bb34._edge_ok(_chalk7034, 10)
+   and not _bb34._edge_ok(_flat34, 5)
+   and not _bb34._edge_ok(_merrill34, 10))
+_kept34 = [c for c in (_merrill34, _chalk34, _chalk7034, _flat34)
+           if _bb34._edge_ok(c, 10) and c["marg"] >= 0.50]
+ck("edge floor + confidence floor compose into exactly the asked pool",
+   _kept34 == [_chalk34, _chalk7034],
+   "the confidence floor is what excludes the 16%-vs-9c longshot; the edge "
+   "floor alone must not, or a 5c setting would silently drop chalk edges")
+ck("no price means no measurable edge, never a free pass",
+   not _bb34._edge_ok({"marg_model": 0.9, "price_cents": None}, 5)
+   and not _bb34._edge_ok({"price_cents": 50}, 5)
+   and _bb34._edge_ok({"marg": 0.62, "price_cents": 55}, 5)
+   and _bb34._edge_ok({"marg_model": 0.88, "price_cents": 80, "side": "no"}, 5),
+   "unpriced legs are excluded in edge mode even when the exchange is down; "
+   "a NO leg carries the NO ask so one formula serves both sides")
+_bms34 = _insp.getsource(_bb34.build_mixed_parlay)
+ck("the gate sits between pricing and the confidence band",
+   _bms34.index("excluded_unpriced += n_all")
+   < _bms34.index("_edge_ok(c, min_edge_c)")
+   < _bms34.index('floor <= c["marg"] <= ceil'),
+   "the edge needs the ask, and 'edges >= +5c, each leg >= 55%' has to mean "
+   "exactly what it reads")
+ck("the thin live-ML fallback obeys the same gate",
+   "_edge_ok(leg, min_edge_c)" in _bms34)
+_apy34 = open(_os.path.join(_root, "app.py")).read()
+ck("the endpoint parses ?min_edge= and an empty pool names the floor",
+   'request.args.get("min_edge")' in _apy34
+   and "min_edge_c=min_edge" in _apy34 and '"edge_empty"' in _apy34)
+_js34 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the control exists, persists, is sent, and the slip states the mode",
+   'id="comboMinEdge"' in _js34 and "|Sides|MinEdge)$/" in _js34
+   and "&min_edge=" in _js34 and "edgeNote" in _js34
+   and '"edge_empty"' in _js34,
+   "same persistence discipline as every other maker control -- a re-render "
+   "must never snap it back")
 
 print()
 print("=" * 72)

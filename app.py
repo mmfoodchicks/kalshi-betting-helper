@@ -3521,6 +3521,16 @@ def api_baseball_mixed():
     sides_pref = (request.args.get("sides") or "both").lower()
     sides = ({"yes"} if sides_pref == "yes"
              else {"no"} if sides_pref == "no" else None)
+    # EDGE MODE: only legs whose pre-blend model number beats the ask by at
+    # least this many cents. Blank = off; 0 is a real floor ("any non-negative
+    # model edge"). Bounded to the range that can exist at all.
+    min_edge = request.args.get("min_edge")
+    try:
+        min_edge = float(min_edge) if min_edge not in (None, "") else None
+    except ValueError:
+        min_edge = None
+    if min_edge is not None:
+        min_edge = max(-20.0, min(30.0, min_edge))
 
     def _slip_log_safe(item):
         """File the built slip in the slip ledger (best-effort bookkeeping --
@@ -3561,7 +3571,7 @@ def api_baseball_mixed():
                 conn=conn, game_sel=sel or None,
                 include_live=include_live, types=prop_types,
                 objective="balanced" if _opt else objective, max_bet=_mb,
-                progress_token=ptok)
+                progress_token=ptok, min_edge_c=min_edge)
 
         # ONE Kalshi book for the whole build (see kalshi_mlb.pinned): every
         # pass prices against the same snapshot, and the index can never
@@ -3614,6 +3624,9 @@ def api_baseball_mixed():
                 # for rare events (home runs, steals) live at 5-20%, so a 55% floor
                 # empties the pool completely. Name that instead of blaming the
                 # game selection.
+                if min_edge is not None:
+                    return {"parlay": None, "hint": "edge_empty",
+                            "min_edge_c": min_edge, "target_pct": target}
                 if sides is not None:
                     return {"parlay": None, "hint": "sides_empty",
                             "sides": sides_pref, "target_pct": target}

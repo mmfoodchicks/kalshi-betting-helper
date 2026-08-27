@@ -1018,9 +1018,9 @@ const comboFormVals = {};
 for (const evName of ["input", "change"]) {
   document.addEventListener(evName, (ev) => {
     const t = ev.target;
-    if (t && t.id && /^(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|PayoutMode|SameGame|Sides)$/.test(t.id)) {
+    if (t && t.id && /^(combo|nflCombo)(Target|Cap|N|Payout|Objective|LegsMode|Conn|PayoutMode|SameGame|Sides|MinEdge)$/.test(t.id)) {
       comboFormVals[t.id] = t.type === "checkbox" ? t.checked : t.value;
-      if (t.id === "comboSides" || t.id === "comboTarget") updateComboSidesHint();
+      if (t.id === "comboSides" || t.id === "comboTarget" || t.id === "comboMinEdge") updateComboSidesHint();
     }
   });
 }
@@ -1044,6 +1044,10 @@ function updateComboSidesHint() {
   } else {
     el.innerHTML = "";
   }
+  const me = ($("comboMinEdge") || {}).value;
+  if (me !== "" && me != null) {
+    el.innerHTML += `${el.innerHTML ? "<br/>" : ""}🎯 <b>Edge mode</b>: only legs where our model beats Kalshi's price by ≥ <b>${me}¢</b> (the pre-blend number - the maker's shown odds stay market-blended). Real edges that big are rare: 3-8¢ finds bets, 10¢+ may find nothing. The confidence floor above keeps them likely - "each leg ≥ 55%" is what rules out a 16%-vs-9¢ longshot.`;
+  }
 }
 const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
@@ -1055,6 +1059,7 @@ let comboConnPref = "or";
 // Which point on the price/probability frontier the maker returns.
 let comboObjectivePref = "balanced";
 let comboSidesPref = "both";   // "both" | "yes" | "no" -- which side of a market may be picked
+let comboMinEdgePref = "";     // edge mode: min pre-blend model edge in cents ("" = off)
 let comboSameGamePref = false;
 let comboIncludeLive = false;
 let comboGameSel = null;   // null/empty = ALL games; else {pk: true|teamName} selection
@@ -1133,6 +1138,7 @@ window.buildCombo = async (maxBet, optimal) => {
   comboConnPref = ($("comboConn") || {}).value || "or";
   comboObjectivePref = ($("comboObjective") || {}).value || "balanced";
   comboSidesPref = ($("comboSides") || {}).value || "both";
+  comboMinEdgePref = ($("comboMinEdge") || {}).value ?? "";
   const date = $("bbDate").value;
   // Both modes run through the simulator now, so every leg shows model vs sim.
   // same_game on may stack correlated legs from one game; off = one leg per game.
@@ -1150,6 +1156,7 @@ window.buildCombo = async (maxBet, optimal) => {
       + `&legs_mode=${comboLegsModePref}&payout_mode=${comboPayoutModePref}&conn=${comboConnPref}`
       + `&include_live=${comboIncludeLive ? 1 : 0}&objective=${comboObjectivePref}`
       + (comboSidesPref !== "both" ? `&sides=${comboSidesPref}` : "")
+      + (comboMinEdgePref !== "" ? `&min_edge=${encodeURIComponent(comboMinEdgePref)}` : "")
       + (c ? `&cap=${c}` : "")
       + (maxBet ? "&max_bet=1" : "")
       + (optimal ? "&optimal=1" : "")
@@ -1232,6 +1239,10 @@ function _renderComboResult(d, out, t, c) {
   if (!d.parlay) {
     if (d.hint === "kalshi_unpriced") {
       out.innerHTML = `<div class="small">No Kalshi prices on the slate yet - <b>${d.n_pregame}</b> game${d.n_pregame === 1 ? "" : "s"} are listed but none is quoted. The maker only builds legs you can actually place, so there is nothing to pick from. MLB lines usually post closer to first pitch; try again nearer game time.</div>`;
+      return;
+    }
+    if (d.hint === "edge_empty") {
+      out.innerHTML = `<div class="small">No leg clears a <b>+${d.min_edge_c}¢</b> model edge under your filters right now. Genuine disagreements that big are rare - try <b>3-5¢</b>, add more prop types, lower <b>each leg ≥</b>, or wait for lines to post (edges are widest when books first open).</div>`;
       return;
     }
     if (d.hint === "sides_empty") {
@@ -1916,6 +1927,8 @@ function renderCombo(c, tag, extraCls) {
   // the answer you asked for.
   const band = (c.target_pct != null)
     ? `<span>each leg <b>${c.target_pct}%${c.cap_pct != null ? `–${c.cap_pct}%` : "+"}</b></span>` : "";
+  const edgeNote = (c.min_edge_c != null)
+    ? `<span>🎯 edges ≥ <b>${c.min_edge_c}¢</b> (model vs price${c.excluded_no_edge ? `; ${c.excluded_no_edge} legs below it excluded` : ""})</span>` : "";
   const legsNote = (c.legs_target != null && c.legs_mode && c.legs_mode !== "off")
     ? `<span>${c.legs_target} legs <b style="color:${c.legs_met === false ? "#e0566a" : "#3ad17a"}">${c.legs_met === false ? `✗ got ${c.legs_used}` : "✓"}</b></span>` : "";
   const payNote = (c.target_payout_x && c.payout_mode && c.payout_mode !== "off")
@@ -1942,7 +1955,7 @@ function renderCombo(c, tag, extraCls) {
       <span class="small">${c.n_legs} legs</span>
     </div>
     <ul class="legs">${legs}</ul>
-    <div class="cnums">${nums}${band}${legsNote}${payNote}</div>
+    <div class="cnums">${nums}${band}${edgeNote}${legsNote}${payNote}</div>
     ${maxBetNote(c)}
     ${warn}
   </div>`;
@@ -2040,6 +2053,8 @@ async function loadBaseball(silent) {
           ${sel("comboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfv("comboObjective", comboObjectivePref))}
           &nbsp;side
           ${sel("comboSides", [["both", "↔️ YES or NO"], ["yes", "✅ YES only"], ["no", "🚫 NO only"]], cfv("comboSides", comboSidesPref))}
+          &nbsp;<span title="Edge mode: keep only legs where OUR pre-blend model number beats the leg's own Kalshi ask by at least this many cents. Blank = off. Pair it with the confidence floor above to keep the edges likely.">🎯 edge ≥
+          <input id="comboMinEdge" type="number" step="1" min="-20" max="30" value="${cfv("comboMinEdge", comboMinEdgePref)}" placeholder="-" style="width:52px"/>¢</span>
         </div>
         <div class="small" id="comboSidesHint" style="margin-top:2px;color:var(--muted)"></div>
         <div class="small" style="margin-top:6px">

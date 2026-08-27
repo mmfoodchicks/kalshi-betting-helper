@@ -3803,7 +3803,12 @@ def find_edges(games, n_sims=4000, min_edge=4.0, top_n=60, types=None):
                 cents = None
             if not cents or not (0 < cents < 100):
                 continue
-            sim_pct = round(c["marg"] * 100, 1)         # holistic estimate (combos use this)
+            # The sim's RAW number. The combo maker shows this same figure as
+            # "pre-blend"; its own probabilities are market-blended, so this
+            # screen and a slip's legs are DIFFERENT views of one leg on
+            # purpose: this is where the model disagrees, the slip is what
+            # you'd actually be paid to believe.
+            sim_pct = round(c["marg"] * 100, 1)
             model_pct = c.get("model_pct")
             edge = round(sim_pct - cents, 1)
             # Kalshi taker fee (~7¢ x p x (1-p) per contract) comes off whichever
@@ -3926,6 +3931,28 @@ def _cand_side(cand, g):
     return None
 
 
+def _edge_ok(c, min_edge_c):
+    """Does this leg's MODEL edge clear the floor?
+
+    Judged on the PRE-BLEND model number against the leg's own ask (a NO leg
+    carries the NO ask, so one formula serves both sides). The blend cannot be
+    the yardstick here: it is anchored to the market and its fitted weights
+    keep legs within a couple of cents of the price by construction, so a
+    post-blend floor above ~3c would match nothing, ever. The floor asks
+    "where does the MODEL genuinely disagree by this much" -- the slip's
+    displayed probabilities and EV stay blended and honest."""
+    if min_edge_c is None:
+        return True
+    px = c.get("price_cents")
+    if not px:
+        return False                    # no price -> no measurable edge
+    p = (c.get("marg_model") if c.get("marg_model") is not None
+         else c.get("marg"))
+    if p is None:
+        return False
+    return p * 100.0 - px >= min_edge_c
+
+
 def _price_cands(cands, suffix, blend=True):
     """Annotate each candidate with its live Kalshi ask and market-blended
     probability, in place.
@@ -3963,7 +3990,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
-                       progress_token=None, sides=None):
+                       progress_token=None, sides=None, min_edge_c=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -3977,6 +4004,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     control whether the leg count and the payout are hard requirements or just
     recommendations. `objective` ("balanced"/"safe"/"value") then orders whatever
     satisfies them, with the Kalshi price inside the search.
+
+    `min_edge_c` is EDGE MODE: keep only legs where the pre-blend model
+    number beats the leg's own ask by at least this many cents (see _edge_ok
+    for why pre-blend is the only honest yardstick). Composes with the
+    confidence floor, so "edges of +5c or better, each leg 55%+ likely"
+    means exactly what it reads.
 
     `sides` restricts the pool to YES legs, NO legs, or both (None). It exists
     because the maker is a probability optimizer and a home run is a ~12% event:
@@ -4030,6 +4063,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
 
     games_bundles = []
     excluded_unpriced = 0
+    excluded_no_edge = 0
     # Count what this build will actually simulate BEFORE starting, so the bar
     # has a real denominator rather than a guess.
     _todo = [g for g in games
@@ -4078,6 +4112,9 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                 if priced_ok and not leg.get("price_cents"):
                     excluded_unpriced += 1          # same rule as every other leg
                     continue
+                if not _edge_ok(leg, min_edge_c):
+                    excluded_no_edge += 1
+                    continue
                 bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
                 games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
                 continue
@@ -4103,6 +4140,13 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             n_all = len(cands)
             cands = [c for c in cands if c.get("price_cents")]
             excluded_unpriced += n_all - len(cands)
+        # EDGE MODE: only legs where the model genuinely disagrees with the
+        # price by the asked margin. After pricing (the edge needs the ask),
+        # before the confidence band, so the two filters compose.
+        if min_edge_c is not None:
+            n_all = len(cands)
+            cands = [c for c in cands if _edge_ok(c, min_edge_c)]
+            excluded_no_edge += n_all - len(cands)
         # The per-leg floor is applied AFTER the blend, because the blend is what
         # decides the number the user actually sees. Filtering first let a leg
         # qualify at 60% pre-blend and then get marked down to 41% by the market,
@@ -4169,6 +4213,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             item[k] = v
     item["objective"] = "max_bet" if max_bet else objective
     item["excluded_unpriced"] = excluded_unpriced
+    item["excluded_no_edge"] = excluded_no_edge
+    item["min_edge_c"] = min_edge_c
     item["pricing_unavailable"] = not priced_ok
     item["legs_target"] = None if max_bet else (n_legs if legs_mode != "off" else None)
     if max_bet:
