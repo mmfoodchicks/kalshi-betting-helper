@@ -1547,17 +1547,21 @@ function modelLegend() {
       <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) - Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
       <li><b>Fair payout ×</b> - 1 ÷ our probability (a 25% chance is a fair 4×). The <b>no-vig fair value</b> from our model.</li>
       <li><b>Kalshi pays ×</b> - the <i>real</i> payout from Kalshi's live prices (product of each leg's market price), so it matches what you'd see building the combo on Kalshi. It's lower than our fair payout by their margin. If our fair payout is <i>way</i> above Kalshi's, we strongly disagree with the market on a leg - possible edge, or miscalibration to sanity-check. (Lines post closer to game time, so it may read "-" early.)</li>
-      <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> - that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = our sim % minus Kalshi's price.</li>
+      <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> - that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = the leg's blended % minus Kalshi's price (the model's own pre-blend edge shows separately).</li>
       <li><b>Weather → ±% runs</b> - park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
     </ul></details>`;
 }
 
-// A leg's probability display. Player props carry BOTH the model's closed-form
-// % and the simulated %, so we show both (they're computed two different ways);
-// other legs (ML/total/run line/HRR) only have the simulated number.
+// A leg's probability display. Three claims can live on one card and each
+// gets its own name: "model" is the closed-form % (player props only),
+// "blended" is what the slip is actually priced on (the sim's marginal after
+// the market blend), and the sim's own voice renders below as "pre-blend"
+// whenever it differs. The blended number used to be labelled "sim" -- true
+// before the blend shipped, nonsense after ("sim 89%" on a model-3.3% event;
+// the owner was misled by it twice in two days).
 function legProb(l, nsim) {
   const core = (l.model_pct != null)
-    ? `model <b>${l.model_pct}%</b> · sim <b>${l.prob_pct}%</b>`
+    ? `model <b>${l.model_pct}%</b> · blended <b>${l.prob_pct}%</b>`
     : `<b>${l.prob_pct}%</b>`;
   const cnt = (nsim && l.sims_hit != null) ? ` · ${l.sims_hit.toLocaleString()}/${nsim.toLocaleString()}` : "";
   // Live Kalshi price for this exact leg, when quoted. Edge = our sim − market.

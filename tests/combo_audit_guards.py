@@ -8471,6 +8471,12 @@ _cl36 = _insp.getsource(_ce36._clamp_to_market)
 ck("the floor keys off the bid and dies with it, in source",
    "bid / 100.0 - _MAX_EDGE" in _cl36 and "p = min(p, p_model)" in _cl36
    and "mid - _MAX_EDGE" not in _cl36)
+_js36 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the blended number is labelled as what it is, never as the sim",
+   "· blended <b>${l.prob_pct}%</b>" in _js36
+   and "· sim <b>${l.prob_pct}%</b>" not in _js36,
+   'the leg parens predate the blend, so the market-blended number rendered '
+   'as "sim 89%" on a model-3.3% event; the sim itself shows as "pre-blend"')
 
 print()
 print("=" * 72)
