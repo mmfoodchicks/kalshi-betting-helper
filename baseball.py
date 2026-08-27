@@ -2686,6 +2686,44 @@ def job_drop(token):
         errlog.note("BB-job_drop", _e)
 
 
+def job_heartbeat(token):
+    """Freshen the job file's mtime without rewriting it. The build thread
+    beats every ~20s from a side thread, so a stale mtime can only mean the
+    process running the build is GONE (recycled by --max-requests, killed by
+    a deploy swap, OOMed) -- never merely busy: the GIL rotates every few ms
+    even under a full simulation, so a live beat thread always gets a slice."""
+    if not token:
+        return
+    try:
+        _os.utime(_job_path(token))
+    except OSError:
+        pass                    # job finished and was swept mid-beat -- fine
+
+
+def job_takeover(token, dead_s):
+    """Remove a 'running' job whose builder stopped beating, so the caller's
+    normal O_EXCL claim can rebuild it. Job files live on the PERSISTENT disk,
+    so a build killed mid-flight used to leave 'running' there forever -- the
+    deploy that shipped this fix did exactly that to the owner: every poll
+    answered 202 'building', the bar froze at 'simulated 1/5', and there was
+    no path back short of the hourly sweep. Two racing takeovers of one token
+    cannot happen in practice (a token is minted per Build click and polled
+    by ONE sequential loop), and ownership of the rebuild is still decided by
+    the claim, not by this."""
+    if not token:
+        return False
+    try:
+        if _time.time() - _os.stat(_job_path(token)).st_mtime <= dead_s:
+            return False
+        _os.remove(_job_path(token))
+        return True
+    except OSError:
+        return False            # already gone, or lost the race -- not ours
+    except Exception as _e:
+        errlog.note("BB-job_takeover", _e)
+        return False
+
+
 def progress_declare(token, passes):
     """A sweep announces up front how many passes one build will make (optimal
     mode tries three per-leg floors, a max bet four), so the bar's denominator

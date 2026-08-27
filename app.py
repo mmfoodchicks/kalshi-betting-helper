@@ -333,6 +333,39 @@ def _api_progress():
                     "elapsed_s": round(time.time() - p["started"], 1)})
 
 
+# A background build must be able to DIE without freezing its bar forever.
+# Job files live on the persistent disk, so a build killed mid-flight (deploy
+# swap, --max-requests worker recycle, OOM) left status='running' there for
+# good: every poll answered 202 'building', the claim was unwinnable (O_EXCL,
+# first winner forever), and the owner watched 'simulated 1/5' sit frozen for
+# 20 minutes. The builder now BEATS its job file from a side thread; a poll
+# that finds a running job untouched for _JOB_DEAD_S takes it over and
+# rebuilds -- riding the disk-cached sims the dead build already paid for.
+_JOB_DEAD_S = 90                # beat is 20s; ~4 missed beats means dead
+
+
+def _run_job(ptok, core, errcode):
+    """Run a build in a daemon thread under its job token, heartbeating the
+    job file so a killed worker is detectable instead of eternal."""
+    def _bg():
+        stop = threading.Event()
+
+        def _beat():
+            while not stop.wait(20):
+                baseball.job_heartbeat(ptok)
+        threading.Thread(target=_beat, daemon=True).start()
+        try:
+            res = core()
+            baseball.job_finish(ptok, "done", result=res)
+        except Exception as e:
+            print(f"[job] build failed ({ptok}): {e!r}", flush=True)
+            errlog.note(errcode, e, path=ptok)
+            baseball.job_finish(ptok, "error", error=str(e))
+        finally:
+            stop.set()
+    threading.Thread(target=_bg, daemon=True).start()
+
+
 @app.route("/api/dfs/scoring")
 def _api_dfs_scoring():
     """The DraftKings scoring card for a sport, rendered from the SAME constants
@@ -2916,17 +2949,14 @@ def api_nfl_parlay():
                 return jsonify(job.get("result") or {})
             if job and job.get("status") == "error":
                 return jsonify({"error": job.get("error") or "build failed"}), 502
+            if (job and job.get("status") == "running"
+                    and baseball.job_takeover(ptok, _JOB_DEAD_S)):
+                errlog.note("NFL-COMBO-dead-job",
+                            RuntimeError("build heartbeat stopped; rebuilding"),
+                            path=ptok)
             if not baseball.job_claim(ptok):
                 return jsonify({"status": "building", "token": ptok}), 202
-
-            def _bg():
-                try:
-                    res = _core()
-                    baseball.job_finish(ptok, "done", result=res)
-                except Exception as e:
-                    errlog.note("NFL-COMBO-build", e, path=ptok)
-                    baseball.job_finish(ptok, "error", error=str(e))
-            threading.Thread(target=_bg, daemon=True).start()
+            _run_job(ptok, _core, "NFL-COMBO-build")
             return jsonify({"status": "building", "token": ptok}), 202
         return jsonify(_core())
     except Exception as e:
@@ -3666,19 +3696,16 @@ def api_baseball_mixed():
             return jsonify(job.get("result") or {})
         if job and job.get("status") == "error":
             return jsonify({"error": job.get("error") or "build failed"}), 502
+        # A running job whose heartbeat stopped is DEAD, not busy -- rebuild.
+        if (job and job.get("status") == "running"
+                and baseball.job_takeover(ptok, _JOB_DEAD_S)):
+            errlog.note("COMBO-dead-job",
+                        RuntimeError("build heartbeat stopped; rebuilding"),
+                        path=ptok)
         # Exactly one worker wins the claim; everyone else just reports 202.
         if not baseball.job_claim(ptok):
             return jsonify({"status": "building", "token": ptok}), 202
-
-        def _bg():
-            try:
-                res = _core()
-                baseball.job_finish(ptok, "done", result=res)
-            except Exception as e:
-                print(f"[combo] build failed ({ptok}): {e!r}", flush=True)
-                errlog.note("COMBO-build", e, path=ptok)
-                baseball.job_finish(ptok, "error", error=str(e))
-        threading.Thread(target=_bg, daemon=True).start()
+        _run_job(ptok, _core, "COMBO-build")
         return jsonify({"status": "building", "token": ptok}), 202
     return jsonify(_core())
 

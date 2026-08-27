@@ -6679,9 +6679,11 @@ print("=" * 72)
 _apy8 = open(_os.path.join(_root, "app.py")).read()
 _nfl8 = _apy8.split("def api_nfl_parlay")[1].split("def api_nfl_sim")[0]
 ck("the NFL build runs server-side under the click's token",
-   "baseball.job_claim(ptok)" in _nfl8 and "job_finish(ptok" in _nfl8
+   "baseball.job_claim(ptok)" in _nfl8
+   and '_run_job(ptok, _core, "NFL-COMBO-build")' in _nfl8
    and '"status": "building"' in _nfl8,
-   "a synchronous build died with the phone; a job survives it")
+   "a synchronous build died with the phone; a job survives it (the finish "
+   "itself now lives in _run_job, alongside the heartbeat)")
 ck("the finished NFL slip is served idempotently",
    'job.get("status") == "done"' in _nfl8
    and "return jsonify(job.get(\"result\")" in _nfl8.replace("'", '"'),
@@ -8469,6 +8471,65 @@ _cl36 = _insp.getsource(_ce36._clamp_to_market)
 ck("the floor keys off the bid and dies with it, in source",
    "bid / 100.0 - _MAX_EDGE" in _cl36 and "p = min(p, p_model)" in _cl36
    and "mid - _MAX_EDGE" not in _cl36)
+
+print()
+print("=" * 72)
+print("A dead build heals itself: heartbeat + takeover")
+print("=" * 72)
+# The reported failure: a deploy swap killed a build mid-flight; its job file
+# ('running') lives on the persistent disk, so it SURVIVED the swap; the
+# O_EXCL claim is first-winner-forever, so every poll answered 202 'building'
+# and the bar froze at 'simulated 1/5' with no path back. The builder now
+# beats the file every 20s; a poll finding a running job untouched for 90s
+# takes it over and rebuilds on the disk-cached sims already paid for.
+import tempfile as _tf37
+import time as _tm37
+_dir37 = _tf37.mkdtemp()
+_old37 = B._JOB_DIR
+B._JOB_DIR = _dir37
+try:
+    _tok37 = "guardtok37"
+    ck("claim: exactly one winner",
+       B.job_claim(_tok37) and not B.job_claim(_tok37))
+    ck("a LIVE job cannot be taken over",
+       not B.job_takeover(_tok37, 90),
+       "takeover must never steal a build that is merely slow -- the beat "
+       "thread keeps a live file younger than ~20s at all times")
+    _p37 = B._job_path(_tok37)
+    _os.utime(_p37, (_tm37.time() - 200, _tm37.time() - 200))
+    ck("heartbeat freshens the file a takeover would otherwise claim",
+       (B.job_heartbeat(_tok37),
+        _tm37.time() - _os.stat(_p37).st_mtime < 5)[1])
+    _os.utime(_p37, (_tm37.time() - 200, _tm37.time() - 200))
+    ck("a job 200s silent IS dead: takeover wins exactly once, claim reopens",
+       B.job_takeover(_tok37, 90) and not B.job_takeover(_tok37, 90)
+       and B.job_claim(_tok37),
+       "this is the frozen-bar state healing itself on the next poll")
+finally:
+    B._JOB_DIR = _old37
+    import shutil as _sh37
+    _sh37.rmtree(_dir37, ignore_errors=True)
+_apy37 = open(_os.path.join(_root, "app.py")).read()
+ck("both parlay endpoints take over dead jobs, before the claim",
+   _apy37.count("baseball.job_takeover(ptok, _JOB_DEAD_S)") == 2
+   and '"COMBO-dead-job"' in _apy37 and '"NFL-COMBO-dead-job"' in _apy37
+   and _apy37.index("job_takeover(ptok") < _apy37.index("job_claim(ptok)"),
+   "a takeover after the claim check could never run -- the claim already "
+   "answered 202")
+import app as _app37
+_rj37 = _insp.getsource(_app37._run_job)
+ck("the builder beats its job file from a side thread every 20s",
+   "stop.wait(20)" in _rj37 and "baseball.job_heartbeat(ptok)" in _rj37
+   and _apy37.count('_run_job(ptok, _core, "COMBO-build")') == 1
+   and _apy37.count('_run_job(ptok, _core, "NFL-COMBO-build")') == 1
+   and _app37._JOB_DEAD_S >= 60,
+   "dead_s must be several missed beats, or a paused beat thread under load "
+   "gets its build stolen out from under it")
+_js37 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the warm bar refuses to render the offline body as a status",
+   "d.error != null || d.total == null" in _js37,
+   'the SW answers a dead fetch with clean JSON, which rendered as '
+   '"undefined/undefined games ready" during every deploy swap')
 
 print()
 print("=" * 72)

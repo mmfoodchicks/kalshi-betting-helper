@@ -6449,6 +6449,11 @@ async function pollWarm() {
   try {
     const date = ($("bbDate") && $("bbDate").value) || "";
     const d = await (await fetch("/api/warm" + (date ? "?date=" + date : ""))).json();
+    // The service worker converts a dead fetch into clean JSON ({error,
+    // offline}), so a deploy swap's failed poll LOOKS like a status and was
+    // rendered: "undefined/undefined games ready". An answer with no counts
+    // is not a status -- say nothing, exactly like the catch below.
+    if (d && (d.error != null || d.total == null)) return;
     // Hidden only when there is truly nothing to say: ready, or a real slate
     // with zero games. total===0 alone is NOT that -- during the slate build
     // (the LONGEST wait) total is 0 and slate_ready is false, and hiding then
