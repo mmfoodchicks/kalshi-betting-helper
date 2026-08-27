@@ -2123,7 +2123,7 @@ _NO_SKIP_TYPES = {"ML", "Total"}
 _NO_MIN, _NO_MAX = 0.10, 0.90
 
 
-def _no_candidates(cands, n):
+def _no_candidates(cands, n, lo=_NO_MIN, hi=_NO_MAX):
     """The NO side of each eligible leg — betting a player DOESN'T get there.
 
     The mask is the exact complement, so a NO leg's correlation with every other
@@ -2131,21 +2131,37 @@ def _no_candidates(cands, n):
     under really are correlated, and this gets that for free instead of assuming
     independence). The marginal is 1 minus the CALIBRATED yes marginal, not the
     raw complement, so a leg and its negation always sum to 1.
+
+    `lo`/`hi` widen the band for callers hunting MISPRICING: the default cap
+    exists because in a fairly-priced book a 94% NO is padding — but against
+    an overpriced YES ask that same leg is the whole bet (see the edge-mode
+    extension in baseball.build_mixed_parlay).
     """
     full = (1 << n) - 1
     out = []
     for c in cands:
         if c["type"] in _NO_SKIP_TYPES:
             continue
-        marg = 1.0 - c["marg"]
-        if not (_NO_MIN <= marg <= _NO_MAX):
+        # Complement the MODEL number, not whatever `marg` currently holds.
+        # At sim time they are the same thing, but the edge-mode caller feeds
+        # cands the pricing pass has already blended IN PLACE (marg_model is
+        # only present after that), and `{**c}` would then hand the NO leg its
+        # YES side's marg_model -- so the edge gate scored the fade as
+        # model-6% vs a 92c NO ask and silently dropped it on every build
+        # after the first.
+        p_yes = c.get("marg_model")
+        marg = 1.0 - (p_yes if p_yes is not None else c["marg"])
+        if not (lo <= marg <= hi):
             continue
         kref = c.get("kref")
         kref = dict(kref, no=True) if kref else None
         model = c.get("model_pct")
-        out.append({**c, "label": f"NO - {c['label']}", "mask": (~c["mask"]) & full,
-                    "marg": marg, "side": "no", "kref": kref,
-                    "model_pct": round(100.0 - model, 1) if model is not None else None})
+        d = {**c, "label": f"NO - {c['label']}", "mask": (~c["mask"]) & full,
+             "marg": marg, "side": "no", "kref": kref,
+             "model_pct": round(100.0 - model, 1) if model is not None else None}
+        if p_yes is not None:
+            d["marg_model"] = 1.0 - p_yes
+        out.append(d)
     return out
 
 

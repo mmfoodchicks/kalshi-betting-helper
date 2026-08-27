@@ -4128,6 +4128,28 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                  and (side is None or _cand_side(c, g) == side)]
         if not cands:
             continue
+        # EDGE MODE hunts mispricing, and the juiciest fades live ABOVE the
+        # normal NO band: a 9+ Ks line the model puts at 6% is a 94% NO --
+        # in a fairly-priced book that's padding (which is why the sim's own
+        # NO generation caps at 90%), but against an overpriced YES ask it is
+        # exactly the bet being asked for ("he's facing a monster lineup").
+        # Generated here at build time so the cached sim's candidate pool is
+        # untouched for every other mode, then priced and gated like any leg
+        # -- an extra fade still has to clear the edge floor on ITS OWN ask.
+        if min_edge_c is not None and (sides is None or "no" in sides):
+            have = {c["label"] for c in cands if c.get("side") == "no"}
+            # Complement from the game's YES pool BEFORE the yes/no side
+            # filter -- under "NO only" the YES cands were just filtered out
+            # of `cands`, and that is precisely the fades-only request this
+            # extension exists to serve.
+            base_yes = [c for c in gs["cands"]
+                        if (types is None or c["type"] in types)
+                        and c.get("side", "yes") == "yes"
+                        and (side is None or _cand_side(c, g) == side)]
+            extra = [c for c in mlb_sim._no_candidates(
+                         base_yes, sim["n"], lo=0.90, hi=0.97)
+                     if c["label"] not in have]
+            cands = cands + extra
         _price_cands(cands, g.get("kalshi_suffix"))
         # ONLY BETTABLE LEGS. A leg with no Kalshi market cannot go on a real
         # slip -- the maker used to include them anyway (EV-neutral at fair

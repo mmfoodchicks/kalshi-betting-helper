@@ -1046,7 +1046,7 @@ function updateComboSidesHint() {
   }
   const me = ($("comboMinEdge") || {}).value;
   if (me !== "" && me != null) {
-    el.innerHTML += `${el.innerHTML ? "<br/>" : ""}🎯 <b>Edge mode</b>: only legs where our model beats Kalshi's price by ≥ <b>${me}¢</b> (the pre-blend number - the maker's shown odds stay market-blended). Real edges that big are rare: 3-8¢ finds bets, 10¢+ may find nothing. The confidence floor above keeps them likely - "each leg ≥ 55%" is what rules out a 16%-vs-9¢ longshot.`;
+    el.innerHTML += `${el.innerHTML ? "<br/>" : ""}🎯 <b>Edge mode</b>: only legs where our model beats Kalshi's price by ≥ <b>${me}¢</b> (the pre-blend number - the maker's shown odds stay market-blended). Real edges that big are rare: 3-8¢ finds bets, 10¢+ may find nothing. The confidence floor above keeps them likely - "each leg ≥ 55%" is what rules out a 16%-vs-9¢ longshot. Overpriced YES markets come in automatically as their <b>NO</b> side (a 59¢ "9+ Ks" our sim puts at 6% shows up as NO with its own edge) - no need for a negative number here; YES-only turns fades off.`;
   }
 }
 const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);

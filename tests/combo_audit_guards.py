@@ -437,8 +437,16 @@ ck("the NO side of a leg uses the exact complement mask",
    '~c["mask"]' in _no_src,
    "so a NO leg's correlation with the rest of the slip is simulated rather "
    "than assumed - which is why the run line needed no NO generator of its own")
+_pair = {"type": "Ks", "label": "L", "marg": 0.62, "mask": 0b1, "group": "g"}
+_pno = _MS._no_candidates([_pair], 4)[0]
+_pblend = _MS._no_candidates([dict(_pair, marg=0.66, marg_model=0.62)], 4)[0]
 ck("and its marginal is 1 minus the CALIBRATED yes, so a pair sums to 1",
-   '1.0 - c["marg"]' in _no_src)
+   abs(_pair["marg"] + _pno["marg"] - 1.0) < 1e-12
+   and abs(_pblend["marg_model"] + 0.62 - 1.0) < 1e-12
+   and abs(_pblend["marg"] + 0.62 - 1.0) < 1e-12,
+   "a cand the pricing pass already blended in place complements its MODEL "
+   "number (marg_model), never the blend -- the pair the model believes in "
+   "sums to 1, and pricing re-blends the NO side fresh from there")
 
 # --- correlation search width --------------------------------------------------
 print()
@@ -8359,9 +8367,77 @@ ck("the control exists, persists, is sent, and the slip states the mode",
 
 print()
 print("=" * 72)
+print("Edge-mode fades: overpriced YES markets enter as their NO side")
+print("=" * 72)
+# The ask, verbatim: "if it says Paul skenes ask for 9 Ks at 59cents but he's
+# playing against a monster lineup and our Sim/model put it at average 6 Ks
+# for a negative edge throw those in too." A model-6% YES is a 94% NO -- past
+# the sim's normal NO cap (padding in a fair book), so edge mode widens the
+# band AT BUILD TIME and the fade then clears the edge floor on its own ask.
+import mlb_sim as _ms35
+import baseball as _bb35
+
+_sk35 = {"type": "Ks", "label": "Skenes 9+ Ks", "marg": 0.06, "model_pct": 6.0,
+         "mask": 0b1, "group": "P1", "kref": {"t": "ks", "player": "Skenes"}}
+_no35 = _ms35._no_candidates([_sk35], 8, lo=0.90, hi=0.97)
+ck("the reported spec, verbatim: a 6%-model 9+Ks line becomes a NO fade",
+   len(_no35) == 1 and abs(_no35[0]["marg"] - 0.94) < 1e-12
+   and _no35[0]["side"] == "no" and _no35[0]["kref"].get("no") is True
+   and _no35[0]["mask"] == (~0b1) & 0xFF)
+ck("the fade clears the edge floor on ITS OWN ask, or it doesn't go in",
+   _bb35._edge_ok(dict(_no35[0], price_cents=88), 5)
+   and not _bb35._edge_ok(dict(_no35[0], price_cents=93), 5),
+   "94% model vs an 88c NO ask is the +6c edge being asked for; vs 93c "
+   "there is no edge and the overpriced-YES observation alone buys nothing")
+ck("the default NO band is untouched -- the cached sim pool stays fair-book",
+   _ms35._no_candidates([_sk35], 8) == []
+   and _insp.signature(_ms35._no_candidates).parameters["hi"].default
+       == _ms35._NO_MAX,
+   "widening the band everywhere would stuff every slip with 90%+ padding "
+   "legs that add headline confidence and no edge")
+ck("a 98% NO is still padding even in edge mode (hi cap holds)",
+   _ms35._no_candidates([dict(_sk35, marg=0.02)], 8, lo=0.90, hi=0.97) == [])
+# The warm-rebuild regression: _price_cands blends IN PLACE on the cached
+# sim's dicts, so on every build after the first the YES cand carries
+# marg_model (its OWN model number). {**c} used to copy that onto the NO leg,
+# so _edge_ok scored the fade as model-6% vs a 92c NO ask (-86c) and silently
+# dropped every fade the moment the sim cache warmed up.
+_warm35 = dict(_sk35, marg=0.085, marg_model=0.06)
+_wno35 = _ms35._no_candidates([_warm35], 8, lo=0.90, hi=0.97)
+ck("a previously-blended YES hands the NO its COMPLEMENT model number",
+   len(_wno35) == 1 and abs(_wno35[0]["marg"] - 0.94) < 1e-12
+   and abs(_wno35[0]["marg_model"] - 0.94) < 1e-12
+   and _bb35._edge_ok(dict(_wno35[0], price_cents=88), 5),
+   "the fade must survive a warm rebuild, not work exactly once per process")
+_bms35 = _insp.getsource(_bb35.build_mixed_parlay)
+ck("fades are generated in edge mode only, before pricing, NO side allowed",
+   'if min_edge_c is not None and (sides is None or "no" in sides):' in _bms35
+   and _bms35.index('lo=0.90, hi=0.97')
+       < _bms35.index('_price_cands(cands, g.get("kalshi_suffix"))'))
+_ext35 = _bms35.split('if min_edge_c is not None and (sides is None or '
+                      '"no" in sides):')[1].split("_price_cands")[0]
+ck("NO-only mode still gets fades: the pool is drawn pre-side-filter",
+   'gs["cands"]' in _ext35
+   and 'c.get("side", "yes") == "yes"' in _ext35,
+   "under sides={no} the YES cands are already filtered out of `cands`, so "
+   "complementing `cands` itself would generate nothing in fades-only mode")
+ck("an existing NO leg is never duplicated by the extension",
+   'have = {c["label"] for c in cands if c.get("side") == "no"}' in _bms35
+   and 'c["label"] not in have' in _bms35)
+_js35 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the hint says fades are automatic -- nobody should type a negative edge",
+   "come in automatically" in _js35 and "YES-only turns fades off" in _js35)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
     for n, d in FAIL:
         print(f"   - {n}   {d}")
 print("=" * 72)
+# A red guard MUST be a red exit code. The suite used to exit 0 unless it
+# crashed outright, which made every "check $? explicitly" ritual theater --
+# the one thing the exit code was trusted to carry (guard failures) was the
+# one thing it never carried.
+sys.exit(1 if FAIL else 0)
