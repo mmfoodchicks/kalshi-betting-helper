@@ -1441,12 +1441,17 @@ function simLoader(el, msg, kind, token) {
   kind = kind || "sim";
   const est = _simEst(kind) || 25;        // no history yet: assume a cold build
   let real = null;                        // latest server-reported counts
+  let phase = null;                       // what the job says it's doing pre-counts
   let pollId = null;
   if (token) {
     pollId = setInterval(async () => {
       try {
         const d = await (await fetch("/api/progress?token=" + encodeURIComponent(token))).json();
         if (d && d.known && d.total > 0) real = d;
+        // Before any game counts exist the job can still SAY what it is on
+        // ("building today's board…") -- the wait that used to render as a
+        // blind time estimate for half a minute.
+        if (d && d.known && d.phase) phase = d.phase;
       } catch (e) { /* a missed poll just falls back to the clock for a beat */ }
     }, 600);
   }
@@ -1501,9 +1506,12 @@ function simLoader(el, msg, kind, token) {
     } else if (dt <= est) {
       pct = 90 * (dt / est);
       note = ` of ~${est.toFixed(0)}s expected`;
+      if (phase && phase !== "simulating games") note += ` - ${phase}`;
     } else {
       pct = 90 + 9 * (1 - Math.exp(-(dt - est) / Math.max(8, est)));
-      note = ` - longer than the usual ${est.toFixed(0)}s; simulating games that weren't cached`;
+      note = (phase && phase !== "simulating games")
+        ? ` - longer than the usual ${est.toFixed(0)}s; ${phase}`
+        : ` - longer than the usual ${est.toFixed(0)}s; simulating games that weren't cached`;
     }
     fill.style.width = pct.toFixed(1) + "%";
     pctEl.textContent = pct.toFixed(0) + "%";

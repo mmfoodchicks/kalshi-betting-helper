@@ -22,6 +22,8 @@ import unicodedata
 
 import kalshi
 import errlog
+import threading
+import contextlib
 
 _GAME_SERIES = ("KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBRFI",
                 "KXMLBEXTRAS")
@@ -41,7 +43,11 @@ _STAT_OF = {"KXMLBKS": "ks", "KXMLBHIT": "hit", "KXMLBTB": "tb",
 # cannot be indexed but left unresolvable (which is exactly how SB failed).
 _PLAYER_STATS = frozenset(_STAT_OF.values())
 
-_TTL = 60
+# Pre-game asks drift, they do not jump; the board itself refreshes on a
+# 5-minute cadence. 60s here meant the index expired MID-BUILD and the builder
+# paid a full refetch (12 series x up to 6 pages, sequential, behind Kalshi's
+# rate limiter) several times per build.
+_TTL = 180
 _cache = {"ts": 0.0, "data": None}
 
 _SUB_LINE = re.compile(r":\s*(\d+)\+")          # "Ketel Marte: 2+" -> 2
@@ -260,10 +266,64 @@ def _idx_disk_put(data):
         errlog.note("KIDX-idx_disk_put", _e)
 
 
+_pin_local = threading.local()
+
+
+@contextlib.contextmanager
+def pinned():
+    """ONE index snapshot for a whole build.
+
+    A multi-pass build re-reads the index many times -- the reachability
+    probe, per-pass candidate pricing, the final payout stamp -- and with the
+    TTL shorter than a build, each re-read paid a full sequential refetch of
+    the entire MLB book: ~10s on a clean network, most of a minute behind
+    Kalshi's rate limiter. Reported live with a screenshot: one cached game,
+    "pass 1/3", 92 seconds. Pinning also makes a slip COHERENT -- every pass
+    prices against the same book, instead of pass 3 seeing prices pass 1
+    never saw. Thread-local, so a pinned build never affects other requests."""
+    _pin_local.idx = index()
+    try:
+        yield _pin_local.idx
+    finally:
+        _pin_local.idx = None
+
+
+_refresh_lock = threading.Lock()
+_refresh = {"busy": False, "last": 0.0}
+
+
+def _kick_refresh():
+    """Rebuild the index in the BACKGROUND, one thread at a time, at most
+    every 30s -- the stale-while-revalidate half of index()."""
+    with _refresh_lock:
+        now = time.time()
+        if _refresh["busy"] or now - _refresh["last"] < 30:
+            return
+        _refresh["busy"] = True
+        _refresh["last"] = now
+
+    def _run():
+        try:
+            built = _build_index()
+            if built:
+                _cache["data"], _cache["ts"] = built, time.time()
+                _idx_disk_put(built)
+        except Exception as _e:
+            errlog.note("KIDX-build", _e)
+        finally:
+            _refresh["busy"] = False
+    threading.Thread(target=_run, daemon=True).start()
+
+
 def index():
-    """Cached market index: memory, then a sibling process's disk copy, then a
-    fresh fetch -- and on a failed fetch, the last GOOD copy up to 45 minutes
-    old rather than an empty dict."""
+    """Cached market index: a build's pinned snapshot, then memory, then a
+    sibling process's disk copy -- and once EXPIRED, the last good copy is
+    served immediately while one background thread refetches. A user-facing
+    build never waits out the refetch unless there is no copy at all (a cold
+    instance's very first pricing)."""
+    p = getattr(_pin_local, "idx", None)
+    if p is not None:
+        return p
     now = time.time()
     if _cache["data"] is not None and now - _cache["ts"] <= _TTL:
         return _cache["data"]
@@ -271,11 +331,18 @@ def index():
     if disk:
         _cache["data"], _cache["ts"] = disk, now
         return disk
+    # Expired with a last-good copy in reach: serve it NOW, refresh behind.
+    # The ts is set so this re-checks in ~30s -- if the refresh landed the new
+    # book takes over, if it failed we keep serving last-good and re-kicking.
+    stale = _cache["data"] or _idx_disk_get(_IDX_STALE_MAX)
+    if stale:
+        _kick_refresh()
+        _cache["data"] = stale
+        _cache["ts"] = now - max(0, _TTL - 30)
+        return stale
+    # No memory, no disk: the caller genuinely has to wait for a build.
     # _build_index swallows per-series fetch errors internally, so a fully
-    # throttled window comes back as an EMPTY dict, not an exception -- and an
-    # empty index is exactly the failure the fallback exists for. Treat empty
-    # and raised identically: keep the last good memory copy if there is one,
-    # else the last good disk copy up to 45 minutes old.
+    # throttled window comes back as an EMPTY dict, not an exception.
     try:
         built = _build_index()
     except Exception as _e:
@@ -284,16 +351,12 @@ def index():
     if built:
         _cache["data"], _cache["ts"] = built, now
         _idx_disk_put(built)
-    elif not _cache["data"]:
-        _cache["data"] = _idx_disk_get(_IDX_STALE_MAX) or {}
-        _cache["ts"] = now
-        if not _cache["data"]:
-            # No fresh build, no memory, no disk young enough: the board will
-            # show "no Kalshi prices" and THIS is why.
-            errlog.note("KIDX-empty",
-                        msg="index build failed with no usable fallback")
-    else:
-        _cache["ts"] = now      # keep last-good memory; retry after the TTL
+        return built
+    # No fresh build, no memory, no disk young enough: the board will show
+    # "no Kalshi prices" and THIS is why. Briefly cache the emptiness so a
+    # throttled window is retried in ~30s, not hammered per request.
+    errlog.note("KIDX-empty", msg="index build failed with no usable fallback")
+    _cache["data"], _cache["ts"] = {}, now - max(0, _TTL - 30)
     return _cache["data"]
 
 

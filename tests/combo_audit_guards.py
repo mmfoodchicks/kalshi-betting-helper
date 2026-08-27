@@ -96,7 +96,11 @@ states = collections.Counter(B._game_state(g) for g in games)
 print(f"  (slate {DATE}: {len(games)} games {dict(states)})")
 playable = [g for g in games if B._playable(g, False)]
 if len(playable) < 2:
-    DATE = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+    # ET tomorrow, not UTC-today+1: at night the container's UTC date is
+    # already ET's tomorrow, so +1 skipped a day and fetched a slate Kalshi
+    # hadn't listed.
+    DATE = (__import__("clock").today_et()
+            + datetime.timedelta(days=1)).isoformat()
     games = B.analyze_slate(DATE, 2026)
     playable = [g for g in games if B._playable(g, False)]
     print(f"  -> using {DATE}: {len(games)} games, {len(playable)} playable")
@@ -1267,7 +1271,18 @@ ck("game_bundles(max_legs=3) still reaches three",
 # End-to-end on the real slate: the shape the bug report actually described.
 # The slip is a list of per-game GROUPS, so a same-game stack is a group of
 # size > 1 -- the Marlins/Braves group carrying "Over 2.5" and "Under 11.5".
-_off = B.build_mixed_parlay(playable, n_legs=4, target_pct=50,
+# STRUCTURE guards (does the checkbox bind), not pricing guards -- but they
+# used to price a startup snapshot against LIVE Kalshi minutes later, so any
+# suite run that crossed a first pitch found the books pulled, every leg
+# dropped, and a red suite at exactly 7:15pm. Pin both nondeterminism
+# sources: unpriced mode (model numbers alone) and a small sim count, both
+# restored (and the small sims evicted) right after.
+_kup_old = B._kalshi_up
+_simn_old = B._SIM_N
+B._kalshi_up = lambda: False
+B._SIM_N = 800
+_struct_games = playable[:4]
+_off = B.build_mixed_parlay(_struct_games, n_legs=4, target_pct=50,
                             max_legs_per_game=1, max_total_legs=8)
 if _off:
     _sizes = [g["size"] for g in _off["groups"]]
@@ -1288,10 +1303,20 @@ else:
 # may legitimately prefer six singles (it did, the night the honest blend
 # landed) -- but three games cannot carry five required legs without stacking
 # somewhere, so this fails only if stacking itself is broken.
-_rich = sorted(playable, key=lambda g: -len((B._game_sim(g) or {}).get("cands", [])))[:3]
+_rich = sorted(_struct_games,
+               key=lambda g: -len((B._game_sim(g) or {}).get("cands", [])))[:3]
 _on = B.build_mixed_parlay(_rich, n_legs=5, target_pct=45,
                            max_legs_per_game=4, max_total_legs=12,
                            legs_mode="require")
+B._kalshi_up = _kup_old
+B._SIM_N = _simn_old
+for _g in _struct_games:                 # evict the 800-run sims: later guards
+    _pk = _g.get("game_pk")              # must never read a thin distribution
+    B._cache.pop(("game_sim", _pk), None)
+    try:
+        os.remove(os.path.join(B._SIM_DISK, f"{_pk}.pkl"))
+    except OSError:
+        pass
 if _on and _on.get("groups"):
     ck("same-game ON still stacks (the fix did not disable stacking)",
        max(g["size"] for g in _on["groups"]) > 1,
@@ -8208,6 +8233,74 @@ ck("game sims ship BEFORE the boards wait loop, not after",
    < _pw32.index('("boards", _task_boards)'),
    "the boards task can sit in its wait loop for five minutes while a user "
    "watches the server re-simulate games the PC already finished")
+
+print()
+print("=" * 72)
+print("The 92-second one-game build: Kalshi index economics")
+print("=" * 72)
+# Reported with screenshots: ONE pregame game, already cached, "pass 1/3",
+# 92 seconds. The sims were instant -- the time was the Kalshi index: a 60s
+# TTL on a book that costs a sequential 12-series refetch (~10s clean, most
+# of a minute behind the rate limiter), re-paid by the reachability probe,
+# by per-pass pricing, and by the payout stamp as it kept expiring
+# mid-build. Three locks: a per-build pinned snapshot, stale-while-
+# revalidate so no caller ever blocks on a refetch while ANY copy exists,
+# and the board fetch moved into the job where the bar can name it.
+import kalshi_mlb as _km33
+import time as _tm33
+
+_oldc33 = dict(_km33._cache)
+_oldb33 = _km33._build_index
+try:
+    _km33._cache["data"] = {"SENTINEL-WARM": {}}
+    _km33._cache["ts"] = _tm33.time()
+    with _km33.pinned():
+        _km33._cache["data"] = {"OTHER": {}}
+        ck("a pinned build sees ONE book no matter what the cache does",
+           "SENTINEL-WARM" in _km33.index(),
+           "every pass prices against the same snapshot; the index cannot "
+           "expire mid-build and charge a refetch per pass")
+    ck("...and the pin releases with the build",
+       "OTHER" in _km33.index())
+
+    _calls33 = {"n": 0}
+    def _slow33():
+        _calls33["n"] += 1
+        _tm33.sleep(0.5)
+        return {"FRESH": {}}
+    _km33._build_index = _slow33
+    _km33._cache["data"] = {"STALE-GOOD": {}}
+    _km33._cache["ts"] = _tm33.time() - 9999
+    _km33._refresh["last"] = 0.0
+    _t033 = _tm33.time()
+    _got33 = _km33.index()
+    _dt33 = _tm33.time() - _t033
+    _tm33.sleep(1.0)
+    ck("an expired index serves last-good INSTANTLY and refreshes behind",
+       "STALE-GOOD" in _got33 and _dt33 < 0.4 and _calls33["n"] == 1
+       and "FRESH" in _km33.index(),
+       f"answered in {_dt33*1000:.0f}ms; a user-facing build only ever waits "
+       "on a cold instance's very first pricing")
+finally:
+    _km33._build_index = _oldb33
+    _km33._cache.update(_oldc33)
+ck("the index TTL matches how pre-game asks actually move",
+   _km33._TTL >= 180,
+   "60s meant the book expired mid-build, always")
+
+_apy33 = open(_os.path.join(_root, "app.py")).read()
+ck("the whole MLB build runs under one pinned book",
+   "with kalshi_mlb.pinned():" in _apy33)
+ck("the board fetch runs IN the job and names itself",
+   'phase="building today\'s board…"' in _apy33
+   and "games = baseball.analyze_slate(date, season)"
+   in _insp.getsource(__import__("app").api_baseball_mixed),
+   "an expired slate cache used to block the HTTP request for the whole "
+   "rebuild while the bar read a blind time estimate")
+_js33 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the bar names the pre-count wait instead of guessing at a curve",
+   "if (d && d.known && d.phase) phase = d.phase;" in _js33
+   and 'phase !== "simulating games"' in _js33)
 
 print()
 print("=" * 72)

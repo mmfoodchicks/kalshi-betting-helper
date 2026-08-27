@@ -3487,10 +3487,6 @@ def api_baseball_mixed():
             sel[int(pk)] = team or True
         except ValueError:
             pass
-    try:
-        games = baseball.analyze_slate(date, season)
-    except Exception as e:
-        return jsonify({"error": f"baseball data failed: {e}"}), 502
     # Optional confidence CEILING -> the floor becomes a band and the builder
     # walks each ladder to the line that lands inside it.
     cap = request.args.get("cap")
@@ -3538,75 +3534,91 @@ def api_baseball_mixed():
         except Exception as _e:
             errlog.note("SLIP-log", _e)
 
-    def _build(target_pct, _mb=False, _opt=False):
-        return baseball.build_mixed_parlay(
-            games, n_legs=legs, target_pct=target_pct, sides=sides,
-            cap_pct=None if (_mb or _opt) else cap,
-            target_payout=0 if _mb else payout, n_sims=sims,
-            max_legs_per_game=max_total if same_game else 1,
-            max_total_legs=max_total,
-            legs_mode="off" if _opt else legs_mode,
-            payout_mode="require" if _opt else payout_mode,
-            conn=conn, game_sel=sel or None,
-            include_live=include_live, types=prop_types,
-            objective="balanced" if _opt else objective, max_bet=_mb,
-            progress_token=ptok)
-
     def _core():
         """The build itself, as a plain dict. Split out so it can run in the
         background instead of holding an HTTP request open."""
         nonlocal payout
-        if optimal:
-            # A target past the exchange ceiling is not reachable in real money;
-            # clamp and say so rather than optimizing toward a payout Kalshi caps.
-            capped = payout > combo_engine.MAX_PAYOUT_X
-            payout = min(payout, combo_engine.MAX_PAYOUT_X)
-            # The floor sweep is N builds on ONE token: declare N up front so
-            # the bar divides by it instead of growing its total mid-flight.
-            baseball.progress_declare(ptok, len(combo_engine.OPTIMAL_FLOORS))
-            item = combo_engine.best_target(lambda f: _build(f, _opt=True))
-            if item:
-                item["objective"] = "optimal"
-                item["target_payout_x"] = payout
-                item["target_capped"] = capped
-                _slip_log_safe(item)
-                return {"parlay": item}
-            pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
-            if pre and not any(g.get("pick_price_cents") for g in pre):
-                return {"parlay": None, "hint": "kalshi_unpriced",
-                        "n_pregame": len(pre)}
-            return {"parlay": None, "hint": "optimal_unbuildable",
-                    "target_payout_x": payout}
-        if max_bet:
-            # The band and the payout target are dropped and the per-leg floor is
-            # swept: reaching the MARKET payout cap needs room the maker's own
-            # settings would not give it. See combo_engine.MAX_BET_FLOORS.
-            baseball.progress_declare(ptok, len(combo_engine.MAX_BET_FLOORS))
-            item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+        # The board fetch runs IN the job, not on the request thread: an
+        # expired slate cache used to block the HTTP request for the whole
+        # board rebuild while the bar read a blind time estimate. The job
+        # phase names the wait instead.
+        if ptok:
+            baseball.job_update(ptok, phase="building today's board…")
+        try:
+            games = baseball.analyze_slate(date, season)
+        except Exception as e:
+            return {"error": f"baseball data failed: {e}"}
+
+        def _build(target_pct, _mb=False, _opt=False):
+            return baseball.build_mixed_parlay(
+                games, n_legs=legs, target_pct=target_pct, sides=sides,
+                cap_pct=None if (_mb or _opt) else cap,
+                target_payout=0 if _mb else payout, n_sims=sims,
+                max_legs_per_game=max_total if same_game else 1,
+                max_total_legs=max_total,
+                legs_mode="off" if _opt else legs_mode,
+                payout_mode="require" if _opt else payout_mode,
+                conn=conn, game_sel=sel or None,
+                include_live=include_live, types=prop_types,
+                objective="balanced" if _opt else objective, max_bet=_mb,
+                progress_token=ptok)
+
+        # ONE Kalshi book for the whole build (see kalshi_mlb.pinned): every
+        # pass prices against the same snapshot, and the index can never
+        # expire mid-build and charge the user a full refetch per pass.
+        import kalshi_mlb
+        with kalshi_mlb.pinned():
+            if optimal:
+                # A target past the exchange ceiling is not reachable in real money;
+                # clamp and say so rather than optimizing toward a payout Kalshi caps.
+                capped = payout > combo_engine.MAX_PAYOUT_X
+                payout = min(payout, combo_engine.MAX_PAYOUT_X)
+                # The floor sweep is N builds on ONE token: declare N up front so
+                # the bar divides by it instead of growing its total mid-flight.
+                baseball.progress_declare(ptok, len(combo_engine.OPTIMAL_FLOORS))
+                item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+                if item:
+                    item["objective"] = "optimal"
+                    item["target_payout_x"] = payout
+                    item["target_capped"] = capped
+                    _slip_log_safe(item)
+                    return {"parlay": item}
+                pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+                if pre and not any(g.get("pick_price_cents") for g in pre):
+                    return {"parlay": None, "hint": "kalshi_unpriced",
+                            "n_pregame": len(pre)}
+                return {"parlay": None, "hint": "optimal_unbuildable",
+                        "target_payout_x": payout}
+            if max_bet:
+                # The band and the payout target are dropped and the per-leg floor is
+                # swept: reaching the MARKET payout cap needs room the maker's own
+                # settings would not give it. See combo_engine.MAX_BET_FLOORS.
+                baseball.progress_declare(ptok, len(combo_engine.MAX_BET_FLOORS))
+                item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+                if not item:
+                    return {"parlay": None, "hint": "max_bet_unreachable",
+                            "cap_x": combo_engine.MAX_PAYOUT_X}
+            else:
+                item = _build(target)
             if not item:
-                return {"parlay": None, "hint": "max_bet_unreachable",
-                        "cap_x": combo_engine.MAX_PAYOUT_X}
-        else:
-            item = _build(target)
-        if not item:
-            # Say WHY nothing built. "No eligible games for that selection" sends
-            # the user to loosen filters that were never the problem: the common
-            # cause is that the slate carries no Kalshi prices yet (lines post
-            # near game time, or the exchange is unreachable), and the maker only
-            # builds legs you can actually place.
-            pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
-            if pre and not any(g.get("pick_price_cents") for g in pre):
-                return {"parlay": None, "hint": "kalshi_unpriced",
-                        "n_pregame": len(pre)}
-            # A one-sided pool and a confidence floor fight each other: YES legs
-            # for rare events (home runs, steals) live at 5-20%, so a 55% floor
-            # empties the pool completely. Name that instead of blaming the
-            # game selection.
-            if sides is not None:
-                return {"parlay": None, "hint": "sides_empty",
-                        "sides": sides_pref, "target_pct": target}
-        _slip_log_safe(item)
-        return {"parlay": item}
+                # Say WHY nothing built. "No eligible games for that selection" sends
+                # the user to loosen filters that were never the problem: the common
+                # cause is that the slate carries no Kalshi prices yet (lines post
+                # near game time, or the exchange is unreachable), and the maker only
+                # builds legs you can actually place.
+                pre = [g for g in games if (g.get("live") or {}).get("state") == "Preview"]
+                if pre and not any(g.get("pick_price_cents") for g in pre):
+                    return {"parlay": None, "hint": "kalshi_unpriced",
+                            "n_pregame": len(pre)}
+                # A one-sided pool and a confidence floor fight each other: YES legs
+                # for rare events (home runs, steals) live at 5-20%, so a 55% floor
+                # empties the pool completely. Name that instead of blaming the
+                # game selection.
+                if sides is not None:
+                    return {"parlay": None, "hint": "sides_empty",
+                            "sides": sides_pref, "target_pct": target}
+            _slip_log_safe(item)
+            return {"parlay": item}
 
     # ---- run it in the BACKGROUND when the client gave us a token ----------
     # A full slate is 14 games and one game's 4,000-run simulation costs ~32s on
