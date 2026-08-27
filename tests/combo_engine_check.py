@@ -110,9 +110,18 @@ p4, _w, ql4 = CE.blend_prob(0.85, q(54, 4), "HRR")
 check("a worthless market still caps the claimed edge",
       p4 <= 0.54 + CE._MAX_EDGE + 1e-9, f"0.85 -> {p4:.3f} vs ask 0.54")
 check("even though it got zero blend weight", ql4 == 0.0)
+# The floor keys off the BID: buyers standing at 49c genuinely bound fair
+# value from below. An ask alone never does -- a dead book's 99c placeholder
+# used to floor a model 3.3% at 89% -- so with no trustworthy bid there is no
+# floor at all, and ask-only evidence may only ever LOWER the number.
 p5, _w, _q = CE.blend_prob(0.02, q(50, 49, vol=500), "Hit")
-_mid5 = CE.market_reference(q(50, 49, vol=500))[0]      # 49.5c, not 50c
-check("the cap binds downward too", p5 >= _mid5 - CE._MAX_EDGE - 1e-9, f"{p5:.3f}")
+check("a real bid binds the number from below", p5 >= 0.49 - CE._MAX_EDGE - 1e-9,
+      f"{p5:.3f}")
+p6, _w, _q = CE.blend_prob(0.033, q(99, 1), "Hit")
+check("a dead book cannot manufacture a favorite", p6 <= 0.033 + 1e-9,
+      f"3.3% vs bid 1c / ask 99c -> {p6:.3f} (the symmetric clamp said 89%)")
+p7, _w, _q = CE.blend_prob(0.033, q(99), "Hit")
+check("an ask with no bid never lifts the model", p7 <= 0.033 + 1e-9, f"{p7:.3f}")
 check("a leg the model and market agree on barely moves",
       abs(CE.blend_prob(0.50, q(50, 49, vol=500), "ML")[0] - 0.50) < 0.02)
 

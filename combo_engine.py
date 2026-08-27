@@ -227,9 +227,28 @@ _MIN_TRADED = 25.0         # or this much lifetime volume + open interest
 _MAX_EDGE = 0.10
 
 
-def _clamp_to_market(p, mid):
-    """Keep a blended probability within _MAX_EDGE of the market's midpoint."""
-    return max(mid - _MAX_EDGE, min(mid + _MAX_EDGE, p))
+def _clamp_to_market(p, p_model, ref, q):
+    """Keep a blended probability inside what the book actually attests.
+
+    Each side of a book is evidence in ONE direction. An ask bounds fair value
+    from ABOVE (someone is willing to sell there); only a bid bounds it from
+    below. So the ceiling keys off the reference (the mid, or the ask when the
+    ask is all there is), but the floor keys off the BID -- and a book with no
+    trustworthy bid (none at all, or a placeholder 1c under a wide spread) has
+    no floor and may never LIFT the model's number either. This used to clamp
+    symmetrically to ref +/- _MAX_EDGE, and on a dead book (bid 1c / ask 99c
+    resting junk, quality 0) the floor arm RAISED a model 3.3% to 89%:
+    "Rutschman 3+ hits" became the likeliest leg on the whole board out of a
+    market nobody had priced, and a likeliest-first slip stacked it."""
+    bid = q.get("bid") if q else None
+    spread = q.get("spread") if q else None
+    if (bid is not None and 0 < bid < 100
+            and spread is not None and spread <= _SPREAD_WIDE):
+        lo = bid / 100.0 - _MAX_EDGE
+    else:
+        p = min(p, p_model)
+        lo = 0.0
+    return max(lo, min(ref + _MAX_EDGE, p))
 
 # How much this model is trusted per market. The table below is the PRIOR --
 # hand-set from where each model leans on stable team/pitcher rates vs
@@ -376,7 +395,7 @@ def blend_prob(p_model, q, typ, sport="mlb"):
     w = tau_m / (tau_m + _MARKET_K * qual)
     z = w * math.log(p_model / (1 - p_model)) + (1 - w) * math.log(mid / (1 - mid))
     z = max(-12.0, min(12.0, z))
-    return _clamp_to_market(1.0 / (1.0 + math.exp(-z)), mid), w, qual
+    return _clamp_to_market(1.0 / (1.0 + math.exp(-z)), p_model, mid, q), w, qual
 
 
 def blend_candidates(cands, quotes, sport="mlb"):

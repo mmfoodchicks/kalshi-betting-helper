@@ -8430,6 +8430,48 @@ ck("the hint says fades are automatic -- nobody should type a negative edge",
 
 print()
 print("=" * 72)
+print("The market clamp is one-directional: a book caps, it never manufactures")
+print("=" * 72)
+# The reported card, verbatim: "Adley Rutschman 3+ hits (model 3.3% / sim 89%)
+# Kalshi 99c" inside a likeliest-first hits slip. The book was dead -- resting
+# 1c bid / 99c ask, zero volume, market quality 0 -- and the old symmetric
+# ref+/-10 clamp turned that placeholder ask into an 89% FLOOR. An ask only
+# bounds fair value from above; the floor belongs to the bid alone.
+import combo_engine as _ce36
+
+_dead36 = {"ask": 99, "bid": 1, "spread": 98, "mid": 50,
+           "vol": 0, "oi": 0, "size": 1}
+_u36, _w36, _q36 = _ce36.blend_prob(0.033, _dead36, "Hit")
+ck("the reported card, verbatim: 3.3% vs a 1c/99c dead book STAYS 3.3%",
+   abs(_u36 - 0.033) < 1e-9 and _w36 == 1.0 and _q36 == 0.0,
+   f"blended {_u36:.3f}; the symmetric clamp displayed 89% and a "
+   "likeliest-first slip stacked it")
+ck("an ask with no bid at all never lifts the model either",
+   _ce36.blend_prob(0.033, {"ask": 99, "bid": None, "spread": None,
+                            "mid": 99, "vol": 0, "oi": 0}, "Hit")[0]
+   <= 0.033 + 1e-9,
+   "one-sided quality is 0.2, so without this the blend PULL alone dragged "
+   "3.3% up to ~73% before any clamp was consulted")
+ck("the winner's-curse cap this clamp exists for still binds",
+   _ce36.blend_prob(0.85, {"ask": 54, "bid": 4, "spread": 50, "mid": 29,
+                           "vol": 0, "oi": 0}, "HRR")[0] <= 0.54 + 0.10 + 1e-9
+   and _ce36.blend_prob(0.83, {"ask": 54, "bid": None, "spread": None,
+                               "mid": 54, "vol": 0, "oi": 0}, "Hit")[0] < 0.83,
+   "capping DOWN against an ask is sound in every book shape -- that is the "
+   "85%-claim-vs-54c-ask case the clamp was originally added for")
+ck("a real two-sided bid still floors the number from below",
+   _ce36.blend_prob(0.02, {"ask": 50, "bid": 49, "spread": 1, "mid": 49.5,
+                           "vol": 500, "oi": 0, "size": 999}, "Hit")[0]
+   >= 0.49 - 0.10 - 1e-9,
+   "buyers standing at 49c are genuine evidence; the fix removes fabricated "
+   "floors, not real ones")
+_cl36 = _insp.getsource(_ce36._clamp_to_market)
+ck("the floor keys off the bid and dies with it, in source",
+   "bid / 100.0 - _MAX_EDGE" in _cl36 and "p = min(p, p_model)" in _cl36
+   and "mid - _MAX_EDGE" not in _cl36)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
