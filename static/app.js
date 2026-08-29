@@ -1588,7 +1588,7 @@ function legProb(l, nsim) {
       const rawEdge = Math.round(l.sim_pct - l.market_cents);
       if (Math.abs(rawEdge - edge) >= 1) {
         const w = (l.model_weight != null)
-          ? ` market took <b>${Math.round((1 - l.model_weight) * 100)}%</b>` : "";
+          ? ` blend <b>${Math.round((1 - l.model_weight) * 100)}% market</b>` : "";
         const tip = `Our simulation alone said ${l.sim_pct}%, an edge of ${rawEdge >= 0 ? "+" : ""}${rawEdge} on this price. The shown ${l.prob_pct}% is that number blended toward the market, which is what the slip's odds are built from. How much weight our number gets is now FITTED per market from the graded record: a model that beats the close earns its disagreements back, one that loses to it gets flattened. Until a market has enough graded history the cautious prior rules.`;
         mkt += ` <span class="kmkt" style="opacity:.7" title="${tip}">pre-blend <b>${l.sim_pct}%</b>` +
           ` <span class="${rawEdge >= 0 ? "ev pos" : "ev neg"}">${rawEdge >= 0 ? "+" : ""}${rawEdge}</span>${w}</span>`;
@@ -2406,9 +2406,47 @@ async function loadBestBets() {
       </div>`;
     }).join("");
     box.innerHTML = head + body +
-      `<div class="small" style="margin-top:10px;color:var(--muted)">${d.rows.length} bets from ${d.n_candidates} candidates · net = our % − ask − Kalshi taker fee · capped 3 per matchup so one opinion can't flood the board. <b>Trust</b>: soft rows are usually our model's bias, not the market's mistake.</div>`;
+      `<div class="small" style="margin-top:10px;color:var(--muted)">${d.rows.length} bets from ${d.n_candidates} candidates · net = our % − ask − Kalshi taker fee · capped 3 per matchup so one opinion can't flood the board. <b>Trust</b>: soft rows are usually our model's bias, not the market's mistake.</div>` +
+      `<details style="margin-top:10px" ontoggle="if(this.open)loadSharp()"><summary class="small" style="cursor:pointer">📏 <b>Where we're actually sharp</b> - each model's measured record vs the price, not today's claimed edges</summary><div id="sharpBox" class="small" style="margin-top:6px">loading…</div></details>`;
   } catch (e) {
     box.innerHTML = `<div class="empty">Best Bets scan failed - try Rescan.</div>`;
+  }
+}
+
+// The app has always KNOWN where its models beat the price -- fitted blend
+// weights, graded vs-market loglosses, and now closing-line drift -- but that
+// intelligence lived in module internals while bets got picked by feel. One
+// table: bet MORE where the record says the model is ahead of the close, and
+// read big claimed edges in weak rows as model error.
+let _sharpLoaded = false;
+async function loadSharp() {
+  if (_sharpLoaded) return;
+  _sharpLoaded = true;
+  const el = $("sharpBox");
+  try {
+    const d = await (await fetch("/api/sharp")).json();
+    if (d.error) { el.innerHTML = d.error; _sharpLoaded = false; return; }
+    const tr = (d.trust || {}).weights || {};
+    const rows = Object.entries(d.models || {}).map(([m, r]) => {
+      const vm = r.vs_market || {};
+      const cl = r.close || {};
+      const w = tr[m] ? `${Math.round((tr[m].effective_weight || 0) * 100)}%` : "-";
+      const beat = vm.ready ? (vm.beats_market ? `<b class="ev pos">beats close</b> (+${vm.edge})`
+                                               : `<span class="ev neg">loses to close</span> (${vm.edge})`) : `${vm.n ?? 0} graded`;
+      const drift = cl.ready ? `${cl.toward_pct}% toward us · ${cl.avg_capture_c >= 0 ? "+" : ""}${cl.avg_capture_c}¢/pick` : `accruing (${cl.n ?? 0})`;
+      return `<div class="edgerow"><span class="ecol-pick"><b>${m}</b></span>
+        <span class="ecol-num" title="how much of the blend the model has EARNED on measured results">${w}</span>
+        <span class="ecol-pick">${beat}</span>
+        <span class="ecol-pick" title="does the closing line move toward our number? Accrues per event - the fastest honest verdict">${drift}</span>
+        <span class="ecol-num">${r.graded ?? 0}g</span></div>`;
+    }).join("");
+    el.innerHTML = rows
+      ? `<div class="edgerow edgehead"><span class="ecol-pick">Model</span><span class="ecol-num">Weight</span><span class="ecol-pick">Graded vs close</span><span class="ecol-pick">Line drift</span><span class="ecol-num">n</span></div>` + rows
+        + `<div style="margin-top:6px;color:var(--muted)">Reading it: <b>weight</b> = the say the model has earned against the market (measured, not vibes). <b>Line drift</b> = whether the CLOSING price keeps moving toward our number - it accrues in days, so it's the early tell. Bet where these are green, and treat big edges from red rows as our error.</div>`
+      : "Nothing measured yet - predictions accrue as boards run.";
+  } catch (e) {
+    el.innerHTML = "failed to load - reopen to retry";
+    _sharpLoaded = false;
   }
 }
 

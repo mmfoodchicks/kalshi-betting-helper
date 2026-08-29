@@ -1987,6 +1987,28 @@ def api_calibration():
         return jsonify({"error": f"calibration report failed: {e}"}), 502
 
 
+@app.route("/api/sharp")
+def api_sharp():
+    """Where the models are ACTUALLY sharp, in one table: per predlog bucket,
+    the graded record vs the price it was logged beside (vs_market), the
+    closing-line movement verdict (close_report -- accrues in days, not
+    weeks), and the measured blend weight each sport has earned
+    (model_trust). The app already KNEW all of this; it was just buried in
+    three modules' internals while picks got chosen by feel."""
+    import predlog
+    import model_trust
+    try:
+        predlog.init_db()
+        models = {}
+        for m, counts in sorted((predlog.status() or {}).items()):
+            models[m] = {**counts,
+                         "vs_market": predlog.vs_market(m),
+                         "close": predlog.close_report(m)}
+        return jsonify({"models": models, "trust": model_trust.report()})
+    except Exception as e:
+        return jsonify({"error": f"sharp report failed: {e}"}), 502
+
+
 # The MLB slate is the heaviest board in the app: a cold build simulates every
 # game and takes ~54s on four fast cores, which on a half-core instance is several
 # MINUTES. Blocking a request for that long does not merely feel slow -- gunicorn

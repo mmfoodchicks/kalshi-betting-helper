@@ -19,9 +19,14 @@ Single-user (the repo owner). Read this before touching anything.
   `vigil-pc.cfg` (holds SIM_TOKEN) is gitignored and must stay that way, along
   with `pc-simcache/` and `pc-deepcache/`.
 - **Guard suite gates every push**: `python3 tests/combo_audit_guards.py`
-  (~1,390 checks, 3-8 min). Check the **exit code explicitly** —
+  (~1,450 checks, 3-8 min). Check the **exit code explicitly** —
   `python3 tests/... ; SUITE=$?; [ $SUITE -eq 0 ] && git commit ...`. Piping to
-  `tail` once masked a red suite and shipped a broken commit.
+  `tail` once masked a red suite and shipped a broken commit. The suite also
+  runs in CI on every push (`.github/workflows/guards.yml`) — a red X on the
+  commit is the backstop, but never push red on purpose; Render deploys
+  regardless. The suite is hermetic via `VIGIL_NO_BG` (importing app.py must
+  never start the production loops in a test process — it once did, and the
+  accumulated live predictions flipped a guard).
 - **Batch pushes.** Every push triggers a ~30-minute Docker build on Render and
   a swap that cold-starts the app and emails a health-check alert. Group related
   work into one commit where you reasonably can.

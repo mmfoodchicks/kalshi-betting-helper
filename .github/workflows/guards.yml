@@ -1,0 +1,32 @@
+# The guard suite gates every push in CI, not just in whoever's terminal
+# remembered to run it. This only became possible once the suite went hermetic
+# (VIGIL_NO_BG): before that, running the tests started the production
+# background loops -- live Kalshi harvesting inside a CI runner.
+#
+# The suite exits non-zero on any failed guard (that exit code was made real
+# on 2026-08-27; before then it only signalled crashes), so a red run here
+# blocks nothing automatically -- Render deploys on push regardless -- but it
+# lands a red X on the commit and an email, which is the alarm that matters
+# for a single-owner repo.
+name: guards
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt pyflakes
+      # Some functional guards touch live public APIs (Kalshi index shapes,
+      # ESPN). They were deflaked to pinned/unpriced modes where flakiness
+      # bit; if a residual flake appears here, deflake the guard -- don't
+      # gate it off.
+      - run: python3 tests/combo_audit_guards.py

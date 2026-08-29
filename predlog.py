@@ -18,6 +18,7 @@ Nothing here changes a prediction — it only records and grades, so calibration
 accrues honestly from real outcomes.
 """
 import os
+import re as _re
 import sqlite3
 import threading
 import time
@@ -61,6 +62,15 @@ def init_db():
                 c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
             except Exception as _e:
                 errlog.note("PRED-init_db", _e)  # a sibling worker just added it
+        # `close_mkt` is the last PRE-EVENT market price (see snapshot_closes):
+        # the closing line, the fastest honest benchmark a pick can be graded
+        # against -- it accrues per event instead of waiting out settlement.
+        if "close_mkt" not in cols:
+            try:
+                c.execute("ALTER TABLE predictions ADD COLUMN close_mkt REAL")
+                c.execute("ALTER TABLE predictions ADD COLUMN close_mkt_ts INTEGER")
+            except Exception as _e:
+                errlog.note("PRED-init_db-2", _e)
         # Repair: NFL exhibitions logged before the nfl_pre split carried
         # model='nfl', and first-write-wins means the corrected router could
         # never re-file them — so August games would grade into the REGULAR
@@ -136,6 +146,105 @@ def devig(own_cents, opp_cents):
     if a <= 0 or b <= 0:
         return None
     return a / (a + b)
+
+
+_TICKER_MON = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+               "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
+_EVT_RE = _re.compile(r"-(\d{2})([A-Z]{3})(\d{2})(\d{4})?")
+
+
+def _event_ts(ticker):
+    """Event START encoded in the ticker itself, as an epoch, or None.
+
+    Kalshi's close_time CANNOT anchor anything pre-game: it is an
+    administrative backstop set WEEKS after the event (a Sep 2 fight
+    'closes' Sep 17) and trading runs in-game, so a price taken near
+    close_time has the outcome inside it. The ticker is the honest source:
+    KXUFCFIGHT-26SEP02RIVDAR encodes the event day, and game series
+    (KXMLBGAME-26AUG312138NYYLAA) carry the start HHMM in ET. Day-only
+    tickers resolve to MIDNIGHT ET of the event day -- snapshots stop the
+    night before, trading a few hours of line movement for zero risk of
+    in-game contamination."""
+    m = _EVT_RE.search(ticker or "")
+    if not m:
+        return None
+    yy, mon, dd, hhmm = m.groups()
+    month = _TICKER_MON.get(mon)
+    if not month:
+        return None
+    hour = minute = 0
+    if hhmm and int(hhmm[:2]) < 24 and int(hhmm[2:]) < 60:
+        hour, minute = int(hhmm[:2]), int(hhmm[2:])
+    import datetime
+    import zoneinfo
+    try:
+        dt = datetime.datetime(2000 + int(yy), month, int(dd), hour, minute,
+                               tzinfo=zoneinfo.ZoneInfo("America/New_York"))
+    except ValueError:
+        return None
+    return dt.timestamp()
+
+
+def snapshot_closes(limit=40):
+    """Refresh each open prediction's pre-event market price; the last write
+    before the event starts IS the closing line.
+
+    Runs every loop pass over ungraded rows whose event is inside the next
+    36 hours, nearest first, capped per pass to be polite to Kalshi. The
+    snapshot is the yes mid (the ask alone when nobody bids); the log-time
+    `mkt` is a two-sided de-vig, so the two conventions differ by half the
+    vig split -- fine for the movement question, which reads direction and
+    size of the drift, not absolute level."""
+    import kalshi
+    now = time.time()
+    with _lock, _conn() as c:
+        rows = [r["ticker"] for r in c.execute(
+            "SELECT ticker FROM predictions WHERE graded=0").fetchall()]
+    due = []
+    for tk in rows:
+        ev = _event_ts(tk)
+        if ev and now < ev and ev - now < 36 * 3600:
+            due.append((ev, tk))
+    due.sort()
+    n = 0
+    for _ev, tk in due[:limit]:
+        try:
+            m = kalshi.get_market(tk)
+        except Exception:
+            continue                     # closed/404/blink -- next pass retries
+        yb, ya = m.get("yes_bid"), m.get("yes_ask")
+        px = (yb + ya) / 2.0 if yb and ya else ya
+        if px and 0 < px < 100:
+            with _lock, _conn() as c:
+                c.execute("UPDATE predictions SET close_mkt=?, close_mkt_ts=? "
+                          "WHERE ticker=? AND graded=0", (px / 100.0, int(now), tk))
+            n += 1
+    return n
+
+
+def close_report(model):
+    """Does the CLOSING line move toward this model's numbers?
+
+    The fastest honest verdict a model can earn: settlement grading needs
+    weeks of coin flips, but every pick where we disagreed with the price
+    gets a close-movement grade the moment its event starts. Read it like a
+    sharp reads beat-the-close: toward_pct over 50 with positive capture
+    means the market's own information flow keeps agreeing with us late;
+    under 50 means our disagreements are noise the market never validates."""
+    with _lock, _conn() as c:
+        rows = [(r["prob"], r["mkt"], r["close_mkt"]) for r in c.execute(
+            "SELECT prob, mkt, close_mkt FROM predictions WHERE model=? "
+            "AND mkt IS NOT NULL AND close_mkt IS NOT NULL", (model,)).fetchall()]
+    live = [(p, m, cm) for p, m, cm in rows if abs(p - m) > 0.005]
+    if len(live) < 10:
+        return {"n": len(live), "ready": False}
+    toward = sum(1 for p, m, cm in live if (cm - m) * (p - m) > 0)
+    flat = sum(1 for p, m, cm in live if abs(cm - m) <= 0.002)
+    cap = sum((cm - m) * (1 if p > m else -1) for p, m, cm in live) / len(live)
+    return {"n": len(live), "ready": True,
+            "toward_pct": round(100.0 * toward / len(live), 1),
+            "flat_pct": round(100.0 * flat / len(live), 1),
+            "avg_capture_c": round(cap * 100, 2)}
 
 
 def pairs(model):
@@ -337,6 +446,10 @@ def _loop(interval):
             harvest()
         except Exception as _e:
             errlog.note("PRED-loop", _e)
+        try:
+            snapshot_closes()
+        except Exception as _e:
+            errlog.note("PRED-loop-3", _e)
         try:
             resolve_due()
         except Exception as _e:

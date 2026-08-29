@@ -8597,6 +8597,85 @@ ck("VIGIL_NO_BG stands down every background claim, and this suite sets it",
 
 print()
 print("=" * 72)
+print("The record grades itself against the CLOSE, without touching the game")
+print("=" * 72)
+# Settlement grading is weeks of coin flips; the closing line is the fastest
+# honest benchmark and it accrues per event. The trap this block exists to
+# hold shut: Kalshi's close_time is an administrative backstop WEEKS after
+# the event (a Sep 2 fight 'closes' Sep 17) and trading runs in-game, so a
+# snapshot anchored to close_time would smuggle the OUTCOME into a number
+# that claims to be pre-game -- the same contamination that once produced a
+# fake +14.8c CLV. The event start comes from the ticker itself.
+import predlog as _pl39
+import tempfile as _tf39
+
+_ufc39 = _pl39._event_ts("KXUFCFIGHT-26SEP02RIVDAR-RIV")
+_mlb39 = _pl39._event_ts("KXMLBGAME-26AUG312138NYYLAA-NYY")
+import datetime as _dt39
+import zoneinfo as _zi39
+_et39 = _zi39.ZoneInfo("America/New_York")
+ck("the event start is read from the TICKER: day series at midnight ET",
+   _ufc39 is not None
+   and _dt39.datetime.fromtimestamp(_ufc39, _et39).strftime("%Y-%m-%d %H:%M")
+   == "2026-09-02 00:00",
+   "day-only tickers stop snapshots the night before -- a few hours of line "
+   "movement traded for zero risk of in-game contamination")
+ck("game series carry the start time, decoded as ET",
+   _mlb39 is not None
+   and _dt39.datetime.fromtimestamp(_mlb39, _et39).strftime("%H:%M") == "21:38"
+   and _pl39._event_ts("no-date-here") is None)
+_sc39 = _insp.getsource(_pl39.snapshot_closes)
+ck("snapshots anchor to the ticker event and NEVER to close_time",
+   "_event_ts(" in _sc39 and "now < ev" in _sc39
+   and "close_time" not in _sc39,
+   "close_time is a backstop weeks out with in-game trading in between; "
+   "anchoring to it would grade the model against the outcome itself")
+ck("each pass REFRESHES ungraded rows, so the last pre-event write wins",
+   'WHERE ticker=? AND graded=0"' in _sc39
+   and "close_mkt IS NULL" not in _sc39,
+   "a write-once snapshot taken 36h out is an opening line wearing a "
+   "closing line's name")
+ck("the loop takes its close snapshots between harvest and grading",
+   _insp.getsource(_pl39._loop).index("snapshot_closes()")
+   < _insp.getsource(_pl39._loop).index("resolve_due()")
+   and '"PRED-loop-3"' in _insp.getsource(_pl39._loop))
+_pdb39 = _pl39._DB
+_pl39._DB = _os.path.join(_tf39.mkdtemp(prefix="guard-predlog-"), "p.db")
+try:
+    _pl39.init_db()
+    _pl39.log_many("guardclose", [(f"GT{i}", 0.60, int(_tm.time() + 9e5), 0.50)
+                                  for i in range(12)])
+    with _pl39._lock, _pl39._conn() as _c39:
+        for _i in range(12):
+            _c39.execute("UPDATE predictions SET close_mkt=? WHERE ticker=?",
+                         (0.55 if _i < 9 else 0.47, f"GT{_i}"))
+    _cr39 = _pl39.close_report("guardclose")
+    ck("close_report: drift toward us and cents captured, per pick",
+       _cr39["ready"] and _cr39["n"] == 12 and _cr39["toward_pct"] == 75.0
+       and abs(_cr39["avg_capture_c"] - 3.0) < 1e-9,
+       "9 of 12 closes moved our way; capture nets the 3 that moved against")
+    ck("a thin sample reports accruing, never a verdict",
+       not _pl39.close_report("guardnothing")["ready"])
+finally:
+    _pl39._DB = _pdb39
+_apy39 = open(_os.path.join(_root, "app.py")).read()
+_js39 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the sharp table exists: measured record over claimed edges",
+   '@app.route("/api/sharp")' in _apy39
+   and "predlog.close_report(m)" in _apy39
+   and "Where we're actually sharp" in _js39 and "loadSharp" in _js39,
+   "the app always KNEW where its models beat the price; it was buried in "
+   "three modules' internals while picks got chosen by feel")
+ck("the blend share reads as composition, not extraction",
+   "% market</b>" in _js39 and "market took" not in _js39,
+   '"market took 98%" read as a fee being charged; it is the blend recipe')
+ck("the guard suite gates every push in CI",
+   _os.path.exists(_os.path.join(_root, ".github", "workflows", "guards.yml"))
+   and "tests/combo_audit_guards.py"
+   in open(_os.path.join(_root, ".github", "workflows", "guards.yml")).read())
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
