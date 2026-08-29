@@ -8780,7 +8780,9 @@ try:
     import combo_engine as _ce41
     ck("the scan recipe: live games out, floor applied, best leg per game",
        _it41 and _it41["n_games"] == 2
-       and all(g["legs"][0]["label"] == "Ace 6+ Ks" for g in _it41["groups"])
+       # "pick" is the display-name key everywhere (_mixed_item convention);
+       # the first live build rendered five "undefined"s off a "label" here.
+       and all(g["legs"][0]["pick"] == "Ace 6+ Ks" for g in _it41["groups"])
        and abs(_it41["combined_prob_pct"] - round(0.85 * 0.85 * 100, 1)) < 1e-9
        and abs(_it41["kalshi_payout_net_x"]
                - round(1.0 / _ce41.leg_cost(80, net=True) ** 2, 2)) < 0.01,

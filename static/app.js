@@ -1111,7 +1111,7 @@ async function renderPresetBox() {
   } else {
     const legs = (it.groups || []).map((grp) => (grp.legs || []).map((l) => `
       <li><span class="legtag">${l.type}</span> <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span>
-        <b>${l.label}</b> <span style="color:var(--muted)">${grp.matchup || ""}</span>
+        <b>${l.pick}</b> <span style="color:var(--muted)">${grp.matchup || ""}</span>
         - <b>${l.prob_pct}%</b>${l.market_cents != null ? ` · Kalshi ${l.market_cents}¢${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` : " · no market"}</li>`).join("")).join("");
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
       <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}</div>

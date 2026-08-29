@@ -115,7 +115,10 @@ def _build_all(games, spec):
         except Exception as e:
             errlog.note("PRESET-ticker", e)
         px = best["price_cents"]
-        leg = {"type": best["type"], "label": best["label"],
+        # "pick" is the leg's display name everywhere a slip is rendered
+        # (mlb_sim._mixed_item convention) -- the first live build showed
+        # five "undefined"s because this said "label".
+        leg = {"type": best["type"], "pick": best["label"],
                "side": best.get("side", "yes"),
                "prob_pct": round(best["marg"] * 100, 1),
                "model_pct": best.get("model_pct"),
