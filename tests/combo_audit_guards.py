@@ -8808,17 +8808,19 @@ finally:
 # 'no 3+ hits' which is like a 96% for most people." Day one proved it:
 # likeliest-first over the whole ladder is won by deep-line NO padding.
 _ok41 = _pr41._hits5_leg_ok
-ck("the reported padding, verbatim: a 96% 'NO 3+ hits' is OUT",
+ck("the reported padding, verbatim: 'NO 3+ hits' never -- at ANY edge",
    not _ok41({"kref": {"line": 3}, "side": "no", "marg": 0.96,
               "marg_model": 0.96, "price_cents": 97})
-   and not _ok41({"kref": {"line": 2}, "side": "no", "marg": 0.88}),
-   "high headline, no payout, five slices of vig -- the fade of a deep line "
-   "never enters this recipe again")
-ck("the 1+ hit line always qualifies; deeper lines need CONVICTION",
+   and not _ok41({"kref": {"line": 3}, "side": "no", "marg_model": 0.95,
+                  "price_cents": 83}),
+   "high headline, no payout -- a fade of a line almost nobody reaches is "
+   "padding even when its price is off")
+ck("the 1+ hit line always qualifies, either side",
    _ok41({"kref": {"line": 1}, "side": "yes", "marg": 0.72})
-   and _ok41({"kref": {"line": 1}, "side": "no", "marg": 0.30})
-   and _ok41({"kref": {"line": 2}, "side": "yes", "marg": 0.42,
-              "marg_model": 0.42})
+   and _ok41({"kref": {"line": 1}, "side": "no", "marg": 0.30}))
+ck("a 2+ YES needs conviction or a real edge",
+   _ok41({"kref": {"line": 2}, "side": "yes", "marg": 0.42,
+          "marg_model": 0.42})
    and _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30,
               "price_cents": 24})
    and not _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30,
@@ -8826,6 +8828,15 @@ ck("the 1+ hit line always qualifies; deeper lines need CONVICTION",
    and not _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30}),
    '"truly thinks a player can get 2" = model 40%+ pre-blend; "a good bet" = '
    "the ask underprices it by 5c+; unpriced deep lines have neither")
+ck("a 2+ NO needs to be a REALLY good bet -- 8c+ on its own ask, never "
+   "probability alone",
+   _ok41({"kref": {"line": 2}, "side": "no", "marg_model": 0.92,
+          "price_cents": 83})
+   and not _ok41({"kref": {"line": 2}, "side": "no", "marg_model": 0.92,
+                  "price_cents": 87})
+   and not _ok41({"kref": {"line": 2}, "side": "no", "marg_model": 0.88}),
+   "a likely fade of a deep line IS the padding; only mispricing earns it "
+   "a slot")
 _bmp41 = _insp.getsource(B.build_mixed_parlay)
 ck("leg_ok runs AFTER pricing (the rule needs the ask), before the gates",
    _bmp41.index('_price_cands(cands, g.get("kalshi_suffix"))')

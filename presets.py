@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 2
+REV = 3
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -34,26 +34,34 @@ REV = 2
 _HIT2_CONVICTION = 0.40    # "truly thinks": the model has 2+ hits at 40%+
 _HIT2_EDGE_C = 5.0         # "a good bet": pre-blend model beats the ask by 5c+
                            # (edge mode's own bar for a real disagreement)
+_HIT2_NO_EDGE_C = 8.0      # "a REALLY good bet": the stiffer bar a 2+ FADE
+                           # must clear -- the top of edge mode's real-edge
+                           # band. Probability alone can't qualify a fade
+                           # (a likely fade of a deep line IS the padding).
 
 
 def _hits5_leg_ok(c):
-    """1+ hit line only; a deeper line enters only as a CONVICTION bet:
-    YES side, and either the model genuinely likes it (>= _HIT2_CONVICTION
-    pre-blend) or the ask underprices it by _HIT2_EDGE_C+. Fades of the deep
-    lines -- the 96% 'NO 3+ hits' padding -- are out entirely."""
+    """The hit ladder, as refined twice from live output: the 1+ line always
+    qualifies, either side. A 2+ line needs to EARN its slot -- YES on
+    conviction (model >= _HIT2_CONVICTION pre-blend) or a real edge
+    (_HIT2_EDGE_C+); NO only as a really good bet (_HIT2_NO_EDGE_C+ on its
+    own ask, never on probability alone). 'NO 3+' never: a 96% fade of a
+    line almost nobody reaches is headline padding, not a bet."""
     line = (c.get("kref") or {}).get("line")
     if line == 1:
         return True
-    if c.get("side", "yes") != "yes":
-        return False
     p = (c.get("marg_model") if c.get("marg_model") is not None
          else c.get("marg"))
     if p is None:
         return False
-    if p >= _HIT2_CONVICTION:
-        return True
     px = c.get("price_cents")
-    return bool(px) and p * 100.0 - px >= _HIT2_EDGE_C
+    edge = (p * 100.0 - px) if px else None
+    if c.get("side", "yes") == "yes":
+        return p >= _HIT2_CONVICTION or (edge is not None
+                                         and edge >= _HIT2_EDGE_C)
+    if line != 2:
+        return False               # NO 3+ (and deeper): never
+    return edge is not None and edge >= _HIT2_NO_EDGE_C
 
 # kind "top":  the N likeliest legs of the type, chosen by the combo maker's
 #              own frontier (objective "safe" = likeliest slip at exactly N).
@@ -64,9 +72,9 @@ def _hits5_leg_ok(c):
 PRESETS = (
     {"id": "hits5", "label": "5 Hits", "emoji": "🖐️", "kind": "top",
      "types": ("Hit",), "n_legs": 5, "sides": None, "leg_ok": _hits5_leg_ok,
-     "desc": "The 5 likeliest 1+ hit props. A 2+ line only sneaks in as a "
-             "real conviction bet (model 40%+, or the ask underprices it "
-             "by 5¢+)."},
+     "desc": "The 5 likeliest 1+ hit props, YES or NO. A 2+ line must earn "
+             "its slot: YES on conviction (model 40%+ or a 5¢+ edge), NO "
+             "only as a really good bet (8¢+ edge). NO 3+ never."},
     {"id": "hr3", "label": "3 Home Runs", "emoji": "💣", "kind": "top",
      "types": ("HR",), "n_legs": 3, "sides": frozenset(("yes",)),
      "desc": "The 3 likeliest home runs to HAPPEN. YES only, locked."},
