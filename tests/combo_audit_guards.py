@@ -8918,6 +8918,75 @@ ck("the tabs exist, match the server's recipe ids, and survive a re-render",
 
 print()
 print("=" * 72)
+print("The PC status light: presence is 'how recently did it call'")
+print("=" * 72)
+# The server can never reach OUT to the PC -- the PC only calls in -- so the
+# header light derives from check-in freshness: green = heartbeat inside 5
+# minutes, yellow = alive but running older code than this server (its git
+# pull self-heals within a minute, so persistent yellow is a real fault),
+# red = silence. pc_loop pings every 60s precisely because a deep-sim cycle
+# can keep pc_worker away from the API for an hour.
+import json as _j42
+import tempfile as _tf42
+_app42 = __import__("app")
+_old42 = (_app42._PC_STATUS_PATH, _app42._SIM_TOKEN,
+          _os.environ.get("RENDER_GIT_COMMIT"), _app42._pc_seen_last[0])
+_app42._PC_STATUS_PATH = _os.path.join(_tf42.mkdtemp(prefix="guard-pc-"),
+                                       "pc-status.json")
+try:
+    _os.environ["RENDER_GIT_COMMIT"] = "abc123def4567890"
+    ck("no check-in file means OFF, honestly, not a crash",
+       _app42._pc_status() == {"state": "off", "seen_s": None, "behind": None})
+    with open(_app42._PC_STATUS_PATH, "w") as _fh42:
+        _j42.dump({"ts": _tm.time(), "commit": "abc123def4567890aaaa"}, _fh42)
+    ck("a fresh heartbeat on matching code is ON (green)",
+       _app42._pc_status()["state"] == "on")
+    with open(_app42._PC_STATUS_PATH, "w") as _fh42:
+        _j42.dump({"ts": _tm.time(), "commit": "fff000fff000fff0"}, _fh42)
+    ck("a fresh heartbeat on OLDER code is BEHIND (yellow)",
+       _app42._pc_status()["state"] == "behind",
+       "prefix comparison both ways, so a short commit from either side "
+       "still matches its long form")
+    with open(_app42._PC_STATUS_PATH, "w") as _fh42:
+        _j42.dump({"ts": _tm.time() - 900, "commit": "abc123def456"}, _fh42)
+    ck("five missed 60s heartbeats is OFF (red) -- one slow cycle is not",
+       _app42._pc_status()["state"] == "off"
+       and _app42._pc_status()["seen_s"] > 300)
+    _app42._SIM_TOKEN = "guardtok42"
+    _app42._pc_seen_last[0] = 0.0
+    _c42 = _app42.app.test_client()
+    _r42 = _c42.get("/api/pc/ping", headers={"X-Sim-Token": "guardtok42",
+                                             "X-PC-Commit": "abc123def4567890"})
+    ck("the ping door takes the shared token and stamps the presence file",
+       _r42.status_code == 200
+       and _app42._pc_status()["state"] == "on"
+       and _c42.get("/api/pc/ping").status_code == 403,
+       "the door is _pc_auth_ok -- only the PC's endpoints use it, so a "
+       "workflow can never impersonate the PC")
+finally:
+    (_app42._PC_STATUS_PATH, _app42._SIM_TOKEN) = _old42[0], _old42[1]
+    _app42._pc_seen_last[0] = _old42[3]
+    if _old42[2] is None:
+        _os.environ.pop("RENDER_GIT_COMMIT", None)
+    else:
+        _os.environ["RENDER_GIT_COMMIT"] = _old42[2]
+_apy42 = open(_os.path.join(_root, "app.py")).read()
+_js42 = open(_os.path.join(_root, "static", "app.js")).read()
+_pl42 = open(_os.path.join(_root, "pc_loop.py")).read()
+ck("the light rides the warm poll (both return shapes), and the loop beats",
+   _apy42.count('"pc": _pc_status()') == 2
+   and _pl42.count("_ping_server()") >= 2 and "/api/pc/ping" in _pl42
+   and '"X-PC-Commit": _git_commit()'
+   in open(_os.path.join(_root, "pc_worker.py")).read(),
+   "the worker's uploads refresh the light too, but a long deep cycle goes "
+   "quiet for an hour -- the loop's 60s ping is what keeps it honest")
+ck("the dot updates BEFORE pollWarm's early returns, on every poll",
+   0 < _js42.index('$("pcDot")') < _js42.index("Hidden only when there is")
+   and 'id="pcDot"' in open(_os.path.join(_root, "templates",
+                                          "index.html")).read())
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

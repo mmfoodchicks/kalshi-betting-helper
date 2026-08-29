@@ -55,9 +55,28 @@ def _config():
     return url, tok
 
 
+_COMMIT_CACHE = [None]
+
+
+def _git_commit():
+    """This checkout's HEAD, for the X-PC-Commit header the status light
+    compares against the server's build."""
+    if _COMMIT_CACHE[0] is None:
+        try:
+            import subprocess
+            r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HERE,
+                               capture_output=True, text=True)
+            _COMMIT_CACHE[0] = (r.stdout or "").strip()
+        except Exception as e:
+            print(f"[vigil-pc] rev-parse failed ({type(e).__name__})")
+            _COMMIT_CACHE[0] = ""
+    return _COMMIT_CACHE[0]
+
+
 def _api(url, tok, path, data=None, headers=None, timeout=90):
     req = urllib.request.Request(url + path, data=data, headers={
         "X-Sim-Token": tok, "User-Agent": "vigil-pc-worker",
+        "X-PC-Commit": _git_commit(),
         **(headers or {})})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode())

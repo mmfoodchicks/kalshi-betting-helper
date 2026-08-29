@@ -6587,6 +6587,24 @@ async function pollWarm() {
     // rendered: "undefined/undefined games ready". An answer with no counts
     // is not a status -- say nothing, exactly like the catch below.
     if (d && (d.error != null || d.total == null)) return;
+    // PC status light (top right), BEFORE the early returns so it updates on
+    // every poll: green = the PC's 60s heartbeat is fresh; yellow = alive but
+    // its checkout is behind this server (it self-updates within a minute, so
+    // persistent yellow = its git pull is failing); red = no heartbeat 5+ min.
+    const dot = $("pcDot");
+    if (dot && d.pc) {
+      const st = d.pc.state;
+      dot.classList.remove("hidden");
+      dot.style.color = st === "on" ? "var(--yes)"
+        : st === "behind" ? "#e8b93c" : "var(--no)";
+      dot.title = st === "on"
+        ? `🖥️ PC online - heartbeat ${d.pc.seen_s}s ago, code up to date`
+        : st === "behind"
+        ? "🖥️ PC online but running older code - it self-updates within a minute; if this stays yellow, its git pull is failing"
+        : d.pc.seen_s == null
+        ? "🖥️ PC has never checked in - is pc_loop running?"
+        : `🖥️ PC unreachable - last heartbeat ${Math.round(d.pc.seen_s / 60)}m ago (powered off? network? token?)`;
+    }
     // Hidden only when there is truly nothing to say: ready, or a real slate
     // with zero games. total===0 alone is NOT that -- during the slate build
     // (the LONGEST wait) total is 0 and slate_ready is false, and hiding then

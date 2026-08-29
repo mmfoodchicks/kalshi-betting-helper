@@ -21,6 +21,11 @@
   <!-- Warm-up status. Hidden once the board is ready, so it is only ever on
        screen when it has something to tell you. -->
   <div id="warmBar" class="hidden"></div>
+  <!-- PC offload status light: green = heartbeat fresh, yellow = alive but
+       the checkout is behind the server, red = no heartbeat. Fed by the
+       /api/warm poll; hidden until the first status arrives. -->
+  <span id="pcDot" class="hidden" title="PC status"
+        style="position:fixed;top:9px;right:12px;z-index:60;font-size:14px;cursor:default">●</span>
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand"><span class="brand-mark">V</span><span class="brand-name">Vigil</span></div>

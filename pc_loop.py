@@ -60,13 +60,44 @@ def _run_cycle():
     subprocess.run([sys.executable, os.path.join(_HERE, "pc_worker.py")], cwd=_HERE)
 
 
+def _ping_server():
+    """60-second heartbeat that feeds the app's PC status light. Best-effort:
+    a failed ping IS the red light doing its job, never a reason to disturb
+    the loop. Sent from here rather than pc_worker because a long deep-sim
+    cycle can keep the worker away from the API for an hour."""
+    try:
+        import json
+        import urllib.request
+        cfg = {}
+        path = os.path.join(_HERE, "vigil-pc.cfg")
+        if os.path.exists(path):
+            with open(path) as fh:
+                cfg = json.load(fh)
+        url = (os.environ.get("VIGIL_APP_URL")
+               or cfg.get("app_url") or "").rstrip("/")
+        tok = os.environ.get("SIM_TOKEN") or cfg.get("sim_token") or ""
+        if not url or not tok:
+            return
+        _, commit = _git("rev-parse", "HEAD")
+        req = urllib.request.Request(
+            url + "/api/pc/ping",
+            headers={"X-Sim-Token": tok, "X-PC-Commit": commit or "",
+                     "User-Agent": "vigil-pc-loop"})
+        urllib.request.urlopen(req, timeout=10).read()
+    except Exception as e:
+        # Same volume as the offline fetch note above; the light is already red.
+        print(f"[vigil-pc] ping failed ({type(e).__name__}) - light goes red")
+
+
 def main():
     print(f"[vigil-pc] loop up - git check every {CHECK_S}s, sim cycle every "
           f"{CYCLE_S // 60} min (or immediately after an update)")
+    _ping_server()
     _run_cycle()                              # fresh start = fresh cycle
     last_cycle = time.time()
     while True:
         time.sleep(CHECK_S)
+        _ping_server()
         if _update_available():
             if _apply_update():
                 print("[vigil-pc] restarting on the new code...")

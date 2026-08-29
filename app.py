@@ -301,7 +301,7 @@ def _api_warm():
                         "warm": 0, "at": at, "phase": phase,
                         "always_warm": bool(_WARM_ALWAYS),
                         "stalled": not alive, "warm_err": err,
-                        "beat_s": beat_s,
+                        "beat_s": beat_s, "pc": _pc_status(),
                         "note": "building today's board…"})
     # PRE-GAME games only -- the same set a Build actually simulates. Counting
     # live games here (13) while the maker's bar counted pregame ones (9) put
@@ -314,7 +314,7 @@ def _api_warm():
     ready = bool(todo) and warm >= len(todo)
     return jsonify({"ready": ready,
                     "slate_ready": slate_fresh, "total": len(todo), "warm": warm,
-                    "at": at, "phase": phase,
+                    "at": at, "phase": phase, "pc": _pc_status(),
                     "always_warm": bool(_WARM_ALWAYS),
                     # Cold with no live warmer is the state that used to be
                     # invisible: the count sat at 0/N and nothing said why.
@@ -504,11 +504,76 @@ def api_fanfare():
 # downstream -- the combo maker, the warm loop, the boards -- adopts whatever
 # is freshest on the sim disk, so the PC can only ever make things faster; if
 # it is off or stale, this server computes for itself exactly as before.
+# The PC's last check-in, on the SHARED disk so every worker (and the next
+# deploy) reads one truth. The server cannot reach out to the PC -- the PC
+# only ever calls in -- so "is the PC up" is by definition "how recently did
+# it call", and this file is that fact.
+_PC_STATUS_PATH = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
+                               or os.environ.get("DEEP_CACHE_DIR") or "/tmp",
+                               "pc-status.json")
+_pc_seen_last = [0.0]           # per-worker write throttle; mtime is the truth
+
+
+def _pc_note_seen(commit):
+    if time.time() - _pc_seen_last[0] < 30:
+        return
+    try:
+        import tempfile
+        d = os.path.dirname(_PC_STATUS_PATH)
+        os.makedirs(d, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
+        with os.fdopen(fd, "w") as fh:
+            json.dump({"ts": time.time(), "commit": (commit or "")[:40]}, fh)
+        os.replace(tmp, _PC_STATUS_PATH)
+        _pc_seen_last[0] = time.time()
+    except Exception as e:
+        errlog.note("APP-pc-seen", e)
+
+
+def _pc_status():
+    """green / yellow / red for the header light. 'on' needs a heartbeat in
+    the last 5 minutes (pc_loop pings every 60s -- five misses is a verdict,
+    one slow deep-sim cycle is not); 'behind' means alive but running older
+    code than this server (it self-updates within a minute, so persistent
+    yellow means the PC's git pull is failing); 'off' is everything else."""
+    try:
+        with open(_PC_STATUS_PATH) as fh:
+            st = json.load(fh)
+    except OSError:
+        return {"state": "off", "seen_s": None, "behind": None}
+    except Exception as e:
+        errlog.note("APP-pc-status", e)
+        return {"state": "off", "seen_s": None, "behind": None}
+    seen = time.time() - (st.get("ts") or 0)
+    srv = os.environ.get("RENDER_GIT_COMMIT", "")
+    pc = st.get("commit") or ""
+    behind = bool(srv and pc
+                  and not (pc.startswith(srv) or srv.startswith(pc)))
+    state = "off" if seen > 300 else ("behind" if behind else "on")
+    return {"state": state, "seen_s": round(seen), "behind": behind}
+
+
 def _pc_auth_ok():
     """The upload door REQUIRES the shared secret even when the app has no
     password set -- writes must never be open."""
     tok = request.headers.get("X-Sim-Token") or ""
-    return bool(_SIM_TOKEN and tok and hmac.compare_digest(tok, _SIM_TOKEN))
+    ok = bool(_SIM_TOKEN and tok and hmac.compare_digest(tok, _SIM_TOKEN))
+    if ok:
+        # Every authenticated PC call refreshes the light; only the PC's
+        # endpoints use this door, so a workflow can never impersonate it.
+        _pc_note_seen(request.headers.get("X-PC-Commit"))
+    return ok
+
+
+@app.route("/api/pc/ping")
+def api_pc_ping():
+    """pc_loop's 60-second heartbeat. The worker's uploads also count (they
+    ride the same door), but a long deep-sim cycle can go quiet for an hour
+    -- the loop's ping is what keeps the light honest in between."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    return jsonify({"ok": True,
+                    "commit": os.environ.get("RENDER_GIT_COMMIT", "")[:12]})
 
 
 @app.route("/api/art/have")
