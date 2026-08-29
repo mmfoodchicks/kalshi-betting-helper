@@ -8539,6 +8539,31 @@ ck("the warm bar refuses to render the offline body as a status",
 
 print()
 print("=" * 72)
+print("UFC: the loud number is the one the evidence backs")
+print("=" * 72)
+# The owner's complaint, verbatim: "alot of the fighters we pick are losing."
+# The board's own backtest had already measured why: the raw fight-history
+# model LOSES to closing lines (logloss 0.685 vs 0.615, fitted blend weight
+# ~0.05) -- yet the fighter row led with the raw number and whispered the
+# market-blended fair win% in small grey. The headline and the evidence now
+# point the same way.
+_js38 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the fighter row headlines the blended fair win, not the raw model",
+   "${headline}%${fair}" in _js38
+   and 'ufc-win">${f.win_pct}' not in _js38
+   and "model ${f.win_pct}%" in _js38,
+   "the raw model number still shows -- small, labelled, with the measured "
+   "record in its tooltip -- because hiding it would be the opposite lie")
+import ufc_prices as _up38
+_mwc38 = _insp.getsource(_up38._model_weight_cap)
+ck("an UNMEASURED model never gets majority say against a real price",
+   "0.20 + 0.15" in _mwc38 and "0.50 + 0.35" not in _mwc38,
+   "the fallback curve reached 0.85 weight on logged-pick COUNT alone -- "
+   "sample size measures how much we know about the fighters, not whether "
+   "our rating of them beats the book (model_trust's own lesson)")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

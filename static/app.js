@@ -4045,8 +4045,16 @@ function _ratingChip(f) {
 }
 function _fighterRow(f) {
   const px = f.kalshi_cents != null ? `${f.kalshi_cents}¢` : "-";
+  // The BIG number is the one the evidence backs. The raw fight-history model
+  // was measured point-in-time against 2025 closing lines (ufc_backtest) and
+  // LOSES to them - logloss 0.685 vs the market's 0.615, fitted blend weight
+  // ~0.05 - so the headline is the market-blended fair win%, and the raw model
+  // rides small beside it, labelled for what it is. It used to be the other
+  // way round, which is exactly how "the fighters we pick keep losing": the
+  // least trustworthy number on the row was the loudest.
+  const headline = f.fair_win != null ? f.fair_win : f.win_pct;
   const fair = f.fair_win != null && f.fair_win !== f.win_pct
-    ? ` <span class="small" style="color:var(--muted)" title="confidence-blended with the market">→${f.fair_win}%</span>` : "";
+    ? ` <span class="small" style="color:var(--muted)" title="our raw fight-history model alone. Backtested against closing lines it underperforms them, so the blend gives it only the small share it has earned (~16%) - treat a big gap between this and the headline as a warning about the model, not a secret edge.">model ${f.win_pct}%</span>` : "";
   const recTxt = f.fights > 0
     ? `${f.record} · ${f.fights}f`
     : (f.career_record ? `pro ${f.career_record}` : `${f.record} · ${f.fights}f`);
@@ -4056,14 +4064,14 @@ function _fighterRow(f) {
     ? ` <span class="ufc-debut" title="Our model favours this fighter but the market has him as the underdog. Disagreeing with a liquid market is where model error shows up first - treat as a flag, not an edge, until the model has graded results behind it.">⚠️ fades the book</span>` : "";
   return `<div class="ufc-fighter">
       <div class="ufc-fname"><b>${f.name}</b>${_ratingChip(f)}${fade} <span class="small" style="color:var(--muted)">${recTxt}</span></div>
-      <div class="ufc-fnums"><span class="ufc-win">${f.win_pct}%${fair}</span>
+      <div class="ufc-fnums"><span class="ufc-win">${headline}%${fair}</span>
         <span class="fr-num">${px}</span><span class="fr-num">${_ufcEdge(f.edge)}</span>
         <span class="fr-num" title="DraftKings projection / ceiling">DK ${f.proj}<span style="color:var(--muted)">/${f.ceil}</span></span></div>
     </div>`;
 }
 function renderUFC() {
   const d = _ufcData; if (!d) return;
-  $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · model = ratings from each fighter's past fights → win prob, method/round & DK points. <span class="ufc-rating" style="border-color:var(--muted);color:var(--muted)">⚡</span> = our 0-100 power rating (league avg 50; hover for the striking/grappling/finishing breakdown). ⚠️ flags fighters with no/thin UFC history running on a league-average baseline. Edge = our fair win% (blended toward the market when history is thin) − Kalshi ask.`;
+  $("ufcSummary").innerHTML = `<b>${d.event || "Upcoming card"}</b>${d.date ? " · " + d.date : ""} · ${d.bouts.length} bouts · the BIG % is the <b>fair win</b> - our model blended with the market by the share the model has <b>earned on graded results</b> (backtested vs closing lines it keeps ~16%; the raw model number sits small beside it). <span class="ufc-rating" style="border-color:var(--muted);color:var(--muted)">⚡</span> = 0-100 power rating (league avg 50; hover for the breakdown). ⚠️ flags no/thin history. Edge = fair win% − Kalshi ask; in MMA these are small on purpose - the closing line is very hard to beat.`;
   appendCalNote("ufcSummary", "ufc", "UFC");
   const bouts = d.bouts.map((bt) => {
     const m = bt.method || {};

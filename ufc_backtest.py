@@ -23,6 +23,16 @@ What it produces:
 This is a batch job: each bout needs two point-in-time ratings and each rating
 is many ESPN calls, so it caches hard and is meant to run in the background over
 a bounded sample rather than on request.
+
+Measured so far (walk-forward, market = the de-vigged ESPN close):
+  * the box-score model, 2025 (59 bouts): logloss 0.685 vs market 0.615 ->
+    fitted blend weight 0.05 (persisted via model_trust).
+  * an Elo over the FULL 2019-2025 results graph (K fit on 2024 only, then
+    385 test bouts in 2025, both fighters with 2+ prior bouts): logloss
+    0.665, accuracy 61.3% -- vs the market's 0.587 / 69.4% on the same
+    bouts. Best blend weight 0.00. Measured 2026-08-29. A rating model
+    does not rescue this: MMA closing lines are simply sharp, and the
+    honest posture is market-first with the model as a small, earned voice.
 """
 
 import concurrent.futures as _cf

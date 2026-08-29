@@ -74,7 +74,13 @@ def _model_weight_cap():
         _t_, _q0_, n = calibrate._params("ufc")
     except Exception:
         n = 0
-    return 0.50 + 0.35 * min(1.0, (n or 0) / 300.0)
+    # Market-leaning like model_trust._DEFAULT, for the same reason: this
+    # branch only runs when nothing has been MEASURED, and graded-pick count
+    # alone must not buy trust (the old curve here started at half weight and
+    # climbed to 0.85 on count -- the exact "more history -> more trust"
+    # mistake the measured path exists to kill). Count accrues a little
+    # headroom; the fit decides the rest.
+    return 0.20 + 0.15 * min(1.0, (n or 0) / 300.0)
 
 
 def attach(board):
