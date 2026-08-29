@@ -8673,6 +8673,30 @@ ck("the guard suite gates every push in CI",
    _os.path.exists(_os.path.join(_root, ".github", "workflows", "guards.yml"))
    and "tests/combo_audit_guards.py"
    in open(_os.path.join(_root, ".github", "workflows", "guards.yml")).read())
+# Every import must be stdlib, a DECLARED dependency, or ours. lol.py quietly
+# imported requests -- never in requirements.txt, so the production image
+# didn't have it and the LoL tab answered 502 in prod while every dev box,
+# with requests installed globally, swore the suite was green. CI's clean
+# environment caught it on its first run; this makes it catchable locally.
+_dep40 = set(sys.stdlib_module_names)
+_local40 = {f[:-3] for f in _os.listdir(_root) if f.endswith(".py")}
+_declared40 = {"flask", "werkzeug", "gunicorn", "qrcode", "tzdata"}
+_undeclared40 = []
+for _f40 in sorted(_os.listdir(_root)):
+    if not _f40.endswith(".py"):
+        continue
+    for _n40 in _gast.walk(_gast.parse(open(_os.path.join(_root, _f40)).read())):
+        _mods40 = ([a.name.split(".")[0] for a in _n40.names]
+                   if isinstance(_n40, _gast.Import)
+                   else [_n40.module.split(".")[0]]
+                   if isinstance(_n40, _gast.ImportFrom)
+                   and _n40.level == 0 and _n40.module else [])
+        for _m40 in _mods40:
+            if _m40 not in _dep40 and _m40 not in _local40 \
+                    and _m40 not in _declared40:
+                _undeclared40.append(f"{_f40}:{_n40.lineno} imports {_m40}")
+ck("every import is stdlib, declared in requirements, or ours",
+   not _undeclared40, _undeclared40[:5])
 
 print()
 print("=" * 72)

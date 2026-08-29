@@ -17,9 +17,10 @@ Pick 6-style More/Less picks (kills / assists / CS), the way the baseball Pick 6
 board works -- esports has no Kalshi combos, so this is a pure prop tool.
 """
 
+import json as _json
 import time
-
-import requests
+import urllib.parse
+import urllib.request
 
 _BASE = "https://lol.fandom.com/api.php"
 _UA = {"User-Agent": "VigilBot/1.0 (private betting-model research)"}
@@ -59,9 +60,16 @@ def _cargo(tables, fields, where=None, order_by=None, limit=200):
         p["order_by"] = order_by
     for attempt in range(4):
         try:
-            r = requests.get(_BASE, params=p, headers=_UA, timeout=25)
-            _last_call[0] = time.time()
-            d = r.json()
+            # urllib, not requests: requests was never in requirements.txt, so
+            # the production image didn't have it and this module could not
+            # even IMPORT there -- the LoL tab answered 502 while every dev
+            # box, with requests installed globally, swore it worked. Caught
+            # by CI's first-ever run on a clean environment.
+            req = urllib.request.Request(
+                _BASE + "?" + urllib.parse.urlencode(p), headers=_UA)
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                _last_call[0] = time.time()
+                d = _json.loads(resp.read().decode("utf-8"))
         except Exception:
             time.sleep(2.0 * (attempt + 1))
             continue
