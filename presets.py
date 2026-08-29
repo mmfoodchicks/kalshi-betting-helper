@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 3
+REV = 4
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -80,7 +80,8 @@ PRESETS = (
      "desc": "The 3 likeliest home runs to HAPPEN. YES only, locked."},
     {"id": "ks80", "label": "Ks 80%+", "emoji": "🔥", "kind": "all",
      "types": ("Ks",), "floor": 0.80, "sides": None,
-     "desc": "Every game's best pitcher strikeout prop at 80%+ likely."},
+     "desc": "Every PITCHER's best strikeout prop at 80%+ likely - both "
+             "starters per game when both have priced ladders."},
     {"id": "ml58", "label": "ML 58%+", "emoji": "💰", "kind": "all",
      "types": ("ML",), "floor": 0.58, "sides": None,
      "desc": "Every game's moneyline at 58%+ likely."},
@@ -121,14 +122,23 @@ def _build_top(games, spec):
 
 
 def _build_all(games, spec):
-    """One leg per game: the likeliest leg of the type at/above the floor.
-    Legs are singles from different games, so the combined chance is the
-    honest independent product — no correlation claim to overstate."""
+    """One leg per MARKET UNIT at/above the floor, likeliest line per unit.
+
+    Not per GAME: a game has one moneyline and one run line but TWO starters,
+    and "every game's pitchers" means both arms — the per-game version showed
+    9 pitchers on an 11-game slate and made the other 13 look unassigned. The
+    unit is the cand's `group` (K:<pitcher>, ML, Run line), so ML/RL still
+    yield at most one leg per game while strikeouts yield one per pitcher.
+    Legs multiply as independent — cross-game they are, and two opposing
+    starters' K props face different lineups, so the product stays honest.
+    `n_pool` counts the priced units scanned, so the tab can say "9 of 16
+    cleared the bar" instead of leaving the gap mysterious."""
     import baseball
     import combo_engine
     import kalshi_mlb
     floor = spec["floor"]
     groups, prob, cost, gross = [], 1.0, 1.0, 1.0
+    n_pool = n_legs = 0
     try:
         idx = kalshi_mlb.index()
     except Exception:
@@ -148,37 +158,49 @@ def _build_all(games, spec):
         if not cands:
             continue
         baseball._price_cands(cands, g.get("kalshi_suffix"))
-        ok = [c for c in cands if c.get("price_cents") and c["marg"] >= floor]
-        if not ok:
+        priced = [c for c in cands if c.get("price_cents")]
+        n_pool += len({c.get("group") or c["label"] for c in priced})
+        by_unit = {}
+        for c in priced:
+            if c["marg"] < floor:
+                continue
+            k = c.get("group") or c["label"]
+            if k not in by_unit or c["marg"] > by_unit[k]["marg"]:
+                by_unit[k] = c
+        if not by_unit:
             continue
-        best = max(ok, key=lambda c: c["marg"])
-        tk, close = (None, None)
-        try:
-            tk, close = kalshi_mlb.ticker_leg(idx, g.get("kalshi_suffix"),
-                                              best.get("kref"))
-        except Exception as e:
-            errlog.note("PRESET-ticker", e)
-        px = best["price_cents"]
-        # "pick" is the leg's display name everywhere a slip is rendered
-        # (mlb_sim._mixed_item convention) -- the first live build showed
-        # five "undefined"s because this said "label".
-        leg = {"type": best["type"], "pick": best["label"],
-               "side": best.get("side", "yes"),
-               "prob_pct": round(best["marg"] * 100, 1),
-               "model_pct": best.get("model_pct"),
-               "sim_pct": (round(best["marg_model"] * 100, 1)
-                           if best.get("marg_model") is not None else None),
-               "market_cents": px,
-               "market_payout_x": round(100.0 / px, 2),
-               "ticker": tk, "close_time": close}
-        groups.append({"matchup": g.get("matchup"), "legs": [leg]})
-        prob *= best["marg"]
-        cost *= combo_engine.leg_cost(px, net=True)
-        gross *= 100.0 / px
+        glegs = []
+        for best in sorted(by_unit.values(), key=lambda c: -c["marg"]):
+            tk, close = (None, None)
+            try:
+                tk, close = kalshi_mlb.ticker_leg(
+                    idx, g.get("kalshi_suffix"), best.get("kref"))
+            except Exception as e:
+                errlog.note("PRESET-ticker", e)
+            px = best["price_cents"]
+            # "pick" is the leg's display name everywhere a slip is rendered
+            # (mlb_sim._mixed_item convention) -- the first live build showed
+            # five "undefined"s because this said "label".
+            glegs.append({"type": best["type"], "pick": best["label"],
+                          "side": best.get("side", "yes"),
+                          "prob_pct": round(best["marg"] * 100, 1),
+                          "model_pct": best.get("model_pct"),
+                          "sim_pct": (round(best["marg_model"] * 100, 1)
+                                      if best.get("marg_model") is not None
+                                      else None),
+                          "market_cents": px,
+                          "market_payout_x": round(100.0 / px, 2),
+                          "ticker": tk, "close_time": close})
+            prob *= best["marg"]
+            cost *= combo_engine.leg_cost(px, net=True)
+            gross *= 100.0 / px
+            n_legs += 1
+        groups.append({"matchup": g.get("matchup"), "legs": glegs})
     if not groups:
         return None
     net_x = round(1.0 / cost, 2) if cost > 0 else None
     return {"groups": groups, "n_games": len(groups),
+            "n_legs": n_legs, "n_pool": n_pool,
             "combined_prob_pct": round(prob * 100, 1),
             "indep_prob_pct": round(prob * 100, 1),
             "fair_payout_x": round(1.0 / prob, 2) if prob > 0 else None,

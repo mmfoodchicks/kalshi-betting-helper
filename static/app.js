@@ -1114,7 +1114,7 @@ async function renderPresetBox() {
         <b>${l.pick}</b> <span style="color:var(--muted)">${grp.matchup || ""}</span>
         - <b>${l.prob_pct}%</b>${l.market_cents != null ? ` · Kalshi ${l.market_cents}¢${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` : " · no market"}</li>`).join("")).join("");
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
-      <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}</div>
+      <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
   box.innerHTML = `<div class="combomaker">

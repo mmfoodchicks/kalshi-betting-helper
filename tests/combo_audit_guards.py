@@ -8751,11 +8751,17 @@ ck("the recorder's tick rebuilds the presets on its cadence",
 # Functional: the scan recipe prices, filters, tickets and logs like the ask.
 _cands41 = [
     {"type": "Ks", "label": "Ace 6+ Ks", "marg": 0.85, "side": "yes",
-     "kref": {"t": "ks"}, "model_pct": 84.0, "marg_model": 0.83},
+     "group": "K:Ace", "kref": {"t": "ks"}, "model_pct": 84.0,
+     "marg_model": 0.83},
     {"type": "Ks", "label": "Ace 8+ Ks", "marg": 0.55, "side": "yes",
-     "kref": {"t": "ks"}, "model_pct": 52.0, "marg_model": 0.50},
+     "group": "K:Ace", "kref": {"t": "ks"}, "model_pct": 52.0,
+     "marg_model": 0.50},
+    {"type": "Ks", "label": "Bob 4+ Ks", "marg": 0.82, "side": "yes",
+     "group": "K:Bob", "kref": {"t": "ks"}, "model_pct": 81.0,
+     "marg_model": 0.80},
     {"type": "ML", "label": "Team ML", "marg": 0.66, "side": "yes",
-     "kref": {"t": "ml"}, "model_pct": 66.0, "marg_model": 0.64}]
+     "group": "ML", "kref": {"t": "ml"}, "model_pct": 66.0,
+     "marg_model": 0.64}]
 _games41 = [{"game_pk": 7, "matchup": "A @ B", "kalshi_suffix": "s1",
              "live": {}, "confirm": {}},
             {"game_pk": 8, "matchup": "C @ D", "kalshi_suffix": "s2",
@@ -8778,15 +8784,24 @@ try:
     _km41.ticker_leg = lambda idx, sfx, kref: ("TK41-" + (sfx or "?"), 123)
     _it41 = _pr41._build_all(_games41, _spec41["ks80"])
     import combo_engine as _ce41
-    ck("the scan recipe: live games out, floor applied, best leg per game",
-       _it41 and _it41["n_games"] == 2
-       # "pick" is the display-name key everywhere (_mixed_item convention);
-       # the first live build rendered five "undefined"s off a "label" here.
-       and all(g["legs"][0]["pick"] == "Ace 6+ Ks" for g in _it41["groups"])
-       and abs(_it41["combined_prob_pct"] - round(0.85 * 0.85 * 100, 1)) < 1e-9
-       and abs(_it41["kalshi_payout_net_x"]
-               - round(1.0 / _ce41.leg_cost(80, net=True) ** 2, 2)) < 0.01,
-       "one leg per game, fee-aware payout, honest independent product")
+    ck("the scan recipe: live games out, floor applied, best leg per UNIT",
+       _it41 and _it41["n_games"] == 2 and _it41["n_legs"] == 4
+       # BOTH starters qualify from one game (the per-game version showed 9
+       # pitchers on an 11-game slate); the best line per pitcher, and "pick"
+       # is the display-name key (_mixed_item convention -- the first live
+       # build rendered five "undefined"s off a "label" here).
+       and sorted(l["pick"] for l in _it41["groups"][0]["legs"])
+       == ["Ace 6+ Ks", "Bob 4+ Ks"]
+       and abs(_it41["combined_prob_pct"]
+               - round((0.85 * 0.82) ** 2 * 100, 1)) < 0.05
+       and _it41["n_pool"] == 4,
+       "one leg per PITCHER for Ks (a game has two arms), still one per game "
+       "for ML/RL; n_pool makes the coverage gap visible instead of spooky")
+    _ml41 = _pr41._build_all(_games41, _spec41["ml58"])
+    ck("...while the moneyline recipe still yields at most one leg per game",
+       _ml41 and _ml41["n_legs"] == 2
+       and all(len(g["legs"]) == 1 for g in _ml41["groups"]),
+       "both ML sides share one group, so the unit rule changes nothing there")
     _ST.DB_PATH = _os.path.join(_tf41.mkdtemp(prefix="guard-preset-"), "v.db")
     _ST.init_db()
     _it41["objective"] = "preset:ks80"
