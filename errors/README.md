@@ -2,8 +2,7 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `FAN-pit` | 89 | 08-27 21:23 | HTTPError: HTTP Error 403: Forbidden |
+| `FAN-pit` | 90 | 08-29 10:23 | HTTPError: HTTP Error 403: Forbidden |
 | `KAL-candles` | 89 | 08-27 21:17 | HTTPError: HTTP Error 429: Too Many Requests |
 | `NFL-espn-fetch` | 13 | 08-23 03:57 | HTTPError: HTTP Error 403: Forbidden |
 | `MEM-high` | 12 | 08-23 05:33 | 1648/2048MB: 891.8MB pid3277 /usr/local/bin/python3.11 -c import os; os.nice(; 380.1MB pid7 /usr/local/bin/python3.11 /u |
-| `SLATE-child` | 1 | 08-22 14:54 | build child exited rc=1 with 0 bytes; building in-process |
