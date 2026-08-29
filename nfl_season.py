@@ -24,6 +24,7 @@ from collections import defaultdict
 
 import clock
 import racing
+import errlog
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl"
 _SLEEPER = "https://api.sleeper.com"
@@ -109,8 +110,8 @@ def _ratings(season):
             ab = id2ab.get(tid)
             if ab in out and v.get("rating") is not None:
                 out[ab] = 8.5 + v["rating"] * 0.8
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLSE-ratings-3", _e)
     # Override with an explicit win-projection source only when it actually
     # varies (a flat/empty source would erase the differential signal above).
     try:
@@ -120,8 +121,8 @@ def _ratings(season):
             for ab, v in proj.items():
                 if ab in out:
                     out[ab] = v
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLSE-ratings-2", _e)
     try:
         import nfl_live
         rt = nfl_live.team_ratings(season) or {}
@@ -136,8 +137,8 @@ def _ratings(season):
             live = 8.5 + (r["pf_pg"] - r["pa_pg"]) * 2.5
             w = g / (g + 6.0)
             out[ab] = (1 - w) * out[ab] + w * live
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLSE-ratings", _e)
     return out
 
 
@@ -300,8 +301,8 @@ def _team_name(ab):
             import pro_data
             for t in pro_data.teams("nfl") or []:
                 _NAMES[_canon(t.get("abbrev") or "")] = t.get("name") or t.get("nick")
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("NFLSE-team_name", _e)
     return _NAMES.get(ab, ab)
 
 
@@ -422,8 +423,8 @@ def _cached_sim(season, n):
             with _LOCK:
                 _SIM_CACHE.update(key=(season, n), t=time.time(), sim=payload)
             return payload
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLSE-cached_sim", _e)
     # Cold path (before the nightly 4,000-season run has cached): cap the
     # synchronous drive-engine compute so a first request can't hang; the
     # nightly scheduler replaces this with the full run on its next pass.

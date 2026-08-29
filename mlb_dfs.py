@@ -378,6 +378,7 @@ def deep_projections(games, season, n=3000):
 # ---- Simulated batter-vs-starting-pitcher (from the deep engine) -----------
 import threading as _thr
 import time as _tm
+import errlog
 _bvp_inflight = set()
 
 
@@ -1107,8 +1108,8 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
     market_boom = {}
     try:
         market_boom = market_signals(date[:4])
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("DFS-build", _e)
 
     n_lineups = max(1, min(150, n_lineups))
 

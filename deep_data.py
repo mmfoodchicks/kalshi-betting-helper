@@ -15,6 +15,7 @@ and the regulars play — the "assumed rotations" path the design calls for.
 
 import baseball
 import clock
+import errlog
 
 STATS = "https://statsapi.mlb.com/api/v1"
 # League-average per-PA outcome rates — fallback for thin samples + the baseline
@@ -539,8 +540,8 @@ def team_profile(team_id, season=None):
         try:
             import savant
             xstats = savant.expected_stats(season) or {}
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("DD-team_profile-5", _e)
         # How much of what we asked for actually came back. The roster call
         # hydrates SEASON and CAREER stats together; career is what regresses a
         # player toward his true talent. When the hydration comes back partial --
@@ -622,8 +623,8 @@ def team_profile(team_id, season=None):
                 try:
                     import savant
                     mults = savant.quality_mults(xstats.get(pid))
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("DD-team_profile-4", _e)
                 if milb_lvl:
                     # Statcast has no minor-league book for him, and a translated
                     # line is already an estimate -- do not stack a second one.
@@ -649,8 +650,8 @@ def team_profile(team_id, season=None):
         # a southpaw starter finally reads as one. Best-effort.
         try:
             _attach_platoon(batters[:13], season)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("DD-team_profile-3", _e)
         # Statcast pitch arsenals: each pitcher's mix + each batter's per-pitch
         # strengths/weaknesses, so a breaking-ball-blind hitter facing a
         # slider-heavy starter reads as the mismatch he is. Best-effort.
@@ -665,8 +666,8 @@ def team_profile(team_id, season=None):
                 m = ars["pit"].get(str(p["id"]))
                 if m:
                     p["mix"] = m
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("DD-team_profile-2", _e)
         # Batter danger: how hard each hitter punishes a mistake over the heart of
         # the plate (MLB hot/cold zone slugging). Drives the sim's pitch-around
         # logic. Lineup only (the bats that'll actually hit), fetched concurrently.
@@ -679,8 +680,8 @@ def team_profile(team_id, season=None):
             for b, d in zip(lineup9, dv):
                 if d is not None:
                     b["danger"] = d
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("DD-team_profile", _e)
         # Taxi bats: BEST ready bat first — when a club loses a starter, the
         # call-up is their best available bat, not the shuttle guy (the depth
         # ARMS pop worst-first because that's how bullpen call-ups work).

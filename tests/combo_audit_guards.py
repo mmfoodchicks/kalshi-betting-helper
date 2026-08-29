@@ -6,8 +6,21 @@ must hold for ANY slate (raising the floor can't lower a leg; adding legs can't
 raise the combined chance).
 """
 import os, sys, datetime, collections, time as _tm
+# Tests exercise functions; they must never run the plant. Importing app.py
+# used to start the production background loops in the TEST process -- the
+# predlog harvester logged live Kalshi predictions into a predlog.db in the
+# checkout, graded them for real, and the accumulated rows eventually crossed
+# a calibration earn-floor and flipped a guard's expected behaviour mid-week.
+os.environ["VIGIL_NO_BG"] = "1"
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import baseball as B
+# The loops used to create the stores' tables as a side effect of starting;
+# with them off, create the tables explicitly -- several guards shape-check
+# the (possibly empty) real stores. Tables only, never live data.
+import store as _st_boot
+_st_boot.init_db()
+import predlog as _pl_boot
+_pl_boot.init_db()
 
 PASS, FAIL = [], []
 
@@ -2292,8 +2305,8 @@ _nd_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                             "nfl_data.py")).read()
 ck("the ratings are attached where the profiles are built",
    "def_pa_pg" in _nd_src and "lg_pa_pg" in _nd_src and "team_ratings" in _nd_src)
-ck("and a failed ratings fetch leaves the board standing",
-   "except Exception:\n            pass\n\n        # Home/away" in _nd_src)
+ck("and a failed ratings fetch leaves the board standing, noted not silent",
+   'errlog.note("NFLD-week_teams-2", _e)\n\n        # Home/away' in _nd_src)
 
 print()
 print("=" * 72)
@@ -3629,10 +3642,14 @@ ck("every prop market has its own registered calibrator with a day floor",
                  "mlb_hr", "mlb_hrr", "mlb_rfi", "mlb_sb", "mlb_rbi")),
    "the pooled prop temperature averages markets that disagree in sign; the "
    "split is registered now and phases in as graded days accrue")
-ck("an unearned market falls back to the pooled correction",
-   abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.batter_prop(0.60)) < 1e-12)
-_CAL._cache["mlb_hit"] = ((1.30, 0.5, 0.0, 500), _tm.time())
+# Both states are INJECTED via the params cache rather than read from
+# whatever predlog.db happens to sit on this machine: the ambient-DB version
+# of the first check flipped the day the local rows crossed the earn-floor.
+_CAL._cache["mlb_hit"] = ((1.0, 0.5, 0.0, 0), _tm.time())
 try:
+    ck("an unearned market falls back to the pooled correction",
+       abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.batter_prop(0.60)) < 1e-12)
+    _CAL._cache["mlb_hit"] = ((1.30, 0.5, 0.0, 500), _tm.time())
     ck("...and a market that HAS earned a fit uses its own",
        abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.apply("mlb_hit", 0.60)) < 1e-12
        and abs(_CAL.prop_market(0.60, "mlb_hit") - _CAL.batter_prop(0.60)) > 1e-6)
@@ -5713,13 +5730,16 @@ finally:
     _gel._DB, _gel._init_done = _gel_old_db, _gel_old_init
 
 # No silent swallows can creep back in: zero pass-only Exception handlers
-# remain in any service module.
-_gswept = ["app.py", "baseball.py", "combine.py", "deep_season.py",
-           "deep_history.py", "tennis_prices.py", "tennis_live.py",
-           "mlb_recorder.py", "recorder.py", "predlog.py", "kalshi_mlb.py",
-           "kalshi.py", "deep_cache.py", "store.py", "odds.py", "ufc_sim.py",
-           "nfl_game_sim.py", "season_sim.py", "model_trust.py",
-           "tennis_elo.py"]
+# remain in ANY service module. This used to be a hand-maintained allowlist
+# of 20 files -- an enforcement blind spot in which 37 swallows accumulated,
+# among them the predlog feeds for NBA, NHL and golf: had prediction logging
+# ever thrown there, those sports would have silently stopped accruing the
+# graded history their calibration runs on, forever, with nothing in the
+# ledger. The sweep is now every module in the repo root; only errlog itself
+# is exempt (the logger cannot note its own failure).
+_gswept = sorted(f for f in _os.listdir(_root)
+                 if f.endswith(".py") and f != "errlog.py"
+                 and not f.startswith("test"))
 _gbad = []
 for _gm in _gswept:
     _gtree = _gast.parse(open(_os.path.join(_root, _gm)).read())
@@ -8561,6 +8581,19 @@ ck("an UNMEASURED model never gets majority say against a real price",
    "the fallback curve reached 0.85 weight on logged-pick COUNT alone -- "
    "sample size measures how much we know about the fighters, not whether "
    "our rating of them beats the book (model_trust's own lesson)")
+
+print()
+print("=" * 72)
+print("Tests exercise functions; they never run the plant")
+print("=" * 72)
+ck("VIGIL_NO_BG stands down every background claim, and this suite sets it",
+   'os.environ.get("VIGIL_NO_BG")' in _insp.getsource(
+       __import__("app")._own_background_jobs)
+   and os.environ.get("VIGIL_NO_BG") == "1"
+   and not __import__("app")._BG_OWNER,
+   "importing app used to start the predlog harvester inside the test "
+   "process: live predictions logged into the checkout's predlog.db, graded "
+   "for real, until the rows crossed an earn-floor and flipped a guard")
 
 print()
 print("=" * 72)

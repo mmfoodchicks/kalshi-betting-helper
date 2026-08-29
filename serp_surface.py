@@ -27,6 +27,7 @@ import os
 import re
 import urllib.parse
 import urllib.request
+import errlog
 
 _CACHE_KEY = "tennis_surface_lookups"     # {normalised tournament: surface|""}
 _ENDPOINT = "https://serpapi.com/search.json"
@@ -210,6 +211,6 @@ def resolve(tournaments, budget=MAX_LOOKUPS_PER_RUN):
         try:
             import deep_cache as dc
             dc.save(_CACHE_KEY, cache)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("SERP-resolve", _e)
     return out

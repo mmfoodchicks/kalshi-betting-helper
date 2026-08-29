@@ -16,6 +16,7 @@ import concurrent.futures as _cf
 
 import pro_data
 import racing
+import errlog
 
 CORE = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
 # ESPN leader category -> our stat key. (interceptions here = DEFENSIVE picks.)
@@ -162,8 +163,8 @@ def _team_wins():
         if board and board.get("teams"):
             return {t.get("abbrev") or t.get("abbr"): t.get("proj_wins", 8.5)
                     for t in board["teams"]}
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLA-team_wins", _e)
     return {}
 
 

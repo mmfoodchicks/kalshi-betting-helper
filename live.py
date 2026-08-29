@@ -15,6 +15,7 @@ richer dedicated feed (inning + base/out state) and is merged in by the caller.
 import concurrent.futures as _cf
 
 import racing
+import errlog
 
 # ESPN site-API scoreboard paths for the team sports we track. These all share
 # the same clean JSON shape, so one parser handles them. (Tennis/MMA use a
@@ -94,6 +95,6 @@ def confirmed_live():
         except Exception:
             _tb = None
         games.extend(tennis_live.live_rows(_tb))
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("LIVE-confirmed_live", _e)
     return games

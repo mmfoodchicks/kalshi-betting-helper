@@ -33,6 +33,7 @@ import csv
 import io
 import os
 import urllib.request
+import errlog
 
 _HF = "https://huggingface.co/datasets/Aneeshers/tennis-sackmann-archive/resolve/main"
 _TML = "https://raw.githubusercontent.com/Tennismylife/TML-Database/master"
@@ -299,6 +300,6 @@ def results(years=None, force=False):
     if rows:
         try:
             deep_cache.save(f"{_CACHE_PREFIX}_{years}y", rows)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("TH-results", _e)
     return rows

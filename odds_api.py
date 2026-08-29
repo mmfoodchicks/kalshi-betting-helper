@@ -33,6 +33,7 @@ import os
 import time
 import urllib.parse
 import urllib.request
+import errlog
 
 _BASE = "https://api.the-odds-api.com/v4"
 _TIMEOUT = 25
@@ -65,8 +66,8 @@ def _save_state(st):
     try:
         import deep_cache
         deep_cache.save(_CACHE_KEY, st)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("OAPI-save_state", _e)
 
 
 def remaining():
@@ -100,8 +101,8 @@ def _get(path, params, billed=True):
             st["used"] = int(float(hdrs.get("x-requests-used", 0) or 0))
             st["checked"] = time.time()
             _save_state(st)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("OAPI-get", _e)
     return body, None
 
 
@@ -229,7 +230,7 @@ def snapshot(sport_keys, note=""):
     try:
         import deep_cache as dc
         dc.save(_SNAP_KEY, series[-20000:])
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("OAPI-snapshot", _e)
     return {"added": added, "total": len(series), "remaining": remaining(),
             "errors": errs}

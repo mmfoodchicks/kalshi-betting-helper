@@ -120,7 +120,16 @@ _BG_LOCK_FD = None
 
 def _own_background_jobs():
     """True in exactly one worker process. Falls back to True where flock is
-    unavailable (a single-process dev run has nothing to contend with)."""
+    unavailable (a single-process dev run has nothing to contend with).
+
+    VIGIL_NO_BG opts a process out entirely. The guard suite imports this app,
+    and importing used to START the production loops inside the test process:
+    predlog's harvester logged live Kalshi predictions into a predlog.db in
+    the CHECKOUT, graded them for real, and one night the accumulated rows
+    crossed a calibration earn-floor and flipped a guard's expected behaviour.
+    Tests exercise functions; they must never run the plant."""
+    if os.environ.get("VIGIL_NO_BG"):
+        return False
     global _BG_LOCK_FD
     if _BG_LOCK_FD is not None:
         return True

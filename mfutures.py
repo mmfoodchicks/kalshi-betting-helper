@@ -406,8 +406,8 @@ def _collect_pro(sport, by_ticker, by_series, by_no):
         return []
     try:
         proj = pro_prices.attach(sport, proj) or proj
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("MFUT-collect_pro", _e)
     out = []
     fields = (("champ", "champ_pct", "Championship"),
               ("conf", "conf_pct", "Conference"),

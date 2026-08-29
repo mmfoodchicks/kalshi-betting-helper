@@ -29,6 +29,7 @@ import re
 
 import clock
 import racing                       # shared cached-JSON getter
+import errlog
 
 LEAGUES = {
     "nba":  {"path": "nba", "label": "🏀 NBA", "hca_eff": 1.010,
@@ -571,8 +572,8 @@ def board(lg, date=None):
         if not pro_sim.in_season(lg):
             return {"date": date or clock.today_et().isoformat(), "games": [],
                     "off_season": True, "league": lg}
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("BK-board", _e)
     date = date or clock.today_et().isoformat()
     import boardshare
     return boardshare.nonblocking(f"bk_{lg}_{date}", 600, _cache,
@@ -682,8 +683,8 @@ def _build_board(lg, date, n=3000):
         try:
             predlog.init_db()
             predlog.log_many(cfg["cal"], log_rows)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("BK-build_board", _e)
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
             "league": lg,

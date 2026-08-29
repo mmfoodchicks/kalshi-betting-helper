@@ -21,6 +21,7 @@ once before the pool forks, so workers inherit them instead of each re-fetching.
 import multiprocessing as mp
 import os
 import random
+import errlog
 
 
 def n_workers(cap=16):
@@ -110,8 +111,8 @@ def run(module, func, base_kwargs, n, seed, team_key, avg_fields, sum_fields,
         warm.update(n=1, seed=0, workers=1)
         if _invoke((module, func, warm)) is None:
             return None
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("MPS-run", _e)
     try:
         with mp.Pool(len(specs)) as pool:
             boards = [b for b in pool.map(_invoke, specs) if b]

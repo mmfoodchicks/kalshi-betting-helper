@@ -41,6 +41,7 @@ import re
 
 import racing
 import ufc_data
+import errlog
 
 CORE = "http://sports.core.api.espn.com/v2/sports/mma/leagues/ufc"
 
@@ -103,8 +104,8 @@ def bouts(year):
                             p = _american_to_prob(s.get("moneyLine"))
                             if aid and p:
                                 mkt[aid] = p
-                except Exception:
-                    pass
+                except Exception as _e:
+                    errlog.note("UFCBT-bouts", _e)
                 ma, mb = mkt.get(ids[0]), mkt.get(ids[1])
                 if ma and mb and (ma + mb) > 0:       # de-vig
                     ma, mb = ma / (ma + mb), mb / (ma + mb)

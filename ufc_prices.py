@@ -8,6 +8,7 @@ and edge (our simulated win % - the market ask) off them.
 import unicodedata
 
 import kalshi
+import errlog
 
 
 def _norm(s):
@@ -67,8 +68,8 @@ def _model_weight_cap():
         measured = (model_trust.load().get("weights") or {}).get("ufc")
         if measured:
             return model_trust.weight("ufc")
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("UFCP-model_weight_cap", _e)
     try:
         import calibrate
         _t_, _q0_, n = calibrate._params("ufc")
@@ -141,8 +142,8 @@ def attach(board):
             try:
                 import calibrate
                 fair = round(100 * calibrate.ufc(fair / 100.0), 1)
-            except Exception:
-                pass
+            except Exception as _e:
+                errlog.note("UFCP-attach", _e)
             f["fair_win"] = fair
             f["edge"] = round(fair - c, 1)
             priced = True

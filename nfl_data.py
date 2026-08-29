@@ -16,6 +16,7 @@ team/opponent). Everything is cached and fails safe to None.
 
 import racing                      # shared cached JSON getter
 import nfl_live                    # ESPN schedule + last-season ratings (fallback)
+import errlog
 
 _SLEEPER = "https://api.sleeper.com/projections/nfl/{season}/{week}"
 _POS = ("QB", "RB", "WR", "TE")
@@ -117,8 +118,8 @@ def week_teams(season, week):
                     r = rt.get(ab) or rt.get(_canon(ab))
                     if r and r.get("pa_pg"):
                         t["def_pa_pg"] = r["pa_pg"]
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("NFLD-week_teams-2", _e)
 
         # Home/away from ESPN's scoreboard for the week.
         try:
@@ -128,8 +129,8 @@ def week_teams(season, week):
                     teams[h]["home"] = True
                 if a in teams:
                     teams[a]["home"] = False
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("NFLD-week_teams", _e)
         return teams or None
     return racing._cached(("nfl_week_teams", str(season), week), 3600, build)
 
@@ -144,8 +145,8 @@ def week_games(season, week):
     sched = []
     try:
         sched = nfl_live.schedule(week, int(season)) or []
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLD-week_games", _e)
     for g in sched:
         h, a = _canon(g["home"]), _canon(g["away"])
         if h in teams and a in teams and (h, a) not in seen:

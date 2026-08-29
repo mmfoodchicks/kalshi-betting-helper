@@ -29,6 +29,7 @@ import re
 
 import clock
 import racing
+import errlog
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl"
 _BYATH = ("https://site.web.api.espn.com/apis/common/v3/sports/hockey/nhl/"
@@ -468,8 +469,8 @@ def board(date=None):
         if not pro_sim.in_season("nhl"):
             return {"date": date or clock.today_et().isoformat(), "games": [],
                     "off_season": True, "league": "nhl"}
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NHL-board", _e)
     date = date or clock.today_et().isoformat()
     import boardshare
     return boardshare.nonblocking(f"nhl_{date}", 600, _cache,
@@ -577,8 +578,8 @@ def _build_board(date, n=3000):
         try:
             predlog.init_db()
             predlog.log_many("nhl", log_rows)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("NHL-build_board", _e)
     games.sort(key=lambda x: x["date"] or "")
     return {"date": date, "n_games": len(games), "games": games, "n_sims": n,
             "league": "nhl",

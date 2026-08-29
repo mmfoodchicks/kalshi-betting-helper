@@ -20,6 +20,7 @@ import concurrent.futures as _cf
 import clock
 
 import racing                     # reuse its disk-cache + JSON GET helpers
+import errlog
 
 
 # Position importance when a player is unavailable (suspended / IR). QB dwarfs
@@ -349,8 +350,8 @@ def nfl_qb_map(prior_season):
                         if pos == "QB" and p.get("id"):
                             qbs.append({"pid": str(p["id"]), "name": p.get("displayName"),
                                         "exp": (p.get("experience") or {}).get("years", 0)})
-            except Exception:
-                pass
+            except Exception as _e:
+                errlog.note("PRO-nfl_qb_map-2", _e)
             try:
                 d = _get(f"{_CORE_NFL}/seasons/{prior_season}/types/2/teams/{tid}/leaders?lang=en")
                 for c in d.get("categories", []):
@@ -359,8 +360,8 @@ def nfl_qb_map(prior_season):
                         if "/athletes/" in ref:
                             prev_pid = ref.split("/athletes/")[-1].split("?")[0]
                         break
-            except Exception:
-                pass
+            except Exception as _e:
+                errlog.note("PRO-nfl_qb_map", _e)
             return tid, qbs, prev_pid
 
         with _cf.ThreadPoolExecutor(max_workers=8) as ex:

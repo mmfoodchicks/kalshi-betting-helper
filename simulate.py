@@ -12,6 +12,7 @@ import math
 import random
 
 import odds
+import errlog
 
 
 def _pois(lam):
@@ -960,8 +961,8 @@ def apply_ufc(players):
                 priced += 1
             if _reblend_bout(bt["a"], bt["b"], seed=i):
                 blended += 1
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("SIM-apply_ufc", _e)
     idx = {}
     for bt in board.get("bouts", []):
         for side in ("a", "b"):

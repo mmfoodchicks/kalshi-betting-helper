@@ -32,6 +32,7 @@ import time as _t
 
 import clock
 import racing
+import errlog
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports/golf"
 _CORE = "https://sports.core.api.espn.com/v2/sports/golf/leagues"
@@ -205,8 +206,8 @@ def conditions(course):
                 wx = weather.get_weather(lat, lon, _t.time() + 6 * 3600)  # ~next tee window
                 if wx:
                     wind, temp = wx.get("wind_mph"), wx.get("temp_f")
-            except Exception:
-                pass
+            except Exception as _e:
+                errlog.note("GOLF-conditions", _e)
         wind = 8.0 if wind is None else float(wind)
         temp = 72.0 if temp is None else float(temp)
         # Scoring: wind and cold play the course harder; altitude (thin air, ball
@@ -454,8 +455,8 @@ def _build_board(tour="pga", n=3000):
         if rows:
             predlog.init_db()
             predlog.log_many("golf", rows)
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("GOLF-build_board", _e)
     players = [{k: p[k] for k in ("name", "to_par", "position", "scoring_avg",
                                   "win_pct", "top5_pct", "top10_pct", "top20_pct",
                                   "make_cut_pct")} for p in sim["players"]]

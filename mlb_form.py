@@ -30,6 +30,7 @@ as "no form data" and falls back to the season number.
 """
 
 import os
+import errlog
 
 STATS_BASE = "https://statsapi.mlb.com/api/v1"
 LAST_X = 10                  # what the lastXGames feed returns
@@ -161,8 +162,8 @@ def form(season, force=False):
     if out["hitting"] or out["pitching"]:
         try:
             deep_cache.save(key, out)
-        except Exception:
-            pass
+        except Exception as _e:
+            errlog.note("FORM-form", _e)
     return out
 
 

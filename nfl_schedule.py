@@ -12,6 +12,7 @@ import clock
 
 import nfl_awards          # racing cache + _team_wins
 import pro_data
+import errlog
 
 _racing = nfl_awards.racing
 # ESPN abbreviation is the canonical key; map the common alternates onto it so a
@@ -63,8 +64,8 @@ def _build(season):
     tw = {}
     try:
         tw = {_canon(k): v for k, v in (nfl_awards._team_wins() or {}).items()}
-    except Exception:
-        pass
+    except Exception as _e:
+        errlog.note("NFLS-build", _e)
     for info in out.values():
         ow = [tw.get(o, 8.5) for o in info["opps"].values()]
         info["sos"] = round(sum(ow) / len(ow), 1) if ow else 8.5
