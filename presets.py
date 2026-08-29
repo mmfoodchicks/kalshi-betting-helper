@@ -211,9 +211,12 @@ def _build_all(games, spec):
 
 
 def build_all(date, games, sig):
-    """Build every preset against one pinned Kalshi book, log each slip."""
+    """Build every preset against one pinned Kalshi book. PURE COMPUTE — the
+    slip ledger is the SERVER's book of record, so filing lives in
+    ensure_logged(); keeping this side-effect-free is what lets the PC build
+    the identical payload and upload it without ever growing a ledger of
+    its own."""
     import kalshi_mlb
-    import sliplog
     out = {}
     with kalshi_mlb.pinned():
         for spec in PRESETS:
@@ -224,24 +227,62 @@ def build_all(date, games, sig):
             except Exception as e:
                 errlog.note("PRESET-build", e, path=pid)
                 item = None
-            key = None
             if item:
                 item["objective"] = f"preset:{pid}"
-                try:
-                    key = sliplog.log_from_item(item, sport="mlb", date=date,
-                                                tag=pid)
-                except Exception as e:
-                    errlog.note("PRESET-log", e, path=pid)
             out[pid] = {"label": spec["label"], "emoji": spec["emoji"],
                         "desc": spec["desc"], "item": item,
-                        "logged": bool(key),
-                        # An unlogged slip still shows; the note says why the
-                        # ledger skipped it (thin slate, an unticketed leg).
-                        "log_note": (None if key else
-                                     "not in the ledger: needs 2+ legs, all "
-                                     "with Kalshi tickets, pre-game")}
+                        "logged": False, "log_note": None}
     return {"date": date, "sig": sig, "rev": REV,
             "built_ts": int(time.time()), "presets": out}
+
+
+def ensure_logged(payload):
+    """File every slip in the payload into the slip ledger. Idempotent — the
+    ledger dedups by leg set — and safe on every tick, which is exactly how a
+    PC-built payload (uploaded with logged=False) gets its slips recorded in
+    the one place a ledger exists. Returns True when any flag changed, so the
+    caller knows to republish the payload with its honest badges."""
+    import sliplog
+    changed = False
+    for pid, p in (payload.get("presets") or {}).items():
+        item = p.get("item")
+        if not item:
+            continue
+        key = None
+        try:
+            key = sliplog.log_from_item(item, sport="mlb",
+                                        date=payload.get("date"), tag=pid)
+        except Exception as e:
+            errlog.note("PRESET-log", e, path=pid)
+        logged = bool(key) or bool(p.get("logged"))
+        # An unlogged slip still shows; the note says why the ledger
+        # skipped it (thin slate, an unticketed leg).
+        note = (None if logged else
+                "not in the ledger: needs 2+ legs, all with Kalshi "
+                "tickets, pre-game")
+        if logged != p.get("logged") or note != p.get("log_note"):
+            p["logged"], p["log_note"] = logged, note
+            changed = True
+    return changed
+
+
+def pc_build():
+    """PC edition: build and PUBLISH, never log — the ledger lives in the
+    server's DB, and the server's tick() files an adopted payload's slips on
+    its next pass. Riding the boards store means the server adopts by
+    freshness and still self-computes whenever the PC is off: the PC can only
+    add speed, exactly like every other board."""
+    import boardshare
+    import clock
+    import baseball
+    date = clock.today_et().isoformat()
+    games = baseball.analyze_slate(date, date[:4])
+    sig = slate_sig(games)
+    if not games or not sig:
+        return None
+    payload = build_all(date, games, sig)
+    boardshare.put(NAME, payload)
+    return payload
 
 
 def tick(force=False):
@@ -265,7 +306,19 @@ def tick(force=False):
     cur, _age = boardshare.get(NAME, None)
     if (not force and cur and cur.get("date") == date
             and cur.get("sig") == sig and cur.get("rev") == REV):
+        # Fresh — self-built OR adopted from the PC. Either way the slips
+        # belong in the ledger: a PC payload lands with logged=False and gets
+        # filed here, then republished so the badges read true.
+        if ensure_logged(cur):
+            boardshare.put(NAME, cur)
+        return 0
+    # Debounce lineup-post storms: sigs can change minutes apart all
+    # afternoon, and each rebuild is real CPU on a shared core the health
+    # probe also lives on. The next tick catches whatever this one skips.
+    if (not force and cur and cur.get("rev") == REV
+            and time.time() - (cur.get("built_ts") or 0) < 300):
         return 0
     payload = build_all(date, games, sig)
+    ensure_logged(payload)
     boardshare.put(NAME, payload)
     return 1

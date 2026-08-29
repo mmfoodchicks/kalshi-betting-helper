@@ -8815,6 +8815,17 @@ try:
        and _rec41["ks80"]["graded"] == 0,
        "the ledger's first-write-wins keys the LEG SET, so a lineup change "
        "is a new row and a no-change rebuild is the same bet")
+    # The PC builds the same payload; only the SERVER may file slips. A
+    # PC-built payload arrives with logged=False and ensure_logged (idempotent)
+    # flips its badges honest on the server's next tick.
+    _pay41 = {"date": "2026-08-29", "presets": {
+        "ks80": {"item": dict(_it41), "logged": False, "log_note": None}}}
+    ck("ensure_logged files an adopted payload's slips and reports the change",
+       _pr41.ensure_logged(_pay41) is True
+       and _pay41["presets"]["ks80"]["logged"] is True
+       and _pr41.ensure_logged(_pay41) is False,
+       "True the first time (badges flipped), False when nothing changed -- "
+       "the tick republishes only when the flags moved")
 finally:
     (B._game_sim, B._price_cands, _km41.index, _km41.ticker_leg,
      _ST.DB_PATH) = _orig41
@@ -8863,6 +8874,40 @@ ck("a recipe change rebuilds today's slips at deploy, not at next lineup",
    and 'cur.get("rev") == REV' in _insp.getsource(_pr41.tick),
    "boardshare persists across the swap; without the rev stamp an edited "
    "recipe would keep serving the old slip until a lineup posted")
+ck("the build is pure compute; the ledger is touched ONLY by ensure_logged",
+   "sliplog" not in _insp.getsource(_pr41.build_all)
+   and "sliplog" not in _insp.getsource(_pr41.pc_build)
+   and "sliplog" in _insp.getsource(_pr41.ensure_logged),
+   "this split is what lets the PC build the identical payload without ever "
+   "growing a ledger of its own -- the server files adopted slips on tick")
+_tk41 = _insp.getsource(_pr41.tick)
+ck("tick adopts a fresh payload (PC or self) and debounces rebuild storms",
+   "ensure_logged(cur)" in _tk41
+   and 'cur.get("built_ts") or 0) < 300' in _tk41,
+   "lineup posts arrive minutes apart all afternoon; each rebuild is real "
+   "CPU on the shared core the health probe lives on")
+_pcw41 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC builds the presets and the FULL model-trust backtests",
+   '__import__("presets").pc_build()' in _pcw41
+   and '("model_trust", lambda: _mt())' in _pcw41
+   and "refresh(quick=False)" in _pcw41)
+import deep_cache as _dc41
+import model_trust as _mt41
+_dcdir41 = _dc41.CACHE_DIR
+_dc41.CACHE_DIR = _tf41.mkdtemp(prefix="guard-mt-")
+try:
+    _mt41.record("guardmt", 0.50, 300, "full")
+    _mt41.record("guardmt", 0.20, 60, "quick")
+    _w41 = (_mt41.load()["weights"] or {}).get("guardmt") or {}
+    ck("a quick 60-sample pass cannot clobber a fresh full 300-sample fit",
+       _w41.get("n") == 300 and _w41.get("weight") == 0.50,
+       "weight() reads n as confidence -- the overwrite would literally "
+       "erase what we know; a stale full fit (>48h) still yields")
+    _mt41.record("guardmt", 0.30, 400, "fuller")
+    ck("...while a BIGGER sample replaces it fine",
+       ((_mt41.load()["weights"] or {}).get("guardmt") or {}).get("n") == 400)
+finally:
+    _dc41.CACHE_DIR = _dcdir41
 _js41 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tabs exist, match the server's recipe ids, and survive a re-render",
    all(f'"{p}"' in _js41.split("_PRESET_TABS")[1][:300]

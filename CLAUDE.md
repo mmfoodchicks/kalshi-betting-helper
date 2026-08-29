@@ -29,7 +29,9 @@ Single-user (the repo owner). Read this before touching anything.
   accumulated live predictions flipped a guard).
 - **Batch pushes.** Every push triggers a ~30-minute Docker build on Render and
   a swap that cold-starts the app and emails a health-check alert. Group related
-  work into one commit where you reasonably can.
+  work into one commit where you reasonably can. Measured cost of ignoring
+  this: seven deploys in one day read, from the owner's seat, as "the server
+  keeps crashing" — the ledger was clean and every "crash" was a swap.
 
 ## Conventions
 

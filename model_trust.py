@@ -72,8 +72,19 @@ def weight(sport, default=None):
 
 
 def record(sport, fitted_weight, n, source, extra=None):
-    """Persist one backtest's verdict for a sport."""
+    """Persist one backtest's verdict for a sport.
+
+    A bigger RECENT sample outranks a smaller one: the PC runs the full
+    backtest overnight (n≈300) and ships it through the deep sync, while the
+    server's own nightly pass stays quick (n≈60) — and since weight() reads n
+    as confidence, letting the quick pass clobber the full one would
+    literally erase what we know. A stale full run (>48h) yields, so a dead
+    PC can't pin outdated weights forever."""
     cur = load()
+    old = (cur.get("weights") or {}).get(sport)
+    if (old and (old.get("n") or 0) > (n or 0)
+            and time.time() - (old.get("at") or 0) < 48 * 3600):
+        return old
     cur["weights"][sport] = {"weight": fitted_weight, "n": n, "source": source,
                              "at": time.time(), **(extra or {})}
     cur["updated"] = time.time()

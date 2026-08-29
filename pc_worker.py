@@ -174,6 +174,12 @@ def _task_boards():
     # simulating on the shared CPU.
     _add("dfs-f1", lambda: __import__("racing_dfs").board("f1"))
     _add("dfs-nascar", lambda: __import__("racing_dfs").board("nascar"))
+    # The locked daily slips: built here on warm local sims, published into
+    # the boards store, adopted by the server like any board. pc_build never
+    # touches a ledger -- the server's tick files the slips in ITS DB when it
+    # adopts. This pulls five combo builds per lineup change off the shared
+    # core the health probe lives on.
+    _add("presets", lambda: __import__("presets").pc_build())
 
     deadline = time.time() + 300
     pending = dict(builders)
@@ -205,9 +211,11 @@ def _task_deep(url, tok):
     """Every registered season sim the server runs nightly, PC edition. Each
     job saves under the same deep_cache key with the SAME payload shape the
     server's runner returns, so the server's daily scheduler sees "already
-    ran today" from the uploaded file and skips its own rebuild. model_trust
-    stays server-side (it replays the server's own prediction-log DB), as do
-    the coherence/ump extras (they feed the GitHub history flow)."""
+    ran today" from the uploaded file and skips its own rebuild. The
+    coherence/ump extras stay server-side (they feed the GitHub history
+    flow). model_trust used to be listed with them on the claim that it
+    replays the server's DB -- it doesn't: both backtests replay ESPN
+    point-in-time, so the FULL fits run here now."""
     have = _api(url, tok, "/api/art/have?kind=deep").get("have") or {}
     import deep_cache
 
@@ -245,6 +253,17 @@ def _task_deep(url, tok):
         print(f"[vigil-pc] deep mlb: done in {(time.time()-t0)/60:.1f} min "
               f"({q.get('teams_ok', '?')}/{q.get('teams', '?')} teams clean)")
 
+    def _mt():
+        """Full-sample model-trust backtests -- the server only ever runs the
+        quick pass (60 bouts / 120 games); a desktop can afford the real one.
+        refresh() saves its own weights via deep_cache (no _plain wrapper),
+        and model_trust.record refuses to let a smaller recent sample clobber
+        the full fit -- which also stops the server rewriting the file every
+        night, so the server-copy age gates this to a daily re-run."""
+        import model_trust
+        done = model_trust.refresh(quick=False)
+        print(f"[vigil-pc] deep model_trust: fitted {sorted(done)}")
+
     def _plain(key, fn):
         ret = fn()
         if ret is not None:
@@ -262,6 +281,7 @@ def _task_deep(url, tok):
         ("nfl", lambda: _plain("nfl", lambda: __import__("pro_sim").project("nfl", 4000))),
         ("nba", lambda: _plain("nba", lambda: __import__("pro_sim").project("nba", 4000))),
         ("nhl", lambda: _plain("nhl", lambda: __import__("pro_sim").project("nhl", 4000))),
+        ("model_trust", lambda: _mt()),
     ]
     for key, fn in jobs:
         if not _due(key):
