@@ -1050,6 +1050,81 @@ function updateComboSidesHint() {
   }
 }
 const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);
+
+// ---- Locked daily slips (presets) -------------------------------------------
+// The recipes live server-side as constants (presets.py); these labels are
+// display only. Custom = the ordinary maker, untouched.
+const _PRESET_TABS = [["custom", "⚙️ Custom"], ["hits5", "🖐️ 5 Hits"],
+  ["hr3", "💣 3 HR"], ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"],
+  ["rl80", "📏 RL 80%+"]];
+let _presetSel = "custom";
+let _presetData = null, _presetFetchTs = 0, _presetPoll = null;
+
+function showPreset(pid) { _presetSel = pid; applyPresetTab(); }
+
+function applyPresetTab() {
+  const tabs = $("presetTabs");
+  if (!tabs) return;
+  tabs.querySelectorAll(".preset-tab").forEach((b) =>
+    b.style.opacity = b.dataset.pid === _presetSel ? "1" : "0.55");
+  const mk = document.querySelector(".combomaker");
+  const box = $("presetBox");
+  if (_presetSel === "custom") {
+    if (mk) mk.classList.remove("hidden");
+    if (box) box.classList.add("hidden");
+    if (_presetPoll) { clearInterval(_presetPoll); _presetPoll = null; }
+    return;
+  }
+  if (mk) mk.classList.add("hidden");
+  if (box) box.classList.remove("hidden");
+  renderPresetBox();
+}
+
+async function renderPresetBox() {
+  const box = $("presetBox");
+  if (!box) return;
+  if (!_presetData || Date.now() - _presetFetchTs > 60000) {
+    try {
+      const r = await fetch("/api/baseball/presets");
+      _presetData = await r.json();
+      _presetFetchTs = Date.now();
+    } catch (e) { box.innerHTML = `<div class="small">Couldn't load presets - retrying…</div>`; }
+  }
+  const d = _presetData;
+  if (!d) return;
+  if (d.status === "building" || d.error) {
+    box.innerHTML = `<div class="small">${d.error || "Building today's preset slips (first run after a deploy)…"}</div>`;
+    if (!_presetPoll) _presetPoll = setInterval(() => { _presetFetchTs = 0; renderPresetBox(); }, 8000);
+    return;
+  }
+  if (_presetPoll) { clearInterval(_presetPoll); _presetPoll = null; }
+  const p = (d.presets || {})[_presetSel];
+  if (!p) { box.innerHTML = `<div class="small">No such preset.</div>`; return; }
+  const rec = (d.records || {})[_presetSel];
+  const recLine = rec && rec.graded
+    ? `📒 record: <b>${rec.won}-${rec.graded - rec.won}</b> graded (expected ${rec.expected} wins from the claimed odds) · legs ${rec.legs_hit}/${rec.legs}${rec.void ? ` · ${rec.void} void` : ""} · ${rec.logged} logged`
+    : `📒 ${rec ? rec.logged : 0} logged, none graded yet - the record builds itself from here`;
+  let bodyHtml;
+  const it = p.item;
+  if (!it) {
+    bodyHtml = `<div class="small" style="margin-top:6px">Nothing qualifies today - that's the recipe being honest, not broken. (Thin slate, no priced legs above the bar, or lineups not in yet.)</div>`;
+  } else {
+    const legs = (it.groups || []).map((grp) => (grp.legs || []).map((l) => `
+      <li><span class="legtag">${l.type}</span> <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span>
+        <b>${l.label}</b> <span style="color:var(--muted)">${grp.matchup || ""}</span>
+        - <b>${l.prob_pct}%</b>${l.market_cents != null ? ` · Kalshi ${l.market_cents}¢${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` : " · no market"}</li>`).join("")).join("");
+    bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
+      <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}</div>
+      <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
+  }
+  box.innerHTML = `<div class="combomaker">
+    <div><b>${p.emoji || ""} ${p.label}</b> <span class="small" style="color:var(--muted)">🔒 locked recipe - no knobs. Want different? That's what Custom is for.</span></div>
+    <div class="small" style="color:var(--muted)">${p.desc || ""}</div>
+    ${bodyHtml}
+    <div class="small" style="margin-top:6px;color:var(--muted)">${recLine}</div>
+    <div class="small" style="color:var(--muted)">Auto-rebuilds when lineups post or starters change · built ${d.age_s != null ? Math.round(d.age_s / 60) + "m ago" : ""} for ${d.date || "today"}</div>
+  </div>`;
+}
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
 // the maker, so without this the selects snap back to defaults - which used to
 // revert AND→OR and detach the in-flight result. See comboBuilding guard below.)
@@ -2045,6 +2120,13 @@ async function loadBaseball(silent) {
       const def = Math.min(parlayLegs, effMax);
       const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
         + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
+      // Locked daily slips ride as TABS beside the custom maker: five recipes
+      // with server-side constants for knobs (presets.py), auto-built every
+      // day, rebuilt when lineups post, logged + graded as a unit. Selecting
+      // one hides the custom maker; "Custom" brings it back untouched.
+      html += `<div class="small" id="presetTabs" style="margin:8px 0 4px">${_PRESET_TABS.map(([pid, lbl]) =>
+        `<button class="leanchip preset-tab" data-pid="${pid}" onclick="showPreset('${pid}')" style="cursor:pointer;margin-right:4px">${lbl}</button>`).join("")}</div>
+        <div id="presetBox" class="hidden"></div>`;
       html += `<div class="combomaker">
         🎯 <b>Combo maker</b>
         <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from - or <b>ALL GAMES</b>:</div>
@@ -2103,6 +2185,7 @@ async function loadBaseball(silent) {
       const prevCombo = (() => { const el = $("comboOut"); return el ? el.innerHTML : ""; })();
       combosBox.innerHTML = html;
       if (prevCombo) { const el = $("comboOut"); if (el) el.innerHTML = prevCombo; }
+      applyPresetTab();   // the re-render must not snap a preset tab back to Custom
     }
     // Keep the Pick 6 board in sync with the loaded slate/date.
     if ($("bbPick6") && $("bbPick6").dataset.loaded && !$("bbPick6").classList.contains("hidden")) loadPick6();

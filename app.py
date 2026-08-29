@@ -3799,6 +3799,35 @@ def api_baseball_sliplog():
     return jsonify(store.slip_report())
 
 
+@app.route("/api/baseball/presets")
+def api_baseball_presets():
+    """The locked daily slips (presets.py): current build of each recipe plus
+    its running ledger record. The recipes' knobs are constants server-side —
+    this endpoint takes no parameters on purpose."""
+    import boardshare
+    import presets
+    payload, age = boardshare.get(presets.NAME, None)
+    try:
+        records = store.preset_records()
+    except Exception as _e:
+        errlog.note("APP-presets-records", _e)
+        records = {}
+    if not payload:
+        # First call before the recorder's first tick (fresh deploy): build
+        # once in a claimed background thread; the client polls.
+        if boardshare.claim(presets.NAME + "_kick"):
+            def _bg():
+                try:
+                    presets.tick(force=True)
+                except Exception as e:
+                    errlog.note("PRESET-kick", e)
+                finally:
+                    boardshare.release(presets.NAME + "_kick")
+            threading.Thread(target=_bg, daemon=True).start()
+        return jsonify({"status": "building", "records": records}), 202
+    return jsonify({**payload, "age_s": round(age), "records": records})
+
+
 @app.route("/api/baseball/hits")
 def api_baseball_hits():
     """Predicted Hits + Risky Hits: from the recorder's graded props, the ones the

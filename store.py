@@ -196,9 +196,18 @@ def init_db():
                 legs TEXT,
                 max_close INTEGER,
                 graded INTEGER DEFAULT 0, won INTEGER, legs_hit INTEGER,
-                resolved_ts INTEGER
+                resolved_ts INTEGER,
+                tag TEXT
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_slip_graded ON slip_log(graded)")
+        # `tag` marks slips built by a locked preset (presets.py) so each
+        # recipe accrues its own graded record. Added later; migrate old DBs.
+        _slip_cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
+        if "tag" not in _slip_cols:
+            try:
+                c.execute("ALTER TABLE slip_log ADD COLUMN tag TEXT")
+            except Exception as _e:
+                errlog.note("ST-init-sliptag", _e)   # sibling worker won the race
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
@@ -507,18 +516,49 @@ def nfl_record():
 
 # ---- Slip ledger (the correlation claim, graded) ---------------------------
 def log_slip(sport, date, key, n_legs, n_games, prob, indep_prob,
-             market_payout_x, ev_pct, objective, legs_json, max_close):
+             market_payout_x, ev_pct, objective, legs_json, max_close,
+             tag=None):
     """First build of a leg-set wins: the claim on record is the one made the
     first time this exact slip was assembled, pre-game."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO slip_log
                (ts, date, sport, key, n_legs, n_games, prob, indep_prob,
-                market_payout_x, ev_pct, objective, legs, max_close)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                market_payout_x, ev_pct, objective, legs, max_close, tag)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (int(time.time()), date, sport, key, n_legs, n_games, prob,
              indep_prob, market_payout_x, ev_pct, objective, legs_json,
-             max_close))
+             max_close, tag))
+
+
+def preset_records():
+    """Per-preset ledger line: how each locked recipe has actually done.
+    Expected wins is the sum of the CLAIMED slip probabilities over graded
+    slips, so 'won 4 of 11, expected 3.2' reads directly as luck vs claim."""
+    with _lock, _conn() as c:
+        cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
+        if "tag" not in cols:
+            return {}
+        rows = c.execute(
+            "SELECT tag, graded, won, prob, n_legs, legs_hit FROM slip_log "
+            "WHERE tag IS NOT NULL").fetchall()
+    out = {}
+    for r in rows:
+        d = out.setdefault(r["tag"], {"logged": 0, "graded": 0, "won": 0,
+                                      "expected": 0.0, "void": 0,
+                                      "legs": 0, "legs_hit": 0})
+        d["logged"] += 1
+        if r["graded"] == 1:
+            d["graded"] += 1
+            d["won"] += r["won"] or 0
+            d["expected"] += r["prob"] or 0.0
+            d["legs"] += r["n_legs"] or 0
+            d["legs_hit"] += r["legs_hit"] or 0
+        elif r["graded"] == 2:
+            d["void"] += 1
+    for d in out.values():
+        d["expected"] = round(d["expected"], 2)
+    return out
 
 
 def ungraded_slips(played_before, limit=40):

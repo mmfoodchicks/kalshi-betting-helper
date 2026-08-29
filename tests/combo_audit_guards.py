@@ -8700,6 +8700,117 @@ ck("every import is stdlib, declared in requirements, or ours",
 
 print()
 print("=" * 72)
+print("Locked daily slips: the recipes are constants, the record is the point")
+print("=" * 72)
+# The ask, near-verbatim: "pre-made slips I like doing... 5 hits / YES 3 home
+# runs / every game's pitcher 80%+ strikeout prop / moneylines above 58% /
+# run lines 80%+. Hard locked -- if I want my own I use the regular combo
+# maker. They run every day, get logged then graded, reran once a new lineup
+# gets posted. All except home runs can be yes or no."
+import presets as _pr41
+import tempfile as _tf41
+
+_spec41 = {s["id"]: s for s in _pr41.PRESETS}
+ck("the five recipes, verbatim, hard-locked as server constants",
+   set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80"}
+   and _spec41["hits5"]["n_legs"] == 5 and _spec41["hits5"]["types"] == ("Hit",)
+   and _spec41["hr3"]["n_legs"] == 3 and _spec41["hr3"]["types"] == ("HR",)
+   and _spec41["ks80"]["floor"] == 0.80 and _spec41["ks80"]["types"] == ("Ks",)
+   and _spec41["ml58"]["floor"] == 0.58 and _spec41["ml58"]["types"] == ("ML",)
+   and _spec41["rl80"]["floor"] == 0.80
+   and _spec41["rl80"]["types"] == ("Run line",))
+ck("home runs are YES only; every other recipe may take either side",
+   _spec41["hr3"]["sides"] == frozenset(("yes",))
+   and all(_spec41[p]["sides"] is None
+           for p in ("hits5", "ks80", "ml58", "rl80")),
+   '"YES 3 home runs" is the one exception, by request -- the sides control '
+   "was born from HR slips coming back all NOs")
+ck("the endpoint takes no parameters -- locked means locked",
+   "request.args" not in _insp.getsource(
+       __import__("app").api_baseball_presets),
+   "a preset with knobs is the combo maker with extra steps; if you want "
+   "knobs, that's what Custom is for")
+ck("the top-N recipes ride the maker's own frontier, likeliest-first",
+   'legs_mode="require"' in _insp.getsource(_pr41._build_top)
+   and 'objective="safe"' in _insp.getsource(_pr41._build_top))
+_g41 = {"game_pk": 1, "home_sp_id": 10, "away_sp_id": 20, "live": {},
+        "confirm": {"home_lineup": "projected", "away_lineup": "projected",
+                    "level": "provisional"}}
+_gf41 = {"game_pk": 2, "live": {"state": "Final"}, "confirm": {}}
+_s41a = _pr41.slate_sig([_g41, _gf41])
+_s41b = _pr41.slate_sig([dict(_g41, confirm={"home_lineup": "confirmed",
+                                             "away_lineup": "projected",
+                                             "level": "provisional"}), _gf41])
+ck("a lineup POSTING changes the slate signature -- the rebuild trigger",
+   _s41a and _s41b and _s41a != _s41b
+   and _pr41.slate_sig([_gf41]) is None,
+   '"reran once a new lineup gets posted" is a hash comparison, not a timer')
+ck("the recorder's tick rebuilds the presets on its cadence",
+   "presets.tick()" in _insp.getsource(
+       __import__("mlb_recorder")._loop))
+# Functional: the scan recipe prices, filters, tickets and logs like the ask.
+_cands41 = [
+    {"type": "Ks", "label": "Ace 6+ Ks", "marg": 0.85, "side": "yes",
+     "kref": {"t": "ks"}, "model_pct": 84.0, "marg_model": 0.83},
+    {"type": "Ks", "label": "Ace 8+ Ks", "marg": 0.55, "side": "yes",
+     "kref": {"t": "ks"}, "model_pct": 52.0, "marg_model": 0.50},
+    {"type": "ML", "label": "Team ML", "marg": 0.66, "side": "yes",
+     "kref": {"t": "ml"}, "model_pct": 66.0, "marg_model": 0.64}]
+_games41 = [{"game_pk": 7, "matchup": "A @ B", "kalshi_suffix": "s1",
+             "live": {}, "confirm": {}},
+            {"game_pk": 8, "matchup": "C @ D", "kalshi_suffix": "s2",
+             "live": {"state": "Live"}, "confirm": {}},
+            {"game_pk": 9, "matchup": "E @ F", "kalshi_suffix": "s3",
+             "live": {}, "confirm": {}}]
+import kalshi_mlb as _km41
+_orig41 = (B._game_sim, B._price_cands, _km41.index, _km41.ticker_leg,
+           _ST.DB_PATH)
+try:
+    B._game_sim = lambda g: {"cands": [dict(c) for c in _cands41],
+                             "sim": {"n": 100}}
+
+    def _fp41(cands, sfx, blend=True):
+        for c in cands:
+            c["price_cents"] = 80
+        return cands
+    B._price_cands = _fp41
+    _km41.index = lambda: {}
+    _km41.ticker_leg = lambda idx, sfx, kref: ("TK41-" + (sfx or "?"), 123)
+    _it41 = _pr41._build_all(_games41, _spec41["ks80"])
+    import combo_engine as _ce41
+    ck("the scan recipe: live games out, floor applied, best leg per game",
+       _it41 and _it41["n_games"] == 2
+       and all(g["legs"][0]["label"] == "Ace 6+ Ks" for g in _it41["groups"])
+       and abs(_it41["combined_prob_pct"] - round(0.85 * 0.85 * 100, 1)) < 1e-9
+       and abs(_it41["kalshi_payout_net_x"]
+               - round(1.0 / _ce41.leg_cost(80, net=True) ** 2, 2)) < 0.01,
+       "one leg per game, fee-aware payout, honest independent product")
+    _ST.DB_PATH = _os.path.join(_tf41.mkdtemp(prefix="guard-preset-"), "v.db")
+    _ST.init_db()
+    _it41["objective"] = "preset:ks80"
+    import sliplog as _sl41
+    _k41 = _sl41.log_from_item(_it41, sport="mlb", date="2026-08-29",
+                               tag="ks80")
+    _sl41.log_from_item(_it41, sport="mlb", date="2026-08-29", tag="ks80")
+    _rec41 = _ST.preset_records()
+    ck("every iteration logs under its recipe's tag; identical rebuilds dedup",
+       _k41 is not None and _rec41.get("ks80", {}).get("logged") == 1
+       and _rec41["ks80"]["graded"] == 0,
+       "the ledger's first-write-wins keys the LEG SET, so a lineup change "
+       "is a new row and a no-change rebuild is the same bet")
+finally:
+    (B._game_sim, B._price_cands, _km41.index, _km41.ticker_leg,
+     _ST.DB_PATH) = _orig41
+_js41 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tabs exist, match the server's recipe ids, and survive a re-render",
+   all(f'"{p}"' in _js41.split("_PRESET_TABS")[1][:300]
+       for p in ("custom", "hits5", "hr3", "ks80", "ml58", "rl80"))
+   and "applyPresetTab();" in _js41,
+   "the 20s slate refresh re-renders the maker; a preset tab must not snap "
+   "back to Custom")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

@@ -24,7 +24,7 @@ import errlog
 import store
 
 
-def log_from_item(item, sport="mlb", date=None):
+def log_from_item(item, sport="mlb", date=None, tag=None):
     """Record one built slip, or None when it isn't cleanly gradable.
 
     All-or-nothing on purpose: a slip with one unticketed or live leg can't be
@@ -58,7 +58,7 @@ def log_from_item(item, sport="mlb", date=None):
                    prob, indep if 0 < indep < 1 else None,
                    item.get("kalshi_payout_net_x"), item.get("ev_pct"),
                    item.get("objective"), json.dumps(legs),
-                   max(closes) if closes else None)
+                   max(closes) if closes else None, tag=tag)
     return key
 
 

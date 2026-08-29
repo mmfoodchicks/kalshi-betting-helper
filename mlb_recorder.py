@@ -213,6 +213,11 @@ def _loop():
             # off Kalshi settlement once their games are done.
             import sliplog
             sliplog.grade_due()
+            # The locked daily slips ride the same tick: rebuilt when the day
+            # rolls or a lineup posts / a starter is scratched, logged into
+            # the ledger each time. Cheap when nothing changed (a hash).
+            import presets
+            presets.tick()
         except Exception as _e:
             errlog.note("MREC-loop", _e)
         time.sleep(SAMPLE_INTERVAL)
