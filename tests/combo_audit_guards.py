@@ -8803,6 +8803,40 @@ try:
 finally:
     (B._game_sim, B._price_cands, _km41.index, _km41.ticker_leg,
      _ST.DB_PATH) = _orig41
+# The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
+# truly thinks a player can get 2 or it would be a good bet. It's only doing
+# 'no 3+ hits' which is like a 96% for most people." Day one proved it:
+# likeliest-first over the whole ladder is won by deep-line NO padding.
+_ok41 = _pr41._hits5_leg_ok
+ck("the reported padding, verbatim: a 96% 'NO 3+ hits' is OUT",
+   not _ok41({"kref": {"line": 3}, "side": "no", "marg": 0.96,
+              "marg_model": 0.96, "price_cents": 97})
+   and not _ok41({"kref": {"line": 2}, "side": "no", "marg": 0.88}),
+   "high headline, no payout, five slices of vig -- the fade of a deep line "
+   "never enters this recipe again")
+ck("the 1+ hit line always qualifies; deeper lines need CONVICTION",
+   _ok41({"kref": {"line": 1}, "side": "yes", "marg": 0.72})
+   and _ok41({"kref": {"line": 1}, "side": "no", "marg": 0.30})
+   and _ok41({"kref": {"line": 2}, "side": "yes", "marg": 0.42,
+              "marg_model": 0.42})
+   and _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30,
+              "price_cents": 24})
+   and not _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30,
+                  "price_cents": 28})
+   and not _ok41({"kref": {"line": 2}, "side": "yes", "marg_model": 0.30}),
+   '"truly thinks a player can get 2" = model 40%+ pre-blend; "a good bet" = '
+   "the ask underprices it by 5c+; unpriced deep lines have neither")
+_bmp41 = _insp.getsource(B.build_mixed_parlay)
+ck("leg_ok runs AFTER pricing (the rule needs the ask), before the gates",
+   _bmp41.index('_price_cands(cands, g.get("kalshi_suffix"))')
+   < _bmp41.index("leg_ok(c)")
+   < _bmp41.index("excluded_unpriced += n_all")
+   and "leg_ok=spec.get(" in _insp.getsource(_pr41._build_top))
+ck("a recipe change rebuilds today's slips at deploy, not at next lineup",
+   '"rev": REV' in _insp.getsource(_pr41.build_all)
+   and 'cur.get("rev") == REV' in _insp.getsource(_pr41.tick),
+   "boardshare persists across the swap; without the rev stamp an edited "
+   "recipe would keep serving the old slip until a lineup posted")
 _js41 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tabs exist, match the server's recipe ids, and survive a re-render",
    all(f'"{p}"' in _js41.split("_PRESET_TABS")[1][:300]

@@ -4028,7 +4028,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        legs_mode="prefer", payout_mode="off", conn="or", types=None,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
-                       progress_token=None, sides=None, min_edge_c=None):
+                       progress_token=None, sides=None, min_edge_c=None,
+                       leg_ok=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -4189,6 +4190,11 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                      if c["label"] not in have]
             cands = cands + extra
         _price_cands(cands, g.get("kalshi_suffix"))
+        # A caller-supplied per-leg rule, applied AFTER pricing so the rule can
+        # see the ask (the locked presets' "a 2+ hits line only as a conviction
+        # bet" needs the edge). None = every leg passes, exactly as before.
+        if leg_ok is not None:
+            cands = [c for c in cands if leg_ok(c)]
         # ONLY BETTABLE LEGS. A leg with no Kalshi market cannot go on a real
         # slip -- the maker used to include them anyway (EV-neutral at fair
         # value), which built slips the user then could not place: "no Kalshi

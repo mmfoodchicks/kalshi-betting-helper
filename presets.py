@@ -21,6 +21,39 @@ import time
 import errlog
 
 NAME = "mlb_presets"          # boardshare key: one build, every worker serves it
+# Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
+# that edits a locked rule replaces today's slips immediately instead of
+# waiting for the next lineup to post.
+REV = 2
+
+# The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
+# truly thinks a player can get 2 or it would be a good bet. It's only doing
+# 'no 3+ hits' which is like 96% for most people." The first live day proved
+# the point: likeliest-first over the whole hit ladder is won by deep-line NO
+# padding -- high headline, no payout, negative EV after five slices of vig.
+_HIT2_CONVICTION = 0.40    # "truly thinks": the model has 2+ hits at 40%+
+_HIT2_EDGE_C = 5.0         # "a good bet": pre-blend model beats the ask by 5c+
+                           # (edge mode's own bar for a real disagreement)
+
+
+def _hits5_leg_ok(c):
+    """1+ hit line only; a deeper line enters only as a CONVICTION bet:
+    YES side, and either the model genuinely likes it (>= _HIT2_CONVICTION
+    pre-blend) or the ask underprices it by _HIT2_EDGE_C+. Fades of the deep
+    lines -- the 96% 'NO 3+ hits' padding -- are out entirely."""
+    line = (c.get("kref") or {}).get("line")
+    if line == 1:
+        return True
+    if c.get("side", "yes") != "yes":
+        return False
+    p = (c.get("marg_model") if c.get("marg_model") is not None
+         else c.get("marg"))
+    if p is None:
+        return False
+    if p >= _HIT2_CONVICTION:
+        return True
+    px = c.get("price_cents")
+    return bool(px) and p * 100.0 - px >= _HIT2_EDGE_C
 
 # kind "top":  the N likeliest legs of the type, chosen by the combo maker's
 #              own frontier (objective "safe" = likeliest slip at exactly N).
@@ -30,8 +63,10 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # ("it keeps giving me no's" is how the sides control was born).
 PRESETS = (
     {"id": "hits5", "label": "5 Hits", "emoji": "🖐️", "kind": "top",
-     "types": ("Hit",), "n_legs": 5, "sides": None,
-     "desc": "The 5 likeliest hit props on the board, YES or NO."},
+     "types": ("Hit",), "n_legs": 5, "sides": None, "leg_ok": _hits5_leg_ok,
+     "desc": "The 5 likeliest 1+ hit props. A 2+ line only sneaks in as a "
+             "real conviction bet (model 40%+, or the ask underprices it "
+             "by 5¢+)."},
     {"id": "hr3", "label": "3 Home Runs", "emoji": "💣", "kind": "top",
      "types": ("HR",), "n_legs": 3, "sides": frozenset(("yes",)),
      "desc": "The 3 likeliest home runs to HAPPEN. YES only, locked."},
@@ -73,7 +108,8 @@ def _build_top(games, spec):
         games, n_legs=n, target_pct=5, cap_pct=None, target_payout=0,
         max_legs_per_game=n, max_total_legs=n,
         legs_mode="require", payout_mode="off", objective="safe",
-        include_live=False, types=set(spec["types"]), sides=spec["sides"])
+        include_live=False, types=set(spec["types"]), sides=spec["sides"],
+        leg_ok=spec.get("leg_ok"))
 
 
 def _build_all(games, spec):
@@ -174,8 +210,8 @@ def build_all(date, games, sig):
                         "log_note": (None if key else
                                      "not in the ledger: needs 2+ legs, all "
                                      "with Kalshi tickets, pre-game")}
-    return {"date": date, "sig": sig, "built_ts": int(time.time()),
-            "presets": out}
+    return {"date": date, "sig": sig, "rev": REV,
+            "built_ts": int(time.time()), "presets": out}
 
 
 def tick(force=False):
@@ -198,7 +234,7 @@ def tick(force=False):
         return 0                    # nothing pre-game left today
     cur, _age = boardshare.get(NAME, None)
     if (not force and cur and cur.get("date") == date
-            and cur.get("sig") == sig):
+            and cur.get("sig") == sig and cur.get("rev") == REV):
         return 0
     payload = build_all(date, games, sig)
     boardshare.put(NAME, payload)
