@@ -3897,7 +3897,8 @@ def api_baseball_presets():
         return jsonify({"status": "building", "records": records,
                         "best_wins": best_wins}), 202
     return jsonify({**payload, "age_s": round(age), "records": records,
-                    "best_wins": best_wins})
+                    "best_wins": best_wins,
+                    "best": presets.best_today(payload, records)})
 
 
 @app.route("/api/baseball/hits")

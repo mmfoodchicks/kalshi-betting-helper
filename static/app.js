@@ -1056,15 +1056,49 @@ const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] :
 // display only. Custom = the ordinary maker, untouched.
 const _PRESET_TABS = [["custom", "⚙️ Custom"], ["hits5", "🖐️ 5 Hits"],
   ["hr3", "💣 3 HR"], ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"],
-  ["rl80", "📏 RL 80%+"]];
+  ["rl80", "📏 RL 80%+"], ["tot80", "📊 Totals 80%+"]];
 let _presetSel = "custom";
 let _presetData = null, _presetFetchTs = 0, _presetPoll = null;
 
 function showPreset(pid) { _presetSel = pid; applyPresetTab(); }
 
+// Shared fetch (60s cache) for the preset tabs, the wall, and the crown.
+async function _fetchPresets() {
+  if (_presetData && Date.now() - _presetFetchTs < 60000) return _presetData;
+  const r = await fetch("/api/baseball/presets");
+  _presetData = await r.json();
+  _presetFetchTs = Date.now();
+  return _presetData;
+}
+
+// The daily crown: the server scores every recipe's CURRENT slip -- fee-aware
+// EV, adjusted by the recipe's own graded record once it has one -- and names
+// the day's best bet. Decorates the tab row so the verdict is visible without
+// opening a single preset.
+async function decorateBestBet() {
+  try {
+    const d = await _fetchPresets();
+    const b = d && d.best;
+    const line = $("presetBestLine");
+    const tabs = $("presetTabs");
+    if (!b || !tabs) { if (line) line.innerHTML = ""; return; }
+    tabs.querySelectorAll(".preset-tab").forEach((btn) => {
+      const crowned = btn.dataset.pid === b.id;
+      btn.style.boxShadow = crowned ? "0 0 0 1px var(--yes)" : "";
+      if (crowned && !btn.textContent.startsWith("👑")) btn.textContent = "👑 " + btn.textContent;
+      if (!crowned) btn.textContent = btn.textContent.replace(/^👑 /, "");
+    });
+    if (line) {
+      const neg = (b.ev_pct != null && b.ev_pct < 0);
+      line.innerHTML = `👑 <b>${neg ? "Least-bad today" : "Best bet today"}: ${b.emoji || ""} ${b.label}</b> - EV <span class="ev ${b.ev_pct >= 0 ? "pos" : "neg"}">${b.ev_pct >= 0 ? "+" : ""}${b.ev_pct}%</span> · ${b.prob_pct}% to cash · pays ${b.payout_x}×${b.record_note ? ` · ${b.record_note}` : ""}${neg ? ` · <span style="color:var(--muted)">even the best recipe is -EV right now; passing is a position too</span>` : ""}`;
+    }
+  } catch (e) { /* the crown is decoration - never break the slate over it */ }
+}
+
 function applyPresetTab() {
   const tabs = $("presetTabs");
   if (!tabs) return;
+  decorateBestBet();       // the crown survives the 20s re-render too
   tabs.querySelectorAll(".preset-tab").forEach((b) =>
     b.style.opacity = b.dataset.pid === _presetSel ? "1" : "0.55");
   const mk = document.querySelector(".combomaker");
@@ -1083,13 +1117,9 @@ function applyPresetTab() {
 async function renderPresetBox() {
   const box = $("presetBox");
   if (!box) return;
-  if (!_presetData || Date.now() - _presetFetchTs > 60000) {
-    try {
-      const r = await fetch("/api/baseball/presets");
-      _presetData = await r.json();
-      _presetFetchTs = Date.now();
-    } catch (e) { box.innerHTML = `<div class="small">Couldn't load presets - retrying…</div>`; }
-  }
+  try {
+    await _fetchPresets();
+  } catch (e) { box.innerHTML = `<div class="small">Couldn't load presets - retrying…</div>`; }
   const d = _presetData;
   if (!d) return;
   if (d.status === "building" || d.error) {
@@ -2124,8 +2154,9 @@ async function loadBaseball(silent) {
       // with server-side constants for knobs (presets.py), auto-built every
       // day, rebuilt when lineups post, logged + graded as a unit. Selecting
       // one hides the custom maker; "Custom" brings it back untouched.
-      html += `<div class="small" id="presetTabs" style="margin:8px 0 4px">${_PRESET_TABS.map(([pid, lbl]) =>
+      html += `<div class="small" id="presetTabs" style="margin:8px 0 2px">${_PRESET_TABS.map(([pid, lbl]) =>
         `<button class="leanchip preset-tab" data-pid="${pid}" onclick="showPreset('${pid}')" style="cursor:pointer;margin-right:4px">${lbl}</button>`).join("")}</div>
+        <div id="presetBestLine" class="small" style="margin:0 0 4px"></div>
         <div id="presetBox" class="hidden"></div>`;
       html += `<div class="combomaker">
         🎯 <b>Combo maker</b>
@@ -2675,12 +2706,14 @@ async function loadHits() {
   if (!box) return;
   box.innerHTML = `<div class="empty">Loading the wall…</div>`;
   try {
-    const d = await (await fetch("/api/baseball/presets")).json();
+    const d = await _fetchPresets();
     const wins = d.best_wins || {};
     const recs = d.records || {};
+    const bestId = (d.best || {}).id;
     const cols = _PRESET_TABS.filter(([pid]) => pid !== "custom").map(([pid, lbl]) => {
       const w = wins[pid];
       const r = recs[pid];
+      const crowned = pid === bestId;
       const recTxt = r && r.graded
         ? `<div class="small" style="color:var(--muted)">${r.won}-${r.graded - r.won} all time</div>` : "";
       const body = w
@@ -2691,8 +2724,8 @@ async function loadHits() {
                : `<li class="small">✅ <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span> <b>${l.pick}</b> <span style="color:var(--muted)">${l.matchup || ""}${l.cents != null ? " · " + l.cents + "¢" : ""}</span></li>`).join("")}
            </ul>`
         : `<div class="empty" style="padding:12px 4px">No win yet - the recipe runs every day; its first cash lands here on its own.</div>`;
-      return `<div class="combo" style="flex:1 1 230px;min-width:210px">
-        <div><b>${lbl}</b></div>${recTxt}${body}</div>`;
+      return `<div class="combo" style="flex:1 1 230px;min-width:210px${crowned ? ";box-shadow:0 0 0 1px var(--yes)" : ""}">
+        <div><b>${lbl}</b>${crowned ? ` <span class="small" title="the server scores every recipe's CURRENT slip - fee-aware EV adjusted by its own graded record - and crowns the day's best">👑 today's best bet</span>` : ""}</div>${recTxt}${body}</div>`;
     }).join("");
     box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">${cols}</div>
       <div class="small" style="margin-top:8px;color:var(--muted)">A slip only hangs here once EVERY leg settled the bought way on Kalshi - the payout shown is what it actually paid, fees in. Ties go to the bigger payout.</div>`;

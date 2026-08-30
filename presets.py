@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 4
+REV = 5
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -88,7 +88,44 @@ PRESETS = (
     {"id": "rl80", "label": "Run lines 80%+", "emoji": "📏", "kind": "all",
      "types": ("Run line",), "floor": 0.80, "sides": None,
      "desc": "Every game's best run line at 80%+ likely."},
+    {"id": "tot80", "label": "Totals 80%+", "emoji": "📊", "kind": "all",
+     "types": ("Total",), "floor": 0.80, "sides": None,
+     "desc": "Every game's best total-runs line at 80%+ likely - whichever "
+             "side clears the bar (Over 3.5 and Under 11.5 alike; both "
+             "directions are real candidates)."},
 )
+
+
+def best_today(payload, records):
+    """Crown ONE recipe for the day. 'Best on paper' is the start, not the
+    verdict: the score is the slip's fee-aware EV, adjusted by the recipe's
+    OWN graded record once it has one (>=5 graded) — a recipe that keeps
+    beating its claimed odds has earned a thumb on the scale, one that keeps
+    missing them gets docked, capped at ±10 EV points so history colors the
+    paper number without drowning it. Returns None until any recipe has a
+    priced slip."""
+    best = None
+    for pid, p in (payload.get("presets") or {}).items():
+        it = p.get("item")
+        if not it or it.get("ev_pct") is None:
+            continue
+        score = float(it["ev_pct"])
+        note = None
+        r = (records or {}).get(pid) or {}
+        graded = r.get("graded") or 0
+        if graded >= 5:
+            delta = (r.get("won", 0) - (r.get("expected") or 0.0)) / graded
+            score += max(-10.0, min(10.0, 50.0 * delta))
+            note = (f"record {r.get('won', 0)}-{graded - r.get('won', 0)} vs "
+                    f"{r.get('expected')} expected")
+        cand = {"id": pid, "label": p.get("label"), "emoji": p.get("emoji"),
+                "score": round(score, 1), "ev_pct": it.get("ev_pct"),
+                "prob_pct": it.get("combined_prob_pct"),
+                "payout_x": it.get("kalshi_payout_net_x"),
+                "record_note": note}
+        if best is None or cand["score"] > best["score"]:
+            best = cand
+    return best
 
 
 def slate_sig(games):

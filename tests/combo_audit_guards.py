@@ -8711,14 +8711,19 @@ import presets as _pr41
 import tempfile as _tf41
 
 _spec41 = {s["id"]: s for s in _pr41.PRESETS}
-ck("the five recipes, verbatim, hard-locked as server constants",
-   set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80"}
+ck("the six recipes, verbatim, hard-locked as server constants",
+   set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80", "tot80"}
    and _spec41["hits5"]["n_legs"] == 5 and _spec41["hits5"]["types"] == ("Hit",)
    and _spec41["hr3"]["n_legs"] == 3 and _spec41["hr3"]["types"] == ("HR",)
    and _spec41["ks80"]["floor"] == 0.80 and _spec41["ks80"]["types"] == ("Ks",)
    and _spec41["ml58"]["floor"] == 0.58 and _spec41["ml58"]["types"] == ("ML",)
    and _spec41["rl80"]["floor"] == 0.80
-   and _spec41["rl80"]["types"] == ("Run line",))
+   and _spec41["rl80"]["types"] == ("Run line",)
+   and _spec41["tot80"]["floor"] == 0.80
+   and _spec41["tot80"]["types"] == ("Total",)
+   and _spec41["tot80"]["sides"] is None,
+   "totals need no sides logic: Over AND Under are both YES-side candidates "
+   "sharing one group per game, so the unit rule picks whichever clears 80%")
 ck("home runs are YES only; every other recipe may take either side",
    _spec41["hr3"]["sides"] == frozenset(("yes",))
    and all(_spec41[p]["sides"] is None
@@ -9048,12 +9053,52 @@ _apy43 = open(_os.path.join(_root, "app.py")).read()
 _js43 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the endpoint serves the wall on both return shapes, and the tab draws it",
    _apy43.count('"best_wins": best_wins') == 2
-   and 'fetch("/api/baseball/presets")'
+   and "await _fetchPresets()"
    in _js43.split("async function loadHits")[1][:500]
    and "No win yet" in _js43
    and '$("hitsResults").dataset.loaded' in _js43,
    "the old gate read the removed hitsDate element and would have thrown "
    "on the first tap of the tab")
+
+print()
+print("=" * 72)
+print("The daily crown: best on paper is the start, the record is the say")
+print("=" * 72)
+# The ask: "read the odds of all of the tabs and highlight the one with the
+# best odds. It may not on paper have the best odds but it reads every
+# parameter." Score = the slip's fee-aware EV, adjusted (capped ±10) by the
+# recipe's own graded record once >=5 slips have settled.
+_pl44 = {"presets": {
+    "ml58": {"item": {"ev_pct": 8.0, "combined_prob_pct": 40.0,
+                      "kalshi_payout_net_x": 2.7}, "label": "ML 58%+"},
+    "ks80": {"item": {"ev_pct": 5.0, "combined_prob_pct": 20.0,
+                      "kalshi_payout_net_x": 6.2}, "label": "Ks 80%+"},
+    "hr3": {"item": None, "label": "3 Home Runs"}}}
+ck("with no history, the best paper EV wears the crown",
+   _pr41.best_today(_pl44, {})["id"] == "ml58")
+_rec44 = {"ks80": {"graded": 8, "won": 6, "expected": 2.0}}
+_b44 = _pr41.best_today(_pl44, _rec44)
+ck("a recipe beating its claimed odds can out-crown better paper",
+   _b44["id"] == "ks80" and _b44["score"] == 15.0
+   and "record 6-2" in (_b44["record_note"] or ""),
+   "(6 wins - 2.0 expected)/8 graded caps the bonus at +10 EV points: "
+   "history colors the paper number without drowning it")
+ck("a thin record (under 5 graded) buys nothing",
+   _pr41.best_today(_pl44, {"ks80": {"graded": 4, "won": 4,
+                                     "expected": 0.5}})["id"] == "ml58")
+ck("an empty day crowns no one, honestly",
+   _pr41.best_today({"presets": {"hr3": {"item": None}}}, {}) is None)
+_apy44 = open(_os.path.join(_root, "app.py")).read()
+_js44 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the crown ships in the payload and decorates tabs AND the wall",
+   '"best": presets.best_today(payload, records)' in _apy44
+   and '"tot80", "📊 Totals 80%+"' in _js44
+   and "decorateBestBet();"
+   in _js44.split("function applyPresetTab")[1][:300]
+   and "Least-bad today" in _js44
+   and "today's best bet" in _js44,
+   'when even the best recipe is -EV the line says "Least-bad today ... '
+   'passing is a position too" -- honesty beats flattery')
 
 print()
 print("=" * 72)
