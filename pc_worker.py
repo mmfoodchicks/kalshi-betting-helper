@@ -121,18 +121,52 @@ def _sync_kind(url, tok, kind, min_fresher_s=60):
 
 
 def _task_mlb_sims(url, tok):
+    import datetime
     import baseball
     import clock
-    have = _api(url, tok, "/api/art/have?kind=gamesim").get("have") or {}
-    server_has = {n for n, age in have.items() if age < 1800}
-    date = clock.today_et().isoformat()
-    games = baseball.analyze_slate(date, date[:4])
-    # Pre-game only: a live game is priced by the server's live-resume path,
-    # never by this pregame cache -- simming it here is upload noise.
-    todo = [g for g in games
-            if (g.get("live") or {}).get("state") not in ("Final", "Live")
-            and g.get("game_pk") and f"{g['game_pk']}.pkl" not in server_has]
-    print(f"[vigil-pc] MLB: {len(todo)} game sim(s) needed")
+    have_resp = _api(url, tok, "/api/sim/have")
+    have = have_resp.get("have") or {}
+    # sim/have keys are bare game pks (art/have's were "<pk>.pkl" filenames);
+    # normalize so the membership test below can't silently never match.
+    server_has = {str(n).removesuffix(".pkl")
+                  for n, age in have.items() if age < 1800}
+    today = clock.today_et().isoformat()
+    # Which DAYS to sim. Hard-coding today made the PC useless every evening:
+    # by 8pm all of today's games are live, todo comes back empty, and the
+    # server crawls tomorrow's cold slate alone on its half core while this
+    # machine idles behind a green light. So: today, plus whatever date the
+    # server's warmer is on (it follows the slate a user is viewing), plus
+    # tomorrow once today has nothing pre-game left -- the midnight roll then
+    # lands on already-warm sims.
+    dates = [today]
+    wd = have_resp.get("warm_date")
+    if wd and wd not in dates:
+        dates.append(wd)
+    todo, seen_pk = [], set()
+    for date in dates:
+        try:
+            games = baseball.analyze_slate(date, date[:4])
+        except Exception as e:
+            print(f"[vigil-pc] MLB slate {date}: failed "
+                  f"({type(e).__name__}: {e}) - skipping that day")
+            continue
+        # Pre-game only: a live game is priced by the server's live-resume
+        # path, never by this pregame cache -- simming it is upload noise.
+        day_todo = [g for g in games
+                    if (g.get("live") or {}).get("state") not in ("Final", "Live")
+                    and g.get("game_pk") and g["game_pk"] not in seen_pk
+                    and str(g["game_pk"]) not in server_has]
+        seen_pk.update(g["game_pk"] for g in day_todo)
+        todo.extend(day_todo)
+        if date == today and not any(
+                (g.get("live") or {}).get("state") not in ("Final", "Live")
+                for g in games):
+            nxt = (datetime.date.fromisoformat(today)
+                   + datetime.timedelta(days=1)).isoformat()
+            if nxt not in dates:
+                dates.append(nxt)
+    print(f"[vigil-pc] MLB: {len(todo)} game sim(s) needed "
+          f"across {'/'.join(dates)}")
     for i, gm in enumerate(todo, 1):
         pk = gm.get("game_pk")
         # The server asked because ITS copy is over 30 minutes old. Answering

@@ -1051,6 +1051,16 @@ function updateComboSidesHint() {
 }
 const cfv = (id, dflt) => (comboFormVals[id] !== undefined ? comboFormVals[id] : dflt);
 
+// The DAY, in the app's timezone. new Date().toISOString() is UTC, which
+// flips to "tomorrow" at 8pm ET / 7pm CT -- so the baseball page quietly
+// rolled a day early every evening while the backend (all ET) still meant
+// today: the warmer chased tomorrow's cold slate on the shared core and the
+// PC, honestly on today, saw nothing to do.
+function todayET(offsetDays = 0) {
+  return new Date(Date.now() + offsetDays * 86400000)
+    .toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
 // ---- Locked daily slips (presets) -------------------------------------------
 // The recipes live server-side as constants (presets.py); these labels are
 // display only. Custom = the ordinary maker, untouched.
@@ -2821,11 +2831,9 @@ let _edgeData = null;
 function initEdges() {
   const sel = $("edgeDate");
   if (!sel) return;
-  const today = new Date();
   let opts = "";
   for (let i = 0; i < 4; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = todayET(i);   // ET, not UTC - see todayET()
     opts += `<option value="${iso}">${i === 0 ? "Today" : i === 1 ? "Tomorrow" : iso}</option>`;
   }
   sel.innerHTML = opts;
@@ -3902,7 +3910,7 @@ function initNBA() {
   const dt = $("nbaDate");
   if (dt && !dt.dataset.wired) {
     dt.dataset.wired = "1";
-    dt.value = new Date().toISOString().slice(0, 10);
+    dt.value = todayET();
     dt.addEventListener("change", () => { _nbaData = null; $("nbaResults").dataset.loaded = ""; loadNBA(0); });
   }
   if (!$("nbaResults").dataset.loaded) { $("nbaResults").dataset.loaded = "1"; loadNBA(0); }
@@ -3942,7 +3950,7 @@ function initNHL() {
   const dt = $("nhlDate");
   if (dt && !dt.dataset.wired) {
     dt.dataset.wired = "1";
-    dt.value = new Date().toISOString().slice(0, 10);
+    dt.value = todayET();
     dt.addEventListener("change", () => { _nhlData = null; $("nhlResults").dataset.loaded = ""; loadNHL(0); });
   }
   if (!$("nhlResults").dataset.loaded) { $("nhlResults").dataset.loaded = "1"; loadNHL(0); }
@@ -5489,7 +5497,7 @@ async function initSim() {
     $("simWxCity").innerHTML = Object.entries(wx).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
     $("simWxCity").addEventListener("change", fillSimWxDates);
   } catch (e) {}
-  $("simGameDate").value = new Date().toISOString().slice(0, 10);
+  $("simGameDate").value = todayET();
   $("simGameDate").addEventListener("change", fillSimGames);
 }
 function simModeChange() {
@@ -6117,7 +6125,7 @@ async function buildRecommended() {
   const cats = [...document.querySelectorAll("#combineCats input:checked")].map((i) => i.value);
   const out = $("cmbRecOut");
   if (!cats.length) { out.innerHTML = `<div class="empty">Check one or more sports above first.</div>`; return; }
-  const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
+  const date = ($("bbDate") && $("bbDate").value) || todayET();
   out.innerHTML = `<div class="empty">Building the best combos across ${cats.length} sport${cats.length > 1 ? "s" : ""}…</div>`;
   try {
     const d = await (await fetch(`/api/combine/recommended?cats=${cats.join(",")}&date=${date}${cmbTypesParam()}${cmbLiveParam()}`)).json();
@@ -6185,7 +6193,7 @@ async function buildCombine() {
   const legsMode = ($("cmbLegsMode") || {}).value || "prefer";
   const payoutMode = ($("cmbPayoutMode") || {}).value || "off";
   const conn = ($("cmbConn") || {}).value || "or";
-  const date = ($("bbDate") && $("bbDate").value) || new Date().toISOString().slice(0, 10);
+  const date = ($("bbDate") && $("bbDate").value) || todayET();
   out.innerHTML = `<div class="empty">Gathering legs across ${cats.length} categories… (a few seconds)</div>`;
   try {
     const q = `cats=${cats.join(",")}&legs=${n}&target=${t}&payout=${p}&date=${date}`
@@ -6502,7 +6510,7 @@ async function init() {
     $("bbetsResults").dataset.loaded = "1";
     loadBestBets();
   }
-  $("bbDate").value = new Date().toISOString().slice(0, 10);
+  $("bbDate").value = todayET();
   $("bbBtn").addEventListener("click", () => loadBaseball());
   $("bbRefresh").addEventListener("click", () => loadBaseball(true));
   if ($("valBtn")) $("valBtn").addEventListener("click", loadValue);

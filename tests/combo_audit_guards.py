@@ -7495,10 +7495,10 @@ ck("adopted sims land atomically where every worker reads",
    "pk can never be a path")
 _pw20 = open(_os.path.join(_root, "pc_worker.py")).read()
 ck("the worker asks what the server needs before simulating",
-   "/api/art/have?kind=gamesim" in _pw20 and "schema" in _pw20
+   '_api(url, tok, "/api/sim/have")' in _pw20 and "schema" in _pw20
    and '("Final", "Live")' in _pw20,
    "re-uploading what the server already has fresh is pure waste; simming "
-   "finished games is worse")
+   "finished games is worse (sim/have also carries warm_date now)")
 _bat20 = open(_os.path.join(_root, "vigil-pc.bat")).read()
 _loop20 = open(_os.path.join(_root, "pc_loop.py")).read()
 ck("the bootstrap is frozen and delegates every brain to the repo",
@@ -9099,6 +9099,37 @@ ck("the crown ships in the payload and decorates tabs AND the wall",
    and "today's best bet" in _js44,
    'when even the best recipe is -EV the line says "Least-bad today ... '
    'passing is a position too" -- honesty beats flattery')
+
+print()
+print("=" * 72)
+print("The app's day is the ET day, and the PC follows the slate being viewed")
+print("=" * 72)
+# Two halves of one evening bug. The date picker defaulted to
+# new Date().toISOString() -- the UTC day, which flips to "tomorrow" at 8pm
+# ET -- so every evening the page silently rolled a day early, the warmer
+# chased tomorrow's cold slate on the shared half-core, and the PC (honestly
+# hard-coded to today) reported "0 sims needed" and idled behind a green
+# light.
+_js45 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("every 'today' default in the client is the ET day, never the UTC day",
+   "new Date().toISOString().slice(0, 10)" not in _js45
+   and 'timeZone: "America/New_York"' in _js45
+   and '$("bbDate").value = todayET()' in _js45
+   and "todayET(i)" in _js45,
+   "the backend is ET everywhere; a UTC picker made the page roll to "
+   "tomorrow at 8pm ET / 7pm CT")
+_pcw45 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC sims today, the warmer's date, and tomorrow once today is done",
+   'have_resp.get("warm_date")' in _pcw45
+   and "datetime.timedelta(days=1)" in _pcw45
+   and '"warm_date": (_warm_json_read(_WARM_STATUS) or {}).get("date")'
+   in open(_os.path.join(_root, "app.py")).read(),
+   "the midnight roll lands on already-warm sims instead of a cold slate")
+ck("sim/have keys are bare pks and the PC normalizes before membership",
+   'str(n).removesuffix(".pkl")' in _pcw45
+   and 'str(g["game_pk"]) not in server_has' in _pcw45,
+   "art/have keys were '<pk>.pkl'; the unnormalized test would silently "
+   "never match and the PC would re-sim the whole slate every cycle")
 
 print()
 print("=" * 72)

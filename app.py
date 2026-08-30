@@ -636,8 +636,12 @@ def api_sim_have():
     expects -- the PC worker's 'what do you still need' question."""
     if not _pc_auth_ok():
         return jsonify({"error": "auth"}), 403
+    # The date the warmer is currently on (it follows whatever slate a user
+    # is viewing), so the PC can sim THAT day too instead of idling on a
+    # today whose games have all gone live.
     return jsonify({"have": baseball.sim_disk_ages(),
                     "schema": baseball.GAME_SIM_SCHEMA,
+                    "warm_date": (_warm_json_read(_WARM_STATUS) or {}).get("date"),
                     "commit": os.environ.get("RENDER_GIT_COMMIT", "")[:12]})
 
 
