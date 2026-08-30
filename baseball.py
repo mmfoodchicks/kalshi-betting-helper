@@ -2686,6 +2686,47 @@ def job_drop(token):
         errlog.note("BB-job_drop", _e)
 
 
+# ---- The combo build SLOT: one MLB build at a time, newest wins ------------
+# Every Build click used to start ANOTHER background build while the old one
+# kept running -- and the first preset tap after a deploy piled a six-recipe
+# build on top. Two or three concurrent CPU-bound builds on a shared half-core
+# starve the platform's health probe, which restarts the instance as "failed"
+# while it was merely busy: from the phone, "reconnecting everywhere". The
+# slot is on the shared disk so all workers agree; taking it is unconditional
+# (the newest click IS the user's current intent), and the superseded build
+# notices at its next game boundary and stops.
+_SLOT_PATH = _os.path.join(_JOB_DIR, "combo-slot.json")
+
+
+def combo_slot_take(token):
+    try:
+        import json
+        import tempfile
+        _os.makedirs(_JOB_DIR, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=_JOB_DIR, suffix=".tmp")
+        with _os.fdopen(fd, "w") as fh:
+            json.dump({"token": token, "ts": _time.time()}, fh)
+        _os.replace(tmp, _SLOT_PATH)
+    except Exception as _e:
+        errlog.note("BB-slot-take", _e)
+
+
+def combo_slot_holder(max_age=1800):
+    """The token currently entitled to build, or None. A stale slot (a build
+    that died with its worker) entitles nobody and blocks nothing."""
+    try:
+        import json
+        if _time.time() - _os.stat(_SLOT_PATH).st_mtime > max_age:
+            return None
+        with open(_SLOT_PATH) as fh:
+            return json.load(fh).get("token")
+    except OSError:
+        return None
+    except Exception as _e:
+        errlog.note("BB-slot-read", _e)
+        return None
+
+
 def job_heartbeat(token):
     """Freshen the job file's mtime without rewriting it. The build thread
     beats every ~20s from a side thread, so a stale mtime can only mean the
@@ -4029,7 +4070,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
                        progress_token=None, sides=None, min_edge_c=None,
-                       leg_ok=None):
+                       leg_ok=None, abort_cb=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -4121,6 +4162,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         # here made `at` outrun `total` (the bar clamps, but the count lied).
         if state == "Live" and not include_live:
             continue
+        # A superseded build stops HERE, at a game boundary, before paying for
+        # another simulation. abort_cb reads the combo slot: the newest Build
+        # click owns it, and two concurrent CPU-bound builds on a shared half
+        # core starve the health probe into restarting the instance.
+        if abort_cb is not None and abort_cb():
+            raise RuntimeError("superseded by a newer build")
         _was_cached = _game_sim_cached(g)
         progress_enter(progress_token)
         live_gs = None

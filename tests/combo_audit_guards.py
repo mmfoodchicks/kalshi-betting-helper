@@ -9165,6 +9165,59 @@ ck("the crypto refresher and update watcher idle when the app is hidden",
 
 print()
 print("=" * 72)
+print("One combo build at a time: the newest click owns the CPU")
+print("=" * 72)
+# The report: "reconnecting everywhere, then I can't switch tabs -- when I'm
+# switching between the pre-made tabs or making multiple combos back to
+# back." Diagnosis: every Build click started ANOTHER background build while
+# the old one kept running, and the first preset tap piled six recipe builds
+# on top. Concurrent CPU-bound builds on a shared half-core starve the
+# platform's health probe, which restarts the instance as "failed" while it
+# was merely busy -- a total blackout from the phone. The combo SLOT caps it:
+# newest build takes it unconditionally, the superseded build stops at its
+# next game boundary, preset rebuilds defer while a user holds it.
+import tempfile as _tf47
+_slot47 = B._SLOT_PATH
+B._SLOT_PATH = _os.path.join(_tf47.mkdtemp(prefix="guard-slot-"), "slot.json")
+try:
+    B.combo_slot_take("tokA")
+    _hA47 = B.combo_slot_holder()
+    B.combo_slot_take("tokB")
+    _hB47 = B.combo_slot_holder()
+    _os.utime(B._SLOT_PATH, (_tm.time() - 2000,) * 2)
+    ck("the slot: newest take wins, a stale slot entitles nobody",
+       _hA47 == "tokA" and _hB47 == "tokB"
+       and B.combo_slot_holder() is None,
+       "a build that died with its worker must never block the next click")
+    _g47 = {"game_pk": 1, "matchup": "A @ B", "live": {}, "confirm": {}}
+    try:
+        B.build_mixed_parlay([_g47], n_legs=2, abort_cb=lambda: True)
+        _aborted47 = False
+    except RuntimeError as _e47:
+        _aborted47 = "superseded" in str(_e47)
+    ck("a superseded build stops at the game boundary, before paying for "
+       "another simulation", _aborted47)
+finally:
+    B._SLOT_PATH = _slot47
+_bmp47 = _insp.getsource(B.build_mixed_parlay)
+ck("the abort check sits before the sim, not after it",
+   _bmp47.index("abort_cb is not None and abort_cb()")
+   < _bmp47.index("_was_cached = _game_sim_cached"))
+_apy47 = open(_os.path.join(_root, "app.py")).read()
+ck("every Build takes the slot; the running build reads it per game",
+   _apy47.index("baseball.combo_slot_take(ptok)")
+   < _apy47.index('_run_job(ptok, _core, "COMBO-build")')
+   and "baseball.combo_slot_holder()" in _apy47
+   and "not in (None, ptok)" in _apy47,
+   "a missing/stale slot aborts nothing -- benefit of the doubt runs toward "
+   "finishing the build")
+ck("preset rebuilds defer while a user's build holds the slot",
+   "combo_slot_holder(max_age=600)" in _insp.getsource(_pr41.tick),
+   "six recipe builds stacking onto a user's build is exactly the "
+   "concurrency that starves the health probe; the next tick retries")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

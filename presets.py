@@ -355,6 +355,14 @@ def tick(force=False):
     if (not force and cur and cur.get("rev") == REV
             and time.time() - (cur.get("built_ts") or 0) < 300):
         return 0
+    # A USER's combo build owns the CPU outright -- six recipe builds
+    # stacking on top of it is exactly the concurrency that starves the
+    # health probe into an instance restart. The next tick retries.
+    try:
+        if baseball.combo_slot_holder(max_age=600):
+            return 0
+    except Exception as e:
+        errlog.note("PRESET-slot", e)
     payload = build_all(date, games, sig)
     ensure_logged(payload)
     boardshare.put(NAME, payload)

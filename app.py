@@ -3701,7 +3701,13 @@ def api_baseball_mixed():
                 conn=conn, game_sel=sel or None,
                 include_live=include_live, types=prop_types,
                 objective="balanced" if _opt else objective, max_bet=_mb,
-                progress_token=ptok, min_edge_c=min_edge)
+                progress_token=ptok, min_edge_c=min_edge,
+                # The newest Build click owns the combo slot; a build that
+                # lost it aborts at its next game boundary instead of racing
+                # the new one for the CPU the health probe also needs.
+                abort_cb=(None if not ptok else
+                          (lambda: baseball.combo_slot_holder()
+                           not in (None, ptok))))
 
         # ONE Kalshi book for the whole build (see kalshi_mlb.pinned): every
         # pass prices against the same snapshot, and the index can never
@@ -3805,6 +3811,9 @@ def api_baseball_mixed():
         # Exactly one worker wins the claim; everyone else just reports 202.
         if not baseball.job_claim(ptok):
             return jsonify({"status": "building", "token": ptok}), 202
+        # The newest build takes the slot unconditionally -- it IS the user's
+        # current intent; whatever was running yields at its next boundary.
+        baseball.combo_slot_take(ptok)
         _run_job(ptok, _core, "COMBO-build")
         return jsonify({"status": "building", "token": ptok}), 202
     return jsonify(_core())
