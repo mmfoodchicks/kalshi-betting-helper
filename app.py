@@ -3877,6 +3877,11 @@ def api_baseball_presets():
     except Exception as _e:
         errlog.note("APP-presets-records", _e)
         records = {}
+    try:
+        best_wins = store.preset_best_wins()
+    except Exception as _e:
+        errlog.note("APP-presets-wins", _e)
+        best_wins = {}
     if not payload:
         # First call before the recorder's first tick (fresh deploy): build
         # once in a claimed background thread; the client polls.
@@ -3889,8 +3894,10 @@ def api_baseball_presets():
                 finally:
                     boardshare.release(presets.NAME + "_kick")
             threading.Thread(target=_bg, daemon=True).start()
-        return jsonify({"status": "building", "records": records}), 202
-    return jsonify({**payload, "age_s": round(age), "records": records})
+        return jsonify({"status": "building", "records": records,
+                        "best_wins": best_wins}), 202
+    return jsonify({**payload, "age_s": round(age), "records": records,
+                    "best_wins": best_wins})
 
 
 @app.route("/api/baseball/hits")

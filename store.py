@@ -10,6 +10,7 @@ A "market" is one thing you're watching, e.g. "BTC above 63000, closing at
 This drives the running accuracy + Brier score the UI shows.
 """
 
+import json
 import os
 import sqlite3
 import time
@@ -197,17 +198,22 @@ def init_db():
                 max_close INTEGER,
                 graded INTEGER DEFAULT 0, won INTEGER, legs_hit INTEGER,
                 resolved_ts INTEGER,
-                tag TEXT
+                tag TEXT,
+                legs_disp TEXT
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_slip_graded ON slip_log(graded)")
         # `tag` marks slips built by a locked preset (presets.py) so each
-        # recipe accrues its own graded record. Added later; migrate old DBs.
+        # recipe accrues its own graded record; `legs_disp` carries the legs'
+        # DISPLAY text (the `legs` column is tickers only, which is enough to
+        # grade but not to show a winning slip on the wall). Added later;
+        # migrate old DBs.
         _slip_cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
-        if "tag" not in _slip_cols:
-            try:
-                c.execute("ALTER TABLE slip_log ADD COLUMN tag TEXT")
-            except Exception as _e:
-                errlog.note("ST-init-sliptag", _e)   # sibling worker won the race
+        for _col in ("tag TEXT", "legs_disp TEXT"):
+            if _col.split()[0] not in _slip_cols:
+                try:
+                    c.execute(f"ALTER TABLE slip_log ADD COLUMN {_col}")
+                except Exception as _e:
+                    errlog.note("ST-init-sliptag", _e)  # sibling won the race
 
         # Unified bet ledger (real bets you place, crypto or baseball or other).
         c.execute("""
@@ -517,18 +523,56 @@ def nfl_record():
 # ---- Slip ledger (the correlation claim, graded) ---------------------------
 def log_slip(sport, date, key, n_legs, n_games, prob, indep_prob,
              market_payout_x, ev_pct, objective, legs_json, max_close,
-             tag=None):
+             tag=None, legs_disp=None):
     """First build of a leg-set wins: the claim on record is the one made the
     first time this exact slip was assembled, pre-game."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO slip_log
                (ts, date, sport, key, n_legs, n_games, prob, indep_prob,
-                market_payout_x, ev_pct, objective, legs, max_close, tag)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                market_payout_x, ev_pct, objective, legs, max_close, tag,
+                legs_disp)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (int(time.time()), date, sport, key, n_legs, n_games, prob,
              indep_prob, market_payout_x, ev_pct, objective, legs_json,
-             max_close, tag))
+             max_close, tag, legs_disp))
+
+
+def preset_best_wins():
+    """Per preset tag, the biggest graded WIN on record — the wall of wins.
+    'Biggest' is the logged net payout; a slip qualifies only when every leg
+    settled the bought way (won=1). Rows logged before legs_disp existed fall
+    back to ticker text, which is ugly but true."""
+    with _lock, _conn() as c:
+        cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
+        if "tag" not in cols:
+            return {}
+        rows = c.execute(
+            "SELECT tag, date, prob, market_payout_x, n_legs, legs, "
+            "legs_disp, resolved_ts FROM slip_log "
+            "WHERE tag IS NOT NULL AND graded=1 AND won=1").fetchall()
+    best = {}
+    for r in rows:
+        px = r["market_payout_x"] or 0
+        cur = best.get(r["tag"])
+        if cur and px <= (cur.get("payout_x") or 0):
+            continue
+        disp = None
+        try:
+            disp = json.loads(r["legs_disp"]) if r["legs_disp"] else None
+        except ValueError:
+            disp = None
+        if disp is None:
+            try:
+                disp = [("NO - " if l.get("no") else "") + (l.get("tk") or "?")
+                        for l in json.loads(r["legs"] or "[]")]
+            except ValueError:
+                disp = []
+        best[r["tag"]] = {"date": r["date"],
+                          "prob_pct": round((r["prob"] or 0) * 100, 1),
+                          "payout_x": px, "n_legs": r["n_legs"],
+                          "legs": disp, "resolved_ts": r["resolved_ts"]}
+    return best
 
 
 def preset_records():

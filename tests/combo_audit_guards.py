@@ -8987,6 +8987,76 @@ ck("the dot updates BEFORE pollWarm's early returns, on every poll",
 
 print()
 print("=" * 72)
+print("The wall of wins: a slip hangs there only after every leg settled")
+print("=" * 72)
+# The ask: fill the neglected Hits tab with each preset's HIGHEST logged win
+# -- one column per recipe, empty until it cashes ("like the home run ones").
+import tempfile as _tf43
+_stdb43 = _ST.DB_PATH
+_ST.DB_PATH = _os.path.join(_tf43.mkdtemp(prefix="guard-wall-"), "v.db")
+try:
+    _ST.init_db()
+    _disp43 = _j42.dumps([{"pick": "Ace 6+ Ks", "side": "yes",
+                           "matchup": "A @ B", "cents": 80}] * 2)
+    _ST.log_slip("mlb", "2026-08-28", "wall-a", 2, 2, 0.70, 0.70, 1.5, 5.0,
+                 "preset:ks80", '[{"tk":"T1","no":0},{"tk":"T2","no":0}]',
+                 None, tag="ks80", legs_disp=_disp43)
+    _ST.log_slip("mlb", "2026-08-29", "wall-b", 2, 2, 0.20, 0.20, 4.8, 5.0,
+                 "preset:ks80", '[{"tk":"T3","no":0},{"tk":"T4","no":1}]',
+                 None, tag="ks80", legs_disp=_disp43)
+    _ST.log_slip("mlb", "2026-08-29", "wall-c", 2, 2, 0.10, 0.10, 9.9, 5.0,
+                 "preset:ks80", '[{"tk":"T5","no":0},{"tk":"T6","no":0}]',
+                 None, tag="ks80", legs_disp=_disp43)
+    _ST.log_slip("mlb", "2026-08-29", "wall-d", 3, 3, 0.02, 0.02, 50.0, 5.0,
+                 "preset:hr3", '[{"tk":"H1","no":0}]', None, tag="hr3",
+                 legs_disp=_disp43)
+    with _ST._lock, _ST._conn() as _c43:
+        _ids43 = {r["key"]: r["id"] for r in _c43.execute(
+            "SELECT id, key FROM slip_log").fetchall()}
+    _ST.set_slip_grade(_ids43["wall-a"], 1, won=1, legs_hit=2)
+    _ST.set_slip_grade(_ids43["wall-b"], 1, won=1, legs_hit=2)
+    _ST.set_slip_grade(_ids43["wall-c"], 1, won=0, legs_hit=1)   # LOST
+    # wall-d (hr3) never grades -- the column must stay empty
+    _bw43 = _ST.preset_best_wins()
+    ck("the biggest WIN hangs; a bigger LOSS never does",
+       _bw43.get("ks80", {}).get("payout_x") == 4.8
+       and _bw43["ks80"]["date"] == "2026-08-29"
+       and _bw43["ks80"]["legs"][0]["pick"] == "Ace 6+ Ks",
+       "9.9x lost with 1 of 2 legs -- the wall shows what PAID, not what "
+       "almost did")
+    ck("a recipe that never cashed stays honestly empty",
+       "hr3" not in _bw43,
+       'the 3 HR slip is a ~1.5% shot; "empty is honest, not broken"')
+    _ST.log_slip("mlb", "2026-08-27", "wall-e", 2, 2, 0.5, 0.5, 2.0, 1.0,
+                 "old", '[{"tk":"KXOLD-X","no":1},{"tk":"KXOLD-Y","no":0}]',
+                 None, tag="ml58")
+    with _ST._lock, _ST._conn() as _c43:
+        _id43e = _c43.execute("SELECT id FROM slip_log WHERE key='wall-e'"
+                              ).fetchone()["id"]
+    _ST.set_slip_grade(_id43e, 1, won=1, legs_hit=2)
+    ck("a pre-legs_disp row falls back to ticker text -- ugly but true",
+       _ST.preset_best_wins()["ml58"]["legs"] == ["NO - KXOLD-X", "KXOLD-Y"])
+finally:
+    _ST.DB_PATH = _stdb43
+_sl43 = _insp.getsource(__import__("sliplog").log_from_item)
+ck("new slips carry their display legs into the ledger",
+   "legs_disp=json.dumps(disp)" in _sl43 and '"matchup": grp.get("matchup")'
+   in _sl43,
+   "the legs column is tickers -- enough to grade, useless to show; the "
+   "wall reads like the slip did the day it was built")
+_apy43 = open(_os.path.join(_root, "app.py")).read()
+_js43 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the endpoint serves the wall on both return shapes, and the tab draws it",
+   _apy43.count('"best_wins": best_wins') == 2
+   and 'fetch("/api/baseball/presets")'
+   in _js43.split("async function loadHits")[1][:500]
+   and "No win yet" in _js43
+   and '$("hitsResults").dataset.loaded' in _js43,
+   "the old gate read the removed hitsDate element and would have thrown "
+   "on the first tap of the tab")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

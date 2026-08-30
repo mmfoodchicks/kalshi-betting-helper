@@ -32,7 +32,7 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
     gradable subset would grade a DIFFERENT slip than the one shown."""
     if not item or not item.get("groups"):
         return None
-    legs = []
+    legs, disp = [], []
     for grp in item["groups"]:
         if "🔴" in (grp.get("matchup") or ""):
             return None                  # a live joint is a different quantity
@@ -45,6 +45,13 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
             legs.append({"tk": tk,
                          "no": 1 if l.get("side") == "no" else 0,
                          "close": l.get("close_time")})
+            # Display text rides along: `legs` above is tickers (enough to
+            # GRADE, useless to SHOW), and a winning slip on the wall should
+            # read like the slip did the day it was built.
+            disp.append({"pick": l.get("pick") or tk,
+                         "side": l.get("side", "yes"),
+                         "matchup": grp.get("matchup"),
+                         "cents": l.get("market_cents")})
     if len(legs) < 2:
         return None
     prob = (item.get("combined_prob_pct") or 0) / 100.0
@@ -58,7 +65,8 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
                    prob, indep if 0 < indep < 1 else None,
                    item.get("kalshi_payout_net_x"), item.get("ev_pct"),
                    item.get("objective"), json.dumps(legs),
-                   max(closes) if closes else None, tag=tag)
+                   max(closes) if closes else None, tag=tag,
+                   legs_disp=json.dumps(disp))
     return key
 
 

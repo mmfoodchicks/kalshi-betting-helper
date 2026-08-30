@@ -2547,7 +2547,7 @@ function setupBaseballSubtabs() {
       document.querySelector("#tab-baseball .bb-edges").classList.toggle("hidden", s !== "edges");
       document.querySelector("#tab-baseball .bb-hits").classList.toggle("hidden", s !== "hits");
       if (s === "edges" && !$("edgeDate").dataset.loaded) { $("edgeDate").dataset.loaded = "1"; initEdges(); }
-      if (s === "hits" && !$("hitsDate").dataset.loaded) { $("hitsDate").dataset.loaded = "1"; initHits(); }
+      if (s === "hits" && !$("hitsResults").dataset.loaded) { $("hitsResults").dataset.loaded = "1"; initHits(); }
     });
   });
   // Combo maker mode: Kalshi combos vs DraftKings Pick 6.
@@ -2662,33 +2662,42 @@ function abbrMatch(mu) {
   return mu;
 }
 
-// ---- Predicted Hits / Risky Hits -----------------------------------------
+// ---- Preset wall of wins ---------------------------------------------------
+// The old Predicted Hits board lived here; the tab now shows each locked
+// recipe's BIGGEST graded win ever, one column per recipe, empty until it
+// cashes. Same data spine as the preset tabs (/api/baseball/presets).
 function initHits() {
-  const sel = $("hitsDate");
-  if (!sel) return;
-  const today = new Date();
-  let opts = "";
-  for (let i = 0; i < 8; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
-    opts += `<option value="${iso}">${i === 0 ? "Today" : i === 1 ? "Yesterday" : iso}</option>`;
-  }
-  opts += `<option value="">All time</option>`;
-  sel.innerHTML = opts;
   loadHits();
 }
 
 async function loadHits() {
   const box = $("hitsResults");
   if (!box) return;
-  box.innerHTML = `<div class="empty">Loading the board…</div>`;
+  box.innerHTML = `<div class="empty">Loading the wall…</div>`;
   try {
-    const date = ($("hitsDate") || {}).value || "";
-    const d = await (await fetch(`/api/baseball/hits?date=${date}`)).json();
-    if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
-    box.innerHTML = renderHits(d);
+    const d = await (await fetch("/api/baseball/presets")).json();
+    const wins = d.best_wins || {};
+    const recs = d.records || {};
+    const cols = _PRESET_TABS.filter(([pid]) => pid !== "custom").map(([pid, lbl]) => {
+      const w = wins[pid];
+      const r = recs[pid];
+      const recTxt = r && r.graded
+        ? `<div class="small" style="color:var(--muted)">${r.won}-${r.graded - r.won} all time</div>` : "";
+      const body = w
+        ? `<div class="small"><b class="ev pos">WON ${w.payout_x ? w.payout_x + "×" : ""}</b> · claimed ${w.prob_pct}% · ${w.date || ""}</div>
+           <ul style="margin:4px 0;padding-left:16px">${(w.legs || []).map((l) =>
+             typeof l === "string"
+               ? `<li class="small">✅ ${l}</li>`
+               : `<li class="small">✅ <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span> <b>${l.pick}</b> <span style="color:var(--muted)">${l.matchup || ""}${l.cents != null ? " · " + l.cents + "¢" : ""}</span></li>`).join("")}
+           </ul>`
+        : `<div class="empty" style="padding:12px 4px">No win yet - the recipe runs every day; its first cash lands here on its own.</div>`;
+      return `<div class="combo" style="flex:1 1 230px;min-width:210px">
+        <div><b>${lbl}</b></div>${recTxt}${body}</div>`;
+    }).join("");
+    box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">${cols}</div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">A slip only hangs here once EVERY leg settled the bought way on Kalshi - the payout shown is what it actually paid, fees in. Ties go to the bigger payout.</div>`;
   } catch (e) {
-    box.innerHTML = `<div class="empty">Couldn't load the board.</div>`;
+    box.innerHTML = `<div class="empty">Couldn't load the wall.</div>`;
   }
 }
 
