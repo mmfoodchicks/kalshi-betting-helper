@@ -2858,6 +2858,16 @@ def progress_get(token):
     j = job_read(token)                      # a sibling worker owns this build
     if j:
         j.setdefault("phase", "simulating games")
+        # How long since the builder last beat the file. Memory copies never
+        # carry this (the worker answering IS the builder, alive by
+        # definition); the file path serves it so a bar polling a build whose
+        # instance died mid-flight can say "restarted" instead of silently
+        # replaying the dead build's last counts until the 90s takeover.
+        try:
+            j["beat_age_s"] = round(
+                _time.time() - _os.stat(_job_path(token)).st_mtime, 1)
+        except OSError:
+            pass                # file swept between read and stat -- fine
         return j
     return None
 
@@ -4291,6 +4301,12 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
             games_bundles.append((label, bundles, g.get("kalshi_suffix")))
     if not games_bundles:
         return None
+
+    # Second supersede boundary: the frontier + chooser are the expensive
+    # tail of a big cross-game build, and a build that lost the slot during
+    # its LAST game's sim would otherwise pay for the whole thing anyway.
+    if abort_cb is not None and abort_cb():
+        raise RuntimeError("superseded by a newer build")
 
     # The DP goes exactly as deep as THIS request needs -- a 4-leg ask no
     # longer pays for a 12-leg state space, and a 19-leg ask is no longer

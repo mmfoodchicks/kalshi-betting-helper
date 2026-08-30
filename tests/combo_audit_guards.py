@@ -9218,6 +9218,52 @@ ck("preset rebuilds defer while a user's build holds the slot",
 
 print()
 print("=" * 72)
+print("Back to Custom finds the maker; a dead build says so on its bar")
+print("=" * 72)
+# Two reports the morning after the slot shipped. (1) "go into a pre-made tab,
+# back to custom, it doesn't build": renderPresetBox puts its OWN .combomaker
+# inside presetBox, which sits earlier in the DOM -- so applyPresetTab's
+# querySelector(".combomaker") grabbed the preset's inner div and never un-hid
+# the real maker again. (2) "won't go past 1 pass": an instance restart
+# mid-build leaves the job file's last counts frozen on the persistent disk,
+# and the bar replayed them without comment until the 90s takeover.
+_js48 = open(_os.path.join(_root, "static", "app.js")).read()
+_apt48 = _js48.split("function applyPresetTab")[1][:900]
+ck("the preset tab switcher addresses the custom maker BY ID",
+   '$("comboMaker")' in _apt48
+   and 'document.querySelector(".combomaker")' not in _apt48
+   and 'class="combomaker" id="comboMaker"' in _js48,
+   "a class selector matches the preset box's own inner .combomaker first, "
+   "and Custom comes back to an invisible maker and a 'lost' build")
+_tok48 = "guard48-" + str(int(_tm.time()))
+B._job_write(_tok48, {"status": "running", "at": 1, "done": 1, "total": 1,
+                      "cached": 1, "pass": 1, "passes": 3,
+                      "started": _tm.time() - 120})
+try:
+    _os.utime(B._job_path(_tok48), (_tm.time() - 60,) * 2)
+    _pg48 = B.progress_get(_tok48)
+    ck("a job served from the shared file carries its heartbeat age",
+       _pg48 and _pg48.get("beat_age_s") is not None
+       and 55 <= _pg48["beat_age_s"] <= 70,
+       "without it a build whose instance died mid-flight replays frozen "
+       "counts and the owner reads 'won't go past 1 pass'")
+finally:
+    B.job_drop(_tok48)
+_apy48 = open(_os.path.join(_root, "app.py")).read()
+ck("the progress endpoint passes the heartbeat age through and the bar "
+   "says 'restarted' instead of replaying the dead build's counts",
+   '"beat_age_s": p.get("beat_age_s")' in _apy48
+   and "real.beat_age_s > 45" in _js48
+   and "restarted mid-build" in _js48)
+ck("the supersede abort also guards the expensive post-loop tail",
+   _bmp47.count("abort_cb is not None and abort_cb()") == 2
+   and _bmp47.rindex("abort_cb is not None and abort_cb()")
+   < _bmp47.index("combo_engine.dp_legs"),
+   "a build that lost the slot during its LAST game's sim must not pay for "
+   "the frontier + chooser anyway")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

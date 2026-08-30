@@ -339,6 +339,11 @@ def _api_progress():
     return jsonify({"known": True, "done": p["done"], "at": p.get("at", 0),
                     "total": p["total"], "cached": p["cached"], "phase": p["phase"],
                     "pass": p.get("pass", 1), "passes": p.get("passes", 1),
+                    # Present only when served from the shared job file: how
+                    # stale the builder's heartbeat is. The bar uses it to say
+                    # "the server restarted mid-build" instead of replaying a
+                    # dead build's frozen counts until the takeover revives it.
+                    "beat_age_s": p.get("beat_age_s"),
                     "elapsed_s": round(time.time() - p["started"], 1)})
 
 

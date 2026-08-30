@@ -1130,7 +1130,13 @@ function applyPresetTab() {
   decorateBestBet();       // the crown survives the 20s re-render too
   tabs.querySelectorAll(".preset-tab").forEach((b) =>
     b.style.opacity = b.dataset.pid === _presetSel ? "1" : "0.55");
-  const mk = document.querySelector(".combomaker");
+  // BY ID, never by class: renderPresetBox puts its OWN .combomaker inside
+  // presetBox, which sits EARLIER in the DOM -- so once any preset had
+  // rendered, querySelector(".combomaker") grabbed that inner div and
+  // "back to Custom" un-hid the wrong one. The real maker stayed hidden,
+  // the in-flight build ticked on invisibly, and the owner rebuilt a slip
+  // that was never lost ("go back to custom and it doesn't build").
+  const mk = $("comboMaker");
   const box = $("presetBox");
   if (_presetSel === "custom") {
     if (mk) mk.classList.remove("hidden");
@@ -1647,6 +1653,14 @@ function simLoader(el, msg, kind, token) {
       if (passes > 1) note += ` · pass ${ps}/${passes}`;
       if (left && fresh && dt > 3) {
         note += `, ~${Math.max(1, Math.round(left * (dt / Math.max(1, fresh))))}s left`;
+      }
+      // A build whose heartbeat has genuinely stopped is DEAD, not slow --
+      // an instance restart mid-build leaves its last counts frozen in the
+      // shared job file, and this bar used to replay them without comment
+      // ("won't go past 1 pass"). Say what actually happened; the endpoint's
+      // 90s takeover revives the build on the sims it already cached.
+      if (real.beat_age_s > 45) {
+        note = " - the server restarted mid-build; picking it back up on the cached games…";
       }
     } else if (dt <= est) {
       pct = 90 * (dt / est);
@@ -2187,7 +2201,7 @@ async function loadBaseball(silent) {
         `<button class="leanchip preset-tab" data-pid="${pid}" onclick="showPreset('${pid}')" style="cursor:pointer;margin-right:4px">${lbl}</button>`).join("")}</div>
         <div id="presetBestLine" class="small" style="margin:0 0 4px"></div>
         <div id="presetBox" class="hidden"></div>`;
-      html += `<div class="combomaker">
+      html += `<div class="combomaker" id="comboMaker">
         🎯 <b>Combo maker</b>
         <div class="small" style="margin:4px 0 2px">Pick which games (or a single team) the combo must come from - or <b>ALL GAMES</b>:</div>
         ${renderGameGrid(d.games)}
