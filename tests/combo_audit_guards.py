@@ -9133,6 +9133,38 @@ ck("sim/have keys are bare pks and the PC normalizes before membership",
 
 print()
 print("=" * 72)
+print("No timer outlives what it watches; nothing polls a hidden screen")
+print("=" * 72)
+# The report: "sitting on the site a while, going between screens, causes it
+# to crash." Diagnosis: the phone kills the tab after client-side timers
+# accumulate. The live-feed refresher held a DOM node the slate auto-refresh
+# replaces every ~20s -- the closure read `open` off the detached ghost,
+# returned early forever, and the interval became IMMORTAL (one permanent
+# 20s fetch + a retained DOM subtree per feed ever opened); re-opening
+# stacked a second timer on top. The tennis live poll ran forever after one
+# visit. Every long-lived poll now re-looks its target up by id and idles
+# when the screen is hidden.
+_js46 = open(_os.path.join(_root, "static", "app.js")).read()
+_lf46 = _js46.split("window.toggleLiveFeed")[1][:2200]
+ck("the live feed re-looks its box up by id and cleans ITSELF up when gone",
+   "const cur = $(`lf-${pk}`)" in _lf46
+   and "clearInterval(_liveFeedTimers[pk])" in _lf46
+   and "delete _liveFeedTimers[pk]" in _lf46
+   and "document.hidden" in _lf46,
+   "a held node is a detached ghost one auto-refresh later -- the sim bar "
+   "learned this same lesson (lookup, never a reference)")
+ck("re-opening a feed can never stack a second timer",
+   _lf46.count("clearInterval(_liveFeedTimers[pk])") >= 2,
+   "the open path clears any survivor before arming its own interval")
+ck("the tennis live poll fires only while tennis is actually on screen",
+   '!$("tab-tennis").classList.contains("hidden")) loadTennis()' in _js46)
+ck("the crypto refresher and update watcher idle when the app is hidden",
+   '!document.hidden && !$("tab-crypto")' in _js46
+   and "if (document.hidden) return;    // a backgrounded phone needs no"
+   in _js46)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

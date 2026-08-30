@@ -741,12 +741,31 @@ window.toggleLiveFeed = (pk) => {
   box.dataset.open = "1";
   box.innerHTML = `<div class="small" style="padding:8px">Loading live feed…</div>`;
   const load = async () => {
+    // RE-LOOK UP by id every tick (the sim bar's lesson): the slate
+    // auto-refresh REPLACES this element every ~20s, so a held node is soon
+    // a detached ghost. The old closure read `open` off the ghost, returned
+    // early forever, and the interval became IMMORTAL -- one more permanent
+    // 20s fetch plus a retained DOM subtree for every feed ever opened,
+    // which is how an evening of watching games ate the tab's memory. If
+    // the current element is gone or closed, the timer cleans itself up.
+    const cur = $(`lf-${pk}`);
+    if (!cur || cur.dataset.open !== "1") {
+      clearInterval(_liveFeedTimers[pk]);
+      delete _liveFeedTimers[pk];
+      return;
+    }
+    if (document.hidden) return;          // backgrounded: idle, don't fetch
     try {
       const d = await (await fetch(`/api/baseball/live/${pk}`)).json();
-      if (box.dataset.open !== "1") return;
-      box.innerHTML = d.error ? `<div class="small">${d.error}</div>` : renderLiveFeed(d);
-    } catch (e) { box.innerHTML = `<div class="small">Live feed unavailable.</div>`; }
+      const now = $(`lf-${pk}`);
+      if (!now || now.dataset.open !== "1") return;
+      now.innerHTML = d.error ? `<div class="small">${d.error}</div>` : renderLiveFeed(d);
+    } catch (e) {
+      const now = $(`lf-${pk}`);
+      if (now && now.dataset.open === "1") now.innerHTML = `<div class="small">Live feed unavailable.</div>`;
+    }
   };
+  clearInterval(_liveFeedTimers[pk]);     // re-opening must never stack timers
   load();
   _liveFeedTimers[pk] = setInterval(load, 20000);   // refresh while open
 };
@@ -4285,7 +4304,12 @@ function initTennis() {
         if (mk) { renderTennisMaker(); return; }
         renderTennis();
         clearInterval(_tnLivePoll); _tnLivePoll = null;
-        if (_tnSub === "live" || _tnSub === "upsets") _tnLivePoll = setInterval(loadTennis, 60000);
+        // Gated at fire time: this poll used to run forever after ONE visit
+        // to Live/Upsets, refetching the tennis board every 60s from
+        // whatever tab you moved on to, screen off included.
+        if (_tnSub === "live" || _tnSub === "upsets") _tnLivePoll = setInterval(() => {
+          if (!document.hidden && !$("tab-tennis").classList.contains("hidden")) loadTennis();
+        }, 60000);
       });
     });
   }
@@ -6501,7 +6525,7 @@ async function init() {
   $("stratBtn").addEventListener("click", loadStrategy);
   $("betAddBtn").addEventListener("click", addBet);
   loadStrategy();
-  setInterval(() => { if (!$("tab-crypto").classList.contains("hidden")) loadStrategy(); }, 60000);
+  setInterval(() => { if (!document.hidden && !$("tab-crypto").classList.contains("hidden")) loadStrategy(); }, 60000);
 
   // Baseball setup
   setupTabs();
@@ -6594,6 +6618,7 @@ init();
 // self-updater, a push reaches the phone with nothing to do but tap.
 let _buildToken = null;
 async function _checkForUpdate() {
+  if (document.hidden) return;    // a backgrounded phone needs no update pings
   try {
     const d = await (await fetch("/api/version", { cache: "no-store" })).json();
     if (!d || !d.v) return;
