@@ -2,6 +2,28 @@
  "errors": [
   {
    "code": "FAN-pit",
+   "id": 115,
+   "last_ts": 1788287167.214981,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 1,
+   "path": null,
+   "pid": 9,
+   "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 472, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 47, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1788287167.214981
+  },
+  {
+   "code": "FAN-pit",
+   "id": 114,
+   "last_ts": 1788286116.8045616,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 3,
+   "path": null,
+   "pid": 7,
+   "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 472, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 47, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1788285747.4789581
+  },
+  {
+   "code": "FAN-pit",
    "id": 113,
    "last_ts": 1788228557.6500447,
    "msg": "HTTPError: HTTP Error 403: Forbidden",
@@ -494,28 +516,17 @@
    "pid": 3783,
    "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 399, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 47, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
    "ts": 1787710025.4165204
-  },
-  {
-   "code": "FAN-pit",
-   "id": 68,
-   "last_ts": 1787684332.4333572,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 2,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 399, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 47, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1787684103.1547022
   }
  ],
- "generated_at": 1788280680.16446,
+ "generated_at": 1788296454.724983,
  "summary": [
   {
    "code": "FAN-pit",
-   "first_ts": 1787684103.1547022,
+   "first_ts": 1787710025.4165204,
    "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1788228557.6500447,
-   "n": 72,
-   "variants": 37
+   "last_ts": 1788287167.214981,
+   "n": 74,
+   "variants": 38
   },
   {
    "code": "KAL-candles",
