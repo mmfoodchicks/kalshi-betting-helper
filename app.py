@@ -3012,7 +3012,12 @@ def api_nfl_parlay():
                 payout_mode="require" if _opt else payout_mode,
                 conn=conn,
                 objective="balanced" if _opt else objective,
-                types=prop_types, game_sel=sel or None, max_bet=_mb)
+                types=prop_types, game_sel=sel or None, max_bet=_mb,
+                # One combo slot across BOTH sports: the newest click owns
+                # the CPU whichever tab it came from.
+                abort_cb=(None if not ptok else
+                          (lambda: baseball.combo_slot_holder()
+                           not in (None, ptok))))
 
         def _core():
             """The whole build as a plain dict, runnable off-request -- the
@@ -3061,6 +3066,7 @@ def api_nfl_parlay():
                             path=ptok)
             if not baseball.job_claim(ptok):
                 return jsonify({"status": "building", "token": ptok}), 202
+            baseball.combo_slot_take(ptok)
             _run_job(ptok, _core, "NFL-COMBO-build")
             return jsonify({"status": "building", "token": ptok}), 202
         return jsonify(_core())
@@ -3917,23 +3923,6 @@ def api_baseball_presets():
     return jsonify({**payload, "age_s": round(age), "records": records,
                     "best_wins": best_wins,
                     "best": presets.best_today(payload, records)})
-
-
-@app.route("/api/baseball/hits")
-def api_baseball_hits():
-    """Predicted Hits + Risky Hits: from the recorder's graded props, the ones the
-    model liked that cashed, and the longshots that would've paid big."""
-    import mlb_recorder
-    date = request.args.get("date")
-    if date == "today":
-        date = clock.today_et().isoformat()
-    try:
-        mlb_recorder.grade_due()   # grade any games that just went final
-    except Exception as _e:
-        errlog.note("APP-api_baseball_hits", _e)
-    res = store.prop_hit_combos(date=date)
-    res["recorder"] = mlb_recorder.status()
-    return jsonify(res)
 
 
 @app.route("/api/stats")

@@ -2226,8 +2226,8 @@ async function loadBaseball(silent) {
       const def = Math.min(parlayLegs, effMax);
       const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
         + opts.map(([v, lbl]) => `<option value="${v}"${v === cur ? " selected" : ""}>${lbl}</option>`).join("") + `</select>`;
-      // Locked daily slips ride as TABS beside the custom maker: five recipes
-      // with server-side constants for knobs (presets.py), auto-built every
+      // Locked daily slips ride as TABS beside the custom maker: the recipes
+      // have server-side constants for knobs (presets.py), auto-built every
       // day, rebuilt when lineups post, logged + graded as a unit. Selecting
       // one hides the custom maker; "Custom" brings it back untouched.
       html += `<div class="small" id="presetTabs" style="margin:8px 0 2px">${_PRESET_TABS.map(([pid, lbl]) =>
@@ -2266,7 +2266,7 @@ async function loadBaseball(silent) {
           <button class="track-mini" style="margin-left:6px" onclick="buildCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
           <button class="track-mini" style="margin-left:6px" onclick="buildCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the games on its own - the likeliest slip that reaches your number and isn't priced against you.">⚡ Optimal for my ×</button>
         </div>
-        <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line (hits, bases, runs total, ML, run line, RFI, Ks) is simulated. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
+        <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every line in the prop-type list below is simulated (the chips are the full set). <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
         ${modelLegend()}
         <div id="comboOut"></div>
       </div>`;
@@ -2810,50 +2810,6 @@ async function loadHits() {
   }
 }
 
-
-// A cashed hindsight combo card: every leg hit, here's what the parlay paid.
-function renderHitCombo(c, tag, extraCls) {
-  const legs = c.legs.map((l) =>
-    `<li>✅ <span class="legtag">${l.type}</span> ${l.pick}
-      <span style="color:var(--muted)">(model ${l.prob_pct != null ? l.prob_pct + "%" : "-"}, ${l.price_cents}¢ → ${l.payout_x}×)</span></li>`).join("");
-  return `<div class="combo ${extraCls || ""}">
-    <div class="chead">
-      <span class="ctag">${tag}</span>
-      <span class="small">${c.n_legs} legs · ${c.date || ""}</span>
-    </div>
-    <ul class="legs">${legs}</ul>
-    <div class="cnums">
-      <span>Combined chance <b>${c.combined_prob_pct != null ? c.combined_prob_pct + "%" : "-"}</b></span>
-      <span>Parlay paid <b class="ev pos">${c.parlay_payout_x}×</b></span>
-      <span>$5 → <b class="ev pos">$${c.ret_5.toLocaleString()}</b></span>
-      <span>$10 → <b class="ev pos">$${c.ret_10.toLocaleString()}</b></span>
-    </div>
-  </div>`;
-}
-
-function renderHits(d) {
-  if (!d.graded_n) {
-    const rec = d.recorder || {};
-    return `<div class="empty">Nothing graded yet for this slate.<br>
-      <span class="small">The recorder logs props every ~10 min and grades them once games go final${rec.logged != null ? ` (so far: ${rec.logged} logged)` : ""}. Combos appear here once a slate finishes. Check back later tonight.</span></div>`;
-  }
-  const s = d.predicted_summary || {};
-  const sumLine = s.recommended
-    ? `<div class="small" style="margin:2px 0 8px">Of <b>${s.recommended}</b> props the model liked (≥55%), <b class="${(s.hit_pct||0) >= 50 ? "ev pos" : "ev neg"}">${s.hit}</b> hit (${s.hit_pct}%). Honest record.</div>`
-    : "";
-  const predicted = (d.predicted_combos || []).length
-    ? d.predicted_combos.map((c, i) => renderHitCombo(c, i === 0 ? "🛡️ Best model combo that cashed" : "✅ Model combo that cashed", "hl")).join("")
-    : `<div class="small">No multi-leg model combo cashed for this slate yet (need ≥2 model-liked props hitting in different games).</div>`;
-  const moon = d.moonshot
-    ? renderHitCombo(d.moonshot, "🚀 Moonshot - longshots that all cashed", "hl prop")
-    : `<div class="small">No longshot moonshot cashed this slate (or none graded yet).</div>`;
-  return `
-    <div class="hitsec"><div class="hitsechead">🎯 Predicted combos - what the model liked, that cashed</div>
-      ${sumLine}${predicted}</div>
-    <div class="hitsec"><div class="hitsechead">🍀 Risky moonshot - the few-dollars-to-thousands combo</div>
-      <div class="small" style="margin:2px 0 8px">The cheapest YES longshots that all hit on one slate, parlayed. Pure hindsight - what it <i>would</i> have paid, not advice.</div>
-      ${moon}</div>`;
-}
 
 // ---- Backtest -------------------------------------------------------------
 function renderBacktest(r) {

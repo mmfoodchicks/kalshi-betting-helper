@@ -1,12 +1,12 @@
 """Locked daily slips — the owner's standing bets, run by the house.
 
-Five recipes the owner actually plays, hard-locked on purpose: the knobs are
-constants in THIS file, not UI state, so every day's slip is built by the same
-rule and the graded record means something. (Tunable presets would be the
-combo maker with extra steps — and an untunable record is the point: these
-run every day, get logged pre-game into the slip ledger, grade off Kalshi
-settlement, and feed the same calibration everything else feeds.) The custom
-combo maker is untouched; if you want knobs, that's the tool.
+The recipes the owner actually plays (ten and counting), hard-locked on
+purpose: the knobs are constants in THIS file, not UI state, so every day's
+slip is built by the same rule and the graded record means something.
+(Tunable presets would be the combo maker with extra steps — and an
+untunable record is the point: these run every day, get logged pre-game
+into the slip ledger, and grade off Kalshi settlement.) The custom combo
+maker is untouched; if you want knobs, that's the tool.
 
 Rebuild rule: a preset re-runs when the DAY rolls or when the slate's lineup
 picture changes — a lineup posting (projected -> confirmed), a starter
@@ -132,13 +132,25 @@ PRESETS = (
 )
 
 
+# A record earns HALF its full say after this many distinct graded days.
+# Worked at the 5-slip gate: five ~34% slips carry a 1-sigma noise of ~1.06
+# wins, which is ~0.21 in delta and ~10.6 EV points of bonus -- the whole
+# cap -- and the crown is a max over ten recipes, so it would go to whichever
+# record got luckiest. Weighting by days
+# (not slips: an afternoon of lineup churn logs one recipe three times)
+# holds the thumb to ~2 points at 5 days and ~7 at 30.
+_RECORD_HALF_DAYS = 10
+
+
 def best_today(payload, records):
     """Crown ONE recipe for the day. 'Best on paper' is the start, not the
     verdict: the score is the slip's fee-aware EV, adjusted by the recipe's
     OWN graded record once it has one (>=5 graded) — a recipe that keeps
     beating its claimed odds has earned a thumb on the scale, one that keeps
-    missing them gets docked, capped at ±10 EV points so history colors the
-    paper number without drowning it. Returns None until any recipe has a
+    missing them gets docked, capped at ±10 EV points and scaled by how
+    many DAYS of evidence stand behind it (_RECORD_HALF_DAYS), so history
+    colors the paper number without drowning it -- and luck over a long
+    weekend can't buy the crown. Returns None until any recipe has a
     priced slip."""
     best = None
     for pid, p in (payload.get("presets") or {}).items():
@@ -151,9 +163,13 @@ def best_today(payload, records):
         graded = r.get("graded") or 0
         if graded >= 5:
             delta = (r.get("won", 0) - (r.get("expected") or 0.0)) / graded
-            score += max(-10.0, min(10.0, 50.0 * delta))
+            # Older records (pre-"days") fall back to the slip count.
+            days = r.get("days") if r.get("days") is not None else graded
+            weight = days / float(days + _RECORD_HALF_DAYS)
+            score += weight * max(-10.0, min(10.0, 50.0 * delta))
             note = (f"record {r.get('won', 0)}-{graded - r.get('won', 0)} vs "
-                    f"{r.get('expected')} expected")
+                    f"{r.get('expected')} expected over {days} day"
+                    f"{'' if days == 1 else 's'}")
         cand = {"id": pid, "label": p.get("label"), "emoji": p.get("emoji"),
                 "score": round(score, 1), "ev_pct": it.get("ev_pct"),
                 "prob_pct": it.get("combined_prob_pct"),

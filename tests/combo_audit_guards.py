@@ -9078,13 +9078,27 @@ _pl44 = {"presets": {
     "hr3": {"item": None, "label": "3 Home Runs"}}}
 ck("with no history, the best paper EV wears the crown",
    _pr41.best_today(_pl44, {})["id"] == "ml58")
-_rec44 = {"ks80": {"graded": 8, "won": 6, "expected": 2.0}}
+_rec44 = {"ks80": {"graded": 8, "won": 6, "expected": 2.0, "days": 8}}
 _b44 = _pr41.best_today(_pl44, _rec44)
 ck("a recipe beating its claimed odds can out-crown better paper",
-   _b44["id"] == "ks80" and _b44["score"] == 15.0
-   and "record 6-2" in (_b44["record_note"] or ""),
-   "(6 wins - 2.0 expected)/8 graded caps the bonus at +10 EV points: "
-   "history colors the paper number without drowning it")
+   _b44["id"] == "ks80" and _b44["score"] == round(5.0 + 10.0 * 8 / 18, 1)
+   and "record 6-2" in (_b44["record_note"] or "")
+   and "over 8 days" in _b44["record_note"],
+   "(6 wins - 2.0 expected)/8 graded caps the bonus at +10 EV points, "
+   "scaled by 8/(8+10) days of evidence: history colors the paper number "
+   "without drowning it")
+# The same eight slips logged across TWO afternoons of lineup churn are two
+# days of evidence, not eight: the thumb shrinks to 10*2/12 and the paper
+# favourite keeps the crown. Records without "days" (pre-field rows) fall
+# back to the slip count.
+ck("churn cannot buy the crown: the bonus is weighted by graded DAYS",
+   _pr41.best_today(_pl44, {"ks80": {"graded": 8, "won": 6,
+                                     "expected": 2.0, "days": 2}})["id"]
+   == "ml58"
+   and _pr41.best_today(_pl44, {"ks80": {"graded": 8, "won": 6,
+                                         "expected": 2.0}})["id"] == "ks80",
+   "at the 5-slip gate the raw bonus's 1-sigma noise is ~10 EV points -- "
+   "the whole cap -- over a max of ten recipes; days earn the say")
 ck("a thin record (under 5 graded) buys nothing",
    _pr41.best_today(_pl44, {"ks80": {"graded": 4, "won": 4,
                                      "expected": 0.5}})["id"] == "ml58")
@@ -9371,6 +9385,58 @@ ck("a rung that can't reach its number says so on the slip",
    "nothing reaches ${it.target_payout_x}× today" in _js50,
    '"closest today" and "pays 10×" are different claims; the tab must not '
    "blur them")
+
+print()
+print("=" * 72)
+print("Discrepancy sweep: what the site says is what the site does")
+print("=" * 72)
+# The wall/records question ("are those grades padding the numbers, or just
+# showboating?") traced end to end: slip grades feed the tabs, the wall and
+# the crown -- nothing else. The crown was the one place a record moved a
+# number, and its bonus was luck-weighted at the gate; now it earns its say
+# by graded DAYS (above). The rest of the sweep: NFL builds bypassed the combo
+# slot, a dead "Predicted Hits" route still described a tab that no longer
+# exists, and the maker's help text listed a subset of the simulated lines.
+_apy51 = open(_os.path.join(_root, "app.py")).read()
+_js51 = open(_os.path.join(_root, "static", "app.js")).read()
+import nfl_game_sim as _ngs51
+ck("NFL builds take the combo slot and yield to it, like baseball",
+   _apy51.count("baseball.combo_slot_take(ptok)") == 2
+   and _apy51.index("baseball.combo_slot_take(ptok)", _apy51.index("NFL-COMBO"))
+   < _apy51.index('_run_job(ptok, _core, "NFL-COMBO-build")')
+   and "abort_cb is not None and abort_cb()"
+   in _insp.getsource(_ngs51.build_parlay)
+   and _apy51.count("not in (None, ptok)") == 2,
+   "one slot across BOTH sports: an NFL build and an MLB build must never "
+   "grind the shared core together")
+ck("the dead Predicted Hits route and its query are gone",
+   '"/api/baseball/hits"' not in _apy51
+   and "prop_hit_combos" not in open(_os.path.join(_root, "store.py")).read()
+   and "api/baseball/hits" not in _js51
+   and "function renderHits(" not in _js51
+   and "function renderHitCombo(" not in _js51,
+   "a route no client called, whose docstring described a tab replaced by "
+   "the wall -- the site said one thing and served another")
+ck("the maker's help text no longer lists a subset of the simulated lines",
+   "Every line in the prop-type list below is simulated" in _js51
+   and "(hits, bases, runs total, ML, run line, RFI, Ks)" not in _js51)
+# Functional: preset_records counts distinct graded DAYS per tag.
+import tempfile as _tf51
+_db51 = _ST.DB_PATH
+_ST.DB_PATH = _os.path.join(_tf51.mkdtemp(prefix="guard-days-"), "v.db")
+try:
+    _ST.init_db()
+    for i, day in enumerate(("2026-08-29", "2026-08-29", "2026-08-30")):
+        _ST.log_slip("mlb", day, f"k51-{i}", 2, 2, 0.3, 0.25, 3.0, 1.0,
+                     "preset:tot80", "[]", None, tag="tot80")
+    for r in _ST.ungraded_slips(int(_tm.time()) + 10):
+        _ST.set_slip_grade(r["id"], 1, won=1, legs_hit=2)
+    _r51 = _ST.preset_records()["tot80"]
+    ck("three slips over two dates are two DAYS of evidence",
+       _r51["graded"] == 3 and _r51["won"] == 3 and _r51["days"] == 2,
+       "an afternoon of lineup churn logs one recipe three times")
+finally:
+    _ST.DB_PATH = _db51
 
 print()
 print("=" * 72)

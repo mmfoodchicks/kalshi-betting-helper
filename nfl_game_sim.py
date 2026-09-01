@@ -1040,7 +1040,7 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
                  target_payout=0, max_legs_per_game=3, max_total_legs=8,
                  legs_mode="prefer", payout_mode="off", conn="or",
                  objective="balanced", n_sims=3000, types=None, game_sel=None,
-                 max_bet=False, cap_x=None):
+                 max_bet=False, cap_x=None, abort_cb=None):
     """One parlay across the week's NFL games, priced against Kalshi.
 
     `cap_pct` turns the confidence floor into a band exactly as it does in
@@ -1092,6 +1092,11 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
             sel_map[base] = team or True
     games_bundles = []
     for g in games:
+        # Same supersede boundary as baseball: a build that lost the combo
+        # slot stops here, before paying for another game, so an NFL build
+        # and an MLB build can never grind the shared core together.
+        if abort_cb is not None and abort_cb():
+            raise RuntimeError("superseded by a newer build")
         team_only = None
         if sel_map:
             v = sel_map.get(g["suffix"] or "", sel_map.get(g.get("pair") or ""))
