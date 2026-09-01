@@ -1085,7 +1085,18 @@ function todayET(offsetDays = 0) {
 // display only. Custom = the ordinary maker, untouched.
 const _PRESET_TABS = [["custom", "⚙️ Custom"], ["hits5", "🖐️ 5 Hits"],
   ["hr3", "💣 3 HR"], ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"],
-  ["rl80", "📏 RL 80%+"], ["tot80", "📊 Totals 80%+"]];
+  ["rl80", "📏 RL 80%+"], ["tot80", "📊 Totals 80%+"],
+  ["targets", "⚡ 2-10×"]];
+// The ⚡ tab is ONE tab with four sections - each rung is its own preset
+// server-side (own tag, own ledger record, own wall column), but the owner
+// asked for one tab, so the tab id maps to these four.
+const _TARGET_IDS = ["x2", "x3", "x5", "x10"];
+// Wall columns are LOGGED TAGS, not tabs: "custom" logs nothing and
+// "targets" is four tags wearing one tab, so the wall lists them itself.
+const _WALL_COLS = [["hits5", "🖐️ 5 Hits"], ["hr3", "💣 3 HR"],
+  ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"], ["rl80", "📏 RL 80%+"],
+  ["tot80", "📊 Totals 80%+"], ["x2", "⚡ Pays 2×"], ["x3", "⚡ Pays 3×"],
+  ["x5", "⚡ Pays 5×"], ["x10", "⚡ Pays 10×"]];
 let _presetSel = "custom";
 let _presetData = null, _presetFetchTs = 0, _presetPoll = null;
 
@@ -1111,8 +1122,10 @@ async function decorateBestBet() {
     const line = $("presetBestLine");
     const tabs = $("presetTabs");
     if (!b || !tabs) { if (line) line.innerHTML = ""; return; }
+    // A crowned ⚡ rung highlights the tab all four rungs share.
+    const crownPid = _TARGET_IDS.includes(b.id) ? "targets" : b.id;
     tabs.querySelectorAll(".preset-tab").forEach((btn) => {
-      const crowned = btn.dataset.pid === b.id;
+      const crowned = btn.dataset.pid === crownPid;
       btn.style.boxShadow = crowned ? "0 0 0 1px var(--yes)" : "";
       if (crowned && !btn.textContent.startsWith("👑")) btn.textContent = "👑 " + btn.textContent;
       if (!crowned) btn.textContent = btn.textContent.replace(/^👑 /, "");
@@ -1163,9 +1176,25 @@ async function renderPresetBox() {
     return;
   }
   if (_presetPoll) { clearInterval(_presetPoll); _presetPoll = null; }
-  const p = (d.presets || {})[_presetSel];
-  if (!p) { box.innerHTML = `<div class="small">No such preset.</div>`; return; }
-  const rec = (d.records || {})[_presetSel];
+  // The ⚡ tab is four presets wearing one tab - render each rung as its own
+  // section through the same renderer every other preset uses.
+  const pids = _presetSel === "targets" ? _TARGET_IDS : [_presetSel];
+  const sections = [];
+  for (const pid of pids) {
+    const p = (d.presets || {})[pid];
+    if (!p) continue;
+    sections.push(_presetSectionHtml(p, (d.records || {})[pid]));
+  }
+  if (!sections.length) { box.innerHTML = `<div class="small">No such preset.</div>`; return; }
+  box.innerHTML = `<div class="combomaker">
+    ${sections.join(`<hr style="border:none;border-top:1px solid var(--line,#333);margin:10px 0">`)}
+    <div class="small" style="margin-top:6px;color:var(--muted)">Auto-rebuilds when lineups post or starters change · built ${d.age_s != null ? Math.round(d.age_s / 60) + "m ago" : ""} for ${d.date || "today"}</div>
+  </div>`;
+}
+
+// One preset's section: header, recipe text, slip, ledger badge, record.
+// Shared by the single-recipe tabs and the ⚡ tab's four rungs.
+function _presetSectionHtml(p, rec) {
   const recLine = rec && rec.graded
     ? `📒 record: <b>${rec.won}-${rec.graded - rec.won}</b> graded (expected ${rec.expected} wins from the claimed odds) · legs ${rec.legs_hit}/${rec.legs}${rec.void ? ` · ${rec.void} void` : ""} · ${rec.logged} logged`
     : `📒 ${rec ? rec.logged : 0} logged, none graded yet - the record builds itself from here`;
@@ -1178,16 +1207,20 @@ async function renderPresetBox() {
       <li><span class="legtag">${l.type}</span> <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span>
         <b>${l.pick}</b> <span style="color:var(--muted)">${grp.matchup || ""}</span>
         - <b>${l.prob_pct}%</b>${l.market_cents != null ? ` · Kalshi ${l.market_cents}¢${l.market_payout_x ? ` (${l.market_payout_x}×)` : ""}` : " · no market"}</li>`).join("")).join("");
+    // An ⚡ rung that couldn't reach its number says so - "closest today"
+    // is a different claim from "pays 10×" and the tab must not blur them.
+    const missLine = (it.target_payout_x && it.payout_reached === false)
+      ? `<div class="small" style="color:var(--muted)">⚠️ nothing reaches ${it.target_payout_x}× today - this is the closest the slate offers.</div>` : "";
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
       <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
+      ${missLine}
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
-  box.innerHTML = `<div class="combomaker">
+  return `<div>
     <div><b>${p.emoji || ""} ${p.label}</b> <span class="small" style="color:var(--muted)">🔒 locked recipe - no knobs. Want different? That's what Custom is for.</span></div>
     <div class="small" style="color:var(--muted)">${p.desc || ""}</div>
     ${bodyHtml}
     <div class="small" style="margin-top:6px;color:var(--muted)">${recLine}</div>
-    <div class="small" style="color:var(--muted)">Auto-rebuilds when lineups post or starters change · built ${d.age_s != null ? Math.round(d.age_s / 60) + "m ago" : ""} for ${d.date || "today"}</div>
   </div>`;
 }
 // Combo-maker controls persist across the 20s auto-refresh (the refresh re-renders
@@ -2753,7 +2786,7 @@ async function loadHits() {
     const wins = d.best_wins || {};
     const recs = d.records || {};
     const bestId = (d.best || {}).id;
-    const cols = _PRESET_TABS.filter(([pid]) => pid !== "custom").map(([pid, lbl]) => {
+    const cols = _WALL_COLS.map(([pid, lbl]) => {
       const w = wins[pid];
       const r = recs[pid];
       const crowned = pid === bestId;

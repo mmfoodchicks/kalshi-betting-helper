@@ -8711,8 +8711,10 @@ import presets as _pr41
 import tempfile as _tf41
 
 _spec41 = {s["id"]: s for s in _pr41.PRESETS}
-ck("the six recipes, verbatim, hard-locked as server constants",
-   set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80", "tot80"}
+ck("the six recipes, verbatim, hard-locked as server constants "
+   "(plus the four ⚡ payout rungs, guarded in their own block)",
+   set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80", "tot80",
+                    "x2", "x3", "x5", "x10"}
    and _spec41["hits5"]["n_legs"] == 5 and _spec41["hits5"]["types"] == ("Hit",)
    and _spec41["hr3"]["n_legs"] == 3 and _spec41["hr3"]["types"] == ("HR",)
    and _spec41["ks80"]["floor"] == 0.80 and _spec41["ks80"]["types"] == ("Ks",)
@@ -9272,11 +9274,13 @@ print("=" * 72)
 # the floor filter has already removed everything under it, so nearest-above
 # can never dip below 80.
 _spec49 = {s["id"]: s for s in _pr41.PRESETS}
-ck("the totals recipe carries pick='floor' and rev moved so today rebuilds",
-   _spec49["tot80"].get("pick") == "floor"
-   and all(_spec49[p].get("pick") is None for p in ("ks80", "ml58", "rl80"))
-   and _pr41.REV >= 6,
-   "the other scan recipes keep likeliest-per-unit; only totals hunts the bar")
+ck("every scan recipe hunts the bar; the top-N recipes stay likeliest",
+   all(_spec49[p].get("pick") == "floor"
+       for p in ("ks80", "ml58", "rl80", "tot80"))
+   and _spec49["hits5"]["kind"] == "top" and _spec49["hr3"]["kind"] == "top"
+   and _pr41.REV >= 7,
+   'the owner: "them all hunting the bar except hits and HR - I want those '
+   'to stay most likely"')
 _cands49 = [
     {"type": "Total", "label": "Under 12.5 runs", "marg": 0.97, "side": "yes",
      "group": "Total", "kref": {"t": "total"}, "model_pct": 96.0,
@@ -9312,6 +9316,61 @@ try:
        "80 pays real money for the same recipe")
 finally:
     (B._game_sim, B._price_cands, _km49.index, _km49.ticker_leg) = _orig49
+
+print()
+print("=" * 72)
+print("The ⚡ rungs: Optimal-for-my-× as four locked recipes on one tab")
+print("=" * 72)
+# The ask: "1 more tab with 4 different items - a 2x, 3x, 5x and 10x section.
+# Works like the 'optimal for my x' button, continuously runs and updates
+# like the rest, logs each time, graded in the wall." Server-side each rung
+# is its own preset (own tag -> own ledger record and wall column); the
+# client folds the four under one tab.
+ck("four rungs, locked at 2/3/5/10, kind 'target'",
+   [( _spec49[p]["kind"], _spec49[p]["target_x"])
+    for p in ("x2", "x3", "x5", "x10")]
+   == [("target", 2.0), ("target", 3.0), ("target", 5.0), ("target", 10.0)])
+ck("build_all dispatches the target kind",
+   '"target": _build_target' in _insp.getsource(_pr41.build_all))
+# The rung must mirror the ⚡ button knob for knob -- payout REQUIRED, legs
+# OFF, balanced, floor swept by best_target -- or the tab and the button
+# would quietly answer different questions.
+_bt49 = _insp.getsource(_pr41._build_target)
+ck("a rung is the endpoint's optimal mode, knob for knob",
+   'legs_mode="off"' in _bt49 and 'payout_mode="require"' in _bt49
+   and 'objective="balanced"' in _bt49 and "include_live=False" in _bt49
+   and "combo_engine.best_target" in _bt49
+   and "MAX_PAYOUT_X" in _bt49)
+_calls49 = []
+_obm49 = B.build_mixed_parlay
+try:
+    def _fbm49(games, **kw):
+        _calls49.append(kw)
+        return None
+    B.build_mixed_parlay = _fbm49
+    _r49 = _pr41._build_target([{"game_pk": 1}], _spec49["x2"])
+    import combo_engine as _ce49
+    ck("the rung sweeps the same floors the button does, at its own target",
+       _r49 is None and len(_calls49) == len(_ce49.OPTIMAL_FLOORS)
+       and [c["target_pct"] for c in _calls49] == list(_ce49.OPTIMAL_FLOORS)
+       and all(c["target_payout"] == 2.0 for c in _calls49),
+       "an empty slate returns None honestly instead of a fabricated slip")
+finally:
+    B.build_mixed_parlay = _obm49
+_js50 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("one ⚡ tab wearing four tags: tab row, wall columns, crown mapping",
+   '["targets", "⚡ 2-10×"]' in _js50
+   and '_TARGET_IDS = ["x2", "x3", "x5", "x10"]' in _js50
+   and "const cols = _WALL_COLS.map" in _js50
+   and '["x10", "⚡ Pays 10×"]' in _js50
+   and '_TARGET_IDS.includes(b.id) ? "targets" : b.id' in _js50
+   and '_presetSel === "targets" ? _TARGET_IDS : [_presetSel]' in _js50,
+   "the wall lists LOGGED TAGS (four rung columns), the tab row shows one "
+   "tab, and a crowned rung highlights the tab all four share")
+ck("a rung that can't reach its number says so on the slip",
+   "nothing reaches ${it.target_payout_x}× today" in _js50,
+   '"closest today" and "pays 10×" are different claims; the tab must not '
+   "blur them")
 
 print()
 print("=" * 72)

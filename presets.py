@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 6
+REV = 7
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -78,16 +78,23 @@ PRESETS = (
     {"id": "hr3", "label": "3 Home Runs", "emoji": "💣", "kind": "top",
      "types": ("HR",), "n_legs": 3, "sides": frozenset(("yes",)),
      "desc": "The 3 likeliest home runs to HAPPEN. YES only, locked."},
+    # The scan recipes all hunt the bar ("why not them all" -- the owner,
+    # after totals). Only the top-N recipes (hits, HR) stay likeliest: those
+    # were specified as "the likeliest", not "everything above a floor".
     {"id": "ks80", "label": "Ks 80%+", "emoji": "🔥", "kind": "all",
-     "types": ("Ks",), "floor": 0.80, "sides": None,
-     "desc": "Every PITCHER's best strikeout prop at 80%+ likely - both "
-             "starters per game when both have priced ladders."},
+     "types": ("Ks",), "floor": 0.80, "sides": None, "pick": "floor",
+     "desc": "Every PITCHER's strikeout line closest to the 80% bar without "
+             "going under - both starters per game when both have priced "
+             "ladders. Nearest-above beats likeliest: same slot, better "
+             "payout."},
     {"id": "ml58", "label": "ML 58%+", "emoji": "💰", "kind": "all",
-     "types": ("ML",), "floor": 0.58, "sides": None,
-     "desc": "Every game's moneyline at 58%+ likely."},
+     "types": ("ML",), "floor": 0.58, "sides": None, "pick": "floor",
+     "desc": "Every game's moneyline closest to the 58% bar without going "
+             "under."},
     {"id": "rl80", "label": "Run lines 80%+", "emoji": "📏", "kind": "all",
-     "types": ("Run line",), "floor": 0.80, "sides": None,
-     "desc": "Every game's best run line at 80%+ likely."},
+     "types": ("Run line",), "floor": 0.80, "sides": None, "pick": "floor",
+     "desc": "Every game's run line closest to the 80% bar without going "
+             "under."},
     # pick "floor": walk the ladder to the line NEAREST the bar from above,
     # not the likeliest. The owner's spec, near-verbatim: "as close to 80% as
     # possible without it going under - I see some that are like 97% but I
@@ -99,6 +106,29 @@ PRESETS = (
              "going under - whichever side lands nearest (Over 3.5 and "
              "Under 11.5 alike). Nearest-above beats likeliest: same slot, "
              "better payout."},
+    # kind "target": the maker's ⚡ Optimal-for-my-× button, locked. One
+    # input (the payout), and everything else is the optimizer's problem --
+    # leg count off, payout required, "balanced" objective, the per-leg
+    # floor swept (combo_engine.best_target), same-game stacks allowed so
+    # the correlation credit is in reach. Four rungs, one tab, each logged
+    # and graded under its own tag.
+    {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
+     "target_x": 2.0,
+     "desc": "The likeliest slip that pays 2× and isn't priced against "
+             "you. Legs, floors and games are the optimizer's call."},
+    {"id": "x3", "label": "Pays 3×", "emoji": "⚡", "kind": "target",
+     "target_x": 3.0,
+     "desc": "The likeliest slip that pays 3× and isn't priced against "
+             "you."},
+    {"id": "x5", "label": "Pays 5×", "emoji": "⚡", "kind": "target",
+     "target_x": 5.0,
+     "desc": "The likeliest slip that pays 5× and isn't priced against "
+             "you."},
+    {"id": "x10", "label": "Pays 10×", "emoji": "⚡", "kind": "target",
+     "target_x": 10.0,
+     "desc": "The likeliest slip that pays 10× and isn't priced against "
+             "you - the long rung; expect same-game stacks doing the "
+             "heavy lifting."},
 )
 
 
@@ -162,6 +192,27 @@ def _build_top(games, spec):
         legs_mode="require", payout_mode="off", objective="safe",
         include_live=False, types=set(spec["types"]), sides=spec["sides"],
         leg_ok=spec.get("leg_ok"))
+
+
+def _build_target(games, spec):
+    """The ⚡ Optimal button as a locked recipe: mirrors the endpoint's
+    optimal mode (app.api_baseball_mixed) knob for knob -- payout required,
+    legs off, "balanced", floor swept by best_target -- so the tab and the
+    button can never quietly disagree about what "optimal" means."""
+    import baseball
+    import combo_engine
+    target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
+
+    def _b(floor):
+        return baseball.build_mixed_parlay(
+            games, n_legs=4, target_pct=floor, cap_pct=None,
+            target_payout=target, max_legs_per_game=30, max_total_legs=30,
+            legs_mode="off", payout_mode="require", objective="balanced",
+            include_live=False, types=None, sides=None)
+    item = combo_engine.best_target(_b)
+    if item:
+        item["target_payout_x"] = target
+    return item
 
 
 def _build_all(games, spec):
@@ -272,8 +323,8 @@ def build_all(date, games, sig):
         for spec in PRESETS:
             pid = spec["id"]
             try:
-                item = (_build_top if spec["kind"] == "top"
-                        else _build_all)(games, spec)
+                item = {"top": _build_top, "all": _build_all,
+                        "target": _build_target}[spec["kind"]](games, spec)
             except Exception as e:
                 errlog.note("PRESET-build", e, path=pid)
                 item = None
