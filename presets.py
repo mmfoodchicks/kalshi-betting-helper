@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 5
+REV = 6
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -88,11 +88,17 @@ PRESETS = (
     {"id": "rl80", "label": "Run lines 80%+", "emoji": "📏", "kind": "all",
      "types": ("Run line",), "floor": 0.80, "sides": None,
      "desc": "Every game's best run line at 80%+ likely."},
+    # pick "floor": walk the ladder to the line NEAREST the bar from above,
+    # not the likeliest. The owner's spec, near-verbatim: "as close to 80% as
+    # possible without it going under - I see some that are like 97% but I
+    # know it can go lower." A 97% deep line and an 81% line fill the same
+    # slot; the 81% one pays real money for the same recipe.
     {"id": "tot80", "label": "Totals 80%+", "emoji": "📊", "kind": "all",
-     "types": ("Total",), "floor": 0.80, "sides": None,
-     "desc": "Every game's best total-runs line at 80%+ likely - whichever "
-             "side clears the bar (Over 3.5 and Under 11.5 alike; both "
-             "directions are real candidates)."},
+     "types": ("Total",), "floor": 0.80, "sides": None, "pick": "floor",
+     "desc": "Every game's total-runs line CLOSEST to the 80% bar without "
+             "going under - whichever side lands nearest (Over 3.5 and "
+             "Under 11.5 alike). Nearest-above beats likeliest: same slot, "
+             "better payout."},
 )
 
 
@@ -159,7 +165,8 @@ def _build_top(games, spec):
 
 
 def _build_all(games, spec):
-    """One leg per MARKET UNIT at/above the floor, likeliest line per unit.
+    """One leg per MARKET UNIT at/above the floor — likeliest line per unit,
+    or the line NEAREST the floor from above when the spec says pick="floor".
 
     Not per GAME: a game has one moneyline and one run line but TWO starters,
     and "every game's pitchers" means both arms — the per-game version showed
@@ -197,12 +204,18 @@ def _build_all(games, spec):
         baseball._price_cands(cands, g.get("kalshi_suffix"))
         priced = [c for c in cands if c.get("price_cents")]
         n_pool += len({c.get("group") or c["label"] for c in priced})
+        # pick "floor" inverts the per-unit choice: nearest ABOVE the bar
+        # instead of likeliest. Everything below the floor is already gone,
+        # so min() here can never go under it.
+        near_floor = spec.get("pick") == "floor"
         by_unit = {}
         for c in priced:
             if c["marg"] < floor:
                 continue
             k = c.get("group") or c["label"]
-            if k not in by_unit or c["marg"] > by_unit[k]["marg"]:
+            if (k not in by_unit
+                    or (c["marg"] < by_unit[k]["marg"] if near_floor
+                        else c["marg"] > by_unit[k]["marg"])):
                 by_unit[k] = c
         if not by_unit:
             continue

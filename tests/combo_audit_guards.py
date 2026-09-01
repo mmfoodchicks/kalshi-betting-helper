@@ -9264,6 +9264,57 @@ ck("the supersede abort also guards the expensive post-loop tail",
 
 print()
 print("=" * 72)
+print("Totals 80%+: nearest the bar from above, never under it")
+print("=" * 72)
+# The owner's change, near-verbatim: "as close to 80% as possible without it
+# going under. I see some that are like 97% but I know it can go lower."
+# pick "floor" walks each game's total ladder to the line nearest the bar;
+# the floor filter has already removed everything under it, so nearest-above
+# can never dip below 80.
+_spec49 = {s["id"]: s for s in _pr41.PRESETS}
+ck("the totals recipe carries pick='floor' and rev moved so today rebuilds",
+   _spec49["tot80"].get("pick") == "floor"
+   and all(_spec49[p].get("pick") is None for p in ("ks80", "ml58", "rl80"))
+   and _pr41.REV >= 6,
+   "the other scan recipes keep likeliest-per-unit; only totals hunts the bar")
+_cands49 = [
+    {"type": "Total", "label": "Under 12.5 runs", "marg": 0.97, "side": "yes",
+     "group": "Total", "kref": {"t": "total"}, "model_pct": 96.0,
+     "marg_model": 0.95},
+    {"type": "Total", "label": "Under 10.5 runs", "marg": 0.82, "side": "yes",
+     "group": "Total", "kref": {"t": "total"}, "model_pct": 80.0,
+     "marg_model": 0.79},
+    {"type": "Total", "label": "Under 9.5 runs", "marg": 0.74, "side": "yes",
+     "group": "Total", "kref": {"t": "total"}, "model_pct": 72.0,
+     "marg_model": 0.71}]
+_games49 = [{"game_pk": 11, "matchup": "C @ D", "kalshi_suffix": "s9",
+             "live": {}, "confirm": {}}]
+import kalshi_mlb as _km49
+_orig49 = (B._game_sim, B._price_cands, _km49.index, _km49.ticker_leg)
+try:
+    B._game_sim = lambda g: {"cands": [dict(c) for c in _cands49],
+                             "sim": {"n": 100}}
+
+    def _fp49(cands, sfx, blend=True):
+        for c in cands:
+            c["price_cents"] = 80
+        return cands
+    B._price_cands = _fp49
+    _km49.index = lambda: {}
+    _km49.ticker_leg = lambda idx, sfx, kref: ("TK49", 1)
+    _t49 = _pr41._build_all(_games49, _spec49["tot80"])
+    _k49 = _pr41._build_all(_games49, dict(_spec49["tot80"], pick=None))
+    ck("nearest-above-the-bar wins the slot; under the bar never qualifies",
+       _t49 and _t49["n_legs"] == 1
+       and _t49["groups"][0]["legs"][0]["pick"] == "Under 10.5 runs"
+       and _k49["groups"][0]["legs"][0]["pick"] == "Under 12.5 runs",
+       "a 97% deep line and an 81% line fill the same slot; the one nearest "
+       "80 pays real money for the same recipe")
+finally:
+    (B._game_sim, B._price_cands, _km49.index, _km49.ticker_leg) = _orig49
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
