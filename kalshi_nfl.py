@@ -148,8 +148,12 @@ def _build():
         # "q" holds the FULL quote for every leg key, keyed exactly as _qkey
         # resolves them. The flat ml/spread/total maps stay as they are because
         # the board UI and game_prices read cents off them directly.
+        # "tick" maps a leg's base key (its q key minus the yes/no flag) to
+        # (ticker, close) so a parlay's legs can be LOGGED and GRADED; both
+        # sides of a market share one ticker, exactly as in kalshi_mlb.
         return idx.setdefault(suffix, {"ml": {}, "spread": {}, "total": {},
                                        "ticker": {}, "close": None, "q": {},
+                                       "tick": {},
                                        "players": {}, "names": {},
                                        "no": {"ml": {}, "spread": {},
                                               "players": {}}})
@@ -167,6 +171,7 @@ def _build():
         e["q"][("ml", team, True)] = _q(m, "no")
         e["ticker"][team] = tk
         e["close"] = kalshi._parse_time(m.get("close_time")) or e["close"]
+        e["tick"][("ml", team)] = (tk, kalshi._parse_time(m.get("close_time")))
 
     for m in _fetch(_SPREAD_SERIES):
         mt = _SPREAD_RE.match(m.get("ticker") or "")
@@ -178,6 +183,8 @@ def _build():
         e["no"]["spread"][(team, by)] = _quote(kalshi._cents(m.get("no_ask_dollars")))
         e["q"][("spread", team, by, False)] = _q(m, "yes")
         e["q"][("spread", team, by, True)] = _q(m, "no")
+        e["tick"][("spread", team, by)] = (m.get("ticker"),
+                                           kalshi._parse_time(m.get("close_time")))
 
     for m in _fetch(_TOTAL_SERIES):
         mt = _TOTAL_RE.match(m.get("ticker") or "")
@@ -190,6 +197,8 @@ def _build():
                          "under": _quote(kalshi._cents(m.get("no_ask_dollars")))}
         e["q"][("total", n, True)] = _q(m, "yes")
         e["q"][("total", n, False)] = _q(m, "no")
+        e["tick"][("total", n)] = (m.get("ticker"),
+                                   kalshi._parse_time(m.get("close_time")))
 
     for series, stat in _PROP_SERIES.items():
         for m in _fetch(series):
@@ -207,6 +216,8 @@ def _build():
             e["no"]["players"][key] = _quote(kalshi._cents(m.get("no_ask_dollars")))
             e["q"][("prop",) + key + (False,)] = _q(m, "yes")
             e["q"][("prop",) + key + (True,)] = _q(m, "no")
+            e["tick"][("prop",) + key] = (m.get("ticker"),
+                                          kalshi._parse_time(m.get("close_time")))
             e["names"][_norm(name)] = name       # display name, as Kalshi writes it
 
     for suffix, e in idx.items():
@@ -257,6 +268,23 @@ def _qkey(kref):
         return ("prop", kref.get("stat"), _norm(kref.get("player")),
                 kref.get("line"), no)
     return None
+
+
+def ticker_leg(idx, suffix, kref):
+    """(kalshi ticker, close_time epoch) for one leg's market, or (None, None).
+    Both sides share one ticker, so the yes/no flag is ignored -- the slip
+    ledger records which side was bought. Mirrors kalshi_mlb.ticker_leg."""
+    if not suffix or not kref:
+        return None, None
+    g = idx.get(suffix)
+    key = _qkey(kref)
+    if not g or not key:
+        return None, None
+    base = key[:-1]
+    if kref.get("t") == "total":
+        base = ("total", kref.get("n"))
+    got = (g.get("tick") or {}).get(base)
+    return got if got else (None, None)
 
 
 def quote_leg(idx, suffix, kref):

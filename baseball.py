@@ -2539,6 +2539,14 @@ def _log_prop_predictions(g, cands):
         p = c.get("marg")
         if not model or not kref or p is None or not (0.0 < p < 1.0):
             continue
+        # One row per MARKET, on the side the ticker names: the NO and Under
+        # candidates share the YES/Over ticker, and only insert-order luck
+        # (YES first) kept their probabilities out of the Over's row -- the
+        # mkt backfill had no such luck and could write an Under's de-vig
+        # onto the Over's record.
+        if kref.get("no") or (kref.get("t") == "total"
+                              and not kref.get("over", True)):
+            continue
         try:
             tk, close = kalshi_mlb.ticker_leg(idx, suffix, kref)
             if not tk:

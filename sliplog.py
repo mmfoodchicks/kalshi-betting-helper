@@ -21,6 +21,7 @@ import json
 import time
 
 import errlog
+import predlog
 import store
 
 
@@ -42,9 +43,9 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
             tk = l.get("ticker")
             if not tk:
                 return None
-            legs.append({"tk": tk,
-                         "no": 1 if l.get("side") == "no" else 0,
-                         "close": l.get("close_time")})
+            legs.append({"tk": tk, "no": _bought_no(l),
+                         "close": l.get("close_time"),
+                         "start": _start_of(l)})
             # Display text rides along: `legs` above is tickers (enough to
             # GRADE, useless to SHOW), and a winning slip on the wall should
             # read like the slip did the day it was built.
@@ -61,20 +62,72 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
     key = hashlib.sha1("|".join(
         sorted(f"{l['tk']}:{l['no']}" for l in legs)).encode()).hexdigest()
     closes = [l["close"] for l in legs if l.get("close")]
+    starts = [l["start"] for l in legs if l.get("start")]
+    # The slip's date is the ET day of its FIRST kickoff: an NFL slip built
+    # on Tuesday for Sunday belongs to Sunday's ledger, not Tuesday's.
+    if not date and starts:
+        import datetime
+        import zoneinfo
+        date = datetime.datetime.fromtimestamp(
+            min(starts), zoneinfo.ZoneInfo("America/New_York")).date().isoformat()
+    if not date:
+        import clock
+        date = clock.today_et().isoformat()
     store.log_slip(sport, date, key, len(legs), item.get("n_games"),
                    prob, indep if 0 < indep < 1 else None,
                    item.get("kalshi_payout_net_x"), item.get("ev_pct"),
                    item.get("objective"), json.dumps(legs),
                    max(closes) if closes else None, tag=tag,
-                   legs_disp=json.dumps(disp))
+                   legs_disp=json.dumps(disp),
+                   start_ts=max(starts) if starts else None)
     return key
 
 
-# A leg is probed no earlier than build time + this: rows are logged pre-game
-# on slate day, so log + a full game's length means the games have been played.
-# Same reasoning as predlog's early probe, without its close-time backstop
-# complications -- an unsettled market just reports itself open and is retried.
-_PLAYED_S = 6 * 3600
+def _bought_no(leg):
+    """1 when the money sits on the NO side of the MARKET the ticker names.
+
+    Over and Under are the two sides of ONE Kalshi market -- the Over's --
+    so an Under is NO on that ticker even though the slip (rightly) shows it
+    as a YES leg. The first cut logged `side == "no"` verbatim, which graded
+    every Under BACKWARDS: a winning Under read as a miss, a losing one as a
+    hit. Totals were in most slips and in the Totals 80%+ recipe, so the
+    ledger's early record was wrong in both directions. kref is the truth;
+    the label is the fallback for legs logged without one."""
+    no = leg.get("side") == "no"
+    k = leg.get("kref") or {}
+    if k:
+        under = k.get("t") == "total" and not k.get("over", True)
+    else:
+        t = str(leg.get("pick") or "").lower().strip()
+        under = t.startswith("under") or t.startswith("no - under")
+    return 1 if (no != under) else 0
+
+
+def _start_of(leg):
+    """When this leg's game starts (epoch), for gating the grader: the
+    kickoff the builder stamped, else the ticker's own event time. A
+    day-only ticker (NFL, UFC) resolves to midnight of the event day, which
+    is BEFORE the game -- so it is pushed to the end of that day, and the
+    grader waits for the day to be over rather than polling Kalshi through
+    an afternoon of football."""
+    st = leg.get("start_ts")
+    if st:
+        return int(st)
+    tk = leg.get("ticker") or ""
+    ev = predlog._event_ts(tk)
+    if not ev:
+        return None
+    m = predlog._EVT_RE.search(tk)
+    timed = bool(m and m.group(4))
+    return int(ev if timed else ev + 86400)
+
+
+# When a slip is probed is decided in store.ungraded_slips: its start
+# (the latest leg's kickoff, stamped at log time) plus a game's length, or,
+# for rows logged before starts were kept, log time + 6h. Probing earlier
+# is not wrong, just wasteful -- an NFL slip built Tuesday for Sunday used
+# to be asked about every ten minutes for five days, ~160 Kalshi reads per
+# pass for nothing, against a rate limiter the whole app shares.
 
 
 def grade_due(limit=40):
@@ -88,7 +141,7 @@ def grade_due(limit=40):
     was logged."""
     import urllib.error
     import kalshi
-    rows = store.ungraded_slips(int(time.time()) - _PLAYED_S, limit=limit)
+    rows = store.ungraded_slips(int(time.time()), limit=limit)
     if not rows:
         return 0
     memo = {}                            # ticker -> ("yes"/"no"/"void"/"open")

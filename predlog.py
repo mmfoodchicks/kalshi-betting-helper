@@ -57,6 +57,14 @@ def init_db():
         # the fact. It has to be captured live or not at all. Added later, so
         # tolerate an older table that predates it.
         cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)")}
+        # `event_ts`: the event start the LOGGER knew (an NFL kickoff from
+        # the schedule). Day-only tickers resolve to midnight otherwise,
+        # and the closing-line snapshot stopped a day early for football.
+        if "event_ts" not in cols:
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE predictions ADD COLUMN event_ts INTEGER")
+            except Exception as _e:
+                errlog.note("PRED-init_db-evt", _e)  # a sibling just added it
         if "mkt" not in cols:
             try:                   # several workers migrate at once on boot
                 c.execute("ALTER TABLE predictions ADD COLUMN mkt REAL")
@@ -84,7 +92,10 @@ def init_db():
 
 
 def log_many(model, rows):
-    """rows: iterable of (ticker, prob 0-1, close_time_epoch|None[, mkt 0-1]).
+    """rows: iterable of (ticker, prob 0-1, close_time_epoch|None[, mkt 0-1
+    [, event_ts_epoch]]). The optional fifth element is the event START as
+    the logger knows it (an NFL kickoff); it anchors the closing-line
+    snapshot where the ticker alone carries only the day.
     One row per ticker ever (the first, pre-settlement prediction) — later
     re-prices are ignored so we grade the genuine forecast, not a near-settled
     one. The optional fourth element is the market's own probability at that
@@ -93,6 +104,7 @@ def log_many(model, rows):
     for row in rows:
         tk, p, ct = row[0], row[1], row[2]
         mk = row[3] if len(row) > 3 else None
+        ev = row[4] if len(row) > 4 else None
         if not tk or p is None:
             continue
         try:
@@ -107,13 +119,19 @@ def log_many(model, rows):
             mk = None
         if mk is not None and not (0.0 < mk < 1.0):
             mk = None
-        clean.append((tk, model, p, int(ct) if ct else None, int(time.time()), mk))
+        try:
+            ev = int(ev) if ev else None
+        except (TypeError, ValueError):
+            ev = None
+        clean.append((tk, model, p, int(ct) if ct else None, int(time.time()),
+                      mk, ev))
     if not clean:
         return 0
     with _lock, _conn() as c:
         c.executemany(
             "INSERT OR IGNORE INTO predictions "
-            "(ticker, model, prob, close_time, ts, mkt) VALUES (?,?,?,?,?,?)", clean)
+            "(ticker, model, prob, close_time, ts, mkt, event_ts) "
+            "VALUES (?,?,?,?,?,?,?)", clean)
         # The PREDICTION is first-write-wins forever — that is the genuine
         # forecast, and later re-prices must never touch it. The market column
         # is a benchmark, not a forecast: a row logged before its book was
@@ -198,11 +216,11 @@ def snapshot_closes(limit=40):
     import kalshi
     now = time.time()
     with _lock, _conn() as c:
-        rows = [r["ticker"] for r in c.execute(
-            "SELECT ticker FROM predictions WHERE graded=0").fetchall()]
+        rows = [(r["ticker"], r["event_ts"]) for r in c.execute(
+            "SELECT ticker, event_ts FROM predictions WHERE graded=0").fetchall()]
     due = []
-    for tk in rows:
-        ev = _event_ts(tk)
+    for tk, logged_ev in rows:
+        ev = logged_ev or _event_ts(tk)
         if ev and now < ev and ev - now < 36 * 3600:
             due.append((ev, tk))
     due.sort()

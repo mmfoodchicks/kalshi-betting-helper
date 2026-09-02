@@ -208,7 +208,7 @@ def init_db():
         # grade but not to show a winning slip on the wall). Added later;
         # migrate old DBs.
         _slip_cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
-        for _col in ("tag TEXT", "legs_disp TEXT"):
+        for _col in ("tag TEXT", "legs_disp TEXT", "start_ts INTEGER"):
             if _col.split()[0] not in _slip_cols:
                 try:
                     c.execute(f"ALTER TABLE slip_log ADD COLUMN {_col}")
@@ -233,6 +233,11 @@ def init_db():
 
 
 # ---- MLB model track record -----------------------------------------------
+    try:
+        repair_under_legs()
+    except Exception as _e:
+        errlog.note("ST-repair-under", _e)
+
 def record_mlb_pick(game_pk, date, pick_side, pick_name, prob, price_cents, pred_total=None,
                     p_home_model=None, p_home_deep=None, prob_raw=None):
     """Store the model's pre-game pick (first time we see the game), including the
@@ -523,19 +528,70 @@ def nfl_record():
 # ---- Slip ledger (the correlation claim, graded) ---------------------------
 def log_slip(sport, date, key, n_legs, n_games, prob, indep_prob,
              market_payout_x, ev_pct, objective, legs_json, max_close,
-             tag=None, legs_disp=None):
+             tag=None, legs_disp=None, start_ts=None):
     """First build of a leg-set wins: the claim on record is the one made the
-    first time this exact slip was assembled, pre-game."""
+    first time this exact slip was assembled, pre-game. `start_ts` is the
+    latest leg's kickoff -- the grader waits for it, so a Tuesday slip for
+    Sunday is not probed all week."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO slip_log
                (ts, date, sport, key, n_legs, n_games, prob, indep_prob,
                 market_payout_x, ev_pct, objective, legs, max_close, tag,
-                legs_disp)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                legs_disp, start_ts)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (int(time.time()), date, sport, key, n_legs, n_games, prob,
              indep_prob, market_payout_x, ev_pct, objective, legs_json,
-             max_close, tag, legs_disp))
+             max_close, tag, legs_disp, start_ts))
+
+
+# Games run about three hours; four past the last kickoff means every leg
+# has had time to settle. Rows logged before start_ts existed keep the old
+# rule (log time + 6h), which was right for same-day baseball.
+_SLIP_SETTLE_S = 4 * 3600
+_SLIP_LEGACY_S = 6 * 3600
+
+
+def repair_under_legs():
+    """One-time, idempotent: Under legs were logged as YES on the OVER market
+    (both sides share the Over's ticker), so the grader read every Under
+    backwards. Re-derive the side from the display text, rewrite the leg,
+    and send any slip that was graded under the wrong side back to the
+    grader. Void slips stay void. Rows without display text (before
+    legs_disp existed) cannot be repaired and are left alone."""
+    with _lock, _conn() as c:
+        cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
+        if "legs_disp" not in cols:
+            return 0
+        rows = c.execute("SELECT id, legs, legs_disp, graded FROM slip_log "
+                         "WHERE legs_disp IS NOT NULL").fetchall()
+        fixed = 0
+        for r in rows:
+            try:
+                legs = json.loads(r["legs"] or "[]")
+                disp = json.loads(r["legs_disp"] or "[]")
+            except ValueError:
+                continue
+            if len(legs) != len(disp):
+                continue
+            changed = False
+            for leg, d in zip(legs, disp):
+                t = str(d.get("pick") or "").lower().strip()
+                if t.startswith("no - "):
+                    t = t[5:]
+                if not t.startswith("under"):
+                    continue
+                want = 0 if d.get("side") == "no" else 1
+                if leg.get("no") != want:
+                    leg["no"] = want
+                    changed = True
+            if changed:
+                c.execute("UPDATE slip_log SET legs=?, "
+                          "graded=CASE WHEN graded=1 THEN 0 ELSE graded END, "
+                          "won=NULL, legs_hit=NULL, resolved_ts=NULL WHERE id=?",
+                          (json.dumps(legs), r["id"]))
+                fixed += 1
+        return fixed
 
 
 def preset_best_wins():
@@ -611,13 +667,16 @@ def preset_records():
     return out
 
 
-def ungraded_slips(played_before, limit=40):
-    """Slips old enough that their games should have been played (log time is
-    build time, pre-game on slate day)."""
+def ungraded_slips(now, limit=40):
+    """Slips whose games should be over by `now`: the stamped start plus a
+    game's length, or, for rows logged before starts were kept, log time
+    plus six hours (right for same-day baseball, the only sport then)."""
     with _lock, _conn() as c:
         return [dict(r) for r in c.execute(
-            "SELECT * FROM slip_log WHERE graded=0 AND ts <= ? "
-            "ORDER BY ts LIMIT ?", (played_before, limit)).fetchall()]
+            "SELECT * FROM slip_log WHERE graded=0 "
+            "AND COALESCE(start_ts + ?, ts + ?) <= ? "
+            "ORDER BY ts LIMIT ?",
+            (_SLIP_SETTLE_S, _SLIP_LEGACY_S, now, limit)).fetchall()]
 
 
 def set_slip_grade(slip_id, graded, won=None, legs_hit=None):
@@ -627,9 +686,10 @@ def set_slip_grade(slip_id, graded, won=None, legs_hit=None):
                   (graded, won, legs_hit, int(time.time()), slip_id))
 
 
-def slip_report():
+def slip_report(sport=None):
     """Claimed vs realized, at the SLIP level -- the only place the correlation
     premium (which carries essentially all of a slip's EV) gets scored.
+    `sport` narrows it (the NFL tab reads its own); None is every slip.
 
     The decisive comparison is three numbers over the same graded slips:
       expected wins under the CLAIMED joints   (sum of prob)
@@ -637,13 +697,16 @@ def slip_report():
       actual wins
     If actual tracks the independent sum, the correlation claims are noise and
     every stacked slip's EV is overstated by exactly the premium."""
+    flt, args = ("AND sport=? ", (sport,)) if sport else ("", ())
     with _lock, _conn() as c:
         rows = [dict(r) for r in c.execute(
-            "SELECT * FROM slip_log WHERE graded=1").fetchall()]
+            "SELECT * FROM slip_log WHERE graded=1 " + flt, args).fetchall()]
         pending = c.execute(
-            "SELECT COUNT(*) n FROM slip_log WHERE graded=0").fetchone()["n"]
+            "SELECT COUNT(*) n FROM slip_log WHERE graded=0 " + flt,
+            args).fetchone()["n"]
         void = c.execute(
-            "SELECT COUNT(*) n FROM slip_log WHERE graded=2").fetchone()["n"]
+            "SELECT COUNT(*) n FROM slip_log WHERE graded=2 " + flt,
+            args).fetchone()["n"]
     n = len(rows)
     out = {"graded": n, "pending": pending, "void": void}
     if not n:

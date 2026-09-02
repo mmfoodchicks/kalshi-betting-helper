@@ -144,3 +144,27 @@ def grade_due():
             store.set_nfl_grade(gid, won, winner, actual_total=total, home_won=home_won)
             n += 1
     return n
+
+
+def tick():
+    """Recorder-cadence pass, August through February: record the current
+    week's pre-game picks off the SHARED board and grade finals. Before this
+    the NFL record only grew when someone opened the tab -- a week nobody
+    looked at before kickoff simply never existed in the ledger, and closes
+    only refreshed while the tab was open. board() is non-blocking (adopts
+    the PC's build when fresh, else kicks one in the background), so a
+    quiet pass costs one file read."""
+    import clock
+    import nfl_game_sim
+    import nfl_preseason
+    d = clock.today_et()
+    if not (d.month >= 8 or d.month <= 2):
+        return 0
+    pre = nfl_preseason.is_preseason()
+    data = nfl_game_sim.board(week=nfl_game_sim.current_week(pre),
+                              preseason=pre)
+    n = 0
+    if data and not data.get("empty"):
+        n = record_from_board(data)
+    grade_due()
+    return n

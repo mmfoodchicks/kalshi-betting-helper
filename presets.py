@@ -300,6 +300,9 @@ def _build_all(games, spec):
             # five "undefined"s because this said "label".
             glegs.append({"type": best["type"], "pick": best["label"],
                           "side": best.get("side", "yes"),
+                          # The ledger derives the Kalshi side from kref
+                          # (an Under is NO on the Over's market).
+                          "kref": best.get("kref"),
                           "prob_pct": round(best["marg"] * 100, 1),
                           "model_pct": best.get("model_pct"),
                           "sim_pct": (round(best["marg_model"] * 100, 1)

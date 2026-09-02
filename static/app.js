@@ -6308,12 +6308,12 @@ async function loadValue() {
 // the correlation lift over the independent product -- and that number had no
 // track record. Every built parlay is now logged pre-game and graded off
 // settlement; this line is where the claim meets reality.
-async function loadSlipLog() {
+async function loadSlipLog(elId = "bbSlipLog", sport = "") {
   if (!isOwner()) return;
-  const el = $("bbSlipLog");
+  const el = $(elId);
   if (!el) return;
   try {
-    const r = await (await fetch("/api/baseball/sliplog")).json();
+    const r = await (await fetch("/api/baseball/sliplog" + (sport ? `?sport=${sport}` : ""))).json();
     if (!r.graded) {
       el.innerHTML = `<div class="small" style="color:var(--muted)">🧪 <b>Slip calibration</b>: every parlay you build is now logged (claimed joint % + the independent product) and graded on settlement${r.pending ? ` - <b>${r.pending}</b> awaiting results` : " - starts with your next build"}. This is the scoreboard for the correlation premium, which is where a slip's EV actually lives.</div>`;
       return;
@@ -6404,6 +6404,7 @@ function pickRecordHtml(r, unitWord) {
 // ---- NFL model track record (the MLB scoreboard, ported) -------------------
 async function loadNflRecord() {
   if (!isOwner()) return;   // model track record is owner-only data
+  loadSlipLog("nflSlipLog", "nfl");   // football's slips grade in the same ledger
   const el = $("nflRecord");
   if (!el) return;
   try {

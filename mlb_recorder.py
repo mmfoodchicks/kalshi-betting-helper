@@ -220,6 +220,13 @@ def _loop():
             presets.tick()
         except Exception as _e:
             errlog.note("MREC-loop", _e)
+        # Football rides the same cadence in season; its own failure code
+        # so a dead NFL feed can never read as a baseball recorder fault.
+        try:
+            import nfl_track
+            nfl_track.tick()
+        except Exception as _e:
+            errlog.note("MREC-nfl", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

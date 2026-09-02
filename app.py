@@ -3019,6 +3019,18 @@ def api_nfl_parlay():
                           (lambda: baseball.combo_slot_holder()
                            not in (None, ptok))))
 
+        def _log(item):
+            """File the slip in the ledger -- the same book baseball's slips
+            are graded in, sport-tagged. Best-effort: a build never fails
+            because a log write did not work."""
+            if not item:
+                return
+            try:
+                import sliplog
+                sliplog.log_from_item(item, sport="nfl")
+            except Exception as _e:
+                errlog.note("NFL-SLIP-log", _e)
+
         def _core():
             """The whole build as a plain dict, runnable off-request -- the
             phone only WATCHES a build, it never carries one."""
@@ -3030,6 +3042,7 @@ def api_nfl_parlay():
                     item["objective"] = "optimal"
                     item["target_payout_x"] = tgt
                     item["target_capped"] = capped
+                    _log(item)
                     return {"parlay": item}
                 return {"parlay": None, "hint": "optimal_unbuildable",
                         "target_payout_x": tgt}
@@ -3048,6 +3061,7 @@ def api_nfl_parlay():
                 return {"parlay": None, "hint": item["error_hint"],
                         "n_games_available": item.get("n_games_available"),
                         "n_started": item.get("n_started")}
+            _log(item)
             return {"parlay": item}
 
         if ptok:
@@ -3885,7 +3899,7 @@ def api_baseball_sliplog():
         sliplog.grade_due()
     except Exception as _e:
         errlog.note("APP-api_baseball_sliplog", _e)
-    return jsonify(store.slip_report())
+    return jsonify(store.slip_report(sport=request.args.get("sport") or None))
 
 
 @app.route("/api/baseball/presets")

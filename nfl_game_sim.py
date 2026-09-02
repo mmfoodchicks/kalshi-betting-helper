@@ -953,8 +953,12 @@ def _build_board(season, week, n=2400, preseason=False):
                         ("home", px.get("home_ticker"), raw_ph, _hc, _ac),
                         ("away", px.get("away_ticker"), 1 - raw_ph, _ac, _hc)):
                     if tk:
+                        # The kickoff rides along: NFL tickers carry only the
+                        # DAY, and predlog's closing-line snapshot would
+                        # otherwise stop at midnight -- up to 20 hours early.
                         log_rows.append((tk, p, px.get("close"),
-                                         predlog.devig(own, opp)))
+                                         predlog.devig(own, opp),
+                                         _iso_ts(g.get("date"))))
 
         # Model pick (calibrated) + default same-game parlay.
         pick_home = ph >= 0.5
@@ -1034,6 +1038,15 @@ def price_cands(cands, suffix, blend=True):
     if blend:
         combo_engine.blend_candidates(cands, quotes, sport="nfl")
     return cands
+
+
+def _iso_ts(s):
+    """ESPN's kickoff ('2026-09-13T17:00Z') as an epoch, or None."""
+    import kalshi
+    try:
+        return kalshi._parse_time(s) if s else None
+    except (ValueError, TypeError):
+        return None
 
 
 def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
@@ -1168,6 +1181,24 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     item = mlb_sim._mixed_item(best["sel"], games_bundles,
                                None if max_bet else
                                (target_payout if payout_mode != "off" else None))
+    # Tickets and kickoffs on every leg, so the slip can be logged and graded
+    # by sliplog exactly like a baseball slip. NFL slips were never in the
+    # ledger before this ("every parlay you build is logged" was true of one
+    # sport), so the correlation verdict had no football evidence at all.
+    import kalshi_nfl
+    try:
+        _idx = kalshi_nfl.index() or {}
+    except Exception as _e:
+        errlog.note("NFLG-stamp-idx", _e)
+        _idx = {}
+    _kick = {g["suffix"]: _iso_ts(g.get("date"))
+             for g in games if g.get("suffix")}
+    for grp in item.get("groups") or []:
+        for leg in grp.get("legs") or []:
+            tk, close = kalshi_nfl.ticker_leg(_idx, grp.get("suffix"),
+                                              leg.get("kref"))
+            leg["ticker"], leg["close_time"] = tk, close
+            leg["start_ts"] = _kick.get(grp.get("suffix"))
     for k, v in meta.items():
         if k != "objective" and v is not None:
             item[k] = v

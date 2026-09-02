@@ -9429,7 +9429,7 @@ try:
     for i, day in enumerate(("2026-08-29", "2026-08-29", "2026-08-30")):
         _ST.log_slip("mlb", day, f"k51-{i}", 2, 2, 0.3, 0.25, 3.0, 1.0,
                      "preset:tot80", "[]", None, tag="tot80")
-    for r in _ST.ungraded_slips(int(_tm.time()) + 10):
+    for r in _ST.ungraded_slips(int(_tm.time()) + 7 * 3600):
         _ST.set_slip_grade(r["id"], 1, won=1, legs_hit=2)
     _r51 = _ST.preset_records()["tot80"]
     ck("three slips over two dates are two DAYS of evidence",
@@ -9437,6 +9437,131 @@ try:
        "an afternoon of lineup churn logs one recipe three times")
 finally:
     _ST.DB_PATH = _db51
+
+print()
+print("=" * 72)
+print("NFL readiness: the ledger grades football, and grades totals right")
+print("=" * 72)
+# The sweep before kickoff. Two findings that mattered: (1) an Under was
+# logged as YES on the OVER's ticker (both sides share it), so the grader
+# read every Under backwards -- MLB and NFL alike, and the Totals 80%+ recipe
+# most of all; (2) NFL slips were never in the ledger, NFL tickers carry only
+# the day (closes anchored at midnight, grading polled all week), and the NFL
+# record only grew while someone had the tab open.
+import sliplog as _sl52
+import predlog as _pl52
+_cases52 = [
+    ({"side": "yes", "kref": {"t": "total", "n": 12, "over": False}}, 1),
+    ({"side": "yes", "kref": {"t": "total", "n": 12, "over": True}}, 0),
+    ({"side": "no", "kref": {"t": "total", "n": 12, "over": True}}, 1),
+    ({"side": "no", "kref": {"t": "total", "n": 12, "over": False}}, 0),
+    ({"side": "no", "kref": {"t": "prop", "stat": "ks"}}, 1),
+    ({"side": "yes", "pick": "Under 9.5 runs"}, 1),       # no kref: the label
+    ({"side": "yes", "pick": "Over 9.5 runs"}, 0)]
+ck("an Under is NO on the Over's market; every other leg keeps its side",
+   all(_sl52._bought_no(l) == want for l, want in _cases52),
+   "the first cut logged side=='no' verbatim and graded every Under backwards")
+ck("the ledger repairs itself: wrong-side Unders are re-sided and re-graded",
+   "repair_under_legs()" in _insp.getsource(_ST.init_db)
+   and "graded=CASE WHEN graded=1 THEN 0 ELSE graded END"
+   in _insp.getsource(_ST.repair_under_legs),
+   "a slip graded under the wrong side goes back to the grader; void stays void")
+_db52 = _ST.DB_PATH
+_ST.DB_PATH = _os.path.join(_tf51.mkdtemp(prefix="guard-under-"), "v.db")
+try:
+    _ST.init_db()
+    _legs52 = [{"tk": "KXMLBTOTAL-26AUG31XX-12", "no": 0, "close": None},
+               {"tk": "KXMLBGAME-26AUG31XX-NYY", "no": 0, "close": None}]
+    _disp52 = [{"pick": "Under 11.5 runs", "side": "yes"},
+               {"pick": "NYY to win", "side": "yes"}]
+    _ST.log_slip("mlb", "2026-08-31", "u52", 2, 1, 0.4, 0.35, 2.5, 1.0,
+                 "preset:tot80", _json2.dumps(_legs52), None, tag="tot80",
+                 legs_disp=_json2.dumps(_disp52))
+    _rid52 = _ST.ungraded_slips(int(_tm.time()) + 7 * 3600)[0]["id"]
+    _ST.set_slip_grade(_rid52, 1, won=0, legs_hit=1)   # the backwards grade
+    _n52 = _ST.repair_under_legs()
+    _row52 = _ST.ungraded_slips(int(_tm.time()) + 7 * 3600)
+    ck("functional: the repair flips the Under, resets the grade, and is idempotent",
+       _n52 == 1 and _ST.repair_under_legs() == 0 and _row52
+       and _json2.loads(_row52[0]["legs"])[0]["no"] == 1
+       and _json2.loads(_row52[0]["legs"])[1]["no"] == 0)
+    # Grading waits for the STAMPED start, not the log time.
+    _ST.log_slip("nfl", "2026-09-13", "f52", 2, 2, 0.3, 0.25, 3.0, 1.0, "b",
+                 "[]", None, start_ts=int(_tm.time()) + 3600)
+    _ST.log_slip("nfl", "2026-09-13", "p52", 2, 2, 0.3, 0.25, 3.0, 1.0, "b",
+                 "[]", None, start_ts=int(_tm.time()) - 5 * 3600)
+    _due52 = {r["key"] for r in _ST.ungraded_slips(int(_tm.time()))}
+    ck("the grader waits for kickoff + a game: a Tuesday slip for Sunday is "
+       "not probed all week",
+       "p52" in _due52 and "f52" not in _due52 and "u52" not in _due52,
+       "~160 Kalshi reads per pass for five days, for nothing, against a "
+       "rate limiter the whole app shares")
+    ck("the slip report can answer for one sport",
+       _ST.slip_report(sport="nfl")["pending"] == 2
+       and _ST.slip_report()["pending"] == 3)
+finally:
+    _ST.DB_PATH = _db52
+ck("a day-only ticker's start is pushed to the END of its day; a stamped "
+   "kickoff wins outright",
+   _sl52._start_of({"ticker": "KXNFLGAME-26SEP09NESEA-SEA"})
+   == _pl52._event_ts("KXNFLGAME-26SEP09NESEA-SEA") + 86400
+   and _sl52._start_of({"ticker": "KXMLBGAME-26AUG312138NYYLAA-NYY"})
+   == _pl52._event_ts("KXMLBGAME-26AUG312138NYYLAA-NYY")
+   and _sl52._start_of({"ticker": "X", "start_ts": 1789000000}) == 1789000000)
+ck("the slip's date is the ET day of its first kickoff, not the build day",
+   "min(starts)" in _insp.getsource(_sl52.log_from_item)
+   and 'ZoneInfo("America/New_York")' in _insp.getsource(_sl52.log_from_item))
+# NFL legs carry tickers + kickoffs, and the endpoint files the slip.
+import kalshi_nfl as _kn52
+_idx52 = {"26SEP13ARILAC": {"tick": {("ml", "LAC"): ("KXNFLGAME-26SEP13ARILAC-LAC", 1),
+                                    ("spread", "LAC", 4): ("KXNFLSPREAD-26SEP13ARILAC-LAC4", 1),
+                                    ("total", 45): ("KXNFLTOTAL-26SEP13ARILAC-45", 1),
+                                    ("prop", "rec_yd", "mike evans", 90.0): ("KXNFLRECYDS-26SEP13ARILAC-X-90", 1)}}}
+ck("kalshi_nfl.ticker_leg resolves every leg kind to its market, either side",
+   _kn52.ticker_leg(_idx52, "26SEP13ARILAC", {"t": "ml", "team": "LAC", "no": True})[0]
+   == "KXNFLGAME-26SEP13ARILAC-LAC"
+   and _kn52.ticker_leg(_idx52, "26SEP13ARILAC", {"t": "spread", "team": "LAC", "by": 4})[0]
+   == "KXNFLSPREAD-26SEP13ARILAC-LAC4"
+   and _kn52.ticker_leg(_idx52, "26SEP13ARILAC", {"t": "total", "n": 45, "over": False})[0]
+   == "KXNFLTOTAL-26SEP13ARILAC-45"
+   and _kn52.ticker_leg(_idx52, "26SEP13ARILAC",
+                        {"t": "prop", "stat": "rec_yd", "player": "Mike Evans", "line": 90.0})[0]
+   == "KXNFLRECYDS-26SEP13ARILAC-X-90"
+   and _kn52.ticker_leg(_idx52, "26SEP13ARILAC", {"t": "ml", "team": "ARI"}) == (None, None)
+   and '"tick": {}' in _insp.getsource(_kn52._build))
+_bp52 = _insp.getsource(_ngs51.build_parlay)
+_apy52 = open(_os.path.join(_root, "app.py")).read()
+ck("NFL parlays stamp ticker/close/kickoff on every leg and are filed in the ledger",
+   'leg["ticker"], leg["close_time"] = tk, close' in _bp52
+   and 'leg["start_ts"] = _kick.get(grp.get("suffix"))' in _bp52
+   and _apy52.count("_log(item)\n") == 2
+   and 'sliplog.log_from_item(item, sport="nfl")' in _apy52,
+   '"every parlay you build is logged" was true of one sport')
+ck("predlog anchors NFL closes at the KICKOFF the logger knew, not midnight",
+   "event_ts INTEGER" in _insp.getsource(_pl52.init_db)
+   and "ev = logged_ev or _event_ts(tk)" in _insp.getsource(_pl52.snapshot_closes)
+   and "_iso_ts(g.get(\"date\"))" in _insp.getsource(_ngs51._build_board)
+   and "row[4] if len(row) > 4 else None" in _insp.getsource(_pl52.log_many),
+   "NFL tickers carry only the day; the snapshot stopped up to 20h early")
+ck("predlog rows are the YES/Over side of each market only",
+   'if kref.get("no") or (kref.get("t") == "total"' in open(
+       _os.path.join(_root, "baseball.py")).read(),
+   "NO/Under candidates share the YES ticker; insert-order luck kept them out "
+   "of the prob, the mkt backfill had no such luck")
+import nfl_track as _nt52
+ck("the NFL record grows on the recorder's cadence in season, tab open or not",
+   "def tick" in _insp.getsource(_nt52)
+   and "nfl_track.tick()" in _insp.getsource(__import__("mlb_recorder")._loop)
+   and "record_from_board(data)" in _insp.getsource(_nt52.tick)
+   and "d.month >= 8 or d.month <= 2" in _insp.getsource(_nt52.tick))
+_js52 = open(_os.path.join(_root, "static", "app.js")).read()
+_html52 = open(_os.path.join(_root, "templates", "index.html")).read()
+ck("the NFL tab shows its own slip calibration",
+   'loadSlipLog("nflSlipLog", "nfl")' in _js52
+   and 'id="nflSlipLog"' in _html52
+   and 'store.slip_report(sport=request.args.get("sport") or None)' in _apy52)
+ck("preset legs carry kref so the ledger can side them",
+   '"kref": best.get("kref")' in _insp.getsource(_pr41._build_all))
 
 print()
 print("=" * 72)
