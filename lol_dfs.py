@@ -5,13 +5,14 @@ under a $50,000 cap. Rules constraints: at most 4 entities from one LoL team
 (the Team entity counts), the lineup must span >= 2 different games, and a player
 can't be used at both CPT and a position.
 
-Projections come from the pasted DKSalaries.csv's AvgPointsPerGame (DK's own
-number, already in DK LoL fantasy points). The value we add is the optimizer plus
+Projections come from our own Leaguepedia model wherever it covers a player
+(_our_projections) and fall back to DK's AvgPointsPerGame off the slate (dk.py's
+live lobby, or a pasted CSV). The value we add is the optimizer plus
 a correlated match sim: LoL scoring is hugely team-driven -- the winning team's
 players all boom together (kills, win/first-blood/objective bonuses, and the big
 series-sweep GNP bonus), the losers all bust. So we sample each game's outcome
 once and move a whole team's players together, which is what ceiling and the
-contest sim need. Player means stay pinned to the CSV projection.
+contest sim need. Player means stay pinned to that projection.
 """
 
 import math

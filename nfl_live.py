@@ -1,9 +1,12 @@
 """NFL week board: modeled scores, yards, TDs + key-player projections.
 
 Mirrors the MLB "today" slate (a card per game with a modeled score, a win-
-probability bar and per-team detail), but for football. The 2026 season hasn't
-kicked off, so ratings come from the last COMPLETED season (2025); the schedule
-comes from the upcoming season and skips preseason (ESPN seasontype=2).
+probability bar and per-team detail), but for football. Ratings come from the
+last COMPLETED season's standings ALL year (board() sets rt_season = season - 1;
+nothing here blends the current season in), and the schedule comes from the
+current season, skipping preseason (ESPN seasontype=2). The in-season,
+matchup-adjusted numbers live on the drive-engine slate (nfl_game_sim off
+Sleeper's weekly projections), not on this board.
 
 Data is ESPN's public API (same source as the live scoreboard + racing feeds):
   - standings                -> points for/against per team (the score model)

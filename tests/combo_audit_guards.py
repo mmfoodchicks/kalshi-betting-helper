@@ -9598,6 +9598,65 @@ ck("Madden Stream groups never reach the picker, and the type rides along",
 
 print()
 print("=" * 72)
+print("Docstrings point at things that exist")
+print("=" * 72)
+# The owner: "since docstrings are stale, go through every docstring and
+# either confirm they are working or confirm they are pointing to nonsense."
+# The manual pass rewrote the ones describing an older app (app.py was still
+# a seven-endpoint crypto helper; store.py knew one table; kalshi.py, racing.py
+# and simulate.py described a corner of themselves; calibrate.py listed three
+# models; nfl_dfs/lol_dfs/deep_cache/prices/mlb_form claimed retired facts).
+# This guard keeps the MECHANICAL half honest from here: every `module.attr`
+# a docstring names must exist, every /api route it names must be registered,
+# and every ?param= an app.py route documents must be read somewhere in app.py.
+import ast as _ast54
+import glob as _glob54
+import re as _re54
+_mods54 = {_os.path.splitext(_os.path.basename(p))[0]
+           for p in _glob54.glob(_os.path.join(_root, "*.py"))}
+_apy54 = open(_os.path.join(_root, "app.py")).read()
+_routes54 = set(_re54.findall(r'@app\.route\("([^"]+)"', _apy54))
+_rpre54 = {r.split("<")[0].rstrip("/") for r in _routes54}
+_dotted54 = _re54.compile(r"\b([a-z_][a-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\b")
+_routeish54 = _re54.compile(r"(/api/[A-Za-z0-9_/\-]+)")
+_notattr54 = {"py", "db", "json", "csv", "pkl", "yml", "yaml", "bat", "cfg",
+              "txt", "md", "html", "js", "com", "org", "gov", "net", "io",
+              "fandom", "app", "gz"}
+_attr_cache54 = {}
+def _has_attr54(mod, name):
+    if mod not in _attr_cache54:
+        _src = open(_os.path.join(_root, mod + ".py")).read()
+        _attr_cache54[mod] = set(_re54.findall(r"^(?:def|class)\s+([A-Za-z_]\w*)", _src, _re54.M)) \
+            | set(_re54.findall(r"^([A-Za-z_]\w*)\s*=", _src, _re54.M))
+    return name in _attr_cache54[mod]
+_bad54 = []
+for _p in sorted(_glob54.glob(_os.path.join(_root, "*.py"))):
+    _mod = _os.path.splitext(_os.path.basename(_p))[0]
+    _src = open(_p).read()
+    _t = _ast54.parse(_src)
+    _nodes = [("module", _t)] + [(n.name, n) for n in _ast54.walk(_t)
+                                 if isinstance(n, (_ast54.FunctionDef, _ast54.AsyncFunctionDef, _ast54.ClassDef))]
+    for _name, _n in _nodes:
+        _d = _ast54.get_docstring(_n)
+        if not _d:
+            continue
+        for _m, _a in _dotted54.findall(_d):
+            if _m in _mods54 and _m != _mod and _a not in _notattr54 and not _has_attr54(_m, _a):
+                _bad54.append(f"{_mod}.{_name}: {_m}.{_a}")
+        for _r in _routeish54.findall(_d):
+            _r0 = _r.rstrip("/.,")
+            if (_r0 not in _routes54 and _r0 not in _rpre54
+                    and not any(_r0.startswith(x + "/") for x in _rpre54)):
+                _bad54.append(f"{_mod}.{_name}: route {_r0}")
+        if _mod == "app" and _name != "module":
+            for _q in set(_re54.findall(r"[?&]([a-z_]+)=", _d)):
+                if f'"{_q}"' not in _apy54:
+                    _bad54.append(f"app.{_name}: ?{_q}=")
+ck("every module.attr, /api route and ?param a docstring names exists",
+   not _bad54, "; ".join(_bad54[:12]))
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

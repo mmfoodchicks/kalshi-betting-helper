@@ -11,6 +11,12 @@ When games go final it grades each logged prop against the real box score. Over
 many games this accumulates the dataset that validates the prop model and the
 value finder IN AGGREGATE -- Brier, calibration, edge ROI. A single night is
 noise; the point is the long-run honest read (store.prop_report).
+
+Its ~10-minute loop is also the app's recorder CADENCE: the same pass grades
+the slip ledger (sliplog.grade_due), rebuilds the locked presets
+(presets.tick) and, in season, records and grades the NFL track record
+(nfl_track.tick) -- each behind its own error code so one dead feed never
+reads as another's fault. Owner worker only.
 """
 
 import datetime

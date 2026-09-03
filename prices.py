@@ -9,8 +9,8 @@ Coinbase exposes two relevant public endpoints:
   - https://api.coinbase.com/v2/prices/<PRODUCT>/spot          (simple spot)
   - https://api.exchange.coinbase.com/products/<PRODUCT>/candles (OHLCV history)
 
-We deliberately use only the Python standard library (urllib) so the only
-third-party dependency for the whole project is Flask.
+We deliberately use only the Python standard library (urllib), which is why
+the project's runtime dependencies stay minimal (see requirements.txt).
 """
 
 import json

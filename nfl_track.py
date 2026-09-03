@@ -8,7 +8,8 @@ grade off ESPN's scoreboard once final. store.nfl_record() then reports the
 same honest scoreboard MLB has: W-L, taker-fee ROI, edge-filtered ROI, CLV,
 Brier, calibration — with preseason in its OWN bucket, because exhibitions
 and the regular season are different distributions (see nfl_game_sim's
-predlog split for the measured gap).
+predlog split for the measured gap). tick() runs on the recorder's cadence
+August through February, so the record grows whether or not the tab is open.
 """
 
 import datetime

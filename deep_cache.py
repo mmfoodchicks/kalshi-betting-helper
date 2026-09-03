@@ -1,16 +1,19 @@
 """Persistent cache + nightly scheduler for the heavy season simulations.
 
-The deep MLB run (and the F1 / NASCAR sims) are expensive, so we compute them
-ONCE, persist the result to disk, and serve the same artifact to every user.
+The deep MLB run, the F1 / NASCAR, NFL / CFB and pro-league season sims and
+the model-trust refit are expensive, so each is computed ONCE, persisted to
+disk, and served to every user as the same artifact (the jobs register from
+app.py).
 A background scheduler re-runs each job once per day (shortly after local
 midnight) so every morning reflects the latest rosters, standings and IL moves;
 the result also survives process restarts by reloading from disk on boot. A
 manual rerun (owner-triggered) forces a fresh run on demand.
 
-Note on hosting: disk persistence survives restarts within a host's lifetime.
-If the host is fully reclaimed (ephemeral containers), point CACHE_DIR at durable
-storage or have an external cron hit the manual-rerun endpoint nightly — that's
-the only way to guarantee the nightly run when the box can sleep.
+Hosting: CACHE_DIR sits on the persistent data disk, and the owner's PC
+(pc_worker) uploads its own nightly run through the artifact door, so the
+server usually ADOPTS a finished run instead of rebuilding -- the scheduler
+reads "already ran today" off the file's timestamp either way. The GitHub
+workflows pull the history out afterwards.
 """
 
 import os

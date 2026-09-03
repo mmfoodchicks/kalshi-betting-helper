@@ -40,12 +40,12 @@ never shipped. Whatever wins is then REGULARIZED toward no-op by sample size, so
 thin history can never earn a big correction. A model with no graded data is a
 no-op until its outcomes accrue. Everything is cached and fails safe.
 
-Registered models (loader returns [(prob 0-1, outcome 0/1)]):
-  win    — MLB game moneyline picks           (store.win_grade_pairs)
-  prop   — MLB batter props                    (store.prop_grade_pairs)
-  crypto — the GBM crypto fair-value model     (recorder.calibration_pairs)
-Others (tennis/ufc/racing/nfl/lol) have no prediction-vs-outcome log yet, so they
-are absent here and stay uncalibrated until that data accrues.
+Registered models (loader returns [(prob 0-1, outcome 0/1)]): the MLB pick and
+prop ledgers and the crypto recorder feed 'win' / 'prop' / 'crypto' directly;
+every other sport (tennis, ufc, nfl, nfl_pre, nba, nhl, ...) feeds through
+predlog.pairs(model), the universal prediction log, so a sport starts
+calibrating the moment its graded history clears its floor in _MODELS. A model
+with no graded data is a no-op.
 """
 import math
 import time as _t

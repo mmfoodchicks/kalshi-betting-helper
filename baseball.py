@@ -1757,7 +1757,8 @@ def _analyze_slate_isolated(date, season):
     a collection recovers almost none of it, because the survivors leave pymalloc
     arenas too fragmented to release (malloc_trim gets ~10 MB back). It plateaus
     rather than growing without bound, but it is a permanent ~140 MB that a
-    512 MB instance cannot spare on top of the Elo pools and the season sim.
+    small instance cannot spare on top of the Elo pools and the season sim
+    (measured on the 512 MB plan; still the reason on 2 GB with three workers).
 
     The finished board is 0.5 MB. So the child does the allocating, the parent
     gets the answer, and the OS reclaims the rest when the child exits.

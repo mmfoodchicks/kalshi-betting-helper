@@ -1,9 +1,12 @@
-"""Live Kalshi market data (public, read-only -- no API key required).
+"""Kalshi's public trade API, read-only -- the one HTTP client every sport uses.
 
-Kalshi exposes market data without authentication. We use it to pull the real,
-currently-open crypto contracts and their live YES/NO prices so the app can
-compare its model's fair value against the actual market instead of making you
-type the price in by hand.
+No key needed. The throttled JSON getter (_get_json: 429/5xx backoff with
+Retry-After honoured), market lists, single-market reads (settlement results
+for grading), the trade tape (price_move), the taker-fee formula and the
+cents/time parsers live here; the per-sport index modules (kalshi_mlb,
+kalshi_nfl, tennis_prices, ufc_prices, ...) build on them. The crypto series
+conventions below are where it started: the app compares its fair value
+against the live YES/NO price instead of making you type the price in by hand.
 
 Series ticker convention (crypto):
   - 15-minute markets : KX<COIN>15M   e.g. KXBTC15M

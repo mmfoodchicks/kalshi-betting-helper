@@ -1,9 +1,18 @@
-"""Monte Carlo simulators (read-only — they touch no stored data).
+"""Monte Carlo simulators + the DFS toolkit every DFS builder shares.
 
-Price simulator: projects a coin/commodity forward with many random GBM paths
-and reports the distribution of where it lands — median, best/worst case, the
-5–95% range, the chance it's up, and the chance it crosses a threshold. This is
-the "run it for an hour and see the range of outcomes" view.
+  price_sim / temp_sim / game_sim      the original GBM price, temperature and
+                                       runs simulators ("run it and see the
+                                       range of outcomes")
+  parse_dk_csv                         the DraftKings salary file (also exactly
+                                       what dk.py emits from the live lobby)
+  dfs_optimize / dfs_showdown / dfs_sim / dfs_build
+                                       lineup search, showdown, lineup sim and
+                                       the portfolio + contest sim (ownership,
+                                       leverage, duplication)
+  apply_grid / apply_ufc               sport hooks that reshape a pool before
+                                       the search
+
+Read-only: nothing here touches stored data.
 """
 
 import csv

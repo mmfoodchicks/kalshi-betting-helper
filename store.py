@@ -1,13 +1,16 @@
-"""SQLite persistence for markets, their signal snapshots, and outcomes.
+"""SQLite persistence: every ledger the app grades itself against.
 
-A "market" is one thing you're watching, e.g. "BTC above 63000, closing at
-3:00pm". We store:
-  - the market definition
-  - the signal snapshot taken when it was created (so we can score the model)
-  - the resolved outcome once the window closes (was it more/less than the
-    amount?) and whether the model's call was correct
+  markets    the crypto market tracker (where the app started) + its signal
+             snapshots and resolved outcomes -> the running accuracy / Brier
+  mlb_picks  the MLB model's moneyline picks: entry and closing price, result
+  nfl_picks  the NFL twin (nfl_track), with preseason in its own bucket
+  prop_log   MLB batter props: model vs Kalshi vs recent form, graded per box
+  slip_log   every parlay the maker or a locked preset built, graded as a UNIT
+             off Kalshi settlement (the correlation claim's record)
+  bets       the unified real-bet ledger
 
-This drives the running accuracy + Brier score the UI shows.
+Plus the shared scoreboard math (_pick_stats: W-L, fee-aware ROI, CLV, Brier,
+calibration) so every sport reports the same honest numbers the same way.
 """
 
 import json

@@ -1,17 +1,19 @@
-"""Starting-grid fetch for NASCAR / F1 DFS.
+"""Racing (F1 / NASCAR): grids, form, the win model and the race board.
 
-DraftKings' DKSalaries.csv has no starting position, but DK racing scoring is
-dominated by place differential (+1 per spot gained, -1 per spot lost). A driver
-who qualifies up front has almost no place-differential upside and large
-downside; season-average fantasy points (FPPR) miss this entirely.
+Started as the starting-grid fetch for DFS -- DraftKings' salary file has no
+starting position, and DK racing scoring is dominated by place differential
+(+1 per spot gained, -1 per spot lost), so a front-row qualifier has almost no
+upside and a back-marker has plenty -- and grew into the racing model proper:
 
-This module pulls the actual qualifying order so the DFS sim can adjust each
-driver for an atypically good/bad starting spot. Sources:
-  - NASCAR: cf.nascar.com weekend feed (qualifying run)
-  - F1:     jolpica/Ergast API (last qualifying)
+  grids       NASCAR weekend feed (qualifying), OpenF1 / jolpica for F1
+  form        recent finishes per driver (get_nascar_form / get_f1_form)
+  win model   DNF rates by grid position + the Plackett-Luce field_model that
+              the Kalshi board, the season sim and racing_dfs all share
+  board       race_board: the priced race card
+  plumbing    the throttled JSON getter and TTL cache the racing modules share
 
-Everything degrades gracefully: any failure returns None and the caller falls
-back to the plain FPPR model.
+Everything degrades gracefully: any feed failure returns None and the caller
+falls back to the plain projection.
 """
 
 import datetime

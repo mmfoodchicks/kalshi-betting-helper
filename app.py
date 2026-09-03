@@ -1,13 +1,18 @@
-"""Kalshi crypto betting helper -- Flask backend.
+"""Vigil -- the Flask backend: every route, and the background jobs ONE worker owns.
 
-Endpoints
-  GET  /                      -> the live web UI
-  GET  /api/coins            -> supported coins
-  GET  /api/quote            -> live spot + signal for ad-hoc params (no save)
-  POST /api/markets          -> create/track a market (saves a model snapshot)
-  GET  /api/markets          -> list tracked markets with live signals; auto-resolves
-  DELETE /api/markets/<id>   -> stop tracking a market
-  GET  /api/stats            -> running accuracy + Brier score
+What started as a Kalshi crypto helper (the /api/coins, /api/quote and
+/api/markets routes are still here) is now a multi-sport betting workbench:
+MLB (slate, sims, combo maker, locked presets, DFS), NFL (drive engine,
+parlays, DFS, season futures), NBA/NHL/CFB season engines, golf, tennis, UFC,
+racing, LoL, crypto/commodities/climate/weather markets, cross-sport Best Bets
+and futures -- each priced against Kalshi and graded into its own ledger.
+
+Layout: request plumbing (auth, the error-ledger hooks, tiers), the background
+owner (one gunicorn worker claims the recorders, the warmer and the deep
+scheduler through a file lock -- _own_background_jobs), then the routes grouped
+by sport. Heavy builds never run inside a request: they run as claimed jobs
+(baseball.job_claim / _run_job) or land in the shared board store (boardshare),
+and the client polls. /healthz and /robots.txt are the only anonymous routes.
 
 This is a decision-support tool. The odds are model estimates, not guarantees.
 """
@@ -3308,7 +3313,9 @@ _deep = {"agg": None, "season": None}
 @app.route("/api/baseball/futures/deep", methods=["POST"])
 def api_baseball_deep_start():
     """Kick off the deep multicore season run in the background (it takes minutes).
-    Poll /deep/status; when ready, GET /futures?engine=deep for the deep board."""
+    Poll /api/baseball/futures/deep/status; when ready, GET /api/baseball/futures
+    with engine=deep for the deep board (that route reads the parameter, not this
+    one)."""
     import deep_season
     import deep_cache
     if (deep_season.progress_read().get("running")

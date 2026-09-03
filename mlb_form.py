@@ -13,7 +13,8 @@ qualified player in the league in ONE request:
     /stats?stats=lastXGames&group=hitting&sportId=1&limit=1500&playerPool=All
     -> 519 hitters, ~2s
 
-which is what makes this affordable on a 512 MB box. Per-player game logs would
+which is what makes this affordable on a memory-constrained box (measured on
+the 512 MB plan). Per-player game logs would
 be ~350 requests for one slate. Note that `limit` paginates PLAYERS, not games:
 the window is fixed at 10 by the endpoint, so LAST_X below documents what the
 feed returns rather than requesting it.
