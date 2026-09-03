@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 7
+REV = 8
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -110,8 +110,18 @@ PRESETS = (
     # input (the payout), and everything else is the optimizer's problem --
     # leg count off, payout required, "balanced" objective, the per-leg
     # floor swept (combo_engine.best_target), same-game stacks allowed so
-    # the correlation credit is in reach. Four rungs, one tab, each logged
+    # the correlation credit is in reach. Five rungs, one tab, each logged
     # and graded under its own tag.
+    # The -200 rung, by request: "if I put in $20 and bankrolled my winnings
+    # I'd be up to $500 by NFL season." -200 American is 1.5x decimal (risk
+    # 200 to win 100), which the maker reaches with one ~66c leg or a short
+    # correlated stack. Logged and graded like the others so the tab's record
+    # line can say how often "practically always hits" actually hits; kept
+    # OFF the wall by request.
+    {"id": "x15", "label": "Pays 1.5× (-200)", "emoji": "⚡", "kind": "target",
+     "target_x": 1.5,
+     "desc": "The likeliest slip that pays 1.5× (-200) and isn't priced "
+             "against you - the bankroll-ladder rung. Often a single leg."},
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
      "desc": "The likeliest slip that pays 2× and isn't priced against "
@@ -378,8 +388,8 @@ def ensure_logged(payload):
         # An unlogged slip still shows; the note says why the ledger
         # skipped it (thin slate, an unticketed leg).
         note = (None if logged else
-                "not in the ledger: needs 2+ legs, all with Kalshi "
-                "tickets, pre-game")
+                "not in the ledger: every leg needs a Kalshi ticket, "
+                "pre-game")
         if logged != p.get("logged") or note != p.get("log_note"):
             p["logged"], p["log_note"] = logged, note
             changed = True

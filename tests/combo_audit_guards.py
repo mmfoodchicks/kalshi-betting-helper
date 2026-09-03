@@ -8714,7 +8714,7 @@ _spec41 = {s["id"]: s for s in _pr41.PRESETS}
 ck("the six recipes, verbatim, hard-locked as server constants "
    "(plus the four ⚡ payout rungs, guarded in their own block)",
    set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80", "tot80",
-                    "x2", "x3", "x5", "x10"}
+                    "x15", "x2", "x3", "x5", "x10"}
    and _spec41["hits5"]["n_legs"] == 5 and _spec41["hits5"]["types"] == ("Hit",)
    and _spec41["hr3"]["n_legs"] == 3 and _spec41["hr3"]["types"] == ("HR",)
    and _spec41["ks80"]["floor"] == 0.80 and _spec41["ks80"]["types"] == ("Ks",)
@@ -9342,8 +9342,9 @@ print("=" * 72)
 # client folds the four under one tab.
 ck("four rungs, locked at 2/3/5/10, kind 'target'",
    [( _spec49[p]["kind"], _spec49[p]["target_x"])
-    for p in ("x2", "x3", "x5", "x10")]
-   == [("target", 2.0), ("target", 3.0), ("target", 5.0), ("target", 10.0)])
+    for p in ("x15", "x2", "x3", "x5", "x10")]
+   == [("target", 1.5), ("target", 2.0), ("target", 3.0), ("target", 5.0),
+       ("target", 10.0)])
 ck("build_all dispatches the target kind",
    '"target": _build_target' in _insp.getsource(_pr41.build_all))
 # The rung must mirror the ⚡ button knob for knob -- payout REQUIRED, legs
@@ -9373,8 +9374,8 @@ finally:
     B.build_mixed_parlay = _obm49
 _js50 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("one ⚡ tab wearing four tags: tab row, wall columns, crown mapping",
-   '["targets", "⚡ 2-10×"]' in _js50
-   and '_TARGET_IDS = ["x2", "x3", "x5", "x10"]' in _js50
+   '["targets", "⚡ 1.5-10×"]' in _js50
+   and '_TARGET_IDS = ["x15", "x2", "x3", "x5", "x10"]' in _js50
    and "const cols = _WALL_COLS.map" in _js50
    and '["x10", "⚡ Pays 10×"]' in _js50
    and '_TARGET_IDS.includes(b.id) ? "targets" : b.id' in _js50
@@ -9654,6 +9655,39 @@ for _p in sorted(_glob54.glob(_os.path.join(_root, "*.py"))):
                     _bad54.append(f"app.{_name}: ?{_q}=")
 ck("every module.attr, /api route and ?param a docstring names exists",
    not _bad54, "; ".join(_bad54[:12]))
+
+print()
+print("=" * 72)
+print("The -200 rung: 1.5x, on the tab and in the ledger, off the wall")
+print("=" * 72)
+# "-200 equals" 1.5x decimal (risk 200 to win 100), not the 1.2-1.3x guessed.
+# A 1.5x slip is often ONE ~66c leg, which the ledger refused (2+ legs) -- so
+# the record line on the tab would have stayed empty forever. Locked recipes
+# may now file a one-leg slip; the maker's own slips still need two.
+_spec55 = {s["id"]: s for s in _pr41.PRESETS}
+ck("x15 is a 1.5x target rung, first on the tab, absent from the wall",
+   _spec55["x15"]["target_x"] == 1.5 and _spec55["x15"]["kind"] == "target"
+   and "-200" in _spec55["x15"]["label"]
+   and '["x15", "⚡' not in _js50 and '_TARGET_IDS = ["x15"' in _js50
+   and _pr41.REV >= 8,
+   "-200 American is 1.5x decimal; the owner asked for no wall column")
+_one55 = {"groups": [{"matchup": "A @ B", "suffix": "S", "legs": [
+    {"ticker": "KXMLBGAME-26SEP012010AAABBB-AAA", "pick": "AAA to win",
+     "side": "yes", "kref": {"t": "ml", "team": "AAA"}, "market_cents": 66}]}],
+    "n_games": 1, "combined_prob_pct": 67.0, "indep_prob_pct": 67.0,
+    "kalshi_payout_net_x": 1.48, "ev_pct": -0.5, "objective": "preset:x15"}
+_db55 = _ST.DB_PATH
+_ST.DB_PATH = _os.path.join(_tf51.mkdtemp(prefix="guard-x15-"), "v.db")
+try:
+    _ST.init_db()
+    ck("a locked recipe may file a one-leg slip; the maker's own still needs two",
+       _sl52.log_from_item(_one55, sport="mlb", date="2026-09-01", tag="x15")
+       and _sl52.log_from_item(_one55, sport="mlb", date="2026-09-01") is None
+       and _ST.preset_records().get("x15", {}).get("logged") == 1,
+       "the ledger grades the JOINT claim for the maker; for a recipe the "
+       "record line is the point")
+finally:
+    _ST.DB_PATH = _db55
 
 print()
 print("=" * 72)
