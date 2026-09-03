@@ -591,7 +591,8 @@ def frontier(games_bundles, max_total_legs=8, net=True):
 
 
 def choose(states, objective="balanced", legs_target=None, payout_target=None,
-           legs_mode="prefer", payout_mode="off", conn="or", min_ev=0.0):
+           legs_mode="prefer", payout_mode="off", conn="or", min_ev=0.0,
+           payout_basis="fair"):
     """Pick one point off the frontier.
 
     The leg-count and payout targets keep their existing three-way semantics --
@@ -607,10 +608,20 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
     X, Y = legs_target or 0, payout_target or 0
 
     meets_legs = lambda s: s["legs"] == X
-    # Judged on the FAIR payout, matching the number the slip displays as its
-    # target. The market payout is what you are actually paid and is reported
-    # separately; targeting it instead would silently chase mispriced legs.
-    meets_payout = lambda s: (s["fair_payout"] or 0) >= Y
+    # Judged on the FAIR payout by default, matching the number the slip
+    # displays as its target. The market payout is what you are actually paid
+    # and is reported separately; targeting it would silently chase mispriced
+    # legs -- which is exactly what payout_basis="market" is FOR: the -200
+    # rung wants the slip Kalshi pays 1.5x on whose true odds are best, i.e.
+    # the biggest gap between the price and the sim. Every leg must be quoted
+    # for that claim to be real (an unpriced leg is charged at fair value and
+    # would fake the payout).
+    if payout_basis == "market":
+        meets_payout = lambda s: ((s["payout"] or 0) >= Y
+                                  and s["priced_frac"] >= 1.0)
+    else:
+        meets_payout = lambda s: (s["fair_payout"] or 0) >= Y
+    reach = "payout" if payout_basis == "market" else "fair_payout"
 
     # Hard requirements, in the order they are given up. A leg count is an exact
     # structural target a slate can nearly always hit; a payout is a ">=" that may
@@ -689,7 +700,7 @@ def choose(states, objective="balanced", legs_target=None, payout_target=None,
             main = s["prob"]
         # Chasing an unmet payout target, reach for the bigger payout first.
         if want_payout and not meets_payout(s):
-            return (tier, near, s["fair_payout"] or 0, main)
+            return (tier, near, s[reach] or 0, main)
         return (tier, near, main, s["ev"] if s["ev"] is not None else 0.0)
 
     best = max(pool, key=rank)

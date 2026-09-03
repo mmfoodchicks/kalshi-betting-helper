@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 8
+REV = 9
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -111,17 +111,23 @@ PRESETS = (
     # leg count off, payout required, "balanced" objective, the per-leg
     # floor swept (combo_engine.best_target), same-game stacks allowed so
     # the correlation credit is in reach. Five rungs, one tab, each logged
-    # and graded under its own tag.
+    # and graded under its own tag. A rung may set payout_basis="market" to
+    # target what Kalshi PAYS rather than the fair payout (see choose()).
     # The -200 rung, by request: "if I put in $20 and bankrolled my winnings
-    # I'd be up to $500 by NFL season." -200 American is 1.5x decimal (risk
-    # 200 to win 100), which the maker reaches with one ~66c leg or a short
-    # correlated stack. Logged and graded like the others so the tab's record
-    # line can say how often "practically always hits" actually hits; kept
-    # OFF the wall by request.
+    # I'd be up to $500 by NFL season... I did want it to be a combo. If the
+    # combo maker can find edges to functionally make it 1.5x in Kalshi's
+    # eyes but factually even higher, I wanna exploit that." -200 American
+    # is 1.5x decimal (risk 200 to win 100). payout_basis "market": the slip
+    # must PAY 1.5x at Kalshi's asks, every leg quoted, and among those the
+    # chooser takes the highest TRUE (sim) probability -- the widest gap
+    # between the price and the odds. Always a combo: the frontier never
+    # yields one leg. Logged and graded so the record line can say how often
+    # "practically always" is; kept OFF the wall by request.
     {"id": "x15", "label": "Pays 1.5× (-200)", "emoji": "⚡", "kind": "target",
-     "target_x": 1.5,
-     "desc": "The likeliest slip that pays 1.5× (-200) and isn't priced "
-             "against you - the bankroll-ladder rung. Often a single leg."},
+     "target_x": 1.5, "payout_basis": "market",
+     "desc": "A combo Kalshi PAYS 1.5× (-200) on, chosen for the highest true "
+             "odds the sim can find at that price - correlated stacks and "
+             "mispriced legs are the edge. The bankroll-ladder rung."},
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
      "desc": "The likeliest slip that pays 2× and isn't priced against "
@@ -234,7 +240,8 @@ def _build_target(games, spec):
             games, n_legs=4, target_pct=floor, cap_pct=None,
             target_payout=target, max_legs_per_game=30, max_total_legs=30,
             legs_mode="off", payout_mode="require", objective="balanced",
-            include_live=False, types=None, sides=None)
+            include_live=False, types=None, sides=None,
+            payout_basis=spec.get("payout_basis", "fair"))
     item = combo_engine.best_target(_b)
     if item:
         item["target_payout_x"] = target
@@ -388,8 +395,8 @@ def ensure_logged(payload):
         # An unlogged slip still shows; the note says why the ledger
         # skipped it (thin slate, an unticketed leg).
         note = (None if logged else
-                "not in the ledger: every leg needs a Kalshi ticket, "
-                "pre-game")
+                "not in the ledger: needs 2+ legs, all with Kalshi "
+                "tickets, pre-game")
         if logged != p.get("logged") or note != p.get("log_note"):
             p["logged"], p["log_note"] = logged, note
             changed = True

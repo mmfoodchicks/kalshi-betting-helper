@@ -53,11 +53,10 @@ def log_from_item(item, sport="mlb", date=None, tag=None):
                          "side": l.get("side", "yes"),
                          "matchup": grp.get("matchup"),
                          "cents": l.get("market_cents")})
-    # The maker's own slips need 2+ legs: the ledger exists to grade the
-    # JOINT claim, and one leg is a pick, not a parlay. A locked recipe is
-    # different -- its 1.5x rung is often a single ~66c leg by design, and
-    # the record line on its tab is the whole point of logging it.
-    if len(legs) < (1 if tag else 2):
+    # 2+ legs, always: the ledger exists to grade the JOINT claim, and one
+    # leg is a pick, not a parlay. (The maker's frontier never yields a
+    # one-leg slip anyway -- combo_engine.frontier skips legs < 2.)
+    if len(legs) < 2:
         return None
     prob = (item.get("combined_prob_pct") or 0) / 100.0
     indep = (item.get("indep_prob_pct") or 0) / 100.0

@@ -4089,7 +4089,7 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
                        progress_token=None, sides=None, min_edge_c=None,
-                       leg_ok=None, abort_cb=None):
+                       leg_ok=None, abort_cb=None, payout_basis="fair"):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
 
@@ -4336,6 +4336,10 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     else:
         targets = {"legs_target": n_legs, "payout_target": target_payout,
                    "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+        if payout_basis == "market":
+            # The target is what Kalshi PAYS, every leg quoted (see
+            # combo_engine.choose): the locked -200 rung's whole point.
+            targets["payout_basis"] = "market"
         best, meta = combo_engine.choose(states, objective=objective, **targets)
     if not best:
         return None
@@ -4350,6 +4354,8 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
         if k != "objective" and v is not None:
             item[k] = v
     item["objective"] = "max_bet" if max_bet else objective
+    if payout_basis == "market":
+        item["payout_basis"] = "market"      # payout_reached came from meta
     item["excluded_unpriced"] = excluded_unpriced
     item["excluded_no_edge"] = excluded_no_edge
     item["min_edge_c"] = min_edge_c

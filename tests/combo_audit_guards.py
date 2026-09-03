@@ -9658,36 +9658,53 @@ ck("every module.attr, /api route and ?param a docstring names exists",
 
 print()
 print("=" * 72)
-print("The -200 rung: 1.5x, on the tab and in the ledger, off the wall")
+print("The -200 rung: a combo Kalshi PAYS 1.5x on, with the best true odds")
 print("=" * 72)
-# "-200 equals" 1.5x decimal (risk 200 to win 100), not the 1.2-1.3x guessed.
-# A 1.5x slip is often ONE ~66c leg, which the ledger refused (2+ legs) -- so
-# the record line on the tab would have stayed empty forever. Locked recipes
-# may now file a one-leg slip; the maker's own slips still need two.
+# "-200 equals" 1.5x decimal (risk 200 to win 100). The owner: "I did want
+# it to be a combo. If the combo maker can find edges to functionally make
+# it 1.5x in Kalshi's eyes but factually even higher, I wanna exploit that."
+# So the rung judges its target on what Kalshi PAYS (every leg quoted) and
+# ranks the survivors by the sim's probability -- the widest price-vs-odds
+# gap wins. Custom builds keep the fair basis and its anti-chasing rule.
 _spec55 = {s["id"]: s for s in _pr41.PRESETS}
-ck("x15 is a 1.5x target rung, first on the tab, absent from the wall",
+ck("x15 is a 1.5x MARKET-basis target rung, first on the tab, off the wall",
    _spec55["x15"]["target_x"] == 1.5 and _spec55["x15"]["kind"] == "target"
+   and _spec55["x15"].get("payout_basis") == "market"
    and "-200" in _spec55["x15"]["label"]
    and '["x15", "⚡' not in _js50 and '_TARGET_IDS = ["x15"' in _js50
-   and _pr41.REV >= 8,
+   and _pr41.REV >= 9
+   and 'payout_basis=spec.get("payout_basis", "fair")'
+   in _insp.getsource(_pr41._build_target),
    "-200 American is 1.5x decimal; the owner asked for no wall column")
-_one55 = {"groups": [{"matchup": "A @ B", "suffix": "S", "legs": [
-    {"ticker": "KXMLBGAME-26SEP012010AAABBB-AAA", "pick": "AAA to win",
-     "side": "yes", "kref": {"t": "ml", "team": "AAA"}, "market_cents": 66}]}],
-    "n_games": 1, "combined_prob_pct": 67.0, "indep_prob_pct": 67.0,
-    "kalshi_payout_net_x": 1.48, "ev_pct": -0.5, "objective": "preset:x15"}
-_db55 = _ST.DB_PATH
-_ST.DB_PATH = _os.path.join(_tf51.mkdtemp(prefix="guard-x15-"), "v.db")
-try:
-    _ST.init_db()
-    ck("a locked recipe may file a one-leg slip; the maker's own still needs two",
-       _sl52.log_from_item(_one55, sport="mlb", date="2026-09-01", tag="x15")
-       and _sl52.log_from_item(_one55, sport="mlb", date="2026-09-01") is None
-       and _ST.preset_records().get("x15", {}).get("logged") == 1,
-       "the ledger grades the JOINT claim for the maker; for a recipe the "
-       "record line is the point")
-finally:
-    _ST.DB_PATH = _db55
+import combo_engine as _ce55
+_A55 = {"legs": 2, "prob": 0.74, "cost": 0.66, "payout": 1.515,
+        "fair_payout": 1.35, "ev": 0.12, "priced_frac": 1.0, "sel": [1]}
+_B55 = {"legs": 2, "prob": 0.67, "cost": 0.70, "payout": 1.43,
+        "fair_payout": 1.49, "ev": -0.04, "priced_frac": 1.0, "sel": [2]}
+_C55 = {"legs": 3, "prob": 0.60, "cost": 0.60, "payout": 1.67,
+        "fair_payout": 1.67, "ev": 0.0, "priced_frac": 1.0, "sel": [3]}
+_D55 = {"legs": 2, "prob": 0.80, "cost": 0.60, "payout": 1.67,
+        "fair_payout": 1.25, "ev": 0.33, "priced_frac": 0.5, "sel": [4]}
+_mk55, _mm55 = _ce55.choose([_A55, _B55, _C55, _D55], objective="balanced",
+                            payout_target=1.5, payout_mode="require",
+                            legs_mode="off", payout_basis="market")
+_fr55, _fm55 = _ce55.choose([_A55, _B55, _C55, _D55], objective="balanced",
+                            payout_target=1.5, payout_mode="require",
+                            legs_mode="off")
+ck("market basis: the slip that PAYS 1.5x with the best true odds wins; "
+   "a half-quoted slip cannot qualify; the fair basis still picks fair",
+   _mk55 is _A55 and _mm55["payout_reached"] is True
+   and _fr55 is _C55 and _fm55["payout_reached"] is True,
+   "A pays 1.515 at 74% true (fair 1.35 -- the gap IS the bet); D pays more "
+   "but half its legs are unquoted; on the fair basis only C reaches 1.5")
+ck("the basis rides through the builder to the slip",
+   'targets["payout_basis"] = "market"' in _insp.getsource(B.build_mixed_parlay)
+   and 'item["payout_basis"] = "market"' in _insp.getsource(B.build_mixed_parlay)
+   and 'it.payout_basis === "market"' in open(_os.path.join(_root, "static", "app.js")).read())
+ck("a rung is always a combo, and the ledger keeps its two-leg rule",
+   "if legs < 2:" in _insp.getsource(_ce55.frontier)
+   and "if len(legs) < 2:" in _insp.getsource(_sl52.log_from_item),
+   "the frontier never yields one leg, so no one-leg exception was needed")
 
 print()
 print("=" * 72)

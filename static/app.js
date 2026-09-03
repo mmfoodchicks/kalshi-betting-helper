@@ -1213,9 +1213,13 @@ function _presetSectionHtml(p, rec) {
     // is a different claim from "pays 10×" and the tab must not blur them.
     const missLine = (it.target_payout_x && it.payout_reached === false)
       ? `<div class="small" style="color:var(--muted)">⚠️ nothing reaches ${it.target_payout_x}× today - this is the closest the slate offers.</div>` : "";
+    // A market-basis rung: the target is what KALSHI pays, and the edge is
+    // the sim's odds above what that price implies.
+    const basisLine = it.payout_basis === "market"
+      ? `<div class="small" style="color:var(--muted)">🎯 priced on Kalshi's payout: the slip must pay ${it.target_payout_x}× at the asks (${(100 / it.target_payout_x).toFixed(1)}% implied); the sim's ${it.combined_prob_pct}% is the edge you're taking.</div>` : "";
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
       <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
-      ${missLine}
+      ${missLine}${basisLine}
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
   return `<div>
