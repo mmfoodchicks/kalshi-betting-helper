@@ -5,7 +5,8 @@ Roster: 1 QB, 2 RB, 3 WR, 1 TE, 1 FLEX (RB/WR/TE), 1 DST -- $50,000 cap.
 Projections + per-player score arrays come from the Sleeper-seeded correlated
 game sim (nfl_dfs_sim.player_pool): skill players carry the within-game
 correlation (a QB and his WRs boom together), DSTs are sampled independently.
-Salaries + the actual player pool come from the pasted DKSalaries.csv. Ceiling /
+Salaries + the actual player pool come from DraftKings' public lobby (dk.py;
+a pasted DKSalaries.csv still works). Ceiling /
 leverage objectives and the top-heavy contest sim mirror the MLB DFS builder;
 the pure payout-curve helpers are reused straight from mlb_dfs.
 """

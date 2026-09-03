@@ -38,6 +38,14 @@ SPORTS = {
     "golf": "GOLF", "nascar": "NAS", "f1": "MOTOR", "soccer": "SOC", "lol": "LOL",
 }
 _AVG_PPG_ATTR = 408          # DK's "AvgPointsPerGame" stat id
+# DK lobby ContestTypeIds, read off the live NFL lobby (Sep 2026): Classic is
+# the full-slate game the optimizer is built for; Showdown (96) is a one-game
+# captain format; Sit & Go (145) is a rebranded Classic; 158/159 are "Madden
+# Stream" contests -- a VIDEO-GAME simulation, with fake "SF @ NE" games and
+# real player names, that the picker chose over week 1 because it started
+# "tonight". Never a real slate for any sport.
+_CLASSIC_TYPES = {"nfl": {21}}
+_NEVER_TYPES = {158, 159}
 _OPP_PITCHER_ATTR = 112      # MLB: opposing starter + handedness
 _OPENER_ATTR = 135           # MLB: "PO" badge -- listed pitcher is an OPENER
 _BULK_ATTR = 136             # MLB: "PLR" badge -- the probable long reliever
@@ -65,10 +73,15 @@ def slates(sport):
             dg = g.get("DraftGroupId")
             if not dg:
                 continue
+            tag = (g.get("ContestStartTimeSuffix") or "").strip() or None
+            ctype = g.get("ContestTypeId")
+            if ctype in _NEVER_TYPES or "madden" in (tag or "").lower():
+                continue
             out.append({"draft_group_id": dg, "sport": sport,
                         "starts": g.get("StartDateEst"),
                         "games": g.get("GameCount"),
-                        "tag": (g.get("ContestStartTimeSuffix") or "").strip() or None})
+                        "contest_type": ctype,
+                        "tag": tag})
         out.sort(key=lambda s: (str(s["starts"] or ""), -(s["games"] or 0)))
         if not out:
             # A throttled or mangled lobby response parses to an EMPTY list,
@@ -216,6 +229,16 @@ def slate_for(sport, draft_group_id=None, exclude_games=None):
         # Tonight first: the biggest slate STARTING TODAY beats a bigger one
         # next Tuesday. Then walk the list -- a group with no players posted
         # yet (DK lists future groups early) must not end the search.
+        # The MAIN slate first where the sport has one: for NFL that is the
+        # Classic full-slate group, and a Thursday-night Showdown (one game,
+        # captain slots) or a Madden Stream that happens to start "tonight"
+        # must not outrank Sunday's thirteen games. Sports without a known
+        # Classic id keep the tonight-first rule as it was.
+        main = _CLASSIC_TYPES.get((sport or "").lower())
+        if main:
+            classic = [s for s in upcoming if s.get("contest_type") in main]
+            if classic:
+                upcoming = classic
         tonight = [s for s in upcoming if str(s.get("starts") or "")[:10] == today]
         ordered = (sorted(tonight, key=lambda s: -(s.get("games") or 0))
                    + sorted((s for s in upcoming if s not in tonight),

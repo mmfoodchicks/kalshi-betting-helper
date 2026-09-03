@@ -9565,6 +9565,39 @@ ck("preset legs carry kref so the ledger can side them",
 
 print()
 print("=" * 72)
+print("The DFS slate picker picks a REAL slate")
+print("=" * 72)
+# Live on Sep 3: dk.slate_for("nfl") chose draft group 152634 -- a "Madden
+# Stream" video-game contest (fake SF @ NE, real names, 89 players) -- over
+# week 1's Classic slate (151307, Sunday 1pm, 1,323 players), because the
+# picker took tonight's biggest group with no idea what kind of contest it
+# was. A Thursday-night Showdown would have won the same way.
+import dk as _dk53
+_osl53, _opl53 = _dk53.slates, _dk53.players
+try:
+    _dk53.slates = lambda sport: [
+        {"draft_group_id": 1, "sport": "nfl", "starts": "2099-01-01T20:20:00",
+         "games": 1, "contest_type": 96, "tag": "(NE @ SEA)"},          # showdown tonight
+        {"draft_group_id": 2, "sport": "nfl", "starts": "2099-01-04T13:00:00",
+         "games": 13, "contest_type": 21, "tag": None}]                  # classic Sunday
+    _dk53.players = lambda dg: [{"name": f"P{dg}", "salary": 5000, "position": "QB",
+                                 "roster_pos": "QB", "game": "A @ B", "team": "A",
+                                 "avg_ppg": None, "status": None, "dk_id": dg,
+                                 "available": True, "role": None}]
+    _dk53.contests = lambda sport, dg=None: []
+    _got53 = _dk53.slate_for("nfl")
+    ck("NFL takes the Classic main slate over a same-night Showdown",
+       _got53 and _got53["draft_group_id"] == 2)
+finally:
+    _dk53.slates, _dk53.players = _osl53, _opl53
+ck("Madden Stream groups never reach the picker, and the type rides along",
+   "_NEVER_TYPES = {158, 159}" in _insp.getsource(_dk53)
+   and '"madden" in (tag or "").lower()' in _insp.getsource(_dk53.slates)
+   and '"contest_type": ctype' in _insp.getsource(_dk53.slates),
+   "a video-game simulation with real player names is not a slate")
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
