@@ -1086,19 +1086,20 @@ function todayET(offsetDays = 0) {
 const _PRESET_TABS = [["custom", "⚙️ Custom"], ["hits5", "🖐️ 5 Hits"],
   ["hr3", "💣 3 HR"], ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"],
   ["rl80", "📏 RL 80%+"], ["tot80", "📊 Totals 80%+"],
-  ["targets", "⚡ 1.5-10×"]];
+  ["targets", "⚡ 1.5-200×"]];
 // The ⚡ tab is ONE tab with four sections - each rung is its own preset
 // server-side (own tag, own ledger record, own wall column), but the owner
 // asked for one tab, so the tab id maps to these four.
 // x15 is the -200 bankroll rung: on the tab, in the ledger, OFF the wall
 // (by request -- "practically always hits" makes a dull highlight reel).
-const _TARGET_IDS = ["x15", "x2", "x3", "x5", "x10"];
+const _TARGET_IDS = ["x15", "x2", "x3", "x5", "x10", "x100", "x200"];
 // Wall columns are LOGGED TAGS, not tabs: "custom" logs nothing and
 // "targets" is four tags wearing one tab, so the wall lists them itself.
 const _WALL_COLS = [["hits5", "🖐️ 5 Hits"], ["hr3", "💣 3 HR"],
   ["ks80", "🔥 Ks 80%+"], ["ml58", "💰 ML 58%+"], ["rl80", "📏 RL 80%+"],
   ["tot80", "📊 Totals 80%+"], ["x2", "⚡ Pays 2×"], ["x3", "⚡ Pays 3×"],
-  ["x5", "⚡ Pays 5×"], ["x10", "⚡ Pays 10×"]];
+  ["x5", "⚡ Pays 5×"], ["x10", "⚡ Pays 10×"], ["x100", "⚡ Pays 100×"],
+  ["x200", "⚡ Pays 200×"]];
 let _presetSel = "custom";
 let _presetData = null, _presetFetchTs = 0, _presetPoll = null;
 

@@ -8714,7 +8714,7 @@ _spec41 = {s["id"]: s for s in _pr41.PRESETS}
 ck("the six recipes, verbatim, hard-locked as server constants "
    "(plus the four ⚡ payout rungs, guarded in their own block)",
    set(_spec41) == {"hits5", "hr3", "ks80", "ml58", "rl80", "tot80",
-                    "x15", "x2", "x3", "x5", "x10"}
+                    "x15", "x2", "x3", "x5", "x10", "x100", "x200"}
    and _spec41["hits5"]["n_legs"] == 5 and _spec41["hits5"]["types"] == ("Hit",)
    and _spec41["hr3"]["n_legs"] == 3 and _spec41["hr3"]["types"] == ("HR",)
    and _spec41["ks80"]["floor"] == 0.80 and _spec41["ks80"]["types"] == ("Ks",)
@@ -9343,9 +9343,9 @@ print("=" * 72)
 # client folds the four under one tab.
 ck("four rungs, locked at 2/3/5/10, kind 'target'",
    [( _spec49[p]["kind"], _spec49[p]["target_x"])
-    for p in ("x15", "x2", "x3", "x5", "x10")]
+    for p in ("x15", "x2", "x3", "x5", "x10", "x100", "x200")]
    == [("target", 1.5), ("target", 2.0), ("target", 3.0), ("target", 5.0),
-       ("target", 10.0)])
+       ("target", 10.0), ("target", 100.0), ("target", 200.0)])
 ck("build_all dispatches the target kind (through the shared frontier)",
    "_build_target(games, spec, abort_cb=abort_cb," in _insp.getsource(_pr41.build_all)
    and "frontier_cache=fcache" in _insp.getsource(_pr41.build_all))
@@ -9376,8 +9376,8 @@ finally:
     B.build_mixed_parlay = _obm49
 _js50 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("one ⚡ tab wearing four tags: tab row, wall columns, crown mapping",
-   '["targets", "⚡ 1.5-10×"]' in _js50
-   and '_TARGET_IDS = ["x15", "x2", "x3", "x5", "x10"]' in _js50
+   '["targets", "⚡ 1.5-200×"]' in _js50
+   and '_TARGET_IDS = ["x15", "x2", "x3", "x5", "x10", "x100", "x200"]' in _js50
    and "const cols = _WALL_COLS.map" in _js50
    and '["x10", "⚡ Pays 10×"]' in _js50
    and '_TARGET_IDS.includes(b.id) ? "targets" : b.id' in _js50
@@ -9879,6 +9879,23 @@ try:
        _nfront57[0] == 2 and len(_fc57) == 2 and _c57 is not None)
 finally:
     (B._game_sim, B._price_cands, _km57.index, _ce57.frontier) = _orig57
+
+print()
+print("=" * 72)
+print("The lottery rungs: 100x and 200x on the tab AND the wall")
+print("=" * 72)
+_spec58 = {s["id"]: s for s in _pr41.PRESETS}
+_js58 = open(_os.path.join(_root, "static", "app.js")).read()
+import combo_engine as _ce58
+ck("x100/x200 are fair-basis target rungs under Kalshi's cap, on the wall",
+   _spec58["x100"]["target_x"] == 100.0 and _spec58["x200"]["target_x"] == 200.0
+   and all(_spec58[p].get("payout_basis") is None for p in ("x100", "x200"))
+   and 200.0 < _ce58.MAX_PAYOUT_X
+   and '["x100", "⚡ Pays 100×"]' in _js58 and '["x200", "⚡ Pays 200×"]' in _js58
+   and '["x15", "⚡' not in _js58
+   and _pr41.REV >= 10,
+   "the owner asked for both on the maker and the hit board; the 1.5x rung "
+   "stays off the wall as asked")
 
 print()
 print("=" * 72)

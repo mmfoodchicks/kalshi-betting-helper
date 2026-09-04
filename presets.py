@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 9
+REV = 10
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -110,7 +110,7 @@ PRESETS = (
     # input (the payout), and everything else is the optimizer's problem --
     # leg count off, payout required, "balanced" objective, the per-leg
     # floor swept (combo_engine.best_target), same-game stacks allowed so
-    # the correlation credit is in reach. Five rungs, one tab, each logged
+    # the correlation credit is in reach. Seven rungs, one tab, each logged
     # and graded under its own tag. A rung may set payout_basis="market" to
     # target what Kalshi PAYS rather than the fair payout (see choose()).
     # The -200 rung, by request: "if I put in $20 and bankrolled my winnings
@@ -145,6 +145,18 @@ PRESETS = (
      "desc": "The likeliest slip that pays 10× and isn't priced against "
              "you - the long rung; expect same-game stacks doing the "
              "heavy lifting."},
+    # The lottery rungs, by request, on the tab AND the wall (a 100x cash is
+    # exactly what a highlight reel is for). Same recipe, same shared
+    # frontier; they only choose deeper. Kalshi caps a payout at
+    # combo_engine.MAX_PAYOUT_X, so both sit under it.
+    {"id": "x100", "label": "Pays 100×", "emoji": "⚡", "kind": "target",
+     "target_x": 100.0,
+     "desc": "The likeliest slip that pays 100× and isn't priced against "
+             "you - a deep stack of correlated legs; ~1% shots by nature."},
+    {"id": "x200", "label": "Pays 200×", "emoji": "⚡", "kind": "target",
+     "target_x": 200.0,
+     "desc": "The likeliest slip that pays 200× and isn't priced against "
+             "you - the moonshot rung; empty on thin slates is honest."},
 )
 
 
