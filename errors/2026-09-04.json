@@ -1,6 +1,28 @@
 {
  "errors": [
   {
+   "code": "FAN-pit",
+   "id": 188,
+   "last_ts": 1788556338.6346045,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 3,
+   "path": null,
+   "pid": 6082,
+   "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 477, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1788555763.3952432
+  },
+  {
+   "code": "KAL-candles",
+   "id": 189,
+   "last_ts": 1788555862.2947917,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 5026,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 229, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1788555862.2947917
+  },
+  {
    "code": "NFL-espn-fetch",
    "id": 187,
    "last_ts": 1788548740.1681037,
@@ -1079,7 +1101,7 @@
    "ts": 1787998996.4462261
   }
  ],
- "generated_at": 1788554661.8853683,
+ "generated_at": 1788556828.5095088,
  "summary": [
   {
    "code": "NFLT-finals",
@@ -1101,17 +1123,17 @@
    "code": "FAN-pit",
    "first_ts": 1787998996.4462261,
    "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1788528205.3516998,
-   "n": 53,
-   "variants": 31
+   "last_ts": 1788556338.6346045,
+   "n": 56,
+   "variants": 32
   },
   {
    "code": "KAL-candles",
    "first_ts": 1788062630.3137605,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1788528284.5389218,
-   "n": 3,
-   "variants": 3
+   "last_ts": 1788555862.2947917,
+   "n": 4,
+   "variants": 4
   },
   {
    "code": "COMBO-dead-job",
