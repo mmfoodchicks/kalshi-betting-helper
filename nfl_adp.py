@@ -172,7 +172,14 @@ def consensus():
                    "name": p.get("full_name"),
                    "injury": inj or None, "injury_return": inj in _RETURN,
                    "fa": team is None, "years_exp": p.get("years_exp"),
-                   "status": p.get("status")}
+                   "status": p.get("status"),
+                   # Sleeper's depth chart: slot (LWR/RWR/SWR/RB/TE/QB) and
+                   # order within it (1 = starter). A practice-squad player
+                   # reads as Active with NO entry -- that absence is the
+                   # DFS builder's roster gate (nfl_dfs._depth_verdict).
+                   "depth_pos": p.get("depth_chart_position"),
+                   "depth": p.get("depth_chart_order"),
+                   "active": p.get("active")}
             # Two players can normalize to the same key (rare); keep the better
             # (lower) consensus rank so a star isn't shadowed by a namesake scrub.
             prev = out.get(nm)

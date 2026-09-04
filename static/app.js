@@ -5775,7 +5775,7 @@ function renderNflDfs(d) {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     return `<div class="nfl-dfsrow">
       <span class="nfl-dfsslot">${p.slot}</span>
-      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)">${p.pos}${p.team ? " · " + p.team : ""}</span></span>
+      <span class="nfl-dfsname">${p.name} <span class="small" style="color:var(--muted)" title="${p.depth ? "Sleeper depth chart" : ""}">${p.depth || p.pos}${p.team ? " · " + p.team : ""}</span></span>
       <span class="nfl-dfsnum">$${nf(p.salary)}</span>
       <span class="nfl-dfsnum">proj <b>${p.proj}</b></span>
       <span class="nfl-dfsnum">ceil <b class="ev pos">${p.ceiling}</b>${own}</span>
@@ -5783,6 +5783,10 @@ function renderNflDfs(d) {
   }).join("");
   const un = (d.unmatched && d.unmatched.length)
     ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection - used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
+  // The roster gate names who it left out and why -- a practice-squad
+  // receiver at $3,000 used to be the best value on the board.
+  const ex = (d.excluded && d.excluded.length)
+    ? `<div class="small" style="color:var(--muted);margin-top:6px">🪑 ${d.n_excluded || d.excluded.length} left out by the depth chart / projections: ${d.excluded.slice(0, 5).map((e) => `${escapeHtml(e.name)} (${e.pos}${e.team ? "·" + e.team : ""}: ${escapeHtml(e.why || "")})`).join("; ")}${d.excluded.length > 5 ? "…" : ""}</div>` : "";
   // A silently-disabled availability filter is worse than none: it puts an IR
   // player in a lineup with nothing on screen to say it could not check.
   const stWarn = d.status_warning
@@ -5801,7 +5805,7 @@ function renderNflDfs(d) {
     </div>
     ${csHead}
     <div class="nfl-dfslist">${rows}</div>
-    ${un}
+    ${un}${ex}
     ${flatNote}
     <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}</div>
   </div>`;

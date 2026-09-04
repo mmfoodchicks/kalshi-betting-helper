@@ -37,7 +37,9 @@ SPORTS = {
     "ufc": "MMA", "mlb": "MLB", "nfl": "NFL", "nba": "NBA", "nhl": "NHL",
     "golf": "GOLF", "nascar": "NAS", "f1": "MOTOR", "soccer": "SOC", "lol": "LOL",
 }
-_AVG_PPG_ATTR = 408          # DK's "AvgPointsPerGame" stat id
+_AVG_PPG_ATTR = 408          # DK's "AvgPointsPerGame" stat id (MLB and most)
+_AVG_PPG_ATTR_NFL = 90       # ...NFL files it under 90 (read off the live
+                             # week-1 draftables: [(90, '8.6'), (-2, '22nd')])
 # DK lobby ContestTypeIds, read off the live NFL lobby (Sep 2026): Classic is
 # the full-slate game the optimizer is built for; Showdown (96) is a one-game
 # captain format; Sit & Go (145) is a rebranded Classic; 158/159 are "Madden
@@ -163,7 +165,7 @@ def players(draft_group_id):
                 "game": comp.get("name") or "",
                 "starts": comp.get("startTime"),
                 "team": x.get("teamAbbreviation") or "",
-                "avg_ppg": attrs.get(_AVG_PPG_ATTR),
+                "avg_ppg": attrs.get(_AVG_PPG_ATTR, attrs.get(_AVG_PPG_ATTR_NFL)),
                 "status": status or None,
                 "opp_pitcher": gattrs.get(_OPP_PITCHER_ATTR),
                 "role": role,

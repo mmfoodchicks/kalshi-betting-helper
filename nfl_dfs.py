@@ -14,6 +14,7 @@ the pure payout-curve helpers are reused straight from mlb_dfs.
 import math
 import random
 
+import errlog
 import simulate                     # parse_dk_csv
 import nfl_dfs_sim
 from mlb_dfs import _gpp_curve, _rank_grid, _ncdf, _npdf   # roster-agnostic helpers
@@ -139,6 +140,87 @@ def _playable(c):
     """Drop players DK has already ruled out. Rostering an OUT or IR player is
     never right, and the export says so plainly."""
     return (c.get("status") or "").upper() not in _OUT_STATUS
+
+
+# ---- The depth-chart gate ---------------------------------------------------
+# The owner: "it gave me Theo Wease Jr. for FLEX -- he's not on their depth
+# chart anywhere; the Chargers signed him to the practice squad Wednesday. We
+# need to be only picking guys that are WR1, 2, and maaaybe WR3." He had no
+# Sleeper projection, so he fell to the CSV's own number: DK's 8.6 average
+# from another team's season, at $3,000 -- elite value on paper. Two rules,
+# REGULAR SEASON ONLY (August's measured inverted-usage model wants the deep
+# guys on purpose):
+#   * a player the sim never projected is EXCLUDED, not handed a stale
+#     average -- an unknown is not a bargain;
+#   * the roster has to know him. Sleeper's depth chart (fetched for the
+#     draft board anyway, cached 12h): QB1 only; RB1-2 (committees are real);
+#     the three WR slot starters (LWR/RWR/SWR order 1 = WR1-3); TE1; kickers
+#     and defenses pass through. No depth entry (a practice-squad player
+#     reads as Active with none), Inactive, Out/Doubtful/IR -> out.
+#     Questionable stays, tagged, so the owner sees it before he enters.
+_DEPTH_MAX = {"QB": 1, "RB": 2, "WR": 1, "TE": 1}
+_INJ_OUT = {"OUT", "DOUBTFUL", "IR", "PUP", "SUS", "SUSPENDED", "NA", "COV"}
+
+
+def _depth_records():
+    try:
+        import nfl_adp
+        return (nfl_adp.consensus() or {}), nfl_adp._norm
+    except Exception as _e:
+        errlog.note("NFLD-depth", _e)
+        return {}, None
+
+
+def _depth_verdict(p, recs, norm):
+    """(ok, why, tag) for one pool player against Sleeper's roster."""
+    pos = (p.get("pos") or "").upper()
+    if pos not in _DEPTH_MAX:
+        return True, None, pos                  # K / DST: no depth to check
+    if norm is None or not recs:
+        return True, None, None                 # no roster source: say nothing
+    key = norm(p.get("name") or "")
+    rec = recs.get(key) or recs.get(key.replace(" ", ""))
+    if rec is None:
+        return False, "not on any roster Sleeper knows", None
+    if (rec.get("status") or "Active") != "Active" or rec.get("active") is False:
+        return False, f"roster status {rec.get('status') or 'inactive'}", None
+    inj = (rec.get("injury") or "").upper()
+    if inj in _INJ_OUT:
+        return False, f"listed {rec.get('injury')}", None
+    d = rec.get("depth")
+    if d is None:
+        return False, "not on the depth chart (practice squad / inactive)", None
+    lim = _DEPTH_MAX[pos]
+    if d > lim:
+        return False, f"{pos} depth {d}, past {pos}{lim}", None
+    tag = f"{pos}{d}" + ("·Q" if inj == "QUESTIONABLE" else "")
+    return True, None, tag
+
+
+def _apply_depth(players, preseason):
+    """Split a pool into (kept, excluded) by the roster gate, tagging every
+    kept player with his depth (WR tags rank a team's slot starters by
+    projection -- WR1/WR2/WR3 in the sense the owner means)."""
+    if preseason:
+        return players, []
+    recs, norm = _depth_records()
+    kept, excluded = [], []
+    for p in players:
+        ok, why, tag = _depth_verdict(p, recs, norm)
+        if not ok:
+            excluded.append({"name": p["name"], "pos": p["pos"],
+                             "team": p.get("team"), "why": why})
+            continue
+        p["depth"] = tag
+        kept.append(p)
+    by_team = {}
+    for p in kept:
+        if p["pos"] == "WR":
+            by_team.setdefault(p.get("team"), []).append(p)
+    for ws in by_team.values():
+        for i, p in enumerate(sorted(ws, key=lambda x: -(x.get("proj") or 0))):
+            p["depth"] = f"WR{i + 1}" + ("·Q" if (p.get("depth") or "").endswith("·Q") else "")
+    return kept, excluded
 
 
 def _norm_index(pool):
@@ -739,7 +821,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     pool = nfl_dfs_sim.player_pool(week, preseason=preseason) or {}
     _nidx, _norm = _norm_index(pool)
     _deep = _deep_fallback(pool, preseason)
-    unmatched = []
+    unmatched, excluded = [], []
     for e in ents:
         sp = _special_arr(e["pos"], preseason)
         sim = _pool_match(pool, e["name"], e["pos"], e.get("team"), _nidx, _norm)
@@ -751,12 +833,27 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             e["proj"], e["ceiling"], e["floor"], e["arr"] = (
                 sim["proj"], sim["ceiling"], sim["floor"], sim["arr"])
         else:
+            if not preseason:
+                # No projection this week is not a bargain at $3,000.
+                excluded.append({"name": e["name"], "pos": e["pos"],
+                                 "team": e.get("team"),
+                                 "why": "no Sleeper projection this week"})
+                e["_drop"] = True
+                unmatched.append(e["name"])
+                continue
             pr = _deep.get(e["pos"], e["proj"])
             e["proj"] = pr
             e["arr"] = [max(0.0, random.gauss(pr, pr * 0.5 + 2)) for _ in range(1500)]
             e["ceiling"], e["floor"] = round(_pct(e["arr"], 0.9), 1), round(_pct(e["arr"], 0.1), 1)
             unmatched.append(e["name"])
         e["proj"] = round(e["proj"], 1)
+    ents = [e for e in ents if not e.get("_drop")]
+    ents, _dx = _apply_depth(ents, preseason)
+    excluded += _dx
+    if len(ents) < len(SHOWDOWN_ROSTER):
+        return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} rostered, projected "
+                         f"players (got {len(ents)} after the depth chart)",
+                "excluded": excluded[:40]}
     _set_ownership(ents, n_slots=len(SHOWDOWN_ROSTER))
     got = optimize_showdown(ents, CAP, objective)
     if not got:
@@ -779,6 +876,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
     for slot, p in [("CPT", cap_p)] + [("FLEX", q) for q in picked]:
         mult = CPT_MULT if slot == "CPT" else 1.0
         rows.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
+                     "depth": p.get("depth"),
                      "salary": p["cpt_salary"] if slot == "CPT" else p["salary"],
                      "proj": round(mult * p["proj"], 1),
                      "ceiling": round(mult * p["ceiling"], 1),
@@ -814,6 +912,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "max": round(max(totals), 1),
             "lineup": rows, "contest_sim": csim,
             "unmatched": unmatched[:20], "n_pool": len(ents),
+            "excluded": excluded[:40], "n_excluded": len(excluded),
             "teams": teams,
             "note": "Showdown Captain Mode: 1 CPT at 1.5x points and 1.5x salary, "
                     "plus 5 FLEX from any position, spanning both teams. Players DK "
@@ -860,7 +959,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     # preseason slate uses. Showdown is the exception, not the rule.
     _nidx, _norm = _norm_index(pool)
     _deep = _deep_fallback(pool, preseason)
-    players, unmatched = [], []
+    players, unmatched, excluded = [], [], []
     for c in csv_players:
         nm = c["name"]
         c["opp"] = _opp_of(c.get("team"), c.get("game"))
@@ -876,7 +975,15 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             ceiling, floor = round(_pct(_sp, 0.9), 1), round(_pct(_sp, 0.1), 1)
         elif sim and sim.get("arr"):
             proj, ceiling, floor, samp = sim["proj"], sim["ceiling"], sim["floor"], sim["arr"]
-        else:                                       # in the CSV but not projected -> soft fallback
+        else:                                       # in the CSV but not projected
+            if not preseason:
+                # The soft fallback handed an unprojected player DK's season
+                # average -- a practice-squad receiver at $3,000 came back the
+                # best value on the board. In season an unknown is left out.
+                excluded.append({"name": nm, "pos": pos, "team": c.get("team"),
+                                 "why": "no Sleeper projection this week"})
+                unmatched.append(nm)
+                continue
             proj = _deep.get(pos, c.get("proj") or 0.0)
             samp = [max(0.0, random.gauss(proj, proj * 0.5 + 2)) for _ in range(1500)]
             ceiling, floor = round(_pct(samp, 0.9), 1), round(_pct(samp, 0.1), 1)
@@ -885,8 +992,12 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                         "salary": int(c["salary"]),
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
+    players, _dx = _apply_depth(players, preseason)
+    excluded += _dx
     if _by_pos(players) is None:
-        return {"error": "the CSV doesn't cover every roster slot (need QB/RB/WR/TE/DST)"}
+        return {"error": "the slate doesn't cover every roster slot with rostered, "
+                         "projected players (need QB/RB/WR/TE/DST)",
+                "excluded": excluded[:40]}
 
     _set_ownership(players)
     # Stacks are the whole point of NFL DFS -- a QB and his pass-catchers boom
@@ -960,6 +1071,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                 if seen[p["pos"]] > need[p["pos"]]:
                     slot = "FLEX"
             out.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
+                        "depth": p.get("depth"),
                         "salary": p["salary"], "proj": p["proj"], "ceiling": p["ceiling"],
                         "floor": p["floor"], "own": p.get("own")})
         return out
@@ -984,6 +1096,9 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),
             "ceiling": round(_pct(totals, 0.90), 1), "max": round(max(totals), 1),
             "lineup": rows, "contest_sim": csim, "unmatched": unmatched[:20],
+            "excluded": excluded[:40], "n_excluded": len(excluded),
             "n_pool": len(players),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "
-                    "game sim. Ownership is a model estimate of the field."}
+                    "game sim. Ownership is a model estimate of the field. In season the "
+                    "pool is gated by Sleeper's depth chart: QB1, RB1-2, the three WR "
+                    "starters, TE1 -- no practice squad, no unprojected fliers."}

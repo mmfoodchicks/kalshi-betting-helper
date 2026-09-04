@@ -9899,6 +9899,79 @@ ck("x100/x200 are fair-basis target rungs under Kalshi's cap, on the wall",
 
 print()
 print("=" * 72)
+print("The NFL DFS pool knows the depth chart")
+print("=" * 72)
+# "It gave me Theo Wease Jr. for FLEX -- not on their depth chart anywhere;
+# signed to the practice squad Wednesday. We need to only be picking WR1, 2,
+# and maaaybe WR3." He had no Sleeper projection and fell to DK's 8.6 average
+# from another team's season at $3,000. Sleeper's roster record carries the
+# depth chart (McConkey SWR 1, Johnston LWR 2, Wease: none); the gate reads it.
+import nfl_dfs as _nd59
+import nfl_adp as _na59
+_recs59 = {
+    "justin herbert": {"status": "Active", "active": True, "depth": 1, "injury": None},
+    "ladd mcconkey": {"status": "Active", "active": True, "depth": 1, "injury": None},
+    "quentin johnston": {"status": "Active", "active": True, "depth": 1, "injury": "Questionable"},
+    "tre harris": {"status": "Active", "active": True, "depth": 2, "injury": None},
+    "theo wease": {"status": "Active", "active": True, "depth": None, "injury": None},
+    "omarion hampton": {"status": "Active", "active": True, "depth": 1, "injury": None},
+    "najee harris": {"status": "Active", "active": True, "depth": 2, "injury": None},
+    "kimani vidal": {"status": "Active", "active": True, "depth": 3, "injury": None},
+    "will dissly": {"status": "Active", "active": True, "depth": 1, "injury": "Out"},
+    "cut guy": {"status": "Inactive", "active": False, "depth": 1, "injury": None}}
+_oc59 = _na59.consensus
+try:
+    _na59.consensus = lambda: _recs59
+    _pool59 = [
+        {"name": "Justin Herbert", "pos": "QB", "team": "LAC", "proj": 19.0},
+        {"name": "Ladd McConkey", "pos": "WR", "team": "LAC", "proj": 13.3},
+        {"name": "Quentin Johnston", "pos": "WR", "team": "LAC", "proj": 11.1},
+        {"name": "Tre Harris", "pos": "WR", "team": "LAC", "proj": 6.0},
+        {"name": "Theo Wease Jr.", "pos": "WR", "team": "LAC", "proj": 8.6},
+        {"name": "Omarion Hampton", "pos": "RB", "team": "LAC", "proj": 14.0},
+        {"name": "Najee Harris", "pos": "RB", "team": "LAC", "proj": 9.0},
+        {"name": "Kimani Vidal", "pos": "RB", "team": "LAC", "proj": 4.0},
+        {"name": "Will Dissly", "pos": "TE", "team": "LAC", "proj": 5.0},
+        {"name": "Cut Guy", "pos": "WR", "team": "LAC", "proj": 7.0},
+        {"name": "Nobody Known", "pos": "WR", "team": "LAC", "proj": 9.0},
+        {"name": "Chargers", "pos": "DST", "team": "LAC", "proj": 7.0},
+        {"name": "Cameron Dicker", "pos": "K", "team": "LAC", "proj": 8.0}]
+    _kept59, _ex59 = _nd59._apply_depth([dict(p) for p in _pool59], preseason=False)
+    _kn59 = {p["name"]: p.get("depth") for p in _kept59}
+    _xw59 = {e["name"]: e["why"] for e in _ex59}
+    ck("practice squad, backups past the limit, Out and Inactive are OUT; "
+       "QB1, RB1-2, the WR slot starters, K and DST stay -- tagged",
+       "Theo Wease Jr." in _xw59 and "depth chart" in _xw59["Theo Wease Jr."]
+       and "Tre Harris" in _xw59 and "Kimani Vidal" in _xw59
+       and "Will Dissly" in _xw59 and "Cut Guy" in _xw59 and "Nobody Known" in _xw59
+       and _kn59.get("Justin Herbert") == "QB1"
+       and _kn59.get("Ladd McConkey") == "WR1" and _kn59.get("Quentin Johnston") == "WR2·Q"
+       and _kn59.get("Omarion Hampton") == "RB1" and _kn59.get("Najee Harris") == "RB2"
+       and _kn59.get("Chargers") == "DST" and _kn59.get("Cameron Dicker") == "K",
+       "a $3,000 practice-squad receiver with a stale 8.6 average was the best "
+       "value on the board")
+    _pre59, _pex59 = _nd59._apply_depth([dict(p) for p in _pool59], preseason=True)
+    ck("August keeps its measured inverted-usage pool: the gate is regular season only",
+       len(_pre59) == len(_pool59) and not _pex59)
+finally:
+    _na59.consensus = _oc59
+_bsrc59 = _insp.getsource(_nd59.build)
+ck("in season an unprojected player is left out, never handed DK's average; "
+   "the responses name the excluded and the rows carry depth",
+   '"why": "no Sleeper projection this week"' in _bsrc59
+   and "players, _dx = _apply_depth(players, preseason)" in _bsrc59
+   and '"excluded": excluded[:40]' in _bsrc59
+   and '"depth": p.get("depth")' in _bsrc59
+   and "ents, _dx = _apply_depth(ents, preseason)" in _insp.getsource(_nd59))
+ck("the roster record carries the depth chart, and NFL's DK average is read",
+   '"depth": p.get("depth_chart_order")' in _insp.getsource(_na59.consensus)
+   and "_AVG_PPG_ATTR_NFL = 90" in open(_os.path.join(_root, "dk.py")).read())
+_js59 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the lineup shows each player's depth tag and who the gate left out",
+   "${p.depth || p.pos}" in _js59 and "left out by the depth chart" in _js59)
+
+print()
+print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
