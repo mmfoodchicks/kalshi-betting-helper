@@ -374,7 +374,9 @@ def _run_job(ptok, core, errcode):
                 baseball.job_heartbeat(ptok)
         threading.Thread(target=_beat, daemon=True).start()
         try:
-            res = core()
+            import jobs
+            with jobs.timed(f"combo:{errcode}"):
+                res = core()
             baseball.job_finish(ptok, "done", result=res)
         except Exception as e:
             print(f"[job] build failed ({ptok}): {e!r}", flush=True)
@@ -393,6 +395,15 @@ def _api_dfs_scoring():
     import dk_scoring
     sport = (request.args.get("sport") or "ufc").lower()
     return jsonify({"sport": sport, "groups": dk_scoring.card(sport)})
+
+
+@app.route("/api/diag/jobs")
+def _api_diag_jobs():
+    """The heavy-job timeline (jobs.py): what was burning the shared core and
+    when. The error-log export carries it so a health-probe restart -- which
+    leaves the error ledger empty -- can be laid against the jobs in flight."""
+    import jobs
+    return jsonify({"now": time.time(), "jobs": jobs.recent(150)})
 
 
 @app.route("/api/diag/slow")

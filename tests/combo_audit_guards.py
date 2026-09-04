@@ -9346,8 +9346,9 @@ ck("four rungs, locked at 2/3/5/10, kind 'target'",
     for p in ("x15", "x2", "x3", "x5", "x10")]
    == [("target", 1.5), ("target", 2.0), ("target", 3.0), ("target", 5.0),
        ("target", 10.0)])
-ck("build_all dispatches the target kind",
-   '"target": _build_target' in _insp.getsource(_pr41.build_all))
+ck("build_all dispatches the target kind (through the shared frontier)",
+   "_build_target(games, spec, abort_cb=abort_cb," in _insp.getsource(_pr41.build_all)
+   and "frontier_cache=fcache" in _insp.getsource(_pr41.build_all))
 # The rung must mirror the ⚡ button knob for knob -- payout REQUIRED, legs
 # OFF, balanced, floor swept by best_target -- or the tab and the button
 # would quietly answer different questions.
@@ -9779,6 +9780,105 @@ ck("the server waits a PC cycle before spending the shared core on presets",
 ck("the bar's fallback text stops claiming to know what the server is doing",
    "no progress reported yet" in open(_os.path.join(_root, "static", "app.js")).read()
    and "simulating games that weren't cached`" not in open(_os.path.join(_root, "static", "app.js")).read())
+
+print()
+print("=" * 72)
+print("Restarts get a timeline; the PC's presets are served, not rebuilt")
+print("=" * 72)
+# Sep 4: the instance restarted at 15:16 and again at 17:20 with an EMPTY
+# error ledger -- nothing threw, something was busy -- and nothing on the
+# site recorded what. The two fixes here: heavy jobs write a timeline the
+# export carries, and the server stops rebuilding presets on every lineup
+# fingerprint move while the PC (whose cores the probe does not live on)
+# is delivering the same payload.
+import jobs as _jb57
+_jp57 = _jb57.PATH
+_jb57.PATH = _os.path.join(_tf51.mkdtemp(prefix="guard-jobs-"), "jobs.json")
+try:
+    with _jb57.timed("guard:one"):
+        pass
+    try:
+        with _jb57.timed("guard:boom"):
+            raise ValueError("x")
+    except ValueError:
+        pass
+    _rows57 = _jb57.recent()
+    ck("a heavy job leaves start and end rows, with duration and any error",
+       [r["phase"] for r in _rows57] == ["start", "end", "start", "end"]
+       and _rows57[1]["dur_s"] is not None and _rows57[1]["err"] is None
+       and "ValueError" in (_rows57[3]["err"] or ""),
+       "a probe restart leaves the error ledger empty; this names the job")
+finally:
+    _jb57.PATH = _jp57
+_apy57 = open(_os.path.join(_root, "app.py")).read()
+_wf57 = open(_os.path.join(_root, ".github", "workflows", "error-log.yml")).read()
+ck("the slate child, tennis pools, NFL board, presets and combo builds are timed, "
+   "and the export carries the timeline",
+   'jobs.timed(f"slate:{date}")' in _insp.getsource(B.analyze_slate)
+   and 'jobs.timed("tennis-pools")' in open(_os.path.join(_root, "tennis_elo.py")).read()
+   and 'jobs.timed(f"nfl-board:w{week}")' in _insp.getsource(_ngs51.board)
+   and 'jobs.timed("presets")' in _insp.getsource(_pr41.tick)
+   and 'jobs.timed(f"combo:{errcode}")' in _apy57
+   and '@app.route("/api/diag/jobs")' in _apy57
+   and "jobs-latest.json" in _wf57)
+_tick57 = _insp.getsource(_pr41.tick)
+ck("with the PC on, the server SERVES the PC's payload and never rebuilds on a "
+   "fingerprint move; it builds only when the PC has gone quiet",
+   "age < _PC_STALE_S" in _tick57 and _pr41._PC_STALE_S == 45 * 60
+   and 'cur.get("date") == date and cur.get("rev") == REV' in _tick57
+   and "if ensure_logged(cur):" in _tick57.split("age < _PC_STALE_S")[1][:300],
+   "the fingerprint moves all afternoon as lineups post; rebuilding 21 passes "
+   "on the shared core each time is what starved the probe at 15:16")
+# The five rungs share one frontier per floor.
+import combo_engine as _ce57
+import kalshi_mlb as _km57
+_cands57 = [
+    {"type": "ML", "label": "A to win", "marg": 0.62, "side": "yes", "group": "ML",
+     "kref": {"t": "ml", "team": "A"}, "mask": (1 << 62) - 1, "model_pct": 60.0},
+    {"type": "Total", "label": "Over 8.5 runs", "marg": 0.55, "side": "yes",
+     "group": "Total", "kref": {"t": "total", "n": 9, "over": True},
+     "mask": ((1 << 55) - 1) << 10, "model_pct": 54.0},
+    {"type": "Ks", "label": "P 5+ Ks", "marg": 0.70, "side": "yes", "group": "K:P",
+     "kref": {"t": "ks"}, "mask": ((1 << 70) - 1) << 20, "model_pct": 69.0}]
+_games57 = [{"game_pk": 1, "matchup": "A @ B", "kalshi_suffix": "s1", "live": {},
+             "confirm": {}, "home_name": "B", "away_name": "A"}]
+_orig57 = (B._game_sim, B._price_cands, _km57.index, _ce57.frontier)
+_nfront57 = [0]
+try:
+    B._game_sim = lambda g: {"cands": [dict(c) for c in _cands57], "sim": {"n": 100}}
+
+    def _fp57(cands, sfx, blend=True):
+        for c in cands:
+            c["price_cents"] = 55
+        return cands
+    B._price_cands = _fp57
+    _km57.index = lambda: {}
+    _real57 = _orig57[3]
+
+    def _front57(*a, **k):
+        _nfront57[0] += 1
+        return _real57(*a, **k)
+    _ce57.frontier = _front57
+    _fc57 = {}
+    _a57 = B.build_mixed_parlay(_games57, n_legs=2, target_pct=30, target_payout=1.5,
+                                max_legs_per_game=3, max_total_legs=3,
+                                legs_mode="off", payout_mode="require",
+                                frontier_cache=_fc57)
+    _b57 = B.build_mixed_parlay(_games57, n_legs=2, target_pct=30, target_payout=3.0,
+                                max_legs_per_game=3, max_total_legs=3,
+                                legs_mode="off", payout_mode="require",
+                                payout_basis="market", frontier_cache=_fc57)
+    ck("two rungs at one floor build the frontier ONCE and choose twice",
+       _nfront57[0] == 1 and len(_fc57) == 1 and _a57 is not None and _b57 is not None,
+       "the rungs differ only in what they choose; 15 maker passes became 3")
+    _c57 = B.build_mixed_parlay(_games57, n_legs=2, target_pct=60, target_payout=1.5,
+                                max_legs_per_game=3, max_total_legs=3,
+                                legs_mode="off", payout_mode="require",
+                                frontier_cache=_fc57)
+    ck("a different floor is a different pool: it builds its own",
+       _nfront57[0] == 2 and len(_fc57) == 2 and _c57 is not None)
+finally:
+    (B._game_sim, B._price_cands, _km57.index, _ce57.frontier) = _orig57
 
 print()
 print("=" * 72)

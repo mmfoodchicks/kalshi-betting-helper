@@ -129,6 +129,14 @@ jobs:
           if python3 -c "import json; json.load(open('/tmp/mem.json'))" 2>/dev/null; then
             cp /tmp/mem.json "$ERRORS_DIR/mem-latest.json"
           fi
+          # The heavy-job timeline: a health-probe restart leaves the error
+          # ledger EMPTY (nothing threw, something was busy), so this is what
+          # names the job that was burning the core at that minute.
+          curl -sS -o /tmp/jobs.json --max-time 30 "${AUTH[@]}" \
+               "$APP_URL/api/diag/jobs" || true
+          if python3 -c "import json; json.load(open('/tmp/jobs.json'))" 2>/dev/null; then
+            cp /tmp/jobs.json "$ERRORS_DIR/jobs-latest.json"
+          fi
           echo "changed=1" >> "$GITHUB_OUTPUT"
 
       - name: Commit

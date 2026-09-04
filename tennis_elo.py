@@ -406,7 +406,8 @@ def _pools_from_disk_or_build():
     except Exception:
         import contextlib
         gate = contextlib.nullcontext()
-    with gate:
+    import jobs
+    with gate, jobs.timed("tennis-pools"):
         built = _build_isolated()
     if built and (built.get("m") or built.get("w")):
         try:

@@ -226,7 +226,7 @@ def _build_top(games, spec, abort_cb=None):
         leg_ok=spec.get("leg_ok"), abort_cb=abort_cb)
 
 
-def _build_target(games, spec, abort_cb=None):
+def _build_target(games, spec, abort_cb=None, frontier_cache=None):
     """The ⚡ Optimal button as a locked recipe: mirrors the endpoint's
     optimal mode (app.api_baseball_mixed) knob for knob -- payout required,
     legs off, "balanced", floor swept by best_target -- so the tab and the
@@ -246,7 +246,7 @@ def _build_target(games, spec, abort_cb=None):
             legs_mode="off", payout_mode="require", objective="balanced",
             include_live=False, types=None, sides=None,
             payout_basis=spec.get("payout_basis", "fair"),
-            abort_cb=abort_cb)
+            abort_cb=abort_cb, frontier_cache=frontier_cache)
     try:
         item = combo_engine.best_target(_b)
     except _Yield:
@@ -371,13 +371,21 @@ def build_all(date, games, sig, abort_cb=None):
     propagates out whole rather than becoming a payload full of Nones."""
     import kalshi_mlb
     out = {}
+    # The five rungs differ only in the payout they CHOOSE; the frontier they
+    # choose from (sims, pricing, bundles, DP) is identical per floor. One
+    # cache shared across them turns 15 maker passes into 3 -- most of the
+    # rebuild's cost, on the PC and on the server alike.
+    fcache = {}
     with kalshi_mlb.pinned():
         for spec in PRESETS:
             pid = spec["id"]
             try:
-                item = {"top": _build_top, "all": _build_all,
-                        "target": _build_target}[spec["kind"]](
-                    games, spec, abort_cb=abort_cb)
+                if spec["kind"] == "target":
+                    item = _build_target(games, spec, abort_cb=abort_cb,
+                                         frontier_cache=fcache)
+                else:
+                    item = {"top": _build_top, "all": _build_all}[spec["kind"]](
+                        games, spec, abort_cb=abort_cb)
             except RuntimeError as e:
                 if "superseded" in str(e):
                     raise
@@ -444,12 +452,16 @@ def pc_build():
     return payload
 
 
-# How long the server waits for the PC's upload before building presets
-# itself. The PC builds the same payload on cores the health probe does not
-# live on and cycles every 10 min; 21 maker passes on the shared half-core
-# during the evening lineup churn is exactly the load that starves the
-# probe. The PC can still only add speed: past this the server builds.
+# When the PC is ON the server does not build presets at all: it serves the
+# PC's latest payload even if the lineup fingerprint has moved since (the
+# PC's own slate catches up within its 10-min cycle -- the fingerprint moves
+# all afternoon as lineups post, and rebuilding here on every move was the
+# 21-pass load that starved the health probe at 15:16). The server builds
+# only when the PC has gone quiet for _PC_STALE_S (on but not delivering),
+# or has no payload at all after _PC_WAIT_S (a fresh deploy). The PC can
+# still only add speed: with the PC off, the server builds as before.
 _PC_WAIT_S = 900
+_PC_STALE_S = 45 * 60
 _pc_wait = [0.0]
 
 
@@ -511,12 +523,22 @@ def tick(force=False):
         errlog.note("PRESET-pc", e)
         pc_on = False
     if pc_on and not force:
+        age = time.time() - ((cur or {}).get("built_ts") or 0)
+        if (cur and cur.get("date") == date and cur.get("rev") == REV
+                and age < _PC_STALE_S):
+            # The PC's payload for today, at most one cycle behind: serve
+            # it, file its slips, and let the PC catch the fingerprint up.
+            if ensure_logged(cur):
+                boardshare.put(NAME, cur)
+            return 0
         if not _pc_wait[0]:
             _pc_wait[0] = time.time()
         if time.time() - _pc_wait[0] < _PC_WAIT_S:
             return 0
+    import jobs
     try:
-        payload = build_all(date, games, sig, abort_cb=_yield_cb)
+        with jobs.timed("presets"):
+            payload = build_all(date, games, sig, abort_cb=_yield_cb)
     except RuntimeError as e:
         if "superseded" in str(e):
             return 0                    # a user clicked Build; next tick

@@ -1711,7 +1711,8 @@ def analyze_slate(date, season, cached_only=False):
                 _time.sleep(5)
             return _analyze_slate_uncached(date, season)   # builder died mid-run
         try:
-            with deep_cache_gate():
+            import jobs
+            with deep_cache_gate(), jobs.timed(f"slate:{date}"):
                 out = _analyze_slate_isolated(date, season)
             _cache[key] = (_time.time(), out, _SLATE_TTL)
             _slate_disk_put(date, season, out)     # share it with the other workers
@@ -4089,9 +4090,16 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
                        game_sel=None, include_live=False, objective="balanced",
                        net_fees=True, cap_pct=None, max_bet=False, cap_x=None,
                        progress_token=None, sides=None, min_edge_c=None,
-                       leg_ok=None, abort_cb=None, payout_basis="fair"):
+                       leg_ok=None, abort_cb=None, payout_basis="fair",
+                       frontier_cache=None):
     """One parlay across MULTIPLE games that may stack correlated legs within a
     game and add single legs from others.
+
+    `frontier_cache` (a dict the caller owns) lets several builds that differ
+    only in what they CHOOSE -- the payout target, its basis -- share one
+    frontier: the sims, pricing, bundles and DP run once per distinct pool
+    key and every later build skips straight to the chooser. The locked
+    payout rungs are the consumer (15 passes became 3).
 
     Honest math: within a game legs are correlated, so each game contributes a
     simulated joint probability; across games they're independent (measured --
@@ -4158,175 +4166,193 @@ def build_mixed_parlay(games, n_legs=4, target_pct=55, target_payout=0,
     # narrow. One cached lookup tells the two apart: an empty index means the
     # exchange is unreachable or the slate hasn't listed yet, so fall back to
     # building unpriced and say so on the slip.
-    priced_ok = _kalshi_up()
+    # The pool key: everything that shapes the frontier. What is chosen from
+    # it (payout target, basis, objective) is deliberately NOT in it.
+    _fkey = None
+    if frontier_cache is not None:
+        _fkey = (target_pct, cap_pct, n_legs, max_legs_per_game, max_total_legs,
+                 legs_mode, payout_mode, conn, max_bet,
+                 tuple(sorted(sides)) if sides else None,
+                 tuple(sorted(types)) if types else None,
+                 tuple(sorted(game_sel)) if game_sel else None,
+                 min_edge_c, include_live, leg_ok is None)
+    _hit = frontier_cache.get(_fkey) if frontier_cache is not None else None
+    if _hit is not None:
+        (games_bundles, states, excluded_unpriced, excluded_no_edge,
+         priced_ok) = _hit
+    else:
+        priced_ok = _kalshi_up()
 
-    games_bundles = []
-    excluded_unpriced = 0
-    excluded_no_edge = 0
-    # Count what this build will actually simulate BEFORE starting, so the bar
-    # has a real denominator rather than a guess.
-    _todo = [g for g in games
-             if _game_state(g) != "Final"
-             and not (game_sel and g["game_pk"] not in game_sel)
-             and (include_live or _game_state(g) != "Live")]
-    progress_start(progress_token, len(_todo))
-    for g in games:
-        state = _game_state(g)
-        if state == "Final":
-            continue
-        if game_sel and g["game_pk"] not in game_sel:
-            continue
-        # Count the game only if it will actually be worked on. Live games are
-        # skipped a few lines down when include_live is off, and entering them
-        # here made `at` outrun `total` (the bar clamps, but the count lied).
-        if state == "Live" and not include_live:
-            continue
-        # A superseded build stops HERE, at a game boundary, before paying for
-        # another simulation. abort_cb reads the combo slot: the newest Build
-        # click owns it, and two concurrent CPU-bound builds on a shared half
-        # core starve the health probe into restarting the instance.
+        games_bundles = []
+        excluded_unpriced = 0
+        excluded_no_edge = 0
+        # Count what this build will actually simulate BEFORE starting, so the bar
+        # has a real denominator rather than a guess.
+        _todo = [g for g in games
+                 if _game_state(g) != "Final"
+                 and not (game_sel and g["game_pk"] not in game_sel)
+                 and (include_live or _game_state(g) != "Live")]
+        progress_start(progress_token, len(_todo))
+        for g in games:
+            state = _game_state(g)
+            if state == "Final":
+                continue
+            if game_sel and g["game_pk"] not in game_sel:
+                continue
+            # Count the game only if it will actually be worked on. Live games are
+            # skipped a few lines down when include_live is off, and entering them
+            # here made `at` outrun `total` (the bar clamps, but the count lied).
+            if state == "Live" and not include_live:
+                continue
+            # A superseded build stops HERE, at a game boundary, before paying for
+            # another simulation. abort_cb reads the combo slot: the newest Build
+            # click owns it, and two concurrent CPU-bound builds on a shared half
+            # core starve the health probe into restarting the instance.
+            if abort_cb is not None and abort_cb():
+                raise RuntimeError("superseded by a newer build")
+            _was_cached = _game_sim_cached(g)
+            progress_enter(progress_token)
+            live_gs = None
+            if state == "Live":
+                if not include_live:
+                    continue
+                # Resume the game from where it stands: every market is live again,
+                # not just the moneyline, because the sim now knows what has already
+                # been banked. Falls back to the win leg alone if the feed is down.
+                live_gs = _live_game_sim(g)
+                if live_gs is None:
+                    if sides is not None and "yes" not in sides:
+                        continue          # the thin live fallback is a YES ML only
+                    if not g.get("pick_prob") or not (floor <= g["pick_prob"] <= ceil):
+                        continue
+                    side = team_side(g)
+                    pick = g.get("pick")
+                    pick_side = "home" if pick == g.get("home_name") else "away"
+                    if side and side != pick_side:
+                        continue  # selected the team that isn't the live favorite
+                    ha = g.get("home_abbr") or g.get("home_name")
+                    aa = g.get("away_abbr") or g.get("away_name")
+                    leg = {"type": "ML", "label": f"{pick} to win",
+                           "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
+                           "group": "ML", "live": True,
+                           "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
+                    _price_cands([leg], g.get("kalshi_suffix"))
+                    if priced_ok and not leg.get("price_cents"):
+                        excluded_unpriced += 1          # same rule as every other leg
+                        continue
+                    if not _edge_ok(leg, min_edge_c):
+                        excluded_no_edge += 1
+                        continue
+                    bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
+                    games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
+                    continue
+            gs = live_gs or _game_sim(g)    # shared with the edge finder + combos
+            progress_step(progress_token, cached=_was_cached)
+            sim = gs["sim"]
+            side = team_side(g)
+            cands = [c for c in gs["cands"]
+                     if (types is None or c["type"] in types)
+                     and (sides is None or c.get("side", "yes") in sides)
+                     and (side is None or _cand_side(c, g) == side)]
+            if not cands:
+                continue
+            # EDGE MODE hunts mispricing, and the juiciest fades live ABOVE the
+            # normal NO band: a 9+ Ks line the model puts at 6% is a 94% NO --
+            # in a fairly-priced book that's padding (which is why the sim's own
+            # NO generation caps at 90%), but against an overpriced YES ask it is
+            # exactly the bet being asked for ("he's facing a monster lineup").
+            # Generated here at build time so the cached sim's candidate pool is
+            # untouched for every other mode, then priced and gated like any leg
+            # -- an extra fade still has to clear the edge floor on ITS OWN ask.
+            if min_edge_c is not None and (sides is None or "no" in sides):
+                have = {c["label"] for c in cands if c.get("side") == "no"}
+                # Complement from the game's YES pool BEFORE the yes/no side
+                # filter -- under "NO only" the YES cands were just filtered out
+                # of `cands`, and that is precisely the fades-only request this
+                # extension exists to serve.
+                base_yes = [c for c in gs["cands"]
+                            if (types is None or c["type"] in types)
+                            and c.get("side", "yes") == "yes"
+                            and (side is None or _cand_side(c, g) == side)]
+                extra = [c for c in mlb_sim._no_candidates(
+                             base_yes, sim["n"], lo=0.90, hi=0.97)
+                         if c["label"] not in have]
+                cands = cands + extra
+            _price_cands(cands, g.get("kalshi_suffix"))
+            # A caller-supplied per-leg rule, applied AFTER pricing so the rule can
+            # see the ask (the locked presets' "a 2+ hits line only as a conviction
+            # bet" needs the edge). None = every leg passes, exactly as before.
+            if leg_ok is not None:
+                cands = [c for c in cands if leg_ok(c)]
+            # ONLY BETTABLE LEGS. A leg with no Kalshi market cannot go on a real
+            # slip -- the maker used to include them anyway (EV-neutral at fair
+            # value), which built slips the user then could not place: "no Kalshi
+            # market" rows sitting in the middle of a parlay. Excluded at the pool,
+            # not at display, so the optimizer never spends a slot on one. The count
+            # is carried out so a thin morning pool (lines post near game time) is
+            # explainable instead of mysterious.
+            if priced_ok:
+                n_all = len(cands)
+                cands = [c for c in cands if c.get("price_cents")]
+                excluded_unpriced += n_all - len(cands)
+            # EDGE MODE: only legs where the model genuinely disagrees with the
+            # price by the asked margin. After pricing (the edge needs the ask),
+            # before the confidence band, so the two filters compose.
+            if min_edge_c is not None:
+                n_all = len(cands)
+                cands = [c for c in cands if _edge_ok(c, min_edge_c)]
+                excluded_no_edge += n_all - len(cands)
+            # The per-leg floor is applied AFTER the blend, because the blend is what
+            # decides the number the user actually sees. Filtering first let a leg
+            # qualify at 60% pre-blend and then get marked down to 41% by the market,
+            # so a slip built under "each leg >= 55%" came back showing 38-43% legs.
+            cands = [c for c in cands if floor <= c["marg"] <= ceil]
+            # A max bet reaches for cheap legs and multiplies them, so a leg our
+            # model likes far more than the market can carry the whole slip on its
+            # own. combo_engine.stackable bounds that optimism as a ratio.
+            if max_bet:
+                cands = [c for c in cands
+                         if combo_engine.stackable(c["marg"], c.get("price_cents"))]
+            if not cands:
+                continue
+            # A same-game stack never needs to be deeper than the parlay itself, and
+            # the depth is what costs -- so asking for 4 legs buys a much wider pool
+            # to find a correlating pair in than passing the 30-leg tier ceiling did.
+            #
+            # The floor is 1, NOT 2. With same-game parlays switched off the caller
+            # passes max_legs_per_game=1, and a floor of 2 silently overrode it: the
+            # bundle search still built pairs, the frontier still picked them, and a
+            # slip came back stacking "Over 2.5 runs" and "Under 11.5 runs" from one
+            # game with the box unticked. The floor was there to keep the search from
+            # being pointless, but one leg per game is a legitimate ask, not a
+            # degenerate one -- the cross-game frontier still has plenty to do.
+            _depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+            bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=_depth)
+            if bundles:
+                label = g["matchup"] + (" 🔴" if live_gs else "")
+                games_bundles.append((label, bundles, g.get("kalshi_suffix")))
+        if not games_bundles:
+            return None
+
+        # Second supersede boundary: the frontier + chooser are the expensive
+        # tail of a big cross-game build, and a build that lost the slot during
+        # its LAST game's sim would otherwise pay for the whole thing anyway.
         if abort_cb is not None and abort_cb():
             raise RuntimeError("superseded by a newer build")
-        _was_cached = _game_sim_cached(g)
-        progress_enter(progress_token)
-        live_gs = None
-        if state == "Live":
-            if not include_live:
-                continue
-            # Resume the game from where it stands: every market is live again,
-            # not just the moneyline, because the sim now knows what has already
-            # been banked. Falls back to the win leg alone if the feed is down.
-            live_gs = _live_game_sim(g)
-            if live_gs is None:
-                if sides is not None and "yes" not in sides:
-                    continue          # the thin live fallback is a YES ML only
-                if not g.get("pick_prob") or not (floor <= g["pick_prob"] <= ceil):
-                    continue
-                side = team_side(g)
-                pick = g.get("pick")
-                pick_side = "home" if pick == g.get("home_name") else "away"
-                if side and side != pick_side:
-                    continue  # selected the team that isn't the live favorite
-                ha = g.get("home_abbr") or g.get("home_name")
-                aa = g.get("away_abbr") or g.get("away_name")
-                leg = {"type": "ML", "label": f"{pick} to win",
-                       "marg": g["pick_prob"], "model_pct": round(g["pick_prob"] * 100, 1),
-                       "group": "ML", "live": True,
-                       "kref": {"t": "ml", "team": ha if pick_side == "home" else aa}}
-                _price_cands([leg], g.get("kalshi_suffix"))
-                if priced_ok and not leg.get("price_cents"):
-                    excluded_unpriced += 1          # same rule as every other leg
-                    continue
-                if not _edge_ok(leg, min_edge_c):
-                    excluded_no_edge += 1
-                    continue
-                bundle = {"size": 1, "prob": g["pick_prob"], "legs": [leg]}
-                games_bundles.append((g["matchup"] + " 🔴", [bundle], g.get("kalshi_suffix")))
-                continue
-        gs = live_gs or _game_sim(g)    # shared with the edge finder + combos
-        progress_step(progress_token, cached=_was_cached)
-        sim = gs["sim"]
-        side = team_side(g)
-        cands = [c for c in gs["cands"]
-                 if (types is None or c["type"] in types)
-                 and (sides is None or c.get("side", "yes") in sides)
-                 and (side is None or _cand_side(c, g) == side)]
-        if not cands:
-            continue
-        # EDGE MODE hunts mispricing, and the juiciest fades live ABOVE the
-        # normal NO band: a 9+ Ks line the model puts at 6% is a 94% NO --
-        # in a fairly-priced book that's padding (which is why the sim's own
-        # NO generation caps at 90%), but against an overpriced YES ask it is
-        # exactly the bet being asked for ("he's facing a monster lineup").
-        # Generated here at build time so the cached sim's candidate pool is
-        # untouched for every other mode, then priced and gated like any leg
-        # -- an extra fade still has to clear the edge floor on ITS OWN ask.
-        if min_edge_c is not None and (sides is None or "no" in sides):
-            have = {c["label"] for c in cands if c.get("side") == "no"}
-            # Complement from the game's YES pool BEFORE the yes/no side
-            # filter -- under "NO only" the YES cands were just filtered out
-            # of `cands`, and that is precisely the fades-only request this
-            # extension exists to serve.
-            base_yes = [c for c in gs["cands"]
-                        if (types is None or c["type"] in types)
-                        and c.get("side", "yes") == "yes"
-                        and (side is None or _cand_side(c, g) == side)]
-            extra = [c for c in mlb_sim._no_candidates(
-                         base_yes, sim["n"], lo=0.90, hi=0.97)
-                     if c["label"] not in have]
-            cands = cands + extra
-        _price_cands(cands, g.get("kalshi_suffix"))
-        # A caller-supplied per-leg rule, applied AFTER pricing so the rule can
-        # see the ask (the locked presets' "a 2+ hits line only as a conviction
-        # bet" needs the edge). None = every leg passes, exactly as before.
-        if leg_ok is not None:
-            cands = [c for c in cands if leg_ok(c)]
-        # ONLY BETTABLE LEGS. A leg with no Kalshi market cannot go on a real
-        # slip -- the maker used to include them anyway (EV-neutral at fair
-        # value), which built slips the user then could not place: "no Kalshi
-        # market" rows sitting in the middle of a parlay. Excluded at the pool,
-        # not at display, so the optimizer never spends a slot on one. The count
-        # is carried out so a thin morning pool (lines post near game time) is
-        # explainable instead of mysterious.
-        if priced_ok:
-            n_all = len(cands)
-            cands = [c for c in cands if c.get("price_cents")]
-            excluded_unpriced += n_all - len(cands)
-        # EDGE MODE: only legs where the model genuinely disagrees with the
-        # price by the asked margin. After pricing (the edge needs the ask),
-        # before the confidence band, so the two filters compose.
-        if min_edge_c is not None:
-            n_all = len(cands)
-            cands = [c for c in cands if _edge_ok(c, min_edge_c)]
-            excluded_no_edge += n_all - len(cands)
-        # The per-leg floor is applied AFTER the blend, because the blend is what
-        # decides the number the user actually sees. Filtering first let a leg
-        # qualify at 60% pre-blend and then get marked down to 41% by the market,
-        # so a slip built under "each leg >= 55%" came back showing 38-43% legs.
-        cands = [c for c in cands if floor <= c["marg"] <= ceil]
-        # A max bet reaches for cheap legs and multiplies them, so a leg our
-        # model likes far more than the market can carry the whole slip on its
-        # own. combo_engine.stackable bounds that optimism as a ratio.
-        if max_bet:
-            cands = [c for c in cands
-                     if combo_engine.stackable(c["marg"], c.get("price_cents"))]
-        if not cands:
-            continue
-        # A same-game stack never needs to be deeper than the parlay itself, and
-        # the depth is what costs -- so asking for 4 legs buys a much wider pool
-        # to find a correlating pair in than passing the 30-leg tier ceiling did.
-        #
-        # The floor is 1, NOT 2. With same-game parlays switched off the caller
-        # passes max_legs_per_game=1, and a floor of 2 silently overrode it: the
-        # bundle search still built pairs, the frontier still picked them, and a
-        # slip came back stacking "Over 2.5 runs" and "Under 11.5 runs" from one
-        # game with the box unticked. The floor was there to keep the search from
-        # being pointless, but one leg per game is a legitimate ask, not a
-        # degenerate one -- the cross-game frontier still has plenty to do.
-        _depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
-        bundles = mlb_sim.game_bundles(cands, sim["n"], max_legs=_depth)
-        if bundles:
-            label = g["matchup"] + (" 🔴" if live_gs else "")
-            games_bundles.append((label, bundles, g.get("kalshi_suffix")))
-    if not games_bundles:
-        return None
 
-    # Second supersede boundary: the frontier + chooser are the expensive
-    # tail of a big cross-game build, and a build that lost the slot during
-    # its LAST game's sim would otherwise pay for the whole thing anyway.
-    if abort_cb is not None and abort_cb():
-        raise RuntimeError("superseded by a newer build")
-
-    # The DP goes exactly as deep as THIS request needs -- a 4-leg ask no
-    # longer pays for a 12-leg state space, and a 19-leg ask is no longer
-    # silently truncated to 12 (which is what returned a 2-leg slip for a
-    # "require 19" build). A max bet is a payout chase, so it keeps the
-    # default depth rather than the leg control's.
-    _dp = combo_engine.dp_legs(
-        n_legs, "off" if max_bet else legs_mode, max_total_legs,
-        payout_mode="require" if max_bet else payout_mode)
-    states = combo_engine.frontier(games_bundles, max_total_legs=_dp,
-                                   net=net_fees)
+        # The DP goes exactly as deep as THIS request needs -- a 4-leg ask no
+        # longer pays for a 12-leg state space, and a 19-leg ask is no longer
+        # silently truncated to 12 (which is what returned a 2-leg slip for a
+        # "require 19" build). A max bet is a payout chase, so it keeps the
+        # default depth rather than the leg control's.
+        _dp = combo_engine.dp_legs(
+            n_legs, "off" if max_bet else legs_mode, max_total_legs,
+            payout_mode="require" if max_bet else payout_mode)
+        states = combo_engine.frontier(games_bundles, max_total_legs=_dp,
+                                       net=net_fees)
+        if frontier_cache is not None:
+            frontier_cache[_fkey] = (games_bundles, states, excluded_unpriced,
+                                     excluded_no_edge, priced_ok)
     if max_bet:
         # The ceiling IS the target, so the leg count and payout controls have
         # nothing left to say -- passing them through would only let a "4 legs"

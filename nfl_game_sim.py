@@ -796,7 +796,9 @@ def board(week=1, preseason=False):
 
         def _bg():
             try:
-                val = _build_board(season, week, preseason=preseason)
+                import jobs
+                with jobs.timed(f"nfl-board:w{week}"):
+                    val = _build_board(season, week, preseason=preseason)
                 if val is None:
                     # A week with no games (or a feed that came back empty) used
                     # to cache NOTHING, so board() returned None forever and the
