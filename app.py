@@ -546,21 +546,10 @@ def _pc_status():
     one slow deep-sim cycle is not); 'behind' means alive but running older
     code than this server (it self-updates within a minute, so persistent
     yellow means the PC's git pull is failing); 'off' is everything else."""
-    try:
-        with open(_PC_STATUS_PATH) as fh:
-            st = json.load(fh)
-    except OSError:
-        return {"state": "off", "seen_s": None, "behind": None}
-    except Exception as e:
-        errlog.note("APP-pc-status", e)
-        return {"state": "off", "seen_s": None, "behind": None}
-    seen = time.time() - (st.get("ts") or 0)
-    srv = os.environ.get("RENDER_GIT_COMMIT", "")
-    pc = st.get("commit") or ""
-    behind = bool(srv and pc
-                  and not (pc.startswith(srv) or srv.startswith(pc)))
-    state = "off" if seen > 300 else ("behind" if behind else "on")
-    return {"state": state, "seen_s": round(seen), "behind": behind}
+    import boardshare
+    # One reader (the preset builder asks too); the path stays this module's
+    # so the note-seen writer and the reader can never disagree.
+    return boardshare.pc_status(_PC_STATUS_PATH)
 
 
 def _pc_auth_ok():

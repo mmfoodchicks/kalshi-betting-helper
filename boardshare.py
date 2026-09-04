@@ -14,6 +14,7 @@ DEEP_CACHE_DIR, else /tmp): on the data disk it also survives a restart, and a
 board that expires is rebuilt anyway, so a wiped /tmp merely costs one build.
 """
 import os
+import json
 import pickle
 import tempfile
 import time
@@ -141,3 +142,36 @@ def nonblocking(name, ttl, mem, key, build, note_id=None):
                 release(name)
         threading.Thread(target=_bg, daemon=True).start()
     return hit[1] if hit else None
+
+
+# ---- Is the owner's PC up? --------------------------------------------------
+# pc_loop pings /api/pc/ping every 60s and the server notes it in this file
+# (the PC only ever calls IN, so "is it up" is "how recently did it call").
+# Read here so modules that decide whether to spend the shared core -- the
+# preset builder -- can ask without importing the app.
+PC_STATUS_PATH = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
+                              or os.environ.get("DEEP_CACHE_DIR") or "/tmp",
+                              "pc-status.json")
+
+
+def pc_status(path=None):
+    """green / yellow / red for the header light. 'on' needs a heartbeat in
+    the last 5 minutes (five misses is a verdict, one slow deep-sim cycle is
+    not); 'behind' means alive but running older code than this server (it
+    self-updates within a minute, so persistent yellow means the PC's git
+    pull is failing); 'off' is everything else."""
+    try:
+        with open(path or PC_STATUS_PATH) as fh:
+            st = json.load(fh)
+    except OSError:
+        return {"state": "off", "seen_s": None, "behind": None}
+    except Exception as e:
+        errlog.note("BS-pc-status", e)
+        return {"state": "off", "seen_s": None, "behind": None}
+    seen = time.time() - (st.get("ts") or 0)
+    srv = os.environ.get("RENDER_GIT_COMMIT", "")
+    pc = st.get("commit") or ""
+    behind = bool(srv and pc
+                  and not (pc.startswith(srv) or srv.startswith(pc)))
+    state = "off" if seen > 300 else ("behind" if behind else "on")
+    return {"state": state, "seen_s": round(seen), "behind": behind}

@@ -214,7 +214,7 @@ def slate_sig(games):
     return hashlib.sha1("|".join(sorted(parts)).encode()).hexdigest()[:16]
 
 
-def _build_top(games, spec):
+def _build_top(games, spec, abort_cb=None):
     """The N likeliest legs of a type — the maker's own machinery, locked."""
     import baseball
     n = spec["n_legs"]
@@ -223,10 +223,10 @@ def _build_top(games, spec):
         max_legs_per_game=n, max_total_legs=n,
         legs_mode="require", payout_mode="off", objective="safe",
         include_live=False, types=set(spec["types"]), sides=spec["sides"],
-        leg_ok=spec.get("leg_ok"))
+        leg_ok=spec.get("leg_ok"), abort_cb=abort_cb)
 
 
-def _build_target(games, spec):
+def _build_target(games, spec, abort_cb=None):
     """The ⚡ Optimal button as a locked recipe: mirrors the endpoint's
     optimal mode (app.api_baseball_mixed) knob for knob -- payout required,
     legs off, "balanced", floor swept by best_target -- so the tab and the
@@ -236,19 +236,32 @@ def _build_target(games, spec):
     target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
 
     def _b(floor):
+        # A yield is not a failed floor: best_target swallows exceptions per
+        # floor, so the supersede has to be re-raised past it.
+        if abort_cb is not None and abort_cb():
+            raise _Yield()
         return baseball.build_mixed_parlay(
             games, n_legs=4, target_pct=floor, cap_pct=None,
             target_payout=target, max_legs_per_game=30, max_total_legs=30,
             legs_mode="off", payout_mode="require", objective="balanced",
             include_live=False, types=None, sides=None,
-            payout_basis=spec.get("payout_basis", "fair"))
-    item = combo_engine.best_target(_b)
+            payout_basis=spec.get("payout_basis", "fair"),
+            abort_cb=abort_cb)
+    try:
+        item = combo_engine.best_target(_b)
+    except _Yield:
+        raise RuntimeError("superseded by a newer build")
     if item:
         item["target_payout_x"] = target
     return item
 
 
-def _build_all(games, spec):
+class _Yield(BaseException):
+    """Carries a supersede past combo_engine.best_target's per-floor
+    `except Exception` -- a BaseException so that net cannot catch it."""
+
+
+def _build_all(games, spec, abort_cb=None):
     """One leg per MARKET UNIT at/above the floor — likeliest line per unit,
     or the line NEAREST the floor from above when the spec says pick="floor".
 
@@ -274,6 +287,8 @@ def _build_all(games, spec):
     for g in games or []:
         if (g.get("live") or {}).get("state") in ("Final", "Live"):
             continue
+        if abort_cb is not None and abort_cb():
+            raise RuntimeError("superseded by a newer build")
         try:
             gs = baseball._game_sim(g)
         except Exception as e:
@@ -347,12 +362,13 @@ def _build_all(games, spec):
                        if net_x else None)}
 
 
-def build_all(date, games, sig):
+def build_all(date, games, sig, abort_cb=None):
     """Build every preset against one pinned Kalshi book. PURE COMPUTE — the
     slip ledger is the SERVER's book of record, so filing lives in
     ensure_logged(); keeping this side-effect-free is what lets the PC build
     the identical payload and upload it without ever growing a ledger of
-    its own."""
+    its own. `abort_cb` (server only) lets a build YIELD -- a supersede
+    propagates out whole rather than becoming a payload full of Nones."""
     import kalshi_mlb
     out = {}
     with kalshi_mlb.pinned():
@@ -360,7 +376,13 @@ def build_all(date, games, sig):
             pid = spec["id"]
             try:
                 item = {"top": _build_top, "all": _build_all,
-                        "target": _build_target}[spec["kind"]](games, spec)
+                        "target": _build_target}[spec["kind"]](
+                    games, spec, abort_cb=abort_cb)
+            except RuntimeError as e:
+                if "superseded" in str(e):
+                    raise
+                errlog.note("PRESET-build", e, path=pid)
+                item = None
             except Exception as e:
                 errlog.note("PRESET-build", e, path=pid)
                 item = None
@@ -422,6 +444,26 @@ def pc_build():
     return payload
 
 
+# How long the server waits for the PC's upload before building presets
+# itself. The PC builds the same payload on cores the health probe does not
+# live on and cycles every 10 min; 21 maker passes on the shared half-core
+# during the evening lineup churn is exactly the load that starves the
+# probe. The PC can still only add speed: past this the server builds.
+_PC_WAIT_S = 900
+_pc_wait = [0.0]
+
+
+def _yield_cb():
+    """A user's combo build owns the CPU: a preset rebuild in flight steps
+    aside at its next boundary and the next tick retries."""
+    import baseball
+    try:
+        return bool(baseball.combo_slot_holder(max_age=600))
+    except Exception as e:
+        errlog.note("PRESET-slot", e)
+        return False
+
+
 def tick(force=False):
     """Recorder-cadence entry point: rebuild when the day rolls or the slate's
     lineup picture changes. Cheap when nothing changed (one cached-slate read
@@ -448,6 +490,7 @@ def tick(force=False):
         # filed here, then republished so the badges read true.
         if ensure_logged(cur):
             boardshare.put(NAME, cur)
+        _pc_wait[0] = 0.0
         return 0
     # Debounce lineup-post storms: sigs can change minutes apart all
     # afternoon, and each rebuild is real CPU on a shared core the health
@@ -455,15 +498,30 @@ def tick(force=False):
     if (not force and cur and cur.get("rev") == REV
             and time.time() - (cur.get("built_ts") or 0) < 300):
         return 0
-    # A USER's combo build owns the CPU outright -- six recipe builds
+    # A USER's combo build owns the CPU outright -- the recipe builds
     # stacking on top of it is exactly the concurrency that starves the
     # health probe into an instance restart. The next tick retries.
+    if _yield_cb():
+        return 0
+    # The PC builds this payload too. When it is on, give it a cycle
+    # before spending the shared core here; when it is off, build now.
     try:
-        if baseball.combo_slot_holder(max_age=600):
-            return 0
+        pc_on = boardshare.pc_status().get("state") == "on"
     except Exception as e:
-        errlog.note("PRESET-slot", e)
-    payload = build_all(date, games, sig)
+        errlog.note("PRESET-pc", e)
+        pc_on = False
+    if pc_on and not force:
+        if not _pc_wait[0]:
+            _pc_wait[0] = time.time()
+        if time.time() - _pc_wait[0] < _PC_WAIT_S:
+            return 0
+    try:
+        payload = build_all(date, games, sig, abort_cb=_yield_cb)
+    except RuntimeError as e:
+        if "superseded" in str(e):
+            return 0                    # a user clicked Build; next tick
+        raise
+    _pc_wait[0] = 0.0
     ensure_logged(payload)
     boardshare.put(NAME, payload)
     return 1

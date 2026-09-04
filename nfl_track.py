@@ -13,10 +13,33 @@ August through February, so the record grows whether or not the tab is open.
 """
 
 import datetime
+import time
 
 import errlog
 import kalshi
 import store
+
+# ESPN answers a burst with 403 and then KEEPS answering 403: the block
+# outlives the burst. Measured overnight (Sep 4): the recorder probed the
+# scoreboard ~27 times a pass -- every ungraded pick date, +-1 day, future
+# weeks that could not be final included -- every ten minutes, 320 refusals
+# by 7:30am, and every ESPN reader on the site (NFL slate, live, tennis,
+# golf...) shared the blocked IP. One refusal now parks ESPN here for
+# _ESPN_COOLOFF_S, the scoreboard is fetched once per date per pass, only
+# dates that have happened are probed, and grading runs half-hourly.
+_ESPN_COOLOFF_S = 6 * 3600
+_GRADE_EVERY_S = 30 * 60
+_WEEK_EVERY_S = 6 * 3600
+_state = {"espn_block_until": 0.0, "last_grade": 0.0,
+          "week": None, "week_ts": 0.0}
+
+
+class _EspnBlocked(Exception):
+    """ESPN refused (403/429): stop the pass, park the module."""
+
+
+def espn_blocked():
+    return time.time() < _state["espn_block_until"]
 
 # ESPN and the board (Sleeper/Kalshi) disagree on a few abbreviations; both
 # sides are canonicalized before comparing so a Washington final actually
@@ -68,10 +91,21 @@ def record_from_board(data):
     return n
 
 
-def _finals_for(date):
+def _finals_for(date, memo=None):
     """{(home, away): (home_score, away_score)} for games FINAL on `date`
-    (YYYY-MM-DD), from ESPN's scoreboard. Abbreviations canonicalized."""
-    d = kalshi._get_json(f"{_SCOREBOARD}?dates={date.replace('-', '')}")
+    (YYYY-MM-DD), from ESPN's scoreboard. Abbreviations canonicalized.
+    `memo` dedups the fetch within one pass (pick dates overlap under the
+    +-1-day sweep); a 403/429 parks ESPN and raises _EspnBlocked."""
+    import urllib.error
+    if memo is not None and date in memo:
+        return memo[date]
+    try:
+        d = kalshi._get_json(f"{_SCOREBOARD}?dates={date.replace('-', '')}")
+    except urllib.error.HTTPError as e:
+        if getattr(e, "code", None) in (403, 429):
+            _state["espn_block_until"] = time.time() + _ESPN_COOLOFF_S
+            raise _EspnBlocked(f"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h")
+        raise
     out = {}
     for ev in d.get("events") or []:
         comp = (ev.get("competitions") or [{}])[0]
@@ -91,6 +125,8 @@ def _finals_for(date):
                 away, as_ = ab, sc
         if home and away and hs is not None and as_ is not None:
             out[(home, away)] = (hs, as_)
+    if memo is not None:
+        memo[date] = out
     return out
 
 
@@ -124,20 +160,33 @@ def _grade_rows(picks, finals):
 
 def grade_due():
     """Grade any recorded picks whose games are now final. Same ±1-day sweep
-    as baseball.grade_picks — late kickoffs cross the calendar date."""
-    picks = store.ungraded_nfl_picks()
+    as baseball.grade_picks — late kickoffs cross the calendar date. Only
+    dates that have arrived are probed (a pick for next Sunday cannot be
+    final), each date is fetched once per pass, and one ESPN refusal ends
+    the pass and parks the module."""
+    if espn_blocked():
+        return 0
+    import clock
+    today = clock.today_et().isoformat()
+    picks = [p for p in store.ungraded_nfl_picks()
+             if (p.get("date") or "") <= today]
     if not picks:
         return 0
     by_date = {}
     for p in picks:
         by_date.setdefault(p["date"], []).append(p)
-    n = 0
-    for date, ps in by_date.items():
+    n, memo = 0, {}
+    for date, ps in sorted(by_date.items()):
         finals = {}
         try:
             d0 = datetime.date.fromisoformat(date)
             for off in (0, 1, -1):
-                finals.update(_finals_for((d0 + datetime.timedelta(days=off)).isoformat()))
+                day = (d0 + datetime.timedelta(days=off)).isoformat()
+                if day <= today:
+                    finals.update(_finals_for(day, memo))
+        except _EspnBlocked as _e:
+            errlog.note("NFLT-espn-blocked", _e)     # once per pass, not per date
+            return n
         except Exception as _e:
             errlog.note("NFLT-finals", _e)
             continue
@@ -152,20 +201,33 @@ def tick():
     week's pre-game picks off the SHARED board and grade finals. Before this
     the NFL record only grew when someone opened the tab -- a week nobody
     looked at before kickoff simply never existed in the ledger, and closes
-    only refreshed while the tab was open. board() is non-blocking (adopts
-    the PC's build when fresh, else kicks one in the background), so a
-    quiet pass costs one file read."""
+    only refreshed while the tab was open.
+
+    Reads ONLY a board that already exists (the PC's upload, or a tab's
+    build): the first version called board(), which kicks a server-side
+    drive-engine build every half hour whether anyone is looking or not,
+    on the shared core the health probe lives on. The week is looked up at
+    most every 6h (it costs ESPN calls), grading every 30 min, and nothing
+    runs while ESPN has us parked."""
+    import boardshare
     import clock
     import nfl_game_sim
     import nfl_preseason
     d = clock.today_et()
-    if not (d.month >= 8 or d.month <= 2):
+    if not (d.month >= 8 or d.month <= 2) or espn_blocked():
         return 0
     pre = nfl_preseason.is_preseason()
-    data = nfl_game_sim.board(week=nfl_game_sim.current_week(pre),
-                              preseason=pre)
+    now = time.time()
+    if _state["week"] is None or now - _state["week_ts"] > _WEEK_EVERY_S:
+        _state["week"] = nfl_game_sim.current_week(pre)
+        _state["week_ts"] = now
+    name = (f"nfl_slate_{nfl_game_sim._season()}_w{_state['week']}"
+            f"_{int(bool(pre))}")
+    data, _age = boardshare.get(name, 3 * 3600)
     n = 0
     if data and not data.get("empty"):
         n = record_from_board(data)
-    grade_due()
+    if now - _state["last_grade"] >= _GRADE_EVERY_S:
+        _state["last_grade"] = now
+        grade_due()
     return n

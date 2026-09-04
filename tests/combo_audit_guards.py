@@ -9228,7 +9228,8 @@ ck("every Build takes the slot; the running build reads it per game",
    "a missing/stale slot aborts nothing -- benefit of the doubt runs toward "
    "finishing the build")
 ck("preset rebuilds defer while a user's build holds the slot",
-   "combo_slot_holder(max_age=600)" in _insp.getsource(_pr41.tick),
+   "if _yield_cb():" in _insp.getsource(_pr41.tick)
+   and "combo_slot_holder(max_age=600)" in _insp.getsource(_pr41._yield_cb),
    "six recipe builds stacking onto a user's build is exactly the "
    "concurrency that starves the health probe; the next tick retries")
 
@@ -9705,6 +9706,79 @@ ck("a rung is always a combo, and the ledger keeps its two-leg rule",
    "if legs < 2:" in _insp.getsource(_ce55.frontier)
    and "if len(legs) < 2:" in _insp.getsource(_sl52.log_from_item),
    "the frontier never yields one leg, so no one-leg exception was needed")
+
+print()
+print("=" * 72)
+print("The recorder must never hammer ESPN; presets yield and defer")
+print("=" * 72)
+# Overnight Sep 4: the new NFL recorder tick probed ESPN ~27 times a pass,
+# every ten minutes, for pick dates that had not happened yet; ESPN 403'd
+# the server's IP (320 refusals by 7:30am) and every ESPN reader on the
+# site went dark. Meanwhile the preset rebuild grew to 21 maker passes and
+# ran on the shared core during lineup churn, unable to yield to a user's
+# build. The owner saw a build that never reported progress.
+import nfl_track as _nt56
+import urllib.error as _ue56
+_calls56 = []
+_ok56 = (_KTH._get_json, _ST.ungraded_nfl_picks)
+_nt56._state.update({"espn_block_until": 0.0, "last_grade": 0.0,
+                     "week": None, "week_ts": 0.0})
+try:
+    def _boom56(url, timeout=10):
+        _calls56.append(url)
+        raise _ue56.HTTPError(url, 403, "Forbidden", {}, None)
+    _KTH._get_json = _boom56
+    _ST.ungraded_nfl_picks = lambda: [
+        {"game_id": "2026-08-30_A@B", "date": "2026-08-30", "pick_side": "home"},
+        {"game_id": "2026-08-31_C@D", "date": "2026-08-31", "pick_side": "home"},
+        {"game_id": "2099-09-13_E@F", "date": "2099-09-13", "pick_side": "home"}]
+    _n56 = _nt56.grade_due()
+    ck("one ESPN refusal ends the grading pass and parks the module for hours",
+       _n56 == 0 and len(_calls56) == 1 and _nt56.espn_blocked()
+       and _nt56._state["espn_block_until"] - _tm.time() > 5 * 3600,
+       "320 refusals in a night: retrying a block every ten minutes keeps it")
+    _calls56.clear()
+    ck("...and a parked module skips grading AND the tick entirely",
+       _nt56.grade_due() == 0 and _nt56.tick() == 0 and not _calls56)
+    _nt56._state["espn_block_until"] = 0.0
+    _calls56.clear()
+    _ST.ungraded_nfl_picks = lambda: [
+        {"game_id": "2099-09-13_E@F", "date": "2099-09-13", "pick_side": "home"}]
+    ck("a pick for a date that has not happened is never probed",
+       _nt56.grade_due() == 0 and not _calls56,
+       "next Sunday's pick cannot be final; asking ESPN about it is pure load")
+finally:
+    _KTH._get_json, _ST.ungraded_nfl_picks = _ok56
+    _nt56._state.update({"espn_block_until": 0.0, "last_grade": 0.0,
+                         "week": None, "week_ts": 0.0})
+_tk56 = _insp.getsource(_nt56.tick)
+ck("the tick reads a board that already exists; it never kicks a build",
+   "boardshare.get(name, 3 * 3600)" in _tk56 and "nfl_game_sim.board(" not in _tk56
+   and "_WEEK_EVERY_S" in _tk56 and "_GRADE_EVERY_S" in _tk56,
+   "board() kicks a server-side drive-engine build every half hour whether "
+   "anyone is looking or not")
+# Presets: a user's build supersedes a rebuild in flight; the PC gets a cycle.
+_g56 = [{"game_pk": 1, "matchup": "A @ B", "live": {}, "confirm": {},
+         "kalshi_suffix": "s1"}]
+try:
+    _pr41.build_all("2026-09-04", _g56, "sig", abort_cb=lambda: True)
+    _sup56 = False
+except RuntimeError as _e:
+    _sup56 = "superseded" in str(_e)
+ck("a preset rebuild yields whole to a user's build (no payload of Nones)",
+   _sup56, "the first version swallowed the supersede per recipe and would "
+   "have published 'Nothing qualifies today' eleven times")
+_tick56 = _insp.getsource(_pr41.tick)
+ck("the server waits a PC cycle before spending the shared core on presets",
+   'boardshare.pc_status().get("state") == "on"' in _tick56
+   and "_PC_WAIT_S" in _tick56 and _pr41._PC_WAIT_S == 900
+   and "build_all(date, games, sig, abort_cb=_yield_cb)" in _tick56
+   and 'return boardshare.pc_status(_PC_STATUS_PATH)' in _insp.getsource(__import__("app")._pc_status),
+   "the PC builds the same payload on cores the health probe does not live on; "
+   "past the wait the server still builds -- the PC can only add speed")
+ck("the bar's fallback text stops claiming to know what the server is doing",
+   "no progress reported yet" in open(_os.path.join(_root, "static", "app.js")).read()
+   and "simulating games that weren't cached`" not in open(_os.path.join(_root, "static", "app.js")).read())
 
 print()
 print("=" * 72)

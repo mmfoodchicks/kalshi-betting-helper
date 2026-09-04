@@ -1709,7 +1709,7 @@ function simLoader(el, msg, kind, token) {
       pct = 90 + 9 * (1 - Math.exp(-(dt - est) / Math.max(8, est)));
       note = (phase && phase !== "simulating games")
         ? ` - longer than the usual ${est.toFixed(0)}s; ${phase}`
-        : ` - longer than the usual ${est.toFixed(0)}s; simulating games that weren't cached`;
+        : ` - longer than the usual ${est.toFixed(0)}s; no progress reported yet - the server may be building today's board, or it restarted (the build resumes on its own)`;
     }
     fill.style.width = pct.toFixed(1) + "%";
     pctEl.textContent = pct.toFixed(0) + "%";
