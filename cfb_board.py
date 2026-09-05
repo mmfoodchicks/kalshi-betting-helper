@@ -382,6 +382,7 @@ def _build_board(season, week, n=_N):
     import boardshare
     boardshare.put(f"cfb_parlay_sims_{season}_w{week}_{n}", sims)
     return {"season": season, "week": week, "engine": "drive", "n_games": len(out),
+            "built_ts": _time.time(),
             "n_sims": n, "games": out, "games_played": played,
             "ratings": "in-season Massey" if played else "preseason prior",
             "model_weight": round(w_model, 2),
@@ -394,9 +395,40 @@ def _build_board(season, week, n=_N):
                      "ATS pick is read off the simulated margins at Kalshi's line.")}
 
 
+def _last_good(name):
+    """The newest board on disk under `name` whatever its age, if it had
+    games; (None, None) otherwise."""
+    import boardshare
+    old, age = boardshare.get(name, None)
+    if old and old.get("games"):
+        return old, age
+    return None, None
+
+
+def _stale(val, age, why):
+    """A good board re-served past its TTL, saying so on the summary line.
+    The pick'em, the cards and the maker keep working off it (the maker
+    prices every leg live and drops anything that has kicked off); the note
+    carries the true age (built_ts, else the file's) and why the rebuild
+    did not replace it."""
+    built = val.get("built_ts")
+    age_s = int(_time.time() - built) if built else int(age or 0)
+    out = dict(val)
+    out["stale"] = True
+    out["stale_s"] = age_s
+    out["note"] = f"served from the last good build ({age_s // 60}m old): {why}"
+    return out
+
+
 def board(week=1):
     """Non-blocking weekly slate, published through boardshare so every
-    worker (and the PC) serves one build. nfl_game_sim.board's pattern."""
+    worker (and the PC) serves one build. nfl_game_sim.board's pattern, with
+    one rule on top: a rebuild that fails or comes back empty never replaces
+    a board that had games. The first Saturday (2026-09-05, PC off, ESPN
+    refusing the server) the failure placeholder overwrote the PC's last
+    upload and the tab read "could not be built" over a slate that was on
+    disk a minute earlier. The placeholder's short age still throttles the
+    retry to one attempt per two minutes across every worker."""
     import boardshare
     season = _season()
     key = ("cfb_slate", season, week)
@@ -417,9 +449,15 @@ def board(week=1):
                 with jobs.timed(f"cfb-board:w{week}"):
                     val = _build_board(season, week)
                 if val is None:
-                    val = {"season": season, "week": week, "games": [], "n_games": 0,
-                           "empty": True,
-                           "note": "No FBS games found for this week."}
+                    old, oage = _last_good(name)
+                    if old is not None:
+                        # A feed listing no games for a week that had them
+                        # is a feed glitch, not a schedule change.
+                        val = _stale(old, oage, "the feed listed no games")
+                    else:
+                        val = {"season": season, "week": week, "games": [], "n_games": 0,
+                               "empty": True,
+                               "note": "No FBS games found for this week."}
                     _cache[key] = (_time.time() - 1500, val)
                     boardshare.put(name, val, age=1500)
                 else:
@@ -427,16 +465,26 @@ def board(week=1):
                     boardshare.put(name, val)
             except Exception as e:
                 errlog.note("CFB-board-build", e, path=f"s{season} w{week}")
-                val = {"season": season, "week": week, "games": [], "n_games": 0,
-                       "empty": True, "error": str(e),
-                       "note": "The board could not be built; retrying shortly."}
+                old, oage = _last_good(name)
+                if old is not None:
+                    val = _stale(old, oage, f"the rebuild failed ({e})")
+                else:
+                    val = {"season": season, "week": week, "games": [], "n_games": 0,
+                           "empty": True, "error": str(e),
+                           "note": "The board could not be built; retrying shortly."}
                 _cache[key] = (_time.time() - 1680, val)
                 boardshare.put(name, val, age=1680)
             finally:
                 _inflight.discard(key)
                 boardshare.release(name)
+
         threading.Thread(target=_bg, daemon=True).start()
-    return hit[1] if hit else None
+    if hit:
+        return hit[1]
+    # Nothing fresh anywhere: the last good build on disk, however old, beats
+    # a spinner while the rebuild runs (or cannot run).
+    old, oage = _last_good(name)
+    return _stale(old, oage, "a rebuild is in flight") if old is not None else None
 
 
 # ---- Combo maker --------------------------------------------------------------
@@ -444,9 +492,15 @@ def _slate_sims(week, n=_N):
     """The week's candidate legs with their sim masks, written by the board
     build. None while the board is still building (the caller says so)."""
     import boardshare
-    sims, _age = boardshare.get(f"cfb_parlay_sims_{_season()}_w{week}_{n}", _SIMS_TTL)
+    name = f"cfb_parlay_sims_{_season()}_w{week}_{n}"
+    sims, _age = boardshare.get(name, _SIMS_TTL)
     if sims is None:
         board(week)                    # kicks the build if nobody has
+        # Past their TTL the sims still describe the unplayed games (the
+        # maker drops anything that has kicked off and prices every leg
+        # live), so the last set on disk beats "building" while ESPN
+        # refuses the server a rebuild.
+        sims, _age = boardshare.get(name, None)
     return sims
 
 

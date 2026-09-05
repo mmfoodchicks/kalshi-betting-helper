@@ -10427,7 +10427,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v105' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v106' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -10693,6 +10693,39 @@ ck("the college maker builds a priced, ticketed slip off the sims store, "
    and all(g["suffix"] == "26SEP05UNTIND" for g in _p64["groups"])
    and (_p64s or {}).get("error_hint") == "single_game_no_stack",
    str(_p64)[:200] if not (_p64 and _p64.get("n_legs") == 2) else "")
+# --- a failed rebuild never replaces the last good board (PC off, ESPN 403
+# on the server: the placeholder overwrote the PC's upload on the first
+# Saturday and the tab read "could not be built" over a slate on disk)
+import time as _t64
+_obd64, _obb64 = _bs64._DIR, _cb64._build_board
+_bs64._DIR = _tf64.mkdtemp()
+_k64 = ("cfb_slate", 2026, 1)
+_cb64._cache.pop(_k64, None)
+_cb64._inflight.discard(_k64)
+_bs64.put("cfb_slate_2026_w1", dict(_b64, note=""), age=_cb64._BOARD_TTL + 60)
+_bs64.put("cfb_parlay_sims_2026_w1_300", _sims64, age=_cb64._SIMS_TTL + 60)
+_cb64._build_board = lambda season, week, n=_cb64._N: (_ for _ in ()).throw(RuntimeError("ESPN 403"))
+try:
+    _r64 = _cb64.board(1)
+    _dl64 = _t64.time() + 15
+    while _t64.time() < _dl64 and _k64 in _cb64._inflight:
+        _t64.sleep(0.05)
+    _after64, _ = _bs64.get("cfb_slate_2026_w1", None)
+    _fresh64, _ = _bs64.get("cfb_slate_2026_w1", _cb64._BOARD_TTL)
+    _ss64 = _cb64._slate_sims(1, 300)
+finally:
+    _cb64._build_board = _obb64
+    _bs64._DIR = _obd64
+    _cb64._cache.pop(_k64, None)
+ck("the last good board is served at once while a rebuild runs, and a failed "
+   "rebuild re-serves it with the reason instead of a 'could not be built' card",
+   _r64 and _r64.get("stale") and _r64["n_games"] == 3 and "in flight" in _r64["note"]
+   and _after64 and len(_after64.get("games") or []) == 3 and _after64.get("stale")
+   and "ESPN 403" in _after64["note"] and _after64.get("built_ts")
+   and _fresh64 is not None,      # the re-put throttles the next attempt
+   str((_r64 or {}).get("note"))[:80] + " | " + str((_after64 or {}).get("note"))[:80])
+ck("the maker's sims outlive their TTL while nothing can rebuild them",
+   _ss64 is not None and [x["pair"] for x in _ss64][:1] == ["UNT@IU"])
 # --- the track record: one ledger, two leagues
 import store as _st64
 _odb64 = _st64.DB_PATH

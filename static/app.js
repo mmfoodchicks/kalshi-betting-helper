@@ -4173,7 +4173,7 @@ function renderCFBPickem(d) {
 }
 function renderCFBWeek() {
   const d = _cfbWeekData; if (!d) return;
-  $("cfbWeekSummary").innerHTML = `<b>${d.n_games}</b> FBS games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${escapeHtml(d.note || "")}</i>`;
+  $("cfbWeekSummary").innerHTML = `<b>${d.n_games}</b> FBS games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${d.stale ? "⚠ " : ""}${escapeHtml(d.note || "")}</i>`;
   renderCFBPickem(d);
   $("cfbWeekResults").innerHTML = d.games.map(cfbSlateCard).join("");
   if (!document.querySelector("#cfbComboMaker .gamegrid")) renderCFBComboMaker();
