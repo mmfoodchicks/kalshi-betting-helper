@@ -4302,7 +4302,11 @@ const _UFC_WALL_COLS = [["fav5", "🥊 5 Favorites"], ["fin3", "💥 3 Finishes"
 const _UFC_TYPES = [["UFC ML", "Fight winner"], ["Rounds", "Ends before round N"]];
 let _ufcTypes = new Set();
 let ufcComboLegs = 3, ufcComboTarget = 55, ufcComboCap = 0, ufcComboPayout = 0;
-let ufcComboObjective = "balanced", ufcComboLegsMode = "prefer";
+// Default goal "safe" (likeliest), unlike baseball's "balanced": the fair
+// number here is blended ~95% to the book, so "isn't -EV" leaves only the
+// same-fight stacks with correlation credit and the maker keeps answering
+// with the same one. EV rides on the slip either way.
+let ufcComboObjective = "safe", ufcComboLegsMode = "prefer";
 let ufcComboPayoutMode = "off", ufcComboConn = "or", ufcComboSameFight = true;
 let ufcComboMinEdge = "";
 let ufcComboSel = null;            // {boutKey: true | fighterId}; null = every bout
@@ -4389,7 +4393,7 @@ function renderUFCComboMaker() {
         and ≤ <input id="ufcComboCap" type="number" min="0" max="99" value="${ufcComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
       <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and the round ladder walks to the rung that lands in the band - "before round 2" at 30% becomes "before round 3" at 55%.</div>
       <div class="small" style="margin-top:6px">goal
-        ${sel("ufcComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], ufcComboObjective)}
+        ${sel("ufcComboObjective", [["safe", "🛡️ likeliest, any price"], ["balanced", "⚖️ best odds that aren't -EV"], ["value", "💰 best value"]], ufcComboObjective)}
         &nbsp;<span title="Edge mode: keep only legs where OUR raw model number beats the leg's Kalshi ask by at least this many cents. Blank = off. The raw fight model loses to the closing line on the backtest, so treat a big edge here as a flag, not a gift.">🎯 edge ≥
         <input id="ufcComboMinEdge" type="number" step="1" min="-20" max="30" value="${ufcComboMinEdge}" placeholder="-" style="width:52px"/>¢</span>
       </div>
@@ -4405,7 +4409,7 @@ function renderUFCComboMaker() {
       <div style="margin-top:6px">
         <button class="track-mini primary-mini" onclick="buildUFCCombo()">Build</button>
         <button class="track-mini" style="margin-left:6px" onclick="buildUFCCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
-        <button class="track-mini" style="margin-left:6px" onclick="buildUFCCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the fights on its own - the likeliest slip that reaches your number and isn't priced against you.">⚡ Optimal for my ×</button>
+        <button class="track-mini" style="margin-left:6px" onclick="buildUFCCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the fights on its own - the likeliest slip that reaches your number, with its EV at the asks shown beside it.">⚡ Optimal for my ×</button>
       </div>
       <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every leg is YES on its own Kalshi market. <b>Same-fight on</b> may stack a fighter with the round the fight ends in, priced off the same simulated fights; off keeps one leg per bout.</div>
       ${modelLegend()}

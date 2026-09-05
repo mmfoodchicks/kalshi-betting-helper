@@ -3251,7 +3251,10 @@ def api_ufc_parlay():
                 max_total_legs=max_total,
                 legs_mode="off" if _opt else legs_mode,
                 payout_mode="require" if _opt else payout_mode,
-                conn=conn, objective="balanced" if _opt else objective,
+                # "safe", not "balanced": on a market-blended card the EV
+                # gate collapses every payout target to the one same-fight
+                # stack with correlation credit (see ufc_presets' rungs).
+                conn=conn, objective="safe" if _opt else objective,
                 types=types or None, bout_sel=sel or None, max_bet=_mb,
                 min_edge_c=min_edge,
                 # One combo slot across every sport: the newest click owns

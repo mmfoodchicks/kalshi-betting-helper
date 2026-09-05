@@ -10321,6 +10321,26 @@ try:
        all((_pp63[t]["item"] or {}).get("target_payout_x") == x
            for t, x in (("x2", 2.0), ("x3", 3.0), ("x5", 5.0), ("x10", 10.0))
            if _pp63[t]["item"]) and any(_pp63[t]["item"] for t in _up63.TARGET_IDS))
+    # 12:37 ET on the first live card: all four rungs showed the SAME 9.4%
+    # same-fight stack paying 11x. best_target ranks an EV-viable slip above
+    # a likelier EV-gated one, and on a card blended ~95% to the book the
+    # only EV-viable state at any floor was that stack. The rungs now pick
+    # the likeliest slip at the payout ("safe") and show the EV beside it.
+    _x2, _x10 = _pp63["x2"]["item"], _pp63["x10"]["item"]
+    ck("Pays 2x is the likeliest slip paying 2x, not the deepest +EV stack on the card",
+       _x2 and _x2["combined_prob_pct"] >= 20 and _x2["fair_payout_x"] >= 2.0
+       and _x2.get("payout_reached") is not False and _x2["objective"].startswith("preset:")
+       and (not _x10 or _x2["combined_prob_pct"] >= _x10["combined_prob_pct"]),
+       f"x2 {_x2 and (_x2['combined_prob_pct'], _x2['fair_payout_x'])}")
+    ck("the rungs differ from one another (they are not one stack wearing four labels)",
+       len({tuple(sorted(l["pick"] for g in (_pp63[t]["item"] or {}).get("groups", [])
+                         for l in g["legs"]))
+            for t in _up63.TARGET_IDS if _pp63[t]["item"]}) >= 2
+       and 'objective="safe"' in _insp.getsource(_up63._build_target)
+       and _up63.REV == 2)
+    ck("the endpoint's Optimal button and the maker's default goal follow the same rule",
+       'objective="safe" if _opt else objective' in _insp.getsource(__import__("app").api_ufc_parlay)
+       and 'let ufcComboObjective = "safe"' in open(_os.path.join(_root, "static", "app.js")).read())
     # nearest-above on a card where the bar is reachable
     _spec63 = {"id": "t", "types": ("Rounds",), "floor": 0.30, "pick": "floor"}
     _all63 = _up63._build_all(_board63, _mk63, _spec63)
@@ -10406,7 +10426,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v102' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v103' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 

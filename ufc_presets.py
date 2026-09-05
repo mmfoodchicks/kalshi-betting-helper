@@ -27,7 +27,7 @@ import errlog
 
 NAME = "ufc_presets"          # boardshare key: one build, every worker serves it
 TAG = "ufc_"                  # ledger tag prefix: "ufc_fav5" etc.
-REV = 1
+REV = 2
 _STALE_S = 1800
 
 PRESETS = (
@@ -51,23 +51,33 @@ PRESETS = (
      "desc": "Every bout's 'ends before round N' rung closest to the 60% "
              "bar without going under - the latest rung that still clears "
              "it, which is the one that pays."},
+    # The rungs pick the LIKELIEST slip at the payout, not the likeliest
+    # +EV one. Baseball's rungs gate on EV because its model carries real
+    # weight and +EV slips exist at every floor. Here the fair number is
+    # blended ~95% to the book, so every independent leg is a little -EV
+    # after the ask and the fee, and the only +EV states are same-fight
+    # stacks with correlation credit. Gating on EV then collapses every
+    # rung to the one such stack: the first live card showed a 9.4% slip
+    # paying 11x as "Pays 2x", "Pays 3x", "Pays 5x" and "Pays 10x" alike
+    # (the owner: "these don't seem like good bets at all"). The EV still
+    # rides on the slip, honestly signed.
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
-     "desc": "The likeliest slip that pays 2× and isn't priced against "
-             "you. Legs, floors and bouts are the optimizer's call."},
+     "desc": "The likeliest slip that pays 2×. Legs, floors and bouts are "
+             "the optimizer's call. EV at Kalshi's asks rides beside it - "
+             "in MMA the fair number sits close to the price, so a rung "
+             "usually runs a little -EV after fees; a same-fight stack is "
+             "where credit shows up."},
     {"id": "x3", "label": "Pays 3×", "emoji": "⚡", "kind": "target",
      "target_x": 3.0,
-     "desc": "The likeliest slip that pays 3× and isn't priced against "
-             "you."},
+     "desc": "The likeliest slip that pays 3×, EV at the asks beside it."},
     {"id": "x5", "label": "Pays 5×", "emoji": "⚡", "kind": "target",
      "target_x": 5.0,
-     "desc": "The likeliest slip that pays 5× and isn't priced against "
-             "you."},
+     "desc": "The likeliest slip that pays 5×, EV at the asks beside it."},
     {"id": "x10", "label": "Pays 10×", "emoji": "⚡", "kind": "target",
      "target_x": 10.0,
-     "desc": "The likeliest slip that pays 10× and isn't priced against "
-             "you - expect same-fight stacks (a winner and the round it "
-             "ends in) doing the heavy lifting."},
+     "desc": "The likeliest slip that pays 10× - expect same-fight stacks "
+             "(a winner and the round it ends in) doing the heavy lifting."},
 )
 TARGET_IDS = tuple(p["id"] for p in PRESETS if p["kind"] == "target")
 
@@ -93,8 +103,9 @@ def _build_top(board, mk, spec, abort_cb=None):
 
 def _build_target(board, mk, spec, abort_cb=None):
     """The ⚡ Optimal button as a locked recipe, knob for knob with the
-    endpoint's optimal mode: payout required, legs off, "balanced", the
-    per-leg floor swept by combo_engine.best_target."""
+    endpoint's optimal mode: payout required, legs off, objective "safe"
+    (see the note above the rungs), the per-leg floor swept by
+    combo_engine.best_target."""
     import combo_engine
     import ufc_combo
     target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
@@ -105,7 +116,7 @@ def _build_target(board, mk, spec, abort_cb=None):
         return ufc_combo.build_parlay(
             n_legs=4, target_pct=floor, cap_pct=None, target_payout=target,
             max_legs_per_bout=30, max_total_legs=30, legs_mode="off",
-            payout_mode="require", objective="balanced", types=None,
+            payout_mode="require", objective="safe", types=None,
             board=board, mk=mk, abort_cb=abort_cb)
     try:
         item = combo_engine.best_target(_b)
