@@ -73,7 +73,11 @@ def _rec(m):
     quote the blend weighs (kalshi_mlb's quote shape, YES side)."""
     import kalshi_mlb
     cents = kalshi._cents(m.get("yes_ask_dollars"))
-    if cents is None:
+    # An ask outside 1-99c is a market with no real YES side (a 100c ask is
+    # "nobody is selling"); combo_engine.leg_cost returns None for it and the
+    # first live card had one -- a recipe multiplied a float by that None.
+    # Unpriced, so the maker excludes it while the book is up.
+    if cents is None or not (0 < cents < 100):
         return None
     return {"cents": cents, "ticker": m.get("ticker"),
             "close_time": kalshi._parse_time(m.get("close_time")),

@@ -10336,6 +10336,18 @@ try:
        and set(g["matchup"] for g in _all63["groups"]) == set(_near63)
        and all(abs(g["legs"][0]["prob_pct"] - _near63[g["matchup"]]) < 0.06
                for g in _all63["groups"]))
+    # 16:21 ET on the first live card: a fighter quoted at 100c (nobody
+    # selling) reached _build_all, combo_engine.leg_cost gave None, and the
+    # recipe died on `cost *= None`. Now an ask outside 1-99c is unpriced.
+    ck("a 100c ask is unpriced, not a crash: _rec drops it and the scan skips it",
+       _uc63._rec({"yes_ask_dollars": "1.0000", "ticker": "KXUFCFIGHT-26SEP19XXXYYY-XXX"}) is None
+       and _uc63._rec({"yes_ask_dollars": "0.0000", "ticker": "t"}) is None
+       and _uc63._rec({"yes_ask_dollars": "0.5500", "ticker": "t", "close_time": None})["cents"] == 55
+       and "if lc is None:" in _insp.getsource(_up63._build_all))
+    _mk100 = {"fights": dict(_mk63["fights"]), "rounds": _mk63["rounds"], "ok": True}
+    _mk100["fights"][_uc63._norm("Quentin Pasley")] = dict(_mk100["fights"][_uc63._norm("Quentin Pasley")], cents=100)
+    ck("and a stray 100c cand cannot take the scan down",
+       _up63._build_all(_board63, _mk100, {"id": "t", "types": ("UFC ML",), "floor": 0.05}) is not None)
     import sliplog as _sl63
     _calls63 = []
     _olf63 = _sl63.log_from_item

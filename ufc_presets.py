@@ -148,6 +148,9 @@ def _build_all(board, mk, spec, abort_cb=None):
         if best is None:
             continue
         px = best["price_cents"]
+        lc = combo_engine.leg_cost(px, net=True)
+        if lc is None:
+            continue                # unplaceable ask (see ufc_combo._rec)
         leg = {"type": best["type"], "pick": best["label"], "side": "yes",
                "kref": best.get("kref"),
                "prob_pct": round(best["marg"] * 100, 1),
@@ -158,7 +161,7 @@ def _build_all(board, mk, spec, abort_cb=None):
                "fillable": best.get("fillable"),
                "ticker": best.get("ticker"), "close_time": best.get("close_time")}
         prob *= best["marg"]
-        cost *= combo_engine.leg_cost(px, net=True)
+        cost *= lc
         gross *= 100.0 / px
         n_legs += 1
         groups.append({"matchup": f"{bt['a']['name']} vs {bt['b']['name']}",
