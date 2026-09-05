@@ -10119,6 +10119,63 @@ ck("the working agreement stops promising a 30-minute build",
    "~30-minute Docker build" not in open(_os.path.join(_root, "CLAUDE.md")).read()
    and "deep_cache.HEAVY_BUILD" in open(_os.path.join(_root, "CLAUDE.md")).read())
 
+
+# ---------------------------------------------------------------------------
+# suite62: per-game sims never run inside a web worker on the server.
+#
+# 2026-09-05 11:26 ET, the second restart of the day: the combo maker was
+# simulating today's games INSIDE a web worker (pure Python, GIL-bound, nice
+# 0) beside a slate child on Render's one-core quota. Jobs timeline: combo
+# build start 15:24:53Z with no end row, fresh boot 15:26:19Z; the slate
+# rebuilds either side ran 91s and 97s against a 27s norm; the 20s memory
+# watchdog never fired. The slate build had been a niced child for months for
+# exactly this reason (DEPLOY.md: "1 worker failed 7/7 probes"); the game sim
+# it feeds the combo maker never was. Now every 4,000-run game sim on a posix
+# host runs through baseball._game_sim_isolated -- a child that nices itself
+# to 10 before importing anything -- with the inline engine as the fallback.
+import pickle as _pk62
+_iso62 = _insp.getsource(B._game_sim_isolated)
+ck("the sim child nices itself before importing anything, and a failed child "
+   "falls back to simulating in-process (heavier, never broken)",
+   '"import os; os.nice(10)\\n"' in _iso62
+   and "baseball._game_sim_blob(sys.stdin.buffer.read())" in _iso62
+   and 'errlog.note("SIM-child"' in _iso62
+   and _iso62.rstrip().endswith("return None")
+   and B._SIM_CHILD_TIMEOUT == 900)
+ck("the child is a posix-only path: the PC (Windows) keeps simulating inline",
+   '_os.name == "posix"' in open(_os.path.join(_root, "baseball.py")).read()
+   .split("_SIM_CHILD = ", 1)[1][:120]
+   and "VIGIL_SIM_INLINE" in open(_os.path.join(_root, "baseball.py")).read()
+   .split("_SIM_CHILD = ", 1)[1][:120])
+_gs62 = _insp.getsource(B._game_sim)
+ck("_game_sim tries the child first and keeps the prediction log in the parent",
+   "val = _game_sim_isolated(g, n=_SIM_N)" in _gs62
+   and _gs62.index("_game_sim_isolated(g, n=_SIM_N)") < _gs62.index("sim = mlb_sim.simulate(g, _SIM_N)")
+   and _gs62.index("_log_prop_predictions(g, cands)") > _gs62.index("_game_sim_isolated(g, n=_SIM_N)"),
+   "the child has no business in predlog; the parent logs off the blob it got back")
+ck("the live (resumed) sim takes the same child",
+   "_game_sim_isolated(g, n=_SIM_N, live=snap)" in _insp.getsource(B._live_game_sim))
+ck("the test's thinner _SIM_N reaches the child (it is passed, not re-read)",
+   "n=_SIM_N" in _gs62 and 'int(req.get("n") or _SIM_N)' in _insp.getsource(B._game_sim_blob))
+# End to end on a real game when the slate has one: the pipe, the pickle and
+# the child's own import of baseball. 40 runs so it costs a second.
+_g62 = next((g for g in (globals().get("playable") or []) if g.get("game_pk")), None)
+if _g62 is not None:
+    _v62 = B._game_sim_isolated(_g62, n=40)
+    ck("a niced child simulates a real game and hands back sim + candidates",
+       isinstance(_v62, dict) and "sim" in _v62 and _v62.get("cands"),
+       f"{_g62.get('matchup')}: {type(_v62).__name__}")
+    _b62 = _pk62.loads(B._game_sim_blob(_pk62.dumps({"g": _g62, "n": 40})))
+    ck("the child entry point returns the same shape the disk cache stores",
+       set(_b62) == {"sim", "cands"})
+else:
+    ck("a niced child simulates a real game and hands back sim + candidates",
+       True, "no playable game today -- child round trip not exercised")
+ck("the memory snapshot says whether the PC was delivering sims",
+   '"pc_state": _pc_status().get("state")' in open(_os.path.join(_root, "app.py")).read())
+ck("the working agreement records the fourth kill and its rule",
+   "_game_sim_isolated" in open(_os.path.join(_root, "CLAUDE.md")).read())
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

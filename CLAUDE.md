@@ -98,7 +98,11 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   deep season sim ran inline inside a web worker (Render's quota is one core,
   so the pool sized to one and skipped the child) beside a slate child. Heavy
   work on the server takes `deep_cache.HEAVY_BUILD`, runs in a child even at
-  one worker, and is handed to the PC first whenever it is on.
+  one worker, and is handed to the PC first whenever it is on. A fourth
+  (11:26 ET the same day) was the combo maker simulating games inside a web
+  worker beside a slate child; per-game sims now run in a niced child too
+  (`baseball._game_sim_isolated`). Nothing CPU-bound belongs in a gunicorn
+  process on a one-core quota.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
   only in memory is re-paid every time. Persist to the deep store instead.
 - Never let in-game information touch a number that claims to be pre-game

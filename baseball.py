@@ -3148,6 +3148,69 @@ def _velo_memo_put(date, memo):
         errlog.note("BB-velo_memo", _e)
 
 
+# The 4,000-run game sim runs in a NICED CHILD on the server, exactly like the
+# slate build (_analyze_slate_isolated) and, since this morning, the deep
+# season sim. Measured 2026-09-05 11:26 ET: a combo build simulating games
+# INSIDE a web worker -- pure Python, GIL-bound, nice 0 -- beside a slate child
+# on Render's one-core quota took the instance down inside a minute (jobs
+# timeline: combo build start 15:24:53Z with no end, boot 15:26:19Z; the 20s
+# memory watchdog never fired, so this was the health probe starving, not
+# memory). The slate rebuilds either side of it ran 91s and 97s against a
+# 27s norm: that is what one core looks like with two sims and a build on it.
+# At nice 10 a sim child only ever gets the CPU nobody else wants, so a probe
+# or a page poll always wins; and the child's working set dies with it, which
+# also stops a worker that simulated an evening's games from settling ~140 MB
+# fatter (see _analyze_slate_isolated). The PC (Windows, plentiful cores)
+# keeps simulating inline: no os.nice there, and nothing to protect.
+_SIM_CHILD = _os.name == "posix" and (_os.environ.get("VIGIL_SIM_INLINE") or "0") != "1"
+_SIM_CHILD_TIMEOUT = 900       # a 200s cloud-core sim, niced under load, x4
+
+
+def _game_sim_blob(raw):
+    """Child entry point: {"g", "n", "live"} pickled in, {"sim", "cands"}
+    pickled out. Module level so a subprocess can import and call it."""
+    import pickle
+    import mlb_sim
+    req = pickle.loads(raw)
+    g, n, snap = req["g"], int(req.get("n") or _SIM_N), req.get("live")
+    sim = mlb_sim.simulate(g, n, live=snap) if snap else mlb_sim.simulate(g, n)
+    return pickle.dumps({"sim": sim, "cands": mlb_sim.build_candidates(g, sim)},
+                        protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def _game_sim_isolated(g, n=None, live=None):
+    """Simulate one game in a separate, niced process and bring back just the
+    result; None when no child runs here (Windows, VIGIL_SIM_INLINE=1) or the
+    child failed, so the caller builds in-process -- heavier, never broken."""
+    if not _SIM_CHILD:
+        return None
+    import pickle
+    import subprocess
+    import sys
+    try:
+        out = subprocess.run(
+            # The child nices ITSELF before importing anything (preexec_fn is
+            # documented unsafe in a threaded process, and this runs from a
+            # build thread).
+            [sys.executable, "-c",
+             "import os; os.nice(10)\n"
+             "import sys, baseball; sys.stdout.buffer.write("
+             "baseball._game_sim_blob(sys.stdin.buffer.read()))"],
+            input=pickle.dumps({"g": g, "n": n or _SIM_N, "live": live},
+                               protocol=pickle.HIGHEST_PROTOCOL),
+            cwd=_os.path.dirname(_os.path.abspath(__file__)),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=_SIM_CHILD_TIMEOUT)
+        if out.returncode == 0 and out.stdout:
+            return pickle.loads(out.stdout)
+        errlog.note("SIM-child", msg=f"{g.get('game_pk')}: sim child exited "
+                    f"rc={out.returncode} with {len(out.stdout or b'')} bytes; "
+                    "simulating in-process")
+    except Exception as _e:
+        errlog.note("SIM-child", _e)
+    return None
+
+
 def _game_sim_cached(g):
     """True when this game's sim is already in cache -- i.e. it costs nothing.
     Lets the progress bar distinguish 'simulating 15 games' from 'reading 15
@@ -3173,16 +3236,21 @@ def _game_sim(g):
     pk = g.get("game_pk")
 
     def build():
-        sim = mlb_sim.simulate(g, _SIM_N)
-        cands = mlb_sim.build_candidates(g, sim)
+        val = _game_sim_isolated(g, n=_SIM_N)   # a niced child, on the server
+        if val is None:                         # no child here, or it failed
+            sim = mlb_sim.simulate(g, _SIM_N)
+            cands = mlb_sim.build_candidates(g, sim)
+            val = {"sim": sim, "cands": cands}
+        cands = val["cands"]
         # Log BEFORE anything can blend these dicts in place. predlog dedups by
         # ticker (first write wins), so the sim rebuilding every few minutes
-        # records each leg once, at the first price we saw it at.
+        # records each leg once, at the first price we saw it at. In the
+        # PARENT: the child has no business in the prediction log.
         try:
             _log_prop_predictions(g, cands)
         except Exception as _e:
             errlog.note("BB-build", _e)
-        return {"sim": sim, "cands": cands}
+        return val
     if pk is None:
         return build()
     key = ("game_sim", pk)
@@ -3252,8 +3320,12 @@ def _live_game_sim(g):
         return None
 
     def build():
-        sim = mlb_sim.simulate(g, _SIM_N, live=snap)
-        return {"sim": sim, "cands": mlb_sim.build_candidates(g, sim), "snap": snap}
+        val = _game_sim_isolated(g, n=_SIM_N, live=snap)   # niced child first
+        if val is None:
+            sim = mlb_sim.simulate(g, _SIM_N, live=snap)
+            val = {"sim": sim, "cands": mlb_sim.build_candidates(g, sim)}
+        val["snap"] = snap
+        return val
     # Keyed on the situation itself, and short-lived on top of that. The
     # signature moves with every at-bat and NEVER repeats, so each superseded
     # entry is dead the moment the next lands -- and at several MB of

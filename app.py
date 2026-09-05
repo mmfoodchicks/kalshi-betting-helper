@@ -809,6 +809,10 @@ def _api_diag_mem():
                     "cgroup_limit_mb": round(limit / 1048576, 1) if limit else None,
                     "procs": procs,
                     "sim_sizing": sizing,
+                    # Whether the PC was delivering sims at the time: a build
+                    # that had to simulate games itself is the whole story of
+                    # the 2026-09-05 11:26 ET restart.
+                    "pc_state": _pc_status().get("state"),
                     "cache_entries": caches})
 
 
