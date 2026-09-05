@@ -26,7 +26,8 @@ contain.
 import os
 import re
 
-SCHEMA = 1
+# 2: the UFC board carries per-sample end-round/method arrays (ufc_combo).
+SCHEMA = 2
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

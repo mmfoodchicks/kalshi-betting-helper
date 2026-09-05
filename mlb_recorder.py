@@ -233,6 +233,14 @@ def _loop():
             nfl_track.tick()
         except Exception as _e:
             errlog.note("MREC-nfl", _e)
+        # The locked UFC slips: rebuilt when the card or the rev changes or
+        # the build ages out, logged under their own tags. Own code, same
+        # reason as football.
+        try:
+            import ufc_presets
+            ufc_presets.tick()
+        except Exception as _e:
+            errlog.note("MREC-ufc", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

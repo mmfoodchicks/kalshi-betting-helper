@@ -425,6 +425,19 @@
       <div id="ufcSummary" class="small"></div>
       <div id="ufcResults" class="markets"><div class="empty">Loading the card…</div></div>
     </section>
+    <section class="card">
+      <h2>🎲 UFC combos (parlays)</h2>
+      <p class="sub" style="margin:4px 0 12px">The baseball combo maker on the fight card. <b>YES legs only</b>: a fighter to win (Kalshi lists one market per fighter) and <b>fight ends before round N</b> (Kalshi's round ladder). Same-fight stacks - a winner and the round it ends in - are priced off the <b>same simulated fights</b>, never assumed independent. <b>% is the fair number</b> (our model blended with the book by the share it has earned); a <b>¢ price</b> is the live Kalshi ask.</p>
+      <div id="ufcComboMaker"><div class="empty">Waiting for the card…</div></div>
+    </section>
+    <section class="card">
+      <h2>🏆 UFC wall of wins</h2>
+      <p class="sub">One column per locked UFC recipe. Each shows that recipe's <b>biggest graded WIN</b> - every leg settled the bought way on Kalshi, at the payout it actually paid. Empty until a recipe cashes.</p>
+      <div class="row" style="gap:8px;align-items:center">
+        <button class="track-mini primary-mini" onclick="loadUfcWall()">Refresh</button>
+      </div>
+      <div id="ufcWall" class="markets"><div class="empty">Loading…</div></div>
+    </section>
    </div><!-- /tab-ufc -->
 
    <div id="tab-tennis" class="hidden">

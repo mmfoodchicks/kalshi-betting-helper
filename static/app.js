@@ -4284,6 +4284,346 @@ function renderUFC() {
       </div>`;
   }).join("");
   $("ufcResults").innerHTML = bouts;
+  renderUFCComboMaker();
+  loadUfcWall();
+}
+
+// ---- UFC combo maker: the baseball maker on the fight card -----------------
+// YES legs only (see ufc_combo.py): a fighter to win, or the fight ending
+// before round N. The controls mirror baseball's minus the side select (there
+// is no NO to pick) and minus live pricing (no live engine for fights).
+const _UFC_PRESET_TABS = [["custom", "⚙️ Custom"], ["fav5", "🥊 5 Favorites"],
+  ["fin3", "💥 3 Finishes"], ["ml65", "💰 Winners 65%+"],
+  ["rd60", "⏱️ Early finish 60%+"], ["targets", "⚡ 2-10×"]];
+const _UFC_TARGET_IDS = ["x2", "x3", "x5", "x10"];
+const _UFC_WALL_COLS = [["fav5", "🥊 5 Favorites"], ["fin3", "💥 3 Finishes"],
+  ["ml65", "💰 Winners 65%+"], ["rd60", "⏱️ Early finish 60%+"],
+  ["x2", "⚡ Pays 2×"], ["x3", "⚡ Pays 3×"], ["x5", "⚡ Pays 5×"], ["x10", "⚡ Pays 10×"]];
+const _UFC_TYPES = [["UFC ML", "Fight winner"], ["Rounds", "Ends before round N"]];
+let _ufcTypes = new Set();
+let ufcComboLegs = 3, ufcComboTarget = 55, ufcComboCap = 0, ufcComboPayout = 0;
+let ufcComboObjective = "balanced", ufcComboLegsMode = "prefer";
+let ufcComboPayoutMode = "off", ufcComboConn = "or", ufcComboSameFight = true;
+let ufcComboMinEdge = "";
+let ufcComboSel = null;            // {boutKey: true | fighterId}; null = every bout
+let ufcComboBuilding = false;
+let _ufcPresetSel = "custom";
+let _ufcPresetData = null, _ufcPresetFetchTs = 0, _ufcPresetPoll = null;
+
+function ufcBoutKey(bt) { return `${bt.a.id}_${bt.b.id}`; }
+function ufcComboSelParam() {
+  if (!ufcComboSel) return "";
+  const parts = [];
+  for (const k in ufcComboSel) {
+    const v = ufcComboSel[k];
+    parts.push(v === true ? k : `${k}:${v}`);
+  }
+  return parts.join(",");
+}
+window.ufcComboAllBouts = () => { ufcComboSel = null; renderUFCComboMaker(); };
+window.ufcComboToggleBout = (key) => {
+  if (!ufcComboSel) ufcComboSel = {};
+  if (ufcComboSel[key] === true) delete ufcComboSel[key];
+  else ufcComboSel[key] = true;
+  if (!Object.keys(ufcComboSel).length) ufcComboSel = null;
+  renderUFCComboMaker();
+};
+window.ufcComboToggleFighter = (key, fid) => {
+  if (!ufcComboSel) ufcComboSel = {};
+  if (ufcComboSel[key] === fid) delete ufcComboSel[key];
+  else ufcComboSel[key] = fid;
+  if (!Object.keys(ufcComboSel).length) ufcComboSel = null;
+  renderUFCComboMaker();
+};
+function ufcGridHtml() {
+  const d = _ufcData;
+  if (!d || !(d.bouts || []).length) return "";
+  const allOn = !ufcComboSel;
+  const esc = (s) => String(s || "").replace(/'/g, "\\'");
+  const last = (nm) => (nm || "").trim().split(/\s+/).slice(-1)[0] || nm;
+  let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="ufcComboAllBouts()">ALL<br>FIGHTS</div>`;
+  cards += d.bouts.map((bt) => {
+    const key = ufcBoutKey(bt);
+    const sel = ufcComboSel ? ufcComboSel[key] : undefined;
+    const aOn = sel === true || sel === bt.a.id;
+    const bOn = sel === true || sel === bt.b.id;
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="ufcComboToggleBout('${esc(key)}')" title="${escapeHtml(bt.a.name)} vs ${escapeHtml(bt.b.name)}${bt.weight ? ` - ${escapeHtml(bt.weight)}` : ""}">
+      <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();ufcComboToggleFighter('${esc(key)}','${esc(bt.a.id)}')">${escapeHtml(last(bt.a.name))}</span>
+      <span class="gg-vs">vs</span>
+      <span class="gg-team${bOn ? " on" : ""}" onclick="event.stopPropagation();ufcComboToggleFighter('${esc(key)}','${esc(bt.b.id)}')">${escapeHtml(last(bt.b.name))}</span>
+      <span class="gg-when">${bt.rounds || 3} rds</span>
+    </div>`;
+  }).join("");
+  const nSel = allOn ? d.bouts.length : Object.keys(ufcComboSel).length;
+  return `<div class="ggwrap"><div class="gamegrid">${cards}</div>
+    <div class="small gg-count" style="color:var(--muted);margin:-2px 0 2px"><b>${d.bouts.length}</b> bouts on the card · <b>${nSel}</b> selected${allOn ? " (all)" : ""}</div></div>`;
+}
+function ufcTypeChipsHTML() {
+  return `<span class="ptchips">` + _UFC_TYPES.map(([v, l]) =>
+    `<span class="ptchip${_ufcTypes.has(v) ? " on" : ""}" onclick="toggleUfcType(this,'${v}')">${l}</span>`).join("") + `</span>`;
+}
+window.toggleUfcType = (el, t) => {
+  if (_ufcTypes.has(t)) { _ufcTypes.delete(t); el.classList.remove("on"); }
+  else { _ufcTypes.add(t); el.classList.add("on"); }
+};
+function showUfcPreset(pid) { _ufcPresetSel = pid; applyUfcPresetTab(); }
+
+function renderUFCComboMaker() {
+  const box = $("ufcComboMaker");
+  if (!box || !_ufcData || !(_ufcData.bouts || []).length) return;
+  // Never re-render mid-build: the progress element is live inside this box.
+  if (ufcComboBuilding) return;
+  const prev = (() => { const el = $("ufcComboOut"); return el ? el.innerHTML : ""; })();
+  const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
+    + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
+  box.innerHTML = `<div class="small" id="ufcPresetTabs" style="margin:8px 0 2px">${_UFC_PRESET_TABS.map(([pid, lbl]) =>
+      `<button class="leanchip preset-tab" data-pid="${pid}" onclick="showUfcPreset('${pid}')" style="cursor:pointer;margin-right:4px">${lbl}</button>`).join("")}</div>
+    <div id="ufcPresetBestLine" class="small" style="margin:0 0 4px"></div>
+    <div id="ufcPresetBox" class="hidden"></div>
+    <div class="combomaker" id="ufcCustomMaker">
+      🎯 <b>Combo maker</b> <span class="chip">✅ YES legs only</span>
+      <div class="small" style="margin:4px 0 2px">Pick which fights (or a single fighter) the combo must come from - or <b>ALL FIGHTS</b>:</div>
+      ${ufcGridHtml()}
+      <div style="margin-top:8px">each leg ≥
+        <input id="ufcComboTarget" type="number" min="2" max="97" value="${ufcComboTarget}" style="width:54px"/>%
+        and ≤ <input id="ufcComboCap" type="number" min="0" max="99" value="${ufcComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+      <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and the round ladder walks to the rung that lands in the band - "before round 2" at 30% becomes "before round 3" at 55%.</div>
+      <div class="small" style="margin-top:6px">goal
+        ${sel("ufcComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], ufcComboObjective)}
+        &nbsp;<span title="Edge mode: keep only legs where OUR raw model number beats the leg's Kalshi ask by at least this many cents. Blank = off. The raw fight model loses to the closing line on the backtest, so treat a big edge here as a flag, not a gift.">🎯 edge ≥
+        <input id="ufcComboMinEdge" type="number" step="1" min="-20" max="30" value="${ufcComboMinEdge}" placeholder="-" style="width:52px"/>¢</span>
+      </div>
+      <div class="small" style="margin-top:6px">
+        ${sel("ufcComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], ufcComboLegsMode)}
+        <input id="ufcComboN" type="number" min="2" max="30" value="${ufcComboLegs}" style="width:50px"/> legs
+        &nbsp;${sel("ufcComboConn", [["or", "OR"], ["and", "AND"]], ufcComboConn)}&nbsp;
+        ${sel("ufcComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], ufcComboPayoutMode)}
+        reach <input id="ufcComboPayout" type="number" min="0" step="any" value="${ufcComboPayout}" style="width:60px"/>× payout
+      </div>
+      <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="ufcComboSameFight"${ufcComboSameFight ? " checked" : ""} style="width:auto"/> allow same-fight stacks (a winner + the round it ends in) ${lockTag("mixed_parlay")}</label>
+      <div class="small" style="margin-top:8px">Leg types <span style="color:var(--muted)">(none selected = both)</span>: ${ufcTypeChipsHTML()}</div>
+      <div style="margin-top:6px">
+        <button class="track-mini primary-mini" onclick="buildUFCCombo()">Build</button>
+        <button class="track-mini" style="margin-left:6px" onclick="buildUFCCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+        <button class="track-mini" style="margin-left:6px" onclick="buildUFCCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the fights on its own - the likeliest slip that reaches your number and isn't priced against you.">⚡ Optimal for my ×</button>
+      </div>
+      <div class="small" style="margin-top:4px">Each target (legs / payout) can be a hard <b>require</b>, a soft <b>recommend</b>, or <b>off</b>; combine them with <b>AND</b>/<b>OR</b>. Every leg is YES on its own Kalshi market. <b>Same-fight on</b> may stack a fighter with the round the fight ends in, priced off the same simulated fights; off keeps one leg per bout.</div>
+      ${modelLegend()}
+      <div id="ufcComboOut"></div>
+    </div>`;
+  if (prev) { const el = $("ufcComboOut"); if (el) el.innerHTML = prev; }
+  applyUfcPresetTab();
+}
+
+async function buildUFCCombo(maxBet, optimal) {
+  const out = $("ufcComboOut");
+  if (!out) return;
+  const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
+  ufcComboLegs = Math.max(2, Math.min(30, num("ufcComboN", 3)));
+  ufcComboTarget = Math.max(2, Math.min(97, num("ufcComboTarget", 55)));
+  let cap = parseInt(($("ufcComboCap") || {}).value, 10);
+  ufcComboCap = (isNaN(cap) || cap <= 0 || cap < ufcComboTarget) ? 0 : cap;
+  ufcComboPayout = num("ufcComboPayout", 0);
+  if (optimal && !(ufcComboPayout > 1)) {
+    out.innerHTML = `<div class="small">⚡ Optimal mode needs the one thing it optimizes for: type the payout you want in the <b>×</b> box (e.g. <b>10</b>), then hit the button again. Legs, confidence and fights are chosen for you.</div>`;
+    return;
+  }
+  ufcComboObjective = ($("ufcComboObjective") || {}).value || "balanced";
+  ufcComboLegsMode = ($("ufcComboLegsMode") || {}).value || "prefer";
+  ufcComboPayoutMode = ($("ufcComboPayoutMode") || {}).value || "off";
+  ufcComboConn = ($("ufcComboConn") || {}).value || "or";
+  ufcComboSameFight = !!(($("ufcComboSameFight") || {}).checked);
+  ufcComboMinEdge = ($("ufcComboMinEdge") || {}).value ?? "";
+  out.innerHTML = `<div class="empty">${maxBet
+    ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : optimal ? `Solving for the likeliest slip that pays ${ufcComboPayout}×…`
+    : "Reading the card's simulated fights and searching combos…"}</div>`;
+  const q = `legs=${ufcComboLegs}&target=${ufcComboTarget}`
+    + (ufcComboCap ? `&cap=${ufcComboCap}` : "")
+    + `&payout=${ufcComboPayout}&objective=${ufcComboObjective}`
+    + `&legs_mode=${ufcComboLegsMode}&payout_mode=${ufcComboPayoutMode}`
+    + `&conn=${ufcComboConn}&same_game=${ufcComboSameFight ? 1 : 0}`
+    + (ufcComboMinEdge !== "" ? `&min_edge=${encodeURIComponent(ufcComboMinEdge)}` : "")
+    + (ufcComboSelParam() ? `&sel=${encodeURIComponent(ufcComboSelParam())}` : "")
+    + (_ufcTypes.size ? `&types=${[..._ufcTypes].map(encodeURIComponent).join(",")}` : "")
+    + (maxBet ? "&max_bet=1" : "")
+    + (optimal ? "&optimal=1" : "");
+  // Server-side under this click's token, served idempotently -- the phone
+  // only watches, exactly like the baseball and NFL makers.
+  const ptok = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  window._comboResume = null;
+  ufcComboBuilding = true;
+  try {
+    const poll = () => fetch(`/api/ufc/parlay?${q}&ptok=${ptok}`).then((r) => r.json());
+    let d = null;
+    const attach = async () => {
+      let misses = 0;
+      for (let i = 0; i < 400; i++) {
+        try {
+          d = await poll();
+          if (d && d.offline) {
+            if (!document.hidden && ++misses > 8) return false;
+          } else {
+            misses = 0;
+            if (!(d && d.status === "building")) return true;
+          }
+        } catch (e) {
+          if (!document.hidden && ++misses > 8) return false;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      return d && d.status !== "building";
+    };
+    if (!await attach()) {
+      const resume = async () => {
+        out.innerHTML = `<div class="empty">Reattaching to the build…</div>`;
+        ufcComboBuilding = true;
+        try {
+          if (await attach() && d) { _renderUfcComboResult(d, out); }
+          else {
+            window._comboResume = resume;
+            out.innerHTML = `<div class="empty">Still can't reach the server - <a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">try again</a>.</div>`;
+          }
+        } finally { ufcComboBuilding = false; }
+      };
+      window._comboResume = resume;
+      out.innerHTML = `<div class="empty">${(d && d.offline)
+        ? "Connection dropped mid-build. The build keeps running on the server - "
+        : "Still building - "}<a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">tap to reattach</a>.</div>`;
+      return;
+    }
+    _renderUfcComboResult(d, out);
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Combo build failed.</div>`;
+  } finally {
+    ufcComboBuilding = false;
+  }
+}
+
+function _renderUfcComboResult(d, out) {
+  noteMaxBetCap(d);
+  if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
+  if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+  if (!d.parlay) {
+    out.innerHTML = (d.hint === "no_card")
+      ? `<div class="empty">No card on the board yet - the simulator is still rating the fighters. Try again in a minute.</div>`
+      : (d.hint === "single_bout_no_stack")
+      ? `<div class="empty">Only <b>${d.n_bouts_available || 1}</b> bout fits your selection, and <b>same-fight stacks are off</b> - one leg per bout can't make a multi-leg slip. Tick <b>allow same-fight stacks</b>, or pick more fights.</div>`
+      : (d.hint === "max_bet_unreachable")
+      ? `<div class="empty">No slip on this card can pay <b>${d.cap_x || MAX_BET_X}×</b>. Every leg needs a real Kalshi quote behind it, and a card runs out of them long before the ceiling.</div>`
+      : (d.hint === "optimal_unbuildable")
+      ? `<div class="empty">Couldn't build anything toward <b>${d.target_payout_x}×</b> - the priced pool is too thin (Kalshi fills the round ladders as fight night approaches).</div>`
+      : (d.hint === "edge_empty")
+      ? `<div class="empty">No leg clears a <b>+${d.min_edge_c}¢</b> model edge under your filters. In MMA those are rare by design - the model is blended hard toward the book. Try <b>3-5¢</b>, or clear the box.</div>`
+      : `<div class="empty">No combo fits those targets on this card.${ufcComboCap ? " The band may be too narrow - widen it, or drop the ceiling." : " Try a lower per-leg %, or ALL FIGHTS."}</div>`;
+    return;
+  }
+  out.innerHTML = renderMixed(d.parlay);
+}
+
+// ---- UFC presets: the locked recipes, and the wall --------------------------
+async function _fetchUfcPresets() {
+  if (_ufcPresetData && Date.now() - _ufcPresetFetchTs < 60000) return _ufcPresetData;
+  const r = await fetch("/api/ufc/presets");
+  _ufcPresetData = await r.json();
+  _ufcPresetFetchTs = Date.now();
+  return _ufcPresetData;
+}
+async function decorateUfcBestBet() {
+  try {
+    const d = await _fetchUfcPresets();
+    const b = d && d.best;
+    const line = $("ufcPresetBestLine");
+    const tabs = $("ufcPresetTabs");
+    if (!b || !tabs) { if (line) line.innerHTML = ""; return; }
+    const crownPid = _UFC_TARGET_IDS.includes(b.id) ? "targets" : b.id;
+    tabs.querySelectorAll(".preset-tab").forEach((btn) => {
+      const crowned = btn.dataset.pid === crownPid;
+      btn.style.boxShadow = crowned ? "0 0 0 1px var(--yes)" : "";
+      if (crowned && !btn.textContent.startsWith("👑")) btn.textContent = "👑 " + btn.textContent;
+      if (!crowned) btn.textContent = btn.textContent.replace(/^👑 /, "");
+    });
+    if (line) {
+      const neg = (b.ev_pct != null && b.ev_pct < 0);
+      line.innerHTML = `👑 <b>${neg ? "Least-bad on this card" : "Best bet on this card"}: ${b.emoji || ""} ${b.label}</b> - EV <span class="ev ${b.ev_pct >= 0 ? "pos" : "neg"}">${b.ev_pct >= 0 ? "+" : ""}${b.ev_pct}%</span> · ${b.prob_pct}% to cash · pays ${b.payout_x}×${b.record_note ? ` · ${b.record_note}` : ""}${neg ? ` · <span style="color:var(--muted)">even the best recipe is -EV right now; passing is a position too</span>` : ""}`;
+    }
+  } catch (e) { /* decoration only */ }
+}
+function applyUfcPresetTab() {
+  const tabs = $("ufcPresetTabs");
+  if (!tabs) return;
+  decorateUfcBestBet();
+  tabs.querySelectorAll(".preset-tab").forEach((b) =>
+    b.style.opacity = b.dataset.pid === _ufcPresetSel ? "1" : "0.55");
+  const mk = $("ufcCustomMaker");
+  const box = $("ufcPresetBox");
+  if (_ufcPresetSel === "custom") {
+    if (mk) mk.classList.remove("hidden");
+    if (box) box.classList.add("hidden");
+    if (_ufcPresetPoll) { clearInterval(_ufcPresetPoll); _ufcPresetPoll = null; }
+    return;
+  }
+  if (mk) mk.classList.add("hidden");
+  if (box) box.classList.remove("hidden");
+  renderUfcPresetBox();
+}
+async function renderUfcPresetBox() {
+  const box = $("ufcPresetBox");
+  if (!box) return;
+  try {
+    await _fetchUfcPresets();
+  } catch (e) { box.innerHTML = `<div class="small">Couldn't load the recipes - retrying…</div>`; }
+  const d = _ufcPresetData;
+  if (!d) return;
+  if (d.status === "building" || d.error) {
+    box.innerHTML = `<div class="small">${d.error || "Building the card's locked slips…"}</div>`;
+    if (!_ufcPresetPoll) _ufcPresetPoll = setInterval(() => { _ufcPresetFetchTs = 0; renderUfcPresetBox(); }, 8000);
+    return;
+  }
+  if (_ufcPresetPoll) { clearInterval(_ufcPresetPoll); _ufcPresetPoll = null; }
+  const pids = _ufcPresetSel === "targets" ? _UFC_TARGET_IDS : [_ufcPresetSel];
+  const sections = [];
+  for (const pid of pids) {
+    const p = (d.presets || {})[pid];
+    if (!p) continue;
+    sections.push(_presetSectionHtml(p, (d.records || {})[pid]));
+  }
+  if (!sections.length) { box.innerHTML = `<div class="small">No such recipe.</div>`; return; }
+  box.innerHTML = `<div class="combomaker">
+    ${sections.join(`<hr style="border:none;border-top:1px solid var(--line,#333);margin:10px 0">`)}
+    <div class="small" style="margin-top:6px;color:var(--muted)">Rebuilds every half hour as Kalshi's prices move, and whenever the card changes · built ${d.age_s != null ? Math.round(d.age_s / 60) + "m ago" : ""} for ${escapeHtml(d.event || "the card")}${d.date ? ` (${d.date})` : ""}</div>
+  </div>`;
+}
+async function loadUfcWall() {
+  const box = $("ufcWall");
+  if (!box) return;
+  try {
+    const d = await _fetchUfcPresets();
+    const wins = d.best_wins || {};
+    const recs = d.records || {};
+    const bestId = (d.best || {}).id;
+    const cols = _UFC_WALL_COLS.map(([pid, lbl]) => {
+      const w = wins[pid];
+      const r = recs[pid];
+      const crowned = pid === bestId;
+      const recTxt = r && r.graded
+        ? `<div class="small" style="color:var(--muted)">${r.won}-${r.graded - r.won} all time</div>` : "";
+      const body = w
+        ? `<div class="small"><b class="ev pos">WON ${w.payout_x ? w.payout_x + "×" : ""}</b> · claimed ${w.prob_pct}% · ${w.date || ""}</div>
+           <ul style="margin:4px 0;padding-left:16px">${(w.legs || []).map((l) =>
+             typeof l === "string"
+               ? `<li class="small">✅ ${escapeHtml(l)}</li>`
+               : `<li class="small">✅ <span class="legtag" style="color:var(--yes);border-color:var(--yes)">YES</span> <b>${escapeHtml(l.pick)}</b> <span style="color:var(--muted)">${escapeHtml(l.matchup || "")}${l.cents != null ? " · " + l.cents + "¢" : ""}</span></li>`).join("")}
+           </ul>`
+        : `<div class="empty" style="padding:12px 4px">No win yet - the recipe runs every card; its first cash lands here on its own.</div>`;
+      return `<div class="combo" style="flex:1 1 230px;min-width:210px${crowned ? ";box-shadow:0 0 0 1px var(--yes)" : ""}">
+        <div><b>${lbl}</b>${crowned ? ` <span class="small" title="the server scores every recipe's CURRENT slip - fee-aware EV adjusted by its own graded record - and crowns the card's best">👑 best bet</span>` : ""}</div>${recTxt}${body}</div>`;
+    }).join("");
+    box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">${cols}</div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">A slip only hangs here once EVERY leg settled the bought way on Kalshi - the payout shown is what it actually paid, fees in.</div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load the wall.</div>`;
+  }
 }
 
 // ---- Tennis ----

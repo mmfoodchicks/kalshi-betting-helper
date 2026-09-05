@@ -1528,24 +1528,25 @@ ck("the tennis board hands liquidity to the leg builder",
 # API + UI
 _app = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                          "app.py")).read()
-ck("all three endpoints read max_bet", _app.count('request.args.get("max_bet")') == 3,
+ck("all four endpoints read max_bet (MLB, NFL, tennis, UFC)",
+   _app.count('request.args.get("max_bet")') == 4,
    _app.count('request.args.get("max_bet")'))
-ck("and all three sweep rather than picking one floor",
-   _app.count("best_max_bet") == 3, _app.count("best_max_bet"))
+ck("and all four sweep rather than picking one floor",
+   _app.count("best_max_bet") == 4, _app.count("best_max_bet"))
 ck("an unreachable ceiling is a named hint, not a bare null",
    _app.count("max_bet_unreachable") >= 3)
 for _b, _label in (("buildCombo", "MLB"), ("buildNFLCombo", "NFL"),
-                   ("buildTennisCombo", "tennis")):
+                   ("buildTennisCombo", "tennis"), ("buildUFCCombo", "UFC")):
     ck(f"the {_label} maker has a max-bet button",
        f"{_b}(true)" in _js)
 ck("every max-bet button is labelled with the ceiling",
-   _js.count("🎰 Max bet (${MAX_BET_X}×)") == 3)
+   _js.count("🎰 Max bet (${MAX_BET_X}×)") == 4)
 ck("the slip shows the market's probability beside ours",
    "market_prob_pct" in _js and "Market says" in _js)
 ck("and says so when the ceiling could not be reached",
    "isn't reachable on this board today" in _js)
 ck("the button label follows the server's cap, not a hardcoded 320",
-   "function noteMaxBetCap(" in _js and _js.count("noteMaxBetCap(d);") == 3,
+   "function noteMaxBetCap(" in _js and _js.count("noteMaxBetCap(d);") == 4,
    # counted with the semicolon: without it the DEFINITION line matches too and
    # three call sites read as four
    _js.count("noteMaxBetCap(d);"))
@@ -8536,9 +8537,10 @@ finally:
     import shutil as _sh37
     _sh37.rmtree(_dir37, ignore_errors=True)
 _apy37 = open(_os.path.join(_root, "app.py")).read()
-ck("both parlay endpoints take over dead jobs, before the claim",
-   _apy37.count("baseball.job_takeover(ptok, _JOB_DEAD_S)") == 2
+ck("every parlay endpoint takes over dead jobs, before the claim",
+   _apy37.count("baseball.job_takeover(ptok, _JOB_DEAD_S)") == 3
    and '"COMBO-dead-job"' in _apy37 and '"NFL-COMBO-dead-job"' in _apy37
+   and '"UFC-COMBO-dead-job"' in _apy37
    and _apy37.index("job_takeover(ptok") < _apy37.index("job_claim(ptok)"),
    "a takeover after the claim check could never run -- the claim already "
    "answered 202")
@@ -9054,7 +9056,7 @@ ck("new slips carry their display legs into the ledger",
 _apy43 = open(_os.path.join(_root, "app.py")).read()
 _js43 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the endpoint serves the wall on both return shapes, and the tab draws it",
-   _apy43.count('"best_wins": best_wins') == 2
+   _apy43.count('"best_wins": best_wins') == 4
    and "await _fetchPresets()"
    in _js43.split("async function loadHits")[1][:500]
    and "No win yet" in _js43
@@ -9404,13 +9406,13 @@ _apy51 = open(_os.path.join(_root, "app.py")).read()
 _js51 = open(_os.path.join(_root, "static", "app.js")).read()
 import nfl_game_sim as _ngs51
 ck("NFL builds take the combo slot and yield to it, like baseball",
-   _apy51.count("baseball.combo_slot_take(ptok)") == 2
+   _apy51.count("baseball.combo_slot_take(ptok)") == 3
    and _apy51.index("baseball.combo_slot_take(ptok)", _apy51.index("NFL-COMBO"))
    < _apy51.index('_run_job(ptok, _core, "NFL-COMBO-build")')
    and "abort_cb is not None and abort_cb()"
    in _insp.getsource(_ngs51.build_parlay)
-   and _apy51.count("not in (None, ptok)") == 2,
-   "one slot across BOTH sports: an NFL build and an MLB build must never "
+   and _apy51.count("not in (None, ptok)") == 3,
+   "one slot across every sport: an NFL, a UFC and an MLB build must never "
    "grind the shared core together")
 ck("the dead Predicted Hits route and its query are gone",
    '"/api/baseball/hits"' not in _apy51
@@ -9537,7 +9539,7 @@ _apy52 = open(_os.path.join(_root, "app.py")).read()
 ck("NFL parlays stamp ticker/close/kickoff on every leg and are filed in the ledger",
    'leg["ticker"], leg["close_time"] = tk, close' in _bp52
    and 'leg["start_ts"] = _kick.get(grp.get("suffix"))' in _bp52
-   and _apy52.count("_log(item)\n") == 2
+   and _apy52.count("_log(item)\n") == 4      # NFL and UFC, optimal + plain
    and 'sliplog.log_from_item(item, sport="nfl")' in _apy52,
    '"every parlay you build is logged" was true of one sport')
 ck("predlog anchors NFL closes at the KICKOFF the logger knew, not midnight",
@@ -10102,7 +10104,7 @@ ck("the PC treats a server request newer than the server's copy as due now",
 _js60 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the page says the PC has the job instead of going quiet or re-offering the button",
    "s.pc_pending_s != null" in _js60 and "Deep sim handed to your PC" in _js60
-   and 'vigil-shell-v101' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v1' in open(_os.path.join(_root, "static", "sw.js")).read())
 _rd60 = _insp.getsource(_ds60.run_deep)
 ck("a one-worker deep run is isolated in a child by default: its working set "
    "dies with it and the sim's os.nice(10) never lands on the web worker",
@@ -10175,6 +10177,226 @@ ck("the memory snapshot says whether the PC was delivering sims",
    '"pc_state": _pc_status().get("state")' in open(_os.path.join(_root, "app.py")).read())
 ck("the working agreement records the fourth kill and its rule",
    "_game_sim_isolated" in open(_os.path.join(_root, "CLAUDE.md")).read())
+
+
+# ---------------------------------------------------------------------------
+# suite63: the UFC combo maker -- the baseball maker on the fight card.
+#
+# The owner: "inside the ufc area could you add a combo maker specifically
+# for ufc. Try to model it exactly from the baseball one. With the only
+# exception is that there are no 'No' tags. Just yes's. Add a custom one
+# with regular 'set' bets like baseball but model them after ufc." Every leg
+# is a bitmask over the bout's simulated fights (ufc_sim now keeps end-round
+# and method per sample beside won_arr), so mlb_sim.game_bundles and
+# combo_engine run unchanged; the recipes (ufc_presets) log under ufc_ tags
+# and grade off Kalshi settlement like every other slip. Synthetic card, no
+# network: ufc_data._default ratings with the career lookup stubbed.
+import ufc_data as _ud63
+import ufc_sim as _us63
+import ufc_combo as _uc63
+import ufc_presets as _up63
+_ocp63 = _ud63.career_profile
+_ud63.career_profile = lambda fid: None
+try:
+    def _rat63(fid, name, **kw):
+        d = _ud63._default(fid, name, 6)
+        d.update(kw); d["record_w"] = 8; d["record_l"] = 2
+        return d
+    _bouts63 = []
+    for (ia, na, ka), (ib, nb, kb) in (
+            (("1", "Quentin Pasley", {"ss_pm": 5.5, "kd_p15": 0.6, "finish_rate": 0.7}),
+             ("2", "Arlind Berisha", {})),
+            (("3", "Isaac Moreno", {"td_p15": 2.5}), ("4", "Jose Hooper", {"durability": 0.5})),
+            (("5", "Alex Ortiz", {}), ("6", "Brian Parker", {"ss_pm": 3.0}))):
+        r = _us63.simulate_bout(_rat63(ia, na, **ka), _rat63(ib, nb, **kb), rounds=3, n=3000, seed=7)
+        r["weight"] = "Welterweight"
+        _bouts63.append(r)
+    _b0 = _bouts63[0]
+    _smp = _b0["samples"]
+    ck("the bout sim keeps end-round and method per sample, index-aligned with won_arr",
+       len(_smp["end_rd"]) == len(_b0["a"]["won_arr"]) == len(_smp["method"]) > 500
+       and all(m in ("ko", "sub", "dec") for m in _smp["method"])
+       and all(1 <= r <= 3 for r in _smp["end_rd"]))
+    ck("a decision is coded as ending in the final round, so it is NO on every rung",
+       all(r == 3 for r, m in zip(_smp["end_rd"], _smp["method"]) if m == "dec")
+       and any(m == "dec" for m in _smp["method"]))
+    ck("the board key moved with the payload shape (a cached old board has no samples) "
+       "and the artifact schema was bumped in the same change",
+       _us63.BOARD_NAME == "ufc_board2" and __import__("artifacts").SCHEMA == 2)
+    ck("both series share the bout key the fighter ticker carries",
+       _uc63.event_key("KXUFCFIGHT-26SEP08PASBER-PAS") == "26SEP08PASBER"
+       and _uc63.event_key("KXUFCROUNDS-26SEP08PASBER-3") == "26SEP08PASBER"
+       and _uc63.event_key("junk") is None)
+    _board63 = {"sport": "ufc", "event": "UFC Fight Night", "date": "2026-09-19",
+                "n_sims": 3000, "bouts": _bouts63}
+    _mk63 = {"fights": {}, "rounds": {}, "ok": True}
+    for bt, ek in zip(_bouts63, ("26SEP19PASBER", "26SEP19MORHOO", "26SEP19ORTPAR")):
+        for side, suf in (("a", ek[-6:-3]), ("b", ek[-3:])):
+            f = bt[side]
+            f["fair_win"] = round(0.7 * f["win_pct"] + 15.0, 1); f["confidence"] = 0.3
+            c = max(3, min(97, int(round(f["fair_win"] - 3))))
+            _mk63["fights"][_uc63._norm(f["name"])] = {
+                "cents": c, "ticker": f"KXUFCFIGHT-{ek}-{suf}", "close_time": 1790000000,
+                "q": {"ask": c, "bid": c - 2, "mid": c - 1, "spread": 2, "size": 50, "vol": 500, "oi": 300}}
+        _mk63["rounds"][ek] = {N: {"cents": c, "ticker": f"KXUFCROUNDS-{ek}-{N}", "close_time": 1790000000,
+                                   "q": {"ask": c, "bid": c - 3, "mid": c - 1.5, "spread": 3, "size": 30, "vol": 200, "oi": 100}}
+                               for N, c in ((2, 35), (3, 60))}
+    _cands63, _n63 = _uc63.bout_cands(_b0, _mk63)
+    _ml63 = [c for c in _cands63 if c["type"] == "UFC ML"]
+    _rd63 = {c["kref"]["n"]: c for c in _cands63 if c["type"] == "Rounds"}
+    ck("a bout yields both fighters' YES markets and every booked round rung, ticketed",
+       len(_ml63) == 2 and set(_rd63) == {2, 3}
+       and all(c["side"] == "yes" and c["ticker"] and c["price_cents"] for c in _cands63)
+       and all(c["kref"]["t"] == "ufcml" for c in _ml63))
+    ck("the fighter masks are disjoint and the round rungs nest (before 2 implies before 3)",
+       (_ml63[0]["mask"] & _ml63[1]["mask"]) == 0
+       and (_rd63[2]["mask"] & _rd63[3]["mask"]) == _rd63[2]["mask"]
+       and _rd63[2]["marg"] < _rd63[3]["marg"])
+    ck("a winner's probability is the board's fair win (market-blended by earned trust), "
+       "not the raw model; a rung is blended here and keeps its raw number beside it",
+       abs(_ml63[0]["marg"] - _b0["a"]["fair_win"] / 100.0) < 1e-9
+       and abs(_ml63[0]["marg_model"] - _b0["a"]["win_pct"] / 100.0) < 1e-9
+       and _rd63[3].get("marg_model") is not None and _rd63[3]["marg"] != _rd63[3]["marg_model"])
+    import mlb_sim as _ms63
+    _bund63 = _ms63.game_bundles(_cands63, _n63, max_legs=2)
+    ck("a same-fight stack never pairs the two fighters or two rungs of one ladder",
+       _bund63 and all(len({c["group"] for c in b["legs"]}) == b["size"] for b in _bund63)
+       and any(b["size"] == 2 for b in _bund63))
+    _it63 = _uc63.build_parlay(n_legs=3, target_pct=55, legs_mode="require",
+                               board=_board63, mk=_mk63)
+    ck("the maker builds a three-leg slip of YES legs, every leg ticketed and priced, "
+       "with baseball's own item fields",
+       _it63 and _it63["n_legs"] == 3 and _it63["sport"] == "ufc"
+       and all(l["side"] == "yes" and l.get("ticker") and l.get("market_cents")
+               for g in _it63["groups"] for l in g["legs"])
+       and _it63.get("kalshi_payout_net_x") and _it63.get("ev_pct") is not None
+       and "alternatives" in _it63 and _it63["excluded_unpriced"] == 0
+       and _it63["pricing_unavailable"] is False,
+       str(_it63)[:200] if not (_it63 and _it63.get("n_legs") == 3) else "")
+    _stk63 = _uc63.build_parlay(n_legs=4, target_pct=20, max_legs_per_bout=2,
+                                target_payout=5, payout_mode="require", legs_mode="off",
+                                board=_board63, mk=_mk63)
+    ck("a payout target can be reached through a same-fight stack priced off the joint",
+       _stk63 and _stk63["n_legs"] >= 2 and _stk63.get("payout_reached") is not False)
+    _mb63 = _uc63.build_parlay(max_bet=True, target_pct=10, max_legs_per_bout=2,
+                               max_total_legs=12, board=_board63, mk=_mk63)
+    ck("max bet runs on the card too", _mb63 and _mb63["objective"] == "max_bet")
+    _sel63 = _uc63.build_parlay(n_legs=2, target_pct=5, bout_sel=["1_2:1", "3_4"],
+                                board=_board63, mk=_mk63)
+    ck("picking one fighter keeps his market only; a whole bout keeps its ladder",
+       _sel63 and all("Berisha" not in l["pick"] for g in _sel63["groups"] for l in g["legs"])
+       and all(g["suffix"] in ("1_2", "3_4") for g in _sel63["groups"]))
+    _typ63 = _uc63.build_parlay(n_legs=2, target_pct=5, types={"Rounds"},
+                                max_legs_per_bout=1, board=_board63, mk=_mk63)
+    ck("the type chips filter the pool", _typ63 and all(l["type"] == "Rounds"
+                                                        for g in _typ63["groups"] for l in g["legs"]))
+    ck("one bout with stacks off says so instead of shrugging",
+       (_uc63.build_parlay(n_legs=2, target_pct=5, bout_sel=["1_2"], max_legs_per_bout=1,
+                           board=_board63, mk=_mk63) or {}).get("error_hint") == "single_bout_no_stack")
+    _mk_unp = {"fights": {k: v for k, v in _mk63["fights"].items() if "pasley" not in k},
+               "rounds": _mk63["rounds"], "ok": True}
+    _unp63 = _uc63.build_parlay(n_legs=2, target_pct=5, board=_board63, mk=_mk_unp)
+    ck("an unquoted fighter is excluded while the book is up, and counted",
+       _unp63 and _unp63["excluded_unpriced"] >= 1
+       and all("Pasley" not in l["pick"] for g in _unp63["groups"] for l in g["legs"]))
+    try:
+        _uc63.build_parlay(n_legs=2, target_pct=5, board=_board63, mk=_mk63, abort_cb=lambda: True)
+        _ab63 = False
+    except RuntimeError as e:
+        _ab63 = "superseded" in str(e)
+    ck("a build that lost the combo slot yields at the bout boundary", _ab63)
+    # ---- the locked recipes
+    _pay63 = _up63.build_all(_board63, _mk63)
+    _pp63 = _pay63["presets"]
+    ck("every UFC recipe builds against the synthetic card and carries its tag",
+       set(_pp63) == {p["id"] for p in _up63.PRESETS}
+       and all((v["item"] or {}).get("objective", f"preset:ufc_{k}") == f"preset:ufc_{k}"
+               for k, v in _pp63.items()))
+    _f5 = _pp63["fav5"]["item"]; _f3 = _pp63["fin3"]["item"]
+    ck("5 Favorites is winners only, one per bout, likeliest first; 3 Finishes is rungs only",
+       _f5 and all(l["type"] == "UFC ML" for g in _f5["groups"] for l in g["legs"])
+       and len({g["suffix"] for g in _f5["groups"]}) == _f5["n_legs"] <= 5
+       and _f3 and all(l["type"] == "Rounds" for g in _f3["groups"] for l in g["legs"]))
+    ck("the rungs are the Optimal button locked: payout required, target stamped",
+       all((_pp63[t]["item"] or {}).get("target_payout_x") == x
+           for t, x in (("x2", 2.0), ("x3", 3.0), ("x5", 5.0), ("x10", 10.0))
+           if _pp63[t]["item"]) and any(_pp63[t]["item"] for t in _up63.TARGET_IDS))
+    # nearest-above on a card where the bar is reachable
+    _spec63 = {"id": "t", "types": ("Rounds",), "floor": 0.30, "pick": "floor"}
+    _all63 = _up63._build_all(_board63, _mk63, _spec63)
+    _near63 = {}
+    for bt in _bouts63:
+        _ok = [c["marg"] * 100 for c in _uc63.bout_cands(bt, _mk63)[0]
+               if c["type"] == "Rounds" and c["marg"] >= 0.30]
+        if _ok:
+            _near63[f"{bt['a']['name']} vs {bt['b']['name']}"] = min(_ok)
+    ck("a scan recipe takes each bout's rung NEAREST the bar from above, never under it",
+       _all63 and all(30.0 <= l["prob_pct"] for g in _all63["groups"] for l in g["legs"])
+       and all(len(g["legs"]) == 1 for g in _all63["groups"])
+       and set(g["matchup"] for g in _all63["groups"]) == set(_near63)
+       and all(abs(g["legs"][0]["prob_pct"] - _near63[g["matchup"]]) < 0.06
+               for g in _all63["groups"]))
+    import sliplog as _sl63
+    _calls63 = []
+    _olf63 = _sl63.log_from_item
+    _sl63.log_from_item = lambda item, sport="mlb", date=None, tag=None: (_calls63.append((sport, tag, date)) or "k")
+    try:
+        _ch1 = _up63.ensure_logged(_pay63); _ch2 = _up63.ensure_logged(_pay63)
+    finally:
+        _sl63.log_from_item = _olf63
+    ck("the recipes file under the ufc sport and ufc_ tags, with the card's date, idempotently",
+       _ch1 and not _ch2 and _calls63
+       and all(sp == "ufc" and tag.startswith("ufc_") and d == "2026-09-19" for sp, tag, d in _calls63))
+    import store as _st63
+    _opr63, _opw63 = _st63.preset_records, _st63.preset_best_wins
+    _st63.preset_records = lambda: {"ufc_fav5": {"graded": 2}, "hits5": {"graded": 9}}
+    _st63.preset_best_wins = lambda: {"ufc_x2": {"payout_x": 2.1}, "x2": {"payout_x": 9}}
+    try:
+        ck("the UFC wall reads only its own tags off the shared ledger",
+           _up63.records() == {"fav5": {"graded": 2}} and _up63.best_wins() == {"x2": {"payout_x": 2.1}})
+    finally:
+        _st63.preset_records, _st63.preset_best_wins = _opr63, _opw63
+finally:
+    _ud63.career_profile = _ocp63
+_apy63 = open(_os.path.join(_root, "app.py")).read()
+_app63 = __import__("app")
+_par63 = _insp.getsource(_app63.api_ufc_parlay)
+ck("/api/ufc/parlay is the baseball endpoint's twin: the combo slot, the job "
+   "pattern, the ledger under sport ufc, and every hint the page names",
+   'baseball.combo_slot_take(ptok)' in _par63
+   and '_run_job(ptok, _core, "UFC-COMBO-build")' in _par63
+   and 'sliplog.log_from_item(item, sport="ufc")' in _par63
+   and "combo_engine.best_target(" in _par63 and "combo_engine.best_max_bet(" in _par63
+   and "baseball.job_takeover(ptok, _JOB_DEAD_S)" in _par63
+   and all(h in _par63 for h in ('"optimal_unbuildable"', '"max_bet_unreachable"', '"edge_empty"')))
+ck("/api/ufc/presets serves the recipes, their records and the crown, and kicks a first build",
+   '@app.route("/api/ufc/presets")' in _apy63
+   and "ufc_presets.best_today(payload, records)" in _apy63
+   and 'boardshare.claim(ufc_presets.NAME + "_kick")' in _apy63)
+ck("the recorder rebuilds the UFC recipes on its cadence under its own code",
+   "ufc_presets.tick()" in open(_os.path.join(_root, "mlb_recorder.py")).read()
+   and 'errlog.note("MREC-ufc", _e)' in open(_os.path.join(_root, "mlb_recorder.py")).read())
+_js63 = open(_os.path.join(_root, "static", "app.js")).read()
+_html63 = open(_os.path.join(_root, "templates", "index.html")).read()
+_ru63 = _js63[_js63.index("function renderUFC()"):_js63.index("function renderUFC()") + 2500]
+ck("the UFC tab carries the maker, its preset tabs and its wall, rendered off the card",
+   'id="ufcComboMaker"' in _html63 and 'id="ufcWall"' in _html63
+   and "renderUFCComboMaker();" in _ru63 and "loadUfcWall();" in _ru63)
+ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/payout modes, "
+   "AND/OR, stacks, type chips, Build / Max bet / Optimal -- with no side selector",
+   all(k in _js63 for k in ("ufcComboTarget", "ufcComboCap", "ufcComboObjective", "ufcComboMinEdge",
+                            "ufcComboLegsMode", "ufcComboN", "ufcComboConn", "ufcComboPayoutMode",
+                            "ufcComboPayout", "ufcComboSameFight", "toggleUfcType",
+                            "buildUFCCombo(true)", "buildUFCCombo(false, true)"))
+   and "ufcComboSides" not in _js63 and "YES legs only" in _js63
+   and "/api/ufc/parlay?" in _js63
+   and "renderMixed(d.parlay)" in _js63[_js63.index("function _renderUfcComboResult"):][:2500])
+ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
+   '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
+   and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
+   and 'vigil-shell-v102' in open(_os.path.join(_root, "static", "sw.js")).read())
+ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
+   "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
 print()
 print("=" * 72)

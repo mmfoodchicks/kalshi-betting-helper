@@ -97,6 +97,14 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
     wins = {a["id"]: 0, b["id"]: 0}
     methods = {"ko": 0, "sub": 0, "dec": 0}
     rounds_hist = {}
+    # Per-sample END ROUND and method, index-aligned with won/dk, for the UFC
+    # combo maker (ufc_combo): a "fight ends before round N" leg is the set
+    # of samples with end_rd < N, and a decision is coded end_rd == rounds so
+    # it is NO on every rung of Kalshi's ladder -- the same bitmask contract
+    # mlb_sim.game_bundles prices same-game stacks with, so "A wins AND it
+    # ends before round 3" is read off the simulated fights, never assumed
+    # independent.
+    end_rds, meths = [], []
     for _ in range(n):
         win = a if rng.random() < pa else b
         finish = rng.random() < p_finish
@@ -123,6 +131,8 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
         methods[method] += 1
         if method != "dec":             # round distribution among FINISHES only
             rounds_hist[rd] = rounds_hist.get(rd, 0) + 1
+        end_rds.append(rd)
+        meths.append(method)
         wins[win["id"]] += 1
         for f, o in ((a, b), (b, a)):
             ss = _pois(_landed_pm(f, o) * end_min, rng)
@@ -173,7 +183,11 @@ def simulate_bout(a, b, rounds=3, n=20000, seed=None):
             "a": fighter_out(a), "b": fighter_out(b),
             "method": {k: round(100 * v / n, 1) for k, v in methods.items()},
             "finish_round": {str(r): round(100 * c / n, 1)
-                             for r, c in sorted(rounds_hist.items())}}
+                             for r, c in sorted(rounds_hist.items())},
+            # Same `keep` stride as won_arr/dk_arr: entry i everywhere is one
+            # simulated fight.
+            "samples": {"end_rd": [end_rds[i] for i in keep if i < len(end_rds)],
+                        "method": [meths[i] for i in keep if i < len(meths)]}}
 
 
 def _apply_bio(ra, rb):
@@ -230,6 +244,7 @@ def _compute_board(n):
 
 
 _board_inflight = [False]
+BOARD_NAME = "ufc_board2"
 
 
 def board(n=15000):
@@ -238,7 +253,11 @@ def board(n=15000):
     first time) and returns None until it's ready. Cached 6h."""
     import racing
     import boardshare
-    return boardshare.nonblocking("ufc_board", 6 * 3600, racing._form_cache,
-                                  ("ufc_board",),
+    # "ufc_board2": the payload grew per-sample end-round/method arrays for
+    # the combo maker, and a cached pre-change board would have left it
+    # without round legs for the rest of the TTL. A new name is a cold start
+    # once, on deploy, for every reader at the same time.
+    return boardshare.nonblocking(BOARD_NAME, 6 * 3600, racing._form_cache,
+                                  (BOARD_NAME,),
                                   lambda: _compute_board(n),
                                   "UFC-board-build")

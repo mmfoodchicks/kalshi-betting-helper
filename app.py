@@ -3185,6 +3185,177 @@ def api_nfl_parlay():
         return jsonify({"error": f"nfl parlay failed: {e}"}), 502
 
 
+@app.route("/api/ufc/parlay")
+def api_ufc_parlay():
+    """One UFC parlay across the card, priced against Kalshi -- the fight
+    twin of /api/baseball/mixed on the same combo engine (ufc_combo). YES
+    legs only: fight winners and "ends before round N" rungs. Same knobs
+    (legs/target/cap/payout/modes/conn/objective/types/sel/min_edge/max_bet/
+    optimal) and the same background job pattern under `ptok`; every built
+    slip is filed in the slip ledger (sport "ufc") and graded off Kalshi
+    settlement."""
+    locked = _locked("mixed_parlay")
+    if locked:
+        return locked
+    try:
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
+        target = float(request.args.get("target", 55))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else 0
+        max_total = tiers.cap_legs(_tier(), 30)
+    except ValueError:
+        return jsonify({"error": "bad legs/payout"}), 400
+    cap = request.args.get("cap")
+    try:
+        cap = float(cap) if cap not in (None, "") else None
+    except ValueError:
+        cap = None
+    if cap is not None and not (0 < cap <= 100):
+        cap = None
+    same_bout = request.args.get("same_game", "1") != "0"
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode", "off")
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode not in modes:
+        payout_mode = "off"
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    import combo_engine
+    objective = request.args.get("objective", "balanced")
+    if objective not in combo_engine.OBJECTIVES:
+        objective = "balanced"
+    sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
+    types = {t.strip() for t in (request.args.get("types") or "").split(",") if t.strip()}
+    min_edge = request.args.get("min_edge")
+    try:
+        min_edge = float(min_edge) if min_edge not in (None, "") else None
+    except ValueError:
+        min_edge = None
+    if min_edge is not None:
+        min_edge = max(-20.0, min(30.0, min_edge))
+    max_bet = request.args.get("max_bet") == "1"
+    optimal = request.args.get("optimal") == "1"
+    if optimal and not (payout and payout > 1):
+        return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
+    ptok = (request.args.get("ptok") or "")[:64] or None
+    try:
+        import ufc_combo
+
+        def _build(target_pct, _mb=False, _opt=False):
+            return ufc_combo.build_parlay(
+                n_legs=legs, target_pct=target_pct,
+                cap_pct=None if (_mb or _opt) else cap,
+                target_payout=0 if _mb else payout,
+                max_legs_per_bout=max_total if same_bout else 1,
+                max_total_legs=max_total,
+                legs_mode="off" if _opt else legs_mode,
+                payout_mode="require" if _opt else payout_mode,
+                conn=conn, objective="balanced" if _opt else objective,
+                types=types or None, bout_sel=sel or None, max_bet=_mb,
+                min_edge_c=min_edge,
+                # One combo slot across every sport: the newest click owns
+                # the CPU whichever tab it came from.
+                abort_cb=(None if not ptok else
+                          (lambda: baseball.combo_slot_holder()
+                           not in (None, ptok))))
+
+        def _log(item):
+            if not item:
+                return
+            try:
+                import sliplog
+                sliplog.log_from_item(item, sport="ufc")
+            except Exception as _e:
+                errlog.note("UFC-SLIP-log", _e)
+
+        def _core():
+            if optimal:
+                tgt = min(payout, combo_engine.MAX_PAYOUT_X)
+                item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+                if item:
+                    item["objective"] = "optimal"
+                    item["target_payout_x"] = tgt
+                    item["target_capped"] = payout > combo_engine.MAX_PAYOUT_X
+                    _log(item)
+                    return {"parlay": item}
+                return {"parlay": None, "hint": "optimal_unbuildable",
+                        "target_payout_x": tgt}
+            if max_bet:
+                item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+                if not item:
+                    return {"parlay": None, "hint": "max_bet_unreachable",
+                            "cap_x": combo_engine.MAX_PAYOUT_X}
+            else:
+                item = _build(target)
+            if isinstance(item, dict) and item.get("error_hint"):
+                return {"parlay": None, "hint": item["error_hint"],
+                        "n_bouts_available": item.get("n_bouts_available")}
+            if not item and min_edge is not None:
+                return {"parlay": None, "hint": "edge_empty",
+                        "min_edge_c": min_edge, "target_pct": target}
+            _log(item)
+            return {"parlay": item}
+
+        if ptok:
+            job = baseball.job_read(ptok)
+            if job and job.get("status") == "done":
+                return jsonify(job.get("result") or {})
+            if job and job.get("status") == "error":
+                return jsonify({"error": job.get("error") or "build failed"}), 502
+            if (job and job.get("status") == "running"
+                    and baseball.job_takeover(ptok, _JOB_DEAD_S)):
+                errlog.note("UFC-COMBO-dead-job",
+                            RuntimeError("build heartbeat stopped; rebuilding"),
+                            path=ptok)
+            if not baseball.job_claim(ptok):
+                return jsonify({"status": "building", "token": ptok}), 202
+            baseball.combo_slot_take(ptok)
+            _run_job(ptok, _core, "UFC-COMBO-build")
+            return jsonify({"status": "building", "token": ptok}), 202
+        return jsonify(_core())
+    except Exception as e:
+        return jsonify({"error": f"ufc parlay failed: {e}"}), 502
+
+
+@app.route("/api/ufc/presets")
+def api_ufc_presets():
+    """The locked UFC slips (ufc_presets.py): each recipe's current build,
+    its ledger record and biggest win, and the day's crown. No parameters
+    on purpose -- the knobs are constants server-side."""
+    import boardshare
+    import ufc_presets
+    payload, age = boardshare.get(ufc_presets.NAME, None)
+    try:
+        records = ufc_presets.records()
+    except Exception as _e:
+        errlog.note("APP-ufc-presets-records", _e)
+        records = {}
+    try:
+        best_wins = ufc_presets.best_wins()
+    except Exception as _e:
+        errlog.note("APP-ufc-presets-wins", _e)
+        best_wins = {}
+    if not payload:
+        # First call before the recorder's first tick (fresh deploy, or the
+        # board is still simulating): build once in a claimed background
+        # thread; the client polls.
+        if boardshare.claim(ufc_presets.NAME + "_kick"):
+            def _bg():
+                try:
+                    ufc_presets.tick(force=True)
+                except Exception as e:
+                    errlog.note("UFCP-kick", e)
+                finally:
+                    boardshare.release(ufc_presets.NAME + "_kick")
+            threading.Thread(target=_bg, daemon=True).start()
+        return jsonify({"status": "building", "records": records,
+                        "best_wins": best_wins}), 202
+    return jsonify({**payload, "age_s": round(age), "records": records,
+                    "best_wins": best_wins,
+                    "best": ufc_presets.best_today(payload, records)})
+
+
 @app.route("/api/nfl/sim")
 def api_nfl_sim():
     """Correlated per-game Monte Carlo seeded by Sleeper weekly projections:
