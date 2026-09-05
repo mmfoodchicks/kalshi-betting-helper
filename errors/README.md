@@ -4,7 +4,7 @@
 |---|---|---|---|
 | `NFLT-finals` | 1123 | 09-04 11:43 | HTTPError: HTTP Error 403: Forbidden |
 | `NFL-espn-fetch` | 98 | 09-05 19:27 | HTTPError: HTTP Error 403: Forbidden |
-| `FAN-pit` | 73 | 09-05 18:46 | HTTPError: HTTP Error 403: Forbidden |
+| `FAN-pit` | 70 | 09-05 18:46 | HTTPError: HTTP Error 403: Forbidden |
 | `KAL-candles` | 6 | 09-05 18:56 | HTTPError: HTTP Error 429: Too Many Requests |
 | `COMBO-dead-job` | 2 | 09-02 17:46 | RuntimeError: build heartbeat stopped; rebuilding |
 | `COMBO-build` | 1 | 09-01 00:34 | RuntimeError: superseded by a newer build |
