@@ -596,7 +596,13 @@ def api_art_have():
     kind = request.args.get("kind") or ""
     if artifacts.dir_for(kind) is None:
         return jsonify({"error": "bad kind"}), 400
-    return jsonify({"have": artifacts.ages(kind), "schema": artifacts.SCHEMA})
+    out = {"have": artifacts.ages(kind), "schema": artifacts.SCHEMA}
+    if kind == "deep":
+        # {key: epoch} of runs this server has handed to the PC; a request
+        # newer than the PC's copy of the server's file is "due now".
+        import deep_cache
+        out["requested"] = deep_cache.pc_requests()
+    return jsonify(out)
 
 
 @app.route("/api/art/upload", methods=["POST"])
@@ -720,6 +726,18 @@ def _cgroup_mem():
     return used, limit
 
 
+def _cgroup_cpu_raw():
+    """The container's CPU quota as the kernel states it ("max 100000" is
+    unlimited; "50000 100000" is half a core), or None where unavailable."""
+    for pth in ("/sys/fs/cgroup/cpu.max", "/sys/fs/cgroup/cpu/cpu.cfs_quota_us"):
+        try:
+            with open(pth) as f:
+                return f.read().strip()
+        except OSError:
+            continue
+    return None
+
+
 def _proc_tree_mb(top=None):
     """Per-process RSS for EVERYTHING in this container, fattest first --
     workers, sim children, the slate builder. An instance-level 'exceeded
@@ -773,11 +791,24 @@ def _api_diag_mem():
         used, limit = _cgroup_mem()
     except Exception as _e:
         errlog.note("APP-diag-cgroup", _e)
+    # What a deep run on this host would fork. The pool is sized from the
+    # cgroup CPU quota, which this snapshot is the only way to read from
+    # outside; a host that exposes no quota sizes the pool from the HOST's
+    # core count, which is the kill mechanism the cap in _deep_workers bounds.
+    try:
+        import deep_season
+        sizing = {"deep_workers": _deep_workers(),
+                  "auto_workers": deep_season.default_workers(),
+                  "host_cpus": os.cpu_count(),
+                  "cgroup_cpu": _cgroup_cpu_raw()}
+    except Exception as _e:
+        sizing = {"err": f"{type(_e).__name__}: {_e}"[:120]}
     return jsonify({"pid": os.getpid(),
                     "uptime_s": round(time.time() - _PROC_START, 1),
                     "cgroup_used_mb": round(used / 1048576, 1) if used else None,
                     "cgroup_limit_mb": round(limit / 1048576, 1) if limit else None,
                     "procs": procs,
+                    "sim_sizing": sizing,
                     "cache_entries": caches})
 
 
@@ -1334,6 +1365,46 @@ def _start_slate_warmer():
 # hydration came back partial and the projection is tracking record, not talent.
 _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
 
+# The deep run ON THIS BOX. Measured 2026-09-05 08:56 ET: the "run deep sim"
+# button forked the season pool while the warmer's slate child was mid-build,
+# and the instance was gone inside a minute -- the last job row is that
+# slate's start with no end, the next is a fresh boot 67s later; no ledger
+# entry, because an OOM kill leaves none. Two things let it happen. The run
+# never took HEAVY_BUILD, so the comment claiming it "can never race" the
+# slate was wrong. And the pool sizes itself from the cgroup limits
+# (deep_season.default_workers) on a host that has never reported what those
+# resolve to; DEPLOY.md's measurements are 336 MB PSS at one worker and 613 MB
+# at two, on top of ~330 MB of web workers, so two is the most the 2 GB plan
+# carries with a slate child in flight. VIGIL_SIM_WORKERS still overrides.
+_DEEP_SERVER_WORKERS = 2
+# How long the PC gets to answer a deep request before the server runs the
+# job itself (gated and capped). pc_loop cycles every 10 min and the desktop
+# run is minutes, so 45 min means "not delivering", not "slow".
+_DEEP_PC_WAIT_S = 45 * 60
+
+
+def _deep_workers():
+    import deep_season
+    n = deep_season.default_workers()
+    if os.environ.get("VIGIL_SIM_WORKERS"):
+        return n                            # an explicit override is trusted
+    return max(1, min(n, _DEEP_SERVER_WORKERS))
+
+
+def _deep_pc_first(key="mlb_deep"):
+    """Should this run be handed to the PC? True stamps the request marker
+    (once -- re-stamping is a no-op while it is pending) and means: do not
+    run here. The PC can only add speed: with it off, or a request it has not
+    answered inside _DEEP_PC_WAIT_S, the server runs the job itself."""
+    import deep_cache
+    if _pc_status().get("state") not in ("on", "behind"):
+        return False
+    pending = deep_cache.pc_pending(key)
+    if pending is not None and time.time() - pending > _DEEP_PC_WAIT_S:
+        return False                        # asked, not delivered: our turn
+    deep_cache.request_pc(key)
+    return True
+
 
 def _register_deep_sims():
     """Register the heavy season sims and load the persisted MLB result.
@@ -1352,12 +1423,23 @@ def _register_deep_sims():
 
     def run_mlb():
         import deep_season
+        import jobs
         season = str(clock.today_et().year)
+        # The PC builds the same payload with the same function on cores the
+        # health probe does not live on. Nightly or button, ask it first.
+        if _deep_pc_first("mlb_deep"):
+            return deep_cache.DEFERRED
         # Capture the profiles this run actually used, so the day's history is
         # diffed against the same rosters the numbers came from rather than a
         # second fetch that may have moved underneath us.
         profs = {}
-        agg = deep_season.run_deep(season, n_seasons=4000, ret_profiles=profs)
+        workers = _deep_workers()
+        # One heavy build at a time -- the slate child holds this same gate,
+        # so the two can no longer overlap -- and a timeline row that names
+        # the pool size, so the next restart is attributable from the ledger.
+        with deep_cache.HEAVY_BUILD, jobs.timed(f"deep:mlb:w{workers}"):
+            agg = deep_season.run_deep(season, n_seasons=4000, workers=workers,
+                                       ret_profiles=profs)
         # Refuse to publish a run built on incomplete data. The roster call
         # hydrates season AND career stats together; career is what regresses a
         # player toward true talent. When that hydration comes back partial --
@@ -3312,10 +3394,12 @@ _deep = {"agg": None, "season": None}
 
 @app.route("/api/baseball/futures/deep", methods=["POST"])
 def api_baseball_deep_start():
-    """Kick off the deep multicore season run in the background (it takes minutes).
-    Poll /api/baseball/futures/deep/status; when ready, GET /api/baseball/futures
-    with engine=deep for the deep board (that route reads the parameter, not this
-    one)."""
+    """Kick off a fresh deep season run. With the PC on, the run is handed to
+    it (request marker, picked up within a pc_loop cycle); otherwise it runs
+    here in the background, gated and capped (see _deep_workers). Poll
+    /api/baseball/futures/deep/status; when ready, GET /api/baseball/futures
+    with engine=deep for the deep board (that route reads the parameter, not
+    this one)."""
     import deep_season
     import deep_cache
     if (deep_season.progress_read().get("running")
@@ -3387,6 +3471,10 @@ def api_baseball_deep_status():
     # rejected" and "it crashed" finally look different from the phone.
     p["queued"] = "mlb_deep" in deep_cache._json_read(deep_cache._RERUN_REQ)
     p["last"] = deep_cache.run_state("mlb_deep")
+    # A request the PC has not answered yet: the page says "your PC is on it"
+    # rather than nothing -- or, worse, offering the button again.
+    _pp = deep_cache.pc_pending("mlb_deep", max_age=_DEEP_PC_WAIT_S)
+    p["pc_pending_s"] = round(time.time() - _pp) if _pp else None
     import deep_history
     p["history_dates"] = deep_history.dates()[:60]
     return jsonify(p)

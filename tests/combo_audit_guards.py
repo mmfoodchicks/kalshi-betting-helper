@@ -9974,6 +9974,135 @@ _js59 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the lineup shows each player's depth tag and who the gate left out",
    "${p.depth || p.pos}" in _js59 and "left out by the depth chart" in _js59)
 
+
+# ---------------------------------------------------------------------------
+# suite60: the deep season sim can no longer take the instance down.
+#
+# 2026-09-05 08:56 ET: the "run deep sim" button forked the season pool on the
+# 2 GB box while the warmer's slate child was mid-build; the instance was gone
+# inside a minute (jobs timeline: slate start 12:55:46Z with no end, fresh
+# boot 12:56:53Z, no ledger entry -- an OOM kill leaves none). The comment on
+# the warmer said the build "takes deep_cache.HEAVY_BUILD, so it can never race
+# the nightly season sim"; the season sim never took the gate. Now: the run is
+# handed to the PC whenever it is on (request marker the PC reads off the deep
+# inventory call), and a server-side run holds the gate, caps its pool, and
+# writes a timeline row.
+import tempfile as _tf60
+import time as _tm60
+import deep_cache as _dc60
+import deep_season as _ds60
+_app60 = __import__("app")
+_dir60 = _tf60.mkdtemp()
+_o60 = (_dc60.CACHE_DIR, _dc60._PC_REQ, _dc60._RUN_STATE, _dc60._RERUN_REQ)
+_dc60.CACHE_DIR = _dir60
+_dc60._PC_REQ = _os.path.join(_dir60, "pc-requests.json")
+_dc60._RUN_STATE = _os.path.join(_dir60, "runstate.json")
+_dc60._RERUN_REQ = _os.path.join(_dir60, "rerun.json")
+try:
+    ck("a PC request is pending until the artifact is newer than it",
+       _dc60.pc_pending("g60") is None
+       and _dc60.request_pc("g60") is not None
+       and _dc60.pc_pending("g60") is not None
+       and _dc60.pc_requests().get("g60") == _dc60.pc_pending("g60"))
+    _ts60 = _dc60.pc_pending("g60")
+    _tm60.sleep(0.05)
+    ck("re-stamping a pending request is a no-op (a half-hourly scheduler pass "
+       "never pushes the PC's deadline back)",
+       _dc60.request_pc("g60") == _ts60 and _dc60.pc_pending("g60") == _ts60)
+    _dc60._json_write(_dc60._PC_REQ, {"g60": _tm60.time() - 3600})
+    ck("a request older than max_age reads as abandoned, so the server takes over",
+       _dc60.pc_pending("g60") is not None
+       and _dc60.pc_pending("g60", max_age=45 * 60) is None)
+    _tm60.sleep(1.1)                  # mtime resolution: the save must land after the stamp
+    _dc60._json_write(_dc60._PC_REQ, {"g60": _tm60.time() - 0.5})
+    _dc60.save("g60", {"ok": 1})
+    ck("the upload that answers a request retires it (artifact newer than the stamp)",
+       _dc60.pc_pending("g60") is None)
+    # DEFERRED is its own phase, not "empty" (which the page reads as "kept the
+    # previous board -- partial rosters").
+    _dc60.register("g60d", lambda: _dc60.DEFERRED)
+    ck("a job that hands its work to the PC records phase 'deferred'",
+       _dc60.run_job("g60d", force=True) and _dc60.wait_for("g60d", timeout=10)
+       and _dc60.run_state("g60d").get("phase") == "deferred"
+       and _dc60.age("g60d") is None)
+    _dc60._jobs.pop("g60d", None)
+    # The server-side pool is capped unless an operator overrides it.
+    _odw60 = _ds60.default_workers
+    _oenv60 = _os.environ.pop("VIGIL_SIM_WORKERS", None)
+    _ds60.default_workers = lambda: 8
+    try:
+        ck("the server caps the deep pool at two workers (measured: 336 MB PSS at "
+           "one, 613 MB at two, beside ~330 MB of web workers on the 2 GB plan)",
+           _app60._deep_workers() == 2 and _app60._DEEP_SERVER_WORKERS == 2)
+        _os.environ["VIGIL_SIM_WORKERS"] = "8"
+        ck("VIGIL_SIM_WORKERS still overrides the cap",
+           _app60._deep_workers() == 8)
+    finally:
+        _ds60.default_workers = _odw60
+        _os.environ.pop("VIGIL_SIM_WORKERS", None)
+        if _oenv60 is not None:
+            _os.environ["VIGIL_SIM_WORKERS"] = _oenv60
+    # PC-first: on -> stamp and defer; off -> run here; stale request -> run here.
+    _ops60 = _app60._pc_status
+    try:
+        _app60._pc_status = lambda: {"state": "off", "seen_s": None, "behind": None}
+        ck("with the PC off the deep run stays on the server and stamps nothing",
+           _app60._deep_pc_first("g60p") is False and _dc60.pc_pending("g60p") is None)
+        _app60._pc_status = lambda: {"state": "on", "seen_s": 12, "behind": False}
+        ck("with the PC on the deep run is handed over: request stamped, run deferred",
+           _app60._deep_pc_first("g60p") is True and _dc60.pc_pending("g60p") is not None)
+        _st60 = _dc60.pc_pending("g60p")
+        ck("a second pass while the request is pending keeps waiting on the same stamp",
+           _app60._deep_pc_first("g60p") is True and _dc60.pc_pending("g60p") == _st60)
+        _dc60._json_write(_dc60._PC_REQ, {"g60p": _tm60.time() - _app60._DEEP_PC_WAIT_S - 60})
+        ck("a request the PC has not answered in 45 min hands the run back to the "
+           "server -- the PC can only add speed or be ignored",
+           _app60._deep_pc_first("g60p") is False)
+        _app60._pc_status = lambda: {"state": "behind", "seen_s": 12, "behind": True}
+        _dc60._json_write(_dc60._PC_REQ, {})
+        ck("a PC on older code ('behind') is still asked first; it self-updates "
+           "within a minute and the 45-min fallback covers the rest",
+           _app60._deep_pc_first("g60p") is True)
+    finally:
+        _app60._pc_status = _ops60
+finally:
+    (_dc60.CACHE_DIR, _dc60._PC_REQ, _dc60._RUN_STATE, _dc60._RERUN_REQ) = _o60
+_reg60 = _insp.getsource(_app60._register_deep_sims)
+ck("run_mlb asks the PC first, then holds the heavy-build gate with a capped, "
+   "timed pool -- the slate child holds the same gate, so they cannot overlap",
+   'if _deep_pc_first("mlb_deep"):' in _reg60
+   and "return deep_cache.DEFERRED" in _reg60
+   and 'with deep_cache.HEAVY_BUILD, jobs.timed(f"deep:mlb:w{workers}"):' in _reg60
+   and "workers=workers," in _reg60
+   and _reg60.index('_deep_pc_first("mlb_deep")') < _reg60.index("deep_season.run_deep("),
+   "the warmer's comment said the build 'can never race the nightly season "
+   "sim'; until now only the slate side of that race held the gate")
+ck("deep_cache's worker treats DEFERRED as its own outcome",
+   "if payload is DEFERRED:" in _insp.getsource(_dc60.run_job)
+   and 'phase="deferred"' in _insp.getsource(_dc60.run_job))
+_apy60 = open(_os.path.join(_root, "app.py")).read()
+ck("the deep inventory call carries the request marker and the status poll "
+   "says a request is pending",
+   'out["requested"] = deep_cache.pc_requests()' in _apy60
+   and 'p["pc_pending_s"] = round(time.time() - _pp) if _pp else None' in _apy60
+   and 'deep_cache.pc_pending("mlb_deep", max_age=_DEEP_PC_WAIT_S)' in _apy60)
+ck("the memory snapshot reports the pool this host would fork (the number the "
+   "kill turned on and nothing had ever read back from Render)",
+   '"sim_sizing": sizing' in _apy60 and '"cgroup_cpu": _cgroup_cpu_raw()' in _apy60
+   and '"auto_workers": deep_season.default_workers()' in _apy60)
+_pw60 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC treats a server request newer than the server's copy as due now",
+   'requested = inv.get("requested") or {}' in _pw60
+   and "if req and (age is None or time.time() - req < age):" in _pw60
+   and _pw60.index("if req and (age is None") < _pw60.index("age < hours * 3600"))
+_js60 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the page says the PC has the job instead of going quiet or re-offering the button",
+   "s.pc_pending_s != null" in _js60 and "Deep sim handed to your PC" in _js60
+   and 'vigil-shell-v101' in open(_os.path.join(_root, "static", "sw.js")).read())
+ck("the working agreement stops promising a 30-minute build",
+   "~30-minute Docker build" not in open(_os.path.join(_root, "CLAUDE.md")).read()
+   and "deep_cache.HEAVY_BUILD" in open(_os.path.join(_root, "CLAUDE.md")).read())
+
 print()
 print("=" * 72)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

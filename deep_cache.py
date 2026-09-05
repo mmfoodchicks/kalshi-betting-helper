@@ -125,6 +125,53 @@ _RUN_STATE = os.path.join(_RUN_DIR, "vigil-deep-runstate.json")
 # not a live sim (the longest real run is well under an hour).
 _RUN_STATE_MAX = 3 * 3600
 
+# A job may hand its work to the owner's PC instead of running here: it
+# returns DEFERRED and the run-state records phase "deferred" -- distinct from
+# "empty" (ran, declined to publish) and "error", because the page has to say
+# "your PC is on it" rather than "kept the previous board (partial rosters)".
+DEFERRED = object()
+
+# The PC request marker: {key: epoch} on the deep store (the data disk, so a
+# restart -- which is exactly what a server-side deep run just caused -- does
+# not lose the request). The PC reads it through /api/art/have?kind=deep and
+# treats a request newer than the server's copy as "due now"; the upload that
+# answers it makes the artifact newer than the request, which is what
+# satisfies it. Not a .pkl, so artifacts.ages() never lists it.
+_PC_REQ = os.path.join(CACHE_DIR, "pc-requests.json")
+
+
+def request_pc(key):
+    """Ask the PC for a fresh run of `key`. Re-stamping a request that is
+    already pending is a no-op, so a scheduler pass every half hour never
+    pushes the deadline back."""
+    d = _json_read(_PC_REQ)
+    if pc_pending(key) is None:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        d[str(key)] = time.time()
+        _json_write(_PC_REQ, d)
+    return d.get(str(key))
+
+
+def pc_requests():
+    """{key: requested_epoch} -- the raw marker, for the PC's inventory call."""
+    return _json_read(_PC_REQ)
+
+
+def pc_pending(key, max_age=None):
+    """Epoch of an unanswered request for `key`, else None. A request is
+    answered once the artifact is newer than it; with `max_age` set, a request
+    older than that is treated as abandoned (the PC never delivered) so the
+    caller can run the job itself."""
+    ts = _json_read(_PC_REQ).get(str(key))
+    if not ts:
+        return None
+    a = age(key)
+    if a is not None and (time.time() - a) >= ts:
+        return None                         # the artifact answered it
+    if max_age is not None and time.time() - ts > max_age:
+        return None                         # abandoned
+    return ts
+
 
 def _json_read(path):
     try:
@@ -176,7 +223,8 @@ def _note_run(key, **kw):
 
 def run_state(key):
     """The last recorded run outcome for this key, from ANY worker:
-    {"phase": "running"|"done"|"empty"|"error", "started", "ended", "err"}."""
+    {"phase": "running"|"done"|"empty"|"error"|"deferred", "started", "ended",
+    "err"}."""
     return _json_read(_RUN_STATE).get(str(key)) or {}
 
 
@@ -231,7 +279,11 @@ def run_job(key, force=False):
     def _worker():
         try:
             payload = job["run"]()
-            if payload is not None:
+            if payload is DEFERRED:
+                # Handed to the PC: nothing saved, the request marker carries
+                # the work, and the calendar says why it has not moved yet.
+                _note_run(key, phase="deferred", ended=time.time())
+            elif payload is not None:
                 save(key, payload)
                 _note_run(key, phase="done", ended=time.time())
             else:

@@ -16,10 +16,13 @@ never strands the rest):
      Builders are the SAME functions the server runs; they write into the
      local boards store and re-invoking them is cheap once fresh.
   3. The nightly deep run (4,000 seasons + quality gate + day history) when
-     the server's copy is older than 19h — uploading mlb_deep.pkl makes the
-     server's own daily scheduler see "already ran today" and skip its
-     multi-hour rebuild. Coherence/ump extras stay server-side (they feed
-     the GitHub history flow, not the artifact stores).
+     the server's copy is older than 19h, OR when the server has asked for
+     one (the site's "run deep sim" button and its own nightly both hand the
+     job here while this worker is on; the request rides on the deep
+     inventory call as {key: epoch}). Uploading mlb_deep.pkl answers the
+     request and makes the server's daily scheduler see "already ran today".
+     Coherence/ump extras stay server-side (they feed the GitHub history
+     flow, not the artifact stores).
   4. Sync: upload every local artifact meaningfully fresher than the
      server's copy, gzip'd, through the schema-gated door.
 """
@@ -269,11 +272,22 @@ def _task_deep(url, tok):
     flow). model_trust used to be listed with them on the claim that it
     replays the server's DB -- it doesn't: both backtests replay ESPN
     point-in-time, so the FULL fits run here now."""
-    have = _api(url, tok, "/api/art/have?kind=deep").get("have") or {}
+    inv = _api(url, tok, "/api/art/have?kind=deep")
+    have = inv.get("have") or {}
+    # {key: epoch} the server stamped when it handed a run to this machine.
+    # A request newer than the server's copy is due NOW regardless of age --
+    # the server-side run it replaces is the one that took the instance down
+    # (2026-09-05 08:56 ET: pool forked beside a slate child, OOM in a minute).
+    requested = inv.get("requested") or {}
     import deep_cache
 
     def _due(key, hours=19):
         age = have.get(f"{key}.pkl")
+        req = requested.get(key)
+        if req and (age is None or time.time() - req < age):
+            print(f"[vigil-pc] deep {key}: requested by the site "
+                  f"{(time.time() - req)/60:.0f} min ago - running now")
+            return True
         if age is not None and age < hours * 3600:
             print(f"[vigil-pc] deep {key}: server copy {age/3600:.1f}h old - not due")
             return False

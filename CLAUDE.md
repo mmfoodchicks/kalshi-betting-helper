@@ -27,8 +27,10 @@ Single-user (the repo owner). Read this before touching anything.
   regardless. The suite is hermetic via `VIGIL_NO_BG` (importing app.py must
   never start the production loops in a test process — it once did, and the
   accumulated live predictions flipped a guard).
-- **Batch pushes.** Every push triggers a ~30-minute Docker build on Render and
-  a swap that cold-starts the app and emails a health-check alert. Group related
+- **Batch pushes.** Every push triggers a Docker build on Render and a swap
+  that cold-starts the app and emails a health-check alert; measured
+  2026-09-05, the swap landed 1, 3 and 9 minutes after the push, so a push
+  is a restart the owner sees almost immediately. Group related
   work into one commit where you reasonably can. Measured cost of ignoring
   this: seven deploys in one day read, from the owner's seat, as "the server
   keeps crashing" — the ledger was clean and every "crash" was a swap.
@@ -92,6 +94,10 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
 - Render is memory-constrained. Anything that caches per-process, or spawns a
   build child, gets measured before it ships. Two "exceeded memory" kills came
   from caches keyed on values that never repeat.
+  A third took the instance down inside a minute (2026-09-05 08:56 ET): the
+  deep season sim forked its process pool beside a slate child. Heavy work on
+  the server takes `deep_cache.HEAVY_BUILD`, is capped (`app._deep_workers`),
+  and is handed to the PC first whenever it is on.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
   only in memory is re-paid every time. Persist to the deep store instead.
 - Never let in-game information touch a number that claims to be pre-game

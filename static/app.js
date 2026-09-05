@@ -5041,6 +5041,13 @@ async function watchFeatured() {
         // seconds; on a fresh boot it waits out the startup grace first).
         if (prog) prog.innerHTML = `<div class="small">⏳ <b>Deep sim queued</b> — starting shortly…</div>`;
         delay = 3000;
+      } else if (s.pc_pending_s != null) {
+        // Handed to the PC (it's on): pc_loop picks the request up within its
+        // 10-minute cycle, the desktop run is minutes, and the upload lands
+        // here as a newer run -- which the branch below reloads on its own.
+        // The server runs it itself only if the PC hasn't answered in 45 min.
+        if (prog) prog.innerHTML = `<div class="small">🖥️ <b>Deep sim handed to your PC</b> — requested ${agoStr(s.pc_pending_s)}; it picks the job up within 10 min and the board refreshes here when the upload lands.</div>`;
+        delay = 15000;
       } else {
         // A run that ended badly used to be indistinguishable from one that
         // never started: the calendar just didn't move. Say what happened.
