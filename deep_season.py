@@ -585,9 +585,17 @@ def progress_read():
 
 
 def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
-             track_progress=True, ret_profiles=None):
+             track_progress=True, ret_profiles=None, isolate=True):
     """Run the deep season Monte Carlo across processes; return aggregates keyed by
     team id (counts) and player id (summed season lines).
+
+    `isolate` (default) runs even a ONE-worker sim in a child process. Inline,
+    the working set settles into the caller -- on the server that is a gunicorn
+    worker, which then also wears the os.nice(10) meant for a sim child for the
+    rest of its life. Measured 2026-09-05 (08:56 ET): Render's one-core quota
+    sizes the pool to one worker, the button took the inline path inside the
+    web worker beside a slate child, and the instance was gone inside a minute.
+    A child's memory dies with it and its nice touches nothing else.
 
     `seed` pins the season seeds. Two runs sharing a seed play the SAME simulated
     seasons, so differencing them isolates whatever input was changed between them
@@ -657,8 +665,9 @@ def run_deep(season=None, n_seasons=600, workers=None, seed=None, profiles=None,
 
     agg = _new_agg()
     try:
-        if workers > 1:
-            with mp.Pool(workers, initializer=_init_worker, initargs=(shared,)) as pool:
+        if workers > 1 or isolate:
+            with mp.Pool(max(1, workers), initializer=_init_worker,
+                         initargs=(shared,)) as pool:
                 for part in pool.imap_unordered(_chunk_seasons, chunks):
                     _merge_agg(agg, part)
                     _prog(done=agg["n"])

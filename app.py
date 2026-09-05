@@ -816,7 +816,9 @@ def _api_diag_mem():
 # before a death, the ledger (on the persistent disk) holds which processes
 # were fat. Render's own email says only "exceeded memory".
 _MEM_WARN_FRAC = float(os.environ.get("VIGIL_MEM_WARN_FRAC") or 0.80)
-_MEM_WATCH_S = 60
+# Two cgroup reads a sample; the 2026-09-05 08:56 ET death happened between
+# two 60-second samples and left nothing, so the window is now 20s.
+_MEM_WATCH_S = 20
 
 
 def _start_mem_watchdog():
@@ -1366,16 +1368,20 @@ def _start_slate_warmer():
 _MIN_CAREER_FRAC = float(os.environ.get("VIGIL_MIN_CAREER_FRAC") or 0.70)
 
 # The deep run ON THIS BOX. Measured 2026-09-05 08:56 ET: the "run deep sim"
-# button forked the season pool while the warmer's slate child was mid-build,
+# button started the season sim while the warmer's slate child was mid-build,
 # and the instance was gone inside a minute -- the last job row is that
 # slate's start with no end, the next is a fresh boot 67s later; no ledger
-# entry, because an OOM kill leaves none. Two things let it happen. The run
-# never took HEAVY_BUILD, so the comment claiming it "can never race" the
-# slate was wrong. And the pool sizes itself from the cgroup limits
-# (deep_season.default_workers) on a host that has never reported what those
-# resolve to; DEPLOY.md's measurements are 336 MB PSS at one worker and 613 MB
-# at two, on top of ~330 MB of web workers, so two is the most the 2 GB plan
-# carries with a slate child in flight. VIGIL_SIM_WORKERS still overrides.
+# entry, because a kill leaves none. Two things let it happen. The run never
+# took HEAVY_BUILD, so the comment claiming it "can never race" the slate
+# was wrong. And Render's cgroup quota is exactly one core (read back from
+# the snapshot at 09:57 ET: host_cpus 16, cgroup_cpu "100000 100000",
+# auto_workers 1), so the pool sized itself to ONE worker and took the
+# inline path: 4,000 seasons of pure Python inside the web worker that also
+# owns every background job, niced 10 by the sim's own initializer, on the
+# same core as the slate child. run_deep now isolates even a one-worker run
+# in a child. The cap below is for a bigger box: DEPLOY.md measures 336 MB
+# PSS at one worker and 613 MB at two, beside ~330 MB of web workers, so two
+# is the most a 2 GB plan carries. VIGIL_SIM_WORKERS still overrides.
 _DEEP_SERVER_WORKERS = 2
 # How long the PC gets to answer a deep request before the server runs the
 # job itself (gated and capped). pc_loop cycles every 10 min and the desktop

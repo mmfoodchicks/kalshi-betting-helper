@@ -9978,15 +9978,19 @@ ck("the lineup shows each player's depth tag and who the gate left out",
 # ---------------------------------------------------------------------------
 # suite60: the deep season sim can no longer take the instance down.
 #
-# 2026-09-05 08:56 ET: the "run deep sim" button forked the season pool on the
+# 2026-09-05 08:56 ET: the "run deep sim" button started the season sim on the
 # 2 GB box while the warmer's slate child was mid-build; the instance was gone
 # inside a minute (jobs timeline: slate start 12:55:46Z with no end, fresh
-# boot 12:56:53Z, no ledger entry -- an OOM kill leaves none). The comment on
-# the warmer said the build "takes deep_cache.HEAVY_BUILD, so it can never race
-# the nightly season sim"; the season sim never took the gate. Now: the run is
-# handed to the PC whenever it is on (request marker the PC reads off the deep
-# inventory call), and a server-side run holds the gate, caps its pool, and
-# writes a timeline row.
+# boot 12:56:53Z, no ledger entry). The comment on the warmer said the build
+# "takes deep_cache.HEAVY_BUILD, so it can never race the nightly season sim";
+# the season sim never took the gate. And the snapshot read back at 09:57 ET
+# settled the pool question: Render's cgroup quota is one core (host_cpus 16,
+# cgroup_cpu "100000 100000", auto_workers 1), so the run took the INLINE path
+# -- 4,000 seasons of pure Python inside the web worker that owns every
+# background job. Now: the run is handed to the PC whenever it is on (request
+# marker the PC reads off the deep inventory call); a server-side run holds
+# the gate, is isolated in a child even at one worker, and writes a timeline
+# row.
 import tempfile as _tf60
 import time as _tm60
 import deep_cache as _dc60
@@ -10099,6 +10103,18 @@ _js60 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the page says the PC has the job instead of going quiet or re-offering the button",
    "s.pc_pending_s != null" in _js60 and "Deep sim handed to your PC" in _js60
    and 'vigil-shell-v101' in open(_os.path.join(_root, "static", "sw.js")).read())
+_rd60 = _insp.getsource(_ds60.run_deep)
+ck("a one-worker deep run is isolated in a child by default: its working set "
+   "dies with it and the sim's os.nice(10) never lands on the web worker",
+   _insp.signature(_ds60.run_deep).parameters["isolate"].default is True
+   and "if workers > 1 or isolate:" in _rd60
+   and "mp.Pool(max(1, workers), initializer=_init_worker," in _rd60
+   and "os.nice(10)" in _insp.getsource(_ds60._init_worker),
+   "Render's quota is one core, so auto-sizing picked one worker and the old "
+   "`if workers > 1` sent the whole sim inline into the background owner")
+ck("the memory watchdog samples every 20s (the 08:56 ET death fell between "
+   "two 60s samples and left nothing)",
+   _app60._MEM_WATCH_S == 20)
 ck("the working agreement stops promising a 30-minute build",
    "~30-minute Docker build" not in open(_os.path.join(_root, "CLAUDE.md")).read()
    and "deep_cache.HEAVY_BUILD" in open(_os.path.join(_root, "CLAUDE.md")).read())

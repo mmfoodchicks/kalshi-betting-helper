@@ -277,7 +277,8 @@ def _task_deep(url, tok):
     # {key: epoch} the server stamped when it handed a run to this machine.
     # A request newer than the server's copy is due NOW regardless of age --
     # the server-side run it replaces is the one that took the instance down
-    # (2026-09-05 08:56 ET: pool forked beside a slate child, OOM in a minute).
+    # (2026-09-05 08:56 ET: the sim ran inside a web worker on Render's
+    # one-core quota, beside a slate child; the instance was gone in a minute).
     requested = inv.get("requested") or {}
     import deep_cache
 

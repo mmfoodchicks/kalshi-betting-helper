@@ -95,9 +95,10 @@ so a self-pulling batch file corrupts itself); all logic lives in Python.
   build child, gets measured before it ships. Two "exceeded memory" kills came
   from caches keyed on values that never repeat.
   A third took the instance down inside a minute (2026-09-05 08:56 ET): the
-  deep season sim forked its process pool beside a slate child. Heavy work on
-  the server takes `deep_cache.HEAVY_BUILD`, is capped (`app._deep_workers`),
-  and is handed to the PC first whenever it is on.
+  deep season sim ran inline inside a web worker (Render's quota is one core,
+  so the pool sized to one and skipped the child) beside a slate child. Heavy
+  work on the server takes `deep_cache.HEAVY_BUILD`, runs in a child even at
+  one worker, and is handed to the PC first whenever it is on.
 - The slate builds in a **fresh subprocess** every few minutes; anything cached
   only in memory is re-paid every time. Persist to the deep store instead.
 - Never let in-game information touch a number that claims to be pre-game
