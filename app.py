@@ -3039,6 +3039,168 @@ def _nfl_preseason():
         return False
 
 
+@app.route("/api/cfb/slate")
+def api_cfb_slate():
+    """Drive-engine college slate (cfb_board): per-game win probs from the
+    in-season Massey ratings vs live Kalshi college moneylines, expected
+    scores, spread and total ladders, the pick'em confidence rank and the
+    ATS pick at Kalshi's line. Non-blocking; the frontend polls. week=0 (or
+    absent) means AUTO: the first week with games still to play."""
+    try:
+        week = int(request.args.get("week", 0))
+    except ValueError:
+        week = 0
+    try:
+        import cfb_board
+        if week < 1:
+            week = cfb_board.current_week()
+        week = max(1, min(cfb_board._LAST_WEEK, week))
+        data = cfb_board.board(week=week)
+    except Exception as e:
+        return jsonify({"error": f"college slate failed: {e}"}), 502
+    if not data:
+        return jsonify({"error": "simulating the slate in the background - retry shortly"}), 502
+    if data.get("empty"):
+        return jsonify({"error": data.get("note") or "No games for this week.",
+                        "week": week, "games": []})
+    try:
+        import cfb_track
+        cfb_track.record_from_board(data)
+    except Exception as _e:
+        errlog.note("APP-cfb-slate-record", _e)
+    return jsonify(data)
+
+
+@app.route("/api/cfb/record")
+def api_cfb_record():
+    """The college model's graded track record (league cfb of the football
+    ledger)."""
+    try:
+        import cfb_track
+        cfb_track.grade_due()
+    except Exception as _e:
+        errlog.note("APP-api_cfb_record", _e)
+    return jsonify(store.nfl_record(league="cfb"))
+
+
+@app.route("/api/cfb/parlay")
+def api_cfb_parlay():
+    """One college parlay across the week's games, priced against Kalshi --
+    /api/nfl/parlay on the college slate (cfb_board.build_parlay), same knobs,
+    same background job pattern under `ptok`, slips filed under sport cfb."""
+    locked = _locked("mixed_parlay")
+    if locked:
+        return locked
+    try:
+        week = max(1, min(16, int(request.args.get("week", 1))))
+        legs = tiers.cap_legs(_tier(), request.args.get("legs", 3))
+        target = float(request.args.get("target", 55))
+        payout = request.args.get("payout")
+        payout = float(payout) if payout not in (None, "", "0") else 0
+        max_total = tiers.cap_legs(_tier(), 30)
+    except ValueError:
+        return jsonify({"error": "bad week/legs/payout"}), 400
+    cap = request.args.get("cap")
+    try:
+        cap = float(cap) if cap not in (None, "") else None
+    except ValueError:
+        cap = None
+    if cap is not None and not (0 < cap <= 100):
+        cap = None
+    same_game = request.args.get("same_game", "1") != "0"
+    modes = ("require", "prefer", "off")
+    legs_mode = request.args.get("legs_mode", "prefer")
+    payout_mode = request.args.get("payout_mode", "off")
+    if legs_mode not in modes:
+        legs_mode = "prefer"
+    if payout_mode not in modes:
+        payout_mode = "off"
+    conn = "and" if request.args.get("conn") == "and" else "or"
+    import combo_engine
+    objective = request.args.get("objective", "balanced")
+    if objective not in combo_engine.OBJECTIVES:
+        objective = "balanced"
+    sel = {t.strip() for t in (request.args.get("sel") or "").split(",") if t.strip()}
+    max_bet = request.args.get("max_bet") == "1"
+    optimal = request.args.get("optimal") == "1"
+    if optimal and not (payout and payout > 1):
+        return jsonify({"error": "optimal mode needs a payout target above 1x"}), 400
+    ptok = (request.args.get("ptok") or "")[:64] or None
+    prop_types = _prop_types()
+    try:
+        import cfb_board
+
+        def _build(target_pct, _mb=False, _opt=False):
+            return cfb_board.build_parlay(
+                week=week, n_legs=legs, target_pct=target_pct,
+                cap_pct=None if (_mb or _opt) else cap,
+                target_payout=0 if _mb else payout,
+                max_legs_per_game=max_total if same_game else 1,
+                max_total_legs=max_total,
+                legs_mode="off" if _opt else legs_mode,
+                payout_mode="require" if _opt else payout_mode,
+                conn=conn, objective="balanced" if _opt else objective,
+                types=prop_types, game_sel=sel or None, max_bet=_mb,
+                abort_cb=(None if not ptok else
+                          (lambda: baseball.combo_slot_holder()
+                           not in (None, ptok))))
+
+        def _log(item):
+            if not item:
+                return
+            try:
+                import sliplog
+                sliplog.log_from_item(item, sport="cfb")
+            except Exception as _e:
+                errlog.note("CFB-SLIP-log", _e)
+
+        def _core():
+            if optimal:
+                tgt = min(payout, combo_engine.MAX_PAYOUT_X)
+                item = combo_engine.best_target(lambda f: _build(f, _opt=True))
+                if item:
+                    item["objective"] = "optimal"
+                    item["target_payout_x"] = tgt
+                    item["target_capped"] = payout > combo_engine.MAX_PAYOUT_X
+                    _log(item)
+                    return {"parlay": item}
+                return {"parlay": None, "hint": "optimal_unbuildable",
+                        "target_payout_x": tgt}
+            if max_bet:
+                item = combo_engine.best_max_bet(lambda f: _build(f, _mb=True))
+                if not item:
+                    return {"parlay": None, "hint": "max_bet_unreachable",
+                            "cap_x": combo_engine.MAX_PAYOUT_X}
+            else:
+                item = _build(target)
+            if isinstance(item, dict) and item.get("error_hint"):
+                return {"parlay": None, "hint": item["error_hint"],
+                        "n_games_available": item.get("n_games_available"),
+                        "n_started": item.get("n_started")}
+            _log(item)
+            return {"parlay": item}
+
+        if ptok:
+            job = baseball.job_read(ptok)
+            if job and job.get("status") == "done":
+                return jsonify(job.get("result") or {})
+            if job and job.get("status") == "error":
+                return jsonify({"error": job.get("error") or "build failed"}), 502
+            if (job and job.get("status") == "running"
+                    and baseball.job_takeover(ptok, _JOB_DEAD_S)):
+                errlog.note("CFB-COMBO-dead-job",
+                            RuntimeError("build heartbeat stopped; rebuilding"),
+                            path=ptok)
+            if not baseball.job_claim(ptok):
+                return jsonify({"status": "building", "token": ptok}), 202
+            baseball.combo_slot_take(ptok)
+            _run_job(ptok, _core, "CFB-COMBO-build")
+            return jsonify({"status": "building", "token": ptok}), 202
+        return jsonify(_core())
+    except Exception as e:
+        return jsonify({"error": f"college parlay failed: {e}"}), 502
+
+
 @app.route("/api/nfl/parlay")
 def api_nfl_parlay():
     """One NFL parlay across the week's games, priced against Kalshi — the

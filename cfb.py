@@ -84,10 +84,32 @@ def teams(season=None):
             for div in (conf.get("children") or [conf]):
                 for e in div.get("standings", {}).get("entries", []):
                     tm = e.get("team", {})
-                    st = {s["name"]: s.get("value") for s in e.get("stats", [])}
-                    w = int(st.get("wins") or 0)
-                    l = int(st.get("losses") or 0)
-                    g = w + l or 12
+                    # ONE entry carries SEVERAL stat blocks back to back --
+                    # overall, Home, Away, vs Division, vs Conference, vs AP
+                    # Top 25, vs ranked -- each repeating the same stat names.
+                    # A dict comprehension kept the LAST block, so every
+                    # team's "season" was its record against ranked teams:
+                    # Mississippi State read -93 points over ONE win, and the
+                    # week-1 board had UL Monroe over them at 92% against a
+                    # 97c market. Measured 2026-09-05. The overall season is
+                    # the FIRST block; keep first occurrences.
+                    st, disp = {}, {}
+                    for s in e.get("stats", []):
+                        st.setdefault(s["name"], s.get("value"))
+                        disp.setdefault(s["name"], s.get("displayValue"))
+                    # The record is the `overall` display value ("12-2");
+                    # the `wins` value alone has no `losses` beside it.
+                    w = l = None
+                    try:
+                        rec = (disp.get("overall") or "").split("-")
+                        w, l = int(rec[0]), int(rec[1])
+                    except (ValueError, IndexError):
+                        w = int(st.get("wins") or 0)
+                        l = int(st.get("losses") or 0)
+                    gp = st.get("gamesPlayed")
+                    g = int(gp) if gp else (w + l)
+                    if g < 6:
+                        g = 12          # a season's worth, never a game's
                     diff = st.get("pointDifferential")
                     if diff is None:
                         diff = (st.get("pointsFor") or 0) - (st.get("pointsAgainst") or 0)
@@ -99,7 +121,7 @@ def teams(season=None):
                         "conf": cname, "w": w, "l": l,
                         "diff_pg": diff / g if g else 0.0}
         return out or None
-    return racing._cached(("cfb_teams", season), 24 * 3600, build) or {}
+    return racing._cached(("cfb_teams", season, 3), 24 * 3600, build) or {}
 
 
 def ratings(season=None):

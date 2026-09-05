@@ -57,7 +57,7 @@
     <button class="tab" data-tab="baseball">⚾ Baseball</button>
     <button class="tab" data-tab="sim">🎲 Sim &amp; DFS</button>
     <button class="tab" data-tab="sports">🔴 Live &amp; Futures</button>
-    <button class="tab" data-tab="nfl">🏈 NFL</button>
+    <button class="tab" data-tab="nfl">🏈 Football</button>
     <button class="tab" data-tab="nba">🏀 NBA</button>
     <button class="tab" data-tab="nhl">🏒 NHL</button>
     <button class="tab" data-tab="ufc">🥊 UFC</button>
@@ -345,6 +345,11 @@
 
 
    <div id="tab-nfl" class="hidden">
+    <div class="subnav" id="fbLeague">
+      <button class="subtab active" data-league="nfl">🏈 NFL</button>
+      <button class="subtab" data-league="cfb">🎓 College</button>
+    </div>
+    <div id="fbNfl">
     <section class="card">
       <div class="row-between">
         <h2>🏈 NFL 2026</h2>
@@ -392,6 +397,30 @@
       <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market. Moneylines, spread and total ladders and - in the preseason, where Kalshi actually books them - <b>player props</b> are all in the pool.</p>
       <div id="nflComboMaker"></div>
     </section>
+    </div><!-- /fbNfl -->
+
+    <div id="fbCfb" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🎓 College football 2026</h2>
+        <div class="row" style="gap:8px;align-items:center">
+          <select id="cfbWeek"></select>
+        </div>
+      </div>
+      <p class="sub" style="margin:2px 0 8px">Every FBS game of the week, played <b>drive by drive</b> through the same football engine as the NFL board, from <b>in-season Massey ratings</b> that learn as the season is played. A priced game's level is blended toward <b>Kalshi's own line</b> by the share the model has earned; the raw model margin shows beside it. <b>Pick'em</b>: the week's straight-up picks ranked by how sure the sim is (confidence points for a pool), and the <b>against-the-spread</b> pick at Kalshi's line where one is booked.</p>
+      <div id="cfbWeekSummary" class="small"></div>
+      <div id="cfbRecord" class="stats owner-only" style="margin-bottom:10px;display:none"></div>
+      <div id="cfbSlipLog" class="stats owner-only" style="margin-bottom:10px"></div>
+      <div id="cfbPickem" style="margin-bottom:10px"></div>
+      <div id="cfbWeekResults" class="markets"><div class="empty">Building the college board in the background (~15s)…</div></div>
+    </section>
+
+    <section class="card" id="cfbComboBox">
+      <h2>🎲 College combo maker</h2>
+      <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is the fair number</b> (the sim, market-anchored where Kalshi books a line); a <b>¢ price</b> means it's a live Kalshi market. Moneylines and every booked spread and total are in the pool.</p>
+      <div id="cfbComboMaker"></div>
+    </section>
+    </div><!-- /fbCfb -->
    </div><!-- /tab-nfl -->
 
 

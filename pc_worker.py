@@ -211,7 +211,12 @@ def _task_boards():
         nfl_game_sim.board(wk, pre)
         nfl_dfs_sim.board(wk, pre)
         nfl_game_sim._slate_sims(wk, pre, 4000)
-    builders = [("nfl", _nfl_tasks)]
+    def _cfb_tasks():
+        import cfb_board
+        import kalshi_cfb
+        kalshi_cfb.index()
+        cfb_board.board(cfb_board.current_week())
+    builders = [("nfl", _nfl_tasks), ("cfb", _cfb_tasks)]
 
     def _add(label, fn):
         builders.append((label, fn))

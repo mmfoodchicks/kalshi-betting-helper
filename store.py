@@ -131,6 +131,14 @@ def init_db():
         # no-op for every row recorded after the fix.
         c.execute("UPDATE mlb_picks SET close_price=NULL "
                   "WHERE date <= '2026-08-23' AND close_price IS NOT NULL")
+        # College football shares the football ledger under its own league
+        # tag; every row before the column existed is NFL. Race-guarded like
+        # predlog's event_ts: three workers init at once.
+        if "league" not in {r[1] for r in c.execute("PRAGMA table_info(nfl_picks)")}:
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE nfl_picks ADD COLUMN league TEXT DEFAULT 'nfl'")
+            except Exception as _e:
+                errlog.note("STORE-nfl-league", _e)  # a sibling just added it
 
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,
@@ -471,21 +479,23 @@ def mlb_record():
 
 # ---- NFL model track record (the MLB ledger, ported) -----------------------
 def record_nfl_pick(game_id, date, week, preseason, pick_side, pick_name,
-                    prob, price_cents, pred_total=None, prob_raw=None):
+                    prob, price_cents, pred_total=None, prob_raw=None,
+                    league="nfl"):
     """First pre-game sight of a game wins: entry price and probability are
-    frozen here, exactly like record_mlb_pick."""
+    frozen here, exactly like record_mlb_pick. `league` is "nfl" or "cfb":
+    one football ledger, two books (cfb_track)."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO nfl_picks
                (game_id, date, week, preseason, pick_side, pick_name,
-                prob, prob_raw, price_cents, close_price, pred_total)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                prob, prob_raw, price_cents, close_price, pred_total, league)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (game_id, date, week, 1 if preseason else 0, pick_side, pick_name,
              prob, prob_raw if prob_raw is not None else prob,
-             price_cents, price_cents, pred_total))
+             price_cents, price_cents, pred_total, league))
 
 
-def update_nfl_close(game_id, price_cents, pick_side):
+def update_nfl_close(game_id, price_cents, pick_side, league="nfl"):
     """Same contract as update_mlb_close: pre-game only (the caller gates on
     state) and same-side only, so a flipped pick freezes at its last honest
     close instead of adopting the other team's price."""
@@ -493,14 +503,15 @@ def update_nfl_close(game_id, price_cents, pick_side):
         return
     with _lock, _conn() as c:
         c.execute("UPDATE nfl_picks SET close_price=? "
-                  "WHERE game_id=? AND graded=0 AND pick_side=?",
-                  (price_cents, game_id, pick_side))
+                  "WHERE game_id=? AND graded=0 AND pick_side=? AND league=?",
+                  (price_cents, game_id, pick_side, league))
 
 
-def ungraded_nfl_picks():
+def ungraded_nfl_picks(league="nfl"):
     with _lock, _conn() as c:
         return [dict(r) for r in c.execute(
-            "SELECT * FROM nfl_picks WHERE graded=0").fetchall()]
+            "SELECT * FROM nfl_picks WHERE graded=0 AND league=?",
+            (league,)).fetchall()]
 
 
 def set_nfl_grade(game_id, won, winner_name, actual_total=None, home_won=None):
@@ -510,16 +521,19 @@ def set_nfl_grade(game_id, won, winner_name, actual_total=None, home_won=None):
                   (won, winner_name, actual_total, home_won, game_id))
 
 
-def nfl_record():
+def nfl_record(league="nfl"):
     """Regular season and preseason as SEPARATE scoreboards -- they are
     different distributions (see nfl_game_sim's predlog split) and averaging
-    them reports a record no single model earned."""
+    them reports a record no single model earned. `league` picks the book
+    (college has no preseason bucket; it comes back empty)."""
     with _lock, _conn() as c:
         rows = [dict(r) for r in c.execute(
-            "SELECT * FROM nfl_picks WHERE graded=1").fetchall()]
+            "SELECT * FROM nfl_picks WHERE graded=1 AND league=?",
+            (league,)).fetchall()]
         pend = {r["k"]: r["n"] for r in c.execute(
             "SELECT COALESCE(preseason,0) k, COUNT(*) n FROM nfl_picks "
-            "WHERE graded=0 GROUP BY COALESCE(preseason,0)")}
+            "WHERE graded=0 AND league=? GROUP BY COALESCE(preseason,0)",
+            (league,))}
     reg = [r for r in rows if not r.get("preseason")]
     pre = [r for r in rows if r.get("preseason")]
     out = {"regular": _pick_stats(reg, pend.get(0, 0)),

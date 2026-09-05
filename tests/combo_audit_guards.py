@@ -1528,25 +1528,26 @@ ck("the tennis board hands liquidity to the leg builder",
 # API + UI
 _app = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                          "app.py")).read()
-ck("all four endpoints read max_bet (MLB, NFL, tennis, UFC)",
-   _app.count('request.args.get("max_bet")') == 4,
+ck("all five endpoints read max_bet (MLB, NFL, tennis, UFC, college)",
+   _app.count('request.args.get("max_bet")') == 5,
    _app.count('request.args.get("max_bet")'))
-ck("and all four sweep rather than picking one floor",
-   _app.count("best_max_bet") == 4, _app.count("best_max_bet"))
+ck("and all five sweep rather than picking one floor",
+   _app.count("best_max_bet") == 5, _app.count("best_max_bet"))
 ck("an unreachable ceiling is a named hint, not a bare null",
    _app.count("max_bet_unreachable") >= 3)
 for _b, _label in (("buildCombo", "MLB"), ("buildNFLCombo", "NFL"),
-                   ("buildTennisCombo", "tennis"), ("buildUFCCombo", "UFC")):
+                   ("buildTennisCombo", "tennis"), ("buildUFCCombo", "UFC"),
+                   ("buildCFBCombo", "college")):
     ck(f"the {_label} maker has a max-bet button",
        f"{_b}(true)" in _js)
 ck("every max-bet button is labelled with the ceiling",
-   _js.count("🎰 Max bet (${MAX_BET_X}×)") == 4)
+   _js.count("🎰 Max bet (${MAX_BET_X}×)") == 5)
 ck("the slip shows the market's probability beside ours",
    "market_prob_pct" in _js and "Market says" in _js)
 ck("and says so when the ceiling could not be reached",
    "isn't reachable on this board today" in _js)
 ck("the button label follows the server's cap, not a hardcoded 320",
-   "function noteMaxBetCap(" in _js and _js.count("noteMaxBetCap(d);") == 4,
+   "function noteMaxBetCap(" in _js and _js.count("noteMaxBetCap(d);") == 5,
    # counted with the semicolon: without it the DEFINITION line matches too and
    # three call sites read as four
    _js.count("noteMaxBetCap(d);"))
@@ -8538,9 +8539,9 @@ finally:
     _sh37.rmtree(_dir37, ignore_errors=True)
 _apy37 = open(_os.path.join(_root, "app.py")).read()
 ck("every parlay endpoint takes over dead jobs, before the claim",
-   _apy37.count("baseball.job_takeover(ptok, _JOB_DEAD_S)") == 3
+   _apy37.count("baseball.job_takeover(ptok, _JOB_DEAD_S)") == 4
    and '"COMBO-dead-job"' in _apy37 and '"NFL-COMBO-dead-job"' in _apy37
-   and '"UFC-COMBO-dead-job"' in _apy37
+   and '"UFC-COMBO-dead-job"' in _apy37 and '"CFB-COMBO-dead-job"' in _apy37
    and _apy37.index("job_takeover(ptok") < _apy37.index("job_claim(ptok)"),
    "a takeover after the claim check could never run -- the claim already "
    "answered 202")
@@ -9406,14 +9407,14 @@ _apy51 = open(_os.path.join(_root, "app.py")).read()
 _js51 = open(_os.path.join(_root, "static", "app.js")).read()
 import nfl_game_sim as _ngs51
 ck("NFL builds take the combo slot and yield to it, like baseball",
-   _apy51.count("baseball.combo_slot_take(ptok)") == 3
+   _apy51.count("baseball.combo_slot_take(ptok)") == 4
    and _apy51.index("baseball.combo_slot_take(ptok)", _apy51.index("NFL-COMBO"))
    < _apy51.index('_run_job(ptok, _core, "NFL-COMBO-build")')
    and "abort_cb is not None and abort_cb()"
    in _insp.getsource(_ngs51.build_parlay)
-   and _apy51.count("not in (None, ptok)") == 3,
-   "one slot across every sport: an NFL, a UFC and an MLB build must never "
-   "grind the shared core together")
+   and _apy51.count("not in (None, ptok)") == 4,
+   "one slot across every sport: an NFL, a college, a UFC and an MLB build "
+   "must never grind the shared core together")
 ck("the dead Predicted Hits route and its query are gone",
    '"/api/baseball/hits"' not in _apy51
    and "prop_hit_combos" not in open(_os.path.join(_root, "store.py")).read()
@@ -9539,7 +9540,7 @@ _apy52 = open(_os.path.join(_root, "app.py")).read()
 ck("NFL parlays stamp ticker/close/kickoff on every leg and are filed in the ledger",
    'leg["ticker"], leg["close_time"] = tk, close' in _bp52
    and 'leg["start_ts"] = _kick.get(grp.get("suffix"))' in _bp52
-   and _apy52.count("_log(item)\n") == 4      # NFL and UFC, optimal + plain
+   and _apy52.count("_log(item)\n") == 6      # NFL, UFC, college: optimal + plain
    and 'sliplog.log_from_item(item, sport="nfl")' in _apy52,
    '"every parlay you build is logged" was true of one sport')
 ck("predlog anchors NFL closes at the KICKOFF the logger knew, not midnight",
@@ -10426,9 +10427,296 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v103' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v104' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
+
+
+# ---------------------------------------------------------------------------
+# suite64: college football under the Football tab -- board, pick'em, combo
+# maker, track record -- on the shared drive engine and Kalshi's KXNCAAF
+# series. The owner: "add college football too, change the name of nfl to
+# football and put two tabs for nfl and college. Im doing a pickem game for
+# college ... Just the same as nfl with a simulation and everything."
+import tempfile as _tf64
+import kalshi_cfb as _kc64
+import cfb as _cfb64
+import cfb_board as _cb64
+import cfb_track as _ct64
+import kalshi_nfl as _kn64
+import racing as _rc64
+# --- the Kalshi college index, from synthetic markets (no network)
+def _mk64(ticker, ev, sub, ask, no_ask, title="", strike=None):
+    return {"ticker": ticker, "event_ticker": ev, "yes_sub_title": sub, "title": title,
+            "yes_ask_dollars": f"{ask/100:.4f}", "no_ask_dollars": f"{no_ask/100:.4f}",
+            "yes_bid_dollars": f"{max(1, ask-2)/100:.4f}", "no_bid_dollars": f"{max(1, no_ask-2)/100:.4f}",
+            "volume_fp": "300", "open_interest_fp": "200", "yes_ask_size_fp": "40",
+            "close_time": "2026-09-07T16:00:00Z", "floor_strike": strike}
+_MKTS64 = {
+    "KXNCAAFGAME": [
+        _mk64("KXNCAAFGAME-26SEP05UNTIND-IND", "KXNCAAFGAME-26SEP05UNTIND", "Indiana", 93, 8),
+        _mk64("KXNCAAFGAME-26SEP05UNTIND-UNT", "KXNCAAFGAME-26SEP05UNTIND", "North Texas", 8, 93),
+        _mk64("KXNCAAFGAME-26SEP05SEMOISU-ISU", "KXNCAAFGAME-26SEP05SEMOISU", "Iowa St.", 92, 9),
+        _mk64("KXNCAAFGAME-26SEP05SEMOISU-SEMO", "KXNCAAFGAME-26SEP05SEMOISU", "SE Missouri St.", 9, 92),
+        _mk64("KXNCAAFGAME-26SEP05MOHPITT-PITT", "KXNCAAFGAME-26SEP05MOHPITT", "Pittsburgh", 80, 21),
+        _mk64("KXNCAAFGAME-26SEP05MOHPITT-MOH", "KXNCAAFGAME-26SEP05MOHPITT", "Miami (OH)", 21, 80),
+        _mk64("KXNCAAFGAME-26SEP05FAMUMIA-MIA", "KXNCAAFGAME-26SEP05FAMUMIA", "Miami (FL)", 97, 4),
+        _mk64("KXNCAAFGAME-26SEP05FAMUMIA-FAMU", "KXNCAAFGAME-26SEP05FAMUMIA", "Florida A&M", 4, 97)],
+    "KXNCAAFSPREAD": [
+        _mk64("KXNCAAFSPREAD-26SEP05UNTIND-IND14", "KXNCAAFSPREAD-26SEP05UNTIND", "Indiana wins by over 13.5 points", 70, 31, strike=13.5),
+        _mk64("KXNCAAFSPREAD-26SEP05UNTIND-IND18", "KXNCAAFSPREAD-26SEP05UNTIND", "Indiana wins by over 17.5 points", 50, 51, strike=17.5),
+        _mk64("KXNCAAFSPREAD-26SEP05UNTIND-IND21", "KXNCAAFSPREAD-26SEP05UNTIND", "Indiana wins by over 20.5 points", 36, 65, strike=20.5)],
+    "KXNCAAFTOTAL": [
+        _mk64("KXNCAAFTOTAL-26SEP05UNTIND-52", "KXNCAAFTOTAL-26SEP05UNTIND", "Over 51.5 points scored", 55, 46, strike=51.5),
+        _mk64("KXNCAAFTOTAL-26SEP05UNTIND-56", "KXNCAAFTOTAL-26SEP05UNTIND", "Over 55.5 points scored", 40, 61, strike=55.5)],
+}
+_ofetch64 = _kn64._fetch
+_kn64._fetch = lambda series: list(_MKTS64.get(series) or [])
+try:
+    _idx64 = _kc64._build()
+finally:
+    _kn64._fetch = _ofetch64
+_e64 = _idx64.get("26SEP05UNTIND") or {}
+ck("the college index parses Kalshi's game, spread and total series by suffix, "
+   "with the team names the moneylines carry",
+   set(_idx64) == {"26SEP05UNTIND", "26SEP05SEMOISU", "26SEP05MOHPITT", "26SEP05FAMUMIA"}
+   and _e64.get("names") == {"IND": "Indiana", "UNT": "North Texas"}
+   and _e64["ml"] == {"IND": 93.0, "UNT": 8.0} and _e64["pair"] == frozenset({"IND", "UNT"})
+   and set(_e64["spread"]) == {("IND", 14), ("IND", 18), ("IND", 21)}
+   and set(_e64["total"]) == {52, 56} and _e64["tick"][("ml", "IND")][0].endswith("-IND"))
+_IU = {"location": "Indiana", "name": "Indiana Hoosiers", "nick": "Hoosiers", "abbr": "IU"}
+_UNT = {"location": "North Texas", "name": "North Texas Mean Green", "nick": "Mean Green", "abbr": "UNT"}
+_ISU = {"location": "Iowa State", "name": "Iowa State Cyclones", "nick": "Cyclones", "abbr": "ISU"}
+_SEMO = {"location": "Southeast Missouri State", "name": "Southeast Missouri State Redhawks", "nick": "Redhawks", "abbr": "SEMO"}
+_MIAFL = {"location": "Miami", "name": "Miami Hurricanes", "nick": "Hurricanes", "abbr": "MIA"}
+_MIAOH = {"location": "Miami (OH)", "name": "Miami (OH) RedHawks", "nick": "RedHawks", "abbr": "M-OH"}
+_FAMU = {"location": "Florida A&M", "name": "Florida A&M Rattlers", "nick": "Rattlers", "abbr": "FAMU"}
+_PITT = {"location": "Pittsburgh", "name": "Pittsburgh Panthers", "nick": "Panthers", "abbr": "PITT"}
+_APP = {"location": "App State", "name": "App State Mountaineers", "nick": "Mountaineers", "abbr": "APP"}
+_d64 = {"26SEP04", "26SEP05", "26SEP06"}
+ck("an ESPN game finds its Kalshi event by date and name, not by abbreviation "
+   "(Indiana is IU on ESPN and IND on Kalshi; 'Iowa St.' meets 'Iowa State')",
+   _kc64.match_game(_idx64, _d64, _IU, _UNT) == ("26SEP05UNTIND", "IND", "UNT")
+   and _kc64.match_game(_idx64, _d64, _ISU, _SEMO) == ("26SEP05SEMOISU", "ISU", "SEMO")
+   and _kc64.match_game(_idx64, {"26SEP19"}, _IU, _UNT) is None)
+ck("two Miamis on one day resolve to their own events, and an alias covers "
+   "the spellings that missed live (App State -> Appalachian State)",
+   _kc64.match_game(_idx64, _d64, _MIAFL, _FAMU) == ("26SEP05FAMUMIA", "MIA", "FAMU")
+   and _kc64.match_game(_idx64, _d64, _PITT, _MIAOH) == ("26SEP05MOHPITT", "PITT", "MOH")
+   and _kc64._nm("App State") == "appalachian state" and _kc64._nm("Iowa St.") == "iowa state")
+ck("legs price, quote and ticket off the college index under Kalshi's codes",
+   _kc64.price_leg(_idx64, "26SEP05UNTIND", {"t": "ml", "team": "IND"}) == 93.0
+   and _kc64.price_leg(_idx64, "26SEP05UNTIND", {"t": "spread", "team": "IND", "by": 18}) == 50.0
+   and _kc64.price_leg(_idx64, "26SEP05UNTIND", {"t": "total", "n": 52, "over": False}) == 46.0
+   and _kc64.ticker_leg(_idx64, "26SEP05UNTIND", {"t": "total", "n": 56, "over": True})[0]
+   == "KXNCAAFTOTAL-26SEP05UNTIND-56"
+   and (_kc64.quote_leg(_idx64, "26SEP05UNTIND", {"t": "ml", "team": "UNT"}) or {}).get("ask") == 8.0
+   and _kc64.ladders(_idx64, "26SEP05UNTIND") == {"spread": {"IND": [14, 18, 21]}, "total": [52, 56]})
+_im64 = _kc64.implied_margin(_idx64, "26SEP05UNTIND", "IND")
+ck("the market's own margin is read off the spread ladder at its 50% crossing",
+   _im64 is not None and 16.0 <= _im64 <= 19.0, _im64)
+ck("game_prices and date keys",
+   _kc64.game_prices(_idx64, "26SEP05UNTIND", "IND", "UNT")["home_cents"] == 93.0
+   and _kc64.date_key(datetime.date(2026, 9, 5)) == "26SEP05"
+   and _kc64.suffix_date("26SEP05UNTIND") == "26SEP05")
+# --- the standings bug: the FIRST stat block is the season
+_stand64 = {"children": [{"name": "SEC", "standings": {"entries": [
+    {"team": {"id": "61", "displayName": "Georgia Bulldogs", "abbreviation": "UGA",
+              "location": "Georgia", "name": "Bulldogs"},
+     "stats": [{"name": "pointDifferential", "value": 203.0, "displayValue": "+203"},
+               {"name": "wins", "value": 12.0, "displayValue": "12"},
+               {"name": "overall", "value": None, "displayValue": "12-2"},
+               {"name": "pointDifferential", "value": 61.0, "displayValue": "+61"},
+               {"name": "wins", "value": 5.0, "displayValue": "5"},
+               {"name": "vs AP Top 25", "value": None, "displayValue": "5-1"}]},
+    {"team": {"id": "344", "displayName": "Mississippi State Bulldogs", "abbreviation": "MSST",
+              "location": "Mississippi State", "name": "Bulldogs"},
+     "stats": [{"name": "pointDifferential", "value": 2.0, "displayValue": "+2"},
+               {"name": "wins", "value": 5.0, "displayValue": "5"},
+               {"name": "overall", "value": None, "displayValue": "5-8"},
+               {"name": "pointDifferential", "value": -93.0, "displayValue": "-93"},
+               {"name": "wins", "value": 1.0, "displayValue": "1"},
+               {"name": "vs USA ranked teams", "value": None, "displayValue": "1-6"}]}]}}]}
+_ogj64 = _rc64._get_json
+_rc64._get_json = lambda url, timeout=25: _stand64
+try:
+    _rc64._form_cache.pop(("cfb_teams", 2099, 3), None)
+    _t64 = _cfb64.teams(2099)
+finally:
+    _rc64._get_json = _ogj64
+    _rc64._form_cache.pop(("cfb_teams", 2099, 3), None)
+ck("a standings entry carries several stat blocks under repeated names; the "
+   "SEASON is the first block and the record is `overall` -- the last block "
+   "(vs ranked teams) read Mississippi State as -93 points over one game",
+   _t64 and abs(_t64["344"]["diff_pg"] - 2.0 / 13) < 1e-6
+   and abs(_t64["61"]["diff_pg"] - 203.0 / 14) < 1e-6
+   and _t64["61"]["w"] == 12 and _t64["61"]["l"] == 2)
+# --- the drive engine on ratings
+_g64 = _cb64.simulate_game({"abbr": "IND", "name": "Indiana Hoosiers"},
+                           {"abbr": "UNT", "name": "North Texas Mean Green"},
+                           9.0, -6.0, n=800, seed=5,
+                           ladders={"spread": {"IND": [14, 18, 21]}, "total": [52, 56]})
+_typ64 = {c["type"] for c in _g64["_masks"]}
+ck("a college game simulates from two ratings: favourite ahead, ladders, and "
+   "candidate legs on the booked lines under the Kalshi codes",
+   0.75 <= _g64["p_home"] <= 0.95 and _g64["exp_home"] > _g64["exp_away"]
+   and _typ64 == {"ML", "Spread", "Total"}
+   and {(c["kref"]["t"], c["kref"].get("team"), c["kref"].get("by"), c["kref"].get("n"))
+        for c in _g64["_masks"]} >= {("ml", "IND", None, None), ("spread", "IND", 18, None),
+                                     ("total", None, None, 52)}
+   and len(_g64["_margins"]) == 800,
+   f"{_g64['p_home']} {sorted(_typ64)}")
+ck("the cover probability is read off the simulated margins, and the inverse "
+   "normal is sane",
+   0.0 <= _cb64._cover_pct(_g64["_margins"], _g64["mean_margin"]) <= 100.0
+   and abs(_cb64._cover_pct(_g64["_margins"], -100) - 100.0) < 1e-9
+   and abs(_cb64._norm_ppf(0.5)) < 1e-9 and abs(_cb64._norm_ppf(0.975) - 1.96) < 0.01
+   and _cb64._norm_ppf(0.2) < 0)
+ck("a moneyline-only market gives a margin through the engine's SD; a spread "
+   "ladder gives its own line",
+   _cb64._market_margin(_idx64, "26SEP05UNTIND", "IND", "UNT")[1] == "spread"
+   and _cb64._market_margin(_idx64, "26SEP05MOHPITT", "PITT", "MOH")[1] == "moneyline"
+   and 10.0 <= _cb64._market_margin(_idx64, "26SEP05MOHPITT", "PITT", "MOH")[0] <= 22.0
+   and _cb64._market_margin(_idx64, "nope", "A", "B") == (None, None))
+# --- the board, on stubbed feeds
+_games64 = [
+    {"id": "1", "date": "2026-09-05T20:00Z", "state": "pre", "neutral": False,
+     "home": dict(_IU, id="84", score=None), "away": dict(_UNT, id="249", score=None)},
+    {"id": "2", "date": "2026-09-05T23:30Z", "state": "pre", "neutral": True,
+     "home": dict(_APP, id="2026", score=None),
+     "away": {"location": "Maine", "name": "Maine Black Bears", "nick": "Black Bears",
+              "abbr": "ME", "id": "311", "score": None}},
+    {"id": "3", "date": "2026-09-05T16:00Z", "state": "in", "neutral": False,
+     "home": dict(_PITT, id="221", score=14.0), "away": dict(_MIAOH, id="193", score=3.0)}]
+_saved64 = (_cb64._week_games, _cfb64.inseason_ratings, _cfb64.teams, _cfb64.schedule,
+            _kc64.index, _cb64._model_weight)
+_puts64, _logs64 = {}, []
+import boardshare as _bs64
+import predlog as _pl64
+_obp64, _oplm64 = _bs64.put, _pl64.log_many
+_cb64._week_games = lambda season, week: _games64
+_cfb64.inseason_ratings = lambda season=None: {"84": 9.0, "249": -6.0, "2026": 1.0, "311": -4.0,
+                                               "221": 3.0, "193": -5.0}
+_cfb64.teams = lambda season=None: {k: {"conf": "X"} for k in ("84", "249", "2026", "311", "221", "193")}
+_cfb64.schedule = lambda season=None: []
+_kc64.index = lambda: _idx64
+_cb64._model_weight = lambda: 0.25
+_bs64.put = lambda name, payload, age=0: _puts64.__setitem__(name, payload)
+_pl64.log_many = lambda model, rows: _logs64.append((model, list(rows)))
+try:
+    _b64 = _cb64._build_board(2026, 1, n=300)
+finally:
+    (_cb64._week_games, _cfb64.inseason_ratings, _cfb64.teams, _cfb64.schedule,
+     _kc64.index, _cb64._model_weight) = _saved64
+    _bs64.put, _pl64.log_many = _obp64, _oplm64
+_by64 = {g["home"]: g for g in (_b64 or {}).get("games") or []}
+_ind64, _app64, _pit64 = _by64.get("IU"), _by64.get("APP"), _by64.get("PITT")
+ck("the college board builds every FBS game with the NFL card's fields, the "
+   "Kalshi codes stamped, a live game carried with its score",
+   _b64 and _b64["n_games"] == 3 and _b64["engine"] == "drive"
+   and _ind64 and _ind64["kx"] == {"suffix": "26SEP05UNTIND", "home": "IND", "away": "UNT"}
+   and _ind64["kalshi"] == {"home_cents": 93.0, "away_cents": 8.0}
+   and _app64 and _app64["kx"] is None and "kalshi" not in _app64 and _app64["neutral"]
+   and _pit64 and _pit64["state"] == "in" and _pit64["home_score"] == 14.0,
+   str(_b64)[:200] if not _b64 else "")
+ck("a priced game's level is blended toward Kalshi's line by the model's weight "
+   "and both margins show; an unpriced game runs on the ratings alone",
+   _ind64 and _ind64["market_src"] == "spread" and _ind64["model_weight"] == 0.25
+   and abs(_ind64["fair_margin"] - (0.25 * _ind64["model_margin"] + 0.75 * _ind64["market_margin"])) < 0.15
+   # the level moves toward the market's side, whichever side that is
+   # (this fixture's ladder sits 0.6 below the ratings gap)
+   and (_ind64["p_home"] - _ind64["p_home_raw"]) * (_ind64["market_margin"] - _ind64["model_margin"]) > 0
+   and _app64["market_src"] is None and _app64["fair_margin"] == _app64["model_margin"]
+   and _app64["model_margin"] == 5.0,     # 1 - (-4), neutral: no home field
+   f"{_ind64 and (_ind64['model_margin'], _ind64['market_margin'], _ind64['fair_margin'])}")
+ck("the ATS pick is who covers Kalshi's line, from the simulated margins",
+   _ind64 and _ind64.get("ats") and _ind64["ats"]["line"] == _ind64["market_margin"]
+   and _ind64["ats"]["team"] in ("IU", "UNT") and 0 < _ind64["ats"]["pct"] <= 100
+   and "ats" not in _app64)
+ck("the pick'em rank orders the week by confidence with pool points",
+   sorted(g["pick"]["rank"] for g in _b64["games"]) == [1, 2, 3]
+   and {g["pick"]["confidence"] for g in _b64["games"]} == {1, 2, 3}
+   and _ind64["pick"]["rank"] == 1 and _ind64["pick"]["team"] == "IU")
+ck("the raw model probability is logged under predlog 'cfb' for the priced "
+   "pre-game legs only, kickoff attached; the sims store is written for the maker",
+   _logs64 and _logs64[0][0] == "cfb" and len(_logs64[0][1]) == 2
+   and all(r[4] for r in _logs64[0][1])
+   and abs(_logs64[0][1][0][1] - _ind64["p_home_raw"]) < 1e-4    # the card rounds to 4 dp
+   and "cfb_parlay_sims_2026_w1_300" in _puts64
+   and [s["pair"] for s in _puts64["cfb_parlay_sims_2026_w1_300"]][:1] == ["UNT@IU"])
+# --- the combo maker on that slate
+_sims64 = _puts64["cfb_parlay_sims_2026_w1_300"]
+_oss64, _oki64 = _cb64._slate_sims, _kc64.index
+_cb64._slate_sims = lambda week, n=_cb64._N: _sims64
+_kc64.index = lambda: _idx64
+try:
+    _p64 = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=2,
+                              legs_mode="require")
+    _p64s = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=1,
+                               legs_mode="require", game_sel=["UNT@IU"])
+finally:
+    _cb64._slate_sims, _kc64.index = _oss64, _oki64
+ck("the college maker builds a priced, ticketed slip off the sims store, "
+   "excludes the game under way, and takes the grid's selection",
+   _p64 and _p64["sport"] == "cfb" and _p64["n_legs"] == 2 and _p64["excluded_started"] == 1
+   and all(l.get("ticker") and l.get("market_cents") for g in _p64["groups"] for l in g["legs"])
+   and all(g["suffix"] == "26SEP05UNTIND" for g in _p64["groups"])
+   and (_p64s or {}).get("error_hint") == "single_game_no_stack",
+   str(_p64)[:200] if not (_p64 and _p64.get("n_legs") == 2) else "")
+# --- the track record: one ledger, two leagues
+import store as _st64
+_odb64 = _st64.DB_PATH
+try:
+    _st64.DB_PATH = _os.path.join(_tf64.mkdtemp(), "guard64.db")
+    _st64.init_db(); _st64.init_db()
+    _n64 = _ct64.record_from_board(_b64)
+    _rows64 = _st64.ungraded_nfl_picks(league="cfb")
+    ck("college picks land in the football ledger under league cfb, pre-game "
+       "and priced only, and the NFL book does not see them",
+       _n64 == 1 and len(_rows64) == 1 and _rows64[0]["game_id"] == "2026-09-05_UNT@IU"
+       and _rows64[0]["league"] == "cfb" and _rows64[0]["pick_side"] == "home"
+       and _rows64[0]["price_cents"] == 93.0 and _st64.ungraded_nfl_picks() == [])
+    _st64.update_nfl_close("2026-09-05_UNT@IU", 95.0, "home", league="cfb")
+    _fin64 = {("IU", "UNT"): (38.0, 10.0)}
+    _gr64 = _ct64._grade_rows(_st64.ungraded_nfl_picks(league="cfb"), _fin64)
+    for _gid, _w, _wn, _t, _hw in _gr64:
+        _st64.set_nfl_grade(_gid, _w, _wn, actual_total=_t, home_won=_hw)
+    _rec64 = _st64.nfl_record(league="cfb")
+    ck("college grading off the scoreboard, and the league's own record",
+       _gr64 == [("2026-09-05_UNT@IU", 1, "IU", 48.0, 1)]
+       and _rec64["regular"]["wins"] == 1 and _st64.nfl_record()["regular"].get("graded", 0) == 0)
+finally:
+    _st64.DB_PATH = _odb64
+ck("the recorder rebuilds the college record on its cadence under its own code, "
+   "and the PC builds the college board and index",
+   "cfb_track.tick()" in open(_os.path.join(_root, "mlb_recorder.py")).read()
+   and 'errlog.note("MREC-cfb", _e)' in open(_os.path.join(_root, "mlb_recorder.py")).read()
+   and "cfb_board.board(cfb_board.current_week())" in open(_os.path.join(_root, "pc_worker.py")).read()
+   and "kalshi_cfb.index()" in open(_os.path.join(_root, "pc_worker.py")).read())
+_app64 = __import__("app")
+_rules64 = {r.rule for r in _app64.app.url_map.iter_rules()}
+_cpar64 = _insp.getsource(_app64.api_cfb_parlay)
+ck("the college routes exist and mirror the NFL ones: slate, record, parlay with "
+   "the job pattern, the combo slot and the cfb slip ledger",
+   {"/api/cfb/slate", "/api/cfb/record", "/api/cfb/parlay"} <= _rules64
+   and '_run_job(ptok, _core, "CFB-COMBO-build")' in _cpar64
+   and 'sliplog.log_from_item(item, sport="cfb")' in _cpar64
+   and "cfb_track.record_from_board(data)" in _insp.getsource(_app64.api_cfb_slate)
+   and 'store.nfl_record(league="cfb")' in _insp.getsource(_app64.api_cfb_record))
+_html64 = open(_os.path.join(_root, "templates", "index.html")).read()
+_js64 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab is Football with NFL and College underneath; the college page carries "
+   "the week board, the pick'em table, the record and its own combo maker",
+   'data-tab="nfl">🏈 Football' in _html64 and 'id="fbLeague"' in _html64
+   and 'data-league="cfb"' in _html64 and 'id="fbCfb"' in _html64
+   and 'id="cfbPickem"' in _html64 and 'id="cfbComboMaker"' in _html64
+   and 'id="cfbRecord"' in _html64 and 'id="fbNfl"' in _html64
+   and "function setFbLeague" in _js64 and "async function loadCFBWeek" in _js64
+   and "function renderCFBPickem" in _js64 and "async function buildCFBCombo" in _js64
+   and "/api/cfb/slate?week=" in _js64 and "/api/cfb/parlay?" in _js64
+   and '"/api/cfb/record"' in _js64 and 'loadSlipLog("cfbSlipLog", "cfb")' in _js64)
+ck("the calibrator already has a college bucket for the logged picks",
+   "cfb" in __import__("calibrate")._MODELS)
 
 print()
 print("=" * 72)

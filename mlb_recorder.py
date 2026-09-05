@@ -241,6 +241,13 @@ def _loop():
             ufc_presets.tick()
         except Exception as _e:
             errlog.note("MREC-ufc", _e)
+        # College football's track record: same cadence, same rule as the
+        # NFL one (reads an existing board, never builds), own code.
+        try:
+            import cfb_track
+            cfb_track.tick()
+        except Exception as _e:
+            errlog.note("MREC-cfb", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 

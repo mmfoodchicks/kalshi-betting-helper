@@ -3488,7 +3488,24 @@ function renderRacing(d) {
 
 // ---- NFL futures projection ----
 let _nflData = null, _nflSub = "futures", _nflPoll = null;
+// The Football tab holds two leagues. NFL is the default; College is the
+// same board shape on the college slate (cfb_board), with a pick'em rank.
+let _fbLeague = "nfl";
+function setFbLeague(lg) {
+  _fbLeague = lg;
+  document.querySelectorAll("#fbLeague .subtab").forEach((b) =>
+    b.classList.toggle("active", b.dataset.league === lg));
+  $("fbNfl").classList.toggle("hidden", lg !== "nfl");
+  $("fbCfb").classList.toggle("hidden", lg !== "cfb");
+  if (lg === "cfb") initCFB();
+}
 function initNFL() {
+  document.querySelectorAll("#fbLeague .subtab").forEach((b) => {
+    if (b.dataset.wired) return;
+    b.dataset.wired = "1";
+    b.addEventListener("click", () => setFbLeague(b.dataset.league));
+  });
+  if (_fbLeague === "cfb") { initCFB(); return; }
   initNFLWeek();                          // week board is the default view
   document.querySelectorAll("#nflSubtabs .subtab").forEach((b) => {
     if (b.dataset.wired) return;
@@ -4047,6 +4064,319 @@ function renderNHL() {
 }
 
 // ---- NFL Sleeper-seeded sim (Sim cards / Best ball / Pick 6) ---------------
+// ---- College football week board + pick'em + combo maker ------------------
+// The NFL week board's twin on /api/cfb/slate. Same card, minus the player
+// lines (nothing projects college players game by game), plus the pick'em
+// table and the ATS pick at Kalshi's line.
+let _cfbWeekData = null;
+function initCFB() {
+  const sel = $("cfbWeek");
+  if (sel && !sel.dataset.filled) {
+    sel.dataset.filled = "1";
+    let opts = "";
+    for (let w = 1; w <= 16; w++) opts += `<option value="${w}">Week ${w}</option>`;
+    sel.innerHTML = opts;
+    sel.addEventListener("change", () => {
+      sel.dataset.userSet = "1";
+      _cfbWeekData = null;
+      $("cfbWeekResults").dataset.loaded = "";
+      loadCFBWeek(0);
+    });
+  }
+  if (!$("cfbWeekResults").dataset.loaded) { $("cfbWeekResults").dataset.loaded = "1"; loadCFBWeek(0); }
+  renderCFBComboMaker();
+}
+async function loadCFBWeek(attempt) {
+  attempt = attempt || 0;
+  const box = $("cfbWeekResults"), sel = $("cfbWeek");
+  const userPicked = sel && sel.dataset.userSet;
+  const wk = userPicked ? sel.value : 0;
+  if (!attempt) box.innerHTML = `<div class="empty">Simulating ${userPicked ? `Week ${wk}` : "the current week"} - every FBS game through the drive engine, priced vs live Kalshi moneylines (~15s). Auto-refreshes.</div>`;
+  try {
+    const d = await (await fetch(`/api/cfb/slate?week=${wk}`)).json();
+    if (d && d.week && sel && !userPicked) sel.value = d.week;
+    if (!d || d.error || !(d.games && d.games.length)) {
+      if (attempt < 9) { setTimeout(() => loadCFBWeek(attempt + 1), 6000); return; }
+      box.innerHTML = `<div class="empty">${(d && d.error) || "No games for this week."}</div>`;
+      return;
+    }
+    _cfbWeekData = d;
+    renderCFBWeek();
+    loadCfbRecord();
+  } catch (e) {
+    if (attempt < 9) { setTimeout(() => loadCFBWeek(attempt + 1), 6000); return; }
+    box.innerHTML = `<div class="empty">College board unavailable.</div>`;
+  }
+}
+function _cfbMarginTxt(m) {
+  if (m == null) return "-";
+  return m > 0 ? `home −${m}` : m < 0 ? `away −${(-m).toFixed(1)}` : "pick";
+}
+function cfbSlateCard(g) {
+  const ph = Math.round(g.p_home * 1000) / 10, pa = Math.round(g.p_away * 1000) / 10;
+  const kx = g.kalshi || {};
+  const ladder = (g.total_ladder || []).slice(0, 4).map((r) =>
+    `<span class="chip">O${r.line} <b>${r.over_pct}%</b></span>`).join(" ");
+  const sh = g.spread_ladder || {};
+  const spreads = ["3", "7", "14"].map((m) =>
+    `<span class="chip">${g.home} −${m === "3" ? "2.5" : m === "7" ? "6.5" : "13.5"} <b>${(sh.home || {})[m] ?? "-"}%</b></span>`).join(" ");
+  const started = g.state === "in" || g.state === "post";
+  const score = started && g.home_score != null
+    ? `<span class="small" style="color:var(--muted)">${g.state === "post" ? "final" : "🔴 live"}: ${g.away} ${g.away_score} - ${g.home_score} ${g.home}</span>` : "";
+  const ats = g.ats
+    ? `<div class="small">ATS at Kalshi's line (${_cfbMarginTxt(g.market_margin)}): <b>${escapeHtml(g.ats.name)}</b> covers <b>${g.ats.pct}%</b></div>` : "";
+  const level = g.market_margin != null
+    ? `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · market ${g.market_margin > 0 ? "+" : ""}${g.market_margin} (${g.market_src}) · blended ${g.fair_margin > 0 ? "+" : ""}${g.fair_margin} (model weight ${Math.round((g.model_weight || 0) * 100)}%)</div>`
+    : `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · no Kalshi line yet</div>`;
+  return `<div class="bbgame nflcard">
+    <div class="top"><div>
+      <div class="matchup">${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}${g.neutral ? " · neutral" : ""}</span> ${score}</div>
+      <div class="pick">Pick: <b>${escapeHtml(g.pick.name || g.pick.team)}</b> ${g.pick.pct}% <span class="small" style="color:var(--muted)">(#${g.pick.rank} · ${g.pick.confidence} pts)</span> · total <b>${g.exp_total}</b></div>
+    </div></div>
+    <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
+    <div class="winbar"><div class="fill" style="width:${ph}%"></div>
+      <div class="lbl">${g.away} ${pa}% ${_nflEdgeChip(kx.away_cents, g.edge_away)} - ${_nflEdgeChip(kx.home_cents, g.edge_home)} ${ph}% ${g.home}</div></div>
+    <div class="small" style="margin:4px 0">${ladder} ${spreads}</div>
+    ${level}${ats}
+    <div class="small" style="color:var(--muted)">ratings: ${g.home} ${g.rating_home > 0 ? "+" : ""}${g.rating_home} · ${g.away} ${g.rating_away > 0 ? "+" : ""}${g.rating_away}${g.conf_home ? ` · ${escapeHtml(g.conf_home)}` : ""}</div>
+  </div>`;
+}
+function renderCFBPickem(d) {
+  const box = $("cfbPickem");
+  if (!box) return;
+  const games = (d.games || []).filter((g) => g.state !== "post");
+  if (!games.length) { box.innerHTML = ""; return; }
+  const rows = games.slice().sort((a, b) => a.pick.rank - b.pick.rank).map((g) => {
+    const kx = g.kalshi || {};
+    const cents = g.pick.team === g.home ? kx.home_cents : kx.away_cents;
+    const edge = g.pick.team === g.home ? g.edge_home : g.edge_away;
+    const ats = g.ats ? `${escapeHtml(g.ats.team)} ${g.ats.pct}%` : `<span style="color:var(--muted)">no line</span>`;
+    return `<tr><td>${g.pick.rank}</td><td><b>${g.pick.confidence}</b></td>
+      <td>${escapeHtml(g.away)} @ ${escapeHtml(g.home)}${g.state === "in" ? ' <span class="gg-live">🔴</span>' : ""}</td>
+      <td><b>${escapeHtml(g.pick.name || g.pick.team)}</b></td><td>${g.pick.pct}%</td>
+      <td>${cents != null ? `${cents}¢` : "-"}${edge != null ? ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span>` : ""}</td>
+      <td>${_cfbMarginTxt(g.market_margin)}</td><td>${ats}</td></tr>`;
+  }).join("");
+  box.innerHTML = `<details class="simdetail" open><summary>🎯 <b>Pick'em</b> - ${games.length} games ranked by confidence</summary>
+    <div style="overflow-x:auto"><table class="seasontbl"><thead><tr><th>#</th><th>pts</th><th>game</th><th>pick</th><th>win%</th><th>Kalshi</th><th>line</th><th>ATS pick</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended sim; Kalshi is the pick's ask with the model's edge beside it. ATS = who covers Kalshi's line, read off the simulated margins - early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
+  </details>`;
+}
+function renderCFBWeek() {
+  const d = _cfbWeekData; if (!d) return;
+  $("cfbWeekSummary").innerHTML = `<b>${d.n_games}</b> FBS games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${escapeHtml(d.note || "")}</i>`;
+  renderCFBPickem(d);
+  $("cfbWeekResults").innerHTML = d.games.map(cfbSlateCard).join("");
+  if (!document.querySelector("#cfbComboMaker .gamegrid")) renderCFBComboMaker();
+}
+async function loadCfbRecord() {
+  if (!isOwner()) return;
+  loadSlipLog("cfbSlipLog", "cfb");
+  const el = $("cfbRecord");
+  if (!el) return;
+  try {
+    const d = await (await fetch("/api/cfb/record")).json();
+    const reg = d.regular || {};
+    let html = "";
+    if (reg.graded) html += pickRecordHtml(reg, "points");
+    else if (reg.pending) html += `<span>Model track record: ${reg.pending} picks awaiting results…</span>`;
+    el.innerHTML = html;
+    el.style.display = html ? "" : "none";
+  } catch (e) { /* ignore */ }
+}
+
+// ---- College combo maker: the NFL maker on the college slate ---------------
+let cfbComboLegs = 3, cfbComboTarget = 55, cfbComboCap = 0, cfbComboPayout = 0;
+let cfbComboObjective = "balanced", cfbComboLegsMode = "prefer";
+let cfbComboPayoutMode = "off", cfbComboConn = "or", cfbComboSameGame = true;
+let cfbComboGameSel = null;
+let cfbComboBuilding = false;
+function cfbGameGridHtml() {
+  const d = _cfbWeekData;
+  if (!d || !(d.games || []).length) return "";
+  const allOn = !cfbComboGameSel || !Object.keys(cfbComboGameSel).length;
+  const esc = (s) => (s || "").replace(/'/g, "\\'");
+  let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="cfbComboAllGames()">ALL<br>GAMES</div>`;
+  cards += d.games.map((g) => {
+    const key = `${g.away}@${g.home}`;
+    const started = g.state === "post" || g.state === "in";
+    const sel = cfbComboGameSel ? cfbComboGameSel[key] : undefined;
+    const aOn = sel === true || sel === g.away;
+    const hOn = sel === true || sel === g.home;
+    let when = "";
+    try { when = g.date ? new Date(g.date).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) : ""; } catch (e) { when = ""; }
+    if (started) {
+      return `<div class="gg-card" style="opacity:.4" title="already started - excluded from pre-game combos">
+        ${g.state === "in" ? '<span class="gg-live">🔴 LIVE</span>' : ""}
+        <span class="gg-team">${escapeHtml(g.away)}</span><span class="gg-vs">@</span><span class="gg-team">${escapeHtml(g.home)}</span>
+        <span class="gg-when">${g.state === "post" ? "final" : "live"}</span></div>`;
+    }
+    return `<div class="gg-card${sel === true ? " on" : ""}" onclick="cfbComboToggleGame('${esc(key)}')" title="${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)}${when ? ` - ${when}` : ""}">
+      <span class="gg-team${aOn ? " on" : ""}" onclick="event.stopPropagation();cfbComboToggleTeam('${esc(key)}','${esc(g.away)}')">${escapeHtml(g.away)}</span>
+      <span class="gg-vs">@</span>
+      <span class="gg-team${hOn ? " on" : ""}" onclick="event.stopPropagation();cfbComboToggleTeam('${esc(key)}','${esc(g.home)}')">${escapeHtml(g.home)}</span>
+      ${when ? `<span class="gg-when">${when}</span>` : ""}
+    </div>`;
+  }).join("");
+  return `<div class="gamegrid">${cards}</div>`;
+}
+window.cfbComboAllGames = () => { cfbComboGameSel = null; renderCFBComboMaker(); };
+window.cfbComboToggleGame = (key) => {
+  if (!cfbComboGameSel) cfbComboGameSel = {};
+  if (cfbComboGameSel[key] === true) delete cfbComboGameSel[key];
+  else cfbComboGameSel[key] = true;
+  renderCFBComboMaker();
+};
+window.cfbComboToggleTeam = (key, team) => {
+  if (!cfbComboGameSel) cfbComboGameSel = {};
+  if (cfbComboGameSel[key] === team) delete cfbComboGameSel[key];
+  else cfbComboGameSel[key] = team;
+  renderCFBComboMaker();
+};
+function cfbComboSelParam() {
+  if (!cfbComboGameSel) return "";
+  const parts = [];
+  for (const k in cfbComboGameSel) {
+    const v = cfbComboGameSel[k];
+    parts.push(v === true ? k : `${k}:${v}`);
+  }
+  return parts.join(",");
+}
+function renderCFBComboMaker() {
+  const box = $("cfbComboMaker");
+  if (!box || cfbComboBuilding) return;
+  const prev = (() => { const el = $("cfbComboOut"); return el ? el.innerHTML : ""; })();
+  const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
+    + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
+  box.innerHTML = `<div class="combomaker">
+    🎯 <b>Combo maker</b>
+    <div style="margin-top:8px">each leg ≥
+      <input id="cfbComboTarget" type="number" min="20" max="97" value="${cfbComboTarget}" style="width:54px"/>%
+      and ≤ <input id="cfbComboCap" type="number" min="0" max="99" value="${cfbComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+    <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band.</div>
+    <div class="small" style="margin-top:6px">goal
+      ${sel("cfbComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfbComboObjective)}
+    </div>
+    <div class="small" style="margin-top:6px">
+      ${sel("cfbComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfbComboLegsMode)}
+      <input id="cfbComboN" type="number" min="2" max="30" value="${cfbComboLegs}" style="width:50px"/> legs
+      &nbsp;${sel("cfbComboConn", [["or", "OR"], ["and", "AND"]], cfbComboConn)}&nbsp;
+      ${sel("cfbComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfbComboPayoutMode)}
+      reach <input id="cfbComboPayout" type="number" min="0" step="any" value="${cfbComboPayout}" style="width:60px"/>× payout
+    </div>
+    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="cfbComboSameGame"${cfbComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+    ${cfbGameGridHtml()}
+    <div style="margin-top:6px">
+      <button class="track-mini primary-mini" onclick="buildCFBCombo()">Build</button>
+      <button class="track-mini" style="margin-left:6px" onclick="buildCFBCombo(true)" title="Ignore the settings above and build the likeliest slip that still pays Kalshi's ${MAX_BET_X}× ceiling">🎰 Max bet (${MAX_BET_X}×)</button>
+      <button class="track-mini" style="margin-left:6px" onclick="buildCFBCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the games on its own.">⚡ Optimal for my ×</button>
+    </div>
+    <div class="small" style="margin-top:4px">Moneylines and every booked spread and total are candidates. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
+    <div id="cfbComboOut"></div>
+  </div>`;
+  if (prev) { const el = $("cfbComboOut"); if (el) el.innerHTML = prev; }
+}
+async function buildCFBCombo(maxBet, optimal) {
+  const out = $("cfbComboOut");
+  if (!out) return;
+  const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
+  cfbComboLegs = Math.max(2, Math.min(12, num("cfbComboN", 3)));
+  cfbComboTarget = Math.max(20, Math.min(97, num("cfbComboTarget", 55)));
+  let cap = parseInt(($("cfbComboCap") || {}).value, 10);
+  cfbComboCap = (isNaN(cap) || cap <= 0) ? 0 : cap;
+  cfbComboPayout = num("cfbComboPayout", 0);
+  if (optimal && !(cfbComboPayout > 1)) {
+    out.innerHTML = `<div class="small">⚡ Optimal mode needs the one thing it optimizes for: type the payout you want in the <b>×</b> box (e.g. <b>10</b>), then hit the button again.</div>`;
+    return;
+  }
+  cfbComboObjective = ($("cfbComboObjective") || {}).value || "balanced";
+  cfbComboLegsMode = ($("cfbComboLegsMode") || {}).value || "prefer";
+  cfbComboPayoutMode = ($("cfbComboPayoutMode") || {}).value || "off";
+  cfbComboConn = ($("cfbComboConn") || {}).value || "or";
+  cfbComboSameGame = !!(($("cfbComboSameGame") || {}).checked);
+  const wk = (_cfbWeekData && _cfbWeekData.week) || ($("cfbWeek") || {}).value || 1;
+  out.innerHTML = `<div class="empty">${maxBet
+    ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
+    : optimal ? `Solving for the likeliest slip that pays ${cfbComboPayout}×…`
+    : "Reading the week's simulated games and searching combos…"}</div>`;
+  const q = `week=${wk}&legs=${cfbComboLegs}&target=${cfbComboTarget}`
+    + (cfbComboCap ? `&cap=${cfbComboCap}` : "")
+    + `&payout=${cfbComboPayout}&objective=${cfbComboObjective}`
+    + `&legs_mode=${cfbComboLegsMode}&payout_mode=${cfbComboPayoutMode}`
+    + `&conn=${cfbComboConn}&same_game=${cfbComboSameGame ? 1 : 0}`
+    + (cfbComboSelParam() ? `&sel=${encodeURIComponent(cfbComboSelParam())}` : "")
+    + (maxBet ? "&max_bet=1" : "")
+    + (optimal ? "&optimal=1" : "");
+  const ptok = "cfb" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  window._comboResume = null;
+  cfbComboBuilding = true;
+  try {
+    const poll = () => fetch(`/api/cfb/parlay?${q}&ptok=${ptok}`).then((r) => r.json());
+    let d = null;
+    const attach = async () => {
+      let misses = 0;
+      for (let i = 0; i < 400; i++) {
+        try {
+          d = await poll();
+          if (d && d.offline) {
+            if (!document.hidden && ++misses > 8) return false;
+          } else {
+            misses = 0;
+            if (!(d && d.status === "building")) return true;
+          }
+        } catch (e) {
+          if (!document.hidden && ++misses > 8) return false;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      return d && d.status !== "building";
+    };
+    if (!await attach()) {
+      const resume = async () => {
+        out.innerHTML = `<div class="empty">Reattaching to the build…</div>`;
+        cfbComboBuilding = true;
+        try {
+          if (await attach() && d) { _renderCfbComboResult(d, out); }
+          else {
+            window._comboResume = resume;
+            out.innerHTML = `<div class="empty">Still can't reach the server - <a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">try again</a>.</div>`;
+          }
+        } finally { cfbComboBuilding = false; }
+      };
+      window._comboResume = resume;
+      out.innerHTML = `<div class="empty">${(d && d.offline) ? "Connection dropped mid-build. The build keeps running on the server - " : "Still building - "}<a href="#" onclick="event.preventDefault();_comboResume && _comboResume()">tap to reattach</a>.</div>`;
+      return;
+    }
+    _renderCfbComboResult(d, out);
+  } catch (e) {
+    out.innerHTML = `<div class="empty">Combo build failed.</div>`;
+  } finally {
+    cfbComboBuilding = false;
+  }
+}
+function _renderCfbComboResult(d, out) {
+  noteMaxBetCap(d);
+  if (d.error === "upgrade_required") { out.innerHTML = upgradeNote(d); return; }
+  if (d.error) { out.innerHTML = `<div class="empty">${escapeHtml(d.error)}</div>`; return; }
+  if (!d.parlay) {
+    out.innerHTML = (d.hint === "building")
+      ? `<div class="empty">The week's simulations are still being built - give it ~15s and hit Build again.</div>`
+      : (d.hint === "single_game_no_stack")
+      ? `<div class="empty">Only <b>${d.n_games_available || 1}</b> game fits your selection, and <b>same-game parlays are off</b>. Tick <b>allow same-game parlays</b>, or pick more games.</div>`
+      : (d.hint === "all_started")
+      ? `<div class="empty">Every game on this week's board has already kicked off (${d.n_started || "all"} started). Try the next week.</div>`
+      : (d.hint === "max_bet_unreachable")
+      ? `<div class="empty">No slip on this week's board can pay <b>${d.cap_x || MAX_BET_X}×</b> - every leg needs a real Kalshi quote behind it.</div>`
+      : (d.hint === "optimal_unbuildable")
+      ? `<div class="empty">Couldn't build anything toward <b>${d.target_payout_x}×</b> - the priced pool is too thin (Kalshi fills the ladders as kickoff approaches).</div>`
+      : `<div class="empty">No combo fits those targets on this week's board.${cfbComboCap ? " The band may be too narrow - widen it, or drop the ceiling." : " Try a lower per-leg %."}</div>`;
+    return;
+  }
+  out.innerHTML = renderMixed(d.parlay)
+    + (d.parlay.excluded_started
+       ? `<div class="small" style="color:var(--muted);margin-top:4px">🔴 ${d.parlay.excluded_started} game${d.parlay.excluded_started > 1 ? "s" : ""} already under way - excluded (pre-game pricing only).</div>` : "");
+}
+
 let _nflSimData = null, _nflSimView = "sim";
 function initNFLSim() {
   const sel = $("nflSimWeek");
