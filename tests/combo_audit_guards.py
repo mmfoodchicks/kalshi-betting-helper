@@ -10427,7 +10427,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v104' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v105' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -10519,6 +10519,31 @@ ck("game_prices and date keys",
    _kc64.game_prices(_idx64, "26SEP05UNTIND", "IND", "UNT")["home_cents"] == 93.0
    and _kc64.date_key(datetime.date(2026, 9, 5)) == "26SEP05"
    and _kc64.suffix_date("26SEP05UNTIND") == "26SEP05")
+# --- the week comes off the calendar, never off ESPN: the server's 403s sent
+# the tab to week 16 with "no games" on the first Saturday of the season
+_D64 = datetime.date
+ck("college weeks run Tuesday to Monday anchored on Labor Day, Week 0 folded "
+   "into week 1, capped at the bowls, the season by cfb's February rule",
+   [_cb64.current_week(d) for d in (_D64(2026, 8, 29), _D64(2026, 9, 5), _D64(2026, 9, 7),
+                                     _D64(2026, 9, 8), _D64(2026, 9, 14), _D64(2026, 9, 15),
+                                     _D64(2025, 9, 1), _D64(2025, 9, 2), _D64(2026, 12, 20),
+                                     _D64(2026, 6, 1), _D64(2027, 1, 10))]
+   == [1, 1, 1, 2, 2, 3, 1, 2, 16, 1, 16]
+   and _cb64._labor_day(2026) == _D64(2026, 9, 7) and _cb64._labor_day(2025) == _D64(2025, 9, 1))
+_owg64 = _cb64._week_games
+_cb64._week_games = lambda season, week: (_ for _ in ()).throw(RuntimeError("ESPN 403"))
+try:
+    _cw64 = _cb64.current_week(_D64(2026, 9, 5))
+finally:
+    _cb64._week_games = _owg64
+ck("current_week makes no ESPN call, so a refused feed cannot move the tab",
+   _cw64 == 1 and "_week_games" not in _insp.getsource(_cb64.current_week))
+_js64w = open(_os.path.join(_root, "static", "app.js")).read()
+ck("an empty week clears the pick'em and summary instead of leaving the last "
+   "week's table above a 'no games' box, and a settled answer is not polled",
+   '$("cfbPickem").innerHTML = ""' in _js64w
+   and "const settled = d && d.week && !(d.games && d.games.length);" in _js64w
+   and "if (!settled && attempt < 9)" in _js64w)
 # --- the standings bug: the FIRST stat block is the season
 _stand64 = {"children": [{"name": "SEC", "standings": {"entries": [
     {"team": {"id": "61", "displayName": "Georgia Bulldogs", "abbreviation": "UGA",
@@ -10646,16 +10671,21 @@ ck("the raw model probability is logged under predlog 'cfb' for the priced "
    and [s["pair"] for s in _puts64["cfb_parlay_sims_2026_w1_300"]][:1] == ["UNT@IU"])
 # --- the combo maker on that slate
 _sims64 = _puts64["cfb_parlay_sims_2026_w1_300"]
-_oss64, _oki64 = _cb64._slate_sims, _kc64.index
+_oss64, _oki64, _otm64 = _cb64._slate_sims, _kc64.index, _cb64._time
 _cb64._slate_sims = lambda week, n=_cb64._N: _sims64
 _kc64.index = lambda: _idx64
+# The fixture kicks off 2026-09-05 20:00Z and the maker's "started" rule reads
+# the wall clock: this guard went red the first time the suite ran after that
+# kickoff (the only priced game read as under way, no slip). Pin the clock to
+# that morning so the guard tests the maker, not the calendar.
+_cb64._time = type("_T64", (), {"time": staticmethod(lambda: 1788609600.0)})
 try:
     _p64 = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=2,
                               legs_mode="require")
     _p64s = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=1,
                                legs_mode="require", game_sel=["UNT@IU"])
 finally:
-    _cb64._slate_sims, _kc64.index = _oss64, _oki64
+    _cb64._slate_sims, _kc64.index, _cb64._time = _oss64, _oki64, _otm64
 ck("the college maker builds a priced, ticketed slip off the sims store, "
    "excludes the game under way, and takes the grid's selection",
    _p64 and _p64["sport"] == "cfb" and _p64["n_legs"] == 2 and _p64["excluded_started"] == 1

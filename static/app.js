@@ -4096,8 +4096,17 @@ async function loadCFBWeek(attempt) {
     const d = await (await fetch(`/api/cfb/slate?week=${wk}`)).json();
     if (d && d.week && sel && !userPicked) sel.value = d.week;
     if (!d || d.error || !(d.games && d.games.length)) {
-      if (attempt < 9) { setTimeout(() => loadCFBWeek(attempt + 1), 6000); return; }
+      // A 502 is the build in flight: poll. A 200 that names the week is the
+      // server's answer that the week is empty: show it now, and clear the
+      // pick'em and summary so a previous week's table never sits above a
+      // "no games" box (the first thing the owner saw on the college tab).
+      const settled = d && d.week && !(d.games && d.games.length);
+      if (!settled && attempt < 9) { setTimeout(() => loadCFBWeek(attempt + 1), 6000); return; }
+      _cfbWeekData = null;
+      $("cfbPickem").innerHTML = "";
+      $("cfbWeekSummary").innerHTML = settled ? `Week ${d.week} · no FBS games on the feed` : "";
       box.innerHTML = `<div class="empty">${(d && d.error) || "No games for this week."}</div>`;
+      renderCFBComboMaker();
       return;
     }
     _cfbWeekData = d;

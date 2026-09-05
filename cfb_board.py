@@ -29,6 +29,7 @@ import datetime
 import random
 import threading
 import time as _time
+import zlib
 import zoneinfo
 
 import errlog
@@ -101,22 +102,31 @@ def _week_games(season, week):
     return racing._cached(("cfb_week", season, week, 1), 1800, build) or []
 
 
-def current_week():
-    """The week the College tab opens on: the first with a game not yet
-    played (ET). nfl_game_sim.current_week's rule, on the college feed."""
-    today = clock.today_et().isoformat()
-    season = _season()
-    for wk in range(1, _LAST_WEEK + 1):
-        try:
-            games = _week_games(season, wk)
-        except Exception as _e:
-            errlog.note("CFB-current-week", _e, path=f"wk{wk}")
-            continue
-        if games and any(g.get("state") != "post" for g in games):
-            return wk
-        if games and any((g.get("date") or "")[:10] >= today for g in games):
-            return wk
-    return _LAST_WEEK
+def _labor_day(year):
+    """First Monday of September, the college calendar's anchor."""
+    d = datetime.date(year, 9, 1)
+    return d + datetime.timedelta(days=(7 - d.weekday()) % 7)
+
+
+def current_week(today=None):
+    """The week the College tab opens on, from the calendar alone.
+
+    ESPN numbers college weeks Tuesday through Monday with week 1 ending on
+    Labor Day and the "Week 0" Saturday folded into it (2025: week 1 ran
+    Aug 23 - Sep 1 and week 2 opened Sep 2; 2026: Aug 29 - Sep 7, which is
+    the week-1 feed this board was smoked against). The first cut asked the
+    feed instead, one scoreboard fetch per week until a week with games
+    left, and on the server that cost up to sixteen refused calls per page
+    load: ESPN's WAF answers this host 403 in bursts, every week read as
+    "failed", and the tab opened on week 16 with "no games" while the PC's
+    week-1 board sat in the store (2026-09-05, mid-slate). The calendar
+    needs no network; the week select covers the rest."""
+    today = today or clock.today_et()
+    season = today.year if today.month >= 2 else today.year - 1   # cfb's rule
+    ld = _labor_day(season)
+    if today <= ld:
+        return 1
+    return max(1, min(_LAST_WEEK, 1 + ((today - ld).days + 6) // 7))
 
 
 def _et_date(iso):
@@ -153,8 +163,11 @@ def simulate_game(home, away, r_home, r_away, neutral=False, n=_N, seed=None,
     the game is matched). Returns win prob, expected score, ladders and the
     bitmask candidate legs; `_margins` rides along for the cover math."""
     import nfl_game_sim
+    # crc32, not hash(): str hashing is salted per process, so the "same"
+    # seed gave every worker, the PC and each guard run a different slate
+    # (the maker guard passed in one suite and returned no slip in the next).
     rng = random.Random(seed if seed is not None
-                        else hash((home["abbr"], away["abbr"])) & 0xFFFFFFFF)
+                        else zlib.crc32(f"{away['abbr']}@{home['abbr']}".encode()))
     rh, ra = cfb._rates_for(r_home, r_away, 0.0 if neutral else 1.0)
     margins, totals = [], []
     pts_h = pts_a = 0.0
