@@ -6,11 +6,14 @@ sample beside each fighter's won_arr), so mlb_sim.game_bundles prices a
 same-fight stack -- "Pasley wins AND it ends before round 3" -- off the
 joint outcomes the sim actually produced, and combo_engine.frontier /
 choose / max_bet / best_target pick the slip exactly as they do for
-baseball and football. YES legs only, by request: Kalshi lists one market
-per fighter and one "fight ends before round N" rung per bout, so the NO of
-a leg is always either the other fighter's own market or a rung the maker
-can already reach the other way, and a NO mirror would only duplicate the
-board (combine._NO_SKIP_TYPES makes the same call for the moneyline).
+baseball and football. YES legs only, and for a reason that is Kalshi's,
+not ours: on these markets the exchange takes NO as a SINGLE bet but not
+inside a combo (the owner saw the NO side greyed out in the combo flow and
+live on the single-bet flow, same market, same day). A NO leg the slip
+cannot be placed with is not a leg, so none is offered. The board loses
+nothing by it: NO on a fighter is the other fighter's own market, and NO
+on a rung is a rung the maker can already reach the other way
+(combine._NO_SKIP_TYPES makes the same call for the moneyline).
 
 Two leg types, both placeable:
 

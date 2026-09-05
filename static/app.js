@@ -4290,8 +4290,10 @@ function renderUFC() {
 
 // ---- UFC combo maker: the baseball maker on the fight card -----------------
 // YES legs only (see ufc_combo.py): a fighter to win, or the fight ending
-// before round N. The controls mirror baseball's minus the side select (there
-// is no NO to pick) and minus live pricing (no live engine for fights).
+// before round N. Kalshi takes NO on these markets as a single bet but not
+// inside a combo, so there is no side select here -- a NO leg you cannot
+// place with the slip is not a leg. No live pricing either (no live engine
+// for fights).
 const _UFC_PRESET_TABS = [["custom", "⚙️ Custom"], ["fav5", "🥊 5 Favorites"],
   ["fin3", "💥 3 Finishes"], ["ml65", "💰 Winners 65%+"],
   ["rd60", "⏱️ Early finish 60%+"], ["targets", "⚡ 2-10×"]];
