@@ -1,6 +1,28 @@
 {
  "errors": [
   {
+   "code": "UFCP-build",
+   "id": 212,
+   "last_ts": 1788625288.170249,
+   "msg": "TypeError: unsupported operand type(s) for *=: 'float' and 'NoneType'",
+   "n": 1,
+   "path": "ml65",
+   "pid": 8,
+   "tb": "Traceback (most recent call last):\n  File \"/app/ufc_presets.py\", line 191, in build_all\n    item = _build_all(board, mk, spec, abort_cb=abort_cb)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/ufc_presets.py\", line 161, in _build_all\n    cost *= combo_engine.leg_cost(px, net=True)\nTypeError: unsupported operand type(s) for *=: 'float' and 'NoneType'\n",
+   "ts": 1788625288.170249
+  },
+  {
+   "code": "NFL-espn-fetch",
+   "id": 211,
+   "last_ts": 1788625287.4952955,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 1,
+   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+   "pid": 8,
+   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1788625287.4952955
+  },
+  {
    "code": "KAL-candles",
    "id": 210,
    "last_ts": 1788624396.5407712,
@@ -1321,7 +1343,7 @@
    "ts": 1788030149.9811757
   }
  ],
- "generated_at": 1788624837.840988,
+ "generated_at": 1788627383.7223573,
  "summary": [
   {
    "code": "NFLT-finals",
@@ -1335,9 +1357,9 @@
    "code": "NFL-espn-fetch",
    "first_ts": 1788379434.1794255,
    "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1788622753.4720855,
-   "n": 95,
-   "variants": 72
+   "last_ts": 1788625287.4952955,
+   "n": 96,
+   "variants": 73
   },
   {
    "code": "FAN-pit",
@@ -1368,6 +1390,14 @@
    "first_ts": 1788222887.696404,
    "last_msg": "RuntimeError: superseded by a newer build",
    "last_ts": 1788222887.696404,
+   "n": 1,
+   "variants": 1
+  },
+  {
+   "code": "UFCP-build",
+   "first_ts": 1788625288.170249,
+   "last_msg": "TypeError: unsupported operand type(s) for *=: 'float' and 'NoneType'",
+   "last_ts": 1788625288.170249,
    "n": 1,
    "variants": 1
   }
