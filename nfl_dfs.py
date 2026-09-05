@@ -153,12 +153,17 @@ def _playable(c):
 #   * a player the sim never projected is EXCLUDED, not handed a stale
 #     average -- an unknown is not a bargain;
 #   * the roster has to know him. Sleeper's depth chart (fetched for the
-#     draft board anyway, cached 12h): QB1 only; RB1-2 (committees are real);
-#     the three WR slot starters (LWR/RWR/SWR order 1 = WR1-3); TE1; kickers
-#     and defenses pass through. No depth entry (a practice-squad player
-#     reads as Active with none), Inactive, Out/Doubtful/IR -> out.
-#     Questionable stays, tagged, so the owner sees it before he enters.
-_DEPTH_MAX = {"QB": 1, "RB": 2, "WR": 1, "TE": 1}
+#     draft board anyway, cached 12h). Slot conventions vary by team -- the
+#     Bears list Odunze "LWR order 2" and he is their WR2 -- so the rule is
+#     a RANK, not a slot: within a team and position, order by depth-chart
+#     order then projection and keep the top QB1, RB1-2 (committees are
+#     real), WR1-3, TE1-2 (the Chargers list Njoku TE2; a strict TE1 would
+#     pre-empt a real name -- the projection decides, the tag shows it);
+#     kickers and defenses pass through. No depth entry
+#     (a practice-squad player reads as Active with none), Inactive,
+#     Out/Doubtful/IR -> out. Questionable stays, tagged, so the owner sees
+#     it before he enters.
+_DEPTH_KEEP = {"QB": 1, "RB": 2, "WR": 3, "TE": 2}
 _INJ_OUT = {"OUT", "DOUBTFUL", "IR", "PUP", "SUS", "SUSPENDED", "NA", "COV"}
 
 
@@ -172,54 +177,70 @@ def _depth_records():
 
 
 def _depth_verdict(p, recs, norm):
-    """(ok, why, tag) for one pool player against Sleeper's roster."""
+    """(ok, why, order, questionable) for one pool player against Sleeper's
+    roster. `order` is his depth-chart order (the rank across the team's
+    position group is decided in _apply_depth)."""
     pos = (p.get("pos") or "").upper()
-    if pos not in _DEPTH_MAX:
-        return True, None, pos                  # K / DST: no depth to check
+    if pos not in _DEPTH_KEEP:
+        return True, None, None, False          # K / DST: no depth to check
     if norm is None or not recs:
-        return True, None, None                 # no roster source: say nothing
+        return True, None, None, False          # no roster source: say nothing
     key = norm(p.get("name") or "")
     rec = recs.get(key) or recs.get(key.replace(" ", ""))
     if rec is None:
-        return False, "not on any roster Sleeper knows", None
+        return False, "not on any roster Sleeper knows", None, False
     if (rec.get("status") or "Active") != "Active" or rec.get("active") is False:
-        return False, f"roster status {rec.get('status') or 'inactive'}", None
+        return False, f"roster status {rec.get('status') or 'inactive'}", None, False
     inj = (rec.get("injury") or "").upper()
     if inj in _INJ_OUT:
-        return False, f"listed {rec.get('injury')}", None
+        return False, f"listed {rec.get('injury')}", None, False
     d = rec.get("depth")
     if d is None:
-        return False, "not on the depth chart (practice squad / inactive)", None
-    lim = _DEPTH_MAX[pos]
-    if d > lim:
-        return False, f"{pos} depth {d}, past {pos}{lim}", None
-    tag = f"{pos}{d}" + ("·Q" if inj == "QUESTIONABLE" else "")
-    return True, None, tag
+        return False, "not on the depth chart (practice squad / inactive)", None, False
+    return True, None, int(d), inj == "QUESTIONABLE"
 
 
 def _apply_depth(players, preseason):
-    """Split a pool into (kept, excluded) by the roster gate, tagging every
-    kept player with his depth (WR tags rank a team's slot starters by
-    projection -- WR1/WR2/WR3 in the sense the owner means)."""
+    """Split a pool into (kept, excluded) by the roster gate. Within each
+    team's position group the survivors are RANKED -- depth-chart order
+    first, projection second -- and only the top _DEPTH_KEEP stay, tagged
+    WR1/WR2/WR3, RB1/RB2, QB1, TE1/TE2 (a Questionable player carries ·Q).
+    That rank is what the owner means by "WR1, 2 and maybe 3", and it
+    survives every team's slot convention."""
     if preseason:
         return players, []
     recs, norm = _depth_records()
-    kept, excluded = [], []
+    kept, excluded, groups = [], [], {}
     for p in players:
-        ok, why, tag = _depth_verdict(p, recs, norm)
+        ok, why, order, q = _depth_verdict(p, recs, norm)
         if not ok:
             excluded.append({"name": p["name"], "pos": p["pos"],
                              "team": p.get("team"), "why": why})
             continue
-        p["depth"] = tag
-        kept.append(p)
-    by_team = {}
-    for p in kept:
-        if p["pos"] == "WR":
-            by_team.setdefault(p.get("team"), []).append(p)
-    for ws in by_team.values():
-        for i, p in enumerate(sorted(ws, key=lambda x: -(x.get("proj") or 0))):
-            p["depth"] = f"WR{i + 1}" + ("·Q" if (p.get("depth") or "").endswith("·Q") else "")
+        pos = (p.get("pos") or "").upper()
+        if order is None:                       # K / DST, or no roster source
+            p["depth"] = pos if pos not in _DEPTH_KEEP else None
+            kept.append(p)
+            continue
+        p["_order"], p["_q"] = order, q
+        groups.setdefault((p.get("team"), pos), []).append(p)
+    for (_tm, pos), grp in groups.items():
+        grp.sort(key=lambda x: (x["_order"], -(x.get("proj") or 0)))
+        keep_n = _DEPTH_KEEP[pos]
+        for i, p in enumerate(grp):
+            rank = i + 1
+            if rank > keep_n:
+                excluded.append({"name": p["name"], "pos": p["pos"],
+                                 "team": p.get("team"),
+                                 "why": f"{pos}{rank} by depth chart (keep {pos}1-{keep_n})"
+                                        if keep_n > 1 else
+                                        f"{pos}{rank} by depth chart (keep {pos}1)"})
+                continue
+            p["depth"] = f"{pos}{rank}" + ("·Q" if p["_q"] else "")
+            kept.append(p)
+        for p in grp:
+            p.pop("_order", None)
+            p.pop("_q", None)
     return kept, excluded
 
 
@@ -1100,5 +1121,5 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             "n_pool": len(players),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "
                     "game sim. Ownership is a model estimate of the field. In season the "
-                    "pool is gated by Sleeper's depth chart: QB1, RB1-2, the three WR "
-                    "starters, TE1 -- no practice squad, no unprojected fliers."}
+                    "pool is gated by Sleeper's depth chart: QB1, RB1-2, WR1-3, TE1-2 per "
+                    "team -- no practice squad, no unprojected fliers."}

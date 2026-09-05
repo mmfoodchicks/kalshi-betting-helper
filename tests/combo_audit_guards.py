@@ -9913,6 +9913,7 @@ _recs59 = {
     "ladd mcconkey": {"status": "Active", "active": True, "depth": 1, "injury": None},
     "quentin johnston": {"status": "Active", "active": True, "depth": 1, "injury": "Questionable"},
     "tre harris": {"status": "Active", "active": True, "depth": 2, "injury": None},
+    "derius davis": {"status": "Active", "active": True, "depth": 2, "injury": None},
     "theo wease": {"status": "Active", "active": True, "depth": None, "injury": None},
     "omarion hampton": {"status": "Active", "active": True, "depth": 1, "injury": None},
     "najee harris": {"status": "Active", "active": True, "depth": 2, "injury": None},
@@ -9927,6 +9928,7 @@ try:
         {"name": "Ladd McConkey", "pos": "WR", "team": "LAC", "proj": 13.3},
         {"name": "Quentin Johnston", "pos": "WR", "team": "LAC", "proj": 11.1},
         {"name": "Tre Harris", "pos": "WR", "team": "LAC", "proj": 6.0},
+        {"name": "Derius Davis", "pos": "WR", "team": "LAC", "proj": 3.0},
         {"name": "Theo Wease Jr.", "pos": "WR", "team": "LAC", "proj": 8.6},
         {"name": "Omarion Hampton", "pos": "RB", "team": "LAC", "proj": 14.0},
         {"name": "Najee Harris", "pos": "RB", "team": "LAC", "proj": 9.0},
@@ -9939,17 +9941,19 @@ try:
     _kept59, _ex59 = _nd59._apply_depth([dict(p) for p in _pool59], preseason=False)
     _kn59 = {p["name"]: p.get("depth") for p in _kept59}
     _xw59 = {e["name"]: e["why"] for e in _ex59}
-    ck("practice squad, backups past the limit, Out and Inactive are OUT; "
-       "QB1, RB1-2, the WR slot starters, K and DST stay -- tagged",
+    ck("practice squad, WR4/RB3 by RANK, Out and Inactive are OUT; "
+       "QB1, RB1-2, WR1-3, K and DST stay -- tagged by rank, not by slot",
        "Theo Wease Jr." in _xw59 and "depth chart" in _xw59["Theo Wease Jr."]
-       and "Tre Harris" in _xw59 and "Kimani Vidal" in _xw59
+       and "Derius Davis" in _xw59 and _xw59["Derius Davis"].startswith("WR4")
+       and "Kimani Vidal" in _xw59 and _xw59["Kimani Vidal"].startswith("RB3")
        and "Will Dissly" in _xw59 and "Cut Guy" in _xw59 and "Nobody Known" in _xw59
        and _kn59.get("Justin Herbert") == "QB1"
        and _kn59.get("Ladd McConkey") == "WR1" and _kn59.get("Quentin Johnston") == "WR2·Q"
+       and _kn59.get("Tre Harris") == "WR3"
        and _kn59.get("Omarion Hampton") == "RB1" and _kn59.get("Najee Harris") == "RB2"
        and _kn59.get("Chargers") == "DST" and _kn59.get("Cameron Dicker") == "K",
-       "a $3,000 practice-squad receiver with a stale 8.6 average was the best "
-       "value on the board")
+       "the Bears list Odunze 'LWR order 2' and he is their WR2: a slot rule "
+       "drops real starters, a rank within the team's position group does not")
     _pre59, _pex59 = _nd59._apply_depth([dict(p) for p in _pool59], preseason=True)
     ck("August keeps its measured inverted-usage pool: the gate is regular season only",
        len(_pre59) == len(_pool59) and not _pex59)
