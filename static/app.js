@@ -3497,17 +3497,12 @@ function setFbLeague(lg) {
     b.classList.toggle("active", b.dataset.league === lg));
   const college = lg === "cfb" || lg === "fcs";
   $("fbNfl").classList.toggle("hidden", lg !== "nfl");
-  $("fbCfb").classList.toggle("hidden", !college);
+  $("fbCfb").classList.toggle("hidden", lg !== "cfb");
+  $("fbFcs").classList.toggle("hidden", lg !== "fcs");
   if (!college) return;
-  // FBS and FCS are their own tabs off ONE build: the board carries both
-  // divisions, so switching costs a re-render rather than a rebuild. Each
-  // tab shows only its own games and only its own graded record -- the two
-  // are not one population (an FCS rating is a heavier regressed prior for
-  // longer), so a shared scoreboard would let easy FCS favourites flatter
-  // the FBS one.
+  // Each division owns its section; the filter is set BEFORE anything renders
+  // so every _cx lookup lands in the tab being opened.
   cfbDivFilter = lg === "fcs" ? "fcs" : "fbs";
-  const t = $("cfbTitle");
-  if (t) t.textContent = lg === "fcs" ? "🎓 College football FCS 2026" : "🎓 College football FBS 2026";
   cfbComboGameSel = null;         // a selection from the other division is gone
   initCFB();
   if (_cfbWeekData) renderCFBWeek();
@@ -4084,7 +4079,7 @@ function renderNHL() {
 // table and the ATS pick at Kalshi's line.
 let _cfbWeekData = null;
 function initCFB() {
-  const sel = $("cfbWeek");
+  const sel = $(_cx("cfbWeek"));
   if (sel && !sel.dataset.filled) {
     sel.dataset.filled = "1";
     let opts = "";
@@ -4093,16 +4088,16 @@ function initCFB() {
     sel.addEventListener("change", () => {
       sel.dataset.userSet = "1";
       _cfbWeekData = null;
-      $("cfbWeekResults").dataset.loaded = "";
+      $(_cx("cfbWeekResults")).dataset.loaded = "";
       loadCFBWeek(0);
     });
   }
-  if (!$("cfbWeekResults").dataset.loaded) { $("cfbWeekResults").dataset.loaded = "1"; loadCFBWeek(0); }
+  if (!$(_cx("cfbWeekResults")).dataset.loaded) { $(_cx("cfbWeekResults")).dataset.loaded = "1"; loadCFBWeek(0); }
   renderCFBComboMaker();
 }
 async function loadCFBWeek(attempt) {
   attempt = attempt || 0;
-  const box = $("cfbWeekResults"), sel = $("cfbWeek");
+  const box = $(_cx("cfbWeekResults")), sel = $(_cx("cfbWeek"));
   const userPicked = sel && sel.dataset.userSet;
   const wk = userPicked ? sel.value : 0;
   if (!attempt) box.innerHTML = `<div class="empty">Simulating ${userPicked ? `Week ${wk}` : "the current week"} - every FBS game through the drive engine, priced vs live Kalshi moneylines (~15s). Auto-refreshes.</div>`;
@@ -4117,8 +4112,8 @@ async function loadCFBWeek(attempt) {
       const settled = d && d.week && !(d.games && d.games.length);
       if (!settled && attempt < 9) { setTimeout(() => loadCFBWeek(attempt + 1), 6000); return; }
       _cfbWeekData = null;
-      $("cfbPickem").innerHTML = "";
-      $("cfbWeekSummary").innerHTML = settled ? `Week ${d.week} · no FBS games on the feed` : "";
+      $(_cx("cfbPickem")).innerHTML = "";
+      $(_cx("cfbWeekSummary")).innerHTML = settled ? `Week ${d.week} · no FBS games on the feed` : "";
       box.innerHTML = `<div class="empty">${(d && d.error) || "No games for this week."}</div>`;
       renderCFBComboMaker();
       return;
@@ -4169,7 +4164,7 @@ function cfbSlateCard(g) {
   </div>`;
 }
 function renderCFBPickem(d) {
-  const box = $("cfbPickem");
+  const box = $(_cx("cfbPickem"));
   if (!box) return;
   const games = _cfbDivGames(d).filter((g) => g.state !== "post");
   if (!games.length) { box.innerHTML = ""; return; }
@@ -4199,6 +4194,12 @@ function renderCFBPickem(d) {
 // buy game belongs to both tabs: it is an FBS team's game and an FCS team's
 // game, and hiding it from either would lose a card that is really there.
 let cfbDivFilter = "fbs";
+// FBS and FCS each have their OWN section in the page -- their own board,
+// pick'em, record, slip ledger and combo maker -- so nothing of one division
+// sits in the other's tab. The renderers are shared, and `_cx` points them at
+// the open division's copy of an element ("cfbPickem" -> "fcsPickem"). The
+// board payload behind both is one build, so the second tab costs a render.
+function _cx(id) { return cfbDivFilter === "fcs" ? id.replace(/^cfb/, "fcs") : id; }
 function _cfbDivGames(d) {
   const gs = d.games || [];
   if (cfbDivFilter === "fcs") return gs.filter((g) => (g.division || "fbs") !== "fbs");
@@ -4210,10 +4211,10 @@ function renderCFBWeek() {
   const cross = mine.filter((g) => g.division === "cross").length;
   const own = mine.length - cross;
   const lbl = cfbDivFilter === "fcs" ? "FCS" : "FBS";
-  $("cfbWeekSummary").innerHTML = `<b>${mine.length}</b> ${lbl} games (<b>${own}</b> all-${lbl}, <b>${cross}</b> against ${cfbDivFilter === "fcs" ? "FBS" : "FCS"}) · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${d.stale ? "⚠ " : ""}${escapeHtml(d.note || "")}</i>`;
+  $(_cx("cfbWeekSummary")).innerHTML = `<b>${mine.length}</b> ${lbl} games (<b>${own}</b> all-${lbl}, <b>${cross}</b> against ${cfbDivFilter === "fcs" ? "FBS" : "FCS"}) · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${d.stale ? "⚠ " : ""}${escapeHtml(d.note || "")}</i>`;
   renderCFBPickem(d);
-  $("cfbWeekResults").innerHTML = _cfbDivGames(d).map(cfbSlateCard).join("");
-  if (!document.querySelector("#cfbComboMaker .gamegrid")) renderCFBComboMaker();
+  $(_cx("cfbWeekResults")).innerHTML = _cfbDivGames(d).map(cfbSlateCard).join("");
+  if (!document.querySelector("#" + _cx("cfbComboMaker") + " .gamegrid")) renderCFBComboMaker();
 }
 // One book of the college record on a line: W-L, fee-in ROI at the entry
 // price, the edge-filtered ROI (bets you'd actually place), CLV, Brier.
@@ -4257,13 +4258,13 @@ function cfbRecordHtml(d) {
   const n = (reg.graded || 0) + (ats.graded || 0) + (tot.graded || 0);
   const warn = n < 50 ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ ${n} graded so far - W-L is mostly noise until ~100+; watch Brier (&lt;0.25 = real signal), edge-bet ROI and CLV.</div>` : "";
   const dl = cfbDivFilter === "fcs" ? "FCS" : "FBS";
-  return `<div><b>🎓 ${dl} model record</b> <span class="small" style="color:var(--muted)">${dl} picks only, graded apart from the other division (they are not one population - an FCS rating is a heavier regressed prior for longer, and pooling would let easy favourites flatter the other book) · pre-game picks only · straight up graded off the finals, spreads and totals off Kalshi's own settlement of the rung it books · ROI is one contract at the entry ask, fees in</span></div>
+  return `<div><b>🎓 ${dl} model record</b> <span class="small" style="color:var(--muted)">${dl} picks only, graded apart from the other division (they are not one population - an FCS rating is a heavier regressed prior for longer, so pooling would let easy favourites flatter the other book) · pre-game picks only · straight up graded off the finals, spreads and totals off Kalshi's own settlement of the rung it books · ROI is one contract at the entry ask, fees in</span></div>
     <div class="small" style="margin-top:3px">${rows.join("")}</div>${warn}`;
 }
 async function loadCfbRecord() {
   if (!isOwner()) return;
-  loadSlipLog("cfbSlipLog", "cfb");
-  const el = $("cfbRecord");
+  loadSlipLog(_cx("cfbSlipLog"), cfbDivFilter === "fcs" ? "cfb_fcs" : "cfb");
+  const el = $(_cx("cfbRecord"));
   if (!el) return;
   try {
     const d = await (await fetch(`/api/cfb/record?div=${cfbDivFilter === "fcs" ? "fcs" : "fbs"}`)).json();
@@ -4331,28 +4332,28 @@ function cfbComboSelParam() {
   return parts.join(",");
 }
 function renderCFBComboMaker() {
-  const box = $("cfbComboMaker");
+  const box = $(_cx("cfbComboMaker"));
   if (!box || cfbComboBuilding) return;
-  const prev = (() => { const el = $("cfbComboOut"); return el ? el.innerHTML : ""; })();
+  const prev = (() => { const el = $(_cx("cfbComboOut")); return el ? el.innerHTML : ""; })();
   const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
     + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
   box.innerHTML = `<div class="combomaker">
     🎯 <b>Combo maker</b>
     <div style="margin-top:8px">each leg ≥
-      <input id="cfbComboTarget" type="number" min="20" max="97" value="${cfbComboTarget}" style="width:54px"/>%
-      and ≤ <input id="cfbComboCap" type="number" min="0" max="99" value="${cfbComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
+      <input id="${_cx("cfbComboTarget")}" type="number" min="20" max="97" value="${cfbComboTarget}" style="width:54px"/>%
+      and ≤ <input id="${_cx("cfbComboCap")}" type="number" min="0" max="99" value="${cfbComboCap || ""}" placeholder="-" style="width:54px"/>% likely</div>
     <div class="small" style="margin-top:2px;color:var(--muted)">Leave the ceiling blank for no upper limit. Set one and each ladder walks to the line that lands in the band.</div>
     <div class="small" style="margin-top:6px">goal
-      ${sel("cfbComboObjective", [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfbComboObjective)}
+      ${sel(_cx("cfbComboObjective"), [["balanced", "⚖️ best odds that aren't -EV"], ["safe", "🛡️ likeliest, any price"], ["value", "💰 best value"]], cfbComboObjective)}
     </div>
     <div class="small" style="margin-top:6px">
-      ${sel("cfbComboLegsMode", [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfbComboLegsMode)}
-      <input id="cfbComboN" type="number" min="2" max="30" value="${cfbComboLegs}" style="width:50px"/> legs
-      &nbsp;${sel("cfbComboConn", [["or", "OR"], ["and", "AND"]], cfbComboConn)}&nbsp;
-      ${sel("cfbComboPayoutMode", [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfbComboPayoutMode)}
-      reach <input id="cfbComboPayout" type="number" min="0" step="any" value="${cfbComboPayout}" style="width:60px"/>× payout
+      ${sel(_cx("cfbComboLegsMode"), [["prefer", "recommend"], ["require", "require"], ["off", "off"]], cfbComboLegsMode)}
+      <input id="${_cx("cfbComboN")}" type="number" min="2" max="30" value="${cfbComboLegs}" style="width:50px"/> legs
+      &nbsp;${sel(_cx("cfbComboConn"), [["or", "OR"], ["and", "AND"]], cfbComboConn)}&nbsp;
+      ${sel(_cx("cfbComboPayoutMode"), [["off", "off"], ["prefer", "recommend"], ["require", "require"]], cfbComboPayoutMode)}
+      reach <input id="${_cx("cfbComboPayout")}" type="number" min="0" step="any" value="${cfbComboPayout}" style="width:60px"/>× payout
     </div>
-    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="cfbComboSameGame"${cfbComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
+    <label class="small" style="display:inline-block;margin-top:6px"><input type="checkbox" id="${_cx("cfbComboSameGame")}"${cfbComboSameGame ? " checked" : ""} style="width:auto"/> allow same-game parlays ${lockTag("mixed_parlay")}</label>
     ${cfbGameGridHtml()}
     <div style="margin-top:6px">
       <button class="track-mini primary-mini" onclick="buildCFBCombo()">Build</button>
@@ -4360,34 +4361,35 @@ function renderCFBComboMaker() {
       <button class="track-mini" style="margin-left:6px" onclick="buildCFBCombo(false, true)" title="One input: the payout in the × box above. The maker chooses the leg count, the confidence level and the games on its own.">⚡ Optimal for my ×</button>
     </div>
     <div class="small" style="margin-top:4px">Moneylines and every booked spread and total are candidates. <b>Same-game on</b> may stack correlated legs from one game; off keeps one leg per game.</div>
-    <div id="cfbComboOut"></div>
+    <div id="${_cx("cfbComboOut")}"></div>
   </div>`;
-  if (prev) { const el = $("cfbComboOut"); if (el) el.innerHTML = prev; }
+  if (prev) { const el = $(_cx("cfbComboOut")); if (el) el.innerHTML = prev; }
 }
 async function buildCFBCombo(maxBet, optimal) {
-  const out = $("cfbComboOut");
+  const out = $(_cx("cfbComboOut"));
   if (!out) return;
   const num = (id, dflt) => { const v = parseFloat(($(id) || {}).value); return isNaN(v) ? dflt : v; };
-  cfbComboLegs = Math.max(2, Math.min(12, num("cfbComboN", 3)));
-  cfbComboTarget = Math.max(20, Math.min(97, num("cfbComboTarget", 55)));
-  let cap = parseInt(($("cfbComboCap") || {}).value, 10);
+  cfbComboLegs = Math.max(2, Math.min(12, num(_cx("cfbComboN"), 3)));
+  cfbComboTarget = Math.max(20, Math.min(97, num(_cx("cfbComboTarget"), 55)));
+  let cap = parseInt(($(_cx("cfbComboCap")) || {}).value, 10);
   cfbComboCap = (isNaN(cap) || cap <= 0) ? 0 : cap;
-  cfbComboPayout = num("cfbComboPayout", 0);
+  cfbComboPayout = num(_cx("cfbComboPayout"), 0);
   if (optimal && !(cfbComboPayout > 1)) {
     out.innerHTML = `<div class="small">⚡ Optimal mode needs the one thing it optimizes for: type the payout you want in the <b>×</b> box (e.g. <b>10</b>), then hit the button again.</div>`;
     return;
   }
-  cfbComboObjective = ($("cfbComboObjective") || {}).value || "balanced";
-  cfbComboLegsMode = ($("cfbComboLegsMode") || {}).value || "prefer";
-  cfbComboPayoutMode = ($("cfbComboPayoutMode") || {}).value || "off";
-  cfbComboConn = ($("cfbComboConn") || {}).value || "or";
-  cfbComboSameGame = !!(($("cfbComboSameGame") || {}).checked);
-  const wk = (_cfbWeekData && _cfbWeekData.week) || ($("cfbWeek") || {}).value || 1;
+  cfbComboObjective = ($(_cx("cfbComboObjective")) || {}).value || "balanced";
+  cfbComboLegsMode = ($(_cx("cfbComboLegsMode")) || {}).value || "prefer";
+  cfbComboPayoutMode = ($(_cx("cfbComboPayoutMode")) || {}).value || "off";
+  cfbComboConn = ($(_cx("cfbComboConn")) || {}).value || "or";
+  cfbComboSameGame = !!(($(_cx("cfbComboSameGame")) || {}).checked);
+  const wk = (_cfbWeekData && _cfbWeekData.week) || ($(_cx("cfbWeek")) || {}).value || 1;
   out.innerHTML = `<div class="empty">${maxBet
     ? `Searching for the likeliest slip that pays ${MAX_BET_X}×…`
     : optimal ? `Solving for the likeliest slip that pays ${cfbComboPayout}×…`
     : "Reading the week's simulated games and searching combos…"}</div>`;
-  const q = `week=${wk}&legs=${cfbComboLegs}&target=${cfbComboTarget}`
+  const q = `week=${wk}&div=${cfbDivFilter === "fcs" ? "fcs" : "fbs"}`
+    + `&legs=${cfbComboLegs}&target=${cfbComboTarget}`
     + (cfbComboCap ? `&cap=${cfbComboCap}` : "")
     + `&payout=${cfbComboPayout}&objective=${cfbComboObjective}`
     + `&legs_mode=${cfbComboLegsMode}&payout_mode=${cfbComboPayoutMode}`

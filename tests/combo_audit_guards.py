@@ -10844,7 +10844,7 @@ ck("current_week makes no ESPN call, so a refused feed cannot move the tab",
 _js64w = open(_os.path.join(_root, "static", "app.js")).read()
 ck("an empty week clears the pick'em and summary instead of leaving the last "
    "week's table above a 'no games' box, and a settled answer is not polled",
-   '$("cfbPickem").innerHTML = ""' in _js64w
+   '$(_cx("cfbPickem")).innerHTML = ""' in _js64w
    and "const settled = d && d.week && !(d.games && d.games.length);" in _js64w
    and "if (!settled && attempt < 9)" in _js64w)
 # --- the standings bug: the FIRST stat block is the season
@@ -11325,7 +11325,7 @@ ck("the college routes exist and mirror the NFL ones: slate, record, parlay with
    "the job pattern, the combo slot and the cfb slip ledger",
    {"/api/cfb/slate", "/api/cfb/record", "/api/cfb/parlay"} <= _rules64
    and '_run_job(ptok, _core, "CFB-COMBO-build")' in _cpar64
-   and 'sliplog.log_from_item(item, sport="cfb")' in _cpar64
+   and "sliplog.log_from_item(item, sport=_cfb_slip_sport())" in _cpar64
    and "cfb_track.record_from_board(data)" in _insp.getsource(_app64.api_cfb_slate)
    and "cfb_track.record(" in _insp.getsource(_app64.api_cfb_record))
 _html64 = open(_os.path.join(_root, "templates", "index.html")).read()
@@ -11340,7 +11340,8 @@ ck("the tab is Football with NFL and College underneath; the college page carrie
    and "function setFbLeague" in _js64 and "async function loadCFBWeek" in _js64
    and "function renderCFBPickem" in _js64 and "async function buildCFBCombo" in _js64
    and "/api/cfb/slate?week=" in _js64 and "/api/cfb/parlay?" in _js64
-   and "/api/cfb/record?div=" in _js64 and 'loadSlipLog("cfbSlipLog", "cfb")' in _js64)
+   and "/api/cfb/record?div=" in _js64
+   and 'loadSlipLog(_cx("cfbSlipLog")' in _js64)
 ck("the college board sweeps BOTH divisions' scoreboards and rates them off one "
    "pooled solver, the route takes a division, and the tab labels and filters by it",
    "for grp in (cfb._FBS_GROUP, cfb._FCS_GROUP)" in _insp.getsource(_cb64._week_games)
@@ -11350,11 +11351,48 @@ ck("the college board sweeps BOTH divisions' scoreboards and rates them off one 
    and "function _cfbDivGames" in _js64
    and 'data-league="fcs"' in _html64 and 'data-league="cfb">🎓 FBS' in _html64
    and 'cfbDivFilter = lg === "fcs" ? "fcs" : "fbs"' in _js64
-   and '/api/cfb/record?div=' in _js64
-   and "Buy games" in _js64 and "FBS and FCS" in _html64
-   # the maker's grid follows the open tab, so a leg from the other division
-   # can never land in a slip built on this one
+   and '/api/cfb/record?div=' in _js64 and "Buy games" in _js64
    and "const mine = _cfbDivGames(d);" in _js64)
+ck("each division has its OWN section in the page -- board, pick'em, record, "
+   "slip ledger and combo maker -- and the shared renderers are pointed at the "
+   "open one by _cx, so nothing of one division renders into the other's tab",
+   'id="fbFcs"' in _html64 and 'id="fbCfb"' in _html64
+   and all(f'id="{i}"' in _html64 for i in
+           ("cfbWeek", "cfbRecord", "cfbSlipLog", "cfbPickem", "cfbWeekResults", "cfbComboMaker",
+            "fcsWeek", "fcsRecord", "fcsSlipLog", "fcsPickem", "fcsWeekResults", "fcsComboMaker"))
+   and 'function _cx(id) { return cfbDivFilter === "fcs" ? id.replace(/^cfb/, "fcs") : id; }' in _js64
+   and '$(_cx("cfbWeekResults"))' in _js64 and '$(_cx("cfbRecord"))' in _js64
+   and '$(_cx("cfbComboMaker"))' in _js64
+   # the generated combo controls are prefixed too, so the two sections never
+   # share an element id
+   and 'id="${_cx("cfbComboTarget")}"' in _js64
+   and 'sel(_cx("cfbComboObjective")' in _js64
+   and '$("fbFcs").classList.toggle("hidden", lg !== "fcs")' in _js64)
+_apy64 = open(_os.path.join(_root, "app.py")).read()
+_sims_d64 = _puts64["cfb_parlay_sims_2026_w1_300"]
+_ofc64, _oki64b = _cb64._slate_sims, _kc64.index
+_cb64._slate_sims = lambda week, n=_cb64._N: [dict(x, division=("fcs" if x["home"] == "APP" else "fbs"))
+                                              for x in _sims_d64]
+_kc64.index = lambda: _idx64
+_cb64._time = type("_T64b", (), {"time": staticmethod(lambda: 1788609600.0)})
+try:
+    _pf64 = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=2,
+                               legs_mode="require", div="fbs")
+    _pc64 = _cb64.build_parlay(week=1, n_legs=2, target_pct=30, max_legs_per_game=2,
+                               legs_mode="require", div="fcs")
+finally:
+    _cb64._slate_sims, _cb64._time, _kc64.index = _ofc64, _otm64, _oki64b
+ck("a slip built on one division's tab can only use that division's games (a "
+   "buy game belongs to both): the sims carry their division and the maker is "
+   "scoped by it, and the two tabs file into their own slip ledgers",
+   all("division" in x for x in _sims_d64)
+   and _pf64 and all(g["suffix"] == "26SEP05UNTIND" for g in _pf64["groups"])
+   and (_pc64 or {}).get("error_hint") in ("all_started", "no_slip", "single_game_no_stack", None)
+   and 'div=_cfb_div()' in _apy64 and 'sport=_cfb_slip_sport()' in _apy64
+   and '"cfb_fcs" if _cfb_div() == "fcs" else "cfb"' in _apy64
+   and 'loadSlipLog(_cx("cfbSlipLog"), cfbDivFilter === "fcs" ? "cfb_fcs" : "cfb")' in _js64
+   and 'div=${cfbDivFilter === "fcs" ? "fcs" : "fbs"}' in _js64,
+   f"{[g['suffix'] for g in (_pf64 or {}).get('groups') or []]} {(_pc64 or {}).get('error_hint')}")
 ck("the record sits at the top of the College page with all three books and the "
    "O/U lean beside the ATS pick in the pick'em table",
    _html64.index('id="cfbRecord"') < _html64.index('id="cfbWeekSummary"')

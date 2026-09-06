@@ -437,6 +437,7 @@ def _build_board(season, week, n=_N):
         sims.append({"label": f"{a['name']} @ {h['name']}", "suffix": suffix,
                      "pair": f"{a['abbr']}@{h['abbr']}", "cands": sim["_masks"],
                      "n": n, "date": g["date"], "state": g["state"],
+                     "division": card["division"],
                      "home": h["abbr"], "away": a["abbr"], "kx_home": hc, "kx_away": ac})
     if log_rows:
         try:
@@ -611,9 +612,13 @@ def price_cands(cands, suffix, idx, blend=True):
 def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
                  max_legs_per_game=3, max_total_legs=8, legs_mode="prefer",
                  payout_mode="off", conn="or", objective="balanced", types=None,
-                 game_sel=None, max_bet=False, cap_x=None, abort_cb=None):
+                 game_sel=None, max_bet=False, cap_x=None, abort_cb=None, div=None):
     """One parlay across the week's college games, priced against Kalshi --
-    nfl_game_sim.build_parlay on the college slate, knob for knob."""
+    nfl_game_sim.build_parlay on the college slate, knob for knob.
+
+    `div` scopes the pool to one division's tab ("fbs" or "fcs"): a slip
+    built on the FCS board must not quietly take an FBS leg, and a buy game
+    belongs to both. Without it the whole college slate is in play."""
     import combo_engine
     import mlb_sim
     floor = max(0.05, min(0.97, target_pct / 100.0))
@@ -631,6 +636,9 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         ts = _iso_ts(g.get("date"))
         return bool(ts) and ts + 300 < now
 
+    if div in ("fbs", "fcs"):
+        other = "fcs" if div == "fbs" else "fbs"
+        games = [g for g in games if (g.get("division") or "fbs") != other]
     n_started = sum(1 for g in games if _started(g))
     games = [g for g in games if not _started(g)]
     if not games:

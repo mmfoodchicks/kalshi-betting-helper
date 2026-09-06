@@ -3204,6 +3204,16 @@ def api_cfb_record():
     return jsonify(cfb_track.record(div if div in cfb_track.DIVISIONS else None))
 
 
+def _cfb_div():
+    """Which college division's tab a request came from: "fbs" or "fcs"."""
+    return "fcs" if request.args.get("div") == "fcs" else "fbs"
+
+
+def _cfb_slip_sport():
+    """Which college slip ledger a build files under, off the tab's `div`."""
+    return "cfb_fcs" if _cfb_div() == "fcs" else "cfb"
+
+
 @app.route("/api/cfb/parlay")
 def api_cfb_parlay():
     """One college parlay across the week's games, priced against Kalshi --
@@ -3262,6 +3272,7 @@ def api_cfb_parlay():
                 payout_mode="require" if _opt else payout_mode,
                 conn=conn, objective="balanced" if _opt else objective,
                 types=prop_types, game_sel=sel or None, max_bet=_mb,
+                div=_cfb_div(),
                 abort_cb=(None if not ptok else
                           (lambda: baseball.combo_slot_holder()
                            not in (None, ptok))))
@@ -3271,7 +3282,10 @@ def api_cfb_parlay():
                 return
             try:
                 import sliplog
-                sliplog.log_from_item(item, sport="cfb")
+                # each division's slips live in its own tab, so they are
+                # their own book: a 30-point FCS favourite is not the same
+                # correlation claim as an FBS conference game
+                sliplog.log_from_item(item, sport=_cfb_slip_sport())
             except Exception as _e:
                 errlog.note("CFB-SLIP-log", _e)
 

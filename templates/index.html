@@ -403,25 +403,48 @@
     <div id="fbCfb" class="hidden">
     <section class="card">
       <div class="row-between">
-        <h2 id="cfbTitle">🎓 College football 2026</h2>
+        <h2>🎓 College football FBS 2026</h2>
         <div class="row" style="gap:8px;align-items:center">
           <select id="cfbWeek"></select>
         </div>
       </div>
       <div id="cfbRecord" class="stats owner-only" style="margin:6px 0 10px;display:none"></div>
-      <p class="sub" style="margin:2px 0 8px">Every <b>FBS and FCS</b> game of the week, played <b>drive by drive</b> through the same football engine as the NFL board, from <b>in-season Massey ratings</b> that learn as the season is played. A priced game's level is blended toward <b>Kalshi's own line</b> by the share the model has earned; the raw model margin shows beside it. <b>Pick'em</b>: the week's straight-up picks ranked by how sure the sim is (confidence points for a pool), the <b>against-the-spread</b> pick at the rung Kalshi books nearest its line, and the <b>total</b> lean at Kalshi's total. The record above grades every pre-game pick: straight up off the finals, spreads and totals off Kalshi's own settlements, and it keeps the divisions apart.</p>
+      <p class="sub" style="margin:2px 0 8px">Every <b>FBS</b> game of the week (a game against an FCS opponent is here too, and on the FCS tab, since it is both teams' game), played <b>drive by drive</b> through the same football engine as the NFL board, from <b>in-season Massey ratings</b> that learn as the season is played. A priced game's level is blended toward <b>Kalshi's own line</b> by the share the model has earned; the raw model margin shows beside it. <b>Pick'em</b>: the week's straight-up picks ranked by how sure the sim is (confidence points for a pool), the <b>against-the-spread</b> pick at the rung Kalshi books nearest its line, and the <b>total</b> lean at Kalshi's total. The record above grades every pre-game pick: straight up off the finals, spreads and totals off Kalshi's own settlements, and it keeps the divisions apart.</p>
       <div id="cfbWeekSummary" class="small"></div>
       <div id="cfbSlipLog" class="stats owner-only" style="margin-bottom:10px"></div>
       <div id="cfbPickem" style="margin-bottom:10px"></div>
-      <div id="cfbWeekResults" class="markets"><div class="empty">Building the college board in the background (~15s)…</div></div>
+      <div id="cfbWeekResults" class="markets"><div class="empty">Building the FBS board in the background (~15s)…</div></div>
     </section>
 
     <section class="card" id="cfbComboBox">
-      <h2>🎲 College combo maker</h2>
+      <h2>🎲 FBS combo maker</h2>
       <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is the fair number</b> (the sim, market-anchored where Kalshi books a line); a <b>¢ price</b> means it's a live Kalshi market. Moneylines and every booked spread and total are in the pool.</p>
       <div id="cfbComboMaker"></div>
     </section>
     </div><!-- /fbCfb -->
+
+    <div id="fbFcs" class="hidden">
+    <section class="card">
+      <div class="row-between">
+        <h2>🎓 College football FCS 2026</h2>
+        <div class="row" style="gap:8px;align-items:center">
+          <select id="fcsWeek"></select>
+        </div>
+      </div>
+      <div id="fcsRecord" class="stats owner-only" style="margin:6px 0 10px;display:none"></div>
+      <p class="sub" style="margin:2px 0 8px">Every <b>FCS</b> game of the week (a game against an FBS opponent is here too, and on the FBS tab, since it is both teams' game), played <b>drive by drive</b> through the same football engine as the NFL board, from <b>in-season Massey ratings</b> that learn as the season is played. A priced game's level is blended toward <b>Kalshi's own line</b> by the share the model has earned; the raw model margin shows beside it. <b>Pick'em</b>: the week's straight-up picks ranked by how sure the sim is (confidence points for a pool), the <b>against-the-spread</b> pick at the rung Kalshi books nearest its line, and the <b>total</b> lean at Kalshi's total. The record above is FCS only, graded apart from the FBS one: the divisions are not one population, and an FCS rating stays a heavier regressed prior for longer, so treat an early number as the model's opinion.</p>
+      <div id="fcsWeekSummary" class="small"></div>
+      <div id="fcsSlipLog" class="stats owner-only" style="margin-bottom:10px"></div>
+      <div id="fcsPickem" style="margin-bottom:10px"></div>
+      <div id="fcsWeekResults" class="markets"><div class="empty">Building the FCS board in the background (~15s)…</div></div>
+    </section>
+
+    <section class="card" id="fcsComboBox">
+      <h2>🎲 FCS combo maker</h2>
+      <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is the fair number</b> (the sim, market-anchored where Kalshi books a line); a <b>¢ price</b> means it's a live Kalshi market. Moneylines and every booked spread and total are in the pool.</p>
+      <div id="fcsComboMaker"></div>
+    </section>
+    </div><!-- /fbFcs -->
    </div><!-- /tab-nfl -->
 
 
