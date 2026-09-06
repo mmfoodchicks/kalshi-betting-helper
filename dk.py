@@ -55,6 +55,11 @@ _AVG_PPG_ATTR_NFL = 90       # ...NFL files it under 90 (read off the live
 # "tonight". Never a real slate for any sport.
 _CLASSIC_TYPES = {"nfl": {21}}
 _NEVER_TYPES = {158, 159}
+# Draft-group tags for DK formats that are not salary-cap lineups at all --
+# snake drafts, Tiers, Total Yards, best ball, pick'em -- read off the live
+# NFL lobby ("(NE @ SEA Snake)", "(NE @ SEA Total Yards)"). A builder fed one
+# would optimize a roster shape the contest does not have.
+_NEVER_TAGS = ("madden", "snake", "tiers", "total yards", "best ball", "pick'em", "pick 'em")
 _OPP_PITCHER_ATTR = 112      # MLB: opposing starter + handedness
 _OPENER_ATTR = 135           # MLB: "PO" badge -- listed pitcher is an OPENER
 _BULK_ATTR = 136             # MLB: "PLR" badge -- the probable long reliever
@@ -87,7 +92,7 @@ def slates(sport):
                 continue                      # another sport's group (see SPORTS)
             tag = (g.get("ContestStartTimeSuffix") or "").strip() or None
             ctype = g.get("ContestTypeId")
-            if ctype in _NEVER_TYPES or "madden" in (tag or "").lower():
+            if ctype in _NEVER_TYPES or any(k in (tag or "").lower() for k in _NEVER_TAGS):
                 continue
             out.append({"draft_group_id": dg, "sport": sport,
                         "starts": g.get("StartDateEst"),
@@ -140,6 +145,115 @@ def contests(sport, draft_group_id=None):
     if draft_group_id:
         rows = [r for r in rows if str(r.get("draft_group_id")) == str(draft_group_id)]
     return rows
+
+
+_CONTEST = "https://api.draftkings.com/contests/v1/contests/{cid}?format=json"
+
+
+def contest_detail(contest_id):
+    """One contest from DK's contest endpoint: the payout table the lobby row
+    lacks (first prize, places paid, every tier), the field cap, the fee, the
+    start time and the draft group. This is what lets the contest picker fill
+    the builder's entries / entry $ / 1st $ / pool $ from the contest you are
+    actually entering, instead of numbers typed from memory. None when DK has
+    no such contest."""
+    try:
+        cid = int(contest_id)
+    except (TypeError, ValueError):
+        return None
+
+    def build():
+        try:
+            d = _get(_CONTEST.format(cid=cid))
+        except Exception as e:
+            errlog.note("DK-contest", e, path=str(cid))
+            return None
+        c = (d or {}).get("contestDetail") or d or {}
+        if not c.get("name"):
+            return None
+        tiers, first, paid = [], 0.0, 0
+        for t in c.get("payoutSummary") or []:
+            try:
+                lo, hi = int(t.get("minPosition") or 0), int(t.get("maxPosition") or 0)
+            except (TypeError, ValueError):
+                continue
+            val = 0.0
+            for pd in t.get("payoutDescriptions") or []:
+                try:
+                    val = max(val, float(pd.get("value") or 0))
+                except (TypeError, ValueError):
+                    pass
+            if not lo or not hi:
+                continue
+            tiers.append({"from": lo, "to": hi, "prize": val})
+            if val > 0:
+                paid = max(paid, hi)
+                if lo == 1:
+                    first = max(first, val)
+
+        def _num(k, cast=float):
+            try:
+                return cast(c.get(k) or 0)
+            except (TypeError, ValueError):
+                return cast(0)
+        fee, pool = _num("entryFee"), _num("totalPayouts")
+        mx, entered = _num("maximumEntries", int), _num("entries", int)
+        # A double-up pays about half the field a little under twice the fee;
+        # a GPP pays a top-heavy table. The contest sim runs a different
+        # payout curve for each, so the picker has to say which this is.
+        kind = ("double_up" if mx and paid / mx >= 0.4 and fee and first <= 2.5 * fee
+                else "gpp")
+        return {"id": cid, "name": c.get("name"), "sport": c.get("sport"),
+                "draft_group_id": c.get("draftGroupId"),
+                "entry_fee": fee, "prize_pool": pool, "first_prize": first,
+                "places_paid": paid, "max_entries": mx, "entered": entered,
+                "max_entries_per_user": c.get("maximumEntriesPerUser"),
+                "starts": c.get("contestStartTime"), "state": c.get("contestState"),
+                "game_type_id": c.get("gameTypeId"), "kind": kind,
+                "payouts": tiers[:60]}
+    return racing._cached(("dk_contest", cid), 600, build)
+
+
+# Sports where DK sells Showdown (one game, a 1.5x captain plus flex) as a
+# product distinct from the default lineup. F1, NASCAR and LoL are captain
+# formats by default, so a captain row there is the normal slate, not a
+# Showdown; UFC has no captain at all.
+_SHOWDOWN_SPORTS = {"nfl", "mlb", "nba", "nhl", "soccer", "golf"}
+
+
+def slate_shape(draft_group_id, sport=None):
+    """{showdown, captain_rows, n_games, n_players, n_rows} for a draft
+    group. A name under two roster slots (or at two salaries) is a captain
+    row: DK's NFL Showdown (54 names, 108 rows, one salary, two slots on the
+    live NE @ SEA group), its everyday F1 Classic (33 names, 55 rows: drivers
+    at two salaries), and even classic NFL (position + FLEX). Showdown is
+    captain rows on a ONE-game slate, in a sport that sells Showdown as a
+    separate product; the picker flips the builder's mode on that alone."""
+    def build():
+        try:
+            d = _get(_DRAFTABLES.format(dg=draft_group_id), timeout=30)
+        except Exception:
+            return None
+        rows = [x for x in (d.get("draftables") or []) if x.get("displayName")]
+        slots, sal, games = {}, {}, set()
+        for x in rows:
+            slots.setdefault(x["displayName"], set()).add(x.get("rosterSlotId"))
+            sal.setdefault(x["displayName"], set()).add(x.get("salary"))
+            comp = x.get("competition") or {}
+            games.add(comp.get("competitionId") or comp.get("name") or 0)
+        if not slots:
+            return None
+        cap = any(len(v) > 1 for v in slots.values()) or any(len(v) > 1 for v in sal.values())
+        # Two slots per name is ALSO classic NFL (position + FLEX: 813 names,
+        # 1,486 rows on the live 16-game group), so the captain rows alone say
+        # nothing. Showdown is one game: captain rows on a one-game slate, in a
+        # sport that sells Showdown as its own product.
+        n_games = len(games)
+        return {"captain_rows": cap, "n_games": n_games,
+                "showdown": bool(cap and n_games == 1
+                                 and (sport or "").lower() in _SHOWDOWN_SPORTS),
+                "n_players": len(slots), "n_rows": len(rows)}
+    return racing._cached(("dk_shape", draft_group_id, (sport or "").lower()), 600, build)
 
 
 def players(draft_group_id):

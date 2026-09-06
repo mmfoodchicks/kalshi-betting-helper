@@ -7168,7 +7168,9 @@ _lobby12 = {"DraftGroups": [
     {"DraftGroupId": 153228, "Sport": "NFL", "StartDateEst": "2026-09-06T11:30:00",
      "GameCount": 8, "ContestTypeId": 106},
     {"DraftGroupId": 152714, "Sport": "F1", "StartDateEst": "2026-09-06T09:00:00",
-     "GameCount": 1, "ContestTypeId": 380}]}
+     "GameCount": 1, "ContestTypeId": 380},
+    {"DraftGroupId": 153098, "Sport": "F1", "StartDateEst": "2026-09-06T09:00:00",
+     "GameCount": 1, "ContestTypeId": 192, "ContestStartTimeSuffix": "(Monza Snake)"}]}
 _odg12 = _dk12._get
 _dk12._get = lambda url, timeout=25: _lobby12
 _rc12._form_cache.pop(("dk_slates", "f1"), None)
@@ -7177,11 +7179,93 @@ try:
 finally:
     _dk12._get = _odg12
     _rc12._form_cache.pop(("dk_slates", "f1"), None)
-ck("DK's F1 lobby code is F1, and slates() keeps only the sport's own groups",
-   _dk12.SPORTS["f1"] == "F1" and [x["draft_group_id"] for x in _sl12] == [152714])
+ck("DK's F1 lobby code is F1, slates() keeps only the sport's own groups, and a "
+   "snake-draft group is not a slate",
+   _dk12.SPORTS["f1"] == "F1" and [x["draft_group_id"] for x in _sl12] == [152714]
+   and "snake" in _dk12._NEVER_TAGS)
 ck("the racing tab says which curve the board is on",
    'tt === "locked"' in open(_os.path.join(_root, "static", "app.js")).read()
    and "pole converts ~7 in 10" in open(_os.path.join(_root, "static", "app.js")).read())
+# --- the contest picker: DK's contest endpoint fills the builder from the
+# contest being entered (entries, fee, 1st, pool, GPP vs double-up), the
+# slate's shape sets Classic vs Showdown, and the pool loads itself
+_det12 = {"contestDetail": {
+    "name": "F1 $30K Laurel [$10K to 1st]", "sport": "F1", "draftGroupId": 152714,
+    "entryFee": 20, "totalPayouts": 30000.0, "maximumEntries": 1764, "entries": 1066,
+    "maximumEntriesPerUser": 52, "contestStartTime": "2026-09-06T13:00:00.0000000Z",
+    "gameTypeId": 380, "contestState": "Upcoming",
+    "payoutSummary": [
+        {"minPosition": 1, "maxPosition": 1, "payoutDescriptions": [{"value": 10000.0}]},
+        {"minPosition": 2, "maxPosition": 2, "payoutDescriptions": [{"value": 2500.0}]},
+        {"minPosition": 3, "maxPosition": 10, "payoutDescriptions": [{"value": 500.0}]},
+        {"minPosition": 11, "maxPosition": 353, "payoutDescriptions": [{"value": 30.0}]}]}}
+_du12 = {"contestDetail": {
+    "name": "NFL $10 Double Up", "sport": "NFL", "draftGroupId": 1, "entryFee": 10,
+    "totalPayouts": 18000.0, "maximumEntries": 2000, "entries": 5,
+    "payoutSummary": [{"minPosition": 1, "maxPosition": 900, "payoutDescriptions": [{"value": 20.0}]}]}}
+_odg12 = _dk12._get
+_dk12._get = lambda url, timeout=25: _det12 if "/194347482?" in url else _du12
+for _k12 in (("dk_contest", 194347482), ("dk_contest", 7)):
+    _rc12._form_cache.pop(_k12, None)
+try:
+    _c12 = _dk12.contest_detail(194347482)
+    _c12b = _dk12.contest_detail(7)
+finally:
+    _dk12._get = _odg12
+    for _k12 in (("dk_contest", 194347482), ("dk_contest", 7)):
+        _rc12._form_cache.pop(_k12, None)
+ck("a contest's payout table gives the builder its first prize, places paid, "
+   "field cap and fee, and a flat half-field table reads as a double-up",
+   _c12 and _c12["first_prize"] == 10000.0 and _c12["places_paid"] == 353
+   and _c12["max_entries"] == 1764 and _c12["entered"] == 1066
+   and _c12["entry_fee"] == 20.0 and _c12["prize_pool"] == 30000.0 and _c12["kind"] == "gpp"
+   and _c12["draft_group_id"] == 152714 and len(_c12["payouts"]) == 4
+   and _c12b and _c12b["kind"] == "double_up" and _c12b["places_paid"] == 900
+   and _dk12.contest_detail("nope") is None,
+   str(_c12)[:160])
+# DK's NFL Showdown lists a name under two roster slots at ONE salary; its
+# everyday F1 Classic lists a driver at TWO salaries (captain) -- both are
+# captain rows, and only the NFL one is a Showdown
+_g1 = {"competition": {"competitionId": 1, "name": "NE @ SEA"}}
+_dr12 = {"draftables": [dict(_g1, displayName=f"p{i % 20}", salary=5000, rosterSlotId=511 if i < 20 else 512) for i in range(40)]}
+_df12 = {"draftables": [dict(_g1, displayName=f"d{i % 22}", salary=8000 if i < 22 else 12000, rosterSlotId=1 if i < 22 else 2) for i in range(44)]
+         + [dict(_g1, displayName=f"c{i}", salary=9000, rosterSlotId=3) for i in range(11)]}
+# classic NFL: position + FLEX rows for every skill player, across 16 games
+_dc12 = {"draftables": [{"displayName": f"p{i % 20}", "salary": 5000, "rosterSlotId": 67 if i < 20 else 70,
+                         "competition": {"competitionId": i % 16, "name": f"g{i % 16}"}} for i in range(40)]}
+_dk12._get = lambda url, timeout=25: _dr12 if "/901/" in url else _df12 if "/902/" in url else _dc12
+for _k12 in (("dk_shape", 901, "nfl"), ("dk_shape", 902, "f1"), ("dk_shape", 903, "nfl")):
+    _rc12._form_cache.pop(_k12, None)
+try:
+    _sh12 = _dk12.slate_shape(901, sport="nfl")
+    _sf12 = _dk12.slate_shape(902, sport="f1")
+    _sc12 = _dk12.slate_shape(903, sport="nfl")
+finally:
+    _dk12._get = _odg12
+    for _k12 in (("dk_shape", 901, "nfl"), ("dk_shape", 902, "f1"), ("dk_shape", 903, "nfl")):
+        _rc12._form_cache.pop(_k12, None)
+ck("captain rows on a one-game NFL slate are a Showdown; the same rows on an F1 "
+   "slate are its everyday Classic; position + FLEX rows across 16 games are "
+   "classic NFL",
+   _sh12 and _sh12["showdown"] and _sh12["captain_rows"] and _sh12["n_games"] == 1
+   and _sh12["n_players"] == 20 and _sh12["n_rows"] == 40
+   and _sf12 and _sf12["captain_rows"] and not _sf12["showdown"] and _sf12["n_players"] == 33 and _sf12["n_rows"] == 55
+   and _sc12 and not _sc12["showdown"] and _sc12["captain_rows"] and _sc12["n_games"] == 16
+   and "f1" not in _dk12._SHOWDOWN_SPORTS and "nfl" in _dk12._SHOWDOWN_SPORTS)
+import app as _apdk
+_rules_dk = {r.rule for r in _apdk.app.url_map.iter_rules()}
+_jsdk = open(_os.path.join(_root, "static", "app.js")).read()
+_tpdk = open(_os.path.join(_root, "templates", "index.html")).read()
+ck("the picker's three routes exist and the tab is wired: sport -> slate -> "
+   "contest fills entries, entry $, 1st $, pool $, the contest kind, the mode "
+   "and the CSV, and remembers the pick per sport",
+   {"/api/dfs/slates", "/api/dfs/contests", "/api/dfs/contest"} <= _rules_dk
+   and all(f'id="{i}"' in _tpdk for i in ("dfsDkSlate", "dfsDkContest", "dfsDkFee", "dfsDkInfo", "dfsDkReload"))
+   and "/api/dfs/contest?id=" in _jsdk and 'set("dfsEntries", c.max_entries' in _jsdk
+   and 'set("dfsEntry", c.entry_fee' in _jsdk and 'set("dfsFirst", c.first_prize' in _jsdk
+   and 'set("dfsPool", c.prize_pool' in _jsdk and 'set("dfsContest", c.kind' in _jsdk
+   and '$("dfsCsv").value = s.csv' in _jsdk and "initDfsPicker();" in _jsdk
+   and '"dfsDk:"' in _jsdk and 'showdown ? "showdown" : "classic"' in _jsdk)
 _f1src12 = _insp.getsource(_rc12._openf1_f1_grid)
 ck("sprint weekends produce a grid instead of a blank model",
    '"Sprint Qualifying"' in _f1src12 and "sprint_result" in _f1src12
@@ -9672,7 +9756,8 @@ finally:
     _dk53.slates, _dk53.players = _osl53, _opl53
 ck("Madden Stream groups never reach the picker, and the type rides along",
    "_NEVER_TYPES = {158, 159}" in _insp.getsource(_dk53)
-   and '"madden" in (tag or "").lower()' in _insp.getsource(_dk53.slates)
+   and "madden" in _dk53._NEVER_TAGS
+   and 'any(k in (tag or "").lower() for k in _NEVER_TAGS)' in _insp.getsource(_dk53.slates)
    and '"contest_type": ctype' in _insp.getsource(_dk53.slates),
    "a video-game simulation with real player names is not a slate")
 
@@ -10501,7 +10586,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v107' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v108' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 

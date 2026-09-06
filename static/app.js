@@ -6213,6 +6213,7 @@ async function initSim() {
     }
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
+  initDfsPicker();
   // A pasted CSV names its own sport; follow it so a baseball slate can never
   // be built with another sport's roster shape.
   if ($("dfsCsv") && !$("dfsCsv").dataset.detect) {
@@ -7618,6 +7619,132 @@ window.dfsApplyReco = (obj, sample) => {
     if (el) { el.addEventListener("change", dfsRecommend); el.addEventListener("input", dfsRecommend); }
   });
 })();
+
+// ---- DraftKings contest picker ---------------------------------------------
+// Sport -> slate (date/time) -> contest. Picking a contest fills the builder
+// from the contest you are actually entering: entries (the field cap), entry
+// $, 1st $ and pool $ from DK's payout table, GPP vs double-up from its
+// shape, Classic vs Showdown from the slate, and the slate's pool into the
+// CSV box. Hand-typed numbers and a pasted CSV were the two ways the contest
+// sim ended up modeling a contest that did not exist.
+let _dfsDkContests = [], _dfsDkShape = null, _dfsDkBusy = false;
+function _dfsDkKey() { return "dfsDk:" + (($("dfsSport") || {}).value || ""); }
+function _dfsDkRemember(dg, id) {
+  try { localStorage.setItem(_dfsDkKey(), JSON.stringify({ dg, id })); } catch (e) { /* private mode */ }
+}
+function _dfsDkRecall() {
+  try { return JSON.parse(localStorage.getItem(_dfsDkKey()) || "null"); } catch (e) { return null; }
+}
+function _dfsDkWhen(iso) {
+  // DK's StartDateEst is an Eastern wall-clock with no zone: print it as such.
+  const m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(iso || "");
+  if (!m) return iso || "";
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
+  const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  let h = +m[4]; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+  return `${day} ${h}:${m[5]} ${ap} ET`;
+}
+function _dfsDkWhenUtc(iso) {
+  // The contest endpoint gives a real UTC instant with seven fractional digits,
+  // which not every Date.parse accepts: trim to milliseconds first.
+  const t = Date.parse((iso || "").replace(/(\.\d{3})\d+/, "$1"));
+  if (!t) return "";
+  return new Date(t).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) + " ET";
+}
+async function loadDfsSlates() {
+  const sel = $("dfsDkSlate"), csel = $("dfsDkContest"), info = $("dfsDkInfo");
+  if (!sel || !csel) return;
+  const sp = $("dfsSport").value;
+  sel.innerHTML = `<option value="">loading DraftKings…</option>`;
+  csel.innerHTML = `<option value="">- pick a contest -</option>`;
+  if (info) info.textContent = "";
+  _dfsDkContests = []; _dfsDkShape = null;
+  try {
+    const d = await (await fetch(`/api/dfs/slates?sport=${encodeURIComponent(sp)}`)).json();
+    const sl = (d.slates || []).filter((x) => x.n_contests > 0);
+    if (!sl.length) { sel.innerHTML = `<option value="">no DraftKings slate posted for ${sp.toUpperCase()}</option>`; return; }
+    const mem = _dfsDkRecall();
+    sel.innerHTML = sl.map((x) => `<option value="${x.draft_group_id}">${_dfsDkWhen(x.starts)} · ${x.games || 1} game${(x.games || 1) === 1 ? "" : "s"}${x.tag ? " " + escapeHtml(x.tag) : ""} · ${x.n_contests} contests</option>`).join("");
+    if (mem && sl.some((x) => String(x.draft_group_id) === String(mem.dg))) sel.value = String(mem.dg);
+    await loadDfsContests(mem && String(sel.value) === String(mem.dg) ? mem.id : null);
+  } catch (e) {
+    sel.innerHTML = `<option value="">DraftKings lobby unavailable</option>`;
+  }
+}
+async function loadDfsContests(preferId) {
+  const sel = $("dfsDkSlate"), csel = $("dfsDkContest"), info = $("dfsDkInfo");
+  const dg = sel && sel.value;
+  csel.innerHTML = `<option value="">- pick a contest -</option>`;
+  _dfsDkContests = []; _dfsDkShape = null;
+  if (!dg) return;
+  try {
+    const d = await (await fetch(`/api/dfs/contests?sport=${encodeURIComponent($("dfsSport").value)}&dg=${encodeURIComponent(dg)}`)).json();
+    _dfsDkContests = d.contests || []; _dfsDkShape = d.shape || null;
+    renderDfsContestOptions();
+    if (preferId && _dfsDkContests.some((c) => String(c.id) === String(preferId))) {
+      csel.value = String(preferId);
+      await applyDfsContest(preferId);
+    } else if (info) {
+      info.textContent = `${_dfsDkShape && _dfsDkShape.showdown ? "Showdown" : "Classic"} slate${_dfsDkShape ? ` · ${_dfsDkShape.n_players} in the pool` : ""} · ${_dfsDkContests.length} contests - pick one to fill the builder`;
+    }
+  } catch (e) { if (info) info.textContent = "DraftKings contests unavailable."; }
+}
+function renderDfsContestOptions() {
+  const csel = $("dfsDkContest");
+  if (!csel) return;
+  const maxFee = parseFloat(($("dfsDkFee") || {}).value) || 0;
+  const keep = csel.value;
+  const rows = _dfsDkContests.filter((c) => !maxFee || (c.entry_fee || 0) <= maxFee);
+  csel.innerHTML = `<option value="">- pick a contest (${rows.length}) -</option>` + rows.map((c) =>
+    `<option value="${c.id}">${escapeHtml(c.name || "")} · $${c.entry_fee} · ${(c.entries || 0).toLocaleString()} max · $${(c.prize_pool || 0).toLocaleString()}</option>`).join("");
+  if (keep && rows.some((c) => String(c.id) === String(keep))) csel.value = keep;
+}
+async function applyDfsContest(id) {
+  const info = $("dfsDkInfo"), sp = $("dfsSport").value, dg = ($("dfsDkSlate") || {}).value;
+  if (!id) { if (info) info.textContent = ""; return; }
+  if (_dfsDkBusy) return;
+  _dfsDkBusy = true;
+  if (info) info.textContent = "Reading the contest from DraftKings…";
+  try {
+    const c = await (await fetch(`/api/dfs/contest?id=${encodeURIComponent(id)}`)).json();
+    if (c.error) { if (info) info.textContent = c.error; return; }
+    const set = (elid, v) => { const el = $(elid); if (el && v != null) el.value = v; };
+    set("dfsEntries", c.max_entries || 0);
+    set("dfsEntry", c.entry_fee || 1);
+    set("dfsFirst", c.first_prize || 0);
+    set("dfsPool", c.prize_pool || 0);
+    set("dfsContest", c.kind || "gpp");
+    const showdown = !!(_dfsDkShape && _dfsDkShape.showdown);
+    if ($("dfsMode")) $("dfsMode").value = showdown ? "showdown" : "classic";
+    if ($("dfsNflMode")) $("dfsNflMode").value = showdown ? "showdown" : "classic";
+    // The slate's pool goes into the box, so the run you make is the one you see.
+    let poolNote = "";
+    try {
+      const s = await (await fetch(`/api/dfs/slate?sport=${encodeURIComponent(sp)}&dg=${encodeURIComponent(dg)}`)).json();
+      if (s.csv) {
+        $("dfsCsv").value = s.csv;
+        poolNote = ` · ${s.n_players} in the pool${s.n_dropped ? ` (${s.n_dropped} scratched)` : ""}`;
+        if ($("dfsFileName")) $("dfsFileName").textContent = `DraftKings slate ${dg}: ${s.n_players} players loaded`;
+      } else { poolNote = " · pool not loaded (paste the CSV)"; }
+    } catch (e) { poolNote = " · pool not loaded (paste the CSV)"; }
+    _dfsDkRemember(dg, id);
+    if (typeof dfsRecommend === "function") dfsRecommend();
+    if (info) info.innerHTML = `🏆 <b>${escapeHtml(c.name || "")}</b> · ${(c.entered || 0).toLocaleString()}/${(c.max_entries || 0).toLocaleString()} entered · $${c.entry_fee} entry · $${(c.prize_pool || 0).toLocaleString()} pool · $${(c.first_prize || 0).toLocaleString()} to 1st · ${(c.places_paid || 0).toLocaleString()} paid · ${c.kind === "double_up" ? "double-up" : "GPP"} · ${showdown ? "Showdown" : "Classic"}${poolNote}${c.starts ? ` · locks ${_dfsDkWhenUtc(c.starts)}` : ""}`;
+  } catch (e) {
+    if (info) info.textContent = "Could not read that contest from DraftKings.";
+  } finally { _dfsDkBusy = false; }
+}
+function initDfsPicker() {
+  const sel = $("dfsDkSlate"), csel = $("dfsDkContest");
+  if (!sel || !csel || sel.dataset.wired) return;
+  sel.dataset.wired = "1";
+  sel.addEventListener("change", () => loadDfsContests(null));
+  csel.addEventListener("change", () => applyDfsContest(csel.value));
+  if ($("dfsDkFee")) $("dfsDkFee").addEventListener("input", renderDfsContestOptions);
+  if ($("dfsDkReload")) $("dfsDkReload").addEventListener("click", (ev) => { ev.preventDefault(); loadDfsSlates(); });
+  $("dfsSport").addEventListener("change", loadDfsSlates);
+  loadDfsSlates();
+}
 
 // ---- client-side error reporting -------------------------------------------
 // A JS exception used to break a page feature in total silence: the server

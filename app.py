@@ -1976,6 +1976,72 @@ def api_dfs_slate():
     return jsonify(s)
 
 
+@app.route("/api/dfs/slates")
+def api_dfs_slates():
+    """Every DraftKings slate posted for a sport, soonest first, with how many
+    contests each carries: the contest picker's first step (sport -> slate ->
+    contest), so the builder is fed from the contest you are entering."""
+    import dk
+    sport = (request.args.get("sport") or "ufc").lower()
+    if sport not in dk.SPORTS:
+        return jsonify({"error": f"unknown sport (have: {', '.join(sorted(dk.SPORTS))})"}), 400
+    try:
+        sl = dk.slates(sport)
+        counts = {}
+        for c in dk.contests(sport):
+            k = str(c.get("draft_group_id"))
+            counts[k] = counts.get(k, 0) + 1
+    except Exception as e:
+        return jsonify({"error": f"dk lobby failed: {e}"}), 502
+    return jsonify({"sport": sport,
+                    "slates": [dict(x, n_contests=counts.get(str(x["draft_group_id"]), 0))
+                               for x in sl]})
+
+
+@app.route("/api/dfs/contests")
+def api_dfs_contests():
+    """Every contest on one slate, richest first, plus the slate's shape
+    (Showdown or Classic, pool size): the picker's second step."""
+    import dk
+    sport = (request.args.get("sport") or "ufc").lower()
+    if sport not in dk.SPORTS:
+        return jsonify({"error": "unknown sport"}), 400
+    try:
+        dg = int(request.args.get("dg") or 0)
+    except ValueError:
+        dg = 0
+    if not dg:
+        return jsonify({"error": "dg (draft group) required"}), 400
+    try:
+        rows = dk.contests(sport, draft_group_id=dg)
+        shape = dk.slate_shape(dg, sport=sport)
+    except Exception as e:
+        return jsonify({"error": f"dk lobby failed: {e}"}), 502
+    return jsonify({"sport": sport, "draft_group_id": dg, "contests": rows,
+                    "shape": shape or {}})
+
+
+@app.route("/api/dfs/contest")
+def api_dfs_contest():
+    """One contest's payout table and field cap from DK's contest endpoint:
+    what fills entries / entry $ / 1st $ / pool $ and the GPP-or-double-up
+    switch in the builder."""
+    import dk
+    try:
+        cid = int(request.args.get("id") or 0)
+    except ValueError:
+        cid = 0
+    if not cid:
+        return jsonify({"error": "id (contest) required"}), 400
+    try:
+        c = dk.contest_detail(cid)
+    except Exception as e:
+        return jsonify({"error": f"dk contest failed: {e}"}), 502
+    if not c:
+        return jsonify({"error": "DraftKings has no such contest (or it has closed)"}), 404
+    return jsonify(c)
+
+
 @app.route("/api/simulate/dfs", methods=["POST"])
 def api_simulate_dfs():
     """Optimize + simulate a DraftKings DFS lineup from a pasted DKSalaries.csv."""
