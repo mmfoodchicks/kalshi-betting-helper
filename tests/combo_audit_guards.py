@@ -3989,8 +3989,9 @@ ck("the sample box finally reaches the NFL contest sim, clamped not ignored",
    "million-entry GPP is decided in a tail 500 lineups cannot map")
 _js_reco = open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..",
                               "static", "app.js")).read()
-ck("the contest coach recommends objective + sample from the field size",
-   "function dfsRecommend()" in _js_reco and "entries >= 100000" in _js_reco
+ck("the contest coach recommends objective + sample from the field size, and now "
+   "follows the sport (the measured sample) and applies itself for the picker",
+   "function dfsRecommend(apply)" in _js_reco and "entries >= 100000" in _js_reco
    and '"leverage"; sample = 2500' in _js_reco
    and '"projection"; sample = 600' in _js_reco,
    "a milly-maker wants leverage and a deep sample; a double-up wants the "
@@ -10649,7 +10650,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v113' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v114' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11436,6 +11437,117 @@ ck("the PC's seed door is token-only, the panel shows the seeded counts and the 
    "/api/dfs/lookback/seed" in _rules_lb
    and "if not _pc_auth_ok():\n        return jsonify({\"error\": \"auth\"}), 403\n    d = request.get_json(force=True, silent=True) or {}\n    try:\n        import dfslog\n        n = dfslog.seed_rows(" in _aps
    and "Seeded from blind backtests" in _jslb2 and "d.backtest || []" in _jslb2)
+# --- the sample knob: honoured, measured, logged. The owner: "does the look
+# back use sample size too? it doesn't change to the recommended when I change
+# sports" / "plug the sample in to the past events too". The box never
+# reached the racing builder, the coach was contest-shaped only, and nothing
+# measured what a sample buys.
+_bp = _smlb.dfs_build(_csvf12, roster=6, cap=50000, sport="f1", mode="classic", sims=200,
+                      contest="gpp", contest_size=1000, entry_fee=20, field_size=150,
+                      contest_probe=[{"sample": 150, "seed": 1, "entries": 1000},
+                                     {"sample": 150, "seed": 1, "entries": 1000},
+                                     {"sample": 150, "seed": 2, "entries": 20000}])
+_pr = (_bp or {}).get("contest_probe") or []
+ck("the racing / UFC builder honours the sample box (it ran off sims alone), and a "
+   "probe scores the same lineup against fields of the asked size, seed and entry "
+   "count: one seed one field, another seed another",
+   _bp and not _bp.get("error") and (_bp.get("contest_sim") or {}).get("sample_size") == 150
+   and len(_pr) == 3 and all(r.get("win_pct") is not None and r.get("roi_pct") is not None for r in _pr)
+   and [r["entries"] for r in _pr] == [1000, 1000, 20000]
+   and _pr[0]["field_hash"] == _pr[1]["field_hash"] and _pr[0]["field_hash"] != _pr[2]["field_hash"]
+   and _pr[0]["win_pct"] == _pr[1]["win_pct"] and all(r["field"] <= 150 for r in _pr),
+   str(_bp)[:200] if not _bp or _bp.get("error") else f"{(_bp.get('contest_sim') or {}).get('sample_size')} {_pr[:2]}")
+import dfs_backtest as _dbt
+_fold = _dbt._fold([
+    {"sample": 300, "seed": 1, "entries": 1000, "win_pct": 1.0, "cash_pct": 30.0, "roi_pct": 10.0, "field": 300, "field_hash": "a"},
+    {"sample": 300, "seed": 2, "entries": 1000, "win_pct": 3.0, "cash_pct": 34.0, "roi_pct": 30.0, "field": 300, "field_hash": "b"},
+    {"sample": 600, "seed": 1, "entries": 1000, "win_pct": 2.0, "cash_pct": 32.0, "roi_pct": 20.0, "field": 590, "field_hash": "c"},
+    {"sample": 600, "seed": 2, "entries": 1000, "error": "boom"}])
+ck("the probe folds to (entries, sample): mean and spread over seeds, distinct fields, "
+   "the field the pool actually yielded; a failed cell is left out; the grid is the "
+   "full cross of sizes, seeds and entry counts",
+   len(_fold) == 2 and _fold[0]["sample"] == 300 and _fold[0]["n_seeds"] == 2
+   and _fold[0]["win_mean"] == 2.0 and _fold[0]["win_sd"] == 1.0 and _fold[0]["cash_sd"] == 2.0
+   and _fold[0]["roi_mean"] == 20.0 and _fold[0]["roi_sd"] == 10.0 and _fold[0]["distinct_fields"] == 2
+   and _fold[1]["n_seeds"] == 1 and _fold[1]["win_sd"] == 0.0 and _fold[1]["field"] == 590
+   and len(_dbt._probe_grid()) == 4 * 4 * 3)
+_np_lb = _os.path.join(_tflb.mkdtemp(), "noise.json")
+_dbt.write_noise([{"sport": "f1", "grid": [{"entries": 1000, "sample": 300}]}], _np_lb)
+_dbt.write_noise([{"sport": "nfl", "grid": []}, {"sport": "f1", "grid": [{"entries": 1000, "sample": 600}]}], _np_lb)
+_nz_lb = _jslb.load(open(_np_lb))
+ck("the noise seed merges per sport, a sport's newest measurement replacing its old one",
+   [r["sport"] for r in _nz_lb["rows"]] == ["f1", "nfl"] and _nz_lb["rows"][0]["grid"][0]["sample"] == 600
+   and _nz_lb.get("generated"))
+_grid_lb = {"rows": [{"sport": "x", "date": "2026-09-06", "grid": [
+    {"entries": 1000, "sample": 300, "win_mean": 5.0, "win_sd": 0.6, "cash_mean": 38.0, "cash_sd": 0.5, "roi_mean": 1200.0, "roi_sd": 70.0},
+    {"entries": 1000, "sample": 600, "win_mean": 5.0, "win_sd": 0.2, "cash_mean": 38.0, "cash_sd": 0.5, "roi_mean": 1200.0, "roi_sd": 30.0},
+    {"entries": 1000, "sample": 1200, "win_mean": 5.0, "win_sd": 0.1, "cash_mean": 38.0, "cash_sd": 0.5, "roi_mean": 1200.0, "roi_sd": 20.0},
+    {"entries": 150000, "sample": 300, "win_mean": 0.0, "win_sd": 0.0, "cash_mean": 21.5, "cash_sd": 1.5, "roi_mean": -67.0, "roi_sd": 1.7},
+    {"entries": 150000, "sample": 600, "win_mean": 0.004, "win_sd": 0.007, "cash_mean": 21.0, "cash_sd": 2.2, "roi_mean": -65.0, "roi_sd": 3.2},
+    {"entries": 150000, "sample": 2500, "win_mean": 0.0, "win_sd": 0.0, "cash_mean": 19.1, "cash_sd": 3.3, "roi_mean": -72.0, "roi_sd": 5.2}]},
+    {"sport": "z", "date": "2026-09-06", "grid": [
+    {"entries": 1000, "sample": 300, "win_mean": 0.5, "win_sd": 0.4, "cash_mean": 21.5, "cash_sd": 1.5, "roi_mean": -67.0, "roi_sd": 1.7},
+    {"entries": 1000, "sample": 600, "win_mean": 0.5, "win_sd": 0.05, "cash_mean": 21.0, "cash_sd": 2.2, "roi_mean": -65.0, "roi_sd": 3.2}]}]}
+ck("the coach's sample is the smallest that holds still (win% within 8% of its mean, "
+   "cash% within 6%, ROI within 10% of the return -- relative, the sim's ROI spans "
+   "-70% to +8,000%); a sub-1% win% is a tail nobody can pin and does not vote; when "
+   "nothing passes the steadiest sample wins (F1's spread grows with the sample); a "
+   "bigger bucket never wants less than a smaller one; the nearest measured entry "
+   "count is used, and an unmeasured sport gets None",
+   _lb.sample_recommend("x", 1000, _grid_lb) == 600
+   and _lb.sample_recommend("x", 2500, _grid_lb) == 600
+   and _lb._bucket_picks(_grid_lb["rows"][0]["grid"]) == {1000: 600, 150000: 600}
+   and _lb.sample_recommend("z", 1000, _grid_lb) == 300      # steadiest: nothing passes
+   and _lb.sample_recommend("x", 100000, _grid_lb) == 600
+   and _lb.sample_recommend("y", 1000, _grid_lb) is None
+   and _lb.sample_reco_table(_grid_lb) == {"x": {"1000": 600, "150000": 600}, "z": {"1000": 300}})
+_seed_nz = _lb.sample_noise()
+ck("the committed measurement (2026-09-06, live slates, four fields per size) carries "
+   "dated 12-cell grids per sport and the coach reads it: NFL wants 600 at 1,000 "
+   "entries and 1,200 at 150,000, MLB 300 and 600, NASCAR 1,200 at 1,000, F1 300 "
+   "everywhere (its 33-name pool yields 461 distinct lineups of 2,500 asked, and its "
+   "spread grows with the sample)",
+   {"f1", "nascar", "nfl", "mlb"} <= {r["sport"] for r in _seed_nz.get("rows") or []}
+   and all(r.get("date") and len(r.get("grid") or []) == 12 for r in _seed_nz["rows"])
+   and _lb.sample_recommend("nfl", 1000) == 600 and _lb.sample_recommend("nfl", 150000) == 1200
+   and _lb.sample_recommend("mlb", 1000) == 300 and _lb.sample_recommend("mlb", 150000) == 600
+   and _lb.sample_recommend("nascar", 1000) == 1200 and _lb.sample_recommend("f1", 20000) == 300
+   and _lb.sample_reco_table()["nfl"]["1000"] == 600,
+   str({r["sport"]: _lb.sample_reco_table().get(r["sport"]) for r in _seed_nz.get("rows") or []}))
+_odb_lb3 = _stlb.DB_PATH
+_stlb.DB_PATH = _os.path.join(_tflb.mkdtemp(), "knobs.db")
+_stlb.init_db()
+_oev_lb3 = _lb.event_of
+_lb.event_of = lambda sport, req, today=None: ("f1:2026-09-06:13", "2026-09-06", None)
+try:
+    _lb.log_build("f1", dict(_req_lb, field_size=777, sims=4000),
+                  dict(_res_lb2, contest_sim={"sample_size": 555}), {"draft_group_id": 1, "n_players": 33}, "")
+    _lb.log_build("nascar", dict(_req_lb, sport="nascar", field_size=777, sims=4000), _res_lb2,
+                  {"draft_group_id": 2, "n_players": 38}, "")
+    with _stlb._lock, _stlb._conn() as _c:
+        _kn = {r["sport"]: (r["sample"], r["sims"]) for r in _c.execute("SELECT sport, sample, sims FROM dfs_builds")}
+    _rep3 = _lb.report()
+finally:
+    _lb.event_of = _oev_lb3
+    _stlb.DB_PATH = _odb_lb3
+ck("every logged build carries the sample the contest sim actually drew (else the box) "
+   "and the sims it ran; the report says what you build at per sport and carries the "
+   "measurement, the coach's table and the rule",
+   _kn == {"f1": (555, 4000), "nascar": (777, 4000)} and _rep3["sample_used"] == {"f1": 555, "nascar": 777}
+   and set(_rep3) >= {"sample_noise", "sample_reco", "sample_rule"}
+   and _rep3["sample_rule"] == {"win_cv": 0.08, "cash_cv": 0.06, "roi_cv": 0.1, "win_floor": 1.0})
+ck("wired: the racing route passes the sample box, the NFL and MLB contest sims take a "
+   "seed and fingerprint their field, the coach follows the sport switch and applies "
+   "its advice when the picker fills a contest, the panel shows the sample check",
+   'field_size=int(_num("field_size", 0, int)) or None)' in _aps
+   and all("field_hash" in open(_os.path.join(_root, f)).read()
+           and "12345 if seed is None else seed" in open(_os.path.join(_root, f)).read()
+           for f in ("nfl_dfs.py", "mlb_dfs.py"))
+   and "1234 if seed is None else seed" in _insp.getsource(_smlb._contest_sim)
+   and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
+   and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
+   and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
+   and 'vigil-shell-v114' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",

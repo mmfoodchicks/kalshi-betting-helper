@@ -845,7 +845,8 @@ def _rank_grid(places, n=240):
 
 
 def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp",
-                entry_fee=1.0, contest_size=None, prize_pool=None, first_prize=None):
+                entry_fee=1.0, contest_size=None, prize_pool=None, first_prize=None,
+                seed=None):
     """Estimate win% / cash% / ROI for your lineups in a contest of ANY size.
 
     Big GPPs have tens of thousands to millions of entries; you can't simulate them
@@ -868,7 +869,9 @@ def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp
     L = min(len(a) for a in arr.values())
     own_w = {p["name"]: max(0.1, p.get("own", 1.0)) for p in players}
 
-    rng = random.Random(12345)
+    # a fixed field for every build; `seed` draws another (the sample-noise
+    # measurement, dfs_backtest.run_sample)
+    rng = random.Random(12345 if seed is None else seed)
     # A real GPP field mostly optimizes against the same public projections, so
     # its lineups cluster near the optimum. Keep sampled field lineups projecting
     # >= ~84% of YOUR best build — an unfiltered random field is far too soft and
@@ -950,6 +953,7 @@ def contest_sim(your_lineups, players, sample_size=600, n_iter=500, contest="gpp
                     "avg_return": round(ret, 2)})
     best = max(range(len(out)), key=lambda i: out[i]["roi_pct"]) if out else None
     return {"sample_size": len(field), "entries": C, "iterations": n_iter,
+            "field_hash": _sim._field_hash(field),
             "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
             "first_prize": round(first), "places_paid": places, "lineups": out,
             "best_lineup_index": best}
@@ -1082,7 +1086,7 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
           n_lineups=1, max_exposure=60.0, min_uniq=2, stack_min=4,
           contest=None, field_size=200, contest_iters=400, entry_fee=1.0,
           include_unconfirmed=False, contest_size=None, prize_pool=None,
-          first_prize=None, roles=None):
+          first_prize=None, roles=None, contest_probe=None):
     import baseball
     players_raw = _sim.parse_dk_csv(csv_text)
     if len(players_raw) < 10:
@@ -1197,4 +1201,22 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
                 contest_size=contest_size, prize_pool=prize_pool, first_prize=first_prize)
         except Exception as e:
             out["contest_sim"] = {"error": f"contest sim failed: {e}"}
+    # Sample-noise probe (dfs_backtest.run_sample): the top lineup against
+    # fields of the asked sizes and seeds at the asked entry counts.
+    if contest_probe and lineups:
+        rows_p = []
+        for pr in contest_probe:
+            try:
+                cs = contest_sim([ln for _, ln, _s in lineups][:1], players,
+                                 sample_size=max(150, min(3000, int(pr.get("sample") or 600))),
+                                 n_iter=min(800, contest_iters), contest=(contest or "gpp"),
+                                 entry_fee=entry_fee, contest_size=pr.get("entries") or contest_size,
+                                 seed=pr.get("seed"))
+                row = dict(pr, **(cs["lineups"][0] if cs and cs.get("lineups") else {"error": "no field"}))
+                if cs:
+                    row["field"], row["field_hash"] = cs.get("sample_size"), cs.get("field_hash")
+            except Exception as e:
+                row = dict(pr, error=str(e))
+            rows_p.append(row)
+        out["contest_probe"] = rows_p
     return out

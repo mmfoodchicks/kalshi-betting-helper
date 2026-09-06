@@ -807,16 +807,26 @@ def _portfolio(players, roster, cap, objective, cv, n_lineups, max_exposure,
     return chosen
 
 
+def _field_hash(field):
+    """A fingerprint of the sampled opponent field (lists of names), so the
+    seed's effect on a run is checkable: same seed, same field."""
+    import hashlib
+    return hashlib.sha1("|".join(sorted(",".join(sorted(f)) for f in field))
+                        .encode()).hexdigest()[:12]
+
+
 def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fee=1.0,
                  contest_size=None, prize_pool=None, first_prize=None,
-                 exclusive_group=None, n_iter=400, field_n=500):
+                 exclusive_group=None, n_iter=400, field_n=500, seed=None):
     """Win% / cash% / ROI for lineups in a contest of ANY size. Ownership-weighted
     sample field + analytic extrapolation to the real entry count with a top-heavy
     payout curve -- the same approach as the MLB contest sim, generalized to
-    projection-based sports (players scored independently, no stacks)."""
+    projection-based sports (players scored independently, no stacks). `seed`
+    draws a different opponent field (the sample-noise measurement,
+    dfs_backtest.run_sample); the default is the fixed field every build uses."""
     import statistics
     import mlb_dfs
-    rng = random.Random(1234)
+    rng = random.Random(1234 if seed is None else seed)
     # A real GPP field isn't dart throwers: most entrants optimize against the
     # same public projections, so field lineups cluster near the optimum. Keep
     # only sampled lineups projecting >= ~84% of YOUR best build — without this
@@ -893,6 +903,7 @@ def _contest_sim(your_lineups, players, roster, cap, cv, contest="gpp", entry_fe
                     "avg_return": round(ret, 2)})
     best = max(range(len(out)), key=lambda i: out[i]["roi_pct"]) if out else None
     return {"entries": C, "iterations": n_iter, "sample_size": len(field),
+            "field_hash": _field_hash(field),
             "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
             "first_prize": round(first), "places_paid": places,
             "lineups": out, "best_lineup_index": best}
@@ -1048,7 +1059,7 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
               objective="projection", date=None, sims=20000,
               n_lineups=1, max_exposure=60.0, min_uniq=1, contest=None,
               contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
-              grid_text=None):
+              grid_text=None, field_size=None, contest_probe=None):
     players = parse_dk_csv(text)
     if len(players) < roster:
         return {"error": f"need at least {roster} players in the CSV (got {len(players)})"}
@@ -1107,20 +1118,43 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
 
     # ---- Contest simulation (win% / cash% / ROI at the real field size) ----
     contest_sim = None
+    # The opponent-field sample: the builder's sample box when set (it never
+    # reached this builder -- the racing and UFC field ran off the sims knob
+    # whatever the box said, which is what the owner saw as the sample
+    # "not changing"), else scaled off sims (`sims` scores YOUR lineups, this
+    # builds the field you're up against).
+    field_n = (min(3000, max(150, int(field_size))) if field_size
+               else min(1500, max(400, sims // 30)))
+    n_iter_c = min(1200, max(300, sims // 40))
     if contest in ("gpp", "double_up"):
         try:
-            # The opponent-field sample scales with the user's sims knob (it was
-            # a fixed 500, which read as the "sims" setting being ignored —
-            # they're different things: `sims` scores YOUR lineups, this builds
-            # the field you're up against).
             contest_sim = _contest_sim(lineups, players, roster, cap, cv, contest=contest,
                                        entry_fee=entry_fee, contest_size=contest_size,
                                        prize_pool=prize_pool, first_prize=first_prize,
                                        exclusive_group=exclusive,
-                                       n_iter=min(1200, max(300, sims // 40)),
-                                       field_n=min(1500, max(400, sims // 30)))
+                                       n_iter=n_iter_c, field_n=field_n)
         except Exception as e:
             contest_sim = {"error": f"contest sim failed: {e}"}
+    # Sample-noise probe: the same built lineup against opponent fields of the
+    # asked sizes and seeds, at the asked entry counts (dfs_backtest.run_sample
+    # measures how much win% / ROI swing with the sample, per sport).
+    probe_rows = None
+    if contest_probe and lineups:
+        probe_rows = []
+        for pr in contest_probe:
+            try:
+                cs = _contest_sim(lineups[:1], players, roster, cap, cv,
+                                  contest=(contest or "gpp"), entry_fee=entry_fee,
+                                  contest_size=pr.get("entries") or contest_size,
+                                  exclusive_group=exclusive, n_iter=n_iter_c,
+                                  field_n=min(3000, max(150, int(pr.get("sample") or 500))),
+                                  seed=pr.get("seed"))
+                row = dict(pr, **(cs["lineups"][0] if cs and cs.get("lineups") else {"error": "no field"}))
+                if cs:
+                    row["field"], row["field_hash"] = cs.get("sample_size"), cs.get("field_hash")
+            except Exception as e:
+                row = dict(pr, error=str(e))
+            probe_rows.append(row)
 
     per_sims = min(sims, 4000) if len(lineups) > 1 else sims
     lineups_out = [{
@@ -1150,6 +1184,7 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
         "n_lineups": len(lineups_out), "lineups": lineups_out,
         "exposure": exposure if len(lineups_out) > 1 else [],
         "contest_sim": contest_sim,
+        "contest_probe": probe_rows,
     }
 
 

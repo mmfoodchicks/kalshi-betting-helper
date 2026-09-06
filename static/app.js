@@ -7631,11 +7631,31 @@ async function dfsShowScoring() {
 // contest lives in its extreme tail, and 600 points cannot draw a tail. It is
 // an accuracy knob, not an edge knob: raise it if win%/ROI jump between
 // identical runs, lower it if the build feels slow.
-function dfsRecommend() {
+// The measured sample per sport (dfslog.sample_reco / sample_noise, loaded
+// with the look-back): the smallest opponent field at which win% and ROI
+// hold still between fields, per entry-count bucket. Until it loads, or for
+// a sport nobody has measured, the contest-shaped rule below stands.
+let _dfsSampleReco = null, _dfsSampleNoise = null;
+function _dfsMeasuredSample(sport, entries) {
+  const reco = (_dfsSampleReco || {})[sport];
+  if (!reco) return null;
+  const buckets = Object.keys(reco).map(Number).filter((b) => b > 0);
+  if (!buckets.length) return null;
+  const want = Math.log(Math.max(1, entries || 1));
+  const bucket = buckets.reduce((a, b) => (Math.abs(Math.log(b) - want) < Math.abs(Math.log(a) - want) ? b : a));
+  const sample = reco[String(bucket)];
+  const row = ((_dfsSampleNoise || {}).rows || []).find((r) => r.sport === sport);
+  const g = row ? (row.grid || []).find((x) => x.entries === bucket && x.sample === sample) : null;
+  return { sample, bucket, date: row ? row.date : null, swing: g ? { win: g.win_mean, win_sd: g.win_sd, cash_sd: g.cash_sd, roi_sd: g.roi_sd } : null };
+}
+// `apply` sets the boxes (the picker filling a contest); a manual edit only
+// shows the advice with a button, so a value you typed is never overwritten.
+function dfsRecommend(apply) {
   const box = $("dfsRecoBox");
   if (!box) return;
   const contest = ($("dfsContest") || {}).value || "";
   const entries = parseInt(($("dfsEntries") || {}).value, 10) || 0;
+  const sport = ($("dfsSport") || {}).value || "";
   if (!contest) { box.innerHTML = ""; return; }
   let obj, sample, why;
   if (contest === "double_up") {
@@ -7651,11 +7671,20 @@ function dfsRecommend() {
     obj = "ceiling"; sample = 600;
     why = "small GPP: ceiling wins it, and a modest sample resolves a small field fine";
   }
+  const m = _dfsMeasuredSample(sport, entries);
+  if (m && m.sample) {
+    sample = m.sample;
+    why += `. Measured for ${sport.toUpperCase()}${m.date ? ` on the ${m.date} slate` : ""}: ${m.sample.toLocaleString()} is the smallest sample that holds still at ~${m.bucket.toLocaleString()} entries${m.swing ? ` (win% ${m.swing.win}% \u00b1${m.swing.win_sd}, cash% \u00b1${m.swing.cash_sd}, ROI \u00b1${m.swing.roi_sd} pts between opponent fields)` : ""}`;
+  }
+  if (apply === true) {
+    if ($("dfsObjective")) $("dfsObjective").value = obj;
+    if ($("dfsField")) $("dfsField").value = sample;
+  }
   const curObj = ($("dfsObjective") || {}).value;
   const curSm = parseInt(($("dfsField") || {}).value, 10) || 0;
   const already = curObj === obj && Math.abs(curSm - sample) < 100;
   const objLabel = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[obj];
-  box.innerHTML = `<div class="dfs-note" style="margin:6px 0 2px">\ud83d\udca1 Recommended: <b>${objLabel}</b> + sample <b>${sample.toLocaleString()}</b>${already ? " \u2713 (set)" : ` <button class="track-mini" style="margin-left:6px" onclick="dfsApplyReco('${obj}',${sample})">Use these</button>`}<div class="small" style="color:var(--muted);margin-top:2px">${why}. Raise the sample if win%/ROI swing between identical runs; lower it for speed.</div></div>`;
+  box.innerHTML = `<div class="dfs-note" style="margin:6px 0 2px">\ud83d\udca1 Recommended for ${escapeHtml(sport.toUpperCase())}: <b>${objLabel}</b> + sample <b>${sample.toLocaleString()}</b>${already ? (apply === true ? " \u2713 (applied)" : " \u2713 (set)") : ` <button class="track-mini" style="margin-left:6px" onclick="dfsApplyReco('${obj}',${sample})">Use these</button>`}<div class="small" style="color:var(--muted);margin-top:2px">${why}. ${m ? "The sample check in the look-back below is where that number comes from" : "No sample measurement for this sport yet - raise the sample if win%/ROI swing between identical runs; lower it for speed"}.</div></div>`;
 }
 window.dfsApplyReco = (obj, sample) => {
   if ($("dfsObjective")) $("dfsObjective").value = obj;
@@ -7667,6 +7696,8 @@ window.dfsApplyReco = (obj, sample) => {
     const el = document.getElementById(id);
     if (el) { el.addEventListener("change", dfsRecommend); el.addEventListener("input", dfsRecommend); }
   });
+  // the advice is per sport now (the measured sample), so it follows the switch
+  if ($("dfsSport")) $("dfsSport").addEventListener("change", dfsRecommend);
 })();
 
 // ---- DFS look-back --------------------------------------------------------------
@@ -7723,8 +7754,37 @@ async function loadDfsLookback() {
     if (pk.length) html += `<div style="margin-top:4px">Waiting on results: ${pk.map((sp) => `${sp.toUpperCase()} ${pend[sp].lineups} lineup${pend[sp].lineups === 1 ? "" : "s"} over ${pend[sp].events} event${pend[sp].events === 1 ? "" : "s"}`).join(" · ")}</div>`;
     const ng = d.not_graded || {};
     html += `<div style="margin-top:4px;color:var(--muted)">Logged but not graded yet: ${Object.keys(ng).map((sp) => `<b>${sp.toUpperCase()}</b> (${escapeHtml(ng[sp])})`).join("; ")}.</div>`;
+    // The sample check: the same lineup against opponent fields of each size,
+    // several seeds each, at three entry counts - how much win% / ROI swing
+    // with the sample. The coach's per-sport sample is the smallest that
+    // holds still (the rule shown), per entry bucket.
+    _dfsSampleNoise = d.sample_noise || null;
+    _dfsSampleReco = d.sample_reco || null;
+    const nz = ((d.sample_noise || {}).rows || []);
+    const used = d.sample_used || {};
+    if (nz.length) {
+      const rule = d.sample_rule || {};
+      html += `<div style="margin-top:8px"><b>Sample check</b> <span style="color:var(--muted)">- one built lineup vs opponent fields of each size (${nz[0].grid ? Math.max(...nz[0].grid.map((g) => g.n_seeds)) : 4} fields each), at three contest sizes. Cells: win% \u00b1swing \u00b7 cash% \u00b1swing \u00b7 ROI \u00b1swing, and the distinct opponent lineups the pool actually yielded when fewer than asked. \u2605 = the smallest sample that holds still (win% swing under ${Math.round(100 * (rule.win_cv || 0.08))}% of its mean where win% is ${rule.win_floor || 0.2}%+, cash% swing under ${Math.round(100 * (rule.cash_cv || 0.06))}%, ROI swing under ${Math.round(100 * (rule.roi_cv || 0.1))}% of the return), or the steadiest when none does - the coach uses it.</span></div>`;
+      for (const r of nz) {
+        const samples = [...new Set((r.grid || []).map((g) => g.sample))].sort((a, b) => a - b);
+        const ents = [...new Set((r.grid || []).map((g) => g.entries))].sort((a, b) => a - b);
+        const reco = (d.sample_reco || {})[r.sport] || {};
+        html += `<div class="scroller" style="overflow-x:auto;margin-top:4px"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">${r.sport.toUpperCase()} ${r.date || ""}${r.event && r.event.n_players ? ` <span style="color:var(--muted)">(${r.event.n_players} in the pool, ${(r.sims || 0).toLocaleString()} sims${used[r.sport] ? `, you build at ${used[r.sport]}` : ""})</span>` : ""}</th>${samples.map((sm) => `<th>${sm.toLocaleString()}</th>`).join("")}</tr></thead><tbody>`;
+        for (const en of ents) {
+          html += `<tr><td>${en.toLocaleString()} entries</td>` + samples.map((sm) => {
+            const g = (r.grid || []).find((x) => x.entries === en && x.sample === sm);
+            if (!g) return `<td style="text-align:center">-</td>`;
+            const star = reco[String(en)] === sm;
+            return `<td style="text-align:center${star ? ";font-weight:bold" : ""}">${star ? "\u2605 " : ""}${g.win_mean}% \u00b1${g.win_sd}<br><span style="color:var(--muted)">cash ${g.cash_mean}% \u00b1${g.cash_sd}<br>ROI ${g.roi_mean >= 0 ? "+" : ""}${g.roi_mean}% \u00b1${g.roi_sd}${g.field && g.field < sm ? `<br>${g.field} distinct` : ""}</span></td>`;
+          }).join("") + `</tr>`;
+        }
+        html += `</tbody></table></div>`;
+      }
+      html += `<div class="small" style="color:var(--muted);margin-top:2px">Measured on the live slate of the day shown; the PC or a session can refresh it (<code>python3 dfs_backtest.py sample</code>). Past seasons cannot be measured: DraftKings publishes no old salary pools, so no lineup or field can be rebuilt for them.</div>`;
+    }
     box.innerHTML = html;
     if (note) note.textContent = "";
+    if (typeof dfsRecommend === "function") dfsRecommend();
   } catch (e) {
     box.textContent = "Look-back unavailable.";
   }
@@ -7853,7 +7913,8 @@ async function applyDfsContest(id) {
       } else { poolNote = " · pool not loaded (paste the CSV)"; }
     } catch (e) { poolNote = " · pool not loaded (paste the CSV)"; }
     _dfsDkRemember(dg, id);
-    if (typeof dfsRecommend === "function") dfsRecommend();
+    // the coach applies its objective + sample for this contest and sport
+    if (typeof dfsRecommend === "function") dfsRecommend(true);
     if (info) info.innerHTML = `🏆 <b>${escapeHtml(c.name || "")}</b> · ${(c.entered || 0).toLocaleString()}/${(c.max_entries || 0).toLocaleString()} entered · $${c.entry_fee} entry · $${(c.prize_pool || 0).toLocaleString()} pool · $${(c.first_prize || 0).toLocaleString()} to 1st · ${(c.places_paid || 0).toLocaleString()} paid · ${c.kind === "double_up" ? "double-up" : "GPP"} · ${showdown ? "Showdown" : "Classic"}${poolNote}${c.starts ? ` · locks ${_dfsDkWhenUtc(c.starts)}` : ""}`;
   } catch (e) {
     if (info) info.textContent = "Could not read that contest from DraftKings.";

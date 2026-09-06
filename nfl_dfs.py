@@ -630,7 +630,7 @@ def _field_lineup(by_pos, cap, own_w, rng, tries=8):
 
 def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size=None,
                 prize_pool=None, first_prize=None, sample_size=500, n_iter=400,
-                extra_lineups=None):
+                extra_lineups=None, seed=None):
     by_pos = _by_pos(players)
     arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
     if by_pos is None or not arr:
@@ -638,7 +638,9 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
     L = min(len(a) for a in arr.values())
     own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in players}
     proj_of = {p["name"]: p.get("proj", 0.0) for p in players}
-    rng = random.Random(12345)
+    # a fixed field for every build; `seed` draws another (the sample-noise
+    # measurement, dfs_backtest.run_sample)
+    rng = random.Random(12345 if seed is None else seed)
     ref = sum(proj_of.get(p["name"], 0.0) for p in your_lineup)
     floor_q = 0.84 * ref
     field, attempts = [], 0
@@ -699,6 +701,7 @@ def contest_sim(your_lineup, players, contest="gpp", entry_fee=1.0, contest_size
            for k in range(K)]
     out = dict(per[0])
     out.update({"avg_return": round(ret[0] / n_iter, 2), "sample_size": len(field),
+                "field_hash": simulate._field_hash(field),
                 "entries": C, "contest": contest, "entry_fee": entry_fee,
                 "prize_pool": round(pool), "first_prize": round(first),
                 "places_paid": places})
@@ -942,7 +945,8 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
 
 def build(csv_text, week=1, objective="projection", stack=True, contest=None,
           contest_size=None, entry_fee=1.0, prize_pool=None, first_prize=None,
-          preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2):
+          preseason=False, mode="auto", field_size=None, n_lineups=1, uniq=2,
+          contest_probe=None):
     csv_players = simulate.parse_dk_csv(csv_text)
     if not csv_players:
         return {"error": "couldn't read any players out of that CSV"}
@@ -1085,6 +1089,25 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                                extra_lineups=lineups[1:])
         except Exception:
             csim = None
+    # Sample-noise probe (dfs_backtest.run_sample): the same lineup against
+    # fields of the asked sizes and seeds at the asked entry counts.
+    probe_rows = None
+    if contest_probe:
+        probe_rows = []
+        for pr in contest_probe:
+            try:
+                cs = contest_sim(lineup, players, contest=(contest or "gpp"), entry_fee=entry_fee,
+                                 contest_size=pr.get("entries") or contest_size,
+                                 sample_size=max(150, min(3000, int(pr.get("sample") or 500))),
+                                 seed=pr.get("seed"))
+                if cs:
+                    row = dict(pr, **{k: cs.get(k) for k in ("win_pct", "cash_pct", "top1_pct", "roi_pct")})
+                    row["field"], row["field_hash"] = cs.get("sample_size"), cs.get("field_hash")
+                else:
+                    row = dict(pr, error="no field")
+            except Exception as e:
+                row = dict(pr, error=str(e))
+            probe_rows.append(row)
     def _rows(lu):
         order = {"QB": 0, "RB": 1, "WR": 2, "TE": 3, "FLEX": 4, "DST": 5}
         need = {"RB": 2, "WR": 3, "TE": 1}
@@ -1121,7 +1144,8 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             "proj": round(sum(p["proj"] for p in lineup), 1),
             "floor": round(_pct(totals, 0.10), 1), "median": round(_pct(totals, 0.50), 1),
             "ceiling": round(_pct(totals, 0.90), 1), "max": round(max(totals), 1),
-            "lineup": rows, "contest_sim": csim, "unmatched": unmatched[:20],
+            "lineup": rows, "contest_sim": csim, "contest_probe": probe_rows,
+            "unmatched": unmatched[:20],
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "n_pool": len(players),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "

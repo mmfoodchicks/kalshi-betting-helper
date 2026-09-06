@@ -2247,7 +2247,8 @@ def api_simulate_dfs():
         entry_fee=max(0.01, _num("entry_fee", 1.0)),
         prize_pool=(_num("prize_pool", 0.0) or None),
         first_prize=(_num("first_prize", 0.0) or None),
-        grid_text=(d.get("grid") or None))
+        grid_text=(d.get("grid") or None),
+        field_size=int(_num("field_size", 0, int)) or None)
     if auto_slate and isinstance(built, dict):
         built["dk_slate"] = auto_slate          # what was auto-loaded, and who DK dropped
     _dfs_log(d.get("sport", "ufc"), d, built, auto_slate, text)

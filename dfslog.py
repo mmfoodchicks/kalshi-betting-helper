@@ -31,6 +31,7 @@ objectives, and no feed the app reads carries them.
 import datetime
 import hashlib
 import json
+import math
 import time
 from collections import defaultdict
 
@@ -64,6 +65,31 @@ _GATE_SHARE = 0.6        # leave-one-event-out: must beat identity this often
 _BACKTEST_W = 0.5
 _HALF_LIFE_EVENTS = 8.0
 SEED_PATH = "seeds/dfs_backtest_seed.json"
+# The sample-noise measurement (dfs_backtest.run_sample): per sport, how much
+# win% / cash% / ROI swing between opponent fields of each size, on a real
+# slate. The coach reads the smallest sample that holds still.
+SAMPLE_NOISE_PATH = "seeds/dfs_sample_noise.json"
+# "Holds still": across opponent fields of one size, the win% spread is under
+# 8% of its mean (only where win% is big enough to be the quantity that
+# matters, 0.2%+), the cash% spread under 6% of its mean, and the ROI spread
+# under 10% of (100 + |ROI|) -- relative, because the sim's ROI for a top
+# lineup runs from -70% (F1) to +8,000% (an NFL 20k-entry GPP) and a fixed
+# point threshold means nothing across that range. Measured 2026-09-06, four
+# fields per size, on the live NFL week-1, NASCAR Darlington, F1 Monza and
+# MLB slates: NFL's win% spread halves per doubling of the sample (cv 0.09 at
+# 300, 0.04 at 1200 for 1,000 entries); NASCAR's win% is ~0.03% and pure
+# noise, its cash% settles at 600-1,200; F1's pool of 33 names yields only
+# 461 distinct field lineups when 2,500 are asked for, and its spread GROWS
+# with the sample (cash cv 0.07 at 300, 0.17 at 2,500), so the smallest
+# sample is the right one there. When no size passes, the steadiest wins.
+_SAMPLE_WIN_CV = 0.08
+_SAMPLE_CASH_CV = 0.06
+_SAMPLE_ROI_CV = 0.10
+# Under 1% the win% is a tail probability a few hundred contest iterations
+# cannot pin whatever the field (MLB's top lineup wins a 1,000-entry GPP
+# 0.5% of the time and its spread read 23% at 300 and 4% at 2,500 on the same
+# cash% within 1%); cash% and ROI carry the decision there.
+_SAMPLE_WIN_FLOOR = 1.0
 
 
 # ---- storage -----------------------------------------------------------------
@@ -88,6 +114,14 @@ def _ensure():
                 c.execute("ALTER TABLE dfs_builds ADD COLUMN backtest INTEGER DEFAULT 0")
             except Exception as _e:
                 errlog.note("DFSLB-init-bt", _e)   # a sibling just added it
+        # the two knobs a build ran under: the opponent-field sample the
+        # contest sim used and the sims that scored the lineup
+        if "sample" not in cols:
+            try:
+                c.execute("ALTER TABLE dfs_builds ADD COLUMN sample INTEGER")
+                c.execute("ALTER TABLE dfs_builds ADD COLUMN sims INTEGER")
+            except Exception as _e:
+                errlog.note("DFSLB-init-sample", _e)
         c.execute("""
             CREATE TABLE IF NOT EXISTS dfs_actuals (
                 sport TEXT, event_key TEXT, payload TEXT, ts INTEGER,
@@ -233,6 +267,7 @@ def log_build(sport, req, res, auto_slate=None, csv_text=""):
     except (TypeError, ValueError):
         contest_id = contest_size = entry_fee = None
     dg = (auto_slate or {}).get("draft_group_id") or req.get("draft_group_id")
+    sample, sims = _knobs_of(req, res)
     n = 0
     with store._lock, store._conn() as c:
         for ix, (players, sal, proj, floor, median, ceil, mx) in enumerate(_lineups_of(res)):
@@ -241,13 +276,120 @@ def log_build(sport, req, res, auto_slate=None, csv_text=""):
             cur = c.execute(
                 "INSERT OR IGNORE INTO dfs_builds (ts, sport, event_key, event_date, week, "
                 "draft_group_id, contest_id, contest_size, entry_fee, objective, mode, lineup_ix, "
-                "players, total_salary, total_proj, floor, median, ceiling, max, big, big_reason, key) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
+                "players, total_salary, total_proj, floor, median, ceiling, max, big, big_reason, key, "
+                "sample, sims) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?)",
                 (int(time.time()), sport, event_key, event_date, week, dg, contest_id,
                  contest_size, entry_fee, objective, str(req.get("mode") or res.get("mode") or ""),
-                 ix, json.dumps(players), sal, proj, floor, median, ceil, mx, why, key))
+                 ix, json.dumps(players), sal, proj, floor, median, ceil, mx, why, key,
+                 sample, sims))
             n += cur.rowcount or 0
     return n
+
+
+def _knobs_of(req, res):
+    """(sample, sims) a build ran under: the opponent field the contest sim
+    actually drew (what the builder clamped the box to), else the box; the
+    sims the request asked for, else what the builder reports."""
+    cs = res.get("contest_sim") if isinstance(res.get("contest_sim"), dict) else {}
+    sample = cs.get("sample_size")
+    try:
+        sample = int(sample) if sample else (int(req.get("field_size") or 0) or None)
+    except (TypeError, ValueError):
+        sample = None
+    try:
+        sims = int(req.get("sims") or 0) or int(res.get("n_sims") or res.get("sims") or 0) or None
+    except (TypeError, ValueError):
+        sims = None
+    return sample, sims
+
+
+# ---- the sample-noise measurement, as the coach reads it ---------------------
+_noise_cache = {"path": None, "mtime": None, "data": None}
+
+
+def sample_noise(path=None):
+    """{"generated", "rows": [{sport, event, sims, grid: [{entries, sample,
+    win_mean, win_sd, cash_mean, cash_sd, roi_mean, roi_sd, ...}]}]} from the
+    committed measurement, {} when there is none."""
+    import os
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), SAMPLE_NOISE_PATH)
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return {}
+    if _noise_cache["path"] == path and _noise_cache["mtime"] == mtime:
+        return _noise_cache["data"]
+    try:
+        with open(path) as fh:
+            d = json.load(fh)
+    except Exception as e:
+        errlog.note("DFSLB-noise-read", e, path=path)
+        return {}
+    _noise_cache.update(path=path, mtime=mtime, data=d)
+    return d
+
+
+def _sample_spreads(g):
+    """(win cv or None, cash cv, roi cv) of one measured cell."""
+    wm, cm, rm = g.get("win_mean") or 0.0, g.get("cash_mean") or 0.0, g.get("roi_mean") or 0.0
+    win = (g.get("win_sd") or 0.0) / wm if wm >= _SAMPLE_WIN_FLOOR else None
+    cash = (g.get("cash_sd") or 0.0) / cm if cm > 0 else 0.0
+    roi = (g.get("roi_sd") or 0.0) / (100.0 + abs(rm))
+    return win, cash, roi
+
+
+def _bucket_picks(grid):
+    """{entries: sample} per measured entry bucket, ascending: the smallest
+    sample at which the estimate holds still (the rule above), the steadiest
+    when none does, and never below the bucket under it -- a bigger contest
+    is decided deeper in the tail, so the sample that resolves a smaller one
+    is the floor for a larger one (four fields per size leave the spreads
+    themselves noisy, and without the floor the table read 2,500 / 600 / 600)."""
+    out, floor = {}, 0
+    for ent in sorted({g["entries"] for g in grid if g.get("entries")}):
+        cands = sorted((g for g in grid if g.get("entries") == ent and g.get("sample")),
+                       key=lambda g: g["sample"])
+        if not cands:
+            continue
+        pick = best = None
+        for g in cands:
+            win, cash, roi = _sample_spreads(g)
+            if ((win is None or win <= _SAMPLE_WIN_CV) and cash <= _SAMPLE_CASH_CV
+                    and roi <= _SAMPLE_ROI_CV):
+                pick = int(g["sample"])
+                break
+            score = max(win or 0.0, cash, roi)
+            if best is None or score < best[0]:
+                best = (score, int(g["sample"]))
+        floor = max(floor, pick if pick is not None else best[1])
+        out[ent] = floor
+    return out
+
+
+def sample_recommend(sport, entries, noise=None):
+    """The measured sample for this sport at the nearest measured entry
+    count (_bucket_picks); None without a measurement."""
+    noise = noise if noise is not None else sample_noise()
+    rows = [r for r in (noise or {}).get("rows") or [] if r.get("sport") == sport]
+    if not rows or not entries:
+        return None
+    picks = _bucket_picks(rows[-1].get("grid") or [])
+    if not picks:
+        return None
+    ent = min(picks, key=lambda b: abs(math.log(b) - math.log(max(1, entries))))
+    return picks[ent]
+
+
+def sample_reco_table(noise=None):
+    """{sport: {entries_bucket: sample}} for every measured sport and bucket."""
+    noise = noise if noise is not None else sample_noise()
+    out = {}
+    for r in (noise or {}).get("rows") or []:
+        picks = _bucket_picks(r.get("grid") or [])
+        if picks:
+            out[r.get("sport")] = {str(k): v for k, v in picks.items()}
+    return out
 
 
 # ---- actual DraftKings points per event --------------------------------------
@@ -793,8 +935,11 @@ def report():
     per = {}
     pending = defaultdict(lambda: {"lineups": 0, "events": set()})
     seeded = defaultdict(lambda: {"backtest": set(), "live": set(), "players": 0})
+    used = defaultdict(list)
     for r in rows:
         sp, obj = r["sport"], r["objective"]
+        if r["sample"]:
+            used[sp].append(int(r["sample"]))
         if not r["graded"]:
             pending[sp]["lineups"] += 1
             pending[sp]["events"].add(r["event_key"])
@@ -868,6 +1013,10 @@ def report():
             "pending": {sp: {"lineups": v["lineups"], "events": len(v["events"])} for sp, v in pending.items()},
             "not_graded": NOT_GRADED, "corrections": corr,
             "gate": {"min_events": _MIN_EVENTS, "loo_share": _GATE_SHARE, "shrink_events": _SHRINK_K},
+            "sample_used": {sp: int(sorted(v)[len(v) // 2]) for sp, v in used.items()},
+            "sample_noise": sample_noise(), "sample_reco": sample_reco_table(),
+            "sample_rule": {"win_cv": _SAMPLE_WIN_CV, "cash_cv": _SAMPLE_CASH_CV,
+                            "roi_cv": _SAMPLE_ROI_CV, "win_floor": _SAMPLE_WIN_FLOOR},
             "n_logged": len(rows)}
 
 

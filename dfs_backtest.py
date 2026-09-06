@@ -293,6 +293,103 @@ def merge_seed(parts, path=None, source="backtest"):
     return write_seed(out, path, source), len(out)
 
 
+# ---- the sample-noise measurement --------------------------------------------
+_SAMPLES = (300, 600, 1200, 2500)
+_SEEDS = (1, 2, 3, 4)
+_ENTRIES = (1000, 20000, 150000)
+NOISE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seeds/dfs_sample_noise.json")
+
+
+def _probe_grid(samples=_SAMPLES, seeds=_SEEDS, entries=_ENTRIES):
+    return [{"sample": sm, "seed": sd, "entries": en}
+            for en in entries for sm in samples for sd in seeds]
+
+
+def _fold(probe):
+    """The probe rows folded to (entries, sample): mean and spread over seeds."""
+    import statistics
+    by = {}
+    for r in probe or []:
+        if r.get("error") or r.get("win_pct") is None:
+            continue
+        by.setdefault((r["entries"], r["sample"]), []).append(r)
+    grid = []
+    for (en, sm), rs in sorted(by.items()):
+        def _ms(key):
+            xs = [float(r.get(key) or 0.0) for r in rs]
+            return (round(statistics.fmean(xs), 4),
+                    round(statistics.pstdev(xs), 4) if len(xs) > 1 else 0.0)
+        wm, ws = _ms("win_pct")
+        cm, cs_ = _ms("cash_pct")
+        rm, rsd = _ms("roi_pct")
+        grid.append({"entries": en, "sample": sm, "n_seeds": len(rs),
+                     "field": int(round(sum(r.get("field") or sm for r in rs) / len(rs))),
+                     "win_mean": wm, "win_sd": ws, "cash_mean": cm, "cash_sd": cs_,
+                     "roi_mean": rm, "roi_sd": rsd,
+                     "distinct_fields": len({r.get("field_hash") for r in rs})})
+    return grid
+
+
+def run_sample(sport, sims=3000, samples=_SAMPLES, seeds=_SEEDS, entries=_ENTRIES,
+               draft_group_id=None, entry_fee=20.0):
+    """Measure the sample noise on the sport's live main DraftKings slate: one
+    build, then the SAME top lineup against opponent fields of each size and
+    seed at each entry count. Returns the row the seed file keeps."""
+    import dk
+    import simulate
+    sl = dk.slate_for(sport, draft_group_id)
+    if not sl or not sl.get("csv"):
+        raise RuntimeError(f"{sport}: no DraftKings slate with a pool")
+    probe = _probe_grid(samples, seeds, entries)
+    today = clock.today_et().isoformat()
+    t0 = time.time()
+    if sport == "nfl":
+        import nfl_dfs
+        res = nfl_dfs.build(sl["csv"], week=1, objective="ceiling", stack=True, contest="gpp",
+                            contest_size=entries[1] if len(entries) > 1 else entries[0],
+                            entry_fee=entry_fee, mode="classic", contest_probe=probe)
+    elif sport == "mlb":
+        import mlb_dfs
+        res = mlb_dfs.build(today, sl["csv"], cap=50000, objective="ceiling", n_sims=sims,
+                            contest="gpp", field_size=600, entry_fee=entry_fee,
+                            contest_size=entries[1] if len(entries) > 1 else entries[0],
+                            contest_probe=probe)
+    else:
+        res = simulate.dfs_build(sl["csv"], roster=6, cap=50000, sport=sport, mode="classic",
+                                 objective="ceiling", date=today, sims=sims, contest="gpp",
+                                 contest_size=entries[1] if len(entries) > 1 else entries[0],
+                                 entry_fee=entry_fee, contest_probe=probe)
+    if not isinstance(res, dict) or res.get("error"):
+        raise RuntimeError(f"{sport}: build failed: {(res or {}).get('error')}")
+    grid = _fold(res.get("contest_probe"))
+    if not grid:
+        raise RuntimeError(f"{sport}: the probe returned nothing")
+    return {"sport": sport, "ts": int(time.time()), "date": today, "sims": sims,
+            "entry_fee": entry_fee, "seconds": round(time.time() - t0, 1),
+            "event": {"draft_group_id": sl.get("draft_group_id"), "n_players": sl.get("n_players"),
+                      "starts": ((sl.get("slate") or {}).get("starts") if isinstance(sl.get("slate"), dict) else None)},
+            "grid": grid}
+
+
+def write_noise(rows, path=None):
+    """Merge per sport into the seed file (a sport's newest measurement wins)."""
+    path = path or NOISE_PATH
+    d = {"generated": None, "rows": []}
+    if os.path.exists(path):
+        try:
+            with open(path) as fh:
+                d = json.load(fh)
+        except Exception:
+            d = {"generated": None, "rows": []}
+    keep = [r for r in d.get("rows") or [] if r.get("sport") not in {x["sport"] for x in rows}]
+    d["rows"] = sorted(keep + list(rows), key=lambda r: r["sport"])
+    d["generated"] = int(time.time())
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(d, fh, indent=1, sort_keys=True)
+    return path
+
+
 if __name__ == "__main__":
     import sys
     args = sys.argv[1:]
@@ -304,6 +401,19 @@ if __name__ == "__main__":
     if args and args[0] == "merge":
         p, n = merge_seed(args[1:])
         print("merged", p, "events", n)
+        sys.exit(0)
+    if args and args[0] == "sample":
+        rows = []
+        for sp in (args[1:] or ["f1", "nascar", "nfl", "mlb"]):
+            try:
+                row = run_sample(sp)
+                rows.append(row)
+                print(sp, "measured in", row["seconds"], "s:",
+                      [(g["entries"], g["sample"], g["win_mean"], g["win_sd"], g["roi_sd"]) for g in row["grid"]])
+            except Exception as e:
+                print(f"{sp}: sample run failed ({e})")
+        if rows:
+            print("wrote", write_noise(rows, out_path))
         sys.exit(0)
     which = args or ["f1", "nascar", "nfl"]
     out = []
