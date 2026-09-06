@@ -10649,7 +10649,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v111' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v112' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11150,22 +11150,109 @@ ck("the report carries the graded row per sport and objective, and one event is 
    and _rep_lb["rows"][0]["events"] == 1 and _rep_lb["rows"][0]["mean_actual"] > _rep_lb["rows"][0]["mean_proj"]
    and _rep_lb["corrections"]["f1"].get("D") is None
    and "needs 5" in _rep_lb["corrections"]["f1"]["_meta"]["D"]["status"])
+_neff6 = sum(0.5 ** (k / 8.0) for k in range(6))
 ck("six events that all ran 15% under projection ship a shrunk correction that "
    "beat no-correction out of sample; six that swing 40% either way are gated out",
-   abs(_cnas.get("D", 0) - (1 + (0.85 - 1) * 6 / 12)) < 1e-6 and _cnas["_meta"]["D"]["status"] == "in force"
+   # six live events on one date rank by insertion: weights 2^(-k/8), k = 0..5,
+   # and the shrink runs on their sum (4.88 events' worth), not on six
+   abs(_cnas.get("D", 0) - round(1 + (0.85 - 1) * _neff6 / (_neff6 + 6.0), 3)) < 1e-9
+   and _cnas["_meta"]["D"]["status"] == "in force"
    and _cnas["_meta"]["D"]["loo_share"] == 1.0
    and _cufc.get("F") is None and _cufc["_meta"]["F"]["status"] == "gated out",
    f"nascar {_cnas.get('_meta', {}).get('D')} | ufc {_cufc.get('_meta', {}).get('F')}")
 ck("a correction in force scales the projection and its samples and marks the row; "
    "a group without one is untouched",
-   _adj == 1 and abs(_players_lb[0]["proj"] - 9.25) < 1e-6 and abs(_players_lb[0]["arr"][1] - 11.1) < 1e-6
-   and _players_lb[0]["lookback_factor"] == 0.925 and _adju == 0 and _players_u[0]["proj"] == 10.0)
+   _adj == 1 and abs(_players_lb[0]["proj"] - 10.0 * _cnas["D"]) < 1e-6
+   and abs(_players_lb[0]["arr"][1] - 12.0 * _cnas["D"]) < 1e-6
+   and _players_lb[0]["lookback_factor"] == _cnas["D"] and _adju == 0 and _players_u[0]["proj"] == 10.0)
 import app as _aplb
 import simulate as _smlb
 _rules_lb = {r.rule for r in _aplb.app.url_map.iter_rules()}
 _jslb2 = open(_os.path.join(_root, "static", "app.js")).read()
 _tplb = open(_os.path.join(_root, "templates", "index.html")).read()
 _aps = open(_os.path.join(_root, "app.py")).read()
+# --- the blind backtest seeds the record: half-weight, recency-decayed
+import dfs_backtest as _bt
+import racing_sim as _rslb
+import nfl_dfs_sim as _nplb
+_stlb.DB_PATH = _os.path.join(_tflb.mkdtemp(), "seed.db")
+_stlb.init_db()
+try:
+    _lb._state["corr"] = {}; _lb._bt_cache.clear()
+    _seed_rows = [{"sport": "f1", "event_key": f"f1:2026-0{m}-01:{m}", "event_date": f"2026-0{m}-01",
+                   "players": [{"name": f"d{i}", "pos": "D", "proj": 20.0, "actual": 17.0} for i in range(6)],
+                   "note": "blind"} for m in range(3, 8)]                        # five backtested rounds
+    _s1 = _lb.seed_rows(_seed_rows, source="test")
+    _s2 = _lb.seed_rows(_seed_rows, source="test")
+    _seedf = _os.path.join(_tflb.mkdtemp(), "seed.json")
+    _jslb.dump({"source": "file", "rows": [{"sport": "f1", "event_key": "f1:2026-08-01:8", "event_date": "2026-08-01",
+                                              "players": [{"name": f"e{i}", "pos": "D", "proj": 20.0, "actual": 17.0} for i in range(4)]}]},
+               open(_seedf, "w"))
+    _s3 = _lb.ingest_seed(_seedf)
+    _pairs_lb = _lb._graded_pairs("f1")
+    _w_by_ev = {e: w for e, _, _, _, w in _pairs_lb}
+    _rep2 = _lb.report()
+    _lb._state["corr"] = {}
+    _c_seed = _lb.corrections("f1")
+finally:
+    _stlb.DB_PATH = _odb_lb
+    _lb._state["corr"] = {}; _lb._bt_cache.clear()
+_newest = max(_w_by_ev, key=lambda e: e.split(":")[1])
+_oldest = min(_w_by_ev, key=lambda e: e.split(":")[1])
+ck("seeded events insert once, load from the committed file, weigh half a live event "
+   "and decay by recency: the newest backtest weighs 0.5, five events back 0.5 x 2^(-5/8)",
+   _s1 == 5 and _s2 == 0 and _s3 == 1 and len(_w_by_ev) == 6
+   and abs(_w_by_ev[_newest] - 0.5) < 1e-9 and abs(_w_by_ev[_oldest] - 0.5 * 0.5 ** (5 / 8)) < 1e-9
+   and _rep2["seeded"]["f1"]["backtest_events"] == 6 and _rep2["seeded"]["f1"]["live_events"] == 0
+   and _rep2["seeded"]["f1"]["backtest_players"] == 34 and not _rep2["rows"]
+   and _rep2["backtest"] and _rep2["backtest"][0]["bias_pct"] == -15.0,
+   f"weights {sorted(_w_by_ev.values())} seeded {_rep2.get('seeded')}")
+_neff = sum(_w_by_ev.values())
+ck("the seeded correction ships in the same direction as the data, shrunk on the "
+   "events' summed weight, and says how many of its events were backtests",
+   _c_seed.get("D") is not None and abs(_c_seed["D"] - round(1 + (0.85 - 1) * _neff / (_neff + 6.0), 3)) < 1e-9
+   and _c_seed["_meta"]["D"]["backtest_events"] == 6 and _c_seed["_meta"]["D"]["status"] == "in force",
+   str(_c_seed.get("_meta")))
+# --- the blind window in the sims
+_res_bt = {"MRData": {"RaceTable": {"Races": [
+    {"round": "1", "Circuit": {"circuitName": "Bahrain"}, "Results": [{"Driver": {"driverId": "a"}, "grid": "1", "position": "1", "status": "Finished"}]},
+    {"round": "2", "Circuit": {"circuitName": "Jeddah"}, "Results": [{"Driver": {"driverId": "a"}, "grid": "1", "position": "9", "status": "Finished"}]},
+    {"round": "3", "Circuit": {"circuitName": "Suzuka"}, "Results": [{"Driver": {"driverId": "a"}, "grid": "1", "position": "9", "status": "Finished"}]}]}}}
+_rclb._get_json = lambda url, timeout=25: _res_bt
+try:
+    for _k in (("f1_results", None), ("f1_results", 2), ("f1_results", 4)):
+        _rclb._form_cache.pop(_k, None)
+    _all_bt = _rslb._f1_results()
+    _asof_bt = _rslb._f1_results(as_of_round=2)
+finally:
+    _rclb._get_json = _ogj_lb
+    for _k in (("f1_results", None), ("f1_results", 2)):
+        _rclb._form_cache.pop(_k, None)
+import inspect as _insplb
+_sig_nrs = str(_insplb.signature(_rslb.next_race_sim))
+ck("a backtest of round 2 sees only round 1 (the live model sees the season), and the "
+   "sims take the race, the blind flag and the as-of window",
+   _all_bt["a"]["starts"] == 3 and _asof_bt["a"]["starts"] == 1
+   and all(k in _sig_nrs for k in ("race=None", "blind=False", "as_of_round=None", "as_of_date=None"))
+   and "as_of=None" in str(_insplb.signature(_rslb.nascar_state))
+   and "as_of=None" in str(_insplb.signature(_rslb.nascar_type_skill))
+   and "season=None" in str(_insplb.signature(_nplb.player_pool))
+   and "_f1_practice_gaps()" in _insplb.getsource(_rslb.next_race_sim)
+   and "None if blind else _f1_longrun_pace()" in _insplb.getsource(_rslb.next_race_sim)
+   and "None if blind else racing.get_nascar_practice" in _insplb.getsource(_rslb.next_race_sim))
+_seed_path = _os.path.join(_root, _lb.SEED_PATH)
+_seed_doc = _jslb.load(open(_seed_path)) if _os.path.exists(_seed_path) else {}
+_seed_sports = {r["sport"] for r in _seed_doc.get("rows", [])}
+ck("the committed seed carries blind F1, NASCAR and NFL events with graded "
+   "projections, every row with a date the recency weight can order",
+   {"f1", "nascar", "nfl"} <= _seed_sports and len(_seed_doc.get("rows", [])) >= 30
+   and all(r.get("event_date") and len(r.get("players") or []) >= 15 for r in _seed_doc["rows"]),
+   f"{_seed_path}: sports {sorted(_seed_sports)} rows {len(_seed_doc.get('rows', []))}")
+ck("the PC's seed door is token-only, the panel shows the seeded counts and the "
+   "backtest scoreboard",
+   "/api/dfs/lookback/seed" in _rules_lb
+   and "if not _pc_auth_ok():\n        return jsonify({\"error\": \"auth\"}), 403\n    d = request.get_json(force=True, silent=True) or {}\n    try:\n        import dfslog\n        n = dfslog.seed_rows(" in _aps
+   and "Seeded from blind backtests" in _jslb2 and "d.backtest || []" in _jslb2)
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",

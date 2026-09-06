@@ -7664,6 +7664,18 @@ async function loadDfsLookback() {
         else waiting.push(`${sp.toUpperCase()} ${g}: ${m.status}${m.events != null ? ` (${m.events})` : ""}`);
       }
     }
+    const seeded = d.seeded || {};
+    const sk = Object.keys(seeded);
+    if (sk.length) html += `<div style="margin-top:6px">Seeded from blind backtests: ${sk.map((sp) => `${sp.toUpperCase()} ${seeded[sp].backtest_events} event${seeded[sp].backtest_events === 1 ? "" : "s"} (${(seeded[sp].backtest_players || 0).toLocaleString()} graded projections)${seeded[sp].live_events ? ` + ${seeded[sp].live_events} live` : ""}`).join(" · ")}. A backtested event counts ${d.weights ? d.weights.backtest : 0.5} of a live one and every event decays by recency (half-life ${d.weights ? d.weights.half_life_events : 8} events).</div>`;
+    const bt = d.backtest || [];
+    if (bt.length) {
+      html += `<div class="scroller" style="overflow-x:auto;margin-top:4px"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">backtest</th><th>group</th><th>events</th><th>players</th><th>proj/player</th><th>actual/player</th><th>bias</th><th>MAE</th></tr></thead><tbody>`;
+      for (const r of bt) {
+        const bias = r.bias_pct > 0 ? `<span style="color:#3ad17a">+${r.bias_pct}%</span>` : `<span style="color:#e0566a">${r.bias_pct}%</span>`;
+        html += `<tr><td>${r.sport.toUpperCase()}</td><td style="text-align:center">${r.group}</td><td style="text-align:center">${r.events}</td><td style="text-align:center">${r.players.toLocaleString()}</td><td style="text-align:right">${r.mean_proj}</td><td style="text-align:right"><b>${r.mean_actual}</b></td><td style="text-align:right">${bias}</td><td style="text-align:right">${r.player_mae}</td></tr>`;
+      }
+      html += `</tbody></table></div>`;
+    }
     html += `<div style="margin-top:6px"><b>Corrections in force:</b> ${inForce.length ? inForce.join(" · ") : "none yet"}</div>`;
     if (waiting.length) html += `<div style="color:var(--muted)">Gated: ${waiting.join(" · ")}</div>`;
     const pend = d.pending || {};

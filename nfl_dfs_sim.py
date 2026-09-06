@@ -497,12 +497,12 @@ def dst_projections(season, week):
     return _cached(("nfl_dst", season, week), 3600, build)
 
 
-def player_pool(week, n=3000, preseason=False):
+def player_pool(week, n=3000, preseason=False, season=None):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
     Cached 30m (this is the heavy correlated sim over the whole slate)."""
-    season = _season()
+    season = season or _season()      # a backtest names a past season
 
     def build():
         games = (preseason_games(str(season), week) if preseason

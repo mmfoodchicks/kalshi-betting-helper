@@ -2062,6 +2062,21 @@ def api_dfs_lookback():
         return jsonify({"error": f"lookback failed: {e}"}), 502
 
 
+@app.route("/api/dfs/lookback/seed", methods=["POST"])
+def api_dfs_lookback_seed():
+    """The PC's door for backtested events (dfs_backtest rows): inserted as
+    graded, flagged rows of the look-back. X-Sim-Token only."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        import dfslog
+        n = dfslog.seed_rows(d.get("rows") or [], source=str(d.get("source") or "pc"))
+        return jsonify({"inserted": n})
+    except Exception as e:
+        return jsonify({"error": f"seed failed: {e}"}), 502
+
+
 @app.route("/api/dfs/lookback/grade", methods=["POST"])
 def api_dfs_lookback_grade():
     """Grade every logged lineup whose event is over, now."""

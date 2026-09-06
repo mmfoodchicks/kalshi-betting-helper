@@ -27,3 +27,6 @@ data/
 # Build artifacts (a 47MB playwright wheel was committed once)
 *.whl
 futures_history/
+
+# backtest part files (merged into seeds/dfs_backtest_seed.json, which IS committed)
+seeds/part_*.json

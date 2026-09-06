@@ -55,6 +55,15 @@ _state = {"last_grade": 0.0, "corr": {}, "corr_ts": 0.0}
 _MIN_EVENTS = 5          # graded events before a correction may ship
 _SHRINK_K = 6.0          # events of prior weight pulling the ratio toward 1
 _GATE_SHARE = 0.6        # leave-one-event-out: must beat identity this often
+# Backtested events seed the record so the first correction has a direction
+# instead of a coin flip, but they were run blind on form alone (no practice
+# pace, no this-weekend reads), so each counts half a live event; and every
+# event decays by recency (half-life eight events) so what happens from today
+# on takes the wheel quickly. Both measured against nothing yet: they are the
+# owner's stated intent ("weigh it harder from today on"), pinned by guards.
+_BACKTEST_W = 0.5
+_HALF_LIFE_EVENTS = 8.0
+SEED_PATH = "seeds/dfs_backtest_seed.json"
 
 
 # ---- storage -----------------------------------------------------------------
@@ -73,6 +82,12 @@ def _ensure():
                 n_missing INTEGER, bucket TEXT, graded_ts INTEGER, note TEXT
             )""")
         c.execute("CREATE INDEX IF NOT EXISTS idx_dfs_builds_graded ON dfs_builds(graded, sport)")
+        cols = {r[1] for r in c.execute("PRAGMA table_info(dfs_builds)")}
+        if "backtest" not in cols:
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE dfs_builds ADD COLUMN backtest INTEGER DEFAULT 0")
+            except Exception as _e:
+                errlog.note("DFSLB-init-bt", _e)   # a sibling just added it
         c.execute("""
             CREATE TABLE IF NOT EXISTS dfs_actuals (
                 sport TEXT, event_key TEXT, payload TEXT, ts INTEGER,
@@ -597,11 +612,12 @@ def _graded_pairs(sport):
     """[(event_key, group, proj, actual)] over every graded lineup's players."""
     _ensure()
     with store._lock, store._conn() as c:
-        rows = c.execute("SELECT event_key, players, actual_players FROM dfs_builds "
+        rows = c.execute("SELECT event_key, event_date, players, actual_players, backtest FROM dfs_builds "
                          "WHERE graded=1 AND sport=?", (sport,)).fetchall()
-    seen, pairs = set(), []
+    seen, pairs, ev_info = set(), [], {}
     for r in rows:
         players = {p["name"]: p for p in json.loads(r["players"] or "[]")}
+        ev_info[r["event_key"]] = (r["event_date"] or "", bool(r["backtest"]))
         for name, proj, actual in json.loads(r["actual_players"] or "[]"):
             if proj is None or actual is None:
                 continue
@@ -612,18 +628,41 @@ def _graded_pairs(sport):
             p = players.get(name) or {}
             base = actual / 1.5 if p.get("captain") else actual
             pairs.append((r["event_key"], _pos_group(sport, p.get("pos"), p.get("slot")), float(proj), float(base)))
-    return pairs
+    # event weight: recency (newest = 1, half-life eight events) x backtest 0.5
+    order = sorted(ev_info, key=lambda e: ev_info[e][0])
+    rank_from_latest = {e: len(order) - 1 - i for i, e in enumerate(order)}
+    ev_w = {e: (0.5 ** (rank_from_latest[e] / _HALF_LIFE_EVENTS)) * (_BACKTEST_W if ev_info[e][1] else 1.0)
+            for e in order}
+    return [(e, g, pj, ac, ev_w.get(e, 1.0)) for e, g, pj, ac in pairs]
 
 
 def _fit(pairs):
-    """Shrunk ratio of actual to projected points over the pairs' events."""
-    ev = {e for e, _, _, _ in pairs}
-    sp, sa = sum(x[2] for x in pairs), sum(x[3] for x in pairs)
+    """Weighted, shrunk ratio of actual to projected points over the pairs'
+    events. The shrink runs on the events' summed weight, so five half-weight
+    backtests pull the ratio toward 1 as much as two and a half live ones."""
+    ev = {}
+    for e, _, _, _, w in pairs:
+        ev[e] = w
+    sp = sum(x[4] * x[2] for x in pairs)
+    sa = sum(x[4] * x[3] for x in pairs)
     if sp <= 0 or not ev:
         return None
     r = sa / sp
-    n = len(ev)
-    return 1.0 + (r - 1.0) * n / (n + _SHRINK_K)
+    n_eff = sum(ev.values())
+    return 1.0 + (r - 1.0) * n_eff / (n_eff + _SHRINK_K)
+
+
+_bt_cache = {}
+
+
+def _is_backtest_event(sport, event_key):
+    key = (sport, event_key)
+    if key not in _bt_cache:
+        with store._lock, store._conn() as c:
+            r = c.execute("SELECT MAX(backtest) b FROM dfs_builds WHERE sport=? AND event_key=?",
+                          (sport, event_key)).fetchone()
+        _bt_cache[key] = bool(r and r["b"])
+    return _bt_cache[key]
 
 
 def corrections(sport, min_events=_MIN_EVENTS):
@@ -637,11 +676,11 @@ def corrections(sport, min_events=_MIN_EVENTS):
         return cached
     pairs = _graded_pairs(sport)
     by_group = defaultdict(list)
-    for e, g, pj, ac in pairs:
-        by_group[g].append((e, g, pj, ac))
+    for row in pairs:
+        by_group[row[1]].append(row)
     out, meta = {}, {}
     for g, rows in by_group.items():
-        events = sorted({e for e, _, _, _ in rows})
+        events = sorted({x[0] for x in rows})
         if len(events) < min_events:
             meta[g] = {"events": len(events), "status": f"needs {min_events} graded events"}
             continue
@@ -656,8 +695,9 @@ def corrections(sport, min_events=_MIN_EVENTS):
         f_all = _fit(rows) or 1.0
         share = wins / len(events)
         raw = (sum(x[3] for x in rows) / max(1e-9, sum(x[2] for x in rows)))
-        meta[g] = {"events": len(events), "players": len(rows), "raw_ratio": round(raw, 3),
-                   "factor": round(f_all, 3), "loo_share": round(share, 2),
+        n_bt = sum(1 for e in events if e.startswith("bt:") or _is_backtest_event(sport, e))
+        meta[g] = {"events": len(events), "backtest_events": n_bt, "players": len(rows),
+                   "raw_ratio": round(raw, 3), "factor": round(f_all, 3), "loo_share": round(share, 2),
                    "status": "in force" if share >= _GATE_SHARE and abs(f_all - 1) >= 0.01 else "gated out"}
         if share >= _GATE_SHARE and abs(f_all - 1) >= 0.01:
             out[g] = round(f_all, 3)
@@ -698,6 +738,53 @@ def adjust(sport, players):
     return n
 
 
+# ---- seeding from a backtest -------------------------------------------------
+def seed_rows(rows, source="backtest"):
+    """Insert backtested events as graded, flagged rows. `rows` is
+    [{sport, event_key, event_date, players: [{name, pos, proj, actual}]}]
+    (dfs_backtest writes them). Idempotent per (sport, event). Returns how
+    many events were inserted."""
+    _ensure()
+    n = 0
+    with store._lock, store._conn() as c:
+        for ev in rows:
+            pls = [p for p in (ev.get("players") or []) if p.get("proj") is not None and p.get("actual") is not None]
+            if len(pls) < 3:
+                continue
+            key = hashlib.sha1(f"{source}|{ev['sport']}|{ev['event_key']}".encode()).hexdigest()[:20]
+            players = [{"name": p["name"], "pos": p.get("pos"), "proj": p["proj"], "captain": False} for p in pls]
+            actual_players = [[p["name"], p["proj"], p["actual"]] for p in pls]
+            tp = round(sum(p["proj"] for p in pls), 2)
+            ta = round(sum(p["actual"] for p in pls), 2)
+            cur = c.execute(
+                "INSERT OR IGNORE INTO dfs_builds (ts, sport, event_key, event_date, objective, mode, lineup_ix, "
+                "players, total_proj, big, big_reason, key, graded, actual, actual_players, n_missing, graded_ts, backtest, note) "
+                "VALUES (?,?,?,?,?,?,?,?,?,1,?,?,1,?,?,0,?,1,?)",
+                (int(time.time()), ev["sport"], ev["event_key"], ev.get("event_date"), "backtest", "",
+                 0, json.dumps(players), tp, f"backtest ({source})", key, ta, json.dumps(actual_players),
+                 int(time.time()), ev.get("note")))
+            n += cur.rowcount or 0
+    if n:
+        _state["corr"] = {}
+        _bt_cache.clear()
+    return n
+
+
+def ingest_seed(path=None):
+    """Load the committed backtest seed once (idempotent by event)."""
+    import os
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), SEED_PATH)
+    if not os.path.exists(path):
+        return 0
+    try:
+        with open(path) as fh:
+            d = json.load(fh)
+    except Exception as e:
+        errlog.note("DFSLB-seed-read", e, path=path)
+        return 0
+    return seed_rows(d.get("rows") or [], source=d.get("source") or "seed")
+
+
 # ---- the report -------------------------------------------------------------
 def report():
     _ensure()
@@ -705,12 +792,18 @@ def report():
         rows = c.execute("SELECT * FROM dfs_builds ORDER BY ts").fetchall()
     per = {}
     pending = defaultdict(lambda: {"lineups": 0, "events": set()})
+    seeded = defaultdict(lambda: {"backtest": set(), "live": set(), "players": 0})
     for r in rows:
         sp, obj = r["sport"], r["objective"]
         if not r["graded"]:
             pending[sp]["lineups"] += 1
             pending[sp]["events"].add(r["event_key"])
             continue
+        if r["backtest"]:
+            seeded[sp]["backtest"].add(r["event_key"])
+            seeded[sp]["players"] += len(json.loads(r["actual_players"] or "[]"))
+            continue                      # the objective table is live lineups only
+        seeded[sp]["live"].add(r["event_key"])
         d = per.setdefault((sp, obj), {"sport": sp, "objective": obj, "events": set(), "lineups": 0,
                                        "proj": 0.0, "actual": 0.0, "beat": 0, "buckets": defaultdict(int),
                                        "abs_err": 0.0, "n_players": 0, "partial": 0})
@@ -752,7 +845,25 @@ def report():
             corr[sp] = corrections(sp)
         except Exception as e:
             errlog.note("DFSLB-report-corr", e, path=sp)
-    return {"rows": out,
+    # the backtest's own scoreboard: projection bias per sport over its events
+    bt_rows = []
+    for sp, v in seeded.items():
+        if not v["backtest"]:
+            continue
+        pairs = [x for x in _graded_pairs(sp) if _is_backtest_event(sp, x[0])]
+        by_g = defaultdict(list)
+        for x in pairs:
+            by_g[x[1]].append(x)
+        for g, xs in sorted(by_g.items()):
+            spj, sac = sum(x[2] for x in xs), sum(x[3] for x in xs)
+            mae = sum(abs(x[3] - x[2]) for x in xs) / len(xs)
+            bt_rows.append({"sport": sp, "group": g, "events": len({x[0] for x in xs}), "players": len(xs),
+                            "mean_proj": round(spj / len(xs), 1), "mean_actual": round(sac / len(xs), 1),
+                            "bias_pct": round(100 * (sac / max(1e-9, spj) - 1), 1), "player_mae": round(mae, 1)})
+    return {"rows": out, "backtest": bt_rows,
+            "seeded": {sp: {"backtest_events": len(v["backtest"]), "live_events": len(v["live"]),
+                            "backtest_players": v["players"]} for sp, v in seeded.items()},
+            "weights": {"backtest": _BACKTEST_W, "half_life_events": _HALF_LIFE_EVENTS},
             "best_objective": {sp: r["objective"] for sp, r in best.items()},
             "pending": {sp: {"lineups": v["lineups"], "events": len(v["events"])} for sp, v in pending.items()},
             "not_graded": NOT_GRADED, "corrections": corr,
@@ -761,9 +872,16 @@ def report():
 
 
 def tick():
-    """Recorder-cadence pass: grade what is due, at most every 30 minutes."""
+    """Recorder-cadence pass: grade what is due, at most every 30 minutes; the
+    committed backtest seed is loaded once per process (idempotent)."""
     now = time.time()
     if now - _state["last_grade"] < _GRADE_EVERY_S:
         return 0
     _state["last_grade"] = now
+    if not _state.get("seeded"):
+        _state["seeded"] = True
+        try:
+            ingest_seed()
+        except Exception as e:
+            errlog.note("DFSLB-seed", e)
     return grade_due()

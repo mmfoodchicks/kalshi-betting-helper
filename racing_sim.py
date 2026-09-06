@@ -112,7 +112,9 @@ def _f1_sc_prob(name):
     return 0.42
 
 
-def _f1_results():
+def _f1_results(as_of_round=None):
+    """`as_of_round` keeps only rounds BEFORE it: the blind form a backtest of
+    that round is allowed to know (the live model reads the whole season)."""
     """Per-driver season form: avg grid, avg finish, DNF rate, starts."""
     def build():
         races = []
@@ -128,6 +130,8 @@ def _f1_results():
         fin_acc, fin_w = defaultdict(float), defaultdict(float)
         t_acc, t_w, t_n = defaultdict(lambda: defaultdict(float)), \
             defaultdict(lambda: defaultdict(float)), defaultdict(lambda: defaultdict(int))
+        if as_of_round is not None:
+            races = [r for r in races if int(r.get("round") or 0) < int(as_of_round)]
         for i, r in enumerate(races):
             w = i + 1
             ctype = _f1_circuit_type((r.get("Circuit") or {}).get("circuitName")
@@ -178,10 +182,10 @@ def _f1_results():
             out[did] = {"avg_grid": avg_grid, "avg_fin": avg_fin, "race_by_type": by_type,
                         "dnf": dnf_rate, "dnf_n": dnf[did], "starts": starts[did]}
         return out
-    return racing._cached(("f1_results",), 6 * 3600, build) or {}
+    return racing._cached(("f1_results", as_of_round), 6 * 3600, build) or {}
 
 
-def f1_type_skill(year=None, n_back=2):
+def f1_type_skill(year=None, n_back=2, as_of_round=None):
     """Per-driver per-circuit-type skill delta, car-free, across recent F1 seasons.
 
     Same delta-of-deltas as NASCAR: for each season, (in-type avg finish − that
@@ -206,6 +210,8 @@ def f1_type_skill(year=None, n_back=2):
                 races += rs_
                 if len(rs_) < 100:
                     break
+            if as_of_round is not None and yr == year:
+                races = [r for r in races if int(r.get("round") or 0) < int(as_of_round)]
             for r in races:
                 ct = _f1_circuit_type((r.get("Circuit") or {}).get("circuitName") or r.get("raceName"))
                 for res in r.get("Results", []):
@@ -238,7 +244,7 @@ def f1_type_skill(year=None, n_back=2):
             out[did] = {ct: round((acc[ct] / wsum[ct]) * nsum[ct] / (nsum[ct] + _SK), 2)
                         for ct in acc if wsum[ct]}
         return out
-    return racing._cached(("f1_type_skill", year, n_back), 7 * 86400, build) or {}
+    return racing._cached(("f1_type_skill", year, n_back, as_of_round), 7 * 86400, build) or {}
 
 
 def _qtime(t):
@@ -289,16 +295,17 @@ def _f1_quali_gaps():
     return racing._cached(("f1_quali_gaps",), 6 * 3600, build) or {}
 
 
-def f1_profiles():
+def f1_profiles(as_of_round=None):
     """{driver_id: profile} with points, constructor, and pace/reliability."""
     def build():
         d = racing._get_json(f"{ERGAST}/driverStandings.json")
         lst = d["MRData"]["StandingsTable"]["StandingsLists"]
         if not lst:
             return {}
-        form = _f1_results()
+        form = _f1_results(as_of_round) if as_of_round is not None else _f1_results()
         gaps = _f1_quali_gaps()
-        skill = f1_type_skill()                       # multi-year, car-free circuit-type skill
+        skill = (f1_type_skill(as_of_round=as_of_round) if as_of_round is not None
+                 else f1_type_skill())                   # multi-year, car-free circuit-type skill
         standings = lst[0]["DriverStandings"]
 
         # Teammate pooling: a driver's car is shared evidence of pace, so each
@@ -356,7 +363,7 @@ def f1_profiles():
                 "dnf": dnf,
             }
         return out
-    return racing._cached(("f1_profiles",), 3 * 3600, build) or {}
+    return racing._cached(("f1_profiles", as_of_round), 3 * 3600, build) or {}
 
 
 def f1_remaining():
@@ -632,7 +639,10 @@ NASCAR_BASE = "https://cf.nascar.com/cacher"
 _nascar_track_type = racing.nascar_track_type
 
 
-def nascar_type_skill(year=None, series=1, n_back=2):
+def nascar_type_skill(year=None, series=1, n_back=2, as_of=None):
+    """`as_of` (a date) drops the current season entirely: a backtest of a
+    race must not know the races after it, and the current-season track-type
+    form then comes from nascar_state's own as-of window."""
     """Per-driver per-track-type SKILL delta, isolated from the car, across recent
     seasons (current + n_back prior).
 
@@ -646,7 +656,7 @@ def nascar_type_skill(year=None, series=1, n_back=2):
     year = year or clock.today_et().year
 
     def build():
-        seasons = list(range(year - n_back, year + 1))
+        seasons = list(range(year - n_back, year if as_of else year + 1))
         today = clock.today_et().isoformat()
         # per[did][season] = {"type": {tt: [finishes]}, "all": [finishes]}
         per = defaultdict(lambda: defaultdict(lambda: {"type": defaultdict(list), "all": []}))
@@ -718,7 +728,7 @@ def nascar_type_skill(year=None, series=1, n_back=2):
                          for tt in lacc if lw[tt]}
             out[did] = {"delta": delta, "led": led_share}
         return out
-    return racing._cached(("nascar_type_skill", year, series, n_back, 2), 7 * 86400, build) or {}
+    return racing._cached(("nascar_type_skill", year, series, n_back, 2, bool(as_of)), 7 * 86400, build) or {}
 
 
 # Finish points: win 40, then 2nd=35 and -1 per spot. Stage points are folded in
@@ -751,13 +761,13 @@ def _stage_points(order, rng, pts, n_stages=2):
 _CHASE_SEED = [2100, 2075] + [2065 - 5 * i for i in range(14)]
 
 
-def nascar_state(year=None, series=1):
+def nascar_state(year=None, series=1, as_of=None):
     """Current Cup standings + pace from this season's completed points races:
     {driver_id: {name, points, playoff_points, wins, race_pace, dnf, starts}}."""
     year = year or clock.today_et().year
 
     def build():
-        today = clock.today_et().isoformat()
+        today = as_of or clock.today_et().isoformat()   # as_of: a backtest's blind window
         rl = racing._get_json(f"{NASCAR_BASE}/{year}/{series}/race_list_basic.json")
         pts_races = sorted((r for r in rl if r.get("race_type_id") == 1),
                            key=lambda r: r.get("race_date", ""))
@@ -800,7 +810,7 @@ def nascar_state(year=None, series=1):
         # prior), car-free (delta-of-deltas). This gives a road ace a real road
         # sample instead of this season's two races, so a specialist isn't washed
         # out. Current-season t_acc is the fallback when multi-year is unavailable.
-        skill = nascar_type_skill(year, series)
+        skill = nascar_type_skill(year, series, as_of=as_of) if as_of else nascar_type_skill(year, series)
         out = {}
         prior, k = 20.0, 5.0      # regress pace toward midpack so a part-timer with
         _TK = 2.0                 # per-category pseudo-races for the single-season fallback
@@ -840,7 +850,7 @@ def nascar_state(year=None, series=1):
                               "avg_wind": clim.get("avg_wind")})
         return {"drivers": out, "n_points_races": len(pts_races), "n_done": len(done),
                 "remaining": remaining}
-    return racing._cached(("nascar_state", year, series), 6 * 3600, build) or {}
+    return racing._cached(("nascar_state", year, series, as_of), 6 * 3600, build) or {}
 
 
 _SIGMA_CUP = 7.5     # Cup field is flat (pole win rate low) -> high race variance
@@ -1347,7 +1357,8 @@ def _alloc_dominators(order, laps, ttype, rng, led_prop=None):
     return dom
 
 
-def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
+def next_race_sim(sport, n=2500, seed=None, fixed_grid=None, race=None, blind=False,
+                  as_of_round=None, as_of_date=None):
     """Simulate the NEXT race many times and return each driver's finish profile
     {name: {avg_finish, p_win, p_top5, p_top10, p_top20, ...}} -- the signal the
     DFS optimizer feeds on -- plus REAL DraftKings scoring components per driver
@@ -1377,12 +1388,16 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
     longrun_used = False
 
     if sport == "f1":
-        profs = f1_profiles(); rem = f1_remaining()
-        if not profs or not rem:
+        # A backtest hands in the race itself, the form as of that round, and
+        # `blind` so this-weekend reads (practice, long runs, pit crews) are
+        # skipped: they would be TODAY's weekend, not the one under test.
+        profs = f1_profiles(as_of_round) if as_of_round is not None else f1_profiles()
+        rem = [] if race is not None else f1_remaining()
+        if not profs or (not rem and race is None):
             return None
         drivers = list(profs.values())
         name_of = {d["id"]: d["name"] for d in drivers}
-        race = rem[0]
+        race = race or rem[0]
         ctype = race.get("type", "standard"); wet_p = race.get("wet_prob", 0.0)
         # Per-circuit dynamics the DFS sim was ignoring: how grid-locked the track
         # is (pole converts far more at Monaco than Monza) and its safety-car rate
@@ -1392,7 +1407,7 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         laps = _F1_LAPS
         # Fresh practice pace from THIS weekend sharpens the simulated qualifying
         # (pre-quali only — once the real grid is fixed, practice is moot).
-        if not fixed_grid:
+        if not fixed_grid and not blind:
             try:
                 pg = _f1_practice_gaps()
             except Exception:
@@ -1413,7 +1428,7 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         # season-average finish misses. Grid-independent, so it applies whether or
         # not the real grid is set. Blended as a pace RANK into the race score.
         try:
-            lr = _f1_longrun_pace()
+            lr = None if blind else _f1_longrun_pace()
         except Exception:
             lr = None
         if lr:
@@ -1433,7 +1448,7 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
         # Pit-crew speed: a slow crew quietly costs track position on every stop.
         # Small, bounded nudge to race pace (positions), relative to the best crew.
         try:
-            pit = _f1_pit_pace()
+            pit = None if blind else _f1_pit_pace()
         except Exception:
             pit = None
         if pit:
@@ -1500,21 +1515,23 @@ def next_race_sim(sport, n=2500, seed=None, fixed_grid=None):
                     pts += start_of.get(did, len(order)) - pos   # exact in-sim PD
                 dk_samples[did].append(pts)
     elif sport == "nascar":
-        state = nascar_state()
+        # kwargs only when a backtest sets them: guards stub these builders
+        # with plain functions
+        state = nascar_state(as_of=as_of_date) if as_of_date else nascar_state()
         dmap = (state or {}).get("drivers") or {}
-        rem = (state or {}).get("remaining") or []
-        if not dmap or not rem:
+        rem = [] if race is not None else ((state or {}).get("remaining") or [])
+        if not dmap or (not rem and race is None):
             return None
         drivers = list(dmap.values())
         name_of = {d["id"]: d["name"] for d in drivers}
-        race = rem[0]
+        race = race or rem[0]
         ttype = race.get("type", "intermediate"); wet_p = race.get("wet_prob", 0.0)
         laps = int(race.get("laps") or _DEFAULT_LAPS.get(ttype, 300))
         # Final-practice speed rank at THIS track nudges race pace: a car that
         # unloaded fast usually races fast; one buried in practice rarely finds
         # 15 spots by Sunday. Modest weight (trim levels vary), name-matched.
         try:
-            pr = racing.get_nascar_practice(race.get("name"))
+            pr = None if blind else racing.get_nascar_practice(race.get("name"))
         except Exception:
             pr = None
         if pr:
