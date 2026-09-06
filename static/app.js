@@ -6571,9 +6571,16 @@ async function runDfsSim() {
     const dfsRow = (p) => {
       const startTag = p.start != null ? `<span class="legtag">P${p.start}</span> ` : "";
       let pd = "";
-      if (p.pd_adj != null && Math.abs(p.pd_adj) >= 0.1) {
+      if (p.exp_finish != null && p.start != null) {
+        // Racing: the sim's expected finish from the real start spot. The
+        // places gained or lost are already inside the projection.
+        const delta = p.pd_adj != null ? p.pd_adj : 0;
+        const cls = delta >= 0.1 ? "#3ad17a" : delta <= -0.1 ? "#e0566a" : "var(--muted)";
+        const places = Math.abs(delta) >= 0.1 ? `, ${delta > 0 ? "+" : ""}${delta} places` : ", holds";
+        pd = ` <span style="color:${cls}">(exp. P${p.exp_finish}${places})</span>`;
+      } else if (p.pd_adj != null && Math.abs(p.pd_adj) >= 0.1) {
         const cls = p.pd_adj > 0 ? "#3ad17a" : "#e0566a";
-        pd = ` <span style="color:${cls}">(${p.pd_adj > 0 ? "+" : ""}${p.pd_adj} PD, was ${p.base_proj})</span>`;
+        pd = ` <span style="color:${cls}">(${p.pd_adj > 0 ? "+" : ""}${p.pd_adj} PD${p.base_proj ? `, was ${p.base_proj}` : ""})</span>`;
       }
       let ufcBits = "";
       if (p.rating != null || p.win_pct != null) {

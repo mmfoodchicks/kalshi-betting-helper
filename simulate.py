@@ -1024,6 +1024,11 @@ def _lineup_player(p):
             "own": p.get("own"),
             "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
             if p.get("base_proj") is not None else None,
+            # The sim's expected finish, so the card can say "P1 -> exp. P10.7"
+            # instead of "(-9.7 PD, was 0)": PD is places, not points, and
+            # "was" was the CSV's season average, which DK's lobby feed does
+            # not carry for F1 (so it read 0 for every driver).
+            "exp_finish": p.get("exp_finish"),
             "ceil_proj": round(p["ceil_proj"], 1) if p.get("ceil_proj") is not None else None,
             "win_pct": p.get("win_pct"), "rating": p.get("rating"),
             "record": p.get("record"), "career_record": p.get("career_record"),

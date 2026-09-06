@@ -7304,6 +7304,18 @@ ck("that CSV builds an F1 lineup under the cap with one captain at 1.5x and a co
    and any(x["name"].startswith("Team ") for x in _bl12["lineup"]),
    str((_bl12 or {}).get("error") or (_bl12 or {}).get("total_salary")))
 _cssdk = open(_os.path.join(_root, "static", "style.css")).read()
+# --- the lineup card's racing note: "(exp. P10.7, -9.7 places)", not
+# "(-9.7 PD, was 0)" -- PD is places and lives inside the projection, and
+# "was" was the CSV's season average, empty for F1 from DK's lobby feed
+import simulate as _simdk
+_lpdk = _simdk._lineup_player({"name": "Pierre Gasly", "salary": 8400, "proj": 21.3, "base_proj": 0.0,
+                               "pd_adj": -9.7, "exp_finish": 10.7, "start": 1})
+_jsdk2 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("a racing lineup row carries the sim's expected finish, and the card prints it "
+   "with the places delta instead of a PD against a season average it never had",
+   _lpdk["exp_finish"] == 10.7 and _lpdk["pd_adj"] == -9.7 and _lpdk["start"] == 1
+   and "(exp. P${p.exp_finish}${places})" in _jsdk2 and '", holds"' in _jsdk2
+   and "p.base_proj ? `, was ${p.base_proj}` : \"\"" in _jsdk2)
 ck("the picker's two wide chips flex inside the row instead of widening the tab",
    'label.small.dkwide select { flex: 1 1 auto; min-width: 0; max-width: 100%;' in _cssdk
    and _tpdk.count('class="small dkwide"') == 2)
@@ -10637,7 +10649,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v109' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v110' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
