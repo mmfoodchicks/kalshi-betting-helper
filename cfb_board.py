@@ -69,21 +69,43 @@ def _season():
 
 # ---- The week's games (ESPN scoreboard) ------------------------------------
 def _week_games(season, week):
-    """[{id, date, state, neutral, home, away}] for one week, both sides FBS.
-    home/away carry ESPN's id, abbreviation, display name, location and
-    nickname (the last three are what the Kalshi matcher scores) and the
-    score once the game has one."""
+    """[{id, date, state, neutral, home, away}] for one week, both sides RATED
+    (FBS or FCS -- cfb.teams(season, "all")). home/away carry ESPN's id,
+    abbreviation, display name, location and nickname (the last three are what
+    the Kalshi matcher scores), the division, and the score once the game has
+    one.
+
+    Both divisions' scoreboards are swept: ESPN files a game under the
+    division of its teams, so an FCS game is only on `groups=81` and an
+    FBS-vs-FCS buy game appears on both (deduped by event id below)."""
     import racing
 
     def build():
-        d = racing._get_json(
-            f"{cfb._SITE}/scoreboard?seasontype=2&week={week}&dates={season}"
-            "&groups=80&limit=400", timeout=25)
-        fbs = set(cfb.teams(season))
+        events, seen_ids = [], set()
+        for grp in (cfb._FBS_GROUP, cfb._FCS_GROUP):
+            try:
+                d = racing._get_json(
+                    f"{cfb._SITE}/scoreboard?seasontype=2&week={week}&dates={season}"
+                    f"&groups={grp}&limit=400", timeout=25)
+            except Exception as _e:
+                errlog.note("CFB-week-group", _e, path=str(grp))
+                continue
+            for e in d.get("events", []):
+                if e.get("id") in seen_ids:
+                    continue      # a cross-division game is on both boards
+                seen_ids.add(e.get("id"))
+                events.append(e)
+        rated = cfb.teams(season, "all")
+        fbs = set(rated)
         out = []
-        for e in d.get("events", []):
+        for e in events:
             comp = (e.get("competitions") or [{}])[0]
-            state = (((comp.get("status") or {}).get("type")) or {}).get("state")
+            stype = ((comp.get("status") or {}).get("type")) or {}
+            state = stype.get("state")
+            # postponed / canceled: "post" with completed false and 0-0 (see
+            # cfb.schedule) -- never a card, never a graded pick
+            if state == "post" and not stype.get("completed"):
+                continue
             sides = {}
             for c in comp.get("competitors", []):
                 tm = c.get("team") or {}
@@ -91,10 +113,12 @@ def _week_games(season, week):
                     sc = float(c.get("score"))
                 except (TypeError, ValueError):
                     sc = None
+                tid = str(tm.get("id") or c.get("id"))
                 sides[c.get("homeAway")] = {
-                    "id": str(tm.get("id") or c.get("id")),
+                    "id": tid,
                     "abbr": tm.get("abbreviation"), "name": tm.get("displayName"),
                     "location": tm.get("location"), "nick": tm.get("name"),
+                    "div": (rated.get(tid) or {}).get("div"),
                     "score": sc}
             h, a = sides.get("home"), sides.get("away")
             if not h or not a or h["id"] not in fbs or a["id"] not in fbs:
@@ -272,9 +296,9 @@ def _build_board(season, week, n=_N):
     games = _week_games(season, week)
     if not games:
         return None
-    R = cfb.inseason_ratings(season)
-    meta = cfb.teams(season)
-    played = sum(1 for g in cfb.schedule(season)
+    R = cfb.inseason_ratings(season, "all")
+    meta = cfb.teams(season, "all")
+    played = sum(1 for g in cfb.schedule(season, "all")
                  if g.get("final") and g.get("margin") is not None
                  and g.get("home") and g.get("away"))
     try:
@@ -313,9 +337,15 @@ def _build_board(season, week, n=_N):
         # ratings' margin through the engine's margin SD, no market in it.
         raw = 0.5 * (1 + _math.erf(model_margin / (_MARGIN_SD * _math.sqrt(2))))
         ph = cal(sim["p_home"]) if mkt_margin is None else sim["p_home"]
+        dh, da = h.get("div") or "fbs", a.get("div") or "fbs"
         card = {"home": h["abbr"], "away": a["abbr"],
                 "home_name": h["name"], "away_name": a["name"],
                 "home_id": h["id"], "away_id": a["id"],
+                "div_home": dh, "div_away": da,
+                # what the record files this game under: one book per division,
+                # plus cross for a buy game, so an FCS pick can never flatter
+                # the FBS scoreboard
+                "division": dh if dh == da else "cross",
                 "date": g["date"], "state": g["state"], "neutral": g["neutral"],
                 "conf_home": (meta.get(h["id"]) or {}).get("conf"),
                 "conf_away": (meta.get(a["id"]) or {}).get("conf"),
@@ -447,7 +477,7 @@ def _build_board(season, week, n=_N):
                      "week's straight-up picks by how sure the blended sim is; the "
                      "ATS pick is read off the simulated margins at the rung Kalshi "
                      "books nearest its line, the total lean off the simulated "
-                     "totals at Kalshi's total.")}
+                     "totals at Kalshi's total. FBS and FCS are both rated and both boards are swept, so conference games in either division and the cross-division buy games are all here; an FCS rating sits on the FBS scale through a fitted division offset and is a heavier regressed prior for longer, so treat an early FCS number as the model's opinion.")}
 
 
 def _last_good(name):

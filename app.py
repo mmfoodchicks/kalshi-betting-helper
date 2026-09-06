@@ -3193,13 +3193,15 @@ def api_cfb_record():
     """The college model's graded track record: straight up (league cfb of
     the football ledger), against the spread and totals at Kalshi's booked
     line (leagues cfb_ats / cfb_tot, Kalshi-settled), and the moneyline
-    model against the price."""
+    model against the price. `div` (fbs / fcs / cross) narrows it to one
+    college division; the default pools them and breaks them out."""
     import cfb_track
     try:
         cfb_track.grade_due()
     except Exception as _e:
         errlog.note("APP-api_cfb_record", _e)
-    return jsonify(cfb_track.record())
+    div = request.args.get("div")
+    return jsonify(cfb_track.record(div if div in cfb_track.DIVISIONS else None))
 
 
 @app.route("/api/cfb/parlay")

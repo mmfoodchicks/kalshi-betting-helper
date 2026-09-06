@@ -149,6 +149,16 @@ def init_db():
                 c.execute("ALTER TABLE nfl_picks ADD COLUMN ticker TEXT")
             except Exception as _e:
                 errlog.note("STORE-nfl-ticker", _e)
+        # `div`: which college division a pick was made in -- "fbs", "fcs" or
+        # "cross" for a buy game. The scoreboards are kept apart because the
+        # divisions are not one population: an FCS rating is a heavier
+        # regressed prior for longer, so pooling them would let easy FCS
+        # favourites flatter the FBS record. NFL rows carry NULL.
+        if "div" not in {r[1] for r in c.execute("PRAGMA table_info(nfl_picks)")}:
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE nfl_picks ADD COLUMN div TEXT")
+            except Exception as _e:
+                errlog.note("STORE-nfl-div", _e)
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,
         # graded against the real box score after the game. Builds the aggregate
@@ -489,21 +499,22 @@ def mlb_record():
 # ---- NFL model track record (the MLB ledger, ported) -----------------------
 def record_nfl_pick(game_id, date, week, preseason, pick_side, pick_name,
                     prob, price_cents, pred_total=None, prob_raw=None,
-                    league="nfl", ticker=None):
+                    league="nfl", ticker=None, div=None):
     """First pre-game sight of a game wins: entry price and probability are
     frozen here, exactly like record_mlb_pick. `league` is "nfl" or "cfb":
     one football ledger, two books (cfb_track). `ticker` is the Kalshi
     market the pick's side is, when the recorder knows it (the settlement
-    grader, cfb_track.grade_lines)."""
+    grader, cfb_track.grade_lines); `div` is the college division the game
+    belongs to, so the record can keep the divisions apart."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO nfl_picks
                (game_id, date, week, preseason, pick_side, pick_name,
-                prob, prob_raw, price_cents, close_price, pred_total, league, ticker)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                prob, prob_raw, price_cents, close_price, pred_total, league, ticker, div)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (game_id, date, week, 1 if preseason else 0, pick_side, pick_name,
              prob, prob_raw if prob_raw is not None else prob,
-             price_cents, price_cents, pred_total, league, ticker))
+             price_cents, price_cents, pred_total, league, ticker, div))
 
 
 def update_nfl_close(game_id, price_cents, pick_side, league="nfl"):
@@ -525,11 +536,16 @@ def ungraded_nfl_picks(league="nfl"):
             (league,)).fetchall()]
 
 
-def nfl_pick_rows(league="nfl"):
-    """Every row of one book of the football ledger, graded or not."""
+def nfl_pick_rows(league="nfl", div=None):
+    """Every row of one book of the football ledger, graded or not; `div`
+    narrows a college book to one division."""
+    where, args = "league=?", [league]
+    if div is not None:
+        where += " AND div=?"
+        args.append(div)
     with _lock, _conn() as c:
         return [dict(r) for r in c.execute(
-            "SELECT * FROM nfl_picks WHERE league=?", (league,)).fetchall()]
+            f"SELECT * FROM nfl_picks WHERE {where}", args).fetchall()]
 
 
 def backfill_nfl_ticker(game_id, league, home_ticker, away_ticker):
@@ -556,19 +572,22 @@ def set_nfl_grade(game_id, won, winner_name, actual_total=None, home_won=None):
                   (won, winner_name, actual_total, home_won, game_id))
 
 
-def nfl_record(league="nfl"):
+def nfl_record(league="nfl", div=None):
     """Regular season and preseason as SEPARATE scoreboards -- they are
     different distributions (see nfl_game_sim's predlog split) and averaging
     them reports a record no single model earned. `league` picks the book
-    (college has no preseason bucket; it comes back empty)."""
+    (college has no preseason bucket; it comes back empty); `div` narrows a
+    college book to one division ("fbs", "fcs" or "cross")."""
+    where, args = "league=?", [league]
+    if div is not None:
+        where += " AND div=?"
+        args.append(div)
     with _lock, _conn() as c:
         rows = [dict(r) for r in c.execute(
-            "SELECT * FROM nfl_picks WHERE graded=1 AND league=?",
-            (league,)).fetchall()]
+            f"SELECT * FROM nfl_picks WHERE graded=1 AND {where}", args).fetchall()]
         pend = {r["k"]: r["n"] for r in c.execute(
-            "SELECT COALESCE(preseason,0) k, COUNT(*) n FROM nfl_picks "
-            "WHERE graded=0 AND league=? GROUP BY COALESCE(preseason,0)",
-            (league,))}
+            f"SELECT COALESCE(preseason,0) k, COUNT(*) n FROM nfl_picks "
+            f"WHERE graded=0 AND {where} GROUP BY COALESCE(preseason,0)", args)}
     reg = [r for r in rows if not r.get("preseason")]
     pre = [r for r in rows if r.get("preseason")]
     out = {"regular": _pick_stats(reg, pend.get(0, 0)),

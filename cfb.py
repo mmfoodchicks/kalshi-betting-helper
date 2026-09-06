@@ -36,6 +36,32 @@ _REG = 0.58           # regress last season's differential toward the mean
 _BASE_PPG = 27.5      # FBS average points/game
 _REG_WEEKS = 15       # regular-season scoreboard weeks to sweep
 
+# ESPN's scoreboard/standings division selectors. The standings tree takes
+# `level=3` for FBS but ignores `level` for FCS -- `group=81` is what actually
+# switches it (level=4 comes back as the FBS tree, which is how a "second
+# division" can silently be the first one twice).
+_FBS_GROUP, _FCS_GROUP = 80, 81
+_DIV_URL = {"fbs": "level=3", "fcs": "group=81"}
+_DIV_GROUP = {"fbs": _FBS_GROUP, "fcs": _FCS_GROUP}
+# Rating points to subtract from an FCS team's within-division prior to put it
+# on the FBS scale. Each division's preseason prior is centred on ITS OWN mean
+# differential -- an FCS team at +10 against FCS schedules is not an FBS team
+# at +10 -- so the two scales need one offset between them.
+#
+# Fitted the way the file's other constants were: predict each cross-division
+# game from the two priors alone and set the mean residual to zero.
+#   2025: 146 cross-division finals, gap 27.31 (median 28.57, residual SD 18.9)
+#   2024: 131 cross-division finals, gap 27.77 (median 27.25, residual SD 17.3)
+# Half a point apart across two seasons, and the residual SD lands on _SIGMA
+# (18.0), which is the same spread the FBS-only fit carries -- so a
+# cross-division game is no less predictable than a conference one, it just
+# needs the offset. 27.5 splits the two seasons.
+#
+# It only sets the PRIOR. Once cross-division games are played the Massey
+# solver pools both divisions in one fixed point and the offset is carried by
+# evidence instead, exactly as the preseason number fades within a division.
+_DIV_GAP = 27.5
+
 # In-season rating constants, all fitted by point-in-time backtest on 2025 and
 # validated on 2024 (739/741 FBS-vs-FBS finals; predict each week from only the
 # weeks before it). Ratings solve margin ~= R_home - R_away + HFA over played
@@ -68,21 +94,31 @@ def _season():
     return t.year if t.month >= 2 else t.year - 1
 
 
-# ---- Teams + ratings (FBS standings tree) -----------------------------------
-def teams(season=None):
-    """{team_id: {name, abbr, location, nick, conf, w, l, diff_pg}} for FBS."""
+# ---- Teams + ratings (the standings trees) ----------------------------------
+def teams(season=None, div="fbs"):
+    """{team_id: {name, abbr, location, nick, conf, div, w, l, diff_pg}}.
+
+    `div` is "fbs" (the default -- every caller that predates FCS support gets
+    exactly what it always got), "fcs", or "all" for both divisions in one
+    table, each row tagged with the division it came from."""
     season = season or _season()
+    if div == "all":
+        out = {}
+        for d in ("fbs", "fcs"):
+            out.update(teams(season, d))
+        return out
 
     def build():
         try:
-            d = racing._get_json(f"{_WEB}/standings?season={season - 1}&level=3", timeout=25)
+            d = racing._get_json(
+                f"{_WEB}/standings?season={season - 1}&{_DIV_URL[div]}", timeout=25)
         except Exception:
             return None
         out = {}
         for conf in d.get("children", []):
             cname = conf.get("name", "")
-            for div in (conf.get("children") or [conf]):
-                for e in div.get("standings", {}).get("entries", []):
+            for sub in (conf.get("children") or [conf]):
+                for e in sub.get("standings", {}).get("entries", []):
                     tm = e.get("team", {})
                     # ONE entry carries SEVERAL stat blocks back to back --
                     # overall, Home, Away, vs Division, vs Conference, vs AP
@@ -118,27 +154,42 @@ def teams(season=None):
                         "abbr": tm.get("abbreviation"),
                         "location": tm.get("location"),
                         "nick": tm.get("name"),
-                        "conf": cname, "w": w, "l": l,
+                        "conf": cname, "div": div, "w": w, "l": l,
                         "diff_pg": diff / g if g else 0.0}
         return out or None
-    return racing._cached(("cfb_teams", season, 3), 24 * 3600, build) or {}
+    return racing._cached(("cfb_teams", season, 3, div), 24 * 3600, build) or {}
 
 
-def ratings(season=None):
+def divisions(season=None):
+    """{team_id: "fbs" | "fcs"} across both trees."""
+    return {tid: t.get("div") or "fbs" for tid, t in teams(season, "all").items()}
+
+
+def ratings(season=None, div="fbs"):
     """{team_id: rating} in margin points/game — last season's differential
     regressed toward the mean (heavy: college is high-variance year to year).
-    This is the PRESEASON PRIOR; inseason_ratings() is what the sim runs on."""
-    tm = teams(season)
+    This is the PRESEASON PRIOR; inseason_ratings() is what the sim runs on.
+
+    Each division is centred on its OWN mean and the FCS side is then dropped
+    by _DIV_GAP, so both come back on one scale a cross-division game can be
+    simulated on."""
+    if div == "all":
+        out = ratings(season, "fbs")
+        out.update({tid: r - _DIV_GAP for tid, r in ratings(season, "fcs").items()})
+        return out
+    tm = teams(season, div)
     if not tm:
         return {}
     mean = sum(t["diff_pg"] for t in tm.values()) / len(tm)
     return {tid: (t["diff_pg"] - mean) * (1 - _REG) for tid, t in tm.items()}
 
 
-def inseason_ratings(season=None):
+def inseason_ratings(season=None, div="fbs"):
     """{team_id: rating} that LEARNS from the season being played.
 
-    Massey-style fixed point over this season's completed FBS-vs-FBS games:
+    Massey-style fixed point over this season's completed games (both sides in
+    the rated pool -- FBS-vs-FBS at the default `div`, and cross-division games
+    too once `div` is "all"):
 
         R_i = (k * prior_i + sum over games (adj_margin + R_opp)) / (k + n_i)
 
@@ -149,10 +200,10 @@ def inseason_ratings(season=None):
     watched instead of the one that ended a year ago. Constants and the
     measured improvement are documented at the top of the file."""
     season = season or _season()
-    prior = ratings(season)
+    prior = ratings(season, div)
     if not prior:
         return {}
-    played = [g for g in schedule(season)
+    played = [g for g in schedule(season, div)
               if g.get("final") and g.get("margin") is not None
               and g["home"] in prior and g["away"] in prior]
     if not played:
@@ -172,32 +223,51 @@ def inseason_ratings(season=None):
 
 
 # ---- Schedule (week-by-week scoreboard, results locked) ---------------------
-def schedule(season=None):
-    """[{home, away, final, home_won}] across the FBS regular season. home/away
-    are team ids; games involving a non-FBS opponent carry that side as None."""
+def schedule(season=None, div="fbs"):
+    """[{home, away, final, home_won}] across the regular season. home/away are
+    team ids; a side outside the rated pool carries None.
+
+    `div` "fbs" sweeps ESPN's FBS scoreboard as before; "all" sweeps both
+    divisions' scoreboards, so an FCS game and an FBS-vs-FCS buy game are both
+    rated instead of being dropped for want of a rating on one side."""
     season = season or _season()
-    fbs = set(teams(season))
+    rated = set(teams(season, div))
+    groups = ([_FBS_GROUP, _FCS_GROUP] if div == "all"
+              else [_DIV_GROUP.get(div, _FBS_GROUP)])
 
     def build():
         import concurrent.futures as _cf
 
-        def week(wk):
+        def week(args):
+            wk, grp = args
             try:
                 return racing._get_json(
                     f"{_SITE}/scoreboard?seasontype=2&week={wk}&dates={season}"
-                    "&groups=80&limit=400", timeout=25)
+                    f"&groups={grp}&limit=400", timeout=25)
             except Exception:
                 return None
 
+        jobs = [(wk, grp) for grp in groups for wk in range(1, _REG_WEEKS + 1)]
         seen = {}
         with _cf.ThreadPoolExecutor(max_workers=8) as ex:
-            weeks = list(ex.map(week, range(1, _REG_WEEKS + 1)))
-        for wk, d in enumerate(weeks, 1):
+            weeks = list(ex.map(week, jobs))
+        for (wk, _grp), d in zip(jobs, weeks):
             if not d:
                 continue
             for e in d.get("events", []):
                 comp = (e.get("competitions") or [{}])[0]
-                state = (((comp.get("status") or {}).get("type")) or {}).get("state")
+                stype = ((comp.get("status") or {}).get("type")) or {}
+                state = stype.get("state")
+                # A POSTPONED or CANCELED game reports state "post" with
+                # completed false and 0-0 on the board. Read as a final it is a
+                # 0-point margin between two real teams, which the Massey
+                # solver takes as evidence they are equal. Two of them sat in
+                # one FCS week (2026-09-06: Western Carolina at Campbell
+                # postponed and replayed the next day, Lafayette at Georgetown
+                # canceled), so the game is dropped outright rather than
+                # counted as played.
+                if state == "post" and not stype.get("completed"):
+                    continue
                 home = away = None
                 hs = as_ = None
                 for c in comp.get("competitors", []):
@@ -213,15 +283,15 @@ def schedule(season=None):
                 if not home or not away:
                     continue
                 g = {"id": e.get("id"), "week": wk,
-                     "home": home if home in fbs else None,
-                     "away": away if away in fbs else None,
+                     "home": home if home in rated else None,
+                     "away": away if away in rated else None,
                      "final": state == "post",
                      # Neutral-site flag rides along so home field is only
                      # credited where a home crowd actually exists (bowls,
                      # kickoff classics and the whole postseason are neutral).
                      "neutral": bool(comp.get("neutralSite"))}
                 if g["home"] is None and g["away"] is None:
-                    continue                      # both non-FBS: ignore entirely
+                    continue                      # neither side rated: ignore
                 if g["final"] and hs is not None and as_ is not None:
                     g["home_won"] = hs > as_
                     # The MARGIN was always in the payload and used to be thrown
@@ -230,7 +300,7 @@ def schedule(season=None):
                     g["margin"] = hs - as_
                 seen[g["id"]] = g
         return list(seen.values())
-    return racing._cached(("cfb_sched", season, 3), 12 * 3600, build) or []
+    return racing._cached(("cfb_sched", season, 3, div), 12 * 3600, build) or []
 
 
 # ---- Drive-engine game resolution -------------------------------------------

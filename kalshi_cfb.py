@@ -132,12 +132,20 @@ def index():
 _ABBREV = {"st": "state", "st.": "state", "univ": "university", "&": "and"}
 # ESPN locations Kalshi spells differently, in normalized form. Measured on
 # the 2026 week-1 card: 52 of 55 pregame games matched on names alone; these
-# three did not.
+# three did not. (The FCS entries below were measured the same way once both
+# divisions were rated.)
 # Kalshi's short forms that no rule recovers: "SE Louisiana" is SoutheastERN
 # but "SE Missouri St." is Southeast, so a prefix rule cannot serve both.
 _ALIASES = {"app state": "appalachian state", "ul monroe": "louisiana monroe",
             "se louisiana": "southeastern louisiana", "usa": "south alabama",
-            "se missouri state": "southeast missouri state"}
+            "se missouri state": "southeast missouri state",
+            # With FCS rated, both divisions' names go through here. Measured
+            # over weeks 2-4 of 2026 (355 games): 126 found no Kalshi event,
+            # and only THREE of those were events Kalshi actually books --
+            # these two spellings. Everything else Kalshi simply does not
+            # list, so the matcher needed two entries, not a rewrite.
+            "north carolina state": "nc state",
+            "tennessee martin": "ut martin"}
 
 
 def _nm(s):

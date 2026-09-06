@@ -4407,16 +4407,16 @@ def _g(h, a, m, neutral=False, wk=1):
     return {"home": h, "away": a, "margin": m, "final": True,
             "neutral": neutral, "week": wk, "home_won": m > 0}
 try:
-    _CFB.teams = lambda season=None: {
+    _CFB.teams = lambda season=None, div="fbs": {
         "A": {"diff_pg": 10.0}, "B": {"diff_pg": 0.0},
         "C": {"diff_pg": 0.0}, "D": {"diff_pg": -10.0}}
-    _CFB.schedule = lambda season=None: []
+    _CFB.schedule = lambda season=None, div="fbs": []
     _pri = _CFB.ratings(2099)
     ck("with no games played the in-season rating IS the prior",
        _CFB.inseason_ratings(2099) == _pri,
        "week 1 must behave exactly as the old model did")
     # B (rated even) beats everyone by 20; D (rated worst) beats A
-    _CFB.schedule = lambda season=None: [
+    _CFB.schedule = lambda season=None, div="fbs": [
         _g("B", "A", 20), _g("B", "C", 20, neutral=True), _g("D", "A", 7),
         _g("C", "D", 3), _g("A", "C", 10)]
     _R = _CFB.inseason_ratings(2099)
@@ -4427,9 +4427,9 @@ try:
        _R["A"] < _pri["A"],
        "A arrived +10 from last season and lost twice")
     # home field only credited where a crowd exists: flip one game to neutral
-    _CFB.schedule = lambda season=None: [_g("B", "C", 10)]
+    _CFB.schedule = lambda season=None, div="fbs": [_g("B", "C", 10)]
     _home = _CFB.inseason_ratings(2099)["B"]
-    _CFB.schedule = lambda season=None: [_g("B", "C", 10, neutral=True)]
+    _CFB.schedule = lambda season=None, div="fbs": [_g("B", "C", 10, neutral=True)]
     _neut = _CFB.inseason_ratings(2099)["B"]
     ck("the same margin is worth more on a neutral field than at home",
        _neut > _home,
@@ -10688,7 +10688,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v114' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v115' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -10906,6 +10906,96 @@ ck("a moneyline-only market gives a margin through the engine's SD; a spread "
    and _cb64._market_margin(_idx64, "26SEP05MOHPITT", "PITT", "MOH")[1] == "moneyline"
    and 10.0 <= _cb64._market_margin(_idx64, "26SEP05MOHPITT", "PITT", "MOH")[0] <= 22.0
    and _cb64._market_margin(_idx64, "nope", "A", "B") == (None, None))
+# --- FCS: both divisions rated, on one scale, with the offset measured. The
+# owner: "Western Carolina vs Campbell are playing right now but I don't see
+# them in the college list" -- an FCS game, and the board was FBS-only, which
+# was hiding 57% of the college events Kalshi actually books.
+_stand_fcs64 = {"children": [{"name": "Big Sky Conference", "standings": {"entries": [
+    {"team": {"id": "2717", "displayName": "Western Carolina Catamounts", "abbreviation": "WCU",
+              "location": "Western Carolina", "name": "Catamounts"},
+     "stats": [{"name": "pointDifferential", "value": 24.0, "displayValue": "+24"},
+               {"name": "overall", "value": None, "displayValue": "8-4"},
+               {"name": "gamesPlayed", "value": 12.0, "displayValue": "12"}]},
+    {"team": {"id": "2097", "displayName": "Campbell Fighting Camels", "abbreviation": "CAM",
+              "location": "Campbell", "name": "Fighting Camels"},
+     "stats": [{"name": "pointDifferential", "value": -24.0, "displayValue": "-24"},
+               {"name": "overall", "value": None, "displayValue": "4-8"},
+               {"name": "gamesPlayed", "value": 12.0, "displayValue": "12"}]}]}}]}
+_ogj_d64 = _rc64._get_json
+_rc64._get_json = lambda url, timeout=25: (_stand_fcs64 if "group=81" in url else _stand64)
+try:
+    for _k in (("cfb_teams", 2098, 3, "fbs"), ("cfb_teams", 2098, 3, "fcs")):
+        _rc64._form_cache.pop(_k, None)
+    _tf_64, _tc_64 = _cfb64.teams(2098, "fbs"), _cfb64.teams(2098, "fcs")
+    _ta_64 = _cfb64.teams(2098, "all")
+    _ra_64 = _cfb64.ratings(2098, "all")
+    _rf_64 = _cfb64.ratings(2098, "fbs")
+finally:
+    _rc64._get_json = _ogj_d64
+    for _k in (("cfb_teams", 2098, 3, "fbs"), ("cfb_teams", 2098, 3, "fcs")):
+        _rc64._form_cache.pop(_k, None)
+ck("the FCS standings tree comes from group=81 -- level=4 silently returns the "
+   "FBS tree a second time -- and each team carries the division it came from",
+   _cfb64._DIV_URL["fcs"] == "group=81" and _cfb64._DIV_URL["fbs"] == "level=3"
+   and set(_tc_64) == {"2717", "2097"} and _tc_64["2097"]["div"] == "fcs"
+   and all(t["div"] == "fbs" for t in _tf_64.values())
+   and len(_ta_64) == len(_tf_64) + len(_tc_64) and not (set(_tf_64) & set(_tc_64))
+   and _cfb64.divisions(2098)["2097"] == "fcs",
+   f"{sorted(_tc_64)} {len(_ta_64)}")
+ck("each division's prior is centred on its OWN mean and the FCS side is then "
+   "dropped by the fitted offset, so the two arrive on one scale; the FBS-only "
+   "numbers every existing caller reads are byte-identical",
+   abs(_cfb64._DIV_GAP - 27.5) < 1e-9
+   # Western Carolina is +24 against an FCS mean of 0, Campbell -24
+   and abs(_ra_64["2717"] - (24.0 / 12) * (1 - _cfb64._REG) + _cfb64._DIV_GAP) < 1e-6
+   and abs(_ra_64["2097"] - (-24.0 / 12) * (1 - _cfb64._REG) + _cfb64._DIV_GAP) < 1e-6
+   and all(abs(_ra_64[t] - _rf_64[t]) < 1e-12 for t in _rf_64)
+   # every FCS team sits below every FBS team on the prior, by construction
+   and max(_ra_64[t] for t in _tc_64) < min(_ra_64[t] for t in _tf_64),
+   f"{_ra_64.get('2717')} {_ra_64.get('2097')}")
+# --- postponed and canceled games are not results
+_post64 = {"events": [
+    {"id": "p1", "date": "2026-09-05T22:20Z", "competitions": [{
+        "status": {"type": {"state": "post", "completed": False, "name": "STATUS_POSTPONED"}},
+        "competitors": [{"homeAway": "home", "team": {"id": "2097", "abbreviation": "CAM",
+                                                      "displayName": "Campbell Fighting Camels",
+                                                      "location": "Campbell", "name": "Fighting Camels"}, "score": "0"},
+                        {"homeAway": "away", "team": {"id": "2717", "abbreviation": "WCU",
+                                                      "displayName": "Western Carolina Catamounts",
+                                                      "location": "Western Carolina", "name": "Catamounts"}, "score": "0"}]}]},
+    {"id": "p2", "date": "2026-09-06T15:00Z", "competitions": [{
+        "status": {"type": {"state": "post", "completed": True, "name": "STATUS_FINAL"}},
+        "competitors": [{"homeAway": "home", "team": {"id": "2097", "abbreviation": "CAM",
+                                                      "displayName": "Campbell Fighting Camels",
+                                                      "location": "Campbell", "name": "Fighting Camels"}, "score": "31"},
+                        {"homeAway": "away", "team": {"id": "2717", "abbreviation": "WCU",
+                                                      "displayName": "Western Carolina Catamounts",
+                                                      "location": "Western Carolina", "name": "Catamounts"}, "score": "17"}]}]}]}
+_ogj_p64 = _rc64._get_json
+_rc64._get_json = lambda url, timeout=25: _post64
+_okal64 = _ct64.kalshi._get_json
+_ct64.kalshi._get_json = lambda url, timeout=25: _post64
+try:
+    _wg64 = _cb64._week_games(2098, 9)
+    _fin64p = _ct64._finals_for("2026-09-06")
+finally:
+    _rc64._get_json = _ogj_p64
+    _ct64.kalshi._get_json = _okal64
+    _rc64._form_cache.pop(("cfb_week", 2098, 9), None)
+ck("a POSTPONED or CANCELED game reports state 'post' with completed false and "
+   "0-0 on the board: it is never a card and never a graded result (two sat in "
+   "one FCS week; read as finals they are a 0-point margin between two real "
+   "teams, which the Massey solver takes as evidence they are equal)",
+   "not stype.get(\"completed\")" in _insp.getsource(_cfb64.schedule)
+   and [g["id"] for g in _wg64] == ["p2"]
+   and list(_fin64p) == [("CAM", "WCU")] and _fin64p[("CAM", "WCU")] == (31.0, 17.0),
+   f"{[g['id'] for g in _wg64]} {_fin64p}")
+ck("the two college spellings the FCS names added are aliased (measured over "
+   "weeks 2-4 of 2026: 355 games, 126 with no Kalshi event, and only these "
+   "three bookings actually missed -- so two entries, not a rewrite)",
+   _kc64._nm("North Carolina St.") == _kc64._nm("NC State")
+   and _kc64._nm("Tennessee-Martin") == _kc64._nm("UT Martin")
+   and _kc64._nm("North Carolina") != _kc64._nm("NC State"))
 # --- the board, on stubbed feeds
 _games64 = [
     {"id": "1", "date": "2026-09-05T20:00Z", "state": "pre", "neutral": False,
@@ -10923,10 +11013,11 @@ import boardshare as _bs64
 import predlog as _pl64
 _obp64, _oplm64 = _bs64.put, _pl64.log_many
 _cb64._week_games = lambda season, week: _games64
-_cfb64.inseason_ratings = lambda season=None: {"84": 9.0, "249": -6.0, "2026": 1.0, "311": -4.0,
-                                               "221": 3.0, "193": -5.0}
-_cfb64.teams = lambda season=None: {k: {"conf": "X"} for k in ("84", "249", "2026", "311", "221", "193")}
-_cfb64.schedule = lambda season=None: []
+_cfb64.inseason_ratings = lambda season=None, div="fbs": {"84": 9.0, "249": -6.0, "2026": 1.0,
+                                                         "311": -4.0, "221": 3.0, "193": -5.0}
+_cfb64.teams = lambda season=None, div="fbs": {k: {"conf": "X", "div": "fbs"}
+                                               for k in ("84", "249", "2026", "311", "221", "193")}
+_cfb64.schedule = lambda season=None, div="fbs": []
 _kc64.index = lambda: _idx64
 _cb64._model_weight = lambda: 0.25
 _bs64.put = lambda name, payload, age=0: _puts64.__setitem__(name, payload)
@@ -11148,7 +11239,7 @@ try:
            "over_pick_pct": 100.0 if _ov64 else 0.0, "overs_hit_pct": 0.0, "graded": 1,
            "vs_line_avg": round(_ind64["exp_total"] - 51.5, 2)}
        and _rec64b["regular"]["wins"] == 2
-       and set(_rec64b) == {"regular", "ats", "totals", "market"}
+       and set(_rec64b) == {"regular", "ats", "totals", "market", "divisions", "div"}
        and "STORE-nfl-ticker" in open(_os.path.join(_root, "store.py")).read(),
        f"{_gl64} {_totr64} {_rec64b.get('totals')}")
 finally:
@@ -11184,6 +11275,43 @@ ck("college tickets probe five hours after the kickoff the logger knew (Kalshi's
    and _res64["KXNCAAFSPREAD-26SEP05UNTIND-IND21"] == {"graded": 0, "outcome": None}
    and "nope" not in _res64 and _pl64.results([]) == {},
    f"{_calls64} {_res64}")
+ck("every card says which division it is, and a buy game is its own book",
+   _ind64["division"] == "fbs" and _ind64["div_home"] == "fbs"
+   and all(g["division"] in ("fbs", "fcs", "cross") for g in _b64["games"]))
+# --- the record keeps the divisions apart
+_odb65 = _st64.DB_PATH
+_st64.DB_PATH = _os.path.join(_tf64.mkdtemp(), "div.db")
+try:
+    _st64.init_db()
+    _ct64.record_from_board(dict(_b64, games=[dict(_ind64, division="fbs")]))
+    _ct64.record_from_board(dict(_b64, games=[dict(
+        _ind64, division="fcs", home="CAM", away="WCU", home_name="Campbell",
+        away_name="Western Carolina", date="2026-09-06T00:00Z",
+        kx={"suffix": "26SEP06WCUCAMP", "home": "CAMP", "away": "WCU"},
+        ats=None, total=None)]))
+    _rows65 = {r["game_id"]: r["div"] for r in _st64.nfl_pick_rows("cfb")}
+    _rec65 = _ct64.record()
+    _fcs65 = _ct64.record("fcs")
+finally:
+    _st64.DB_PATH = _odb65
+ck("a pick carries its division into the ledger, the record breaks the books out "
+   "per division and can be asked for one -- pooling them would let easy FCS "
+   "favourites flatter the FBS scoreboard",
+   set(_rows65.values()) == {"fbs", "fcs"}
+   and set(_rec65["divisions"]) == {"fbs", "fcs"}
+   and _rec65["divisions"]["fcs"]["regular"]["pending"] == 1
+   and _rec65["divisions"]["fbs"]["regular"]["pending"] == 1
+   and _rec65["regular"]["pending"] == 2          # the pooled call still pools
+   and _fcs65["regular"]["pending"] == 1 and "divisions" not in _fcs65
+   and _ct64.DIVISIONS == ("fbs", "fcs", "cross"),
+   f"{_rows65} {list(_rec65.get('divisions') or {})}")
+ck("a buy game shows on both divisions' tabs but is graded in neither book -- "
+   "the FBS side wins ~86% of them, so it would flatter one record and bury the "
+   "other -- so each division's record carries it on its own line",
+   set(_fcs65["cross"]) == {"regular", "ats", "totals"}
+   and _ct64.record("fbs")["cross"]["regular"]["graded"] == 0
+   and "cross" not in _rec65          # the pooled call breaks out instead
+   and _fcs65["div"] == "fcs")
 ck("the recorder rebuilds the college record on its cadence under its own code, "
    "and the PC builds the college board and index",
    "cfb_track.tick()" in open(_os.path.join(_root, "mlb_recorder.py")).read()
@@ -11199,19 +11327,34 @@ ck("the college routes exist and mirror the NFL ones: slate, record, parlay with
    and '_run_job(ptok, _core, "CFB-COMBO-build")' in _cpar64
    and 'sliplog.log_from_item(item, sport="cfb")' in _cpar64
    and "cfb_track.record_from_board(data)" in _insp.getsource(_app64.api_cfb_slate)
-   and "cfb_track.record()" in _insp.getsource(_app64.api_cfb_record))
+   and "cfb_track.record(" in _insp.getsource(_app64.api_cfb_record))
 _html64 = open(_os.path.join(_root, "templates", "index.html")).read()
 _js64 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tab is Football with NFL and College underneath; the college page carries "
    "the week board, the pick'em table, the record and its own combo maker",
    'data-tab="nfl">🏈 Football' in _html64 and 'id="fbLeague"' in _html64
-   and 'data-league="cfb"' in _html64 and 'id="fbCfb"' in _html64
+   and 'data-league="cfb"' in _html64 and 'data-league="fcs"' in _html64
+   and 'id="fbCfb"' in _html64
    and 'id="cfbPickem"' in _html64 and 'id="cfbComboMaker"' in _html64
    and 'id="cfbRecord"' in _html64 and 'id="fbNfl"' in _html64
    and "function setFbLeague" in _js64 and "async function loadCFBWeek" in _js64
    and "function renderCFBPickem" in _js64 and "async function buildCFBCombo" in _js64
    and "/api/cfb/slate?week=" in _js64 and "/api/cfb/parlay?" in _js64
-   and '"/api/cfb/record"' in _js64 and 'loadSlipLog("cfbSlipLog", "cfb")' in _js64)
+   and "/api/cfb/record?div=" in _js64 and 'loadSlipLog("cfbSlipLog", "cfb")' in _js64)
+ck("the college board sweeps BOTH divisions' scoreboards and rates them off one "
+   "pooled solver, the route takes a division, and the tab labels and filters by it",
+   "for grp in (cfb._FBS_GROUP, cfb._FCS_GROUP)" in _insp.getsource(_cb64._week_games)
+   and 'cfb.inseason_ratings(season, "all")' in _insp.getsource(_cb64._build_board)
+   and 'cfb.teams(season, "all")' in _insp.getsource(_cb64._build_board)
+   and "cfb_track.DIVISIONS" in _insp.getsource(_app64.api_cfb_record)
+   and "function _cfbDivGames" in _js64
+   and 'data-league="fcs"' in _html64 and 'data-league="cfb">🎓 FBS' in _html64
+   and 'cfbDivFilter = lg === "fcs" ? "fcs" : "fbs"' in _js64
+   and '/api/cfb/record?div=' in _js64
+   and "Buy games" in _js64 and "FBS and FCS" in _html64
+   # the maker's grid follows the open tab, so a leg from the other division
+   # can never land in a slip built on this one
+   and "const mine = _cfbDivGames(d);" in _js64)
 ck("the record sits at the top of the College page with all three books and the "
    "O/U lean beside the ATS pick in the pick'em table",
    _html64.index('id="cfbRecord"') < _html64.index('id="cfbWeekSummary"')
@@ -11585,7 +11728,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v114' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v115' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",

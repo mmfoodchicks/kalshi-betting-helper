@@ -5,7 +5,10 @@ Kalshi price behind it) is recorded at first sight with its probability and
 entry price, its same-side close is refreshed while the game is still
 pre-game, and it is graded off ESPN's college scoreboard once the game is
 final. Rows live in the same ledger as the NFL picks (the nfl_picks table) under
-league "cfb", so the report math is one function.
+league "cfb", so the report math is one function. Both college divisions are
+rated (cfb.teams(season, "all")), so an FCS game and an FBS-vs-FCS buy game
+are recorded too -- each row carries the division it was played in and the
+record keeps them apart.
 
 The ATS pick (at the rung Kalshi books nearest its line) and the total lean
 (at Kalshi's total) are two more books of the same ledger, leagues "cfb_ats"
@@ -83,6 +86,7 @@ def record_from_board(data):
                     f"KXNCAAFGAME-{kxc['suffix']}-{kxc['home']}",
                     f"KXNCAAFGAME-{kxc['suffix']}-{kxc['away']}")
             continue
+        gdiv = g.get("division") or "fbs"
         for key, league in _LINE_BOOKS:
             pk = g.get(key) or {}
             tk, side, ask = pk.get("ticker"), pk.get("side"), pk.get("ask")
@@ -92,7 +96,7 @@ def record_from_board(data):
                 tk, date, week, False, side, _line_name(key, pk),
                 pk["pct"] / 100.0, ask,
                 pred_total=g.get("exp_total") if key == "total" else None,
-                league=league)
+                league=league, div=gdiv)
             store.update_nfl_close(tk, ask, side, league=league)
             n += 1
         ph = g.get("p_home")
@@ -114,7 +118,7 @@ def record_from_board(data):
             ph if pick_home else 1 - ph, price,
             pred_total=g.get("exp_total"),
             prob_raw=(raw if pick_home else 1 - raw) if raw is not None else None,
-            league=LEAGUE, ticker=ticker)
+            league=LEAGUE, ticker=ticker, div=gdiv)
         store.update_nfl_close(gid, price, side, league=LEAGUE)
         n += 1
     return n
@@ -138,7 +142,11 @@ def _finals_for(date, memo=None):
     out = {}
     for ev in d.get("events") or []:
         comp = (ev.get("competitions") or [{}])[0]
-        if (((comp.get("status") or {}).get("type")) or {}).get("state") != "post":
+        stype = ((comp.get("status") or {}).get("type")) or {}
+        # `completed`, not the state: a postponed or canceled game also reports
+        # "post", with 0-0 on the board, and would grade the pick as a loss
+        # against a game nobody played (see cfb.schedule).
+        if stype.get("state") != "post" or not stype.get("completed"):
             continue
         home = away = None
         hs = as_ = None
@@ -235,17 +243,26 @@ def grade_lines():
     return n
 
 
-def record():
+DIVISIONS = ("fbs", "fcs", "cross")
+
+
+def record(div=None):
     """The College tab's scoreboard: the straight-up picks (ESPN-graded, the
     football ledger's math), the ATS and total picks at Kalshi's booked line
     (Kalshi-settled), the totals' lean, and the moneyline model against the
-    price it was logged beside."""
-    su = store.nfl_record(league=LEAGUE)["regular"]
-    ats = store.nfl_record(league="cfb_ats")["regular"]
-    tot = store.nfl_record(league="cfb_tot")["regular"]
+    price it was logged beside.
+
+    `div` narrows every book to one division; the default pools them for the
+    headline and carries a per-division breakdown under "divisions", because
+    FBS and FCS are not one population -- an FCS rating is a heavier regressed
+    prior for longer, and easy FCS favourites would otherwise flatter the FBS
+    record."""
+    su = store.nfl_record(league=LEAGUE, div=div)["regular"]
+    ats = store.nfl_record(league="cfb_ats", div=div)["regular"]
+    tot = store.nfl_record(league="cfb_tot", div=div)["regular"]
     for r in (ats, tot):
         r["clv_note"] = "pre-game closes only"
-    rows = [r for r in store.nfl_pick_rows("cfb_tot") if r.get("graded") != 2]
+    rows = [r for r in store.nfl_pick_rows("cfb_tot", div=div) if r.get("graded") != 2]
     graded = [r for r in rows if r.get("graded") == 1]
     overs = [r for r in rows if r.get("pick_side") == "yes"]
     # the Over's own hit rate, whichever way we leaned: the pick's YES side
@@ -273,7 +290,30 @@ def record():
                   "close": predlog.close_report(LEAGUE)}
     except Exception as _e:
         errlog.note("CFBT-market", _e)
-    return {"regular": su, "ats": ats, "totals": tot, "market": market}
+    out = {"regular": su, "ats": ats, "totals": tot, "market": market, "div": div}
+    if div in ("fbs", "fcs"):
+        # A buy game shows on BOTH divisions' tabs -- it is an FBS team's game
+        # and an FCS team's game -- but it is graded in neither book. The FBS
+        # side wins 86% of them (2025: 146 finals, mean margin 26.8), so
+        # folding them into the FBS record would flatter it with games that
+        # were never in doubt, and into the FCS record would bury it. Its own
+        # line, shown on both tabs.
+        out["cross"] = {
+            "regular": store.nfl_record(league=LEAGUE, div="cross")["regular"],
+            "ats": store.nfl_record(league="cfb_ats", div="cross")["regular"],
+            "totals": store.nfl_record(league="cfb_tot", div="cross")["regular"]}
+    if div is None:
+        # one row per division, and only the ones that carry picks -- a book
+        # with nothing in it is noise on the card
+        by = {}
+        for d in DIVISIONS:
+            r = store.nfl_record(league=LEAGUE, div=d)["regular"]
+            a = store.nfl_record(league="cfb_ats", div=d)["regular"]
+            t = store.nfl_record(league="cfb_tot", div=d)["regular"]
+            if any((x.get("graded") or 0) + (x.get("pending") or 0) for x in (r, a, t)):
+                by[d] = {"regular": r, "ats": a, "totals": t}
+        out["divisions"] = by
+    return out
 
 
 def grade_due():

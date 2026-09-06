@@ -3495,9 +3495,23 @@ function setFbLeague(lg) {
   _fbLeague = lg;
   document.querySelectorAll("#fbLeague .subtab").forEach((b) =>
     b.classList.toggle("active", b.dataset.league === lg));
+  const college = lg === "cfb" || lg === "fcs";
   $("fbNfl").classList.toggle("hidden", lg !== "nfl");
-  $("fbCfb").classList.toggle("hidden", lg !== "cfb");
-  if (lg === "cfb") initCFB();
+  $("fbCfb").classList.toggle("hidden", !college);
+  if (!college) return;
+  // FBS and FCS are their own tabs off ONE build: the board carries both
+  // divisions, so switching costs a re-render rather than a rebuild. Each
+  // tab shows only its own games and only its own graded record -- the two
+  // are not one population (an FCS rating is a heavier regressed prior for
+  // longer), so a shared scoreboard would let easy FCS favourites flatter
+  // the FBS one.
+  cfbDivFilter = lg === "fcs" ? "fcs" : "fbs";
+  const t = $("cfbTitle");
+  if (t) t.textContent = lg === "fcs" ? "🎓 College football FCS 2026" : "🎓 College football FBS 2026";
+  cfbComboGameSel = null;         // a selection from the other division is gone
+  initCFB();
+  if (_cfbWeekData) renderCFBWeek();
+  loadCfbRecord();
 }
 function initNFL() {
   document.querySelectorAll("#fbLeague .subtab").forEach((b) => {
@@ -3505,7 +3519,7 @@ function initNFL() {
     b.dataset.wired = "1";
     b.addEventListener("click", () => setFbLeague(b.dataset.league));
   });
-  if (_fbLeague === "cfb") { initCFB(); return; }
+  if (_fbLeague === "cfb" || _fbLeague === "fcs") { initCFB(); return; }
   initNFLWeek();                          // week board is the default view
   document.querySelectorAll("#nflSubtabs .subtab").forEach((b) => {
     if (b.dataset.wired) return;
@@ -3719,7 +3733,7 @@ function nflGameGridHtml() {
   const allOn = !nflComboGameSel || !Object.keys(nflComboGameSel).length;
   const esc = (s) => (s || "").replace(/'/g, "\\'");
   let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="nflComboAllGames()">ALL<br>GAMES</div>`;
-  cards += d.games.map((g) => {
+  cards += mine.map((g) => {
     const key = `${g.away}@${g.home}`;
     const started = g.state === "post" || g.state === "in";
     const sel = nflComboGameSel ? nflComboGameSel[key] : undefined;
@@ -4132,6 +4146,8 @@ function cfbSlateCard(g) {
   const started = g.state === "in" || g.state === "post";
   const score = started && g.home_score != null
     ? `<span class="small" style="color:var(--muted)">${g.state === "post" ? "final" : "🔴 live"}: ${g.away} ${g.away_score} - ${g.home_score} ${g.home}</span>` : "";
+  const divChip = g.division && g.division !== "fbs"
+    ? ` <span class="chip" style="font-size:.7rem">${g.division === "cross" ? "FBS vs FCS" : "FCS"}</span>` : "";
   const ats = (g.ats
     ? `<div class="small">ATS at Kalshi's rung: <b>${escapeHtml(g.ats.name)} ${escapeHtml(g.ats.spread || "")}</b> covers <b>${g.ats.pct}%</b>${g.ats.mkt_pct != null ? ` <span style="color:var(--muted)">(market ${g.ats.mkt_pct}%${g.ats.ask != null ? `, ${g.ats.ask}¢` : ""}; its line ${_cfbMarginTxt(g.market_margin)})</span>` : ""}</div>` : "")
     + (g.total
@@ -4141,7 +4157,7 @@ function cfbSlateCard(g) {
     : `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · no Kalshi line yet</div>`;
   return `<div class="bbgame nflcard">
     <div class="top"><div>
-      <div class="matchup">${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}${g.neutral ? " · neutral" : ""}</span> ${score}</div>
+      <div class="matchup">${escapeHtml(g.away_name || g.away)} @ ${escapeHtml(g.home_name || g.home)}${divChip} <span class="small" style="color:var(--muted)">${(g.date || "").slice(0, 10)}${g.neutral ? " · neutral" : ""}</span> ${score}</div>
       <div class="pick">Pick: <b>${escapeHtml(g.pick.name || g.pick.team)}</b> ${g.pick.pct}% <span class="small" style="color:var(--muted)">(#${g.pick.rank} · ${g.pick.confidence} pts)</span> · total <b>${g.exp_total}</b></div>
     </div></div>
     <div class="nfl-score"><span class="nfl-sc">${g.away} <b>${g.exp_away}</b></span><span class="nfl-scsep">-</span><span class="nfl-sc"><b>${g.exp_home}</b> ${g.home}</span></div>
@@ -4155,7 +4171,7 @@ function cfbSlateCard(g) {
 function renderCFBPickem(d) {
   const box = $("cfbPickem");
   if (!box) return;
-  const games = (d.games || []).filter((g) => g.state !== "post");
+  const games = _cfbDivGames(d).filter((g) => g.state !== "post");
   if (!games.length) { box.innerHTML = ""; return; }
   const rows = games.slice().sort((a, b) => a.pick.rank - b.pick.rank).map((g) => {
     const kx = g.kalshi || {};
@@ -4168,7 +4184,7 @@ function renderCFBPickem(d) {
       ? `${g.total.lean === "over" ? "O" : "U"} ${g.total.line} <b>${g.total.pct}%</b>${g.total.mkt_pct != null ? ` <span style="color:var(--muted)">(mkt ${g.total.mkt_pct}%)</span>` : ""}`
       : `<span style="color:var(--muted)">-</span>`;
     return `<tr><td>${g.pick.rank}</td><td><b>${g.pick.confidence}</b></td>
-      <td>${escapeHtml(g.away)} @ ${escapeHtml(g.home)}${g.state === "in" ? ' <span class="gg-live">🔴</span>' : ""}</td>
+      <td>${escapeHtml(g.away)} @ ${escapeHtml(g.home)}${g.division && g.division !== "fbs" ? ` <span style="color:var(--muted)">${g.division === "cross" ? "·fbs/fcs" : "·fcs"}</span>` : ""}${g.state === "in" ? ' <span class="gg-live">🔴</span>' : ""}</td>
       <td><b>${escapeHtml(g.pick.name || g.pick.team)}</b></td><td>${g.pick.pct}%</td>
       <td>${cents != null ? `${cents}¢` : "-"}${edge != null ? ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span>` : ""}</td>
       <td>${_cfbMarginTxt(g.market_margin)}</td><td>${ats}</td><td>${ou}</td></tr>`;
@@ -4178,11 +4194,25 @@ function renderCFBPickem(d) {
     <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended sim; Kalshi is the pick's ask with the model's edge beside it. line = the market's own line off its traded rungs. ATS = who covers at the rung Kalshi books nearest that line, read off the simulated margins, with the market's own cover chance beside it; O/U = the lean at Kalshi's total, off the simulated totals. Early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
   </details>`;
 }
+// Which division's tab is open. One build carries both, so the tab is a
+// filter over the same board rather than a second fetch. A cross-division
+// buy game belongs to both tabs: it is an FBS team's game and an FCS team's
+// game, and hiding it from either would lose a card that is really there.
+let cfbDivFilter = "fbs";
+function _cfbDivGames(d) {
+  const gs = d.games || [];
+  if (cfbDivFilter === "fcs") return gs.filter((g) => (g.division || "fbs") !== "fbs");
+  return gs.filter((g) => (g.division || "fbs") !== "fcs");
+}
 function renderCFBWeek() {
   const d = _cfbWeekData; if (!d) return;
-  $("cfbWeekSummary").innerHTML = `<b>${d.n_games}</b> FBS games · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${d.stale ? "⚠ " : ""}${escapeHtml(d.note || "")}</i>`;
+  const mine = _cfbDivGames(d);
+  const cross = mine.filter((g) => g.division === "cross").length;
+  const own = mine.length - cross;
+  const lbl = cfbDivFilter === "fcs" ? "FCS" : "FBS";
+  $("cfbWeekSummary").innerHTML = `<b>${mine.length}</b> ${lbl} games (<b>${own}</b> all-${lbl}, <b>${cross}</b> against ${cfbDivFilter === "fcs" ? "FBS" : "FCS"}) · Week ${d.week} · ${(d.n_sims || 0).toLocaleString()} sims/game · ratings: ${escapeHtml(d.ratings || "")} (${d.games_played || 0} games played) · <i style="color:var(--muted)">${d.stale ? "⚠ " : ""}${escapeHtml(d.note || "")}</i>`;
   renderCFBPickem(d);
-  $("cfbWeekResults").innerHTML = d.games.map(cfbSlateCard).join("");
+  $("cfbWeekResults").innerHTML = _cfbDivGames(d).map(cfbSlateCard).join("");
   if (!document.querySelector("#cfbComboMaker .gamegrid")) renderCFBComboMaker();
 }
 // One book of the college record on a line: W-L, fee-in ROI at the entry
@@ -4217,9 +4247,17 @@ function cfbRecordHtml(d) {
   if (reg.calibration && reg.calibration.length)
     rows.push(`<div style="color:var(--muted)">Calibration ` + reg.calibration.map((b) =>
       `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · ") + `</div>`);
+  const x = d.cross;
+  if (x && ((x.regular.graded || 0) + (x.regular.pending || 0)
+            + (x.ats.graded || 0) + (x.ats.pending || 0)
+            + (x.totals.graded || 0) + (x.totals.pending || 0))) {
+    const b = (r) => (r && r.graded ? `${r.wins}-${r.losses}` : (r && r.pending ? `${r.pending} pending` : "-"));
+    rows.push(`<div style="margin-top:3px">Buy games <span style="color:var(--muted)">(FBS vs FCS - graded in neither book: the FBS side wins ~86% of them, so they would flatter one record and bury the other)</span>: SU <b>${b(x.regular)}</b> · ATS <b>${b(x.ats)}</b> · O/U <b>${b(x.totals)}</b></div>`);
+  }
   const n = (reg.graded || 0) + (ats.graded || 0) + (tot.graded || 0);
   const warn = n < 50 ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ ${n} graded so far - W-L is mostly noise until ~100+; watch Brier (&lt;0.25 = real signal), edge-bet ROI and CLV.</div>` : "";
-  return `<div><b>🎓 Model record</b> <span class="small" style="color:var(--muted)">pre-game picks only · straight up graded off the finals, spreads and totals off Kalshi's own settlement of the rung it books · ROI is one contract at the entry ask, fees in</span></div>
+  const dl = cfbDivFilter === "fcs" ? "FCS" : "FBS";
+  return `<div><b>🎓 ${dl} model record</b> <span class="small" style="color:var(--muted)">${dl} picks only, graded apart from the other division (they are not one population - an FCS rating is a heavier regressed prior for longer, and pooling would let easy favourites flatter the other book) · pre-game picks only · straight up graded off the finals, spreads and totals off Kalshi's own settlement of the rung it books · ROI is one contract at the entry ask, fees in</span></div>
     <div class="small" style="margin-top:3px">${rows.join("")}</div>${warn}`;
 }
 async function loadCfbRecord() {
@@ -4228,7 +4266,7 @@ async function loadCfbRecord() {
   const el = $("cfbRecord");
   if (!el) return;
   try {
-    const d = await (await fetch("/api/cfb/record")).json();
+    const d = await (await fetch(`/api/cfb/record?div=${cfbDivFilter === "fcs" ? "fcs" : "fbs"}`)).json();
     el.innerHTML = cfbRecordHtml(d);
     el.style.display = "";
   } catch (e) { /* ignore */ }
@@ -4243,6 +4281,7 @@ let cfbComboBuilding = false;
 function cfbGameGridHtml() {
   const d = _cfbWeekData;
   if (!d || !(d.games || []).length) return "";
+  const mine = _cfbDivGames(d);
   const allOn = !cfbComboGameSel || !Object.keys(cfbComboGameSel).length;
   const esc = (s) => (s || "").replace(/'/g, "\\'");
   let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="cfbComboAllGames()">ALL<br>GAMES</div>`;
