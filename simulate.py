@@ -587,6 +587,60 @@ def _set_values(players, objective, cv):
             p["value"] = p["proj"]
 
 
+def _joint_score(rows, mults, objective, q=0.9):
+    """A captain-mode lineup's score on its JOINT simulated points -- half the
+    lineup's 90th percentile, half its median -- with the captain multiplier
+    and (for leverage) the ownership discount applied per player. None when
+    no row carries a simulated array; rows without one (constructors) count
+    at their projection.
+
+    Per-player ceilings do not add: at most one driver wins a race, so the
+    sum of everyone's own 90th percentile is a total no single simulated race
+    produces. Measured on Monza 2026 (the owner, on Gasly starting P1 in a
+    slow car: "he'd have to stay 1st, or lose a point for each position he
+    loses AND lose points for not being in 1st"): the old sum-of-ceilings
+    read 340 for the Gasly-captain build against 332 for a Russell-captain
+    one, while their JOINT 90th percentiles were 227 and 228 -- the same
+    tail -- with the Gasly build 15 points lower on the mean and 18 lower at
+    its 10th percentile. So the old score was ranking on a total no race
+    produces. The median half of the blend is what prices the fade the
+    captain's 1.5x multiplies as hard as the win.
+
+    Honest about what this does NOT do: on the live Monza slate it did not
+    unseat Gasly. Scored jointly, his build led the next one by 0.9 of 197
+    (196.8 to 195.9), and across two draws of the same 3,000-sim race the
+    order at the top changed -- Albon led one, Gasly the other, everything
+    inside ~2%. The captain choice among the leaders is inside the sim's own
+    noise, which the old score hid behind a number that looked decisive.
+    Gasly's own read was never the bug: the sim had him finishing 10.8th on
+    average with a 10th percentile of -22 points, and his 51-point ceiling
+    (a win at Monza is 40 + laps led + classified, with zero place
+    differential available from pole) is real and costs 8,400 against
+    Russell's 62 at 18,000. Cash (max projection) captains Hamilton."""
+    arrs = []
+    for p, m in zip(rows, mults):
+        w = m
+        if objective == "leverage":
+            own = p.get("own") if p.get("own") is not None else 15.0
+            w *= (1.0 - 0.007 * own)
+        arrs.append((p.get("arr"), w, float(p.get("proj") or 0.0)))
+    lens = [len(a) for a, _w, _pj in arrs if a]
+    if not lens:
+        return None
+    L = min(lens)
+    tot = [0.0] * L
+    for a, w, pj in arrs:
+        if a:
+            for i in range(L):
+                tot[i] += w * a[i]
+        else:
+            c = w * pj
+            for i in range(L):
+                tot[i] += c
+    tot.sort()
+    return 0.5 * tot[int(q * (L - 1))] + 0.5 * tot[(L - 1) // 2]
+
+
 def dfs_showdown(players, cap, objective, cv, flex_count=5, exclusive_group=None):
     """Captain (1.5x salary + 1.5x points) + flex lineup. Tries each player as
     captain and knapsacks the rest. `exclusive_group` forbids co-rostering players
@@ -597,6 +651,7 @@ def dfs_showdown(players, cap, objective, cv, flex_count=5, exclusive_group=None
             seen[p["name"]] = p
     pool = list(seen.values())
     _set_values(pool, objective, cv)
+    joint = objective in ("ceiling", "leverage") and any(p.get("arr") for p in pool)
     best = None
     for i, capt in enumerate(pool):
         cap_sal = capt["salary"] * 1.5
@@ -612,6 +667,9 @@ def dfs_showdown(players, cap, objective, cv, flex_count=5, exclusive_group=None
         if not flex:
             continue
         score = capt["value"] * 1.5 + sum(p["value"] for p in flex)
+        if joint:
+            js = _joint_score([capt] + flex, [1.5] + [1.0] * len(flex), objective)
+            score = js if js is not None else score
         if best is None or score > best[0]:
             best = (score, capt, flex)
     if not best:
@@ -634,6 +692,10 @@ def _f1_showdown(players, cap, objective, cv):
     if not cpt or len(drv) < 4 or not con:
         return None
     _set_values(players, objective, cv)
+    # GPP objectives score the captain and constructor on the lineup's joint
+    # distribution (_joint_score); the four flex drivers are still knapsacked
+    # on their own values under what the pair leaves of the cap.
+    joint = objective in ("ceiling", "leverage") and any(d.get("arr") for d in drv)
     best = None
     for c in cpt:
         if c["salary"] > cap:
@@ -661,6 +723,9 @@ def _f1_showdown(players, cap, objective, cv):
             if not four:
                 continue
             score = cval + k["value"] + sum(d["value"] for d in four)
+            if joint:
+                js = _joint_score([c] + four + [k], [1.5] + [1.0] * (len(four) + 1), objective)
+                score = js if js is not None else score
             if best is None or score > best[0]:
                 best = (score, c, k, four)
     if not best:

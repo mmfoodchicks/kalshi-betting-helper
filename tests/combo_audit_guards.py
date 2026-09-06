@@ -7304,6 +7304,44 @@ ck("that CSV builds an F1 lineup under the cap with one captain at 1.5x and a co
    and _bl12["total_salary"] <= 50000
    and any(x["name"].startswith("Team ") for x in _bl12["lineup"]),
    str((_bl12 or {}).get("error") or (_bl12 or {}).get("total_salary")))
+# --- the captain is scored on the LINEUP's joint distribution, not the sum of
+# each driver's own ceiling (Monza 2026: Gasly on pole, sim finish 11th, was
+# the ceiling captain because his own 90th percentile was the fattest per dollar)
+def _arr12(spikes, base, hi, L=20):
+    a = [float(base)] * L
+    for k in spikes:
+        a[k] = float(hi)
+    return a
+def _drv12(name, sal, proj, arr, team, own=15.0):
+    ceil = sorted(arr)[int(0.9 * (len(arr) - 1))]
+    base = {"name": name, "proj": proj, "arr": arr, "ceil_proj": ceil, "team": team, "own": own, "position": "D"}
+    return [dict(base, salary=sal * 1.5, roster_pos="CPT"), dict(base, salary=sal, roster_pos="D")]
+_cap12 = (_drv12("Stud A", 12000, 38.0, _arr12([0, 1, 2], 36.0, 60.0), "T1")
+          + _drv12("Stud B", 11000, 35.0, _arr12([3, 4, 5], 33.0, 60.0), "T2")
+          # the pole-sitter in a slow car: a 15% spike, a fade the rest of the time
+          + _drv12("Fader C", 5600, 14.0, _arr12([6, 7, 8], -10.0, 70.0), "T3")
+          + _drv12("Flat D", 6000, 15.0, [15.0] * 20, "T4")
+          + _drv12("Flat E", 6500, 16.0, [16.0] * 20, "T5")
+          + _drv12("Flat F", 7000, 17.0, [17.0] * 20, "T6")
+          + [{"name": "Team K", "salary": 8000, "proj": 20.0, "team": "T7", "roster_pos": "CNSTR", "position": "CNSTR"}])
+_ceil12 = _sim12._f1_showdown([dict(p) for p in _cap12], 56500, "ceiling", 0.3)
+_cash12 = _sim12._f1_showdown([dict(p) for p in _cap12], 56500, "projection", 0.3)
+_js_c12 = _sim12._joint_score([p for p in _cap12 if p["name"] == "Fader C" and p["roster_pos"] == "CPT"]
+                              + [p for p in _cap12 if p["name"] in ("Stud A", "Stud B", "Flat F", "Flat E") and p["roster_pos"] == "D"]
+                              + [_cap12[-1]], [1.5, 1, 1, 1, 1, 1], "ceiling")
+_js_a12 = _sim12._joint_score([p for p in _cap12 if p["name"] == "Stud A" and p["roster_pos"] == "CPT"]
+                              + [p for p in _cap12 if p["name"] in ("Stud B", "Fader C", "Flat F", "Flat E") and p["roster_pos"] == "D"]
+                              + [_cap12[-1]], [1.5, 1, 1, 1, 1, 1], "ceiling")
+ck("the GPP captain is chosen on the lineup's joint points (half its 90th percentile, "
+   "half its median): the fader's own ceiling summed higher (1.5 x 70 vs 1.5 x 60) "
+   "but the stud-captain build's joint score wins; cash still captains by projection",
+   _ceil12 and [p["name"] for p in _ceil12 if p["captain"]] == ["Stud A"]
+   and _cash12 and [p["name"] for p in _cash12 if p["captain"]] == ["Stud A"]
+   and abs(_js_c12 - (0.5 * 227 + 0.5 * 107)) < 1e-6 and abs(_js_a12 - (0.5 * 210 + 0.5 * 130)) < 1e-6
+   and _js_a12 > _js_c12
+   and 1.5 * 70 + 60 + 60 + 17 + 16 + 20 > 1.5 * 60 + 60 + 70 + 17 + 16 + 20
+   and _sim12._joint_score([{"proj": 5.0}, {"proj": 6.0}], [1.5, 1.0], "ceiling") is None,
+   f"{[(p['name'], p.get('captain')) for p in (_ceil12 or [])]} {_js_c12} {_js_a12}")
 _cssdk = open(_os.path.join(_root, "static", "style.css")).read()
 # --- the lineup card's racing note: "(exp. P10.7, -9.7 places)", not
 # "(-9.7 PD, was 0)" -- PD is places and lives inside the projection, and
