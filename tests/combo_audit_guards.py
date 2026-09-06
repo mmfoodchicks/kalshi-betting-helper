@@ -7256,6 +7256,57 @@ import app as _apdk
 _rules_dk = {r.rule for r in _apdk.app.url_map.iter_rules()}
 _jsdk = open(_os.path.join(_root, "static", "app.js")).read()
 _tpdk = open(_os.path.join(_root, "templates", "index.html")).read()
+# --- the pool carries the BASE salary; the captain row rides as cpt_salary
+# and the CSV lists it first as CPT (DK's own export shape). Keeping DK's
+# first row gave every driver his 1.5x price and "no valid lineup fits the
+# salary cap" on the Italian GP slate.
+_f1d12 = {"draftables": (
+    [{"displayName": f"Driver {i}", "salary": 15000 - 500 * i, "position": "D", "rosterSlotId": 646,
+      "playerDkId": 1000 + i, "teamAbbreviation": f"T{i // 2}", "competition": {"name": "Italian Grand Prix 2026"}} for i in range(10)]
+    + [{"displayName": f"Driver {i}", "salary": 10000 - 333 * i, "position": "D", "rosterSlotId": 647,
+        "playerDkId": 1000 + i, "teamAbbreviation": f"T{i // 2}", "competition": {"name": "Italian Grand Prix 2026"}} for i in range(10)]
+    + [{"displayName": f"Team {i}", "salary": 9000 - 800 * i, "position": "CNSTR", "rosterSlotId": 648,
+        "playerDkId": 2000 + i, "teamAbbreviation": f"T{i}", "competition": {"name": "Italian Grand Prix 2026"}} for i in range(5)])}
+_sdd12 = {"draftables": [{"displayName": "Drake Maye", "salary": 15000, "position": "QB", "rosterSlotId": 511, "playerDkId": 1},
+                         {"displayName": "Drake Maye", "salary": 10000, "position": "QB", "rosterSlotId": 512, "playerDkId": 1}]}
+_mlb12 = {"draftables": [{"displayName": "Mookie Betts", "salary": 5200, "position": "2B", "rosterSlotId": 1, "playerDkId": 9},
+                         {"displayName": "Mookie Betts", "salary": 5200, "position": "OF", "rosterSlotId": 2, "playerDkId": 9}]}
+_dk12._get = lambda url, timeout=25: _f1d12 if "/911/" in url else _sdd12 if "/912/" in url else _mlb12
+for _k12 in (("dk_players", 911), ("dk_players", 912), ("dk_players", 913)):
+    _rc12._form_cache.pop(_k12, None)
+try:
+    _pf12, _ps12, _pm12 = _dk12.players(911), _dk12.players(912), _dk12.players(913)
+    _csvf12 = _dk12.salaries_csv(911)
+finally:
+    _dk12._get = _odg12
+    for _k12 in (("dk_players", 911), ("dk_players", 912), ("dk_players", 913)):
+        _rc12._form_cache.pop(_k12, None)
+_d0 = next(x for x in _pf12 if x["name"] == "Driver 0")
+_lines12 = _csvf12.splitlines()
+ck("a captain-format pool keeps the base price and carries the 1.5x captain "
+   "price beside it; a same-price duplicate (MLB's two slots) stays one row",
+   _d0["salary"] == 10000 and _d0["cpt_salary"] == 15000 and _d0["roster_pos"] == "D"
+   and len(_pf12) == 15 and all(x["cpt_salary"] is None for x in _pf12 if x["position"] == "CNSTR")
+   and _ps12[0]["salary"] == 10000 and _ps12[0]["cpt_salary"] == 15000
+   and len(_pm12) == 1 and _pm12[0]["cpt_salary"] is None and _pm12[0]["salary"] == 5200)
+ck("the slate CSV lists the captain row first as CPT at the captain price, then "
+   "the base row -- DK's export shape, which the F1 builder reads",
+   sum(1 for l in _lines12 if ",CPT," in l) == 10 and sum(1 for l in _lines12 if ",CNSTR," in l) == 5
+   and len(_lines12) == 1 + 10 + 10 + 5
+   and _lines12[1].startswith("D,Driver 0 (1000),Driver 0,1000,CPT,15000,")
+   and _lines12[2].startswith("D,Driver 0 (1000),Driver 0,1000,D,10000,"))
+import simulate as _sim12
+_bl12 = _sim12.dfs_build(_csvf12, roster=6, cap=50000, sport="f1", mode="classic", sims=200)
+ck("that CSV builds an F1 lineup under the cap with one captain at 1.5x and a constructor",
+   _bl12 and not _bl12.get("error") and len(_bl12["lineup"]) == 6
+   and sum(1 for x in _bl12["lineup"] if x.get("captain")) == 1
+   and _bl12["total_salary"] <= 50000
+   and any(x["name"].startswith("Team ") for x in _bl12["lineup"]),
+   str((_bl12 or {}).get("error") or (_bl12 or {}).get("total_salary")))
+_cssdk = open(_os.path.join(_root, "static", "style.css")).read()
+ck("the picker's two wide chips flex inside the row instead of widening the tab",
+   'label.small.dkwide select { flex: 1 1 auto; min-width: 0; max-width: 100%;' in _cssdk
+   and _tpdk.count('class="small dkwide"') == 2)
 ck("the picker's three routes exist and the tab is wired: sport -> slate -> "
    "contest fills entries, entry $, 1st $, pool $, the contest kind, the mode "
    "and the CSV, and remembers the pick per sport",
@@ -10586,7 +10637,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v108' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v109' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 

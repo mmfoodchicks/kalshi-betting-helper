@@ -7696,7 +7696,7 @@ function renderDfsContestOptions() {
   const keep = csel.value;
   const rows = _dfsDkContests.filter((c) => !maxFee || (c.entry_fee || 0) <= maxFee);
   csel.innerHTML = `<option value="">- pick a contest (${rows.length}) -</option>` + rows.map((c) =>
-    `<option value="${c.id}">${escapeHtml(c.name || "")} · $${c.entry_fee} · ${(c.entries || 0).toLocaleString()} max · $${(c.prize_pool || 0).toLocaleString()}</option>`).join("");
+    `<option value="${c.id}">${escapeHtml(c.name || "")} · $${c.entry_fee} · ${(c.entries || 0).toLocaleString()} max</option>`).join("");
   if (keep && rows.some((c) => String(c.id) === String(keep))) csel.value = keep;
 }
 async function applyDfsContest(id) {

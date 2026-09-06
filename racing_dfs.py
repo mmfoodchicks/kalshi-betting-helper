@@ -197,8 +197,8 @@ def _dk_slate(kind, field):
         hit = racing._match_prob(canon, None, p["name"])
         if hit is None:
             continue
-        if hit not in sal:                    # first slot row = base salary
-            sal[hit] = p["salary"]
+        if hit not in sal:                    # dk.players carries the BASE salary
+            sal[hit] = p["salary"]            # (the captain row rides as cpt_salary)
             team[hit] = p.get("team") or ""
     if len(sal) < 6:
         return None

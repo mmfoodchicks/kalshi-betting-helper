@@ -258,8 +258,9 @@ def slate_shape(draft_group_id, sport=None):
 
 def players(draft_group_id):
     """The slate's player pool: [{name, salary, position, roster_pos, game, team,
-    avg_ppg, status, opp_pitcher, available}] — de-duplicated (DK lists a player
-    once per roster slot)."""
+    avg_ppg, status, opp_pitcher, available, cpt_salary}] — de-duplicated (DK
+    lists a player once per roster slot). `salary` is the BASE price; in a
+    captain format (F1, Showdown) the 1.5x captain price is `cpt_salary`."""
     def build():
         try:
             d = _get(_DRAFTABLES.format(dg=draft_group_id), timeout=30)
@@ -268,7 +269,24 @@ def players(draft_group_id):
         seen = {}
         for x in d.get("draftables") or []:
             nm = x.get("displayName")
-            if not nm or nm in seen:
+            if not nm:
+                continue
+            if nm in seen:
+                # A second row for the same name at a DIFFERENT salary is the
+                # captain row of a captain format (DK lists it FIRST: Antonelli
+                # 19,500 then 13,000 on the Italian GP group, Drake Maye 15,000
+                # then 10,000 on the NE @ SEA Showdown). Keeping the first row
+                # gave every driver his 1.5x price and "no valid lineup fits
+                # the salary cap". The pool carries the base salary; the
+                # captain price rides along for the CSV's CPT row.
+                prev = seen[nm]
+                try:
+                    a, b = float(prev.get("salary") or 0), float(x.get("salary") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if a and b and a != b:
+                    prev["salary"] = int(min(a, b))
+                    prev["cpt_salary"] = int(max(a, b))
                 continue
             attrs = {a.get("id"): a.get("value") for a in (x.get("draftStatAttributes") or [])}
             gattrs = {a.get("id"): a.get("value") for a in (x.get("playerGameAttributes") or [])}
@@ -296,6 +314,7 @@ def players(draft_group_id):
                 "hand": pattrs.get("Handedness"),
                 "bats": pattrs.get("Bat-Handedness"),
                 "dk_id": x.get("playerDkId"),
+                "cpt_salary": None,
                 # DK marks the injured/inactive; a player on the IL can still be
                 # listed, so this is what lets us drop him from the pool.
                 "available": not (x.get("isDisabled") or status in _UNAVAILABLE)}
@@ -325,9 +344,17 @@ def salaries_csv(draft_group_id, drop_unavailable=True, exclude_games=None):
             continue
         if not p.get("salary"):
             continue
+        ppg = p["avg_ppg"] if p["avg_ppg"] not in (None, "-") else ""
+        if p.get("cpt_salary"):
+            # DK's own export lists the captain row first: Roster Position
+            # CPT at the 1.5x price. The F1 builder needs it (it picks the
+            # captain from CPT rows) and the Showdown builders read it as
+            # the showdown tell.
+            rows.append([p["position"] or "", f"{p['name']} ({p['dk_id']})", p["name"],
+                         p["dk_id"], "CPT", p["cpt_salary"], p["game"], p["team"], ppg])
         rows.append([p["position"] or "", f"{p['name']} ({p['dk_id']})", p["name"],
                      p["dk_id"], p["roster_pos"] or "", p["salary"], p["game"],
-                     p["team"], p["avg_ppg"] if p["avg_ppg"] not in (None, "-") else ""])
+                     p["team"], ppg])
     if len(rows) < 2:
         return None
     buf = io.StringIO()
