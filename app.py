@@ -3189,14 +3189,16 @@ def api_cfb_slate():
 
 @app.route("/api/cfb/record")
 def api_cfb_record():
-    """The college model's graded track record (league cfb of the football
-    ledger)."""
+    """The college model's graded track record: straight up (league cfb of
+    the football ledger), against the spread and totals at Kalshi's booked
+    line (leagues cfb_ats / cfb_tot, Kalshi-settled), and the moneyline
+    model against the price."""
+    import cfb_track
     try:
-        import cfb_track
         cfb_track.grade_due()
     except Exception as _e:
         errlog.note("APP-api_cfb_record", _e)
-    return jsonify(store.nfl_record(league="cfb"))
+    return jsonify(cfb_track.record())
 
 
 @app.route("/api/cfb/parlay")

@@ -4132,8 +4132,10 @@ function cfbSlateCard(g) {
   const started = g.state === "in" || g.state === "post";
   const score = started && g.home_score != null
     ? `<span class="small" style="color:var(--muted)">${g.state === "post" ? "final" : "🔴 live"}: ${g.away} ${g.away_score} - ${g.home_score} ${g.home}</span>` : "";
-  const ats = g.ats
-    ? `<div class="small">ATS at Kalshi's line (${_cfbMarginTxt(g.market_margin)}): <b>${escapeHtml(g.ats.name)}</b> covers <b>${g.ats.pct}%</b></div>` : "";
+  const ats = (g.ats
+    ? `<div class="small">ATS at Kalshi's rung: <b>${escapeHtml(g.ats.name)} ${escapeHtml(g.ats.spread || "")}</b> covers <b>${g.ats.pct}%</b>${g.ats.mkt_pct != null ? ` <span style="color:var(--muted)">(market ${g.ats.mkt_pct}%${g.ats.ask != null ? `, ${g.ats.ask}¢` : ""}; its line ${_cfbMarginTxt(g.market_margin)})</span>` : ""}</div>` : "")
+    + (g.total
+    ? `<div class="small">Total at Kalshi's ${g.total.line}: <b>${g.total.lean === "over" ? "Over" : "Under"}</b> <b>${g.total.pct}%</b>${g.total.mkt_pct != null ? ` <span style="color:var(--muted)">(market ${g.total.mkt_pct}%${g.total.ask != null ? `, ${g.total.ask}¢` : ""})</span>` : ""}</div>` : "");
   const level = g.market_margin != null
     ? `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · market ${g.market_margin > 0 ? "+" : ""}${g.market_margin} (${g.market_src}) · blended ${g.fair_margin > 0 ? "+" : ""}${g.fair_margin} (model weight ${Math.round((g.model_weight || 0) * 100)}%)</div>`
     : `<div class="small" style="color:var(--muted)">margin: model ${g.model_margin > 0 ? "+" : ""}${g.model_margin} · no Kalshi line yet</div>`;
@@ -4159,16 +4161,21 @@ function renderCFBPickem(d) {
     const kx = g.kalshi || {};
     const cents = g.pick.team === g.home ? kx.home_cents : kx.away_cents;
     const edge = g.pick.team === g.home ? g.edge_home : g.edge_away;
-    const ats = g.ats ? `${escapeHtml(g.ats.team)} ${g.ats.pct}%` : `<span style="color:var(--muted)">no line</span>`;
+    const ats = g.ats
+      ? `${escapeHtml(g.ats.team)} ${escapeHtml(g.ats.spread || "")} <b>${g.ats.pct}%</b>${g.ats.mkt_pct != null ? ` <span style="color:var(--muted)">(mkt ${g.ats.mkt_pct}%)</span>` : ""}`
+      : `<span style="color:var(--muted)">no line</span>`;
+    const ou = g.total
+      ? `${g.total.lean === "over" ? "O" : "U"} ${g.total.line} <b>${g.total.pct}%</b>${g.total.mkt_pct != null ? ` <span style="color:var(--muted)">(mkt ${g.total.mkt_pct}%)</span>` : ""}`
+      : `<span style="color:var(--muted)">-</span>`;
     return `<tr><td>${g.pick.rank}</td><td><b>${g.pick.confidence}</b></td>
       <td>${escapeHtml(g.away)} @ ${escapeHtml(g.home)}${g.state === "in" ? ' <span class="gg-live">🔴</span>' : ""}</td>
       <td><b>${escapeHtml(g.pick.name || g.pick.team)}</b></td><td>${g.pick.pct}%</td>
       <td>${cents != null ? `${cents}¢` : "-"}${edge != null ? ` <span class="${edge >= 0 ? "ev pos" : "ev neg"}">${edge >= 0 ? "+" : ""}${edge}</span>` : ""}</td>
-      <td>${_cfbMarginTxt(g.market_margin)}</td><td>${ats}</td></tr>`;
+      <td>${_cfbMarginTxt(g.market_margin)}</td><td>${ats}</td><td>${ou}</td></tr>`;
   }).join("");
   box.innerHTML = `<details class="simdetail" open><summary>🎯 <b>Pick'em</b> - ${games.length} games ranked by confidence</summary>
-    <div style="overflow-x:auto"><table class="seasontbl"><thead><tr><th>#</th><th>pts</th><th>game</th><th>pick</th><th>win%</th><th>Kalshi</th><th>line</th><th>ATS pick</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended sim; Kalshi is the pick's ask with the model's edge beside it. ATS = who covers Kalshi's line, read off the simulated margins - early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
+    <div style="overflow-x:auto"><table class="seasontbl"><thead><tr><th>#</th><th>pts</th><th>game</th><th>pick</th><th>win%</th><th>Kalshi</th><th>line</th><th>ATS pick</th><th>O/U</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="small" style="color:var(--muted);margin-top:4px">pts = confidence-pool points (surest pick gets the most). win% is the blended sim; Kalshi is the pick's ask with the model's edge beside it. line = the market's own line off its traded rungs. ATS = who covers at the rung Kalshi books nearest that line, read off the simulated margins, with the market's own cover chance beside it; O/U = the lean at Kalshi's total, off the simulated totals. Early in the season the ratings are a regressed prior, so treat a big ATS lean on an underdog as the model's opinion, not a given.</div>
   </details>`;
 }
 function renderCFBWeek() {
@@ -4178,6 +4185,43 @@ function renderCFBWeek() {
   $("cfbWeekResults").innerHTML = d.games.map(cfbSlateCard).join("");
   if (!document.querySelector("#cfbComboMaker .gamegrid")) renderCFBComboMaker();
 }
+// One book of the college record on a line: W-L, fee-in ROI at the entry
+// price, the edge-filtered ROI (bets you'd actually place), CLV, Brier.
+function _cfbBookHtml(r, what) {
+  if (!r || !r.graded) return `<span style="color:var(--muted)">${r && r.pending ? `${r.pending} ${what} awaiting results` : `no ${what} recorded yet`}</span>`;
+  const pct = (v) => (v >= 0 ? "+" : "") + v + "%";
+  let s = `<b>${r.wins}-${r.losses}</b> (${r.accuracy_pct}%)`;
+  if (r.roi_pct != null) s += ` · ROI <b class="${r.roi_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_pct)}</b>`;
+  if (r.roi_edge_pct != null) s += ` · edge bets (≥${r.edge_threshold}¢) <b class="${r.roi_edge_pct >= 0 ? "ev pos" : "ev neg"}">${pct(r.roi_edge_pct)}</b> <span style="color:var(--muted)">(${r.edge_bets})</span>`;
+  if (r.clv_avg != null) s += ` · CLV <b class="${r.clv_avg >= 0 ? "ev pos" : "ev neg"}">${r.clv_avg >= 0 ? "+" : ""}${r.clv_avg}¢</b> <span style="color:var(--muted)">(${r.clv_positive_pct}% beat close)</span>`;
+  if (r.brier != null) s += ` · Brier <b style="color:${r.brier < 0.25 ? "#3ad17a" : "#e0566a"}">${r.brier}</b>`;
+  if (r.pending) s += ` · ${r.pending} pending`;
+  return s;
+}
+function cfbRecordHtml(d) {
+  const reg = d.regular || {}, ats = d.ats || {}, tot = d.totals || {};
+  const lean = tot.lean || {}, mk = d.market || {};
+  const rows = [];
+  rows.push(`<div>Straight up: ${_cfbBookHtml(reg, "picks")}</div>`);
+  rows.push(`<div>ATS at Kalshi's rung: ${_cfbBookHtml(ats, "spread picks")}</div>`);
+  let t = `<div>Totals at Kalshi's line: ${_cfbBookHtml(tot, "total picks")}`;
+  if (lean.n) t += ` <span style="color:var(--muted)">· leaned Over on ${lean.over_pick_pct}% of ${lean.n}${lean.overs_hit_pct != null ? `, Overs hit ${lean.overs_hit_pct}% of ${lean.graded}` : ""}${lean.vs_line_avg != null ? `, model total ${lean.vs_line_avg >= 0 ? "+" : ""}${lean.vs_line_avg} vs the line` : ""}</span>`;
+  rows.push(t + `</div>`);
+  const vm = mk.vs_market, cr = mk.close, bits = [];
+  if (vm && vm.ready) bits.push(`Brier <b>${vm.model_brier}</b> vs the price's <b>${vm.market_brier}</b> on ${vm.n} graded - ${vm.beats_market ? `<b class="ev pos">the model beats the price</b>` : `<span class="ev neg">the price is sharper</span>`}`);
+  else if (vm) bits.push(`${vm.n}/30 graded before it can say who was sharper`);
+  if (cr && cr.ready) bits.push(`the close moved our way ${cr.toward_pct}% of the time (${cr.n} disagreements)`);
+  if (bits.length) rows.push(`<div>Moneyline vs the price: ${bits.join(" · ")}</div>`);
+  const ta = reg.totals_accuracy;
+  if (ta) rows.push(`<div style="color:var(--muted)">Sim totals: predicted ${ta.predicted_avg} vs actual ${ta.actual_avg} (off by ${ta.mean_abs_error} points avg, bias ${ta.bias >= 0 ? "+" : ""}${ta.bias}, ${ta.n} games)</div>`);
+  if (reg.calibration && reg.calibration.length)
+    rows.push(`<div style="color:var(--muted)">Calibration ` + reg.calibration.map((b) =>
+      `${b.range}: ${b.predicted}→<b style="color:${Math.abs(b.actual - b.predicted) <= 8 ? "#3ad17a" : "var(--muted)"}">${b.actual}%</b>`).join(" · ") + `</div>`);
+  const n = (reg.graded || 0) + (ats.graded || 0) + (tot.graded || 0);
+  const warn = n < 50 ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ ${n} graded so far - W-L is mostly noise until ~100+; watch Brier (&lt;0.25 = real signal), edge-bet ROI and CLV.</div>` : "";
+  return `<div><b>🎓 Model record</b> <span class="small" style="color:var(--muted)">pre-game picks only · straight up graded off the finals, spreads and totals off Kalshi's own settlement of the rung it books · ROI is one contract at the entry ask, fees in</span></div>
+    <div class="small" style="margin-top:3px">${rows.join("")}</div>${warn}`;
+}
 async function loadCfbRecord() {
   if (!isOwner()) return;
   loadSlipLog("cfbSlipLog", "cfb");
@@ -4185,12 +4229,8 @@ async function loadCfbRecord() {
   if (!el) return;
   try {
     const d = await (await fetch("/api/cfb/record")).json();
-    const reg = d.regular || {};
-    let html = "";
-    if (reg.graded) html += pickRecordHtml(reg, "points");
-    else if (reg.pending) html += `<span>Model track record: ${reg.pending} picks awaiting results…</span>`;
-    el.innerHTML = html;
-    el.style.display = html ? "" : "none";
+    el.innerHTML = cfbRecordHtml(d);
+    el.style.display = "";
   } catch (e) { /* ignore */ }
 }
 

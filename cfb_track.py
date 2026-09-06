@@ -7,6 +7,17 @@ pre-game, and it is graded off ESPN's college scoreboard once the game is
 final. Rows live in the same ledger as the NFL picks (the nfl_picks table) under
 league "cfb", so the report math is one function.
 
+The ATS pick (at the rung Kalshi books nearest its line) and the total lean
+(at Kalshi's total) are two more books of the same ledger, leagues "cfb_ats"
+and "cfb_tot", filed under the Kalshi TICKET they are (game_id = ticker,
+pick_side yes/no) and graded off Kalshi's own settlement through predlog,
+which logs the same tickers under models cfb_ats / cfb_total -- no
+scoreboard read, no push rule to get wrong (every rung is a half-point).
+The straight-up pick carries its own moneyline ticket too and grades the
+same way, so the record fills while ESPN's WAF has the scoreboard parked
+(every pass of 2026-09-06); the scoreboard pass still grades rows the
+settlement has not reached and is the only source of the actual total.
+
 Runs on the recorder's cadence (mlb_recorder), August through January, off a
 board that already exists (the PC's upload or a tab's build) -- it never
 kicks a build. ESPN's WAF parks this module for six hours on a refusal,
@@ -19,6 +30,7 @@ import time
 
 import errlog
 import kalshi
+import predlog
 import store
 import cfb
 
@@ -27,6 +39,8 @@ _GRADE_EVERY_S = 30 * 60
 _WEEK_EVERY_S = 6 * 3600
 _state = {"espn_block_until": 0.0, "last_grade": 0.0, "week": None, "week_ts": 0.0}
 LEAGUE = "cfb"
+# (card field, ledger league): the two line picks, filed as tickets
+_LINE_BOOKS = (("ats", "cfb_ats"), ("total", "cfb_tot"))
 
 
 class _EspnBlocked(Exception):
@@ -37,17 +51,50 @@ def espn_blocked():
     return time.time() < _state["espn_block_until"]
 
 
+def _line_name(key, pk):
+    """The pick as the owner reads it: 'IU -17.5', 'Over 51.5'."""
+    if key == "ats":
+        return f"{pk.get('team')} {pk.get('spread')}"
+    return f"{'Over' if pk.get('lean') == 'over' else 'Under'} {pk.get('line')}"
+
+
 def record_from_board(data):
     """Log every pre-game board game with a Kalshi price for the model's
-    pick; refresh same-side closes. Returns how many rows were touched."""
+    pick, and its ATS and total picks as the tickets they are; refresh
+    same-side closes. Returns how many rows were touched."""
     if not data or data.get("empty"):
         return 0
     week = data.get("week")
     n = 0
     for g in data.get("games") or []:
         state = (g.get("state") or "").lower()
-        if state and state != "pre":
+        date = (g.get("date") or "")[:10]
+        home, away = g.get("home"), g.get("away")
+        if not (date and home and away):
             continue
+        kxc = g.get("kx") or {}
+        if state and state != "pre":
+            # Already under way or final: nothing new to record, but a
+            # straight-up row filed before the ticket column existed (week
+            # 1 of 2026) gets its ticket so the settlement can grade it.
+            if kxc.get("suffix") and kxc.get("home") and kxc.get("away"):
+                store.backfill_nfl_ticker(
+                    f"{date}_{away}@{home}", LEAGUE,
+                    f"KXNCAAFGAME-{kxc['suffix']}-{kxc['home']}",
+                    f"KXNCAAFGAME-{kxc['suffix']}-{kxc['away']}")
+            continue
+        for key, league in _LINE_BOOKS:
+            pk = g.get(key) or {}
+            tk, side, ask = pk.get("ticker"), pk.get("side"), pk.get("ask")
+            if not (tk and side in ("yes", "no") and ask and pk.get("pct") is not None):
+                continue
+            store.record_nfl_pick(
+                tk, date, week, False, side, _line_name(key, pk),
+                pk["pct"] / 100.0, ask,
+                pred_total=g.get("exp_total") if key == "total" else None,
+                league=league)
+            store.update_nfl_close(tk, ask, side, league=league)
+            n += 1
         ph = g.get("p_home")
         kx = g.get("kalshi") or {}
         if ph is None:
@@ -56,19 +103,18 @@ def record_from_board(data):
         price = kx.get("home_cents" if pick_home else "away_cents")
         if price is None:
             continue
-        date = (g.get("date") or "")[:10]
-        home, away = g.get("home"), g.get("away")
-        if not (date and home and away):
-            continue
         gid = f"{date}_{away}@{home}"
         side = "home" if pick_home else "away"
         raw = g.get("p_home_raw")
+        # the pick's own market, for the settlement grader
+        ticker = (f"KXNCAAFGAME-{kxc['suffix']}-{kxc[side]}"
+                  if kxc.get("suffix") and kxc.get(side) else None)
         store.record_nfl_pick(
             gid, date, week, False, side, home if pick_home else away,
             ph if pick_home else 1 - ph, price,
             pred_total=g.get("exp_total"),
             prob_raw=(raw if pick_home else 1 - raw) if raw is not None else None,
-            league=LEAGUE)
+            league=LEAGUE, ticker=ticker)
         store.update_nfl_close(gid, price, side, league=LEAGUE)
         n += 1
     return n
@@ -139,21 +185,119 @@ def _grade_rows(picks, finals):
     return out
 
 
+def _su_grade(r, yes):
+    """A straight-up pick off its own moneyline's settlement: YES means the
+    pick's team won. (won, winner_name, home_won); the actual total is not
+    in a settlement and stays for the scoreboard pass to fill."""
+    try:
+        _date, matchup = r["game_id"].split("_", 1)
+        away, home = matchup.split("@", 1)
+    except ValueError:
+        away = home = None
+    won = 1 if yes else 0
+    picked_home = r.get("pick_side") == "home"
+    home_won = 1 if picked_home == bool(won) else 0
+    winner = (home if home_won else away) or (r.get("pick_name") if won else "other")
+    return won, winner, home_won
+
+
+def grade_lines():
+    """Grade picks off Kalshi's settlement of the ticket each one is
+    (predlog resolves the ticker; the pick row reads its outcome): the ATS
+    and total picks always, and the straight-up picks through their own
+    moneyline -- ESPN's WAF parked the scoreboard on every pass of
+    2026-09-06, and a record that waits on it never fills. A void or
+    delisted market voids the pick."""
+    n = 0
+    for league in (LEAGUE,) + tuple(lg for _k, lg in _LINE_BOOKS):
+        rows = [r for r in store.ungraded_nfl_picks(league=league)
+                if r.get("ticker") or league != LEAGUE]
+        if not rows:
+            continue
+        key = "ticker" if league == LEAGUE else "game_id"
+        res = predlog.results([r[key] for r in rows])
+        for r in rows:
+            got = res.get(r[key])
+            if not got:
+                continue
+            if got["graded"] == 2:
+                store.void_nfl_pick(r["game_id"])
+                n += 1
+            elif got["graded"] == 1 and got["outcome"] is not None:
+                yes = int(got["outcome"]) == 1
+                if league == LEAGUE:
+                    won, winner, home_won = _su_grade(r, yes)
+                    store.set_nfl_grade(r["game_id"], won, winner, home_won=home_won)
+                else:
+                    won = 1 if yes == (r["pick_side"] == "yes") else 0
+                    store.set_nfl_grade(r["game_id"], won, "yes" if yes else "no")
+                n += 1
+    return n
+
+
+def record():
+    """The College tab's scoreboard: the straight-up picks (ESPN-graded, the
+    football ledger's math), the ATS and total picks at Kalshi's booked line
+    (Kalshi-settled), the totals' lean, and the moneyline model against the
+    price it was logged beside."""
+    su = store.nfl_record(league=LEAGUE)["regular"]
+    ats = store.nfl_record(league="cfb_ats")["regular"]
+    tot = store.nfl_record(league="cfb_tot")["regular"]
+    for r in (ats, tot):
+        r["clv_note"] = "pre-game closes only"
+    rows = [r for r in store.nfl_pick_rows("cfb_tot") if r.get("graded") != 2]
+    graded = [r for r in rows if r.get("graded") == 1]
+    overs = [r for r in rows if r.get("pick_side") == "yes"]
+    # the Over's own hit rate, whichever way we leaned: the pick's YES side
+    # is the Over, so an Over pick that won or an Under pick that lost
+    over_hit = [r for r in graded
+                if (r.get("pick_side") == "yes") == (r.get("won") == 1)]
+
+    def _line(r):
+        try:
+            return float((r.get("pick_name") or "").rsplit(" ", 1)[-1])
+        except ValueError:
+            return None
+    diffs = [r["pred_total"] - _line(r) for r in rows
+             if r.get("pred_total") is not None and _line(r) is not None]
+    tot["lean"] = {
+        "n": len(rows), "over_picks": len(overs), "under_picks": len(rows) - len(overs),
+        "over_pick_pct": round(100.0 * len(overs) / len(rows), 1) if rows else None,
+        "overs_hit_pct": round(100.0 * len(over_hit) / len(graded), 1) if graded else None,
+        "graded": len(graded),
+        # model total minus Kalshi's line, averaged: the lean in points
+        "vs_line_avg": round(sum(diffs) / len(diffs), 2) if diffs else None}
+    market = {}
+    try:
+        market = {"vs_market": predlog.vs_market(LEAGUE),
+                  "close": predlog.close_report(LEAGUE)}
+    except Exception as _e:
+        errlog.note("CFBT-market", _e)
+    return {"regular": su, "ats": ats, "totals": tot, "market": market}
+
+
 def grade_due():
-    """Grade recorded picks whose games are now final, dates that have
-    arrived only, one scoreboard fetch per date, ESPN refusal ends the pass."""
+    """Grade recorded picks whose games are now final: the line picks off
+    their settlements first (no ESPN in that), then the straight-up picks
+    off the scoreboard, dates that have arrived only, one fetch per date,
+    ESPN refusal ends the pass."""
+    n = 0
+    try:
+        n = grade_lines()
+    except Exception as _e:
+        errlog.note("CFBT-lines", _e)
     if espn_blocked():
-        return 0
+        return n
     import clock
     today = clock.today_et().isoformat()
     picks = [p for p in store.ungraded_nfl_picks(league=LEAGUE)
              if (p.get("date") or "") <= today]
     if not picks:
-        return 0
+        return n
     by_date = {}
     for p in picks:
         by_date.setdefault(p["date"], []).append(p)
-    n, memo = 0, {}
+    memo = {}
     for date, ps in sorted(by_date.items()):
         finals = {}
         try:

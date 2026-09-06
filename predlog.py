@@ -317,6 +317,24 @@ def vs_market(model):
             "beats_market": ours < mkt}
 
 
+def results(tickers):
+    """{ticker: {"graded": 0/1/2, "outcome": 0/1/None}} for the tickers
+    asked about -- how a ledger that files a pick as a Kalshi ticket (the
+    college ATS and total picks, cfb_track) reads its settlement."""
+    tks = [t for t in tickers if t]
+    out = {}
+    if not tks:
+        return out
+    with _lock, _conn() as c:
+        for i in range(0, len(tks), 400):
+            chunk = tks[i:i + 400]
+            qs = ",".join("?" * len(chunk))
+            for r in c.execute("SELECT ticker, graded, outcome FROM predictions "
+                               f"WHERE ticker IN ({qs})", chunk).fetchall():
+                out[r["ticker"]] = {"graded": r["graded"], "outcome": r["outcome"]}
+    return out
+
+
 def _mark(ticker, graded, outcome=None, resolved_ts=None):
     with _lock, _conn() as c:
         c.execute("UPDATE predictions SET graded=?, outcome=?, resolved_ts=? WHERE ticker=?",
@@ -353,12 +371,19 @@ def resolve_due(limit=150):
         # retried next pass, at the cost of one lookup. Tennis/UFC close at
         # event time, so they are excluded -- probing them early would poll
         # matches that haven't been played.
+        # College rows probe off the KICKOFF the logger knew instead: Kalshi's
+        # college backstop is 48h (measured 2026-09-06: close_time = kickoff
+        # + 48h on every KXNCAAF series), so the 66h window above would open
+        # 18 HOURS BEFORE kickoff, and the week board logs its rows on
+        # Tuesday, so log-time + 6h says nothing about the game. Five hours
+        # after the logged kickoff the game is over; rows without event_ts
+        # wait for close_time as before.
         early = [r["ticker"] for r in c.execute(
-            "SELECT ticker FROM predictions WHERE graded=0 "
-            "AND close_time > ? AND close_time - 237600 <= ? "
-            "AND ts + 21600 <= ? "
-            "AND (model LIKE 'mlb%' OR model LIKE 'nfl%') "
-            "ORDER BY close_time LIMIT ?", (now, now, now, limit)).fetchall()]
+            "SELECT ticker FROM predictions WHERE graded=0 AND close_time > ? AND ("
+            "(close_time - 237600 <= ? AND ts + 21600 <= ? "
+            " AND (model LIKE 'mlb%' OR model LIKE 'nfl%')) "
+            "OR (model LIKE 'cfb%' AND event_ts IS NOT NULL AND event_ts + 18000 <= ?)) "
+            "ORDER BY close_time LIMIT ?", (now, now, now, now, limit)).fetchall()]
         due += early
         early = set(early)
     graded = 0

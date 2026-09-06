@@ -293,20 +293,55 @@ def ladders(idx, suffix):
     return {"spread": sp, "total": sorted(g.get("total") or {})}
 
 
+# A booked rung nobody quotes is not a price. Kalshi lists every rung of a
+# ladder from day one and parks the untraded ones at 92c ask / 8c bid on BOTH
+# sides, so the yes mid and the no mid each read 50 and the rung looks exactly
+# like the market's 50% line. Measured 2026-09-06 on JVST@OHIO: the traded
+# rungs put Ohio -2.5 (OHIO2/3/4 mids 51/49/42) while the dead JVST5..15 rungs
+# sat at 50/50 and pulled implied_margin to -14.5 -- twelve points of phantom
+# line that the blend then anchored the card's level and the ATS pick to. A
+# live quote has a bid within _LIVE_SPREAD_C of its ask (the traded college
+# rungs measured 4-10c wide, the sentinel 84c) and an ask under 90c.
+_LIVE_SPREAD_C = 16
+
+
+def _live_mid(q):
+    """The mid of a quote somebody is actually making, else None."""
+    if not q or q.get("ask") is None or q["ask"] >= 90:
+        return None
+    if q.get("bid") is not None and (q.get("spread") or 0) > _LIVE_SPREAD_C:
+        return None
+    return q["mid"]
+
+
+def _yes_prob(q, key_yes, key_no):
+    """De-vigged probability of one market's YES side off its live mids:
+    both sides when both are quoted, one side alone otherwise, None when the
+    rung is dead."""
+    y = _live_mid(q.get(key_yes))
+    n = _live_mid(q.get(key_no))
+    if y is not None and n is not None and y + n > 0:
+        return y / (y + n)
+    if y is not None:
+        return y / 100.0
+    if n is not None:
+        return 1.0 - n / 100.0
+    return None
+
+
 def implied_margin(idx, suffix, home_code):
     """The market's own expected margin (home minus away) off the spread
-    ladder, de-vigged and interpolated to the 50% line; None without a
-    ladder. Shown beside the model's number on the card -- the pick'em
-    question is 'who covers', and this is the line to cover."""
+    ladder's LIVE rungs, de-vigged and interpolated to the 50% line; None
+    without two quoted rungs that bracket it. Shown beside the model's
+    number on the card -- the pick'em question is 'who covers', and this is
+    the line to cover."""
     g = (idx or {}).get(suffix) or {}
     q = g.get("q") or {}
     pts = []
     for (team, by) in (g.get("spread") or {}):
-        y = (q.get(("spread", team, by, False)) or {}).get("mid")
-        n = (q.get(("spread", team, by, True)) or {}).get("mid")
-        if y is None:
+        p = _yes_prob(q, ("spread", team, by, False), ("spread", team, by, True))
+        if p is None:
             continue
-        p = y / (y + n) if (n is not None and y + n > 0) else y / 100.0
         m = (by - 0.5) if team == home_code else -(by - 0.5)
         pts.append((m, p if team == home_code else 1.0 - p))
     if len(pts) < 2:
@@ -317,3 +352,58 @@ def implied_margin(idx, suffix, home_code):
         if (p0 - 0.5) * (p1 - 0.5) <= 0 and p0 != p1:
             return round(m0 + (0.5 - p0) * (m1 - m0) / (p1 - p0), 1)
     return None
+
+
+def spread_rung(idx, suffix, home_code, away_code, margin):
+    """The LIVE booked spread rung nearest a home margin: the ticket the ATS
+    pick is made on, so the pick is tradeable and the record grades on
+    Kalshi's own settlement. {"team", "by", "line" (the rung as a home
+    margin: by-0.5 on the home ladder, -(by-0.5) on the away one), "mkt"
+    (the market's de-vigged YES probability), "ticker", "close", "ask",
+    "no_ask"} or None."""
+    g = (idx or {}).get(suffix) or {}
+    q = g.get("q") or {}
+    best = None
+    for (team, by) in (g.get("spread") or {}):
+        if team not in (home_code, away_code):
+            continue
+        p = _yes_prob(q, ("spread", team, by, False), ("spread", team, by, True))
+        if p is None:
+            continue
+        line = (by - 0.5) if team == home_code else -(by - 0.5)
+        d = abs(line - margin)
+        if best is None or d < best[0]:
+            best = (d, team, by, line, p)
+    if best is None:
+        return None
+    _d, team, by, line, p = best
+    kref = {"t": "spread", "team": team, "by": by}
+    tk, close = ticker_leg(idx, suffix, kref)
+    return {"team": team, "by": by, "line": line, "mkt": round(p, 4),
+            "ticker": tk, "close": close,
+            "ask": price_leg(idx, suffix, kref),
+            "no_ask": price_leg(idx, suffix, dict(kref, no=True))}
+
+
+def total_rung(idx, suffix):
+    """The market's own total: the LIVE booked rung whose over/under sits
+    nearest 50%, with the Over as the YES side. {"n", "line" (n-0.5), "mkt"
+    (de-vigged Over probability), "ticker", "close", "ask" (Over), "no_ask"
+    (Under)} or None when no rung is quoted."""
+    g = (idx or {}).get(suffix) or {}
+    q = g.get("q") or {}
+    best = None
+    for n in (g.get("total") or {}):
+        p = _yes_prob(q, ("total", n, True), ("total", n, False))
+        if p is None:
+            continue
+        if best is None or abs(p - 0.5) < abs(best[1] - 0.5):
+            best = (n, p)
+    if best is None:
+        return None
+    n, p = best
+    kref = {"t": "total", "n": n, "over": True}
+    tk, close = ticker_leg(idx, suffix, kref)
+    return {"n": n, "line": n - 0.5, "mkt": round(p, 4), "ticker": tk, "close": close,
+            "ask": price_leg(idx, suffix, kref),
+            "no_ask": price_leg(idx, suffix, dict(kref, over=False))}

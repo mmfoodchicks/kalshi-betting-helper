@@ -140,6 +140,15 @@ def init_db():
             except Exception as _e:
                 errlog.note("STORE-nfl-league", _e)  # a sibling just added it
 
+        # `ticker`: the Kalshi market a straight-up pick IS (its side's
+        # moneyline), so it can grade off Kalshi's settlement when ESPN's
+        # WAF parks the scoreboard -- which it did on every pass of
+        # 2026-09-06 (CFBT-espn-blocked / NFL-espn-fetch every half hour).
+        if "ticker" not in {r[1] for r in c.execute("PRAGMA table_info(nfl_picks)")}:
+            try:                   # several workers migrate at once on boot
+                c.execute("ALTER TABLE nfl_picks ADD COLUMN ticker TEXT")
+            except Exception as _e:
+                errlog.note("STORE-nfl-ticker", _e)
         # Player-prop log: every Kalshi-listed batter prop we record while the app
         # runs, with the model %, Kalshi price, and recent/season form at the time,
         # graded against the real box score after the game. Builds the aggregate
@@ -480,19 +489,21 @@ def mlb_record():
 # ---- NFL model track record (the MLB ledger, ported) -----------------------
 def record_nfl_pick(game_id, date, week, preseason, pick_side, pick_name,
                     prob, price_cents, pred_total=None, prob_raw=None,
-                    league="nfl"):
+                    league="nfl", ticker=None):
     """First pre-game sight of a game wins: entry price and probability are
     frozen here, exactly like record_mlb_pick. `league` is "nfl" or "cfb":
-    one football ledger, two books (cfb_track)."""
+    one football ledger, two books (cfb_track). `ticker` is the Kalshi
+    market the pick's side is, when the recorder knows it (the settlement
+    grader, cfb_track.grade_lines)."""
     with _lock, _conn() as c:
         c.execute(
             """INSERT OR IGNORE INTO nfl_picks
                (game_id, date, week, preseason, pick_side, pick_name,
-                prob, prob_raw, price_cents, close_price, pred_total, league)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                prob, prob_raw, price_cents, close_price, pred_total, league, ticker)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (game_id, date, week, 1 if preseason else 0, pick_side, pick_name,
              prob, prob_raw if prob_raw is not None else prob,
-             price_cents, price_cents, pred_total, league))
+             price_cents, price_cents, pred_total, league, ticker))
 
 
 def update_nfl_close(game_id, price_cents, pick_side, league="nfl"):
@@ -512,6 +523,30 @@ def ungraded_nfl_picks(league="nfl"):
         return [dict(r) for r in c.execute(
             "SELECT * FROM nfl_picks WHERE graded=0 AND league=?",
             (league,)).fetchall()]
+
+
+def nfl_pick_rows(league="nfl"):
+    """Every row of one book of the football ledger, graded or not."""
+    with _lock, _conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM nfl_picks WHERE league=?", (league,)).fetchall()]
+
+
+def backfill_nfl_ticker(game_id, league, home_ticker, away_ticker):
+    """Stamp the pick side's Kalshi ticket on a row recorded before the
+    column existed (week 1 of 2026 college), so it can grade off the
+    settlement; the row's own pick_side chooses the side."""
+    with _lock, _conn() as c:
+        c.execute("UPDATE nfl_picks SET ticker=CASE pick_side WHEN 'home' THEN ? ELSE ? END "
+                  "WHERE game_id=? AND league=? AND ticker IS NULL AND graded=0",
+                  (home_ticker, away_ticker, game_id, league))
+
+
+def void_nfl_pick(game_id):
+    """A pick whose market settled void or was delisted: graded=2 keeps the
+    row but takes it out of both the record and the pending count."""
+    with _lock, _conn() as c:
+        c.execute("UPDATE nfl_picks SET graded=2 WHERE game_id=? AND graded=0", (game_id,))
 
 
 def set_nfl_grade(game_id, won, winner_name, actual_total=None, home_won=None):

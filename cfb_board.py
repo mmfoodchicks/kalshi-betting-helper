@@ -14,11 +14,14 @@
          pick'em needs the game, not the yardage.
   PICK'EM Every card carries the straight-up pick with its probability and a
          confidence RANK across the week (the surest pick ranks 1), plus the
-         against-the-spread pick at Kalshi's own line when the spread ladder
-         is booked: P(cover) is read off the simulated margins, never off
-         the moneyline.
+         against-the-spread pick at the rung Kalshi books nearest its own
+         line, and the total lean at Kalshi's total: P(cover) and P(over)
+         are read off the simulated margins and totals, never off the
+         moneyline.
   RECORD cfb_track logs the pre-game pick and grades it off the final, in
-         the same ledger as the NFL picks under league "cfb".
+         the same ledger as the NFL picks under league "cfb"; the ATS and
+         total picks file as Kalshi tickets (leagues cfb_ats / cfb_tot) and
+         grade on Kalshi's own settlement.
 
 Board and sims are published through boardshare, so the PC builds them on
 its own cores and the server adopts (pc_worker._task_boards); the server
@@ -26,6 +29,7 @@ self-computes only when the PC is off.
 """
 
 import datetime
+import math as _math
 import random
 import threading
 import time as _time
@@ -200,7 +204,7 @@ def simulate_game(home, away, r_home, r_away, neutral=False, n=_N, seed=None,
             "exp_total": round(mean_total, 1),
             "mean_margin": round(sum(margins) / n, 1),
             "total_ladder": total_ladder, "spread_ladder": spread_ladder,
-            "n_sims": n, "_masks": masks, "_margins": margins}
+            "n_sims": n, "_masks": masks, "_margins": margins, "_totals": totals}
 
 
 def _model_weight():
@@ -285,6 +289,7 @@ def _build_board(season, week, n=_N):
         cal = lambda p: p
     w_model = _model_weight()
     out, sims, log_rows = [], [], []
+    ats_rows, tot_rows = [], []
     for g in games:
         h, a = g["home"], g["away"]
         rh, ra = R.get(h["id"], 0.0), R.get(a["id"], 0.0)
@@ -306,7 +311,6 @@ def _build_board(season, week, n=_N):
                             rh_s, ra_s, neutral=g["neutral"], n=n, ladders=lad)
         # The RAW model's number, for the calibrator and the record: the
         # ratings' margin through the engine's margin SD, no market in it.
-        import math as _math
         raw = 0.5 * (1 + _math.erf(model_margin / (_MARGIN_SD * _math.sqrt(2))))
         ph = cal(sim["p_home"]) if mkt_margin is None else sim["p_home"]
         card = {"home": h["abbr"], "away": a["abbr"],
@@ -338,18 +342,57 @@ def _build_board(season, week, n=_N):
                 card["edge_home"] = round(ph * 100 - px["home_cents"], 1)
             if px.get("away_cents") is not None:
                 card["edge_away"] = round((1 - ph) * 100 - px["away_cents"], 1)
-            line = mkt_margin if mkt_src == "spread" else None
+            pre = (g.get("state") or "") == "pre"
             card["market_margin"] = mkt_margin
-            if line is not None:
-                # Against the spread, at the market's line: who covers, and
-                # how often the simulated margins say so.
-                pc = _cover_pct(sim["_margins"], line)
+            rung = (kalshi_cfb.spread_rung(idx, suffix, hc, ac, mkt_margin)
+                    if mkt_src == "spread" else None)
+            if rung:
+                # Against the spread at the rung Kalshi actually books nearest
+                # its line, so the pick is a ticket (the record grades it on
+                # Kalshi's own settlement, cfb_track) rather than a number
+                # between two rungs. Who covers, and how often the simulated
+                # margins say so; the rung's YES side is "team wins by >= by",
+                # which is the home cover on the home ladder and the away
+                # cover on the away one.
+                pc = _cover_pct(sim["_margins"], rung["line"])
                 home_covers = pc >= 50.0
-                card["ats"] = {"line": line,
+                yes_home = rung["team"] == hc
+                p_yes = pc / 100.0 if yes_home else 1.0 - pc / 100.0
+                pick_yes = home_covers == yes_home
+                # the pick's own number: the home line negated for the home
+                # side (IND -17.5), as is for the visitor (UNT +17.5)
+                own = -rung["line"] if home_covers else rung["line"]
+                card["ats"] = {"line": rung["line"], "by": rung["by"], "kx_team": rung["team"],
                                "team": h["abbr"] if home_covers else a["abbr"],
                                "name": h["name"] if home_covers else a["name"],
-                               "pct": pc if home_covers else round(100.0 - pc, 1)}
-            if (g.get("state") or "") == "pre":
+                               "pct": pc if home_covers else round(100.0 - pc, 1),
+                               "spread": f"{own:+.1f}", "side": "yes" if pick_yes else "no",
+                               "mkt_pct": round(100.0 * (rung["mkt"] if pick_yes
+                                                         else 1.0 - rung["mkt"]), 1),
+                               "ask": rung["ask"] if pick_yes else rung["no_ask"],
+                               "ticker": rung["ticker"]}
+                if pre and rung["ticker"]:
+                    ats_rows.append((rung["ticker"], min(0.999, max(0.001, p_yes)),
+                                     rung["close"], rung["mkt"], _iso_ts(g.get("date"))))
+            tot = kalshi_cfb.total_rung(idx, suffix)
+            if tot:
+                # The total at Kalshi's own line: how often the simulated
+                # totals clear it, and the lean that follows.
+                n_t = len(sim["_totals"]) or 1
+                over = sum(1 for t in sim["_totals"] if t > tot["line"]) / n_t
+                lean_over = over >= 0.5
+                card["total"] = {"line": tot["line"], "over_pct": round(100.0 * over, 1),
+                                 "lean": "over" if lean_over else "under",
+                                 "pct": round(100.0 * (over if lean_over else 1.0 - over), 1),
+                                 "mkt_pct": round(100.0 * (tot["mkt"] if lean_over
+                                                           else 1.0 - tot["mkt"]), 1),
+                                 "side": "yes" if lean_over else "no",
+                                 "ask": tot["ask"] if lean_over else tot["no_ask"],
+                                 "ticker": tot["ticker"]}
+                if pre and tot["ticker"]:
+                    tot_rows.append((tot["ticker"], min(0.999, max(0.001, over)),
+                                     tot["close"], tot["mkt"], _iso_ts(g.get("date"))))
+            if pre:
                 for tk, p, own, opp in (
                         (px.get("home_ticker"), raw, px.get("home_cents"), px.get("away_cents")),
                         (px.get("away_ticker"), 1 - raw, px.get("away_cents"), px.get("home_cents"))):
@@ -371,6 +414,16 @@ def _build_board(season, week, n=_N):
             predlog.log_many("cfb", log_rows)
         except Exception as _e:
             errlog.note("CFB-build_board", _e)
+    # The ATS and total forecasts file under their own models: they are
+    # coin-flip-shaped numbers at a line, and mixing them into the moneyline
+    # bucket would bend the calibrator that bucket fits (calibrate "cfb").
+    for model, rows in (("cfb_ats", ats_rows), ("cfb_total", tot_rows)):
+        if rows:
+            try:
+                predlog.init_db()
+                predlog.log_many(model, rows)
+            except Exception as _e:
+                errlog.note("CFB-build_board-lines", _e)
     out.sort(key=lambda g: g["date"] or "")
     # Pick'em confidence: rank the straight-up picks by probability, surest
     # first. `confidence` is the points a standard confidence pool assigns
@@ -392,7 +445,9 @@ def _build_board(season, week, n=_N):
                      "line by the share the model has earned on graded results; the "
                      "raw model margin shows beside it. The pick'em rank orders the "
                      "week's straight-up picks by how sure the blended sim is; the "
-                     "ATS pick is read off the simulated margins at Kalshi's line.")}
+                     "ATS pick is read off the simulated margins at the rung Kalshi "
+                     "books nearest its line, the total lean off the simulated "
+                     "totals at Kalshi's total.")}
 
 
 def _last_good(name):
