@@ -6214,6 +6214,7 @@ async function initSim() {
   };
   if ($("dfsSport")) { $("dfsSport").addEventListener("change", dfsMlbToggle); dfsMlbToggle(); }
   initDfsPicker();
+  initDfsLookback();
   // A pasted CSV names its own sport; follow it so a baseball slate can never
   // be built with another sport's roster shape.
   if ($("dfsCsv") && !$("dfsCsv").dataset.detect) {
@@ -6562,6 +6563,7 @@ async function runDfsSim() {
     if (d.error === "upgrade_required") { box.innerHTML = upgradeNote(d); return; }
     if (d.error) { box.innerHTML = `<div class="empty">${d.error}</div>`; return; }
     // The slate that was auto-pulled from DK's lobby, and who DK scratched.
+    if (typeof loadDfsLookback === "function") setTimeout(loadDfsLookback, 800);   // the build was just logged
     const dkNote = d.dk_slate
       ? `<div class="small" style="margin:0 0 6px">📥 Auto-loaded tonight's DraftKings slate: <b>${d.dk_slate.n_players}</b> players available${d.dk_slate.n_dropped ? `, <b>${d.dk_slate.n_dropped}</b> scratched/inactive dropped` : ""}.</div>`
       : "";
@@ -7626,6 +7628,70 @@ window.dfsApplyReco = (obj, sample) => {
     if (el) { el.addEventListener("change", dfsRecommend); el.addEventListener("input", dfsRecommend); }
   });
 })();
+
+// ---- DFS look-back --------------------------------------------------------------
+// The builder's graded record: per sport and objective, projected vs actual,
+// how often the actual landed inside the lineup's own floor / ceiling band,
+// and the corrections in force. Read after every build and on demand.
+async function loadDfsLookback() {
+  const box = $("dfsLookbackBody"), note = $("dfsLookbackNote");
+  if (!box) return;
+  try {
+    const d = await (await fetch("/api/dfs/lookback")).json();
+    if (d.error) { box.textContent = d.error; return; }
+    const rows = d.rows || [];
+    const objName = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage", confidence: "Most confident", median: "Cash (median)" };
+    let html = "";
+    if (!rows.length) {
+      html += `<div>No graded lineups yet. ${d.n_logged ? `<b>${d.n_logged}</b> logged and waiting for their events to finish.` : "Build a lineup for a big event and it is logged automatically."}</div>`;
+    } else {
+      html += `<div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="text-align:left">sport</th><th style="text-align:left">objective</th><th>events</th><th>lineups</th><th>proj</th><th>actual</th><th>bias</th><th>beat proj</th><th>in band</th><th>MAE/player</th></tr></thead><tbody>`;
+      for (const r of rows) {
+        const best = (d.best_objective || {})[r.sport] === r.objective;
+        const bias = r.bias_pct > 0 ? `<span style="color:#3ad17a">+${r.bias_pct}%</span>` : `<span style="color:#e0566a">${r.bias_pct}%</span>`;
+        html += `<tr><td>${r.sport.toUpperCase()}</td><td>${objName[r.objective] || r.objective}${best ? " ⭐" : ""}</td><td style="text-align:center">${r.events}</td><td style="text-align:center">${r.lineups}</td><td style="text-align:right">${r.mean_proj}</td><td style="text-align:right"><b>${r.mean_actual}</b></td><td style="text-align:right">${bias}</td><td style="text-align:center">${r.beat_proj_pct}%</td><td style="text-align:center">${r.in_band_pct}%<span style="color:var(--muted)"> (${r.below_floor_pct}↓ ${r.above_ceiling_pct}↑)</span></td><td style="text-align:right">${r.player_mae ?? "-"}</td></tr>`;
+      }
+      html += `</tbody></table></div><div style="margin-top:4px">⭐ = the objective with the best actual average for that sport (2+ events). "In band" = actual landed between the lineup's own floor and ceiling; a well-sized sim lands there ~80% of the time.${rows.some((r) => r.partial) ? " NASCAR grades omit fastest laps (not in the feed)." : ""}</div>`;
+    }
+    const corr = d.corrections || {};
+    const inForce = [];
+    const waiting = [];
+    for (const sp of Object.keys(corr)) {
+      const meta = (corr[sp] || {})._meta || {};
+      for (const g of Object.keys(meta)) {
+        const m = meta[g];
+        if (m.status === "in force") inForce.push(`${sp.toUpperCase()} ${g} ×${m.factor} (${m.events} events, raw ${m.raw_ratio}, beat no-correction ${Math.round(100 * m.loo_share)}%)`);
+        else waiting.push(`${sp.toUpperCase()} ${g}: ${m.status}${m.events != null ? ` (${m.events})` : ""}`);
+      }
+    }
+    html += `<div style="margin-top:6px"><b>Corrections in force:</b> ${inForce.length ? inForce.join(" · ") : "none yet"}</div>`;
+    if (waiting.length) html += `<div style="color:var(--muted)">Gated: ${waiting.join(" · ")}</div>`;
+    const pend = d.pending || {};
+    const pk = Object.keys(pend);
+    if (pk.length) html += `<div style="margin-top:4px">Waiting on results: ${pk.map((sp) => `${sp.toUpperCase()} ${pend[sp].lineups} lineup${pend[sp].lineups === 1 ? "" : "s"} over ${pend[sp].events} event${pend[sp].events === 1 ? "" : "s"}`).join(" · ")}</div>`;
+    const ng = d.not_graded || {};
+    html += `<div style="margin-top:4px;color:var(--muted)">Logged but not graded yet: ${Object.keys(ng).map((sp) => `<b>${sp.toUpperCase()}</b> (${escapeHtml(ng[sp])})`).join("; ")}.</div>`;
+    box.innerHTML = html;
+    if (note) note.textContent = "";
+  } catch (e) {
+    box.textContent = "Look-back unavailable.";
+  }
+}
+function initDfsLookback() {
+  const btn = $("dfsLookbackGrade");
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", async () => {
+    const note = $("dfsLookbackNote");
+    if (note) note.textContent = "grading…";
+    try {
+      const d = await (await fetch("/api/dfs/lookback/grade", { method: "POST" })).json();
+      if (note) note.textContent = d.error ? d.error : `graded ${d.graded} lineup${d.graded === 1 ? "" : "s"}`;
+    } catch (e) { if (note) note.textContent = "grade failed"; }
+    loadDfsLookback();
+  });
+  loadDfsLookback();
+}
 
 // ---- DraftKings contest picker ---------------------------------------------
 // Sport -> slate (date/time) -> contest. Picking a contest fills the builder

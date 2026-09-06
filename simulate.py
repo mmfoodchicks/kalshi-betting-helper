@@ -1021,6 +1021,8 @@ def apply_ufc(players):
 def _lineup_player(p):
     return {"name": p["name"], "salary": int(p["salary"]), "proj": round(p["proj"], 1),
             "captain": p.get("captain", False), "start": p.get("start"),
+            "pos": p.get("roster_pos") or p.get("position"),
+            "lookback_factor": p.get("lookback_factor"),
             "own": p.get("own"),
             "pd_adj": p.get("pd_adj"), "base_proj": round(p["base_proj"], 1)
             if p.get("base_proj") is not None else None,
@@ -1068,6 +1070,13 @@ def dfs_build(text, roster=6, cap=50000, sport="ufc", mode="classic",
     # "Game Info" column is identical for both fighters in a fight, so it's the bout key.
     exclusive = (lambda p: p.get("game")) if sport == "ufc" else None
     n_lineups = max(1, min(150, int(n_lineups)))
+    # The look-back's correction in force for this sport (none until five
+    # graded events say so); applied before any lineup is chosen.
+    try:
+        import dfslog
+        dfslog.adjust(sport, players)
+    except Exception as _e:
+        errlog.note("DFSLB-adjust", _e, path=sport)
     captain_mode = sport in ("f1", "nascar") and any(p.get("roster_pos") == "CNSTR" for p in players)
     # Projected field ownership BEFORE building: the leverage objective and the
     # contest sim both need it.

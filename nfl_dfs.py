@@ -1025,6 +1025,11 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     # together -- and they used to switch on only for the GPP objectives, so a
     # default build came back stackless. Every objective stacks now; the
     # top-heavy ones stack deeper.
+    try:
+        import dfslog                      # look-back correction in force (gated)
+        dfslog.adjust("nfl", players)
+    except Exception as _e:
+        errlog.note("DFSLB-adjust", _e, path="nfl")
     stack_min = (2 if objective in ("ceiling", "leverage") else 1) if stack else 0
     # The GPP shapes also bring back one catcher from the QB's opponent: a
     # shootout lifts both sides, and the game-stack owns that outcome.

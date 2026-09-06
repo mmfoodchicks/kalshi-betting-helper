@@ -1145,6 +1145,11 @@ def build(date, csv_text, cap=50000, objective="median", n_sims=4000,
                 "if lineups aren't posted yet, try again closer to first pitch."}
 
     # Slate-wide leverage board (the unique selling point): best sharp + raw plays.
+    try:
+        import dfslog                      # look-back correction in force (gated)
+        dfslog.adjust("mlb", players)
+    except Exception as _e:
+        errlog.note("DFSLB-adjust", _e, path="mlb")
     sim_players = [p for p in players if p["sim"]]
     board = sorted(sim_players, key=lambda p: (p.get("sharp") if p.get("sharp") is not None else -999, p.get("lev", -999)), reverse=True)
     leverage_board = [{"name": p["name"], "team": p.get("team"), "salary": int(p["salary"]),

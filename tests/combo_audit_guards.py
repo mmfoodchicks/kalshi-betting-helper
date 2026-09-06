@@ -10649,7 +10649,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v110' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v111' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11005,6 +11005,178 @@ ck("the calibrator already has a college bucket for the logged picks",
 
 print()
 print("=" * 72)
+print()
+print("=" * 72)
+print("DFS look-back: big-event lineups graded off DraftKings' real scoring")
+print("=" * 72)
+# The builder's lineups were projections nobody checked. dfslog logs every
+# big-event lineup under its objective, grades it off the real DK scoring
+# from the feeds the app already reads, and feeds a gated correction back.
+import dfslog as _lb
+import racing as _rclb
+import store as _stlb
+import tempfile as _tflb
+import json as _jslb
+ck("only big events are logged: a race, an 8-game main slate, a full UFC card, "
+   "a 1,000-entry contest",
+   _lb.is_big("f1", {}, 1, 33)[0] and _lb.is_big("nascar", {}, 1, 40)[0]
+   and _lb.is_big("nfl", {}, 13, 400)[0] and not _lb.is_big("nfl", {}, 1, 54)[0]
+   and _lb.is_big("nfl", {"contest_size": 1500}, 1, 54)[0]
+   and _lb.is_big("mlb", {}, 9, 300)[0] and not _lb.is_big("mlb", {}, 2, 60)[0]
+   and _lb.is_big("ufc", {}, 1, 26)[0] and not _lb.is_big("ufc", {}, 1, 8)[0]
+   and _lb.n_games_from_csv("Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\n"
+                            "QB,A (1),A,1,QB,5000,BUF@NYJ 09/07/2026 01:00PM ET,BUF,\n"
+                            "RB,B (2),B,2,RB,5000,MIA@LAC 09/07/2026 04:05PM ET,MIA,\n") == 2)
+_osched_lb, _onas_lb = _lb._f1_schedule, _lb._nascar_races
+_lb._f1_schedule = lambda season: [{"date": "2026-08-23", "round": "12"}, {"date": "2026-09-06", "round": "13"}]
+_lb._nascar_races = lambda year: [{"race_id": 5623, "race_date": "2026-08-29T19:30:00"},
+                                  {"race_id": 5624, "race_date": "2026-09-06T18:00:00"}]
+try:
+    _ev1 = _lb.event_of("f1", {}, today="2026-09-06")
+    _ev2 = _lb.event_of("nascar", {}, today="2026-09-01")
+    _ev3 = _lb.event_of("nfl", {"week": 3}, today="2026-09-20")
+    _ev4 = _lb.event_of("mlb", {"date": "2026-09-06", "draft_group_id": 7}, today="2026-09-06")
+finally:
+    _lb._f1_schedule, _lb._nascar_races = _osched_lb, _onas_lb
+ck("a build is keyed to its event: the next race on the calendar, the NFL week, "
+   "the MLB date and slate",
+   _ev1 == ("f1:2026-09-06:13", "2026-09-06", None) and _ev2 == ("nascar:5624", "2026-09-06", None)
+   and _ev3 == ("nfl:2026:w3", "2026-09-20", 3) and _ev4 == ("mlb:2026-09-06:7", "2026-09-06", None))
+# --- F1 off a stubbed feed: DK's exact math, the teammate bonus, a pit-lane
+# start counting from the back, an unclassified car, constructors
+_res_lb = {"MRData": {"RaceTable": {"Races": [{"Results": [
+    {"position": "1", "grid": "2", "status": "Finished", "FastestLap": {"rank": "1"},
+     "Driver": {"driverId": "a", "givenName": "Ann", "familyName": "Alpha"}, "Constructor": {"name": "McLaren"}},
+    {"position": "2", "grid": "1", "status": "Finished", "FastestLap": {"rank": "2"},
+     "Driver": {"driverId": "b", "givenName": "Bob", "familyName": "Beta"}, "Constructor": {"name": "McLaren"}},
+    {"position": "3", "grid": "0", "status": "+1 Lap",
+     "Driver": {"driverId": "c", "givenName": "Cy", "familyName": "Gamma"}, "Constructor": {"name": "Alpine F1 Team"}},
+    {"position": "4", "grid": "3", "status": "Engine",
+     "Driver": {"driverId": "d", "givenName": "Di", "familyName": "Delta"}, "Constructor": {"name": "Alpine F1 Team"}}]}]}}}
+_laps_lb = {"MRData": {"total": "8", "RaceTable": {"Races": [{"Laps": [
+    {"Timings": [{"driverId": "b", "position": "1"}, {"driverId": "a", "position": "2"}]},
+    {"Timings": [{"driverId": "a", "position": "1"}, {"driverId": "b", "position": "2"}]},
+    {"Timings": [{"driverId": "a", "position": "1"}, {"driverId": "b", "position": "2"}]},
+    {"Timings": [{"driverId": "a", "position": "1"}, {"driverId": "b", "position": "2"}]}]}]}}}
+_ogj_lb = _rclb._get_json
+_rclb._get_json = lambda url, timeout=25: _res_lb if "results.json" in url else _laps_lb
+try:
+    _f1a = _lb.actuals_f1("f1:2026-08-23:12")
+finally:
+    _rclb._get_json = _ogj_lb
+ck("F1: finish table + place differential + laps led + fastest lap + classified + "
+   "defeated teammate per driver; both cars, laps and the three bonuses per constructor",
+   _f1a["ann alpha"] == 50.75 and _f1a["bob beta"] == 37.25 and _f1a["cy gamma"] == 42.0
+   and _f1a["di delta"] == 31.0 and _f1a["cnstr:mclaren"] == 88.0
+   and _f1a["cnstr:" + _lb._norm("Alpine F1 Team")] == 67.0
+   and _lb._lookup("f1", _f1a, {"name": "Ann Alpha", "pos": "D"}) == 50.75
+   and _lb._lookup("f1", _f1a, {"name": "McLaren", "pos": "CNSTR"}) == 88.0
+   and _lb._lookup("f1", _f1a, {"name": "Alpine F1 Team", "pos": "CNSTR"}) == 67.0
+   and _lb._lookup("f1", _f1a, {"name": "Kimi Gamma", "pos": "D"}) == 42.0,
+   str({k: v for k, v in _f1a.items() if not k.startswith("last:")}))
+ck("NFL: the 300 / 100-yard bonuses, receptions, fumbles and the DST points-allowed table",
+   _lb._nfl_points("QB", {"pass_yd": 312, "pass_td": 3, "pass_int": 1, "rush_yd": 12}) == 27.68
+   and _lb._nfl_points("WR", {"rec": 8, "rec_yd": 104, "rec_td": 1, "fum_lost": 1}) == 26.4
+   and _lb._nfl_points("DEF", {"sack": 3, "int": 2, "fum_rec": 1, "def_td": 1, "pts_allow": 13}) == 19.0)
+ck("MLB: singles are hits less extra bases, innings become outs, a complete-game "
+   "no-hitter stacks its bonuses",
+   _lb._mlb_points({"hits": 3, "doubles": 1, "homeRuns": 1, "rbi": 3, "runs": 2, "baseOnBalls": 1, "stolenBases": 1}, {}) == (35.0, 0.0)
+   and _lb._mlb_points({}, {"inningsPitched": "7.2", "strikeOuts": 9, "earnedRuns": 1, "hits": 4, "baseOnBalls": 2, "wins": 1})[1] == 33.65
+   and _lb._mlb_points({}, {"outs": 27, "completeGames": 1, "hits": 0, "shutouts": 1, "strikeOuts": 10, "wins": 1})[1] == 54.25)
+_rclb._get_json = lambda url, timeout=25: {"weekend_race": [{"results": [
+    {"driver_fullname": "Ricky Stenhouse", "finishing_position": 1, "starting_position": 10, "laps_led": 20},
+    {"driver_fullname": "Nobody Started", "finishing_position": 0, "starting_position": 0, "laps_led": 0}]}]}
+try:
+    _nas = _lb.actuals_nascar("nascar:5623")
+finally:
+    _rclb._get_json = _ogj_lb
+ck("NASCAR: finish table + place differential + laps led, and the grade says the feed "
+   "has no fastest laps",
+   _nas["ricky stenhouse"] == 59.0 and "nobody started" not in _nas and "fastest" in _nas["_partial"])
+# --- log, grade, report, on a scratch database
+_odb_lb = _stlb.DB_PATH
+_stlb.DB_PATH = _os.path.join(_tflb.mkdtemp(), "lookback.db")
+_stlb.init_db()
+_oev_lb, _oact_lb = _lb.event_of, _lb._actuals
+_lb.event_of = lambda sport, req, today=None: ("f1:2026-08-23:12", "2026-08-23", None)
+_lb._actuals = lambda sport, ek: dict(_f1a)
+_req_lb = {"sport": "f1", "objective": "ceiling", "contest_size": 1764, "entry_fee": 20, "mode": "classic"}
+_res_lb2 = {"objective": "ceiling", "pool": 33, "lineups": [{"lineup": [
+    {"name": "Ann Alpha", "salary": 18000, "proj": 40.0, "captain": True, "pos": "D"},
+    {"name": "Bob Beta", "salary": 11000, "proj": 30.0, "captain": False, "pos": "D"},
+    {"name": "McLaren", "salary": 9000, "proj": 60.0, "captain": False, "pos": "CNSTR"}],
+    "total_salary": 38000, "total_proj": 150.0, "sim": {"floor": 100.0, "median": 150.0, "ceiling": 200.0, "max": 260.0}}]}
+try:
+    _lb._state["corr"] = {}
+    _n1 = _lb.log_build("f1", _req_lb, _res_lb2, {"draft_group_id": 1, "n_players": 33}, "")
+    _n2 = _lb.log_build("f1", _req_lb, _res_lb2, {"draft_group_id": 1, "n_players": 33}, "")
+    _small = _lb.log_build("mlb", {"contest_size": 20}, _res_lb2, {"n_players": 40}, "")
+    _g1 = _lb.grade_due()
+    with _stlb._lock, _stlb._conn() as _c:
+        _row_lb = _c.execute("SELECT actual, n_missing, bucket FROM dfs_builds").fetchone()
+    _rep_lb = _lb.report()
+    # six consistent events: the correction ships; six noisy ones: it does not
+    with _stlb._lock, _stlb._conn() as _c:
+        for _i in range(6):
+            _pl = [{"name": f"p{_i}a", "proj": 40.0, "pos": "D", "captain": False}, {"name": f"p{_i}b", "proj": 30.0, "pos": "D", "captain": False}]
+            _ap = [[f"p{_i}a", 40.0, 34.0], [f"p{_i}b", 30.0, 25.5]]
+            _c.execute("INSERT INTO dfs_builds (ts, sport, event_key, event_date, objective, players, total_proj, big, key, graded, actual, actual_players) "
+                       "VALUES (?,?,?,?,?,?,?,1,?,1,?,?)", (1, "nascar", f"nascar:e{_i}", "2026-01-01", "projection", _jslb.dumps(_pl), 70.0, f"k{_i}", 59.5, _jslb.dumps(_ap)))
+            _apn = [[f"q{_i}a", 40.0, 40.0 * (0.6 if _i % 2 else 1.4)], [f"q{_i}b", 30.0, 30.0 * (0.6 if _i % 2 else 1.4)]]
+            _pln = [{"name": f"q{_i}a", "proj": 40.0, "pos": "D", "captain": False}, {"name": f"q{_i}b", "proj": 30.0, "pos": "D", "captain": False}]
+            _c.execute("INSERT INTO dfs_builds (ts, sport, event_key, event_date, objective, players, total_proj, big, key, graded, actual, actual_players) "
+                       "VALUES (?,?,?,?,?,?,?,1,?,1,?,?)", (1, "ufc", f"ufc:e{_i}", "2026-01-01", "projection", _jslb.dumps(_pln), 70.0, f"n{_i}", 0.0, _jslb.dumps(_apn)))
+    _lb._state["corr"] = {}
+    _cnas = _lb.corrections("nascar")
+    _cufc = _lb.corrections("ufc")
+    _players_lb = [{"name": "x", "roster_pos": "D", "proj": 10.0, "arr": [8.0, 12.0]}]
+    _adj = _lb.adjust("nascar", _players_lb)
+    _players_u = [{"name": "u", "roster_pos": "F", "proj": 10.0}]
+    _adju = _lb.adjust("ufc", _players_u)
+finally:
+    _lb.event_of, _lb._actuals = _oev_lb, _oact_lb
+    _stlb.DB_PATH = _odb_lb
+    _lb._state["corr"] = {}
+ck("a big-event lineup is logged once (first write wins), a small slate is not, and "
+   "the grade sums real points with the captain at 1.5x and places the total in "
+   "the lineup's own band",
+   _n1 == 1 and _n2 == 0 and _small == 0 and _g1 == 1
+   and _row_lb and abs(_row_lb["actual"] - (50.75 * 1.5 + 37.25 + 88.0)) < 0.01    # stored to 2 dp
+   and _row_lb["n_missing"] == 0 and _row_lb["bucket"] == "above_ceiling",
+   str(dict(_row_lb) if _row_lb else None))
+ck("the report carries the graded row per sport and objective, and one event is not "
+   "enough to correct anything",
+   _rep_lb["rows"] and _rep_lb["rows"][0]["sport"] == "f1" and _rep_lb["rows"][0]["objective"] == "ceiling"
+   and _rep_lb["rows"][0]["events"] == 1 and _rep_lb["rows"][0]["mean_actual"] > _rep_lb["rows"][0]["mean_proj"]
+   and _rep_lb["corrections"]["f1"].get("D") is None
+   and "needs 5" in _rep_lb["corrections"]["f1"]["_meta"]["D"]["status"])
+ck("six events that all ran 15% under projection ship a shrunk correction that "
+   "beat no-correction out of sample; six that swing 40% either way are gated out",
+   abs(_cnas.get("D", 0) - (1 + (0.85 - 1) * 6 / 12)) < 1e-6 and _cnas["_meta"]["D"]["status"] == "in force"
+   and _cnas["_meta"]["D"]["loo_share"] == 1.0
+   and _cufc.get("F") is None and _cufc["_meta"]["F"]["status"] == "gated out",
+   f"nascar {_cnas.get('_meta', {}).get('D')} | ufc {_cufc.get('_meta', {}).get('F')}")
+ck("a correction in force scales the projection and its samples and marks the row; "
+   "a group without one is untouched",
+   _adj == 1 and abs(_players_lb[0]["proj"] - 9.25) < 1e-6 and abs(_players_lb[0]["arr"][1] - 11.1) < 1e-6
+   and _players_lb[0]["lookback_factor"] == 0.925 and _adju == 0 and _players_u[0]["proj"] == 10.0)
+import app as _aplb
+import simulate as _smlb
+_rules_lb = {r.rule for r in _aplb.app.url_map.iter_rules()}
+_jslb2 = open(_os.path.join(_root, "static", "app.js")).read()
+_tplb = open(_os.path.join(_root, "templates", "index.html")).read()
+_aps = open(_os.path.join(_root, "app.py")).read()
+ck("wired: every builder applies the correction, every big build is logged from the "
+   "route, the recorder grades on its cadence, the two routes exist, the tab shows "
+   "the record and can grade on demand",
+   all("dfslog.adjust(" in open(_os.path.join(_root, f)).read() for f in ("simulate.py", "nfl_dfs.py", "mlb_dfs.py"))
+   and _aps.count("_dfs_log(") == 5 and "dfslog.tick()" in open(_os.path.join(_root, "mlb_recorder.py")).read()
+   and {"/api/dfs/lookback", "/api/dfs/lookback/grade"} <= _rules_lb
+   and all(f'id="{i}"' in _tplb for i in ("dfsLookback", "dfsLookbackGrade", "dfsLookbackBody"))
+   and "async function loadDfsLookback()" in _jslb2 and '"/api/dfs/lookback/grade"' in _jslb2
+   and "initDfsLookback();" in _jslb2
+   and _smlb._lineup_player({"name": "n", "salary": 1, "proj": 1.0, "roster_pos": "CNSTR"})["pos"] == "CNSTR")
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

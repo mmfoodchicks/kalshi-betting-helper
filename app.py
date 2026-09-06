@@ -2042,6 +2042,37 @@ def api_dfs_contest():
     return jsonify(c)
 
 
+def _dfs_log(sport, req, res, auto_slate, csv_text):
+    """Log a big-event build for the look-back; never in the request's way."""
+    try:
+        import dfslog
+        dfslog.log_build(sport, req, res, auto_slate, csv_text)
+    except Exception as _e:
+        errlog.note("DFSLB-log", _e, path=str(sport))
+
+
+@app.route("/api/dfs/lookback")
+def api_dfs_lookback():
+    """The builder's graded record per sport and objective, the pending
+    events, and the corrections in force (dfslog)."""
+    try:
+        import dfslog
+        return jsonify(dfslog.report())
+    except Exception as e:
+        return jsonify({"error": f"lookback failed: {e}"}), 502
+
+
+@app.route("/api/dfs/lookback/grade", methods=["POST"])
+def api_dfs_lookback_grade():
+    """Grade every logged lineup whose event is over, now."""
+    try:
+        import dfslog
+        n = dfslog.grade_due()
+        return jsonify({"graded": n})
+    except Exception as e:
+        return jsonify({"error": f"grade failed: {e}"}), 502
+
+
 @app.route("/api/simulate/dfs", methods=["POST"])
 def api_simulate_dfs():
     """Optimize + simulate a DraftKings DFS lineup from a pasted DKSalaries.csv."""
@@ -2101,6 +2132,7 @@ def api_simulate_dfs():
                 first_prize=(_li("first_prize", 0.0) or None))
             if auto_slate and isinstance(res, dict):
                 res["dk_slate"] = auto_slate
+            _dfs_log("lol", d, res, auto_slate, text)
             return jsonify(res)
         except Exception as e:
             return jsonify({"error": f"lol dfs failed: {e}"}), 502
@@ -2138,6 +2170,7 @@ def api_simulate_dfs():
                       else "auto"))
             if auto_slate and isinstance(res, dict):
                 res["dk_slate"] = auto_slate
+            _dfs_log("nfl", d, res, auto_slate, text)
             return jsonify(res)
         except Exception as e:
             return jsonify({"error": f"nfl dfs failed: {e}"}), 502
@@ -2178,6 +2211,7 @@ def api_simulate_dfs():
             roles=(auto_slate or {}).get("roles"))
         if auto_slate and isinstance(res, dict):
             res["dk_slate"] = auto_slate
+        _dfs_log("mlb", d, res, auto_slate, text)
         return jsonify(res)
     # UFC / F1 / NASCAR: single or multi-lineup portfolio + large-field contest sim.
     def _num(key, default, cast=float):
@@ -2201,6 +2235,7 @@ def api_simulate_dfs():
         grid_text=(d.get("grid") or None))
     if auto_slate and isinstance(built, dict):
         built["dk_slate"] = auto_slate          # what was auto-loaded, and who DK dropped
+    _dfs_log(d.get("sport", "ufc"), d, built, auto_slate, text)
     return jsonify(built)
 
 

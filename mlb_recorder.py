@@ -248,6 +248,13 @@ def _loop():
             cfb_track.tick()
         except Exception as _e:
             errlog.note("MREC-cfb", _e)
+        # The DFS look-back: logged big-event lineups graded off the real
+        # DraftKings scoring once their events are over. Own code.
+        try:
+            import dfslog
+            dfslog.tick()
+        except Exception as _e:
+            errlog.note("MREC-dfslb", _e)
         time.sleep(SAMPLE_INTERVAL)
 
 
