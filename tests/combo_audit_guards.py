@@ -7108,6 +7108,80 @@ ck("DNF risk is measured per starting spot, and deep starts pay ~2.5x",
    and _rc12.f1_dnf_pct(14) == 16.9 and _rc12.f1_dnf_pct(20) == 16.4,
    "1,398 classified 2023-2025 entries; 'Lapped' is a finish, not a DNF -- "
    "counting it as one had the back row crashing out of half its races")
+# --- the track decides how much a grid spot is worth (2026-09-06: the race
+# board and the DFS builder ran one curve for Monaco and Monza; the season sim
+# already knew better)
+ck("F1 overtaking classes are fitted per class on the same 70 races: a locked "
+   "pole converts 71%, an open one 47%",
+   _rc12._F1_TAU == {"locked": 0.75, "standard": 1.35, "open": 1.40}
+   and _rc12._F1_CHAOS == {"locked": 0.015, "standard": 0.03, "open": 0.04}
+   and _rc12.f1_pass_class("Monaco Grand Prix Winner?") == "locked"
+   and _rc12.f1_pass_class("Italian Grand Prix") == "open"
+   and _rc12.f1_pass_class("Monza GP") == "open"
+   and _rc12.f1_pass_class("Japanese Grand Prix") == "standard"
+   and _rc12.f1_pass_class("Pasted grid") is None and _rc12.f1_pass_class("") is None)
+_pl12 = _rc12.win_probs(_g12, "f1", track_type="locked")
+_po12 = _rc12.win_probs(_g12, "f1", track_type="open")
+_pn12 = _rc12.win_probs(_g12, "f1", track_type=None)
+ck("the pole is worth more at a locked track than an open one, the back row "
+   "stays possible at both, and an unknown track keeps the flat fit",
+   _pl12["driver 1"] > _pn12["driver 1"] > _po12["driver 1"]
+   and _pl12["driver 1"] > 0.65 and _po12["driver 1"] < 0.55
+   and 0.0005 < _pl12["driver 20"] < _po12["driver 20"] < 0.01
+   and abs(_pn12["driver 1"] - _p12["driver 1"]) < 1e-12
+   and abs(sum(_pl12.values()) - 1.0) < 1e-9 and abs(sum(_po12.values()) - 1.0) < 1e-9,
+   f"P1: locked {100*_pl12['driver 1']:.1f}% flat {100*_pn12['driver 1']:.1f}% "
+   f"open {100*_po12['driver 1']:.1f}%")
+_ogg12, _ogf12 = _rc12.get_grid, _rc12.get_f1_form
+_rc12.get_grid = lambda sport, race_name=None, date=None, names=None: _rc12._finalize(
+    {f"driver {i}": i for i in range(1, 21)}, "Monza GP", "F1")
+_rc12.get_f1_form = lambda: None
+try:
+    _fm12 = _rc12.field_model("f1", race_name="Italian Grand Prix Winner?")
+    _fm12b = _rc12.field_model("f1", race_name=None)
+finally:
+    _rc12.get_grid, _rc12.get_f1_form = _ogg12, _ogf12
+ck("the board's model bundle carries the class from the market title or the "
+   "grid's race name, so the board and the DFS sampler run the right curve",
+   _fm12 and _fm12["track_type"] == "open" and _fm12b and _fm12b["track_type"] == "open"
+   and abs(_fm12["probs"]["driver 1"] - _po12["driver 1"]) < 1e-12)
+import racing_dfs as _rd12
+_sfl12 = _rd12.simulate_field("f1", dict(_fm12, probs=_pl12, track_type="locked"), n=1500, seed=3)
+_sfo12 = _rd12.simulate_field("f1", _fm12, n=1500, seed=3)
+_wshare12 = lambda f: sum(1 for x in f["sims"] if x["finish"].get("driver 1") == 1) / len(f["sims"])
+ck("the DFS finish orders inherit it: the pole wins more of the sampled races "
+   "at a locked track",
+   _sfl12 and _sfo12 and _wshare12(_sfl12) > _wshare12(_sfo12) + 0.10,
+   f"{_wshare12(_sfl12):.2f} vs {_wshare12(_sfo12):.2f}")
+import racing_sim as _rs12
+ck("the season sim and the board read one circuit table",
+   _rs12._F1_HARD_PASS is _rc12.F1_PASS_LOCKED and _rs12._F1_EASY_PASS is _rc12.F1_PASS_OPEN
+   and _rs12._f1_grid_weight("Monaco GP") == 0.84
+   and _rs12._f1_grid_weight("Italian Grand Prix") == 0.60)
+# --- the DK lobby: F1 is "F1", and a lobby that ignores the sport filter can
+# never hand another sport's pool to a builder (the MOTOR code returned all 45
+# open groups and the picker served a golf showdown as the Italian GP pool)
+import dk as _dk12
+_lobby12 = {"DraftGroups": [
+    {"DraftGroupId": 152929, "Sport": "GOLF", "StartDateEst": "2026-09-06T01:35:00",
+     "GameCount": 1, "ContestTypeId": 87, "ContestStartTimeSuffix": "(Round 4 DP World Tour)"},
+    {"DraftGroupId": 153228, "Sport": "NFL", "StartDateEst": "2026-09-06T11:30:00",
+     "GameCount": 8, "ContestTypeId": 106},
+    {"DraftGroupId": 152714, "Sport": "F1", "StartDateEst": "2026-09-06T09:00:00",
+     "GameCount": 1, "ContestTypeId": 380}]}
+_odg12 = _dk12._get
+_dk12._get = lambda url, timeout=25: _lobby12
+_rc12._form_cache.pop(("dk_slates", "f1"), None)
+try:
+    _sl12 = _dk12.slates("f1")
+finally:
+    _dk12._get = _odg12
+    _rc12._form_cache.pop(("dk_slates", "f1"), None)
+ck("DK's F1 lobby code is F1, and slates() keeps only the sport's own groups",
+   _dk12.SPORTS["f1"] == "F1" and [x["draft_group_id"] for x in _sl12] == [152714])
+ck("the racing tab says which curve the board is on",
+   'tt === "locked"' in open(_os.path.join(_root, "static", "app.js")).read()
+   and "pole converts ~7 in 10" in open(_os.path.join(_root, "static", "app.js")).read())
 _f1src12 = _insp.getsource(_rc12._openf1_f1_grid)
 ck("sprint weekends produce a grid instead of a blank model",
    '"Sprint Qualifying"' in _f1src12 and "sprint_result" in _f1src12
@@ -10427,7 +10501,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v106' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v107' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 

@@ -74,13 +74,8 @@ def _f1_circuit_type(name):
 # but overtake-heavy (long straights + DRS), while Monaco and Hungary are the truly
 # grid-locked ones. Track position is worth far more at the processional tracks, so
 # the pole-sitter/front row should convert much more often there than at pass-fests.
-_F1_HARD_PASS = ("monaco", "monte carlo", "singapore", "marina bay",
-                 "hungar", "zandvoort", "dutch", "imola", "emilia")
-_F1_EASY_PASS = ("monza", "italian", "spa", "belgian", "baku", "azerbaijan",
-                 "jeddah", "saudi", "las vegas", "vegas", "shanghai", "chinese",
-                 "china", "bahrain", "sakhir", "red bull ring", "austria",
-                 "spielberg", "interlagos", "brazil", "sao paulo", "americas",
-                 "cota", "austin", "mexico", "hermanos")
+_F1_HARD_PASS = racing.F1_PASS_LOCKED      # one circuit table for the board,
+_F1_EASY_PASS = racing.F1_PASS_OPEN        # the DFS sampler and this sim
 
 
 def _f1_grid_weight(name):

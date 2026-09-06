@@ -32,10 +32,17 @@ import racing
 _LOBBY = "https://www.draftkings.com/lobby/getcontests?sport={sport}"
 _DRAFTABLES = "https://api.draftkings.com/draftgroups/v1/draftgroups/{dg}/draftables?format=json"
 
-# Our sport keys -> DK's lobby sport codes.
+# Our sport keys -> DK's lobby sport codes. Read off the live lobby: F1 is
+# "F1" (SportId 27), and a code the lobby does not know ("MOTOR", the first
+# guess) is not an error -- DK answers with EVERY sport it has open, 45 draft
+# groups on 2026-09-06, and the picker took the soonest one: a DP World Tour
+# golf showdown, served as the Italian GP's player pool ("I don't even know
+# who those guys are"). slates() now also keeps only groups whose own Sport
+# label is the one asked for, so a lobby that ignores the filter can never
+# hand another sport's pool to a builder.
 SPORTS = {
     "ufc": "MMA", "mlb": "MLB", "nfl": "NFL", "nba": "NBA", "nhl": "NHL",
-    "golf": "GOLF", "nascar": "NAS", "f1": "MOTOR", "soccer": "SOC", "lol": "LOL",
+    "golf": "GOLF", "nascar": "NAS", "f1": "F1", "soccer": "SOC", "lol": "LOL",
 }
 _AVG_PPG_ATTR = 408          # DK's "AvgPointsPerGame" stat id (MLB and most)
 _AVG_PPG_ATTR_NFL = 90       # ...NFL files it under 90 (read off the live
@@ -75,6 +82,9 @@ def slates(sport):
             dg = g.get("DraftGroupId")
             if not dg:
                 continue
+            label = (g.get("Sport") or "").strip().upper()
+            if label and label != code:
+                continue                      # another sport's group (see SPORTS)
             tag = (g.get("ContestStartTimeSuffix") or "").strip() or None
             ctype = g.get("ContestTypeId")
             if ctype in _NEVER_TYPES or "madden" in (tag or "").lower():

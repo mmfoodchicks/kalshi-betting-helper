@@ -5987,7 +5987,15 @@ function renderSports() {
     const spr = d.grid.sprint_form ? " + Saturday's sprint result (freshest same-track pace)" : "";
     const prov = d.grid.provisional
       ? `<div class="small" style="margin:2px 0 8px;color:#e0a23a">⚠️ Grid is <b>provisional</b>: ${d.grid.provisional}. Penalties and the official starting order land once the real grid posts - the model updates automatically.</div>` : "";
-    banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis}${spr} (${d.grid.series}, ${d.grid.field}-car field). Edge = model win% − Kalshi price.</div>${prov}`;
+    // F1: the overtaking class the win model runs on (fitted per class:
+    // a locked pole converts ~7 in 10, an open one ~1 in 2). NASCAR shows its
+    // track type the same way.
+    const tt = d.grid.track_type;
+    const trk = tt === "locked" ? " · <b>locked track</b>: the grid decides, pole converts ~7 in 10"
+      : tt === "open" ? " · <b>open track</b>: passing is easy, pole converts ~1 in 2"
+      : tt === "standard" ? " · standard track, pole converts ~1 in 2"
+      : tt ? ` · ${escapeHtml(tt)} track` : "";
+    banner = `<div class="small" style="margin:2px 0 8px">🏁 Model using <b>${d.grid.race}</b> ${basis}${spr} (${d.grid.series}, ${d.grid.field}-car field)${trk}. Edge = model win% − Kalshi price.</div>${prov}`;
   } else if (d.grid && !d.grid.available) {
     banner = `<div class="small" style="margin:2px 0 8px">🏁 ${d.grid.reason} - showing market-favorite picks until qualifying posts.</div>`;
   }

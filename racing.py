@@ -579,6 +579,41 @@ _TAU = {"f1": 1.2, "nascar": 4.5, "motogp": 4.0}
 # (Gasly Monza '20 class of race) says it's rare, not impossible. Costs 0.013
 # log-lik in-sample; buys the tail. NASCAR's fat taus already encode chaos.
 _CHAOS = {"f1": 0.03}
+# F1 by how hard the circuit is to OVERTAKE on -- the axis that decides how
+# much a starting spot is worth. Fitted like _TAU (winner max-likelihood over
+# the same 70 races of 2023-2025) after splitting the sample by class:
+#   locked   14 races  pole wins 71%, front row 93%, no winner from P4+  tau 0.75
+#   standard 24 races  pole wins 54%                                     tau 1.35
+#   open     32 races  pole wins 47%, winners from P6 and P9             tau 1.40
+# One tau for every circuit had Monaco's pole at 55% when it converts 71%, and
+# Monza's front row too strong; the DFS sampler inherits whichever curve the
+# board runs. The chaos floor follows the observed tail (P4+ winners: 0/14,
+# 2/24, 3/32). The flat _TAU / _CHAOS stay the fallback for a grid whose name
+# says nothing about the track (a pasted grid). The season sim's grid weights
+# (racing_sim) read the same two tables, so one circuit list serves both.
+F1_PASS_LOCKED = ("monaco", "monte carlo", "singapore", "marina bay",
+                  "hungar", "zandvoort", "dutch", "imola", "emilia")
+F1_PASS_OPEN = ("monza", "italian", "spa", "belgian", "baku", "azerbaijan",
+                "jeddah", "saudi", "las vegas", "vegas", "shanghai", "chinese",
+                "china", "bahrain", "sakhir", "red bull ring", "austria",
+                "spielberg", "interlagos", "brazil", "sao paulo", "americas",
+                "cota", "austin", "mexico", "hermanos")
+_F1_TAU = {"locked": 0.75, "standard": 1.35, "open": 1.40}
+_F1_CHAOS = {"locked": 0.015, "standard": 0.03, "open": 0.04}
+
+
+def f1_pass_class(name):
+    """'locked' / 'open' / 'standard' from a circuit or race name (a Kalshi
+    market title, OpenF1's short name, the schedule's race name); None when the
+    name carries no track at all, so the caller keeps the flat fit."""
+    t = (name or "").lower().strip()
+    if any(k in t for k in F1_PASS_LOCKED):
+        return "locked"
+    if any(k in t for k in F1_PASS_OPEN):
+        return "open"
+    if not t or "pasted" in t or t in ("race", "grand prix", "gp", "test"):
+        return None
+    return "standard"
 # Measured DNF rate by STARTING SPOT, 2023-2025 (1,398 classified entries;
 # "Lapped" is a finish, not a DNF): the midfield/back crashes out at ~2.5x the
 # front's rate -- starting deep means passing through the accidents.
@@ -618,7 +653,9 @@ def win_probs(grid_info, sport, form=None, track_type=None):
     """{normalized name: win probability} from the starting grid, optionally
     blended with recent form (a position-scale quality estimate per driver).
     For NASCAR, `track_type` steepens/flattens the field and re-weights form
-    vs grid to match how that kind of race actually behaves."""
+    vs grid to match how that kind of race actually behaves. For F1 it is the
+    overtaking class from f1_pass_class: a locked circuit runs the steeper
+    fitted curve with less chaos, an open one the flatter curve with more."""
     if not grid_info:
         return {}
     sp = (sport or "").lower()
@@ -630,6 +667,9 @@ def win_probs(grid_info, sport, form=None, track_type=None):
         if track_type:
             tau = _NASCAR_TAU.get(track_type, tau)
             fw = _NASCAR_FORM_W.get(track_type, fw)
+    elif sp == "f1" and track_type in _F1_TAU:
+        tau = _F1_TAU[track_type]
+        eps = _F1_CHAOS[track_type]
     form = form or {}
     strengths = {}
     for nm, pos in grid_info["grid"].items():
@@ -680,6 +720,10 @@ def field_model(sport, race_name=None, date=None, names=None):
             form = get_nascar_form(year, date or clock.today_et().isoformat(),
                                    series=grid.get("series_id") or 1, track_type=ttype)
         elif sp == "f1":
+            # The market title names the race ("Italian Grand Prix Winner"),
+            # the feed's grid names the circuit ("Monza GP"); either sets the
+            # overtaking class. A pasted grid with no market leaves it None.
+            ttype = f1_pass_class(race_name or grid.get("race") or grid.get("track"))
             form = get_f1_form()
             # Sprint weekends: Saturday's sprint FINISH is same-track,
             # same-weekend pace -- fresher than the championship table. Blend
