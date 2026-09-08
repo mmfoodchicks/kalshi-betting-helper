@@ -10688,7 +10688,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v115' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v116' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11401,6 +11401,47 @@ ck("the record sits at the top of the College page with all three books and the 
    and "ATS at Kalshi's rung:" in _js64 and "Totals at Kalshi's line:" in _js64
    and "leaned Over on" in _js64 and "<th>ATS pick</th><th>O/U</th>" in _js64
    and "g.ats.spread" in _js64 and "g.total.lean" in _js64)
+# --- "I can't open the app": the service worker was eating the auth challenge
+_sw64 = open(_os.path.join(_root, "static", "sw.js")).read()
+ck("an auth challenge reaches the BROWSER instead of being answered from cache: "
+   "a 401 handed back as a cached 200 paints a page whose every API call then "
+   "401s and never opens the sign-in prompt, and with the cache empty (activate "
+   "purges the old SHELL on every bump) the raw 401 renders instead -- either "
+   "way the app will not open and nothing says why",
+   "if (res.status === 401 || res.status === 403) return res;" in _sw64
+   and _sw64.index("if (res.status === 401") < _sw64.index("if (!res.ok) return shellFallback()")
+   # and the challenge is never written into the shell cache
+   and _sw64.index("if (res.status === 401") < _sw64.index("caches.open(SHELL).then((c) => c.put"))
+ck("one challenged URL cannot empty the whole shell cache: install caches each "
+   "entry on its own, because addAll is all-or-nothing and every route but "
+   "/healthz sits behind Basic auth",
+   "PRECACHE.map((u) => c.add(u).catch(() => {}))" in _sw64
+   and "c.addAll(PRECACHE)" not in _sw64)
+# --- a NULL column must not crash the report whose filters tolerate it
+import store as _st65
+_odb66 = _st65.DB_PATH
+_st65.DB_PATH = _os.path.join(_tf64.mkdtemp(), "slip.db")
+try:
+    _st65.init_db()
+    _st65.log_slip("cfb", "2026-09-06", "k1", 2, 2, 0.40, None, 3.0, 5.0,
+                   "balanced", "[]", 90.0)
+    _st65.log_slip("cfb", "2026-09-06", "k2", 2, 2, 0.50, 0.30, 3.0, 5.0,
+                   "balanced", "[]", 90.0)
+    with _st65._lock, _st65._conn() as _c66:
+        _c66.execute("UPDATE slip_log SET graded=1, won=1, legs_hit=2")
+    _rep66 = _st65.slip_report()
+    _rep66c = _st65.slip_report(sport="cfb")
+finally:
+    _st65.DB_PATH = _odb66
+ck("a slip logged with no independent product (prob set, indep_prob NULL) is "
+   "counted, not fatal: the stacked filter reads it through `or 0` and the sums "
+   "under it now do too -- 54 straight 500s on /api/baseball/sliplog, every "
+   "sport's slip card, came off one such row",
+   _rep66["graded"] == 2 and _rep66["stacked"]["n"] == 2
+   and abs(_rep66["stacked"]["expected_wins_indep"] - 0.30) < 1e-6
+   and abs(_rep66["stacked"]["expected_wins"] - 0.90) < 1e-6
+   and _rep66["calibration"] and _rep66c["graded"] == 2,
+   str(_rep66)[:200])
 ck("the calibrator has a college bucket for the moneyline picks and none for the "
    "line forecasts (coin-flip-shaped rows would bend it)",
    "cfb" in __import__("calibrate")._MODELS
@@ -11766,7 +11807,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v115' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v116' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",

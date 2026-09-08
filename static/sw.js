@@ -2,12 +2,19 @@
 // picked up immediately when online (the previous cache-first version could
 // serve a stale app.js after an update). The cache is only an offline fallback.
 // Live /api/ data is always network. Bumping SHELL purges every older cache.
-const SHELL = "vigil-shell-v115";
+const SHELL = "vigil-shell-v116";
 const PRECACHE = ["/", "/static/style.css", "/static/app.js",
                   "/static/icon-192.png", "/static/manifest.json"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)).catch(() => {})
+  // addAll is ALL-OR-NOTHING, and every route but /healthz sits behind Basic
+  // auth: if install runs before the browser has credentials to attach, "/"
+  // answers 401, addAll rejects, and NOTHING is cached -- right after activate
+  // purged the previous SHELL. Cache each entry on its own so one challenged
+  // URL cannot empty the whole shell.
+  e.waitUntil(caches.open(SHELL)
+    .then((c) => Promise.all(PRECACHE.map((u) => c.add(u).catch(() => {}))))
+    .catch(() => {})
     .then(() => self.skipWaiting()));
 });
 
@@ -62,6 +69,15 @@ self.addEventListener("fetch", (e) => {
     caches.match(e.request).then((hit) => hit || caches.match("/"));
   e.respondWith(
     fetch(e.request).then((res) => {
+      // An AUTH CHALLENGE is not a failure to paper over. Answering a 401 from
+      // the shell cache hands the browser a 200 it never asked for: the
+      // browser's sign-in prompt never opens, a cached page paints, and every
+      // /api/ call behind it 401s. With an empty cache there is nothing to
+      // answer with either, so the raw 401 body renders and the app simply
+      // will not open. Either way the user cannot get in and nothing says
+      // why. The challenge has to reach the browser untouched -- that is
+      // what opens the sign-in prompt.
+      if (res.status === 401 || res.status === 403) return res;
       if (!res.ok) return shellFallback().then((hit) => hit || res);
       const copy = res.clone();
       caches.open(SHELL).then((c) => c.put(e.request, copy)).catch(() => {});

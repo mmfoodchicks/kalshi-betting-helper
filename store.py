@@ -798,16 +798,22 @@ def slip_report(sport=None):
         b = [r for r in rows if lo <= 100 * (r["prob"] or 0) < hi]
         if b:
             bins.append({"range": f"{lo}-{min(hi, 100)}%", "n": len(b),
-                         "claimed": round(100 * sum(r["prob"] for r in b) / len(b), 1),
+                         "claimed": round(100 * sum(r["prob"] or 0 for r in b) / len(b), 1),
                          "hit": round(100 * sum(1 for r in b if r["won"]) / len(b), 1)})
     out["calibration"] = bins
     # The slips that actually CLAIM correlation: joint above the independent
     # product. These are where the premium lives; single-leg-per-game slips
     # grade the marginals, which the prop log already covers.
+    # Every filter here reads a possibly-NULL column through `or 0`; the sums
+    # under them did not, so one slip logged without an independent product
+    # (prob set, indep_prob NULL) passed the filter and then crashed the whole
+    # report with "unsupported operand type(s) for +: 'float' and 'NoneType'".
+    # Measured 2026-09-07/08: 54 straight 500s on /api/baseball/sliplog, which
+    # is EVERY sport's slip card, off a single bad row.
     st = [r for r in rows if (r["prob"] or 0) > (r["indep_prob"] or 0) + 1e-9]
     if st:
-        s_exp = sum(r["prob"] for r in st)
-        s_ind = sum(r["indep_prob"] for r in st)
+        s_exp = sum(r["prob"] or 0 for r in st)
+        s_ind = sum(r["indep_prob"] or 0 for r in st)
         s_act = sum(1 for r in st if r["won"])
         out["stacked"] = {
             "n": len(st), "wins": s_act,
