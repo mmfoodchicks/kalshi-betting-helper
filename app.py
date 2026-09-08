@@ -4510,8 +4510,30 @@ def api_baseball_presets():
             threading.Thread(target=_bg, daemon=True).start()
         return jsonify({"status": "building", "records": records,
                         "best_wins": best_wins}), 202
+    # When this build happened, and when each recipe's slip actually starts --
+    # the same first-leg start the ledger measures its lead time against
+    # (sliplog._start_of), so the "built Nh before first pitch" on the card and
+    # the timing buckets in the slip ledger are the same quantity. Computed
+    # into a side map rather than onto the payload, which is the shared
+    # boardshare object every worker serves.
+    import sliplog
+    firsts = {}
+    for pid, p in (payload.get("presets") or {}).items():
+        starts = []
+        for grp in ((p.get("item") or {}).get("groups") or []):
+            for l in grp.get("legs") or []:
+                try:
+                    st = sliplog._start_of(l)
+                except Exception as _e:
+                    errlog.note("APP-presets-start", _e, path=pid)
+                    st = None
+                if st:
+                    starts.append(st)
+        if starts:
+            firsts[pid] = min(starts)
     return jsonify({**payload, "age_s": round(age), "records": records,
-                    "best_wins": best_wins,
+                    "best_wins": best_wins, "built_ts": int(time.time() - age),
+                    "first_starts": firsts,
                     "best": presets.best_today(payload, records)})
 
 

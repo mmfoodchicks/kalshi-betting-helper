@@ -1186,7 +1186,8 @@ async function renderPresetBox() {
   for (const pid of pids) {
     const p = (d.presets || {})[pid];
     if (!p) continue;
-    sections.push(_presetSectionHtml(p, (d.records || {})[pid]));
+    sections.push(_presetSectionHtml(p, (d.records || {})[pid],
+                                     d.built_ts, (d.first_starts || {})[pid]));
   }
   if (!sections.length) { box.innerHTML = `<div class="small">No such preset.</div>`; return; }
   box.innerHTML = `<div class="combomaker">
@@ -1197,7 +1198,26 @@ async function renderPresetBox() {
 
 // One preset's section: header, recipe text, slip, ledger badge, record.
 // Shared by the single-recipe tabs and the ⚡ tab's four rungs.
-function _presetSectionHtml(p, rec) {
+// "Built 3:42pm ET, 4.0h before first pitch." The lead is the same quantity
+// the slip ledger buckets its graded record by (store._slip_timing), so the
+// line on the card and the table under 'Does the timing matter?' are the same
+// number -- read one, then the other tells you how that lead has cashed.
+function _slipBuiltLine(builtTs, firstStart) {
+  if (!builtTs) return "";
+  let when;
+  try {
+    when = new Date(builtTs * 1000).toLocaleTimeString([], {
+      hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  } catch (e) { return ""; }
+  let lead = "";
+  if (firstStart) {
+    const h = (firstStart - builtTs) / 3600;
+    lead = h < 0 ? " · first pitch has passed"
+      : ` · <b>${h < 1 ? Math.round(h * 60) + "m" : h.toFixed(1) + "h"}</b> before first pitch`;
+  }
+  return `<div class="small" style="color:var(--muted)">🕒 built ${when} ET${lead}</div>`;
+}
+function _presetSectionHtml(p, rec, builtTs, firstStart) {
   const recLine = rec && rec.graded
     ? `📒 record: <b>${rec.won}-${rec.graded - rec.won}</b> graded (expected ${rec.expected} wins from the claimed odds) · legs ${rec.legs_hit}/${rec.legs}${rec.void ? ` · ${rec.void} void` : ""} · ${rec.logged} logged`
     : `📒 ${rec ? rec.logged : 0} logged, none graded yet - the record builds itself from here`;
@@ -1221,6 +1241,7 @@ function _presetSectionHtml(p, rec) {
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
       <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
       ${missLine}${basisLine}
+      ${_slipBuiltLine(builtTs, firstStart)}
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
   return `<div>
@@ -7132,8 +7153,36 @@ async function loadSlipLog(elId = "bbSlipLog", sport = "") {
         `${b.range}: ${b.claimed}→${b.hit}% (${b.n})`).join(" · ") + `</div>`;
     if (r.graded < 30)
       html += `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ ${r.graded} slips is far too few to judge - the premium verdict needs ~50+. Until then treat every slip EV as a claim, size small, and let this line decide.</div>`;
+    html += _slipTimingHtml(r.timing);
     el.innerHTML = html;
   } catch (e) { /* ignore */ }
+}
+
+// Does WHEN a slip was built show up in whether it cashed? Two axes: how long
+// before its own first game it was made, and the ET hour of the build (the
+// "middle of the night" question). Read the EDGE column, not the hit rate -
+// the buckets hold different recipes at different claimed odds, so a bucket
+// full of 60% doubles out-hits one full of 8% moonshots without the hour
+// having done anything. Edge is wins minus what those slips claimed.
+function _slipTimingHtml(t) {
+  if (!t || (!(t.lead || []).length && !(t.clock || []).length)) return "";
+  const row = (c) => {
+    const cls = c.edge > 0 ? "ev pos" : c.edge < 0 ? "ev neg" : "";
+    const thin = c.n < 10 ? ` <span style="color:var(--muted)" title="too few to read as a tendency">⚠</span>` : "";
+    return `<tr><td>${escapeHtml(c.label)}</td><td style="text-align:center">${c.n}${thin}</td>
+      <td style="text-align:center">${c.wins}</td><td style="text-align:center">${c.expected}</td>
+      <td style="text-align:center" class="${cls}"><b>${c.edge >= 0 ? "+" : ""}${c.edge}</b></td>
+      <td style="text-align:center;color:var(--muted)">${c.claimed_pct}%→${c.realized_pct}%</td></tr>`;
+  };
+  const tbl = (title, rows) => !rows.length ? "" : `<div style="margin-top:4px">${title}</div>
+    <div class="scroller" style="overflow-x:auto"><table class="small" style="border-collapse:collapse;min-width:100%">
+    <thead><tr><th style="text-align:left">when</th><th>slips</th><th>won</th><th>claimed</th><th>vs claim</th><th>rate</th></tr></thead>
+    <tbody>${rows.map(row).join("")}</tbody></table></div>`;
+  return `<details class="simdetail" style="margin-top:6px"><summary>⏱️ <b>Does the timing matter?</b> - ${t.n_graded} graded slips by when they were built</summary>
+    ${tbl("<b>Lead time</b> before the slip's own first game", t.lead || [])}
+    ${tbl("<b>Hour built</b> (Eastern)", t.clock || [])}
+    <div class="small" style="color:var(--muted);margin-top:4px">${escapeHtml(t.note || "")}${(t.n_lead || 0) < (t.n_graded || 0) ? ` ${t.n_graded - t.n_lead} older slip(s) carry no per-leg start time and sit out the lead table.` : ""}</div>
+  </details>`;
 }
 
 // ---- Baseball model track record ------------------------------------------

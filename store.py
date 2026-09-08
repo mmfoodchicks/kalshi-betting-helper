@@ -757,6 +757,92 @@ def set_slip_grade(slip_id, graded, won=None, legs_hit=None):
                   (graded, won, legs_hit, int(time.time()), slip_id))
 
 
+# When a slip was built, as two questions the ledger can actually answer.
+#
+# LEAD is the gap between the build and the slip's OWN first game -- not the
+# slate's, because a slip whose legs all start at 10pm is a pre-game slip even
+# if other games have been running for hours. CLOCK is the wall time in ET,
+# which is the "middle of the night" axis: an overnight build prices markets
+# nobody has moved since yesterday, off lineups that are not posted yet.
+#
+# There is no in-play bucket and there cannot be one: sliplog.log_from_item
+# refuses any slip carrying a live leg, so every row in this ledger was built
+# before all of its own games. "<1h" is the closest thing to in-play the
+# ledger holds, and the report says so rather than showing an empty row.
+_SLIP_LEAD_BUCKETS = ((0.0, 1.0, "under 1h"), (1.0, 3.0, "1-3h"),
+                      (3.0, 6.0, "3-6h"), (6.0, 12.0, "6-12h"),
+                      (12.0, 24.0, "12-24h"), (24.0, float("inf"), "24h+"))
+_SLIP_CLOCK_BUCKETS = ((0, 6, "overnight (12-6am)"), (6, 12, "morning (6am-12pm)"),
+                       (12, 18, "afternoon (12-6pm)"), (18, 24, "evening (6pm-12am)"))
+
+
+def _slip_first_start(r):
+    """Epoch of the EARLIEST leg's game, off the stored leg blob. `start_ts`
+    on the row is the LATEST leg (the grader waits for all of them), so it
+    cannot answer "how long before the action did I build this" -- but every
+    leg's own start was written into `legs` from the first day, so the whole
+    history reconstructs without a migration or a backfill."""
+    try:
+        starts = [l.get("start") for l in json.loads(r["legs"] or "[]")]
+    except (TypeError, ValueError):
+        return None
+    starts = [s for s in starts if s]
+    return min(starts) if starts else None
+
+
+def _slip_timing(rows):
+    """Graded slips bucketed by when they were built: hours before their own
+    first game, and the ET hour of the build.
+
+    Each bucket reports wins against EXPECTED wins (the sum of the claimed
+    joints), not a raw hit rate. Raw rates across these buckets are not
+    comparable -- an overnight build and a first-pitch build are usually
+    different recipes at different claimed odds, so a bucket full of 60%
+    doubles will always "hit more" than one full of 8% moonshots without that
+    meaning the hour helped. Wins minus expected is the only number here that
+    answers the question that was asked."""
+    import datetime
+    import zoneinfo
+    et = zoneinfo.ZoneInfo("America/New_York")
+
+    def _cell(label, rs):
+        exp = sum(r["prob"] or 0 for r in rs)
+        won = sum(1 for r in rs if r["won"])
+        return {"label": label, "n": len(rs), "wins": won,
+                "expected": round(exp, 2), "edge": round(won - exp, 2),
+                "realized_pct": round(100.0 * won / len(rs), 1) if rs else None,
+                "claimed_pct": round(100.0 * exp / len(rs), 1) if rs else None}
+
+    lead_rows = []
+    for r in rows:
+        first = _slip_first_start(r)
+        if first and r["ts"]:
+            lead_rows.append((max(0.0, (first - r["ts"]) / 3600.0), r))
+    lead = [_cell(lbl, [r for h, r in lead_rows if lo <= h < hi])
+            for lo, hi, lbl in _SLIP_LEAD_BUCKETS]
+    clock = []
+    for lo, hi, lbl in _SLIP_CLOCK_BUCKETS:
+        rs = []
+        for r in rows:
+            if not r["ts"]:
+                continue
+            h = datetime.datetime.fromtimestamp(r["ts"], et).hour
+            if lo <= h < hi:
+                rs.append(r)
+        clock.append(_cell(lbl, rs))
+    return {"lead": [c for c in lead if c["n"]],
+            "clock": [c for c in clock if c["n"]],
+            "n_lead": len(lead_rows), "n_graded": len(rows),
+            "note": ("Lead is the gap to the slip's OWN first game. A slip with a "
+                     "live leg is never logged, so there is no in-play bucket -- "
+                     "'under 1h' is the closest the ledger comes. Read wins against "
+                     "expected, not the raw rate: the buckets hold different "
+                     "recipes at different claimed odds. Exact wherever the ticket "
+                     "carries a start time (every MLB game and prop ticket does, "
+                     "and football kickoffs are stamped); a day-only ticket (UFC) "
+                     "resolves to the end of its day, so those leads read long.")}
+
+
 def slip_report(sport=None):
     """Claimed vs realized, at the SLIP level -- the only place the correlation
     premium (which carries essentially all of a slip's EV) gets scored.
@@ -824,6 +910,7 @@ def slip_report(sport=None):
             "claimed_premium": round(s_exp - s_ind, 2),
             "realized_premium": round(s_act - s_ind, 2),
         }
+    out["timing"] = _slip_timing(rows)
     return out
 
 

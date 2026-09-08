@@ -10688,7 +10688,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v116' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v117' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11442,6 +11442,87 @@ ck("a slip logged with no independent product (prob set, indep_prob NULL) is "
    and abs(_rep66["stacked"]["expected_wins"] - 0.90) < 1e-6
    and _rep66["calibration"] and _rep66c["graded"] == 2,
    str(_rep66)[:200])
+# --- when a slip was built, graded. The owner: "add a time to these pre-made
+# slips ... I want to see if there's a correlation between hits and the time
+# between the slips are made ... an hour before the games start, while the
+# games are in play or in the middle of the night."
+import store as _st67
+import datetime as _dt67, zoneinfo as _zi67, json as _js67
+_et67 = _zi67.ZoneInfo("America/New_York")
+_odb67 = _st67.DB_PATH
+_st67.DB_PATH = _os.path.join(_tf64.mkdtemp(), "timing.db")
+try:
+    _st67.init_db()
+    def _mk67(key, built, lead_h, prob, won, starts=True):
+        ts = int(built.timestamp())
+        first = ts + int(lead_h * 3600)
+        legs = _js67.dumps([{"tk": "A", "no": 0, "start": first if starts else None},
+                            {"tk": "B", "no": 0, "start": first + 7200 if starts else None}])
+        _st67.log_slip("mlb", "2026-09-06", key, 2, 2, prob, prob * 0.9, 3.0, 5.0,
+                       "balanced", legs, None, start_ts=first + 7200)
+        with _st67._lock, _st67._conn() as _c:
+            _c.execute("UPDATE slip_log SET ts=?, graded=1, won=?, legs_hit=2 WHERE key=?",
+                       (ts, won, key))
+    _d67 = _dt67.datetime(2026, 9, 6, tzinfo=_et67)
+    _mk67("t_n1", _d67.replace(hour=3), 9.0, 0.10, 1)      # overnight, 9h out
+    _mk67("t_n2", _d67.replace(hour=4), 8.0, 0.10, 0)
+    _mk67("t_e1", _d67.replace(hour=18), 0.5, 0.55, 1)     # evening, 30 min out
+    _mk67("t_e2", _d67.replace(hour=19), 0.4, 0.55, 1)
+    _mk67("t_old", _d67.replace(hour=13), 4.0, 0.30, 0, starts=False)  # no leg starts
+    _rep67 = _st67.slip_report()
+    _t67 = _rep67["timing"]
+finally:
+    _st67.DB_PATH = _odb67
+_lead67 = {c["label"]: c for c in _t67["lead"]}
+_clock67 = {c["label"]: c for c in _t67["clock"]}
+ck("a graded slip is bucketed by the gap to its OWN first game, reconstructed "
+   "from the per-leg starts already in the ledger -- the row's start_ts is the "
+   "LATEST leg (the grader waits for all of them) and cannot answer this, but "
+   "every leg's own start was written from day one, so the whole history reads "
+   "back with no migration and no backfill",
+   "_slip_timing(rows)" in _insp.getsource(_st67.slip_report)
+   and "min(starts)" in _insp.getsource(_st67._slip_first_start)
+   and _lead67["under 1h"]["n"] == 2 and _lead67["under 1h"]["wins"] == 2
+   and _lead67["6-12h"]["n"] == 2 and _lead67["6-12h"]["wins"] == 1
+   and _t67["n_lead"] == 4 and _t67["n_graded"] == 5,   # the start-less row sits out
+   f"{_t67['lead']} {_t67['n_lead']}/{_t67['n_graded']}")
+ck("and by the ET hour it was built -- the 'middle of the night' axis -- with "
+   "the start-less row still counted there, since the clock needs only the "
+   "build time",
+   _clock67["overnight (12-6am)"]["n"] == 2
+   and _clock67["evening (6pm-12am)"]["n"] == 2
+   and _clock67["afternoon (12-6pm)"]["n"] == 1
+   and sum(c["n"] for c in _t67["clock"]) == 5,
+   str(_t67["clock"]))
+ck("each bucket is scored against what those slips CLAIMED, not on a raw hit "
+   "rate: the buckets hold different recipes at different odds, so two 55% "
+   "slips winning is +0.90 against claim while two 10% slips going 1-1 is "
+   "+0.80 -- close, where the raw rates (100% vs 50%) are not comparable at all",
+   abs(_lead67["under 1h"]["expected"] - 1.10) < 1e-6
+   and abs(_lead67["under 1h"]["edge"] - 0.90) < 1e-6
+   and abs(_lead67["6-12h"]["edge"] - 0.80) < 1e-6
+   and _lead67["under 1h"]["realized_pct"] == 100.0
+   and _lead67["6-12h"]["claimed_pct"] == 10.0)
+ck("there is no in-play bucket and the report says why rather than showing an "
+   "empty row: a slip carrying a live leg is never logged at all",
+   "in-play" in _t67["note"] and "live leg is never logged" in _t67["note"]
+   and 'if l.get("live"):\n                return None' in open(
+       _os.path.join(_root, "sliplog.py")).read()
+   and all(c["n"] for c in _t67["lead"] + _t67["clock"]))
+_apy67 = open(_os.path.join(_root, "app.py")).read()
+_js67s = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the card shows each pre-made slip's own build time and how long before "
+   "first pitch it was made, off the SAME first-leg start the ledger buckets "
+   "by (sliplog._start_of), so the line on the slip and the table under it are "
+   "one quantity",
+   '"first_starts": firsts' in _apy67 and '"built_ts": int(time.time() - age)' in _apy67
+   and "sliplog._start_of(l)" in _apy67
+   and "function _slipBuiltLine" in _js67s and "before first pitch" in _js67s
+   and "_slipBuiltLine(builtTs, firstStart)" in _js67s
+   and "function _slipTimingHtml" in _js67s
+   and "_slipTimingHtml(r.timing)" in _js67s
+   # computed into a side map, never onto the shared boardshare payload
+   and "firsts = {}" in _apy67)
 ck("the calibrator has a college bucket for the moneyline picks and none for the "
    "line forecasts (coin-flip-shaped rows would bend it)",
    "cfb" in __import__("calibrate")._MODELS
@@ -11807,7 +11888,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v116' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v117' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
