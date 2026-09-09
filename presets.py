@@ -24,7 +24,7 @@ NAME = "mlb_presets"          # boardshare key: one build, every worker serves i
 # Bump when a RECIPE changes: tick() rebuilds on a rev mismatch, so a deploy
 # that edits a locked rule replaces today's slips immediately instead of
 # waiting for the next lineup to post.
-REV = 10
+REV = 11
 
 # The 5-Hits refinement, near-verbatim: "limited to 1 hit, UNLESS the model
 # truly thinks a player can get 2 or it would be a good bet. It's only doing
@@ -109,10 +109,19 @@ PRESETS = (
     # kind "target": the maker's ⚡ Optimal-for-my-× button, locked. One
     # input (the payout), and everything else is the optimizer's problem --
     # leg count off, payout required, "balanced" objective, the per-leg
-    # floor swept (combo_engine.best_target), same-game stacks allowed so
-    # the correlation credit is in reach. Seven rungs, one tab, each logged
-    # and graded under its own tag. A rung may set payout_basis="market" to
-    # target what Kalshi PAYS rather than the fair payout (see choose()).
+    # floor swept (combo_engine.best_target). Seven rungs, one tab, each
+    # logged and graded under its own tag.
+    #
+    # The payout is what KALSHI PAYS for that exact combo, not the sim's
+    # fair odds, and the slip is ONE LEG PER GAME. The owner: "if the combo
+    # is in the 200x rung, that if I go to kalshi, and put in that exact
+    # combo my payout would be 2000+." The rungs used to target the fair
+    # payout (1/sim joint) and stack same-game legs for the correlation
+    # credit; Kalshi quotes a combo through a market maker who prices that
+    # correlation himself, so a "200x" slip whose asks multiplied to ~1,600x
+    # was quoted 133x on 2026-09-08. With independent legs the product of
+    # the asks is the maker's own fair value and the quote lands near it;
+    # the target carries combo_engine.QUOTE_ROOM for his cut.
     # The -200 rung, by request: "if I put in $20 and bankrolled my winnings
     # I'd be up to $500 by NFL season... I did want it to be a combo. If the
     # combo maker can find edges to functionally make it 1.5x in Kalshi's
@@ -125,38 +134,42 @@ PRESETS = (
     # "practically always" is; kept OFF the wall by request.
     {"id": "x15", "label": "Pays 1.5× (-200)", "emoji": "⚡", "kind": "target",
      "target_x": 1.5, "payout_basis": "market",
-     "desc": "A combo Kalshi PAYS 1.5× (-200) on, chosen for the highest true "
-             "odds the sim can find at that price - correlated stacks and "
-             "mispriced legs are the edge. The bankroll-ladder rung."},
+     "desc": "A combo whose Kalshi asks multiply to 1.5× (-200) and more, "
+             "one leg per game, chosen for the highest true odds the sim "
+             "can find at that price - mispriced legs are the edge. The "
+             "bankroll-ladder rung."},
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
-     "desc": "The likeliest slip that pays 2× and isn't priced against "
-             "you. Legs, floors and games are the optimizer's call."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 2× and "
+             "more (room for the maker's cut included), one leg per game, "
+             "that isn't priced against you. Legs, floors and games are "
+             "the optimizer's call."},
     {"id": "x3", "label": "Pays 3×", "emoji": "⚡", "kind": "target",
      "target_x": 3.0,
-     "desc": "The likeliest slip that pays 3× and isn't priced against "
-             "you."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 3× and "
+             "more, one leg per game, that isn't priced against you."},
     {"id": "x5", "label": "Pays 5×", "emoji": "⚡", "kind": "target",
      "target_x": 5.0,
-     "desc": "The likeliest slip that pays 5× and isn't priced against "
-             "you."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 5× and "
+             "more, one leg per game, that isn't priced against you."},
     {"id": "x10", "label": "Pays 10×", "emoji": "⚡", "kind": "target",
      "target_x": 10.0,
-     "desc": "The likeliest slip that pays 10× and isn't priced against "
-             "you - the long rung; expect same-game stacks doing the "
-             "heavy lifting."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 10× and "
+             "more, one leg per game, that isn't priced against you."},
     # The lottery rungs, by request, on the tab AND the wall (a 100x cash is
     # exactly what a highlight reel is for). Same recipe, same shared
     # frontier; they only choose deeper. Kalshi caps a payout at
     # combo_engine.MAX_PAYOUT_X, so both sit under it.
     {"id": "x100", "label": "Pays 100×", "emoji": "⚡", "kind": "target",
      "target_x": 100.0,
-     "desc": "The likeliest slip that pays 100× and isn't priced against "
-             "you - a deep stack of correlated legs; ~1% shots by nature."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 100× and "
+             "more, one leg per game - about seven coin flips across seven "
+             "games; ~1% shots by nature."},
     {"id": "x200", "label": "Pays 200×", "emoji": "⚡", "kind": "target",
      "target_x": 200.0,
-     "desc": "The likeliest slip that pays 200× and isn't priced against "
-             "you - the moonshot rung; empty on thin slates is honest."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 200× and "
+             "more, one leg per game - the moonshot rung; empty on thin "
+             "slates is honest."},
 )
 
 
@@ -247,6 +260,11 @@ def _build_target(games, spec, abort_cb=None, frontier_cache=None):
     import combo_engine
     target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
 
+    # The bar the legs' asks must multiply to (fee in) so that a maker's
+    # quote still pays the rung's number; see combo_engine.QUOTE_ROOM.
+    room = combo_engine.QUOTE_ROOM
+    bar = round(target * room, 2)
+
     def _b(floor):
         # A yield is not a failed floor: best_target swallows exceptions per
         # floor, so the supersede has to be re-raised past it.
@@ -254,10 +272,10 @@ def _build_target(games, spec, abort_cb=None, frontier_cache=None):
             raise _Yield()
         return baseball.build_mixed_parlay(
             games, n_legs=4, target_pct=floor, cap_pct=None,
-            target_payout=target, max_legs_per_game=30, max_total_legs=30,
+            target_payout=bar, max_legs_per_game=1, max_total_legs=30,
             legs_mode="off", payout_mode="require", objective="balanced",
             include_live=False, types=None, sides=None,
-            payout_basis=spec.get("payout_basis", "fair"),
+            payout_basis="market",
             abort_cb=abort_cb, frontier_cache=frontier_cache)
     try:
         item = combo_engine.best_target(_b)
@@ -265,6 +283,8 @@ def _build_target(games, spec, abort_cb=None, frontier_cache=None):
         raise RuntimeError("superseded by a newer build")
     if item:
         item["target_payout_x"] = target
+        item["target_market_x"] = bar
+        item["quote_room_x"] = room
     return item
 
 

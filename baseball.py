@@ -4076,11 +4076,13 @@ def _kalshi_payout(leg_suffix_pairs):
         if c and 0 < c < 100:
             leg["market_payout_x"] = round(100.0 / c, 2)
             payout *= 100.0 / c
-            # Net payout: each leg effectively costs price + taker fee.
-            payout_net *= 100.0 / min(99.9, c + _kalshi_fee(c))
             priced += 1
         else:
             leg["market_payout_x"] = None
+    # Net: the exchange's ONE fee on the basket price, not a taker fee per
+    # leg compounded (see combo_engine.combo_cost).
+    import combo_engine
+    payout_net = combo_engine.combo_net_payout(payout) if priced else None
     return {"kalshi_payout_x": round(payout, 2) if priced else None,
             "kalshi_payout_net_x": round(payout_net, 2) if priced else None,
             "kalshi_priced": priced, "kalshi_total_legs": total,

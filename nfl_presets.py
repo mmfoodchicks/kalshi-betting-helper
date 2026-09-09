@@ -42,7 +42,7 @@ import errlog
 
 NAME = "nfl_presets"          # boardshare key: one build, every worker serves it
 TAG = "nfl_"                  # ledger tag prefix: "nfl_td5" etc.
-REV = 1
+REV = 2
 _STALE_S = 1800
 # The PC warms exactly this pool (pc_worker._task_boards: _slate_sims(wk,
 # pre, 4000)), so the recipes ride its upload rather than paying their own.
@@ -102,38 +102,46 @@ PRESETS = (
              "being honest."},
     # kind "target": the maker's ⚡ Optimal-for-my-× button, locked, knob
     # for knob with app.api_nfl_parlay's optimal mode: payout required,
-    # legs off, "balanced", the per-leg floor swept by best_target, stacks
-    # allowed. Seven rungs, one tab, each logged and graded under its own
-    # tag. The 1.5× rung targets what Kalshi PAYS (payout_basis "market"),
-    # as baseball's does: the slip must pay 1.5× at the asks and the chooser
-    # takes the highest TRUE (sim) probability among those.
+    # legs off, "balanced", the per-leg floor swept by best_target. Seven
+    # rungs, one tab, each logged and graded under its own tag. The payout
+    # is what KALSHI PAYS for that exact combo -- the legs' asks multiplied,
+    # with combo_engine.QUOTE_ROOM for the maker's cut -- and the slip is
+    # one leg per game, because a maker prices a same-game stack's
+    # correlation himself (see presets.py's rungs for the 133x lesson).
     {"id": "x15", "label": "Pays 1.5× (-200)", "emoji": "⚡", "kind": "target",
      "target_x": 1.5, "payout_basis": "market",
-     "desc": "A combo Kalshi PAYS 1.5× (-200) on, chosen for the highest true "
-             "odds the sim can find at that price - correlated stacks and "
-             "mispriced legs are the edge. The bankroll-ladder rung."},
+     "desc": "A combo whose Kalshi asks multiply to 1.5× (-200) and more, "
+             "one leg per game, chosen for the highest true odds the sim "
+             "can find at that price - mispriced legs are the edge. The "
+             "bankroll-ladder rung."},
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
-     "desc": "The likeliest slip that pays 2× and isn't priced against "
-             "you. Legs, floors and games are the optimizer's call."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 2× and "
+             "more (room for the maker's cut included), one leg per game, "
+             "that isn't priced against you. Legs, floors and games are "
+             "the optimizer's call."},
     {"id": "x3", "label": "Pays 3×", "emoji": "⚡", "kind": "target",
      "target_x": 3.0,
-     "desc": "The likeliest slip that pays 3× and isn't priced against you."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 3× and "
+             "more, one leg per game, that isn't priced against you."},
     {"id": "x5", "label": "Pays 5×", "emoji": "⚡", "kind": "target",
      "target_x": 5.0,
-     "desc": "The likeliest slip that pays 5× and isn't priced against you."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 5× and "
+             "more, one leg per game, that isn't priced against you."},
     {"id": "x10", "label": "Pays 10×", "emoji": "⚡", "kind": "target",
      "target_x": 10.0,
-     "desc": "The likeliest slip that pays 10× and isn't priced against "
-             "you - expect same-game stacks doing the heavy lifting."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 10× and "
+             "more, one leg per game, that isn't priced against you."},
     {"id": "x100", "label": "Pays 100×", "emoji": "⚡", "kind": "target",
      "target_x": 100.0,
-     "desc": "The likeliest slip that pays 100× and isn't priced against "
-             "you - a deep stack of correlated legs; ~1% shots by nature."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 100× and "
+             "more, one leg per game - about seven coin flips across seven "
+             "games; ~1% shots by nature."},
     {"id": "x200", "label": "Pays 200×", "emoji": "⚡", "kind": "target",
      "target_x": 200.0,
-     "desc": "The likeliest slip that pays 200× and isn't priced against "
-             "you - the moonshot rung; empty on a thin slate is honest."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 200× and "
+             "more, one leg per game - the moonshot rung; empty on a thin "
+             "slate is honest."},
 )
 TARGET_IDS = tuple(p["id"] for p in PRESETS if p["kind"] == "target")
 
@@ -185,6 +193,8 @@ def _build_target(week, pre, spec, abort_cb=None, frontier_cache=None):
     import combo_engine
     import nfl_game_sim
     target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
+    room = combo_engine.QUOTE_ROOM
+    bar = round(target * room, 2)
 
     def _b(floor):
         # A yield is not a failed floor: best_target swallows exceptions per
@@ -193,10 +203,10 @@ def _build_target(week, pre, spec, abort_cb=None, frontier_cache=None):
             raise _Yield()
         return nfl_game_sim.build_parlay(
             week=week, preseason=pre, n_legs=4, target_pct=floor,
-            cap_pct=None, target_payout=target, n_sims=_N,
-            max_legs_per_game=30, max_total_legs=30, legs_mode="off",
+            cap_pct=None, target_payout=bar, n_sims=_N,
+            max_legs_per_game=1, max_total_legs=30, legs_mode="off",
             payout_mode="require", conn="or", objective="balanced",
-            types=None, payout_basis=spec.get("payout_basis", "fair"),
+            types=None, payout_basis="market",
             abort_cb=abort_cb, frontier_cache=frontier_cache)
     try:
         item = combo_engine.best_target(_b)
@@ -204,6 +214,8 @@ def _build_target(week, pre, spec, abort_cb=None, frontier_cache=None):
         raise RuntimeError("superseded by a newer build")
     if item:
         item["target_payout_x"] = target
+        item["target_market_x"] = bar
+        item["quote_room_x"] = room
     return item
 
 

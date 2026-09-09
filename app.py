@@ -3271,6 +3271,7 @@ def api_cfb_parlay():
                 legs_mode="off" if _opt else legs_mode,
                 payout_mode="require" if _opt else payout_mode,
                 conn=conn, objective="balanced" if _opt else objective,
+                payout_basis="market" if _opt else "fair",
                 types=prop_types, game_sel=sel or None, max_bet=_mb,
                 div=_cfb_div(),
                 abort_cb=(None if not ptok else
@@ -3406,6 +3407,8 @@ def api_nfl_parlay():
                 payout_mode="require" if _opt else payout_mode,
                 conn=conn,
                 objective="balanced" if _opt else objective,
+                # Optimal reaches for what KALSHI pays (see presets' rungs).
+                payout_basis="market" if _opt else "fair",
                 types=prop_types, game_sel=sel or None, max_bet=_mb,
                 # One combo slot across BOTH sports: the newest click owns
                 # the CPU whichever tab it came from.
@@ -3552,6 +3555,7 @@ def api_ufc_parlay():
                 # gate collapses every payout target to the one same-fight
                 # stack with correlation credit (see ufc_presets' rungs).
                 conn=conn, objective="safe" if _opt else objective,
+                payout_basis="market" if _opt else "fair",
                 types=types or None, bout_sel=sel or None, max_bet=_mb,
                 min_edge_c=min_edge,
                 # One combo slot across every sport: the newest click owns
@@ -3618,6 +3622,27 @@ def api_ufc_parlay():
         return jsonify({"error": f"ufc parlay failed: {e}"}), 502
 
 
+def _preset_quoting(payload):
+    """Per recipe, whether a maker is quoting the slip's events right now
+    (combo_engine.quote_status) -- read at request time off the cached
+    collection feed, because quoters come and go with the clock and the
+    build may be an hour old."""
+    import combo_engine
+    out = {}
+    for pid, p in ((payload or {}).get("presets") or {}).items():
+        it = p.get("item")
+        if not it:
+            continue
+        try:
+            q = combo_engine.quote_status(it)
+        except Exception as _e:
+            errlog.note("APP-presets-quoting", _e, path=pid)
+            q = None
+        if q:
+            out[pid] = q
+    return out
+
+
 @app.route("/api/ufc/presets")
 def api_ufc_presets():
     """The locked UFC slips (ufc_presets.py): each recipe's current build,
@@ -3652,7 +3677,7 @@ def api_ufc_presets():
         return jsonify({"status": "building", "records": records,
                         "best_wins": best_wins}), 202
     return jsonify({**payload, "age_s": round(age), "records": records,
-                    "best_wins": best_wins,
+                    "best_wins": best_wins, "quoting": _preset_quoting(payload),
                     "best": ufc_presets.best_today(payload, records)})
 
 
@@ -3723,7 +3748,7 @@ def api_nfl_presets():
                         "best_wins": best_wins}), 202
     return jsonify({**payload, "age_s": round(age), "records": records,
                     "best_wins": best_wins, "built_ts": int(time.time() - age),
-                    "first_starts": firsts,
+                    "first_starts": firsts, "quoting": _preset_quoting(payload),
                     "best": nfl_presets.best_today(payload, records)})
 
 
@@ -4373,6 +4398,9 @@ def api_baseball_mixed():
                 conn=conn, game_sel=sel or None,
                 include_live=include_live, types=prop_types,
                 objective="balanced" if _opt else objective, max_bet=_mb,
+                # Optimal reaches for what KALSHI pays, every leg quoted --
+                # the number the user typed is a payout, not the sim's odds.
+                payout_basis="market" if _opt else "fair",
                 progress_token=ptok, min_edge_c=min_edge,
                 # The newest Build click owns the combo slot; a build that
                 # lost it aborts at its next game boundary instead of racing
@@ -4604,7 +4632,7 @@ def api_baseball_presets():
             firsts[pid] = min(starts)
     return jsonify({**payload, "age_s": round(age), "records": records,
                     "best_wins": best_wins, "built_ts": int(time.time() - age),
-                    "first_starts": firsts,
+                    "first_starts": firsts, "quoting": _preset_quoting(payload),
                     "best": presets.best_today(payload, records)})
 
 

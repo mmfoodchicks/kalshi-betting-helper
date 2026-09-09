@@ -687,15 +687,16 @@ def _fee_cents(cents):
 
 
 def _item(combo):
-    prob = 1.0; cost = 1.0; cost_net = 1.0; priced = True
+    prob = 1.0; cost = 1.0; priced = True
     for l in combo:
         prob *= l["prob"]
         if l.get("price_cents"):
-            c = l["price_cents"]
-            cost *= c / 100.0
-            cost_net *= min(99.9, c + _fee_cents(c)) / 100.0   # each leg pays a taker fee
+            cost *= l["price_cents"] / 100.0
         else:
             priced = False
+    # One combo fee on the basket price, not a taker fee per leg.
+    import combo_engine
+    cost_net = combo_engine.combo_cost(cost) if 0 < cost < 1 else cost
     item = {
         "legs": [{"pick": l["label"], "matchup": l["matchup"], "type": l["type"],
                   "category": l["category"], "prob_pct": round(l["prob"] * 100, 1),
@@ -711,7 +712,7 @@ def _item(combo):
         item["parlay_payout_x"] = round(payout, 2)
         item["parlay_cost_cents"] = round(cost * 100, 1)
         item["ev_pct"] = round((prob * payout - 1) * 100, 1)
-        # EV net of Kalshi's per-leg taker fees -- the number you actually bank.
+        # EV net of Kalshi's one combo fee -- the number you actually bank.
         item["ev_net_pct"] = round((prob * (1 / cost_net) - 1) * 100, 1)
     return item
 

@@ -27,7 +27,7 @@ import errlog
 
 NAME = "ufc_presets"          # boardshare key: one build, every worker serves it
 TAG = "ufc_"                  # ledger tag prefix: "ufc_fav5" etc.
-REV = 2
+REV = 3
 _STALE_S = 1800
 
 PRESETS = (
@@ -63,21 +63,23 @@ PRESETS = (
     # rides on the slip, honestly signed.
     {"id": "x2", "label": "Pays 2×", "emoji": "⚡", "kind": "target",
      "target_x": 2.0,
-     "desc": "The likeliest slip that pays 2×. Legs, floors and bouts are "
-             "the optimizer's call. EV at Kalshi's asks rides beside it - "
-             "in MMA the fair number sits close to the price, so a rung "
-             "usually runs a little -EV after fees; a same-fight stack is "
-             "where credit shows up."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 2× and "
+             "more (room for the maker's cut included), one leg per bout. "
+             "Legs, floors and bouts are the optimizer's call. EV at the "
+             "asks rides beside it - in MMA the fair number sits close to "
+             "the price, so a rung usually runs a little -EV after fees."},
     {"id": "x3", "label": "Pays 3×", "emoji": "⚡", "kind": "target",
      "target_x": 3.0,
-     "desc": "The likeliest slip that pays 3×, EV at the asks beside it."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 3× and "
+             "more, one leg per bout, EV at the asks beside it."},
     {"id": "x5", "label": "Pays 5×", "emoji": "⚡", "kind": "target",
      "target_x": 5.0,
-     "desc": "The likeliest slip that pays 5×, EV at the asks beside it."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 5× and "
+             "more, one leg per bout, EV at the asks beside it."},
     {"id": "x10", "label": "Pays 10×", "emoji": "⚡", "kind": "target",
      "target_x": 10.0,
-     "desc": "The likeliest slip that pays 10× - expect same-fight stacks "
-             "(a winner and the round it ends in) doing the heavy lifting."},
+     "desc": "The likeliest slip whose Kalshi asks multiply to 10× and "
+             "more, one leg per bout - four or five underdogs' worth."},
 )
 TARGET_IDS = tuple(p["id"] for p in PRESETS if p["kind"] == "target")
 
@@ -105,25 +107,33 @@ def _build_target(board, mk, spec, abort_cb=None):
     """The ⚡ Optimal button as a locked recipe, knob for knob with the
     endpoint's optimal mode: payout required, legs off, objective "safe"
     (see the note above the rungs), the per-leg floor swept by
-    combo_engine.best_target."""
+    combo_engine.best_target. The payout is what KALSHI PAYS for the exact
+    combo -- the legs' asks multiplied, with combo_engine.QUOTE_ROOM for the
+    maker's cut -- and the slip is one leg per bout: a maker quoting a
+    winner stacked with its round prices that correlation himself, which
+    is exactly the credit the rung used to count as reach."""
     import combo_engine
     import ufc_combo
     target = min(float(spec["target_x"]), combo_engine.MAX_PAYOUT_X)
+    room = combo_engine.QUOTE_ROOM
+    bar = round(target * room, 2)
 
     def _b(floor):
         if abort_cb is not None and abort_cb():
             raise _Yield()
         return ufc_combo.build_parlay(
-            n_legs=4, target_pct=floor, cap_pct=None, target_payout=target,
-            max_legs_per_bout=30, max_total_legs=30, legs_mode="off",
+            n_legs=4, target_pct=floor, cap_pct=None, target_payout=bar,
+            max_legs_per_bout=1, max_total_legs=30, legs_mode="off",
             payout_mode="require", objective="safe", types=None,
-            board=board, mk=mk, abort_cb=abort_cb)
+            payout_basis="market", board=board, mk=mk, abort_cb=abort_cb)
     try:
         item = combo_engine.best_target(_b)
     except _Yield:
         raise RuntimeError("superseded by a newer build")
     if item:
         item["target_payout_x"] = target
+        item["target_market_x"] = bar
+        item["quote_room_x"] = room
     return item
 
 

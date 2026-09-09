@@ -59,6 +59,81 @@ _MAX_PRICE_C = 99
 # changes it.
 MAX_PAYOUT_X = float(os.getenv("VIGIL_MAX_PAYOUT_X") or 435)
 
+# What a combo costs once it is ONE contract. A Kalshi combo is a single
+# multivariate market: you pay the maker's quote for the basket and the
+# exchange's fee on THAT price, once -- the combo series (KXMVESPORTS...)
+# reports fee_type "quadratic_with_combo_maker_fees" at fee_multiplier 1,
+# i.e. 0.07 x P x (1-P) per contract on the basket price, ~7% of the stake
+# on a sub-cent contract. The old model charged a taker fee on every leg and
+# compounded them, which at eleven legs ate 31% of the payout the asks
+# multiply to (2,329x shown as 1,606x) for a fee the exchange takes once.
+COMBO_FEE_MULT = 0.07
+
+
+def combo_cost(p_gross):
+    """Cost of $1 of combo payout at basket price `p_gross` (a fraction of
+    $1), the exchange's one fee in: p + 0.07 p (1 - p). Prices outside
+    (0, 1) come back unchanged -- they are not prices."""
+    if p_gross is None or not (0 < p_gross < 1):
+        return p_gross
+    return p_gross * (1.0 + COMBO_FEE_MULT * (1.0 - p_gross))
+
+
+def combo_net_payout(gross_x):
+    """The multiple a combo pays after the exchange's one fee, from the
+    multiple its legs' asks multiply to."""
+    if not gross_x or gross_x <= 1.0:
+        return gross_x
+    return 1.0 / combo_cost(1.0 / gross_x)
+
+
+# Room between what the legs' asks multiply to and what a rung promises.
+# Kalshi does not price a combo off its legs at all: a market maker answers
+# a request for quote with one price for the basket, privately, and that
+# price is what you pay. For INDEPENDENT legs (one per game) the product of
+# the asks is the maker's own fair value, so the quote lands near it, a
+# little worse; for a same-game stack the maker prices the correlation the
+# sim was counting as edge, and the quote lands far under the product --
+# measured 2026-09-08: a rung whose asks multiplied to ~1,600x (sim fair
+# 200x) was quoted 133x. The rungs therefore build one leg per game and
+# aim the product this much above the promise, so the maker's cut still
+# leaves the number on the tab. UNMEASURED for independent legs as of
+# 2026-09-09: no quote on a one-leg-per-game slip has been reported yet;
+# the first few will size this properly.
+QUOTE_ROOM = 1.15
+
+
+def quote_status(item):
+    """Is anyone quoting this slip right now? Kalshi's collection feed
+    names the ACTIVE QUOTERS per event; a combo whose events have none
+    shows "payout unavailable" on the exchange until a maker turns up
+    (they appear closer to game time). {"events": n, "quoted": m,
+    "unquoted": [event tickers]} off the slip's leg tickers, or None when
+    the feed is down or the legs carry no tickers."""
+    try:
+        import kalshi
+        quoters = kalshi.combo_quoters()
+    except Exception:
+        return None
+    if not quoters:
+        return None
+    events, unquoted = set(), []
+    for grp in (item or {}).get("groups") or []:
+        for leg in grp.get("legs") or []:
+            tk = leg.get("ticker")
+            if not tk or "-" not in tk:
+                continue
+            ev = tk.rsplit("-", 1)[0]
+            if ev in events:
+                continue
+            events.add(ev)
+            if not quoters.get(ev):
+                unquoted.append(ev)
+    if not events:
+        return None
+    return {"events": len(events), "quoted": len(events) - len(unquoted),
+            "unquoted": unquoted}
+
 OBJECTIVES = ("balanced", "safe", "value")
 
 # An EV-driven objective must be mostly BETTABLE. Unpriced legs are charged at
@@ -525,6 +600,8 @@ def dp_legs(n_legs, legs_mode, max_total_legs, payout_mode="off"):
 
 def frontier(games_bundles, max_total_legs=8, net=True):
     """Every efficient (legs, cost) combination and the likeliest slip at each.
+    `net` charges the exchange's ONE combo fee on each state's basket price
+    (combo_cost); the legs themselves are costed at their asks.
 
     games_bundles: [(label, [bundle, ...], suffix), ...] as built by
     mlb_sim.game_bundles -- one entry per game, at most one bundle taken from
@@ -540,7 +617,9 @@ def frontier(games_bundles, max_total_legs=8, net=True):
             p = b.get("prob") or 0.0
             if not (0 < p <= 1):
                 continue
-            c, bpr, btt = bundle_cost(b["legs"], net=net)
+            # Legs at their ASKS: the fee is charged once on the basket
+            # (combo_cost, below), not per leg.
+            c, bpr, btt = bundle_cost(b["legs"], net=False)
             if c is None or c <= 0:
                 continue
             priced.append((nl0, math.log(p), math.log(c), bpr, btt, b))
@@ -585,6 +664,8 @@ def frontier(games_bundles, max_total_legs=8, net=True):
             if not sel:
                 continue
             prob, cost = math.exp(lp), math.exp(lc)
+            if net:
+                cost = combo_cost(cost)
             out.append({"legs": legs, "prob": prob, "cost": cost,
                         "payout": (1.0 / cost) if cost > 0 else None,
                         "fair_payout": (1.0 / prob) if prob > 0 else None,
@@ -932,12 +1013,14 @@ OPTIMAL_FLOORS = (55, 35, 15)
 def _opt_key(it):
     """Order two optimal-mode slips. Reaching the payout target beats not;
     among those that reach it, EV-viable beats EV-gated-out, then the likelier
-    slip wins; among those that miss, the one whose payout got closest."""
+    slip wins; among those that miss, the one whose payout got closest -- the
+    payout the target was judged on (Kalshi's on a market-basis build)."""
     reached = bool(it.get("payout_reached"))
+    near = (it.get("kalshi_payout_net_x") if it.get("payout_basis") == "market"
+            else it.get("fair_payout_x")) or 0.0
     return (1 if reached else 0,
             1 if it.get("ev_ok") is not False else 0,
-            (it.get("combined_prob_pct") or 0.0) if reached
-            else (it.get("fair_payout_x") or 0.0),
+            (it.get("combined_prob_pct") or 0.0) if reached else near,
             it.get("ev_pct") or 0.0)
 
 
@@ -956,6 +1039,7 @@ def best_target(build, floors=OPTIMAL_FLOORS):
             continue
         tried.append({"floor_pct": f, "reached": bool(it.get("payout_reached")),
                       "payout_x": it.get("fair_payout_x"),
+                      "market_x": it.get("kalshi_payout_net_x"),
                       "prob_pct": it.get("combined_prob_pct")})
         if best is None or _opt_key(it) > _opt_key(best):
             best = it

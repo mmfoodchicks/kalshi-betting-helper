@@ -1365,8 +1365,8 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     # other maker (baseball, college, UFC) carries and this one did not, so
     # every NFL slip rendered "pays -" and was filed in the slip ledger with
     # no payout, which is a ledger that cannot report an ROI.
-    import kalshi
-    payout, net, priced, total = 1.0, 1.0, 0, 0
+    import combo_engine
+    payout, priced, total = 1.0, 0, 0
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
             total += 1
@@ -1374,10 +1374,11 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
             if c and 0 < c < 100:
                 leg["market_payout_x"] = round(100.0 / c, 2)
                 payout *= 100.0 / c
-                net *= 100.0 / min(99.9, c + kalshi.taker_fee_cents(c))
                 priced += 1
             else:
                 leg["market_payout_x"] = None
+    # One combo fee on the basket, not a taker fee per leg (combo_cost).
+    net = combo_engine.combo_net_payout(payout) if priced else None
     item.update({"kalshi_payout_x": round(payout, 2) if priced else None,
                  "kalshi_payout_net_x": round(net, 2) if priced else None,
                  "kalshi_priced": priced, "kalshi_total_legs": total,

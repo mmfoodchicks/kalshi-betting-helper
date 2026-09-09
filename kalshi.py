@@ -120,25 +120,47 @@ def _f(v):
 # codebase had carried "Kalshi does not allow ITF matches as parlay legs" as a
 # bare assertion, and it was hiding 87 perfectly good matches.
 _COMBO_TTL = 600
-_combo_cache = {"ts": 0.0, "events": None}
+_combo_cache = {"ts": 0.0, "events": None, "quoters": None}
+
+
+def _combo_refresh():
+    """One read of the collection feed: the eligible event set, and per
+    event how many makers are ACTIVELY QUOTING it right now. A combo is
+    priced by a maker answering a request for quote, so an event with no
+    active quoter is one Kalshi shows as "payout unavailable" -- measured
+    2026-09-09 18:10 UTC: 2,406 eligible events, 0 with a quoter, four
+    days before the NFL slate and six hours before first pitch."""
+    now = time.time()
+    if _combo_cache["events"] is not None and now - _combo_cache["ts"] < _COMBO_TTL:
+        return True
+    events, quoters = set(), {}
+    try:
+        d = _get_json(f"{BASE}/multivariate_event_collections", timeout=25)
+        for c in (d.get("multivariate_contracts") or []):
+            events |= set(c.get("associated_event_tickers") or [])
+            for e in (c.get("associated_events") or []):
+                tk = e.get("ticker")
+                if tk:
+                    quoters[tk] = max(quoters.get(tk, 0),
+                                      len(e.get("active_quoters") or []))
+    except Exception:
+        return _combo_cache["events"] is not None
+    _combo_cache.update({"events": events, "quoters": quoters, "ts": now})
+    return True
 
 
 def combo_events():
     """Set of event tickers Kalshi will accept as a parlay leg. Empty on failure,
     which callers must treat as "unknown", never as "nothing is eligible"."""
-    now = time.time()
-    if _combo_cache["events"] is not None and now - _combo_cache["ts"] < _COMBO_TTL:
-        return _combo_cache["events"]
-    out = set()
-    try:
-        d = _get_json(f"{BASE}/multivariate_event_collections", timeout=25)
-        for c in (d.get("multivariate_contracts") or []):
-            out |= set(c.get("associated_event_tickers") or [])
-    except Exception:
-        return _combo_cache["events"] or set()
-    _combo_cache["events"] = out
-    _combo_cache["ts"] = now
-    return out
+    _combo_refresh()
+    return _combo_cache["events"] or set()
+
+
+def combo_quoters():
+    """{event ticker: number of makers actively quoting it}, every eligible
+    event present (0 when nobody is). Empty on failure -- "unknown"."""
+    _combo_refresh()
+    return _combo_cache["quoters"] or {}
 
 
 def combo_ok(event_ticker):

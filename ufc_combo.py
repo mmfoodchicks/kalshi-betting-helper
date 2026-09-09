@@ -213,7 +213,8 @@ def _board():
 def _kalshi_summary(item):
     """The slip's real Kalshi payout off its legs' asks, fees in -- the same
     five fields baseball._kalshi_payout stamps, so kalshiPayout() renders it."""
-    payout, net, priced, total = 1.0, 1.0, 0, 0
+    import combo_engine
+    payout, priced, total = 1.0, 0, 0
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
             total += 1
@@ -221,10 +222,11 @@ def _kalshi_summary(item):
             if c and 0 < c < 100:
                 leg["market_payout_x"] = round(100.0 / c, 2)
                 payout *= 100.0 / c
-                net *= 100.0 / min(99.9, c + kalshi.taker_fee_cents(c))
                 priced += 1
             else:
                 leg["market_payout_x"] = None
+    # One combo fee on the basket, not a taker fee per leg (combo_cost).
+    net = combo_engine.combo_net_payout(payout) if priced else None
     item.update({"kalshi_payout_x": round(payout, 2) if priced else None,
                  "kalshi_payout_net_x": round(net, 2) if priced else None,
                  "kalshi_priced": priced, "kalshi_total_legs": total,

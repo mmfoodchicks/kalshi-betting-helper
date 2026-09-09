@@ -612,9 +612,12 @@ def price_cands(cands, suffix, idx, blend=True):
 def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
                  max_legs_per_game=3, max_total_legs=8, legs_mode="prefer",
                  payout_mode="off", conn="or", objective="balanced", types=None,
-                 game_sel=None, max_bet=False, cap_x=None, abort_cb=None, div=None):
+                 game_sel=None, max_bet=False, cap_x=None, abort_cb=None, div=None,
+                 payout_basis="fair"):
     """One parlay across the week's college games, priced against Kalshi --
     nfl_game_sim.build_parlay on the college slate, knob for knob.
+    `payout_basis="market"` judges the payout target on what Kalshi pays
+    with every leg quoted (the optimal button), as the other makers do.
 
     `div` scopes the pool to one division's tab ("fbs" or "fcs"): a slip
     built on the FCS board must not quietly take an FBS leg, and a buy game
@@ -705,12 +708,16 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
     else:
         targets = {"legs_target": n_legs, "payout_target": target_payout,
                    "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+        if payout_basis == "market":
+            targets["payout_basis"] = "market"
         best, meta = combo_engine.choose(states, objective=objective, **targets)
     if not best:
         return None
     item = mlb_sim._mixed_item(best["sel"], games_bundles,
                                None if max_bet else
                                (target_payout if payout_mode != "off" else None))
+    if payout_basis == "market":
+        item["payout_basis"] = "market"      # payout_reached comes from meta
     kick = {(g.get("suffix") or g.get("pair")): _iso_ts(g.get("date")) for g in games}
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
@@ -740,8 +747,8 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
         item["alternatives"] = combo_engine.compare(states, best, **targets)
     item["n_sims"] = _N
     # The real Kalshi payout off the legs' asks, fees in (kalshiPayout()).
-    import kalshi
-    payout, net, priced, total = 1.0, 1.0, 0, 0
+    import combo_engine
+    payout, priced, total = 1.0, 0, 0
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
             total += 1
@@ -749,10 +756,11 @@ def build_parlay(week=1, n_legs=3, target_pct=55, cap_pct=None, target_payout=0,
             if c and 0 < c < 100:
                 leg["market_payout_x"] = round(100.0 / c, 2)
                 payout *= 100.0 / c
-                net *= 100.0 / min(99.9, c + kalshi.taker_fee_cents(c))
                 priced += 1
             else:
                 leg["market_payout_x"] = None
+    # One combo fee on the basket, not a taker fee per leg (combo_cost).
+    net = combo_engine.combo_net_payout(payout) if priced else None
     item.update({"kalshi_payout_x": round(payout, 2) if priced else None,
                  "kalshi_payout_net_x": round(net, 2) if priced else None,
                  "kalshi_priced": priced, "kalshi_total_legs": total,

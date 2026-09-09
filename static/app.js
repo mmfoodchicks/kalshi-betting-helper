@@ -1187,7 +1187,8 @@ async function renderPresetBox() {
     const p = (d.presets || {})[pid];
     if (!p) continue;
     sections.push(_presetSectionHtml(p, (d.records || {})[pid],
-                                     d.built_ts, (d.first_starts || {})[pid]));
+                                     d.built_ts, (d.first_starts || {})[pid],
+                                     (d.quoting || {})[pid]));
   }
   if (!sections.length) { box.innerHTML = `<div class="small">No such preset.</div>`; return; }
   box.innerHTML = `<div class="combomaker">
@@ -1217,7 +1218,7 @@ function _slipBuiltLine(builtTs, firstStart) {
   }
   return `<div class="small" style="color:var(--muted)">🕒 built ${when} ET${lead}</div>`;
 }
-function _presetSectionHtml(p, rec, builtTs, firstStart) {
+function _presetSectionHtml(p, rec, builtTs, firstStart, quoting) {
   const recLine = rec && rec.graded
     ? `📒 record: <b>${rec.won}-${rec.graded - rec.won}</b> graded (expected ${rec.expected} wins from the claimed odds) · legs ${rec.legs_hit}/${rec.legs}${rec.void ? ` · ${rec.void} void` : ""} · ${rec.logged} logged`
     : `📒 ${rec ? rec.logged : 0} logged, none graded yet - the record builds itself from here`;
@@ -1234,17 +1235,30 @@ function _presetSectionHtml(p, rec, builtTs, firstStart) {
     // is a different claim from "pays 10×" and the tab must not blur them.
     const missLine = (it.target_payout_x && it.payout_reached === false)
       ? `<div class="small" style="color:var(--muted)">⚠️ nothing reaches ${it.target_payout_x}× today - this is the closest the slate offers.</div>` : "";
-    // A market-basis rung: the target is what KALSHI pays, and the edge is
-    // the sim's odds above what that price implies.
     // A top-N recipe on a slate that books fewer: the slip is the likeliest
     // of what exists, and the card says so rather than implying five.
     const shortLine = it.short_slate
       ? `<div class="small" style="color:var(--muted)">⚠️ the slate books fewer than ${it.short_slate} of these at the recipe's rung - this is the likeliest ${it.n_legs}-leg version.</div>` : "";
+    // A rung: the target is what KALSHI pays for this exact combo - the
+    // legs' asks multiplied, held above the promise by the room a maker's
+    // quote needs - and the edge is the sim's odds above what that price
+    // implies. Kalshi quotes a combo through a market maker (an RFQ), so the
+    // product is the expectation for INDEPENDENT legs; a same-game stack is
+    // quoted on its correlation and lands far under it (a 200× rung whose
+    // asks multiplied to ~1,600× was quoted 133× on 2026-09-08).
     const basisLine = it.payout_basis === "market"
-      ? `<div class="small" style="color:var(--muted)">🎯 priced on Kalshi's payout: the slip must pay ${it.target_payout_x}× at the asks (${(100 / it.target_payout_x).toFixed(1)}% implied); the sim's ${it.combined_prob_pct}% is the edge you're taking.</div>` : "";
+      ? `<div class="small" style="color:var(--muted)">🎯 built to pay <b>${it.target_payout_x}×</b> on Kalshi: the legs' asks multiply to ${it.kalshi_payout_net_x || "-"}× after the combo fee, against a ${it.target_market_x || it.target_payout_x}× bar${it.quote_room_x ? ` (${it.quote_room_x}× room for the maker's cut)` : ""}, one leg per game so a maker's quote lands near it. The price implies ${it.kalshi_payout_x ? (100 / it.kalshi_payout_x).toFixed(2) : "-"}%; the sim's ${it.combined_prob_pct}% is the edge you're taking.</div>` : "";
+    const stacked = (it.groups || []).some((g) => (g.size || (g.legs || []).length) > 1);
+    const stackLine = stacked
+      ? `<div class="small" style="color:#e0566a">⚠️ same-game stack: Kalshi quotes a combo through a market maker who prices the correlation himself - expect a quote well under what the asks multiply to.</div>` : "";
+    const quoteLine = quoting
+      ? (quoting.quoted >= quoting.events
+          ? `<div class="small" style="color:var(--muted)">🟢 a maker is quoting all ${quoting.events} of this slip's events right now.</div>`
+          : `<div class="small" style="color:var(--muted)">⚪ no maker is quoting ${quoting.events - quoting.quoted} of this slip's ${quoting.events} events right now - Kalshi shows "payout unavailable" until one does (quotes tend to appear closer to game time).</div>`)
+      : "";
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
-      <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
-      ${missLine}${shortLine}${basisLine}
+      <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · Kalshi's asks multiply to ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> after the combo fee` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
+      ${missLine}${shortLine}${basisLine}${stackLine}${quoteLine}
       ${_slipBuiltLine(builtTs, firstStart)}
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
@@ -1759,7 +1773,7 @@ function modelLegend() {
       <li><b>Market %</b> - Kalshi's price <i>is</i> a probability: a YES at 60¢ means the market thinks ~60%. That's the number we compare against.</li>
       <li><b class="ev pos">Edge</b> (green) / <b class="ev neg">Edge</b> (red) - Model % minus Market %. <b class="ev pos">Green</b> = we think it's underpriced (good value to buy). <b class="ev neg">Red</b> = overpriced (skip). Shown in ¢ because 1% ≈ 1¢ on Kalshi.</li>
       <li><b>Fair payout ×</b> - 1 ÷ our probability (a 25% chance is a fair 4×). The <b>no-vig fair value</b> from our model.</li>
-      <li><b>Kalshi pays ×</b> - the <i>real</i> payout from Kalshi's live prices (product of each leg's market price), so it matches what you'd see building the combo on Kalshi. It's lower than our fair payout by their margin. If our fair payout is <i>way</i> above Kalshi's, we strongly disagree with the market on a leg - possible edge, or miscalibration to sanity-check. (Lines post closer to game time, so it may read "-" early.)</li>
+      <li><b>Legs multiply to ×</b> - each leg's live Kalshi ask multiplied through, after Kalshi's one fee on the combo. Kalshi does not price a combo off its legs: a market maker quotes the basket through an RFQ, and that quote is what you pay. With one leg per game the product is his own fair value and the quote lands near it, a little under; a same-game stack is quoted on its correlation and lands far under it (a slip whose asks multiplied to ~1,600× was quoted 133×). The ⚡ rungs build one leg per game and aim the product above the promise for exactly this reason. (Lines post closer to game time, so it may read "-" early.)</li>
       <li><b>Per-leg Kalshi <span class="kmkt">34¢ (2.94×)</span></b> - that leg's live market price and payout, with the <b class="ev pos">+</b>/<b class="ev neg">−</b> edge = the leg's blended % minus Kalshi's price (the model's own pre-blend edge shows separately).</li>
       <li><b>Weather → ±% runs</b> - park orientation (home plate → center field) vs the wind: blowing <span class="ev pos">out</span> adds runs, <span class="ev neg">in</span> suppresses them, plus temperature/humidity. This nudges the game total the sim is calibrated to.</li>
     </ul></details>`;
@@ -1841,16 +1855,22 @@ function renderBreakdown(b, n) {
     </div></details>`;
 }
 
-// Real Kalshi combo payout (product of each leg's live market price), shown next
-// to our fair payout so the number matches Kalshi's own builder.
+// What the legs' live Kalshi asks multiply to, next to our fair payout. NOT
+// "what Kalshi pays": a combo is quoted by a market maker through an RFQ, and
+// the product is his fair value only when the legs are independent. A
+// same-game stack is quoted on its correlation and lands far under the
+// product (a slip whose asks multiplied to ~1,600× was quoted 133×).
 function kalshiPayout(m) {
   if (m.kalshi_payout_x == null) {
-    return `<span style="color:var(--muted)">Kalshi pays <span class="small">(no live prices yet, markets post closer to game time)</span></span>`;
+    return `<span style="color:var(--muted)">Legs multiply to <span class="small">(no live prices yet, markets post closer to game time)</span></span>`;
   }
   const partial = m.kalshi_full ? "" : ` <span class="small" style="color:var(--muted)">(${m.kalshi_priced}/${m.kalshi_total_legs} legs priced)</span>`;
   const net = m.kalshi_payout_net_x != null
-    ? ` <span class="small" style="color:var(--muted)" title="each leg pays Kalshi's ~1–2¢ taker fee">(${m.kalshi_payout_net_x}× net of fees)</span>` : "";
-  return `<span>Kalshi pays <b>${m.kalshi_payout_x}×</b>${net}${partial}</span>`;
+    ? ` <span class="small" style="color:var(--muted)" title="after Kalshi's one fee on the combo's price (0.07 × P × (1−P) per contract)">(${m.kalshi_payout_net_x}× after the combo fee)</span>` : "";
+  const stacked = (m.groups || []).some((g) => (g.size || (g.legs || []).length) > 1) || m.same_game === true;
+  const warn = stacked
+    ? ` <span class="small" style="color:#e0566a" title="Kalshi quotes a combo through a market maker who prices same-game correlation himself; the product of the asks overstates what a stack pays">⚠️ stacked: expect a quote well under this</span>` : "";
+  return `<span>Legs multiply to <b>${m.kalshi_payout_x}×</b> at the asks${net}${partial}${warn}</span>`;
 }
 
 function renderSGP(s) {
@@ -5048,7 +5068,8 @@ async function renderUfcPresetBox() {
   for (const pid of pids) {
     const p = (d.presets || {})[pid];
     if (!p) continue;
-    sections.push(_presetSectionHtml(p, (d.records || {})[pid]));
+    sections.push(_presetSectionHtml(p, (d.records || {})[pid], null, null,
+                                     (d.quoting || {})[pid]));
   }
   if (!sections.length) { box.innerHTML = `<div class="small">No such recipe.</div>`; return; }
   box.innerHTML = `<div class="combomaker">
@@ -5180,7 +5201,8 @@ async function renderNflPresetBox() {
     const p = (d.presets || {})[pid];
     if (!p) continue;
     sections.push(_presetSectionHtml(p, (d.records || {})[pid],
-                                     d.built_ts, (d.first_starts || {})[pid]));
+                                     d.built_ts, (d.first_starts || {})[pid],
+                                     (d.quoting || {})[pid]));
   }
   if (!sections.length) { box.innerHTML = `<div class="small">No such recipe.</div>`; return; }
   const wk = d.week ? `${d.preseason ? "preseason " : ""}week ${d.week}` : "the week";

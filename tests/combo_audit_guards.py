@@ -6125,9 +6125,12 @@ for _gt in range(40):
             continue
         _gpp, _gcc, _gpr, _gtt = 1.0, 1.0, 0, 0
         for _gb in _gch:
-            _gbc, _gbpr, _gbtt = _gce.bundle_cost(_gb["legs"], net=True)
+            # Legs at their asks; the exchange's one combo fee on the basket,
+            # exactly as frontier() charges it.
+            _gbc, _gbpr, _gbtt = _gce.bundle_cost(_gb["legs"], net=False)
             _gpp, _gcc = _gpp * _gb["prob"], _gcc * _gbc
             _gpr, _gtt = _gpr + _gbpr, _gtt + _gbtt
+        _gcc = _gce.combo_cost(_gcc)
         _ge = _gpp / _gcc - 1.0
         _grec = _gbf.setdefault(_gnl, [0.0, -9e9, None])
         _grec[0] = max(_grec[0], _gpp)
@@ -9640,7 +9643,7 @@ try:
     ck("the rung sweeps the same floors the button does, at its own target",
        _r49 is None and len(_calls49) == len(_ce49.OPTIMAL_FLOORS)
        and [c["target_pct"] for c in _calls49] == list(_ce49.OPTIMAL_FLOORS)
-       and all(c["target_payout"] == 2.0 for c in _calls49),
+       and all(c["target_payout"] == round(2.0 * _ce49.QUOTE_ROOM, 2) for c in _calls49),
        "an empty slate returns None honestly instead of a fabricated slip")
 finally:
     B.build_mixed_parlay = _obm49
@@ -9945,9 +9948,8 @@ ck("x15 is a 1.5x MARKET-basis target rung, first on the tab, off the wall",
    and _spec55["x15"].get("payout_basis") == "market"
    and "-200" in _spec55["x15"]["label"]
    and '["x15", "⚡' not in _js50 and '_TARGET_IDS = ["x15"' in _js50
-   and _pr41.REV >= 9
-   and 'payout_basis=spec.get("payout_basis", "fair")'
-   in _insp.getsource(_pr41._build_target),
+   and _pr41.REV >= 11
+   and 'payout_basis="market"' in _insp.getsource(_pr41._build_target),
    "-200 American is 1.5x decimal; the owner asked for no wall column")
 import combo_engine as _ce55
 _A55 = {"legs": 2, "prob": 0.74, "cost": 0.66, "payout": 1.515,
@@ -10606,7 +10608,7 @@ try:
                          for l in g["legs"]))
             for t in _up63.TARGET_IDS if _pp63[t]["item"]}) >= 2
        and 'objective="safe"' in _insp.getsource(_up63._build_target)
-       and _up63.REV == 2)
+       and _up63.REV >= 3)
     ck("the endpoint's Optimal button and the maker's default goal follow the same rule",
        'objective="safe" if _opt else objective' in _insp.getsource(__import__("app").api_ufc_parlay)
        and 'let ufcComboObjective = "safe"' in open(_os.path.join(_root, "static", "app.js")).read())
@@ -10694,8 +10696,8 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
    and "renderMixed(d.parlay)" in _js63[_js63.index("function _renderUfcComboResult"):][:2500])
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
-   and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
+   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11895,7 +11897,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -11998,7 +12000,7 @@ ck("the board carries each side's ticker so the recorder can file the ticket",
    '"home_ticker": px.get("home_ticker")' in _bb9)
 _bp9 = _insp9.getsource(_ng9.build_parlay)
 ck("an NFL slip carries the real Kalshi payout, fees in (it rendered 'pays -' and logged no payout)",
-   "kalshi_payout_net_x" in _bp9 and "taker_fee_cents" in _bp9 and '"kalshi_full"' in _bp9)
+   "kalshi_payout_net_x" in _bp9 and "combo_net_payout" in _bp9 and '"kalshi_full"' in _bp9)
 
 # --- 4. the engine: pinned means, fitted spread, yards that follow points ----
 def _prof9(ab, home, seed):
@@ -12487,7 +12489,108 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
+
+# ---------------------------------------------------------------------------
+# The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
+# "only netted 133x ... if the combo is in the 200x rung, that if I go to
+# kalshi, and put in that exact combo my payout would be 2000+" and "I want it
+# to try to find edges and stuff, but I just want the payout to be at or above
+# the prescribed amount." Kalshi quotes a combo through a market maker (an
+# RFQ): the product of the legs' asks is his fair value only for INDEPENDENT
+# legs, and a same-game stack is quoted on its correlation. So the rungs build
+# one leg per game, target the product of the asks with room for the maker's
+# cut, and every maker charges the exchange's ONE combo fee instead of a taker
+# fee per leg (the combo series reports fee_type
+# quadratic_with_combo_maker_fees at fee_multiplier 1).
+print("The rungs pay what Kalshi pays: one combo fee, one leg per game, room for the maker")
+import inspect as _i12
+import combo_engine as _ce12
+import kalshi as _k12
+import presets as _pr12
+import nfl_presets as _np12
+import ufc_presets as _up12
+ck("the exchange's fee is charged once on the basket: 50c costs 51.75c of $1, two 50c legs "
+   "multiply to 3.80x, not the 3.73x eleven-leg-style compounding gave",
+   abs(_ce12.combo_cost(0.5) - 0.5175) < 1e-9
+   and abs(_ce12.combo_net_payout(4.0) - 1.0 / (0.25 * 1.0525)) < 1e-9
+   and _ce12.combo_cost(1.0) == 1.0 and _ce12.combo_net_payout(None) is None
+   and _ce12.COMBO_FEE_MULT == 0.07,
+   "0.07 x P x (1-P) per contract on the basket price, the schedule the combo series reports")
+_gb12 = [("A", [{"size": 1, "prob": 0.5, "legs": [{"marg": 0.5, "price_cents": 50, "fillable": True}]}], "a"),
+         ("B", [{"size": 1, "prob": 0.5, "legs": [{"marg": 0.5, "price_cents": 50, "fillable": True}]}], "b")]
+_st12 = [s for s in _ce12.frontier(_gb12, max_total_legs=2, net=True) if s["legs"] == 2]
+ck("the frontier costs a two-leg slip at the asks plus one combo fee",
+   len(_st12) == 1 and abs(_st12[0]["cost"] - _ce12.combo_cost(0.25)) < 1e-9
+   and abs(_st12[0]["payout"] - 3.8005) < 0.001
+   and abs(_st12[0]["ev"] - (0.25 / _ce12.combo_cost(0.25) - 1)) < 1e-9)
+for _mod12, _nm12, _knob12 in ((_pr12, "presets", "max_legs_per_game=1"),
+                               (_np12, "nfl_presets", "max_legs_per_game=1"),
+                               (_up12, "ufc_presets", "max_legs_per_bout=1")):
+    _src12 = _i12.getsource(_mod12._build_target)
+    ck(f"{_nm12}: the rungs target what Kalshi pays, one leg per game, with room for the maker's cut",
+       'payout_basis="market"' in _src12 and _knob12 in _src12
+       and "combo_engine.QUOTE_ROOM" in _src12 and "target_payout=bar" in _src12
+       and 'item["target_market_x"] = bar' in _src12
+       and 'item["target_payout_x"] = target' in _src12)
+ck("the recipes' revs moved, so the next tick rebuilds the old fair-basis stacks away",
+   _pr12.REV >= 11 and _np12.REV >= 2 and _up12.REV >= 3)
+ck("the room for the maker's cut is a named, bounded constant",
+   1.0 < _ce12.QUOTE_ROOM < 1.5)
+import baseball as _bb12
+import nfl_game_sim as _ng12
+import cfb_board as _cb12
+import ufc_combo as _uc12
+import combine as _cm12
+ck("no maker compounds a taker fee per leg any more; every payout block charges the one combo fee",
+   all("min(99.9, c +" not in _i12.getsource(f) for f in
+       (_bb12._kalshi_payout, _ng12.build_parlay, _cb12.build_parlay, _uc12._kalshi_summary, _cm12._item))
+   and all("combo_net_payout(" in _i12.getsource(f) for f in
+           (_bb12._kalshi_payout, _ng12.build_parlay, _cb12.build_parlay, _uc12._kalshi_summary))
+   and "combo_cost(" in _i12.getsource(_cm12._item)
+   and "bundle_cost(b[\"legs\"], net=False)" in _i12.getsource(_ce12.frontier))
+_apy12 = open(_os.path.join(_root, "app.py")).read()
+ck("the Optimal button on all four makers reaches for what Kalshi pays, and every preset route says who is quoting",
+   _apy12.count('payout_basis="market" if _opt else "fair"') == 4
+   and _apy12.count('"quoting": _preset_quoting(payload)') == 3
+   and "payout_basis" in _i12.signature(_cb12.build_parlay).parameters)
+# The collection feed: eligible events AND who is quoting them right now.
+_og12 = _k12._get_json
+_k12._get_json = lambda url, timeout=10: {"multivariate_contracts": [
+    {"associated_event_tickers": ["KXMLBGAME-26SEP09AAA", "KXMLBTOTAL-26SEP09AAA"],
+     "associated_events": [{"ticker": "KXMLBGAME-26SEP09AAA", "active_quoters": ["mm1", "mm2"]},
+                           {"ticker": "KXMLBTOTAL-26SEP09AAA", "active_quoters": []}]}]}
+_k12._combo_cache.update({"ts": 0.0, "events": None, "quoters": None})
+try:
+    _ev12 = _k12.combo_events()
+    _qs12 = _k12.combo_quoters()
+    _q12 = _ce12.quote_status({"groups": [{"legs": [
+        {"ticker": "KXMLBGAME-26SEP09AAA-AAA"}, {"ticker": "KXMLBTOTAL-26SEP09AAA-T7"},
+        {"ticker": "KXMLBGAME-26SEP09AAA-BBB"}, {"ticker": None}]}]})
+    _k12._combo_cache.update({"ts": 0.0, "events": None, "quoters": None})
+    _k12._get_json = lambda url, timeout=10: (_ for _ in ()).throw(RuntimeError("down"))
+    _q12b = _ce12.quote_status({"groups": [{"legs": [{"ticker": "KXMLBGAME-26SEP09AAA-AAA"}]}]})
+finally:
+    _k12._get_json = _og12
+    _k12._combo_cache.update({"ts": 0.0, "events": None, "quoters": None})
+ck("the collection feed yields the eligible events and, per event, how many makers are quoting",
+   _ev12 == {"KXMLBGAME-26SEP09AAA", "KXMLBTOTAL-26SEP09AAA"}
+   and _qs12 == {"KXMLBGAME-26SEP09AAA": 2, "KXMLBTOTAL-26SEP09AAA": 0})
+ck("quote_status counts a slip's events once each and names the ones nobody is quoting; a dead feed is unknown, not 'nobody'",
+   _q12 == {"events": 2, "quoted": 1, "unquoted": ["KXMLBTOTAL-26SEP09AAA"]} and _q12b is None)
+ck("the optimal sweep ranks a missed market-basis rung by Kalshi's payout, not the fair one",
+   _ce12._opt_key({"payout_reached": False, "payout_basis": "market",
+                   "kalshi_payout_net_x": 150.0, "fair_payout_x": 400.0})[2] == 150.0
+   and _ce12._opt_key({"payout_reached": False, "fair_payout_x": 400.0})[2] == 400.0)
+_js12 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, names the rung's bar, and shows who is quoting",
+   "Kalshi pays <b>" not in _js12 and "Legs multiply to <b>" in _js12
+   and "stacked: expect a quote well under this" in _js12
+   and "same-game stack: Kalshi quotes a combo through a market maker" in _js12
+   and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
+   and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
+   and _js12.count("(d.quoting || {})[pid]") == 3
+   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
