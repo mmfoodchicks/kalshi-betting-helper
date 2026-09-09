@@ -6745,7 +6745,7 @@ function renderNflDfs(d) {
          <span>top 1% <b>${cs.top1_pct}%</b></span>
          <span>ROI <b class="${cs.roi_pct >= 0 ? "ev pos" : "ev neg"}">${cs.roi_pct >= 0 ? "+" : ""}${cs.roi_pct}%</b></span>
        </div>` : "";
-  const rows = d.lineup.map((p) => {
+  const rowsOf = (lineup) => (lineup || []).map((p) => {
     const own = p.own != null ? `<span class="small" style="color:var(--faint)"> · own ${p.own}%</span>` : "";
     return `<div class="nfl-dfsrow">
       <span class="nfl-dfsslot">${p.slot}</span>
@@ -6755,6 +6755,22 @@ function renderNflDfs(d) {
       <span class="nfl-dfsnum">ceil <b class="ev pos">${p.ceiling}</b>${own}</span>
     </div>`;
   }).join("");
+  const rows = rowsOf(d.lineup);
+  // A showdown multi-entry: one build per captain (the server spreads the
+  // captains, which is how a big single-game GPP is played), each scored
+  // against the same simulated field. Entry 1 is also the card's own numbers.
+  const csLine = (c) => c
+    ? `<div class="cnums" style="margin:4px 0"><span>top 1% <b>${c.top1_pct}%</b></span><span>cash <b>${c.cash_pct}%</b></span><span>ROI <b class="${c.roi_pct >= 0 ? "ev pos" : "ev neg"}">${c.roi_pct >= 0 ? "+" : ""}${c.roi_pct}%</b></span></div>` : "";
+  const entriesHtml = (d.entries && d.entries.length > 1)
+    ? `<div style="margin-top:10px"><b>${d.entries.length} entries, one captain each</b> <span class="small" style="color:var(--muted)">- best captain first; every entry obeys the rules below</span></div>`
+      + d.entries.map((e, i) => `<div style="margin-top:8px;padding:6px 8px;border:1px solid var(--line,#333);border-radius:8px">
+        <div><b>Entry ${i + 1} · ${e.captain} captain</b> <span class="small" style="color:var(--muted)">$${nf(e.salary)} used, $${nf(e.salary_left)} left · proj ${e.proj} · floor ${e.floor} · median ${e.median} · ceiling <b>${e.ceiling}</b></span></div>
+        ${csLine(e.contest_sim)}
+        <div class="nfl-dfslist">${rowsOf(e.lineup)}</div>
+      </div>`).join("")
+    : "";
+  const rulesHtml = (d.rules && d.rules.length)
+    ? `<div class="small" style="margin-top:6px;color:var(--muted)">📐 rules: ${d.rules.map(escapeHtml).join(" · ")}</div>` : "";
   const un = (d.unmatched && d.unmatched.length)
     ? `<div class="small" style="color:var(--muted);margin-top:6px">${d.unmatched.length} player(s) not in the Sleeper projection - used the CSV's own number (no correlation): ${d.unmatched.slice(0, 6).join(", ")}${d.unmatched.length > 6 ? "…" : ""}</div>` : "";
   // The roster gate names who it left out and why -- a practice-squad
@@ -6778,10 +6794,11 @@ function renderNflDfs(d) {
       <span>ceiling <b class="ev pos">${d.ceiling}</b></span>
     </div>
     ${csHead}
-    <div class="nfl-dfslist">${rows}</div>
+    ${entriesHtml || `<div class="nfl-dfslist">${rows}</div>`}
+    ${rulesHtml}
     ${un}${ex}
     ${flatNote}
-    <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}</div>
+    <div class="small" style="margin-top:6px;color:var(--muted)">${d.note}${d.n_sims ? ` ${nf(d.n_sims)} sims of this game.` : ""}</div>
   </div>`;
 }
 
@@ -7917,10 +7934,18 @@ function dfsRecommend(apply) {
   const entries = parseInt(($("dfsEntries") || {}).value, 10) || 0;
   const sport = ($("dfsSport") || {}).value || "";
   if (!contest) { box.innerHTML = ""; return; }
-  let obj, sample, why;
+  let obj, sample, why, lineups = null;
+  const showdown = !!(_dfsDkShape && _dfsDkShape.showdown);
   if (contest === "double_up") {
     obj = "projection"; sample = 600;
     why = "a double-up pays half the field, so the median score wins it - build for the highest average, not the boom";
+  } else if (showdown && sport === "nfl") {
+    // One game: the server simulates it deep and builds one entry per
+    // captain under the showdown rules. Leverage is not offered here -- its
+    // ownership estimate saturates on a one-game pool and the record says a
+    // WR captain at a real price beats a fade at the captain slot.
+    obj = "ceiling"; sample = entries >= 50000 ? 2000 : 1200; lineups = entries >= 20000 ? 5 : 3;
+    why = `a showdown: ${lineups} entries with a different captain each (the way a big single-game GPP is played), every one under the construction rules, scored against one ${sample.toLocaleString()}-lineup field`;
   } else if (entries >= 100000) {
     obj = "leverage"; sample = 2500;
     why = `${entries.toLocaleString()} entries: thousands already hold the chalk ceiling build, so winning takes being different AND right - and a field this size is decided deep in the score distribution's tail, which a small sample can't map`;
@@ -7939,16 +7964,18 @@ function dfsRecommend(apply) {
   if (apply === true) {
     if ($("dfsObjective")) $("dfsObjective").value = obj;
     if ($("dfsField")) $("dfsField").value = sample;
+    if (lineups && $("dfsLineups")) $("dfsLineups").value = lineups;
   }
   const curObj = ($("dfsObjective") || {}).value;
   const curSm = parseInt(($("dfsField") || {}).value, 10) || 0;
   const already = curObj === obj && Math.abs(curSm - sample) < 100;
   const objLabel = { projection: "Cash (max projection)", ceiling: "GPP (max ceiling)", leverage: "GPP leverage" }[obj];
-  box.innerHTML = `<div class="dfs-note" style="margin:6px 0 2px">\ud83d\udca1 Recommended for ${escapeHtml(sport.toUpperCase())}: <b>${objLabel}</b> + sample <b>${sample.toLocaleString()}</b>${already ? (apply === true ? " \u2713 (applied)" : " \u2713 (set)") : ` <button class="track-mini" style="margin-left:6px" onclick="dfsApplyReco('${obj}',${sample})">Use these</button>`}<div class="small" style="color:var(--muted);margin-top:2px">${why}. ${m ? "The sample check in the look-back below is where that number comes from" : "No sample measurement for this sport yet - raise the sample if win%/ROI swing between identical runs; lower it for speed"}.</div></div>`;
+  box.innerHTML = `<div class="dfs-note" style="margin:6px 0 2px">\ud83d\udca1 Recommended for ${escapeHtml(sport.toUpperCase())}: <b>${objLabel}</b> + sample <b>${sample.toLocaleString()}</b>${lineups ? ` + <b>${lineups}</b> entries` : ""}${already ? (apply === true ? " \u2713 (applied)" : " \u2713 (set)") : ` <button class="track-mini" style="margin-left:6px" onclick="dfsApplyReco('${obj}',${sample},${lineups || 0})">Use these</button>`}<div class="small" style="color:var(--muted);margin-top:2px">${why}. ${m ? "The sample check in the look-back below is where that number comes from" : "No sample measurement for this sport yet - raise the sample if win%/ROI swing between identical runs; lower it for speed"}.</div></div>`;
 }
-window.dfsApplyReco = (obj, sample) => {
+window.dfsApplyReco = (obj, sample, lineups) => {
   if ($("dfsObjective")) $("dfsObjective").value = obj;
   if ($("dfsField")) $("dfsField").value = sample;
+  if (lineups && $("dfsLineups")) $("dfsLineups").value = lineups;
   dfsRecommend();
 };
 (function () {

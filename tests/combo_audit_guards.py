@@ -10697,7 +10697,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11897,7 +11897,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12489,7 +12489,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12590,7 +12590,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12689,7 +12689,7 @@ ck("showdown's leverage discount applies to a defense too, and a lineup with no 
    abs(_nd13._value_sd({"pos": "DST", "ceiling": 20.0, "own": 40.0}, "leverage") - 20.0 * (1 - 0.28)) < 1e-9
    and _nd13._value({"pos": "DST", "ceiling": 20.0, "own": 40.0}, "leverage") == 20.0
    and _nd13._joint_score({"arr": None, "pos": "QB"}, [], "ceiling", range(10)) is None
-   and "_value_sd(" in _insp.getsource(_nd13._sd_fill) and "_value_sd(" in _insp.getsource(_nd13.optimize_showdown))
+   and "_value_sd(" in _insp.getsource(_nd13._sd_fill) and "_value_sd(" in _insp.getsource(_nd13._showdown_bests))
 
 # The construction rules the showdown record supports (ETR's top-1% review),
 # added after the first two runs on the opener captained the Seahawks kicker
@@ -12721,11 +12721,68 @@ _dead13 = _nd13._sd_fill(_fp13, 20000, "ceiling", _r13, "NE", greedy=True,
                          cap_p={"name": "C", "pos": "QB", "team": "NE", "salary": 10000})
 ck("a fill that dies leaves every player free for the next one (it used to lock the expensive ones out)",
    _dead13 is None and all(p["_free"] for p in _fp13))
+_te1 = {"name": "TE1 B", "pos": "TE", "team": "SEA", "salary": 4600, "depth": "TE1"}
+_te2 = {"name": "TE2 B", "pos": "TE", "team": "SEA", "salary": 1600, "depth": "TE2"}
+_te2b = {"name": "TE2 B rich", "pos": "TE", "team": "SEA", "salary": 4000, "depth": "TE2"}
+_wr3 = {"name": "WR3 A", "pos": "WR", "team": "NE", "salary": 1800, "depth": "WR3"}
+ck("one tight end per team, and a punt must hold a role (a TE2 at $1,600 is out, the same TE2 at a real price is in)",
+   _nd13._sd_allowed(_te1, _capq, []) and not _nd13._sd_allowed(_te2, _capq, [_te1])
+   and not _nd13._sd_allowed(_te2, _capq, []) and _nd13._sd_allowed(_te2b, _capq, [])
+   and not _nd13._sd_allowed(_te2b, _capq, [_te1])
+   and _nd13._sd_allowed(_wr3, _capq, [])
+   and not _nd13._sd_allowed(dict(_wr3, depth="WR4"), _capq, [])
+   and _nd13._sd_allowed(dict(_wr3, depth=None), _capq, [])
+   and _nd13._sd_allowed(dict(_wr3, depth="RB2\u00b7Q", pos="RB"), _capq, []))
 ck("a GPP build never captains a kicker or a defense; cash keeps the whole captain pool",
    _gpp13 and _gpp13[0]["pos"] in _nd13._SD_GPP_CPT_POS and _cash13 is not None
    and _nd13._SD_GPP_CPT_POS == {"QB", "RB", "WR", "TE"}
-   and "cap_p=cap_p" in _insp.getsource(_nd13.optimize_showdown)
+   and "cap_p=cap_p" in _insp.getsource(_nd13._showdown_bests)
    and "_sd_allowed(p, cap_p, picked)" in _insp.getsource(_nd13._sd_fill))
+
+# Showdown for every slate, in the app: one game simulated deep, an entry per
+# captain scored against one shared field, the rules in the response, the tab
+# recommending the spread. The owner: "how is it going to do showdowns, not
+# just this one tonight, Sunday night football, Monday, Thursday, etc?"
+ck("the weekly pool can be narrowed to the game two clubs play (a showdown is one game, simulated deep)",
+   "teams" in _insp.signature(_ns13.player_pool).parameters
+   and "tuple(sorted(want)) or None" in _insp.getsource(_ns13.player_pool)
+   and _nd13._SD_SIMS >= 10000 and "teams=teams" in _insp.getsource(_nd13._build_showdown))
+_r13.seed(9)
+_multi13 = _nd13.optimize_showdown_multi(list(_pl13), _cap13, "ceiling", 3, restarts=40)
+_caps13 = [c[0]["name"] for c in _multi13]
+ck("a multi-entry is one build per captain, distinct captains, none of them a kicker, a defense or a cheap seat",
+   len(_multi13) == 3 and len(set(_caps13)) == 3
+   and all(c[0]["pos"] in _nd13._SD_GPP_CPT_POS and c[0]["cpt_salary"] >= _nd13._SD_MIN_CPT_SALARY
+           and c[2] <= _cap13 and len(c[1]) == 5 for c in _multi13),
+   str(_caps13))
+_r13.seed(9)
+_one13 = _nd13.optimize_showdown(list(_pl13), _cap13, "ceiling", restarts=40)
+ck("the single build is the multi-entry's first entry", _one13 and _one13[0]["name"] == _caps13[0])
+# several lineups against one field give the same numbers as one at a time
+_yours13 = [[("CPT", c[0]["name"])] + [("FLEX", p["name"]) for p in c[1]] for c in _multi13]
+_many13 = _nd13._showdown_contest_sims(_yours13, _pl13, "gpp", 20.0, 100000, 2000000.0, 1000000.0,
+                                       sample_size=150, n_iter=60)
+_solo13 = [_nd13._showdown_contest_sim(y, _pl13, "gpp", 20.0, 100000, 2000000.0, 1000000.0,
+                                       sample_size=150, n_iter=60) for y in _yours13]
+ck("scoring several entries against one shared field matches scoring each alone, field and all",
+   len(_many13) == 3 and all(m and s_ for m, s_ in zip(_many13, _solo13))
+   and all(m["sample_size"] == _many13[0]["sample_size"] for m in _many13)
+   and abs(_many13[0]["top1_pct"] - _solo13[0]["top1_pct"]) < 1e-9
+   and abs(_many13[0]["roi_pct"] - _solo13[0]["roi_pct"]) < 1e-9)
+_bs13 = _insp.getsource(_nd13._build_showdown)
+ck("the showdown build returns an entry per captain ranked by the contest sim, the rules, and entry 1 as its own numbers",
+   "n_lineups=n_lineups" in _insp.getsource(_nd13.build)
+   and '"entries": entries' in _bs13 and '"rules": list(_SD_RULES)' in _bs13
+   and "_showdown_contest_sims(all_slots" in _bs13 and 'get("top1_pct")' in _bs13
+   and "rows = entries[0][\"lineup\"]" in _bs13 and len(_nd13._SD_RULES) >= 5
+   and _nd13._SD_MAX_ENTRIES >= 5)
+_js13 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab draws every entry with its captain, depth tags and contest line, lists the rules, and recommends the captain spread for a showdown",
+   "entries, one captain each" in _js13 and "const rowsOf = (lineup)" in _js13
+   and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
+   and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
+   and '$("dfsLineups").value = lineups' in _js13
+   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

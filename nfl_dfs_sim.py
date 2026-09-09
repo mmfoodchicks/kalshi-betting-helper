@@ -573,16 +573,26 @@ def _kicker_arr(k, off, n, rng):
     return [round(x * f, 2) for x in out]
 
 
-def player_pool(week, n=3000, preseason=False, season=None):
+def player_pool(week, n=3000, preseason=False, season=None, teams=None):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
-    Cached 30m (this is the heavy correlated sim over the whole slate)."""
+    Cached 30m (this is the heavy correlated sim over the whole slate).
+
+    `teams` narrows the pool to the games those clubs play in -- a showdown
+    is one game, and simulating sixteen at 3,000 draws to build it was both
+    the wrong cost and the wrong depth: the one game gets simulated deep
+    instead (nfl_dfs._SD_SIMS), on its own cache key."""
     season = season or _season()      # a backtest names a past season
+    want = frozenset(str(t).upper() for t in (teams or ()) if t)
 
     def build():
         games = (preseason_games(str(season), week) if preseason
                  else weekly_games(str(season), week))
+        if games and want:
+            games = {gid: g for gid, g in games.items()
+                     if want & ({str(t).upper() for t in (g.get("teams") or [])}
+                                | {str(pl.get("team")).upper() for pl in (g.get("players") or [])})}
         if not games:
             return None
         pool = {}
@@ -678,7 +688,8 @@ def player_pool(week, n=3000, preseason=False, season=None):
                           "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
-    return _cached(("nfl_pool", season, week, n, bool(preseason)), 1800, build)
+    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None),
+                   1800, build)
 
 
 # ---- Week board (all games simmed) -----------------------------------------

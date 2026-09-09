@@ -426,6 +426,26 @@ _SD_PUNT_SALARY = 2000
 # ceiling tied a defense captain with a Maye stack on the joint rule. Cash
 # keeps the full pool: a defense captain by projection is a different bet.
 _SD_GPP_CPT_POS = {"QB", "RB", "WR", "TE"}
+# And a GPP captain is a real price: the winning captain paid at least
+# $11,400 in 17 of 19 slates ETR reviewed, averaging about $13,000-$14,800.
+# A cheap captain is what the cap arithmetic likes (it frees room for every
+# stud at FLEX) and what the record says does not win: on the opener the
+# sim's second entry captained a $6,900 tight end beside both quarterbacks.
+# Applied only when the pool offers three captains at the price, so a
+# flat-priced exhibition slate is not emptied.
+_SD_MIN_CPT_SALARY = 11000
+# The owner, on the first entries: "It's also not smart to have your leg
+# people both the same position for the same team. Barner and Arroyo are
+# both tight ends for the Seahawks ... adding the barely used 2nd string
+# pass blocking TE is not the best idea." Two tight ends from one team
+# split one role -- unlike two receivers, who can both be a quarterback's
+# first read on different drives -- so one per team. And a punt-priced
+# player is only a play when he has a job: a second-string tight end is a
+# blocker with a touchdown lottery ticket, and the roster gate keeps him in
+# the pool (a TE2 can be a real name at a real price) without making him a
+# punt. Punts must carry a depth tag of RB1-2, WR1-3 or TE1.
+_SD_MAX_TE_PER_TEAM = 1
+_SD_PUNT_ROLES = {"RB1", "RB2", "WR1", "WR2", "WR3", "TE1"}
 
 
 def _sd_allowed(p, cap_p, picked):
@@ -443,6 +463,16 @@ def _sd_allowed(p, cap_p, picked):
         n = (1 if cap_p.get("salary", 0) <= _SD_PUNT_SALARY else 0) \
             + sum(1 for q in picked if q["salary"] <= _SD_PUNT_SALARY)
         if n >= _SD_MAX_PUNTS:
+            return False
+        # A punt needs a role. Rows carry the roster gate's tag (WR3, TE2,
+        # RB1·Q ...); one the gate did not tag (no roster source) passes.
+        tag = (p.get("depth") or "").split("·")[0]
+        if tag and tag not in _SD_PUNT_ROLES:
+            return False
+    if pos == "TE":
+        n = (1 if cap_p.get("pos") == "TE" and cap_p.get("team") == p.get("team") else 0) \
+            + sum(1 for q in picked if q.get("pos") == "TE" and q.get("team") == p.get("team"))
+        if n >= _SD_MAX_TE_PER_TEAM:
             return False
     return True
 
@@ -530,28 +560,40 @@ def _joint_score(cap_p, picked, objective, iters):
     return 0.5 * tot[int(0.9 * len(tot))] + 0.5 * tot[len(tot) // 2]
 
 
-def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
-    """Best 1 CPT + 5 FLEX under the cap. Every player is tried as captain --
-    the pool is one game, so that is only a few dozen -- and each captaincy gets
-    one greedy fill plus a batch of randomized ones. Cash (projection) keeps
-    the additive sum; the GPP objectives re-score the strongest candidates on
-    their joint sims (_joint_score) and take the best of those."""
+# Candidates re-scored jointly PER CAPTAIN. A multi-entry in a big showdown
+# spreads captains across entries (one build per captain), so the search
+# keeps the best lineup for every captain rather than one global winner.
+_JOINT_PER_CPT = 40
+
+
+def _showdown_bests(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
+    """[(score, cap_p, picked, sal), ...] -- the best lineup for EACH captain,
+    best first. Every player is tried as captain (the pool is one game, so
+    that is only a few dozen); each captaincy gets one greedy fill plus a
+    batch of randomized ones, under the construction rules. Cash
+    (projection) ranks on the additive sum; the GPP objectives re-score each
+    captain's strongest candidates on their joint sims (_joint_score)."""
     rng = rng or random
     if len(players) < len(SHOWDOWN_ROSTER):
-        return None
+        return []
     for p in players:
         p["_free"] = True
-    best = None
-    cands = {}
+    gpp = objective in ("ceiling", "leverage")
+    rich = sum(1 for p in players if p.get("pos") in _SD_GPP_CPT_POS
+               and p["cpt_salary"] >= _SD_MIN_CPT_SALARY) >= 3
+    per = {}                                    # captain name -> {frozenset: cand}
     for cap_p in players:
         budget = cap - cap_p["cpt_salary"]
         if budget < 0:
             continue
-        if objective in ("ceiling", "leverage") and cap_p.get("pos") not in _SD_GPP_CPT_POS:
+        if gpp and cap_p.get("pos") not in _SD_GPP_CPT_POS:
             continue                        # no K / DST captain in a GPP build
+        if gpp and rich and cap_p["cpt_salary"] < _SD_MIN_CPT_SALARY:
+            continue                        # a GPP captain is a real price
         cap_p["_free"] = False
         others = [p for p in players if p is not cap_p]
         cap_val = CPT_MULT * _value_sd(cap_p, objective)
+        cands = per.setdefault(cap_p["name"], {})
         for i in range(restarts + 1):
             r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0),
                          cap_p=cap_p)
@@ -559,31 +601,49 @@ def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
                 continue
             picked, sal = r
             score = cap_val + sum(_value_sd(p, objective) for p in picked)
-            if best is None or score > best[0]:
-                best = (score, cap_p, list(picked), sal + cap_p["cpt_salary"])
-            key = (cap_p["name"], frozenset(p["name"] for p in picked))
+            key = frozenset(p["name"] for p in picked)
             if key not in cands or score > cands[key][0]:
                 cands[key] = (score, cap_p, list(picked), sal + cap_p["cpt_salary"])
         cap_p["_free"] = True
-    if not best:
+    out = []
+    for _nm, cands in per.items():
+        if not cands:
+            continue
+        ranked = sorted(cands.values(), key=lambda c: -c[0])
+        best = ranked[0]
+        if gpp:
+            top = ranked[:_JOINT_PER_CPT]
+            L = min((len(p.get("arr") or []) for c in top for p in [c[1]] + c[2]), default=0)
+            if L > 0:
+                step = max(1, L // _JOINT_ITERS)
+                iters = range(0, L, step)
+                jbest = None
+                for c in top:
+                    js = _joint_score(c[1], c[2], objective, iters)
+                    if js is not None and (jbest is None or js > jbest[0]):
+                        jbest = (js, c[1], c[2], c[3])
+                if jbest is not None:
+                    best = jbest
+        out.append(best)
+    out.sort(key=lambda c: -c[0])
+    return out
+
+
+def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
+    """Best 1 CPT + 5 FLEX under the cap (see _showdown_bests)."""
+    per = _showdown_bests(players, cap, objective, restarts=restarts, rng=rng)
+    if not per:
         return None
-    if objective in ("ceiling", "leverage") and cands:
-        top = sorted(cands.values(), key=lambda c: -c[0])[:_JOINT_KEEP]
-        L = min((len(p.get("arr") or []) for c in top for p in [c[1]] + c[2]), default=0)
-        if L > 0:
-            step = max(1, L // _JOINT_ITERS)
-            iters = range(0, L, step)
-            jbest = None
-            for c in top:
-                js = _joint_score(c[1], c[2], objective, iters)
-                if js is None:
-                    continue
-                if jbest is None or js > jbest[0]:
-                    jbest = (js, c[1], c[2], c[3])
-            if jbest is not None:
-                best = jbest
-    _score, cap_p, picked, sal = best
+    _score, cap_p, picked, sal = per[0]
     return cap_p, picked, sal
+
+
+def optimize_showdown_multi(players, cap, objective, n, restarts=_SD_RESTARTS, rng=None):
+    """The best lineup for each of the top `n` captains, best captain first --
+    a multi-entry that spreads captains, which is how a big showdown is
+    played: "be a rare lineup, not just rare players"."""
+    per = _showdown_bests(players, cap, objective, restarts=restarts, rng=rng)
+    return [(c[1], c[2], c[3]) for c in per[:max(1, int(n))]]
 
 
 def _by_pos(players):
@@ -908,13 +968,27 @@ def _sd_field_lineup(players, cap, own_w, rng, tries=10):
 
 def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
                           prize_pool, first_prize, sample_size=400, n_iter=300):
-    """Same maths as the classic contest sim, over showdown rosters. The captain's
+    """One lineup against a simulated field (see _showdown_contest_sims)."""
+    got = _showdown_contest_sims([your], players, contest, entry_fee, contest_size,
+                                 prize_pool, first_prize, sample_size=sample_size,
+                                 n_iter=n_iter)
+    return got[0] if got else None
+
+
+def _showdown_contest_sims(yours, players, contest, entry_fee, contest_size,
+                           prize_pool, first_prize, sample_size=400, n_iter=300):
+    """Same maths as the classic contest sim, over showdown rosters, for
+    SEVERAL lineups against ONE field: the field's per-iteration score
+    distribution is the expensive part (sample_size lineups x n_iter), and it
+    is the same field whichever of our entries is being scored, so a
+    five-captain multi-entry costs about what one lineup did. The captain's
     1.5x has to be applied per SLOT, not per player -- the same name scores
-    differently depending on where the field put him."""
+    differently depending on where the field put him. Returns one result per
+    lineup (None where nothing could be scored)."""
     import statistics
     arr = {p["name"]: p.get("arr") for p in players if p.get("arr")}
-    if not arr:
-        return None
+    if not arr or not yours:
+        return [None for _ in yours]
     L = min(len(a) for a in arr.values())
     own_w = {p["name"]: max(0.1, p.get("own", 8.0)) for p in players}
     proj_of = {p["name"]: p.get("proj", 0.0) for p in players}
@@ -924,7 +998,11 @@ def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
         return sum((CPT_MULT if s == "CPT" else 1.0) * (arr.get(nm) or [0])[it % L]
                    for s, nm in slots)
 
-    ref = sum((CPT_MULT if s == "CPT" else 1.0) * proj_of.get(nm, 0.0) for s, nm in your)
+    # The field is trimmed to lineups projecting near OUR level (the bottom of
+    # a real field never threatens a top-1% finish); the bar is set off the
+    # strongest of our entries so every entry meets the same opponents.
+    ref = max(sum((CPT_MULT if s == "CPT" else 1.0) * proj_of.get(nm, 0.0) for s, nm in y)
+              for y in yours)
     floor_q = 0.84 * ref
     field, attempts = [], 0
     while len(field) < sample_size and attempts < sample_size * 40:
@@ -934,7 +1012,7 @@ def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
                       for s, nm in fl) >= floor_q:
             field.append(fl)
     if len(field) < 30:
-        return None
+        return [None for _ in yours]
     C = max(2, int(contest_size or (len(field) + 1)))
     pool = float(prize_pool) if prize_pool else entry_fee * C * 0.85
     if contest == "double_up":
@@ -946,42 +1024,70 @@ def _showdown_contest_sim(your, players, contest, entry_fee, contest_size,
         first = float(first_prize) if first_prize else 0.20 * pool
         payout, places = _gpp_curve(C, pool, first, entry_fee)
     grid = _rank_grid(places)
-    win = cash = ret = top1 = 0.0
     top1_line = max(1, int(0.01 * C))
+    acc = [[0.0, 0.0, 0.0, 0.0] for _ in yours]        # win, cash, ret, top1
     for it in range(n_iter):
         fs = [sc(f, it) for f in field]
         mu = statistics.fmean(fs); sd = statistics.pstdev(fs) or 1.0
-        ys = sc(your, it)
-        q = max(1e-12, min(1.0, 1.0 - _ncdf((ys - mu) / sd)))
-        winp = math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
-        win += winp
-        mr = 1.0 + (C - 1) * q
-        sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
-        cash += _ncdf((places - mr) / sr)
-        top1 += _ncdf((top1_line - mr) / sr)
-        if contest == "double_up":
-            ret += each * _ncdf((places - mr) / sr)
-        else:
-            ev = first * winp
-            for r, wd in grid:
-                ev += payout(r) * _npdf((r - mr) / sr) / sr * wd
-            ret += ev
-    ret /= n_iter
-    return {"win_pct": round(100 * win / n_iter, 4), "cash_pct": round(100 * cash / n_iter, 1),
-            "top1_pct": round(100 * top1 / n_iter, 2),
-            "roi_pct": round(100 * (ret - entry_fee) / entry_fee, 1),
-            "avg_return": round(ret, 2), "sample_size": len(field), "entries": C,
-            "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
-            "first_prize": round(first), "places_paid": places}
+        for k, your in enumerate(yours):
+            ys = sc(your, it)
+            q = max(1e-12, min(1.0, 1.0 - _ncdf((ys - mu) / sd)))
+            winp = math.exp((C - 1) * math.log(1.0 - q)) if q < 1.0 else 0.0
+            mr = 1.0 + (C - 1) * q
+            sr = math.sqrt(max(1e-9, (C - 1) * q * (1.0 - q)))
+            a = acc[k]
+            a[0] += winp
+            a[1] += _ncdf((places - mr) / sr)
+            a[3] += _ncdf((top1_line - mr) / sr)
+            if contest == "double_up":
+                a[2] += each * _ncdf((places - mr) / sr)
+            else:
+                ev = first * winp
+                for r, wd in grid:
+                    ev += payout(r) * _npdf((r - mr) / sr) / sr * wd
+                a[2] += ev
+    out = []
+    for win, cash, ret, top1 in acc:
+        ret /= n_iter
+        out.append({"win_pct": round(100 * win / n_iter, 4), "cash_pct": round(100 * cash / n_iter, 1),
+                    "top1_pct": round(100 * top1 / n_iter, 2),
+                    "roi_pct": round(100 * (ret - entry_fee) / entry_fee, 1),
+                    "avg_return": round(ret, 2), "sample_size": len(field), "entries": C,
+                    "contest": contest, "entry_fee": entry_fee, "prize_pool": round(pool),
+                    "first_prize": round(first), "places_paid": places})
+    return out
+
+
+# A showdown is one game: simulate that game deep instead of sixteen games
+# shallow. 12,000 draws is what the contest sim's tail needs (a 132k-entry
+# field is decided past the 99th percentile) at a few seconds on one core;
+# the classic pool stays at its 3,000 across the week.
+_SD_SIMS = 12000
+# Contest-sim iterations for a showdown build. The field's per-iteration score
+# distribution is shared by every entry (_showdown_contest_sims), so this is
+# paid once per build, not per entry.
+_SD_ITERS = 800
+_SD_MAX_ENTRIES = 8
+_SD_RULES = (
+    "no defense beside the opposing team's captain",
+    "no kicker or defense as a GPP captain",
+    "at most two kickers/defenses and two $2,000-or-under punts",
+    "one tight end per team",
+    "a punt must hold a role: RB1-2, WR1-3 or TE1 on the depth chart",
+    "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out",
+)
 
 
 def _build_showdown(csv_players, week, objective, contest, contest_size,
-                    entry_fee, prize_pool, first_prize, preseason, field_size=None):
+                    entry_fee, prize_pool, first_prize, preseason, field_size=None,
+                    n_lineups=1):
     ents = showdown_pool(csv_players)
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
                          f"(got {len(ents)} after dropping OUT/IR)"}
-    pool = nfl_dfs_sim.player_pool(week, preseason=preseason) or {}
+    teams = {e.get("team") for e in ents if e.get("team")}
+    pool = nfl_dfs_sim.player_pool(week, n=_SD_SIMS, preseason=preseason,
+                                   teams=teams) or {}
     _nidx, _norm = _norm_index(pool)
     _deep = _deep_fallback(pool, preseason)
     unmatched, excluded = [], []
@@ -1018,33 +1124,64 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
                          f"players (got {len(ents)} after the depth chart)",
                 "excluded": excluded[:40]}
     _set_ownership(ents, n_slots=len(SHOWDOWN_ROSTER))
-    got = optimize_showdown(ents, CAP, objective)
-    if not got:
+    n_entries = max(1, min(_SD_MAX_ENTRIES, int(n_lineups or 1)))
+    builds = optimize_showdown_multi(ents, CAP, objective, n_entries)
+    if not builds:
         return {"error": "no valid showdown lineup under the cap"}
-    cap_p, picked, sal = got
-    slots = [("CPT", cap_p["name"])] + [("FLEX", p["name"]) for p in picked]
+    all_slots = [[("CPT", c["name"])] + [("FLEX", p["name"]) for p in pk] for c, pk, _s in builds]
+    csims = [None for _ in builds]
+    if contest:
+        try:
+            csims = _showdown_contest_sims(all_slots, ents, contest, entry_fee, contest_size,
+                                           prize_pool, first_prize,
+                                           sample_size=max(150, min(2000, int(field_size or 400))),
+                                           n_iter=_SD_ITERS)
+        except Exception as _e:
+            errlog.note("NFLDFS-sd-contest", _e)
+            csims = [None for _ in builds]
+    entries = []
+    for (cap_p, picked, sal), csim in zip(builds, csims):
+        lineup = [cap_p] + picked
+        L = min(len(p["arr"]) for p in lineup)
+        totals = [CPT_MULT * cap_p["arr"][i] + sum(p["arr"][i] for p in picked)
+                  for i in range(L)]
+        rows = []
+        for slot, p in [("CPT", cap_p)] + [("FLEX", q) for q in picked]:
+            mult = CPT_MULT if slot == "CPT" else 1.0
+            rows.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
+                         "depth": p.get("depth"),
+                         "salary": p["cpt_salary"] if slot == "CPT" else p["salary"],
+                         "proj": round(mult * p["proj"], 1),
+                         "ceiling": round(mult * p["ceiling"], 1),
+                         "floor": round(mult * p["floor"], 1), "own": p.get("own")})
+        entries.append({"captain": cap_p["name"], "captain_pos": cap_p["pos"],
+                        "captain_team": cap_p["team"],
+                        "lineup": rows, "salary": sal, "salary_left": CAP - sal,
+                        "proj": round(sum(r["proj"] for r in rows), 1),
+                        "floor": round(_pct(totals, 0.10), 1),
+                        "median": round(_pct(totals, 0.50), 1),
+                        "ceiling": round(_pct(totals, 0.90), 1),
+                        "max": round(max(totals), 1),
+                        "teams": sorted({p["team"] for p in lineup if p["team"]}),
+                        "contest_sim": csim})
+    # With a contest to score against, the entries rank by their chance of a
+    # top-1% finish in it; without one, by the objective's own joint score.
+    if any(e.get("contest_sim") for e in entries):
+        order = sorted(range(len(entries)),
+                       key=lambda i: -((entries[i]["contest_sim"] or {}).get("top1_pct") or 0.0))
+        entries = [entries[i] for i in order]
+        builds = [builds[i] for i in order]
+        csims = [csims[i] for i in order]
+    # Entry 1 is the build; the top-level fields carry it so every reader of
+    # a single-lineup result (the look-back, the card) is unchanged.
+    cap_p, picked, sal = builds[0]
     lineup = [cap_p] + picked
     L = min(len(p["arr"]) for p in lineup)
     totals = [CPT_MULT * cap_p["arr"][i] + sum(p["arr"][i] for p in picked)
               for i in range(L)]
-    csim = None
-    if contest:
-        try:
-            csim = _showdown_contest_sim(slots, ents, contest, entry_fee, contest_size,
-                                         prize_pool, first_prize,
-                                         sample_size=max(150, min(2000, int(field_size or 400))))
-        except Exception:
-            csim = None
-    rows = []
-    for slot, p in [("CPT", cap_p)] + [("FLEX", q) for q in picked]:
-        mult = CPT_MULT if slot == "CPT" else 1.0
-        rows.append({"slot": slot, "name": p["name"], "pos": p["pos"], "team": p["team"],
-                     "depth": p.get("depth"),
-                     "salary": p["cpt_salary"] if slot == "CPT" else p["salary"],
-                     "proj": round(mult * p["proj"], 1),
-                     "ceiling": round(mult * p["ceiling"], 1),
-                     "floor": round(mult * p["floor"], 1), "own": p.get("own")})
-    teams = sorted({p["team"] for p in lineup if p["team"]})
+    csim = csims[0]
+    rows = entries[0]["lineup"]
+    teams = entries[0]["teams"]
     # Flat pricing changes what the optimizer is solving. With one salary for the
     # whole pool the knapsack dissolves: there is no value play, no salary saver,
     # nothing to punt, and points-per-dollar is a constant. Every lineup that
@@ -1074,6 +1211,8 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "ceiling": round(_pct(totals, 0.90), 1),
             "max": round(max(totals), 1),
             "lineup": rows, "contest_sim": csim,
+            "entries": entries, "n_entries": len(entries),
+            "rules": list(_SD_RULES), "n_sims": _SD_SIMS,
             "unmatched": unmatched[:20], "n_pool": len(ents),
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "teams": teams,
@@ -1106,7 +1245,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
     if use == "showdown":
         res = _build_showdown(csv_players, week, objective, contest, contest_size,
                               entry_fee, prize_pool, first_prize, preseason,
-                              field_size=field_size)
+                              field_size=field_size, n_lineups=n_lineups)
         if isinstance(res, dict) and "error" not in res:
             res["slate_mode"] = slate_note
         return res
