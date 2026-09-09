@@ -10688,7 +10688,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v117' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v118' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11888,7 +11888,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v117' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v118' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -11899,6 +11899,277 @@ ck("wired: every builder applies the correction, every big build is logged from 
    and "async function loadDfsLookback()" in _jslb2 and '"/api/dfs/lookback/grade"' in _jslb2
    and "initDfsLookback();" in _jslb2
    and _smlb._lineup_player({"name": "n", "salary": 1, "proj": 1.0, "roster_pos": "CNSTR"})["pos"] == "CNSTR")
+
+print()
+print("=" * 72)
+print("NFL game-day audit (2026-09-09): the grains of sand")
+print("=" * 72)
+# Everything below was found by measuring the week-1 slate against Kalshi's
+# own book and against 2025's real results, then fixed in one batch. Each
+# guard is the measurement's contract, so the bug it closes cannot reopen.
+import inspect as _insp9
+import statistics as _st9
+import kalshi as _kx9
+import kalshi_nfl as _kn9
+import nfl_game_sim as _ng9
+import nfl_track as _nt9
+import nfl_data as _nd9
+import nfl_season as _ns9
+import predlog as _pl9
+import store as _store9
+import errlog as _el9
+import racing as _rc9
+
+# --- 1. the Kalshi walk reads the whole series ------------------------------
+# Four pages of 200 was 800 markets; KXNFLRECYDS listed 956 and KXNFLREC 824
+# on the week-1 board, and the pages that fell off the end were the THURSDAY
+# game's (NE@SEA: 75 receiving-yard rungs and 24 reception rungs unpriced).
+_pages9 = {"n": 0}
+_orig_get9 = _kx9._get_json
+def _paged9(url):
+    _pages9["n"] += 1
+    k = _pages9["n"]
+    return {"markets": [{"ticker": f"T{k}-{i}"} for i in range(200)],
+            "cursor": f"c{k}" if k < 7 else None}
+_kx9._get_json = _paged9
+try:
+    _got9 = _kn9._fetch("KXNFLRECYDS")
+finally:
+    _kx9._get_json = _orig_get9
+ck("kalshi_nfl._fetch follows the cursor past the old four-page cap",
+   len(_got9) == 1400 and _pages9["n"] == 7 and _kn9._MAX_PAGES >= 10,
+   f"{len(_got9)} markets over {_pages9['n']} pages (was capped at 800)")
+_notes9 = []
+_orig_note9 = _el9.note
+_el9.note = lambda *a, **k: _notes9.append((a, k))
+_pages9["n"] = 0
+_kx9._get_json = lambda url: (_pages9.__setitem__("n", _pages9["n"] + 1) or
+                              {"markets": [{"ticker": "x"}], "cursor": "more"})
+try:
+    _kn9._fetch("KXNFLTD", max_pages=3)
+finally:
+    _kx9._get_json = _orig_get9
+    _el9.note = _orig_note9
+ck("...and a walk that runs out of pages with the cursor still open is logged, not ignored",
+   _pages9["n"] == 3 and any(a and a[0] == "KNFL-markets-truncated" for a, _k in _notes9))
+
+# --- 2. a team's D/ST touchdown market is not a player ----------------------
+def _fetch9(series):
+    if series == _kn9._ML_SERIES:
+        return [{"ticker": "KXNFLGAME-26SEP13ATLPIT-PIT", "event_ticker": "KXNFLGAME-26SEP13ATLPIT",
+                 "yes_ask_dollars": "0.60", "no_ask_dollars": "0.42", "close_time": "2026-09-15T17:00:00Z"},
+                {"ticker": "KXNFLGAME-26SEP13ATLPIT-ATL", "event_ticker": "KXNFLGAME-26SEP13ATLPIT",
+                 "yes_ask_dollars": "0.42", "no_ask_dollars": "0.60", "close_time": "2026-09-15T17:00:00Z"}]
+    if series == "KXNFLTD":
+        return [{"ticker": "KXNFLTD-26SEP13ATLPIT-ATLDST-1", "event_ticker": "KXNFLTD-26SEP13ATLPIT",
+                 "title": "ATL Falcons D/ST: 1+ touchdowns", "floor_strike": 0.5,
+                 "yes_ask_dollars": "0.30", "no_ask_dollars": "0.72"},
+                {"ticker": "KXNFLTD-26SEP13ATLPIT-ATLBROBINSON-1", "event_ticker": "KXNFLTD-26SEP13ATLPIT",
+                 "title": "Bijan Robinson: 1+ touchdowns", "floor_strike": 0.5,
+                 "yes_ask_dollars": "0.61", "no_ask_dollars": "0.41"}]
+    return []
+_orig_fetch9 = _kn9._fetch
+_kn9._fetch = _fetch9
+try:
+    _idx9 = _kn9._build()
+finally:
+    _kn9._fetch = _orig_fetch9
+_pl9k = list((_idx9.get("26SEP13ATLPIT") or {}).get("players") or {})
+ck("a 'D/ST: 1+ touchdowns' market is skipped by the player-prop parser",
+   _pl9k == [("td", "bijan robinson", 0.5)], _pl9k)
+
+# --- 3. the combo maker's player legs are Kalshi's rungs, priced ------------
+_ss9 = _insp9.getsource(_ng9._slate_sims)
+_bb9 = _insp9.getsource(_ng9._build_board)
+ck("the parlay sims hand simulate_game the prop ladder (every player leg carried no kref before)",
+   'prop_lad=(lad or {}).get("props")' in _ss9 and "nfl_parlay_sims4_" in _ss9,
+   "1,553 player legs carried a kref with the ladder against 0 without it; "
+   "the cache generation moved so a sims3 build is never served")
+ck("the slate board's default same-game parlay is built on Kalshi's lines too",
+   "_game_ladders(" in _bb9 and 'prop_lad=(lad or {}).get("props")' in _bb9)
+ck("the board carries each side's ticker so the recorder can file the ticket",
+   '"home_ticker": px.get("home_ticker")' in _bb9)
+_bp9 = _insp9.getsource(_ng9.build_parlay)
+ck("an NFL slip carries the real Kalshi payout, fees in (it rendered 'pays -' and logged no payout)",
+   "kalshi_payout_net_x" in _bp9 and "taker_fee_cents" in _bp9 and '"kalshi_full"' in _bp9)
+
+# --- 4. the engine: pinned means, fitted spread, yards that follow points ----
+def _prof9(ab, home, seed):
+    # A real depth chart, because the draws are normalized within the team:
+    # a lone rusher would have his own noise cancelled by the normalization.
+    def _p(nm, pos, pa, ru, ry, rc, ptd, rtd, ctd):
+        return {"name": f"{ab} {nm}", "pos": pos, "pass_yd": pa, "rush_yd": ru, "rec_yd": ry,
+                "rec": rc, "pass_td": ptd, "rush_td": rtd, "rec_td": ctd, "int": 0.0, "fum": 0.02}
+    ps = [_p("QB", "QB", 250.0, 12.0, 0.0, 0.0, 1.7, 0.15, 0.0),
+          _p("RB1", "RB", 0.0, 70.0, 22.0, 3.0, 0.0, 0.55, 0.12),
+          _p("WR1", "WR", 0.0, 3.0, 80.0, 5.5, 0.0, 0.01, 0.45),
+          _p("RB2", "RB", 0.0, 35.0, 10.0, 1.5, 0.0, 0.25, 0.05),
+          _p("WR2", "WR", 0.0, 2.0, 55.0, 4.0, 0.0, 0.01, 0.30),
+          _p("TE", "TE", 0.0, 0.0, 40.0, 3.5, 0.0, 0.0, 0.30),
+          _p("WR3", "WR", 0.0, 1.0, 35.0, 2.5, 0.0, 0.0, 0.18)]
+    exp = {k: sum(p.get(k, 0.0) for p in ps) for k in ("pass_yd", "rush_yd", "rec", "rec_yd", "pass_td", "rush_td", "rec_td")}
+    exp["pass_int"] = 0.7; exp["fum_lost"] = 0.24; exp["fgm"] = 1.7; exp["xpm"] = 2.2
+    return {"abbr": ab, "name": ab, "home": home, "players": ps, "exp": exp,
+            "points": 6.0 * (exp["pass_td"] + exp["rush_td"]) + exp["xpm"] + 3.0 * exp["fgm"] + 1.1}
+_cap9 = {}
+_orig_masks9 = _ng9._build_masks
+def _capm9(home, away, hp, ap, lines, margins, totals, p_home, n, ladders=None, prop_lad=None):
+    _cap9["lines"] = lines; _cap9["hp"] = hp; _cap9["ap"] = ap
+    return _orig_masks9(home, away, hp, ap, lines, margins, totals, p_home, n, ladders=ladders, prop_lad=prop_lad)
+_pts9 = []
+_orig_play9 = _ng9._play_game
+def _playrec9(rh, ra, rng, form_sd=None):
+    g = _orig_play9(rh, ra, rng, form_sd); _pts9.append(g[0]["pts"]); return g
+_ng9._build_masks = _capm9
+_ng9._play_game = _playrec9
+try:
+    _N9 = 2000
+    _sim9 = _ng9.simulate_game(_prof9("HHH", True, 1), _prof9("AAA", False, 2), n=_N9, seed=7)
+finally:
+    _ng9._build_masks = _orig_masks9
+    _ng9._play_game = _orig_play9
+_L9 = _cap9["lines"]; _allp9 = list(_cap9["hp"]) + list(_cap9["ap"])
+_pin_ok9 = True
+for _i9, _p9 in enumerate(_allp9):
+    for _k9, _b9 in _ng9._PROJ_BIAS.items():
+        if (_p9.get(_k9) or 0) <= 0:
+            continue
+        _m9 = sum(_L9[_i9][_k9]) / _N9
+        if abs(_m9 / (_p9[_k9] * _b9) - 1.0) > 1e-6:
+            _pin_ok9 = False
+ck("every regular-season player line is pinned to Sleeper's projection times the measured 2025 bias",
+   _pin_ok9 and _ng9._PROJ_BIAS == {"pass_yd": 0.975, "rush_yd": 0.972, "rec_yd": 0.931, "rec": 0.972},
+   "the dealt volume ran +5% on passing stats before the pin; Sleeper itself runs 3-7% hot")
+def _cv9(key, floor):
+    # pooled sim/mean over every player above the floor, as the fit was
+    pooled = []
+    for _i9, _p9 in enumerate(_allp9):
+        if (_p9.get(key) or 0) < floor:
+            continue
+        _m9 = sum(_L9[_i9][key]) / _N9
+        pooled.extend(x / _m9 for x in _L9[_i9][key])
+    return _st9.pstdev(pooled) / _st9.mean(pooled) if pooled else 0.0
+_cv_pass9 = _cv9("pass_yd", 150); _cv_rush9 = _cv9("rush_yd", 30); _cv_recyd9 = _cv9("rec_yd", 30); _cv_rec9 = _cv9("rec", 2.5)
+ck("the per-stat spread is the measured shape: QB ~0.34, receptions wider, receiving yards widest",
+   0.28 <= _cv_pass9 <= 0.42 and 0.50 <= _cv_rush9 <= 0.80 and 0.55 <= _cv_recyd9 <= 0.85
+   and 0.45 <= _cv_rec9 <= 0.72 and _cv_recyd9 > _cv_rec9 + 0.04 and _cv_rush9 > _cv_pass9 + 0.12,
+   f"cv pass {_cv_pass9:.2f} rush {_cv_rush9:.2f} rec_yd {_cv_recyd9:.2f} rec {_cv_rec9:.2f} "
+   "(one gaussian sd 0.28 gave 0.26/0.33/0.38/0.38 against real 0.34/0.64/0.70/0.58)")
+_yds9 = [sum(_L9[j][k][t] for j in range(len(_cap9["hp"])) for k in ("pass_yd", "rush_yd")) for t in range(_N9)]
+_hp9 = _pts9[:_N9]
+def _corr9(x, y):
+    mx, my = _st9.mean(x), _st9.mean(y)
+    return sum((a - mx) * (b - my) for a, b in zip(x, y)) / len(x) / (_st9.pstdev(x) * _st9.pstdev(y))
+_c9 = _corr9(_hp9, _yds9)
+ck("a team's yards FOLLOW its points (the sim had them anti-correlated at -0.25; real +0.63)",
+   _c9 > 0.40 and _ng9._YD_PTS_BETA > 0 and _ng9._YD_PTS_BETA_RUSH > 0
+   and "couple_p" in _insp9.getsource(_ng9.simulate_game),
+   f"corr(points, yards) = {_c9:.2f}")
+ck("the pin and the coupling stay off the preseason path (its level is the market's ladder)",
+   "if not shock:" in _insp9.getsource(_ng9.simulate_game)
+   and "couple_p = couple_r = 1.0" in _insp9.getsource(_ng9.simulate_game))
+ck("the engine's level is the measured one: 0.969 x (offence + DST), touchdowns trimmed harder than field goals",
+   _ng9._TD_CAL < 0.92 < 1.0 < _ng9._FG_CAL and 0.93 <= _ng9._ENGINE_BIAS <= 0.97)
+ck("the SGP legs the board shows come from a sim that was handed the ladders",
+   "ladders=lad" in _bb9)
+
+# --- 5. the NFL record grades off Kalshi's settlement --------------------------
+_calls9 = []
+_orig_st9 = {k: getattr(_store9, k) for k in ("record_nfl_pick", "update_nfl_close", "backfill_nfl_ticker",
+                                             "ungraded_nfl_picks", "set_nfl_grade", "void_nfl_pick")}
+_store9.record_nfl_pick = lambda *a, **k: _calls9.append(("rec", a, k))
+_store9.update_nfl_close = lambda *a, **k: _calls9.append(("close", a, k))
+_store9.backfill_nfl_ticker = lambda *a, **k: _calls9.append(("fill", a, k))
+_board9 = {"week": 1, "preseason": False, "games": [
+    {"home": "SEA", "away": "NE", "date": "2026-09-10T00:20Z", "state": "pre", "p_home": 0.42,
+     "p_home_raw": 0.42, "exp_total": 46.0,
+     "kalshi": {"home_cents": 62.0, "away_cents": 39.0,
+                "home_ticker": "KXNFLGAME-26SEP09NESEA-SEA", "away_ticker": "KXNFLGAME-26SEP09NESEA-NE"}},
+    {"home": "LAR", "away": "SF", "date": "2026-09-11T00:35Z", "state": "in", "p_home": 0.58,
+     "kalshi": {"home_cents": 65.0, "away_cents": 36.0,
+                "home_ticker": "KXNFLGAME-26SEP10SFLAR-LAR", "away_ticker": "KXNFLGAME-26SEP10SFLAR-SF"}}]}
+try:
+    _n9 = _nt9.record_from_board(_board9)
+finally:
+    for k, v in _orig_st9.items():
+        setattr(_store9, k, v)
+_rec9 = [c for c in _calls9 if c[0] == "rec"]
+_fill9 = [c for c in _calls9 if c[0] == "fill"]
+ck("a pre-game pick is filed with the ticket of the side it took (NE here: the away moneyline)",
+   _n9 == 1 and len(_rec9) == 1 and _rec9[0][2].get("ticker") == "KXNFLGAME-26SEP09NESEA-NE"
+   and _rec9[0][1][0] == "2026-09-10_NE@SEA" and _rec9[0][1][4] == "away")
+ck("...and rows filed before the board carried tickets get theirs, pre-game and in-play alike",
+   len(_fill9) == 2 and _fill9[1][1] == ("2026-09-11_SF@LAR", "nfl",
+                                          "KXNFLGAME-26SEP10SFLAR-LAR", "KXNFLGAME-26SEP10SFLAR-SF"))
+_graded9 = []
+_rows9 = [{"game_id": "2026-09-10_NE@SEA", "ticker": "KXNFLGAME-26SEP09NESEA-NE", "pick_side": "away", "pick_name": "NE"},
+          {"game_id": "2026-09-13_CLE@JAX", "ticker": "KXNFLGAME-26SEP13CLEJAC-JAC", "pick_side": "home", "pick_name": "JAX"},
+          {"game_id": "2026-09-13_BAL@IND", "ticker": "KXNFLGAME-26SEP13BALIND-BAL", "pick_side": "away", "pick_name": "BAL"},
+          {"game_id": "2026-09-13_GB@MIN", "ticker": None, "pick_side": "home", "pick_name": "MIN"}]
+_res9 = {"KXNFLGAME-26SEP09NESEA-NE": {"graded": 1, "outcome": 0},
+         "KXNFLGAME-26SEP13CLEJAC-JAC": {"graded": 1, "outcome": 1},
+         "KXNFLGAME-26SEP13BALIND-BAL": {"graded": 2, "outcome": None}}
+_orig_res9 = _pl9.results
+_pl9.results = lambda tks: {t: _res9[t] for t in tks if t in _res9}
+_store9.ungraded_nfl_picks = lambda league="nfl": list(_rows9)
+_store9.set_nfl_grade = lambda *a, **k: _graded9.append(("grade", a, k))
+_store9.void_nfl_pick = lambda *a, **k: _graded9.append(("void", a, k))
+try:
+    _ng9n = _nt9.grade_settled()
+finally:
+    _pl9.results = _orig_res9
+    for k, v in _orig_st9.items():
+        setattr(_store9, k, v)
+_g9 = {c[1][0]: c for c in _graded9}
+ck("grade_settled reads the ticket: NE lost its YES (won 0, SEA won), JAX won its YES (home_won 1), void voids",
+   _ng9n == 3
+   and _g9["2026-09-10_NE@SEA"][0] == "grade" and _g9["2026-09-10_NE@SEA"][1][1:3] == (0, "SEA")
+   and _g9["2026-09-10_NE@SEA"][2].get("home_won") == 1
+   and _g9["2026-09-13_CLE@JAX"][1][1:3] == (1, "JAX") and _g9["2026-09-13_CLE@JAX"][2].get("home_won") == 1
+   and _g9["2026-09-13_BAL@IND"][0] == "void" and "2026-09-13_GB@MIN" not in _g9,
+   "ESPN's WAF parked this host on every pass of 2026-09-04..09; a record that waits on it never fills")
+_gd9 = _insp9.getsource(_nt9.grade_due)
+ck("grade_due settles off Kalshi BEFORE asking whether ESPN is parked",
+   _gd9.index("grade_settled()") < _gd9.index("if espn_blocked()"))
+ck("predlog's early probe reads an NFL game market off its kickoff, like college (Kalshi closes it kickoff + 48h)",
+   "(model LIKE 'cfb%' OR model LIKE 'nfl%')" in _insp9.getsource(_pl9.resolve_due)
+   and "event_ts + 18000" in _insp9.getsource(_pl9.resolve_due))
+
+# --- 6. a young season's points-allowed is believed in proportion ------------
+ck("shrink_pa: one game is believed an eighth as much as the season the exponent was fitted on",
+   abs(_nd9.shrink_pa(40.0, 23.0, 1) - (23.0 + 0.135 * 17.0)) < 0.2
+   and _nd9.shrink_pa(40.0, 23.0, 16) == 40.0 and _nd9.shrink_pa(40.0, 23.0, 0) == 23.0
+   and _nd9._PA_K == 11.9,
+   f"g=1 -> {_nd9.shrink_pa(40.0, 23.0, 1)} (K = 11.9 games measured on 2025: within-team sd 9.56 vs true "
+   "between-team sd 2.77; week 1's rate correlates -0.02 with the rest of the season)")
+ck("...and week_teams applies it", "shrink_pa(" in _insp9.getsource(_nd9.week_teams))
+
+# --- 7. the futures board opens at the market's level -------------------------
+_orig_pm9 = _ns9._price_maps
+_orig_cached9 = _rc9._cached
+_lad9 = {("BUF", 6): 99.0, ("BUF", 7): 95.0, ("BUF", 8): 89.0, ("BUF", 9): 86.0,
+         ("BUF", 10): 70.0, ("BUF", 11): 58.0, ("BUF", 12): 42.0, ("BUF", 13): 26.0,
+         ("CLE", 6): 60.0, ("CLE", 7): 40.0, ("CLE", 8): 28.0, ("CLE", 9): 18.0, ("CLE", 10): 15.0,
+         ("XXX", 8): 50.0}
+_ns9._price_maps = lambda: {"win_total": _lad9}
+_rc9._cached = lambda key, ttl, fn: fn()
+try:
+    _mw9 = _ns9._market_wins()
+finally:
+    _ns9._price_maps = _orig_pm9
+    _rc9._cached = _orig_cached9
+ck("_market_wins reads E[W] = sum P(W>=L) off the ladder, tail and all (BUF ~10.9, CLE ~6.6, a one-rung team skipped)",
+   10.4 <= _mw9.get("BUF", 0) <= 11.4 and 6.0 <= _mw9.get("CLE", 0) <= 7.2 and "XXX" not in _mw9, _mw9)
+_rt9 = _insp9.getsource(_ns9._ratings)
+ck("the season sim's ratings are anchored to the market's wins before the live blend",
+   _rt9.index("_market_wins()") < _rt9.index("nfl_live.team_ratings(season)"),
+   "opening day 2026: pro_sim had HOU at 5.4 wins against ~10.2 implied and LAR 8.0 against 11.7, "
+   "which read as HOU 0.5% to win its division against a 47c market")
+ck("live results blend in at the measured 0.5 wins per point of differential, not 2.5",
+   _ns9._WINS_PER_PD == 0.5 and "* _WINS_PER_PD" in _rt9 and "* 2.5" not in _rt9)
+ck("a projected win is worth the same points in every matchup helper",
+   "_PTS_PER_WIN" in _insp9.getsource(_ns9._wp) and "_PTS_PER_WIN" in _insp9.getsource(_ns9._matchup_pts)
+   and 1.8 <= _ns9._PTS_PER_WIN <= 2.6)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

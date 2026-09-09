@@ -272,7 +272,18 @@ _MODEL_TRUST = {"ML": 1.0, "Total": 0.7, "Ks": 0.7, "Run line": 0.7,
                 "RFI": 0.5, "Hit": 0.5, "Bases": 0.5, "SB": 0.4,
                 "HR": 0.35, "HRR": 0.35, "RBI": 0.35,
                 "nfl:ML": 1.0, "nfl:Spread": 0.7, "nfl:Total": 0.7,
-                "nfl:TD": 0.4}
+                "nfl:TD": 0.4,
+                # NFL yardage and reception props ran on the 0.6 default
+                # silently; explicit now, with the measurement behind it.
+                # Against every believable Kalshi rung on the 2026 week-1
+                # board (2,000 rungs), the drive engine's per-stat means sat
+                # within two points of the market's de-vigged mids once its
+                # shape was fitted (pass +2.2, rush -0.8, rec yds +0.1,
+                # receptions -0.6; anytime TD +2.3) -- a model that agrees
+                # with the market on average earns the middle of the table,
+                # not the moneyline's full trust and not the TD prior's.
+                "nfl:Pass Yds": 0.6, "nfl:Rush Yds": 0.6, "nfl:Rec Yds": 0.6,
+                "nfl:Receptions": 0.6}
 # candidate type -> the predlog bucket its graded record lives under
 _TRUST_BUCKET = {"ML": "mlb", "Total": "mlb_total", "Ks": "mlb_ks",
                  "Run line": "mlb_runline", "RFI": "mlb_rfi", "Hit": "mlb_hit",

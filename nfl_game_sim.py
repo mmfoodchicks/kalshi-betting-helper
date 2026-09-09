@@ -41,16 +41,96 @@ _DRIVES = 10.7            # nominal possessions per team per game
 # gets logged, calibrated and built into combos, while spreads price off the
 # center of the distribution, not its skewed mean.
 _HFA_SCORE = 1.05
-# Structural calibration (measured over a full slate): short fields, hurry-up
-# possessions and OT add ~3.3% points beyond the per-drive rates, so the rates
-# are trimmed to land the simulated total on the expected total.
-_CAL = 0.968
+# Structural calibration: short fields, hurry-up possessions and OT add points
+# beyond the per-drive rates, so the rates are trimmed. Two measurements set
+# the level, both against real results rather than against the projection:
+#
+#   * Sleeper's team projection runs HOT. 2025 regular season, every team-game
+#     (n=544): projected points 23.74 (nfl_data's sum, DST sliver included)
+#     against 23.01 actual -- ratio 0.969; pass yards 224.9 projected against
+#     218.9, rush 119.7 against 114.4, touchdowns 2.55 against 2.40.
+#   * At the old 0.968 the engine realized 1.032x the OFFENSIVE projection
+#     (16-game 2026 week-1 slate at 4,000 sims: 47.1 a game against a 45.6
+#     offensive ask), i.e. the trim was not landing where its comment said,
+#     and the DST sliver that real totals contain was being realized as extra
+#     offence instead.
+#
+# Together: the honest total is 0.969 x (offence + DST), which for the slate
+# above is 46.4 against the 47.1 the engine produced, and against the market's
+# own 45.1 (Kalshi's de-vigged total ladders, same sixteen games: the model
+# sat +1.9 a game over the market, 13 of 16 games high).
+#
+# The trim is SPLIT between touchdowns and field goals because Sleeper's
+# optimism is not evenly spread (2025, n=563 team-games): touchdowns 2.47
+# projected against 2.31 actual (0.939, passing and rushing alike), field
+# goals 1.62 against 1.65 (1.022). One multiplier on both rates landed the
+# points and still dealt 7% too many touchdowns to the players -- which is
+# the anytime-TD market. _TD_CAL is set so the engine's realized touchdowns
+# are 0.939x the projection, _FG_CAL so the points then land on the level
+# above (both fitted on the same sixteen-game slate at 2,000 sims).
+_TD_CAL = 0.880
+_FG_CAL = 1.21
 _SHORT_FIELD = 1.35       # scoring-rate boost on the drive after a takeaway
 _XP_MAKE = 0.945
 _TWO_PT = 0.06            # share of TDs that go for 2 (converts ~48%)
 _HURRY_TILT = 0.30        # Q4 trailing pass tilt (leader gets the mirror run tilt)
-_YD_SD = 0.16             # team yardage noise beyond volume/script effects
-_PLAYER_SD = 0.28         # per-player volume noise around his team share
+# Team yardage noise beyond volume, script and the points coupling below.
+# Fitted at TEAM level to 2025's actual/projected (n=544 team-games): passing
+# yards CV 0.345, rushing 0.420, corr(points, pass) 0.45, corr(points, rush)
+# 0.42, corr(pass, rush) -0.08. One 0.16 on both gave 0.27 and 0.30 and left
+# the quarterback -- who IS his team's passing game -- with less than the
+# real spread.
+_TEAM_PASS_SD = 0.24
+_TEAM_RUSH_SD = 0.34
+_PLAYER_SD = 0.28         # _shock's gaussian fallback; the season's draws are the lognormals below
+# REGULAR-SEASON player noise, fitted to what actually happens to a projection.
+# Sleeper 2025, every projected player-game with a real line (played only):
+#
+#     stat      n     actual/proj  CV     P(>proj) P(>1.3x) P(<0.7x)  q10   q90
+#     pass_yd   543   0.975        0.34   0.46     0.15     0.18      0.59  1.40
+#     rush_yd   825   0.972        0.64   0.41     0.24     0.37      0.30  1.83
+#     rec_yd  1,578   0.931        0.70   0.39     0.25     0.42      0.19  1.83
+#     rec     1,813   0.972        0.58   0.44     0.25     0.34      0.30  1.70
+#
+# The old single gaussian (sd 0.28 on every stat) produced CVs of 0.26 / 0.33 /
+# 0.38 / 0.38 -- right for a quarterback, half the real spread for everyone
+# else -- and symmetric where reality is right-skewed (a receiver's median game
+# is 81% of his projection; his mean is 93%). Measured against Kalshi's own
+# rungs on the 2026 week-1 board it read as +14 points of probability on every
+# rung under the projection (rec yds: model 93%, market 67%) and -4 to -7 on
+# every rung above it. Mean-preserving lognormals per stat, with receptions
+# and receiving yards sharing the target draw and yards-per-catch adding its
+# own, normalized within the team (a big day is a teammate's quiet one, see
+# the dealing loop) and fitted so the pooled sim/proj distribution matches
+# the table -- landed at CVs 0.345 / 0.63 / 0.70 / 0.60, q10/q90 of a
+# receiver's yards 0.32/1.90 against 0.19/1.83:
+_QB_LSD = 0.10            # the quarterback's own sliver beyond his team's passing game
+_RUSH_LSD = 0.92          # a rusher's carries/efficiency around his share
+_REC_LSD = 0.53           # a target's share of the passing game (catches)
+_YPC_LSD = 0.44           # yards per catch, on top of the catches
+# Sleeper's per-stat optimism, applied to the level each player is pinned to
+# (the actual/proj column above). The rest of the engine deals yards from the
+# simulated team game for the correlation; the pin keeps that from moving the
+# mean: before it the dealt volume ran +5% on passing stats (11.1 possessions
+# realized against the 10.7 nominal, plus the hurry-up's extra drive).
+_PROJ_BIAS = {"pass_yd": 0.975, "rush_yd": 0.972, "rec_yd": 0.931, "rec": 0.972}
+# YARDS FOLLOW POINTS. Real team-games (2025, n=544): corr(points, total
+# yards) = +0.63, elasticity d ln(yards)/d ln(points) = 0.35. The engine's
+# dealt yards were driven by possessions and the game script alone -- the
+# leader kneels and runs, the trailer throws in hurry-up -- which made the
+# correlation NEGATIVE (-0.25 measured on the same slate): a team scoring 35
+# got fewer yards than one scoring 13, and every same-game parlay pairing a
+# total or a moneyline with a yardage prop carried the wrong sign. Each
+# side's yardage now scales with its realized points. Two exponents: the
+# fourth-quarter script already hands the leader the ground game (the run
+# tilt), so rushing needs less coupling than passing to land on the real
+# figures -- with one exponent on both, corr(points, rush) overshot (0.58
+# against 0.42) while pass sat right. Fitted, 2026 week-1 slate: team-level
+# corr(points, pass) 0.45 / corr(points, rush) 0.42 / corr(pass, rush) -0.08
+# are the targets (2025, n=544).
+_YD_PTS_BETA = 0.70       # passing
+_YD_PTS_BETA_RUSH = 0.40  # rushing
+_YD_PTS_C = 6.0           # softening constant: a shutout is not zero yards
 _FORM_SD = 0.20           # zero-sum game-control tilt (see _play_game); fitted
                           # so the engine's margin SD lands on the measured 13.3
 _FORM_SD_PRE = 0.26       # preseason tilt: roster churn scatters results wider
@@ -118,8 +198,8 @@ def _rates(prof, home, def_mult=1.0):
     e = prof["exp"]
     tds = e["pass_td"] + e["rush_td"]
     hfa = _HFA_SCORE if home else 1.0 / _HFA_SCORE
-    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _CAL * def_mult))
-    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _CAL * def_mult))
+    p_td = max(0.04, min(0.55, tds / _DRIVES * hfa * _TD_CAL * def_mult))
+    p_fg = max(0.02, min(0.40, e["fgm"] / _DRIVES * hfa * _FG_CAL * def_mult))
     # Takeaways belong to the DEFENCE forcing them, so a good defence raises the
     # offence's turnover rate — the multiplier goes the other way here.
     p_to = max(0.02, min(0.30, (e["pass_int"] + e["fum_lost"]) / _DRIVES / def_mult))
@@ -290,8 +370,20 @@ def simulate_game(home, away, n=2400, seed=None, ladders=None, prop_lad=None,
             e = prof["exp"]
             vol = side["drv"] / _DRIVES
             tilt = side["tilt"]
-            pass_mult = vol * (1 + 0.45 * tilt) * max(0.3, rng.gauss(1.0, _YD_SD))
-            rush_mult = vol * (1 - 0.55 * tilt) * max(0.3, rng.gauss(1.0, _YD_SD))
+            # Regular season only: the preseason path is anchored to Kalshi's
+            # ladders and carries no pin, so a coupling there would move its
+            # means. The level is the offensive projection the rates came from.
+            couple_p = couple_r = 1.0
+            if not shock:
+                tds_e = e["pass_td"] + e["rush_td"]
+                xp_e = e["xpm"] if e.get("xpm", 0) > 0 else 0.97 * tds_e
+                pts_e = 6.0 * tds_e + xp_e + 3.0 * e["fgm"]
+                if pts_e > 0:
+                    ratio = (side["pts"] + _YD_PTS_C) / (pts_e + _YD_PTS_C)
+                    couple_p = ratio ** _YD_PTS_BETA
+                    couple_r = ratio ** _YD_PTS_BETA_RUSH
+            pass_mult = vol * (1 + 0.45 * tilt) * couple_p * max(0.3, rng.gauss(1.0, _TEAM_PASS_SD))
+            rush_mult = vol * (1 - 0.55 * tilt) * couple_r * max(0.3, rng.gauss(1.0, _TEAM_RUSH_SD))
             team_pass = e["pass_yd"] * pass_mult
             team_rush = e["rush_yd"] * rush_mult
             # deal realized TDs to players by TD share (pass TDs = catchers' TDs)
@@ -315,31 +407,80 @@ def simulate_game(home, away, n=2400, seed=None, ladders=None, prop_lad=None,
             rec_tds = deal(pass_td_n, "rec_td", "rec_td")
             rush_tds = deal(rush_td_n, "rush_td", "rush_td")
 
+            # Every player's draws first: in the regular season the carries and
+            # the targets are REALLOCATED among teammates rather than conjured,
+            # so the draws are normalized against the team before they are
+            # dealt (see below) and the sums hold to the yard.
+            rn, ypc, rr = {}, {}, {}
+            for i, p in enumerate(ps):
+                if p["rush_yd"] > 0:
+                    rr[i] = _shock(rng, shock or _RUSH_LSD)
+                if p["rec_yd"] > 0:
+                    # One draw for the TARGETS (catches and yards move together),
+                    # a second for yards per catch: receptions are the steadier
+                    # stat (CV 0.58 against 0.70), and one shared multiplier
+                    # cannot give them different spreads.
+                    rn[i] = _shock(rng, shock or _REC_LSD)
+                    ypc[i] = 1.0 if shock else _shock(rng, _YPC_LSD)
+            n_rush = n_rec = n_recyd = 1.0
+            if not shock:
+                # A receiver's big day is a teammate's quiet one: the team's
+                # passing yards are the quarterback's, and they are split among
+                # the catchers, not multiplied. Dealt without this, each
+                # player's own noise piled onto the team's and the simulated
+                # rushing total came out with a CV of 0.52 against a real
+                # 0.42 -- and the receivers' yards no longer summed to the
+                # quarterback's, which is the one same-game correlation the
+                # market can never price and the sim exists to carry.
+                d = sum(p["rush_yd"] * rr[i] for i, p in enumerate(ps) if i in rr)
+                n_rush = tot["rush_yd"] / d if d > 0 else 1.0
+                d = sum(p["rec"] * rn[i] for i, p in enumerate(ps) if i in rn)
+                n_rec = tot["rec"] / d if d > 0 else 1.0
+                d = sum(p["rec_yd"] * rn[i] * ypc[i] for i, p in enumerate(ps) if i in rn)
+                n_recyd = tot["rec_yd"] / d if d > 0 else 1.0
             for i, p in enumerate(ps):
                 L = lines[off + i]
-                noise = _shock(rng, shock)
                 if p["pass_yd"] > 0:
-                    # A quarterback's yardage tracks his team's passing game
-                    # almost exactly in the regular season -- he is the only one
-                    # throwing. In an exhibition it does not: whether he plays a
-                    # series or a half is a coaching decision, so the preseason
-                    # shock applies to him too.
-                    qn = _shock(rng, shock) if shock else max(0.5, rng.gauss(1.0, 0.08))
+                    # The quarterback IS his team's passing game: his line is
+                    # the team's passing yards (which his catchers split) plus a
+                    # sliver of his own -- sacks, scrambles, a backup series. In
+                    # an exhibition whether he plays a series or a half is a
+                    # coaching decision, so the preseason shock applies instead.
+                    qn = _shock(rng, shock or _QB_LSD)
                     L["pass_yd"][s] = p["pass_yd"] / (tot["pass_yd"] or 1) * team_pass * qn
                     L["pass_td"][s] = pass_td_n if p["pass_yd"] / tot["pass_yd"] > 0.7 \
                         else _pois(p["pass_td"] * pass_mult, rng)
-                if p["rush_yd"] > 0:
-                    L["rush_yd"][s] = p["rush_yd"] / tot["rush_yd"] * team_rush * noise
-                if p["rec_yd"] > 0:
-                    rn = _shock(rng, shock)
+                if i in rr:
+                    L["rush_yd"][s] = p["rush_yd"] / tot["rush_yd"] * team_rush * rr[i] * n_rush
+                if i in rn:
                     L["rec_yd"][s] = p["rec_yd"] / tot["rec_yd"] * team_pass \
-                        * (tot["rec_yd"] / (tot["pass_yd"] or 1)) * rn
-                    L["rec"][s] = p["rec"] / (tot["rec"] or 1) * (e["rec"] * pass_mult) * rn
+                        * (tot["rec_yd"] / (tot["pass_yd"] or 1)) * rn[i] * ypc[i] * n_recyd
+                    L["rec"][s] = p["rec"] / (tot["rec"] or 1) * (e["rec"] * pass_mult) * rn[i] * n_rec
                 L["td"][s] = rec_tds[i] + rush_tds[i]
             off += len(ps)
 
     all_ps = list(hp) + list(ap)
     team_of = [home["abbr"]] * len(hp) + [away["abbr"]] * len(ap)
+
+    # PIN each regular-season line to Sleeper's projection times the measured
+    # bias (_PROJ_BIAS). Everything above exists for the SHAPE and the joint --
+    # possessions, script, points coupling, per-player draws -- and none of it
+    # is allowed to move the mean: the pin rescales every array so its mean is
+    # the projection's, correlation and skew intact. Without it the dealt
+    # volume ran +4.9% on passing yards and +5.2% on receiving yards (week 1
+    # 2026, 115 receivers), on top of Sleeper's own optimism.
+    if not shock:
+        for i, p in enumerate(all_ps):
+            L = lines[i]
+            for key, bias in _PROJ_BIAS.items():
+                proj = p.get(key) or 0.0
+                if proj <= 0:
+                    continue
+                arr = L[key]
+                m = sum(arr) / n
+                if m > 0:
+                    f = proj * bias / m
+                    L[key] = [x * f for x in arr]
 
     def q(arr, f):
         s2 = sorted(arr)
@@ -606,16 +747,17 @@ def current_week(preseason=False):
 # rather than left for the caller to wonder about. REMEASURED after the
 # game-control tilt and the split home bump landed (the split is x1.05 up and
 # /1.05 down, which nets a hair under 1.0, and the tilt's clamps shave a little
-# more), raw response under preseason conditions:
+# more), and again when the trim was split into _TD_CAL/_FG_CAL (see there),
+# raw response under
+# preseason conditions:
 #
 #     asked   30.0   35.0   40.0   46.0   52.0
-#     got     28.8   33.6   38.4   44.4   50.4
-#     ratio  0.960  0.960  0.960  0.965  0.969
+#     got     28.9   33.6   38.4   44.5   50.3
+#     ratio  0.962  0.959  0.960  0.966  0.966
 #
 # Flat 0.960 through the preseason's working range (36-44 totals), drifting
-# toward 0.969 only at totals August never sees; 0.961 splits the difference
-# where the games actually live.
-_ENGINE_BIAS = 0.961
+# to 0.966 only at totals August never sees.
+_ENGINE_BIAS = 0.960
 
 # What the engine's own home-field bump is WORTH, in points, measured by running
 # two identically-specified teams against each other under preseason conditions
@@ -913,11 +1055,27 @@ def _build_board(season, week, n=2400, preseason=False):
         cal = lambda p: p
 
     out, log_rows = [], []
+
+    def _regular_sims():
+        # Every regular-season sim is built on KALSHI'S OWN LINES (spread,
+        # total and player ladders) so the default same-game parlay carries
+        # krefs that price -- exactly what the combo maker gets. Built off the
+        # bare projection, as it was, every SGP leg was an invented line with
+        # no market behind it ("Rashid Shaheed 30.5+ rec yds", kref null).
+        try:
+            idx = kalshi_index()
+        except Exception as _e:
+            errlog.note("NFLG-board-index", _e)
+            idx = {}
+        for h, a in games:
+            lad = _game_ladders(idx, h["abbr"], a["abbr"])
+            yield simulate_game(h, a, n=n, ladders=lad,
+                                prop_lad=(lad or {}).get("props"))
+
     # A preseason model has no independent read on the level -- it is anchored TO
     # the market -- so the calibrator, which corrects a model against its own
     # graded record, has nothing to correct and is left out of that path.
-    for sim in (sims if preseason else
-                (simulate_game(h, a, n=n) for h, a in games)):
+    for sim in (sims if preseason else _regular_sims()):
         raw_ph = sim["p_home"]
         if preseason:
             cal_used = lambda p: p
@@ -942,7 +1100,13 @@ def _build_board(season, week, n=2400, preseason=False):
             except Exception:
                 px = None
             if px:
-                g["kalshi"] = {"home_cents": px["home_cents"], "away_cents": px["away_cents"]}
+                # The tickers ride along so the pick recorder can file each
+                # straight-up pick as the Kalshi ticket it is and grade it off
+                # the settlement (nfl_track): the record used to wait on ESPN's
+                # scoreboard, which parks this host for six hours at a time.
+                g["kalshi"] = {"home_cents": px["home_cents"], "away_cents": px["away_cents"],
+                               "home_ticker": px.get("home_ticker"),
+                               "away_ticker": px.get("away_ticker")}
                 if px["home_cents"] is not None:
                     g["edge_home"] = round(ph * 100 - px["home_cents"], 1)
                 if px["away_cents"] is not None:
@@ -969,8 +1133,18 @@ def _build_board(season, week, n=2400, preseason=False):
                      "pct": round((ph if pick_home else 1 - ph) * 100, 1)}
         try:
             g["sgp"] = same_game_parlay(sim, n_legs=3, target=0.45)
-        except Exception:
+        except Exception as _e:
+            errlog.note("NFLG-board-sgp", _e, path=f"{sim['away']}@{sim['home']}")
             g["sgp"] = None
+        # The pre-made slip's legs are Kalshi's rungs now, so each one can
+        # show the ask it trades at (None where the market has no offer).
+        if g.get("sgp") and kx and px and px.get("suffix"):
+            try:
+                _idx_b = kalshi_index()
+                for leg in g["sgp"].get("legs") or []:
+                    leg["market_cents"] = kalshi_nfl.price_leg(_idx_b, px["suffix"], leg.get("kref"))
+            except Exception as _e:
+                errlog.note("NFLG-board-sgp-price", _e)
         out.append(g)
 
     if log_rows:
@@ -1224,6 +1398,27 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     if not max_bet:
         item["alternatives"] = combo_engine.compare(states, best, **targets)
     item["n_sims"] = n_sims
+    # The real Kalshi payout off the legs' asks, fees in -- the block every
+    # other maker (baseball, college, UFC) carries and this one did not, so
+    # every NFL slip rendered "pays -" and was filed in the slip ledger with
+    # no payout, which is a ledger that cannot report an ROI.
+    import kalshi
+    payout, net, priced, total = 1.0, 1.0, 0, 0
+    for grp in item.get("groups") or []:
+        for leg in grp.get("legs") or []:
+            total += 1
+            c = leg.get("market_cents")
+            if c and 0 < c < 100:
+                leg["market_payout_x"] = round(100.0 / c, 2)
+                payout *= 100.0 / c
+                net *= 100.0 / min(99.9, c + kalshi.taker_fee_cents(c))
+                priced += 1
+            else:
+                leg["market_payout_x"] = None
+    item.update({"kalshi_payout_x": round(payout, 2) if priced else None,
+                 "kalshi_payout_net_x": round(net, 2) if priced else None,
+                 "kalshi_priced": priced, "kalshi_total_legs": total,
+                 "kalshi_full": priced == total and priced > 0})
     return item
 
 
@@ -1246,7 +1441,9 @@ def _slate_sims(week, preseason, n_sims):
     import nfl_live
     import time as _t3
     season = _season()
-    name = f"nfl_parlay_sims3_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
+    # sims4: the player legs now carry Kalshi's rungs and krefs (see below),
+    # so a sims3 cache built without them must not be served.
+    name = f"nfl_parlay_sims4_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
     disk, _age = boardshare.get(name, _SIMS_TTL)
     if disk is not None:
         return disk
@@ -1312,7 +1509,17 @@ def _slate_sims(week, preseason, n_sims):
                              if th.get("abbr") == h and ta.get("abbr") == a), None)
                 if not pair:
                     continue
-                sim = simulate_game(pair[0], pair[1], n=n_sims, ladders=lad)
+                # prop_lad was never passed here, so every regular-season
+                # player leg in the combo maker was an INVENTED line with no
+                # kref: unpriced against a book that had the exact rung
+                # (Jahmyr Gibbs anytime TD sat at 72c with 2,200 contracts
+                # traded while the maker carried him at the model's number,
+                # unfillable, ticketless -- and a slip with any player leg
+                # could never be logged or graded). Measured on the 2026
+                # week-1 slate: 1,553 player legs carried a kref with the
+                # ladder against 0 without it.
+                sim = simulate_game(pair[0], pair[1], n=n_sims, ladders=lad,
+                                    prop_lad=(lad or {}).get("props"))
             out.append({"label": f"{gm.get('away_name') or a} @ {gm.get('home_name') or h}",
                         "suffix": suffix, "pair": f"{a}@{h}",
                         "state": gm.get("state"), "date": gm.get("date"),
@@ -1327,6 +1534,21 @@ def _slate_sims(week, preseason, n_sims):
 def kalshi_index():
     import kalshi_nfl
     return kalshi_nfl.index()
+
+
+def _game_ladders(idx, home, away):
+    """kalshi_nfl.ladders() for a matchup, or None when Kalshi has not listed
+    it (or the read failed -- logged, never raised: an unpriced sim beats no
+    sim)."""
+    suffix = _suffix_for(idx, home, away)
+    if not suffix:
+        return None
+    try:
+        import kalshi_nfl
+        return kalshi_nfl.ladders(suffix)
+    except Exception as _e:
+        errlog.note("NFLG-ladders", _e, path=str(suffix))
+        return None
 
 
 def _suffix_for(idx, home, away):

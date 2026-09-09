@@ -3692,7 +3692,9 @@ function nflSlateCard(g) {
     `<li><span class="legtag">${p.stat}</span> ${p.player} ${p.stat === "anytime TD" ? "" : `${p.line}+`} <span style="color:var(--muted)">(${p.over_pct}%)</span></li>`).join("");
   let sgp = "";
   if (g.sgp && g.sgp.legs) {
-    const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%)</span></li>`).join("");
+    // Each leg is one of Kalshi's own rungs now, so the ask rides along where
+    // the market has an offer (the legs used to be invented lines, priceless).
+    const legs = g.sgp.legs.map((l) => `<li><span class="legtag">${l.type}</span> ${l.pick} <span style="color:var(--muted)">(${l.prob_pct}%${l.market_cents ? ` · ${l.market_cents}¢` : ""})</span></li>`).join("");
     sgp = `<details class="simdetail"><summary>🎰 Same-game parlay - joint <b>${g.sgp.combined_prob_pct}%</b> (${g.sgp.fair_payout_x}×, corr ${g.sgp.corr_delta_pct >= 0 ? "+" : ""}${g.sgp.corr_delta_pct}%)</summary><ul class="legs">${legs}</ul></details>`;
   }
   const players = (g.players || []).slice(0, 6).map((p) => {

@@ -123,6 +123,24 @@ def _ratings(season):
                     out[ab] = v
     except Exception as _e:
         errlog.note("NFLSE-ratings-2", _e)
+    # THE MARKET'S SEASON. Kalshi books a win-total ladder on all 32 teams
+    # (KXNFLWINS, "N+ wins", eight rungs each, real volume) and that ladder
+    # knows the offseason -- the roster-aware backbone above is last season's
+    # differential regressed plus a quarterback layer, and on 2026's opening
+    # day it disagreed with the market by up to five wins: HOU 5.4 projected
+    # against ~10.2 implied, LAR 8.0 against ~11.7, CHI 6.0 against ~9.9, SF
+    # 7.1 against ~10.3, BAL 8.3 against ~10.8 -- which put Houston at 0.5% to
+    # win its division against a 47c market and Seattle at 79.5% against
+    # 32c. Those are not edges. So at the bell the level is the market's,
+    # exactly as the preseason game board is anchored to Kalshi's ladders,
+    # and what the season sim adds is the JOINT structure single prices do
+    # not carry (a division race, the playoff bracket, the seeding); the
+    # ratings then blend toward actual results as games are played.
+    mkt = _market_wins()
+    if len(mkt) >= 24:
+        for ab, v in mkt.items():
+            if ab in out:
+                out[ab] = v
     try:
         import nfl_live
         rt = nfl_live.team_ratings(season) or {}
@@ -133,8 +151,13 @@ def _ratings(season):
             g = r["g"]
             if r["w"] + r["l"] < 1:
                 continue
-            # Points differential per game -> wins-scale (~2.7 pd/g = elite).
-            live = 8.5 + (r["pf_pg"] - r["pa_pg"]) * 2.5
+            # Points differential per game -> wins over 17. Measured on 2025
+            # (32 teams): 0.51 wins per point of differential per game (r =
+            # 0.92); the Pythagorean long-run figure is about 0.42. This was
+            # 2.5, five times too steep: one 20-point opening win would have
+            # read as a 58-win pace and, at the 1/7 weight below, lifted a
+            # ten-win team to seventeen.
+            live = 8.5 + (r["pf_pg"] - r["pa_pg"]) * _WINS_PER_PD
             w = g / (g + 6.0)
             out[ab] = (1 - w) * out[ab] + w * live
     except Exception as _e:
@@ -142,9 +165,67 @@ def _ratings(season):
     return out
 
 
+_WINS_PER_PD = 0.5
+
+
+def _market_wins():
+    """{abbr: expected wins implied by Kalshi's win-total ladder}, or {}.
+
+    E[W] = sum over L of P(W >= L). The ladder books "N+ wins" at each rung;
+    below its lowest rung the probability is taken as 1, above its highest a
+    geometric tail off the last two rungs. The rungs are YES asks, each
+    carrying its vig, so the league's implied wins overshoot -- and a season
+    is exactly 272 wins, so the whole table is scaled to that. Cached an
+    hour: the season sim's workers each ask."""
+    def build():
+        try:
+            wt = _price_maps().get("win_total") or {}
+        except Exception as _e:
+            errlog.note("NFLSE-market-wins", _e)
+            return None
+        by = defaultdict(dict)
+        for (ab, line), c in wt.items():
+            if c is not None and 0 < c < 100:
+                by[_canon(ab)][int(line)] = c / 100.0
+        out = {}
+        for ab, p in by.items():
+            if len(p) < 4:
+                continue
+            lines = sorted(p)
+            run, q = 1.0, {}
+            for L in lines:                 # P(W >= L) cannot rise with L
+                run = min(run, p[L])
+                q[L] = run
+            lo, hi = lines[0], lines[-1]
+            prev = q.get(hi - 1)
+            r = (q[hi] / prev) if prev and prev > q[hi] > 0 else 0.5
+            tail = q[hi] * r / (1.0 - r) if r < 1 else q[hi]
+            out[ab] = (lo - 1) + sum(q.values()) + min(tail, 1.5 * q[hi])
+        if len(out) >= 24:
+            s = sum(out.values())
+            if s > 0:
+                scale = 272.0 * len(out) / 32.0 / s
+                out = {k: round(v * scale, 3) for k, v in out.items()}
+        return out or None
+    return racing._cached(("nflss_mkt_wins",), 3600, build) or {}
+
+
+# Points of per-game margin per projected win of gap between two ratings.
+# Two reads. 2025's teams: average margin regressed on wins runs 1.66 points
+# per win (r = 0.92) and wins on margin 0.51 wins per point, i.e. ~1.96
+# points per win of underlying strength. The ratings here are EXPECTED wins,
+# already shrunk, so the constant is set the other way round -- the season
+# sim seeded with the market's wins has to give those wins back: at 1.66 it
+# returned them compressed (slope 0.74 of sim wins on market wins, 300
+# seasons, 2026-09-09: MIA 4.2 implied came back 5.2), so 1.66/0.74. This
+# was 0.9, which compressed every matchup: a 12-win side against a 6-win
+# side was a 5.4-point favourite.
+_PTS_PER_WIN = 2.25
+
+
 def _wp(ra, rb, home_edge=2.1):
-    """P(team A beats team B): ~0.9 points of spread per projected win of gap."""
-    margin = (ra - rb) * 0.9 + home_edge
+    """P(team A beats team B) off the projected-win gap."""
+    margin = (ra - rb) * _PTS_PER_WIN + home_edge
     return _phi(margin / 13.2)
 
 
@@ -160,7 +241,7 @@ _HFA_MARGIN = 2.2         # home-field edge in points of margin
 
 def _matchup_pts(ra, rb, host_edge):
     """(exp_pts_a, exp_pts_b) for a rated pair; host_edge in {+1,0,-1}."""
-    margin = (ra - rb) * 0.9 + _HFA_MARGIN * host_edge
+    margin = (ra - rb) * _PTS_PER_WIN + _HFA_MARGIN * host_edge
     return _BASE_PPG + margin / 2.0, _BASE_PPG - margin / 2.0
 
 

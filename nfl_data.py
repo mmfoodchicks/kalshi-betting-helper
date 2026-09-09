@@ -46,6 +46,37 @@ def _rows(season, week, positions):
         return None
 
 
+# HOW MUCH OF A YOUNG SEASON'S POINTS-ALLOWED TO BELIEVE. The defence exponent
+# (nfl_game_sim._DEF_EXP) was fitted on leave-one-out SEASON rates -- about
+# sixteen games behind every estimate. Fed a two-game rate it applies the same
+# slope to a number that is mostly noise. Measured on 2025 (n=544 team-games):
+# a single game's points allowed has sd 9.56 within a team against a true
+# between-team sd of 2.77, so K = 91.4/7.69 = 11.9 games of noise per game of
+# signal; the first week's rate correlates -0.02 with the rest of the season,
+# the first two weeks' 0.16, four weeks' 0.46. Week 1 has NO rate at all
+# (ESPN's standings carry zeros, so the factor was already 1.0), and a
+# season's first Sunday rate would have moved an opponent's scoring 13%
+# (the clamp) off one 40-point game. Shrunk toward the league mean by the
+# reliability of g games RELATIVE to the sixteen the exponent was fitted on,
+# so a full season is believed exactly as the fit believed it and a single
+# game about an eighth as much. Last season's rate is not blended in: it
+# correlates 0.45 (2024->25) and -0.03 (2023->24) with the next year's, worth
+# about a 1% multiplier at the extremes, which is inside the noise of the
+# exponent itself.
+_PA_K = 11.9
+_PA_FIT_G = 16.0
+
+
+def shrink_pa(pa_pg, lg_pa, games):
+    """Points-allowed per game after `games` games, shrunk toward the league
+    mean by its reliability relative to the season-length fit."""
+    g = max(0.0, float(games or 0))
+    if not lg_pa or lg_pa <= 0 or g <= 0:
+        return lg_pa
+    w = min(1.0, (g / (g + _PA_K)) / (_PA_FIT_G / (_PA_FIT_G + _PA_K)))
+    return round(lg_pa + w * (pa_pg - lg_pa), 3)
+
+
 def week_teams(season, week):
     """{abbr: team profile} for one week, from Sleeper projections + ESPN schedule.
 
@@ -117,7 +148,7 @@ def week_teams(season, week):
                     t["lg_pa_pg"] = round(lg_pa, 3)
                     r = rt.get(ab) or rt.get(_canon(ab))
                     if r and r.get("pa_pg"):
-                        t["def_pa_pg"] = r["pa_pg"]
+                        t["def_pa_pg"] = shrink_pa(r["pa_pg"], lg_pa, r.get("g") or 0)
         except Exception as _e:
             errlog.note("NFLD-week_teams-2", _e)
 

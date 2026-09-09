@@ -72,9 +72,21 @@ def _norm(name):
     return " ".join(s.split())
 
 
-def _fetch(series):
+# Pages of 200 a series may run to before the walk stops. This was FOUR --
+# 800 markets -- and a regular-season week is bigger than that: measured on
+# the 2026 week-1 board (16 games), KXNFLRECYDS listed 956 open markets and
+# KXNFLREC 824, so the last 156 receiving-yard rungs and 24 reception rungs
+# were never fetched. Kalshi pages in listing order, and the tail was the
+# THURSDAY game (NE@SEA: 75 rec-yard rungs, 24 reception rungs) plus most of
+# SF@LAR -- the games nearest kickoff, with the deepest books, silently
+# unpriced. Fifteen pages is 3,000 markets, about three weeks of the widest
+# series; a walk that still has a cursor at the end is logged, not ignored.
+_MAX_PAGES = 15
+
+
+def _fetch(series, max_pages=_MAX_PAGES):
     out, cursor = [], None
-    for _ in range(4):
+    for _ in range(max_pages):
         url = f"{kalshi.BASE}/markets?series_ticker={series}&status=open&limit=200"
         if cursor:
             url += f"&cursor={cursor}"
@@ -87,6 +99,10 @@ def _fetch(series):
         cursor = d.get("cursor")
         if not cursor:
             break
+    else:
+        errlog.note("KNFL-markets-truncated",
+                    msg=f"{series}: {len(out)} markets over {max_pages} pages "
+                        "and the cursor is still open")
     return out
 
 
@@ -209,6 +225,12 @@ def _build():
             name = title.split(":", 1)[0].strip()
             line = m.get("floor_strike")
             if not name or line is None:
+                continue
+            # "ATL Falcons D/ST: 1+ touchdowns" is a TEAM market in a player
+            # series. It parsed as a player called "atl falcons d st" -- never
+            # matched a roster, so harmless to the sim, but it sat in every
+            # game's player index and name map as if it were a person.
+            if "D/ST" in name.upper():
                 continue
             e = ent(suffix)
             key = (stat, _norm(name), float(line))

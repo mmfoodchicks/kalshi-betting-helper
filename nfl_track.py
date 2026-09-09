@@ -17,6 +17,7 @@ import time
 
 import errlog
 import kalshi
+import predlog
 import store
 
 # ESPN answers a burst with 403 and then KEEPS answering 403: the block
@@ -64,30 +65,83 @@ def record_from_board(data):
     n = 0
     for g in data.get("games") or []:
         state = (g.get("state") or "").lower()
-        if state and state != "pre":
-            continue                  # live/final: never write prices again
-        ph = g.get("p_home")
         kx = g.get("kalshi") or {}
+        date = (g.get("date") or "")[:10]
+        home, away = canon(g.get("home")), canon(g.get("away"))
+        if not (date and home and away):
+            continue
+        gid = f"{date}_{away}@{home}"
+        tk_home, tk_away = kx.get("home_ticker"), kx.get("away_ticker")
+        if state and state != "pre":
+            # Live/final: never write prices again -- but a row filed before
+            # the board carried tickets (the 2026 week-1 slate) gets its
+            # ticket now, so the settlement can grade it.
+            if tk_home and tk_away:
+                store.backfill_nfl_ticker(gid, "nfl", tk_home, tk_away)
+            continue
+        ph = g.get("p_home")
         if ph is None:
             continue
         pick_home = ph >= 0.5
         price = kx.get("home_cents" if pick_home else "away_cents")
         if price is None:
             continue                  # no market for our side -> nothing to grade ROI on
-        date = (g.get("date") or "")[:10]
-        home, away = canon(g.get("home")), canon(g.get("away"))
-        if not (date and home and away):
-            continue
-        gid = f"{date}_{away}@{home}"
         side = "home" if pick_home else "away"
         raw = g.get("p_home_raw")
         store.record_nfl_pick(
             gid, date, week, pre, side, home if pick_home else away,
             ph if pick_home else 1 - ph, price,
             pred_total=g.get("exp_total"),
-            prob_raw=(raw if pick_home else 1 - raw) if raw is not None else None)
+            prob_raw=(raw if pick_home else 1 - raw) if raw is not None else None,
+            ticker=tk_home if pick_home else tk_away)
+        if tk_home and tk_away:
+            store.backfill_nfl_ticker(gid, "nfl", tk_home, tk_away)
         store.update_nfl_close(gid, price, side)
         n += 1
+    return n
+
+
+def _su_grade(r, yes):
+    """A straight-up pick off its own moneyline's settlement: YES means the
+    pick's team won. (won, winner_name, home_won); the actual total is not
+    in a settlement and stays for the scoreboard pass to fill."""
+    try:
+        _date, matchup = r["game_id"].split("_", 1)
+        away, home = matchup.split("@", 1)
+    except ValueError:
+        away = home = None
+    won = 1 if yes else 0
+    picked_home = r.get("pick_side") == "home"
+    home_won = 1 if picked_home == bool(won) else 0
+    winner = (home if home_won else away) or (r.get("pick_name") if won else "other")
+    return won, winner, home_won
+
+
+def grade_settled():
+    """Grade picks off Kalshi's settlement of the ticket each one is -- the
+    college recorder's grader (cfb_track.grade_lines), ported. predlog
+    resolves the moneyline (the board logs both sides of every game there,
+    and its early probe reads the settlement hours after kickoff); the pick
+    row reads its outcome. Needs no ESPN at all, which matters: ESPN's WAF
+    parked this host on every pass of 2026-09-04..09 and the 16 week-1 picks
+    would have waited on it indefinitely. A void or delisted market voids
+    the pick. Returns rows graded."""
+    rows = [r for r in store.ungraded_nfl_picks() if r.get("ticker")]
+    if not rows:
+        return 0
+    res = predlog.results([r["ticker"] for r in rows])
+    n = 0
+    for r in rows:
+        got = res.get(r["ticker"])
+        if not got:
+            continue
+        if got["graded"] == 2:
+            store.void_nfl_pick(r["game_id"])
+            n += 1
+        elif got["graded"] == 1 and got["outcome"] is not None:
+            won, winner, home_won = _su_grade(r, int(got["outcome"]) == 1)
+            store.set_nfl_grade(r["game_id"], won, winner, home_won=home_won)
+            n += 1
     return n
 
 
@@ -159,23 +213,30 @@ def _grade_rows(picks, finals):
 
 
 def grade_due():
-    """Grade any recorded picks whose games are now final. Same ±1-day sweep
-    as baseball.grade_picks — late kickoffs cross the calendar date. Only
-    dates that have arrived are probed (a pick for next Sunday cannot be
-    final), each date is fetched once per pass, and one ESPN refusal ends
-    the pass and parks the module."""
+    """Grade any recorded picks whose games are now final. The settlement
+    grader runs first and needs no ESPN; the scoreboard pass then grades
+    whatever is left (rows without a ticket) and fills the actual totals.
+    Same ±1-day sweep as baseball.grade_picks — late kickoffs cross the
+    calendar date. Only dates that have arrived are probed (a pick for next
+    Sunday cannot be final), each date is fetched once per pass, and one
+    ESPN refusal ends the pass and parks the module."""
+    try:
+        n0 = grade_settled()
+    except Exception as _e:
+        errlog.note("NFLT-settled", _e)
+        n0 = 0
     if espn_blocked():
-        return 0
+        return n0
     import clock
     today = clock.today_et().isoformat()
     picks = [p for p in store.ungraded_nfl_picks()
              if (p.get("date") or "") <= today]
     if not picks:
-        return 0
+        return n0
     by_date = {}
     for p in picks:
         by_date.setdefault(p["date"], []).append(p)
-    n, memo = 0, {}
+    n, memo = n0, {}
     for date, ps in sorted(by_date.items()):
         finals = {}
         try:

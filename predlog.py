@@ -377,12 +377,18 @@ def resolve_due(limit=150):
         # 18 HOURS BEFORE kickoff, and the week board logs its rows on
         # Tuesday, so log-time + 6h says nothing about the game. Five hours
         # after the logged kickoff the game is over; rows without event_ts
-        # wait for close_time as before.
+        # wait for close_time as before. NFL game rows are the same shape
+        # (measured 2026-09-09: KXNFLGAME/SPREAD/TOTAL all close kickoff +
+        # 48h, and the slate logs its rows days out), so those that carry a
+        # kickoff probe the same way; the 66h rule stays for the old rows
+        # that do not.
         early = [r["ticker"] for r in c.execute(
             "SELECT ticker FROM predictions WHERE graded=0 AND close_time > ? AND ("
             "(close_time - 237600 <= ? AND ts + 21600 <= ? "
-            " AND (model LIKE 'mlb%' OR model LIKE 'nfl%')) "
-            "OR (model LIKE 'cfb%' AND event_ts IS NOT NULL AND event_ts + 18000 <= ?)) "
+            " AND (model LIKE 'mlb%' OR model LIKE 'nfl%')"
+            " AND NOT (model LIKE 'nfl%' AND event_ts IS NOT NULL)) "
+            "OR ((model LIKE 'cfb%' OR model LIKE 'nfl%') "
+            "    AND event_ts IS NOT NULL AND event_ts + 18000 <= ?)) "
             "ORDER BY close_time LIMIT ?", (now, now, now, now, limit)).fetchall()]
         due += early
         early = set(early)
