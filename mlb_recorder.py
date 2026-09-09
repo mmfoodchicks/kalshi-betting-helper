@@ -241,6 +241,14 @@ def _loop():
             ufc_presets.tick()
         except Exception as _e:
             errlog.note("MREC-ufc", _e)
+        # The locked NFL slips: the same recipes on the week's slate, off
+        # sims already in the shared store (never simulating here), logged
+        # under nfl_ tags. Own code, same reason as football's record.
+        try:
+            import nfl_presets
+            nfl_presets.tick()
+        except Exception as _e:
+            errlog.note("MREC-nflp", _e)
         # College football's track record: same cadence, same rule as the
         # NFL one (reads an existing board, never builds), own code.
         try:

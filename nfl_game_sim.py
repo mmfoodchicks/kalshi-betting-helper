@@ -659,6 +659,16 @@ def _build_masks(home, away, hp, ap, lines, margins, totals, p_home, n,
             add("TD", f"{nm} anytime TD",
                 _mask_of(lambda i2, A=L["td"]: A[i2] >= 1, n), f"{nm}:td",
                 team=p_team)
+    # The NO side of every spread and player leg, exactly as the MLB maker has
+    # offered it all along (mlb_sim._no_candidates): a fade is a real Kalshi
+    # position with its own ask, ticker and settlement, and the mask is the
+    # exact complement so its correlations fall out of the same sim. The NFL
+    # pool was YES-only, which is why "the spread nearest 80%" had nothing to
+    # walk to on a coin-flip game -- the favourite's shortest line tops out
+    # near its moneyline -- while "NO - LAC by over 10.5" is that leg. The
+    # moneyline and the total already carry their other side.
+    import mlb_sim as _ms
+    cands.extend(_ms._no_candidates(cands, n))
     return cands
 
 
@@ -1225,11 +1235,30 @@ def _iso_ts(s):
         return None
 
 
+def game_started(g, now=None):
+    """Has this slate game kicked off? A game that has cannot be a pre-game
+    leg: its sim is stale and its quotes are live-market. Baseball excludes
+    these unless explicitly opted into its live engine; NFL has no live engine
+    yet, so they are excluded outright -- previously a finished Thursday game
+    sat in Friday's builds at its pre-game probabilities."""
+    import time as _t5
+    import datetime as _dt5
+    if (g.get("state") or "").lower() in ("post", "in"):
+        return True
+    d = g.get("date") or ""
+    try:
+        return bool(d) and _dt5.datetime.fromisoformat(
+            d.replace("Z", "+00:00")).timestamp() + 300 < (now or _t5.time())
+    except ValueError:
+        return False
+
+
 def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
                  target_payout=0, max_legs_per_game=3, max_total_legs=8,
                  legs_mode="prefer", payout_mode="off", conn="or",
                  objective="balanced", n_sims=3000, types=None, game_sel=None,
-                 max_bet=False, cap_x=None, abort_cb=None):
+                 max_bet=False, cap_x=None, abort_cb=None, sides=None,
+                 leg_ok=None, payout_basis="fair", frontier_cache=None):
     """One parlay across the week's NFL games, priced against Kalshi.
 
     `cap_pct` turns the confidence floor into a band exactly as it does in
@@ -1237,7 +1266,14 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     the builder walks to the one that lands inside it.
 
     `max_bet` swaps every target for Kalshi's payout ceiling -- the likeliest
-    slip that still collects the full capped payout. See combo_engine.max_bet."""
+    slip that still collects the full capped payout. See combo_engine.max_bet.
+
+    `sides` restricts the pool to YES legs, NO legs or both (None); `leg_ok`
+    is a per-leg rule applied AFTER pricing so it can read the ask;
+    `payout_basis="market"` judges the payout target on what Kalshi pays with
+    every leg quoted; `frontier_cache` (a dict the caller owns) lets builds
+    that differ only in what they CHOOSE share one frontier -- the locked
+    payout rungs (nfl_presets) are the consumer, exactly as in baseball."""
     import combo_engine
     import mlb_sim
 
@@ -1246,111 +1282,40 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     if cap_pct is not None and cap_pct / 100.0 > floor:
         ceil = min(1.0, cap_pct / 100.0)
 
-    games = _slate_sims(week, preseason, n_sims)
-    # A game that has kicked off cannot be a pre-game leg: its sim is stale and
-    # its quotes are live-market. Baseball excludes these unless explicitly
-    # opted into its live engine; NFL has no live engine yet, so they are
-    # excluded outright -- previously a finished Thursday game sat in Friday's
-    # builds at its pre-game probabilities.
-    import time as _t5
-    import datetime as _dt5
-    _now = _t5.time()
-
-    def _started(g):
-        if (g.get("state") or "").lower() in ("post", "in"):
-            return True
-        d = g.get("date") or ""
-        try:
-            return bool(d) and _dt5.datetime.fromisoformat(
-                d.replace("Z", "+00:00")).timestamp() + 300 < _now
-        except ValueError:
-            return False
-
-    n_started = sum(1 for g in games if _started(g))
-    games = [g for g in games if not _started(g)]
-    if not games:
-        return {"error_hint": "all_started", "n_started": n_started}
-    # Grid selection: "base" keeps the whole game, "base:TEAM" keeps one club's
-    # legs only -- exactly baseball's semantics. `base` may be the Kalshi suffix
-    # or the AWY@HOM pair, because a game with no market yet has no suffix but
-    # is still pickable.
-    sel_map = {}
-    for tok in (game_sel or ()):
-        base, _, team = str(tok).partition(":")
-        if base:
-            sel_map[base] = team or True
-    games_bundles = []
-    for g in games:
-        # Same supersede boundary as baseball: a build that lost the combo
-        # slot stops here, before paying for another game, so an NFL build
-        # and an MLB build can never grind the shared core together.
-        if abort_cb is not None and abort_cb():
-            raise RuntimeError("superseded by a newer build")
-        team_only = None
-        if sel_map:
-            v = sel_map.get(g["suffix"] or "", sel_map.get(g.get("pair") or ""))
-            if v is None:
-                continue
-            if v is not True:
-                team_only = v
-        cands = [c for c in g["cands"]
-                 if (types is None or c["type"] in types)]
-        if not cands:
-            continue
-        price_cands(cands, g["suffix"])
-        if team_only:
-            # One club selected: keep that club's legs. Totals and other
-            # game-level legs drop with the other side, matching baseball.
-            cands = [c for c in cands if c.get("side_team") == team_only]
-        cands = [c for c in cands if floor <= c["marg"] <= ceil]
-        # The NFL ladder is WIDE -- Kalshi books two dozen spreads and nineteen
-        # totals a side -- and same-game bundling is combinatorial in the
-        # per-game pool: an uncapped pool put C(100+,4) mask-ANDs inside one
-        # Build click and hung it for minutes. Keep the most bettable forty:
-        # priced legs first, then the biggest model-vs-price gap, then the
-        # likeliest. MLB never needed this cap because its ladders are a
-        # quarter the width.
-        if len(cands) > 40:
-            cands.sort(key=lambda c: (
-                c.get("price_cents") is None,
-                -abs((c.get("marg") or 0) * 100 - (c.get("price_cents") or 50.0)),
-                -(c.get("marg") or 0)))
-            cands = cands[:40]
-        # Same optimism bound as baseball: a max bet multiplies prices, so a leg
-        # the model likes far more than the market can carry the slip alone.
-        if max_bet:
-            cands = [c for c in cands
-                     if combo_engine.stackable(c["marg"], c.get("price_cents"))]
-        if not cands:
-            continue
-        # Floor of 1, not 2 -- same bug as baseball carried. With same-game off
-        # the caller passes max_legs_per_game=1 and a floor of 2 stacked anyway.
-        depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
-        bundles = mlb_sim.game_bundles(cands, g["n"], max_legs=depth)
-        if bundles:
-            games_bundles.append((g["label"], bundles, g["suffix"]))
+    _fkey = None
+    if frontier_cache is not None:
+        _fkey = (week, bool(preseason), target_pct, cap_pct, n_legs, max_legs_per_game,
+                 max_total_legs, legs_mode, payout_mode, conn, max_bet, n_sims,
+                 tuple(sorted(sides)) if sides else None,
+                 tuple(sorted(types)) if types else None,
+                 tuple(sorted(map(str, game_sel))) if game_sel else None,
+                 leg_ok is None)
+    _hit = frontier_cache.get(_fkey) if frontier_cache is not None else None
+    if _hit is not None:
+        games_bundles, states, n_started, _kick = _hit
+        if isinstance(games_bundles, dict):
+            return dict(games_bundles)                 # a cached error_hint
+    else:
+        games_bundles, states, n_started, _kick = _build_frontier(
+            week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_game,
+            max_total_legs, legs_mode, payout_mode, types, game_sel, max_bet,
+            abort_cb, sides, leg_ok)
+        if frontier_cache is not None:
+            frontier_cache[_fkey] = (games_bundles, states, n_started, _kick)
+        if isinstance(games_bundles, dict):
+            return games_bundles                       # an error_hint
     if not games_bundles:
         return None
-
-    # One leg per game on a one-game board cannot reach two legs, and that is a
-    # sentence the caller should be able to say rather than shrug at.
-    if len(games_bundles) < 2 and max_legs_per_game <= 1:
-        return {"error_hint": "single_game_no_stack", "n_games_available": len(games_bundles)}
-    # Demand-driven DP depth, same as baseball: the NFL ladder is the widest
-    # board here (~24 bundles a game across 16 games), so paying for leg counts
-    # nobody asked for is exactly where this used to hang.
-    _dp = combo_engine.dp_legs(
-        n_legs, "off" if max_bet else legs_mode, max_total_legs,
-        payout_mode="require" if max_bet else payout_mode)
-    states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
     if max_bet:
-        # Same reasoning as baseball: the ceiling is the target, so the leg and
-        # payout preferences have nothing left to bind.
+        # The ceiling IS the target, so the leg and payout preferences have
+        # nothing left to bind.
         targets = {}
         best, meta = combo_engine.max_bet(states, cap=cap_x)
     else:
         targets = {"legs_target": n_legs, "payout_target": target_payout,
                    "legs_mode": legs_mode, "payout_mode": payout_mode, "conn": conn}
+        if payout_basis == "market":
+            targets["payout_basis"] = "market"
         best, meta = combo_engine.choose(states, objective=objective, **targets)
     if not best:
         return None
@@ -1358,17 +1323,13 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
                                None if max_bet else
                                (target_payout if payout_mode != "off" else None))
     # Tickets and kickoffs on every leg, so the slip can be logged and graded
-    # by sliplog exactly like a baseball slip. NFL slips were never in the
-    # ledger before this ("every parlay you build is logged" was true of one
-    # sport), so the correlation verdict had no football evidence at all.
+    # by sliplog exactly like a baseball slip.
     import kalshi_nfl
     try:
         _idx = kalshi_nfl.index() or {}
     except Exception as _e:
         errlog.note("NFLG-stamp-idx", _e)
         _idx = {}
-    _kick = {g["suffix"]: _iso_ts(g.get("date"))
-             for g in games if g.get("suffix")}
     for grp in item.get("groups") or []:
         for leg in grp.get("legs") or []:
             tk, close = kalshi_nfl.ticker_leg(_idx, grp.get("suffix"),
@@ -1379,6 +1340,8 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
         if k != "objective" and v is not None:
             item[k] = v
     item["objective"] = "max_bet" if max_bet else objective
+    if payout_basis == "market":
+        item["payout_basis"] = "market"
     item["legs_target"] = None if max_bet else (n_legs if legs_mode != "off" else None)
     if max_bet:
         # Same trap as baseball: _mixed_item's payout_reached defaults to True
@@ -1422,6 +1385,106 @@ def build_parlay(week=1, preseason=False, n_legs=4, target_pct=55, cap_pct=None,
     return item
 
 
+def _build_frontier(week, preseason, n_sims, floor, ceil, n_legs, max_legs_per_game,
+                    max_total_legs, legs_mode, payout_mode, types, game_sel, max_bet,
+                    abort_cb, sides, leg_ok):
+    """The expensive half of build_parlay: the slate's sims, priced and
+    banded, bundled per game and swept into the frontier. Returns
+    (games_bundles, states, n_started, kickoffs) -- or (error_hint dict,
+    None, n_started, {}) when nothing can be built -- so the chooser can be
+    run many times over one frontier (build_parlay's frontier_cache)."""
+    import combo_engine
+    import mlb_sim
+    import time as _t5
+
+    games = _slate_sims(week, preseason, n_sims)
+    _now = _t5.time()
+    n_started = sum(1 for g in games if game_started(g, _now))
+    games = [g for g in games if not game_started(g, _now)]
+    if not games:
+        return {"error_hint": "all_started", "n_started": n_started}, None, n_started, {}
+    # Grid selection: "base" keeps the whole game, "base:TEAM" keeps one club's
+    # legs only -- exactly baseball's semantics. `base` may be the Kalshi suffix
+    # or the AWY@HOM pair, because a game with no market yet has no suffix but
+    # is still pickable.
+    sel_map = {}
+    for tok in (game_sel or ()):
+        base, _, team = str(tok).partition(":")
+        if base:
+            sel_map[base] = team or True
+    games_bundles = []
+    for g in games:
+        # Same supersede boundary as baseball: a build that lost the combo
+        # slot stops here, before paying for another game, so an NFL build
+        # and an MLB build can never grind the shared core together.
+        if abort_cb is not None and abort_cb():
+            raise RuntimeError("superseded by a newer build")
+        team_only = None
+        if sel_map:
+            v = sel_map.get(g["suffix"] or "", sel_map.get(g.get("pair") or ""))
+            if v is None:
+                continue
+            if v is not True:
+                team_only = v
+        cands = [dict(c) for c in g["cands"]
+                 if (types is None or c["type"] in types)
+                 and (sides is None or c.get("side", "yes") in sides)]
+        if not cands:
+            continue
+        price_cands(cands, g["suffix"])
+        # A caller-supplied per-leg rule, after pricing so it can read the
+        # ask (the locked recipes keep only the rung they are about).
+        if leg_ok is not None:
+            cands = [c for c in cands if leg_ok(c)]
+        if team_only:
+            # One club selected: keep that club's legs. Totals and other
+            # game-level legs drop with the other side, matching baseball.
+            cands = [c for c in cands if c.get("side_team") == team_only]
+        cands = [c for c in cands if floor <= c["marg"] <= ceil]
+        # The NFL ladder is WIDE -- Kalshi books two dozen spreads and nineteen
+        # totals a side -- and same-game bundling is combinatorial in the
+        # per-game pool: an uncapped pool put C(100+,4) mask-ANDs inside one
+        # Build click and hung it for minutes. Keep the most bettable forty:
+        # priced legs first, then the biggest model-vs-price gap, then the
+        # likeliest. MLB never needed this cap because its ladders are a
+        # quarter the width.
+        if len(cands) > 40:
+            cands.sort(key=lambda c: (
+                c.get("price_cents") is None,
+                -abs((c.get("marg") or 0) * 100 - (c.get("price_cents") or 50.0)),
+                -(c.get("marg") or 0)))
+            cands = cands[:40]
+        # Same optimism bound as baseball: a max bet multiplies prices, so a leg
+        # the model likes far more than the market can carry the slip alone.
+        if max_bet:
+            cands = [c for c in cands
+                     if combo_engine.stackable(c["marg"], c.get("price_cents"))]
+        if not cands:
+            continue
+        # Floor of 1, not 2 -- same bug as baseball carried. With same-game off
+        # the caller passes max_legs_per_game=1 and a floor of 2 stacked anyway.
+        depth = max(1, min(max_legs_per_game, max(n_legs, 3), max_total_legs))
+        bundles = mlb_sim.game_bundles(cands, g["n"], max_legs=depth)
+        if bundles:
+            games_bundles.append((g["label"], bundles, g["suffix"]))
+    if not games_bundles:
+        return None, None, n_started, {}
+    # One leg per game on a one-game board cannot reach two legs, and that is a
+    # sentence the caller should be able to say rather than shrug at.
+    if len(games_bundles) < 2 and max_legs_per_game <= 1:
+        return ({"error_hint": "single_game_no_stack",
+                 "n_games_available": len(games_bundles)}, None, n_started, {})
+    # Demand-driven DP depth, same as baseball: the NFL ladder is the widest
+    # board here (~24 bundles a game across 16 games), so paying for leg counts
+    # nobody asked for is exactly where this used to hang.
+    _dp = combo_engine.dp_legs(
+        n_legs, "off" if max_bet else legs_mode, max_total_legs,
+        payout_mode="require" if max_bet else payout_mode)
+    states = combo_engine.frontier(games_bundles, max_total_legs=_dp, net=True)
+    _kick = {g["suffix"]: _iso_ts(g.get("date")) for g in games if g.get("suffix")}
+    return games_bundles, states, n_started, _kick
+
+
 _SIMS_TTL = 1800
 
 
@@ -1441,9 +1504,9 @@ def _slate_sims(week, preseason, n_sims):
     import nfl_live
     import time as _t3
     season = _season()
-    # sims4: the player legs now carry Kalshi's rungs and krefs (see below),
-    # so a sims3 cache built without them must not be served.
-    name = f"nfl_parlay_sims4_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
+    # sims5: the pool carries the NO side of every spread and player leg
+    # (sims4 added Kalshi's rungs and krefs); an older cache must not be served.
+    name = f"nfl_parlay_sims5_{season}_w{week}_{int(bool(preseason))}_{n_sims}"
     disk, _age = boardshare.get(name, _SIMS_TTL)
     if disk is not None:
         return disk

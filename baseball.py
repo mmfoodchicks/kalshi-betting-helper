@@ -2538,7 +2538,14 @@ def _log_prop_predictions(g, cands):
     for c in cands:
         model = _PREDLOG_TYPES.get(c.get("type"))
         kref = c.get("kref")
-        p = c.get("marg")
+        # The RAW sim frequency, not `marg`: build_candidates has already put
+        # the pooled batter-prop calibration into `marg` for the hit/bases/HR
+        # families, and the per-market calibrators fit on THESE rows. Logging
+        # the corrected number would have each market's fit measure the
+        # pooled correction's residual and then be applied to the raw
+        # frequency in prop_market() -- under-correcting by exactly the pooled
+        # amount once earned. Same convention as the moneyline (p_home_raw).
+        p = c.get("marg_raw") if c.get("marg_raw") is not None else c.get("marg")
         if not model or not kref or p is None or not (0.0 < p < 1.0):
             continue
         # One row per MARKET, on the side the ticker names: the NO and Under

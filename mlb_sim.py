@@ -1946,6 +1946,14 @@ def build_candidates(g, sim, types=None):
             marg = _calibrate.prop_market(marg, _PREDLOG_BUCKET[typ])
         if 0.04 <= marg <= 0.97:
             cands.append({"type": typ, "label": label, "mask": m, "marg": marg,
+                          # The sim's OWN frequency, before any calibration or
+                          # override. This is what the prediction log files
+                          # (baseball._log_prop_predictions): a calibrator fitted
+                          # on numbers it had already corrected would measure
+                          # its own residual and, applied to the raw frequency,
+                          # cancel itself -- the feedback loop the ML path
+                          # avoids by logging p_home_raw.
+                          "marg_raw": _popcount(m) / n,
                           "group": group or typ, "model_pct": model, "kref": kref,
                           "sim_avg": avg, "avg_unit": unit, "side": "yes"})
 
@@ -2057,7 +2065,11 @@ def build_candidates(g, sim, types=None):
             for m in (1, 2, 3, 4):
                 add("Hit", f"{nm} {m}+ hits", lambda i, a=hit, m=m: a[i] >= m, grp,
                     bp.get(f"hit{m}"), {"t": "hit", "player": nm, "line": m}, avg=a_hit, unit="hits")
-            for m in (2, 3, 4, 5, 6):   # HRR is a combined market — no closed form
+            # 1+ included: Kalshi books "1+ H+R+RBI" on every batter it lists
+            # (87 of 87 on the 2026-09-09 slate) and the ladder started at 2,
+            # so the market's likeliest YES and its ~12% fade were never
+            # offered. HRR is a combined market -- no closed form.
+            for m in (1, 2, 3, 4, 5, 6):
                 add("HRR", f"{nm} {m}+ H+R+RBI",
                     lambda i, h=hit, rr=r, bb=rbi, m=m: h[i] + rr[i] + bb[i] >= m, grp,
                     None, {"t": "hrr", "player": nm, "line": m}, avg=a_hrr, unit="H+R+RBI")
@@ -2085,7 +2097,14 @@ def build_candidates(g, sim, types=None):
     # ladder built off a tiny sample (a rookie's K/9 is mostly noise early).
     hsp_ip = (g.get("home_sp") or {}).get("ip")
     asp_ip = (g.get("away_sp") or {}).get("ip")
-    K_LINES = (4, 5, 6, 7, 8, 9, 10)
+    # 1-3 and 11-12 included: Kalshi's ladder follows the arm. A 2.4-K
+    # starter (Daniel Lynch, 2026-09-09) is booked at 1+..5+ and a strikeout
+    # pitcher at 4+..12+; starting at 4 left 46 booked rungs on the slate
+    # with no leg at all -- the bettable end of a low-K ladder -- and the
+    # marginal filter already drops whichever ones a given arm makes
+    # near-certain or hopeless. The closed form (props.pitcher_k_props)
+    # only tabulates 4+, so the lower rungs carry no model_pct.
+    K_LINES = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
     mean_hk, mean_ak = round(_mean(hk), 1), round(_mean(ak), 1)
     if ks_h and props.get("home_sp_name"):
         for line in K_LINES:

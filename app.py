@@ -3656,6 +3656,77 @@ def api_ufc_presets():
                     "best": ufc_presets.best_today(payload, records)})
 
 
+@app.route("/api/nfl/presets")
+def api_nfl_presets():
+    """The locked NFL slips (nfl_presets.py): each recipe's current build,
+    its ledger record and biggest win, and the week's crown. No parameters
+    on purpose -- the knobs are constants server-side. Built for the
+    recorder's week (nfl_track's cached current week), whatever week the
+    board's dropdown shows."""
+    import boardshare
+    import nfl_presets
+    payload, age = boardshare.get(nfl_presets.NAME, None)
+    try:
+        records = nfl_presets.records()
+    except Exception as _e:
+        errlog.note("APP-nfl-presets-records", _e)
+        records = {}
+    try:
+        best_wins = nfl_presets.best_wins()
+    except Exception as _e:
+        errlog.note("APP-nfl-presets-wins", _e)
+        best_wins = {}
+    import sliplog
+    firsts = {}
+    for pid, p in ((payload or {}).get("presets") or {}).items():
+        starts = []
+        for grp in ((p.get("item") or {}).get("groups") or []):
+            for l in grp.get("legs") or []:
+                try:
+                    st = sliplog._start_of(l)
+                except Exception as _e:
+                    errlog.note("APP-nfl-presets-start", _e, path=pid)
+                    st = None
+                if st:
+                    starts.append(st)
+        if starts:
+            firsts[pid] = min(starts)
+    # The recorder only rebuilds off sims somebody already paid for (the
+    # PC's upload or a Build click); a tab open on a missing or half-hour-
+    # stale payload kicks a forced build in a claimed background thread --
+    # a Build click's cost, when a person is looking -- and the client polls.
+    # Not while the week is over, though: once every slip's first kickoff
+    # has passed and the recorder still says the same week, a rebuild would
+    # simulate sixteen finished games to conclude there is nothing to build,
+    # once per half hour for as long as the tab stays open.
+    import nfl_track
+    if payload:
+        _now = time.time()
+        _wk = nfl_track._state.get("week")
+        stale = (_now - (payload.get("built_ts") or 0) > nfl_presets._STALE_S
+                 and (any(f > _now for f in firsts.values())
+                      or _wk is None or _wk != payload.get("week")))
+    else:
+        stale = True
+    if stale:
+        if boardshare.claim(nfl_presets.NAME + "_kick"):
+            def _bg():
+                try:
+                    nfl_presets.tick(force=True)
+                except Exception as e:
+                    errlog.note("NFLP-kick", e)
+                finally:
+                    boardshare.release(nfl_presets.NAME + "_kick")
+            threading.Thread(target=_bg, daemon=True).start()
+    if not payload:
+        return jsonify({"status": "building", "records": records,
+                        "best_wins": best_wins}), 202
+    return jsonify({**payload, "age_s": round(age), "records": records,
+                    "best_wins": best_wins, "built_ts": int(time.time() - age),
+                    "first_starts": firsts,
+                    "best": nfl_presets.best_today(payload, records)})
+
+
 @app.route("/api/nfl/sim")
 def api_nfl_sim():
     """Correlated per-game Monte Carlo seeded by Sleeper weekly projections:

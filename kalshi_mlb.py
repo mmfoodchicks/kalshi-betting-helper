@@ -59,9 +59,17 @@ def _norm(name):
     normalize identically. The old strip-only version depended on BOTH feeds
     carrying the accent: MLB StatsAPI does and today's Kalshi subtitles do, so
     nothing mismatched on the audited slate -- but one feed quietly dropping
-    diacritics would have silently unpriced every accented player's props."""
+    diacritics would have silently unpriced every accented player's props.
+
+    GENERATIONAL SUFFIXES ARE DROPPED TOO. Kalshi keeps some and drops
+    others: it books "Jazz Chisholm Jr." with the Jr. and "Daniel Lynch"
+    without the IV that MLB's StatsAPI carries, so on 2026-09-09 Lynch's
+    whole strikeout ladder (seven rungs, both sides) went unpriced and fell
+    out of every maker. The recorder's matcher (value._norm) already
+    stripped these; this one did not. Same set, so the two agree."""
     s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z]", "", s.lower())
+    s = re.sub(r"\b(jr|sr|ii|iii|iv)\b", " ", s.lower())
+    return re.sub(r"[^a-z]", "", s)
 
 
 def _suffix(event_ticker):
@@ -72,20 +80,35 @@ def _suffix(event_ticker):
     return event_ticker.split("-", 1)[1]
 
 
-def _fetch(series):
+# Pages of 400 a series may run to. Measured 2026-09-09 (15 games): the widest
+# series, KXMLBHRR, listed 435 open markets and every other one fewer, so six
+# pages (2,400) is three slates of headroom -- but a walk that ends with the
+# cursor still open must say so rather than serve a silently truncated book
+# (the NFL index lost the Thursday game's receiving ladders exactly that way).
+_MAX_PAGES = 6
+
+
+def _fetch(series, max_pages=_MAX_PAGES):
     out, cursor = [], None
-    for _ in range(6):
+    for _ in range(max_pages):
         url = f"{kalshi.BASE}/markets?series_ticker={series}&status=open&limit=400"
         if cursor:
             url += f"&cursor={cursor}"
         try:
             d = kalshi._get_json(url)
-        except Exception:
+        except Exception as _e:
+            # A throttled or failed page used to vanish: the series came back
+            # short and nothing anywhere said so.
+            errlog.note("KIDX-markets-fetch", _e, path=series)
             break
         out.extend(d.get("markets") or [])
         cursor = d.get("cursor")
         if not cursor:
             break
+    else:
+        errlog.note("KIDX-markets-truncated",
+                    msg=f"{series}: {len(out)} markets over {max_pages} pages "
+                        "and the cursor is still open")
     return out
 
 

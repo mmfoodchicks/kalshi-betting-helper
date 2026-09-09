@@ -1349,7 +1349,9 @@ else:
 # One game on the board plus one leg per game cannot reach two legs. Returning
 # a bare None left the NFL tab saying "no combo" with no reason, on a preseason
 # week that had exactly one game.
-_hint = _insp.getsource(_NFS.build_parlay)
+# The expensive half of build_parlay moved to _build_frontier (the locked
+# NFL recipes share one frontier across the payout rungs); the hint lives there.
+_hint = _insp.getsource(_NFS.build_parlay) + _insp.getsource(_NFS._build_frontier)
 ck("the one-leg-per-game / one-game dead end is named, not shrugged at",
    "single_game_no_stack" in _hint,
    "None is indistinguishable from 'the slate is dry'")
@@ -6473,7 +6475,10 @@ print("=" * 72)
 import nfl_game_sim as _ngs3
 import combo_engine as _ce4
 import random as _rnd4
-_bp_src = _insp.getsource(_ngs3.build_parlay)
+# The kickoff rule is its own function now (game_started), shared with the
+# locked NFL recipes.
+_bp_src = (_insp.getsource(_ngs3.build_parlay) + _insp.getsource(_ngs3._build_frontier)
+           + _insp.getsource(_ngs3.game_started))
 ck("started games are excluded from pre-game combos",
    '"post", "in"' in _bp_src and "all_started" in _bp_src
    and "excluded_started" in _bp_src,
@@ -6596,7 +6601,8 @@ print("=" * 72)
 # Two findings from the user seeing NO grid at all: the maker rendered before
 # the week data arrived and nothing ever re-rendered it (so the grid never
 # appeared, however long you stared), and the picker had no team halves.
-_bp2 = _insp.getsource(__import__("nfl_game_sim").build_parlay)
+_bp2 = (_insp.getsource(__import__("nfl_game_sim").build_parlay)
+        + _insp.getsource(__import__("nfl_game_sim")._build_frontier))
 ck("the builder parses base and base:TEAM selections",
    "partition(\":\")" in _bp2.replace("'", '"') and "team_only" in _bp2)
 ck("a one-team selection keeps only that club's legs",
@@ -9317,7 +9323,8 @@ ck("new slips carry their display legs into the ledger",
 _apy43 = open(_os.path.join(_root, "app.py")).read()
 _js43 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the endpoint serves the wall on both return shapes, and the tab draws it",
-   _apy43.count('"best_wins": best_wins') == 4
+   # Six: baseball, UFC and the NFL recipes each answer on both shapes.
+   _apy43.count('"best_wins": best_wins') == 6
    and "await _fetchPresets()"
    in _js43.split("async function loadHits")[1][:500]
    and "No win yet" in _js43
@@ -9671,7 +9678,7 @@ ck("NFL builds take the combo slot and yield to it, like baseball",
    and _apy51.index("baseball.combo_slot_take(ptok)", _apy51.index("NFL-COMBO"))
    < _apy51.index('_run_job(ptok, _core, "NFL-COMBO-build")')
    and "abort_cb is not None and abort_cb()"
-   in _insp.getsource(_ngs51.build_parlay)
+   in _insp.getsource(_ngs51._build_frontier)
    and _apy51.count("not in (None, ptok)") == 4,
    "one slot across every sport: an NFL, a college, a UFC and an MLB build "
    "must never grind the shared core together")
@@ -10688,7 +10695,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid])" in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v118' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11888,7 +11895,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v118' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -11982,7 +11989,7 @@ ck("a 'D/ST: 1+ touchdowns' market is skipped by the player-prop parser",
 _ss9 = _insp9.getsource(_ng9._slate_sims)
 _bb9 = _insp9.getsource(_ng9._build_board)
 ck("the parlay sims hand simulate_game the prop ladder (every player leg carried no kref before)",
-   'prop_lad=(lad or {}).get("props")' in _ss9 and "nfl_parlay_sims4_" in _ss9,
+   'prop_lad=(lad or {}).get("props")' in _ss9 and "nfl_parlay_sims5_" in _ss9,
    "1,553 player legs carried a kref with the ladder against 0 without it; "
    "the cache generation moved so a sims3 build is never served")
 ck("the slate board's default same-game parlay is built on Kalshi's lines too",
@@ -12170,6 +12177,310 @@ ck("live results blend in at the measured 0.5 wins per point of differential, no
 ck("a projected win is worth the same points in every matchup helper",
    "_PTS_PER_WIN" in _insp9.getsource(_ns9._wp) and "_PTS_PER_WIN" in _insp9.getsource(_ns9._matchup_pts)
    and 1.8 <= _ns9._PTS_PER_WIN <= 2.6)
+
+print()
+print("=" * 72)
+print("MLB combo-maker audit (2026-09-09): the grains of sand")
+print("=" * 72)
+import inspect as _insp10
+import kalshi_mlb as _km10
+import kalshi as _k10
+import errlog as _el10
+import baseball as _bb10
+import mlb_sim as _ms10
+import predlog as _pl10
+import value as _val10
+# 1. Generational suffixes: Kalshi books "Daniel Lynch", MLB says "Daniel Lynch IV".
+ck("kalshi_mlb._norm drops Jr./Sr./II/III/IV so Kalshi's and MLB's spellings meet",
+   _km10._norm("Daniel Lynch IV") == _km10._norm("Daniel Lynch") == "daniellynch"
+   and _km10._norm("Jazz Chisholm Jr.") == _km10._norm("Jazz Chisholm")
+   and _km10._norm("Vladimir Guerrero Jr.") == "vladimirguerrero"
+   and _km10._norm("José Ramírez") == "joseramirez" and _km10._norm("Bryce Miller") == "brycemiller",
+   "2026-09-09: Lynch's whole strikeout ladder (7 rungs, both sides) was unpriced "
+   "and fell out of every maker; the recorder's matcher already stripped these")
+ck("...and agrees with the recorder's matcher (value._norm) on every suffixed name",
+   all(_km10._norm(n) == _val10._norm(n).replace(" ", "")
+       for n in ("Daniel Lynch IV", "Jazz Chisholm Jr.", "Ken Griffey Jr.", "Cal Ripken Sr.",
+                 "Robert Hassell III", "Fernando Tatis Jr.", "Shohei Ohtani")))
+# 2. A throttled page or an open cursor is reported, not swallowed.
+_notes10 = []
+_orig_note10 = _el10.note
+_orig_get10 = _k10._get_json
+try:
+    _el10.note = lambda code, e=None, **kw: _notes10.append((code, kw.get("path"), kw.get("msg")))
+    _k10._get_json = lambda url: (_ for _ in ()).throw(RuntimeError("429"))
+    _got10 = _km10._fetch("KXMLBHIT")
+    ck("a failed Kalshi page lands in the ledger under KIDX-markets-fetch with the series",
+       _got10 == [] and any(c == "KIDX-markets-fetch" and p == "KXMLBHIT" for c, p, _m in _notes10),
+       "the old except: break returned a short book and said nothing")
+    _notes10.clear()
+    _k10._get_json = lambda url: {"markets": [{"ticker": "x"}] * 400, "cursor": "more"}
+    _got10 = _km10._fetch("KXMLBTB", max_pages=3)
+    ck("a walk that runs out of pages with the cursor still open is logged as truncated",
+       len(_got10) == 1200 and any(c == "KIDX-markets-truncated" for c, _p, _m in _notes10)
+       and _km10._MAX_PAGES >= 6)
+finally:
+    _el10.note = _orig_note10
+    _k10._get_json = _orig_get10
+# 3. The prediction log files the sim's RAW frequency, not the calibrated marginal.
+ck("build_candidates keeps the raw sim frequency on every leg (marg_raw)",
+   '"marg_raw": _popcount(m) / n' in _insp10.getsource(_ms10.build_candidates))
+_rows10 = []
+_orig_lm10 = _pl10.log_many
+_orig_idx10, _orig_tl10, _orig_pl10 = _km10.index, _km10.ticker_leg, _km10.price_leg
+try:
+    _pl10.log_many = lambda model, rows: _rows10.extend((model,) + tuple(r) for r in rows)
+    _km10.index = lambda: {"SUF": {}}
+    _km10.ticker_leg = lambda idx, suf, kref: ("KXMLBHIT-SUF-X-1", 1700000000)
+    _km10.price_leg = lambda idx, suf, kref: 60.0 if not kref.get("no") else 44.0
+    _bb10._log_prop_predictions(
+        {"live": {"state": "Preview"}, "kalshi_suffix": "SUF"},
+        [{"type": "Hit", "kref": {"t": "hit", "player": "X", "line": 1},
+          "marg": 0.55, "marg_raw": 0.62}])
+    ck("_log_prop_predictions logs the raw 0.62, not the calibrated 0.55",
+       len(_rows10) == 1 and _rows10[0][0] == "mlb_hit" and abs(_rows10[0][2] - 0.62) < 1e-9,
+       "a per-market calibrator fitted on already-corrected numbers measures the "
+       "pooled correction's residual and, applied to the raw frequency, cancels it")
+finally:
+    _pl10.log_many = _orig_lm10
+    _km10.index, _km10.ticker_leg, _km10.price_leg = _orig_idx10, _orig_tl10, _orig_pl10
+
+# 4. Kalshi's ladders start lower than the sim's did.
+_n10 = 60
+_rng10 = __import__("random").Random(3)
+_sim10 = {"n": _n10, "live": False,
+          "home_runs": [_rng10.randint(0, 8) for _ in range(_n10)], "away_runs": [_rng10.randint(0, 8) for _ in range(_n10)],
+          "home_win": [_rng10.random() < 0.5 for _ in range(_n10)],
+          "home_k": [_rng10.randint(0, 6) for _ in range(_n10)], "away_k": [_rng10.randint(2, 11) for _ in range(_n10)],
+          "rfi": [_rng10.random() < 0.5 for _ in range(_n10)], "extras": [_rng10.random() < 0.1 for _ in range(_n10)],
+          "bat": {"home": {"A Bat": {"hit": [_rng10.randint(0, 2) for _ in range(_n10)], "tb": [_rng10.randint(0, 3) for _ in range(_n10)],
+                                     "hr": [1 if _rng10.random() < 0.1 else 0 for _ in range(_n10)], "r": [_rng10.randint(0, 1) for _ in range(_n10)],
+                                     "rbi": [_rng10.randint(0, 1) for _ in range(_n10)], "sb": [1 if _rng10.random() < 0.1 else 0 for _ in range(_n10)]}},
+                  "away": {}}}
+_g10 = {"home_abbr": "HOM", "away_abbr": "AWY", "home_name": "Home", "away_name": "Away",
+        "props": {"batters_home": [{"name": "A Bat", "hr1": 10.0, "tb2": 40.0}], "batters_away": [],
+                  "ks_home": {"4": 20.0}, "ks_away": {"4": 60.0}, "home_sp_name": "Low Arm", "away_sp_name": "High Arm"}}
+_c10 = _ms10.build_candidates(_g10, _sim10)
+_labels10 = {c["label"] for c in _c10 if c.get("side", "yes") == "yes"}
+ck("the strikeout ladder reaches the low rungs a 2-K arm is booked at (1+/2+/3+) and the high ones (11+)",
+   "Low Arm 2+ Ks (avg 3.0)" in _labels10 and "Low Arm 3+ Ks (avg 3.0)" in _labels10
+   and any(l.startswith("High Arm 11+ Ks") for l in _labels10)
+   and _ms10.build_candidates.__code__.co_consts is not None
+   and "K_LINES = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)" in _insp10.getsource(_ms10.build_candidates),
+   "46 booked strikeout rungs on the 2026-09-09 slate had no leg because the ladder started at 4")
+ck("the H+R+RBI ladder offers the 1+ line Kalshi books on every batter",
+   "A Bat 1+ H+R+RBI" in _labels10 and "for m in (1, 2, 3, 4, 5, 6):" in _insp10.getsource(_ms10.build_candidates),
+   "87 of 87 booked; the ladder started at 2, so the market's likeliest YES and its fade were never offered")
+
+# ---------------------------------------------------------------------------
+# The NFL locked recipes (nfl_presets): the baseball preset tabs on the
+# week's slate. The owner: "I'm not seeing those pre-made tabs like in
+# baseball for nfl, 5 likeliest anytime TDs, moneyline, run line, 100+
+# yards receiving, 100+ rushing, 5+ receptions, 300+ passing yards, then
+# the 1.5x, 2x, 3x, 5x, 10, 100x, 200x. I want nfl to have its own hits
+# section and independent tabs like baseball for quick bets." Hermetic:
+# synthetic pools, the maker and the market monkeypatched.
+print("NFL locked recipes: seven owner-asked slips and seven rungs, own wall")
+import inspect as _insp11
+import nfl_presets as _np11
+import nfl_game_sim as _ng11
+import kalshi_nfl as _kn11
+_ids11 = [p["id"] for p in _np11.PRESETS]
+ck("every recipe the owner named is a locked NFL preset, plus the seven payout rungs",
+   _ids11 == ["td5", "ml58", "sp80", "rec100", "rush100", "rec5", "pass300",
+              "x15", "x2", "x3", "x5", "x10", "x100", "x200"]
+   and _np11.TARGET_IDS == ("x15", "x2", "x3", "x5", "x10", "x100", "x200")
+   and _np11.TAG == "nfl_" and _np11.NAME == "nfl_presets")
+_spec11 = {p["id"]: p for p in _np11.PRESETS}
+ck("the player recipes keep ONE rung -- 0.5 TD, 99.5 yards, 4.5 catches, 299.5 passing -- "
+   "YES only and priced, never the likeliest shallow rung wearing the recipe's name",
+   all(_spec11[i]["kind"] == "top" and _spec11[i]["sides"] == frozenset(("yes",))
+       and _spec11[i]["n_legs"] == 5 for i in ("td5", "rec100", "rush100", "rec5", "pass300"))
+   and _spec11["td5"]["leg_ok"]({"kref": {"line": 0.5}, "price_cents": 40})
+   and not _spec11["td5"]["leg_ok"]({"kref": {"line": 1.5}, "price_cents": 40})
+   and not _spec11["td5"]["leg_ok"]({"kref": {"line": 0.5}, "price_cents": None})
+   and _spec11["rec100"]["leg_ok"]({"kref": {"line": 99.5}, "price_cents": 30})
+   and not _spec11["rec100"]["leg_ok"]({"kref": {"line": 24.5}, "price_cents": 90})
+   and _spec11["rush100"]["leg_ok"]({"kref": {"line": 99.5}, "price_cents": 30})
+   and _spec11["rec5"]["leg_ok"]({"kref": {"line": 4.5}, "price_cents": 50})
+   and not _spec11["rec5"]["leg_ok"]({"kref": {"line": 5.5}, "price_cents": 50})
+   and _spec11["pass300"]["leg_ok"]({"kref": {"line": 299.5}, "price_cents": 20})
+   and not _spec11["pass300"]["leg_ok"]({"kref": {"line": 249.5}, "price_cents": 45}),
+   "Kalshi's strikes on the 2026 week-1 book: TD 0.5/1.5, rec yds 14.5..179.5 by 10s "
+   "at 99.5, receptions 1.5..13.5, pass yds 149.5..399.5 with 299.5 booked")
+_bm11 = _insp11.getsource(_ng11._build_masks)
+ck("the recipes' type names are the engine's own labels (TD, Rec Yds, Rush Yds, Receptions, "
+   "Pass Yds, ML, Spread) -- a renamed type would silently empty a tab",
+   _spec11["td5"]["types"] == ("TD",) and 'add("TD"' in _bm11
+   and _spec11["rec100"]["types"] == ("rec yds".title(),) and '("rec_yd", "rec yds", 15)' in _bm11
+   and _spec11["rush100"]["types"] == ("rush yds".title(),) and '("rush_yd", "rush yds", 15)' in _bm11
+   and _spec11["rec5"]["types"] == ("receptions".title(),) and '("rec", "receptions", 1)' in _bm11
+   and _spec11["pass300"]["types"] == ("pass yds".title(),) and '("pass_yd", "pass yds", 25)' in _bm11
+   and "add(lab.title()," in _bm11
+   and _spec11["ml58"]["types"] == ("ML",) and 'add("ML"' in _bm11
+   and _spec11["sp80"]["types"] == ("Spread",) and 'add("Spread"' in _bm11)
+ck("the scan recipes hunt the bar from above (58% moneyline, 80% spread, YES or NO)",
+   _spec11["ml58"]["kind"] == "all" and _spec11["ml58"]["floor"] == 0.58 and _spec11["ml58"]["pick"] == "floor"
+   and _spec11["ml58"]["sides"] is None
+   and _spec11["sp80"]["kind"] == "all" and _spec11["sp80"]["floor"] == 0.80 and _spec11["sp80"]["pick"] == "floor"
+   and _spec11["sp80"]["sides"] is None)
+ck("the rungs are the ⚡ Optimal button locked: 1.5× on what Kalshi PAYS, 2-200× on the fair payout, "
+   "all under the payout ceiling",
+   all(_spec11[i]["kind"] == "target" for i in _np11.TARGET_IDS)
+   and _spec11["x15"]["target_x"] == 1.5 and _spec11["x15"].get("payout_basis") == "market"
+   and [_spec11[i]["target_x"] for i in ("x2", "x3", "x5", "x10", "x100", "x200")] == [2.0, 3.0, 5.0, 10.0, 100.0, 200.0]
+   and all(_spec11[i].get("payout_basis", "fair") == "fair" for i in ("x2", "x3", "x5", "x10", "x100", "x200"))
+   and 'payout_mode="require"' in _insp11.getsource(_np11._build_target)
+   and 'legs_mode="off"' in _insp11.getsource(_np11._build_target)
+   and 'objective="balanced"' in _insp11.getsource(_np11._build_target)
+   and "frontier_cache=frontier_cache" in _insp11.getsource(_np11._build_target)
+   and "combo_engine.best_target(_b)" in _insp11.getsource(_np11._build_target))
+_sig11 = _insp11.signature(_ng11.build_parlay).parameters
+_bf11 = _insp11.getsource(_ng11._build_frontier)
+ck("the NFL maker grew the knobs the recipes need -- sides, a post-pricing per-leg rule, a market "
+   "payout basis, a shared frontier -- and the rule runs AFTER pricing so it can read the ask",
+   all(k in _sig11 for k in ("sides", "leg_ok", "payout_basis", "frontier_cache"))
+   and _bf11.index("price_cands(cands, g[\"suffix\"])") < _bf11.index("if leg_ok is not None:")
+   and 'and (sides is None or c.get("side", "yes") in sides)' in _bf11
+   and 'targets["payout_basis"] = "market"' in _insp11.getsource(_ng11.build_parlay)
+   and "frontier_cache[_fkey] = (games_bundles, states, n_started, _kick)" in _insp11.getsource(_ng11.build_parlay))
+ck("the NFL pool carries the NO side of every spread and player leg (the 80% spread on a coin-flip "
+   "game is a fade), and the cache name moved so an older YES-only pool is never served",
+   "cands.extend(_ms._no_candidates(cands, n))" in _bm11
+   and "nfl_parlay_sims5_" in _insp11.getsource(_ng11._slate_sims))
+# A YES/NO pair from a tiny synthetic pool: the NO mask is the exact complement.
+_n11 = 40
+_pool11 = [{"type": "Spread", "label": "HOM by over 3.5", "mask": (1 << 30) - 1, "marg": 30 / 40,
+            "group": "spread:HOM", "model_pct": None, "kref": {"t": "spread", "team": "HOM", "by": 3.5},
+            "side_team": "HOM"}]
+import mlb_sim as _ms11
+_nos11 = _ms11._no_candidates(_pool11, _n11)
+ck("a fade's mask is the complement of the leg it fades, with the same kref flagged no",
+   len(_nos11) == 1 and _nos11[0].get("side") == "no"
+   and _nos11[0]["mask"] == ((1 << _n11) - 1) ^ _pool11[0]["mask"]
+   and _nos11[0]["kref"].get("no") is True and _nos11[0]["kref"].get("by") == 3.5)
+ck("a game that has kicked off is not a pre-game leg (state post/in, or 5 minutes past kickoff)",
+   _ng11.game_started({"state": "post", "date": "2099-01-01T00:00Z"})
+   and _ng11.game_started({"state": "pre", "date": "2020-01-01T00:00Z"})
+   and not _ng11.game_started({"state": "pre", "date": "2099-01-01T00:00Z"})
+   and not _ng11.game_started({"state": "pre", "date": None}))
+# kind "all" on a synthetic three-game slate: nearest-above-the-bar per game,
+# a coin-flip game sits out, a kicked-off game is skipped, legs carry tickets
+# and kickoffs, the product is the honest joint.
+_orig_pc11, _orig_idx11, _orig_tl11 = _ng11.price_cands, _kn11.index, _kn11.ticker_leg
+def _pc11(cands, suffix):
+    for c in cands:
+        c["price_cents"] = {"A": 60, "B": 45, "C": 64, "D": 40, "E": 88, "F": 12}.get(c["label"], None)
+    return cands
+_ng11.price_cands = _pc11
+_kn11.index = lambda: {"g1": {}, "g2": {}, "g3": {}}
+_kn11.ticker_leg = lambda idx, suffix, kref: (f"KX-{suffix}-{kref['team']}", 1800000000)
+def _ml11(lbl, team, p):
+    return {"type": "ML", "label": lbl, "mask": 0, "marg": p, "group": "ML",
+            "kref": {"t": "ml", "team": team}, "side": "yes", "side_team": team}
+_games11 = [
+    {"label": "Away1 @ Home1", "suffix": "g1", "pair": "AW1@HM1", "state": "pre", "date": "2099-09-13T17:00Z",
+     "cands": [_ml11("A", "HM1", 0.55), _ml11("B", "AW1", 0.45)], "n": 100},
+    {"label": "Away2 @ Home2", "suffix": "g2", "pair": "AW2@HM2", "state": "pre", "date": "2099-09-13T20:25Z",
+     "cands": [_ml11("C", "HM2", 0.62), _ml11("D", "AW2", 0.38)], "n": 100},
+    {"label": "Away3 @ Home3", "suffix": "g3", "pair": "AW3@HM3", "state": "pre", "date": "2099-09-14T00:20Z",
+     "cands": [_ml11("E", "HM3", 0.90), _ml11("F", "AW3", 0.10)], "n": 100},
+    {"label": "Away0 @ Home0", "suffix": "g0", "pair": "AW0@HM0", "state": "post", "date": "2099-09-11T00:20Z",
+     "cands": [_ml11("E", "HM0", 0.90)], "n": 100},
+]
+try:
+    _it11 = _np11._build_all(_games11, _spec11["ml58"])
+    _sig_a = _np11.slate_sig(_games11)
+    _sig_b = _np11.slate_sig([dict(g, state="post") if g["suffix"] == "g1" else g for g in _games11])
+finally:
+    _ng11.price_cands, _kn11.index, _kn11.ticker_leg = _orig_pc11, _orig_idx11, _orig_tl11
+_legs11 = [l for g in (_it11 or {}).get("groups") or [] for l in g["legs"]]
+ck("ML 58%+ takes each game's side nearest ABOVE the bar, sits a coin-flip game out, skips a game that "
+   "kicked off, and every leg carries a ticket, a kickoff and Kalshi's ask",
+   _it11 is not None and _it11["n_legs"] == 2 and _it11["n_pool"] == 3 and _it11["n_games"] == 2
+   and [l["pick"] for l in _legs11] == ["C", "E"]
+   and all(l["ticker"] and l["start_ts"] and l["market_cents"] for l in _legs11)
+   and [g["matchup"] for g in _it11["groups"]] == ["Away2 @ Home2", "Away3 @ Home3"]
+   and abs(_it11["combined_prob_pct"] - round(0.62 * 0.90 * 100, 1)) < 0.05
+   and _it11["sport"] == "nfl" and _it11["kalshi_payout_net_x"] and _it11["ev_pct"] is not None)
+ck("the slate fingerprint is the set of games still to be played, so a kickoff moves it and prices don't",
+   _sig_a and _sig_b and _sig_a != _sig_b
+   and _np11.slate_sig([dict(g, state="post") for g in _games11]) is None)
+# kind "top" walks the count down on a thin slate (300+ passing books three
+# quarterbacks most weeks) and never answers with one leg.
+_orig_bp11 = _ng11.build_parlay
+_calls11 = []
+def _bp11(**kw):
+    _calls11.append(kw["n_legs"])
+    if kw["n_legs"] > 3:
+        return None
+    return {"n_legs": kw["n_legs"], "groups": [], "combined_prob_pct": 20.0}
+_ng11.build_parlay = _bp11
+try:
+    _top11 = _np11._build_top(1, False, _spec11["pass300"])
+    _calls11b = []
+    def _bp11b(**kw):
+        _calls11b.append(kw["n_legs"])
+        return {"error_hint": "all_started"}
+    _ng11.build_parlay = _bp11b
+    _top11b = _np11._build_top(1, False, _spec11["td5"])
+    _ng11.build_parlay = lambda **kw: None
+    _top11c = _np11._build_top(1, False, _spec11["rec5"])
+finally:
+    _ng11.build_parlay = _orig_bp11
+ck("'the 5 likeliest' on a slate that books three walks 5, 4, 3 and says the slate came up short; "
+   "an all-started slate returns the hint once; a slate with nothing never tries one leg",
+   _calls11 == [5, 4, 3] and _top11 and _top11["n_legs"] == 3 and _top11.get("short_slate") == 5
+   and _calls11b == [5] and _top11b == {"error_hint": "all_started"}
+   and _top11c is None)
+_tick11 = _insp11.getsource(_np11.tick)
+ck("the recorder tick never simulates the slate itself: no cached pool means no build unless forced "
+   "(the tab's first open), and a user's combo build owns the CPU",
+   "games = cached_sims(week, pre)" in _tick11
+   and _tick11.index("if not force:") < _tick11.index("_slate_sims(week, pre, _N)")
+   and "if _yield_cb():" in _tick11
+   and "boardshare.get(name, nfl_game_sim._SIMS_TTL)" in _insp11.getsource(_np11.cached_sims)
+   and _np11._N == 4000 and "_slate_sims(wk, pre, 4000)" in open(_os.path.join(_root, "pc_worker.py")).read(),
+   "a 16-game slate sim is ~25s of the one-core quota; a half-hourly background copy of it "
+   "beside the MLB slate child is the shape of every instance kill on record")
+ck("the recipes are filed under nfl_ tags, sport nfl, dated by first kickoff (no date passed), "
+   "and the crown is baseball's scorer",
+   'sliplog.log_from_item(item, sport="nfl", tag=TAG + pid)' in _insp11.getsource(_np11.ensure_logged)
+   and "presets.best_today(payload, recs)" in _insp11.getsource(_np11.best_today)
+   and "tag.startswith(TAG)" in _insp11.getsource(_np11.records))
+_apy11 = open(_os.path.join(_root, "app.py")).read()
+ck("/api/nfl/presets serves the recipes, their records and the crown, kicks a first build and a "
+   "stale one, and stamps first kickoffs for the built-N-hours-before line",
+   '@app.route("/api/nfl/presets")' in _apy11
+   and "nfl_presets.best_today(payload, records)" in _apy11
+   and 'boardshare.claim(nfl_presets.NAME + "_kick")' in _apy11
+   and "> nfl_presets._STALE_S" in _apy11
+   and "any(f > _now for f in firsts.values())" in _apy11
+   and '"first_starts": firsts' in _apy11[_apy11.index('@app.route("/api/nfl/presets")'):][:4000])
+_mrec11 = open(_os.path.join(_root, "mlb_recorder.py")).read()
+ck("the recorder rebuilds the NFL recipes on its cadence under its own code",
+   "nfl_presets.tick()" in _mrec11 and 'errlog.note("MREC-nflp", _e)' in _mrec11)
+_js11 = open(_os.path.join(_root, "static", "app.js")).read()
+_html11 = open(_os.path.join(_root, "templates", "index.html")).read()
+_rn11 = _js11[_js11.index("function renderNFLComboMaker()"):_js11.index("async function buildNFLCombo(")]
+ck("the NFL maker carries the preset tabs above a hideable custom maker, re-applies the chosen tab "
+   "on every re-render, and the week board loads the wall",
+   "nflPresetTabsHtml()" in _rn11 and 'id="nflCustomMaker"' in _rn11 and "applyNflPresetTab();" in _rn11
+   and 'id="nflWall"' in _html11 and 'id="nflWallBox"' in _html11
+   and "loadNflWall();" in _js11[_js11.index("function initNFLWeek()"):_js11.index("async function loadNFLWeek(")]
+   and '"/api/nfl/presets"' in _js11 and "_NFL_PRESET_TABS" in _js11 and "_NFL_WALL_COLS" in _js11)
+import re as _re11
+_tabs11 = _re11.findall(r'\["(\w+)", "[^"]+"\]', _js11[_js11.index("const _NFL_PRESET_TABS"):_js11.index("const _NFL_TARGET_IDS")])
+_tids11 = _re11.findall(r'"(\w+)"', _js11[_js11.index("const _NFL_TARGET_IDS"):].split("\n")[0])
+_wall11 = _re11.findall(r'\["(\w+)", "[^"]+"\]', _js11[_js11.index("const _NFL_WALL_COLS"):_js11.index("let _nflPresetSel")])
+ck("the tabs are the server's recipes in the owner's order, the ⚡ tab is the seven rungs, and the "
+   "wall lists every logged tag but the -200 bankroll rung",
+   _tabs11 == ["custom", "td5", "ml58", "sp80", "rec100", "rush100", "rec5", "pass300", "targets"]
+   and _tids11 == list(_np11.TARGET_IDS)
+   and _wall11 == [i for i in _ids11 if i != "x15"])
+ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
+   "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
+   and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

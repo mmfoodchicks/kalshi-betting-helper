@@ -398,6 +398,14 @@
       <p class="sub" style="margin:4px 0 12px">All legs must win; the joint chance comes off the <b>same simulation</b> that produced them, so legs from one game carry real correlation instead of an independence guess. <b>% is our model's number</b>; a <b>¢ price</b> means it's a live Kalshi market. Moneylines, spread and total ladders and - in the preseason, where Kalshi actually books them - <b>player props</b> are all in the pool.</p>
       <div id="nflComboMaker"></div>
     </section>
+    <section class="card" id="nflWallBox">
+      <h2>🏆 NFL wall of wins</h2>
+      <p class="sub">One column per locked NFL recipe. Each shows that recipe's <b>biggest graded WIN</b> - every leg settled the bought way on Kalshi, at the payout it actually paid. Empty until a recipe cashes.</p>
+      <div class="row" style="gap:8px;align-items:center">
+        <button class="track-mini primary-mini" onclick="loadNflWall()">Refresh</button>
+      </div>
+      <div id="nflWall" class="markets"><div class="empty">Loading…</div></div>
+    </section>
     </div><!-- /fbNfl -->
 
     <div id="fbCfb" class="hidden">

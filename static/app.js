@@ -1236,11 +1236,15 @@ function _presetSectionHtml(p, rec, builtTs, firstStart) {
       ? `<div class="small" style="color:var(--muted)">⚠️ nothing reaches ${it.target_payout_x}× today - this is the closest the slate offers.</div>` : "";
     // A market-basis rung: the target is what KALSHI pays, and the edge is
     // the sim's odds above what that price implies.
+    // A top-N recipe on a slate that books fewer: the slip is the likeliest
+    // of what exists, and the card says so rather than implying five.
+    const shortLine = it.short_slate
+      ? `<div class="small" style="color:var(--muted)">⚠️ the slate books fewer than ${it.short_slate} of these at the recipe's rung - this is the likeliest ${it.n_legs}-leg version.</div>` : "";
     const basisLine = it.payout_basis === "market"
       ? `<div class="small" style="color:var(--muted)">🎯 priced on Kalshi's payout: the slip must pay ${it.target_payout_x}× at the asks (${(100 / it.target_payout_x).toFixed(1)}% implied); the sim's ${it.combined_prob_pct}% is the edge you're taking.</div>` : "";
     bodyHtml = `<ul style="margin:6px 0 4px;padding-left:18px">${legs}</ul>
       <div class="small"><b>Combined ${it.combined_prob_pct}%</b> · pays ${it.kalshi_payout_net_x ? `<b>${it.kalshi_payout_net_x}×</b> net of fees` : "-"}${it.ev_pct != null ? ` · EV <span class="ev ${it.ev_pct >= 0 ? "pos" : "neg"}">${it.ev_pct >= 0 ? "+" : ""}${it.ev_pct}%</span>` : ""}${it.n_pool ? ` · <span style="color:var(--muted)" title="priced markets scanned vs how many cleared the recipe's bar - the gap is markets below the floor or without probables, not missing games">${it.n_legs}/${it.n_pool} cleared the bar</span>` : ""}</div>
-      ${missLine}${basisLine}
+      ${missLine}${shortLine}${basisLine}
       ${_slipBuiltLine(builtTs, firstStart)}
       <div class="small" style="color:var(--muted)">${p.logged ? "✅ logged to the slip ledger - it grades itself when the games settle" : `⚠️ ${p.log_note || "not logged"}`}</div>`;
   }
@@ -3616,6 +3620,7 @@ function initNFLWeek() {
   if (pre) pre.checked = nflPreseason;   // re-sync on every init, not just once
   if (!$("nflWeekResults").dataset.loaded) { $("nflWeekResults").dataset.loaded = "1"; loadNFLWeek(0); }
   renderNFLComboMaker();
+  loadNflWall();            // the recipes' wall of wins rides under the maker
 }
 async function loadNFLWeek(attempt) {
   attempt = attempt || 0;
@@ -3805,7 +3810,8 @@ function renderNFLComboMaker() {
   const prev = (() => { const el = $("nflComboOut"); return el ? el.innerHTML : ""; })();
   const sel = (id, opts, cur) => `<select id="${id}" style="width:auto;padding:2px 4px">`
     + opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("") + `</select>`;
-  box.innerHTML = `<div class="combomaker">
+  box.innerHTML = `${nflPresetTabsHtml()}
+    <div class="combomaker" id="nflCustomMaker">
     🎯 <b>Combo maker</b>${nflPreseason ? ` <span class="chip">🏟️ preseason</span>` : ""}
     <div style="margin-top:8px">each leg ≥
       <input id="nflComboTarget" type="number" min="20" max="97" value="${cfv("nflComboTarget", nflComboTarget)}" style="width:54px"/>%
@@ -3832,6 +3838,7 @@ function renderNFLComboMaker() {
     <div id="nflComboOut"></div>
   </div>`;
   if (prev) { const el = $("nflComboOut"); if (el) el.innerHTML = prev; }
+  applyNflPresetTab();      // a re-render must not un-hide the maker under a preset tab
 }
 async function buildNFLCombo(maxBet, optimal) {
   const out = $("nflComboOut");
@@ -5067,6 +5074,139 @@ async function loadUfcWall() {
         : `<div class="empty" style="padding:12px 4px">No win yet - the recipe runs every card; its first cash lands here on its own.</div>`;
       return `<div class="combo" style="flex:1 1 230px;min-width:210px${crowned ? ";box-shadow:0 0 0 1px var(--yes)" : ""}">
         <div><b>${lbl}</b>${crowned ? ` <span class="small" title="the server scores every recipe's CURRENT slip - fee-aware EV adjusted by its own graded record - and crowns the card's best">👑 best bet</span>` : ""}</div>${recTxt}${body}</div>`;
+    }).join("");
+    box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">${cols}</div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">A slip only hangs here once EVERY leg settled the bought way on Kalshi - the payout shown is what it actually paid, fees in.</div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="empty">Couldn't load the wall.</div>`;
+  }
+}
+
+// ---- NFL locked recipes: the baseball preset tabs on the week's slate ----
+// Same shape as the MLB and UFC ones: the recipes live server-side
+// (nfl_presets.py), the tab only renders and polls. The owner: "I want nfl
+// to have its own hits section and independent tabs like baseball for
+// quick bets."
+const _NFL_PRESET_TABS = [["custom", "⚙️ Custom"], ["td5", "🏈 5 Anytime TDs"],
+  ["ml58", "💰 ML 58%+"], ["sp80", "📏 Spreads 80%+"], ["rec100", "🙌 100+ Rec Yds"],
+  ["rush100", "🏃 100+ Rush Yds"], ["rec5", "🧤 5+ Receptions"],
+  ["pass300", "🎯 300+ Pass Yds"], ["targets", "⚡ 1.5-200×"]];
+// x15 is the -200 bankroll rung: on the tab, in the ledger, OFF the wall,
+// as in baseball.
+const _NFL_TARGET_IDS = ["x15", "x2", "x3", "x5", "x10", "x100", "x200"];
+const _NFL_WALL_COLS = [["td5", "🏈 5 Anytime TDs"], ["ml58", "💰 ML 58%+"],
+  ["sp80", "📏 Spreads 80%+"], ["rec100", "🙌 100+ Rec Yds"],
+  ["rush100", "🏃 100+ Rush Yds"], ["rec5", "🧤 5+ Receptions"],
+  ["pass300", "🎯 300+ Pass Yds"], ["x2", "⚡ Pays 2×"], ["x3", "⚡ Pays 3×"],
+  ["x5", "⚡ Pays 5×"], ["x10", "⚡ Pays 10×"], ["x100", "⚡ Pays 100×"],
+  ["x200", "⚡ Pays 200×"]];
+let _nflPresetSel = "custom";
+let _nflPresetData = null, _nflPresetFetchTs = 0, _nflPresetPoll = null;
+function showNflPreset(pid) { _nflPresetSel = pid; applyNflPresetTab(); }
+function nflPresetTabsHtml() {
+  return `<div class="small" id="nflPresetTabs" style="margin:8px 0 2px">${_NFL_PRESET_TABS.map(([pid, lbl]) =>
+      `<button class="leanchip preset-tab" data-pid="${pid}" onclick="showNflPreset('${pid}')" style="cursor:pointer;margin-right:4px">${lbl}</button>`).join("")}</div>
+    <div id="nflPresetBestLine" class="small" style="margin:0 0 4px"></div>
+    <div id="nflPresetBox" class="hidden"></div>`;
+}
+async function _fetchNflPresets() {
+  if (_nflPresetData && Date.now() - _nflPresetFetchTs < 60000) return _nflPresetData;
+  const r = await fetch("/api/nfl/presets");
+  _nflPresetData = await r.json();
+  _nflPresetFetchTs = Date.now();
+  return _nflPresetData;
+}
+async function decorateNflBestBet() {
+  try {
+    const d = await _fetchNflPresets();
+    const b = d && d.best;
+    const line = $("nflPresetBestLine");
+    const tabs = $("nflPresetTabs");
+    if (!b || !tabs) { if (line) line.innerHTML = ""; return; }
+    const crownPid = _NFL_TARGET_IDS.includes(b.id) ? "targets" : b.id;
+    tabs.querySelectorAll(".preset-tab").forEach((btn) => {
+      const crowned = btn.dataset.pid === crownPid;
+      btn.style.boxShadow = crowned ? "0 0 0 1px var(--yes)" : "";
+      if (crowned && !btn.textContent.startsWith("👑")) btn.textContent = "👑 " + btn.textContent;
+      if (!crowned) btn.textContent = btn.textContent.replace(/^👑 /, "");
+    });
+    if (line) {
+      const neg = (b.ev_pct != null && b.ev_pct < 0);
+      line.innerHTML = `👑 <b>${neg ? "Least-bad this week" : "Best bet this week"}: ${b.emoji || ""} ${b.label}</b> - EV <span class="ev ${b.ev_pct >= 0 ? "pos" : "neg"}">${b.ev_pct >= 0 ? "+" : ""}${b.ev_pct}%</span> · ${b.prob_pct}% to cash · pays ${b.payout_x}×${b.record_note ? ` · ${b.record_note}` : ""}${neg ? ` · <span style="color:var(--muted)">even the best recipe is -EV right now; passing is a position too</span>` : ""}`;
+    }
+  } catch (e) { /* decoration only */ }
+}
+function applyNflPresetTab() {
+  const tabs = $("nflPresetTabs");
+  if (!tabs) return;
+  decorateNflBestBet();
+  tabs.querySelectorAll(".preset-tab").forEach((b) =>
+    b.style.opacity = b.dataset.pid === _nflPresetSel ? "1" : "0.55");
+  const mk = $("nflCustomMaker");
+  const box = $("nflPresetBox");
+  if (_nflPresetSel === "custom") {
+    if (mk) mk.classList.remove("hidden");
+    if (box) box.classList.add("hidden");
+    if (_nflPresetPoll) { clearInterval(_nflPresetPoll); _nflPresetPoll = null; }
+    return;
+  }
+  if (mk) mk.classList.add("hidden");
+  if (box) box.classList.remove("hidden");
+  renderNflPresetBox();
+}
+async function renderNflPresetBox() {
+  const box = $("nflPresetBox");
+  if (!box) return;
+  try {
+    await _fetchNflPresets();
+  } catch (e) { box.innerHTML = `<div class="small">Couldn't load the recipes - retrying…</div>`; }
+  const d = _nflPresetData;
+  if (!d) return;
+  if (d.status === "building" || d.error) {
+    box.innerHTML = `<div class="small">${d.error || "Building the week's locked slips - the slate sim runs first when nothing has warmed it (~30s)…"}</div>`;
+    if (!_nflPresetPoll) _nflPresetPoll = setInterval(() => { _nflPresetFetchTs = 0; renderNflPresetBox(); }, 8000);
+    return;
+  }
+  if (_nflPresetPoll) { clearInterval(_nflPresetPoll); _nflPresetPoll = null; }
+  const pids = _nflPresetSel === "targets" ? _NFL_TARGET_IDS : [_nflPresetSel];
+  const sections = [];
+  for (const pid of pids) {
+    const p = (d.presets || {})[pid];
+    if (!p) continue;
+    sections.push(_presetSectionHtml(p, (d.records || {})[pid],
+                                     d.built_ts, (d.first_starts || {})[pid]));
+  }
+  if (!sections.length) { box.innerHTML = `<div class="small">No such recipe.</div>`; return; }
+  const wk = d.week ? `${d.preseason ? "preseason " : ""}week ${d.week}` : "the week";
+  box.innerHTML = `<div class="combomaker">
+    ${sections.join(`<hr style="border:none;border-top:1px solid var(--line,#333);margin:10px 0">`)}
+    <div class="small" style="margin-top:6px;color:var(--muted)">Rebuilds every half hour as Kalshi's prices move, and when a game kicks off · built ${d.age_s != null ? Math.round(d.age_s / 60) + "m ago" : ""} for ${wk}${d.age_s > 3600 ? ` · <span title="the recorder rebuilds off sims the PC (or a Build click) already paid for; a stale card means neither has run lately - opening this tab kicks a fresh build">⏳ refreshing</span>` : ""}</div>
+  </div>`;
+}
+async function loadNflWall() {
+  const box = $("nflWall");
+  if (!box) return;
+  try {
+    const d = await _fetchNflPresets();
+    const wins = d.best_wins || {};
+    const recs = d.records || {};
+    const bestId = (d.best || {}).id;
+    const cols = _NFL_WALL_COLS.map(([pid, lbl]) => {
+      const w = wins[pid];
+      const r = recs[pid];
+      const crowned = pid === bestId;
+      const recTxt = r && r.graded
+        ? `<div class="small" style="color:var(--muted)">${r.won}-${r.graded - r.won} all time</div>` : "";
+      const body = w
+        ? `<div class="small"><b class="ev pos">WON ${w.payout_x ? w.payout_x + "×" : ""}</b> · claimed ${w.prob_pct}% · ${w.date || ""}</div>
+           <ul style="margin:4px 0;padding-left:16px">${(w.legs || []).map((l) =>
+             typeof l === "string"
+               ? `<li class="small">✅ ${escapeHtml(l)}</li>`
+               : `<li class="small">✅ <span class="legtag" style="${l.side === "no" ? "color:var(--no);border-color:var(--no)" : "color:var(--yes);border-color:var(--yes)"}">${(l.side || "yes").toUpperCase()}</span> <b>${escapeHtml(l.pick)}</b> <span style="color:var(--muted)">${escapeHtml(l.matchup || "")}${l.cents != null ? " · " + l.cents + "¢" : ""}</span></li>`).join("")}
+           </ul>`
+        : `<div class="empty" style="padding:12px 4px">No win yet - the recipe runs every week; its first cash lands here on its own.</div>`;
+      return `<div class="combo" style="flex:1 1 230px;min-width:210px${crowned ? ";box-shadow:0 0 0 1px var(--yes)" : ""}">
+        <div><b>${lbl}</b>${crowned ? ` <span class="small" title="the server scores every recipe's CURRENT slip - fee-aware EV adjusted by its own graded record - and crowns the week's best">👑 best bet</span>` : ""}</div>${recTxt}${body}</div>`;
     }).join("");
     box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">${cols}</div>
       <div class="small" style="margin-top:8px;color:var(--muted)">A slip only hangs here once EVERY leg settled the bought way on Kalshi - the payout shown is what it actually paid, fees in.</div>`;
