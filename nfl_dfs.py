@@ -400,32 +400,91 @@ def _value_sd(p, objective):
     return _value(p, objective)
 
 
-def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False):
-    """Five FLEX under `budget`, spanning both teams with the captain."""
+# Construction rules the showdown record supports (Establish The Run's
+# year-in-review of top-1% lineups): a defense beside the OPPOSING team's
+# captain is the one pairing the sharp field has learned to avoid -- captain
+# QB with the other defense fell from 7.8% of lineups to 1.4% in a year --
+# because the defense scores exactly when the captain's offense stalls; more
+# than two kickers/defenses in a lineup finished top-1% at a 1.1% rate; and
+# no top finisher carried more than two $200-$2,000 punts. The optimizer used
+# to hand back Smith-Njigba as captain with Darnold AND the Patriots defense,
+# a lineup that needs Seattle's offense to score and to stall in the same
+# game; the joint sim discounted it, the leverage discount's cheap filler
+# outweighed that, and a rule is cheaper than a fight between two heuristics.
+_SD_MAX_KDST = 2
+_SD_MAX_PUNTS = 2
+_SD_PUNT_SALARY = 2000
+# And no kicker or defense as CAPTAIN in a GPP build: "outlier D/ST
+# performances are difficult to predict and higher-than-expected ownership
+# often occurs when these positions are targeted; in large-field tournaments
+# it's acceptable to remove them from the captain player pool" (ETR). Wide
+# receivers captained 31.4% of top-1% lineups; the average winning captain
+# cost about $13,000. Denied the opposing defense at FLEX, leverage promptly
+# captained the Seahawks kicker at 16.8% ownership beside both quarterbacks
+# (projected 88 against 95 for the stacks; the ownership estimate saturates
+# on a one-game pool, so the discount rewards whoever it cannot cap), and
+# ceiling tied a defense captain with a Maye stack on the joint rule. Cash
+# keeps the full pool: a defense captain by projection is a different bet.
+_SD_GPP_CPT_POS = {"QB", "RB", "WR", "TE"}
+
+
+def _sd_allowed(p, cap_p, picked):
+    """May `p` fill a FLEX beside captain `cap_p` and the FLEX `picked` so far?"""
+    pos = p.get("pos")
+    if pos == "DST" and cap_p.get("pos") != "DST" and p.get("team") \
+            and p.get("team") != cap_p.get("team"):
+        return False                        # the captain's opponents' defense
+    if pos in ("K", "DST"):
+        n = (1 if cap_p.get("pos") in ("K", "DST") else 0) \
+            + sum(1 for q in picked if q.get("pos") in ("K", "DST"))
+        if n >= _SD_MAX_KDST:
+            return False
+    if p["salary"] <= _SD_PUNT_SALARY:
+        n = (1 if cap_p.get("salary", 0) <= _SD_PUNT_SALARY else 0) \
+            + sum(1 for q in picked if q["salary"] <= _SD_PUNT_SALARY)
+        if n >= _SD_MAX_PUNTS:
+            return False
+    return True
+
+
+def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False, cap_p=None):
+    """Five FLEX under `budget`, spanning both teams with the captain, under
+    the construction rules (_sd_allowed) when the captain is given."""
     picked, sal, teams = [], 0, {cpt_team}
-    for slot in range(5):
-        pool = [p for p in cands if p["_free"] and sal + p["salary"] <= budget]
-        # Last slot and still one-sided -> it has to come from the other team.
-        if slot == 4 and len(teams) < SHOWDOWN_MIN_TEAMS:
-            other = [p for p in pool if p["team"] and p["team"] not in teams]
-            if not other:
+    # A fill that dies mid-way (no player fits the last slot) used to return
+    # with its partial picks still flagged taken, and they stayed taken for
+    # every later fill under that captain -- so the expensive players, who
+    # are the ones a dead fill has usually already spent, vanished from the
+    # search after the first failure. On the 2026 opener a Maye-captain
+    # search scored 290 candidates and not one carried Smith-Njigba; the
+    # best lineup it never saw scored 108.8 on the joint rule against the
+    # 99.5 it returned. The flags are released on every path now.
+    try:
+        for slot in range(5):
+            pool = [p for p in cands if p["_free"] and sal + p["salary"] <= budget
+                    and (cap_p is None or _sd_allowed(p, cap_p, picked))]
+            # Last slot and still one-sided -> it has to come from the other team.
+            if slot == 4 and len(teams) < SHOWDOWN_MIN_TEAMS:
+                other = [p for p in pool if p["team"] and p["team"] not in teams]
+                if not other:
+                    return None
+                pool = other
+            if not pool:
                 return None
-            pool = other
-        if not pool:
-            return None
-        if greedy:
-            pick = max(pool, key=lambda p: _value_sd(p, objective))
-        else:
-            top = sorted(pool, key=lambda p: -_value_sd(p, objective))[:16]
-            w = [max(0.1, _value_sd(x, objective)) ** 2 for x in top]
-            pick = rng.choices(top, weights=w)[0]
-        pick["_free"] = False
-        picked.append(pick)
-        sal += pick["salary"]
-        if pick["team"]:
-            teams.add(pick["team"])
-    for p in picked:
-        p["_free"] = True
+            if greedy:
+                pick = max(pool, key=lambda p: _value_sd(p, objective))
+            else:
+                top = sorted(pool, key=lambda p: -_value_sd(p, objective))[:16]
+                w = [max(0.1, _value_sd(x, objective)) ** 2 for x in top]
+                pick = rng.choices(top, weights=w)[0]
+            pick["_free"] = False
+            picked.append(pick)
+            sal += pick["salary"]
+            if pick["team"]:
+                teams.add(pick["team"])
+    finally:
+        for p in picked:
+            p["_free"] = True
     if len(teams) < SHOWDOWN_MIN_TEAMS:
         return None
     return picked, sal
@@ -488,11 +547,14 @@ def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
         budget = cap - cap_p["cpt_salary"]
         if budget < 0:
             continue
+        if objective in ("ceiling", "leverage") and cap_p.get("pos") not in _SD_GPP_CPT_POS:
+            continue                        # no K / DST captain in a GPP build
         cap_p["_free"] = False
         others = [p for p in players if p is not cap_p]
         cap_val = CPT_MULT * _value_sd(cap_p, objective)
         for i in range(restarts + 1):
-            r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0))
+            r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0),
+                         cap_p=cap_p)
             if not r:
                 continue
             picked, sal = r

@@ -12691,6 +12691,42 @@ ck("showdown's leverage discount applies to a defense too, and a lineup with no 
    and _nd13._joint_score({"arr": None, "pos": "QB"}, [], "ceiling", range(10)) is None
    and "_value_sd(" in _insp.getsource(_nd13._sd_fill) and "_value_sd(" in _insp.getsource(_nd13.optimize_showdown))
 
+# The construction rules the showdown record supports (ETR's top-1% review),
+# added after the first two runs on the opener captained the Seahawks kicker
+# and, before that, the Seahawks defense beside the Patriots offense.
+_capq = {"name": "QB A", "pos": "QB", "team": "NE", "salary": 10000, "cpt_salary": 15000}
+_capd = {"name": "DST B", "pos": "DST", "team": "SEA", "salary": 4400, "cpt_salary": 6600}
+_dstB = {"name": "DST B", "pos": "DST", "team": "SEA", "salary": 4400}
+_dstA = {"name": "DST A", "pos": "DST", "team": "NE", "salary": 3400}
+_kB = {"name": "K B", "pos": "K", "team": "SEA", "salary": 5000}
+_punt = {"name": "P", "pos": "TE", "team": "SEA", "salary": 1600}
+_punt2 = {"name": "P2", "pos": "WR", "team": "NE", "salary": 200}
+ck("a defense may not sit beside the OPPOSING team's captain, may beside its own or a defense captain",
+   not _nd13._sd_allowed(_dstB, _capq, []) and _nd13._sd_allowed(_dstA, _capq, [])
+   and _nd13._sd_allowed(_dstA, _capd, []))
+ck("at most two kickers/defenses and two $2,000-or-under punts in a lineup",
+   _nd13._sd_allowed(_kB, _capq, [_dstA]) and not _nd13._sd_allowed(_kB, _capq, [_dstA, {"pos": "K", "salary": 5000, "team": "NE"}])
+   and not _nd13._sd_allowed(_kB, _capd, [_dstA])
+   and _nd13._sd_allowed(_punt2, _capq, [_punt]) and not _nd13._sd_allowed(_punt2, _capq, [_punt, {"pos": "RB", "salary": 200, "team": "NE"}])
+   and _nd13._SD_MAX_KDST == 2 and _nd13._SD_MAX_PUNTS == 2)
+_r13.seed(4)
+_gpp13 = _nd13.optimize_showdown(list(_pl13), _cap13, "ceiling", restarts=40)
+_r13.seed(4)
+_cash13 = _nd13.optimize_showdown(list(_pl13), _cap13, "projection", restarts=40)
+# A fill that cannot complete releases every player it touched.
+_fp13 = [{"name": f"P{i}", "pos": "WR", "team": "NE" if i < 4 else "SEA", "salary": 9000 if i < 4 else 400,
+          "cpt_salary": 13500, "proj": 10.0 - i, "ceiling": 20.0 - i, "floor": 1.0, "_free": True} for i in range(8)]
+_r13.seed(1)
+_dead13 = _nd13._sd_fill(_fp13, 20000, "ceiling", _r13, "NE", greedy=True,
+                         cap_p={"name": "C", "pos": "QB", "team": "NE", "salary": 10000})
+ck("a fill that dies leaves every player free for the next one (it used to lock the expensive ones out)",
+   _dead13 is None and all(p["_free"] for p in _fp13))
+ck("a GPP build never captains a kicker or a defense; cash keeps the whole captain pool",
+   _gpp13 and _gpp13[0]["pos"] in _nd13._SD_GPP_CPT_POS and _cash13 is not None
+   and _nd13._SD_GPP_CPT_POS == {"QB", "RB", "WR", "TE"}
+   and "cap_p=cap_p" in _insp.getsource(_nd13.optimize_showdown)
+   and "_sd_allowed(p, cap_p, picked)" in _insp.getsource(_nd13._sd_fill))
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
