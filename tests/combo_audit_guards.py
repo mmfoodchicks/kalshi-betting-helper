@@ -12592,6 +12592,105 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and _js12.count("(d.quoting || {})[pid]") == 3
    and 'vigil-shell-v120' in open(_os.path.join(_root, "static", "sw.js")).read())
 
+# ---------------------------------------------------------------------------
+# The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
+# 132,352 entries), run for the owner from here: two things were off. The
+# pool had no kickers (DK lists both, Myers averaged 12 DK points in 2025 at
+# $5,400), and the optimizer summed each player's own ceiling, which captained
+# the Seahawks DEFENSE beside both quarterbacks and the Patriots defense --
+# parts that score in different games. Kickers now ride the pool off their own
+# offense's iterations; the GPP objectives score a lineup on its joint sims;
+# showdown's leverage discount applies to a defense too. Hermetic: stubbed
+# Sleeper rows, synthetic arrays.
+print("Showdown: kickers in the pool, GPP lineups scored jointly")
+import nfl_dfs as _nd13
+import nfl_dfs_sim as _ns13
+import dk_scoring as _dks13
+import random as _r13
+ck("DraftKings' showdown kicker table: 3 / 4 / 5 by distance, an extra point 1, a miss free",
+   _dks13.NFL_K == {"fg_0_39": 3, "fg_40_49": 4, "fg_50p": 5, "xp": 1})
+_og13 = _ns13._get
+_ns13._get = lambda url: [
+    {"player": {"position": "K", "first_name": "Jason", "last_name": "Myers"}, "team": "SEA",
+     "stats": {"fgm": 1.97, "fgm_20_29": 0.36, "fgm_30_39": 0.47, "fgm_40_49": 0.47,
+               "xpm": 2.67, "xpa": 2.8, "pts_std": 6.9}},
+    {"player": {"position": "K", "first_name": "No", "last_name": "Kicks"}, "team": "ZZZ",
+     "stats": {"fgm": 0.0, "xpm": 0.0, "xpa": 0.0}}]
+_ns13._cache.pop(("nfl_k", "2026", 1), None)
+try:
+    _kp13 = _ns13.kicker_projections("2026", 1)
+finally:
+    _ns13._get = _og13
+    _ns13._cache.pop(("nfl_k", "2026", 1), None)
+ck("a kicker's projection is DK-scored off Sleeper's distance BUCKETS (Myers 7.04, matching Sleeper's own 6.9 "
+   "up to the 50+ bonus) and a team with no kicks is not in the map",
+   _kp13 and set(_kp13) == {"SEA"} and _kp13["SEA"]["name"] == "Jason Myers"
+   and abs(_kp13["SEA"]["pts"] - (3 * 0.83 + 4 * 0.47 + 2.67)) < 0.01
+   and _kp13["SEA"]["xpm"] == 2.67)
+# The array rides the offense: iterations with touchdowns carry extra points,
+# yardage scales the field-goal rate, and the mean is pinned to the projection.
+_n13 = 4000
+_rng13 = _r13.Random(5)
+_td13 = [_rng13.choice([0, 0, 1, 2, 3, 4]) for _ in range(_n13)]
+_yd13 = [_rng13.uniform(150, 500) for _ in range(_n13)]
+_arr13 = _ns13._kicker_arr(_kp13["SEA"], {"td": _td13, "yd": _yd13}, _n13, _r13.Random(6))
+_hi13 = [a for a, t in zip(_arr13, _td13) if t >= 3]
+_lo13 = [a for a, t in zip(_arr13, _td13) if t == 0]
+ck("a kicker's per-iteration points follow his offense (more touchdowns, more points), mean pinned to the projection",
+   _arr13 and len(_arr13) == _n13 and abs(sum(_arr13) / _n13 - _kp13["SEA"]["pts"]) < 0.05
+   and sum(_hi13) / len(_hi13) > sum(_lo13) / len(_lo13) + 1.5
+   and _ns13._kicker_arr(_kp13["SEA"], {"td": _td13[:10], "yd": _yd13}, _n13, _r13.Random(6)) is None)
+ck("the regular-season pool adds kickers off the offense's own iterations",
+    'kicker_projections(str(season), week)' in _insp.getsource(_ns13.player_pool)
+    and "team_off[t] = d" in _insp.getsource(_ns13.player_pool)
+    and "if not preseason:" in _insp.getsource(_ns13.player_pool))
+# Joint scoring: a defense whose own ceiling sums highest loses to the stack
+# once the lineup is scored on the game it is actually in.
+_L13 = 3000
+_g13 = _r13.Random(11)
+_game13 = [_g13.gauss(1.0, 0.35) for _ in range(_L13)]              # the NE offense's day
+def _mk13(name, pos, team, base, sign, sal, cpt, own):
+    arr = [max(0.0, base * (1 + sign * (g - 1.0)) + _g13.gauss(0, base * 0.15)) for g in _game13]
+    s_ = sorted(arr)
+    return {"name": name, "pos": pos, "team": team, "salary": sal, "cpt_salary": cpt,
+            "proj": sum(arr) / _L13, "ceiling": s_[int(0.9 * _L13)], "floor": s_[int(0.1 * _L13)],
+            "arr": arr, "own": own}
+_pl13 = [_mk13("QB A", "QB", "NE", 20.0, 1.0, 10000, 15000, 45.0),
+         _mk13("WR A", "WR", "NE", 16.0, 1.0, 9000, 13500, 45.0),
+         _mk13("RB A", "RB", "NE", 14.0, 0.8, 8000, 12000, 40.0),
+         _mk13("TE A", "TE", "NE", 9.0, 0.8, 4500, 6750, 30.0),
+         _mk13("QB B", "QB", "SEA", 17.0, 0.3, 9000, 13500, 40.0),
+         _mk13("WR B", "WR", "SEA", 18.0, 0.3, 10000, 15000, 45.0),
+         _mk13("TE B", "TE", "SEA", 9.0, 0.3, 4500, 6750, 30.0),
+         _mk13("DST B", "DST", "SEA", 9.0, -2.2, 4400, 6600, 40.0),   # fat tail when NE fails
+         _mk13("DST A", "DST", "NE", 7.0, -0.6, 3400, 5100, 18.0),
+         _mk13("K B", "K", "SEA", 7.0, 0.3, 5000, 7500, 15.0)]
+_cap13 = 50000
+_sumbest = max(((1.5 * p["ceiling"]) for p in _pl13))
+_dstc = next(p for p in _pl13 if p["name"] == "DST B")
+_qba = next(p for p in _pl13 if p["name"] == "QB A")
+_js_d = _nd13._joint_score(_dstc, [p for p in _pl13 if p["name"] in ("QB A", "WR A", "QB B", "WR B", "DST A")], "ceiling", range(_L13))
+_js_q = _nd13._joint_score(_qba, [p for p in _pl13 if p["name"] in ("WR A", "RB A", "TE A", "WR B", "TE B")], "ceiling", range(_L13))
+_sum_d = 1.5 * _dstc["ceiling"] + sum(p["ceiling"] for p in _pl13 if p["name"] in ("QB A", "WR A", "QB B", "WR B", "DST A"))
+_sum_q = 1.5 * _qba["ceiling"] + sum(p["ceiling"] for p in _pl13 if p["name"] in ("WR A", "RB A", "TE A", "WR B", "TE B"))
+ck("a defense captain beside the offense it needs to fail sums high and scores low jointly; the stack wins the joint rule",
+   _js_d is not None and _js_q is not None and _js_q > _js_d and _sum_d > _sum_q * 0.9,
+   f"joint dst {_js_d:.1f} vs stack {_js_q:.1f}; sums {_sum_d:.1f} vs {_sum_q:.1f}")
+_r13.seed(3)
+_got13 = _nd13.optimize_showdown(list(_pl13), _cap13, "ceiling", restarts=40)
+_r13.seed(3)
+_lev13 = _nd13.optimize_showdown(list(_pl13), _cap13, "leverage", restarts=40)
+ck("optimize_showdown's GPP objectives return the joint winner, never a defense captaining its own opponents' offense",
+   _got13 and _got13[0]["pos"] != "DST" and _got13[1] and len(_got13[1]) == 5 and _got13[2] <= _cap13
+   and _lev13 and _lev13[0]["pos"] != "DST" and _lev13[2] <= _cap13
+   and not ({"DST A", "DST B"} <= {p["name"] for p in [_lev13[0]] + _lev13[1]}),
+   f"ceiling cpt {_got13 and _got13[0]['name']} leverage cpt {_lev13 and _lev13[0]['name']}")
+ck("showdown's leverage discount applies to a defense too, and a lineup with no arrays scores None",
+   abs(_nd13._value_sd({"pos": "DST", "ceiling": 20.0, "own": 40.0}, "leverage") - 20.0 * (1 - 0.28)) < 1e-9
+   and _nd13._value({"pos": "DST", "ceiling": 20.0, "own": 40.0}, "leverage") == 20.0
+   and _nd13._joint_score({"arr": None, "pos": "QB"}, [], "ceiling", range(10)) is None
+   and "_value_sd(" in _insp.getsource(_nd13._sd_fill) and "_value_sd(" in _insp.getsource(_nd13.optimize_showdown))
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

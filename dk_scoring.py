@@ -43,6 +43,9 @@ NFL_OFF = {"pass_yd": 0.04, "pass_td": 4, "pass_300": 3, "int": -1,
            "rec": 1, "rec_yd": 0.1, "rec_td": 6, "rec_100": 3,
            "return_td": 6, "fumble_lost": -1, "two_point": 2,
            "fum_rec_td": 6}
+# Showdown kickers. DraftKings pays a made field goal by distance and an
+# extra point flat; a miss costs nothing.
+NFL_K = {"fg_0_39": 3, "fg_40_49": 4, "fg_50p": 5, "xp": 1}
 NFL_DST = {"sack": 1, "int": 2, "fumble_rec": 2, "return_td": 6, "int_td": 6,
            "fum_rec_td": 6, "blocked_return_td": 6, "safety": 2,
            "blocked_kick": 2, "two_point_return": 2}

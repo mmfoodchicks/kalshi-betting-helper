@@ -497,6 +497,82 @@ def dst_projections(season, week):
     return _cached(("nfl_dst", season, week), 3600, build)
 
 
+def kicker_projections(season, week):
+    """{team_abbr: {name, fg: [(dk_pts, made_per_game), ...], xpm, xpa, pts}}
+    from Sleeper's kicker rows. Cached 1h.
+
+    Sleeper's `fgm` runs ahead of its own distance buckets (Myers, 2026 week
+    1: fgm 1.97 against buckets summing to 1.30) and its point total is built
+    from the BUCKETS, so the buckets are what is trusted here -- a made kick
+    with no distance is not worth inventing a distance for."""
+    def build():
+        url = (f"{_PROJ.format(season=season, week=week)}?season_type=regular"
+               f"&position[]=K&order_by=pts_std")
+        try:
+            rows = _get(url)
+        except Exception as _e:
+            errlog.note("NFLDFS-sleeper-k", _e)
+            return None
+        out = {}
+        for r in rows:
+            st = r.get("stats") or {}
+            p = r.get("player") or {}
+            if (p.get("position") or "") != "K" or not r.get("team"):
+                continue
+            fg = [(dk_scoring.NFL_K["fg_0_39"],
+                   sum(float(st.get(k) or 0.0) for k in ("fgm_0_19", "fgm_20_29", "fgm_30_39"))),
+                  (dk_scoring.NFL_K["fg_40_49"], float(st.get("fgm_40_49") or 0.0)),
+                  (dk_scoring.NFL_K["fg_50p"], float(st.get("fgm_50p") or 0.0))]
+            xpm = float(st.get("xpm") or 0.0)
+            xpa = float(st.get("xpa") or 0.0) or xpm
+            pts = sum(v * m for v, m in fg) + dk_scoring.NFL_K["xp"] * xpm
+            if pts <= 0:
+                continue
+            out[r.get("team")] = {
+                "name": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
+                "fg": fg, "xpm": xpm, "xpa": xpa, "pts": round(pts, 2)}
+        return out or None
+    return _cached(("nfl_k", season, week), 3600, build)
+
+
+def _kicker_arr(k, off, n, rng):
+    """A kicker's per-iteration DK points off HIS OWN offense's simulated
+    output: an extra point per offensive touchdown that iteration (made at
+    his xpm/xpa), field goals as a Poisson whose mean rides the offense's
+    yardage that iteration (more drives that move, more kicks), each made
+    kick's distance drawn from the projection's own mix. Mean pinned to the
+    projection like every other player; the shape and the correlation with
+    his quarterback are the point -- a kicker in a shootout scores, one in
+    a shutout does not, and the old pool had no kicker at all."""
+    tds, yds = off.get("td") or [], off.get("yd") or []
+    if len(tds) < n or len(yds) < n:
+        return None
+    fg_mean = sum(m for _v, m in k["fg"])
+    mix = [(v, m) for v, m in k["fg"] if m > 0]
+    tot_m = sum(m for _v, m in mix) or 1.0
+    xp_rate = (k["xpm"] / k["xpa"]) if k["xpa"] else 0.94
+    mean_yd = (sum(yds) / len(yds)) or 1.0
+    out = []
+    for i in range(n):
+        xp = sum(1 for _ in range(int(tds[i])) if rng.random() < xp_rate)
+        f = min(2.5, max(0.3, yds[i] / mean_yd))
+        made = _pois(fg_mean * f)
+        pts = dk_scoring.NFL_K["xp"] * xp
+        for _ in range(made):
+            u = rng.random() * tot_m
+            for v, m in mix:
+                u -= m
+                if u <= 0:
+                    pts += v
+                    break
+            else:
+                pts += mix[-1][0]
+        out.append(float(pts))
+    raw = sum(out) / n
+    f = k["pts"] / raw if raw > 0 else 1.0
+    return [round(x * f, 2) for x in out]
+
+
 def player_pool(week, n=3000, preseason=False, season=None):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
@@ -512,8 +588,11 @@ def player_pool(week, n=3000, preseason=False, season=None):
         pool = {}
         pre_dst = {}
         sim_dst = {}
+        team_off = {}
         for gid, g in games.items():
             sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
+            for t, d in (sim.get("team_def") or {}).items():
+                team_off[t] = d                 # this offense's own per-iteration output
             for p in sim["players"]:
                 pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
                                    "proj": p["proj_pts"], "ceiling": p["ceiling"],
@@ -570,6 +649,25 @@ def player_pool(week, n=3000, preseason=False, season=None):
                 pool[key] = {"pos": "DST", "team": team, "opp": None, "proj": proj,
                              "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                              "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
+        # Kickers, regular season: DK's Showdown pool carries them and they are
+        # a standard play there (Myers averaged 12 DK points in 2025 at $5,400
+        # tonight); the pool had none, so every showdown build was choosing
+        # from a board with the kicker slot cut out. Scored off the offense's
+        # own iterations (_kicker_arr), so a kicker and his quarterback move
+        # together.
+        if not preseason:
+            for team, k in (kicker_projections(str(season), week) or {}).items():
+                off = team_off.get(team)
+                if not off or k["name"] in pool:
+                    continue
+                arr = _kicker_arr(k, off, n, _random)
+                if not arr:
+                    continue
+                pool[k["name"]] = {"pos": "K", "team": team, "opp": None,
+                                   "proj": k["pts"],
+                                   "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
+                                   "floor": round(sorted(arr)[int(0.1 * len(arr))], 1),
+                                   "arr": arr}
         # A preseason defense whose team Sleeper did not list still gets its
         # simulated array rather than dropping out of the pool entirely.
         for team, arr in pre_dst.items():

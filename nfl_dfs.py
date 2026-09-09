@@ -384,6 +384,22 @@ def showdown_pool(csv_players):
     return out
 
 
+def _value_sd(p, objective):
+    """Showdown's per-player value. Same as _value except that leverage's
+    ownership discount applies to a DEFENSE too. Classic exempts the DST slot
+    (its score range is too small for contrarianism to differentiate a
+    lineup); in showdown a defense competes for the captain's 1.5x and for
+    five open FLEX slots against every skill player, and exempting it there
+    handed both defenses a free pass past a discount every stud paid: with
+    nine players at the 45% ownership cap the leverage build on the 2026
+    opener was the Seahawks defense as captain beside both quarterbacks and
+    the Patriots defense -- on the joint rule it scored 80.4 against 75.0 for
+    the same lineup with the discount applied, and 76.2 for a Maye stack."""
+    if objective == "leverage":
+        return p["ceiling"] * (1.0 - 0.007 * p.get("own", 8.0))
+    return _value(p, objective)
+
+
 def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False):
     """Five FLEX under `budget`, spanning both teams with the captain."""
     picked, sal, teams = [], 0, {cpt_team}
@@ -398,10 +414,10 @@ def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False):
         if not pool:
             return None
         if greedy:
-            pick = max(pool, key=lambda p: _value(p, objective))
+            pick = max(pool, key=lambda p: _value_sd(p, objective))
         else:
-            top = sorted(pool, key=lambda p: -_value(p, objective))[:16]
-            w = [max(0.1, _value(x, objective)) ** 2 for x in top]
+            top = sorted(pool, key=lambda p: -_value_sd(p, objective))[:16]
+            w = [max(0.1, _value_sd(x, objective)) ** 2 for x in top]
             pick = rng.choices(top, weights=w)[0]
         pick["_free"] = False
         picked.append(pick)
@@ -415,34 +431,95 @@ def _sd_fill(cands, budget, objective, rng, cpt_team, greedy=False):
     return picked, sal
 
 
-def optimize_showdown(players, cap, objective, restarts=60, rng=None):
+# The GPP objectives (ceiling, leverage) score a candidate lineup on its JOINT
+# simulated points -- half its 90th percentile, half its median, the captain's
+# 1.5x and (for leverage) each player's ownership discount applied per player
+# -- exactly the rule the racing captain optimizer took on after Monza. The
+# sum of six players' own ceilings is a total no simulated game produces, and
+# it buys the fattest tail per dollar whatever it correlates with: on the 2026
+# opener (NE @ SEA) the sum-of-ceilings build was the Seahawks DEFENSE as
+# captain beside both quarterbacks and the other defense, a lineup whose
+# parts score in different games. Joint scoring is what knows that.
+# Search width. Sixty randomized fills per captain left the answer seed-
+# dependent (two seeds on the opener gave two different leverage builds,
+# one of them the weaker on every number); a one-game pool is ~20 players,
+# so four hundred fills per captain cost a few seconds and the seeds agree.
+_SD_RESTARTS = 400
+_JOINT_KEEP = 600          # candidates re-scored jointly per build
+_JOINT_ITERS = 2500        # iterations sampled per candidate (pure Python)
+
+
+def _joint_score(cap_p, picked, objective, iters):
+    """0.5 x p90 + 0.5 x median of the lineup's simulated totals over `iters`
+    iteration indexes, captain at 1.5x, leverage's ownership discount per
+    player. None when any row carries no simulated array."""
+    rows = [(CPT_MULT, cap_p)] + [(1.0, p) for p in picked]
+    if any(not p.get("arr") for _m, p in rows):
+        return None
+    disc = []
+    for m, p in rows:
+        w = m
+        if objective == "leverage":             # a defense pays it too (_value_sd)
+            w *= (1.0 - 0.007 * p.get("own", 8.0))
+        disc.append((w, p["arr"]))
+    L = min(len(a) for _w, a in disc)
+    tot = []
+    for i in iters:
+        j = i % L
+        tot.append(sum(w * a[j] for w, a in disc))
+    tot.sort()
+    return 0.5 * tot[int(0.9 * len(tot))] + 0.5 * tot[len(tot) // 2]
+
+
+def optimize_showdown(players, cap, objective, restarts=_SD_RESTARTS, rng=None):
     """Best 1 CPT + 5 FLEX under the cap. Every player is tried as captain --
     the pool is one game, so that is only a few dozen -- and each captaincy gets
-    one greedy fill plus a batch of randomized ones."""
+    one greedy fill plus a batch of randomized ones. Cash (projection) keeps
+    the additive sum; the GPP objectives re-score the strongest candidates on
+    their joint sims (_joint_score) and take the best of those."""
     rng = rng or random
     if len(players) < len(SHOWDOWN_ROSTER):
         return None
     for p in players:
         p["_free"] = True
     best = None
+    cands = {}
     for cap_p in players:
         budget = cap - cap_p["cpt_salary"]
         if budget < 0:
             continue
         cap_p["_free"] = False
         others = [p for p in players if p is not cap_p]
-        cap_val = CPT_MULT * _value(cap_p, objective)
+        cap_val = CPT_MULT * _value_sd(cap_p, objective)
         for i in range(restarts + 1):
             r = _sd_fill(others, budget, objective, rng, cap_p["team"], greedy=(i == 0))
             if not r:
                 continue
             picked, sal = r
-            score = cap_val + sum(_value(p, objective) for p in picked)
+            score = cap_val + sum(_value_sd(p, objective) for p in picked)
             if best is None or score > best[0]:
                 best = (score, cap_p, list(picked), sal + cap_p["cpt_salary"])
+            key = (cap_p["name"], frozenset(p["name"] for p in picked))
+            if key not in cands or score > cands[key][0]:
+                cands[key] = (score, cap_p, list(picked), sal + cap_p["cpt_salary"])
         cap_p["_free"] = True
     if not best:
         return None
+    if objective in ("ceiling", "leverage") and cands:
+        top = sorted(cands.values(), key=lambda c: -c[0])[:_JOINT_KEEP]
+        L = min((len(p.get("arr") or []) for c in top for p in [c[1]] + c[2]), default=0)
+        if L > 0:
+            step = max(1, L // _JOINT_ITERS)
+            iters = range(0, L, step)
+            jbest = None
+            for c in top:
+                js = _joint_score(c[1], c[2], objective, iters)
+                if js is None:
+                    continue
+                if jbest is None or js > jbest[0]:
+                    jbest = (js, c[1], c[2], c[3])
+            if jbest is not None:
+                best = jbest
     _score, cap_p, picked, sal = best
     return cap_p, picked, sal
 
