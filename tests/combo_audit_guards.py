@@ -12478,6 +12478,13 @@ ck("the tabs are the server's recipes in the owner's order, the ⚡ tab is the s
    _tabs11 == ["custom", "td5", "ml58", "sp80", "rec100", "rush100", "rec5", "pass300", "targets"]
    and _tids11 == list(_np11.TARGET_IDS)
    and _wall11 == [i for i in _ids11 if i != "x15"])
+_grid11 = _js11[_js11.index("function nflGameGridHtml()"):_js11.index("window.nflComboToggleGame")]
+ck("the NFL game grid maps the week board's own games -- every name it reads is defined in the "
+   "function (the college split left `mine` here undefined and the whole maker stopped painting)",
+   "cards += (d.games || []).map(" in _grid11
+   and "mine" not in "\n".join(l for l in _grid11.split("\n") if not l.strip().startswith("//"))
+   and "const d = _nflWeekData;" in _grid11,
+   "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
    and 'vigil-shell-v119' in open(_os.path.join(_root, "static", "sw.js")).read())

@@ -3756,7 +3756,13 @@ function nflGameGridHtml() {
   const allOn = !nflComboGameSel || !Object.keys(nflComboGameSel).length;
   const esc = (s) => (s || "").replace(/'/g, "\\'");
   let cards = `<div class="gg-card gg-all${allOn ? " on" : ""}" onclick="nflComboAllGames()">ALL<br>GAMES</div>`;
-  cards += mine.map((g) => {
+  // Every game on the week board. The college grid filters its `d.games`
+  // by division into a `mine` list; that name leaked into this function
+  // when the two were split (0b1024b) with nothing defining it here, so the
+  // first render after the week data arrived threw ReferenceError and the
+  // whole NFL combo maker -- grid, knobs, Build, and now the preset tabs
+  // above it -- never painted (JS-error ledger, 2026-09-09 13:37 ET).
+  cards += (d.games || []).map((g) => {
     const key = `${g.away}@${g.home}`;
     const started = g.state === "post" || g.state === "in";
     const sel = nflComboGameSel ? nflComboGameSel[key] : undefined;
