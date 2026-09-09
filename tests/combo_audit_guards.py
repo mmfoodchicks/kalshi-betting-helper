@@ -8953,21 +8953,41 @@ ck("the guard suite gates every push in CI",
 _dep40 = set(sys.stdlib_module_names)
 _local40 = {f[:-3] for f in _os.listdir(_root) if f.endswith(".py")}
 _declared40 = {"flask", "werkzeug", "gunicorn", "qrcode", "tzdata"}
+# requirements-pc.txt is installed on the owner's PC only (numpy for the DFS
+# tournament). Those imports are allowed ONLY behind a try/except
+# ImportError: the server image lacks them and must import the module anyway.
+_pc40 = {_l.split(">=")[0].split("==")[0].strip().lower()
+         for _l in open(_os.path.join(_root, "requirements-pc.txt"))
+         if _l.strip() and not _l.startswith("#")}
 _undeclared40 = []
 for _f40 in sorted(_os.listdir(_root)):
     if not _f40.endswith(".py"):
         continue
-    for _n40 in _gast.walk(_gast.parse(open(_os.path.join(_root, _f40)).read())):
+    _tree40 = _gast.parse(open(_os.path.join(_root, _f40)).read())
+    _guarded40 = set()
+    for _t40 in _gast.walk(_tree40):
+        if isinstance(_t40, _gast.Try) and any(
+                (isinstance(_h.type, _gast.Name) and _h.type.id == "ImportError")
+                for _h in _t40.handlers):
+            for _b40 in _t40.body:
+                for _i40 in _gast.walk(_b40):
+                    if isinstance(_i40, (_gast.Import, _gast.ImportFrom)):
+                        _guarded40.add(_i40.lineno)
+    for _n40 in _gast.walk(_tree40):
         _mods40 = ([a.name.split(".")[0] for a in _n40.names]
                    if isinstance(_n40, _gast.Import)
                    else [_n40.module.split(".")[0]]
                    if isinstance(_n40, _gast.ImportFrom)
                    and _n40.level == 0 and _n40.module else [])
         for _m40 in _mods40:
+            if _m40 in _pc40 and _n40.lineno in _guarded40:
+                continue
             if _m40 not in _dep40 and _m40 not in _local40 \
                     and _m40 not in _declared40:
-                _undeclared40.append(f"{_f40}:{_n40.lineno} imports {_m40}")
-ck("every import is stdlib, declared in requirements, or ours",
+                _undeclared40.append(f"{_f40}:{_n40.lineno} imports {_m40}"
+                                     + (" (PC-only: guard it with try/except ImportError)"
+                                        if _m40 in _pc40 else ""))
+ck("every import is stdlib, declared in requirements, or ours -- a PC-only extra only behind try/except ImportError",
    not _undeclared40, _undeclared40[:5])
 
 print()
@@ -10493,7 +10513,7 @@ try:
        and any(m == "dec" for m in _smp["method"]))
     ck("the board key moved with the payload shape (a cached old board has no samples) "
        "and the artifact schema was bumped in the same change",
-       _us63.BOARD_NAME == "ufc_board2" and __import__("artifacts").SCHEMA == 2)
+       _us63.BOARD_NAME == "ufc_board2" and __import__("artifacts").SCHEMA == 3)
     ck("both series share the bout key the fighter ticker carries",
        _uc63.event_key("KXUFCFIGHT-26SEP08PASBER-PAS") == "26SEP08PASBER"
        and _uc63.event_key("KXUFCROUNDS-26SEP08PASBER-3") == "26SEP08PASBER"
@@ -10697,7 +10717,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11897,7 +11917,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12489,7 +12509,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12590,7 +12610,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12782,7 +12802,133 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v121' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+
+
+# ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
+import dfs_tourney as _dt14
+import itertools as _itertools
+import shutil as _shutil
+_apy14 = open(_os.path.join(_root, "app.py")).read()
+_req14 = open(_os.path.join(_root, "requirements.txt")).read()
+_reqpc14 = open(_os.path.join(_root, "requirements-pc.txt")).read()
+_pcl14 = open(_os.path.join(_root, "pc_loop.py")).read()
+_pcw14 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the tournament is the PC's job: numpy is in requirements-pc.txt (pc_loop installs it), never in the server's requirements, app.py never imports the engine, and pc_worker runs it in its loop",
+   "numpy" in _reqpc14 and "numpy" not in _req14
+   and '"requirements-pc.txt"' in _pcl14 and '"requirements.txt"' in _pcl14
+   and "import dfs_tourney" not in _apy14
+   and '("showdown tourney", _task_showdown_tourney)' in _pcw14
+   and 'name = f"sd_tourney_nfl_{dg}"' in _pcw14 and "n_sims=60000" in _pcw14
+   and "dfs_tourney.available()" in _pcw14
+   and __import__("artifacts").SCHEMA == 3,
+   "a one-core web worker must never be able to start a 200,000 x 60,000 job")
+ck("the tournament keeps the app's showdown rules and the depth gate for OUR lineups while the field may hold anything legal",
+   "nfl_dfs._sd_allowed(p, cap_p, got)" in _insp.getsource(_dt14.build_nfl_showdown)
+   and "nfl_dfs._apply_depth(ents, preseason)" in _insp.getsource(_dt14.build_nfl_showdown)
+   and '_field_only' in _insp.getsource(_dt14.build_nfl_showdown)
+   and "_set_ownership" not in _insp.getsource(_dt14),
+   "the v0 field used the app's ownership guesses (nine players pinned at 45%) and "
+   "showed a 25% top-1% chance against 132,000 entries")
+if _dt14.available():
+    import numpy as _np14
+    _rng14 = _np14.random.default_rng(14)
+    _pl14 = []
+    for _i in range(11):
+        _s = int(_rng14.integers(24, 112)) * 100
+        _pl14.append({"name": f"p{_i}", "pos": "WR", "team": "AA" if _i % 2 else "BB",
+                      "salary": _s, "cpt_salary": int(_s * 1.5), "proj": float(_rng14.uniform(3, 22))})
+    _idx14, _W14, _al14 = _dt14.enumerate_showdown(
+        _pl14, 50000, entry_ok=lambda cap, picked: all(p["name"] != "p3" for p in picked),
+        cpt_ok=lambda p: p["name"] != "p0")
+    _n14 = 0
+    for _c in range(11):
+        for _cm in _itertools.combinations([i for i in range(11) if i != _c], 5):
+            if _pl14[_c]["cpt_salary"] + sum(_pl14[i]["salary"] for i in _cm) <= 50000 \
+                    and len({_pl14[_c]["team"]} | {_pl14[i]["team"] for i in _cm}) >= 2:
+                _n14 += 1
+    ck("every legal showdown lineup exactly once, captain first at 1.5x, and the enumeration agrees with brute force",
+       len(_idx14) == _n14 > 100
+       and bool((_W14[_np14.arange(len(_idx14)), _idx14[:, 0]] == 1.5).all())
+       and bool((_W14.sum(axis=1) == 6.5).all())
+       and len({tuple(r) for r in _idx14.tolist()}) == len(_idx14))
+    ck("'allowed' is OUR rulebook (p0 never captains, p3 never plays) while the field keeps every legal lineup",
+       int(_al14[_idx14[:, 0] == 0].sum()) == 0
+       and int(_al14[(_idx14[:, 1:] == 3).any(axis=1)].sum()) == 0
+       and 0 < int(_al14.sum()) < len(_idx14))
+    _f14, _b14 = _dt14.field_weights(_pl14, _idx14)
+    _oc14, _of14 = _dt14.field_ownership(_pl14, _idx14, _f14)
+    ck("the field's most popular build holds exactly FIELD_TOP_SHARE, the field sums to one, captain shares to 100% and flex shares to 500%",
+       abs(float(_f14.max()) - _dt14.FIELD_TOP_SHARE) < 1e-9 and abs(float(_f14.sum()) - 1.0) < 1e-9
+       and abs(float(_oc14.sum()) - 100.0) < 1e-6 and abs(float(_of14.sum()) - 500.0) < 1e-6
+       and _b14 > 0 and int(_np14.argmax(_f14)) == int(_np14.argmax(
+           _np14.asarray([p["proj"] for p in _pl14])[_idx14[:, 0]] * 1.5
+           + _np14.asarray([p["proj"] for p in _pl14])[_idx14[:, 1:]].sum(axis=1))))
+    _X14 = _np14.asarray([_rng14.gamma(2.0, p["proj"] / 2.0, size=400) for p in _pl14], dtype=_np14.float32)
+    _grid14 = _dt14.payout_grid(50000, [{"from": 1, "to": 1, "prize": 100000.0},
+                                        {"from": 2, "to": 10000, "prize": 20.0}], 20.0, 10000)
+    _res14 = _dt14.run(_W14, _X14, _f14, _grid14, chunk=100)
+    ck("the ranking is self-consistent: the field's own top-1% mass is 1%, its cash mass is the paid fraction, one lineup per world has nobody above it, and the optimal tally counts every world",
+       abs(float((_f14 * _res14["top1"]).sum()) - 0.01) < 0.004
+       and abs(float((_f14 * _res14["cash"]).sum()) - 0.2) < 0.03
+       and 0.99 <= float(_res14["win"].sum()) <= 1.4
+       and int(_res14["opt"].sum()) == 400 and _res14["n_worlds"] == 400)
+    # one world by hand: mass strictly above each lineup, through the same grid
+    _S14 = _W14 @ _X14[:, :1]
+    _B14 = _np14.clip(_np14.floor(_S14[:, 0] * 10.0 + 0.5), 0, 4000).astype(int)
+    _above14 = _np14.asarray([float(_f14[_B14 > b].sum()) for b in _B14])
+    _pos14 = _np14.minimum(_np14.searchsorted(_grid14["F"], _np14.clip(_above14, 0, 1)), len(_grid14["F"]) - 1)
+    _one14 = _dt14.run(_W14, _X14[:, :1], _f14, _grid14, chunk=100)
+    ck("the world-major bucket pass equals the by-hand mass-above computation on a single world",
+       float(_np14.abs(_one14["win"] - _grid14["first"][_pos14]).max()) < 1e-9
+       and float(_np14.abs(_one14["ev"] - _grid14["ev"][_pos14]).max()) < 1e-6)
+    _cand14 = _np14.argsort(-_res14["top1"])[:60]
+    _ch14, _pa14 = _dt14.portfolio(_W14, _X14, _f14, _grid14, _cand14, 4, chunk=100)
+    ck("the portfolio is four distinct picks, the first the strongest single top-1% lineup, each adding cover",
+       len(_ch14) == 4 and len(set(_ch14)) == 4 and _ch14[0] == 0
+       and all(b >= a for a, b in zip(_pa14, _pa14[1:]))
+       and abs(_pa14[0] - float(_res14["top1"][_cand14[0]])) < 1e-6)
+    ck("chunks are sized to the pool: 666 worlds for 225,000 lineups, 125 for 1.2 million, never above the ask",
+       _dt14.chunk_for(225000, 800) == 666 and _dt14.chunk_for(1200000, 500) == 125
+       and _dt14.chunk_for(10, 500) == 500)
+else:
+    ck("(numpy is not installed here -- the tournament's numeric guards run where it is; the server is meant to lack it)", True)
+# the route: the PC's board or an honest "none", never a computation
+import boardshare as _bs14
+import tempfile as _tf14
+_app14 = __import__("app")
+_old14 = (_bs14._DIR, _app14._SIM_TOKEN)
+_tmp14 = _tf14.mkdtemp(prefix="vigil-tourney-guard-")
+try:
+    _bs14._DIR = _tmp14
+    _app14._SIM_TOKEN = "guardtok14"          # the workflows' door, whatever the login state
+    _c14 = _app14.app.test_client()
+    _h14 = {"X-Sim-Token": "guardtok14"}
+    _r14a = _c14.get("/api/dfs/tourney?sport=nfl&dg=424242", headers=_h14).get_json()
+    _r14b = _c14.get("/api/dfs/tourney?sport=mlb&dg=1", headers=_h14).get_json()
+    _bs14.put("sd_tourney_nfl_424242", {"version": 1, "sport": "nfl", "draft_group_id": 424242,
+                                        "contest": {"name": "guard"}, "worlds": 7,
+                                        "lineups_legal": 3, "lineups_allowed": 2,
+                                        "portfolio": {"5": {"p_any_top1_pct": 1.0, "entries": []}},
+                                        "top_win": [], "players": []})
+    _r14c = _c14.get("/api/dfs/tourney?sport=nfl&dg=424242", headers=_h14).get_json()
+    ck("the tournament route serves the PC's board with its age and the PC light, and says why when there is none",
+       _r14a.get("status") == "none" and "pc" in _r14a and "not built yet" in (_r14a.get("why") or "")
+       and _r14b.get("status") == "none" and "NFL showdown" in (_r14b.get("why") or "")
+       and _r14c.get("status") == "ok" and _r14c.get("worlds") == 7 and "age_s" in _r14c
+       and _r14c.get("pc", {}).get("state") in ("on", "off", "behind"))
+finally:
+    _bs14._DIR, _app14._SIM_TOKEN = _old14
+    _shutil.rmtree(_tmp14, ignore_errors=True)
+_js14 = open(_os.path.join(_root, "static", "app.js")).read()
+_ix14 = open(_os.path.join(_root, "templates", "index.html")).read()
+ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes, best by win, the chalk build, field vs optimal shares per player) and says PC off when there is no board",
+   'id="dfsTourney"' in _ix14 and "async function loadDfsTourney(dg)" in _js14
+   and "/api/dfs/tourney?sport=nfl" in _js14 and "loadDfsTourney(dg);" in _js14
+   and "loadDfsTourney(null)" in _js14 and "function renderDfsTourney(d)" in _js14
+   and "dfsTourneyPick(" in _js14 and "most popular build" in _js14
+   and "optimal CPT" in _js14 and "PC off" in _js14
+   and 'sp !== "nfl" || !showdown' in _js14)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

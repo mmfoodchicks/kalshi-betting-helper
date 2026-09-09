@@ -1,0 +1,4 @@
+# The owner's PC only (pc_loop installs this after every git pull). The server
+# never gets numpy on purpose: the tournament engine (dfs_tourney) is a
+# desktop's job, and a one-core web worker must not be able to start it.
+numpy>=1.26

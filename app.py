@@ -2042,6 +2042,41 @@ def api_dfs_contest():
     return jsonify(c)
 
 
+@app.route("/api/dfs/tourney")
+def api_dfs_tourney():
+    """The DFS tournament board for one DraftKings showdown draft group
+    (dfs_tourney): every legal lineup scored in every simulated world against
+    the modelled field, ranked by how often it wins. Built ONLY on the
+    owner's PC (numpy, gigabytes, minutes) and adopted here as a board named
+    sd_tourney_<sport>_<dg> -- this route reads that pickle or says why there
+    is none. It never computes: a one-core web worker must not be able to
+    start a 200,000 x 60,000 matrix job.
+
+    ?sport=nfl&dg=<draft_group_id>"""
+    import boardshare
+    sport = (request.args.get("sport") or "nfl").lower()
+    try:
+        dg = int(request.args.get("dg") or 0)
+    except ValueError:
+        dg = 0
+    pc = _pc_status()               # the light: "PC off" is the honest reason for no board
+    if sport != "nfl":
+        return jsonify({"status": "none", "sport": sport, "pc": pc,
+                        "why": "the tournament runs for NFL showdown slates so far"})
+    if not dg:
+        return jsonify({"status": "none", "pc": pc, "why": "dg (draft group) required"})
+    payload, age = boardshare.get(f"sd_tourney_{sport}_{dg}", None)
+    if not payload:
+        return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
+                        "why": "not built yet - the PC builds the next showdown slates "
+                               "within minutes of the pool posting whenever it is on"})
+    out = dict(payload)
+    out["status"] = "ok"
+    out["age_s"] = int(age or 0)
+    out["pc"] = pc
+    return jsonify(out)
+
+
 def _dfs_log(sport, req, res, auto_slate, csv_text):
     """Log a big-event build for the look-back; never in the request's way."""
     try:

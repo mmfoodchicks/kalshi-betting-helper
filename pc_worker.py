@@ -366,6 +366,70 @@ def _task_deep(url, tok):
                   "the server's own nightly still covers it")
 
 
+def _task_showdown_tourney():
+    """The DFS tournament (dfs_tourney) for the next NFL showdown slates:
+    every legal lineup scored in every one of 60,000 simulated games
+    against a weighted field, ranked by how often it wins. Built here
+    because it is a desktop's job (numpy, a few gigabytes, minutes), and
+    shipped as a board the tab serves; the server never computes it.
+    Rebuilt when the DraftKings pool changes (a scratch, a price) or the
+    build is three hours old."""
+    import datetime
+    import hashlib
+    import boardshare
+    import dfs_tourney
+    import dk
+    if not dfs_tourney.available():
+        print("[vigil-pc] tourney: numpy missing - pip install -r requirements-pc.txt")
+        return
+    try:
+        slates = dk.slates("nfl") or []
+    except Exception as e:
+        print(f"[vigil-pc] tourney: DK lobby failed ({type(e).__name__}: {e})")
+        return
+    now = datetime.datetime.now()
+    soon = []
+    for sl in slates:
+        if sl.get("games") != 1 or sl.get("contest_type") != 96:
+            continue                        # showdown captain-mode slates only
+        try:
+            st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
+        except ValueError:
+            continue
+        if now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8):
+            soon.append((st, sl))
+    soon.sort(key=lambda x: x[0])
+    for _st, sl in soon[:2]:
+        dg = int(sl["draft_group_id"])
+        name = f"sd_tourney_nfl_{dg}"
+        try:
+            slate = dk.slate_for("nfl", draft_group_id=dg)
+        except Exception as e:
+            print(f"[vigil-pc] tourney {dg}: slate failed ({type(e).__name__}: {e})")
+            continue
+        if not slate:
+            continue
+        sig = hashlib.sha1("\n".join(sorted(slate["csv"].splitlines())).encode()).hexdigest()[:16]
+        cur, age = boardshare.get(name, None)
+        if cur and cur.get("sig") == sig and age is not None and age < 3 * 3600:
+            print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
+            continue
+        print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds)...")
+        t0 = time.time()
+        try:
+            art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print)
+        except Exception as e:
+            print(f"[vigil-pc] tourney {dg}: failed ({type(e).__name__}: {e})")
+            continue
+        if not art:
+            print(f"[vigil-pc] tourney {dg}: nothing to build (no contest or pool)")
+            continue
+        art["sig"] = sig
+        boardshare.put(name, art)
+        print(f"[vigil-pc] tourney {dg}: done in {time.time() - t0:.0f}s, "
+              f"{art['lineups_legal']:,} lineups x {art['worlds']:,} worlds")
+
+
 def main():
     url, tok = _config()
     total = 0
@@ -384,6 +448,7 @@ def main():
     except Exception as e:
         print(f"[vigil-pc] sync gamesim failed ({type(e).__name__}: {e})")
     for label, fn in (("boards", _task_boards),
+                      ("showdown tourney", _task_showdown_tourney),
                       ("deep nightly", lambda: _task_deep(url, tok))):
         try:
             fn()

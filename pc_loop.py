@@ -48,10 +48,13 @@ def _apply_update():
     if rc != 0:
         print("[vigil-pc] pull failed - will retry next check")
         return False
-    req = os.path.join(_HERE, "requirements.txt")
-    if os.path.exists(req):
-        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", req],
-                       cwd=_HERE)
+    # requirements-pc.txt is the PC-only extras (numpy for the DFS
+    # tournament); the server's requirements.txt stays lean on purpose.
+    for fn in ("requirements.txt", "requirements-pc.txt"):
+        req = os.path.join(_HERE, fn)
+        if os.path.exists(req):
+            subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", req],
+                           cwd=_HERE)
     return True
 
 

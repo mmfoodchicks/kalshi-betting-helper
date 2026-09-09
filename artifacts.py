@@ -27,7 +27,8 @@ import os
 import re
 
 # 2: the UFC board carries per-sample end-round/method arrays (ufc_combo).
-SCHEMA = 2
+# 3: sd_tourney_nfl_<draft group> boards (dfs_tourney, PC-built).
+SCHEMA = 3
 
 _NAME_RE = re.compile(r"^[\w.,@=+-]{1,140}\.pkl$")
 

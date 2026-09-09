@@ -8131,6 +8131,7 @@ async function loadDfsSlates() {
   csel.innerHTML = `<option value="">- pick a contest -</option>`;
   if (info) info.textContent = "";
   _dfsDkContests = []; _dfsDkShape = null;
+  loadDfsTourney(null);
   try {
     const d = await (await fetch(`/api/dfs/slates?sport=${encodeURIComponent(sp)}`)).json();
     const sl = (d.slates || []).filter((x) => x.n_contests > 0);
@@ -8148,11 +8149,14 @@ async function loadDfsContests(preferId) {
   const dg = sel && sel.value;
   csel.innerHTML = `<option value="">- pick a contest -</option>`;
   _dfsDkContests = []; _dfsDkShape = null;
-  if (!dg) return;
+  if (!dg) { loadDfsTourney(null); return; }
   try {
     const d = await (await fetch(`/api/dfs/contests?sport=${encodeURIComponent($("dfsSport").value)}&dg=${encodeURIComponent(dg)}`)).json();
     _dfsDkContests = d.contests || []; _dfsDkShape = d.shape || null;
     renderDfsContestOptions();
+    // the PC's tournament board is per slate, not per contest: show it as
+    // soon as the slate is known to be a showdown
+    loadDfsTourney(dg);
     if (preferId && _dfsDkContests.some((c) => String(c.id) === String(preferId))) {
       csel.value = String(preferId);
       await applyDfsContest(preferId);
@@ -8206,6 +8210,89 @@ async function applyDfsContest(id) {
   } catch (e) {
     if (info) info.textContent = "Could not read that contest from DraftKings.";
   } finally { _dfsDkBusy = false; }
+}
+// ---- The tournament board (dfs_tourney) -------------------------------------
+// Every legal lineup for a showdown slate, scored in every one of 60,000
+// simulated games against a modelled field, ranked by how often it WINS. The
+// owner's PC builds it (numpy, gigabytes, minutes) and uploads it as a board;
+// the server only serves it, so the panel says "PC off" rather than waiting.
+let _dfsTourneyDg = null, _dfsTourneyData = null, _dfsTourneyK = "5", _dfsTourneyAll = false;
+async function loadDfsTourney(dg) {
+  const box = $("dfsTourney");
+  if (!box) return;
+  const sp = ($("dfsSport") || {}).value;
+  const showdown = !!(_dfsDkShape && _dfsDkShape.showdown);
+  if (!dg || sp !== "nfl" || !showdown) { box.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
+  _dfsTourneyDg = String(dg);
+  box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament: looking for the PC's build…</div>`;
+  try {
+    const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}`)).json();
+    if (String(_dfsTourneyDg) !== String(dg)) return;     // the user moved to another slate
+    _dfsTourneyData = d;
+    renderDfsTourney(d);
+  } catch (e) {
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament board unavailable.</div>`;
+  }
+}
+function dfsTourneyPick(k) { _dfsTourneyK = String(k); if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
+function dfsTourneyAll() { _dfsTourneyAll = !_dfsTourneyAll; if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
+function dfsTourneyCopy(list, i) {
+  const d = _dfsTourneyData;
+  const rows = list === "portfolio" ? (((d.portfolio || {})[_dfsTourneyK] || {}).entries || []) : (d[list] || []);
+  const r = rows[i];
+  if (!r) return;
+  const txt = `CPT ${r.captain}; ${r.flex.join("; ")}`;
+  try { navigator.clipboard.writeText(txt); } catch (e) { /* no clipboard: the row is on screen */ }
+}
+function renderDfsTourney(d) {
+  const box = $("dfsTourney");
+  if (!box) return;
+  const pc = d.pc || {};
+  const pcTxt = pc.state === "on" ? "PC on" : pc.state === "behind" ? "PC on, updating" : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
+  if (d.status !== "ok") {
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}</div>`;
+    return;
+  }
+  const c = d.contest || {}, fm = d.field_model || {}, tm = d.timings || {};
+  const money = (v) => "$" + Math.round(v || 0).toLocaleString();
+  const pct = (v, dp) => (v == null ? "-" : Number(v).toFixed(dp == null ? 1 : dp) + "%");
+  const roiCls = (v) => (v >= 0 ? "ev pos" : "ev neg");
+  const lineupCell = (r) => {
+    const cap = (r.lineup || [])[0] || {};
+    return `<b>${escapeHtml(r.captain)}</b> <span class="small" style="color:var(--muted)">${escapeHtml(cap.depth || r.captain_pos || "")}${r.captain_team ? " · " + escapeHtml(r.captain_team) : ""}</span> + ${(r.lineup || []).slice(1).map((p) => `${escapeHtml(p.name)}<span class="small" style="color:var(--faint)"> ${escapeHtml(p.depth || p.pos || "")}</span>`).join(", ")}`;
+  };
+  const table = (rows, list) => rows.length ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
+    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="share of simulated games this exact lineup finishes first, before splitting with its copies">win</th><th title="finishes in the top 1% of the field">top 1%</th><th title="finishes in the money">cash</th><th title="expected payout after splitting first place with the copies the field model expects">EV</th><th title="expected identical lineups in the field">copies</th><th></th></tr>
+    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.win_pct, 3)}</b></td><td>${pct(r.top1_pct, 1)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}">${money(r.ev_dup)}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the six names">📋</a></td></tr>`).join("")}
+  </table></div>` : `<div class="small" style="color:var(--muted)">none</div>`;
+  const ports = d.portfolio || {};
+  const sizes = Object.keys(ports).sort((a, b) => +a - +b);
+  if (!ports[_dfsTourneyK] && sizes.length) _dfsTourneyK = sizes[0];
+  const port = ports[_dfsTourneyK] || { entries: [] };
+  const sizeBtns = sizes.map((k) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${k === _dfsTourneyK ? "font-weight:bold;text-decoration:underline" : ""}">${k} entries · ${pct(ports[k].p_any_top1_pct, 0)} any top 1%</a>`).join("");
+  const chalk = fm.chalk;
+  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · win ${pct(chalk.win_pct, 3)} · top 1% ${pct(chalk.top1_pct)} · EV after the split ${money(chalk.ev_dup)}</div>` : "";
+  const players = d.players || [];
+  const shown = _dfsTourneyAll ? players : players.slice(0, 12);
+  const playersHtml = `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
+    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">player</th><th>$</th><th>proj</th><th title="the field model's captain share">field CPT</th><th title="the field model's flex share">field FLEX</th><th title="share of simulated games in which the best possible lineup had him at captain">optimal CPT</th><th title="share of simulated games in which the best possible lineup had him at flex">optimal FLEX</th></tr>
+    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.field_only ? " · field only" : ""}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_cpt_pct)}</td><td>${pct(p.field_flex_pct)}</td><td><b>${pct(p.opt_cpt_pct)}</b></td><td><b>${pct(p.opt_flex_pct)}</b></td></tr>`).join("")}
+  </table></div>${players.length > 12 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : ""}`;
+  const fieldOnly = ((d.slate || {}).field_only || []);
+  box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
+    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span></div>
+    <div class="small" style="color:var(--muted);margin-top:2px">${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field. ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.map(escapeHtml).join(", ")}; the field still plays them.` : ""}</div>
+    ${chalkHtml}
+    <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>
+    ${table(port.entries || [], "portfolio")}
+    <div style="margin-top:8px"><b>Best single entries by win%</b> <span class="small" style="color:var(--muted)">- before the split; the EV column is after it</span></div>
+    ${table((d.top_win || []).slice(0, 8), "top_win")}
+    <div style="margin-top:8px"><b>Best single entries by EV after duplicates</b></div>
+    ${table((d.top_ev || []).slice(0, 5), "top_ev")}
+    <div style="margin-top:8px"><b>Players</b> <span class="small" style="color:var(--muted)">- what the field does with them vs where the winning lineups actually had them</span></div>
+    ${playersHtml}
+    <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s · enumerate ${Math.round(tm.enumerate_s || 0)}s · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>
+  </div>`;
 }
 function initDfsPicker() {
   const sel = $("dfsDkSlate"), csel = $("dfsDkContest");
