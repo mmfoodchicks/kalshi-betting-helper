@@ -680,10 +680,16 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             for t, d in (sim.get("team_def") or {}).items():
                 team_off[t] = d                 # this offense's own per-iteration output
                 team_rng[t] = side_rng
+            # projected targets ride along: the receiving-back stack rule
+            # (dfs_tourney.RB_STACK_TARGETS) needs them, and nothing else in
+            # the pool carries a component
+            tgt_of = {pl["name"]: float((pl.get("recon") or pl.get("means") or {}).get("rec_tgt") or 0.0)
+                      for pl in (g.get("players") or [])}
             for p in sim["players"]:
                 pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
                                    "proj": p["proj_pts"], "ceiling": p["ceiling"],
-                                   "floor": p["floor"], "arr": p["arr"], "sim_mean": p.get("sim_mean")}
+                                   "floor": p["floor"], "arr": p["arr"], "sim_mean": p.get("sim_mean"),
+                                   "rec_tgt": tgt_of.get(p["name"], 0.0)}
             # In August a defense is scored against the offense it faced in that
             # same iteration, so the two defenses in a game move together and a
             # shootout punishes both. Sleeper's regular-season DST projection --

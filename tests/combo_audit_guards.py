@@ -10728,7 +10728,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11928,7 +11928,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12520,7 +12520,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12621,7 +12621,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12813,7 +12813,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -12894,13 +12894,18 @@ if _dt14.available():
        and int(_res14["opt"].sum()) == 400 and _res14["n_worlds"] == 400)
     # one world by hand: mass strictly above each lineup, through the same grid
     _S14 = _W14 @ _X14[:, :1]
-    _B14 = _np14.clip(_np14.floor(_S14[:, 0] * 10.0 + 0.5), 0, 4000).astype(int)
+    _B14 = _np14.clip(_np14.floor(_S14[:, 0] * _dt14._RES + 0.5), 0, _dt14._NB - 1).astype(int)
     _above14 = _np14.asarray([float(_f14[_B14 > b].sum()) for b in _B14])
+    _level14 = _np14.asarray([float(_f14[_B14 == b].sum()) for b in _B14])
     _pos14 = _np14.minimum(_np14.searchsorted(_grid14["F"], _np14.clip(_above14, 0, 1)), len(_grid14["F"]) - 1)
+    _elog14 = _np14.log(_np14.maximum(_grid14["E"], 1e-300))
+    _iE14 = _dt14._log_index(_elog14, _np14.clip(_level14, 0.0, _dt14.TIE_E_MAX))
     _one14 = _dt14.run(_W14, _X14[:, :1], _f14, _grid14, chunk=100)
-    ck("the world-major bucket pass equals the by-hand mass-above computation on a single world",
+    ck("the world-major bucket pass equals the by-hand computation on a single world: the mass strictly above drives the share-of-first and the no-tie payout, and the mass LEVEL with the lineup drives the outright win and the tie-aware payout",
        float(_np14.abs(_one14["win"] - _grid14["first"][_pos14]).max()) < 1e-9
-       and float(_np14.abs(_one14["ev"] - _grid14["ev"][_pos14]).max()) < 1e-6)
+       and float(_np14.abs(_one14["ev_notie"] - _grid14["ev"][_pos14]).max()) < 1e-6
+       and float(_np14.abs(_one14["win_sole"] - _grid14["win_sole"][_pos14, _iE14]).max()) < 1e-9
+       and float(_np14.abs(_one14["ev"] - _grid14["ev2"][_pos14, _iE14]).max()) < 1e-3)   # the tie table is float32
     _cand14 = _np14.argsort(-_res14["top1"])[:60]
     _ch14, _pa14 = _dt14.portfolio(_W14, _X14, _f14, _grid14, _cand14, 4, chunk=100)
     ck("the portfolio is four distinct picks, the first the strongest single top-1% lineup, each adding cover",
@@ -13269,7 +13274,7 @@ ck("the concentration caps are knobs: no per-game cap by default (the freedom th
    _dt14.CL_MAX_PER_GAME is None and _dt14.CL_MAX_PER_TEAM == 3
    and any("no cap on players from one game" in r and "knob" in r for r in _dt14.CL_RULES)
    and not any("four players from one game" in r for r in _dt14.CL_RULES)
-   and "def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):" in _dts1
+   and "def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB):" in _dts1
    and '"max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,' in _dts1)
 _ws1 = _dt14.world_split(60000, 20000)
 _ws2 = _dt14.world_split(400, 20000)
@@ -13300,7 +13305,7 @@ ck("the board stamps its engine semantics, the field's targets and achieved rece
    _dt14.ENGINE == 4 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
-   and '"experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],' in _dts1
+   and '"experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),' in _dts1
    and _pcw16m._rebuild_reason({"kind": "classic", "engine": 1, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
    and _pcw16m._rebuild_reason({"kind": "classic", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
    and _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) is None
@@ -13311,7 +13316,7 @@ ck("the tab labels the experimental columns from the board (experimental win, ex
    and "experimental win</th>" in _js_s1 and "experimental EV</th>" in _js_s1
    and '"Best by experimental EV"' in _js_s1 and '"Best by experimental first place"' in _js_s1
    and "<b>Experimental win, EV and ROI</b>" in _js_s1 and "are held out)" in _js_s1
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---- Stage 2A: the sampler's completion invariant, probe lineups, the simulator stamp ----
 # 2026-09-10. The floors are a lower-bound heuristic, not a proof, so the
@@ -13383,7 +13388,7 @@ if _dt14.available():
        and _p0["available"] and abs(_p0["top1_pct"] - round(100.0 * float(_res2[0]["top1"][0]), 2)) < 0.011
        and _p0["rank"]["top1"] == int((_res2[0]["top1"] > _res2[0]["top1"][0]).sum()) + 1 and _p0["rank"]["of"] == len(_k2)
        and all(k in _p0 for k in ("legal", "legal_under_cap4", "salary", "proj", "mean", "median", "p10", "p90", "p95", "p99",
-                                  "top1_pct", "top01_pct", "cash_pct", "win_pct", "ev", "ev_dup", "roi_pct", "expected_copies", "rank"))
+                                  "top1_pct", "top01_pct", "cash_pct", "win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies", "rank"))
        and _p0["p10"] <= _p0["median"] <= _p0["p90"] <= _p0["p95"] <= _p0["p99"]
        and _pr2[1] == {"names": ["Nobody Guard", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"], "available": False, "missing": ["Nobody Guard"]})
 else:
@@ -13392,7 +13397,7 @@ _js2 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tab shows the probes as passengers with legality, both tail columns and their ranks, the score quantiles and the experimental first-place figures",
    "probes: rs.probes || []" in _js2 and "<b>Probes</b>" in _js2 and "they never enter the candidates or the portfolio" in _js2
    and "(fails a cap of four)" in _js2 and "experimental win ${pct(p.win_pct, 3)}" in _js2
-   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---- Stage 2B: the historical evidence base is what it says it is ----------
 # 2026-09-10. The constrained simulator is fitted to 2022-2024 and judged on
@@ -13614,6 +13619,155 @@ ck("the Stage 2D artifact: the moment harness reproduces Stage 2B, the per-world
    and _st2d["meta"]["simulator"]["params_hash"] == _cs.params_hash(_cs.DEFAULT_PARAMS)[:16]
    and all(len(v) == 2 for v in _teams_gk.values()) and len(_teams_gk) > 1000,
    f"harness {_st2d['harness_check'].get('ok')} invariants {_st2d['invariants'].get('ok')} game keys with != 2 teams {sum(1 for v in _teams_gk.values() if len(v) != 2)}")
+
+# ---- Stage 3B: DraftKings does not break ties, so neither do we ------------
+# 2026-09-10. Every payout number the board shows assumed the entry stood
+# alone on its score. It does not: one sampled field lineup on our score in
+# a 300,000 sample stands for 2.8 entries of an 832,000 contest, and a
+# lineup the field also builds is tied with all of its own copies. DK splits
+# the prizes for the tied positions equally, so first place can be worth a
+# quarter of what the board claimed. The payout curve now reads the mass
+# LEVEL with the entry as well as the mass above it, buckets are 0.01 points
+# so a tie means the same score, and the count of entries above is Poisson
+# where its mean is small -- the normal approximation valued a 1,000,000 top
+# prize 7.6% high in exactly the regime that matters.
+_PAY3 = [{"from": 1, "to": 1, "prize": 1000000.0}, {"from": 2, "to": 2, "prize": 500000.0},
+         {"from": 3, "to": 5, "prize": 100000.0}, {"from": 6, "to": 100, "prize": 1000.0}]
+ck("the tie rule is DraftKings' rule: the tied entries take positions above+1 .. above+1+tied and split those prizes equally -- sole first, a two-way and a five-way for first, a tie inside one bracket, a tie straddling the last paid place, and a tie outside the money",
+   abs(float(_dt14.tie_payout(_PAY3, 0, 0)) - 1000000.0) < 1e-6
+   and abs(float(_dt14.tie_payout(_PAY3, 0, 1)) - 750000.0) < 1e-6
+   and abs(float(_dt14.tie_payout(_PAY3, 0, 4)) - (1e6 + 5e5 + 3 * 1e5) / 5.0) < 1e-6
+   and abs(float(_dt14.tie_payout(_PAY3, 2, 2)) - 100000.0) < 1e-6
+   and abs(float(_dt14.tie_payout(_PAY3, 4, 1)) - (1e5 + 1e3) / 2.0) < 1e-6
+   and abs(float(_dt14.tie_payout(_PAY3, 99, 1)) - 500.0) < 1e-6
+   and float(_dt14.tie_payout(_PAY3, 100, 0)) == 0.0 and float(_dt14.tie_payout(_PAY3, 120, 3)) == 0.0
+   and list(_dt14.cum_prize(_PAY3, [0, 1, 2, 5, 100, 200])) == [0.0, 1e6, 1.5e6, 1.8e6, 1895000.0, 1895000.0])
+if _dt14.available():
+    _g3 = _dt14.payout_grid(5000, _PAY3, 5.0, 100)
+    _iF3 = int(_np14.searchsorted(_g3["F"], 1e-4))
+    _lam3 = 4999 * 1e-4
+    _m3, _s3 = 1.0 + _lam3, (4999 * 1e-4 * (1 - 1e-4)) ** 0.5
+    # what the normal approximation alone used to say here
+    _old3 = 1e6 * (1 - 1e-4) ** 4999
+    for _lo3, _hi3, _p3 in ((2, 2, 5e5), (3, 5, 1e5), (6, 100, 1e3)):
+        _old3 += _p3 * float(_dt14._ncdf_arr(_np14.array([(_hi3 + 0.5 - _m3) / _s3]))[0] - _dt14._ncdf_arr(_np14.array([(_lo3 - 0.5 - _m3) / _s3]))[0])
+    _rng3 = _np14.random.default_rng(31)
+    _draw3 = _rng3.binomial(4999, 1e-4, size=400000)
+    _exact3 = float(_dt14.tie_payout(_PAY3, _draw3, _np14.zeros_like(_draw3)).mean())
+    ck("with nobody tied the expected payout is right to a fraction of a percent where the normal approximation was 7% high: at 5,000 entries and one in 10,000 above, a Binomial with mean 0.5 is no bell curve",
+       abs(_g3["ev"][_iF3] - _exact3) / _exact3 < 0.01 and (_old3 - _exact3) / _exact3 > 0.05,
+       f"grid {_g3['ev'][_iF3]:.0f} exact {_exact3:.0f} normal-only {_old3:.0f}")
+    _iE0 = 0
+    _iE3 = int(_np14.searchsorted(_g3["E"], 2e-4))
+    ck("the tie grid: no tie mass reproduces the no-tie column exactly, the payout never rises as more entries tie (the two branches meet with a step worth a ten-thousandth of the top prize, clamped and reported), a sole win is never more likely than a share of one, and the sole-win column falls as the tie mass grows",
+       float(_np14.abs(_g3["ev2"][:, _iE0] - _g3["ev"]).max()) < 1e-9
+       and bool((_np14.diff(_g3["ev2"], axis=1) <= 1e-9).all()) and _g3["ev2"][_iF3, _iE3] < 0.9 * _g3["ev"][_iF3]
+       and _g3["monotone_clamp"] < 1e-3 * float(_g3["ev2"].max())
+       and bool((_g3["win_sole"] <= _g3["first"][:, None] + 1e-12).all())
+       and bool((_g3["win_sole"][:, -1] <= _g3["win_sole"][:, 0] + 1e-12).all())
+       and _g3["first_share"].shape == _g3["ev2"].shape and abs(_g3["prize1"] - 1e6) < 1e-9,
+       f"clamp {_g3['monotone_clamp']:.1f} of {_g3['ev2'].max():.0f}")
+    _drawT = _rng3.multinomial(4999, [1e-4, 2e-4, 1 - 3e-4], size=400000)
+    _exactT = float(_dt14.tie_payout(_PAY3, _drawT[:, 0], _drawT[:, 1]).mean())
+    ck("with a tie mass twice the mass above, the grid's expected payout matches a direct multinomial draw of the same contest within a few percent, and is far below the no-tie number",
+       abs(_g3["ev2"][_iF3, _iE3] - _exactT) / _exactT < 0.05 and _g3["ev2"][_iF3, _iE3] < 0.85 * _g3["ev"][_iF3],
+       f"grid {_g3['ev2'][_iF3, _iE3]:.0f} exact {_exactT:.0f} no-tie {_g3['ev'][_iF3]:.0f}")
+    # the engine on a lattice where ties are real, with a heavily duplicated field
+    _r3 = _np14.random.default_rng(3)
+    _P3n, _K3, _N3 = 30, 400, 800
+    _X3 = _np14.round(_r3.gamma(2.0, 4.0, size=(_P3n, _N3))).astype(_np14.float32)
+    _Wc3 = _np14.zeros((_K3, _P3n))
+    for _i3 in range(_K3):
+        _Wc3[_i3, _r3.choice(_P3n, 9, replace=False)] = 1
+    _base3 = _np14.zeros((200, _P3n))
+    for _i3 in range(200):
+        _base3[_i3, _r3.choice(_P3n, 9, replace=False)] = 1
+    _Wf3 = _np14.repeat(_base3, 10, axis=0)
+    _Wc3[:200] = _base3                                   # our first 200 ARE the field's popular builds
+    _M3 = _Wf3.shape[0]
+    _wf3 = _np14.full(_M3, 1.0 / _M3)
+    _pay3 = [{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 5, "prize": 1e4}, {"from": 6, "to": 500, "prize": 20.0}]
+    _res3, _opt3, _n3 = _dt14.run_vs_field(_Wc3, _Wf3, _wf3, _X3, [_dt14.payout_grid(50000, _pay3, 5.0, 500)], chunk=200)
+    _rr3 = _res3[0]
+    _d3 = _rr3["ev_notie"] - _rr3["ev"]
+    _dupi = _np14.arange(200)
+    _uni = _np14.arange(200, _K3)
+    # brute force the best lineup: the DK rule on a direct multinomial draw, world by world
+    _i3b = int(_np14.argmax(_rr3["ev"]))
+    _Sc3 = _Wc3 @ _X3
+    _Sf3 = _Wf3 @ _X3
+    _abv = (_Sf3 > _Sc3[_i3b][None, :] + 1e-6).sum(axis=0) / _M3
+    _lvl = (_np14.abs(_Sf3 - _Sc3[_i3b][None, :]) <= 1e-6).sum(axis=0) / _M3
+    _bev, _bsole = [], []
+    _r3b = _np14.random.default_rng(9)
+    for _w3 in range(_N3):
+        _dw = _r3b.multinomial(49999, [_abv[_w3], _lvl[_w3], max(0.0, 1 - _abv[_w3] - _lvl[_w3])], size=400)
+        _bev.append(float(_dt14.tie_payout(_pay3, _dw[:, 0], _dw[:, 1]).mean()))
+        _bsole.append(float(((_dw[:, 0] == 0) & (_dw[:, 1] == 0)).mean()))
+    ck("scored through the engine on a lattice where ties are real: the tie-aware payout matches a brute-force multinomial of the same worlds, so does the outright-win column, the payout never exceeds the no-tie one, and a lineup the field also builds loses almost all of its first-place money to its own copies while a unique one loses far less",
+       abs(_rr3["ev"][_i3b] - float(_np14.mean(_bev))) / max(1.0, float(_np14.mean(_bev))) < 0.01
+       and abs(_rr3["win_sole"][_i3b] - float(_np14.mean(_bsole))) < 2e-4
+       and bool((_rr3["ev"] <= _rr3["ev_notie"] + 1e-6).all())
+       and bool((_rr3["win_sole"] <= _rr3["win"] + 1e-9).all())
+       and float(_d3[_dupi].mean() / _rr3["ev_notie"][_dupi].mean()) > 0.9
+       and float(_d3[_uni].mean() / _rr3["ev_notie"][_uni].mean()) < 0.5
+       and float(_rr3["win_sole"][_dupi].mean()) < 0.2 * float(_rr3["win"][_dupi].mean()),
+       f"engine {_rr3['ev'][_i3b]:.1f} brute {float(_np14.mean(_bev)):.1f}; duplicated lose {100 * float(_d3[_dupi].mean() / _rr3['ev_notie'][_dupi].mean()):.0f}%, unique {100 * float(_d3[_uni].mean() / _rr3['ev_notie'][_uni].mean()):.0f}%")
+else:
+    ck("(numpy is not installed here -- the tie-aware payout guards run where it is)", True)
+_dts3 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+_js3 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the board's rows carry the outright win, the share-of-first win, the tie-aware payout and what it would have been without ties; the bucket is a hundredth of a point so a tie means the same score; the board says how ties are paid; and the tab shows the split",
+   '"win_pct": round(100.0 * float(r["win_sole"][i]), 4),' in _dts3
+   and '"ev": round(float(r["ev"][i]), 2), "ev_notie": round(float(r["ev_notie"][i]), 2),' in _dts3
+   and '"ties": "DraftKings splits the tied positions\' prizes equally' in _dts3
+   and _dt14._RES == 100.0 and _dt14._NB == 40001 and "ev_dup" not in _js3
+   and "${money(r.ev)}" in _js3 and "ignoring ties" in _js3
+   and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
+
+# The receiving back as a stack partner: the knob exists, is off, and the
+# rule text says so. Stage 4B decides it against the fitted simulator; the
+# projected targets it reads ride in from the simulator's pool.
+_rbpl = [{"name": "QB", "pos": "QB", "team": "A", "opp": "B", "salary": 7000, "rec_tgt": 0},
+         {"name": "RB1", "pos": "RB", "team": "A", "opp": "B", "salary": 6000, "rec_tgt": 5.0},
+         {"name": "RB2", "pos": "RB", "team": "C", "opp": "D", "salary": 5000, "rec_tgt": 1.0},
+         {"name": "WR1", "pos": "WR", "team": "C", "opp": "D", "salary": 6000, "rec_tgt": 8.0},
+         {"name": "WR2", "pos": "WR", "team": "E", "opp": "F", "salary": 5000, "rec_tgt": 6.0},
+         {"name": "WR3", "pos": "WR", "team": "E", "opp": "F", "salary": 4000, "rec_tgt": 4.0},
+         {"name": "TE", "pos": "TE", "team": "C", "opp": "D", "salary": 3500, "rec_tgt": 4.0},
+         {"name": "FLEX", "pos": "RB", "team": "E", "opp": "F", "salary": 4000, "rec_tgt": 2.0},
+         {"name": "DST", "pos": "DST", "team": "G", "opp": "H", "salary": 3000, "rec_tgt": 0}]
+if _dt14.available():
+    _rbidx = _np14.arange(9)[None, :]
+    ck("a quarterback with only his pass-catching back is unstacked under the rule as it stands, legal once a back with five projected targets may count, and unstacked again if the bar is six; the knob is off and the published rule says a back does not count",
+       _dt14.RB_STACK_TARGETS is None
+       and not bool(_dt14.classic_allowed(_rbidx, _rbpl)[0])
+       and bool(_dt14.classic_allowed(_rbidx, _rbpl, rb_stack_targets=4.0)[0])
+       and not bool(_dt14.classic_allowed(_rbidx, _rbpl, rb_stack_targets=6.0)[0])
+       and "a back does not count" in _dt14.CL_RULES[0] and "RB_STACK_TARGETS" in _dt14.CL_RULES[0])
+else:
+    ck("(numpy is not installed here -- the stack-partner knob runs where it is)", True)
+ck("projected targets reach the tournament from the simulator's pool, so the stack rule can read them",
+   '"rec_tgt": tgt_of.get(p["name"], 0.0)}' in open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
+   and '"rec_tgt": float(sim.get("rec_tgt") or 0.0)})' in open(_os.path.join(_root, "dfs_tourney.py")).read())
+
+# ---- Stage 3D: the money columns are experimental for a stated reason ------
+# Three links: the sample must resolve the mass the contest asks about, ties
+# must be paid the way the house pays them, and the duplicate count must be
+# derived rather than measured. The first fails by arithmetic on every board
+# this engine builds (300,000 sampled lineups against 832,000 entries), so
+# the board says experimental and says why, with the number in it.
+_gate3 = _dt14.money_gate(300000, 832000)
+ck("the money gate refuses to call the first-place, payout and ROI columns authoritative while one sampled lineup stands for nearly three entries, names all three links, carries the arithmetic in its reason, and would still refuse on the duplicate link alone with a field as large as the contest",
+   _gate3["authoritative"] is False and _gate3["links"]["sample_resolves_the_contest"] is False
+   and _gate3["links"]["ties_paid_as_the_house_pays_them"] is True
+   and _gate3["links"]["duplicates_exact"] is False
+   and abs(_gate3["entries_per_sampled_lineup"] - 2.77) < 0.01
+   and "one sampled lineup stands for 2.8 entries" in _gate3["why"]
+   and _gate3["columns"] == ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct"]
+   and _dt14.money_gate(1000000, 832000)["links"]["sample_resolves_the_contest"] is True
+   and _dt14.money_gate(1000000, 832000)["authoritative"] is False,
+   str(_gate3["links"]))
 if _cs.available():
     _gcs = {"label": "B @ A", "teams": ["A", "B"], "players": []}
     for _t in ("A", "B"):
@@ -13648,7 +13802,7 @@ else:
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still
 # said "queued for 10:32pm" the next morning: the pickle carried np.float64
-# in the ev_dup/roi_pct of every row (round() keeps numpy's type, and a
+# in the ev/roi_pct of every row (round() keeps numpy's type, and a
 # json.dump check hides it because np.float64 subclasses float); the server,
 # which has no numpy on purpose, ledgered BOARD-read x41 and served "not
 # built yet". Every artifact now leaves through dfs_tourney.plain, the PC
@@ -13666,7 +13820,7 @@ ck("every tournament artifact leaves through plain() (both adapters wrapped, VER
    "one numpy scalar anywhere in the pickle makes the whole board unreadable on the server")
 if _dt14.available():
     _raw18 = {"version": 2,
-              "rows": [{"ev_dup": round(_np14.float64(1.234), 2), "roi_pct": round(_np14.float64(-12.34), 1),
+              "rows": [{"ev_notie": round(_np14.float64(1.234), 2), "roi_pct": round(_np14.float64(-12.34), 1),
                         "n": _np14.int64(3), "ok": _np14.bool_(True), "arr": _np14.arange(3, dtype=_np14.float32)}],
               "t": (_np14.float64(1.0), 2), "nested": {"k": [_np14.int32(7)]}}
     _out18 = _dt14.plain(_raw18)
@@ -13675,7 +13829,7 @@ if _dt14.available():
        isinstance(round(_np14.float64(1.234), 2), float) and type(round(_np14.float64(1.234), 2)) is not float
        and b"numpy" in _pk18.dumps(_raw18)
        and b"numpy" not in _pk18.dumps(_out18, protocol=_pk18.HIGHEST_PROTOCOL)
-       and type(_r18["ev_dup"]) is float and _r18["ev_dup"] == 1.23 and type(_r18["roi_pct"]) is float
+       and type(_r18["ev_notie"]) is float and _r18["ev_notie"] == 1.23 and type(_r18["roi_pct"]) is float
        and type(_r18["n"]) is int and _r18["n"] == 3 and _r18["ok"] is True
        and _r18["arr"] == [0.0, 1.0, 2.0] and _out18["t"] == (1.0, 2) and type(_out18["t"]) is tuple
        and type(_out18["nested"]["k"][0]) is int)
@@ -13713,7 +13867,7 @@ try:
     _pcw16m._ship_boards = lambda url, tok: _ship18.append((url, tok))
     _leaf18 = _np14.float64(2.5) if _dt14.available() else 2.5
     _b18 = {"version": 2, "kind": "classic", "built_ts": 20, "pool_sig": "abc",
-            "results": {"9": {"top_win": [{"ev_dup": _leaf18, "roi_pct": _leaf18}]}}}
+            "results": {"9": {"top_win": [{"ev_notie": _leaf18, "roi_pct": _leaf18}]}}}
     _did18 = _pcw16m._tourney_resave("cl_tourney_nfl_777003", _b18, "http://guard", "tok")
     with open(_bs14._path("cl_tourney_nfl_777003", "pkl"), "rb") as _fh18:
         _blob18 = _fh18.read()
@@ -13722,8 +13876,8 @@ try:
     ck("the PC repairs an older board in place: re-saved through plain() as VERSION 3 with no numpy in the file, shipped once, then left alone; the request older than built_ts is answered",
        _did18 is True and _did18b is False and len(_ship18) == 1
        and b"numpy" not in _blob18 and _re18 and _re18.get("version") == _dt14.VERSION
-       and type(_re18["results"]["9"]["top_win"][0]["ev_dup"]) is float
-       and _re18["results"]["9"]["top_win"][0]["ev_dup"] == 2.5
+       and type(_re18["results"]["9"]["top_win"][0]["ev_notie"]) is float
+       and _re18["results"]["9"]["top_win"][0]["ev_notie"] == 2.5
        and _re18.get("built_ts") == 20 and _app14._tourney_pending() == [],
        "the 72-minute build was fine; rebuilding it would have cost another 72 minutes")
     _pcw18 = open(_os.path.join(_root, "pc_worker.py")).read()

@@ -72,7 +72,7 @@ def plain(obj):
     their shape. Every artifact leaves through here. The server has no numpy
     on purpose, so ONE numpy scalar anywhere in the pickle makes the whole
     board unreadable there: the first classic build (2026-09-10, 72 minutes)
-    carried np.float64 in the ev_dup/roi_pct of every row (round() keeps the
+    carried np.float64 in the ev/roi_pct of every row (round() keeps the
     numpy type, and a json.dump check hides it because np.float64 subclasses
     float); the server ledgered BOARD-read x41, the tab said "not built yet"
     and the queued request looked like it never fired."""
@@ -187,49 +187,286 @@ def _ncdf_arr(x):
     return np.where(x >= 0, 0.5 * (1.0 + y), 0.5 * (1.0 - y))
 
 
-def payout_grid(C, payouts, entry_fee, places, n=6000):
-    """For F = the field mass scoring above an entry, on a grid dense near 0:
-    P(first), P(top 1%), P(cash), expected payout. First place is exact
-    ((1-F)^(C-1): nobody above); the rest use the normal approximation of a
-    Binomial(C-1, F) rank, the same one the contest sims use."""
+def _npdf_arr(x):
+    return np.exp(-0.5 * x * x) / math.sqrt(2.0 * math.pi)
+
+
+def _norm_loss(a):
+    """E[(Z - a)+] for a standard normal Z, the integral of the upper tail:
+    phi(a) - a(1 - Phi(a)). Used to average a prize schedule over a band of
+    finishing positions in closed form."""
+    return _npdf_arr(a) - a * (1.0 - _ncdf_arr(a))
+
+
+def cum_prize(payouts, n):
+    """Prize money paid to positions 1..n in total. `n` may be an array and
+    may be fractional -- a position part-way through a bracket is prorated,
+    which is what keeps the average over a band of positions continuous."""
+    n = np.asarray(n, dtype=np.float64)
+    out = np.zeros(n.shape, dtype=np.float64)
+    for row in payouts or []:
+        lo, hi, p = int(row["from"]), int(row["to"]), float(row["prize"])
+        if p <= 0 or hi < lo:
+            continue
+        out += p * np.clip(n - (lo - 1), 0.0, float(hi - lo + 1))
+    return out
+
+
+def tie_payout(payouts, above, tied):
+    """What DraftKings pays ONE entry that has `above` entries strictly ahead
+    of it and `tied` other entries on its exact score.
+
+    DK does not break ties: the tied entries occupy positions above+1 through
+    above+1+tied and split the prizes for those positions equally. So a
+    two-way tie for first in a contest paying 1,000,000 and 500,000 pays each
+    750,000, and a tie that straddles the cash line pays everyone in it the
+    average -- including the entries that would have missed the money."""
+    above = np.asarray(above, dtype=np.float64)
+    tied = np.asarray(tied, dtype=np.float64)
+    return (cum_prize(payouts, above + 1.0 + tied) - cum_prize(payouts, above)) / (tied + 1.0)
+
+
+def _band_expect(rows, m, s, x):
+    """E[ cum_prize(R + x) ] for the finishing rank R ~ Normal(m, s), with the
+    prize schedule prorated inside a bracket. Closed form: each bracket
+    contributes p * E[clip(R + x - (lo-1), 0, width)], and E[clip(Z, 0, W)]
+    for a normal Z is s times the difference of two normal loss functions."""
+    out = np.zeros(np.shape(m), dtype=np.float64)
+    for lo, hi, p in rows:
+        w = float(hi - lo + 1)
+        mu = m + x - (lo - 1)
+        out += p * s * (_norm_loss(-mu / s) - _norm_loss((w - mu) / s))
+    return out
+
+
+TIE_T_MAX = 128         # tie counts carried one by one; beyond this the count's
+TIE_LAM_MAX = 64.0      # own spread (sqrt(lambda)) is small beside the band
+TIE_E_MAX = 0.05        # tie masses above this are read as this (the prize
+                        # schedule is flat wherever a twentieth of the field
+                        # shares a score, so the cap costs nothing)
+# How many entries finish above us is Binomial(C-1, F). Where that mean is
+# small -- which is exactly where the money is, one entry in 832,000 -- the
+# normal approximation is badly wrong: at C=5,000 and F=1e-4 it valued a
+# 1,000,000 top prize at 825,000 against a true 767,000, 7.6% high, because
+# a Binomial with mean 0.5 is nothing like a bell curve. Below this mean the
+# count is taken as Poisson term by term instead (exact to the third figure
+# against a direct multinomial draw), with lambda chosen so that P(nobody
+# above) is (1-F)^(C-1) exactly; above it the normal is used, and there the
+# prize schedule is flat enough that it costs nothing.
+POIS_LAM_MAX = 60.0
+POIS_K_MAX = 260
+
+
+_LOG_FACT = np.cumsum(np.concatenate([[0.0], np.log(np.arange(1, POIS_K_MAX + 2, dtype=np.float64))]))
+
+
+def _pois_cdf_table(lam, kmax=POIS_K_MAX):
+    """(len(lam), kmax+1) Poisson CDF, built from the log pmf."""
+    lam = np.asarray(lam, dtype=np.float64)[:, None]
+    k = np.arange(0, kmax + 1, dtype=np.float64)[None, :]
+    logpmf = -lam + k * np.log(np.maximum(lam, 1e-300)) - _LOG_FACT[None, : kmax + 1]
+    return np.clip(np.cumsum(np.exp(logpmf), axis=1), 0.0, 1.0)
+
+
+def _tie_nodes(lam):
+    """Quadrature over T, the number of OTHER entries on our exact score:
+    T ~ Poisson(lambda) term by term while lambda is small, and lambda
+    itself when it is not -- a tie group of hundreds spans a stretch of the
+    prize schedule so flat that the group's own size fluctuation cannot
+    matter."""
+    if lam <= 0:
+        return np.array([0.0]), np.array([1.0])
+    if lam > TIE_LAM_MAX:
+        return np.array([float(lam)]), np.array([1.0])
+    t = np.arange(0, TIE_T_MAX + 1, dtype=np.float64)
+    w = np.exp(-lam + t * math.log(lam) - _LOG_FACT[: TIE_T_MAX + 1])
+    return t, w / w.sum()
+
+
+def payout_grid(C, payouts, entry_fee, places, n=6000, n_tie=160):
+    """The payout curves as a function of F = the field mass scoring strictly
+    ABOVE an entry and E = the field mass scoring EXACTLY LEVEL with it, both
+    on grids dense near zero.
+
+    F only: P(first or a share of it), (1-F)^(C-1) exactly; P(top 1%),
+    P(top 0.1%), P(cash). Those three are right under ties as they stand,
+    because a tie that straddles a line still pays everyone in it and the
+    rank is the number strictly above plus one.
+
+    F and E: P(sole first), (1-F-E)^(C-1), and the expected payout, which
+    ties change a great deal. One sampled field lineup on our score in a
+    300,000-lineup sample stands for 2.8 entries of an 832,000 contest, so
+    the top prize splits about four ways; assuming no tie overstates
+    first-place money by that factor. DraftKings does not break ties: the
+    tied entries take positions above+1 .. above+1+tied and split those
+    positions' prizes equally (tie_payout), so the payout here is that rule
+    averaged over the distribution of both counts."""
     C = max(2, int(C))
     F = np.concatenate([np.array([0.0]), np.logspace(-9, 0, n - 1)])
     F = np.minimum(F, 1.0)
+    E = np.concatenate([np.array([0.0]), np.logspace(-9, math.log10(TIE_E_MAX), n_tie - 1)])
     m = 1.0 + (C - 1) * F
     s = np.sqrt(np.maximum(1e-9, (C - 1) * F * (1.0 - F)))
     first = np.power(1.0 - F, C - 1)
-    top1_line = max(1, int(0.01 * C))
-    top1 = _ncdf_arr((top1_line + 0.5 - m) / s)
+    # lambda from the exact P(nobody above), so the Poisson branch keeps the
+    # one probability the whole top of the schedule turns on
+    lamA = -(C - 1) * np.log(np.maximum(1.0 - F, 1e-300))
+    pois = lamA <= POIS_LAM_MAX
+    cdfA = _pois_cdf_table(lamA[pois]) if pois.any() else np.zeros((0, POIS_K_MAX + 1))
+
+    def p_at_most(k):
+        """P(A <= k) on the whole F grid: Poisson where the mean is small,
+        the normal approximation of the rank where it is not."""
+        out = _ncdf_arr((k + 1.5 - m) / s)
+        if pois.any():
+            kk = np.clip(np.asarray(k, dtype=np.int64), -1, POIS_K_MAX)
+            head = np.where(kk < 0, 0.0, cdfA[np.arange(cdfA.shape[0]), np.maximum(kk, 0)])
+            if np.ndim(k) == 0 and k > POIS_K_MAX:
+                head = np.ones(cdfA.shape[0])
+            out = out.copy()
+            out[pois] = head
+        return out
+
+    top1 = p_at_most(max(1, int(0.01 * C)) - 1)
     # top 0.1%: in an 832,000-entry Millionaire first place is too rare to
     # rank on and the top 1% is 8,300 places; the top 832 is the money.
-    top01 = _ncdf_arr((max(1, int(0.001 * C)) + 0.5 - m) / s)
-    cash = _ncdf_arr((places + 0.5 - m) / s)
-    ev = np.zeros_like(F)
-    for row in payouts or []:
-        lo, hi, prize = int(row["from"]), int(row["to"]), float(row["prize"])
-        if prize <= 0:
-            continue
-        if lo == 1:
-            ev += prize * first
-            lo = 2
-            if hi < 2:
-                continue
-        ev += prize * (_ncdf_arr((hi + 0.5 - m) / s) - _ncdf_arr((lo - 0.5 - m) / s))
-    return {"F": F, "first": first, "top1": top1, "top01": top01, "cash": cash, "ev": ev,
-            "C": C, "places": places, "entry_fee": float(entry_fee)}
+    top01 = p_at_most(max(1, int(0.001 * C)) - 1)
+    cash = p_at_most(int(places) - 1)
+    rows = [(int(r["from"]), int(r["to"]), float(r["prize"]))
+            for r in (payouts or []) if float(r["prize"]) > 0 and int(r["to"]) >= int(r["from"])]
+
+    def prize_at_shift(i):
+        """E[prize paid for finishing position A + 1 + i]."""
+        out = np.zeros(n, dtype=np.float64)
+        for lo, hi, p in rows:
+            out += p * (p_at_most(hi - 1 - i) - p_at_most(lo - 2 - i))
+        return out
+
+    R = np.stack([prize_at_shift(i) for i in range(TIE_T_MAX + 1)])          # (T+1, n)
+    S = np.cumsum(R, axis=0)
+    B = S / (np.arange(1, TIE_T_MAX + 2, dtype=np.float64)[:, None])         # band average per tie count
+    base = _band_expect(rows, m, s, -1.0)
+    ev2 = np.empty((n, n_tie), dtype=np.float64)
+    win_sole = np.empty((n, n_tie), dtype=np.float64)
+    share1 = np.empty((n, n_tie), dtype=np.float64)
+    prize1 = float(cum_prize(payouts, np.array([1.0]))[0])
+    for j, e in enumerate(E):
+        lam = (C - 1) * e
+        if lam > TIE_LAM_MAX:
+            # a tie group of tens or hundreds: the closed-form band average,
+            # which needs no term-by-term count. (Reading the deterministic
+            # node as an index into the term-by-term table instead would have
+            # read tie count zero and handed back the no-tie payout: caught
+            # by the guard that the payout never rises with the tie mass.)
+            ev2[:, j] = (_band_expect(rows, m, s, lam) - base) / (lam + 1.0)
+        else:
+            tj, wj = _tie_nodes(lam)
+            ev2[:, j] = wj @ B[: len(tj)]
+        # given nobody is above us, each of the others ties us with
+        # probability e/(1-F); E[1/(T+1)] for a Poisson count is
+        # (1 - exp(-lambda))/lambda
+        lam0 = np.minimum((C - 1) * e / np.maximum(1.0 - F, 1e-12), 1e6)
+        g0 = np.where(lam0 > 1e-9, (1.0 - np.exp(-lam0)) / np.maximum(lam0, 1e-12), 1.0)
+        share1[:, j] = first * g0
+        win_sole[:, j] = np.power(np.clip(1.0 - F - e, 0.0, 1.0), C - 1)
+    # More entries level with us can only lower the payout: the band widens
+    # into smaller prizes and is divided among more people. The two branches
+    # (term by term, then the closed-form band) meet with a step of about 8%
+    # where they cross, at a tie group of 64 -- by then the payout is a
+    # thousandth of the top prize, so the step is worth a hundred dollars of
+    # a million-dollar schedule. Clamped to the shape the mathematics
+    # guarantees, and the largest clamp is reported rather than hidden.
+    clamp = float(np.max(np.diff(ev2, axis=1), initial=0.0))
+    ev2 = np.minimum.accumulate(ev2, axis=1)
+    return {"F": F, "E": E, "first": first, "top1": top1, "top01": top01, "cash": cash,
+            "ev": ev2[:, 0], "ev2": ev2, "win_sole": win_sole, "first_share": share1,
+            "monotone_clamp": clamp,
+            "C": C, "places": places, "entry_fee": float(entry_fee), "prize1": prize1}
+
+
+# The curves a world reads by the field mass ABOVE the entry alone, and the
+# two it reads by that mass together with the mass LEVEL with it.
+# ---- Stage 3D: when may the money columns be published as fact? ----------
+# Three links have to hold before a first-place probability, an expected
+# payout or an ROI is worth reading as a number rather than as a ranking.
+#
+#   1. RESOLUTION. The field is a SAMPLE. With M sampled lineups the
+#      smallest mass it can report above an entry is 1/M, while the contest
+#      asks about 1/C. At M = 300,000 against C = 832,000 one sampled
+#      lineup stands for 2.8 entries, so the first-place column is a count
+#      of clean sweeps of the sample, and its LEVEL is a property of the
+#      sample size. Measured in Stage 3A: the truth is below the sample's
+#      resolution in most (candidate, world) pairs at the top.
+#   2. TIES. DraftKings splits the tied positions' prizes. Stage 3B pays
+#      that rule (tie_payout) instead of assuming the entry stands alone.
+#      This link holds.
+#   3. DUPLICATES. How many entries are our exact lineup is read off the
+#      same sample's collisions -- zero, one or two lineups at the top.
+#      Stage 3C measured what it converges to on a field ten times larger
+#      and could not replace the estimator with an exact one: the sampler
+#      has no closed-form density (the salary reserve makes a pick depend
+#      on the money already spent), so there is no dynamic programme and
+#      no importance weight. This link is a measurement, not a proof.
+#
+# Link 1 fails by arithmetic on every board this engine builds, so the
+# money columns stay experimental and the board says why. Raising the
+# field to the contest's size would fix the arithmetic; it would not fix
+# the field MODEL, which is a guess at what the public builds.
+MONEY_TIES_PAID = True                   # Stage 3B
+MONEY_DUP_EXACT = False                  # Stage 3C: measured, not derived
+
+
+def money_gate(field_n, contest_C):
+    """Whether the win, payout and ROI columns may be published as
+    authoritative. Returns the block a board carries."""
+    per_lineup = float(contest_C) / max(1, int(field_n))
+    resolves = per_lineup <= 1.0
+    ok = bool(resolves and MONEY_TIES_PAID and MONEY_DUP_EXACT)
+    why = ("the first-place estimate rests on the field sample's extreme tail: with "
+           f"{int(field_n):,} sampled lineups against {int(contest_C):,} entries, one sampled lineup "
+           f"stands for {per_lineup:.1f} entries and the smallest mass the sample can report is "
+           f"1 in {int(field_n):,}. Ties are paid the way DraftKings pays them (Stage 3B) and the "
+           "duplicate count is measured rather than derived (Stage 3C); the resolution is what "
+           "keeps these columns experimental. Rank on top 1% and top 0.1%.")
+    return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct"],
+            "authoritative": ok,
+            "links": {"sample_resolves_the_contest": bool(resolves),
+                      "ties_paid_as_the_house_pays_them": bool(MONEY_TIES_PAID),
+                      "duplicates_exact": bool(MONEY_DUP_EXACT)},
+            "entries_per_sampled_lineup": round(per_lineup, 2),
+            "why": why}
 
 
 _GRID_COLS = ("first", "top1", "top01", "cash", "ev")
+_TIE_COLS = ("win_sole", "ev2")
 
 
 def _grid_table(grids):
-    """Every contest's five curves side by side, (n_grid, 5 x contests), so a
-    world costs one gather however many contests share the slate."""
+    """Every contest's above-only curves side by side, (n_grid, 5 x contests),
+    so a world costs one gather however many contests share the slate."""
     return np.concatenate([np.stack([g[c] for c in _GRID_COLS], axis=1) for g in grids], axis=1)
 
 
+def _tie_table(grids):
+    """The tie-aware curves flattened to one row per (above, level) pair:
+    (n_grid x n_tie, 2 x contests), float32 to keep a six-contest slate near
+    30 MB. A world gathers this by the same trick, one index per bucket."""
+    n, nE = grids[0]["ev2"].shape
+    cols = []
+    for g in grids:
+        cols.append(np.stack([g["win_sole"].reshape(-1), g["ev2"].reshape(-1)], axis=1))
+    return np.concatenate(cols, axis=1).astype(np.float32), nE
+
+
 # ---- the tournament ---------------------------------------------------------
-_RES = 10.0           # score buckets of 0.1 DK points for the field ranking
+# Score buckets of 0.01 DK points. They were 0.1 while the only question was
+# how much field finished ABOVE a lineup; once ties are paid by splitting
+# (Stage 3B) a bucket has to mean "the same score", and DraftKings scores
+# land on a fine lattice (0.04 a passing yard, 0.1 a receiving yard), so a
+# tenth of a point fused genuinely different scores into a tie. Measured
+# cost of the finer bucket: 1.1 ms a world on a 300,000 field, about 45
+# seconds of a 45-minute build.
+_RES = 100.0
 _MAXPTS = 400.0
 _NB = int(_MAXPTS * _RES) + 1
 _CHUNK_ELEMS = 1.5e8  # scores per chunk: (c x L) float32 + int32 ~ 1.2 GB
@@ -243,22 +480,39 @@ def chunk_for(L, chunk):
 
 
 def _buckets(St):
-    """Scores (c, L) float32 -> 0.1-point buckets, in place (St is spent)."""
+    """Scores (c, L) float32 -> 0.01-point buckets, in place (St is spent)."""
     np.multiply(St, _RES, out=St)
     St += 0.5
     np.clip(St, 0, _NB - 1, out=St)
     return St.astype(np.int32)
 
 
-def _world_tables(b, f, F_grid):
-    """One world: the field mass strictly above each score bucket, as an
-    index into the payout grid. Everything per-lineup in a world is then a
-    gather by bucket -- the old per-(lineup, world) binary search was 90%
-    of the run (measured: 20s of a 33s chunk on 225,000 lineups)."""
+def _log_index(grid_log, v):
+    """Nearest grid point in LOG space (the tie grid is geometric, so the
+    upper neighbour alone would read a mass up to 10% high)."""
+    lv = np.log(np.maximum(v, 1e-300))
+    i = np.searchsorted(grid_log, lv)
+    i = np.minimum(i, len(grid_log) - 1)
+    lo = np.maximum(i - 1, 0)
+    take_lo = np.abs(grid_log[lo] - lv) < np.abs(grid_log[i] - lv)
+    return np.where(take_lo, lo, i)
+
+
+def _world_tables(b, f, F_grid, E_log=None, nE=0):
+    """One world: the field mass strictly above each score bucket as an index
+    into the payout grid, and (when a tie grid is given) the combined index
+    into the tie-aware table, the mass LEVEL with the bucket being the
+    bucket's own mass. Everything per-lineup in a world is then a gather by
+    bucket -- the old per-(lineup, world) binary search was 90% of the run
+    (measured: 20s of a 33s chunk on 225,000 lineups)."""
     hist = np.bincount(b, weights=f, minlength=_NB)
     strictly = np.cumsum(hist[::-1])[::-1] - hist
     pos = np.searchsorted(F_grid, np.clip(strictly, 0.0, 1.0))
-    return np.minimum(pos, len(F_grid) - 1)
+    iF = np.minimum(pos, len(F_grid) - 1)
+    if E_log is None:
+        return iF
+    iE = _log_index(E_log, np.clip(hist, 0.0, TIE_E_MAX))
+    return iF, iF * nE + iE
 
 
 def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
@@ -267,16 +521,21 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
     summing to one (showdown: every legal lineup and the field model;
     classic: a sample from the field generator, 1/M each), X (P, N) player
     points per world, grids one payout_grid per contest. Returns
-    ([{win, top1, top01, cash, ev} per contest], opt (K,), N): means over
-    worlds, and how often each candidate scored highest of the candidates.
+    ([{win, win_sole, top1, top01, cash, ev, ev_notie} per contest], opt (K,), N):
+    means over worlds, and how often each candidate scored highest of the
+    candidates. `win` is a share of first or better; `win_sole` is first
+    outright; `ev` splits every tied position the way DraftKings does.
 
     World-major: each chunk's scores come out as (worlds, lineups) so a
     world is a contiguous row -- the (lineups, worlds) layout paid 25x on
     the per-world pass (9.9s vs 0.4s a chunk, measured)."""
     K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
     F_grid = grids[0]["F"]
+    E_log = np.log(np.maximum(grids[0]["E"], 1e-300))
     G = _grid_table(grids)
+    G2, nE = _tie_table(grids)
     acc = np.zeros((K, G.shape[1]), dtype=np.float64)
+    acc2 = np.zeros((K, G2.shape[1]), dtype=np.float64)
     opt = np.zeros(K, dtype=np.int64)
     same = Wc is Wf
     WcT = np.ascontiguousarray(Wc.T)
@@ -290,14 +549,19 @@ def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
         Bc = _buckets(Sc)
         Bf = Bc if same else _buckets(Xc @ WfT)
         for j in range(Bc.shape[0]):
-            acc += G[_world_tables(Bf[j], wf, F_grid)][Bc[j]]
+            iF, iFE = _world_tables(Bf[j], wf, F_grid, E_log, nE)
+            bj = Bc[j]
+            acc += G[iF][bj]
+            acc2 += G2[iFE][bj]
         if progress:
             progress(min(N, start + chunk), N, time.time() - t0)
     out = []
     for gi in range(len(grids)):
         cols = acc[:, gi * 5:(gi + 1) * 5] / N
+        tie = acc2[:, gi * 2:(gi + 1) * 2] / N
         out.append({"win": cols[:, 0], "top1": cols[:, 1], "top01": cols[:, 2],
-                    "cash": cols[:, 3], "ev": cols[:, 4]})
+                    "cash": cols[:, 3], "ev_notie": cols[:, 4],
+                    "win_sole": tie[:, 0], "ev": tie[:, 1]})
     return out, opt, N
 
 
@@ -307,8 +571,8 @@ def run(W, X, f, grid, chunk=500, progress=None):
     (fees not yet netted), plus the hindsight-optimal tallies."""
     res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress)
     r = res[0]
-    return {"win": r["win"], "top1": r["top1"], "top01": r["top01"], "cash": r["cash"],
-            "ev": r["ev"], "opt": opt, "n_worlds": N}
+    return {"win": r["win"], "win_sole": r["win_sole"], "top1": r["top1"], "top01": r["top01"],
+            "cash": r["cash"], "ev": r["ev"], "ev_notie": r["ev_notie"], "opt": opt, "n_worlds": N}
 
 
 def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):
@@ -489,10 +753,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
               if done % every == 0 or done == n else None)
     t3 = time.time()
     fee = float(contest.get("entry_fee") or 1.0)
-    first = float(contest.get("first_prize") or 0.0)
     copies = C * f                                         # expected duplicates in the field
-    ev_dup = res["ev"] - res["win"] * first * (1.0 - 1.0 / (1.0 + copies))
-    roi = (ev_dup - fee) / fee
+    # `ev` already splits every tied position the way DraftKings does, and the
+    # field mass on our exact score includes our own duplicates -- the old
+    # ev_dup correction for first place alone would now count them twice.
+    roi = (res["ev"] - fee) / fee
     ok = np.where(allowed)[0]
 
     def row(i, rank_by):
@@ -510,17 +775,18 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                "proj": p["proj"]} for k, p in zip(range(1, 6), legs)]),
                 "salary": int(cap["cpt_salary"] + sum(p["salary"] for p in legs)),
                 "proj": round(1.5 * cap["proj"] + sum(p["proj"] for p in legs), 1),
-                "win_pct": round(100.0 * float(res["win"][i]), 4),
+                "win_pct": round(100.0 * float(res["win_sole"][i]), 4),
+                "win_any_pct": round(100.0 * float(res["win"][i]), 4),
                 "top1_pct": round(100.0 * float(res["top1"][i]), 2),
                 "cash_pct": round(100.0 * float(res["cash"][i]), 1),
-                "ev": round(float(res["ev"][i]), 2), "ev_dup": round(float(ev_dup[i]), 2),
+                "ev": round(float(res["ev"][i]), 2), "ev_notie": round(float(res["ev_notie"][i]), 2),
                 "roi_pct": round(100.0 * float(roi[i]), 1),
                 "expected_copies": round(float(copies[i]), 1),
                 "opt_worlds": int(res["opt"][i]),
                 "opt_pct": round(100.0 * float(res["opt"][i]) / res["n_worlds"], 2),
                 "rank_by": rank_by}
-    by_win = ok[np.argsort(-res["win"][ok])][:top]
-    by_ev = ok[np.argsort(-ev_dup[ok])][:top]
+    by_win = ok[np.argsort(-res["win_sole"][ok])][:top]
+    by_ev = ok[np.argsort(-res["ev"][ok])][:top]
     by_top1 = ok[np.argsort(-res["top1"][ok])][:top]
     # the portfolio: greedy cover over the strongest allowed lineups by top-1%
     cand = ok[np.argsort(-res["top1"][ok])][:int(candidates)]
@@ -636,6 +902,15 @@ _CL_PUNT_ROLES = {"RB1", "RB2", "WR1", "WR2", "WR3", "TE1"}
 # first place, and excludes both entered lineups.
 CL_MAX_PER_TEAM = 3
 CL_MAX_PER_GAME = None
+# A receiving back as a stack partner. The rule as it stands counts only a
+# receiver or a tight end from the quarterback's team, so a lineup of
+# quarterback plus his pass-catching back is "not stacked". The training
+# seasons put a back's residual co-movement with his quarterback at 0.066
+# pooled -- 0.10 for backs projected four to five targets against 0.04 for
+# backs under two, real but small beside a receiver's 0.39. None keeps the
+# rule as it is; a number lets a back count once his projected targets
+# reach it. Chosen in Stage 4B against the fitted simulator, not here.
+RB_STACK_TARGETS = None
 _KNOB = object()                # "use the module knob" for classic_allowed
 
 
@@ -646,8 +921,16 @@ def _cap_rule():
     return f"at most {CL_MAX_PER_GAME} players from one game and {CL_MAX_PER_TEAM} from one team"
 
 
+def _stack_rule():
+    if RB_STACK_TARGETS is None:
+        return ("the quarterback is stacked with at least one of his receivers or tight ends "
+                "(a back does not count; RB_STACK_TARGETS, a knob, decided after the simulator work)")
+    return ("the quarterback is stacked with at least one of his receivers or tight ends, or a back "
+            f"projected for {RB_STACK_TARGETS:g} or more targets")
+
+
 CL_RULES = (
-    "the quarterback is stacked with at least one of his receivers or tight ends",
+    _stack_rule(),
     "no defense against our quarterback's team or our running backs' teams",
     _cap_rule(),
     "at most one punt under $3,000, and he must hold a role (RB1-2, WR1-3, TE1)",
@@ -1028,16 +1311,20 @@ def check_completion(report, what):
     return report
 
 
-def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):
+def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB, rb_stack_targets=_KNOB):
     """Our rulebook on a batch of lineups (rows, 9): stacked QB, no defense
     against our QB's or backs' teams, the team cap and (when set) the game
     cap, at most one sub-$3,000 punt and he holds a role. Field-only players
     (the depth gate's exclusions) fail it. The caps default to the module
-    knobs; max_per_game=None means no per-game cap."""
+    knobs; max_per_game=None means no per-game cap, and rb_stack_targets a
+    number lets a back with that many projected targets count as the
+    quarterback's stack partner."""
     if max_per_game is _KNOB:
         max_per_game = CL_MAX_PER_GAME
     if max_per_team is _KNOB:
         max_per_team = CL_MAX_PER_TEAM
+    if rb_stack_targets is _KNOB:
+        rb_stack_targets = RB_STACK_TARGETS
     teams = sorted({p.get("team") or "" for p in players} | {p.get("opp") or "" for p in players})
     tcode = {t: i for i, t in enumerate(teams)}
     team = np.asarray([tcode[p.get("team") or ""] for p in players])
@@ -1051,6 +1338,11 @@ def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):
     qb_team = T[:, 0]
     catchers = idx[:, [3, 4, 5, 6, 7]]
     stacked = ((team[catchers] == qb_team[:, None]) & np.isin(pc[catchers], (2, 3))).any(axis=1)
+    if rb_stack_targets is not None:
+        tgt = np.asarray([float(p.get("rec_tgt") or 0.0) for p in players])
+        backs = idx[:, [1, 2, 7]]
+        stacked |= ((team[backs] == qb_team[:, None]) & (pc[backs] == 1)
+                    & (tgt[backs] >= float(rb_stack_targets))).any(axis=1)
     dst_opp = opp[idx[:, 8]]
     dst_ok = (dst_opp != qb_team) & (dst_opp != T[:, 1]) & (dst_opp != T[:, 2]) \
         & ~((dst_opp == T[:, 7]) & (pc[idx[:, 7]] == 1))
@@ -1398,7 +1690,6 @@ def probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed, f_count,
         r, rp = res[gi], resp[gi]
         C = int(c.get("max_entries") or c.get("entered") or 10000)
         fee = float(c.get("entry_fee") or 1.0)
-        first = float(c.get("first_prize") or 0.0)
         rows_out = []
         j = 0
         for m in meta:
@@ -1406,7 +1697,6 @@ def probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed, f_count,
                 rows_out.append({k: v for k, v in m.items() if k != "idx"})
                 continue
             copies = float(C * f_count.get(keys_p[j], 0) / M) if M else 0.0
-            ev_dup = float(rp["ev"][j]) - float(rp["win"][j]) * first * (1.0 - 1.0 / (1.0 + copies))
 
             def rank(v_all, v):
                 return int((v_all[ok] > v).sum()) + 1 if len(ok) else None
@@ -1425,13 +1715,14 @@ def probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed, f_count,
                 "top1_pct": round(100.0 * float(rp["top1"][j]), 2),
                 "top01_pct": round(100.0 * float(rp["top01"][j]), 3),
                 "cash_pct": round(100.0 * float(rp["cash"][j]), 1),
-                "win_pct": round(100.0 * float(rp["win"][j]), 4),
-                "ev": round(float(rp["ev"][j]), 2), "ev_dup": round(ev_dup, 2),
-                "roi_pct": round(100.0 * (ev_dup - fee) / fee, 1),
+                "win_pct": round(100.0 * float(rp["win_sole"][j]), 4),
+                "win_any_pct": round(100.0 * float(rp["win"][j]), 4),
+                "ev": round(float(rp["ev"][j]), 2), "ev_notie": round(float(rp["ev_notie"][j]), 2),
+                "roi_pct": round(100.0 * (float(rp["ev"][j]) - fee) / fee, 1),
                 "expected_copies": round(copies, 1),
                 "rank": {"top1": rank(r["top1"], float(rp["top1"][j])),
                          "top01": rank(r["top01"], float(rp["top01"][j])),
-                         "win": rank(r["win"], float(rp["win"][j])),
+                         "win": rank(r["win_sole"], float(rp["win_sole"][j])),
                          "of": int(len(ok))},
             })
             j += 1
@@ -1528,7 +1819,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                      "opp": nfl_dfs._opp_of(c.get("team"), c.get("game")),
                      "game": nfl_dfs.game_key(c.get("game")),
                      "salary": int(c["salary"]), "proj": round(float(sim["proj"]), 1),
-                     "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"]})
+                     "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"],
+                     "rec_tgt": float(sim.get("rec_tgt") or 0.0)})
     by_name = {e["name"]: e for e in ents}
     ents, dx = nfl_dfs._apply_depth(ents, preseason)
     extra = []
@@ -1646,9 +1938,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         c = contests[gi]
         C = int(c.get("max_entries") or c.get("entered") or 10000)
         fee = float(c.get("entry_fee") or 1.0)
-        first = float(c.get("first_prize") or 0.0)
         copies = float(C * copies_share[i])                 # np.float64 here leaked into the pickle
-        ev_dup = float(r["ev"][i]) - float(r["win"][i]) * first * (1.0 - 1.0 / (1.0 + copies))
         lineup = [{"slot": CL_SLOTS[k], "name": ents[idx_k[i, k]]["name"], "pos": ents[idx_k[i, k]]["pos"],
                    "team": ents[idx_k[i, k]]["team"], "salary": ents[idx_k[i, k]]["salary"],
                    "depth": ents[idx_k[i, k]].get("depth"), "proj": ents[idx_k[i, k]]["proj"],
@@ -1656,12 +1946,13 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         return {"lineup": lineup, "names": [p["name"] for p in lineup],
                 "salary": int(sum(p["salary"] for p in lineup)),
                 "proj": round(float(sum(p["proj"] for p in lineup)), 1),
-                "win_pct": round(100.0 * float(r["win"][i]), 4),
+                "win_pct": round(100.0 * float(r["win_sole"][i]), 4),
+                "win_any_pct": round(100.0 * float(r["win"][i]), 4),
                 "top1_pct": round(100.0 * float(r["top1"][i]), 2),
                 "top01_pct": round(100.0 * float(r["top01"][i]), 3),
                 "cash_pct": round(100.0 * float(r["cash"][i]), 1),
-                "ev": round(float(r["ev"][i]), 2), "ev_dup": round(ev_dup, 2),
-                "roi_pct": round(100.0 * (ev_dup - fee) / fee, 1),
+                "ev": round(float(r["ev"][i]), 2), "ev_notie": round(float(r["ev_notie"][i]), 2),
+                "roi_pct": round(100.0 * (float(r["ev"][i]) - fee) / fee, 1),
                 "expected_copies": round(float(copies), 1),
                 "opt_worlds": int(is_opt[i]), "opt_pct": round(100.0 * float(is_opt[i]) / n_opt, 2),
                 "allowed": bool(allowed[i]), "rank_by": rank_by}
@@ -1669,16 +1960,13 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     chalk_i = int(np.argmax(copies_share)) if K else None
     for gi, c in enumerate(contests):
         r = res[gi]
-        C = int(c.get("max_entries") or c.get("entered") or 10000)
-        first = float(c.get("first_prize") or 0.0)
-        ev_dup = r["ev"] - r["win"] * first * (1.0 - 1.0 / (1.0 + C * copies_share))
         chosen, p_any = ports[gi] if ports else ([], [])
         results[str(c["id"])] = {
             "contest": {k: c.get(k) for k in ("id", "name", "entry_fee", "prize_pool", "first_prize",
                                               "places_paid", "max_entries", "entered",
                                               "max_entries_per_user", "starts")},
-            "top_win": [row(int(i), gi, "win") for i in ok[np.argsort(-r["win"][ok])][:top]],
-            "top_ev": [row(int(i), gi, "ev") for i in ok[np.argsort(-ev_dup[ok])][:top]],
+            "top_win": [row(int(i), gi, "win") for i in ok[np.argsort(-r["win_sole"][ok])][:top]],
+            "top_ev": [row(int(i), gi, "ev") for i in ok[np.argsort(-r["ev"][ok])][:top]],
             "top_top1": [row(int(i), gi, "top1") for i in ok[np.argsort(-r["top1"][ok])][:top]],
             "top_top01": [row(int(i), gi, "top01") for i in ok[np.argsort(-r["top01"][ok])][:top]],
             "portfolio": {"entries": [row(int(cand[j]), gi, "cover") for j in chosen],
@@ -1736,10 +2024,12 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             # top 300 by it at Spearman 0.51 (measured 2026-09-10). EV and
             # ROI inherit it through the first prize. Kept for comparison
             # while the tail estimator is validated; the tab labels them.
-            "experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],
-                             "why": ("the first-place estimate rests on the field sample's extreme tail "
-                                     "(one in 300,000 resolves; one in 832,000 is asked) and is still "
-                                     "being validated; rank on top 1% and top 0.1%")},
+            "experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),
+            "payout": {"ties": "DraftKings splits the tied positions' prizes equally; ev pays that rule "
+                               "over the distribution of how many finish above and level (dfs_tourney.tie_payout)",
+                       "win_pct": "first outright", "win_any_pct": "first or a share of it",
+                       "ev_notie": "the same expected payout with ties ignored, for the size of the difference",
+                       "bucket_pts": round(1.0 / _RES, 3), "tie_grid": len(grids[0]["E"]) if grids else None},
             "candidates": int(K), "candidates_allowed": int(allowed.sum()),
             "optimal_distinct": int(len(opt_count)),
             "field_model": {"kind": "sampled: softmax on projection and price, stack and bring-back "
