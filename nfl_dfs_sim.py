@@ -263,14 +263,17 @@ def sim_stamp(n=None, preseason=False):
             "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
 
 
-def _pois(mean):
-    """Poisson draw (small means) via inversion."""
+def _pois(mean, rng=_random):
+    """Poisson draw (small means) via inversion. `rng` is anything with
+    random(): the module generator by default (the legacy model is
+    unseeded), a random.Random(seed) for the constrained model's
+    reproducible defenses and kickers."""
     if mean <= 0:
         return 0
     import math
     L, k, p = math.exp(-mean), 0, 1.0
     while True:
-        p *= _random.random()
+        p *= rng.random()
         if p <= L:
             return k
         k += 1
@@ -463,11 +466,11 @@ def _dst_from_components(opp_td, opp_gv, opp_yd, opp_pa, rng):
     for i in range(n):
         # Points allowed: touchdowns are worth 7 with the extra point, and field
         # goals scale with how much yardage the offense actually moved.
-        fg = _pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD))
+        fg = _pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD), rng)
         pa = 7 * opp_td[i] + 3 * fg
         pts = dk_scoring.nfl_dst_pa_points(pa)
         # Sacks: more dropbacks, more chances.
-        pts += s["sack"] * _pois(_LG_SACKS * max(0.3, opp_pa[i] / _LG_PASS_YD))
+        pts += s["sack"] * _pois(_LG_SACKS * max(0.3, opp_pa[i] / _LG_PASS_YD), rng)
         # Takeaways are NOT re-rolled -- they are the same interceptions and
         # fumbles the offense lost in this iteration, so the two sides of the
         # ball agree with each other.
@@ -596,7 +599,7 @@ def _kicker_arr(k, off, n, rng):
     for i in range(n):
         xp = sum(1 for _ in range(int(tds[i])) if rng.random() < xp_rate)
         f = min(2.5, max(0.3, yds[i] / mean_yd))
-        made = _pois(fg_mean * f)
+        made = _pois(fg_mean * f, rng)
         pts = dk_scoring.NFL_K["xp"] * xp
         for _ in range(made):
             u = rng.random() * tot_m
@@ -613,7 +616,10 @@ def _kicker_arr(k, off, n, rng):
     return [round(x * f, 2) for x in out]
 
 
-def player_pool(week, n=3000, preseason=False, season=None, teams=None):
+MODELS = ("legacy", "constrained")
+
+
+def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -622,9 +628,22 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None):
     `teams` narrows the pool to the games those clubs play in -- a showdown
     is one game, and simulating sixteen at 3,000 draws to build it was both
     the wrong cost and the wrong depth: the one game gets simulated deep
-    instead (nfl_dfs._SD_SIMS), on its own cache key."""
+    instead (nfl_dfs._SD_SIMS), on its own cache key.
+
+    `model` picks the game simulator: "legacy" (this module's latent model,
+    the production default, unseeded) or "constrained" (nfl_dfs_csim, the
+    alternate mode under validation: the reconciled line, the team's books
+    balanced in every world, child-seeded per game from `seed` so a board is
+    reproducible draw for draw; the defenses and kickers ride the same
+    seed). Both run the same defense and kicker models off the offense the
+    model produced. `proj` stays Sleeper's number under either model: the
+    field is built on what the public reads."""
     season = season or _season()      # a backtest names a past season
     want = frozenset(str(t).upper() for t in (teams or ()) if t)
+    if model not in MODELS:
+        raise ValueError(f"unknown simulator model {model!r}")
+    if model == "constrained" and preseason:
+        raise ValueError("the constrained model has no preseason projections to reconcile")
 
     def build():
         games = (preseason_games(str(season), week) if preseason
@@ -639,14 +658,32 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None):
         pre_dst = {}
         sim_dst = {}
         team_off = {}
+        team_rng = {}
+        side_rng = _random                  # defenses and kickers: the module generator (legacy)
+        if model == "constrained":
+            import random as _rnd
+            import nfl_dfs_csim
+            from research import seeds as _seeds
+            _np = nfl_dfs_csim.np            # numpy lives behind nfl_dfs_csim's ImportError guard
+            if _np is None:
+                raise RuntimeError("numpy is required for the constrained model")
         for gid, g in games.items():
-            sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
+            if model == "constrained":
+                child = _seeds.child_seed(seed, season, week, gid, "constrained") if seed is not None else None
+                sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child))
+                side_rng = _rnd.Random(child) if seed is not None else _random
+                for p in sim["players"]:
+                    p["arr"] = _np.round(p["arr"], 2).tolist()
+                sim["team_def"] = {t: {k: v.tolist() for k, v in d.items()} for t, d in sim["team_def"].items()}
+            else:
+                sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
             for t, d in (sim.get("team_def") or {}).items():
                 team_off[t] = d                 # this offense's own per-iteration output
+                team_rng[t] = side_rng
             for p in sim["players"]:
                 pool[p["name"]] = {"pos": p["pos"], "team": p["team"], "opp": p.get("opp"),
                                    "proj": p["proj_pts"], "ceiling": p["ceiling"],
-                                   "floor": p["floor"], "arr": p["arr"]}
+                                   "floor": p["floor"], "arr": p["arr"], "sim_mean": p.get("sim_mean")}
             # In August a defense is scored against the offense it faced in that
             # same iteration, so the two defenses in a game move together and a
             # shootout punishes both. Sleeper's regular-season DST projection --
@@ -667,7 +704,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None):
                 ts = list(tdef)
                 for me, opp in ((ts[0], ts[1]), (ts[1], ts[0])):
                     d = tdef[opp]
-                    arr = _dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], _random)
+                    arr = _dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)
                     if arr:
                         sim_dst[me] = arr
         dst = dst_projections(str(season), week) or {}
@@ -708,9 +745,10 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None):
         if not preseason:
             for team, k in (kicker_projections(str(season), week) or {}).items():
                 off = team_off.get(team)
+                k_rng = team_rng.get(team, _random)
                 if not off or k["name"] in pool:
                     continue
-                arr = _kicker_arr(k, off, n, _random)
+                arr = _kicker_arr(k, off, n, k_rng)
                 if not arr:
                     continue
                 pool[k["name"]] = {"pos": "K", "team": team, "opp": None,
@@ -728,7 +766,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None):
                           "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
-    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None),
+    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed),
                    1800, build)
 
 

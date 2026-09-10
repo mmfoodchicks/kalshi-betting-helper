@@ -1,6 +1,6 @@
 # Stage 2B: historical evidence, 2022 to 2024 fitting seasons, 2025 held out
 
-Commit 395c3af, base seed 20220901, 400 clustered bootstraps. Built 2026-09-10 20:53 UTC. 2025 is loaded and coverage-counted only; no 2025 outcome enters any number below except the coverage table. Residual method: actual minus projected DraftKings points (components, no bonuses on the projection side), standardised by the role's residual sd on the training seasons. Roles: pregame only: QB1 by projected pass attempts; RB1-3 by projected carries plus targets; WR1-4 and TE1-2 by projected targets, receiving yards as the tie-break. Bootstrap: clusters are team-seasons (the repeated weeks of one offense resample together); for opponent pairs the cluster is the first-named side's team-season; 90% intervals.
+Commit 3006cc9, base seed 20220901, 400 clustered bootstraps. Built 2026-09-10 21:16 UTC. 2025 is loaded and coverage-counted only; no 2025 outcome enters any number below except the coverage table. Residual method: actual minus projected DraftKings points (components, no bonuses on the projection side), standardised by the role's residual sd on the training seasons. Roles: pregame only: QB1 by projected pass attempts; RB1-3 by projected carries plus targets; WR1-4 and TE1-2 by projected targets, receiving yards as the tie-break. Bootstrap: clusters are team-seasons (the repeated weeks of one offense resample together); for opponent pairs the cluster is the first-named side's team-season; 90% intervals.
 
 ## Coverage
 

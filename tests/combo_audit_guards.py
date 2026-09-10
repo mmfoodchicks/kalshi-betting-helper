@@ -8956,6 +8956,9 @@ ck("the guard suite gates every push in CI",
 # environment caught it on its first run; this makes it catchable locally.
 _dep40 = set(sys.stdlib_module_names)
 _local40 = {f[:-3] for f in _os.listdir(_root) if f.endswith(".py")}
+# our own packages count as ours too (research: the evidence base, seeds
+# and reconciliation weights the constrained simulator reads; pure Python)
+_local40 |= {d for d in _os.listdir(_root) if _os.path.isfile(_os.path.join(_root, d, "__init__.py"))}
 _declared40 = {"flask", "werkzeug", "gunicorn", "qrcode", "tzdata"}
 # requirements-pc.txt is installed on the owner's PC only (numpy for the DFS
 # tournament). Those imports are allowed ONLY behind a try/except
@@ -13330,9 +13333,9 @@ ck("the sampler's completion receipt is stamped on the field and on the candidat
    'idx_f = classic_sample(ents, int(field_n), rng, beta, kappa, report=rep_f)' in _build2
    and 'check_completion(rep_f, "field")' in _build2 and 'check_completion(rep_c, "candidate draws")' in _build2
    and '"completion": rep_f,' in _build2 and '"candidate_draws": rep_c,' in _build2
-   and '"simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),' in _build2
+   and '"simulator": simulator_stamp(model, int(n_sims), seed, preseason),' in _build2
    and '"probes_configured": int(len(probes)),' in _build2
-   and _dts2.count('"simulator": nfl_dfs_sim.sim_stamp(') == 2)
+   and _dts2.count('"simulator": nfl_dfs_sim.sim_stamp(') == 1 and _dts2.count('"simulator": simulator_stamp(') == 1)
 import nfl_dfs_sim as _sim2
 _stamp2 = _sim2.sim_stamp(n=60000)
 ck("the simulator stamp names the production model and version, carries its constants, how the marginals are pinned and that it is unseeded",
@@ -13550,6 +13553,95 @@ ck("the Stage 2C artifact records every invariant passing, the training team-wee
    and "for pid in sorted(set(pr) | set(ar))" in open(_os.path.join(_root, "research", "hist_data.py")).read()
    and "!research/data/" in open(_os.path.join(_root, ".gitignore")).read(),
    f"invariants {_st2c['invariants']}")
+
+# ---- Stage 2D: the constrained team simulator is an alternate mode ----------
+# 2026-09-10. nfl_dfs_csim builds each world the way a game is played: a
+# shared pace, each team's passing volume and script, targets shared out by
+# noisy shares, receptions and yards on team-wide accuracy and efficiency
+# days, the team's touchdowns allocated among the men who caught the ball;
+# the quarterback's line IS his receivers' in every world, nothing is
+# rescaled to Sleeper afterwards, and every draw is seeded. It is not
+# production: the legacy model stays the default, the PC never asks for it,
+# and its parameters are stamped unfitted until Stage 2E writes them.
+import nfl_dfs_csim as _cs
+_stamp_cs = _cs.sim_stamp(n=500, seed=9)
+ck("the constrained simulator's stamp names its model and version, carries every parameter with a hash, says whether they are fitted, embeds the reconciliation stamp, records the seed and says no marginal is pinned",
+   _stamp_cs["model"] == "constrained-team" and _stamp_cs["version"] == 1 and _stamp_cs["seed"] == 9 and _stamp_cs["n"] == 500
+   and set(_stamp_cs["params"]) == set(_cs.DEFAULT_PARAMS) and _stamp_cs["params_hash"] == _cs.PARAMS["hash"][:16]
+   and isinstance(_stamp_cs["params_fitted"], bool) and _stamp_cs["reconciliation"]["model"] == "wls-identity"
+   and "not pinned" in _stamp_cs["marginals"] and "reconciled" in _stamp_cs["projections"])
+_sim_src = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
+_pool_src = _sim_src[_sim_src.index("def player_pool("):_sim_src.index("# ---- Week board (all games simmed)")]
+ck("player_pool takes model and seed with legacy the default, rejects an unknown model and a preseason constrained pool before any fetch, keys its cache on both, and routes the constrained model's defenses and kickers through a seeded generator while the legacy path keeps the module generator",
+   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None):' in _sim_src
+   and _sim2.MODELS == ("legacy", "constrained")
+   and 'tuple(sorted(want)) or None, model, seed),' in _pool_src
+   and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child))' in _pool_src
+   and 'side_rng = _rnd.Random(child) if seed is not None else _random' in _pool_src
+   and '_dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)' in _pool_src
+   and 'arr = _kicker_arr(k, off, n, k_rng)' in _pool_src
+   and 'def _pois(mean, rng=_random):' in _sim_src and '_pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD), rng)' in _sim_src
+   and '_pois(fg_mean * f, rng)' in _sim_src)
+try:
+    _sim2.player_pool(1, n=10, season="2026", model="bogus"); _rej_cs = False
+except ValueError:
+    try:
+        _sim2.player_pool(1, n=10, season="2026", model="constrained", preseason=True); _rej_cs = False
+    except ValueError:
+        _rej_cs = True
+ck("an unknown model and a preseason constrained pool are refused with ValueError", _rej_cs)
+_dts_d = open(_os.path.join(_root, "dfs_tourney.py")).read()
+_build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build_nfl_classic(") + len(_insp.getsource(_dt14.build_nfl_classic))]
+ck("the classic build takes model (legacy by default) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the showdown build and the PC's classic request stay on the legacy model",
+   'seed=None, log=print, probes=None, model="legacy"):' in _build_d
+   and 'pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed) or {}' in _build_d
+   and '"model": model, "seed": (int(seed) if seed is not None else None),' in _build_d
+   and _dt14.simulator_stamp("legacy", 5) == _sim2.sim_stamp(n=5)
+   and _dt14.simulator_stamp("constrained", 5, 3)["seed"] == 3 and _dt14.simulator_stamp("constrained", 5, 3)["model"] == "constrained-team"
+   and "model=" not in open(_os.path.join(_root, "pc_worker.py")).read().split("dfs_tourney.build_nfl_classic(")[1].split("\n")[0]
+   and "model=" not in _dts_d[_dts_d.index("def build_nfl_showdown("):_dts_d.index("def build_nfl_showdown(") + 400])
+_st2d = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2d_stats.json")))
+_teams_gk = {}
+for r in _rows2b:
+    if r["keep"] == "1" and r["team"]:
+        _teams_gk.setdefault((r["season"], r["week"], r["game_key"]), set()).add(r["team"])
+ck("the Stage 2D artifact: the moment harness reproduces Stage 2B, the per-world identities held on every training game at 200 worlds with zero failures, the seed reproduces the worlds, the parameters are recorded as unfitted, 2025 is unread; and every game key in the table now carries exactly two teams",
+   _st2d["harness_check"]["ok"] and _st2d["invariants"]["ok"] and _st2d["invariants"]["games"] >= 800 and _st2d["invariants"]["worlds"] >= 160000
+   and _st2d["invariants"]["identity_failures"] == 0 and _st2d["invariants"]["bound_failures"] == 0 and _st2d["invariants"]["points_mismatch"] == 0
+   and _st2d["reproducibility"]["same_seed_same_worlds"] and _st2d["reproducibility"]["different_seed_different_worlds"]
+   and _st2d["meta"]["holdout_outcomes_read"] is False and _st2d["meta"]["simulator"]["params_hash"] == _cs.PARAMS["hash"][:16]
+   and all(len(v) == 2 for v in _teams_gk.values()) and len(_teams_gk) > 1000,
+   f"harness {_st2d['harness_check'].get('ok')} invariants {_st2d['invariants'].get('ok')} game keys with != 2 teams {sum(1 for v in _teams_gk.values() if len(v) != 2)}")
+if _cs.available():
+    _gcs = {"label": "B @ A", "teams": ["A", "B"], "players": []}
+    for _t in ("A", "B"):
+        for p in _team2c(gap_yd=0.1, gap_td=0.2):
+            p["team"] = _t; p["opp"] = ("B" if _t == "A" else "A")
+            p["means"]["rush_att"] = {"QB": 3.0, "RB": 12.0}.get(p["pos"], 0.5)
+            p["means"]["rush_yd"] = {"QB": 12.0, "RB": 55.0}.get(p["pos"], 3.0)
+            p["proj_pts"] = _rc.dk_mean(p["means"])
+            _gcs["players"].append(p)
+    _rc.reconcile_games({"g": _gcs})
+    _sa = _cs.simulate_game(_gcs, n=4000, rng=_np14.random.default_rng(21))
+    _sb = _cs.simulate_game(_gcs, n=4000, rng=_np14.random.default_rng(21))
+    _sc = _cs.simulate_game(_gcs, n=4000, rng=_np14.random.default_rng(22))
+    _inv_cs = _cs.check_invariants(_sa, _gcs["players"])
+    _qb_a = [i for i, p in enumerate(_gcs["players"]) if p["team"] == "A" and p["pos"] == "QB"][0]
+    _rec_a = [i for i, p in enumerate(_gcs["players"]) if p["team"] == "A" and p["pos"] != "QB"]
+    _yd_in = _gcs["players"][_qb_a]["recon"]["pass_yd"]
+    _yd_out = float(_sa["components"][_qb_a]["pass_yd"].mean())
+    _td_in = sum(_gcs["players"][i]["recon"]["rec_td"] for i in _rec_a)
+    _td_out = float(_sa["components"][_qb_a]["pass_td"].mean())
+    ck("on a synthetic two-team game the constrained simulator keeps every per-world identity and bound, the same seed reproduces the worlds and a different seed does not, the quarterback's mean yards and touchdowns sit on the reconciled line (no rescale, so the mean is the model's, within Monte Carlo noise), and the defense components are per world",
+       all(v[0] for v in _inv_cs.values()) and len(_inv_cs) >= 11
+       and all(_np14.array_equal(x["arr"], y["arr"]) for x, y in zip(_sa["players"], _sb["players"]))
+       and any(not _np14.array_equal(x["arr"], y["arr"]) for x, y in zip(_sa["players"], _sc["players"]))
+       and abs(_yd_out / _yd_in - 1.0) < 0.04 and abs(_td_out / _td_in - 1.0) < 0.06
+       and set(_sa["team_def"]) == {"A", "B"} and len(_sa["team_def"]["A"]["td"]) == 4000
+       and abs(float(_sa["players"][_qb_a]["arr"].mean()) - _sa["players"][_qb_a]["sim_mean"]) < 0.01,
+       f"invariants {[k for k, v in _inv_cs.items() if not v[0]]} yards {_yd_out:.1f}/{_yd_in:.1f} tds {_td_out:.2f}/{_td_in:.2f}")
+else:
+    ck("(numpy is not installed here -- the constrained simulator runs where it is)", True)
 
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still

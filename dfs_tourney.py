@@ -1453,14 +1453,27 @@ def world_split(n_worlds, opt_worlds):
     return range(0, gen), range(gen, n)
 
 
+def simulator_stamp(model, n, seed=None, preseason=False):
+    """The stamp of whichever game simulator made a board's worlds."""
+    import nfl_dfs_sim
+    if model == "constrained":
+        import nfl_dfs_csim
+        return nfl_dfs_csim.sim_stamp(n=n, seed=seed, preseason=preseason)
+    return nfl_dfs_sim.sim_stamp(n=n, preseason=preseason)
+
+
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
-                      seed=None, log=print, probes=None):
+                      seed=None, log=print, probes=None, model="legacy"):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
-    pool cannot be read."""
+    pool cannot be read. `model` names the game simulator (nfl_dfs_sim
+    .MODELS): "legacy" is production; "constrained" is the alternate mode
+    under validation, and a board built on it says so in its stamp and its
+    `model` field. `seed` seeds the field, the candidate draws and, under
+    the constrained model, the worlds themselves."""
     if np is None:
         raise RuntimeError("numpy is required for the tournament")
     import dk
@@ -1496,8 +1509,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             errlog.note("TOURN-week", e)
             week = 1
     log(f"[tourney] classic {dg}: {len(csv_players)} players, {len(contests)} contest(s) "
-        f"{', '.join(c['name'][:40] for c in contests)}; simulating week {week} x {n_sims:,}...")
-    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason) or {}
+        f"{', '.join(c['name'][:40] for c in contests)}; simulating week {week} x {n_sims:,} ({model})...")
+    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, model=model, seed=seed) or {}
     if not pool:
         return None
     nidx, norm = nfl_dfs._norm_index(pool)
@@ -1709,7 +1722,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                       "games": len({(e["team"], e.get("opp")) for e in ents}) // 2,
                       "week": week, "preseason": bool(preseason), "field_only": sorted(field_only)},
             "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt), "eval_worlds": int(len(ev)),
-            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),
+            "model": model, "seed": (int(seed) if seed is not None else None),
+            "simulator": simulator_stamp(model, int(n_sims), seed, preseason),
             "probes_configured": int(len(probes)),
             "candidate_draws": rep_c,
             "max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,

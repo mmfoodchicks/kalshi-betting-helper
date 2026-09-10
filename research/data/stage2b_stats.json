@@ -662,8 +662,8 @@
  "meta": {
   "base_seed": 20220901,
   "bootstraps": 400,
-  "built": "2026-09-10 20:53 UTC",
-  "commit": "395c3af",
+  "built": "2026-09-10 21:16 UTC",
+  "commit": "3006cc9",
   "holdout_outcomes_read": false,
   "holdout_season": 2025,
   "method": {
@@ -672,7 +672,7 @@
    "residual": "actual minus projected DraftKings points (components, no bonuses on the projection side), standardised by the role's residual sd on the training seasons",
    "roles": "pregame only: QB1 by projected pass attempts; RB1-3 by projected carries plus targets; WR1-4 and TE1-2 by projected targets, receiving yards as the tie-break"
   },
-  "seconds": 8.8,
+  "seconds": 10.1,
   "stage": "2B",
   "train_seasons": [
    2022,

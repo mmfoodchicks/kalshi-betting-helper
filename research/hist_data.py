@@ -121,6 +121,15 @@ def build(raw_dir, seasons=SEASONS, weeks=range(1, 19)):
                     if r["team"] and r["opp"]:
                         opp_of.setdefault(r["team"], collections.Counter())[r["opp"]] += 1
             opp_main = {t: c.most_common(1)[0][0] for t, c in opp_of.items()}
+            # one game id per team from the PROJECTION feed: the box-score feed
+            # numbers its games differently, and a played-only row (the backup
+            # who came in) filed under its own feed's id landed in a stranger's
+            # game (Cooper Rush, DAL v TB, inside ATL v NO in 2022 week 1)
+            gid_of = {}
+            for r in pr.values():
+                if r.get("team") and r.get("game_id"):
+                    gid_of.setdefault(r["team"], collections.Counter())[str(r["game_id"])] += 1
+            gid_of = {t: c.most_common(1)[0][0] for t, c in gid_of.items()}
             games = {tuple(sorted((t, o))) for t, o in opp_main.items()}
             cov["games"] += len(games)
             week_rows = []
@@ -163,7 +172,7 @@ def build(raw_dir, seasons=SEASONS, weeks=range(1, 19)):
                 act_dk = dk_points(as_, bonuses=True) if (a and gp) else None
                 if p and (proj_dk or 0.0) <= 0.0:
                     flags.append("proj_zero")
-                game_key = (p or a).get("game_id") or ("-".join(sorted((team or "?", opp or "?"))))
+                game_key = gid_of.get(team) or gid_of.get(opp) or ("-".join(sorted((team or "?", opp or "?"))))
                 rec = {"season": season, "week": week, "pid": pid, "name": base["name"], "pos": pos, "team": team,
                        "opp": opp, "game_key": str(game_key), "has_proj": bool(p), "has_act": bool(a and gp),
                        "p": ps, "a": as_, "proj_dk": proj_dk, "act_dk": act_dk, "flags": flags, "gp": gp}

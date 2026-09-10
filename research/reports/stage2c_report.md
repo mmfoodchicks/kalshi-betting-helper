@@ -1,6 +1,6 @@
 # Stage 2C: reconciling Sleeper's component means, weights fitted on 2022 to 2024
 
-Commit 395c3af, base seed 20220902, 400 clustered bootstraps, 1,628 training team-weeks. Built 2026-09-10 20:58 UTC. Weights artifact research/data/reconcile_weights.json, SHA-256 500fb0dcfd4a30f2. No 2025 outcome is read; 2025 projections are not touched until Stage 2E. Model wls-identity v1.
+Commit 3006cc9, base seed 20220902, 400 clustered bootstraps, 1,628 training team-weeks. Built 2026-09-10 21:16 UTC. Weights artifact research/data/reconcile_weights.json, SHA-256 500fb0dcfd4a30f2. No 2025 outcome is read; 2025 projections are not touched until Stage 2E. Model wls-identity v1.
 
 ## Method
 
