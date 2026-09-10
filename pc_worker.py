@@ -366,14 +366,20 @@ def _task_deep(url, tok):
                   "the server's own nightly still covers it")
 
 
-def _task_showdown_tourney():
+def _task_showdown_tourney(url, tok):
     """The DFS tournament (dfs_tourney) for the next NFL showdown slates:
     every legal lineup scored in every one of 60,000 simulated games
     against a weighted field, ranked by how often it wins. Built here
     because it is a desktop's job (numpy, a few gigabytes, minutes), and
     shipped as a board the tab serves; the server never computes it.
     Rebuilt when the DraftKings pool changes (a scratch, a price) or the
-    build is three hours old."""
+    build is three hours old.
+
+    Boards are synced HERE, before the first build and after each one, not
+    only at the cycle's end: the first NE @ SEA board (1,241s to build,
+    2026-09-09) sat on this disk through the next slate's 25-minute build
+    and the deep task, and reached the tab after kickoff. A board finished
+    in a cycle that was killed before its upload ships on the next start."""
     import datetime
     import hashlib
     import boardshare
@@ -399,6 +405,8 @@ def _task_showdown_tourney():
         if now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8):
             soon.append((st, sl))
     soon.sort(key=lambda x: x[0])
+    if soon:
+        _ship_boards(url, tok)
     for _st, sl in soon[:2]:
         dg = int(sl["draft_group_id"])
         name = f"sd_tourney_nfl_{dg}"
@@ -428,6 +436,18 @@ def _task_showdown_tourney():
         boardshare.put(name, art)
         print(f"[vigil-pc] tourney {dg}: done in {time.time() - t0:.0f}s, "
               f"{art['lineups_legal']:,} lineups x {art['worlds']:,} worlds")
+        _ship_boards(url, tok)
+
+
+def _ship_boards(url, tok):
+    """Upload the boards store now (every board fresher than the server's,
+    the tournament included); a failure is printed and the cycle's own
+    end-of-cycle sync tries again."""
+    try:
+        _sync_kind(url, tok, "boards")
+    except Exception as e:
+        print(f"[vigil-pc] tourney: board upload failed ({type(e).__name__}: {e}) "
+              "- the end of the cycle retries")
 
 
 def main():
@@ -448,7 +468,7 @@ def main():
     except Exception as e:
         print(f"[vigil-pc] sync gamesim failed ({type(e).__name__}: {e})")
     for label, fn in (("boards", _task_boards),
-                      ("showdown tourney", _task_showdown_tourney),
+                      ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok))):
         try:
             fn()

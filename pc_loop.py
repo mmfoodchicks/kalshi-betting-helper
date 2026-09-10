@@ -19,6 +19,7 @@ Two speeds:
 import os
 import subprocess
 import sys
+import threading
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +68,10 @@ def _ping_server():
     """60-second heartbeat that feeds the app's PC status light. Best-effort:
     a failed ping IS the red light doing its job, never a reason to disturb
     the loop. Sent from here rather than pc_worker because a long deep-sim
-    cycle can keep the worker away from the API for an hour."""
+    cycle can keep the worker away from the API for an hour -- and from a
+    thread of its own (_heartbeat), because this loop WAITS on the worker:
+    the first 60,000-world tournament build ran 1,241s (2026-09-09) with no
+    ping in between, and the light sat red while the PC was at full tilt."""
     try:
         import json
         import urllib.request
@@ -92,15 +96,24 @@ def _ping_server():
         print(f"[vigil-pc] ping failed ({type(e).__name__}) - light goes red")
 
 
+def _heartbeat():
+    """The ping every CHECK_S seconds, on a daemon thread, so a worker cycle
+    of any length cannot silence it. Daemon: the loop's exit-to-restart
+    after an update must not wait on it."""
+    while True:
+        time.sleep(CHECK_S)
+        _ping_server()
+
+
 def main():
     print(f"[vigil-pc] loop up - git check every {CHECK_S}s, sim cycle every "
           f"{CYCLE_S // 60} min (or immediately after an update)")
     _ping_server()
+    threading.Thread(target=_heartbeat, daemon=True).start()
     _run_cycle()                              # fresh start = fresh cycle
     last_cycle = time.time()
     while True:
         time.sleep(CHECK_S)
-        _ping_server()
         if _update_available():
             if _apply_update():
                 print("[vigil-pc] restarting on the new code...")

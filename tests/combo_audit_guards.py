@@ -9272,13 +9272,17 @@ finally:
 _apy42 = open(_os.path.join(_root, "app.py")).read()
 _js42 = open(_os.path.join(_root, "static", "app.js")).read()
 _pl42 = open(_os.path.join(_root, "pc_loop.py")).read()
-ck("the light rides the warm poll (both return shapes), and the loop beats",
+ck("the light rides the warm poll (both return shapes), and the loop beats -- from a thread the worker cannot block",
    _apy42.count('"pc": _pc_status()') == 2
    and _pl42.count("_ping_server()") >= 2 and "/api/pc/ping" in _pl42
+   and "def _heartbeat" in _pl42
+   and "threading.Thread(target=_heartbeat, daemon=True).start()" in _pl42
+   and _pl42.index("threading.Thread(target=_heartbeat") < _pl42.index("_run_cycle()                              # fresh start")
    and '"X-PC-Commit": _git_commit()'
    in open(_os.path.join(_root, "pc_worker.py")).read(),
    "the worker's uploads refresh the light too, but a long deep cycle goes "
-   "quiet for an hour -- the loop's 60s ping is what keeps it honest")
+   "quiet for an hour -- the loop's 60s ping is what keeps it honest, and the "
+   "loop WAITS on the worker: a 1,241s tournament build left the light red")
 ck("the dot updates BEFORE pollWarm's early returns, on every poll",
    0 < _js42.index('$("pcDot")') < _js42.index("Hidden only when there is")
    and 'id="pcDot"' in open(_os.path.join(_root, "templates",
@@ -12818,11 +12822,19 @@ ck("the tournament is the PC's job: numpy is in requirements-pc.txt (pc_loop ins
    "numpy" in _reqpc14 and "numpy" not in _req14
    and '"requirements-pc.txt"' in _pcl14 and '"requirements.txt"' in _pcl14
    and "import dfs_tourney" not in _apy14
-   and '("showdown tourney", _task_showdown_tourney)' in _pcw14
+   and '("showdown tourney", lambda: _task_showdown_tourney(url, tok))' in _pcw14
    and 'name = f"sd_tourney_nfl_{dg}"' in _pcw14 and "n_sims=60000" in _pcw14
    and "dfs_tourney.available()" in _pcw14
    and __import__("artifacts").SCHEMA == 3,
    "a one-core web worker must never be able to start a 200,000 x 60,000 job")
+_tt14 = _pcw14[_pcw14.index("def _task_showdown_tourney"):_pcw14.index("def main")]
+ck("a finished tournament board ships the moment it exists -- boards are synced before the first build and after each one, not only at the cycle's end",
+   _tt14.count("_ship_boards(url, tok)") >= 2
+   and _tt14.index("_ship_boards(url, tok)") < _tt14.index("build_nfl_showdown(")
+   and _tt14.rindex("_ship_boards(url, tok)") > _tt14.rindex("boardshare.put(name, art)")
+   and '_sync_kind(url, tok, "boards")' in _tt14,
+   "the first NE @ SEA board sat on the PC through the next slate's 25-minute "
+   "build and the deep task, and reached the tab after kickoff")
 ck("the tournament keeps the app's showdown rules and the depth gate for OUR lineups while the field may hold anything legal",
    "nfl_dfs._sd_allowed(p, cap_p, got)" in _insp.getsource(_dt14.build_nfl_showdown)
    and "nfl_dfs._apply_depth(ents, preseason)" in _insp.getsource(_dt14.build_nfl_showdown)
