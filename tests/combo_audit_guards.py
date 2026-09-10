@@ -13391,6 +13391,57 @@ ck("the tab shows the probes as passengers with legality, both tail columns and 
    and "(fails a cap of four)" in _js2 and "experimental win ${pct(p.win_pct, 3)}" in _js2
    and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 
+# ---- Stage 2B: the historical evidence base is what it says it is ----------
+# 2026-09-10. The constrained simulator is fitted to 2022-2024 and judged on
+# 2025, so the committed table, the coverage report and the statistics
+# artifact must keep their promises: stable ids, no duplicates, rows
+# excluded with a reason and never fixed, roles from pregame information,
+# the holdout season counted but not read, and reproducible seeds.
+import gzip as _gz2b
+import csv as _csv2b
+import json as _json2b
+from research import hist_data as _hd2b
+from research import seeds as _seeds2b
+_tab2b = _os.path.join(_root, "research", "data", "player_weeks_2022_2025.csv.gz")
+_cov2b = _json2b.load(open(_os.path.join(_root, "research", "data", "coverage.json")))
+_st2b = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2b_stats.json")))
+with _gz2b.open(_tab2b, "rt") as _fh2b:
+    _rows2b = list(_csv2b.DictReader(_fh2b))
+_keys2b = [(r["season"], r["week"], r["player_id"]) for r in _rows2b]
+_kept2b = [r for r in _rows2b if r["keep"] == "1"]
+_bad_kept = [r for r in _kept2b if not r["team"] or not r["opp"] or r["pos"] not in _hd2b.POS]
+_rec_gt = [r for r in _kept2b if r["has_act"] == "1" and r["act_rec_tgt"] not in ("", None) and r["act_rec"] not in ("", None)
+           and float(r["act_rec"]) > float(r["act_rec_tgt"])]
+_by_tw = {}
+for r in _rows2b:
+    if r["role"] == "QB1":
+        _by_tw[(r["season"], r["week"], r["team"])] = _by_tw.get((r["season"], r["week"], r["team"]), 0) + 1
+_matched2b = {s: sum(1 for r in _rows2b if r["season"] == s and r["has_act"] == "1" and r["has_proj"] == "1" and r["proj_dk"] not in ("", None) and float(r["proj_dk"]) > 0) for s in ("2022", "2023", "2024", "2025")}
+ck("the historical table joins by stable player id with no duplicate player-week, every kept row carries a team, an opponent and a position in scope, receptions never exceed targets on kept box scores, and each team-week has one pregame QB1",
+   len(_keys2b) == len(set(_keys2b)) and not _bad_kept and not _rec_gt and all(v == 1 for v in _by_tw.values()) and len(_rows2b) > 25000,
+   f"rows {len(_rows2b)} dup {len(_keys2b) - len(set(_keys2b))} bad kept {len(_bad_kept)} rec>tgt {len(_rec_gt)} multi-QB1 {sum(1 for v in _by_tw.values() if v != 1)}")
+ck("the coverage report counts every season 2022-2025 with 18 weeks and 272 games each, marks 2025 as the holdout, and its matched counts equal the table's",
+   sorted(_cov2b) == ["2022", "2023", "2024", "2025"] and _cov2b["2025"]["holdout"] is True
+   and all(not _cov2b[s]["holdout"] for s in ("2022", "2023", "2024"))
+   and all(_cov2b[s]["weeks_with_projections"] == 18 and _cov2b[s]["weeks_with_actuals"] == 18 and _cov2b[s]["games"] == 272 for s in _cov2b)
+   and all(_cov2b[s]["matched"] == _matched2b[s] for s in _cov2b)
+   and all(_cov2b[s]["excluded"] == sum(_cov2b[s]["exclusion_reasons"].values()) or _cov2b[s]["excluded"] <= sum(_cov2b[s]["exclusion_reasons"].values()) for s in _cov2b),
+   f"coverage matched {[_cov2b[s]['matched'] for s in sorted(_cov2b)]} vs table {[_matched2b[s] for s in sorted(_matched2b)]}")
+ck("the Stage 2B statistics were computed on the training seasons only, say so, carry counts and clustered-bootstrap intervals for every relationship, and stamp the commit and the seed",
+   _st2b["meta"]["train_seasons"] == [2022, 2023, 2024] and _st2b["meta"]["holdout_season"] == 2025
+   and _st2b["meta"]["holdout_outcomes_read"] is False and _st2b["meta"]["base_seed"] == 20220901 and _st2b["meta"]["commit"]
+   and all(v.get("n", 0) > 500 and v.get("boot_lo") is not None and v.get("boot_hi") is not None and v["boot_lo"] <= v["pooled"] <= v["boot_hi"]
+           for k, v in _st2b["relationships"].items() if v.get("n"))
+   and set(_st2b["marginals"]) >= {"QB1", "RB1", "WR1", "WR2", "TE1"}
+   and all(k in _st2b for k in ("target_competition", "touchdowns", "sleeper_audit", "stacks", "rb_buckets")))
+ck("DraftKings points from a component line include the yardage bonuses on the actual side only, and the research seeds are deterministic, distinct by coordinate and stamped",
+   abs(_hd2b.dk_points({"pass_yd": 300, "pass_td": 2, "pass_int": 1, "rush_yd": 100, "rush_td": 1, "rec": 5, "rec_yd": 100, "rec_td": 1, "fum_lost": 1}) - (12 + 8 - 1 + 10 + 6 + 5 + 10 + 6 - 1 + 9)) < 1e-9
+   and abs(_hd2b.dk_points({"pass_yd": 300, "rec_yd": 100}, bonuses=False) - 22.0) < 1e-9
+   and _seeds2b.child_seed(1, 2024, 3, "DET-NO", "legacy") == _seeds2b.child_seed(1, 2024, 3, "DET-NO", "legacy")
+   and _seeds2b.child_seed(1, 2024, 3, "DET-NO", "legacy") != _seeds2b.child_seed(1, 2024, 3, "DET-NO", "constrained")
+   and _seeds2b.child_seed(2, 2024, 3, "DET-NO", "legacy") != _seeds2b.child_seed(1, 2024, 3, "DET-NO", "legacy")
+   and _seeds2b.stamp(7, season=2024, week=3)["child_seed"] == _seeds2b.child_seed(7, season=2024, week=3))
+
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still
 # said "queued for 10:32pm" the next morning: the pickle carried np.float64
