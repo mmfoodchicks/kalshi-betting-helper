@@ -109,14 +109,41 @@ def slate_season_type(csv_players):
     return False, week
 
 
-def _opp_of(team, game):
-    """The opponent abbr from a DK Game Info string ("DET@NO 09/13/2026...")."""
-    pair = (game or "").split(" ")[0]
-    if "@" not in pair:
+def _matchup(game):
+    """("AWAY", "HOME") from a DraftKings game string in EITHER shape the app
+    meets: the salary export's "NO@DET 09/13/2026 01:00PM ET" and the live
+    feed's competition name "NO @ DET" (spaces round the @). None without an
+    @. The old parser took the first space-separated token and looked for
+    the @ inside it, so the feed's "NO" had none: every classic board built
+    from the feed carried a blank opponent for every player (243 of 243 on
+    2026-09-10), which silently switched off the per-game cap, the defense
+    rule and the field's bring-backs while the export path kept passing its
+    guard. The tokens either side of the @ are the teams in both shapes."""
+    g = str(game or "").strip()
+    if "@" not in g:
         return None
-    a, _, h = pair.partition("@")
+    left, right = g.split("@", 1)
+    away = left.strip().split(" ")[-1].upper() if left.strip() else ""
+    home = right.strip().split(" ")[0].upper() if right.strip() else ""
+    if not away or not home or not away.isalnum() or not home.isalnum():
+        return None
+    return away, home
+
+
+def game_key(game):
+    """The canonical game identity, "AWAY@HOME", from either game-string
+    shape; None when there is no matchup in it."""
+    m = _matchup(game)
+    return f"{m[0]}@{m[1]}" if m else None
+
+
+def _opp_of(team, game):
+    """The opponent abbr from a DK game string, either shape (see _matchup)."""
+    m = _matchup(game)
+    if not m:
+        return None
     t = (team or "").upper()
-    return h.upper() if a.upper() == t else (a.upper() if h.upper() == t else None)
+    return m[1] if m[0] == t else (m[0] if m[1] == t else None)
 
 
 def detect_mode(csv_players):
@@ -130,7 +157,7 @@ def detect_mode(csv_players):
     rps = {(c.get("roster_pos") or "").upper() for c in csv_players}
     if "CPT" in rps:
         return "showdown"
-    games = {(c.get("game") or "").split(" ")[0] for c in csv_players if c.get("game")}
+    games = {game_key(c.get("game")) or (c.get("game") or "").split(" ")[0] for c in csv_players if c.get("game")}
     if len(games) == 1 and rps and rps <= {"FLEX", "UTIL", ""}:
         return "showdown"
     return "classic"

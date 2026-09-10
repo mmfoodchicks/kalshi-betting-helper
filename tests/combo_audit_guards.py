@@ -10725,7 +10725,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11925,7 +11925,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12517,7 +12517,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12618,7 +12618,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12810,7 +12810,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -13103,6 +13103,22 @@ if _dt14.available():
        and float(_np14.abs(_dist16 - _np14.asarray(_dt14.CL_STACK_DIST) / sum(_dt14.CL_STACK_DIST)).max()) < 0.03
        and abs(float((_bring16 > 0).mean()) - _dt14.CL_BRING_BACK) < 0.04,
        "Establish The Run: naked QB 17.4%, one teammate 49.0%, two 28.9%, three-plus 4.2%")
+    _fs16 = _dt14.field_stats(_idx16, _pl16)
+    ck("field_stats reads the receipts off a sample: the bring-back share lands on the configured rate, the defense-vs-own-QB share is positive and below the share of the field that does not avoid one (8% not avoiding, the softmax picks that defense about one time in thirty), the stack distribution matches the published one",
+       abs(_fs16["bring_back"] - _dt14.CL_BRING_BACK) < 0.04
+       and 0.0 < _fs16["dst_vs_own_qb"] <= _dt14.CL_DST_VS_OWN_QB
+       and abs(_fs16["bring_back"] - float((_bring16 > 0).mean())) < 1e-9
+       and float(_np14.abs(_np14.asarray(_fs16["stack_dist"]) - _dist16).max()) < 1e-9 and _fs16["n"] == len(_idx16),
+       f"bring-back {_fs16['bring_back']:.3f} vs {_dt14.CL_BRING_BACK}, defense vs own QB {_fs16['dst_vs_own_qb']:.3f} vs {_dt14.CL_DST_VS_OWN_QB}")
+    _blank16 = [dict(p, opp=None) for p in _pl16]
+    _fsb16 = _dt14.field_stats(_dt14.classic_sample(_blank16, 5000, _np14.random.default_rng(3), beta=0.3, kappa=0.0), _blank16)
+    ck("with a blank opponent field the receipts read 0% bring-backs and 0% defense-vs-own-QB -- the live boards' condition before the parser fix, now visible instead of silent",
+       _fsb16["bring_back"] == 0.0 and _fsb16["dst_vs_own_qb"] == 0.0)
+    _cal16 = _dt14.calibrate_field(_pl16, _np14.random.default_rng(161), n=8000, max_own=0.38, salary_used=49400.0)
+    _fsc16 = _dt14.field_stats(_dt14.classic_sample(_pl16, 20000, _np14.random.default_rng(162), _cal16[0], _cal16[1]), _pl16)
+    ck("the calibrator lands on its targets within tolerance on a fresh sample: max ownership within 2 points of 38%, mean salary within $200 of $49,400",
+       abs(_fsc16["max_own"] - 0.38) < 0.02 and abs(_fsc16["mean_salary"] - 49400.0) < 200.0,
+       f"achieved ownership {100 * _fsc16['max_own']:.1f}% and salary ${_fsc16['mean_salary']:,.0f} (20,000 draws); the two-round cut landed a 38% target at 41% and $49,400 at $48,958")
     _byn16 = {p["name"]: i for i, p in enumerate(_pl16)}
     for p in _pl16:
         p["salary"] = 5000 if p["pos"] != "DST" else 3000
@@ -13113,6 +13129,7 @@ if _dt14.available():
     _dstrb16 = list(_clean16); _dstrb16[8] = "T03DST0"                     # T03 faces T02, our RB
     _five16 = ["T00QB0", "T02RB0", "T03RB0", "T00WR0", "T00WR1", "T01WR0", "T01TE0", "T01RB0", "T09DST0"]
     _al16 = _dt14.classic_allowed(_np14.concatenate([_row(_clean16), _row(_naked16), _row(_dstqb16), _row(_dstrb16), _row(_five16)]), _pl16)
+    _al16cap = _dt14.classic_allowed(_row(_five16), _pl16, max_per_game=4)[0]
     _pl16[_byn16["T04WR0"]]["salary"] = 2500                                # one punt, WR1: holds a role
     _al16b = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
     _pl16[_byn16["T06TE0"]]["salary"] = 2500                                # a second punt
@@ -13127,8 +13144,10 @@ if _dt14.available():
     _pl16[_byn16["T04WR0"]]["_field_only"] = True
     _al16e = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
     _pl16[_byn16["T04WR0"]]["_field_only"] = False
-    ck("our rules: a stacked, clean lineup passes, with one punt who holds a role; a naked QB, a defense against our QB or our back, five from one game, two punts, a roleless punt and a field-only player fail",
-       bool(_al16[0]) and not _al16[1:].any() and bool(_al16b) and not _al16c and not _al16d and not _al16e)
+    ck("our rules: a stacked, clean lineup passes, with one punt who holds a role; a naked QB, a defense against our QB or our back, two punts, a roleless punt and a field-only player fail; five from one game passes under the knob (no per-game cap) and fails when the cap is set to four",
+       bool(_al16[0]) and not _al16[1:4].any() and bool(_al16[4]) and not _al16cap
+       and bool(_al16b) and not _al16c and not _al16d and not _al16e,
+       "the four-per-game cap never ran on a live board (blank opponents); keeping the freedom is a decision, not a side effect")
     _sr16 = _dt14._slot_rows([tuple(sorted(_byn16[n] for n in _clean16))], [p["pos"] for p in _pl16])[0]
     ck("a sorted optimal lineup lands in slot order with the third back or fourth receiver at FLEX",
        _pl16[_sr16[0]]["pos"] == "QB" and _pl16[_sr16[8]]["pos"] == "DST" and _pl16[_sr16[6]]["pos"] == "TE"
@@ -13168,6 +13187,76 @@ ck("the tab renders a classic board: a contest selector, portfolio sizes one to 
    and "p_any_top1_pct" in _js16 and "[1, 2, 3, 5, 10, 20]" in _js16 and "dfsTourneyListPick(" in _js16
    and "`${p.slot} ${p.name}`" in _js16)
 
+# ---- Stage 1: opponents from the live feed, the caps as knobs, holdout worlds, honest labels ----
+# 2026-09-10. The feed names games "NO @ DET"; the parser wanted "NO@DET
+# 09/13/2026", took the first token and found no '@': every player on
+# every live classic board had a blank opponent, so the per-game cap, the
+# defense rule and the field's bring-backs were all silently off while the
+# export-format guard kept passing. The fix understands both shapes and
+# the diagnostic below makes a third shape fail loudly.
+_games_s1 = (("NO @ DET", "NO", "DET"), ("BAL @ IND", "BAL", "IND"), ("NYJ @ TEN", "NYJ", "TEN"),
+             ("MIA @ LV", "MIA", "LV"), ("ATL @ PIT", "ATL", "PIT"))
+_ok_s1 = True
+for _g, _a, _h in _games_s1:
+    _export = f"{_a}@{_h} 09/13/2026 01:00PM ET"
+    for _txt in (_g, _export):
+        _ok_s1 = _ok_s1 and _ND._opp_of(_a, _txt) == _h and _ND._opp_of(_h, _txt) == _a \
+            and _ND._opp_of("KC", _txt) is None and _ND.game_key(_txt) == f"{_a}@{_h}"
+ck("the opponent parser reads both game-string shapes for five representative games: the live feed's 'NO @ DET' and the export's 'NO@DET 09/13/2026 01:00PM ET' give the same opponents and the same canonical game key",
+   _ok_s1 and _ND.game_key("Final") is None and _ND.game_key("") is None and _ND.game_key(None) is None
+   and _ND._opp_of("NO", "NO @ DET") == "DET" and _ND._opp_of("DET", "NO @ DET") == "NO",
+   "before the fix: 243 of 243 players on the live pool had no opponent; after: 243 of 243 have one")
+import simulate as _sim_s1
+_csv_s1 = ("Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\n"
+           "QB,Jared Goff (1),Jared Goff,1,QB,6000,NO @ DET,DET,19.3\n"
+           "WR,Chris Olave (2),Chris Olave,2,WR/FLEX,6700,NO @ DET,NO,17.4\n"
+           "RB,Jonathan Taylor (3),Jonathan Taylor,3,RB/FLEX,7300,BAL @ IND,IND,22.3\n"
+           "DST,Steelers (4),Steelers,4,DST,3300,ATL @ PIT,PIT,7.8\n")
+_rows_s1 = _sim_s1.parse_dk_csv(_csv_s1)
+_blank_s1 = [c["name"] for c in _rows_s1 if not _ND._opp_of(c.get("team"), c.get("game")) or not _ND.game_key(c.get("game"))]
+ck("a feed-format pool parsed through the CSV reader gives every player a team, an opponent and a game key -- a new feed shape must fail HERE, not by blanking every opponent on a live board",
+   len(_rows_s1) == 4 and not _blank_s1
+   and [_ND._opp_of(c.get("team"), c.get("game")) for c in _rows_s1] == ["NO", "DET", "BAL", "ATL"]
+   and _ND.detect_mode(_rows_s1) == "classic",
+   f"players without an opponent: {_blank_s1}")
+_dts1 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+ck("the concentration caps are knobs: no per-game cap by default (the freedom the live optimizer ran with), three per team, the rules text says so, the board carries both, and classic_allowed reads the knobs",
+   _dt14.CL_MAX_PER_GAME is None and _dt14.CL_MAX_PER_TEAM == 3
+   and any("no cap on players from one game" in r and "knob" in r for r in _dt14.CL_RULES)
+   and not any("four players from one game" in r for r in _dt14.CL_RULES)
+   and "def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):" in _dts1
+   and '"max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,' in _dts1)
+_ws1 = _dt14.world_split(60000, 20000)
+_ws2 = _dt14.world_split(400, 20000)
+_ws3 = _dt14.world_split(0, 20000)
+ck("generation and evaluation worlds are disjoint and cover the run: 60,000 at 20,000 requested is 0-20,000 and 20,000-60,000; a small build keeps two thirds for evaluation; the classic build scores and covers on the evaluation slice only",
+   _ws1 == (range(0, 20000), range(20000, 60000)) and not (set(_ws1[0]) & set(_ws1[1]))
+   and _ws2 == (range(0, 133), range(133, 400)) and not (set(_ws2[0]) & set(_ws2[1]))
+   and _ws3 == (range(0, 0), range(0, 0))
+   and "gen, ev = world_split(N, opt_worlds)" in _dts1
+   and "X[keep][:, gen.start:gen.stop], sal[keep]" in _dts1
+   and "Xe = np.ascontiguousarray(X[:, ev.start:ev.stop])" in _dts1
+   and "Wc, Wf, wf, Xe, grids, chunk=ch," in _dts1
+   and "ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch)" in _dts1
+   and '"eval_worlds": int(len(ev))' in _dts1,
+   "a candidate found because it won world j was being paid for world j: first place 1.9x for optimal-world lineups, measured")
+ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
+   _dt14.ENGINE == 2 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
+   and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
+   and '"experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],' in _dts1
+   and _pcw16m._rebuild_reason({"kind": "classic", "engine": 1, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
+   and _pcw16m._rebuild_reason({"kind": "classic", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
+   and _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) is None
+   and _pcw16m._rebuild_reason({"kind": "showdown", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) is None)
+_js_s1 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab labels the experimental columns from the board (experimental win, experimental EV, the list names) with the reason, and says which Sundays are held out",
+   "const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;" in _js_s1
+   and "experimental win</th>" in _js_s1 and "experimental EV</th>" in _js_s1
+   and '"Best by experimental EV"' in _js_s1 and '"Best by experimental first place"' in _js_s1
+   and "<b>Experimental win, EV and ROI</b>" in _js_s1 and "are held out)" in _js_s1
+   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still
 # said "queued for 10:32pm" the next morning: the pickle carried np.float64
@@ -13184,7 +13273,7 @@ _src18 = open(_os.path.join(_root, "dfs_tourney.py")).read()
 ck("every tournament artifact leaves through plain() (both adapters wrapped, VERSION 3), and the classic row builds its duplicate count as a Python float",
    _dt14.VERSION == 3
    and 'return plain({"version": VERSION, "kind": "showdown"' in _src18
-   and 'return plain({"version": VERSION, "kind": "classic"' in _src18
+   and 'return plain({"version": VERSION, "engine": ENGINE, "kind": "classic"' in _src18
    and "copies = float(C * copies_share[i])" in _src18,
    "one numpy scalar anywhere in the pickle makes the whole board unreadable on the server")
 if _dt14.available():

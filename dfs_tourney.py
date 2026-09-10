@@ -47,6 +47,13 @@ except ImportError:                      # the server: no numpy on purpose
     np = None
 
 VERSION = 3                              # 3: every leaf a plain Python value (no numpy)
+# What the board's numbers MEAN, as opposed to how they are stored (VERSION):
+# bumped when the rules, the field or the evaluation change, so pc_worker
+# rebuilds a board that was computed under the old semantics instead of
+# re-saving it. 2: opponents parsed from the live feed (the defense rule
+# and the field's bring-backs active for the first time), the per-game cap
+# an explicit knob, candidates scored on worlds they were not found in.
+ENGINE = 2
 
 
 def available():
@@ -609,10 +616,32 @@ _CL_KEEP = {"QB": 16, "RB": 40, "WR": 60, "TE": 20, "DST": 32}   # the solver's 
 _CL_FIELD_KEEP = 60         # depth-gated players the field still plays (WR4s, third backs)
 _CL_PUNT_SALARY = 3000
 _CL_PUNT_ROLES = {"RB1", "RB2", "WR1", "WR2", "WR3", "TE1"}
+# Roster concentration, two knobs. The team cap is the rule the owner set
+# (QB plus two teammates at most). The per-game cap was written as four,
+# but the opponent field it needs was blank on every live board (see
+# nfl_dfs._matchup), so the optimizer has only ever run with the team cap
+# binding -- six from one game is legal under it -- and the lineups the
+# owner entered were built that way. None keeps that freedom on purpose:
+# the cap is a policy decision for after the simulator work, not a side
+# effect of fixing a parser. Measured 2026-09-10 on holdout worlds: a cap of
+# four costs the top-40 about 5% of top 1%, 13% of top 0.1% and 25% of
+# first place, and excludes both entered lineups.
+CL_MAX_PER_TEAM = 3
+CL_MAX_PER_GAME = None
+_KNOB = object()                # "use the module knob" for classic_allowed
+
+
+def _cap_rule():
+    if CL_MAX_PER_GAME is None:
+        return (f"at most {CL_MAX_PER_TEAM} from one team; no cap on players from one game "
+                f"(CL_MAX_PER_GAME, a knob, decided after the simulator work)")
+    return f"at most {CL_MAX_PER_GAME} players from one game and {CL_MAX_PER_TEAM} from one team"
+
+
 CL_RULES = (
     "the quarterback is stacked with at least one of his receivers or tight ends",
     "no defense against our quarterback's team or our running backs' teams",
-    "at most four players from one game and three from one team",
+    _cap_rule(),
     "at most one punt under $3,000, and he must hold a role (RB1-2, WR1-3, TE1)",
     "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out",
 )
@@ -866,11 +895,16 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     return idx[good]
 
 
-def classic_allowed(idx, players, max_per_game=4, max_per_team=3):
+def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):
     """Our rulebook on a batch of lineups (rows, 9): stacked QB, no defense
-    against our QB's or backs' teams, at most four from one game and three
-    from one team, at most one sub-$3,000 punt and he holds a role. Field-only
-    players (the depth gate's exclusions) fail it."""
+    against our QB's or backs' teams, the team cap and (when set) the game
+    cap, at most one sub-$3,000 punt and he holds a role. Field-only players
+    (the depth gate's exclusions) fail it. The caps default to the module
+    knobs; max_per_game=None means no per-game cap."""
+    if max_per_game is _KNOB:
+        max_per_game = CL_MAX_PER_GAME
+    if max_per_team is _KNOB:
+        max_per_team = CL_MAX_PER_TEAM
     teams = sorted({p.get("team") or "" for p in players} | {p.get("opp") or "" for p in players})
     tcode = {t: i for i, t in enumerate(teams)}
     team = np.asarray([tcode[p.get("team") or ""] for p in players])
@@ -892,7 +926,8 @@ def classic_allowed(idx, players, max_per_game=4, max_per_team=3):
     per_team = np.max(np.stack([(T == T[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
     punt = (sal[idx] < _CL_PUNT_SALARY) & (pc[idx] != 4)
     punts_ok = (punt.sum(axis=1) <= 1) & ~(punt & ~role[idx]).any(axis=1)
-    return (stacked & dst_ok & (per_game <= max_per_game) & (per_team <= max_per_team)
+    game_ok = (per_game <= max_per_game) if max_per_game is not None else np.ones(len(idx), dtype=bool)
+    return (stacked & dst_ok & game_ok & (per_team <= max_per_team)
             & punts_ok & ~field_only[idx].any(axis=1))
 
 
@@ -916,14 +951,57 @@ def _collision(idx):
     return float((counts * (counts - 1)).sum()) / (n * (n - 1))
 
 
+def field_stats(idx, players):
+    """What a sampled field actually does, measured on the sample: the
+    most-owned player's share, the mean salary, the share of lineups with a
+    bring-back (a pass-catcher from the QB's opponent), the share whose
+    defense faces its own QB, and the stack-count distribution. The
+    calibrator's targets are claims; these are the receipts, stamped on the
+    board and checked by the guards. With a blank opponent field (the live
+    boards before 2026-09-10) bring-backs read 0% and the defense share 0%."""
+    idx = np.asarray(idx)
+    if not len(idx):
+        return {"n": 0}
+    P = len(players)
+    team = np.asarray([p.get("team") or "" for p in players])
+    opp = np.asarray([p.get("opp") or "" for p in players])
+    sal = np.asarray([int(p["salary"]) for p in players])
+    pc = np.asarray([_CL_CODE.get(p["pos"], -1) for p in players])
+    own = np.bincount(idx.ravel(), minlength=P) / len(idx)
+    qb = idx[:, 0]
+    catchers = idx[:, 3:8]
+    is_catcher = np.isin(pc[catchers], (2, 3))
+    stack = ((team[catchers] == team[qb][:, None]) & is_catcher).sum(axis=1)
+    has_opp = opp[qb] != ""
+    bring = ((team[catchers] == opp[qb][:, None]) & is_catcher).any(axis=1) & has_opp
+    dst_own = (opp[idx[:, 8]] == team[qb]) & (opp[idx[:, 8]] != "")
+    dist = np.bincount(np.minimum(stack, 3), minlength=4) / len(idx)
+    return {"n": int(len(idx)), "max_own": float(own.max()),
+            "mean_salary": float(sal[idx].sum(axis=1).mean()),
+            "bring_back": float(bring.mean()), "dst_vs_own_qb": float(dst_own.mean()),
+            "stack_dist": [float(x) for x in dist]}
+
+
 def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used=CL_SALARY_USED,
-                    exclude=None, rounds=2):
+                    exclude=None, rounds=4, own_tol=0.01, salary_tol=100.0):
     """(beta, kappa) for classic_sample: kappa (points per $1,000) so the
     mean salary spent lands on `salary_used`, beta so the most-owned player
-    holds `max_own` of the sample; the two bisections alternated `rounds`
-    times because each moves the other a little. About thirty draws of `n`.
-    Returns (beta, kappa, top ownership, mean salary, collision, top build
-    share)."""
+    holds `max_own` of the sample; the two bisections alternated until both
+    land inside the tolerances (at most `rounds` times), because each moves
+    the other. Returns (beta, kappa, top ownership, mean salary, collision,
+    top build share), the middle two measured on a final fresh draw.
+
+    Why the tolerances: the first cut stopped after two rounds with an
+    eight-step beta bisection over [0, 3], a resolution of 0.047 in beta
+    while ownership moves about 1.3 points per 0.01 of beta -- so a 38%
+    target landed at 41% -- and its kappa had been fitted to the PREVIOUS
+    beta, so a $49,400 target landed at $48,958 (measured 2026-09-10).
+    Now: ten beta steps (0.003), kappa refitted after beta before the check,
+    and the loop runs until the draw is within a point of ownership and $100
+    of spend. The first round searches the full brackets (22 draws of `n`);
+    later rounds bisect a narrow bracket round the last answer (17 draws),
+    so the worst case at four rounds is 73 draws against the old cut's 30,
+    and the usual case, one or two rounds, costs about what it did."""
     sal = np.asarray([int(p["salary"]) for p in players])
     P = len(players)
 
@@ -954,10 +1032,18 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
                 hi = beta
         return 0.5 * (lo + hi)
     beta, kappa = 0.5, 2.0
-    for r in range(rounds):
-        kappa = kappa_for(beta, -4.0, 6.0, 7)      # negative = the public pays up for stars
-        beta = beta_for(kappa, 0.0, 3.0, 8 if r == 0 else 6)
-    idx, mean, own = draw(beta, kappa)
+    idx, mean, own = None, 0.0, 0.0
+    for _r in range(max(1, int(rounds))):
+        if _r == 0:
+            kappa = kappa_for(beta, -4.0, 6.0, 7)      # negative = the public pays up for stars
+            beta = beta_for(kappa, 0.0, 3.0, 10)
+        else:
+            kappa = kappa_for(beta, kappa - 0.75, kappa + 0.75, 5)
+            beta = beta_for(kappa, max(0.0, beta - 0.3), beta + 0.3, 7)
+        kappa = kappa_for(beta, kappa - 0.75, kappa + 0.75, 5)   # kappa was fitted to the previous beta
+        idx, mean, own = draw(beta, kappa)
+        if abs(own - max_own) <= own_tol and abs(mean - salary_used) <= salary_tol:
+            break
     return beta, kappa, own, mean, _collision(idx), _dup_share(idx)
 
 
@@ -1043,6 +1129,20 @@ def _slot_rows(lineups, pos):
     return out
 
 
+def world_split(n_worlds, opt_worlds):
+    """(generation, evaluation) world ranges, disjoint: the first `opt_worlds`
+    worlds -- at most a third of them -- find the hindsight-optimal
+    candidates, and only the rest score every candidate. A lineup chosen
+    because it won world j must not be paid for world j: with the two sets
+    overlapping (the first build) optimal-world lineups' first-place rate
+    read 1.9x their holdout rate while top 1% and top 0.1% did not move
+    (measured 2026-09-10, 4,000 generation worlds of 20,000). 60,000 worlds
+    at 20,000 requested: 20,000 generate, 40,000 evaluate."""
+    n = max(0, int(n_worlds))
+    gen = max(0, min(int(opt_worlds), n // 3))
+    return range(0, gen), range(gen, n)
+
+
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=40000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
@@ -1103,6 +1203,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             continue
         ents.append({"name": c["name"], "pos": pos, "team": c.get("team"),
                      "opp": nfl_dfs._opp_of(c.get("team"), c.get("game")),
+                     "game": nfl_dfs.game_key(c.get("game")),
                      "salary": int(c["salary"]), "proj": round(float(sim["proj"]), 1),
                      "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"]})
     by_name = {e["name"]: e for e in ents}
@@ -1143,10 +1244,11 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         ids.sort(key=lambda i: -float(np.percentile(X[i], 90)))
         keep += ids[:_CL_KEEP[p]]
     keep = np.asarray(sorted(keep))
-    n_opt = min(N, int(opt_worlds))
+    gen, ev = world_split(N, opt_worlds)
+    n_opt = len(gen)
     every = max(1, (n_opt // 4 // 64) * 64)
     opt_L, opt_v = optimal_lineups(
-        X[keep][:, :n_opt], sal[keep], [pos[i] for i in keep], chunk=64,
+        X[keep][:, gen.start:gen.stop], sal[keep], [pos[i] for i in keep], chunk=64,
         progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds solved, {dt:.0f}s")
         if done % every == 0 or done == n else None)
     opt_L = [tuple(int(keep[i]) for i in L) for L in opt_L]
@@ -1171,10 +1273,13 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     rows_f = np.sort(idx_f, axis=1)
     _uf, first_f, counts_f = np.unique(rows_f, axis=0, return_index=True, return_counts=True)
     f_count = {tuple(rows_f[i].tolist()): int(k) for i, k in zip(first_f, counts_f)}
+    achieved = field_stats(idx_f, ents)
     t3 = time.time()
-    log(f"[tourney] classic {dg}: field of {M:,} (beta {beta:.3f}, kappa {kappa:.3f}, top ownership "
-        f"{100 * max_own:.0f}%, mean salary ${mean_sal:,.0f}, collision {coll:.2e}, top build "
-        f"{100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
+    log(f"[tourney] classic {dg}: field of {M:,} (beta {beta:.3f}, kappa {kappa:.3f}; achieved: top ownership "
+        f"{100 * achieved['max_own']:.1f}% of {100 * CL_FIELD_MAX_OWN:.0f}%, mean salary ${achieved['mean_salary']:,.0f} "
+        f"of ${CL_SALARY_USED:,.0f}, bring-back {100 * achieved['bring_back']:.1f}% of {100 * CL_BRING_BACK:.0f}%, "
+        f"defense vs own QB {100 * achieved['dst_vs_own_qb']:.2f}% ({100 * CL_DST_VS_OWN_QB:.0f}% of the field does not avoid it); "
+        f"collision {coll:.2e}, top build {100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
     # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
     idx_o = _slot_rows(list(opt_count.keys()), pos)
     idx_c = classic_sample(ents, int(cand_n), rng, beta, kappa, rules=True, exclude=fo)
@@ -1200,9 +1305,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     log(f"[tourney] classic {dg}: {K:,} candidates ({int(allowed.sum()):,} we may enter, "
         f"{len(idx_o):,} hindsight-optimal) ({t4 - t3:.0f}s); scoring against the field in every world...")
     ch = chunk_for(max(K, M), chunk)
-    every = max(ch, (N // 6 // ch) * ch)
+    Xe = np.ascontiguousarray(X[:, ev.start:ev.stop])      # the evaluation worlds only (world_split)
+    every = max(ch, (len(ev) // 6 // ch) * ch)
     res, opt_c, _n = run_vs_field(
-        Wc, Wf, wf, X, grids, chunk=ch,
+        Wc, Wf, wf, Xe, grids, chunk=ch,
         progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s")
         if done % every == 0 or done == n else None)
     t5 = time.time()
@@ -1210,7 +1316,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     cand = ok[np.argsort(-res[0]["top1"][ok])][:int(candidates)] if len(ok) else ok
     log(f"[tourney] classic {dg}: scored ({t5 - t4:.0f}s); portfolios of {k_port} per contest from "
         f"the {len(cand):,} strongest...")
-    ports = portfolio_vs_field(Wc, Wf, wf, X, grids, cand, k_port, chunk=ch) if len(cand) else []
+    ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch) if len(cand) else []
     t6 = time.time()
 
     def row(i, gi, rank_by):
@@ -1260,6 +1366,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     players_out = []
     for i, e in enumerate(ents):
         players_out.append({"name": e["name"], "pos": e["pos"], "team": e["team"], "opp": e.get("opp"),
+                            "game": e.get("game"),
                             "salary": e["salary"], "depth": e.get("depth"),
                             "field_only": bool(e.get("_field_only")),
                             "proj": e["proj"], "floor": e.get("floor"), "ceiling": e.get("ceiling"),
@@ -1278,20 +1385,41 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
-    return plain({"version": VERSION, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
+    return plain({"version": VERSION, "engine": ENGINE, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
             "pool_sig": pool_sig(slate["csv"]),
             "contests": [results[str(c["id"])]["contest"] for c in contests],
             "slate": {"n_players": slate.get("n_players"), "dropped": slate.get("dropped"),
                       "games": len({(e["team"], e.get("opp")) for e in ents}) // 2,
                       "week": week, "preseason": bool(preseason), "field_only": sorted(field_only)},
-            "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt),
+            "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt), "eval_worlds": int(len(ev)),
+            "max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,
+            # The first-place column is the share of evaluation worlds in
+            # which the lineup beats every one of the field SAMPLE's
+            # lineups: with 300,000 sampled against 832,000 real entries one
+            # sampled exceedance takes a world from 1.0 to 0.06, so the
+            # column is a count of clean sweeps of the sample, its level is
+            # a property of the sample size, and two field seeds rank the
+            # top 300 by it at Spearman 0.51 (measured 2026-09-10). EV and
+            # ROI inherit it through the first prize. Kept for comparison
+            # while the tail estimator is validated; the tab labels them.
+            "experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],
+                             "why": ("the first-place estimate rests on the field sample's extreme tail "
+                                     "(one in 300,000 resolves; one in 832,000 is asked) and is still "
+                                     "being validated; rank on top 1% and top 0.1%")},
             "candidates": int(K), "candidates_allowed": int(allowed.sum()),
             "optimal_distinct": int(len(opt_count)),
             "field_model": {"kind": "sampled: softmax on projection and price, stack and bring-back "
                                     "rates from the public record",
                             "n": int(M), "beta": round(beta, 4), "kappa": round(kappa, 4),
                             "max_own_pct": round(100.0 * max_own, 1),
+                            # dst_vs_own_qb_not_avoiding is the share of the field that does
+                            # not steer round a defense facing its own QB; the achieved share
+                            # that actually holds one is that times the softmax's pick rate
+                            # (about 0.3% on today's pool), so the two are not compared 1:1.
+                            "targets": {"max_own": CL_FIELD_MAX_OWN, "mean_salary": CL_SALARY_USED,
+                                        "bring_back": CL_BRING_BACK, "dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB},
+                            "achieved": achieved,
                             "collision": coll, "mean_salary": round(mean_sal),
                             "top_share_pct": round(100.0 * top_share, 4),
                             "stack_dist": list(CL_STACK_DIST), "bring_back": CL_BRING_BACK,

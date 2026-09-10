@@ -8329,6 +8329,10 @@ function renderDfsTourney(d) {
     return;
   }
   const classic = d.kind === "classic";
+  // The board says which columns are experimental (the first-place estimate
+  // and what rides on it) and why; the headers and the list names carry it.
+  const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;
+  const expWhy = exp ? escapeHtml(exp.why || "") : "";
   if (classic) {
     const ids = (d.contests || []).map((c) => String(c.id));
     const picked = String((($("dfsDkContest") || {}).value) || "");
@@ -8348,7 +8352,7 @@ function renderDfsTourney(d) {
     return (r.lineup || []).map((p) => `<span class="small" style="color:var(--muted)">${p.slot}</span> ${escapeHtml(p.name)}${tag(p)}`).join(", ");
   };
   const table = (rows, list) => rows.length ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
-    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="finishes in the top 1% of the field">top 1%</th>${classic ? `<th title="finishes in the top 0.1% of the field">top 0.1%</th>` : ""}<th title="share of simulated games this exact lineup finishes first, before splitting with its copies">win</th><th title="finishes in the money">cash</th><th title="expected payout after splitting first place with the copies the field model expects">EV</th><th title="expected identical lineups in the field">copies</th><th></th></tr>
+    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="finishes in the top 1% of the field">top 1%</th>${classic ? `<th title="finishes in the top 0.1% of the field">top 0.1%</th>` : ""}${exp ? `<th title="experimental: ${expWhy}">experimental win</th>` : `<th title="share of simulated games this exact lineup finishes first, before splitting with its copies">win</th>`}<th title="finishes in the money">cash</th>${exp ? `<th title="experimental: rides on the first-place estimate; ${expWhy}">experimental EV</th>` : `<th title="expected payout after splitting first place with the copies the field model expects">EV</th>`}<th title="expected identical lineups in the field">copies</th><th></th></tr>
     ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}</td>` : ""}<td>${pct(r.win_pct, 3)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}">${money(r.ev_dup)}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
   </table></div>` : `<div class="small" style="color:var(--muted)">none</div>`;
   // the portfolio: every prefix of the greedy cover is itself the best cover of that size
@@ -8366,7 +8370,7 @@ function renderDfsTourney(d) {
   }
   const contestBtns = classic ? `<div class="small" style="margin-top:4px">${(d.contests || []).map((x) => `<a href="#" onclick="dfsTourneyContest('${x.id}');return false" style="margin-right:10px;${String(x.id) === _dfsTourneyCid ? "font-weight:bold;text-decoration:underline" : ""}">${money(x.entry_fee)} · ${escapeHtml((x.name || "").replace(/^NFL /, ""))} · ${nf(x.max_entries)} entries</a>`).join("")}</div>` : "";
   const chalk = rr.chalk;
-  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · top 1% ${pct(chalk.top1_pct)} · win ${pct(chalk.win_pct, 3)} · EV after the split ${money(chalk.ev_dup)}</div>` : "";
+  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · top 1% ${pct(chalk.top1_pct)} · ${exp ? "experimental win" : "win"} ${pct(chalk.win_pct, 3)} · ${exp ? "experimental EV" : "EV after the split"} ${money(chalk.ev_dup)}</div>` : "";
   const players = d.players || [];
   const shown = _dfsTourneyAll ? players : players.slice(0, 14);
   const playersHtml = classic
@@ -8381,17 +8385,18 @@ function renderDfsTourney(d) {
   const moreHtml = players.length > 14 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : "";
   const fieldOnly = ((d.slate || {}).field_only || []);
   const listNames = classic
-    ? [["top_top1", "Best single entries by top 1%"], ["top_top01", "Best by top 0.1%"], ["top_ev", "Best by EV after duplicates"], ["top_win", "Best by first place"]]
+    ? [["top_top1", "Best single entries by top 1%"], ["top_top01", "Best by top 0.1%"], ["top_ev", exp ? "Best by experimental EV" : "Best by EV after duplicates"], ["top_win", exp ? "Best by experimental first place" : "Best by first place"]]
     : [["top_win", "Best single entries by win%"], ["top_top1", "Best by top 1%"], ["top_ev", "Best by EV after duplicates"]];
   if (!rr.lists[_dfsTourneyList]) _dfsTourneyList = listNames[0][0];
   const listBtns = listNames.map(([k, lbl]) => `<a href="#" onclick="dfsTourneyListPick('${k}');return false" style="margin-right:10px;${k === _dfsTourneyList ? "font-weight:bold;text-decoration:underline" : ""}">${lbl}</a>`).join("");
   const head = classic
-    ? `${nf(d.candidates)} candidate lineups (${nf(d.candidates_allowed)} pass the rules; ${nf(d.optimal_distinct)} are the exact best lineup of some simulated Sunday) × ${nf(d.worlds)} simulated Sundays, each scored against ${nf((fm.n || 0))} lineups drawn the way the public builds.`
+    ? `${nf(d.candidates)} candidate lineups (${nf(d.candidates_allowed)} pass the rules; ${nf(d.optimal_distinct)} are the exact best lineup of some simulated Sunday) × ${nf(d.eval_worlds || d.worlds)} simulated Sundays${d.eval_worlds ? ` (the ${nf(d.opt_worlds)} Sundays that found the candidates are held out)` : ""}, each scored against ${nf((fm.n || 0))} lineups drawn the way the public builds.`
     : `${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field.`;
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
     <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
     ${contestBtns}
     <div class="small" style="color:var(--muted);margin-top:2px">${head} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
+    ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}
     ${chalkHtml}
     <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover; the first k rows are the best k</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>
     ${table(portRows, "portfolio")}

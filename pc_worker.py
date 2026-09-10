@@ -457,11 +457,19 @@ def _status_changed(board):
     return bool(moved), ", ".join(moved[:6]) + (" ..." if len(moved) > 6 else "")
 
 
+def _classic_engine():
+    import dfs_tourney
+    return dfs_tourney.ENGINE
+
+
 def _rebuild_reason(board, pool_sig, req, state, dg, status_key):
-    """Why a board should be (re)built now, or None. Pool membership and
-    requests count any time; status only inside a window, once per window."""
+    """Why a board should be (re)built now, or None. An older engine, pool
+    membership and requests count any time; status only inside a window,
+    once per window."""
     if not board:
         return "no board yet"
+    if board.get("kind") == "classic" and (board.get("engine") or 1) < _classic_engine():
+        return "engine updated"          # the numbers mean something new (dfs_tourney.ENGINE)
     if pool_sig and board.get("pool_sig") and board.get("pool_sig") != pool_sig:
         return "the DraftKings pool changed"
     if req and (req.get("ts") or 0) > (board.get("built_ts") or 0):
