@@ -19,7 +19,7 @@ import collections
 POS = ("QB", "RB", "WR", "TE")
 SEASONS = (2022, 2023, 2024, 2025)
 HOLDOUT = 2025
-COMPONENTS = ("pass_att", "pass_yd", "pass_td", "pass_int", "rush_att", "rush_yd", "rush_td",
+COMPONENTS = ("pass_att", "pass_cmp", "pass_yd", "pass_td", "pass_int", "rush_att", "rush_yd", "rush_td",
               "rec_tgt", "rec", "rec_yd", "rec_td", "fum_lost")
 ACT_EXTRA = ("pass_2pt", "rush_2pt", "rec_2pt", "st_td", "fum_rec_td", "pts_ppr", "gp", "off_snp")
 COLUMNS = (["season", "week", "player_id", "name", "pos", "team", "opp", "game_key", "role",
@@ -124,7 +124,7 @@ def build(raw_dir, seasons=SEASONS, weeks=range(1, 19)):
             games = {tuple(sorted((t, o))) for t, o in opp_main.items()}
             cov["games"] += len(games)
             week_rows = []
-            for pid in set(pr) | set(ar):
+            for pid in sorted(set(pr) | set(ar)):     # a fixed row order: the table and every sum over it repeat bit for bit
                 p, a = pr.get(pid), ar.get(pid)
                 base = p or a
                 flags = []
@@ -217,8 +217,10 @@ def to_csv_gz(rows, path):
         line += ["" if not r["has_act"] or r["a"].get(c) is None else r["a"].get(c) for c in COMPONENTS]
         line += ["" if not r["has_act"] or r["a"].get(c) is None else r["a"].get(c) for c in ACT_EXTRA]
         w.writerow(line)
-    with gzip.open(path, "wt") as fh:
-        fh.write(buf.getvalue())
+    # mtime pinned to zero: gzip stamps the archive with the clock, and the
+    # committed table must hash the same whenever it is rebuilt
+    with gzip.GzipFile(path, "wb", mtime=0) as fh:
+        fh.write(buf.getvalue().encode())
 
 
 def read_csv_gz(path):

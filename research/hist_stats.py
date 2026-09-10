@@ -307,7 +307,10 @@ def sleeper_audit(rows, seasons):
                 continue
             qv = sum((r[qb_key] or 0) for r in qbs)
             if name.startswith("pass_cmp"):
-                qv = sum(((r["proj_pass_att"] or 0) * 0.65) for r in qbs)   # attempts x a 65% completion rate, a proxy
+                # Sleeper projects completions directly (pass_cmp, in the
+                # table since Stage 2C); attempts x 65% stays as the fallback
+                # for a row without one.
+                qv = sum(((r.get("proj_pass_cmp") if r.get("proj_pass_cmp") is not None else (r["proj_pass_att"] or 0) * 0.65)) for r in qbs)
             sv = sum((r[sum_key] or 0) for r in rr if r["pos"] in ("RB", "WR", "TE"))
             if qv <= 0:
                 continue
@@ -319,7 +322,7 @@ def sleeper_audit(rows, seasons):
         out[name] = {"team_weeks": int(len(diffs)), "diff_median": float(np.median(diffs)), "diff_mean": float(diffs.mean()),
                      "rel_median": float(np.median(rel)), "rel_mean": float(rel.mean()),
                      "rel_p10": float(np.quantile(rel, 0.1)), "rel_p90": float(np.quantile(rel, 0.9)),
-                     "abs_rel_p95": float(np.quantile(np.abs(rel), 0.95)), "share_sum_above_qb": float((diffs > 0).mean()),
+                     "abs_rel_p95": float(np.quantile(np.abs(rel), 0.95)), "share_sum_above_qb": float((diffs > 1e-9).mean()),
                      "by_season_rel_mean": {str(s): float(np.mean(v)) for s, v in sorted(by_season.items())},
                      "worst": [{"season_week_team": list(k), "qb": q, "sum": s2, "abs_diff": round(a, 1)} for a, k, q, s2 in worst[:5]]}
     return out

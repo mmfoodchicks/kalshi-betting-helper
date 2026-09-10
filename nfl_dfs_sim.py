@@ -109,7 +109,14 @@ def weekly_games(season, week):
                      "rec": st.get("rec", 0.0) or 0.0,
                      "rec_yd": st.get("rec_yd", 0.0) or 0.0,
                      "rec_td": st.get("rec_td", 0.0) or 0.0,
-                     "fum": st.get("fum_lost", 0.0) or 0.0}
+                     "fum": st.get("fum_lost", 0.0) or 0.0,
+                     # the volume components the reconciliation (nfl_recon)
+                     # and the constrained simulator read; the legacy loop
+                     # above never looks at them
+                     "pass_att": st.get("pass_att", 0.0) or 0.0,
+                     "pass_cmp": st.get("pass_cmp", 0.0) or 0.0,
+                     "rec_tgt": st.get("rec_tgt", 0.0) or 0.0,
+                     "rush_att": st.get("rush_att", 0.0) or 0.0}
             games.setdefault(gid, {"players": [], "label": None})["players"].append({
                 "name": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
                 "pos": p.get("position"), "team": r.get("team"), "opp": r.get("opponent"),
@@ -121,6 +128,17 @@ def weekly_games(season, week):
                     teams.append(pl["team"])
             g["teams"] = teams
             g["label"] = f"{teams[1]} @ {teams[0]}" if len(teams) >= 2 else (teams[0] if teams else "?")
+        # Stage 2C: every player also carries `recon`, his line with the
+        # team's passing books balanced (nfl_recon), and every game a
+        # per-team report. `means` is untouched: the legacy simulator keeps
+        # reading it, so a board built here does not change; the constrained
+        # simulator reads `recon`. A failure here leaves the games as they
+        # were, with the failure in the ledger.
+        try:
+            import nfl_recon
+            nfl_recon.reconcile_games(games)
+        except Exception as _e:
+            errlog.note("RECON-weekly", _e)
         return games or None
     return _cached(("nfl_sleeper", season, week), 3600, build)
 

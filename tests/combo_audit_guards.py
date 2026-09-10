@@ -13442,6 +13442,115 @@ ck("DraftKings points from a component line include the yardage bonuses on the a
    and _seeds2b.child_seed(2, 2024, 3, "DET-NO", "legacy") != _seeds2b.child_seed(1, 2024, 3, "DET-NO", "legacy")
    and _seeds2b.stamp(7, season=2024, week=3)["child_seed"] == _seeds2b.child_seed(7, season=2024, week=3))
 
+# ---- Stage 2C: the team's passing books balance before a simulation --------
+# 2026-09-10. Sleeper projects every player alone, so a team's receivers'
+# yards, receptions, targets and touchdowns do not add up to its
+# quarterback's; the box scores keep those identities. nfl_recon makes them
+# hold with the least change the evidence allows (lambda and the variance
+# functions fitted on 2022-2024 only, hashed), keeps the originals, bounds
+# every number, flags what it cannot trust, and never touches what the
+# legacy simulator reads.
+import copy as _copy2c
+import nfl_recon as _rc
+_w2c = _rc.WEIGHTS
+_lam2c = (_w2c or {}).get("weights", {}).get("lambda", {})
+ck("the reconciliation weights are a committed, hashed artifact fitted on 2022-2024 with 2025 unread: every lambda inside [0, 1] with its bootstrap interval around it on 1,500+ team-weeks, the target factor between 0.9 and 1, a variance function for every reconciled position and component with a positive slope",
+   _w2c is not None and _w2c["meta"]["train_seasons"] == [2022, 2023, 2024] and _w2c["meta"]["holdout_season"] == 2025
+   and _w2c["meta"]["holdout_outcomes_read"] is False and _rc.weights_hash(_w2c["weights"]) == _w2c["hash"]
+   and set(_lam2c) == {"pass_att", "pass_cmp", "pass_yd", "pass_td"}
+   and all(0.0 <= v["boot_lo"] <= v["value"] <= v["boot_hi"] <= 1.0 and v["n"] >= 1500 for v in _lam2c.values())
+   and 0.9 < _w2c["weights"]["target_factor"]["value"] < 1.0
+   and all(c in _w2c["weights"]["variance"]["QB"] and _w2c["weights"]["variance"]["QB"][c]["b"] > 0 for c in ("pass_att", "pass_cmp", "pass_yd", "pass_td"))
+   and all(c in _w2c["weights"]["variance"][pos] and _w2c["weights"]["variance"][pos][c]["b"] > 0 for pos in ("RB", "WR", "TE") for c in ("rec_tgt", "rec", "rec_yd", "rec_td"))
+   and _w2c["weights"]["tripwire"] == _rc.TRIPWIRE and _rc.recon_stamp()["weights_hash"] == _w2c["hash"][:16],
+   str((_w2c or {}).get("meta")))
+def _team2c(gap_yd=0.2, gap_td=0.3, cmp_over_att=False):
+    qb = {"name": "QB", "pos": "QB", "team": "T", "means": {"pass_att": 34.0, "pass_cmp": (40.0 if cmp_over_att else 22.0), "pass_yd": 250.0, "pass_td": 1.6, "int": 0.7, "rush_yd": 10.0, "rush_td": 0.1, "rec": 0.0, "rec_yd": 0.0, "rec_td": 0.0, "rec_tgt": 0.0, "fum": 0.1}}
+    recs = [("WR1", "WR", 9.0, 6.0, 80.0, 0.5), ("WR2", "WR", 6.5, 4.0, 55.0, 0.35), ("WR3", "WR", 4.0, 2.5, 30.0, 0.2),
+            ("TE1", "TE", 5.0, 3.5, 38.0, 0.3), ("RB1", "RB", 4.0, 3.2, 25.0, 0.15), ("RB2", "RB", 1.5, 1.2, 8.0, 0.05), ("WR4", "WR", 2.5, 1.6, 14.0, 0.1)]
+    ky = 250.0 * (1 + gap_yd) / sum(r[4] for r in recs); kt = 1.6 * (1 + gap_td) / sum(r[5] for r in recs)
+    return [qb] + [{"name": n, "pos": p, "team": "T", "means": {"rec_tgt": t, "rec": c, "rec_yd": y * ky, "rec_td": d * kt, "rush_yd": 5.0, "rush_td": 0.02, "int": 0.0, "fum": 0.02, "pass_yd": 0.0, "pass_td": 0.0, "pass_att": 0.0, "pass_cmp": 0.0}} for n, p, t, c, y, d in recs]
+_pl2c = _team2c()
+_orig2c = _copy2c.deepcopy(_pl2c)
+_rep2c = _rc.reconcile_team(_pl2c, team="T")
+def _sides2c(pl, qc, rc, f=1.0):
+    return (f * sum(p["recon"][qc] for p in pl if p["pos"] == "QB"), sum(p["recon"][rc] for p in pl if p["pos"] != "QB"))
+_tf2c = _w2c["weights"]["target_factor"]["value"] if _w2c else 1.0
+ck("on a team whose receivers out-project the quarterback by 20% in yards and 30% in touchdowns, all four identities hold to 1e-9 afterwards, the target sits between the two sides, nothing goes negative, receptions stay within targets, touchdowns within receptions, completions within attempts, and the originals are untouched",
+   _w2c is not None
+   and all(abs(a - b) < 1e-9 for a, b in (_sides2c(_pl2c, "pass_yd", "rec_yd"), _sides2c(_pl2c, "pass_td", "rec_td"), _sides2c(_pl2c, "pass_cmp", "rec"), _sides2c(_pl2c, "pass_att", "rec_tgt", _tf2c)))
+   and all(min(v["qb"], v["sum"]) - 1e-6 <= v["target"] <= max(v["qb"], v["sum"]) + 1e-6 for v in _rep2c["identities"].values())
+   and all(v >= 0 for p in _pl2c for v in p["recon"].values())
+   and all(p["recon"]["rec"] <= p["recon"]["rec_tgt"] + 1e-9 and p["recon"]["rec_td"] <= p["recon"]["rec"] + 1e-9 for p in _pl2c if p["pos"] != "QB")
+   and _pl2c[0]["recon"]["pass_cmp"] <= _pl2c[0]["recon"]["pass_att"] + 1e-9
+   and [p["means"] for p in _pl2c] == [p["means"] for p in _orig2c]
+   and _rep2c["identities"]["pass_yd"]["gap_rel"] == 0.2 and _rep2c["identities"]["pass_td"]["gap_rel"] == 0.3
+   and not _rep2c["tripped"] and _rep2c["flags"] == [],
+   str(_rep2c))
+_again2c = [{"name": p["name"], "pos": p["pos"], "means": dict(p["recon"])} for p in _pl2c]
+_rc.reconcile_team(_again2c, team="T")
+_moves2c = {p["name"]: abs(p["recon"]["rec_yd"] - p["means"]["rec_yd"]) for p in _pl2c if p["pos"] != "QB"}
+ck("reconciling is idempotent, the largest projection absorbs the largest yardage change (the variance functions grow with the projection), and the quarterback moves toward the receivers by exactly (1 - lambda) of the gap",
+   all(abs(a["recon"][k] - b["recon"][k]) < 1e-9 for a, b in zip(_again2c, _pl2c) for k in a["recon"])
+   and _moves2c["WR1"] >= max(_moves2c.values()) - 1e-9
+   and abs(_pl2c[0]["recon"]["pass_yd"] - (250.0 + (1 - _lam2c["pass_yd"]["value"]) * 50.0)) < 1e-6)
+_nq2c = [p for p in _team2c() if p["pos"] != "QB"]
+_r_nq = _rc.reconcile_team(_nq2c, team="T")
+_bad2c = _team2c(cmp_over_att=True)
+_r_bad = _rc.reconcile_team(_bad2c, team="T")
+ck("a team with no projected quarterback is left as it is and flagged; a 40% yardage gap trips the wire and a 5% one does not; a quarterback projected for more completions than attempts is no evidence, so his completions become the receivers' sum and the flag says so",
+   "no_qb" in _r_nq["flags"] and all(p["recon"] == p["means"] for p in _nq2c)
+   and _rc.reconcile_team(_team2c(gap_yd=0.4), team="T")["tripped"] and "gap_pass_yd" in _rc.reconcile_team(_team2c(gap_yd=0.4), team="T")["flags"]
+   and not _rc.reconcile_team(_team2c(gap_yd=0.05, gap_td=0.05), team="T")["tripped"]
+   and "qb_bound_pass_cmp" in _r_bad["flags"]
+   and abs(_bad2c[0]["recon"]["pass_cmp"] - sum(p["recon"]["rec"] for p in _bad2c[1:])) < 1e-9
+   and abs(_bad2c[0]["recon"]["pass_cmp"] - sum(p["means"]["rec"] for p in _bad2c[1:])) < 1e-9
+   and _bad2c[0]["recon"]["pass_cmp"] <= _bad2c[0]["recon"]["pass_att"])
+_x2c, _left2c = _rc.allocate([10.0, 5.0, 1.0], [4.0, 2.0, 1.0], -8.0, [0.0, 0.0, 0.0], [99.0, 99.0, 99.0])
+_y2c, _lefty2c = _rc.allocate([10.0, 5.0], [1.0, 1.0], -20.0, [0.0, 0.0], [99.0, 99.0])
+ck("allocate shares a change by variance, pins an entry that would cross zero and re-shares the rest, and reports the change it could not place when every bound binds",
+   abs(sum(_x2c) - 8.0) < 1e-9 and abs(_left2c) < 1e-9 and all(v >= 0 for v in _x2c)
+   and _x2c[2] == 0.0 and _x2c[0] < 10.0 and _x2c[1] < 5.0 and abs((10.0 - _x2c[0]) / (5.0 - _x2c[1]) - 2.0) < 1e-9
+   and _y2c == [0.0, 0.0] and abs(_lefty2c + 5.0) < 1e-9)
+_g2c = {"g1": {"label": "B @ A", "teams": ["A", "B"], "players": []}}
+for _t in ("A", "B"):
+    for p in _team2c(gap_yd=(0.2 if _t == "A" else -0.1), gap_td=(0.6 if _t == "A" else 0.0)):
+        p["team"] = _t; p["opp"] = ("B" if _t == "A" else "A"); p["proj_pts"] = 10.0
+        _g2c["g1"]["players"].append(p)
+_before2c = _copy2c.deepcopy(_g2c["g1"]["players"])
+_sum2c = _rc.reconcile_games(_g2c)
+ck("reconcile_games works team by team inside a weekly_games-shaped dict: every player keeps `means` and gains `recon`, the game carries a report per team, the slate summary counts the teams and names the tripped one with its gap, and the DraftKings-point shifts are tallied by position",
+   _sum2c["teams"] == 2 and set(_g2c["g1"]["recon"]) == {"A", "B"}
+   and [p["means"] for p in _g2c["g1"]["players"]] == [p["means"] for p in _before2c]
+   and all("recon" in p for p in _g2c["g1"]["players"])
+   and _sum2c["tripped"] == [{"team": "A", "game": "g1", "gaps": {"pass_td": 0.6}}]
+   and _sum2c["flags"] == {"gap_pass_td": 1}
+   and set(_sum2c["dk_shift_by_pos"]) == {"QB", "WR", "TE", "RB"} and _sum2c["dk_shift_by_pos"]["QB"]["n"] == 2
+   and abs(_sides2c([p for p in _g2c["g1"]["players"] if p["team"] == "B"], "pass_yd", "rec_yd")[0] - _sides2c([p for p in _g2c["g1"]["players"] if p["team"] == "B"], "pass_yd", "rec_yd")[1]) < 1e-9,
+   str(_sum2c))
+_sim2c = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
+_wg2c = _sim2c[_sim2c.index("def weekly_games("):_sim2c.index("# DraftKings scoring, for turning a MEAN stat line")]
+_sg2c = _sim2c[_sim2c.index("def simulate_game("):_sim2c.index("# League-average rates the DST component model")]
+ck("weekly_games carries the volume components (attempts, completions, targets) and attaches the reconciliation with its failure in the ledger, while the legacy simulator never reads `recon`, so the production board is unchanged",
+   '"pass_att": st.get("pass_att", 0.0) or 0.0' in _wg2c and '"pass_cmp": st.get("pass_cmp", 0.0) or 0.0' in _wg2c
+   and '"rec_tgt": st.get("rec_tgt", 0.0) or 0.0' in _wg2c and '"rush_att": st.get("rush_att", 0.0) or 0.0' in _wg2c
+   and "nfl_recon.reconcile_games(games)" in _wg2c and 'errlog.note("RECON-weekly", _e)' in _wg2c
+   and "recon" not in _sg2c and 'except Exception: pass' not in open(_os.path.join(_root, "nfl_recon.py")).read())
+_st2c = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2c_stats.json")))
+_rep2c_md = open(_os.path.join(_root, "research", "reports", "stage2c_report.md")).read()
+with _gz2b.open(_tab2b, "rt") as _fh2c:
+    _hdr2c = _fh2c.readline().strip().split(",")
+ck("the Stage 2C artifact records every invariant passing, the training team-weeks balanced to 1e-6 after reconciliation, the same hash as the weights; the report names the hash and the in-sample label; the historical table now carries completions and is a reproducible archive (gzip timestamp zero, rows in a fixed order)",
+   _st2c["hash"] == (_w2c or {}).get("hash") and all(_st2c["invariants"].values()) and len(_st2c["invariants"]) >= 14
+   and all(v < 1e-6 for v in _st2c["applied"]["gap_after_max_abs"].values()) and _st2c["applied"]["team_weeks"] > 1500
+   and _st2c["meta"]["holdout_outcomes_read"] is False
+   and _st2c["hash"][:16] in _rep2c_md and "not validation" in _rep2c_md
+   and "proj_pass_cmp" in _hdr2c and "act_pass_cmp" in _hdr2c
+   and open(_tab2b, "rb").read(8)[4:8] == b"\x00\x00\x00\x00"
+   and "for pid in sorted(set(pr) | set(ar))" in open(_os.path.join(_root, "research", "hist_data.py")).read()
+   and "!research/data/" in open(_os.path.join(_root, ".gitignore")).read(),
+   f"invariants {_st2c['invariants']}")
+
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still
 # said "queued for 10:32pm" the next morning: the pickle carried np.float64

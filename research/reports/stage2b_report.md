@@ -1,6 +1,6 @@
 # Stage 2B: historical evidence, 2022 to 2024 fitting seasons, 2025 held out
 
-Commit 25a996a, base seed 20220901, 400 clustered bootstraps. Built 2026-09-10 20:37 UTC. 2025 is loaded and coverage-counted only; no 2025 outcome enters any number below except the coverage table. Residual method: actual minus projected DraftKings points (components, no bonuses on the projection side), standardised by the role's residual sd on the training seasons. Roles: pregame only: QB1 by projected pass attempts; RB1-3 by projected carries plus targets; WR1-4 and TE1-2 by projected targets, receiving yards as the tie-break. Bootstrap: clusters are team-seasons (the repeated weeks of one offense resample together); for opponent pairs the cluster is the first-named side's team-season; 90% intervals.
+Commit 395c3af, base seed 20220901, 400 clustered bootstraps. Built 2026-09-10 20:53 UTC. 2025 is loaded and coverage-counted only; no 2025 outcome enters any number below except the coverage table. Residual method: actual minus projected DraftKings points (components, no bonuses on the projection side), standardised by the role's residual sd on the training seasons. Roles: pregame only: QB1 by projected pass attempts; RB1-3 by projected carries plus targets; WR1-4 and TE1-2 by projected targets, receiving yards as the tie-break. Bootstrap: clusters are team-seasons (the repeated weeks of one offense resample together); for opponent pairs the cluster is the first-named side's team-season; 90% intervals.
 
 ## Coverage
 
@@ -65,7 +65,7 @@ TE1: rec_tgt: proj 4.7, ratio sd 0.64, p10/p90 0.29/1.79; rec: proj 3.2, ratio s
 
 ## Target competition
 
-1,604 team-weeks with WR1, WR2, WR3, TE1 and RB1 all present. Team targets actual over projected: mean 1.009, sd 0.250. Mean actual share by role: {"WR1": 0.262, "WR2": 0.185, "WR3": 0.113, "TE1": 0.16, "RB1": 0.11}. Share residual sd (actual share minus projected share): {"WR1": 0.094, "WR2": 0.085, "WR3": 0.073, "TE1": 0.08, "RB1": 0.069}. Week-to-week share sd of one player, by role: {"TE1": 0.073, "WR2": 0.078, "WR1": 0.088, "WR3": 0.067, "RB1": 0.061}.
+1,604 team-weeks with WR1, WR2, WR3, TE1 and RB1 all present. Team targets actual over projected: mean 1.009, sd 0.250. Mean actual share by role: {"WR1": 0.262, "WR2": 0.185, "WR3": 0.113, "TE1": 0.16, "RB1": 0.11}. Share residual sd (actual share minus projected share): {"WR1": 0.094, "WR2": 0.085, "WR3": 0.073, "TE1": 0.08, "RB1": 0.069}. Week-to-week share sd of one player, by role: {"WR1": 0.088, "RB1": 0.061, "TE1": 0.073, "WR2": 0.078, "WR3": 0.067}.
 
 Correlation of share residuals across roles (the competition targets for the team-budget model):
 
@@ -101,9 +101,9 @@ When WR1 beats his projected targets by three or more (and when he misses by thr
 |---|---|---|---|---|---|---|---|---|
 | pass_yd vs sum rec_yd | 1,630 | -0.016 | -0.017 | -0.149 | +0.112 | 0.228 | 0.44 | {"2022": -0.023, "2023": -0.022, "2024": -0.008} |
 | pass_td vs sum rec_td | 1,630 | -0.017 | +0.009 | -0.200 | +0.253 | 0.390 | 0.45 | {"2022": -0.056, "2023": 0.043, "2024": 0.039} |
-| pass_cmp vs sum rec | 1,631 | -0.023 | -0.028 | -0.197 | +0.134 | 0.265 | 0.44 | {"2022": -0.02, "2023": -0.04, "2024": -0.025} |
+| pass_cmp vs sum rec | 1,631 | +0.001 | +0.003 | -0.138 | +0.144 | 0.231 | 0.50 | {"2022": 0.008, "2023": 0.009, "2024": -0.007} |
 
-Worst cases: pass_yd vs sum rec_yd: [2022, 18, 'LAR'] QB 242.8 vs sum 143.2, [2024, 7, 'LAC'] QB 230.6 vs sum 133.6, [2024, 16, 'NO'] QB 195.2 vs sum 98.4; pass_td vs sum rec_td: [2022, 3, 'LAC'] QB 2.4 vs sum 1.5, [2022, 9, 'DET'] QB 1.8 vs sum 1.0, [2023, 18, 'CIN'] QB 0.8 vs sum 1.6; pass_cmp vs sum rec: [2024, 16, 'NO'] QB 21.8 vs sum 10.8, [2024, 17, 'NO'] QB 21.8 vs sum 12.2, [2022, 17, 'LAR'] QB 22.9 vs sum 13.6.
+Worst cases: pass_yd vs sum rec_yd: [2022, 18, 'LAR'] QB 242.8 vs sum 143.3, [2024, 7, 'LAC'] QB 230.6 vs sum 133.6, [2024, 16, 'NO'] QB 195.2 vs sum 98.4; pass_td vs sum rec_td: [2022, 3, 'LAC'] QB 2.4 vs sum 1.5, [2022, 9, 'DET'] QB 1.8 vs sum 1.0, [2023, 18, 'CIN'] QB 0.8 vs sum 1.7; pass_cmp vs sum rec: [2023, 3, 'ARI'] QB 42.9 vs sum 17.1, [2023, 13, 'PIT'] QB 34.9 vs sum 19.9, [2024, 7, 'LAC'] QB 21.3 vs sum 12.8.
 
 ## Stack totals against their summed projection
 

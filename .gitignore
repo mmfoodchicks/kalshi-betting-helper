@@ -23,6 +23,9 @@ pc-deepcache/
 
 # Deep-sim cache
 data/
+# the research evidence base (research/data) is committed on purpose: the
+# guard suite and the fitting stages read it, and CI has no raw feeds
+!research/data/
 
 # Build artifacts (a 47MB playwright wheel was committed once)
 *.whl

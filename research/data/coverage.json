@@ -1,0 +1,106 @@
+{
+ "2022": {
+  "actual_player_weeks": 7066,
+  "actual_without_projection": 747,
+  "empty_rows": 48956,
+  "excluded": 200,
+  "exclusion_reasons": {
+   "negative_stat": 2,
+   "pos_out_of_scope": 196,
+   "team_conflict": 2
+  },
+  "feed_flags": {},
+  "flag_counts": {
+   "act_did_not_play": 51,
+   "negative_stat": 2,
+   "pos_out_of_scope": 196,
+   "proj_zero": 747,
+   "team_conflict": 2
+  },
+  "games": 272,
+  "holdout": false,
+  "kept": 6917,
+  "matched": 6319,
+  "projected_player_weeks": 6370,
+  "projection_without_actual": 51,
+  "weeks_with_actuals": 18,
+  "weeks_with_projections": 18
+ },
+ "2023": {
+  "actual_player_weeks": 7052,
+  "actual_without_projection": 1107,
+  "empty_rows": 48974,
+  "excluded": 197,
+  "exclusion_reasons": {
+   "negative_stat": 4,
+   "pos_out_of_scope": 193
+  },
+  "feed_flags": {},
+  "flag_counts": {
+   "act_did_not_play": 43,
+   "negative_stat": 4,
+   "pos_out_of_scope": 193,
+   "proj_zero": 1107
+  },
+  "games": 272,
+  "holdout": false,
+  "kept": 6899,
+  "matched": 5945,
+  "projected_player_weeks": 5989,
+  "projection_without_actual": 44,
+  "weeks_with_actuals": 18,
+  "weeks_with_projections": 18
+ },
+ "2024": {
+  "actual_player_weeks": 7004,
+  "actual_without_projection": 1064,
+  "empty_rows": 49017,
+  "excluded": 127,
+  "exclusion_reasons": {
+   "negative_stat": 3,
+   "pos_out_of_scope": 124
+  },
+  "feed_flags": {},
+  "flag_counts": {
+   "act_did_not_play": 50,
+   "negative_stat": 3,
+   "pos_out_of_scope": 124,
+   "proj_zero": 1064
+  },
+  "games": 272,
+  "holdout": false,
+  "kept": 6927,
+  "matched": 5940,
+  "projected_player_weeks": 5990,
+  "projection_without_actual": 50,
+  "weeks_with_actuals": 18,
+  "weeks_with_projections": 18
+ },
+ "2025": {
+  "actual_player_weeks": 7031,
+  "actual_without_projection": 934,
+  "empty_rows": 48971,
+  "excluded": 111,
+  "exclusion_reasons": {
+   "negative_stat": 1,
+   "pos_out_of_scope": 107,
+   "team_conflict": 3
+  },
+  "feed_flags": {},
+  "flag_counts": {
+   "act_did_not_play": 62,
+   "negative_stat": 1,
+   "pos_out_of_scope": 107,
+   "proj_zero": 934,
+   "team_conflict": 3
+  },
+  "games": 272,
+  "holdout": true,
+  "kept": 6988,
+  "matched": 6097,
+  "projected_player_weeks": 6165,
+  "projection_without_actual": 68,
+  "weeks_with_actuals": 18,
+  "weeks_with_projections": 18
+ }
+}
