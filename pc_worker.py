@@ -479,6 +479,26 @@ def _rebuild_reason(board, pool_sig, req, state, dg, status_key):
     return None
 
 
+def _tourney_resave(name, board, url, tok):
+    """A board that is current but was written by an older dfs_tourney: save
+    it again through dfs_tourney.plain and ship it, without rebuilding. The
+    first classic board (2026-09-10) carried numpy scalars the server could
+    not unpickle (BOARD-read x41 while the tab said "not built yet"); the
+    72-minute build itself was fine, so the fix is a re-save, one PC cycle
+    after the pull. Returns whether it re-saved."""
+    import boardshare
+    import dfs_tourney
+    if (board.get("version") or 0) >= dfs_tourney.VERSION:
+        return False
+    fresh = dfs_tourney.plain(board)
+    fresh["version"] = dfs_tourney.VERSION
+    boardshare.put(name, fresh)
+    print(f"[vigil-pc] {name}: re-saved for the server "
+          f"(artifact v{board.get('version') or 0} -> v{dfs_tourney.VERSION}, no rebuild)")
+    _ship_boards(url, tok)
+    return True
+
+
 def _main_slate(slates):
     """The Sunday main slate: an untagged classic slate of ten-plus games
     (the Early Only / Afternoon Only / Sun-Mon slates carry tags), the most
@@ -547,7 +567,8 @@ def _task_classic_tourney(url, tok):
         board, age = boardshare.get(name, None)
         why = _rebuild_reason(board, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
         if why is None:
-            print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
+            if not _tourney_resave(name, board, url, tok):
+                print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
             continue
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
@@ -641,7 +662,8 @@ def _task_showdown_tourney(url, tok):
         cur, age = boardshare.get(name, None)
         why = _rebuild_reason(cur, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
         if why is None:
-            print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
+            if not _tourney_resave(name, cur, url, tok):
+                print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
             continue
         print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds) - {why}...")
         t0 = time.time()

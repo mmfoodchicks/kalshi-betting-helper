@@ -13168,6 +13168,99 @@ ck("the tab renders a classic board: a contest selector, portfolio sizes one to 
    and "p_any_top1_pct" in _js16 and "[1, 2, 3, 5, 10, 20]" in _js16 and "dfsTourneyListPick(" in _js16
    and "`${p.slot} ${p.name}`" in _js16)
 
+# ---- the board the server could not read (2026-09-10) ---------------------
+# The first classic build finished at 03:2x UTC, uploaded, and the tab still
+# said "queued for 10:32pm" the next morning: the pickle carried np.float64
+# in the ev_dup/roi_pct of every row (round() keeps numpy's type, and a
+# json.dump check hides it because np.float64 subclasses float); the server,
+# which has no numpy on purpose, ledgered BOARD-read x41 and served "not
+# built yet". Every artifact now leaves through dfs_tourney.plain, the PC
+# re-saves an older board through it without rebuilding, and this block
+# reproduces the leak, the symptom and the repair.
+import pickle as _pk18
+import errlog as _el18
+import json as _json18
+_src18 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+ck("every tournament artifact leaves through plain() (both adapters wrapped, VERSION 3), and the classic row builds its duplicate count as a Python float",
+   _dt14.VERSION == 3
+   and 'return plain({"version": VERSION, "kind": "showdown"' in _src18
+   and 'return plain({"version": VERSION, "kind": "classic"' in _src18
+   and "copies = float(C * copies_share[i])" in _src18,
+   "one numpy scalar anywhere in the pickle makes the whole board unreadable on the server")
+if _dt14.available():
+    _raw18 = {"version": 2,
+              "rows": [{"ev_dup": round(_np14.float64(1.234), 2), "roi_pct": round(_np14.float64(-12.34), 1),
+                        "n": _np14.int64(3), "ok": _np14.bool_(True), "arr": _np14.arange(3, dtype=_np14.float32)}],
+              "t": (_np14.float64(1.0), 2), "nested": {"k": [_np14.int32(7)]}}
+    _out18 = _dt14.plain(_raw18)
+    _r18 = _out18["rows"][0]
+    ck("the leak reproduced: round() keeps np.float64 (a float subclass, invisible to a json.dump check) and the pickle names numpy; plain() strips every numpy leaf and keeps values, dicts, lists and tuples",
+       isinstance(round(_np14.float64(1.234), 2), float) and type(round(_np14.float64(1.234), 2)) is not float
+       and b"numpy" in _pk18.dumps(_raw18)
+       and b"numpy" not in _pk18.dumps(_out18, protocol=_pk18.HIGHEST_PROTOCOL)
+       and type(_r18["ev_dup"]) is float and _r18["ev_dup"] == 1.23 and type(_r18["roi_pct"]) is float
+       and type(_r18["n"]) is int and _r18["n"] == 3 and _r18["ok"] is True
+       and _r18["arr"] == [0.0, 1.0, 2.0] and _out18["t"] == (1.0, 2) and type(_out18["t"]) is tuple
+       and type(_out18["nested"]["k"][0]) is int)
+else:
+    ck("(numpy is not installed here -- the sanitizer's numeric guard runs where it is)", True)
+# The symptom: a board whose pickle names a module this process lacks (a
+# hand-built pickle, so the reproduction does not depend on numpy being
+# absent) reads as nothing, the tab's request stays pending past the
+# board's own built_ts, and the ledger carries BOARD-read. Then the PC's
+# repair: an older-version board is re-saved through plain() and shipped,
+# once, without a build.
+_old18 = _bs14._DIR
+_tmp18 = _tf14.mkdtemp(prefix="vigil-board-read-guard-")
+_el18_old_db, _el18_old_init = _el18._DB, _el18._init_done
+_el18._DB = _os.path.join(_tmp18, "errlog.db")
+_el18._init_done = False
+_ship18 = []
+_ship18_saved = _pcw16m._ship_boards
+try:
+    _bs14._DIR = _os.path.join(_tmp18, "boards")
+    _os.makedirs(_bs14._DIR, exist_ok=True)
+    with open(_bs14._path("cl_tourney_nfl_777003", "pkl"), "wb") as _fh18:
+        _fh18.write(b"cvigil_guard_no_such_module\n_Foreign\n)\x81.")
+    with open(_bs14._path(_app14._TOURNEY_REQ, "json"), "w") as _fh18:
+        _json18.dump({"777003": {"sport": "nfl", "kind": "classic", "ts": 10, "label": "guard milly"}}, _fh18)
+    _c18 = _app14.app.test_client()
+    _t18 = _c18.get("/api/dfs/tourney?sport=nfl&dg=777003").get_json()
+    _pend18 = _app14._tourney_pending()
+    _led18 = _el18.recent(code="BOARD-read")
+    ck("the symptom reproduced: a board the server cannot unpickle serves as not built, its request stays queued, and the ledger says BOARD-read with the missing module",
+       _bs14.get("cl_tourney_nfl_777003", None) == (None, None)
+       and _t18.get("status") != "ok" and [r.get("dg") for r in _pend18] == [777003]
+       and _led18 and "ModuleNotFoundError" in _led18[0]["msg"] and "vigil_guard_no_such_module" in _led18[0]["msg"],
+       "this is what 'queued for 10:32pm' the next morning looked like from the server's seat")
+    _pcw16m._ship_boards = lambda url, tok: _ship18.append((url, tok))
+    _leaf18 = _np14.float64(2.5) if _dt14.available() else 2.5
+    _b18 = {"version": 2, "kind": "classic", "built_ts": 20, "pool_sig": "abc",
+            "results": {"9": {"top_win": [{"ev_dup": _leaf18, "roi_pct": _leaf18}]}}}
+    _did18 = _pcw16m._tourney_resave("cl_tourney_nfl_777003", _b18, "http://guard", "tok")
+    with open(_bs14._path("cl_tourney_nfl_777003", "pkl"), "rb") as _fh18:
+        _blob18 = _fh18.read()
+    _re18, _age18 = _bs14.get("cl_tourney_nfl_777003", None)
+    _did18b = _pcw16m._tourney_resave("cl_tourney_nfl_777003", _re18, "http://guard", "tok")
+    ck("the PC repairs an older board in place: re-saved through plain() as VERSION 3 with no numpy in the file, shipped once, then left alone; the request older than built_ts is answered",
+       _did18 is True and _did18b is False and len(_ship18) == 1
+       and b"numpy" not in _blob18 and _re18 and _re18.get("version") == _dt14.VERSION
+       and type(_re18["results"]["9"]["top_win"][0]["ev_dup"]) is float
+       and _re18["results"]["9"]["top_win"][0]["ev_dup"] == 2.5
+       and _re18.get("built_ts") == 20 and _app14._tourney_pending() == [],
+       "the 72-minute build was fine; rebuilding it would have cost another 72 minutes")
+    _pcw18 = open(_os.path.join(_root, "pc_worker.py")).read()
+    ck("both tournament tasks try the re-save before calling a current board current",
+       _pcw18.count("if not _tourney_resave(name, ") == 2
+       and "if not _tourney_resave(name, board, url, tok):" in _pcw18
+       and "if not _tourney_resave(name, cur, url, tok):" in _pcw18
+       and '(board.get("version") or 0) >= dfs_tourney.VERSION' in _pcw18)
+finally:
+    _pcw16m._ship_boards = _ship18_saved
+    _bs14._DIR = _old18
+    _el18._DB, _el18._init_done = _el18_old_db, _el18_old_init
+    _shutil.rmtree(_tmp18, ignore_errors=True)
+
 # ---- the money audit (round two): the reviewer's reproductions, kept -------
 # 2026-09-10, an outside review of every place the app prints money: seven
 # findings, each reproduced against the real functions, each a guard below

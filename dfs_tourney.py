@@ -46,11 +46,35 @@ try:
 except ImportError:                      # the server: no numpy on purpose
     np = None
 
-VERSION = 2
+VERSION = 3                              # 3: every leaf a plain Python value (no numpy)
 
 
 def available():
     return np is not None
+
+
+def plain(obj):
+    """`obj` with every numpy leaf replaced by its Python value (scalars to
+    float/int/bool, arrays to lists), recursively; dicts, lists and tuples keep
+    their shape. Every artifact leaves through here. The server has no numpy
+    on purpose, so ONE numpy scalar anywhere in the pickle makes the whole
+    board unreadable there: the first classic build (2026-09-10, 72 minutes)
+    carried np.float64 in the ev_dup/roi_pct of every row (round() keeps the
+    numpy type, and a json.dump check hides it because np.float64 subclasses
+    float); the server ledgered BOARD-read x41, the tab said "not built yet"
+    and the queued request looked like it never fired."""
+    if isinstance(obj, dict):
+        return {plain(k): plain(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [plain(v) for v in obj]
+    if isinstance(obj, tuple):
+        return tuple(plain(v) for v in obj)
+    if np is not None:
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.generic):
+            return obj.item()
+    return obj
 
 
 # ---- lineups ---------------------------------------------------------------
@@ -523,7 +547,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
-    return {"version": VERSION, "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
+    return plain({"version": VERSION, "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
             "pool_sig": pool_sig(slate["csv"]),
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
@@ -551,7 +575,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "excluded": excluded[:40],
             "timings": {"sims_s": round(t1 - t0, 1), "enumerate_s": round(t2 - t1, 1),
                         "score_s": round(t3 - t2, 1), "portfolio_s": round(t4 - t3, 1),
-                        "total_s": round(t4 - t0, 1)}}
+                        "total_s": round(t4 - t0, 1)}})
 
 
 # ---- classic (nine slots) ------------------------------------------------------
@@ -1195,7 +1219,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         C = int(c.get("max_entries") or c.get("entered") or 10000)
         fee = float(c.get("entry_fee") or 1.0)
         first = float(c.get("first_prize") or 0.0)
-        copies = C * copies_share[i]
+        copies = float(C * copies_share[i])                 # np.float64 here leaked into the pickle
         ev_dup = float(r["ev"][i]) - float(r["win"][i]) * first * (1.0 - 1.0 / (1.0 + copies))
         lineup = [{"slot": CL_SLOTS[k], "name": ents[idx_k[i, k]]["name"], "pos": ents[idx_k[i, k]]["pos"],
                    "team": ents[idx_k[i, k]]["team"], "salary": ents[idx_k[i, k]]["salary"],
@@ -1254,7 +1278,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
-    return {"version": VERSION, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
+    return plain({"version": VERSION, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
             "pool_sig": pool_sig(slate["csv"]),
             "contests": [results[str(c["id"])]["contest"] for c in contests],
@@ -1282,4 +1306,4 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "timings": {"sims_s": round(t1 - t0, 1), "optimal_s": round(t2 - t1, 1),
                         "field_s": round(t3 - t2, 1), "candidates_s": round(t4 - t3, 1),
                         "score_s": round(t5 - t4, 1), "portfolio_s": round(t6 - t5, 1),
-                        "total_s": round(t6 - t0, 1)}}
+                        "total_s": round(t6 - t0, 1)}})
