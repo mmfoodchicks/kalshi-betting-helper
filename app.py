@@ -2042,6 +2042,39 @@ def api_dfs_contest():
     return jsonify(c)
 
 
+_TOURNEY_REQ = "tourney_requests"      # the tab's Build queue, a json beside the boards
+
+
+def _tourney_requests():
+    """{dg: {sport, kind, ts, label}} the owner has asked the PC to build."""
+    import boardshare
+    try:
+        with open(boardshare._path(_TOURNEY_REQ, "json")) as fh:
+            return json.load(fh) or {}
+    except OSError:
+        return {}
+    except Exception as e:
+        errlog.note("TOURN-req-read", e)
+        return {}
+
+
+def _tourney_pending():
+    """Requests no board has answered yet: no board for that slate, or the
+    board is older than the ask. The PC builds these first; the tab shows
+    'queued' until the board lands."""
+    import boardshare
+    out = []
+    for dg, r in sorted(_tourney_requests().items(), key=lambda kv: kv[1].get("ts") or 0):
+        payload, _age = boardshare.get(f"sd_tourney_{r.get('sport') or 'nfl'}_{dg}", None)
+        if payload and (payload.get("built_ts") or 0) >= (r.get("ts") or 0):
+            continue
+        try:
+            out.append(dict(r, dg=int(dg)))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 @app.route("/api/dfs/tourney")
 def api_dfs_tourney():
     """The DFS tournament board for one DraftKings showdown draft group
@@ -2065,16 +2098,96 @@ def api_dfs_tourney():
                         "why": "the tournament runs for NFL showdown slates so far"})
     if not dg:
         return jsonify({"status": "none", "pc": pc, "why": "dg (draft group) required"})
+    queued = [r for r in _tourney_pending() if r["dg"] == dg]
+    queued_ts = queued[0].get("ts") if queued else None
     payload, age = boardshare.get(f"sd_tourney_{sport}_{dg}", None)
     if not payload:
         return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
-                        "why": "not built yet - the PC builds the next showdown slates "
-                               "within minutes of the pool posting whenever it is on"})
+                        "queued_ts": queued_ts,
+                        "why": "not built yet - the PC builds the Thursday, Sunday and Monday "
+                               "night showdowns on its own; the button queues any other slate"})
     out = dict(payload)
     out["status"] = "ok"
     out["age_s"] = int(age or 0)
     out["pc"] = pc
+    out["queued_ts"] = queued_ts
     return jsonify(out)
+
+
+@app.route("/api/dfs/tourney/request", methods=["POST"])
+def api_dfs_tourney_request():
+    """The tab's Build button: queue one slate for the PC. The PC reads the
+    queue every cycle (10 minutes) and builds requests before anything else;
+    a request is answered once a board newer than it arrives. The owner's
+    ask, 2026-09-10: "let me have a button that will run it if I want."
+
+    JSON body: {sport, dg, kind: showdown|classic, label}"""
+    import boardshare
+    import tempfile
+    body = request.get_json(silent=True) or {}
+    sport = (body.get("sport") or "nfl").lower()
+    try:
+        dg = int(body.get("dg") or 0)
+    except (TypeError, ValueError):
+        dg = 0
+    if sport != "nfl" or not dg:
+        return jsonify({"error": "sport nfl and dg (draft group) required"}), 400
+    kind = "showdown" if (body.get("kind") or "") == "showdown" else "classic"
+    reqs = _tourney_requests()
+    now = int(time.time())
+    reqs[str(dg)] = {"sport": sport, "kind": kind, "ts": now,
+                     "label": str(body.get("label") or "")[:120]}
+    reqs = {k: v for k, v in reqs.items() if (v.get("ts") or 0) >= now - 3 * 86400}
+    try:
+        os.makedirs(boardshare._DIR, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=boardshare._DIR, suffix=".tmp")
+        with os.fdopen(fd, "w") as fh:
+            json.dump(reqs, fh)
+        os.replace(tmp, boardshare._path(_TOURNEY_REQ, "json"))
+    except Exception as e:
+        errlog.note("TOURN-req-write", e)
+        return jsonify({"error": "could not queue the request"}), 500
+    return jsonify({"queued": True, "dg": dg, "kind": kind, "ts": now,
+                    "pending": len(_tourney_pending())})
+
+
+@app.route("/api/dfs/tourney/requests")
+def api_dfs_tourney_requests():
+    """The PC's view of the Build queue (its door only): the requests no
+    board has answered yet."""
+    if not _pc_auth_ok():
+        return jsonify({"error": "auth"}), 403
+    return jsonify({"requests": _tourney_pending()})
+
+
+@app.route("/api/dfs/tourney/list")
+def api_dfs_tourney_list():
+    """Every tournament board on file for a sport, newest first, plus the
+    pending queue: the tab lists these so a board stays reachable after
+    DraftKings drops its slate from the lobby at lock."""
+    import boardshare
+    sport = (request.args.get("sport") or "nfl").lower()
+    prefix = f"sd_tourney_{sport}_"
+    rows = []
+    try:
+        names = sorted(os.listdir(boardshare._DIR))
+    except OSError:
+        names = []
+    for fn in names:
+        if not (fn.startswith(prefix) and fn.endswith(".pkl")):
+            continue
+        payload, age = boardshare.get(fn[:-4], None)
+        if not payload:
+            continue
+        c = payload.get("contest") or {}
+        sl = payload.get("slate") or {}
+        rows.append({"dg": payload.get("draft_group_id"), "kind": "showdown",
+                     "contest": c.get("name"), "entries": c.get("max_entries"),
+                     "entry_fee": c.get("entry_fee"), "teams": sl.get("teams"),
+                     "starts": c.get("starts"), "worlds": payload.get("worlds"),
+                     "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
+    rows.sort(key=lambda r: -(r.get("built_ts") or 0))
+    return jsonify({"sport": sport, "boards": rows[:12], "pending": _tourney_pending()})
 
 
 def _dfs_log(sport, req, res, auto_slate, csv_text):

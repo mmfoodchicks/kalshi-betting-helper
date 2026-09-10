@@ -10721,7 +10721,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11921,7 +11921,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12513,7 +12513,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12614,7 +12614,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12806,7 +12806,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v122' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -12932,15 +12932,65 @@ try:
 finally:
     _bs14._DIR, _app14._SIM_TOKEN = _old14
     _shutil.rmtree(_tmp14, ignore_errors=True)
+# the primetime gate and the tab's Build queue
+_pcw15 = open(_os.path.join(_root, "pc_worker.py")).read()
+_tt15 = _pcw15[_pcw15.index("def _task_showdown_tourney"):_pcw15.index("def _ship_boards")]
+ck("the PC builds only the primetime showdown Millionaires on its own (richest contest >= $500k), requests first, and never rebuilds on age alone",
+   "_SD_MIN_POOL = 500_000" in _pcw15 and "pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL" in _tt15
+   and '"/api/dfs/tourney/requests"' in _pcw15 and "soon.append((0, wanted[dg]" in _tt15
+   and "3 * 3600" not in _tt15 and 'why = "queued from the tab"' in _tt15
+   and 'why = "the DraftKings pool changed"' in _tt15 and "soon[:2]" not in _tt15,
+   "the first cycle after the engine shipped spent 25 minutes on the NO @ DET $20K "
+   "Special while Sunday night's slate waited behind eleven of them")
+_old15 = (_bs14._DIR, _app14._SIM_TOKEN)
+_tmp15 = _tf14.mkdtemp(prefix="vigil-tourney-queue-guard-")
+try:
+    _bs14._DIR = _tmp15
+    _app14._SIM_TOKEN = "guardtok15"
+    _c15 = _app14.app.test_client()
+    _h15 = {"X-Sim-Token": "guardtok15"}
+    _r15a = _c15.post("/api/dfs/tourney/request",
+                      json={"sport": "nfl", "dg": 777001, "kind": "showdown", "label": "guard slate"}).get_json()
+    _r15b = _c15.get("/api/dfs/tourney/requests").status_code
+    _r15c = _c15.get("/api/dfs/tourney/requests", headers=_h15).get_json()
+    _r15d = _c15.get("/api/dfs/tourney?sport=nfl&dg=777001", headers=_h15).get_json()
+    _bs14.put("sd_tourney_nfl_777001", {"version": 1, "sport": "nfl", "draft_group_id": 777001,
+                                        "built_ts": int(_r15a.get("ts") or 0) + 1,
+                                        "contest": {"name": "guard contest", "max_entries": 9, "entry_fee": 5.0},
+                                        "slate": {"teams": ["AA", "BB"]}, "worlds": 3,
+                                        "lineups_legal": 1, "lineups_allowed": 1,
+                                        "portfolio": {}, "top_win": [], "players": []})
+    _r15e = _c15.get("/api/dfs/tourney/requests", headers=_h15).get_json()
+    _r15f = _c15.get("/api/dfs/tourney/list?sport=nfl", headers=_h15).get_json()
+    _r15g = _c15.post("/api/dfs/tourney/request", json={"sport": "mlb", "dg": 1}).status_code
+    ck("the Build button queues a slate, the PC's door lists it until a newer board answers it, and boards on file names every board with its teams and age",
+       bool(_r15a.get("queued")) and _r15a.get("kind") == "showdown"
+       and _r15b == 403
+       and [r.get("dg") for r in (_r15c.get("requests") or [])] == [777001]
+       and _r15d.get("status") == "none" and _r15d.get("queued_ts") == _r15a.get("ts")
+       and (_r15e.get("requests") or []) == []
+       and [b.get("dg") for b in (_r15f.get("boards") or [])] == [777001]
+       and _r15f["boards"][0].get("teams") == ["AA", "BB"]
+       and _r15f["boards"][0].get("contest") == "guard contest"
+       and "age_s" in _r15f["boards"][0]
+       and _r15g == 400,
+       "a board is reachable after DraftKings drops its slate from the lobby at lock")
+finally:
+    _bs14._DIR, _app14._SIM_TOKEN = _old15
+    _shutil.rmtree(_tmp15, ignore_errors=True)
 _js14 = open(_os.path.join(_root, "static", "app.js")).read()
 _ix14 = open(_os.path.join(_root, "templates", "index.html")).read()
 ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes, best by win, the chalk build, field vs optimal shares per player) and says PC off when there is no board",
-   'id="dfsTourney"' in _ix14 and "async function loadDfsTourney(dg)" in _js14
+   'id="dfsTourney"' in _ix14 and "async function loadDfsTourney(dg, force)" in _js14
    and "/api/dfs/tourney?sport=nfl" in _js14 and "loadDfsTourney(dg);" in _js14
    and "loadDfsTourney(null)" in _js14 and "function renderDfsTourney(d)" in _js14
    and "dfsTourneyPick(" in _js14 and "most popular build" in _js14
    and "optimal CPT" in _js14 and "PC off" in _js14
-   and 'sp !== "nfl" || !showdown' in _js14)
+   and "!showdown && !force" in _js14
+   and "Build on the PC" in _js14 and "Rebuild on the PC" in _js14
+   and 'fetch("/api/dfs/tourney/request"' in _js14
+   and "async function loadDfsTourneyList()" in _js14 and "boards on file" in _js14
+   and "loadDfsTourney(${r.dg}, true)" in _js14 and "queued_ts" in _js14)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

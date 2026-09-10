@@ -8216,23 +8216,64 @@ async function applyDfsContest(id) {
 // simulated games against a modelled field, ranked by how often it WINS. The
 // owner's PC builds it (numpy, gigabytes, minutes) and uploads it as a board;
 // the server only serves it, so the panel says "PC off" rather than waiting.
+// On its own the PC builds the Thursday / Sunday / Monday night showdowns;
+// the Build button queues any slate, and "boards on file" keeps a finished
+// board reachable after DraftKings drops the slate from its lobby at lock.
 let _dfsTourneyDg = null, _dfsTourneyData = null, _dfsTourneyK = "5", _dfsTourneyAll = false;
-async function loadDfsTourney(dg) {
+let _dfsTourneyLabel = "", _dfsTourneyBusy = false;
+function _dfsTourneyBoxes() {
   const box = $("dfsTourney");
-  if (!box) return;
+  if (!box) return null;
+  if (!$("dfsTourneyMain")) box.innerHTML = `<div id="dfsTourneyMain"></div><div id="dfsTourneyFiles"></div>`;
+  return { main: $("dfsTourneyMain"), files: $("dfsTourneyFiles") };
+}
+async function loadDfsTourney(dg, force) {
+  const bx = _dfsTourneyBoxes();
+  if (!bx) return;
   const sp = ($("dfsSport") || {}).value;
   const showdown = !!(_dfsDkShape && _dfsDkShape.showdown);
-  if (!dg || sp !== "nfl" || !showdown) { box.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
+  if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
+  loadDfsTourneyList();
+  if (!dg || (!showdown && !force)) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   _dfsTourneyDg = String(dg);
-  box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament: looking for the PC's build…</div>`;
+  const sel = $("dfsDkSlate");
+  _dfsTourneyLabel = (sel && sel.selectedOptions && sel.selectedOptions[0] && String(sel.value) === String(dg)) ? sel.selectedOptions[0].textContent : "";
+  bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament: looking for the PC's build…</div>`;
   try {
     const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}`)).json();
     if (String(_dfsTourneyDg) !== String(dg)) return;     // the user moved to another slate
     _dfsTourneyData = d;
     renderDfsTourney(d);
   } catch (e) {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament board unavailable.</div>`;
+    bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament board unavailable.</div>`;
   }
+}
+async function loadDfsTourneyList() {
+  const bx = _dfsTourneyBoxes();
+  if (!bx) return;
+  try {
+    const d = await (await fetch(`/api/dfs/tourney/list?sport=nfl`)).json();
+    const rows = d.boards || [];
+    const pend = d.pending || [];
+    if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
+    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${(r.teams || []).map(escapeHtml).join(" vs ") || r.dg}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
+    const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => escapeHtml(p.label || String(p.dg))).join(", ")}</span>` : "";
+    bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
+  } catch (e) { bx.files.innerHTML = ""; }
+}
+async function dfsTourneyRequest() {
+  if (!_dfsTourneyDg || _dfsTourneyBusy) return;
+  _dfsTourneyBusy = true;
+  try {
+    const showdown = !!(_dfsDkShape && _dfsDkShape.showdown) || !!(_dfsTourneyData && _dfsTourneyData.status === "ok");
+    const r = await (await fetch("/api/dfs/tourney/request", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sport: "nfl", dg: _dfsTourneyDg, kind: showdown ? "showdown" : "classic", label: _dfsTourneyLabel || ((_dfsTourneyData || {}).contest || {}).name || "" }),
+    })).json();
+    if (r.queued && _dfsTourneyData) { _dfsTourneyData.queued_ts = r.ts; renderDfsTourney(_dfsTourneyData); }
+    loadDfsTourneyList();
+  } catch (e) { /* the panel keeps its last state; the next load shows the queue */ }
+  finally { _dfsTourneyBusy = false; }
 }
 function dfsTourneyPick(k) { _dfsTourneyK = String(k); if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
 function dfsTourneyAll() { _dfsTourneyAll = !_dfsTourneyAll; if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
@@ -8244,13 +8285,24 @@ function dfsTourneyCopy(list, i) {
   const txt = `CPT ${r.captain}; ${r.flex.join("; ")}`;
   try { navigator.clipboard.writeText(txt); } catch (e) { /* no clipboard: the row is on screen */ }
 }
+function _dfsTourneyQueued(d) {
+  if (!d.queued_ts) return "";
+  const t = new Date(d.queued_ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes and a showdown build takes about 20</span>`;
+}
+function _dfsTourneyButton(d) {
+  if (!_dfsTourneyDg) return "";
+  const label = d.status === "ok" ? "Rebuild on the PC" : "Build on the PC";
+  return `<button class="track-mini" type="button" onclick="dfsTourneyRequest()" title="Queue this slate for the PC's next cycle. It builds requests before anything else.">${label}</button>`;
+}
 function renderDfsTourney(d) {
-  const box = $("dfsTourney");
-  if (!box) return;
+  const bx = _dfsTourneyBoxes();
+  if (!bx) return;
+  const box = bx.main;
   const pc = d.pc || {};
   const pcTxt = pc.state === "on" ? "PC on" : pc.state === "behind" ? "PC on, updating" : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
   if (d.status !== "ok") {
-    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt}</div>`;
+    box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt} ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>`;
     return;
   }
   const c = d.contest || {}, fm = d.field_model || {}, tm = d.timings || {};
@@ -8280,7 +8332,7 @@ function renderDfsTourney(d) {
   </table></div>${players.length > 12 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : ""}`;
   const fieldOnly = ((d.slate || {}).field_only || []);
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
-    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span></div>
+    <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
     <div class="small" style="color:var(--muted);margin-top:2px">${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field. ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.map(escapeHtml).join(", ")}; the field still plays them.` : ""}</div>
     ${chalkHtml}
     <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>

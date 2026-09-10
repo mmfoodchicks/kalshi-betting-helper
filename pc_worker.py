@@ -366,14 +366,46 @@ def _task_deep(url, tok):
                   "the server's own nightly still covers it")
 
 
+_SD_MIN_POOL = 500_000
+# A showdown slate builds on its own only when its richest contest is a real
+# Millionaire -- Thursday, Sunday and Monday night. The Sunday 1:00 and 4:25
+# single-game "$20K Specials" are not worth 25 minutes of the PC each (the
+# first cycle after the engine shipped spent its afternoon on NO @ DET while
+# Sunday night's slate waited behind eleven of them). Owner, 2026-09-10: "I
+# do not want it to EVERY showdown, only pivotal ones like Monday, Sunday and
+# Thursday." The tab's Build button queues any slate regardless.
+
+
+def _tourney_requests(url, tok):
+    """{dg: request} the owner queued from the tab and no board has answered
+    yet (the server drops a request once a newer board arrives)."""
+    try:
+        rows = _api(url, tok, "/api/dfs/tourney/requests").get("requests") or []
+    except Exception as e:
+        print(f"[vigil-pc] tourney: request queue unreadable ({type(e).__name__}: {e})")
+        return {}
+    out = {}
+    for r in rows:
+        try:
+            out[int(r.get("dg") or 0)] = r
+        except (TypeError, ValueError):
+            continue
+    out.pop(0, None)
+    return out
+
+
 def _task_showdown_tourney(url, tok):
-    """The DFS tournament (dfs_tourney) for the next NFL showdown slates:
-    every legal lineup scored in every one of 60,000 simulated games
+    """The DFS tournament (dfs_tourney) for the primetime NFL showdown
+    slates: every legal lineup scored in every one of 60,000 simulated games
     against a weighted field, ranked by how often it wins. Built here
     because it is a desktop's job (numpy, a few gigabytes, minutes), and
     shipped as a board the tab serves; the server never computes it.
-    Rebuilt when the DraftKings pool changes (a scratch, a price) or the
-    build is three hours old.
+
+    Builds: every showdown slate in the next eight days whose richest
+    contest clears _SD_MIN_POOL, plus anything the owner queued from the
+    tab (requests first). Rebuilds only when the DraftKings pool changes (a
+    scratch, a price) or a request is newer than the board -- never on age:
+    the sims do not get better by being re-drawn.
 
     Boards are synced HERE, before the first build and after each one, not
     only at the cycle's end: the first NE @ SEA board (1,241s to build,
@@ -390,11 +422,17 @@ def _task_showdown_tourney(url, tok):
         return
     try:
         slates = dk.slates("nfl") or []
+        contests = dk.contests("nfl") or []
     except Exception as e:
         print(f"[vigil-pc] tourney: DK lobby failed ({type(e).__name__}: {e})")
         return
+    pool_by_dg = {}
+    for c in contests:
+        dg = c.get("draft_group_id")
+        pool_by_dg[dg] = max(pool_by_dg.get(dg, 0.0), float(c.get("prize_pool") or 0))
+    wanted = _tourney_requests(url, tok)
     now = datetime.datetime.now()
-    soon = []
+    soon, small = [], 0
     for sl in slates:
         if sl.get("games") != 1 or sl.get("contest_type") != 96:
             continue                        # showdown captain-mode slates only
@@ -402,12 +440,22 @@ def _task_showdown_tourney(url, tok):
             st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
         except ValueError:
             continue
-        if now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8):
-            soon.append((st, sl))
-    soon.sort(key=lambda x: x[0])
+        if not (now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8)):
+            continue
+        dg = int(sl["draft_group_id"])
+        if dg in wanted:
+            soon.append((0, wanted[dg].get("ts") or 0, st, sl))     # requests first
+        elif pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL:
+            soon.append((1, 0, st, sl))
+        else:
+            small += 1
+    soon.sort(key=lambda x: (x[0], x[1], x[2]))
+    if small:
+        print(f"[vigil-pc] tourney: {small} showdown slate(s) under ${_SD_MIN_POOL:,} pool "
+              "skipped (the tab's Build button queues any of them)")
     if soon:
         _ship_boards(url, tok)
-    for _st, sl in soon[:2]:
+    for _pri, _rts, _st, sl in soon:
         dg = int(sl["draft_group_id"])
         name = f"sd_tourney_nfl_{dg}"
         try:
@@ -419,10 +467,18 @@ def _task_showdown_tourney(url, tok):
             continue
         sig = hashlib.sha1("\n".join(sorted(slate["csv"].splitlines())).encode()).hexdigest()[:16]
         cur, age = boardshare.get(name, None)
-        if cur and cur.get("sig") == sig and age is not None and age < 3 * 3600:
+        req = wanted.get(dg)
+        why = None
+        if not cur:
+            why = "no board yet"
+        elif cur.get("sig") != sig:
+            why = "the DraftKings pool changed"
+        elif req and (req.get("ts") or 0) > (cur.get("built_ts") or 0):
+            why = "queued from the tab"
+        if why is None:
             print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
             continue
-        print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds)...")
+        print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds) - {why}...")
         t0 = time.time()
         try:
             art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print)
