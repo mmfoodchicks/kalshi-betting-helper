@@ -3,12 +3,12 @@
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
 | `NFLT-finals` | 1123 | 09-04 11:43 | HTTPError: HTTP Error 403: Forbidden |
-| `NFL-espn-fetch` | 178 | 09-10 03:58 | HTTPError: HTTP Error 403: Forbidden |
-| `FAN-pit` | 93 | 09-10 04:30 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 79 | 09-10 03:58 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 174 | 09-10 08:06 | HTTPError: HTTP Error 403: Forbidden |
+| `FAN-pit` | 95 | 09-10 08:55 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 81 | 09-10 08:06 | _EspnBlocked: ESPN 403: parked 6h |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
-| `KAL-candles` | 14 | 09-08 11:18 | HTTPError: HTTP Error 429: Too Many Requests |
-| `BOARD-read` | 7 | 09-10 04:32 | ModuleNotFoundError: No module named 'numpy' |
+| `BOARD-read` | 41 | 09-10 09:01 | ModuleNotFoundError: No module named 'numpy' |
+| `KAL-candles` | 15 | 09-10 08:56 | HTTPError: HTTP Error 429: Too Many Requests |
 | `CFB-week-group` | 2 | 09-07 11:35 | HTTPError: HTTP Error 403: Forbidden |
 | `DK-lobby-empty` | 1 | 09-07 18:39 | nascar: lobby answered with no draft groups |
 | `JS-error` | 1 | 09-09 13:37 | Uncaught ReferenceError: mine is not defined @ https://vigil-vdoh.onrender.com/static/app.js?v=1788960295:3754:12 |
