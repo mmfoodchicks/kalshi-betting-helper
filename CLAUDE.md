@@ -42,6 +42,8 @@ Single-user (the repo owner). Read this before touching anything.
   visible in the ledger. IDs are grep-able and stable (e.g. `SLATE-child`,
   `WARM-game-sim`, `PCUP-art-write`, `MEM-high`).
 - **pyflakes is part of the guard suite** — unused imports/vars fail it.
+- **Times for the owner are Mountain time** (MDT, six hours behind UTC in
+  season). Logs, workflows and commit messages stay UTC.
 - Comments explain *why*, especially for anything counter-intuitive or
   measured. Most constants in this codebase were fitted against real data; say
   what was measured and what it cost. Match that density.

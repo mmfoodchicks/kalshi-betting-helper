@@ -137,6 +137,35 @@ jobs:
           if python3 -c "import json; json.load(open('/tmp/jobs.json'))" 2>/dev/null; then
             cp /tmp/jobs.json "$ERRORS_DIR/jobs-latest.json"
           fi
+          # The served classic tournament boards, through the tab's own routes,
+          # so a rebuilt board can be audited from this branch without a
+          # login: what is actually served, not a scratch build. The volatile
+          # keys (age, the PC light, the queue) are dropped so an unchanged
+          # board is not a new commit every snapshot.
+          curl -sS -o /tmp/tlist.json --max-time 30 "${AUTH[@]}" \
+               "$APP_URL/api/dfs/tourney/list?sport=nfl" || true
+          if python3 -c "import json; json.load(open('/tmp/tlist.json'))" 2>/dev/null; then
+            python3 - <<'PY'
+          import json, os
+          d = json.load(open("/tmp/tlist.json"))
+          for k in ("pc", "queued", "age_s"):
+              d.pop(k, None)
+          json.dump(d, open(os.path.join(os.environ["ERRORS_DIR"], "tourney-list-latest.json"), "w"), indent=1, sort_keys=True)
+          PY
+            for dg in $(python3 -c "import json; print(' '.join(str(b['dg']) for b in json.load(open('/tmp/tlist.json')).get('boards', []) if b.get('kind') == 'classic'))" | cut -d' ' -f1-3); do
+              curl -sS -o /tmp/tb.json --max-time 60 "${AUTH[@]}" \
+                   "$APP_URL/api/dfs/tourney?sport=nfl&dg=$dg" || true
+              if python3 -c "import json; json.load(open('/tmp/tb.json'))" 2>/dev/null; then
+                DG="$dg" python3 - <<'PY'
+          import json, os
+          d = json.load(open("/tmp/tb.json"))
+          for k in ("pc", "queued", "queued_ts", "age_s"):
+              d.pop(k, None)
+          json.dump(d, open(os.path.join(os.environ["ERRORS_DIR"], f"tourney-{os.environ['DG']}.json"), "w"), indent=1, sort_keys=True)
+          PY
+              fi
+            done
+          fi
           echo "changed=1" >> "$GITHUB_OUTPUT"
 
       - name: Commit
