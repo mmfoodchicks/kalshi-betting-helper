@@ -13119,6 +13119,14 @@ if _dt14.available():
     ck("the calibrator lands on its targets within tolerance on a fresh sample: max ownership within 2 points of 38%, mean salary within $200 of $49,400",
        abs(_fsc16["max_own"] - 0.38) < 0.02 and abs(_fsc16["mean_salary"] - 49400.0) < 200.0,
        f"achieved ownership {100 * _fsc16['max_own']:.1f}% and salary ${_fsc16['mean_salary']:,.0f} (20,000 draws); the two-round cut landed a 38% target at 41% and $49,400 at $48,958")
+    _calx16 = _dt14.calibrate_field(_pl16, _np14.random.default_rng(163), n=4000, max_own=0.10, salary_used=49900.0, rounds=1)
+    _fsx16 = _dt14.field_stats(_dt14.classic_sample(_pl16, 8000, _np14.random.default_rng(164), _calx16[0], _calx16[1]), _pl16)
+    _missx = lambda o, m: ((o - 0.10) / 0.01) ** 2 + ((m - 49900.0) / 100.0) ** 2
+    ck("targets that cannot both be met (10% ownership at $49,900 of spend) end in a compromise that shares the miss, not with the whole miss on one target; the pattern search is in the source",
+       "def miss(o, m):" in _insp.getsource(_dt14.calibrate_field)
+       and abs(_fsx16["max_own"] - 0.10) / 0.01 < 0.9 * _missx(_fsx16["max_own"], _fsx16["mean_salary"]) ** 0.5 + 3
+       and 0.10 < _fsx16["max_own"] < 0.45 and 47000.0 < _fsx16["mean_salary"] < 49900.0,
+       f"achieved {100 * _fsx16['max_own']:.1f}% and ${_fsx16['mean_salary']:,.0f}")
     _byn16 = {p["name"]: i for i, p in enumerate(_pl16)}
     for p in _pl16:
         p["salary"] = 5000 if p["pos"] != "DST" else 3000

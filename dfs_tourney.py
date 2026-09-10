@@ -1001,7 +1001,10 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
     of spend. The first round searches the full brackets (22 draws of `n`);
     later rounds bisect a narrow bracket round the last answer (17 draws),
     so the worst case at four rounds is 73 draws against the old cut's 30,
-    and the usual case, one or two rounds, costs about what it did."""
+    and the usual case, one or two rounds, costs about what it did. When the
+    two targets cannot both be met on a pool, a pattern search (at most 12
+    more draws) lands the least combined miss instead of leaving the whole
+    miss on whichever target the last bisection did not touch."""
     sal = np.asarray([int(p["salary"]) for p in players])
     P = len(players)
 
@@ -1044,6 +1047,31 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
         idx, mean, own = draw(beta, kappa)
         if abs(own - max_own) <= own_tol and abs(mean - salary_used) <= salary_tol:
             break
+    if not (abs(own - max_own) <= own_tol and abs(mean - salary_used) <= salary_tol):
+        # The two targets can conflict: on the 2026-09-10 pool every (beta,
+        # kappa) that spends $49,400 holds Gibbs at 42% or more, so 38% and
+        # $49,400 are not on the curve, and the alternation ends wherever its
+        # last bisection left it (42.9% and $49,410, the whole miss on one
+        # target). Finish with a pattern search on the combined miss in units
+        # of the tolerances, so the miss is shared the way the tolerances
+        # weigh it and the receipts on the board say what was reached.
+        def miss(o, m):
+            return ((o - max_own) / own_tol) ** 2 + ((m - salary_used) / salary_tol) ** 2
+        best = (miss(own, mean), beta, kappa, idx, mean, own)
+        db, dk = 0.02, 0.5
+        for _ in range(3):
+            improved = False
+            for b2, k2 in ((best[1] + db, best[2]), (best[1] - db, best[2]),
+                           (best[1], best[2] + dk), (best[1], best[2] - dk)):
+                if b2 <= 0.0:
+                    continue
+                i2, m2, o2 = draw(b2, k2)
+                if miss(o2, m2) < best[0]:
+                    best = (miss(o2, m2), b2, k2, i2, m2, o2)
+                    improved = True
+            if not improved:
+                db, dk = db / 2.0, dk / 2.0
+        _m, beta, kappa, idx, mean, own = best
     return beta, kappa, own, mean, _collision(idx), _dup_share(idx)
 
 
@@ -1144,7 +1172,7 @@ def world_split(n_worlds, opt_worlds):
 
 
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
-                      opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=40000, chunk=500,
+                      opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
                       seed=None, log=print):
     """The tournament for a DraftKings classic slate, against every contest
