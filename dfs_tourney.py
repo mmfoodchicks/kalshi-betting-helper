@@ -53,7 +53,10 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # re-saving it. 2: opponents parsed from the live feed (the defense rule
 # and the field's bring-backs active for the first time), the per-game cap
 # an explicit knob, candidates scored on worlds they were not found in.
-ENGINE = 2
+# 3: the field sampler reserves the salary of a defense the row may still
+# take, so no draw dies at the last slot (the drops were cheap-QB, spend-out
+# builds, 0.37% of the field).
+ENGINE = 3
 
 
 def available():
@@ -760,8 +763,10 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     with `bring_p`; then the remaining slots, cap-aware, DST last. With
     `rules` the stack is at least one and the defense never faces our QB
     or backs (the other rules are checked by classic_allowed). Returns idx
-    (rows, 9) int32 -- QB, RB, RB, WR, WR, WR, TE, FLEX, DST -- rows that
-    came out legal (a few percent die on the cap and are simply dropped)."""
+    (rows, 9) int32 -- QB, RB, RB, WR, WR, WR, TE, FLEX, DST. The salary of
+    the cheapest defense the row may still take is reserved at every pick,
+    so every draw comes out under the cap with its defense; a row is dropped
+    only when it is genuinely impossible."""
     P = len(players)
     proj = np.asarray([float(p.get("proj") or 0.0) for p in players], dtype=np.float32)
     sal = np.asarray([int(p["salary"]) for p in players], dtype=np.int64)
@@ -774,21 +779,92 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     # beta scales the whole thing, so sharpness and price sensitivity are
     # separate knobs and the two calibrations do not fight.
     logits = (beta * (proj - kappa * sal / 1000.0)).astype(np.float32)
-    mins = {k: int(sal[pc == _CL_CODE[k]].min()) if (pc == _CL_CODE[k]).any() else 10 ** 9
+    avail = np.ones(P, dtype=bool)
+    if exclude is not None:
+        avail &= ~np.asarray(exclude, dtype=bool)
+    mins = {k: int(sal[(pc == _CL_CODE[k]) & avail].min()) if ((pc == _CL_CODE[k]) & avail).any() else 10 ** 9
             for k in _CL_POS}
-    min_flex = min(mins["RB"], mins["WR"])
     idx = np.full((n, 9), -1, dtype=np.int32)
     used = np.zeros((n, P), dtype=bool)
-    if exclude is not None:
-        used[:, np.asarray(exclude, dtype=bool)] = True
+    used[:, ~avail] = True
+    T = len(teams)
+    # The defense's salary is reserved throughout -- not the cheapest defense
+    # on the slate but the cheapest one the row may still take under its
+    # partial roster. With the global floor, 370 of 100,000 draws
+    # (2026-09-10) reached the last slot with eight filled and no legal
+    # defense affordable, and those rows were not random: cheap quarterbacks,
+    # lighter stacks, more bring-backs, spend-out builds, so dropping them
+    # tilted the field by that much. The reserve is per row (the defense
+    # facing the row's quarterback is off limits for the careful 92% of the
+    # field and for every row under `rules`) and, under `rules`, a back being
+    # considered is priced as if his team were rostered, since the defense
+    # may not face our backs either.
+    dst_ids = np.where((pc == 4) & avail)[0]
+    dst_ids = dst_ids[np.argsort(sal[dst_ids], kind="stable")]
+
+    def dst_floor(blocked):
+        """(n,) the cheapest defense whose opponent is not blocked (n, T)."""
+        res = np.full(blocked.shape[0], 10 ** 9, dtype=np.int64)
+        for d in dst_ids:
+            res = np.where((res == 10 ** 9) & ~blocked[:, opp[d]], sal[d], res)
+        return res
+
+    state = {"reserve": np.full(n, mins["DST"], dtype=np.int64), "by_team": None}
+    # The other floors are per row too: the cheapest players of each
+    # position NOT already used in the row, one per remaining need, and
+    # for the flex the next unused back or receiver after those. A global
+    # minimum let a row spend to the point where the one $3,000 receiver
+    # it was counting on for the flex was already in its WR3 slot (45 of
+    # 30,000 rule-abiding draws, 2026-09-10). Pass-catchers from the
+    # quarterback's own game do not count either: the fill never takes
+    # them (the stack and the bring-back are drawn, not filled), so a cheap
+    # receiver on the QB's opponent is no floor for the row's flex.
+    cheap = {}
+    for k in ("RB", "WR", "TE"):
+        ids = np.where((pc == _CL_CODE[k]) & avail)[0]
+        cheap[k] = ids[np.argsort(sal[ids], kind="stable")][:10]
+
+    def floors():
+        """(total (n,), {kind: (n,) this kind's charge}) from the row's unused players."""
+        rel = {"QB": np.full(n, mins["QB"], dtype=np.int64), "DST": state["reserve"]}
+        cost = need["QB"] * rel["QB"] + need["DST"] * rel["DST"]
+        nxt = {}
+        for k in ("RB", "WR", "TE"):
+            ids = cheap[k]
+            if not len(ids):
+                rel[k] = np.full(n, 10 ** 9, dtype=np.int64)
+                nxt[k] = rel[k]
+                cost = cost + need[k] * rel[k]
+                continue
+            un = ~used[:, ids]
+            if k in ("WR", "TE"):
+                tid = team[ids][None, :]
+                un &= (tid != qteam[:, None]) & (tid != qopp[:, None])
+            rank = np.cumsum(un, axis=1)
+            csal = sal[ids][None, :]
+            take = un & (rank <= need[k][:, None])
+            cost = cost + (take * csal).sum(axis=1)
+            first = un & (rank == 1)
+            rel[k] = np.where(first.any(axis=1), (first * csal).sum(axis=1), int(sal[ids].max()))
+            nx = un & (rank == need[k][:, None] + 1)
+            nxt[k] = np.where(nx.any(axis=1), (nx * csal).sum(axis=1), int(sal[ids].max()))
+        rel["FLEX"] = np.minimum(nxt["RB"], nxt["WR"])
+        cost = cost + need["FLEX"] * rel["FLEX"]
+        return cost, rel
+
+    def reserve_for(blocked):
+        state["reserve"] = dst_floor(blocked)
+        if rules:
+            bt = np.empty((n, T), dtype=np.int64)
+            for t in range(T):
+                b2 = blocked.copy()
+                b2[:, t] = True
+                bt[:, t] = dst_floor(b2)
+            state["by_team"] = bt
     spent = np.zeros(n, dtype=np.int64)
     need = {"QB": np.full(n, 1), "RB": np.full(n, 2), "WR": np.full(n, 3), "TE": np.full(n, 1),
             "DST": np.full(n, 1), "FLEX": np.full(n, 1)}
     slot_of = {"RB": (1, 2), "WR": (3, 4, 5), "TE": (6,), "DST": (8,), "FLEX": (7,)}
-
-    def floor_cost():
-        return (need["QB"] * mins["QB"] + need["RB"] * mins["RB"] + need["WR"] * mins["WR"]
-                + need["TE"] * mins["TE"] + need["DST"] * mins["DST"] + need["FLEX"] * min_flex)
 
     def place(rows, pick):
         """Record a pick for `rows` (pick (n,), -1 = none) into the right slot."""
@@ -817,21 +893,30 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     def elig_for(kinds, rows, extra=None):
         """(n, P) eligibility: kinds a set of position names, cap-aware."""
         e = np.zeros((n, P), dtype=bool)
-        budget = int(cap) - spent - floor_cost()
+        floor, rel = floors()
+        budget = int(cap) - spent - floor
         for kind in kinds:
             if kind == "FLEX":
                 cols = (pc == 1) | (pc == 2)
                 room = need["FLEX"] > 0
-                relief = min_flex
+                relief = rel["FLEX"]
             else:
                 cols = pc == _CL_CODE[kind]
                 room = need[kind] > 0
-                relief = mins[kind]
+                relief = rel[kind]
             # a WR/RB may also take the FLEX slot once its own slots are full
             if kind in ("RB", "WR"):
                 room = room | (need["FLEX"] > 0)
-                relief = max(relief, min_flex)
+                relief = np.where(need[kind] > 0, relief, rel["FLEX"])
             fit = sal[None, :] <= (budget + relief)[:, None]
+            if rules and state["by_team"] is not None and kind in ("RB", "FLEX"):
+                # a back on the roster puts the defense facing his team off
+                # limits: he fits only if the defense still affordable WITH
+                # him rostered fits too
+                rb = np.where(cols & (pc == 1))[0]
+                if len(rb):
+                    more = state["by_team"][:, team[rb]] - state["reserve"][:, None]
+                    fit[:, rb] &= sal[rb][None, :] <= (budget + relief)[:, None] - more
             e |= (cols[None, :] & fit & room[:, None] & rows[:, None])
         e &= ~used
         if extra is not None:
@@ -839,6 +924,8 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
         return e
 
     allr = np.ones(n, dtype=bool)
+    qteam = np.full(n, -1, dtype=np.int64)          # known after the QB pick; the floors read them
+    qopp = np.full(n, -1, dtype=np.int64)
     # 1. the quarterback
     qb = _gumbel_pick(logits, elig_for(("QB",), allr), rng)
     idx[:, 0] = qb
@@ -848,6 +935,13 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     need["QB"][ok] = 0
     qteam = np.where(ok, team[np.maximum(qb, 0)], -1)
     qopp = np.where(ok, opp[np.maximum(qb, 0)], -1)
+    # the public mostly avoids a defense against its own quarterback; drawn
+    # here so the salary reserved for the defense knows who may take which
+    careful = rng.random(n) >= dst_own_p
+    blocked = np.zeros((n, T), dtype=bool)
+    r_ = np.where(ok & (careful | rules))[0]
+    blocked[r_, qteam[r_]] = True
+    reserve_for(blocked)
     # 2. the stack: how many of his pass-catchers
     dist = np.asarray(stack_dist, dtype=np.float64)
     if rules:
@@ -879,15 +973,23 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
                 rows = ok & (need[kind] > 0)
                 pick = _gumbel_pick(logits, elig_for((kind,), rows, extra=no_more), rng)
             place(rows, pick)
-    off_teams = np.zeros((n, len(teams)), dtype=bool)
-    for s_ in (0, 1, 2, 7):
-        r = np.where(idx[:, s_] >= 0)[0]
-        off_teams[r, team[idx[r, s_]]] = True
+            if rules and kind in ("RB", "FLEX"):
+                blocked = np.zeros((n, T), dtype=bool)
+                for s_ in (0, 1, 2):
+                    r_ = np.where(idx[:, s_] >= 0)[0]
+                    blocked[r_, team[idx[r_, s_]]] = True
+                r_ = np.where((idx[:, 7] >= 0) & (pc[np.maximum(idx[:, 7], 0)] == 1))[0]
+                blocked[r_, team[idx[r_, 7]]] = True
+                reserve_for(blocked)
     if rules:
+        off_teams = np.zeros((n, T), dtype=bool)
+        for s_ in (0, 1, 2):
+            r = np.where(idx[:, s_] >= 0)[0]
+            off_teams[r, team[idx[r, s_]]] = True
+        r = np.where((idx[:, 7] >= 0) & (pc[np.maximum(idx[:, 7], 0)] == 1))[0]   # the flex only when he is a back, as classic_allowed
+        off_teams[r, team[idx[r, 7]]] = True
         avoid = off_teams[:, opp]                                   # (n, P): DST facing our QB / backs
     else:
-        # the public mostly avoids a defense against its own quarterback
-        careful = rng.random(n) >= dst_own_p
         avoid = (opp[None, :] == qteam[:, None]) & careful[:, None]
     rows = ok & (need["DST"] > 0)
     place(rows, _gumbel_pick(logits, elig_for(("DST",), rows, extra=~avoid), rng))

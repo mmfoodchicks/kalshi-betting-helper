@@ -13119,6 +13119,40 @@ if _dt14.available():
     ck("the calibrator lands on its targets within tolerance on a fresh sample: max ownership within 2 points of 38%, mean salary within $200 of $49,400",
        abs(_fsc16["max_own"] - 0.38) < 0.02 and abs(_fsc16["mean_salary"] - 49400.0) < 200.0,
        f"achieved ownership {100 * _fsc16['max_own']:.1f}% and salary ${_fsc16['mean_salary']:,.0f} (20,000 draws); the two-round cut landed a 38% target at 41% and $49,400 at $48,958")
+    # The sampler must never die at the last slot. An adversarial copy of the
+    # pool: one defense far cheaper than the rest, so rows whose quarterback
+    # it faces (and, under the rules, whose backs it faces) need a pricier
+    # one; and only two receivers at the floor price, so a row that spends
+    # out and puts them at WR is left needing a flex nobody sells. The old
+    # global floors dropped 370 of 100,000 field draws and 45 of 30,000
+    # rule-abiding draws on the live pool (2026-09-10), all of one shape.
+    _plx16 = [dict(p) for p in _pl16]
+    for p in _plx16:
+        if p["pos"] == "DST":
+            p["salary"] = 2000 if p["team"] == "T01" else 4800
+        if p["pos"] in ("RB", "WR") and p["salary"] < 3400:
+            p["salary"] = 3400
+    _plx16[_byn16x := next(i for i, p in enumerate(_plx16) if p["pos"] == "WR" and p["team"] == "T05")]["salary"] = 3000
+    _plx16[next(i for i, p in enumerate(_plx16) if p["pos"] == "WR" and p["team"] == "T07")]["salary"] = 3000
+    _fx16 = _dt14.classic_sample(_plx16, 100000, _np14.random.default_rng(165), beta=0.3, kappa=-2.0)
+    _fox16 = _np14.zeros(len(_plx16), dtype=bool)
+    _rx16 = _dt14.classic_sample(_plx16, 30000, _np14.random.default_rng(166), beta=0.3, kappa=-2.0, rules=True, exclude=_fox16)
+    _salx = _np14.asarray([p["salary"] for p in _plx16]); _tmx = _np14.asarray([p["team"] for p in _plx16]); _opx = _np14.asarray([p["opp"] for p in _plx16]); _pcx = _np14.asarray([p["pos"] for p in _plx16])
+    _fsx = _dt14.field_stats(_fx16, _plx16)
+    _qb_cheap = _salx[_fx16[:, 0]] <= _np14.quantile(_salx[_pcx == "QB"], 0.25)
+    _spend_out = _salx[_fx16].sum(axis=1) >= 49500
+    _bringx = ((_tmx[_fx16[:, 3:8]] == _opx[_fx16[:, 0]][:, None]) & _np14.isin(_pcx[_fx16[:, 3:8]], ("WR", "TE"))).any(axis=1)
+    _dst_vs_own = (_opx[_rx16[:, 8]] == _tmx[_rx16[:, 0]]) | (_opx[_rx16[:, 8]] == _tmx[_rx16[:, 1]]) | (_opx[_rx16[:, 8]] == _tmx[_rx16[:, 2]]) \
+        | ((_opx[_rx16[:, 8]] == _tmx[_rx16[:, 7]]) & (_pcx[_rx16[:, 7]] == "RB"))
+    ck("the sampler reserves a defense the row may still take and charges the row's own unused cheapest players: 100,000 field draws and 30,000 rule-abiding draws on the adversarial pool come out complete, under the cap, with the stack rates and the bring-back rate intact, the defense never facing our QB or backs, and cheap-QB spend-out bring-back builds present",
+       len(_fx16) == 100000 and len(_rx16) == 30000
+       and bool((_salx[_fx16].sum(axis=1) <= 50000).all()) and bool((_salx[_rx16].sum(axis=1) <= 50000).all())
+       and bool((_fx16 >= 0).all()) and bool((_rx16 >= 0).all())
+       and float(_np14.abs(_np14.asarray(_fsx["stack_dist"]) - _np14.asarray(_dt14.CL_STACK_DIST) / sum(_dt14.CL_STACK_DIST)).max()) < 0.03
+       and abs(_fsx["bring_back"] - _dt14.CL_BRING_BACK) < 0.04
+       and not _dst_vs_own.any()
+       and int((_qb_cheap & _spend_out & _bringx).sum()) > 50,
+       f"field {len(_fx16)} rules {len(_rx16)} stack {[round(x, 3) for x in _fsx['stack_dist']]} bring {_fsx['bring_back']:.3f} cheap-QB spend-out bring-back builds {int((_qb_cheap & _spend_out & _bringx).sum())}")
     _calx16 = _dt14.calibrate_field(_pl16, _np14.random.default_rng(163), n=4000, max_own=0.10, salary_used=49900.0, rounds=1)
     _fsx16 = _dt14.field_stats(_dt14.classic_sample(_pl16, 8000, _np14.random.default_rng(164), _calx16[0], _calx16[1]), _pl16)
     _missx = lambda o, m: ((o - 0.10) / 0.01) ** 2 + ((m - 49900.0) / 100.0) ** 2
@@ -13260,7 +13294,7 @@ if _dt14.available():
        and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
-   _dt14.ENGINE == 2 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   _dt14.ENGINE == 3 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    and '"experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],' in _dts1
