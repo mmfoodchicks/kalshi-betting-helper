@@ -3,7 +3,7 @@
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
 | `NFLT-finals` | 1123 | 09-04 11:43 | HTTPError: HTTP Error 403: Forbidden |
-| `NFL-espn-fetch` | 171 | 09-10 09:18 | HTTPError: HTTP Error 403: Forbidden |
+| `NFL-espn-fetch` | 170 | 09-10 09:18 | HTTPError: HTTP Error 403: Forbidden |
 | `FAN-pit` | 95 | 09-10 08:55 | HTTPError: HTTP Error 403: Forbidden |
 | `CFBT-espn-blocked` | 82 | 09-10 09:18 | _EspnBlocked: ESPN 403: parked 6h |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
