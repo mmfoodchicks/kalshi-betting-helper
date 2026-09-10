@@ -1,0 +1,62 @@
+{
+ "hash": "df906d36b9effb01b7dd35c689ed764c74863f0b39671c33bf1ca73ed2becfca",
+ "meta": {
+  "alt_seed": 20220905,
+  "base_seed": 20220904,
+  "bootstraps": 200,
+  "built": "2026-09-10 22:34 UTC",
+  "commit": "fc10b3e",
+  "evaluations": 475,
+  "games": 816,
+  "holdout_outcomes_read": false,
+  "holdout_season": 2025,
+  "k_final": 120,
+  "k_fit": 40,
+  "method": "Nelder-Mead on the mean squared standardised moment mismatch, scales from a within-season game bootstrap of the observed moments, common random numbers",
+  "objective": 4.236362027303392,
+  "objective_final_k120": 4.700549017107484,
+  "objective_start": 13.444930292843809,
+  "seconds": 3596.9,
+  "stage": "2E-fit",
+  "start": {
+   "att_sd": 0.16,
+   "cmp_sd": 0.25,
+   "eff_sd": 0.15,
+   "env_rush": 0.5,
+   "env_sd": 0.12,
+   "rshare_sd": 0.3,
+   "rtd_vol": 1.0,
+   "rush_sd": 0.2,
+   "script": 0.1,
+   "script_rush": 0.12,
+   "share_sd": 0.35,
+   "td_eff": 0.5,
+   "td_vol": 1.0,
+   "ypc_sd": 0.5,
+   "ypr_sd": 0.45
+  },
+  "terms": 97,
+  "train_seasons": [
+   2022,
+   2023,
+   2024
+  ]
+ },
+ "params": {
+  "att_sd": 0.007465586110235227,
+  "cmp_sd": 0.22692101901967887,
+  "eff_sd": 0.09926353962510054,
+  "env_rush": 0.13179834591020345,
+  "env_sd": 0.12412606741062329,
+  "rshare_sd": 0.7467888387436807,
+  "rtd_vol": 1.2449248297550142,
+  "rush_sd": 0.300106428339706,
+  "script": 0.10253732248580456,
+  "script_rush": 0.128391234139787,
+  "share_sd": 0.27867013659899786,
+  "td_eff": 0.5486029286309839,
+  "td_vol": 0.424800386468542,
+  "ypc_sd": 0.8634101623533919,
+  "ypr_sd": 0.7054926977620923
+ }
+}

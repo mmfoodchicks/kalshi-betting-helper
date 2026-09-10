@@ -13609,7 +13609,9 @@ ck("the Stage 2D artifact: the moment harness reproduces Stage 2B, the per-world
    _st2d["harness_check"]["ok"] and _st2d["invariants"]["ok"] and _st2d["invariants"]["games"] >= 800 and _st2d["invariants"]["worlds"] >= 160000
    and _st2d["invariants"]["identity_failures"] == 0 and _st2d["invariants"]["bound_failures"] == 0 and _st2d["invariants"]["points_mismatch"] == 0
    and _st2d["reproducibility"]["same_seed_same_worlds"] and _st2d["reproducibility"]["different_seed_different_worlds"]
-   and _st2d["meta"]["holdout_outcomes_read"] is False and _st2d["meta"]["simulator"]["params_hash"] == _cs.PARAMS["hash"][:16]
+   and _st2d["meta"]["holdout_outcomes_read"] is False
+   and _st2d["meta"]["simulator"]["params_fitted"] is False
+   and _st2d["meta"]["simulator"]["params_hash"] == _cs.params_hash(_cs.DEFAULT_PARAMS)[:16]
    and all(len(v) == 2 for v in _teams_gk.values()) and len(_teams_gk) > 1000,
    f"harness {_st2d['harness_check'].get('ok')} invariants {_st2d['invariants'].get('ok')} game keys with != 2 teams {sum(1 for v in _teams_gk.values() if len(v) != 2)}")
 if _cs.available():
