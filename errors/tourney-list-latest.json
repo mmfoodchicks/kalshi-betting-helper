@@ -1,0 +1,68 @@
+{
+ "boards": [
+  {
+   "age_s": 533,
+   "built_ts": 1789063598,
+   "contest": "NFL $3.5M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 151307,
+   "entries": 832342,
+   "entry_fee": 5.0,
+   "kind": "classic",
+   "label": "Sunday main (12 games)",
+   "n_contests": 4,
+   "starts": "2026-09-13T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  },
+  {
+   "age_s": 61512,
+   "built_ts": 1789002620,
+   "contest": "NFL Showdown $20K Showdown Special [$5K to 1st] (NO @ DET)",
+   "dg": 153073,
+   "entries": 2352,
+   "entry_fee": 10.0,
+   "kind": "showdown",
+   "label": "DET vs NO",
+   "starts": "2026-09-13T17:00:00.0000000Z",
+   "teams": [
+    "DET",
+    "NO"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 31746,
+   "built_ts": 1789000089,
+   "contest": "NFL $1.5M Thursday Night Showdown [$500K to 1st] (SF vs LAR)",
+   "dg": 153072,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "LAR vs SF",
+   "starts": "2026-09-11T00:35:00.0000000Z",
+   "teams": [
+    "LAR",
+    "SF"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 63274,
+   "built_ts": 1788998378,
+   "contest": "NFL Showdown $2.25M Wednesday Kickoff Millionaire [$1M to 1st, TD Throne Eligible] (NE @ SEA)",
+   "dg": 151820,
+   "entries": 132352,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "NE vs SEA",
+   "starts": "2026-09-10T00:20:00.0000000Z",
+   "teams": [
+    "NE",
+    "SEA"
+   ],
+   "worlds": 60000
+  }
+ ],
+ "pending": [],
+ "sport": "nfl"
+}
