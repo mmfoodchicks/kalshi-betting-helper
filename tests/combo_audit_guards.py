@@ -13248,6 +13248,17 @@ ck("generation and evaluation worlds are disjoint and cover the run: 60,000 at 2
    and "ports = portfolio_vs_field(Wc, Wf, wf, Xe, grids, cand, k_port, chunk=ch)" in _dts1
    and '"eval_worlds": int(len(ev))' in _dts1,
    "a candidate found because it won world j was being paid for world j: first place 1.9x for optimal-world lineups, measured")
+if _dt14.available():
+    _Xp = _np14.full((6, 30), 5.0, dtype=_np14.float32)
+    _Xp[1, 20:] = 90.0                                  # big only in evaluation worlds
+    _Xp[2, :10] = 60.0                                  # big in generation worlds
+    _posp = ["QB", "QB", "QB", "RB", "WR", "DST"]
+    _gp, _evp = _dt14.world_split(30, 10)
+    _poolp = _dt14._solver_pool(_Xp, _posp, _gp, keep={"QB": 1, "RB": 1, "WR": 1, "TE": 0, "DST": 1})
+    ck("the solver's player pool is ranked on generation worlds only: a player whose big games all sit in evaluation worlds is not chosen over one whose big games sit in generation worlds, and the build calls the pool with the generation range",
+       _poolp.tolist() == [2, 3, 4, 5]
+       and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
+       "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
    _dt14.ENGINE == 2 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1

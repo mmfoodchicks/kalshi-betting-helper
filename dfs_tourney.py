@@ -1157,6 +1157,24 @@ def _slot_rows(lineups, pos):
     return out
 
 
+def _solver_pool(X, pos, gen, keep=_CL_KEEP):
+    """The players the optimal-lineup solver may use: per position, the top
+    `keep` by 90th-percentile points over the GENERATION worlds only. The
+    first cut ranked on every world, so the evaluation worlds had a say in
+    which players could form a candidate even though the solver itself
+    never saw them; candidate construction must see only generation-world
+    outputs (Sleeper's projections, salaries, positions and the depth chart
+    are pre-simulation inputs and fine)."""
+    Xg = X[:, gen.start:gen.stop] if len(gen) else X[:, :0]
+    out = []
+    for p in _CL_POS:
+        ids = [i for i in range(len(pos)) if pos[i] == p]
+        if Xg.shape[1]:
+            ids.sort(key=lambda i: -float(np.percentile(Xg[i], 90)))
+        out += ids[:keep[p]]
+    return np.asarray(sorted(out), dtype=np.int64)
+
+
 def world_split(n_worlds, opt_worlds):
     """(generation, evaluation) world ranges, disjoint: the first `opt_worlds`
     worlds -- at most a third of them -- find the hindsight-optimal
@@ -1266,13 +1284,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     log(f"[tourney] classic {dg}: pool {P} players ({len(extra)} field-only) x {N:,} worlds "
         f"({t1 - t0:.0f}s); the best lineup of each of {min(N, opt_worlds):,} worlds...")
     # --- the hindsight-optimal lineup of every world (a pruned pool) ---
-    keep = []
-    for p in _CL_POS:
-        ids = [i for i in range(P) if pos[i] == p]
-        ids.sort(key=lambda i: -float(np.percentile(X[i], 90)))
-        keep += ids[:_CL_KEEP[p]]
-    keep = np.asarray(sorted(keep))
     gen, ev = world_split(N, opt_worlds)
+    keep = _solver_pool(X, pos, gen)
     n_opt = len(gen)
     every = max(1, (n_opt // 4 // 64) * 64)
     opt_L, opt_v = optimal_lineups(
