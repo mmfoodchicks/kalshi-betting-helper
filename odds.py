@@ -495,7 +495,7 @@ def kelly_fraction(prob, cost_cents):
 
 def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
                   yes_bid=None, no_bid=None, yes_ask=None, no_ask=None,
-                  minutes_to_close=None):
+                  minutes_to_close=None, ticker=None):
     """When to sell a held position.
 
     side: 'YES' or 'NO' you bought. entry_cost: what you paid (cents).
@@ -515,7 +515,14 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
     if estimated:
         sell_price = fair  # no live bid (e.g. manual market): use fair as a proxy
 
-    pnl = round(sell_price - entry_cost, 1) if entry_cost is not None else None
+    # Selling is a taker trade too: the exit fee comes off the sale. The gross
+    # price gain and the net after that fee are two numbers, and only the net
+    # is profit -- "lock in +20¢" was the gross (the 2026-09-10 audit). The
+    # entry fee is sunk and unknown to this screen.
+    import kalshi
+    exit_fee = round(kalshi.fee_for_market(ticker, sell_price), 2) if sell_price is not None else 0.0
+    pnl_gross = round(sell_price - entry_cost, 1) if entry_cost is not None else None
+    pnl = round(pnl_gross - exit_fee, 1) if pnl_gross is not None else None
     pnl_pct = round(100 * pnl / entry_cost, 1) if (pnl is not None and entry_cost) else None
 
     # Core decision: compare what you can sell for now vs. its hold value (fair).
@@ -524,9 +531,11 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
         if pnl is None:
             headline = "Sell - the edge is gone"
         elif pnl >= 0:
-            headline = f"Sell now - lock in +{pnl}¢ profit"
+            headline = f"Sell now - +{pnl_gross}¢ price gain, ~+{pnl}¢ after the exit fee"
+        elif pnl_gross >= 0:
+            headline = f"Sell / cut - +{pnl_gross}¢ of price gain, {pnl}¢ after the exit fee"
         else:
-            headline = f"Sell / cut - edge gone, trim the {abs(pnl)}¢ loss"
+            headline = f"Sell / cut - edge gone, trim the {abs(pnl)}¢ loss (after the exit fee)"
         detail = (f"You can sell your {side} for ~{sell_price}¢, and the model's fair "
                   f"value is only {fair}¢ - little left to gain by holding.")
     else:
@@ -535,9 +544,9 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
         if pnl is None:
             headline = "Hold - still underpriced"
         elif pnl >= 0:
-            headline = f"Hold - up {pnl}¢, still has edge"
+            headline = f"Hold - up {pnl}¢ net, still has edge"
         else:
-            headline = f"Hold - down {abs(pnl)}¢, model still likes it"
+            headline = f"Hold - down {abs(pnl)}¢ net, model still likes it"
         detail = (f"Model fair value is {fair}¢ but you'd only get ~{sell_price}¢ selling "
                   f"now ({upside}¢ of upside left). Hold, or sell only if you want to "
                   f"de-risk.")
@@ -578,6 +587,8 @@ def sell_guidance(side, entry_cost, fair_yes_cents, fair_no_cents,
         "entry_cost_cents": entry_cost,
         "fair_value_cents": fair,
         "sell_price_cents": round(sell_price, 1),
+        "pnl_gross_cents": pnl_gross,          # price paid vs price on offer
+        "exit_fee_cents": exit_fee,            # Kalshi's taker fee on the sale
         "sell_price_estimated": estimated,
         "pnl_cents": pnl,
         "pnl_pct": pnl_pct,

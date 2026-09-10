@@ -5685,12 +5685,14 @@ try:
 
     with _gapp2.app.test_client() as _gc:
         _gr = _gc.get("/api/_guard_boom_ledger")
-        ck("an unhandled route exception returns its error ID and is ledgered",
+        ck("an unhandled route exception returns its error ID and is ledgered -- and the exception text stays in the ledger, off the wire",
            _gr.status_code == 500
            and _gr.get_json()["error_id"] == "HTTP-_guard_boom_ledger"
+           and "deliberate" not in _gr.get_data(as_text=True)
            and any(x["code"] == "HTTP-_guard_boom_ledger"
                    for x in _gel.recent(30)),
-           "a 500 with no ID restarts the hunt from zero")
+           "a 500 with no ID restarts the hunt from zero; a 500 with the "
+           "traceback in it hands paths and internals to the browser")
         ck("a plain 404 is NOT treated as a failure",
            _gc.get("/api/_no_such_guard_route").status_code == 404
            and not any("_no_such_guard_route" in (x.get("path") or "")
@@ -8041,10 +8043,12 @@ try:
        "a retired model's totals must age out of the bias stat")
     _st26.set_mlb_grade(1, 1, "LAA", actual_total=8, home_won=1)
     _rec26 = _st26.mlb_record()
-    ck("MLB ROI is fee-inclusive and says so",
-       _rec26["fees_included"] and _rec26["roi_pct"] == 78.2
+    ck("MLB ROI is fee-inclusive and says so, on the cash actually deployed",
+       _rec26["fees_included"] and _rec26["roi_pct"] == 75.4
        and bool(_rec26["clv_note"]),
-       "win at 55c = 100-55-2(fee) = 43c on 55 staked = +78.2%")
+       "win at 55c = 100-55-2(fee) = 43c on 57c of cash (the 55c contract plus "
+       "its 2c fee) = +75.4%. The first pin said 78.2%: fee in the profit, not "
+       "in the stake -- a definition that flattered every scoreboard by the fee")
 
     _st26.record_nfl_pick("2026-09-13_KC@BUF", "2026-09-13", 1, False,
                           "home", "BUF", 0.58, 57.0, pred_total=47.5,
@@ -10721,7 +10725,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11921,7 +11925,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12513,7 +12517,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12614,7 +12618,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12806,7 +12810,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v125' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -13163,6 +13167,198 @@ ck("the tab renders a classic board: a contest selector, portfolio sizes one to 
    'd.kind === "classic"' in _js16 and "dfsTourneyContest(" in _js16 and "top 0.1%" in _js16
    and "p_any_top1_pct" in _js16 and "[1, 2, 3, 5, 10, 20]" in _js16 and "dfsTourneyListPick(" in _js16
    and "`${p.slot} ${p.name}`" in _js16)
+
+# ---- the money audit (round two): the reviewer's reproductions, kept -------
+# 2026-09-10, an outside review of every place the app prints money: seven
+# findings, each reproduced against the real functions, each a guard below
+# so it cannot come back. The forward arbitrage one is the trophy: the
+# reverse path four lines below it already demanded a bid on every outcome
+# and the fees on every leg; the forward path summed whatever asks existed
+# and called the rest guaranteed.
+import sports as _sp17
+import bestbets as _bb17
+import kalshi as _kl17
+import odds as _od17
+import store as _st17
+import sliplog as _sl17
+import tempfile as _tf17
+import json as _json17
+
+
+def _book17(asks, bids, vols):
+    return {"markets": [
+        {"event_ticker": "EV-GUARD", "ticker": f"KXGUARD-EV-{i}", "title": "Three-way event",
+         "yes_sub_title": f"Outcome {i}",
+         "yes_ask_dollars": (None if a is None else f"{a / 100:.2f}"),
+         "yes_bid_dollars": (None if b is None else f"{b / 100:.2f}"),
+         "volume_fp": v} for i, (a, b, v) in enumerate(zip(asks, bids, vols))]}
+
+
+def _events17(asks, bids, vols):
+    saved = _kl17._get_json
+    _kl17._move_cache.clear()
+    _sp17.SPORTS["_guard"] = {"label": "Guard", "series": ["KXGUARD"]}
+    try:
+        _kl17._get_json = lambda url, timeout=10: (_book17(asks, bids, vols) if "/markets?" in url
+                                                    else {"candlesticks": []})
+        return _sp17.get_events("_guard")
+    finally:
+        _kl17._get_json = saved
+        _kl17._move_cache.clear()
+        _sp17.SPORTS.pop("_guard", None)
+
+
+def _arb17(asks, bids, vols):
+    ev = _events17(asks, bids, vols)[0]
+    saved = _sp17.get_events
+    try:
+        _sp17.get_events = lambda key, limit=200: [ev] if key == "golf" else []
+        return _bb17._arb_rows()
+    finally:
+        _sp17.get_events = saved
+
+
+_e17a = _events17([40, 40, None], [38, 38, None], [0, 0, 0])[0]
+ck("forward arbitrage requires a real ask on EVERY outcome",
+   _e17a.get("arbitrage_pct") is None and _e17a.get("liquidity") == "none",
+   "two of three outcomes at 40c is not a 20c lock: the third cannot be bought")
+_e17b = _events17([33, 33, 31], [31, 31, 29], [500, 500, 500])[0]
+ck("a forward arbitrage carries the sum of its per-leg taker fees, and 97c of asks is a losing basket",
+   _e17b.get("arbitrage_pct") == 3.0 and _e17b.get("liquidity") == "ok"
+   and abs((_e17b.get("arb_fee_est") or 0) - 4.6) < 0.15,
+   "33 + 33 + 31 = 97c gross, 1.55 + 1.55 + 1.50 = 4.6c of fees: -1.6c")
+ck("Best Bets refuses the arbitrage row on an unbuyable outcome, on a book nobody trades, and on a basket the fees eat",
+   _arb17([40, 40, None], [38, 38, None], [0, 0, 0]) == []
+   and _arb17([30, 30, 30], [28, 28, 28], [0, 0, 0]) == []
+   and _arb17([33, 33, 31], [31, 31, 29], [500, 500, 500]) == [],
+   "the old row checked a `thin` key the sports layer never set, and netted a flat 2c")
+_row17 = _arb17([30, 30, 30], [28, 28, 28], [500, 500, 500])
+ck("and shows one only when every ask is real, the book trades, and the edge survives the per-leg fees",
+   len(_row17) == 1 and abs(_row17[0]["net_edge"] - (10.0 - 3 * _kl17.taker_fee_cents(30))) < 0.15
+   and _row17[0]["trust"] == "high" and "fee" in (_row17[0].get("note") or ""))
+_js17 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the sports page's arbitrage note nets the fees and needs a traded book too",
+   "e.arb_fee_est" in _js17 and 'e.liquidity === "ok"' in _js17
+   and "locks in ~${e.arbitrage_pct}¢ guaranteed" not in _js17)
+# 2. ROI on cash deployed: the fee is in the denominator as well as the numerator
+_src17 = open(_os.path.join(_root, "store.py")).read()
+ck("every fee-inclusive ROI divides by the cash deployed, price plus fee, in the pick scoreboard and the prop report",
+   'stake = sum(p["price_cents"] + _fee_cents(p["price_cents"]' in _src17
+   and "staked = sum(c + _fee_cents(c" in _src17,
+   "a win at 55c with a 2c fee is 43c on 57c of cash = 75.4%, not 43c on 55c = 78.2%")
+# 3. the sell screen: gross price gain and net after the exit fee, never 'locked in'
+_sg17 = _od17.sell_guidance("YES", 40.0, 60.0, 40.0, yes_bid=60.0)
+ck("the sell screen separates gross price gain from the net after the exit fee, and never calls the gross figure locked in",
+   _sg17.get("pnl_gross_cents") == 20.0
+   and abs((_sg17.get("exit_fee_cents") or 0) - _kl17.taker_fee_cents(60)) < 0.05
+   and abs(_sg17["pnl_cents"] - (20.0 - _kl17.taker_fee_cents(60))) < 0.1
+   and "lock in" not in _sg17["headline"].lower() and "after" in _sg17["headline"].lower()
+   and "locked in" not in _js17)
+# 4. a scalar settlement is a value, not a scratch
+_oldgm17, _olddb17 = _kl17.get_market, _st17.DB_PATH
+try:
+    _st17.DB_PATH = _os.path.join(_tf17.mkdtemp(), "guard17.db")
+    _st17.init_db()
+    _item17 = {"groups": [{"matchup": "AAA @ BBB", "suffix": "S1", "legs": [
+        {"side": "yes", "ticker": "T-SCALAR", "close_time": 100},
+        {"side": "yes", "ticker": "T-YES", "close_time": 100}]}],
+        "n_games": 1, "combined_prob_pct": 20.0, "indep_prob_pct": 12.0,
+        "kalshi_payout_net_x": 8.4, "ev_pct": 61.0, "objective": "balanced"}
+    _sl17.log_from_item(_item17, date="2026-08-25")
+    _kl17.get_market = lambda tk: ({"status": "finalized", "result": "scalar", "settlement_value": 70.0}
+                                   if tk == "T-SCALAR" else {"status": "finalized", "result": "yes"})
+    with _st17._lock, _st17._conn() as _c17:
+        _c17.execute("UPDATE slip_log SET ts = ts - 90000")
+    _sl17.grade_due()
+    with _st17._lock, _st17._conn() as _c17:
+        _row17s = dict(_c17.execute("SELECT graded, won, settle_value FROM slip_log").fetchone())
+    _rep17 = _st17.slip_report()
+    ck("a slip with a scalar-settled leg keeps the settlement value and stays out of the binary record instead of being voided",
+       _row17s["graded"] == 3 and _row17s["settle_value"] == 70.0 and _row17s["won"] is None
+       and (_rep17 or {}).get("graded", 0) == 0,
+       "Kalshi reports result 'scalar' with settlement_value_dollars since 2026-01-28; a 0.70 is money, not a scratch")
+finally:
+    _kl17.get_market, _st17.DB_PATH = _oldgm17, _olddb17
+_gm17 = _insp.getsource(_kl17.get_market)
+ck("the market reader carries the settlement value and the prediction grader files a scalar as its own grade, not dead",
+   '"settlement_value": _cents(m.get("settlement_value_dollars"))' in _gm17
+   and 'result == "scalar"' in _insp.getsource(__import__("predlog").resolve_due)
+   and "settle_value" in _insp.getsource(__import__("predlog")._mark))
+# 5. fees come from the market's series
+_saved17, _calls17 = _kl17._get_json, []
+def _fake17(url, timeout=10):
+    _calls17.append(url)
+    if url.endswith("/series/KXMLBGAME"):
+        return {"series": {"ticker": "KXMLBGAME", "fee_type": "quadratic_with_maker_fees", "fee_multiplier": 0.5}}
+    if url.endswith("/series/KXODD"):
+        return {"series": {"ticker": "KXODD", "fee_type": "flat_per_contract", "fee_multiplier": 3}}
+    raise RuntimeError("down")
+try:
+    _kl17._get_json = _fake17
+    _kl17._series_cache.clear()
+    _f17 = [_kl17.fee_for_market("KXMLBGAME-26SEP10NYYBOS-NYY", 50), _kl17.fee_for_market("KXMLBGAME-X-Y", 50),
+            _kl17.fee_for_market("KXODD-A-B", 50), _kl17.fee_for_market("KXDOWN-A-B", 50),
+            _kl17.fee_for_market(None, 50)]
+    _sf17 = _st17._fee_cents(50, ticker="KXMLBGAME-26SEP10NYYBOS-NYY")
+    ck("fees come from the market's series: KXMLBGAME charges half, an unknown fee type and a failed lookup fall back to the standard curve, the series is fetched once, and the scoreboard's fee follows",
+       abs(_f17[0] - 0.875) < 1e-9 and _f17[1] == _f17[0] and abs(_f17[2] - 1.75) < 1e-9
+       and abs(_f17[3] - 1.75) < 1e-9 and abs(_f17[4] - 1.75) < 1e-9
+       and sum(1 for u in _calls17 if u.endswith("/series/KXMLBGAME")) == 1
+       and _sf17 == 1 and _st17._fee_cents(50) == 2,
+       "Kalshi's series carry fee_type and fee_multiplier; the MLB game series is 0.5")
+finally:
+    _kl17._get_json = _saved17
+    _kl17._series_cache.clear()
+# 6. the real-money ledger: strict numbers, fees in the P/L, no HTML from the description
+_olddb17b = _st17.DB_PATH
+try:
+    _st17.DB_PATH = _os.path.join(_tf17.mkdtemp(), "guard17b.db")
+    _st17.init_db()
+    _c17b = _app14.app.test_client()
+    _post17 = lambda body: _c17b.post("/api/bets", json=body).status_code
+    ck("the ledger refuses a negative, zero, NaN or infinite stake and a price outside (0, 100), and takes a real bet",
+       _post17({"stake": -5, "price_cents": 55}) == 400 and _post17({"stake": 0, "price_cents": 55}) == 400
+       and _post17({"stake": "nan", "price_cents": 55}) == 400 and _post17({"stake": "inf", "price_cents": 55}) == 400
+       and _post17({"stake": 10, "price_cents": 150}) == 400 and _post17({"stake": 10, "price_cents": 0}) == 400
+       and _post17({"stake": 10, "price_cents": "nan"}) == 400
+       and _post17({"stake": 10, "price_cents": 55, "description": "guard bet"}) == 201
+       and _post17({"stake": 10, "description": "no price"}) == 201,
+       "a negative stake turned a loss into profit; the server is the integrity boundary, not the input box")
+    ck("the ledger's P/L nets Kalshi's taker fee on the entry: $10 at 55c wins $7.86, loses $10.32, a void is $0",
+       _st17._bet_pnl("won", 10.0, 55.0) == 7.86 and _st17._bet_pnl("lost", 10.0, 55.0) == -10.32
+       and _st17._bet_pnl("void", 10.0, 55.0) == 0.0 and _st17._bet_pnl("won", 10.0, None) == 10.0,
+       "18.18 contracts at 55c carry a 32c fee (7% x 0.55 x 0.45, rounded up to the cent)")
+finally:
+    _st17.DB_PATH = _olddb17b
+ck("the ledger renders its strings escaped -- a market title or a typed description is text, never markup",
+   'escapeHtml(b.description || "(bet)")' in _js17 and "escapeHtml(b.side)" in _js17
+   and "escapeHtml(b.kind)" in _js17 and "${b.description ||" not in _js17)
+# 7. production fails closed, and a 500 tells the browser its ID, not its traceback
+_oldenv17 = (_os.environ.get("RENDER"), _os.environ.get("VIGIL_ALLOW_OPEN"))
+try:
+    _os.environ.pop("RENDER", None)
+    _os.environ.pop("VIGIL_ALLOW_OPEN", None)
+    _c17c = _app14.app.test_client()
+    _dev17 = _c17c.get("/api/dfs/tourney/list?sport=nfl").status_code   # 401 = a login is configured here
+    _os.environ["RENDER"] = "true"
+    _closed17 = (_c17c.get("/api/dfs/tourney/list?sport=nfl").status_code, _c17c.get("/healthz").status_code)
+    _os.environ["VIGIL_ALLOW_OPEN"] = "1"
+    _open17 = _c17c.get("/api/dfs/tourney/list?sport=nfl").status_code
+    if _dev17 == 401:
+        ck("(a login is configured on this box, so the fail-closed path cannot be exercised here; CI runs it open)", True)
+    else:
+        ck("with no login configured, a production host answers 503 (health checks still pass), VIGIL_ALLOW_OPEN=1 or a dev box opens it",
+           _dev17 == 200 and _closed17 == (503, 200) and _open17 == 200,
+           "forgetting an environment variable must fail closed, not publicly open")
+    ck("the fail-closed switch reads the host at request time and names the remedy",
+       "def _open_ok" in _apy14 and 'os.environ.get("RENDER")' in _insp.getsource(_app14._open_ok)
+       and "VIGIL_ALLOW_OPEN" in _app14._CLOSED_MSG and "Response(_CLOSED_MSG, 503)" in _insp.getsource(_app14._auth))
+finally:
+    for k, v in zip(("RENDER", "VIGIL_ALLOW_OPEN"), _oldenv17):
+        if v is None:
+            _os.environ.pop(k, None)
+        else:
+            _os.environ[k] = v
 
 _js14 = open(_os.path.join(_root, "static", "app.js")).read()
 _ix14 = open(_os.path.join(_root, "templates", "index.html")).read()

@@ -81,11 +81,22 @@ def get_events(sport_key, limit=200):
                            if (o["yes_ask"] is not None and o["yes_bid"] is not None) else None)
         # Overround/arbitrage stay on the ASKS -- that's what you'd actually pay
         # to buy every outcome; the mid-based fair % above is just the estimate.
-        ask_total = sum(o["yes_ask"] for o in e["outcomes"] if o["yes_ask"])
+        asks = [o["yes_ask"] for o in e["outcomes"]]
+        ask_total = sum(a for a in asks if a)
         e["overround_pct"] = round(ask_total - 100, 1) if ask_total else None
-        # Arbitrage: if the outcome prices sum to < 100¢, buying them all is a
-        # guaranteed profit (exactly one pays 100¢). Free money from stale quotes.
-        e["arbitrage_pct"] = round(100 - ask_total, 1) if (ask_total and ask_total < 100) else None
+        # Arbitrage: if the outcome prices sum to < 100¢, buying them ALL is a
+        # guaranteed profit (exactly one pays 100¢) -- which needs an executable
+        # ask on EVERY outcome, and the taker fee is paid on every leg. Until
+        # the 2026-09-10 audit this summed whatever asks existed: two of three
+        # outcomes at 40¢ read as a "20¢ lock" while the third could not be
+        # bought. The reverse path below always demanded every quote.
+        if len(asks) >= 2 and all(a for a in asks) and ask_total < 100:
+            e["arbitrage_pct"] = round(100 - ask_total, 1)
+            e["arb_fee_est"] = round(sum(kalshi.fee_for_market(o.get("ticker"), o["yes_ask"])
+                                         for o in e["outcomes"]), 1)
+        else:
+            e["arbitrage_pct"] = None
+            e["arb_fee_est"] = None
         # REVERSE arbitrage (the side the YES check can't see): if the BIDS sum
         # to over 100¢, buying NO on every outcome costs sum(100-bid) against a
         # guaranteed (n-1)x100 payout — profit = bid_total - 100, fees aside.
@@ -93,8 +104,8 @@ def get_events(sport_key, limit=200):
         bids = [o["yes_bid"] for o in e["outcomes"]]
         if len(bids) >= 2 and all(b for b in bids) and sum(bids) > 100:
             e["no_arbitrage_pct"] = round(sum(bids) - 100, 1)
-            e["no_arb_fee_est"] = round(sum(kalshi.taker_fee_cents(100 - b)
-                                            for b in bids), 1)
+            e["no_arb_fee_est"] = round(sum(kalshi.fee_for_market(o.get("ticker"), 100 - o["yes_bid"])
+                                            for o in e["outcomes"]), 1)
         else:
             e["no_arbitrage_pct"] = None
         e["outcomes"].sort(key=lambda o: (o["fair_pct"] is None, -(o["fair_pct"] or 0)))

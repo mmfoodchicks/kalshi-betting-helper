@@ -163,6 +163,9 @@ def grade_due(limit=40):
         res = (m.get("result") or "").lower()
         if res in ("yes", "no"):
             memo[tk] = res
+        elif res == "scalar" or m.get("settlement_value") is not None:
+            # settled at a VALUE (Kalshi, 2026-01-28): money, not a scratch
+            memo[tk] = ("scalar", m.get("settlement_value"))
         elif (m.get("status") or "").lower() in ("finalized", "settled",
                                                  "determined"):
             memo[tk] = "void"            # settled with no side = scratched
@@ -185,6 +188,13 @@ def grade_due(limit=40):
             continue
         if any(res == "open" for res, _n in results):
             continue                     # still settling -> next pass
+        scalars = [res[1] for res, _n in results if isinstance(res, tuple)]
+        if scalars:
+            # a leg paid a value between 0 and 100: the slip is neither a
+            # binary win nor a scratch; keep the value, keep it out of the record
+            store.set_slip_grade(r["id"], 3, settle_value=scalars[0])
+            graded += 1
+            continue
         hits = sum(1 for res, no in results
                    if res == ("no" if no else "yes"))
         store.set_slip_grade(r["id"], 1, won=1 if hits == len(results) else 0,

@@ -312,14 +312,28 @@ def _arb_rows():
         try:
             for ev in sports.get_events(key) or []:
                 arb = ev.get("arbitrage_pct")
-                if arb and arb >= 1.0 and not ev.get("thin"):
-                    rows.append({"sport": "🔒 Arbitrage", "kind": sports.SPORTS[key]["label"],
-                                 "pick": f"Buy ALL outcomes: {ev.get('title')}",
-                                 "matchup": f"asks sum to {round(100 - arb, 1)}¢",
-                                 "our_pct": 100.0, "cents": round(100 - arb, 1),
-                                 "payout_x": None, "edge": round(arb, 1),
-                                 "net_edge": round(arb - 2.0, 1),   # ~fees across the legs
-                                 "trust": "high", "note": "guaranteed if all fills - check book depth"})
+                fee = ev.get("arb_fee_est")
+                # The sports layer only sets arbitrage_pct when EVERY outcome
+                # has an ask; the book has to trade (its liquidity read, not a
+                # `thin` key that was never set -- that gate stood open from the
+                # day it was written); and the edge is net of every leg's taker
+                # fee with the same half-cent of room the reverse note keeps. A
+                # flat 2¢ fee called a 97¢ three-way basket a +1¢ lock; the legs
+                # cost 4.6¢.
+                if not arb or fee is None or ev.get("liquidity") != "ok":
+                    continue
+                net = round(arb - fee, 1)
+                if net <= 0.5:
+                    continue
+                rows.append({"sport": "🔒 Arbitrage", "kind": sports.SPORTS[key]["label"],
+                             "pick": f"Buy ALL outcomes: {ev.get('title')}",
+                             "matchup": f"asks sum to {round(100 - arb, 1)}¢",
+                             "our_pct": 100.0, "cents": round(100 - arb, 1),
+                             "payout_x": None, "edge": round(arb, 1),
+                             "net_edge": net,
+                             "trust": "high",
+                             "note": f"guaranteed only if every leg fills at its ask - {fee}¢ of "
+                                     "taker fees across the legs already taken out; check book depth"})
         except Exception:
             continue
     return [r for r in rows if r["net_edge"] > 0]

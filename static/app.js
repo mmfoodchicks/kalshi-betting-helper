@@ -269,7 +269,7 @@ function renderMarket(m) {
       <div class="sellhead"><span class="sellaction">${p.action === "SELL" ? "🔔 " : "⏳ "}${p.headline}</span>${pnlTxt}</div>
       <div class="small">You hold <b>${p.side}</b>, bought at <b>${p.entry_cost_cents}¢</b> · sell now ~<b>${p.sell_price_cents}¢</b>${p.sell_price_estimated ? " (est.)" : ""} · fair value <b>${p.fair_value_cents}¢</b></div>
       <div class="choices">
-        <div class="choice"><b>💵 Sell now</b><br>get ~${p.sell_price_cents}¢ ${pnl != null ? `(${pnl >= 0 ? "+" : ""}${pnl}¢)` : ""} locked in</div>
+        <div class="choice"><b>💵 Sell now</b><br>get ~${p.sell_price_cents}¢ ${pnl != null ? `(${pnl >= 0 ? "+" : ""}${pnl}¢ net after the ~${p.exit_fee_cents != null ? p.exit_fee_cents : 0}¢ exit fee${p.pnl_gross_cents != null ? `, ${p.pnl_gross_cents >= 0 ? "+" : ""}${p.pnl_gross_cents}¢ gross` : ""})` : ""}</div>
         <div class="choice"><b>⏳ Hold to close</b><br>worth ~${p.fair_value_cents}¢ avg (100¢ or 0¢)</div>
       </div>
       <div class="small">${p.detail}</div>
@@ -3042,8 +3042,8 @@ function renderBet(b) {
     return `<div class="market">
       <div class="top">
         <div>
-          <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
-          <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
+          <div class="title">${escapeHtml(b.description || "(bet)")} ${b.side ? `· ${escapeHtml(b.side)}` : ""}</div>
+          <div class="meta">${escapeHtml(b.kind)} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
         </div>${x}
       </div>
       <div class="scanbtns">
@@ -3058,8 +3058,8 @@ function renderBet(b) {
   return `<div class="market resolved">
     <div class="top">
       <div>
-        <div class="title">${b.description || "(bet)"} ${b.side ? `· ${b.side}` : ""}</div>
-        <div class="meta">${b.kind} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
+        <div class="title">${escapeHtml(b.description || "(bet)")} ${b.side ? `· ${escapeHtml(b.side)}` : ""}</div>
+        <div class="meta">${escapeHtml(b.kind)} · $${b.stake} @ ${b.price_cents != null ? b.price_cents + "¢" : "-"}</div>
       </div>${x}
     </div>
     <div class="kv"><span>Result <b class="${cls}">${b.status.toUpperCase()}</b></span><span>P/L <b class="${cls}">${pnl}</b></span></div>
@@ -3187,8 +3187,12 @@ function renderSportEvent(e, sportKey) {
   const liqWarn = thin
     ? `<div class="note" style="border:1px solid var(--no);color:var(--no)">⚠ ${e.liquidity === "none" ? "Untraded / one-sided book" : "Thin market"} (${e.volume || 0} contracts) - the no-vig fair %, edges and any "arbitrage" here come off stale, wide quotes and aren't reliably tradeable.</div>`
     : "";
-  const arb = (e.arbitrage_pct && !thin)
-    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: outcome prices sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ - buying every outcome locks in ~${e.arbitrage_pct}¢ guaranteed profit per $1.</div>`
+  // Forward arbitrage: only when EVERY outcome has an ask (the server sets
+  // arbitrage_pct only then), the book trades, and the edge survives the sum
+  // of the per-leg taker fees with half a cent of room.
+  const arbNet = (e.arbitrage_pct != null && e.arb_fee_est != null) ? e.arbitrage_pct - e.arb_fee_est : null;
+  const arb = (arbNet != null && e.liquidity === "ok" && arbNet > 0.5)
+    ? `<div class="note dip" style="border-color:var(--yes);color:var(--yes)">💸 Arbitrage: every outcome has an ask and they sum to ${(100 - e.arbitrage_pct).toFixed(1)}¢ - buying every outcome nets ~${arbNet.toFixed(1)}¢ per set after ~${e.arb_fee_est}¢ of taker fees, if every leg fills.</div>`
     : "";
   // Reverse arbitrage: the bids sum over 100¢, so buying NO on EVERY outcome
   // locks in the excess (exactly one outcome wins; the other NOs all pay).
@@ -6273,7 +6277,7 @@ function renderSports() {
   }
   // Summary: how many tradeable, the best value (lowest vig among liquid), arbs.
   const liquid = d.events.filter((e) => e.liquidity === "ok");
-  const arbs = d.events.filter((e) => e.arbitrage_pct && e.liquidity === "ok").length;
+  const arbs = d.events.filter((e) => e.arbitrage_pct && e.liquidity === "ok" && e.arb_fee_est != null && e.arbitrage_pct - e.arb_fee_est > 0.5).length;
   const vigged = liquid.filter((e) => e.overround_pct != null);
   const bestVal = vigged.length ? vigged.reduce((a, b) => b.overround_pct < a.overround_pct ? b : a) : null;
   $("sportSummary").innerHTML = `<div class="leanrow">

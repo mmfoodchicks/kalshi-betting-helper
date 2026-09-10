@@ -78,7 +78,9 @@ def _unhandled(e):
         return e                          # 404s and friends are not failures
     code = f"HTTP-{request.endpoint or request.path}"
     errlog.note(code, e, path=request.path)
-    return jsonify({"error": f"{type(e).__name__}: {e}", "error_id": code}), 500
+    # The exception text (paths, upstream URLs, internals) lives in the
+    # ledger under that ID; the browser gets the ID to look it up by.
+    return jsonify({"error": "Something went wrong.", "error_id": code}), 500
 
 
 def _thread_hook(args):
@@ -1004,10 +1006,24 @@ def _trusted_ip(addr):
 _SIM_TOKEN = os.environ.get("SIM_TOKEN") or ""
 
 
+_CLOSED_MSG = ("Login is not configured and this is a production host: refusing to serve "
+               "openly. Configure the login (see .env.example), or set VIGIL_ALLOW_OPEN=1 "
+               "to run open on purpose.")
+
+
+def _open_ok():
+    """No login configured: open on a dev box, CLOSED on Render unless
+    VIGIL_ALLOW_OPEN=1 says open on purpose. Forgetting an environment
+    variable must fail closed, not publicly open (the 2026-09-10 audit)."""
+    return bool(os.environ.get("VIGIL_ALLOW_OPEN")) or not os.environ.get("RENDER")
+
+
 @app.before_request
 def _auth():
     if not APP_PASSWORD:
-        return
+        if request.path in ("/healthz", "/robots.txt") or _open_ok():
+            return
+        return Response(_CLOSED_MSG, 503)
     if request.path in ("/healthz", "/robots.txt"):   # platform probes, no creds
         return
     tok = request.headers.get("X-Sim-Token") or ""
@@ -1783,6 +1799,7 @@ def api_list_markets():
                     yes_ask=(live or {}).get("yes_ask"),
                     no_ask=(live or {}).get("no_ask"),
                     minutes_to_close=sig.get("minutes_to_close"),
+                    ticker=m.get("ticker") or m.get("kalshi_ticker"),
                 )
         out.append(item)
     return jsonify(out)
@@ -2628,6 +2645,14 @@ def api_add_bet():
         price = float(d["price_cents"]) if d.get("price_cents") not in (None, "", "null") else None
     except (KeyError, ValueError, TypeError) as e:
         return jsonify({"error": f"bad params: {e}"}), 400
+    # The server is the integrity boundary, not the input box: a negative
+    # stake turned a lost bet into profit, a price over 100 turned a win into
+    # a loss, and float() happily parses "nan" (the 2026-09-10 audit).
+    import math
+    if not math.isfinite(stake) or stake <= 0:
+        return jsonify({"error": "stake must be a positive dollar amount"}), 400
+    if price is not None and not (math.isfinite(price) and 0 < price < 100):
+        return jsonify({"error": "price_cents must be between 0 and 100, exclusive"}), 400
     kind = d.get("kind", "other")
     bid = store.add_bet(kind, d.get("description", ""), d.get("side"),
                         stake, price, d.get("notes"))

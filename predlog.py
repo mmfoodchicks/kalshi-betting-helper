@@ -57,6 +57,11 @@ def init_db():
         # the fact. It has to be captured live or not at all. Added later, so
         # tolerate an older table that predates it.
         cols = {r[1] for r in c.execute("PRAGMA table_info(predictions)")}
+        if "settle_value" not in cols:          # scalar settlements (2026-09-10)
+            try:
+                c.execute("ALTER TABLE predictions ADD COLUMN settle_value REAL")
+            except Exception as _e:
+                errlog.note("PL-init-settle", _e)   # a sibling worker won the race
         # `event_ts`: the event start the LOGGER knew (an NFL kickoff from
         # the schedule). Day-only tickers resolve to midnight otherwise,
         # and the closing-line snapshot stopped a day early for football.
@@ -335,10 +340,14 @@ def results(tickers):
     return out
 
 
-def _mark(ticker, graded, outcome=None, resolved_ts=None):
+def _mark(ticker, graded, outcome=None, resolved_ts=None, settle_value=None):
+    """graded 1 = yes/no and scored, 2 = dead (void / gone), 3 = settled at a
+    scalar VALUE (settle_value, cents): kept as money, excluded from the
+    binary record rather than filed as a scratch."""
     with _lock, _conn() as c:
-        c.execute("UPDATE predictions SET graded=?, outcome=?, resolved_ts=? WHERE ticker=?",
-                  (graded, outcome, resolved_ts, ticker))
+        c.execute("UPDATE predictions SET graded=?, outcome=?, resolved_ts=?, settle_value=? "
+                  "WHERE ticker=?",
+                  (graded, outcome, resolved_ts, settle_value, ticker))
 
 
 def resolve_due(limit=150):
@@ -406,6 +415,9 @@ def resolve_due(limit=150):
         result = (m.get("result") or "").lower()     # get_market already lower-cases
         if result in ("yes", "no"):
             _mark(tk, 1, 1 if result == "yes" else 0, now)
+            graded += 1
+        elif result == "scalar" or m.get("settlement_value") is not None:
+            _mark(tk, 3, None, now, settle_value=m.get("settlement_value"))
             graded += 1
         elif (status in ("finalized", "settled", "determined", "closed")
               and result not in ("yes", "no") and tk not in early):

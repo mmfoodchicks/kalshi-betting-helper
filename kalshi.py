@@ -214,7 +214,10 @@ def get_market(ticker):
     return {
         "ticker": m.get("ticker"),
         "status": m.get("status"),
-        "result": (m.get("result") or "").lower(),   # 'yes'/'no'/'' once settled
+        "result": (m.get("result") or "").lower(),   # 'yes'/'no'/'scalar'/'' once settled
+        # A scalar-settled market (Kalshi, 2026-01-28: result "scalar") pays
+        # its settlement value, not 0 or 100: the graders keep it as money.
+        "settlement_value": _cents(m.get("settlement_value_dollars")),
         "close_time": _parse_time(m.get("close_time")),
         "yes_bid": _cents(m.get("yes_bid_dollars")),
         "yes_ask": _cents(m.get("yes_ask_dollars")),
@@ -277,6 +280,48 @@ def price_move(ticker, hours=24):
 # the same formula, and they had already drifted on rounding. The smoke test that
 # was supposed to catch that guarded on `hasattr(combine, "_kalshi_fee")`, a name
 # combine never had, so it silently compared three of the five and passed.
+_series_cache = {}
+
+
+def series_info(series):
+    """One series' metadata (fee_type, fee_multiplier, title), cached 12h; a
+    failed lookup is cached ten minutes as an empty record so a throttling
+    storm does not become a fetch per fee."""
+    now = time.time()
+    hit = _series_cache.get(series)
+    if hit and now - hit[0] < hit[2]:
+        return hit[1]
+    try:
+        info = (_get_json(f"{BASE}/series/{series}") or {}).get("series") or {}
+        ttl = 12 * 3600
+    except Exception as e:
+        errlog.note("KAL-series", e, path=str(series))
+        info, ttl = {}, 600
+    _series_cache[series] = (now, info, ttl)
+    return info
+
+
+def fee_for_market(ticker, cents):
+    """Taker fee in cents for one contract of `ticker` at `cents`, on ITS
+    series' schedule: Kalshi's quadratic curve times the series'
+    fee_multiplier (KXMLBGAME is 0.5, KXNFLGAME is 1; a championship series
+    can be more). No ticker, a fee type that is not the quadratic family, or
+    a failed lookup fall back to the standard curve -- the 2026-09-10 audit:
+    one universal schedule overcharged every MLB game market by half and
+    would undercharge a special-fee series."""
+    base = taker_fee_cents(cents)
+    if not ticker or not base:
+        return base
+    info = series_info(str(ticker).split("-")[0])
+    if not str(info.get("fee_type") or "").startswith("quadratic"):
+        return base
+    try:
+        mult = float(info.get("fee_multiplier")) if info.get("fee_multiplier") is not None else 1.0
+    except (TypeError, ValueError):
+        mult = 1.0
+    return base * mult
+
+
 def taker_fee_cents(cents):
     """Expected Kalshi taker fee in cents for one contract priced at `cents`.
 

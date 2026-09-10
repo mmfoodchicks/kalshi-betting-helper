@@ -238,7 +238,7 @@ def init_db():
         # grade but not to show a winning slip on the wall). Added later;
         # migrate old DBs.
         _slip_cols = {r[1] for r in c.execute("PRAGMA table_info(slip_log)")}
-        for _col in ("tag TEXT", "legs_disp TEXT", "start_ts INTEGER"):
+        for _col in ("tag TEXT", "legs_disp TEXT", "start_ts INTEGER", "settle_value REAL"):
             if _col.split()[0] not in _slip_cols:
                 try:
                     c.execute(f"ALTER TABLE slip_log ADD COLUMN {_col}")
@@ -364,14 +364,19 @@ def prop_grade_pairs():
             "AND COALESCE(model_version, 0) = ?", (MODEL_VERSION,)).fetchall()]
 
 
-def _fee_cents(price_cents):
+def _fee_cents(price_cents, ticker=None):
     """Kalshi's taker fee for one contract at price P, in cents:
     ceil(0.07 * P * (1-P)), i.e. ~1.75c at 50c, rounded up to the next cent.
     Charged on the trade itself, win or lose, so an honest ROI subtracts it
     from every bet. Maker (resting) fills pay none -- this reports the taker
-    case, which is what "bet the number on the screen" actually costs."""
+    case, which is what "bet the number on the screen" actually costs. With a
+    ticker the curve follows the market's SERIES (kalshi.fee_for_market: the
+    MLB game series charges half); without one, the standard curve."""
     import math
     c = float(price_cents)
+    if ticker:
+        import kalshi
+        return math.ceil(kalshi.fee_for_market(ticker, c))
     return math.ceil(7.0 * c * (100.0 - c) / 10000.0)
 
 
@@ -386,8 +391,14 @@ def _pick_stats(graded, pending, edge_threshold=3.0, totals_rows=None):
     wins = sum(1 for p in graded if p["won"] == 1)
 
     def roi(picks):
-        stake = sum(p["price_cents"] for p in picks)
-        pnl = sum((100 if p["won"] else 0) - p["price_cents"] - _fee_cents(p["price_cents"])
+        # Cash deployed is the contract PLUS its fee: the fee leaves the
+        # account at the fill. Dividing net profit by the bare price flattered
+        # every scoreboard by the fee -- 43c on 57c is +75.4%, not +78.2%
+        # (the 2026-09-10 audit; the guard that pinned 78.2 was corrected).
+        stake = sum(p["price_cents"] + _fee_cents(p["price_cents"], p.get("kalshi_ticker") or p.get("ticker"))
+                    for p in picks)
+        pnl = sum((100 if p["won"] else 0) - p["price_cents"]
+                  - _fee_cents(p["price_cents"], p.get("kalshi_ticker") or p.get("ticker"))
                   for p in picks)
         return (round(100 * pnl / stake, 1) if stake else None), len(picks)
 
@@ -750,11 +761,14 @@ def ungraded_slips(now, limit=40):
             (_SLIP_SETTLE_S, _SLIP_LEGACY_S, now, limit)).fetchall()]
 
 
-def set_slip_grade(slip_id, graded, won=None, legs_hit=None):
+def set_slip_grade(slip_id, graded, won=None, legs_hit=None, settle_value=None):
+    """graded 1 = settled yes/no and scored, 2 = void (a scratched leg), 3 =
+    a leg settled at a scalar VALUE (kept in settle_value, cents): money, not
+    a scratch, and not a binary win either -- it stays out of the record."""
     with _lock, _conn() as c:
-        c.execute("UPDATE slip_log SET graded=?, won=?, legs_hit=?, resolved_ts=? "
+        c.execute("UPDATE slip_log SET graded=?, won=?, legs_hit=?, resolved_ts=?, settle_value=? "
                   "WHERE id=?",
-                  (graded, won, legs_hit, int(time.time()), slip_id))
+                  (graded, won, legs_hit, int(time.time()), settle_value, slip_id))
 
 
 # When a slip was built, as two questions the ledger can actually answer.
@@ -1039,12 +1053,13 @@ def prop_report(min_edge=8.0):
             if side is None or not cost or cost <= 0 or cost >= 100:
                 continue
             won = (r["actual"] == 1) if side == "YES" else (r["actual"] == 0)
-            bets.append((cost, won))
+            bets.append((cost, won, r.get("ticker")))
         if not bets:
             return None
-        staked = sum(c for c, _ in bets)
-        pnl = sum((100 if w else 0) - c - _fee_cents(c) for c, w in bets)
-        wins = sum(1 for _, w in bets if w)
+        # cash deployed = contract + fee (see _pick_stats.roi)
+        staked = sum(c + _fee_cents(c, tk) for c, _, tk in bets)
+        pnl = sum((100 if w else 0) - c - _fee_cents(c, tk) for c, w, tk in bets)
+        wins = sum(1 for _, w, _tk in bets if w)
         return {"bets": len(bets), "win_pct": round(100 * wins / len(bets), 1),
                 "roi_pct": round(100 * pnl / staked, 1) if staked else None,
                 "pnl_per_contract_c": round(pnl / len(bets), 1),
@@ -1188,15 +1203,33 @@ def add_bet(kind, description, side, stake, price_cents, notes=None):
         return cur.lastrowid
 
 
+def _bet_fee_dollars(stake, price_cents):
+    """Kalshi's taker fee on the entry, in dollars: 7% x contracts x P x (1-P),
+    rounded up to the cent. Paid at the fill, win or lose; a void refunds it.
+    Until the 2026-09-10 audit the real-money ledger reported gross P/L while
+    every model scoreboard netted the fee -- "actual profit" that flattered by
+    exactly the fee."""
+    import math
+    try:
+        p = float(price_cents) / 100.0
+    except (TypeError, ValueError):
+        return 0.0
+    if not (0 < p < 1) or not stake:
+        return 0.0
+    contracts = float(stake) / p
+    return math.ceil(0.07 * contracts * p * (1.0 - p) * 100.0) / 100.0
+
+
 def _bet_pnl(status, stake, price_cents):
+    fee = _bet_fee_dollars(stake, price_cents)
     if status == "won":
         # A contract bought at price_cents returns 100; profit scales accordingly.
         if price_cents and price_cents > 0:
-            return round(stake * (100.0 / price_cents - 1.0), 2)
+            return round(stake * (100.0 / price_cents - 1.0) - fee, 2)
         return round(stake, 2)
     if status == "lost":
-        return round(-stake, 2)
-    return 0.0  # void
+        return round(-stake - fee, 2)
+    return 0.0  # void: the fee comes back too
 
 
 def settle_bet(bet_id, status):
