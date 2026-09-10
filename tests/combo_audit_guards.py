@@ -10725,7 +10725,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11925,7 +11925,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12517,7 +12517,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12618,7 +12618,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12810,7 +12810,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -13294,7 +13294,7 @@ if _dt14.available():
        and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
-   _dt14.ENGINE == 3 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   _dt14.ENGINE == 4 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    and '"experimental": {"columns": ["win_pct", "ev", "ev_dup", "roi_pct"],' in _dts1
@@ -13308,7 +13308,88 @@ ck("the tab labels the experimental columns from the board (experimental win, ex
    and "experimental win</th>" in _js_s1 and "experimental EV</th>" in _js_s1
    and '"Best by experimental EV"' in _js_s1 and '"Best by experimental first place"' in _js_s1
    and "<b>Experimental win, EV and ROI</b>" in _js_s1 and "are held out)" in _js_s1
-   and 'vigil-shell-v126' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
+
+# ---- Stage 2A: the sampler's completion invariant, probe lineups, the simulator stamp ----
+# 2026-09-10. The floors are a lower-bound heuristic, not a proof, so the
+# build stamps the sampler's completion and fails on a shortfall instead of
+# serving a quietly conditioned field. Fixed probe lineups ride every board
+# as passengers -- never candidates, never in the portfolio -- so simulator
+# versions are compared on identical lineups. Every board says which
+# simulator, at which version and constants, made its worlds.
+_dts2 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+_build2 = _dts2[_dts2.index("def build_nfl_classic("):_dts2.index("def build_nfl_classic(") + len(_insp.getsource(_dt14.build_nfl_classic))]
+_before_results2 = _build2[:_build2.index("    results = {}")]
+ck("candidate construction, the field, the ranking and the portfolio are finished before a probe is resolved: the word 'probe' appears in the build only in its signature before the results are assembled, and the probe rows are attached after them",
+   _before_results2.count("probe") == 1 and "probes=None" in _before_results2.split("\n")[3]
+   and 'results[cid]["probes"] = rows_p' in _build2
+   and _build2.index("ports = portfolio_vs_field(") < _build2.index("probe_rows(probes, ents")
+   and _build2.index("results = {}") < _build2.index("probe_rows(probes, ents"),
+   "probes are diagnostic passengers: they must not enter generation, filtering, calibration, ranking or the cover")
+ck("the sampler's completion receipt is stamped on the field and on the candidate draws, a short field fails the build through check_completion, and the board carries the simulator stamp and the probe count",
+   'idx_f = classic_sample(ents, int(field_n), rng, beta, kappa, report=rep_f)' in _build2
+   and 'check_completion(rep_f, "field")' in _build2 and 'check_completion(rep_c, "candidate draws")' in _build2
+   and '"completion": rep_f,' in _build2 and '"candidate_draws": rep_c,' in _build2
+   and '"simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),' in _build2
+   and '"probes_configured": int(len(probes)),' in _build2
+   and _dts2.count('"simulator": nfl_dfs_sim.sim_stamp(') == 2)
+import nfl_dfs_sim as _sim2
+_stamp2 = _sim2.sim_stamp(n=60000)
+ck("the simulator stamp names the production model and version, carries its constants, how the marginals are pinned and that it is unseeded",
+   _stamp2["model"] == "legacy-latent" and _stamp2["version"] == 1 and _stamp2["n"] == 60000
+   and _stamp2["params"] == {"env_sd": _sim2._ENV_SD, "qb_sd": _sim2._QB_SD, "rush_sd": _sim2._RUSH_SD, "script_sd": _sim2._SCRIPT_SD,
+                             "script_rush": _sim2._SCRIPT_RUSH, "script_pass": _sim2._SCRIPT_PASS, "td_sd": _sim2._TD_SD}
+   and _stamp2["seed"] is None and "rescaled to the Sleeper mean" in _stamp2["marginals"])
+try:
+    _dt14.check_completion({"requested": 100, "completed": 99, "unfilled_by_slot": {"DST": 1}, "over_cap": 0, "no_qb": 0}, "guard field")
+    _short2 = False
+except RuntimeError as _e2:
+    _short2 = "99 of 100" in str(_e2) and "DST" in str(_e2)
+ck("check_completion raises on a short field with the reasons in the message and passes a complete one",
+   _short2 and _dt14.check_completion({"requested": 5, "completed": 5}, "guard")["completed"] == 5)
+ck("the two lineups the owner entered are permanent probes for the Sunday main slate",
+   len(_dt14.PROBES.get(("nfl", 151307)) or []) == 2
+   and _dt14.PROBES[("nfl", 151307)][0][0] == "Jared Goff" and _dt14.PROBES[("nfl", 151307)][1][0] == "Geno Smith"
+   and all(len(x) == 9 for x in _dt14.PROBES[("nfl", 151307)]))
+if _dt14.available():
+    _rep2 = {}
+    _fx2 = _dt14.classic_sample(_plx16, 20000, _np14.random.default_rng(167), beta=0.3, kappa=-2.0, report=_rep2)
+    ck("classic_sample fills the completion receipt: requested, completed, rejected, unfilled by slot, over cap, no QB; complete on the adversarial pool",
+       _rep2 == {"requested": 20000, "completed": 20000, "rejected": 0, "unfilled_by_slot": {}, "no_qb": 0, "over_cap": 0} and len(_fx2) == 20000,
+       str(_rep2))
+    # probes on the synthetic pool: a probe equal to the best candidate ranks first, an unknown name is reported, nothing else changes
+    _pos2 = [p["pos"] for p in _pl16]
+    _ix2, _miss2 = _dt14.probe_index(["T00QB0", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"], _pl16)
+    _ixm2, _missm2 = _dt14.probe_index(["Nobody Guard", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"], _pl16)
+    _X2 = _np14.asarray([_np14.random.default_rng(i).gamma(2.0, 5.0, size=300) for i in range(len(_pl16))], dtype=_np14.float32)
+    _f2 = _dt14.classic_sample(_pl16, 4000, _np14.random.default_rng(168), beta=0.3, kappa=0.0)
+    _Wf2 = _dt14.lineup_matrix(_f2.astype(_np14.int64), len(_pl16)); _wf2 = _np14.full(len(_f2), 1.0 / len(_f2))
+    _g2 = [_dt14.payout_grid(1000, [{"from": 1, "to": 1, "prize": 500}, {"from": 2, "to": 100, "prize": 10}], 5.0, 100)]
+    _k2 = _np14.asarray([_ix2] + _f2[:30].astype(_np14.int64).tolist())
+    _Wc2 = _dt14.lineup_matrix(_k2, len(_pl16))
+    _res2, _o2, _n2 = _dt14.run_vs_field(_Wc2, _Wf2, _wf2, _X2, _g2, chunk=100)
+    _al2 = _np14.ones(len(_k2), dtype=bool)
+    _rows2 = _np14.sort(_f2, axis=1); _u2, _c2 = _np14.unique(_rows2, axis=0, return_counts=True)
+    _fc2 = {tuple(x.tolist()): int(k) for x, k in zip(_u2, _c2)}
+    _pr2 = _dt14.probe_rows([["T00QB0", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"],
+                             ["Nobody Guard", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"]],
+                            _pl16, _Wf2, _wf2, _X2, _g2, [{"id": 7, "max_entries": 1000, "entry_fee": 5.0, "first_prize": 500.0}], _res2, _al2, _fc2, len(_f2), chunk=100)["7"]
+    _p0 = _pr2[0]
+    ck("probe rows: a probe identical to candidate 0 reports the same top 1% as that candidate and ranks it exactly where the candidate sits; every reported field is present; an unknown name is reported as unavailable with the missing name",
+       _ix2 is not None and not _miss2 and _ixm2 is None and _missm2 == ["Nobody Guard"]
+       and _p0["available"] and abs(_p0["top1_pct"] - round(100.0 * float(_res2[0]["top1"][0]), 2)) < 0.011
+       and _p0["rank"]["top1"] == int((_res2[0]["top1"] > _res2[0]["top1"][0]).sum()) + 1 and _p0["rank"]["of"] == len(_k2)
+       and all(k in _p0 for k in ("legal", "legal_under_cap4", "salary", "proj", "mean", "median", "p10", "p90", "p95", "p99",
+                                  "top1_pct", "top01_pct", "cash_pct", "win_pct", "ev", "ev_dup", "roi_pct", "expected_copies", "rank"))
+       and _p0["p10"] <= _p0["median"] <= _p0["p90"] <= _p0["p95"] <= _p0["p99"]
+       and _pr2[1] == {"names": ["Nobody Guard", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"], "available": False, "missing": ["Nobody Guard"]})
+else:
+    ck("(numpy is not installed here -- the sampler receipt and probe guards run where it is)", True)
+_js2 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab shows the probes as passengers with legality, both tail columns and their ranks, the score quantiles and the experimental first-place figures",
+   "probes: rs.probes || []" in _js2 and "<b>Probes</b>" in _js2 and "they never enter the candidates or the portfolio" in _js2
+   and "(fails a cap of four)" in _js2 and "experimental win ${pct(p.win_pct, 3)}" in _js2
+   and 'vigil-shell-v127' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---- the board the server could not read (2026-09-10) ---------------------
 # The first classic build finished at 03:2x UTC, uploaded, and the tab still

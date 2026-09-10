@@ -56,7 +56,10 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # 3: the field sampler reserves the salary of a defense the row may still
 # take, so no draw dies at the last slot (the drops were cheap-QB, spend-out
 # builds, 0.37% of the field).
-ENGINE = 3
+# 4: the sampler's completion is stamped and a short field fails the build;
+# fixed probe lineups ride on every board as diagnostic passengers; the
+# simulator's model, version and constants are stamped.
+ENGINE = 4
 
 
 def available():
@@ -559,6 +562,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         st_sig, st_cls = None, {}
     return plain({"version": VERSION, "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
             "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
+            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),
             "pool_sig": pool_sig(slate["csv"]),
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
@@ -598,6 +602,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
 # generator. Scoring, the payout curves, duplication, the hindsight tallies
 # and the portfolio are the showdown machinery unchanged.
 CL_SLOTS = ("QB", "RB", "RB", "WR", "WR", "WR", "TE", "FLEX", "DST")
+_SLOT_LABELS = ("QB", "RB1", "RB2", "WR1", "WR2", "WR3", "TE", "FLEX", "DST")
 _CL_POS = ("QB", "RB", "WR", "TE", "DST")
 _CL_CODE = {p: i for i, p in enumerate(_CL_POS)}
 CL_FIELD_MAX_OWN = 0.38
@@ -754,7 +759,8 @@ def _gumbel_pick(logits, elig, rng):
 
 
 def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_DIST,
-                   bring_p=CL_BRING_BACK, dst_own_p=CL_DST_VS_OWN_QB, rules=False, exclude=None):
+                   bring_p=CL_BRING_BACK, dst_own_p=CL_DST_VS_OWN_QB, rules=False, exclude=None,
+                   report=None):
     """`n` classic lineups the way the public builds them, vectorized. A
     player's pull is beta * projection - kappa * salary / 1000 (beta the
     sharpness, kappa the price sensitivity; both calibrated by the caller).
@@ -766,7 +772,10 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     (rows, 9) int32 -- QB, RB, RB, WR, WR, WR, TE, FLEX, DST. The salary of
     the cheapest defense the row may still take is reserved at every pick,
     so every draw comes out under the cap with its defense; a row is dropped
-    only when it is genuinely impossible."""
+    only when it is genuinely impossible. `report`, a dict, is filled with
+    the completion receipt: requested, completed, rejected, unfilled slots
+    by slot, over-cap rows -- the build stamps it and fails on a shortfall
+    (check_completion)."""
     P = len(players)
     proj = np.asarray([float(p.get("proj") or 0.0) for p in players], dtype=np.float32)
     sal = np.asarray([int(p["salary"]) for p in players], dtype=np.int64)
@@ -994,7 +1003,29 @@ def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_
     rows = ok & (need["DST"] > 0)
     place(rows, _gumbel_pick(logits, elig_for(("DST",), rows, extra=~avoid), rng))
     good = (idx >= 0).all(axis=1) & (spent <= int(cap))
+    if report is not None:
+        unfilled = idx < 0
+        report.update({"requested": int(n), "completed": int(good.sum()), "rejected": int((~good).sum()),
+                       "unfilled_by_slot": {_SLOT_LABELS[k]: int(unfilled[:, k].sum())
+                                            for k in range(9) if unfilled[:, k].any()},
+                       "no_qb": int(unfilled[:, 0].sum()),
+                       "over_cap": int(((idx >= 0).all(axis=1) & (spent > int(cap))).sum())})
     return idx[good]
+
+
+def check_completion(report, what):
+    """The sampler's invariant, enforced: every requested draw completes.
+    A short field is a build failure, ledgered (TOURN-field-short), never a
+    quietly conditioned field -- the 370 of 100,000 the old floors dropped
+    were one shape of lineup. The floors are a lower-bound heuristic, not a
+    proof, so this is what catches the next interaction they miss."""
+    req, done = int(report.get("requested") or 0), int(report.get("completed") or 0)
+    if done < req:
+        msg = (f"{what}: {done:,} of {req:,} draws completed; unfilled {report.get('unfilled_by_slot')}, "
+               f"over cap {report.get('over_cap')}, no QB {report.get('no_qb')}")
+        errlog.note("TOURN-field-short", msg=msg)
+        raise RuntimeError(msg)
+    return report
 
 
 def classic_allowed(idx, players, max_per_game=_KNOB, max_per_team=_KNOB):
@@ -1277,6 +1308,137 @@ def _solver_pool(X, pos, gen, keep=_CL_KEEP):
     return np.asarray(sorted(out), dtype=np.int64)
 
 
+# Fixed probe lineups: exact nine-man lineups evaluated against every
+# completed board whether or not this build's candidates happened to hold
+# them, as diagnostic passengers only -- they never enter candidate
+# generation, filtering, calibration, ranking or the portfolio. The two the
+# owner entered on 2026-09-10 are permanent for that slate so every
+# simulator version is compared on identical lineups: a fresh build's
+# 144,708 candidates did not contain either.
+PROBES = {
+    ("nfl", 151307): [
+        ["Jared Goff", "Jahmyr Gibbs", "Travis Etienne Jr.", "Amon-Ra St. Brown", "Chris Olave",
+         "Devaughn Vele", "Tyler Warren", "Tre Tucker", "Steelers"],
+        ["Geno Smith", "Jonathan Taylor", "Derrick Henry", "Zay Flowers", "Garrett Wilson",
+         "Josh Downs", "Tyler Warren", "Breece Hall", "Raiders"],
+    ],
+}
+
+
+def _norm_name(s):
+    s = str(s or "").lower().replace(".", "").replace("'", "")
+    for suf in (" jr", " sr", " iii", " ii", " iv"):
+        if s.endswith(suf):
+            s = s[:-len(suf)]
+    return " ".join(s.split())
+
+
+def probe_index(names, players):
+    """(indices in slot order, missing names) for one probe against a pool:
+    by normalised name, a defense by nickname or abbreviation."""
+    by = {}
+    for i, p in enumerate(players):
+        by.setdefault(_norm_name(p.get("name")), []).append(i)
+    out, missing = [], []
+    for nm in names:
+        c = by.get(_norm_name(nm)) or []
+        if not c:
+            key = _norm_name(nm)
+            c = [i for i, p in enumerate(players) if p.get("pos") == "DST"
+                 and (key in _norm_name(p.get("name")) or _norm_name(p.get("team")) == key)]
+        if not c:
+            missing.append(nm)
+        else:
+            out.append(int(c[0]))
+    if missing or len(out) != 9 or len(set(out)) != 9:
+        return None, missing or ["not nine distinct players"]
+    return out, []
+
+
+def probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed, f_count, M, chunk=500):
+    """Per contest, one row per probe: legality, salary, projection, the
+    score distribution on the evaluation worlds, the tail metrics, the
+    experimental first-place figures and the probe's rank among the
+    evaluated candidates. Read-only over everything the build computed."""
+    P = len(ents)
+    pos = [e["pos"] for e in ents]
+    out = {str(c["id"]): [] for c in contests}
+    if not probes:
+        return out
+    rows, meta = [], []
+    for names in probes:
+        ix, missing = probe_index(names, ents)
+        if ix is None:
+            meta.append({"names": list(names), "available": False, "missing": missing})
+            continue
+        try:
+            slot = _slot_rows([tuple(sorted(ix))], pos)[0]
+        except Exception as e:                       # a shape the slots cannot hold
+            errlog.note("TOURN-probe-shape", e)
+            meta.append({"names": list(names), "available": False, "missing": ["roster shape"]})
+            continue
+        if (slot < 0).any():
+            meta.append({"names": list(names), "available": False, "missing": ["roster shape"]})
+            continue
+        rows.append(slot)
+        meta.append({"names": list(names), "available": True, "idx": slot})
+    if not rows:
+        for cid in out:
+            out[cid] = [dict(m) for m in meta]
+        return out
+    idx_p = np.asarray(rows, dtype=np.int64)
+    Wp = lineup_matrix(idx_p, P)
+    resp, _o, _n = run_vs_field(Wp, Wf, wf, Xe, grids, chunk=chunk)
+    legal = classic_allowed(idx_p, ents)
+    legal4 = classic_allowed(idx_p, ents, max_per_game=4)
+    keys_p = [tuple(r.tolist()) for r in np.sort(idx_p, axis=1)]
+    ok = np.where(allowed)[0]
+    S = np.stack([Xe[r].sum(axis=0) for r in idx_p])          # (probes, evaluation worlds)
+    for gi, c in enumerate(contests):
+        r, rp = res[gi], resp[gi]
+        C = int(c.get("max_entries") or c.get("entered") or 10000)
+        fee = float(c.get("entry_fee") or 1.0)
+        first = float(c.get("first_prize") or 0.0)
+        rows_out = []
+        j = 0
+        for m in meta:
+            if not m["available"]:
+                rows_out.append({k: v for k, v in m.items() if k != "idx"})
+                continue
+            copies = float(C * f_count.get(keys_p[j], 0) / M) if M else 0.0
+            ev_dup = float(rp["ev"][j]) - float(rp["win"][j]) * first * (1.0 - 1.0 / (1.0 + copies))
+
+            def rank(v_all, v):
+                return int((v_all[ok] > v).sum()) + 1 if len(ok) else None
+            q = np.quantile(S[j], [0.1, 0.5, 0.9, 0.95, 0.99])
+            lineup = [{"slot": CL_SLOTS[k], "name": ents[idx_p[j, k]]["name"], "pos": ents[idx_p[j, k]]["pos"],
+                       "team": ents[idx_p[j, k]]["team"], "salary": ents[idx_p[j, k]]["salary"],
+                       "depth": ents[idx_p[j, k]].get("depth"), "proj": ents[idx_p[j, k]]["proj"]} for k in range(9)]
+            rows_out.append({
+                "names": m["names"], "available": True, "lineup": lineup,
+                "legal": bool(legal[j]), "legal_under_cap4": bool(legal4[j]),
+                "salary": int(sum(p["salary"] for p in lineup)),
+                "proj": round(float(sum(p["proj"] for p in lineup)), 1),
+                "mean": round(float(S[j].mean()), 1), "median": round(float(q[1]), 1),
+                "p10": round(float(q[0]), 1), "p90": round(float(q[2]), 1),
+                "p95": round(float(q[3]), 1), "p99": round(float(q[4]), 1),
+                "top1_pct": round(100.0 * float(rp["top1"][j]), 2),
+                "top01_pct": round(100.0 * float(rp["top01"][j]), 3),
+                "cash_pct": round(100.0 * float(rp["cash"][j]), 1),
+                "win_pct": round(100.0 * float(rp["win"][j]), 4),
+                "ev": round(float(rp["ev"][j]), 2), "ev_dup": round(ev_dup, 2),
+                "roi_pct": round(100.0 * (ev_dup - fee) / fee, 1),
+                "expected_copies": round(copies, 1),
+                "rank": {"top1": rank(r["top1"], float(rp["top1"][j])),
+                         "top01": rank(r["top01"], float(rp["top01"][j])),
+                         "win": rank(r["win"], float(rp["win"][j])),
+                         "of": int(len(ok))},
+            })
+            j += 1
+        out[str(c["id"])] = rows_out
+    return out
+
+
 def world_split(n_worlds, opt_worlds):
     """(generation, evaluation) world ranges, disjoint: the first `opt_worlds`
     worlds -- at most a third of them -- find the hindsight-optimal
@@ -1294,7 +1456,7 @@ def world_split(n_worlds, opt_worlds):
 def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
                       opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=20000, chunk=500,
                       week=None, preseason=False, top=40, k_port=20, candidates=1200,
-                      seed=None, log=print):
+                      seed=None, log=print, probes=None):
     """The tournament for a DraftKings classic slate, against every contest
     on it whose pool clears `min_pool` (or `contest_ids`). Returns the
     artifact the tab serves, or None when the slate, the contests or the
@@ -1408,7 +1570,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         f"({t2 - t1:.0f}s); calibrating the field...")
     # --- the field ---
     beta, kappa, max_own, mean_sal, coll, top_share = calibrate_field(ents, rng, n=int(cal_n))
-    idx_f = classic_sample(ents, int(field_n), rng, beta, kappa)
+    rep_f = {}
+    idx_f = classic_sample(ents, int(field_n), rng, beta, kappa, report=rep_f)
+    check_completion(rep_f, "field")
     M = len(idx_f)
     Wf = lineup_matrix(idx_f, P)
     wf = np.full(M, 1.0 / M)
@@ -1425,7 +1589,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         f"collision {coll:.2e}, top build {100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
     # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
     idx_o = _slot_rows(list(opt_count.keys()), pos)
-    idx_c = classic_sample(ents, int(cand_n), rng, beta, kappa, rules=True, exclude=fo)
+    rep_c = {}
+    idx_c = classic_sample(ents, int(cand_n), rng, beta, kappa, rules=True, exclude=fo, report=rep_c)
+    check_completion(rep_c, "candidate draws")
     idx_c = idx_c[classic_allowed(idx_c, ents)]
     # the public's three most common builds ride along (allowed or not) so
     # the chalk row on the sheet is the real chalk
@@ -1506,6 +1672,13 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                           "p_any_top1_pct": [round(100.0 * v, 1) for v in p_any]},
             "chalk": row(chalk_i, gi, "chalk") if chalk_i is not None else None,
         }
+    # The probes come last and read only: the candidates, their ranking and
+    # the portfolio above are finished before a probe is even resolved.
+    if probes is None:
+        probes = PROBES.get(("nfl", int(dg)), [])
+    for cid, rows_p in probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed,
+                                  f_count, M, chunk=ch).items():
+        results[cid]["probes"] = rows_p
     players_out = []
     for i, e in enumerate(ents):
         players_out.append({"name": e["name"], "pos": e["pos"], "team": e["team"], "opp": e.get("opp"),
@@ -1536,6 +1709,9 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                       "games": len({(e["team"], e.get("opp")) for e in ents}) // 2,
                       "week": week, "preseason": bool(preseason), "field_only": sorted(field_only)},
             "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt), "eval_worlds": int(len(ev)),
+            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),
+            "probes_configured": int(len(probes)),
+            "candidate_draws": rep_c,
             "max_per_game": CL_MAX_PER_GAME, "max_per_team": CL_MAX_PER_TEAM,
             # The first-place column is the share of evaluation worlds in
             # which the lineup beats every one of the field SAMPLE's
@@ -1563,6 +1739,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                             "targets": {"max_own": CL_FIELD_MAX_OWN, "mean_salary": CL_SALARY_USED,
                                         "bring_back": CL_BRING_BACK, "dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB},
                             "achieved": achieved,
+                            "completion": rep_f,
                             "collision": coll, "mean_salary": round(mean_sal),
                             "top_share_pct": round(100.0 * top_share, 4),
                             "stack_dist": list(CL_STACK_DIST), "bring_back": CL_BRING_BACK,

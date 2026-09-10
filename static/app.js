@@ -8290,7 +8290,7 @@ function _dfsTourneyRows(d) {
   if (d.kind === "classic") {
     const rs = (d.results || {})[_dfsTourneyCid] || {};
     const pf = rs.portfolio || {};
-    return { portfolio: pf.entries || [], p_any: pf.p_any_top1_pct || [], chalk: rs.chalk, contest: rs.contest || {},
+    return { portfolio: pf.entries || [], p_any: pf.p_any_top1_pct || [], chalk: rs.chalk, contest: rs.contest || {}, probes: rs.probes || [],
       lists: { top_top1: rs.top_top1 || [], top_top01: rs.top_top01 || [], top_ev: rs.top_ev || [], top_win: rs.top_win || [] } };
   }
   const ports = d.portfolio || {};
@@ -8402,6 +8402,9 @@ function renderDfsTourney(d) {
     ${table(portRows, "portfolio")}
     <div style="margin-top:8px"><b>Single entries</b> <span class="small" style="margin-left:6px">${listBtns}</span></div>
     ${table((rr.lists[_dfsTourneyList] || []).slice(0, 8), _dfsTourneyList)}
+    ${(rr.probes || []).length ? `<div style="margin-top:8px"><b>Probes</b> <span class="small" style="color:var(--muted)">- fixed lineups scored against this board as passengers; they never enter the candidates or the portfolio</span></div>
+    ${(rr.probes || []).map((p) => p.available === false ? `<div class="small" style="color:var(--muted)">${escapeHtml((p.names || []).join(", "))} · not on this pool (${escapeHtml((p.missing || []).join(", "))})</div>`
+      : `<div class="small">${lineupCell(p)} · $${nf(p.salary)} · ${p.legal ? "legal" : "<b>not legal</b>"}${p.legal && !p.legal_under_cap4 ? " (fails a cap of four)" : ""} · top 1% <b>${pct(p.top1_pct, 1)}</b> #${(p.rank || {}).top1 || "-"} · top 0.1% <b>${pct(p.top01_pct, 2)}</b> #${(p.rank || {}).top01 || "-"} of ${nf((p.rank || {}).of)} · p10/p50/p90/p99 ${p.p10}/${p.median}/${p.p90}/${p.p99}${exp ? ` · experimental win ${pct(p.win_pct, 3)} · experimental EV ${money(p.ev_dup)}` : ` · win ${pct(p.win_pct, 3)} · EV ${money(p.ev_dup)}`}</div>`).join("")}` : ""}
     <div style="margin-top:8px"><b>Players</b> <span class="small" style="color:var(--muted)">- what the field does with them vs where the winning lineups actually had them</span></div>
     ${playersHtml}${moreHtml}
     <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s${classic ? ` · best lineups ${Math.round(tm.optimal_s || 0)}s · field ${Math.round(tm.field_s || 0)}s` : ` · enumerate ${Math.round(tm.enumerate_s || 0)}s`} · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>

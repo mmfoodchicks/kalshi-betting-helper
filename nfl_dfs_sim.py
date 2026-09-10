@@ -222,6 +222,28 @@ _SCRIPT_RUSH = 0.14     # leading -> more rush yards
 _SCRIPT_PASS = 0.12     # trailing -> garbage-time pass volume
 _TD_SD = 0.0            # TDs handled as Poisson, no extra multiplier
 
+# What produced a board's point arrays, stamped on every tournament artifact
+# so two boards built by different simulators can never be confused: this
+# is the production model; the constrained simulator (a separate mode, in
+# research) will stamp its own name, version and fitted parameters.
+SIM_MODEL = "legacy-latent"
+SIM_MODEL_VERSION = 1
+
+
+def sim_stamp(n=None, preseason=False):
+    """{model, version, params, ...}: enough to say which model, with which
+    constants, generated a board's worlds. The game loop draws from the
+    module RNG unseeded, so a build is reproducible in distribution, not
+    draw for draw; the stamp says so rather than implying otherwise."""
+    return {"model": SIM_MODEL, "version": SIM_MODEL_VERSION, "projections": "sleeper-weekly",
+            "params": {"env_sd": _ENV_SD, "qb_sd": _QB_SD, "rush_sd": _RUSH_SD, "script_sd": _SCRIPT_SD,
+                       "script_rush": _SCRIPT_RUSH, "script_pass": _SCRIPT_PASS, "td_sd": _TD_SD},
+            "touchdowns": "poisson, independent per player",
+            "receiving_noise": "none beyond the shared game, team-passing and script factors",
+            "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+            "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+            "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
+
 
 def _pois(mean):
     """Poisson draw (small means) via inversion."""
