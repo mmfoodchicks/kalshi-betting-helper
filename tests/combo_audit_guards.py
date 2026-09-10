@@ -10721,7 +10721,7 @@ ck("the maker mirrors baseball's controls -- floor, ceiling, goal, edge, legs/pa
 ck("the recipe tabs, the crown and the wall are the baseball ones on the UFC data",
    '"/api/ufc/presets"' in _js63 and "_UFC_PRESET_TABS" in _js63 and "_UFC_WALL_COLS" in _js63
    and "_presetSectionHtml(p, (d.records || {})[pid], null, null," in _js63[_js63.index("async function renderUfcPresetBox"):]
-   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("the multi-sport combo area still has its UFC legs (the new maker is in addition)",
    "def _ufc_legs" in open(_os.path.join(_root, "combine.py")).read())
 
@@ -11921,7 +11921,7 @@ ck("wired: the racing route passes the sample box, the NFL and MLB contest sims 
    and '$("dfsSport").addEventListener("change", dfsRecommend)' in _jslb2
    and "dfsRecommend(true)" in _jslb2 and "_dfsMeasuredSample(sport, entries)" in _jslb2
    and "Sample check" in _jslb2 and "d.sample_reco || null" in _jslb2
-   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
 ck("wired: every builder applies the correction, every big build is logged from the "
    "route, the recorder grades on its cadence, the two routes exist, the tab shows "
    "the record and can grade on demand",
@@ -12513,7 +12513,7 @@ ck("the NFL game grid maps the week board's own games -- every name it reads is 
    "JS-error ledger 2026-09-09 13:37 ET: Uncaught ReferenceError: mine is not defined @ app.js:3754")
 ck("the shared preset card says when a top-N recipe came up short, and the shell moved for the new tab",
    "it.short_slate" in _js11[_js11.index("function _presetSectionHtml("):][:4000]
-   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The rungs pay what KALSHI pays. The owner, 2026-09-09: a 200x rung's slip
@@ -12614,7 +12614,7 @@ ck("the UI never calls a product of asks 'Kalshi pays' again, warns on stacks, n
    and "no maker is quoting" in _js12 and "built to pay <b>${it.target_payout_x}×</b> on Kalshi" in _js12
    and "_presetSectionHtml(p, rec, builtTs, firstStart, quoting)" in _js12
    and _js12.count("(d.quoting || {})[pid]") == 3
-   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # ---------------------------------------------------------------------------
 # The showdown builder on the 2026 opener (NE @ SEA, DK's $2.25M Millionaire,
@@ -12806,7 +12806,7 @@ ck("the tab draws every entry with its captain, depth tags and contest line, lis
    and "rules:" in _js13 and "showdown && sport === \"nfl\"" in _js13
    and 'dfsApplyReco(\'${obj}\',${sample},${lineups || 0})' in _js13
    and '$("dfsLineups").value = lineups' in _js13
-   and 'vigil-shell-v123' in open(_os.path.join(_root, "static", "sw.js")).read())
+   and 'vigil-shell-v124' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 
 # ---- the DFS tournament engine (dfs_tourney): built on the PC, served here --
@@ -12926,7 +12926,7 @@ try:
     _r14c = _c14.get("/api/dfs/tourney?sport=nfl&dg=424242", headers=_h14).get_json()
     ck("the tournament route serves the PC's board with its age and the PC light, and says why when there is none",
        _r14a.get("status") == "none" and "pc" in _r14a and "not built yet" in (_r14a.get("why") or "")
-       and _r14b.get("status") == "none" and "NFL showdown" in (_r14b.get("why") or "")
+       and _r14b.get("status") == "none" and "NFL slates" in (_r14b.get("why") or "")
        and _r14c.get("status") == "ok" and _r14c.get("worlds") == 7 and "age_s" in _r14c
        and _r14c.get("pc", {}).get("state") in ("on", "off", "behind"))
 finally:
@@ -12938,8 +12938,10 @@ _tt15 = _pcw15[_pcw15.index("def _task_showdown_tourney"):_pcw15.index("def _shi
 ck("the PC builds only the primetime showdown Millionaires on its own (richest contest >= $500k), requests first, and never rebuilds on age alone",
    "_SD_MIN_POOL = 500_000" in _pcw15 and "pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL" in _tt15
    and '"/api/dfs/tourney/requests"' in _pcw15 and "soon.append((0, wanted[dg]" in _tt15
-   and "3 * 3600" not in _tt15 and 'why = "queued from the tab"' in _tt15
-   and 'why = "the DraftKings pool changed"' in _tt15 and "soon[:2]" not in _tt15,
+   and "3 * 3600" not in _tt15 and "_rebuild_reason(cur, _pool_sig(slate), wanted.get(dg), state, dg, status_key)" in _tt15
+   and 'return "queued from the tab"' in _pcw15
+   and 'return "the DraftKings pool changed"' in _pcw15 and "soon[:2]" not in _tt15
+   and "timedelta(minutes=30) <= st" in _tt15,
    "the first cycle after the engine shipped spent 25 minutes on the NO @ DET $20K "
    "Special while Sunday night's slate waited behind eleven of them")
 _old15 = (_bs14._DIR, _app14._SIM_TOKEN)
@@ -12978,6 +12980,190 @@ try:
 finally:
     _bs14._DIR, _app14._SIM_TOKEN = _old15
     _shutil.rmtree(_tmp15, ignore_errors=True)
+# ---- the classic-slate tournament ------------------------------------------
+_pcw16 = open(_os.path.join(_root, "pc_worker.py")).read()
+ck("the PC builds the Sunday main slate against its seven-figure contests, checks statuses nightly at 3 ET and Sunday 11:35-12:15 ET, and never rebuilds on age",
+   '("classic tourney", lambda: _task_classic_tourney(url, tok))' in _pcw16
+   and "_CL_MIN_POOL = 1_000_000" in _pcw16
+   and '("nightly", 3, 0, 3, 59, None)' in _pcw16 and '("sunday", 11, 35, 12, 15, 6)' in _pcw16
+   and 'return "the DraftKings pool changed"' in _pcw16 and 'return "queued from the tab"' in _pcw16
+   and 'return f"status changed: {detail}"' in _pcw16 and "3 * 3600" not in _pcw16
+   and "min_pool=_CL_MIN_POOL, n_sims=60000" in _pcw16
+   and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _pcw16,
+   "owner: nightly for status changes only, Sunday before the games, only the Sunday ones over $1M")
+import pc_worker as _pcw16m
+_old16 = _bs14._DIR
+_tmp16 = _tf14.mkdtemp(prefix="vigil-classic-guard-")
+try:
+    _bs14._DIR = _os.path.join(_tmp16, "boards")
+    _os.makedirs(_bs14._DIR)
+    _st16 = {}
+    _b16 = {"pool_sig": "abc", "built_ts": 100, "status": {"Guard Player One": "q", "Guard Player Two": "in"}}
+    _r16 = [_pcw16m._rebuild_reason(None, "abc", None, _st16, 1, None),
+            _pcw16m._rebuild_reason(_b16, "zzz", None, _st16, 1, None),
+            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 200}, _st16, 1, None),
+            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 50}, _st16, 1, None),
+            _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday"),
+            _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday"),
+            _pcw16m._rebuild_reason({"pool_sig": "abc", "built_ts": 100, "status": {"Guard Player Three": "in"}},
+                                    "abc", None, _st16, 2, "2026-09-13 sunday")]
+    ck("rebuild reasons: no board, a pool change, a newer request, a pivotal status change inside a window; an older request, a repeated window and an unchanged status are not reasons",
+       _r16[0] == "no board yet" and _r16[1] == "the DraftKings pool changed"
+       and _r16[2] == "queued from the tab" and _r16[3] is None
+       and (_r16[4] or "").startswith("status changed: Guard Player One q->")
+       and _r16[5] is None and _r16[6] is None
+       and (_st16.get("status_checks") or {}).get("1") == "2026-09-13 sunday"
+       and _os.path.exists(_pcw16m._tourney_state_path()))
+    import datetime as _dt16
+    _day16 = (_dt16.datetime.now() + _dt16.timedelta(days=2)).strftime("%Y-%m-%dT13:00:00")
+    _sl16 = [{"draft_group_id": 1, "contest_type": 21, "games": 12, "tag": None, "starts": _day16},
+             {"draft_group_id": 2, "contest_type": 21, "games": 14, "tag": "(Sun-Mon)", "starts": _day16},
+             {"draft_group_id": 3, "contest_type": 21, "games": 8, "tag": "(Early Only)", "starts": _day16},
+             {"draft_group_id": 4, "contest_type": 96, "games": 1, "tag": None, "starts": _day16}]
+    ck("the main slate is the untagged classic slate of ten-plus games, not the Sun-Mon, early-only or showdown ones",
+       (_pcw16m._main_slate(_sl16) or {}).get("draft_group_id") == 1
+       and _pcw16m._main_slate(_sl16[1:]) is None)
+finally:
+    _bs14._DIR = _old16
+    _shutil.rmtree(_tmp16, ignore_errors=True)
+_csv16a = ("Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\n"
+           "QB,A Guard (1),A Guard,1,QB,7000,AA@BB 09/13/2026 01:00PM ET,AA,20\n"
+           "WR,B Guard (2),B Guard,2,WR/FLEX,5000,AA@BB 09/13/2026 01:00PM ET,BB,12\n")
+_csv16b = _csv16a.replace(",7000,", ",7500,")
+_csv16c = _csv16a.replace("WR,B Guard (2),B Guard,2,WR/FLEX,5000,AA@BB 09/13/2026 01:00PM ET,BB,12\n", "")
+ck("the pool signature is who is in the pool: a salary change leaves it alone, a dropped player changes it",
+   _dt14.pool_sig(_csv16a) == _dt14.pool_sig(_csv16b) and _dt14.pool_sig(_csv16a) != _dt14.pool_sig(_csv16c))
+_cls16 = _dt14.status_classes(["Guard Nobody", "Another Guard"])
+ck("status classes are in / q / out per name and the signature is stable",
+   set(_cls16.values()) <= {"in", "q", "out"} and len(_cls16) == 2
+   and _dt14.status_sig(["Guard Nobody"])[0] == _dt14.status_sig(["Guard Nobody"])[0])
+if _dt14.available():
+    _rng16 = _np14.random.default_rng(16)
+    _teams16 = [f"T{i:02d}" for i in range(24)]
+    _opp16 = {_teams16[2 * g_]: _teams16[2 * g_ + 1] for g_ in range(12)}
+    _opp16.update({v: k for k, v in list(_opp16.items())})
+    _pl16 = []
+    for _pos, _per, _lo, _hi in (("QB", 1, 5000, 8500), ("RB", 3, 3000, 9000), ("WR", 4, 3000, 9000),
+                                 ("TE", 2, 3000, 6000), ("DST", 1, 3000, 4000)):
+        for _team16 in _teams16:
+            for _i in range(_per):
+                _pl16.append({"name": f"{_team16}{_pos}{_i}", "pos": _pos, "team": _team16, "opp": _opp16[_team16],
+                              "salary": int(_rng16.integers(_lo, _hi) // 100 * 100),
+                              "proj": float(_rng16.uniform(3, 22)), "depth": f"{_pos}{_i + 1}"})
+    # the exact solver against brute force on a small corner of it (a full
+    # four-team corner is ninety million Python combinations)
+    _sub16 = []
+    for _pos, _n in (("QB", 3), ("RB", 6), ("WR", 7), ("TE", 3), ("DST", 3)):
+        _sub16 += [p for p in _pl16 if p["pos"] == _pos and p["team"] in ("T00", "T01", "T02", "T03")][:_n]
+    _X16 = _np14.asarray([_rng16.gamma(2.0, p["proj"] / 2.0, size=6) for p in _sub16], dtype=_np14.float32)
+    _sal16 = [p["salary"] for p in _sub16]
+    _pos16 = [p["pos"] for p in _sub16]
+    _L16, _v16 = _dt14.optimal_lineups(_X16, _sal16, _pos16, chunk=4)
+    _q16 = [i for i, p in enumerate(_pos16) if p == "QB"]
+    _r16b = [i for i, p in enumerate(_pos16) if p == "RB"]
+    _w16 = [i for i, p in enumerate(_pos16) if p == "WR"]
+    _t16 = [i for i, p in enumerate(_pos16) if p == "TE"]
+    _d16 = [i for i, p in enumerate(_pos16) if p == "DST"]
+    _agree16 = 0
+    for _wld in range(2):
+        _best = (-1.0, None)
+        for _qq in _q16:
+            for _tt in _t16:
+                for _dd in _d16:
+                    for _rr in _itertools.combinations(_r16b, 2):
+                        for _ww in _itertools.combinations(_w16, 3):
+                            for _fx in [k for k in _r16b + _w16 if k not in _rr and k not in _ww]:
+                                _Lx = (_qq, _tt, _dd, *_rr, *_ww, _fx)
+                                if sum(_sal16[k] for k in _Lx) <= 50000:
+                                    _sc = float(_X16[list(_Lx), _wld].sum())
+                                    if _sc > _best[0]:
+                                        _best = (_sc, tuple(sorted(_Lx)))
+        _agree16 += int(_best[1] == _L16[_wld] and abs(_best[0] - _v16[_wld]) < 1e-3)
+    ck("the classic solver finds the exact best lineup of a world (agrees with brute force, nine players, under the cap)",
+       _agree16 == 2 and all(len(L) == 9 for L in _L16)
+       and all(sum(_sal16[k] for k in L) <= 50000 for L in _L16))
+    _idx16 = _dt14.classic_sample(_pl16, 20000, _rng16, beta=0.3, kappa=0.0)
+    _salA = _np14.asarray([p["salary"] for p in _pl16])
+    _pcA = _np14.asarray([_dt14._CL_CODE[p["pos"]] for p in _pl16])[_idx16]
+    _tmA = _np14.asarray([p["team"] for p in _pl16])
+    _opA = _np14.asarray([p["opp"] for p in _pl16])
+    _stack16 = ((_tmA[_idx16[:, 3:8]] == _tmA[_idx16[:, 0]][:, None]) & _np14.isin(_pcA[:, 3:8], (2, 3))).sum(axis=1)
+    _bring16 = ((_tmA[_idx16[:, 3:8]] == _opA[_idx16[:, 0]][:, None]) & _np14.isin(_pcA[:, 3:8], (2, 3))).sum(axis=1)
+    _dist16 = _np14.bincount(_np14.minimum(_stack16, 3), minlength=4) / len(_idx16)
+    _srt16 = _np14.sort(_idx16, axis=1)
+    ck("the field sampler draws legal lineups (slots, nine distinct players, under the cap) with the published stack and bring-back rates",
+       len(_idx16) > 19000 and bool((_salA[_idx16].sum(axis=1) <= 50000).all())
+       and bool((_pcA[:, 0] == 0).all() and (_pcA[:, [1, 2]] == 1).all() and (_pcA[:, [3, 4, 5]] == 2).all()
+                and (_pcA[:, 6] == 3).all() and _np14.isin(_pcA[:, 7], (1, 2)).all() and (_pcA[:, 8] == 4).all())
+       and bool((_srt16[:, 1:] != _srt16[:, :-1]).all())
+       and float(_np14.abs(_dist16 - _np14.asarray(_dt14.CL_STACK_DIST) / sum(_dt14.CL_STACK_DIST)).max()) < 0.03
+       and abs(float((_bring16 > 0).mean()) - _dt14.CL_BRING_BACK) < 0.04,
+       "Establish The Run: naked QB 17.4%, one teammate 49.0%, two 28.9%, three-plus 4.2%")
+    _byn16 = {p["name"]: i for i, p in enumerate(_pl16)}
+    for p in _pl16:
+        p["salary"] = 5000 if p["pos"] != "DST" else 3000
+    _row = lambda names: _np14.asarray([[_byn16[n] for n in names]], dtype=_np14.int32)
+    _clean16 = ["T00QB0", "T02RB0", "T03RB0", "T00WR0", "T04WR0", "T05WR0", "T06TE0", "T07RB0", "T09DST0"]
+    _naked16 = list(_clean16); _naked16[3] = "T10WR0"
+    _dstqb16 = list(_clean16); _dstqb16[8] = "T01DST0"                     # T01 faces T00, our QB
+    _dstrb16 = list(_clean16); _dstrb16[8] = "T03DST0"                     # T03 faces T02, our RB
+    _five16 = ["T00QB0", "T02RB0", "T03RB0", "T00WR0", "T00WR1", "T01WR0", "T01TE0", "T01RB0", "T09DST0"]
+    _al16 = _dt14.classic_allowed(_np14.concatenate([_row(_clean16), _row(_naked16), _row(_dstqb16), _row(_dstrb16), _row(_five16)]), _pl16)
+    _pl16[_byn16["T04WR0"]]["salary"] = 2500                                # one punt, WR1: holds a role
+    _al16b = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
+    _pl16[_byn16["T06TE0"]]["salary"] = 2500                                # a second punt
+    _al16c = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
+    _pl16[_byn16["T06TE0"]]["salary"] = 5000
+    _pl16[_byn16["T04WR0"]]["salary"] = 5000
+    _pl16[_byn16["T05WR0"]]["salary"] = 2500                                # a punt without a role
+    _pl16[_byn16["T05WR0"]]["depth"] = "WR4"
+    _al16d = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
+    _pl16[_byn16["T05WR0"]]["salary"] = 5000
+    _pl16[_byn16["T05WR0"]]["depth"] = "WR1"
+    _pl16[_byn16["T04WR0"]]["_field_only"] = True
+    _al16e = _dt14.classic_allowed(_row(_clean16), _pl16)[0]
+    _pl16[_byn16["T04WR0"]]["_field_only"] = False
+    ck("our rules: a stacked, clean lineup passes, with one punt who holds a role; a naked QB, a defense against our QB or our back, five from one game, two punts, a roleless punt and a field-only player fail",
+       bool(_al16[0]) and not _al16[1:].any() and bool(_al16b) and not _al16c and not _al16d and not _al16e)
+    _sr16 = _dt14._slot_rows([tuple(sorted(_byn16[n] for n in _clean16))], [p["pos"] for p in _pl16])[0]
+    ck("a sorted optimal lineup lands in slot order with the third back or fourth receiver at FLEX",
+       _pl16[_sr16[0]]["pos"] == "QB" and _pl16[_sr16[8]]["pos"] == "DST" and _pl16[_sr16[6]]["pos"] == "TE"
+       and [_pl16[i]["pos"] for i in _sr16[1:3]] == ["RB", "RB"] and [_pl16[i]["pos"] for i in _sr16[3:6]] == ["WR"] * 3
+       and _pl16[_sr16[7]]["pos"] == "RB")
+    _g16a = _dt14.payout_grid(832342, [{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 166000, "prize": 10.0}], 5.0, 166000)
+    _g16b = _dt14.payout_grid(750, [{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 150, "prize": 5000.0}], 4444.0, 150)
+    _res16, _opt16, _n16 = _dt14.run_vs_field(_W14, _W14, _f14, _X14, [_g16a, _g16b], chunk=100)
+    _one16r = _dt14.run(_W14, _X14, _f14, _g16a, chunk=100)
+    ck("payout curves carry top 0.1% <= top 1% <= cash, several contests share one scoring pass, and the single-contest form equals the first of them",
+       bool((_g16a["top01"] <= _g16a["top1"] + 1e-12).all() and (_g16a["top1"] <= _g16a["cash"] + 1e-12).all())
+       and _dt14._grid_table([_g16a, _g16b]).shape[1] == 10 and len(_res16) == 2
+       and float(_np14.abs(_res16[0]["top1"] - _one16r["top1"]).max()) < 1e-12
+       and float(_np14.abs(_res16[1]["ev"] - _res16[0]["ev"]).max()) > 0)
+else:
+    ck("(numpy is not installed here -- the classic engine's numeric guards run where it is)", True)
+_old16b = _bs14._DIR
+_tmp16b = _tf14.mkdtemp(prefix="vigil-classic-route-guard-")
+try:
+    _bs14._DIR = _tmp16b
+    _c16 = _app14.app.test_client()
+    _bs14.put("cl_tourney_nfl_777002", {"version": 2, "kind": "classic", "sport": "nfl", "draft_group_id": 777002,
+                                        "built_ts": 5, "contests": [{"id": 9, "name": "guard milly", "max_entries": 10, "entry_fee": 5.0}],
+                                        "slate": {"games": 12}, "results": {"9": {}}, "players": [], "worlds": 3})
+    _r16a = _c16.get("/api/dfs/tourney?sport=nfl&dg=777002").get_json()
+    _r16b = _c16.get("/api/dfs/tourney/list?sport=nfl").get_json()
+    ck("the tourney route and the file list serve a classic board too, labelled by its slate and counting its contests",
+       _r16a.get("status") == "ok" and _r16a.get("kind") == "classic"
+       and [b.get("dg") for b in (_r16b.get("boards") or [])] == [777002]
+       and _r16b["boards"][0].get("label") == "Sunday main (12 games)" and _r16b["boards"][0].get("n_contests") == 1)
+finally:
+    _bs14._DIR = _old16b
+    _shutil.rmtree(_tmp16b, ignore_errors=True)
+_js16 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the tab renders a classic board: a contest selector, portfolio sizes one to twenty, the top 0.1% column, and nine-slot rows",
+   'd.kind === "classic"' in _js16 and "dfsTourneyContest(" in _js16 and "top 0.1%" in _js16
+   and "p_any_top1_pct" in _js16 and "[1, 2, 3, 5, 10, 20]" in _js16 and "dfsTourneyListPick(" in _js16
+   and "`${p.slot} ${p.name}`" in _js16)
+
 _js14 = open(_os.path.join(_root, "static", "app.js")).read()
 _ix14 = open(_os.path.join(_root, "templates", "index.html")).read()
 ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes, best by win, the chalk build, field vs optimal shares per player) and says PC off when there is no board",
@@ -12986,7 +13172,7 @@ ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes,
    and "loadDfsTourney(null)" in _js14 and "function renderDfsTourney(d)" in _js14
    and "dfsTourneyPick(" in _js14 and "most popular build" in _js14
    and "optimal CPT" in _js14 and "PC off" in _js14
-   and "!showdown && !force" in _js14
+   and 'if (!dg) { bx.main.innerHTML = ""' in _js14
    and "Build on the PC" in _js14 and "Rebuild on the PC" in _js14
    and 'fetch("/api/dfs/tourney/request"' in _js14
    and "async function loadDfsTourneyList()" in _js14 and "boards on file" in _js14

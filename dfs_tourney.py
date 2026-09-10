@@ -46,7 +46,7 @@ try:
 except ImportError:                      # the server: no numpy on purpose
     np = None
 
-VERSION = 1
+VERSION = 2
 
 
 def available():
@@ -163,6 +163,9 @@ def payout_grid(C, payouts, entry_fee, places, n=6000):
     first = np.power(1.0 - F, C - 1)
     top1_line = max(1, int(0.01 * C))
     top1 = _ncdf_arr((top1_line + 0.5 - m) / s)
+    # top 0.1%: in an 832,000-entry Millionaire first place is too rare to
+    # rank on and the top 1% is 8,300 places; the top 832 is the money.
+    top01 = _ncdf_arr((max(1, int(0.001 * C)) + 0.5 - m) / s)
     cash = _ncdf_arr((places + 0.5 - m) / s)
     ev = np.zeros_like(F)
     for row in payouts or []:
@@ -175,8 +178,17 @@ def payout_grid(C, payouts, entry_fee, places, n=6000):
             if hi < 2:
                 continue
         ev += prize * (_ncdf_arr((hi + 0.5 - m) / s) - _ncdf_arr((lo - 0.5 - m) / s))
-    return {"F": F, "first": first, "top1": top1, "cash": cash, "ev": ev,
+    return {"F": F, "first": first, "top1": top1, "top01": top01, "cash": cash, "ev": ev,
             "C": C, "places": places, "entry_fee": float(entry_fee)}
+
+
+_GRID_COLS = ("first", "top1", "top01", "cash", "ev")
+
+
+def _grid_table(grids):
+    """Every contest's five curves side by side, (n_grid, 5 x contests), so a
+    world costs one gather however many contests share the slate."""
+    return np.concatenate([np.stack([g[c] for c in _GRID_COLS], axis=1) for g in grids], axis=1)
 
 
 # ---- the tournament ---------------------------------------------------------
@@ -212,74 +224,104 @@ def _world_tables(b, f, F_grid):
     return np.minimum(pos, len(F_grid) - 1)
 
 
-def run(W, X, f, grid, chunk=500, progress=None):
-    """Score every lineup in every world. W (L, P) lineup weights, X (P, N)
-    player points per world, f (L,) field probability, grid from
-    payout_grid. Returns per-lineup means over worlds: win, top1, cash, ev
-    (fees not yet netted), plus the hindsight-optimal tallies.
+def run_vs_field(Wc, Wf, wf, X, grids, chunk=500, progress=None):
+    """Score candidates against a field in every world. Wc (K, P) candidate
+    lineup weights, Wf (M, P) the field's lineups with probability wf (M,)
+    summing to one (showdown: every legal lineup and the field model;
+    classic: a sample from the field generator, 1/M each), X (P, N) player
+    points per world, grids one payout_grid per contest. Returns
+    ([{win, top1, top01, cash, ev} per contest], opt (K,), N): means over
+    worlds, and how often each candidate scored highest of the candidates.
 
     World-major: each chunk's scores come out as (worlds, lineups) so a
     world is a contiguous row -- the (lineups, worlds) layout paid 25x on
     the per-world pass (9.9s vs 0.4s a chunk, measured)."""
-    L, N = W.shape[0], X.shape[1]
-    F_grid = grid["F"]
-    G = np.stack([grid["first"], grid["top1"], grid["cash"], grid["ev"]], axis=1)
-    acc = np.zeros((L, 4), dtype=np.float64)
-    opt = np.zeros(L, dtype=np.int64)          # worlds in which this lineup scored highest of all
-    WT = np.ascontiguousarray(W.T)             # (P, L)
-    chunk = chunk_for(L, chunk)
+    K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
+    F_grid = grids[0]["F"]
+    G = _grid_table(grids)
+    acc = np.zeros((K, G.shape[1]), dtype=np.float64)
+    opt = np.zeros(K, dtype=np.int64)
+    same = Wc is Wf
+    WcT = np.ascontiguousarray(Wc.T)
+    WfT = WcT if same else np.ascontiguousarray(Wf.T)
+    chunk = chunk_for(max(K, M), chunk)
     t0 = time.time()
     for start in range(0, N, chunk):
         Xc = np.ascontiguousarray(X[:, start:start + chunk].T)   # (c, P)
-        St = Xc @ WT                                             # (c, L)
-        opt += np.bincount(np.argmax(St, axis=1), minlength=L)
-        Bt = _buckets(St)
-        for j in range(Bt.shape[0]):
-            b = Bt[j]
-            acc += G[_world_tables(b, f, F_grid)][b]
+        Sc = Xc @ WcT                                             # (c, K)
+        opt += np.bincount(np.argmax(Sc, axis=1), minlength=K)
+        Bc = _buckets(Sc)
+        Bf = Bc if same else _buckets(Xc @ WfT)
+        for j in range(Bc.shape[0]):
+            acc += G[_world_tables(Bf[j], wf, F_grid)][Bc[j]]
         if progress:
             progress(min(N, start + chunk), N, time.time() - t0)
-    return {"win": acc[:, 0] / N, "top1": acc[:, 1] / N, "cash": acc[:, 2] / N,
-            "ev": acc[:, 3] / N, "opt": opt, "n_worlds": N}
+    out = []
+    for gi in range(len(grids)):
+        cols = acc[:, gi * 5:(gi + 1) * 5] / N
+        out.append({"win": cols[:, 0], "top1": cols[:, 1], "top01": cols[:, 2],
+                    "cash": cols[:, 3], "ev": cols[:, 4]})
+    return out, opt, N
+
+
+def run(W, X, f, grid, chunk=500, progress=None):
+    """Showdown form: every legal lineup is both the candidate set and the
+    field. Returns per-lineup means over worlds: win, top1, top01, cash, ev
+    (fees not yet netted), plus the hindsight-optimal tallies."""
+    res, opt, N = run_vs_field(W, W, f, X, [grid], chunk=chunk, progress=progress)
+    r = res[0]
+    return {"win": r["win"], "top1": r["top1"], "top01": r["top01"], "cash": r["cash"],
+            "ev": r["ev"], "opt": opt, "n_worlds": N}
+
+
+def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):
+    """Greedy cover over candidate lineups, per contest: each pick adds the
+    most `rank` probability (top1 or top01) in the worlds the picks so far
+    leave uncovered. Returns, per contest, (chosen candidate positions best
+    first, P(at least one entry makes it) for every prefix length)."""
+    if not len(cand_idx):
+        return [([], []) for _ in grids]
+    K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
+    F_grid = grids[0]["F"]
+    same = Wc is Wf
+    WfT = np.ascontiguousarray(Wf.T)
+    WkT = np.ascontiguousarray(Wc[cand_idx].T)
+    chunk = chunk_for(max(K, M), chunk)
+    # per-world make-it probability for every candidate and contest,
+    # (contests, K', N) float32, built once; the field pass is repeated (a
+    # second matmul and bucket count) rather than kept from the scoring
+    # pass: 60,000 worlds x 4,001 buckets would be a gigabyte of tables.
+    P = np.zeros((len(grids), len(cand_idx), N), dtype=np.float32)
+    tabs = [g[rank] for g in grids]
+    for start in range(0, N, chunk):
+        Xc = np.ascontiguousarray(X[:, start:start + chunk].T)
+        Bf = _buckets(Xc @ WfT)
+        Bk = _buckets(Xc @ WkT)
+        for j in range(Bf.shape[0]):
+            pos = _world_tables(Bf[j], wf, F_grid)
+            for gi, tab in enumerate(tabs):
+                P[gi, :, start + j] = tab[pos][Bk[j]]
+    del same
+    out = []
+    for gi in range(len(grids)):
+        chosen, miss = [], np.ones(N, dtype=np.float64)   # P(no pick makes it) per world
+        p_any = []
+        for _ in range(min(k, len(cand_idx))):
+            gain = (miss[None, :] * P[gi]).sum(axis=1)
+            if chosen:
+                gain[chosen] = -1.0
+            j = int(np.argmax(gain))
+            chosen.append(j)
+            miss = miss * (1.0 - P[gi, j])
+            p_any.append(float(1.0 - miss.mean()))
+        out.append((chosen, p_any))
+    return out
 
 
 def portfolio(W, X, f, grid, cand_idx, k, chunk=500):
-    """Greedy cover over candidate lineups: each pick adds the most top-1%
-    probability in the worlds the picks so far leave uncovered. Returns the
-    chosen candidate positions (best first) and, per prefix length, the
-    portfolio's P(at least one entry finishes top 1%)."""
-    if not len(cand_idx):
-        return [], []
-    L, N = W.shape[0], X.shape[1]
-    F_grid = grid["F"]
-    top1_g = grid["top1"]
-    WT = np.ascontiguousarray(W.T)
-    WcT = np.ascontiguousarray(W[cand_idx].T)
-    chunk = chunk_for(L, chunk)
-    # per-world top-1% probability for every candidate (K x N), built once;
-    # the field pass is repeated (a second matmul and bucket count) rather
-    # than kept from run(): 60,000 worlds x 4,001 buckets would be a
-    # gigabyte of tables.
-    P = np.zeros((len(cand_idx), N), dtype=np.float32)
-    for start in range(0, N, chunk):
-        Xc = np.ascontiguousarray(X[:, start:start + chunk].T)
-        Bt = _buckets(Xc @ WT)
-        Bc = _buckets(Xc @ WcT)
-        for j in range(Bt.shape[0]):
-            P[:, start + j] = top1_g[_world_tables(Bt[j], f, F_grid)][Bc[j]]
-    # Greedy cover for the LARGEST k; a smaller portfolio is its prefix, so
-    # the caller slices rather than re-scoring the field per size.
-    chosen, miss = [], np.ones(N, dtype=np.float64)   # P(no pick in top 1%) per world
-    p_any = []
-    for _ in range(min(k, len(cand_idx))):
-        gain = (miss[None, :] * P).sum(axis=1)
-        if chosen:
-            gain[chosen] = -1.0
-        j = int(np.argmax(gain))
-        chosen.append(j)
-        miss = miss * (1.0 - P[j])
-        p_any.append(float(1.0 - miss.mean()))
-    return chosen, p_any
+    """Showdown form of portfolio_vs_field: one contest, the field is every
+    legal lineup. Returns (chosen, p_any per prefix)."""
+    return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]
 
 
 # ---- NFL showdown adapter ----------------------------------------------------
@@ -476,8 +518,14 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                             "opt_cpt_pct": round(100.0 * float(opt_c[i]) / res["n_worlds"], 2),
                             "opt_flex_pct": round(100.0 * float(opt_f[i]) / res["n_worlds"], 2)})
     players_out.sort(key=lambda p: -(p["opt_cpt_pct"] + p["opt_flex_pct"]))
-    return {"version": VERSION, "sport": "nfl", "draft_group_id": int(dg),
-            "built_ts": int(time.time()),
+    try:
+        st_sig, st_cls = status_sig([e["name"] for e in ents])
+    except Exception as e:
+        errlog.note("TOURN-status", e)
+        st_sig, st_cls = None, {}
+    return {"version": VERSION, "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
+            "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
+            "pool_sig": pool_sig(slate["csv"]),
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
                                                     "entered", "max_entries_per_user", "starts")},
@@ -504,3 +552,734 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "timings": {"sims_s": round(t1 - t0, 1), "enumerate_s": round(t2 - t1, 1),
                         "score_s": round(t3 - t2, 1), "portfolio_s": round(t4 - t3, 1),
                         "total_s": round(t4 - t0, 1)}}
+
+
+# ---- classic (nine slots) ------------------------------------------------------
+# A 12-game main slate has ~400 projected players and 9 slots: trillions of
+# legal lineups, so two things change from showdown and everything else
+# stays. The FIELD is a sample (classic_sample, the generator's knobs pinned
+# to published numbers), and OUR candidates are built: the exact best
+# lineup of every simulated world (optimal_lineups -- the lineup that wins
+# that world, by construction) plus rule-abiding draws from a sharper
+# generator. Scoring, the payout curves, duplication, the hindsight tallies
+# and the portfolio are the showdown machinery unchanged.
+CL_SLOTS = ("QB", "RB", "RB", "WR", "WR", "WR", "TE", "FLEX", "DST")
+_CL_POS = ("QB", "RB", "WR", "TE", "DST")
+_CL_CODE = {p: i for i, p in enumerate(_CL_POS)}
+CL_FIELD_MAX_OWN = 0.38
+# How sharp the public is: the most-owned player's share of Milly Maker
+# lineups runs 30-45% in a normal week (a mega-chalk back at 45% is the
+# top of it). Smooth, huge sample support, and it is the number the DFS
+# sites publish every week, so it can be checked against the real sheet
+# after lock. The first cut bisected on the sample's collision rate and
+# chased noise: eight duplicate pairs among 8,000 draws is not a signal.
+CL_FIELD_COLLISION = 1.2e-7    # reported, not fitted: P(two random entries hold the same lineup)
+CL_STACK_DIST = (0.174, 0.490, 0.289, 0.047)
+# Establish The Run (Levitan, Milly Maker trends): entries with a naked
+# QB 17.4%, one teammate 49.0%, two 28.9%, three-plus 4.2% (the remainder
+# folded into three-plus).
+CL_BRING_BACK = 0.35        # a pass-catcher from the QB's opponent; assumed, not published
+CL_SALARY_USED = 49400.0    # mean salary the field spends; assumed near the cap
+CL_DST_VS_OWN_QB = 0.08     # share of the field that plays a defense against its own QB
+_CL_KEEP = {"QB": 16, "RB": 40, "WR": 60, "TE": 20, "DST": 32}   # the solver's pool, by 90th pct
+_CL_FIELD_KEEP = 60         # depth-gated players the field still plays (WR4s, third backs)
+_CL_PUNT_SALARY = 3000
+_CL_PUNT_ROLES = {"RB1", "RB2", "WR1", "WR2", "WR3", "TE1"}
+CL_RULES = (
+    "the quarterback is stacked with at least one of his receivers or tight ends",
+    "no defense against our quarterback's team or our running backs' teams",
+    "at most four players from one game and three from one team",
+    "at most one punt under $3,000, and he must hold a role (RB1-2, WR1-3, TE1)",
+    "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out",
+)
+
+
+def _cl_state(q, r, w, t, d):
+    return (((q * 4 + r) * 5 + w) * 2 + t) * 2 + d
+
+
+_CL_S = 2 * 4 * 5 * 2 * 2
+_CL_FINALS = (_cl_state(1, 2, 4, 1, 1), _cl_state(1, 3, 3, 1, 1))   # FLEX a WR, FLEX an RB
+
+
+def _cl_transitions():
+    """Per position, (from_states, to_states): roster counts (q, r, w, t, d)
+    with r + w <= 6 (two backs, three receivers, one FLEX of either). A
+    bijection per position, so adding a player is one fancy-indexed max."""
+    out = {}
+    for p in _CL_POS:
+        fr, to = [], []
+        for q in range(2):
+            for r in range(4):
+                for w in range(5):
+                    for t in range(2):
+                        for d in range(2):
+                            if r + w > 6:
+                                continue
+                            nq, nr, nw, nt, nd = (q + (p == "QB"), r + (p == "RB"), w + (p == "WR"),
+                                                  t + (p == "TE"), d + (p == "DST"))
+                            if nq > 1 or nr > 3 or nw > 4 or nt > 1 or nd > 1 or nr + nw > 6:
+                                continue
+                            fr.append(_cl_state(q, r, w, t, d))
+                            to.append(_cl_state(nq, nr, nw, nt, nd))
+        out[p] = (np.asarray(fr, dtype=np.int64), np.asarray(to, dtype=np.int64))
+    return out
+
+
+def optimal_lineups(X, sal, pos, cap=50000, chunk=64, progress=None):
+    """The best legal nine-man lineup of EVERY world: an exact 0/1 knapsack
+    over players with the roster counts as state, vectorized across a chunk
+    of worlds, backpointers kept per chunk and walked back per world. X (P,
+    N) points, sal (P,) dollars, pos (P,) position strings. Returns (one
+    sorted tuple of player indices per world -- empty when no legal lineup
+    exists -- and the values (N,)). Measured: 3.6s per 64 worlds on a
+    160-player pool here; the PC does the 20,000 worlds it is asked for in
+    a coffee break."""
+    P, N = X.shape
+    s100 = np.asarray([int(v) // 100 for v in sal], dtype=np.int64)
+    CAP = int(cap) // 100
+    trans = _cl_transitions()
+    pred = {p: dict(zip(to.tolist(), fr.tolist())) for p, (fr, to) in trans.items()}
+    NEG = -1.0e6
+    lineups, values = [], np.full(N, NEG, dtype=np.float64)
+    take = None
+    t0 = time.time()
+    for start in range(0, N, chunk):
+        Xc = np.ascontiguousarray(X[:, start:start + chunk], dtype=np.float32)
+        c = Xc.shape[1]
+        V = np.full((_CL_S, CAP + 1, c), NEG, dtype=np.float32)
+        V[0, 0, :] = 0.0
+        if take is None or take.shape[3] != c:
+            take = np.zeros((P, _CL_S, CAP + 1, c), dtype=bool)
+        else:
+            take[:] = False
+        for i in range(P):
+            si = int(s100[i])
+            if si > CAP:
+                continue
+            fr, to = trans[pos[i]]
+            src = V[fr, :CAP + 1 - si, :]                 # gathered BEFORE the write: 0/1
+            cand = src + Xc[i][None, None, :]
+            cur = V[to, si:, :]
+            better = (cand > cur) & (src > NEG / 2)
+            V[to, si:, :] = np.where(better, cand, cur)
+            take[i, to, si:, :] = better
+        flat = V[list(_CL_FINALS)].reshape(-1, c)
+        best = np.argmax(flat, axis=0)
+        vals = flat[best, np.arange(c)]
+        for j in range(c):
+            f_, s = divmod(int(best[j]), CAP + 1)
+            st = _CL_FINALS[f_]
+            picks = []
+            if vals[j] > NEG / 2:
+                for i in range(P - 1, -1, -1):
+                    if take[i, st, s, j]:
+                        picks.append(i)
+                        st = pred[pos[i]][st]
+                        s -= int(s100[i])
+                        if st == 0:
+                            break
+            ok = len(picks) == 9
+            lineups.append(tuple(sorted(picks)) if ok else ())
+            values[start + j] = float(vals[j]) if ok else NEG
+        if progress:
+            progress(min(N, start + chunk), N, time.time() - t0)
+    return lineups, values
+
+
+def _gumbel_pick(logits, elig, rng):
+    """One player per row by Gumbel-max over the eligible ones: a softmax
+    draw for every row at once. -1 where a row has nobody eligible."""
+    g = rng.gumbel(size=elig.shape).astype(np.float32)
+    z = np.where(elig, logits[None, :] + g, -np.inf)
+    pick = np.argmax(z, axis=1)
+    pick[~elig.any(axis=1)] = -1
+    return pick
+
+
+def classic_sample(players, n, rng, beta, kappa, cap=50000, stack_dist=CL_STACK_DIST,
+                   bring_p=CL_BRING_BACK, dst_own_p=CL_DST_VS_OWN_QB, rules=False, exclude=None):
+    """`n` classic lineups the way the public builds them, vectorized. A
+    player's pull is beta * projection - kappa * salary / 1000 (beta the
+    sharpness, kappa the price sensitivity; both calibrated by the caller).
+    The quarterback first; then a stack count drawn from `stack_dist`
+    (teammates at WR/TE by the same pull); a bring-back from his opponent
+    with `bring_p`; then the remaining slots, cap-aware, DST last. With
+    `rules` the stack is at least one and the defense never faces our QB
+    or backs (the other rules are checked by classic_allowed). Returns idx
+    (rows, 9) int32 -- QB, RB, RB, WR, WR, WR, TE, FLEX, DST -- rows that
+    came out legal (a few percent die on the cap and are simply dropped)."""
+    P = len(players)
+    proj = np.asarray([float(p.get("proj") or 0.0) for p in players], dtype=np.float32)
+    sal = np.asarray([int(p["salary"]) for p in players], dtype=np.int64)
+    pc = np.asarray([_CL_CODE.get(p["pos"], -1) for p in players], dtype=np.int64)
+    teams = sorted({p.get("team") or "" for p in players} | {p.get("opp") or "" for p in players})
+    tcode = {t: i for i, t in enumerate(teams)}
+    team = np.asarray([tcode[p.get("team") or ""] for p in players], dtype=np.int64)
+    opp = np.asarray([tcode[p.get("opp") or ""] for p in players], dtype=np.int64)
+    # kappa is points per $1,000 (the public's price of a projected point);
+    # beta scales the whole thing, so sharpness and price sensitivity are
+    # separate knobs and the two calibrations do not fight.
+    logits = (beta * (proj - kappa * sal / 1000.0)).astype(np.float32)
+    mins = {k: int(sal[pc == _CL_CODE[k]].min()) if (pc == _CL_CODE[k]).any() else 10 ** 9
+            for k in _CL_POS}
+    min_flex = min(mins["RB"], mins["WR"])
+    idx = np.full((n, 9), -1, dtype=np.int32)
+    used = np.zeros((n, P), dtype=bool)
+    if exclude is not None:
+        used[:, np.asarray(exclude, dtype=bool)] = True
+    spent = np.zeros(n, dtype=np.int64)
+    need = {"QB": np.full(n, 1), "RB": np.full(n, 2), "WR": np.full(n, 3), "TE": np.full(n, 1),
+            "DST": np.full(n, 1), "FLEX": np.full(n, 1)}
+    slot_of = {"RB": (1, 2), "WR": (3, 4, 5), "TE": (6,), "DST": (8,), "FLEX": (7,)}
+
+    def floor_cost():
+        return (need["QB"] * mins["QB"] + need["RB"] * mins["RB"] + need["WR"] * mins["WR"]
+                + need["TE"] * mins["TE"] + need["DST"] * mins["DST"] + need["FLEX"] * min_flex)
+
+    def place(rows, pick):
+        """Record a pick for `rows` (pick (n,), -1 = none) into the right slot."""
+        ok = rows & (pick >= 0)
+        r = np.where(ok)[0]
+        if not len(r):
+            return
+        p = pick[r]
+        used[r, p] = True
+        spent[r] += sal[p]
+        code = pc[p]
+        for kind, cd in (("RB", 1), ("WR", 2), ("TE", 3), ("DST", 4)):
+            sel = r[code == cd]
+            if not len(sel):
+                continue
+            main = need[kind][sel] > 0
+            for k_, arr_ in ((kind, main), ("FLEX", ~main)):
+                rows_k = sel[arr_]
+                for row in rows_k:
+                    for s_ in slot_of[k_]:
+                        if idx[row, s_] < 0:
+                            idx[row, s_] = pick[row]
+                            break
+                need[k_][rows_k] -= 1
+
+    def elig_for(kinds, rows, extra=None):
+        """(n, P) eligibility: kinds a set of position names, cap-aware."""
+        e = np.zeros((n, P), dtype=bool)
+        budget = int(cap) - spent - floor_cost()
+        for kind in kinds:
+            if kind == "FLEX":
+                cols = (pc == 1) | (pc == 2)
+                room = need["FLEX"] > 0
+                relief = min_flex
+            else:
+                cols = pc == _CL_CODE[kind]
+                room = need[kind] > 0
+                relief = mins[kind]
+            # a WR/RB may also take the FLEX slot once its own slots are full
+            if kind in ("RB", "WR"):
+                room = room | (need["FLEX"] > 0)
+                relief = max(relief, min_flex)
+            fit = sal[None, :] <= (budget + relief)[:, None]
+            e |= (cols[None, :] & fit & room[:, None] & rows[:, None])
+        e &= ~used
+        if extra is not None:
+            e &= extra
+        return e
+
+    allr = np.ones(n, dtype=bool)
+    # 1. the quarterback
+    qb = _gumbel_pick(logits, elig_for(("QB",), allr), rng)
+    idx[:, 0] = qb
+    ok = qb >= 0
+    used[np.arange(n)[ok], qb[ok]] = True
+    spent[ok] += sal[qb[ok]]
+    need["QB"][ok] = 0
+    qteam = np.where(ok, team[np.maximum(qb, 0)], -1)
+    qopp = np.where(ok, opp[np.maximum(qb, 0)], -1)
+    # 2. the stack: how many of his pass-catchers
+    dist = np.asarray(stack_dist, dtype=np.float64)
+    if rules:
+        dist = dist.copy()
+        dist[0] = 0.0
+    dist = dist / dist.sum()
+    k_stack = rng.choice(len(dist), size=n, p=dist)
+    for step in range(1, len(dist)):
+        rows = ok & (k_stack >= step)
+        same_team = team[None, :] == qteam[:, None]
+        pick = _gumbel_pick(logits, elig_for(("WR", "TE"), rows, extra=same_team), rng)
+        place(rows, pick)
+    # 3. the bring-back
+    rows = ok & (rng.random(n) < bring_p)
+    from_opp = team[None, :] == qopp[:, None]
+    place(rows, _gumbel_pick(logits, elig_for(("WR", "TE"), rows, extra=from_opp), rng))
+    # 4. the rest: backs, tight end, receivers, FLEX, defense last. The
+    # stack count and the bring-back are OUTCOMES in the published numbers,
+    # so the fill never adds a pass-catcher from either side of the QB's
+    # game: what was drawn is what the lineup ends with.
+    catcher = np.isin(pc, (2, 3))
+    no_more = ~((team[None, :] == qteam[:, None]) | (team[None, :] == qopp[:, None])) | ~catcher[None, :]
+    for kind, times in (("RB", 3), ("TE", 1), ("WR", 4), ("FLEX", 1)):
+        for _ in range(times):
+            if kind == "FLEX":
+                rows = ok & (need["FLEX"] > 0)
+                pick = _gumbel_pick(logits, elig_for(("FLEX",), rows, extra=no_more), rng)
+            else:
+                rows = ok & (need[kind] > 0)
+                pick = _gumbel_pick(logits, elig_for((kind,), rows, extra=no_more), rng)
+            place(rows, pick)
+    off_teams = np.zeros((n, len(teams)), dtype=bool)
+    for s_ in (0, 1, 2, 7):
+        r = np.where(idx[:, s_] >= 0)[0]
+        off_teams[r, team[idx[r, s_]]] = True
+    if rules:
+        avoid = off_teams[:, opp]                                   # (n, P): DST facing our QB / backs
+    else:
+        # the public mostly avoids a defense against its own quarterback
+        careful = rng.random(n) >= dst_own_p
+        avoid = (opp[None, :] == qteam[:, None]) & careful[:, None]
+    rows = ok & (need["DST"] > 0)
+    place(rows, _gumbel_pick(logits, elig_for(("DST",), rows, extra=~avoid), rng))
+    good = (idx >= 0).all(axis=1) & (spent <= int(cap))
+    return idx[good]
+
+
+def classic_allowed(idx, players, max_per_game=4, max_per_team=3):
+    """Our rulebook on a batch of lineups (rows, 9): stacked QB, no defense
+    against our QB's or backs' teams, at most four from one game and three
+    from one team, at most one sub-$3,000 punt and he holds a role. Field-only
+    players (the depth gate's exclusions) fail it."""
+    teams = sorted({p.get("team") or "" for p in players} | {p.get("opp") or "" for p in players})
+    tcode = {t: i for i, t in enumerate(teams)}
+    team = np.asarray([tcode[p.get("team") or ""] for p in players])
+    opp = np.asarray([tcode[p.get("opp") or ""] for p in players])
+    game = np.minimum(team, opp) * len(teams) + np.maximum(team, opp)
+    sal = np.asarray([int(p["salary"]) for p in players])
+    pc = np.asarray([_CL_CODE.get(p["pos"], -1) for p in players])
+    role = np.asarray([str(p.get("depth") or "").split("·")[0] in _CL_PUNT_ROLES for p in players])
+    field_only = np.asarray([bool(p.get("_field_only")) for p in players])
+    T = team[idx]                                              # (rows, 9)
+    qb_team = T[:, 0]
+    catchers = idx[:, [3, 4, 5, 6, 7]]
+    stacked = ((team[catchers] == qb_team[:, None]) & np.isin(pc[catchers], (2, 3))).any(axis=1)
+    dst_opp = opp[idx[:, 8]]
+    dst_ok = (dst_opp != qb_team) & (dst_opp != T[:, 1]) & (dst_opp != T[:, 2]) \
+        & ~((dst_opp == T[:, 7]) & (pc[idx[:, 7]] == 1))
+    Gm = game[idx]
+    per_game = np.max(np.stack([(Gm == Gm[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
+    per_team = np.max(np.stack([(T == T[:, [k]]).sum(axis=1) for k in range(9)], axis=1), axis=1)
+    punt = (sal[idx] < _CL_PUNT_SALARY) & (pc[idx] != 4)
+    punts_ok = (punt.sum(axis=1) <= 1) & ~(punt & ~role[idx]).any(axis=1)
+    return (stacked & dst_ok & (per_game <= max_per_game) & (per_team <= max_per_team)
+            & punts_ok & ~field_only[idx].any(axis=1))
+
+
+def _dup_share(idx):
+    """The most common lineup's share of a sample (rows sorted by player)."""
+    if not len(idx):
+        return 0.0
+    rows = np.sort(idx, axis=1)
+    _u, counts = np.unique(rows, axis=0, return_counts=True)
+    return float(counts.max()) / len(rows)
+
+
+def _collision(idx):
+    """Unbiased estimate of P(two random field entries are the same lineup)
+    from a sample: colliding pairs over all pairs."""
+    n = len(idx)
+    if n < 2:
+        return 0.0
+    rows = np.sort(idx, axis=1)
+    _u, counts = np.unique(rows, axis=0, return_counts=True)
+    return float((counts * (counts - 1)).sum()) / (n * (n - 1))
+
+
+def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used=CL_SALARY_USED,
+                    exclude=None, rounds=2):
+    """(beta, kappa) for classic_sample: kappa (points per $1,000) so the
+    mean salary spent lands on `salary_used`, beta so the most-owned player
+    holds `max_own` of the sample; the two bisections alternated `rounds`
+    times because each moves the other a little. About thirty draws of `n`.
+    Returns (beta, kappa, top ownership, mean salary, collision, top build
+    share)."""
+    sal = np.asarray([int(p["salary"]) for p in players])
+    P = len(players)
+
+    def draw(beta, kappa):
+        idx = classic_sample(players, n, rng, beta, kappa, exclude=exclude)
+        if not len(idx):
+            return idx, 0.0, 0.0
+        own = np.bincount(idx.ravel(), minlength=P) / len(idx)
+        return idx, float(sal[idx].sum(axis=1).mean()), float(own.max())
+
+    def kappa_for(beta, lo, hi, steps):
+        for _ in range(steps):
+            kappa = 0.5 * (lo + hi)
+            _idx, mean, _own = draw(beta, kappa)
+            if mean > salary_used:
+                lo = kappa                     # spending too much: charge more per dollar
+            else:
+                hi = kappa
+        return 0.5 * (lo + hi)
+
+    def beta_for(kappa, lo, hi, steps):
+        for _ in range(steps):
+            beta = 0.5 * (lo + hi)
+            _idx, _mean, own = draw(beta, kappa)
+            if own < max_own:
+                lo = beta
+            else:
+                hi = beta
+        return 0.5 * (lo + hi)
+    beta, kappa = 0.5, 2.0
+    for r in range(rounds):
+        kappa = kappa_for(beta, -4.0, 6.0, 7)      # negative = the public pays up for stars
+        beta = beta_for(kappa, 0.0, 3.0, 8 if r == 0 else 6)
+    idx, mean, own = draw(beta, kappa)
+    return beta, kappa, own, mean, _collision(idx), _dup_share(idx)
+
+
+def pool_sig(csv_text):
+    """Who is in a DraftKings pool -- the playable names only, so a salary
+    tweak never triggers an hour of the PC and a player dropped (OUT) does.
+    The adapters stamp it on the board; pc_worker compares it."""
+    import hashlib
+    import nfl_dfs
+    import simulate
+    names = sorted(c["name"] for c in simulate.parse_dk_csv(csv_text) if nfl_dfs._playable(c))
+    return hashlib.sha1("\n".join(names).encode()).hexdigest()[:16]
+
+
+def lineup_matrix(idx, P, cpt_mult=None):
+    """(rows, P) float32 weights from (rows, k) player indices."""
+    W = np.zeros((len(idx), P), dtype=np.float32)
+    ar = np.arange(len(idx))
+    for k in range(idx.shape[1]):
+        W[ar, idx[:, k]] = 1.0
+    if cpt_mult is not None:
+        W[ar, idx[:, 0]] = cpt_mult
+    return W
+
+
+def status_classes(names):
+    """{name: in | q | out} from Sleeper's roster (the depth-chart source):
+    OUT / IR / doubtful / not Active -> out, Questionable -> q, else in. The
+    rebuild trigger compares these across builds: a projection drifting is
+    not a reason to spend the PC's hour, a starter turning doubtful is."""
+    import nfl_dfs
+    recs, norm = nfl_dfs._depth_records()
+    out = {}
+    for nm in names:
+        cls = "in"
+        if norm is not None and recs:
+            key = norm(nm or "")
+            rec = recs.get(key) or recs.get(key.replace(" ", ""))
+            if rec is not None:
+                inj = (rec.get("injury") or "").upper()
+                if (rec.get("status") or "Active") != "Active" or rec.get("active") is False \
+                        or inj in nfl_dfs._INJ_OUT:
+                    cls = "out"
+                elif inj == "QUESTIONABLE":
+                    cls = "q"
+        out[nm] = cls
+    return out
+
+
+def status_sig(names):
+    """A stable digest of status_classes over `names` (sorted)."""
+    import hashlib
+    cls = status_classes(names)
+    body = "\n".join(f"{nm}:{cls[nm]}" for nm in sorted(cls))
+    return hashlib.sha1(body.encode()).hexdigest()[:16], cls
+
+
+def _slot_rows(lineups, pos):
+    """Sorted player-index tuples -> (rows, 9) in CL_SLOTS order: the third
+    back or fourth receiver takes FLEX."""
+    out = np.full((len(lineups), 9), -1, dtype=np.int32)
+    for r, L in enumerate(lineups):
+        rb, wr = [], []
+        for i in L:
+            p = pos[i]
+            if p == "QB":
+                out[r, 0] = i
+            elif p == "TE":
+                out[r, 6] = i
+            elif p == "DST":
+                out[r, 8] = i
+            elif p == "RB":
+                rb.append(i)
+            else:
+                wr.append(i)
+        for k, i in enumerate(rb[:2]):
+            out[r, 1 + k] = i
+        for k, i in enumerate(wr[:3]):
+            out[r, 3 + k] = i
+        extra = rb[2:] + wr[3:]
+        if extra:
+            out[r, 7] = extra[0]
+    return out
+
+
+def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_worlds=None,
+                      opt_worlds=20000, field_n=300000, cand_n=150000, cal_n=40000, chunk=500,
+                      week=None, preseason=False, top=40, k_port=20, candidates=1200,
+                      seed=None, log=print):
+    """The tournament for a DraftKings classic slate, against every contest
+    on it whose pool clears `min_pool` (or `contest_ids`). Returns the
+    artifact the tab serves, or None when the slate, the contests or the
+    pool cannot be read."""
+    if np is None:
+        raise RuntimeError("numpy is required for the tournament")
+    import dk
+    import nfl_dfs
+    import nfl_dfs_sim
+    import simulate
+    rng = np.random.default_rng(seed)
+    t0 = time.time()
+    slate = dk.slate_for("nfl", draft_group_id=int(dg))
+    if not slate:
+        return None
+    rows = slate.get("contests") or []
+    if contest_ids:
+        want = [int(c) for c in contest_ids]
+    else:
+        want = [int(c["id"]) for c in rows if float(c.get("prize_pool") or 0) >= float(min_pool)]
+    contests = []
+    for cid in want[:6]:
+        c = dk.contest_detail(cid)
+        if c and c.get("payouts"):
+            contests.append(c)
+    if not contests:
+        return None
+    contests.sort(key=lambda c: -float(c.get("prize_pool") or 0))
+    csv_players = [c for c in simulate.parse_dk_csv(slate["csv"]) if nfl_dfs._playable(c)]
+    if week is None:
+        try:
+            import nfl_game_sim
+            import nfl_preseason
+            preseason = nfl_preseason.is_preseason()
+            week = nfl_game_sim.current_week(preseason)
+        except Exception as e:
+            errlog.note("TOURN-week", e)
+            week = 1
+    log(f"[tourney] classic {dg}: {len(csv_players)} players, {len(contests)} contest(s) "
+        f"{', '.join(c['name'][:40] for c in contests)}; simulating week {week} x {n_sims:,}...")
+    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason) or {}
+    if not pool:
+        return None
+    nidx, norm = nfl_dfs._norm_index(pool)
+    ents, excluded = [], []
+    for c in csv_players:
+        pos = (c.get("pos") or "").upper().split("/")[0]
+        if pos not in _CL_POS:
+            continue
+        sim = nfl_dfs._pool_match(pool, c["name"], pos, c.get("team"), nidx, norm)
+        if not (sim and sim.get("arr")):
+            excluded.append({"name": c["name"], "pos": pos, "team": c.get("team"),
+                             "why": "no projection this week"})
+            continue
+        ents.append({"name": c["name"], "pos": pos, "team": c.get("team"),
+                     "opp": nfl_dfs._opp_of(c.get("team"), c.get("game")),
+                     "salary": int(c["salary"]), "proj": round(float(sim["proj"]), 1),
+                     "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"]})
+    by_name = {e["name"]: e for e in ents}
+    ents, dx = nfl_dfs._apply_depth(ents, preseason)
+    extra = []
+    for d in dx:
+        e = by_name.get(d["name"])
+        if e is not None and "depth chart" in (d.get("why") or "") \
+                and (e.get("proj") or 0) >= _FIELD_EXTRA_MIN_PROJ:
+            e["_field_only"] = True
+            e["depth"] = (d["why"].split(" ") or [""])[0]
+            extra.append(e)
+    extra.sort(key=lambda e: -e["proj"])
+    extra = extra[:_CL_FIELD_KEEP]
+    field_only = {e["name"] for e in extra}
+    for d in dx:
+        d["field"] = d["name"] in field_only
+    excluded += dx
+    ents = ents + extra
+    have = {p: sum(1 for e in ents if e["pos"] == p and not e.get("_field_only")) for p in _CL_POS}
+    if have["QB"] < 2 or have["RB"] < 4 or have["WR"] < 6 or have["TE"] < 2 or have["DST"] < 2:
+        return None
+    P = len(ents)
+    N = min(len(e["arr"]) for e in ents)
+    if n_worlds:
+        N = min(N, int(n_worlds))
+    X = np.asarray([e["arr"][:N] for e in ents], dtype=np.float32)
+    sal = np.asarray([e["salary"] for e in ents])
+    pos = [e["pos"] for e in ents]
+    fo = np.asarray([bool(e.get("_field_only")) for e in ents])
+    t1 = time.time()
+    log(f"[tourney] classic {dg}: pool {P} players ({len(extra)} field-only) x {N:,} worlds "
+        f"({t1 - t0:.0f}s); the best lineup of each of {min(N, opt_worlds):,} worlds...")
+    # --- the hindsight-optimal lineup of every world (a pruned pool) ---
+    keep = []
+    for p in _CL_POS:
+        ids = [i for i in range(P) if pos[i] == p]
+        ids.sort(key=lambda i: -float(np.percentile(X[i], 90)))
+        keep += ids[:_CL_KEEP[p]]
+    keep = np.asarray(sorted(keep))
+    n_opt = min(N, int(opt_worlds))
+    every = max(1, (n_opt // 4 // 64) * 64)
+    opt_L, opt_v = optimal_lineups(
+        X[keep][:, :n_opt], sal[keep], [pos[i] for i in keep], chunk=64,
+        progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds solved, {dt:.0f}s")
+        if done % every == 0 or done == n else None)
+    opt_L = [tuple(int(keep[i]) for i in L) for L in opt_L]
+    opt_count = {}
+    for L in opt_L:
+        if L:
+            opt_count[L] = opt_count.get(L, 0) + 1
+    opt_player = np.zeros(P, dtype=np.int64)
+    for L, k in opt_count.items():
+        for i in L:
+            opt_player[i] += k
+    t2 = time.time()
+    log(f"[tourney] classic {dg}: {len(opt_count):,} distinct optimal lineups over {n_opt:,} worlds "
+        f"({t2 - t1:.0f}s); calibrating the field...")
+    # --- the field ---
+    beta, kappa, max_own, mean_sal, coll, top_share = calibrate_field(ents, rng, n=int(cal_n))
+    idx_f = classic_sample(ents, int(field_n), rng, beta, kappa)
+    M = len(idx_f)
+    Wf = lineup_matrix(idx_f, P)
+    wf = np.full(M, 1.0 / M)
+    field_pct = 100.0 * Wf.mean(axis=0)
+    rows_f = np.sort(idx_f, axis=1)
+    _uf, first_f, counts_f = np.unique(rows_f, axis=0, return_index=True, return_counts=True)
+    f_count = {tuple(rows_f[i].tolist()): int(k) for i, k in zip(first_f, counts_f)}
+    t3 = time.time()
+    log(f"[tourney] classic {dg}: field of {M:,} (beta {beta:.3f}, kappa {kappa:.3f}, top ownership "
+        f"{100 * max_own:.0f}%, mean salary ${mean_sal:,.0f}, collision {coll:.2e}, top build "
+        f"{100 * top_share:.3f}%) ({t3 - t2:.0f}s); our candidates...")
+    # --- our candidates: every world's optimal (allowed or not) + rule-abiding draws ---
+    idx_o = _slot_rows(list(opt_count.keys()), pos)
+    idx_c = classic_sample(ents, int(cand_n), rng, beta, kappa, rules=True, exclude=fo)
+    idx_c = idx_c[classic_allowed(idx_c, ents)]
+    # the public's three most common builds ride along (allowed or not) so
+    # the chalk row on the sheet is the real chalk
+    top_f = np.argsort(-counts_f)[:3]
+    idx_chalk = _slot_rows([tuple(int(v) for v in _uf[i]) for i in top_f], pos)
+    both = np.concatenate([idx_chalk, idx_o, idx_c], axis=0) if len(idx_o) else np.concatenate([idx_chalk, idx_c], axis=0)
+    srt = np.sort(both, axis=1)
+    _u, first = np.unique(srt, axis=0, return_index=True)
+    idx_k = both[np.sort(first)]
+    K = len(idx_k)
+    allowed = classic_allowed(idx_k, ents)
+    keys_k = [tuple(r.tolist()) for r in np.sort(idx_k, axis=1)]
+    is_opt = np.asarray([opt_count.get(k, 0) for k in keys_k])
+    copies_share = np.asarray([f_count.get(k, 0) / M for k in keys_k])
+    Wc = lineup_matrix(idx_k, P)
+    grids = [payout_grid(int(c.get("max_entries") or c.get("entered") or 10000),
+                         c.get("payouts") or [], float(c.get("entry_fee") or 1.0),
+                         int(c.get("places_paid") or 1)) for c in contests]
+    t4 = time.time()
+    log(f"[tourney] classic {dg}: {K:,} candidates ({int(allowed.sum()):,} we may enter, "
+        f"{len(idx_o):,} hindsight-optimal) ({t4 - t3:.0f}s); scoring against the field in every world...")
+    ch = chunk_for(max(K, M), chunk)
+    every = max(ch, (N // 6 // ch) * ch)
+    res, opt_c, _n = run_vs_field(
+        Wc, Wf, wf, X, grids, chunk=ch,
+        progress=lambda done, n, dt: log(f"[tourney]   {done:,}/{n:,} worlds, {dt:.0f}s")
+        if done % every == 0 or done == n else None)
+    t5 = time.time()
+    ok = np.where(allowed)[0]
+    cand = ok[np.argsort(-res[0]["top1"][ok])][:int(candidates)] if len(ok) else ok
+    log(f"[tourney] classic {dg}: scored ({t5 - t4:.0f}s); portfolios of {k_port} per contest from "
+        f"the {len(cand):,} strongest...")
+    ports = portfolio_vs_field(Wc, Wf, wf, X, grids, cand, k_port, chunk=ch) if len(cand) else []
+    t6 = time.time()
+
+    def row(i, gi, rank_by):
+        r = res[gi]
+        c = contests[gi]
+        C = int(c.get("max_entries") or c.get("entered") or 10000)
+        fee = float(c.get("entry_fee") or 1.0)
+        first = float(c.get("first_prize") or 0.0)
+        copies = C * copies_share[i]
+        ev_dup = float(r["ev"][i]) - float(r["win"][i]) * first * (1.0 - 1.0 / (1.0 + copies))
+        lineup = [{"slot": CL_SLOTS[k], "name": ents[idx_k[i, k]]["name"], "pos": ents[idx_k[i, k]]["pos"],
+                   "team": ents[idx_k[i, k]]["team"], "salary": ents[idx_k[i, k]]["salary"],
+                   "depth": ents[idx_k[i, k]].get("depth"), "proj": ents[idx_k[i, k]]["proj"],
+                   "field_pct": round(float(field_pct[idx_k[i, k]]), 1)} for k in range(9)]
+        return {"lineup": lineup, "names": [p["name"] for p in lineup],
+                "salary": int(sum(p["salary"] for p in lineup)),
+                "proj": round(float(sum(p["proj"] for p in lineup)), 1),
+                "win_pct": round(100.0 * float(r["win"][i]), 4),
+                "top1_pct": round(100.0 * float(r["top1"][i]), 2),
+                "top01_pct": round(100.0 * float(r["top01"][i]), 3),
+                "cash_pct": round(100.0 * float(r["cash"][i]), 1),
+                "ev": round(float(r["ev"][i]), 2), "ev_dup": round(ev_dup, 2),
+                "roi_pct": round(100.0 * (ev_dup - fee) / fee, 1),
+                "expected_copies": round(float(copies), 1),
+                "opt_worlds": int(is_opt[i]), "opt_pct": round(100.0 * float(is_opt[i]) / n_opt, 2),
+                "allowed": bool(allowed[i]), "rank_by": rank_by}
+    results = {}
+    chalk_i = int(np.argmax(copies_share)) if K else None
+    for gi, c in enumerate(contests):
+        r = res[gi]
+        C = int(c.get("max_entries") or c.get("entered") or 10000)
+        first = float(c.get("first_prize") or 0.0)
+        ev_dup = r["ev"] - r["win"] * first * (1.0 - 1.0 / (1.0 + C * copies_share))
+        chosen, p_any = ports[gi] if ports else ([], [])
+        results[str(c["id"])] = {
+            "contest": {k: c.get(k) for k in ("id", "name", "entry_fee", "prize_pool", "first_prize",
+                                              "places_paid", "max_entries", "entered",
+                                              "max_entries_per_user", "starts")},
+            "top_win": [row(int(i), gi, "win") for i in ok[np.argsort(-r["win"][ok])][:top]],
+            "top_ev": [row(int(i), gi, "ev") for i in ok[np.argsort(-ev_dup[ok])][:top]],
+            "top_top1": [row(int(i), gi, "top1") for i in ok[np.argsort(-r["top1"][ok])][:top]],
+            "top_top01": [row(int(i), gi, "top01") for i in ok[np.argsort(-r["top01"][ok])][:top]],
+            "portfolio": {"entries": [row(int(cand[j]), gi, "cover") for j in chosen],
+                          "p_any_top1_pct": [round(100.0 * v, 1) for v in p_any]},
+            "chalk": row(chalk_i, gi, "chalk") if chalk_i is not None else None,
+        }
+    players_out = []
+    for i, e in enumerate(ents):
+        players_out.append({"name": e["name"], "pos": e["pos"], "team": e["team"], "opp": e.get("opp"),
+                            "salary": e["salary"], "depth": e.get("depth"),
+                            "field_only": bool(e.get("_field_only")),
+                            "proj": e["proj"], "floor": e.get("floor"), "ceiling": e.get("ceiling"),
+                            "field_pct": round(float(field_pct[i]), 1),
+                            "opt_pct": round(100.0 * float(opt_player[i]) / n_opt, 2)})
+    players_out.sort(key=lambda p: -p["opt_pct"])
+    pivotal = {e["name"] for e in sorted(ents, key=lambda e: -e["proj"])[:60]}
+    for rs in results.values():
+        for lst in ("top_win", "top_ev", "top_top1", "top_top01"):
+            for rw in rs[lst][:10]:
+                pivotal.update(rw["names"])
+        for rw in rs["portfolio"]["entries"]:
+            pivotal.update(rw["names"])
+    try:
+        st_sig, st_cls = status_sig(sorted(pivotal))
+    except Exception as e:
+        errlog.note("TOURN-status", e)
+        st_sig, st_cls = None, {}
+    return {"version": VERSION, "kind": "classic", "sport": "nfl", "draft_group_id": int(dg),
+            "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
+            "pool_sig": pool_sig(slate["csv"]),
+            "contests": [results[str(c["id"])]["contest"] for c in contests],
+            "slate": {"n_players": slate.get("n_players"), "dropped": slate.get("dropped"),
+                      "games": len({(e["team"], e.get("opp")) for e in ents}) // 2,
+                      "week": week, "preseason": bool(preseason), "field_only": sorted(field_only)},
+            "sims": int(n_sims), "worlds": int(N), "opt_worlds": int(n_opt),
+            "candidates": int(K), "candidates_allowed": int(allowed.sum()),
+            "optimal_distinct": int(len(opt_count)),
+            "field_model": {"kind": "sampled: softmax on projection and price, stack and bring-back "
+                                    "rates from the public record",
+                            "n": int(M), "beta": round(beta, 4), "kappa": round(kappa, 4),
+                            "max_own_pct": round(100.0 * max_own, 1),
+                            "collision": coll, "mean_salary": round(mean_sal),
+                            "top_share_pct": round(100.0 * top_share, 4),
+                            "stack_dist": list(CL_STACK_DIST), "bring_back": CL_BRING_BACK,
+                            "note": ("the field is a sample of the public's builds: stack rates from "
+                                     "Establish The Run's Milly Maker record, sharpness set so the "
+                                     f"most-owned player sits at {100 * CL_FIELD_MAX_OWN:.0f}%. Dollar "
+                                     "figures assume the sim is the truth; read the ranks.")},
+            "rules": list(CL_RULES),
+            "results": results,
+            "players": players_out,
+            "excluded": excluded[:60],
+            "timings": {"sims_s": round(t1 - t0, 1), "optimal_s": round(t2 - t1, 1),
+                        "field_s": round(t3 - t2, 1), "candidates_s": round(t4 - t3, 1),
+                        "score_s": round(t5 - t4, 1), "portfolio_s": round(t6 - t5, 1),
+                        "total_s": round(t6 - t0, 1)}}

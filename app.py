@@ -2062,10 +2062,9 @@ def _tourney_pending():
     """Requests no board has answered yet: no board for that slate, or the
     board is older than the ask. The PC builds these first; the tab shows
     'queued' until the board lands."""
-    import boardshare
     out = []
     for dg, r in sorted(_tourney_requests().items(), key=lambda kv: kv[1].get("ts") or 0):
-        payload, _age = boardshare.get(f"sd_tourney_{r.get('sport') or 'nfl'}_{dg}", None)
+        payload, _age = _tourney_board(r.get("sport") or "nfl", dg)
         if payload and (payload.get("built_ts") or 0) >= (r.get("ts") or 0):
             continue
         try:
@@ -2073,6 +2072,19 @@ def _tourney_pending():
         except (TypeError, ValueError):
             continue
     return out
+
+
+_TOURNEY_KINDS = ("cl", "sd")           # classic board first, then showdown
+
+
+def _tourney_board(sport, dg):
+    """(payload, age) for a slate's tournament board of either kind."""
+    import boardshare
+    for k in _TOURNEY_KINDS:
+        payload, age = boardshare.get(f"{k}_tourney_{sport}_{dg}", None)
+        if payload:
+            return payload, age
+    return None, None
 
 
 @app.route("/api/dfs/tourney")
@@ -2086,7 +2098,6 @@ def api_dfs_tourney():
     start a 200,000 x 60,000 matrix job.
 
     ?sport=nfl&dg=<draft_group_id>"""
-    import boardshare
     sport = (request.args.get("sport") or "nfl").lower()
     try:
         dg = int(request.args.get("dg") or 0)
@@ -2095,17 +2106,18 @@ def api_dfs_tourney():
     pc = _pc_status()               # the light: "PC off" is the honest reason for no board
     if sport != "nfl":
         return jsonify({"status": "none", "sport": sport, "pc": pc,
-                        "why": "the tournament runs for NFL showdown slates so far"})
+                        "why": "the tournament runs for NFL slates so far"})
     if not dg:
         return jsonify({"status": "none", "pc": pc, "why": "dg (draft group) required"})
     queued = [r for r in _tourney_pending() if r["dg"] == dg]
     queued_ts = queued[0].get("ts") if queued else None
-    payload, age = boardshare.get(f"sd_tourney_{sport}_{dg}", None)
+    payload, age = _tourney_board(sport, dg)
     if not payload:
         return jsonify({"status": "none", "sport": sport, "draft_group_id": dg, "pc": pc,
                         "queued_ts": queued_ts,
-                        "why": "not built yet - the PC builds the Thursday, Sunday and Monday "
-                               "night showdowns on its own; the button queues any other slate"})
+                        "why": "not built yet - the PC builds the Sunday main slate and the "
+                               "Thursday, Sunday and Monday night showdowns on its own; the "
+                               "button queues any other slate"})
     out = dict(payload)
     out["status"] = "ok"
     out["age_s"] = int(age or 0)
@@ -2167,23 +2179,35 @@ def api_dfs_tourney_list():
     DraftKings drops its slate from the lobby at lock."""
     import boardshare
     sport = (request.args.get("sport") or "nfl").lower()
-    prefix = f"sd_tourney_{sport}_"
+    prefixes = tuple(f"{k}_tourney_{sport}_" for k in _TOURNEY_KINDS)
     rows = []
     try:
         names = sorted(os.listdir(boardshare._DIR))
     except OSError:
         names = []
     for fn in names:
-        if not (fn.startswith(prefix) and fn.endswith(".pkl")):
+        if not (fn.startswith(prefixes) and fn.endswith(".pkl")):
             continue
         payload, age = boardshare.get(fn[:-4], None)
         if not payload:
             continue
-        c = payload.get("contest") or {}
         sl = payload.get("slate") or {}
+        if payload.get("kind") == "classic":
+            cs = payload.get("contests") or []
+            c = cs[0] if cs else {}
+            rows.append({"dg": payload.get("draft_group_id"), "kind": "classic",
+                         "contest": c.get("name"), "entries": c.get("max_entries"),
+                         "entry_fee": c.get("entry_fee"), "teams": None,
+                         "label": f"Sunday main ({sl.get('games')} games)" if sl.get("games") else "classic",
+                         "n_contests": len(cs), "starts": c.get("starts"),
+                         "worlds": payload.get("worlds"), "built_ts": payload.get("built_ts"),
+                         "age_s": int(age or 0)})
+            continue
+        c = payload.get("contest") or {}
         rows.append({"dg": payload.get("draft_group_id"), "kind": "showdown",
                      "contest": c.get("name"), "entries": c.get("max_entries"),
                      "entry_fee": c.get("entry_fee"), "teams": sl.get("teams"),
+                     "label": " vs ".join(sl.get("teams") or []) or str(payload.get("draft_group_id")),
                      "starts": c.get("starts"), "worlds": payload.get("worlds"),
                      "built_ts": payload.get("built_ts"), "age_s": int(age or 0)})
     rows.sort(key=lambda r: -(r.get("built_ts") or 0))

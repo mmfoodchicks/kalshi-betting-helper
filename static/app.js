@@ -8212,15 +8212,17 @@ async function applyDfsContest(id) {
   } finally { _dfsDkBusy = false; }
 }
 // ---- The tournament board (dfs_tourney) -------------------------------------
-// Every legal lineup for a showdown slate, scored in every one of 60,000
-// simulated games against a modelled field, ranked by how often it WINS. The
-// owner's PC builds it (numpy, gigabytes, minutes) and uploads it as a board;
-// the server only serves it, so the panel says "PC off" rather than waiting.
-// On its own the PC builds the Thursday / Sunday / Monday night showdowns;
-// the Build button queues any slate, and "boards on file" keeps a finished
-// board reachable after DraftKings drops the slate from its lobby at lock.
+// Showdown: every legal lineup for the slate, scored in every one of 60,000
+// simulated games against a modelled field. Classic: the exact best lineup of
+// 20,000 simulated Sundays plus rule-abiding candidates, against a 300,000-
+// lineup sample of the public, for every seven-figure contest on the slate.
+// The owner's PC builds it (numpy, gigabytes, the better part of an hour)
+// and uploads it as a board; the server only serves it. On its own the PC
+// builds the Sunday main slate and the Thursday / Sunday / Monday night
+// showdowns; the Build button queues any slate, and "boards on file" keeps a
+// finished board reachable after DraftKings drops the slate at lock.
 let _dfsTourneyDg = null, _dfsTourneyData = null, _dfsTourneyK = "5", _dfsTourneyAll = false;
-let _dfsTourneyLabel = "", _dfsTourneyBusy = false;
+let _dfsTourneyLabel = "", _dfsTourneyBusy = false, _dfsTourneyCid = null, _dfsTourneyList = "top_top1";
 function _dfsTourneyBoxes() {
   const box = $("dfsTourney");
   if (!box) return null;
@@ -8231,10 +8233,9 @@ async function loadDfsTourney(dg, force) {
   const bx = _dfsTourneyBoxes();
   if (!bx) return;
   const sp = ($("dfsSport") || {}).value;
-  const showdown = !!(_dfsDkShape && _dfsDkShape.showdown);
   if (sp !== "nfl") { bx.main.innerHTML = ""; bx.files.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   loadDfsTourneyList();
-  if (!dg || (!showdown && !force)) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
+  if (!dg) { bx.main.innerHTML = ""; _dfsTourneyDg = null; _dfsTourneyData = null; return; }
   _dfsTourneyDg = String(dg);
   const sel = $("dfsDkSlate");
   _dfsTourneyLabel = (sel && sel.selectedOptions && sel.selectedOptions[0] && String(sel.value) === String(dg)) ? sel.selectedOptions[0].textContent : "";
@@ -8243,6 +8244,7 @@ async function loadDfsTourney(dg, force) {
     const d = await (await fetch(`/api/dfs/tourney?sport=nfl&dg=${encodeURIComponent(dg)}`)).json();
     if (String(_dfsTourneyDg) !== String(dg)) return;     // the user moved to another slate
     _dfsTourneyData = d;
+    _dfsTourneyCid = null;
     renderDfsTourney(d);
   } catch (e) {
     bx.main.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ tournament board unavailable.</div>`;
@@ -8256,7 +8258,7 @@ async function loadDfsTourneyList() {
     const rows = d.boards || [];
     const pend = d.pending || [];
     if (!rows.length && !pend.length) { bx.files.innerHTML = ""; return; }
-    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${(r.teams || []).map(escapeHtml).join(" vs ") || r.dg}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
+    const links = rows.map((r) => `<a href="#" onclick="loadDfsTourney(${r.dg}, true);return false" style="margin-right:10px" title="${escapeHtml(r.contest || "")}">${escapeHtml(r.label || (r.teams || []).join(" vs ") || String(r.dg))}</a><span class="small" style="color:var(--faint);margin-right:12px">${agoStr(r.age_s)}</span>`).join("");
     const q = pend.length ? `<span class="small" style="color:var(--muted)"> · queued for the PC: ${pend.map((p) => escapeHtml(p.label || String(p.dg))).join(", ")}</span>` : "";
     bx.files.innerHTML = `<div class="small" style="margin-top:6px;color:var(--muted)">🗂 boards on file: ${links}${q}</div>`;
   } catch (e) { bx.files.innerHTML = ""; }
@@ -8265,7 +8267,7 @@ async function dfsTourneyRequest() {
   if (!_dfsTourneyDg || _dfsTourneyBusy) return;
   _dfsTourneyBusy = true;
   try {
-    const showdown = !!(_dfsDkShape && _dfsDkShape.showdown) || !!(_dfsTourneyData && _dfsTourneyData.status === "ok");
+    const showdown = !!(_dfsDkShape && _dfsDkShape.showdown) || !!(_dfsTourneyData && _dfsTourneyData.kind === "showdown");
     const r = await (await fetch("/api/dfs/tourney/request", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sport: "nfl", dg: _dfsTourneyDg, kind: showdown ? "showdown" : "classic", label: _dfsTourneyLabel || ((_dfsTourneyData || {}).contest || {}).name || "" }),
@@ -8277,18 +8279,35 @@ async function dfsTourneyRequest() {
 }
 function dfsTourneyPick(k) { _dfsTourneyK = String(k); if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
 function dfsTourneyAll() { _dfsTourneyAll = !_dfsTourneyAll; if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
+function dfsTourneyContest(cid) { _dfsTourneyCid = String(cid); if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
+function dfsTourneyListPick(name) { _dfsTourneyList = name; if (_dfsTourneyData) renderDfsTourney(_dfsTourneyData); }
+function _dfsTourneyRows(d) {
+  // {portfolio: [rows], p_any: [per prefix], lists: {name: rows}, contest}
+  if (d.kind === "classic") {
+    const rs = (d.results || {})[_dfsTourneyCid] || {};
+    const pf = rs.portfolio || {};
+    return { portfolio: pf.entries || [], p_any: pf.p_any_top1_pct || [], chalk: rs.chalk, contest: rs.contest || {},
+      lists: { top_top1: rs.top_top1 || [], top_top01: rs.top_top01 || [], top_ev: rs.top_ev || [], top_win: rs.top_win || [] } };
+  }
+  const ports = d.portfolio || {};
+  const big = ports["20"] || ports["10"] || ports["5"] || { entries: [] };
+  const p_any = Object.keys(ports).map((k) => [+k, ports[k].p_any_top1_pct]);
+  return { portfolio: big.entries || [], p_any_sizes: p_any, chalk: (d.field_model || {}).chalk, contest: d.contest || {},
+    lists: { top_top1: d.top_top1 || [], top_ev: d.top_ev || [], top_win: d.top_win || [] } };
+}
 function dfsTourneyCopy(list, i) {
   const d = _dfsTourneyData;
-  const rows = list === "portfolio" ? (((d.portfolio || {})[_dfsTourneyK] || {}).entries || []) : (d[list] || []);
+  const rr = _dfsTourneyRows(d);
+  const rows = list === "portfolio" ? rr.portfolio : (rr.lists[list] || []);
   const r = rows[i];
   if (!r) return;
-  const txt = `CPT ${r.captain}; ${r.flex.join("; ")}`;
+  const txt = r.captain ? `CPT ${r.captain}; ${r.flex.join("; ")}` : (r.lineup || []).map((p) => `${p.slot} ${p.name}`).join("; ");
   try { navigator.clipboard.writeText(txt); } catch (e) { /* no clipboard: the row is on screen */ }
 }
 function _dfsTourneyQueued(d) {
   if (!d.queued_ts) return "";
   const t = new Date(d.queued_ts * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes and a showdown build takes about 20</span>`;
+  return `<span class="small" style="color:var(--muted)"> · ⏳ queued ${t}: the PC picks it up within 10 minutes; a showdown build takes about 20, a classic slate about an hour</span>`;
 }
 function _dfsTourneyButton(d) {
   if (!_dfsTourneyDg) return "";
@@ -8305,45 +8324,78 @@ function renderDfsTourney(d) {
     box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt} ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>`;
     return;
   }
-  const c = d.contest || {}, fm = d.field_model || {}, tm = d.timings || {};
+  const classic = d.kind === "classic";
+  if (classic) {
+    const ids = (d.contests || []).map((c) => String(c.id));
+    const picked = String((($("dfsDkContest") || {}).value) || "");
+    if (!_dfsTourneyCid || !ids.includes(_dfsTourneyCid)) _dfsTourneyCid = ids.includes(picked) ? picked : ids[0];
+  }
+  const rr = _dfsTourneyRows(d);
+  const c = rr.contest, fm = d.field_model || {}, tm = d.timings || {};
   const money = (v) => "$" + Math.round(v || 0).toLocaleString();
   const pct = (v, dp) => (v == null ? "-" : Number(v).toFixed(dp == null ? 1 : dp) + "%");
   const roiCls = (v) => (v >= 0 ? "ev pos" : "ev neg");
+  const tag = (p) => `<span class="small" style="color:var(--faint)"> ${escapeHtml(p.depth || p.pos || "")}${p.team && classic ? "·" + escapeHtml(p.team) : ""}</span>`;
   const lineupCell = (r) => {
-    const cap = (r.lineup || [])[0] || {};
-    return `<b>${escapeHtml(r.captain)}</b> <span class="small" style="color:var(--muted)">${escapeHtml(cap.depth || r.captain_pos || "")}${r.captain_team ? " · " + escapeHtml(r.captain_team) : ""}</span> + ${(r.lineup || []).slice(1).map((p) => `${escapeHtml(p.name)}<span class="small" style="color:var(--faint)"> ${escapeHtml(p.depth || p.pos || "")}</span>`).join(", ")}`;
+    if (r.captain) {
+      const cap = (r.lineup || [])[0] || {};
+      return `<b>${escapeHtml(r.captain)}</b> <span class="small" style="color:var(--muted)">${escapeHtml(cap.depth || r.captain_pos || "")}${r.captain_team ? " · " + escapeHtml(r.captain_team) : ""}</span> + ${(r.lineup || []).slice(1).map((p) => `${escapeHtml(p.name)}${tag(p)}`).join(", ")}`;
+    }
+    return (r.lineup || []).map((p) => `<span class="small" style="color:var(--muted)">${p.slot}</span> ${escapeHtml(p.name)}${tag(p)}`).join(", ");
   };
   const table = (rows, list) => rows.length ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
-    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="share of simulated games this exact lineup finishes first, before splitting with its copies">win</th><th title="finishes in the top 1% of the field">top 1%</th><th title="finishes in the money">cash</th><th title="expected payout after splitting first place with the copies the field model expects">EV</th><th title="expected identical lineups in the field">copies</th><th></th></tr>
-    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.win_pct, 3)}</b></td><td>${pct(r.top1_pct, 1)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}">${money(r.ev_dup)}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the six names">📋</a></td></tr>`).join("")}
+    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="finishes in the top 1% of the field">top 1%</th>${classic ? `<th title="finishes in the top 0.1% of the field">top 0.1%</th>` : ""}<th title="share of simulated games this exact lineup finishes first, before splitting with its copies">win</th><th title="finishes in the money">cash</th><th title="expected payout after splitting first place with the copies the field model expects">EV</th><th title="expected identical lineups in the field">copies</th><th></th></tr>
+    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}</td>` : ""}<td>${pct(r.win_pct, 3)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}">${money(r.ev_dup)}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
   </table></div>` : `<div class="small" style="color:var(--muted)">none</div>`;
-  const ports = d.portfolio || {};
-  const sizes = Object.keys(ports).sort((a, b) => +a - +b);
-  if (!ports[_dfsTourneyK] && sizes.length) _dfsTourneyK = sizes[0];
-  const port = ports[_dfsTourneyK] || { entries: [] };
-  const sizeBtns = sizes.map((k) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${k === _dfsTourneyK ? "font-weight:bold;text-decoration:underline" : ""}">${k} entries · ${pct(ports[k].p_any_top1_pct, 0)} any top 1%</a>`).join("");
-  const chalk = fm.chalk;
-  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · win ${pct(chalk.win_pct, 3)} · top 1% ${pct(chalk.top1_pct)} · EV after the split ${money(chalk.ev_dup)}</div>` : "";
+  // the portfolio: every prefix of the greedy cover is itself the best cover of that size
+  let sizeBtns = "", portRows = [];
+  if (rr.p_any_sizes) {
+    const sizes = rr.p_any_sizes.map((x) => String(x[0]));
+    if (!sizes.includes(_dfsTourneyK)) _dfsTourneyK = sizes[0];
+    sizeBtns = rr.p_any_sizes.map(([k, p]) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${String(k) === _dfsTourneyK ? "font-weight:bold;text-decoration:underline" : ""}">${k} entries · ${pct(p, 0)} any top 1%</a>`).join("");
+    portRows = (((d.portfolio || {})[_dfsTourneyK]) || {}).entries || [];
+  } else {
+    const n = rr.portfolio.length;
+    const kk = Math.min(n, Math.max(1, parseInt(_dfsTourneyK, 10) || 5));
+    sizeBtns = [1, 2, 3, 5, 10, 20].filter((k) => k <= n).map((k) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${k === kk ? "font-weight:bold;text-decoration:underline" : ""}">${k} ${k === 1 ? "entry" : "entries"} · ${pct(rr.p_any[k - 1], 0)} any top 1%</a>`).join("");
+    portRows = rr.portfolio.slice(0, kk);
+  }
+  const contestBtns = classic ? `<div class="small" style="margin-top:4px">${(d.contests || []).map((x) => `<a href="#" onclick="dfsTourneyContest('${x.id}');return false" style="margin-right:10px;${String(x.id) === _dfsTourneyCid ? "font-weight:bold;text-decoration:underline" : ""}">${money(x.entry_fee)} · ${escapeHtml((x.name || "").replace(/^NFL /, ""))} · ${nf(x.max_entries)} entries</a>`).join("")}</div>` : "";
+  const chalk = rr.chalk;
+  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · top 1% ${pct(chalk.top1_pct)} · win ${pct(chalk.win_pct, 3)} · EV after the split ${money(chalk.ev_dup)}</div>` : "";
   const players = d.players || [];
-  const shown = _dfsTourneyAll ? players : players.slice(0, 12);
-  const playersHtml = `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
+  const shown = _dfsTourneyAll ? players : players.slice(0, 14);
+  const playersHtml = classic
+    ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
+    <tr style="color:var(--muted);text-align:right"><th style="text-align:left">player</th><th>$</th><th>proj</th><th title="share of the field model's lineups that hold him">field</th><th title="share of simulated Sundays in which the best possible lineup had him">optimal</th></tr>
+    ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.opp ? " v " + escapeHtml(p.opp) : ""}${p.field_only ? " · field only" : ""}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_pct)}</td><td><b>${pct(p.opt_pct)}</b></td></tr>`).join("")}
+  </table></div>`
+    : `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
     <tr style="color:var(--muted);text-align:right"><th style="text-align:left">player</th><th>$</th><th>proj</th><th title="the field model's captain share">field CPT</th><th title="the field model's flex share">field FLEX</th><th title="share of simulated games in which the best possible lineup had him at captain">optimal CPT</th><th title="share of simulated games in which the best possible lineup had him at flex">optimal FLEX</th></tr>
     ${shown.map((p) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)${p.field_only ? ";color:var(--muted)" : ""}"><td style="text-align:left">${escapeHtml(p.name)} <span class="small" style="color:var(--muted)">${escapeHtml(p.depth || p.pos || "")}${p.team ? " · " + escapeHtml(p.team) : ""}${p.field_only ? " · field only" : ""}</span></td><td>${nf(p.salary)}</td><td>${p.proj}</td><td>${pct(p.field_cpt_pct)}</td><td>${pct(p.field_flex_pct)}</td><td><b>${pct(p.opt_cpt_pct)}</b></td><td><b>${pct(p.opt_flex_pct)}</b></td></tr>`).join("")}
-  </table></div>${players.length > 12 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : ""}`;
+  </table></div>`;
+  const moreHtml = players.length > 14 ? `<a href="#" class="small" onclick="dfsTourneyAll();return false">${_dfsTourneyAll ? "fewer" : `all ${players.length} players`}</a>` : "";
   const fieldOnly = ((d.slate || {}).field_only || []);
+  const listNames = classic
+    ? [["top_top1", "Best single entries by top 1%"], ["top_top01", "Best by top 0.1%"], ["top_ev", "Best by EV after duplicates"], ["top_win", "Best by first place"]]
+    : [["top_win", "Best single entries by win%"], ["top_top1", "Best by top 1%"], ["top_ev", "Best by EV after duplicates"]];
+  if (!rr.lists[_dfsTourneyList]) _dfsTourneyList = listNames[0][0];
+  const listBtns = listNames.map(([k, lbl]) => `<a href="#" onclick="dfsTourneyListPick('${k}');return false" style="margin-right:10px;${k === _dfsTourneyList ? "font-weight:bold;text-decoration:underline" : ""}">${lbl}</a>`).join("");
+  const head = classic
+    ? `${nf(d.candidates)} candidate lineups (${nf(d.candidates_allowed)} pass the rules; ${nf(d.optimal_distinct)} are the exact best lineup of some simulated Sunday) × ${nf(d.worlds)} simulated Sundays, each scored against ${nf((fm.n || 0))} lineups drawn the way the public builds.`
+    : `${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field.`;
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
     <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
-    <div class="small" style="color:var(--muted);margin-top:2px">${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field. ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.map(escapeHtml).join(", ")}; the field still plays them.` : ""}</div>
+    ${contestBtns}
+    <div class="small" style="color:var(--muted);margin-top:2px">${head} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${chalkHtml}
-    <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>
-    ${table(port.entries || [], "portfolio")}
-    <div style="margin-top:8px"><b>Best single entries by win%</b> <span class="small" style="color:var(--muted)">- before the split; the EV column is after it</span></div>
-    ${table((d.top_win || []).slice(0, 8), "top_win")}
-    <div style="margin-top:8px"><b>Best single entries by EV after duplicates</b></div>
-    ${table((d.top_ev || []).slice(0, 5), "top_ev")}
+    <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover; the first k rows are the best k</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>
+    ${table(portRows, "portfolio")}
+    <div style="margin-top:8px"><b>Single entries</b> <span class="small" style="margin-left:6px">${listBtns}</span></div>
+    ${table((rr.lists[_dfsTourneyList] || []).slice(0, 8), _dfsTourneyList)}
     <div style="margin-top:8px"><b>Players</b> <span class="small" style="color:var(--muted)">- what the field does with them vs where the winning lineups actually had them</span></div>
-    ${playersHtml}
-    <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s · enumerate ${Math.round(tm.enumerate_s || 0)}s · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>
+    ${playersHtml}${moreHtml}
+    <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s${classic ? ` · best lineups ${Math.round(tm.optimal_s || 0)}s · field ${Math.round(tm.field_s || 0)}s` : ` · enumerate ${Math.round(tm.enumerate_s || 0)}s`} · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>
   </div>`;
 }
 function initDfsPicker() {

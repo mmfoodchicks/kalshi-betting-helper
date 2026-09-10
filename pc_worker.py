@@ -374,6 +374,17 @@ _SD_MIN_POOL = 500_000
 # Sunday night's slate waited behind eleven of them). Owner, 2026-09-10: "I
 # do not want it to EVERY showdown, only pivotal ones like Monday, Sunday and
 # Thursday." The tab's Build button queues any slate regardless.
+_CL_MIN_POOL = 1_000_000
+# The Sunday main slate builds against every contest with a seven-figure
+# pool (the $5, $100 and $4,444 Millionaires share one board). Owner: "as a
+# rule only list and do Sunday ones that are over 1 Mil in pool."
+_STATUS_WINDOWS = (("nightly", 3, 0, 3, 59, None), ("sunday", 11, 35, 12, 15, 6))
+# When a board is re-checked for STATUS changes (Eastern): every night at
+# 3:00, and Sunday 11:35-12:15 after the inactives post at 11:30. A build
+# is an hour of the PC; a projection drifting is not a reason to spend
+# it, a starter turning doubtful is. Owner: "let it run nightly to check
+# ONLY for players changing their status ... yes Sunday before the games
+# run rebuild it."
 
 
 def _tourney_requests(url, tok):
@@ -392,6 +403,167 @@ def _tourney_requests(url, tok):
             continue
     out.pop(0, None)
     return out
+
+
+def _tourney_state_path():
+    import boardshare
+    return os.path.join(os.path.dirname(boardshare._DIR), "tourney_state.json")
+
+
+def _tourney_state():
+    try:
+        with open(_tourney_state_path()) as fh:
+            return json.load(fh) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _tourney_state_save(state):
+    try:
+        with open(_tourney_state_path(), "w") as fh:
+            json.dump(state, fh)
+    except OSError as e:
+        print(f"[vigil-pc] tourney: state not saved ({e})")
+
+
+def _status_window_key():
+    """The status-check window we are in right now, as a once-per-window
+    key ('2026-09-13 sunday'), or None outside the windows."""
+    import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.datetime.now(ZoneInfo("America/New_York"))
+    except Exception:
+        now = datetime.datetime.now()
+    hm = (now.hour, now.minute)
+    for name, h1, m1, h2, m2, wd in _STATUS_WINDOWS:
+        if wd is not None and now.weekday() != wd:
+            continue
+        if (h1, m1) <= hm <= (h2, m2):
+            return f"{now.date().isoformat()} {name}"
+    return None
+
+
+def _status_changed(board):
+    """(changed, detail) -- the board's pivotal players re-read from Sleeper.
+    A class change in either direction counts: playing -> questionable ->
+    doubtful/out/dropped, and back."""
+    import dfs_tourney
+    old = board.get("status") or {}
+    if not old:
+        return False, "no status recorded"
+    cur = dfs_tourney.status_classes(sorted(old))
+    moved = [f"{nm} {old[nm]}->{cur.get(nm)}" for nm in sorted(old) if cur.get(nm) != old[nm]]
+    return bool(moved), ", ".join(moved[:6]) + (" ..." if len(moved) > 6 else "")
+
+
+def _rebuild_reason(board, pool_sig, req, state, dg, status_key):
+    """Why a board should be (re)built now, or None. Pool membership and
+    requests count any time; status only inside a window, once per window."""
+    if not board:
+        return "no board yet"
+    if pool_sig and board.get("pool_sig") and board.get("pool_sig") != pool_sig:
+        return "the DraftKings pool changed"
+    if req and (req.get("ts") or 0) > (board.get("built_ts") or 0):
+        return "queued from the tab"
+    if status_key:
+        done = state.setdefault("status_checks", {})
+        if done.get(str(dg)) != status_key:
+            done[str(dg)] = status_key
+            _tourney_state_save(state)
+            changed, detail = _status_changed(board)
+            print(f"[vigil-pc] tourney {dg}: status check ({status_key}): "
+                  f"{'changed - ' + detail if changed else 'no change'}")
+            if changed:
+                return f"status changed: {detail}"
+    return None
+
+
+def _main_slate(slates):
+    """The Sunday main slate: an untagged classic slate of ten-plus games
+    (the Early Only / Afternoon Only / Sun-Mon slates carry tags), the most
+    games if several, within the next eight days."""
+    import datetime
+    now = datetime.datetime.now()
+    best = None
+    for sl in slates:
+        if sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag"):
+            continue
+        try:
+            st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
+        except ValueError:
+            continue
+        if not (now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8)):
+            continue
+        if best is None or (sl.get("games") or 0) > (best.get("games") or 0):
+            best = sl
+    return best
+
+
+def _pool_sig(slate):
+    """The board's pool signature (dfs_tourney.pool_sig): playable names only."""
+    import dfs_tourney
+    return dfs_tourney.pool_sig(slate["csv"])
+
+
+def _task_classic_tourney(url, tok):
+    """The classic-slate tournament (dfs_tourney.build_nfl_classic) for the
+    Sunday main slate against its seven-figure contests, plus any classic
+    slate queued from the tab. Built here (numpy, the exact best lineup of
+    20,000 worlds, a 300,000-lineup field; the better part of an hour) and
+    shipped as a board the tab serves."""
+    import boardshare
+    import dfs_tourney
+    import dk
+    if not dfs_tourney.available():
+        return
+    try:
+        slates = dk.slates("nfl") or []
+    except Exception as e:
+        print(f"[vigil-pc] classic tourney: DK lobby failed ({type(e).__name__}: {e})")
+        return
+    wanted = _tourney_requests(url, tok)
+    todo = []
+    main = _main_slate(slates)
+    if main:
+        todo.append((int(main["draft_group_id"]), main))
+    by_dg = {int(sl["draft_group_id"]): sl for sl in slates if sl.get("draft_group_id")}
+    for dg, r in sorted(wanted.items(), key=lambda kv: kv[1].get("ts") or 0):
+        if r.get("kind") == "classic" and dg in by_dg and dg not in [d for d, _ in todo]:
+            todo.insert(0, (dg, by_dg[dg]))
+    if not todo:
+        return
+    state = _tourney_state()
+    status_key = _status_window_key()
+    for dg, sl in todo:
+        name = f"cl_tourney_nfl_{dg}"
+        try:
+            slate = dk.slate_for("nfl", draft_group_id=dg)
+        except Exception as e:
+            print(f"[vigil-pc] classic tourney {dg}: slate failed ({type(e).__name__}: {e})")
+            continue
+        if not slate:
+            continue
+        board, age = boardshare.get(name, None)
+        why = _rebuild_reason(board, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
+        if why is None:
+            print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
+            continue
+        print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
+        t0 = time.time()
+        try:
+            art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=60000, log=print)
+        except Exception as e:
+            print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
+            continue
+        if not art:
+            print(f"[vigil-pc] classic tourney {dg}: nothing to build (no seven-figure contest, or no pool)")
+            continue
+        boardshare.put(name, art)
+        print(f"[vigil-pc] classic tourney {dg}: done in {time.time() - t0:.0f}s, "
+              f"{art['candidates']:,} candidates x {art['worlds']:,} worlds, "
+              f"{len(art['contests'])} contest(s)")
+        _ship_boards(url, tok)
 
 
 def _task_showdown_tourney(url, tok):
@@ -413,7 +585,6 @@ def _task_showdown_tourney(url, tok):
     and the deep task, and reached the tab after kickoff. A board finished
     in a cycle that was killed before its upload ships on the next start."""
     import datetime
-    import hashlib
     import boardshare
     import dfs_tourney
     import dk
@@ -440,8 +611,8 @@ def _task_showdown_tourney(url, tok):
             st = datetime.datetime.fromisoformat(str(sl.get("starts") or "")[:19])
         except ValueError:
             continue
-        if not (now - datetime.timedelta(hours=4) <= st <= now + datetime.timedelta(days=8)):
-            continue
+        if not (now - datetime.timedelta(minutes=30) <= st <= now + datetime.timedelta(days=8)):
+            continue                        # a slate that has kicked off is a post-mortem, not a build
         dg = int(sl["draft_group_id"])
         if dg in wanted:
             soon.append((0, wanted[dg].get("ts") or 0, st, sl))     # requests first
@@ -455,6 +626,8 @@ def _task_showdown_tourney(url, tok):
               "skipped (the tab's Build button queues any of them)")
     if soon:
         _ship_boards(url, tok)
+    state = _tourney_state()
+    status_key = _status_window_key()
     for _pri, _rts, _st, sl in soon:
         dg = int(sl["draft_group_id"])
         name = f"sd_tourney_nfl_{dg}"
@@ -465,16 +638,8 @@ def _task_showdown_tourney(url, tok):
             continue
         if not slate:
             continue
-        sig = hashlib.sha1("\n".join(sorted(slate["csv"].splitlines())).encode()).hexdigest()[:16]
         cur, age = boardshare.get(name, None)
-        req = wanted.get(dg)
-        why = None
-        if not cur:
-            why = "no board yet"
-        elif cur.get("sig") != sig:
-            why = "the DraftKings pool changed"
-        elif req and (req.get("ts") or 0) > (cur.get("built_ts") or 0):
-            why = "queued from the tab"
+        why = _rebuild_reason(cur, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
         if why is None:
             print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
             continue
@@ -488,7 +653,6 @@ def _task_showdown_tourney(url, tok):
         if not art:
             print(f"[vigil-pc] tourney {dg}: nothing to build (no contest or pool)")
             continue
-        art["sig"] = sig
         boardshare.put(name, art)
         print(f"[vigil-pc] tourney {dg}: done in {time.time() - t0:.0f}s, "
               f"{art['lineups_legal']:,} lineups x {art['worlds']:,} worlds")
@@ -525,6 +689,7 @@ def main():
         print(f"[vigil-pc] sync gamesim failed ({type(e).__name__}: {e})")
     for label, fn in (("boards", _task_boards),
                       ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
+                      ("classic tourney", lambda: _task_classic_tourney(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok))):
         try:
             fn()
