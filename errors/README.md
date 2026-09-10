@@ -3,9 +3,9 @@
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
 | `NFLT-finals` | 1123 | 09-04 11:43 | HTTPError: HTTP Error 403: Forbidden |
-| `NFL-espn-fetch` | 182 | 09-10 00:19 | HTTPError: HTTP Error 403: Forbidden |
-| `FAN-pit` | 83 | 09-10 00:07 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 75 | 09-10 00:19 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 182 | 09-10 01:15 | HTTPError: HTTP Error 403: Forbidden |
+| `FAN-pit` | 88 | 09-10 01:05 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 76 | 09-10 01:15 | _EspnBlocked: ESPN 403: parked 6h |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
 | `KAL-candles` | 14 | 09-08 11:18 | HTTPError: HTTP Error 429: Too Many Requests |
 | `CFB-week-group` | 2 | 09-07 11:35 | HTTPError: HTTP Error 403: Forbidden |
