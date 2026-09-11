@@ -13633,15 +13633,36 @@ ck("the Stage 2D artifact: the moment harness reproduces Stage 2B, the per-world
 # prize 7.6% high in exactly the regime that matters.
 _PAY3 = [{"from": 1, "to": 1, "prize": 1000000.0}, {"from": 2, "to": 2, "prize": 500000.0},
          {"from": 3, "to": 5, "prize": 100000.0}, {"from": 6, "to": 100, "prize": 1000.0}]
-ck("the tie rule is DraftKings' rule: the tied entries take positions above+1 .. above+1+tied and split those prizes equally -- sole first, a two-way and a five-way for first, a tie inside one bracket, a tie straddling the last paid place, and a tie outside the money",
-   abs(float(_dt14.tie_payout(_PAY3, 0, 0)) - 1000000.0) < 1e-6
-   and abs(float(_dt14.tie_payout(_PAY3, 0, 1)) - 750000.0) < 1e-6
-   and abs(float(_dt14.tie_payout(_PAY3, 0, 4)) - (1e6 + 5e5 + 3 * 1e5) / 5.0) < 1e-6
-   and abs(float(_dt14.tie_payout(_PAY3, 2, 2)) - 100000.0) < 1e-6
-   and abs(float(_dt14.tie_payout(_PAY3, 4, 1)) - (1e5 + 1e3) / 2.0) < 1e-6
-   and abs(float(_dt14.tie_payout(_PAY3, 99, 1)) - 500.0) < 1e-6
-   and float(_dt14.tie_payout(_PAY3, 100, 0)) == 0.0 and float(_dt14.tie_payout(_PAY3, 120, 3)) == 0.0
-   and list(_dt14.cum_prize(_PAY3, [0, 1, 2, 5, 100, 200])) == [0.0, 1e6, 1.5e6, 1.8e6, 1895000.0, 1895000.0])
+if _dt14.available():
+    ck("the tie rule is DraftKings' rule: the tied entries take positions above+1 .. above+1+tied and split those prizes equally -- sole first, a two-way and a five-way for first, a tie inside one bracket, a tie straddling the last paid place, and a tie outside the money",
+       abs(float(_dt14.tie_payout(_PAY3, 0, 0)) - 1000000.0) < 1e-6
+       and abs(float(_dt14.tie_payout(_PAY3, 0, 1)) - 750000.0) < 1e-6
+       and abs(float(_dt14.tie_payout(_PAY3, 0, 4)) - (1e6 + 5e5 + 3 * 1e5) / 5.0) < 1e-6
+       and abs(float(_dt14.tie_payout(_PAY3, 2, 2)) - 100000.0) < 1e-6
+       and abs(float(_dt14.tie_payout(_PAY3, 4, 1)) - (1e5 + 1e3) / 2.0) < 1e-6
+       and abs(float(_dt14.tie_payout(_PAY3, 99, 1)) - 500.0) < 1e-6
+       and float(_dt14.tie_payout(_PAY3, 100, 0)) == 0.0 and float(_dt14.tie_payout(_PAY3, 120, 3)) == 0.0
+       and list(_dt14.cum_prize(_PAY3, [0, 1, 2, 5, 100, 200])) == [0.0, 1e6, 1.5e6, 1.8e6, 1895000.0, 1895000.0])
+else:
+    ck("(numpy is not installed here -- the tie rule's own arithmetic runs where it is)", True)
+# Nothing at module scope may touch numpy. _LOG_FACT was a module-level
+# np.cumsum for one push: the server imports dfs_tourney WITHOUT numpy, so
+# importing it raised AttributeError and the tournament route died, and CI
+# (which installs no numpy either) went red on the commit. This re-imports
+# the PC-only modules in a subprocess where numpy cannot be imported, which
+# is exactly the server's situation.
+_nonpdir = _tf14.mkdtemp(prefix="vigil-nonumpy-guard-")
+with open(_os.path.join(_nonpdir, "numpy.py"), "w") as _fh_np:
+    _fh_np.write("raise ImportError('no numpy here (guard)')\n")
+_nonp = _gsp.run([_gsy.executable, "-c",
+                  "import dfs_tourney, nfl_dfs_csim, nfl_recon, nfl_dfs_sim\n"
+                  "assert dfs_tourney.available() is False\n"
+                  "assert nfl_dfs_csim.available() is False\n"
+                  "print('ok')\n"],
+                 capture_output=True, text=True, cwd=_root,
+                 env=dict(_os.environ, PYTHONPATH=_nonpdir, VIGIL_NO_BG="1"))
+ck("every module the server imports still imports with numpy absent -- nothing numeric at module scope",
+   "ok" in (_nonp.stdout or ""), (_nonp.stderr or "").strip()[-300:])
 if _dt14.available():
     _g3 = _dt14.payout_grid(5000, _PAY3, 5.0, 100)
     _iF3 = int(_np14.searchsorted(_g3["F"], 1e-4))

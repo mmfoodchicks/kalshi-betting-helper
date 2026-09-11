@@ -263,14 +263,25 @@ POIS_LAM_MAX = 60.0
 POIS_K_MAX = 260
 
 
-_LOG_FACT = np.cumsum(np.concatenate([[0.0], np.log(np.arange(1, POIS_K_MAX + 2, dtype=np.float64))]))
+# Log factorials, built on first use. At module level this was a numpy call
+# in a module the SERVER imports without numpy, so importing dfs_tourney there
+# raised AttributeError and the tournament route died; CI (which installs no
+# numpy either) caught it on the push. Nothing at module scope may touch np.
+_LOG_FACT = None
+
+
+def _log_fact(n=POIS_K_MAX + 1):
+    global _LOG_FACT
+    if _LOG_FACT is None or len(_LOG_FACT) < n + 1:
+        _LOG_FACT = np.cumsum(np.concatenate([[0.0], np.log(np.arange(1, n + 1, dtype=np.float64))]))
+    return _LOG_FACT
 
 
 def _pois_cdf_table(lam, kmax=POIS_K_MAX):
     """(len(lam), kmax+1) Poisson CDF, built from the log pmf."""
     lam = np.asarray(lam, dtype=np.float64)[:, None]
     k = np.arange(0, kmax + 1, dtype=np.float64)[None, :]
-    logpmf = -lam + k * np.log(np.maximum(lam, 1e-300)) - _LOG_FACT[None, : kmax + 1]
+    logpmf = -lam + k * np.log(np.maximum(lam, 1e-300)) - _log_fact()[None, : kmax + 1]
     return np.clip(np.cumsum(np.exp(logpmf), axis=1), 0.0, 1.0)
 
 
@@ -285,7 +296,7 @@ def _tie_nodes(lam):
     if lam > TIE_LAM_MAX:
         return np.array([float(lam)]), np.array([1.0])
     t = np.arange(0, TIE_T_MAX + 1, dtype=np.float64)
-    w = np.exp(-lam + t * math.log(lam) - _LOG_FACT[: TIE_T_MAX + 1])
+    w = np.exp(-lam + t * math.log(lam) - _log_fact()[: TIE_T_MAX + 1])
     return t, w / w.sum()
 
 
