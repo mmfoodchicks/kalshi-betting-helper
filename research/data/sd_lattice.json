@@ -1,0 +1,105 @@
+{
+ "blocked_by": [
+  "fixing it inside the legacy simulator would move every classic number validated in the previous pass, which this pass may not do",
+  "the constrained simulator already scores on the exact lattice (0 of 1,600,000 off it) but promoting it is not this pass's decision"
+ ],
+ "by_position": [
+  {
+   "off_lattice": 1975,
+   "off_lattice_pct": 49.38,
+   "players": 1,
+   "pos": "DB",
+   "samples": 4000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 79908,
+   "off_lattice_pct": 31.21,
+   "players": 64,
+   "pos": "DST",
+   "samples": 256000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 8006,
+   "off_lattice_pct": 50.04,
+   "players": 4,
+   "pos": "FB",
+   "samples": 16000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 58664,
+   "off_lattice_pct": 45.83,
+   "players": 32,
+   "pos": "K",
+   "samples": 128000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 66277,
+   "off_lattice_pct": 50.21,
+   "players": 33,
+   "pos": "QB",
+   "samples": 132000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 200126,
+   "off_lattice_pct": 50.03,
+   "players": 100,
+   "pos": "RB",
+   "samples": 400000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 196173,
+   "off_lattice_pct": 50.04,
+   "players": 98,
+   "pos": "TE",
+   "samples": 392000,
+   "worst_residual_steps": 0.5
+  },
+  {
+   "off_lattice": 322661,
+   "off_lattice_pct": 50.1,
+   "players": 161,
+   "pos": "WR",
+   "samples": 644000,
+   "worst_residual_steps": 0.5
+  }
+ ],
+ "consequence": [
+  "the sole-win column is decided by tie frequency, and a grid twice as fine as the real one makes exact ties about half as likely",
+  "dfs_tourney.SD_MONEY_LATTICE_OK is False, so the showdown money gate stays shut for this reason independently of the field model"
+ ],
+ "mechanism": [
+  "skill players: arr = [x * (proj / raw) for x in arr], a per-player floating multiply, then round(x, 2)",
+  "defenses: arr = [round(max(-4.0, x + shift), 2)], a floating additive shift to the Sleeper mean",
+  "both land scores on a 0.01 grid; DK offence lives on 0.02"
+ ],
+ "meta": {
+  "dk_step": 0.02,
+  "model": "legacy",
+  "provenance": {
+   "commit": "a1c4836",
+   "data_split": null,
+   "dirty": true,
+   "model": "legacy",
+   "seed": null,
+   "source_files": 21,
+   "source_sha": "964f741b8f031308035130b7f5ba1c5649984e8b38648ad968752ec0cfdd95f5",
+   "worlds": 4000
+  },
+  "season": "2026",
+  "stage": "showdown DK-lattice audit (a measurement, not a fix)",
+  "week": 1,
+  "worlds": 4000
+ },
+ "total": {
+  "distinct_values": 5253,
+  "off_lattice": 933790,
+  "off_lattice_pct": 47.35,
+  "samples": 1972000
+ }
+}

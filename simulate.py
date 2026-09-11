@@ -130,7 +130,13 @@ def parse_dk_csv(text):
                             # DK's own availability flag. Carried so a builder can
                             # refuse to roster a player who is already ruled out --
                             # tonight's showdown export lists one OUT and two IR.
-                            "status": (r.get("Status") or "").strip().upper()})
+                            "status": (r.get("Status") or "").strip().upper(),
+                            # DraftKings' own stable player id. Names collide
+                            # across teams and change spelling between exports
+                            # ("Travis Etienne" / "Travis Etienne Jr."); the id
+                            # does neither, so identity and the pool signature
+                            # can rest on it where it exists.
+                            "dk_id": (r.get("ID") or r.get("Id") or r.get("id") or "").strip()})
         if out:
             return out
 

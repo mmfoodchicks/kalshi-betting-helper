@@ -12950,7 +12950,11 @@ _tt15 = _pcw15[_pcw15.index("def _task_showdown_tourney"):_pcw15.index("def _shi
 ck("the PC builds only the primetime showdown Millionaires on its own (richest contest >= $500k), requests first, and never rebuilds on age alone",
    "_SD_MIN_POOL = 500_000" in _pcw15 and "pool_by_dg.get(dg, 0.0) >= _SD_MIN_POOL" in _tt15
    and '"/api/dfs/tourney/requests"' in _pcw15 and "soon.append((0, wanted[dg]" in _tt15
-   and "3 * 3600" not in _tt15 and "_rebuild_reason(cur, _pool_sig(slate), wanted.get(dg), state, dg, status_key)" in _tt15
+   and "3 * 3600" not in _tt15
+   and "_rebuild_reason(cur, _sd_pool_sig(slate), wanted.get(dg), state, dg,\n                                      status_key, prelock_key=pl_key)" in _tt15
+   # still no rebuild for age ALONE; the refreshes are lock-relative, bounded
+   # and fire once each, which is a different thing from "the board is old"
+   and "_prelock_window(_dt_ts(sl.get(\"starts\")))" in _tt15
    and 'return "queued from the tab"' in _pcw15
    and 'return "the DraftKings pool changed"' in _pcw15 and "soon[:2]" not in _tt15
    and "timedelta(minutes=30) <= st" in _tt15,
@@ -12999,7 +13003,8 @@ ck("the PC builds the Sunday main slate against its seven-figure contests, check
    and "_CL_MIN_POOL = 1_000_000" in _pcw16
    and '("nightly", 3, 0, 3, 59, None)' in _pcw16 and '("sunday", 11, 35, 12, 15, 6)' in _pcw16
    and 'return "the DraftKings pool changed"' in _pcw16 and 'return "queued from the tab"' in _pcw16
-   and 'return f"status changed: {detail}"' in _pcw16 and "3 * 3600" not in _pcw16
+   and 'return (f"status changed: {detail}" if changed else None), status_key' in _pcw16
+   and "3 * 3600" not in _pcw16
    and "min_pool=_CL_MIN_POOL, n_sims=60000" in _pcw16
    and 'sl.get("contest_type") != 21 or (sl.get("games") or 0) < 10 or sl.get("tag")' in _pcw16,
    "owner: nightly for status changes only, Sunday before the games, only the Sunday ones over $1M")
@@ -13010,15 +13015,18 @@ try:
     _bs14._DIR = _os.path.join(_tmp16, "boards")
     _os.makedirs(_bs14._DIR)
     _st16 = {}
-    _b16 = {"pool_sig": "abc", "built_ts": 100, "status": {"Guard Player One": "q", "Guard Player Two": "in"}}
-    _r16 = [_pcw16m._rebuild_reason(None, "abc", None, _st16, 1, None),
-            _pcw16m._rebuild_reason(_b16, "zzz", None, _st16, 1, None),
-            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 200}, _st16, 1, None),
-            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 50}, _st16, 1, None),
-            _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday"),
-            _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday"),
-            _pcw16m._rebuild_reason({"pool_sig": "abc", "built_ts": 100, "status": {"Guard Player Three": "in"}},
-                                    "abc", None, _st16, 2, "2026-09-13 sunday")]
+    _b16 = {"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100,
+            "status": {"Guard Player One": "q", "Guard Player Two": "in"}}
+    _r16 = [_pcw16m._rebuild_reason(None, "abc", None, _st16, 1, None)[0],
+            _pcw16m._rebuild_reason(_b16, "zzz", None, _st16, 1, None)[0],
+            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 200}, _st16, 1, None)[0],
+            _pcw16m._rebuild_reason(_b16, "abc", {"ts": 50}, _st16, 1, None)[0],
+            _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday")[0],
+            (_pcw16m._consume_window(_st16, 1, "2026-09-13 sunday")
+             or _pcw16m._rebuild_reason(_b16, "abc", None, _st16, 1, "2026-09-13 sunday")[0]),
+            _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc",
+                                     "built_ts": 100, "status": {"Guard Player Three": "in"}},
+                                    "abc", None, _st16, 2, "2026-09-13 sunday")[0]]
     ck("rebuild reasons: no board, a pool change, a newer request, a pivotal status change inside a window; an older request, a repeated window and an unchanged status are not reasons",
        _r16[0] == "no board yet" and _r16[1] == "the DraftKings pool changed"
        and _r16[2] == "queued from the tab" and _r16[3] is None
@@ -13306,10 +13314,13 @@ ck("the board stamps its engine semantics, the field's targets and achieved rece
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    and '"experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),' in _dts1
-   and _pcw16m._rebuild_reason({"kind": "classic", "engine": 1, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
-   and _pcw16m._rebuild_reason({"kind": "classic", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) == "engine updated"
-   and _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) is None
-   and _pcw16m._rebuild_reason({"kind": "showdown", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None) is None)
+   and _pcw16m._rebuild_reason({"kind": "classic", "engine": 1, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] == "engine updated"
+   and _pcw16m._rebuild_reason({"kind": "classic", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] == "engine updated"
+   and _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] is None
+   # a showdown board with no engine stamp USED to pass here, which was the
+   # defect: it now rebuilds like any other artifact whose meaning is older
+   and _pcw16m._rebuild_reason({"kind": "showdown", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] == "engine updated"
+   and _pcw16m._rebuild_reason({"kind": "showdown", "engine": _dt14.SD_ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] is None)
 _js_s1 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the tab labels the experimental columns from the board (experimental win, experimental EV, the list names) with the reason, and says which Sundays are held out",
    "const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;" in _js_s1
@@ -13831,6 +13842,186 @@ ck("the blind 2025 validation is on file with its gate passed on all three legs,
 # never entered. The research module no longer holds a copy; this checks that
 # it cannot grow one back, and that the artifact's rows carry the canonical
 # names rather than merely being two rows that resolved.
+# ======================================================================
+# Showdown correction pass, stage S1: operational correctness
+# ======================================================================
+# A showdown board could not be invalidated by an engine change: the check
+# read `board.get("kind") == "classic"` and showdown artifacts stamped no
+# engine at all, so a board whose numbers meant something older stayed
+# authoritative forever. Classic and showdown now version separately, and an
+# unstamped artifact reads as 0 and rebuilds.
+import pc_worker as _pw_s1
+import time as _t_s1
+_now_s1 = _t_s1.time()
+
+
+def _sdb(**kw):
+    b = {"kind": "showdown", "engine": _dt14.SD_ENGINE, "pool_sig": "AAA",
+         "built_ts": _now_s1 - 3600, "status": {"Jared Goff": "playing"}}
+    b.update(kw)
+    return b
+
+
+_b_noeng = _sdb()
+_b_noeng.pop("engine")
+ck("a showdown board rebuilds when its engine is older than the showdown engine, and an artifact with no engine stamp at all rebuilds rather than staying authoritative",
+   _pw_s1._rebuild_reason(_sdb(), "AAA", None, {}, 1, None)[0] is None
+   and _pw_s1._rebuild_reason(_sdb(engine=_dt14.SD_ENGINE - 1), "AAA", None, {}, 1, None)[0] == "engine updated"
+   and _pw_s1._rebuild_reason(_b_noeng, "AAA", None, {}, 1, None)[0] == "engine updated"
+   and _dt14.SD_ENGINE >= 2)
+ck("classic and showdown version separately, so one kind's rebuild is never forced by the other kind's change",
+   _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
+   and _pw_s1._expected_engine("classic") == _dt14.ENGINE
+   and _pw_s1._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "AAA", "built_ts": _now_s1},
+                              "AAA", None, {}, 1, None)[0] is None
+   and _pw_s1._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE - 1, "pool_sig": "AAA", "built_ts": _now_s1},
+                              "AAA", None, {}, 1, None)[0] == "engine updated")
+
+# The signature was playable NAMES ONLY, so a captain's price could double and
+# the board would be called current. On classic that tradeoff is deliberate
+# (an hour of rebuild for a price tweak is a bad trade); on showdown the price
+# decides which of ~480,000 lineups are affordable at all.
+_HDR_S1 = "Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame,Status"
+
+
+def _sdcsv(cpt=17400, flex=11600, status="", extra=""):
+    g = "DET@NO 09/14/2026 01:00PM ET"
+    rows = [_HDR_S1,
+            f"QB,Jared Goff (111),Jared Goff,111,CPT,{cpt},{g},DET,21.1,{status}",
+            f"QB,Jared Goff (111),Jared Goff,111,FLEX,{flex},{g},DET,21.1,{status}",
+            f"WR,Chris Olave (222),Chris Olave,222,CPT,15000,{g},NO,14.2,",
+            f"WR,Chris Olave (222),Chris Olave,222,FLEX,10000,{g},NO,14.2,"]
+    if extra:
+        rows.append(extra)
+    return "\n".join(rows)
+
+
+_base_s1 = _sdcsv()
+_sig = _dt14.pool_sig_rich
+ck("the showdown pool signature moves on a captain-price change, a flex-price change, a status change and a late punt appearing -- every one of which the names-only signature calls identical",
+   _sig(_sdcsv(cpt=17800)) != _sig(_base_s1)
+   and _sig(_sdcsv(flex=11800)) != _sig(_base_s1)
+   and _sig(_sdcsv(status="Q")) != _sig(_base_s1)
+   and _sig(_sdcsv(extra="WR,Late Punt (999),Late Punt,999,FLEX,200,DET@NO 09/14/2026 01:00PM ET,NO,0.0,")) != _sig(_base_s1)
+   and _dt14.pool_sig(_sdcsv(cpt=17800)) == _dt14.pool_sig(_base_s1)
+   and _dt14.pool_sig(_sdcsv(status="Q")) == _dt14.pool_sig(_base_s1),
+   "the rich signature must see prices and status; the names-only one provably does not")
+ck("and every field the rich signature hashes is one the CSV reader actually produces, so it cannot look sensitive while being blind",
+   all(k in _SIM.parse_dk_csv(_base_s1)[0] for k in ("dk_id", "name", "team", "game", "pos", "roster_pos", "salary", "status"))
+   and _SIM.parse_dk_csv(_base_s1)[0]["dk_id"] == "111",
+   str(sorted(_SIM.parse_dk_csv(_base_s1)[0])))
+
+# A board built days before kickoff was served at lock unchanged, because the
+# only triggers were pool MEMBERSHIP and an explicit request.
+_wins = [_pw_s1._prelock_window(_now_s1 + m * 60, now_ts=_now_s1)[0] for m in (600, 240, 120, 60, 25, 3)]
+ck("a showdown board is forced to refresh as lock approaches -- four hours, two hours, one hour and a last look before kickoff -- and is left alone outside those windows",
+   _wins == [None, "T-4h", "T-2h", "T-1h", "T-25m", None],
+   str(_wins))
+ck("and the pre-lock refresh fires once per window even when nothing visible has changed, then stops",
+   _pw_s1._rebuild_reason(_sdb(), "AAA", None, {}, 1, None, prelock_key="T-2h")[0] == "pre-lock refresh (T-2h)"
+   and _pw_s1._rebuild_reason(_sdb(), "AAA", None, {"prelock_checks": {"1": "T-2h"}}, 1, None,
+                              prelock_key="T-2h")[0] is None)
+
+# The window used to be stamped INSIDE the decision, before the build ran, so
+# a build that threw burned the window and the board sat unrebuilt until the
+# next one came round.
+_st_s1 = {}
+_why_s1, _win_s1 = _pw_s1._rebuild_reason(_sdb(), "AAA", None, _st_s1, 1, None, prelock_key="T-1h")
+_why2_s1, _ = _pw_s1._rebuild_reason(_sdb(), "AAA", None, _st_s1, 1, None, prelock_key="T-1h")
+ck("deciding to rebuild writes no state at all, so a build that fails is owed again on the next cycle rather than silently skipped until the window closes",
+   _why_s1 == "pre-lock refresh (T-1h)" and _win_s1 == "T-1h" and _st_s1 == {}
+   and _why2_s1 == "pre-lock refresh (T-1h)",
+   f"state after deciding: {_st_s1}")
+_st_ok_s1 = {"prelock_checks": {"1": "T-1h"}}
+ck("and once the build has actually succeeded the caller consumes the window, which is the only thing that stops the retry",
+   _pw_s1._rebuild_reason(_sdb(), "AAA", None, _st_ok_s1, 1, None, prelock_key="T-1h")[0] is None
+   and "_consume_window(state, dg, window)" in _insp.getsource(_pw_s1._task_showdown_tourney)
+   and _insp.getsource(_pw_s1._task_showdown_tourney).index("art = dfs_tourney.build_nfl_showdown")
+       < _insp.getsource(_pw_s1._task_showdown_tourney).rindex("_consume_window(state, dg, window)"),
+   "the consume must come after the build, not before it")
+
+# ======================================================================
+# Showdown stage S2: authority. The money columns had no gate at all.
+# ======================================================================
+# Showdown's field is EXHAUSTIVE, so the resolution problem that shuts
+# classic's gate does not apply -- and that makes the remaining link the
+# sharper one: every weight comes from softmax(beta x projected points) with
+# beta solved so the chalkiest build holds 0.2% of the field, a number taken
+# from a single published contest in 2021 and never fitted to real showdown
+# ownership. First place, EV, ROI and expected copies inherit that whole.
+_sdg = _dt14.sd_money_gate(486_000, 132_000)
+ck("the showdown money gate refuses to call first place, payout, ROI or expected copies authoritative while the field model is uncalibrated, and names the exhaustive universe as the one link that IS closed",
+   _sdg["authoritative"] is False
+   and _sdg["links"]["field_model_calibrated"] is False
+   and _sdg["links"]["lineup_universe_exhaustive"] is True
+   and _sdg["links"]["ties_paid_as_the_house_pays_them"] is True
+   and set(_sdg["columns"]) == {"win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies"}
+   and "never fitted to real showdown ownership" in _sdg["why"]
+   and _dt14.SD_MONEY_FIELD_CALIBRATED is False,
+   str(_sdg["links"]))
+_sdg_links = ("lineup_universe_exhaustive", "ties_paid_as_the_house_pays_them",
+              "scores_on_the_dk_lattice", "field_model_calibrated")
+ck("the gate opens only when EVERY link closes: an enumerated universe is not enough, and calibrating the field is not enough while the scores are off the DraftKings lattice",
+   all(k in _sdg["links"] for k in _sdg_links)
+   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False
+   and _dt14.sd_money_gate(0, 132_000, field_calibrated=True)["authoritative"] is False
+   and sum(1 for k in _sdg_links if _sdg["links"][k]) == 2,
+   str(_sdg["links"]))
+_sd_src_s2 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+ck("every showdown board carries that gate, so the tab's experimental labelling switches on for showdown exactly as it does for classic",
+   '"experimental": sd_money_gate(len(idx), int(contest.get("max_entries")' in _sd_src_s2
+   and "const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;" in _js_s1
+   and "experimental EV</th>" in _js_s1)
+# The freshness of a board is now part of what it says about itself.
+ck("a showdown board records when it was built relative to kickoff, so a board made on Thursday and served at Sunday lock can be told apart from one made at lock",
+   '"kickoff_ts": _starts_ts,' in _sd_src_s2
+   and '"mins_before_lock":' in _sd_src_s2
+   and '"pool_sig": pool_sig_rich(slate["csv"]), "pool_sig_kind": "rich",' in _sd_src_s2)
+
+# ======================================================================
+# Showdown stage S3: the scores the tie machinery is fed
+# ======================================================================
+# Showdown's headline column is a SOLE-win probability, decided entirely by
+# how often two lineups land on the same number. Measured on the live pool:
+# 47% of simulated scores cannot occur under DraftKings scoring at all, in
+# EVERY position including kickers and defenses, and the residual is always
+# exactly half a step -- the scores sit on a 0.01 grid where DK offence lives
+# on 0.02. The tie arithmetic is right; what reaches it is not.
+_sdl = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_lattice.json")))
+_sdl_by = {r["pos"]: r for r in _sdl["by_position"]}
+ck("the showdown lattice audit is on file and says what the gate quotes: about half of every position's simulated scores are unreachable under DraftKings scoring, kickers and defenses included",
+   _sdl["total"]["off_lattice_pct"] > 40.0
+   and all(_sdl_by[p]["off_lattice_pct"] > 25.0 for p in ("QB", "RB", "WR", "TE", "K", "DST"))
+   and all(abs(_sdl_by[p]["worst_residual_steps"] - 0.5) < 1e-6 for p in ("QB", "RB", "WR", "TE", "K", "DST"))
+   and _sdl["meta"]["model"] == "legacy",
+   str({p: _sdl_by[p]["off_lattice_pct"] for p in ("QB", "RB", "WR", "TE", "K", "DST")}))
+ck("and the board's money gate carries that as its own link, so first place stays experimental for the lattice reason even if the field model were calibrated tomorrow",
+   _dt14.SD_MONEY_LATTICE_OK is False
+   and _dt14.sd_money_gate(486_000, 132_000)["links"]["scores_on_the_dk_lattice"] is False
+   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False
+   and "cannot occur under DraftKings scoring" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+ck("the audit records the mechanism it measured rather than asserting one: the per-player multiply, the defense's floating shift, and the rounding that puts both on a 0.01 grid",
+   any("proj / raw" in m for m in _sdl["mechanism"])
+   and any("floating additive" in m for m in _sdl["mechanism"])
+   and any("0.01 grid" in m for m in _sdl["mechanism"])
+   and any("classic" in b for b in _sdl["blocked_by"]))
+
+# The showdown report has to keep saying which stages were NOT reached. A
+# report that quietly drops its own scope section reads as a finished pass.
+_sdr = open(_os.path.join(_root, "showdown_audit_report.md")).read()
+_sdrw = " ".join(_sdr.split())
+ck("the showdown report states its baseline, that only three of nine stages were done, the measured lattice share, the shut gate with its two open links, and that Classic was left alone",
+   "a1c4836" in _sdrw and "stages S1, S2 and S3 of nine" in _sdrw
+   and "47.35%" in _sdrw and "half a step" in _sdrw
+   and "Authoritative: false" in _sdrw
+   and "S4 portfolio cross-fit** was not reached" in _sdrw
+   and "S7 historical field calibration** was not reached" in _sdrw
+   and "Classic behaviour | unchanged" in _sdrw)
+ck("and it keeps the two places the reviewer was wrong or already satisfied, rather than reporting a clean sweep of confirmations",
+   "partially falsified" in _sdrw
+   and "already in place" in _sdrw
+   and "already documented in code" in _sdrw)
+
 # ---- the portfolio cover: one contest, one field, nested entries ---------
 # READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is
 # SYNTHETIC: hand-built probability matrices chosen to separate the two
@@ -14262,7 +14453,8 @@ import json as _json18
 _src18 = open(_os.path.join(_root, "dfs_tourney.py")).read()
 ck("every tournament artifact leaves through plain() (both adapters wrapped, VERSION 3), and the classic row builds its duplicate count as a Python float",
    _dt14.VERSION == 3
-   and 'return plain({"version": VERSION, "kind": "showdown"' in _src18
+   and 'return plain({"version": VERSION, "engine": SD_ENGINE,' in _src18
+   and '"kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),' in _src18
    and 'return plain({"version": VERSION, "engine": ENGINE, "kind": "classic"' in _src18
    and "copies = float(C * copies_share[i])" in _src18,
    "one numpy scalar anywhere in the pickle makes the whole board unreadable on the server")

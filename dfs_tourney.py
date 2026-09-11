@@ -66,6 +66,18 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # the money columns' experimental label is built by money_gate; the board
 # records which simulator model made its worlds.
 ENGINE = 6
+# Showdown carries its OWN semantic version. The two engines change for
+# different reasons -- a classic field-model fix has nothing to say about a
+# single-game board -- and each build is expensive enough (an hour for
+# classic, twenty minutes for showdown) that sharing one number would spend
+# the PC's evening rebuilding boards whose meaning did not move. Bump this
+# when a showdown board's NUMBERS mean something new.
+#
+# 1: the first exhaustive showdown boards (through 2026-09-11) -- no engine
+#    stamp at all, so they read as 0 and rebuild.
+# 2: engine stamped, a salary- and status-sensitive pool signature, and
+#    pre-lock refreshes.
+SD_ENGINE = 2
 
 
 def available():
@@ -457,6 +469,83 @@ def money_gate(field_n, contest_C):
                       "ties_paid_as_the_house_pays_them": bool(MONEY_TIES_PAID),
                       "duplicates_exact": bool(MONEY_DUP_EXACT)},
             "entries_per_sampled_lineup": round(per_lineup, 2),
+            "why": why}
+
+
+# Showdown's public field is EXHAUSTIVE, not sampled: every legal lineup is
+# enumerated and carries an explicit weight, so the resolution problem that
+# keeps classic's money columns shut does not exist here. What does exist is
+# worse for the same columns -- those weights come from one uncalibrated knob.
+SD_MONEY_FIELD_CALIBRATED = False
+# FIELD_TOP_SHARE is set from a single published contest (the 2021 GB-DET
+# Millionaire's 231-way tie) and has never been fitted against real showdown
+# ownership: not captain rates, not flex rates, not 5-1/4-2/3-3 shares, not
+# the duplication distribution. Flip this only when a held-out comparison
+# against historical contests supports it, and never because a board looks
+# sensible.
+SD_MONEY_TIES_PAID = True       # the same tie-aware payout classic uses
+# Measured on the live pool, 1,952,000 simulated scores: 48.7% of them cannot
+# occur under DraftKings scoring at all (49.8% of quarterbacks, 50.1% of
+# receivers, 48.3% of kickers, 40.6% of defenses; the residual is exactly half
+# a lattice step, so they sit on odd hundredths). The legacy simulator pins
+# each player's mean by MULTIPLYING his whole point array by proj/raw, shifts
+# a defense by a floating amount, and rounds to two decimals -- so the scores
+# land on a 0.01 grid, and DraftKings' offensive scoring lives on 0.02
+# (0.04/passing yard, 0.1/rushing and receiving yard, whole receptions and
+# touchdowns, whole bonuses).
+#
+# That matters here more than anywhere else in the app: showdown's first-place
+# column is a SOLE-win probability, which is decided by how often scores tie,
+# and a score grid twice as fine as the real one makes exact ties about half
+# as likely as they truly are. The tie arithmetic is correct; it is being fed
+# scores the house could never print.
+#
+# Fixing it means generating discrete stat lines and scoring them with DK's
+# rules, which the constrained simulator already does (0 of 1,600,000 off the
+# lattice after the classic pass). Doing it inside the legacy simulator would
+# change every classic number that has just been validated, and promoting the
+# constrained model is not this pass's decision. So the defect is recorded,
+# the link is open, and the gate stays shut for this reason as well.
+SD_MONEY_LATTICE_OK = False
+
+
+def sd_money_gate(n_legal, contest_C, field_calibrated=None):
+    """Whether a showdown board's money columns may be published as
+    authoritative. Same shape as `money_gate` so the tab can read either.
+
+    The links differ from classic on purpose. Showdown enumerates the whole
+    lineup universe, so nothing is lost to sampling and expected copies are
+    exact GIVEN the weights -- which is precisely the problem, because the
+    weights are a placeholder. Duplication and first place are therefore only
+    as good as an uncalibrated field model, and that link is the one that
+    keeps the gate shut."""
+    cal = SD_MONEY_FIELD_CALIBRATED if field_calibrated is None else bool(field_calibrated)
+    exhaustive = int(n_legal) > 0
+    ok = bool(cal and exhaustive and SD_MONEY_TIES_PAID and SD_MONEY_LATTICE_OK)
+    why = ("the whole lineup universe is enumerated -- "
+           f"{int(n_legal):,} legal lineups against {int(contest_C):,} entries -- so unlike the "
+           "classic board nothing here is lost to sampling, and expected copies are exact given "
+           "the field's weights. The weights are the problem: the public is modelled as "
+           "softmax(beta x projected points) with beta solved so the most popular build holds "
+           f"{100 * FIELD_TOP_SHARE:.1f}% of the field, a figure taken from ONE published contest "
+           "and never fitted to real showdown ownership -- not captain rates, not flex rates, not "
+           "team structures, not the duplication distribution. First place, payout and ROI inherit "
+           "that uncertainty whole. Second, and separately: 48.7% of the simulated scores cannot "
+           "occur under DraftKings scoring (the legacy simulator pins each mean by multiplying the "
+           "whole array and rounds to hundredths, so scores sit on a 0.01 grid where DK's offence "
+           "lives on 0.02). First place here is a SOLE-win probability decided by how often scores "
+           "tie, so a grid twice as fine as the real one understates ties and flatters it. Rank on "
+           "top 1% and top 0.1%.")
+    return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies"],
+            "authoritative": ok,
+            "links": {"lineup_universe_exhaustive": bool(exhaustive),
+                      "ties_paid_as_the_house_pays_them": bool(SD_MONEY_TIES_PAID),
+                      "scores_on_the_dk_lattice": bool(SD_MONEY_LATTICE_OK),
+                      "field_model_calibrated": bool(cal)},
+            "field_model": {"kind": "softmax over projected points", "calibrated": bool(cal),
+                            "top_share_pct": round(100.0 * FIELD_TOP_SHARE, 3),
+                            "source": "one published contest (2021-09-20 GB-DET Millionaire)"},
+            "legal_lineups": int(n_legal),
             "why": why}
 
 
@@ -901,10 +990,18 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
-    return plain({"version": VERSION, "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
-            "built_ts": int(time.time()), "status_sig": st_sig, "status": st_cls,
+    _starts_ts = _iso_ts(contest.get("starts") or (slate.get("starts") if isinstance(slate, dict) else None))
+    _built = int(time.time())
+    return plain({"version": VERSION, "engine": SD_ENGINE,
+            "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
+            "built_ts": _built, "status_sig": st_sig, "status": st_cls,
+            # freshness, so a board can be audited for WHEN it was built
+            # rather than only for what it says: a board made on Thursday and
+            # served on Sunday used to look identical to one made at lock.
+            "kickoff_ts": _starts_ts,
+            "mins_before_lock": (None if not _starts_ts else int(round((_starts_ts - _built) / 60.0))),
             "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),
-            "pool_sig": pool_sig(slate["csv"]),
+            "pool_sig": pool_sig_rich(slate["csv"]), "pool_sig_kind": "rich",
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
                                                     "entered", "max_entries_per_user", "starts")},
@@ -921,6 +1018,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                      f"{100 * FIELD_TOP_SHARE:.1f}% of the field (a 231-way tie "
                                      "won DraftKings' 2021 GB-DET showdown Millionaire). "
                                      "Dollar figures assume the sim is the truth; read the ranks.")},
+            "experimental": sd_money_gate(len(idx), int(contest.get("max_entries")
+                                                          or contest.get("entered") or 0)),
             "rules": list(nfl_dfs._SD_RULES),
             "top_win": [row(int(i), "win") for i in by_win],
             "top_ev": [row(int(i), "ev") for i in by_ev],
@@ -1573,6 +1672,58 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
                 db, dk = db / 2.0, dk / 2.0
         _m, beta, kappa, idx, mean, own = best
     return beta, kappa, own, mean, _collision(idx), _dup_share(idx)
+
+
+def _iso_ts(v):
+    """DraftKings' start time as epoch seconds, or None. Their strings carry a
+    trailing Z and sometimes seven fractional digits, which datetime refuses."""
+    import datetime
+    t = str(v or "")[:19]
+    if not t:
+        return None
+    try:
+        return int(datetime.datetime.fromisoformat(t).replace(
+            tzinfo=datetime.timezone.utc).timestamp())
+    except ValueError:
+        return None
+
+
+def pool_sig_rich(csv_text):
+    """Everything about a DraftKings pool that can change what a board MEANS:
+    the stable id where DraftKings gives one, name, team, game, position, the
+    roster slot (a showdown export lists every man twice, CPT and FLEX, so
+    both prices are rows of their own), the salary and the reported status.
+
+    `pool_sig` deliberately hashes playable names only, so that a price tweak
+    never costs the PC an hour of classic rebuild. On showdown that tradeoff
+    is wrong twice over. The build is twenty minutes, not sixty; and the price
+    IS the board -- a captain's price decides which of ~480,000 lineups are
+    affordable at all, and a late $200 punt appearing changes the legal
+    universe without changing anybody's name. A board built on Thursday's
+    prices was being served on Sunday as though nothing had moved.
+
+    Every field here is one the CSV reader actually produces: hashing a key
+    the parser never sets would look sensitive and be blind, which is the
+    failure this function exists to end.
+    """
+    import hashlib
+    import nfl_dfs
+    import simulate
+    rows = []
+    for c in simulate.parse_dk_csv(csv_text):
+        if not nfl_dfs._playable(c):
+            continue
+        rows.append("|".join(str(x) for x in (
+            c.get("dk_id") or "",
+            c.get("name") or "",
+            c.get("team") or "",
+            c.get("game") or "",
+            (c.get("pos") or "").upper(),
+            (c.get("roster_pos") or "").upper(),
+            int(float(c.get("salary") or 0)),
+            (c.get("status") or "").strip().upper(),
+        )))
+    return hashlib.sha1("\n".join(sorted(rows)).encode()).hexdigest()[:16]
 
 
 def pool_sig(csv_text):

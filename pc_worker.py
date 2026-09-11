@@ -462,29 +462,86 @@ def _classic_engine():
     return dfs_tourney.ENGINE
 
 
-def _rebuild_reason(board, pool_sig, req, state, dg, status_key):
-    """Why a board should be (re)built now, or None. An older engine, pool
-    membership and requests count any time; status only inside a window,
-    once per window."""
+def _expected_engine(kind):
+    """The semantic engine a board of this kind should carry. Classic and
+    showdown version separately: a classic field-model change says nothing
+    about a single-game board, and each rebuild is expensive enough (an hour
+    against twenty minutes) that one shared number would spend the PC's
+    evening on boards whose meaning never moved."""
+    import dfs_tourney
+    return dfs_tourney.SD_ENGINE if kind == "showdown" else dfs_tourney.ENGINE
+
+
+# Minutes before kickoff, and the name of the window. A showdown board built
+# on Thursday was being served at Sunday kickoff unchanged, because the only
+# rebuild triggers were pool MEMBERSHIP and an explicit request -- neither of
+# which fires for a price move, a demotion, or news. These windows make a
+# refresh mandatory as lock approaches, at a cadence a twenty-minute build can
+# actually keep: four hours out, two hours out, one hour out, and a last look
+# ~25 minutes before kickoff.
+_PRELOCK_WINDOWS = ((240, 121, "T-4h"), (120, 61, "T-2h"), (60, 26, "T-1h"), (25, 6, "T-25m"))
+
+
+def _prelock_window(starts_ts, now_ts=None):
+    """(window key, minutes to lock) for the pre-lock refresh window a slate
+    is in right now, or (None, minutes). Outside every window the key is None
+    and nothing is forced."""
+    if not starts_ts:
+        return None, None
+    now = time.time() if now_ts is None else now_ts
+    mins = (float(starts_ts) - now) / 60.0
+    for hi, lo, name in _PRELOCK_WINDOWS:
+        if lo <= mins <= hi:
+            return name, mins
+    return None, mins
+
+
+def _rebuild_reason(board, pool_sig, req, state, dg, status_key, prelock_key=None):
+    """(why to rebuild now or None, the once-per-window key this decision
+    used or None).
+
+    PURE: it reads state and never writes it. The window is consumed by the
+    caller, and only after the outcome is known. It used to be stamped here,
+    before the build was even attempted, so a build that then threw -- a DK
+    timeout, a bad slate -- burned the window and the board sat unrebuilt
+    until the next one. A failed rebuild is now retried on the next cycle."""
     if not board:
-        return "no board yet"
-    if board.get("kind") == "classic" and (board.get("engine") or 1) < _classic_engine():
-        return "engine updated"          # the numbers mean something new (dfs_tourney.ENGINE)
+        return "no board yet", None
+    kind = board.get("kind") or "classic"
+    if (board.get("engine") or 0) < _expected_engine(kind):
+        # an artifact with no engine stamp at all reads as 0 and rebuilds,
+        # which is what every showdown board written before SD_ENGINE existed
+        # should do rather than stay quietly authoritative
+        return "engine updated", None
     if pool_sig and board.get("pool_sig") and board.get("pool_sig") != pool_sig:
-        return "the DraftKings pool changed"
+        return "the DraftKings pool changed", None
     if req and (req.get("ts") or 0) > (board.get("built_ts") or 0):
-        return "queued from the tab"
+        return "queued from the tab", None
+    if prelock_key:
+        done = state.get("prelock_checks", {})
+        if done.get(str(dg)) != prelock_key:
+            # mandatory: the board is remade on the pool and prices as they
+            # stand, whether or not anything we can see has changed
+            return f"pre-lock refresh ({prelock_key})", prelock_key
     if status_key:
-        done = state.setdefault("status_checks", {})
+        done = state.get("status_checks", {})
         if done.get(str(dg)) != status_key:
-            done[str(dg)] = status_key
-            _tourney_state_save(state)
             changed, detail = _status_changed(board)
             print(f"[vigil-pc] tourney {dg}: status check ({status_key}): "
                   f"{'changed - ' + detail if changed else 'no change'}")
-            if changed:
-                return f"status changed: {detail}"
-    return None
+            # a clean "no change" still consumes the window; a rebuild
+            # consumes it only once it has succeeded
+            return (f"status changed: {detail}" if changed else None), status_key
+    return None, None
+
+
+def _consume_window(state, dg, key, kind="status_checks"):
+    """Mark a once-per-window check done. Called only after the outcome is
+    known: a successful build, or a look that found nothing to do."""
+    if not key:
+        return
+    state.setdefault(kind, {})[str(dg)] = key
+    _tourney_state_save(state)
 
 
 def _tourney_resave(name, board, url, tok):
@@ -526,6 +583,22 @@ def _main_slate(slates):
         if best is None or (sl.get("games") or 0) > (best.get("games") or 0):
             best = sl
     return best
+
+
+def _sd_pool_sig(slate):
+    """Showdown's signature: prices and status included (dfs_tourney
+    .pool_sig_rich). Classic stays on the names-only signature on purpose --
+    an hour of rebuild for a price tweak is a bad trade there and a good one
+    here, where the build is twenty minutes and the price decides the
+    affordable universe."""
+    import dfs_tourney
+    return dfs_tourney.pool_sig_rich(slate["csv"])
+
+
+def _dt_ts(starts):
+    """A slate's kickoff as epoch seconds, or None."""
+    import dfs_tourney
+    return dfs_tourney._iso_ts(starts)
 
 
 def _pool_sig(slate):
@@ -573,8 +646,9 @@ def _task_classic_tourney(url, tok):
         if not slate:
             continue
         board, age = boardshare.get(name, None)
-        why = _rebuild_reason(board, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
+        why, window = _rebuild_reason(board, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
         if why is None:
+            _consume_window(state, dg, window)      # a look that found nothing still counts
             if not _tourney_resave(name, board, url, tok):
                 print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
             continue
@@ -583,12 +657,14 @@ def _task_classic_tourney(url, tok):
         try:
             art = dfs_tourney.build_nfl_classic(dg, min_pool=_CL_MIN_POOL, n_sims=60000, log=print)
         except Exception as e:
+            # the window is NOT consumed: a failed build is retried next cycle
             print(f"[vigil-pc] classic tourney {dg}: failed ({type(e).__name__}: {e})")
             continue
         if not art:
             print(f"[vigil-pc] classic tourney {dg}: nothing to build (no seven-figure contest, or no pool)")
             continue
         boardshare.put(name, art)
+        _consume_window(state, dg, window)          # consumed only now the build stands
         print(f"[vigil-pc] classic tourney {dg}: done in {time.time() - t0:.0f}s, "
               f"{art['candidates']:,} candidates x {art['worlds']:,} worlds, "
               f"{len(art['contests'])} contest(s)")
@@ -668,24 +744,38 @@ def _task_showdown_tourney(url, tok):
         if not slate:
             continue
         cur, age = boardshare.get(name, None)
-        why = _rebuild_reason(cur, _pool_sig(slate), wanted.get(dg), state, dg, status_key)
+        # showdown reads the price- and status-sensitive signature, and its
+        # own pre-lock refresh windows
+        pl_key, mins_left = _prelock_window(_dt_ts(sl.get("starts")))
+        why, window = _rebuild_reason(cur, _sd_pool_sig(slate), wanted.get(dg), state, dg,
+                                      status_key, prelock_key=pl_key)
         if why is None:
+            _consume_window(state, dg, window)
+            if pl_key:
+                _consume_window(state, dg, pl_key, kind="prelock_checks")
             if not _tourney_resave(name, cur, url, tok):
-                print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old)")
+                left = "" if mins_left is None else f", {mins_left:.0f} min to lock"
+                print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old{left})")
             continue
         print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds) - {why}...")
         t0 = time.time()
         try:
             art = dfs_tourney.build_nfl_showdown(dg, n_sims=60000, log=print)
         except Exception as e:
+            # neither window is consumed: the refresh is owed again next cycle
             print(f"[vigil-pc] tourney {dg}: failed ({type(e).__name__}: {e})")
             continue
         if not art:
             print(f"[vigil-pc] tourney {dg}: nothing to build (no contest or pool)")
             continue
         boardshare.put(name, art)
+        _consume_window(state, dg, window)
+        if pl_key:
+            _consume_window(state, dg, pl_key, kind="prelock_checks")
         print(f"[vigil-pc] tourney {dg}: done in {time.time() - t0:.0f}s, "
-              f"{art['lineups_legal']:,} lineups x {art['worlds']:,} worlds")
+              f"{art['lineups_legal']:,} lineups x {art['worlds']:,} worlds"
+              + ("" if art.get("mins_before_lock") is None
+                 else f", {art['mins_before_lock']} min before lock"))
         _ship_boards(url, tok)
 
 
