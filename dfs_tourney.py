@@ -59,7 +59,13 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # 4: the sampler's completion is stamped and a short field fails the build;
 # fixed probe lineups ride on every board as diagnostic passengers; the
 # simulator's model, version and constants are stamped.
-ENGINE = 4
+# 5: ties are paid the way DraftKings pays them (the mass LEVEL with a
+# lineup, not only the mass above it), so win_pct means first OUTRIGHT and
+# the payout splits every tied position; the count of entries above is
+# Poisson where its mean is small; score buckets are a hundredth of a point;
+# the money columns' experimental label is built by money_gate; the board
+# records which simulator model made its worlds.
+ENGINE = 5
 
 
 def available():

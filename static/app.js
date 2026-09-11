@@ -8340,6 +8340,12 @@ function renderDfsTourney(d) {
   }
   const rr = _dfsTourneyRows(d);
   const c = rr.contest, fm = d.field_model || {}, tm = d.timings || {};
+  // A board built before engine 5 carries ev_dup and no outright-win column.
+  // The tab has to stay readable in the half hour between the deploy and the
+  // PC's rebuild, so the old keys are read where the new ones are missing.
+  const evOf = (r) => ((r && r.ev != null) ? r.ev : (r || {}).ev_dup);
+  const evNoTieOf = (r) => ((r && r.ev_notie != null) ? r.ev_notie : evOf(r));
+  const winAnyOf = (r) => ((r && r.win_any_pct != null) ? r.win_any_pct : (r || {}).win_pct);
   const money = (v) => "$" + Math.round(v || 0).toLocaleString();
   const pct = (v, dp) => (v == null ? "-" : Number(v).toFixed(dp == null ? 1 : dp) + "%");
   const roiCls = (v) => (v >= 0 ? "ev pos" : "ev neg");
@@ -8353,7 +8359,7 @@ function renderDfsTourney(d) {
   };
   const table = (rows, list) => rows.length ? `<div style="overflow-x:auto"><table class="small" style="border-collapse:collapse;width:100%;margin-top:4px">
     <tr style="color:var(--muted);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">lineup</th><th>$</th><th>proj</th><th title="finishes in the top 1% of the field">top 1%</th>${classic ? `<th title="finishes in the top 0.1% of the field">top 0.1%</th>` : ""}${exp ? `<th title="experimental: ${expWhy}">experimental win</th>` : `<th title="share of simulated games this lineup finishes first OUTRIGHT - the field mass on its exact score is split the way DraftKings splits it">win</th>`}<th title="finishes in the money">cash</th>${exp ? `<th title="experimental: rides on the first-place estimate; ${expWhy}">experimental EV</th>` : `<th title="expected payout, every tied position split equally as DraftKings splits it">EV</th>`}<th title="expected identical lineups in the field">copies</th><th></th></tr>
-    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}</td>` : ""}<td>${pct(r.win_pct, 3)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}" title="ignoring ties it would be ${money(r.ev_notie)}">${money(r.ev)}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
+    ${rows.map((r, i) => `<tr style="text-align:right;border-top:1px solid var(--line,#333)"><td style="text-align:left">${i + 1}</td><td style="text-align:left;white-space:normal">${lineupCell(r)}</td><td>${nf(r.salary)}</td><td>${r.proj != null ? r.proj : "-"}</td><td><b>${pct(r.top1_pct, 1)}</b></td>${classic ? `<td>${pct(r.top01_pct, 2)}</td>` : ""}<td>${pct(r.win_pct, 3)}</td><td>${pct(r.cash_pct, 0)}</td><td class="${roiCls(r.roi_pct)}" title="ignoring ties it would be ${money(evNoTieOf(r))}">${money(evOf(r))}</td><td>${r.expected_copies}</td><td><a href="#" onclick="dfsTourneyCopy('${list}',${i});return false" title="copy the names">📋</a></td></tr>`).join("")}
   </table></div>` : `<div class="small" style="color:var(--muted)">none</div>`;
   // the portfolio: every prefix of the greedy cover is itself the best cover of that size
   let sizeBtns = "", portRows = [];
@@ -8370,7 +8376,7 @@ function renderDfsTourney(d) {
   }
   const contestBtns = classic ? `<div class="small" style="margin-top:4px">${(d.contests || []).map((x) => `<a href="#" onclick="dfsTourneyContest('${x.id}');return false" style="margin-right:10px;${String(x.id) === _dfsTourneyCid ? "font-weight:bold;text-decoration:underline" : ""}">${money(x.entry_fee)} · ${escapeHtml((x.name || "").replace(/^NFL /, ""))} · ${nf(x.max_entries)} entries</a>`).join("")}</div>` : "";
   const chalk = rr.chalk;
-  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · top 1% ${pct(chalk.top1_pct)} · ${exp ? "experimental win" : "win"} ${pct(chalk.win_pct, 3)} · ${exp ? "experimental EV" : "EV after the split"} ${money(chalk.ev)}</div>` : "";
+  const chalkHtml = chalk ? `<div class="small" style="margin-top:4px">📊 the field's most popular build (~${chalk.expected_copies} copies): ${lineupCell(chalk)} · top 1% ${pct(chalk.top1_pct)} · ${exp ? "experimental win" : "win"} ${pct(chalk.win_pct, 3)} · ${exp ? "experimental EV" : "EV after the split"} ${money(evOf(chalk))}</div>` : "";
   const players = d.players || [];
   const shown = _dfsTourneyAll ? players : players.slice(0, 14);
   const playersHtml = classic
@@ -8404,7 +8410,7 @@ function renderDfsTourney(d) {
     ${table((rr.lists[_dfsTourneyList] || []).slice(0, 8), _dfsTourneyList)}
     ${(rr.probes || []).length ? `<div style="margin-top:8px"><b>Probes</b> <span class="small" style="color:var(--muted)">- fixed lineups scored against this board as passengers; they never enter the candidates or the portfolio</span></div>
     ${(rr.probes || []).map((p) => p.available === false ? `<div class="small" style="color:var(--muted)">${escapeHtml((p.names || []).join(", "))} · not on this pool (${escapeHtml((p.missing || []).join(", "))})</div>`
-      : `<div class="small">${lineupCell(p)} · $${nf(p.salary)} · ${p.legal ? "legal" : "<b>not legal</b>"}${p.legal && !p.legal_under_cap4 ? " (fails a cap of four)" : ""} · top 1% <b>${pct(p.top1_pct, 1)}</b> #${(p.rank || {}).top1 || "-"} · top 0.1% <b>${pct(p.top01_pct, 2)}</b> #${(p.rank || {}).top01 || "-"} of ${nf((p.rank || {}).of)} · p10/p50/p90/p99 ${p.p10}/${p.median}/${p.p90}/${p.p99}${exp ? ` · experimental win ${pct(p.win_pct, 3)} outright (${pct(p.win_any_pct, 3)} incl. a share) · experimental EV ${money(p.ev)} (${money(p.ev_notie)} ignoring ties)` : ` · win ${pct(p.win_pct, 3)} · EV ${money(p.ev)}`}</div>`).join("")}` : ""}
+      : `<div class="small">${lineupCell(p)} · $${nf(p.salary)} · ${p.legal ? "legal" : "<b>not legal</b>"}${p.legal && !p.legal_under_cap4 ? " (fails a cap of four)" : ""} · top 1% <b>${pct(p.top1_pct, 1)}</b> #${(p.rank || {}).top1 || "-"} · top 0.1% <b>${pct(p.top01_pct, 2)}</b> #${(p.rank || {}).top01 || "-"} of ${nf((p.rank || {}).of)} · p10/p50/p90/p99 ${p.p10}/${p.median}/${p.p90}/${p.p99}${exp ? ` · experimental win ${pct(p.win_pct, 3)} outright (${pct(winAnyOf(p), 3)} incl. a share) · experimental EV ${money(evOf(p))} (${money(evNoTieOf(p))} ignoring ties)` : ` · win ${pct(p.win_pct, 3)} · EV ${money(evOf(p))}`}</div>`).join("")}` : ""}
     <div style="margin-top:8px"><b>Players</b> <span class="small" style="color:var(--muted)">- what the field does with them vs where the winning lineups actually had them</span></div>
     ${playersHtml}${moreHtml}
     <div class="small" style="color:var(--muted);margin-top:6px">⏱ sims ${Math.round(tm.sims_s || 0)}s${classic ? ` · best lineups ${Math.round(tm.optimal_s || 0)}s · field ${Math.round(tm.field_s || 0)}s` : ` · enumerate ${Math.round(tm.enumerate_s || 0)}s`} · score ${Math.round(tm.score_s || 0)}s · portfolio ${Math.round(tm.portfolio_s || 0)}s${d.rules ? ` · 📐 ${d.rules.map(escapeHtml).join(" · ")}` : ""}</div>

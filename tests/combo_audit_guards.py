@@ -13302,7 +13302,7 @@ if _dt14.available():
        and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
-   _dt14.ENGINE == 4 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   _dt14.ENGINE == 5 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    and '"experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),' in _dts1
@@ -13721,8 +13721,10 @@ ck("the board's rows carry the outright win, the share-of-first win, the tie-awa
    '"win_pct": round(100.0 * float(r["win_sole"][i]), 4),' in _dts3
    and '"ev": round(float(r["ev"][i]), 2), "ev_notie": round(float(r["ev_notie"][i]), 2),' in _dts3
    and '"ties": "DraftKings splits the tied positions\' prizes equally' in _dts3
-   and _dt14._RES == 100.0 and _dt14._NB == 40001 and "ev_dup" not in _js3
-   and "${money(r.ev)}" in _js3 and "ignoring ties" in _js3
+   and _dt14._RES == 100.0 and _dt14._NB == 40001
+   and _js3.count("ev_dup") == 2                              # only the engine-4 fallback and its comment
+   and "${money(evOf(r))}" in _js3 and "ignoring ties" in _js3
+   and "r.ev != null) ? r.ev : (r || {}).ev_dup" in _js3      # an engine-4 board stays readable through the swap
    and 'vigil-shell-v128' in open(_os.path.join(_root, "static", "sw.js")).read())
 
 # The receiving back as a stack partner: the knob exists, is off, and the
@@ -13750,6 +13752,66 @@ else:
 ck("projected targets reach the tournament from the simulator's pool, so the stack rule can read them",
    '"rec_tgt": tgt_of.get(p["name"], 0.0)}' in open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
    and '"rec_tgt": float(sim.get("rec_tgt") or 0.0)})' in open(_os.path.join(_root, "dfs_tourney.py")).read())
+
+# ---- Stages 2F, 3A, 3C and 4: the measured artifacts say what they measured --
+# 2026-09-11. Each research stage leaves a JSON artifact and a report. These
+# guards do not re-run the studies (they need the raw feeds and a
+# three-million-lineup field); they pin the facts the final audit report
+# quotes, so a later edit cannot quietly change what the evidence said.
+_st2f = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2f_stats.json")))
+_st3a = _json2b.load(open(_os.path.join(_root, "research", "data", "stage3a_tails.json")))
+_st4 = _json2b.load(open(_os.path.join(_root, "research", "data", "stage4_stats.json")))
+_val = _json2b.load(open(_os.path.join(_root, "research", "data", "stage2e_validation.json")))
+ck("the blind 2025 validation is on file with its gate passed on all three legs, the constrained model better calibrated than the legacy one by a wide margin, and its known weakness recorded: the two sides of a game barely move together",
+   _val["gate"]["promote_to_alternate"] is True and _val["gate"]["materially_worse"] is False
+   and _val["meta"]["holdout_outcomes_read"] is True and _val["meta"]["games"] == 272
+   and _val["calibration"]["constrained"]["_pooled"]["pit_ks"] < 0.5 * _val["calibration"]["legacy"]["_pooled"]["pit_ks"]
+   and _val["pair_rmse"]["constrained"] < 0.5 * _val["pair_rmse"]["legacy"]
+   and abs(_val["seed_robustness"]["crps_diff"]) < 0.05
+   and next(r for r in _val["pairs"] if r["moment"] == "pair QB1/opp QB1")["constrained"] < 0.5 * next(r for r in _val["pairs"] if r["moment"] == "pair QB1/opp QB1")["obs"],
+   f"pit {_val['calibration']['constrained']['_pooled']['pit_ks']:.3f} vs {_val['calibration']['legacy']['_pooled']['pit_ks']:.3f}")
+ck("the current-slate comparison is on file: both models read the same slate and field, the constrained one puts far fewer big game stacks among the strongest candidates, and the probe lineups are scored under both",
+   _st2f["models"]["legacy"]["entries"] == _st2f["models"]["constrained"]["entries"]
+   and _st2f["models"]["constrained"]["stacks"]["share_5plus"] < 0.5 * _st2f["models"]["legacy"]["stacks"]["share_5plus"]
+   and len(_st2f["models"]["legacy"]["probes"]) == 2 and len(_st2f["models"]["constrained"]["probes"]) == 2
+   and all(p.get("available") for m in ("legacy", "constrained") for p in _st2f["models"][m]["probes"])
+   and isinstance(_st2f["parameter_draws"], list) and len(_st2f["parameter_draws"]) >= 4)
+_lvl = _st3a["level_calibration"]
+ck("the tail study is on file and says what the report quotes: one sampled lineup stands for nearly three entries, the mass a thousandth and a ten-thousandth deep is resolved within three times every time, and a millionth deep the raw count says nobody above in most worlds while the fitted Pareto tail is an order of magnitude low",
+   abs(_st3a["resolution"]["entries_per_sampled_lineup"] - 2.77) < 0.02
+   and _st3a["meta"]["field_big"] >= 3_000_000 and _st3a["meta"]["field_sample"] == 300_000
+   and _lvl["0.001"]["raw"]["within_3x"] > 0.99 and _lvl["0.0001"]["raw"]["within_3x"] > 0.99
+   and _lvl["1e-06"]["raw"]["zero_share"] > 0.5 and _lvl["1e-06"]["raw"]["within_3x"] < 0.2
+   and _lvl["1e-06"]["gpd"]["median_ratio"] < 0.2 and _lvl["1e-05"]["gpd"]["within_3x"] < 0.5,
+   f"1e-6: raw zero {_lvl['1e-06']['raw']['zero_share']:.2f}, gpd ratio {_lvl['1e-06']['gpd']['median_ratio']:.3f}")
+ck("the duplication study is on file: the big field's most popular lineup is tens of entries of a real contest, the board's sample overstates the count, and multiplying the nine ownerships is wrong by more than an order of magnitude",
+   _st3a["duplication_stats"]["max_copies_big"] > 50
+   and _st3a["duplication_stats"]["distinct_big"] > 2_900_000
+   and _st3a["duplication"][0]["copies_big"] > 20
+   and _st3a["duplication"][0]["copies_independent"] > 10 * _st3a["duplication"][0]["copies_big"])
+_p4 = _st4["portfolio_objective"]
+_cap4 = {str(r["value"]): r for r in _st4["game_cap"]}
+_rb4 = {str(r["value"]): r for r in _st4["rb_stack_rule"]}
+ck("the stage four decisions are on file and cross-fitted: covering the top 0.1% beats covering the top 1% on the top-0.1% probability and on the payout at twenty entries, the per-game cap moves the held-out cover by a couple of percent with no pattern, and letting a receiving back count as the stack partner changes the held-out numbers not at all",
+   _st4["meta"]["build_worlds"] > 1000 and _st4["meta"]["score_worlds"] > 1000
+   and _st4["meta"]["build_worlds"] == _st4["meta"]["score_worlds"]
+   and _p4["top01"][-1]["p_any_top01"] > _p4["top1"][-1]["p_any_top01"]
+   and _p4["top01"][-1]["ev_total"] > _p4["top1"][-1]["ev_total"]
+   and _p4["top1"][-1]["p_any_top1"] > _p4["ev"][-1]["p_any_top1"]
+   and abs(_cap4["None"]["p_any_top1_20"] - _cap4["4"]["p_any_top1_20"]) < 0.05
+   and _cap4["None"]["allowed"] >= _cap4["4"]["allowed"]
+   and _rb4["3.0"]["allowed"] > _rb4["None"]["allowed"]
+   and abs(_rb4["3.0"]["p_any_top1_20"] - _rb4["None"]["p_any_top1_20"]) < 1e-9
+   and _st4["rb_stack_counts"]["legal_only_if_a_back_counts"] > 100,
+   f"cover20 top1 {_p4['top1'][-1]['p_any_top1']:.4f} vs top01 {_p4['top01'][-1]['p_any_top1']:.4f}")
+_fin = open(_os.path.join(_root, "dfs_final_audit_report.md")).read()
+ck("the final audit report is in the tree and carries the sections the review asks for, the numbers that decide things, and the limitations rather than only the wins",
+   all(h in _fin for h in ("## A. The commit chain", "## I. Stage 2E part two: the blind 2025 result",
+                           "## K. Stage 3A: the tail", "## N. Stage 3D: what the money columns are worth",
+                           "## O. Stage 4A: what a portfolio should cover", "## T. Known limitations",
+                           "## V. Questions for the adversarial review"))
+   and "0.028" in _fin and "0.178" in _fin and "2.8 entries" in _fin
+   and "2025 is spent as a holdout" in _fin)
 
 # ---- Stage 3D: the money columns are experimental for a stated reason ------
 # Three links: the sample must resolve the mass the contest asks about, ties

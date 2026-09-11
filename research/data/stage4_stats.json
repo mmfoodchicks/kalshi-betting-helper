@@ -1,0 +1,498 @@
+{
+ "game_cap": [
+  {
+   "allowed": 51421,
+   "best_top01_pct": 2.124048435334352,
+   "best_top1_pct": 9.999365713332644,
+   "ev_total_20": 5932.002379915308,
+   "example": [
+    "Bryce Young",
+    "Jahmyr Gibbs",
+    "Ashton Jeanty",
+    "Amon-Ra St. Brown",
+    "Tetairoa McMillan",
+    "Jalen Coker",
+    "Sam LaPorta",
+    "Quentin Johnston",
+    "Vikings"
+   ],
+   "mean_top1_pct_of_20": 6.550653018871561,
+   "p_any_top01_20": 0.22750848935020984,
+   "p_any_top1_20": 0.7526216312975815,
+   "roi_pct_20": 5832.002379915308,
+   "share_allowed": 0.79236008382643,
+   "value": 4
+  },
+  {
+   "allowed": 52120,
+   "best_top01_pct": 2.124048435334352,
+   "best_top1_pct": 9.999365713332644,
+   "ev_total_20": 4887.174423683859,
+   "example": [
+    "Bryce Young",
+    "Jahmyr Gibbs",
+    "Ashton Jeanty",
+    "Amon-Ra St. Brown",
+    "Tetairoa McMillan",
+    "Jalen Coker",
+    "Sam LaPorta",
+    "Quentin Johnston",
+    "Vikings"
+   ],
+   "mean_top1_pct_of_20": 6.445730198002886,
+   "p_any_top01_20": 0.23957425849544,
+   "p_any_top1_20": 0.7725922079771543,
+   "roi_pct_20": 4787.174423683859,
+   "share_allowed": 0.8031311637080868,
+   "value": 5
+  },
+  {
+   "allowed": 52146,
+   "best_top01_pct": 2.124048435334352,
+   "best_top1_pct": 9.999365713332644,
+   "ev_total_20": 4625.569224016543,
+   "example": [
+    "Bryce Young",
+    "Jahmyr Gibbs",
+    "Ashton Jeanty",
+    "Amon-Ra St. Brown",
+    "Tetairoa McMillan",
+    "Jalen Coker",
+    "Sam LaPorta",
+    "Quentin Johnston",
+    "Vikings"
+   ],
+   "mean_top1_pct_of_20": 6.584991131042509,
+   "p_any_top01_20": 0.23877806381357225,
+   "p_any_top1_20": 0.7671014609947825,
+   "roi_pct_20": 4525.569224016543,
+   "share_allowed": 0.8035318047337278,
+   "value": 6
+  },
+  {
+   "allowed": 52146,
+   "best_top01_pct": 2.124048435334352,
+   "best_top1_pct": 9.999365713332644,
+   "ev_total_20": 4625.569224016543,
+   "example": [
+    "Bryce Young",
+    "Jahmyr Gibbs",
+    "Ashton Jeanty",
+    "Amon-Ra St. Brown",
+    "Tetairoa McMillan",
+    "Jalen Coker",
+    "Sam LaPorta",
+    "Quentin Johnston",
+    "Vikings"
+   ],
+   "mean_top1_pct_of_20": 6.584991131042509,
+   "p_any_top01_20": 0.23877806381357225,
+   "p_any_top1_20": 0.7671014609947825,
+   "roi_pct_20": 4525.569224016543,
+   "share_allowed": 0.8035318047337278,
+   "value": null
+  }
+ ],
+ "meta": {
+  "base_seed": 20260911,
+  "build_worlds": 7500,
+  "built": "2026-09-11 01:46 UTC",
+  "candidates": 64896,
+  "commit": "9b39e8c",
+  "contest": {
+   "entry_fee": 5.0,
+   "first_prize": 1000000.0,
+   "max_entries": 832000,
+   "name": "research millionaire",
+   "places_paid": 166400
+  },
+  "field": 150000,
+  "players": 243,
+  "score_worlds": 7500,
+  "seconds": 2779.3,
+  "slate_dir": "slate",
+  "stage": "4",
+  "worlds": 20000
+ },
+ "portfolio_objective": {
+  "_overlap": {
+   "top01 vs ev": 4,
+   "top1 vs ev": 0,
+   "top1 vs top01": 7
+  },
+  "_picks": {
+   "ev": [
+    [
+     "Geno Smith",
+     "Jahmyr Gibbs",
+     "Breece Hall",
+     "Tetairoa McMillan",
+     "Jalen Coker",
+     "Garrett Wilson",
+     "Colston Loveland",
+     "David Montgomery",
+     "Raiders"
+    ],
+    [
+     "Joe Burrow",
+     "Chase Brown",
+     "David Montgomery",
+     "Tee Higgins",
+     "Nico Collins",
+     "Tetairoa McMillan",
+     "Darren Waller",
+     "Jalen Coker",
+     "Falcons"
+    ],
+    [
+     "Bryce Young",
+     "Chase Brown",
+     "D'Andre Swift",
+     "Nico Collins",
+     "Tetairoa McMillan",
+     "Jalen Coker",
+     "Colston Loveland",
+     "Garrett Wilson",
+     "Bengals"
+    ]
+   ],
+   "top01": [
+    [
+     "Bryce Young",
+     "Jahmyr Gibbs",
+     "Ashton Jeanty",
+     "Amon-Ra St. Brown",
+     "Tetairoa McMillan",
+     "Jalen Coker",
+     "Sam LaPorta",
+     "Quentin Johnston",
+     "Vikings"
+    ],
+    [
+     "Cam Ward",
+     "Jahmyr Gibbs",
+     "Breece Hall",
+     "Amon-Ra St. Brown",
+     "Garrett Wilson",
+     "Carnell Tate",
+     "Sam LaPorta",
+     "Calvin Ridley",
+     "Raiders"
+    ],
+    [
+     "Jared Goff",
+     "Jahmyr Gibbs",
+     "Travis Etienne Jr.",
+     "Amon-Ra St. Brown",
+     "Chris Olave",
+     "Devaughn Vele",
+     "Mark Andrews",
+     "Rico Dowdle",
+     "Eagles"
+    ]
+   ],
+   "top1": [
+    [
+     "Bryce Young",
+     "Jahmyr Gibbs",
+     "Ashton Jeanty",
+     "Amon-Ra St. Brown",
+     "Tetairoa McMillan",
+     "Jalen Coker",
+     "Sam LaPorta",
+     "Quentin Johnston",
+     "Vikings"
+    ],
+    [
+     "Jared Goff",
+     "Jahmyr Gibbs",
+     "Travis Etienne Jr.",
+     "Amon-Ra St. Brown",
+     "Chris Olave",
+     "Devaughn Vele",
+     "Mark Andrews",
+     "Rico Dowdle",
+     "Eagles"
+    ],
+    [
+     "Geno Smith",
+     "Jahmyr Gibbs",
+     "Chase Brown",
+     "Ja'Marr Chase",
+     "Tee Higgins",
+     "Devaughn Vele",
+     "Sam LaPorta",
+     "Garrett Wilson",
+     "Jets"
+    ]
+   ]
+  },
+  "ev": [
+   {
+    "ev_notie_total": 968.2765574471848,
+    "ev_total": 968.2650024144959,
+    "p_any_top01": 0.020155579637162968,
+    "p_any_top1": 0.08487088789458841,
+    "roi_pct": 19265.30004828992,
+    "size": 1,
+    "win_sole_any_pct": 0.09338515762848942
+   },
+   {
+    "ev_notie_total": 1813.8888328278044,
+    "ev_total": 1813.860304810602,
+    "p_any_top01": 0.032703931811467246,
+    "p_any_top1": 0.13295106963957126,
+    "roi_pct": 18038.603048106022,
+    "size": 2,
+    "win_sole_any_pct": 0.1735163795623218
+   },
+   {
+    "ev_notie_total": 1837.1058046116225,
+    "ev_total": 1837.074654670374,
+    "p_any_top01": 0.044357749701014915,
+    "p_any_top1": 0.16284425040001693,
+    "roi_pct": 12147.16436446916,
+    "size": 3,
+    "win_sole_any_pct": 0.1735169658476199
+   },
+   {
+    "ev_notie_total": 2693.5552062934607,
+    "ev_total": 2693.484630909229,
+    "p_any_top01": 0.0696228034854871,
+    "p_any_top1": 0.2625034083690516,
+    "roi_pct": 10673.938523636916,
+    "size": 5,
+    "win_sole_any_pct": 0.25347251010614524
+   },
+   {
+    "ev_notie_total": 5307.54593976732,
+    "ev_total": 5307.319858230772,
+    "p_any_top01": 0.13242321733605733,
+    "p_any_top1": 0.4150352970468967,
+    "roi_pct": 10514.639716461545,
+    "size": 10,
+    "win_sole_any_pct": 0.4933733053262057
+   },
+   {
+    "ev_notie_total": 9238.276133594576,
+    "ev_total": 9237.686409130454,
+    "p_any_top01": 0.2090383449672294,
+    "p_any_top1": 0.5928623599429151,
+    "roi_pct": 9137.686409130454,
+    "size": 20,
+    "win_sole_any_pct": 0.8521478313692321
+   }
+  ],
+  "top01": [
+   {
+    "ev_notie_total": 731.6536864642287,
+    "ev_total": 731.6488989444175,
+    "p_any_top01": 0.023436216589126757,
+    "p_any_top1": 0.09440075971922701,
+    "roi_pct": 14532.97797888835,
+    "size": 1,
+    "win_sole_any_pct": 0.06687337422052186
+   },
+   {
+    "ev_notie_total": 1194.6407220383226,
+    "ev_total": 1194.621829623751,
+    "p_any_top01": 0.046363444299234335,
+    "p_any_top1": 0.16902799966097215,
+    "roi_pct": 11846.21829623751,
+    "size": 2,
+    "win_sole_any_pct": 0.10705319649513267
+   },
+   {
+    "ev_notie_total": 1508.2788715828701,
+    "ev_total": 1506.3061653668665,
+    "p_any_top01": 0.06430311316891801,
+    "p_any_top1": 0.23161539133997355,
+    "roi_pct": 9942.041102445777,
+    "size": 3,
+    "win_sole_any_pct": 0.13379492520794178
+   },
+   {
+    "ev_notie_total": 2548.87732104313,
+    "ev_total": 2546.8267186673015,
+    "p_any_top01": 0.1028828624797119,
+    "p_any_top1": 0.36339305184885795,
+    "roi_pct": 10087.306874669206,
+    "size": 5,
+    "win_sole_any_pct": 0.2273969572448964
+   },
+   {
+    "ev_notie_total": 6088.122066348059,
+    "ev_total": 6086.012751157482,
+    "p_any_top01": 0.17797859855631126,
+    "p_any_top1": 0.5299888801824767,
+    "roi_pct": 12072.025502314964,
+    "size": 10,
+    "win_sole_any_pct": 0.5600082318087951
+   },
+   {
+    "ev_notie_total": 9623.114344568514,
+    "ev_total": 9620.69523482364,
+    "p_any_top01": 0.2772910249125168,
+    "p_any_top1": 0.709782767029133,
+    "roi_pct": 9520.69523482364,
+    "size": 20,
+    "win_sole_any_pct": 0.8785762520856055
+   }
+  ],
+  "top1": [
+   {
+    "ev_notie_total": 731.6536864642287,
+    "ev_total": 731.6488989444175,
+    "p_any_top01": 0.023436216589126757,
+    "p_any_top1": 0.09440075971922701,
+    "roi_pct": 14532.97797888835,
+    "size": 1,
+    "win_sole_any_pct": 0.06687337422052186
+   },
+   {
+    "ev_notie_total": 1045.2918360087763,
+    "ev_total": 1043.333234687533,
+    "p_any_top01": 0.04217588545861983,
+    "p_any_top1": 0.16895159978014018,
+    "roi_pct": 10333.33234687533,
+    "size": 2,
+    "win_sole_any_pct": 0.09362585922735311
+   },
+   {
+    "ev_notie_total": 1777.3677567594177,
+    "ev_total": 1775.4034856519615,
+    "p_any_top01": 0.06439021083400076,
+    "p_any_top1": 0.24990758177631056,
+    "roi_pct": 11736.023237679743,
+    "size": 3,
+    "win_sole_any_pct": 0.16048742409119354
+   },
+   {
+    "ev_notie_total": 2548.87732104313,
+    "ev_total": 2546.8267186673015,
+    "p_any_top01": 0.1028828624797119,
+    "p_any_top1": 0.36339305184885795,
+    "roi_pct": 10087.306874669206,
+    "size": 5,
+    "win_sole_any_pct": 0.2273969572448964
+   },
+   {
+    "ev_notie_total": 3328.424852266788,
+    "ev_total": 3326.3443347525663,
+    "p_any_top01": 0.15313232617771577,
+    "p_any_top1": 0.5547131157410428,
+    "roi_pct": 6552.688669505133,
+    "size": 10,
+    "win_sole_any_pct": 0.2942081342982683
+   },
+   {
+    "ev_notie_total": 4627.701394555282,
+    "ev_total": 4625.569224016543,
+    "p_any_top01": 0.23877806381357225,
+    "p_any_top1": 0.7671014609947825,
+    "roi_pct": 4525.569224016543,
+    "size": 20,
+    "win_sole_any_pct": 0.4011903269567685
+   }
+  ]
+ },
+ "rb_stack_counts": {
+  "already_stacked": 36795,
+  "legal_only_if_a_back_counts": 932,
+  "unforced_draws": 59917
+ },
+ "rb_stack_rule": [
+  {
+   "allowed": 36795,
+   "best_top01_pct": 1.836412439375715,
+   "best_top1_pct": 7.882163288611375,
+   "ev_total_20": 4382.038819249533,
+   "example": [
+    "Jalen Hurts",
+    "Jahmyr Gibbs",
+    "Travis Etienne Jr.",
+    "Amon-Ra St. Brown",
+    "Devaughn Vele",
+    "DeVonta Smith",
+    "Dallas Goedert",
+    "Quentin Johnston",
+    "Titans"
+   ],
+   "mean_top1_pct_of_20": 6.207801387332292,
+   "p_any_top01_20": 0.2134972608006651,
+   "p_any_top1_20": 0.7446170114833197,
+   "roi_pct_20": 4282.038819249533,
+   "share_allowed": 0.6140995043143015,
+   "value": null
+  },
+  {
+   "allowed": 37413,
+   "best_top01_pct": 1.836412439375715,
+   "best_top1_pct": 7.882163288611375,
+   "ev_total_20": 4382.038819249533,
+   "example": [
+    "Jalen Hurts",
+    "Jahmyr Gibbs",
+    "Travis Etienne Jr.",
+    "Amon-Ra St. Brown",
+    "Devaughn Vele",
+    "DeVonta Smith",
+    "Dallas Goedert",
+    "Quentin Johnston",
+    "Titans"
+   ],
+   "mean_top1_pct_of_20": 6.207801387332292,
+   "p_any_top01_20": 0.2134972608006651,
+   "p_any_top1_20": 0.7446170114833197,
+   "roi_pct_20": 4282.038819249533,
+   "share_allowed": 0.6244137723851327,
+   "value": 3.0
+  },
+  {
+   "allowed": 37207,
+   "best_top01_pct": 1.836412439375715,
+   "best_top1_pct": 7.882163288611375,
+   "ev_total_20": 4382.038819249533,
+   "example": [
+    "Jalen Hurts",
+    "Jahmyr Gibbs",
+    "Travis Etienne Jr.",
+    "Amon-Ra St. Brown",
+    "Devaughn Vele",
+    "DeVonta Smith",
+    "Dallas Goedert",
+    "Quentin Johnston",
+    "Titans"
+   ],
+   "mean_top1_pct_of_20": 6.207801387332292,
+   "p_any_top01_20": 0.2134972608006651,
+   "p_any_top1_20": 0.7446170114833197,
+   "roi_pct_20": 4282.038819249533,
+   "share_allowed": 0.620975683028189,
+   "value": 4.0
+  },
+  {
+   "allowed": 37037,
+   "best_top01_pct": 1.836412439375715,
+   "best_top1_pct": 7.882163288611375,
+   "ev_total_20": 4382.038819249533,
+   "example": [
+    "Jalen Hurts",
+    "Jahmyr Gibbs",
+    "Travis Etienne Jr.",
+    "Amon-Ra St. Brown",
+    "Devaughn Vele",
+    "DeVonta Smith",
+    "Dallas Goedert",
+    "Quentin Johnston",
+    "Titans"
+   ],
+   "mean_top1_pct_of_20": 6.207801387332292,
+   "p_any_top01_20": 0.2134972608006651,
+   "p_any_top1_20": 0.7446170114833197,
+   "roi_pct_20": 4282.038819249533,
+   "share_allowed": 0.6181384248210023,
+   "value": 5.0
+  }
+ ]
+}

@@ -1,0 +1,449 @@
+{
+ "meta": {
+  "base_seed": 20260912,
+  "built": "2026-09-10 23:59 UTC",
+  "candidates_drawn": 60000,
+  "commit": "9b39e8c",
+  "field": 150000,
+  "season": "2026",
+  "seconds": 4272.1,
+  "stage": "2F",
+  "week": 1,
+  "worlds": 20000
+ },
+ "models": {
+  "constrained": {
+   "allowed": 53205,
+   "best": {
+    "ev": 15.879835946005842,
+    "names": [
+     "Jared Goff",
+     "Bijan Robinson",
+     "Rico Dowdle",
+     "Amon-Ra St. Brown",
+     "Tetairoa McMillan",
+     "Garrett Wilson",
+     "Sam LaPorta",
+     "Tre Tucker",
+     "Eagles"
+    ],
+    "top01_pct": 1.063125907149439,
+    "top1_pct": 6.080882805601797,
+    "win_sole_pct": 5.808118730680402e-05
+   },
+   "beta": 0.19454668492078783,
+   "candidates": 66666,
+   "distinct_optimal": 6666,
+   "entries": 243,
+   "eval_worlds": 13334,
+   "kappa": -1.953125,
+   "mean_proj_of_top50": 132.82399999999998,
+   "probes": [
+    {
+     "available": true,
+     "ev": 4.835956052077426,
+     "ev_notie": 4.8383089638048835,
+     "mean": 125.36610412597656,
+     "median": 123.22500228881836,
+     "names": [
+      "Jared Goff",
+      "Jahmyr Gibbs",
+      "Travis Etienne",
+      "Amon-Ra St. Brown",
+      "Devaughn Vele",
+      "Jameson Williams",
+      "Sam LaPorta",
+      "Alvin Kamara",
+      "Jets"
+     ],
+     "of": 53205,
+     "p10": 88.2599967956543,
+     "p90": 165.75099945068362,
+     "p99": 204.09410980224612,
+     "rank_top01": 2917,
+     "rank_top1": 2182,
+     "top01_pct": 0.3285212748301747,
+     "top1_pct": 2.655886934116464,
+     "win_sole_pct": 1.690929865337682e-12
+    },
+    {
+     "available": true,
+     "ev": 1.4732193365426163,
+     "ev_notie": 1.4736510697026657,
+     "mean": 111.79857635498047,
+     "median": 110.32999420166016,
+     "names": [
+      "Geno Smith",
+      "Derrick Henry",
+      "Jonathan Taylor",
+      "Zay Flowers",
+      "Josh Downs",
+      "Rashod Bateman",
+      "Tyler Warren",
+      "Justice Hill",
+      "Falcons"
+     ],
+     "of": 53205,
+     "p10": 81.7129898071289,
+     "p90": 143.48700714111328,
+     "p99": 174.6104005432129,
+     "rank_top01": 46588,
+     "rank_top1": 47991,
+     "top01_pct": 0.030118511340493436,
+     "top1_pct": 0.4275646157184445,
+     "win_sole_pct": 8.531116592494946e-32
+    }
+   ],
+   "stacks": {
+    "mean_per_game": 3.085,
+    "per_game_dist": {
+     "2": 0.165,
+     "3": 0.595,
+     "4": 0.23,
+     "5": 0.01
+    },
+    "share_5plus": 0.01,
+    "share_6plus": 0.0,
+    "top": 200
+   },
+   "top1_max": 0.06080882805601796,
+   "top1_p90": 0.021632658372511254,
+   "worlds": 20000
+  },
+  "legacy": {
+   "allowed": 52655,
+   "best": {
+    "ev": 1316.542482383212,
+    "names": [
+     "Geno Smith",
+     "Jonathan Taylor",
+     "Breece Hall",
+     "Zay Flowers",
+     "Garrett Wilson",
+     "Josh Downs",
+     "Tyler Warren",
+     "David Montgomery",
+     "Jaguars"
+    ],
+    "top01_pct": 2.5323724363315403,
+    "top1_pct": 9.06415076074495,
+    "win_sole_pct": 0.12781218048350307
+   },
+   "beta": 0.19454668492078783,
+   "candidates": 66666,
+   "distinct_optimal": 6666,
+   "entries": 243,
+   "eval_worlds": 13334,
+   "kappa": -1.953125,
+   "mean_proj_of_top50": 132.314,
+   "probes": [
+    {
+     "available": true,
+     "ev": 28.120906542468717,
+     "ev_notie": 28.128053011901876,
+     "mean": 124.4263916015625,
+     "median": 120.6450080871582,
+     "names": [
+      "Jared Goff",
+      "Jahmyr Gibbs",
+      "Travis Etienne",
+      "Amon-Ra St. Brown",
+      "Devaughn Vele",
+      "Jameson Williams",
+      "Sam LaPorta",
+      "Alvin Kamara",
+      "Jets"
+     ],
+     "of": 52655,
+     "p10": 81.9900001525879,
+     "p90": 171.51400299072267,
+     "p99": 217.88689605712892,
+     "rank_top01": 3,
+     "rank_top1": 3,
+     "top01_pct": 2.36275870054152,
+     "top1_pct": 8.779956835731385,
+     "win_sole_pct": 0.00011637801717687939
+    },
+    {
+     "available": true,
+     "ev": 2.636143049769284,
+     "ev_notie": 2.636497326974369,
+     "mean": 110.987060546875,
+     "median": 109.03000259399414,
+     "names": [
+      "Geno Smith",
+      "Derrick Henry",
+      "Jonathan Taylor",
+      "Zay Flowers",
+      "Josh Downs",
+      "Rashod Bateman",
+      "Tyler Warren",
+      "Justice Hill",
+      "Falcons"
+     ],
+     "of": 52655,
+     "p10": 79.4900001525879,
+     "p90": 145.16000366210938,
+     "p99": 176.1535124206543,
+     "rank_top01": 13327,
+     "rank_top1": 16753,
+     "top01_pct": 0.16697411128020712,
+     "top1_pct": 1.4493640843230837,
+     "win_sole_pct": 9.797162163068571e-20
+    }
+   ],
+   "stacks": {
+    "mean_per_game": 3.765,
+    "per_game_dist": {
+     "2": 0.01,
+     "3": 0.415,
+     "4": 0.4,
+     "5": 0.15,
+     "6": 0.025
+    },
+    "share_5plus": 0.175,
+    "share_6plus": 0.025,
+    "top": 200
+   },
+   "top1_max": 0.09064150760744949,
+   "top1_p90": 0.02563700155912199,
+   "worlds": 20000
+  }
+ },
+ "parameter_draws": [
+  {
+   "best": [
+    "Joe Burrow",
+    "Bijan Robinson",
+    "Jaylen Warren",
+    "Ja'Marr Chase",
+    "Tee Higgins",
+    "Garrett Wilson",
+    "Sam LaPorta",
+    "Devaughn Vele",
+    "Cardinals"
+   ],
+   "draw": 0,
+   "params": {
+    "att_sd": 0.0,
+    "cmp_sd": 0.2317,
+    "eff_sd": 0.0963,
+    "env_rush": 0.2152,
+    "env_sd": 0.1295,
+    "rshare_sd": 0.7413,
+    "rtd_vol": 1.2867,
+    "rush_sd": 0.3093,
+    "script": 0.1156,
+    "script_rush": 0.1306,
+    "share_sd": 0.2916,
+    "td_eff": 0.4482,
+    "td_vol": 0.4163,
+    "ypc_sd": 1.0025,
+    "ypr_sd": 0.7047
+   },
+   "probe_rank": [
+    539,
+    16173
+   ],
+   "probe_top1": [
+    2.843,
+    0.375
+   ]
+  },
+  {
+   "best": [
+    "Jared Goff",
+    "Jeremiyah Love",
+    "David Montgomery",
+    "Amon-Ra St. Brown",
+    "Drake London",
+    "Garrett Wilson",
+    "Sam LaPorta",
+    "Tre Tucker",
+    "Steelers"
+   ],
+   "draw": 1,
+   "params": {
+    "att_sd": 0.0164,
+    "cmp_sd": 0.24,
+    "eff_sd": 0.1092,
+    "env_rush": 0.1564,
+    "env_sd": 0.1283,
+    "rshare_sd": 0.7508,
+    "rtd_vol": 1.2882,
+    "rush_sd": 0.2816,
+    "script": 0.0957,
+    "script_rush": 0.1213,
+    "share_sd": 0.2773,
+    "td_eff": 0.5135,
+    "td_vol": 0.4467,
+    "ypc_sd": 0.6133,
+    "ypr_sd": 0.7057
+   },
+   "probe_rank": [
+    684,
+    16815
+   ],
+   "probe_top1": [
+    2.749,
+    0.277
+   ]
+  },
+  {
+   "best": [
+    "Jalen Hurts",
+    "David Montgomery",
+    "Jaylen Warren",
+    "DeVonta Smith",
+    "Justin Jefferson",
+    "Amon-Ra St. Brown",
+    "Dallas Goedert",
+    "Tre Tucker",
+    "Jets"
+   ],
+   "draw": 2,
+   "params": {
+    "att_sd": 0.0101,
+    "cmp_sd": 0.2344,
+    "eff_sd": 0.09,
+    "env_rush": 0.0873,
+    "env_sd": 0.1398,
+    "rshare_sd": 0.7522,
+    "rtd_vol": 1.2847,
+    "rush_sd": 0.2815,
+    "script": 0.1151,
+    "script_rush": 0.1264,
+    "share_sd": 0.2636,
+    "td_eff": 0.5228,
+    "td_vol": 0.4158,
+    "ypc_sd": 0.8594,
+    "ypr_sd": 0.7062
+   },
+   "probe_rank": [
+    1400,
+    16176
+   ],
+   "probe_top1": [
+    2.326,
+    0.377
+   ]
+  },
+  {
+   "best": [
+    "Jalen Hurts",
+    "Breece Hall",
+    "Saquon Barkley",
+    "DeVonta Smith",
+    "Drake London",
+    "Amon-Ra St. Brown",
+    "Gunnar Helm",
+    "Tre Tucker",
+    "Jets"
+   ],
+   "draw": 3,
+   "params": {
+    "att_sd": 0.0201,
+    "cmp_sd": 0.2266,
+    "eff_sd": 0.0941,
+    "env_rush": 0.1326,
+    "env_sd": 0.1275,
+    "rshare_sd": 0.743,
+    "rtd_vol": 1.2371,
+    "rush_sd": 0.291,
+    "script": 0.1096,
+    "script_rush": 0.1203,
+    "share_sd": 0.2879,
+    "td_eff": 0.4468,
+    "td_vol": 0.4592,
+    "ypc_sd": 1.0511,
+    "ypr_sd": 0.706
+   },
+   "probe_rank": [
+    1203,
+    16776
+   ],
+   "probe_top1": [
+    2.397,
+    0.291
+   ]
+  },
+  {
+   "best": [
+    "Geno Smith",
+    "Jonathan Taylor",
+    "Chase Brown",
+    "Zay Flowers",
+    "Ladd McConkey",
+    "Garrett Wilson",
+    "Sam LaPorta",
+    "David Montgomery",
+    "Jets"
+   ],
+   "draw": 4,
+   "params": {
+    "att_sd": 0.0,
+    "cmp_sd": 0.2075,
+    "eff_sd": 0.0932,
+    "env_rush": 0.227,
+    "env_sd": 0.1115,
+    "rshare_sd": 0.746,
+    "rtd_vol": 1.26,
+    "rush_sd": 0.3042,
+    "script": 0.0948,
+    "script_rush": 0.1182,
+    "share_sd": 0.2893,
+    "td_eff": 0.6931,
+    "td_vol": 0.4182,
+    "ypc_sd": 0.9324,
+    "ypr_sd": 0.7056
+   },
+   "probe_rank": [
+    2166,
+    14340
+   ],
+   "probe_top1": [
+    2.06,
+    0.585
+   ]
+  },
+  {
+   "best": [
+    "Joe Burrow",
+    "Jahmyr Gibbs",
+    "Bijan Robinson",
+    "Ja'Marr Chase",
+    "Tee Higgins",
+    "Devaughn Vele",
+    "Juwan Johnson",
+    "Tre Tucker",
+    "Browns"
+   ],
+   "draw": 5,
+   "params": {
+    "att_sd": 0.0176,
+    "cmp_sd": 0.2393,
+    "eff_sd": 0.1097,
+    "env_rush": 0.0317,
+    "env_sd": 0.1095,
+    "rshare_sd": 0.7498,
+    "rtd_vol": 1.2359,
+    "rush_sd": 0.289,
+    "script": 0.1002,
+    "script_rush": 0.1368,
+    "share_sd": 0.2855,
+    "td_eff": 0.6748,
+    "td_vol": 0.4482,
+    "ypc_sd": 0.7367,
+    "ypr_sd": 0.7051
+   },
+   "probe_rank": [
+    1033,
+    15948
+   ],
+   "probe_top1": [
+    2.495,
+    0.407
+   ]
+  }
+ ]
+}
