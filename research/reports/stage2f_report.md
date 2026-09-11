@@ -1,6 +1,6 @@
 # Stage 2F: the two simulators on the current slate
 
-Commit 9b39e8c, base seed 20260912, 2026 week 1, 20,000 worlds a game, field 150,000, 60,000 candidate draws. Built 2026-09-10 23:59 UTC (4272.1s). Both models read the same slate, the same salaries and the same field model; only the point arrays differ.
+Commit 59e563b, base seed 20260912, 2026 week 1, 20,000 worlds a game, field 150,000, 60,000 candidate draws. Built 2026-09-11 18:00 UTC (4324.0s). Both models read the same slate, the same salaries and the same field model; only the point arrays differ.
 
 ## The board each model builds
 
@@ -8,28 +8,28 @@ Commit 9b39e8c, base seed 20260912, 2026 week 1, 20,000 worlds a game, field 150
 |---|---|---|
 | slate entries | 243 | 243 |
 | candidates | 66,666 | 66,666 |
-| allowed | 52,655 | 53,205 |
+| allowed | 52,749 | 53,135 |
 | distinct hindsight-optimal lineups | 6,666 | 6,666 |
-| strongest candidate, top 1% | 9.06% | 6.08% |
-| strongest candidate, top 0.1% | 2.532% | 1.063% |
-| strongest candidate, outright win | 0.1278% | 0.0001% |
-| mean projection of the top fifty | 132.3 | 132.8 |
-| players from one game, mean of the top 200 | 3.77 | 3.08 |
-| share of the top 200 with five from one game | 0.175 | 0.010 |
-| share with six | 0.025 | 0.000 |
+| strongest candidate, top 1% | 9.27% | 5.89% |
+| strongest candidate, top 0.1% | 1.849% | 1.039% |
+| strongest candidate, outright win | 0.0301% | 0.0151% |
+| mean projection of the top fifty | 133.0 | 132.7 |
+| players from one game, mean of the top 200 | 3.81 | 3.04 |
+| share of the top 200 with five from one game | 0.215 | 0.010 |
+| share with six | 0.060 | 0.000 |
 
-Strongest under legacy: Geno Smith, Jonathan Taylor, Breece Hall, Zay Flowers, Garrett Wilson, Josh Downs, Tyler Warren, David Montgomery, Jaguars.
+Strongest under legacy: Joe Burrow, Jahmyr Gibbs, Jaylen Warren, Ja'Marr Chase, Tee Higgins, Devaughn Vele, Sam LaPorta, Rico Dowdle, Jets.
 
-Strongest under constrained: Jared Goff, Bijan Robinson, Rico Dowdle, Amon-Ra St. Brown, Tetairoa McMillan, Garrett Wilson, Sam LaPorta, Tre Tucker, Eagles.
+Strongest under constrained: Jared Goff, Ashton Jeanty, Derrick Henry, Amon-Ra St. Brown, Devaughn Vele, Drake London, Sam LaPorta, Tee Higgins, Jets.
 
 ## The two probe lineups under each model
 
 | Probe | Model | top 1% | rank | top 0.1% | rank | outright win | expected payout | mean | p90 | p99 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| L1 | legacy | 8.78% | #3 | 2.363% | #3 | 0.0001% | $28.12 | 124.4 | 171.5 | 217.9 |
-| L1 | constrained | 2.66% | #2182 | 0.329% | #2917 | 0.0000% | $4.84 | 125.4 | 165.8 | 204.1 |
-| L2 | legacy | 1.45% | #16753 | 0.167% | #13327 | 0.0000% | $2.64 | 111.0 | 145.2 | 176.2 |
-| L2 | constrained | 0.43% | #47991 | 0.030% | #46588 | 0.0000% | $1.47 | 111.8 | 143.5 | 174.6 |
+| L1 | legacy | 10.11% | #1 | 2.445% | #1 | 0.0451% | $482.63 | 134.3 | 174.3 | 211.9 |
+| L1 | constrained | 4.39% | #50 | 0.617% | #128 | 0.0000% | $9.92 | 135.5 | 173.1 | 211.7 |
+| L2 | legacy | 9.85% | #1 | 2.973% | #1 | 0.1803% | $1855.89 | 131.5 | 167.0 | 200.8 |
+| L2 | constrained | 4.59% | #38 | 0.866% | #5 | 0.0075% | $86.56 | 132.5 | 168.2 | 204.4 |
 
 ## Parameter uncertainty
 
@@ -37,11 +37,11 @@ Each draw resamples every fitted parameter uniformly inside the wider of its pro
 
 | Draw | probe L1 top 1% (rank) | probe L2 top 1% (rank) | strongest lineup |
 |---|---|---|---|
-| 0 | 2.843% (#539) | 0.375% (#16173) | Joe Burrow, Bijan Robinson, Jaylen Warren, Ja'Marr Chase... |
-| 1 | 2.749% (#684) | 0.277% (#16815) | Jared Goff, Jeremiyah Love, David Montgomery, Amon-Ra St. Brown... |
-| 2 | 2.326% (#1400) | 0.377% (#16176) | Jalen Hurts, David Montgomery, Jaylen Warren, DeVonta Smith... |
-| 3 | 2.397% (#1203) | 0.291% (#16776) | Jalen Hurts, Breece Hall, Saquon Barkley, DeVonta Smith... |
-| 4 | 2.06% (#2166) | 0.585% (#14340) | Geno Smith, Jonathan Taylor, Chase Brown, Zay Flowers... |
-| 5 | 2.495% (#1033) | 0.407% (#15948) | Joe Burrow, Jahmyr Gibbs, Bijan Robinson, Ja'Marr Chase... |
+| 0 | 4.498% (#16) | 4.72% (#8) | Joe Burrow, Bucky Irving, Omarion Hampton, Ja'Marr Chase... |
+| 1 | 4.097% (#38) | 5.283% (#1) | Jared Goff, De'Von Achane, David Montgomery, Amon-Ra St. Brown... |
+| 2 | 5.093% (#5) | 4.187% (#33) | Jalen Hurts, Rico Dowdle, Jahmyr Gibbs, DeVonta Smith... |
+| 3 | 3.641% (#83) | 4.089% (#33) | Jalen Hurts, Derrick Henry, Breece Hall, DeVonta Smith... |
+| 4 | 4.667% (#9) | 4.737% (#9) | Bryce Young, Bijan Robinson, Omarion Hampton, Jalen Coker... |
+| 5 | 4.579% (#10) | 4.754% (#7) | Jalen Hurts, Ashton Jeanty, David Montgomery, Amon-Ra St. Brown... |
 
 This report does not promote anything. The blind 2025 validation decides which model is better; this only says what the change would look like on the board the owner reads.

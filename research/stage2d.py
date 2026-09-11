@@ -20,7 +20,6 @@ research/reports/stage2d_report.md.
 """
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -40,10 +39,17 @@ K_MOMENTS = 60
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def harness_check(obs_m):

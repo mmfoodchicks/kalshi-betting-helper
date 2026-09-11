@@ -126,6 +126,83 @@ def _line(p):
     return out
 
 
+def _split_int(total, shares):
+    """Split an integer team total across k quarterbacks by largest
+    remainder, so every share is a whole number and the k shares still sum
+    to the team total exactly. A fractional split (total * share) put a
+    quarterback on 147.3 passing yards, which is not a box-score line and
+    knocks the DraftKings score off its real lattice; with one quarterback,
+    which is nearly every team, this returns the total untouched."""
+    total = np.asarray(total)
+    k = len(shares)
+    if k == 1:
+        return [total.astype(np.int64)]
+    exact = np.outer(np.asarray(shares, dtype=np.float64), total.astype(np.float64))
+    base = np.floor(exact).astype(np.int64)
+    rem = total.astype(np.int64) - base.sum(axis=0)
+    frac = exact - base
+    order = np.argsort(-frac, axis=0)
+    for r in range(k):                      # hand the leftovers to the biggest fractions
+        rows = order[r]
+        base[rows, np.arange(base.shape[1])] += (rem > r)
+    return [base[j] for j in range(k)]
+
+
+def _multinomial_capped(rng, N, shares, cap, rounds=12):
+    """Counts (k, n) of N trials over k categories with weights (k, n), where
+    category i can hold at most cap[i]. The budget is first cut to the room
+    that exists, then dealt out in rounds: each round allocates what is still
+    owed among the categories that still have room, and whatever overflows a
+    category is carried to the next round rather than thrown away.
+
+    The contract, stated so "nothing is lost" cannot be read as "the budget
+    is always honoured":
+
+        allocated = min(drawn_budget, physical_capacity)
+        drawn_budget = allocated + impossible_surplus
+
+    A budget larger than the catches and carries available is NOT forced onto
+    the field; the part that cannot fit is surplus, reported through
+    `_capped_short` as `td_short`, and the two numbers always add back to what
+    was drawn. Zero lost means nothing vanished unrecorded, not that every
+    drawn touchdown was scored.
+
+    The previous form was `np.minimum(_multinomial(...), cap)`, which simply
+    DELETED the overflow. Measured on a synthetic two-team game against the
+    frozen parameters, 100,000 worlds: that silently destroyed 0.28% of the
+    drawn passing-touchdown budget and 0.08% of the rushing budget. The
+    quarterback was then handed the post-clipping team total, so the
+    QB-equals-receivers identity still held and the invariant checker saw
+    nothing wrong -- the touchdowns were gone before it looked. A team's
+    drawn touchdowns now either land on a player who can hold them or are
+    impossible for want of catches and carries, and `_capped_short` reports
+    which."""
+    cap = np.asarray(cap)
+    room_total = cap.sum(axis=0)
+    owed = np.minimum(np.asarray(N).astype(np.int64), room_total.astype(np.int64))
+    alloc = np.zeros(cap.shape, dtype=np.int64)
+    for _ in range(rounds):
+        if not owed.any():
+            break
+        room = cap - alloc
+        w = np.where(room > 0, shares, 0.0)
+        live = (owed > 0) & (w.sum(axis=0) > 0)
+        if not live.any():
+            break
+        take = np.minimum(_multinomial(rng, np.where(live, owed, 0), w), room)
+        alloc = alloc + take
+        owed = owed - take.sum(axis=0)
+    return alloc
+
+
+def _capped_short(N, cap):
+    """The impossible surplus: `drawn_budget - physical_capacity` where that
+    is positive, per world. A team cannot score four receiving touchdowns on
+    three catches, so the surplus is a real constraint rather than a bug, and
+    reporting it is what makes `drawn = allocated + surplus` checkable."""
+    return np.maximum(np.asarray(N).astype(np.int64) - np.asarray(cap).sum(axis=0).astype(np.int64), 0)
+
+
 def _multinomial(rng, N, shares):
     """Counts (k, n) of N (n,) trials over k categories with weights (k, n),
     by sequential binomials so nothing depends on numpy's broadcasting
@@ -153,7 +230,7 @@ def _lognormal(rng, sd, size):
     return np.exp(rng.normal(0.0, sd, size=size) - 0.5 * sd * sd)
 
 
-def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
+def simulate_game(game, n=4000, rng=None, params=None, target_factor=None, xside=0.0):
     """One game, n worlds. Returns the contract nfl_dfs_sim.player_pool
     reads: players with their point arrays (`arr`), the per-world team
     output (`team_fp`) and the DraftKings components each offense
@@ -177,9 +254,31 @@ def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
     # ---- shared world latents ----
     env = _lognormal(rng, P["env_sd"], n)
     script = rng.normal(0.0, 1.0, size=n)
+    # `xside` is a RESEARCH KNOB and is not part of the frozen fit. This
+    # model's quarterback-against-opposing-quarterback correlation comes out
+    # near 0.03 where the holdout observed 0.235 -- its one disclosed
+    # weakness. The first attempt at a knob here simply SHARED the existing
+    # per-team efficiency latent across the game; measured on the live slate,
+    # sharing it completely only reached 0.074, because that latent's fitted
+    # spread is too small to carry the covariance. The architecture cannot
+    # reach the observed figure by re-weighting what it already has, which is
+    # itself a finding: it needs a new term.
+    #
+    # So `xside` is the standard deviation of a game-level scoring latent
+    # applied to BOTH offences on top of their own efficiency days -- the
+    # shared game latent proposed in section V of the audit report. At the
+    # default 0.0 nothing is drawn and the frozen path is bit-identical; no
+    # fitted artifact carries this and nothing may be promoted from a sweep
+    # over it. It exists so the sensitivity of a strategy conclusion to a
+    # known, already-measured miss can itself be measured.
+    xside = float(xside or 0.0)
+    eff_game = (np.exp(xside * rng.normal(0.0, 1.0, size=n) - 0.5 * xside * xside)
+                if xside > 0 else None)
     comps = {i: {} for i in range(len(players))}
     pts = [np.zeros(n) for _ in players]
     team_out = {}
+    short = {}          # budget the opportunities could not hold
+    budget = {}         # the team touchdown budget as drawn, before allocation
     for ti, t in enumerate(teams):
         s = script if ti == 0 else -script           # the two scripts are opposite
         idx = [i for i, p in enumerate(players) if p.get("team") == t]
@@ -205,20 +304,31 @@ def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
             # ---- yards: yards per reception on the team's efficiency day, per-player big plays ----
             ypr = np.asarray([max(3.0, lines[i]["rec_yd"] / max(lines[i]["rec"], 0.25)) for i in recv])[:, None]
             eff = _lognormal(rng, P["eff_sd"], n)[None, :]
+            if eff_game is not None:
+                eff = eff * eff_game[None, :]      # the game's own day, shared by both offences
             big = np.exp(rng.normal(0.0, P["ypr_sd"], size=(len(recv), n)) / np.sqrt(np.maximum(rec, 1)) - 0.5 * P["ypr_sd"] ** 2 / np.maximum(rec, 1))
-            rec_yd = rec * ypr * eff * big
+            # An NFL box score is integers. Continuous yardage put scores on an
+            # arbitrary grid that rounding to two decimals did not repair, so
+            # the model could say nothing honest about tie rates. Rounding
+            # here, per player, is what a real stat line does: the team total
+            # is the sum of nine integers, not a rounded sum.
+            rec_yd = np.rint(rec * ypr * eff * big)
             # ---- passing touchdowns: the team's, on volume and efficiency, among the men who caught ----
             td_mean = sum(lines[i]["rec_td"] for i in recv)
             vol_ratio = np.maximum(n_tgt, 0) / max(att_mean * target_factor, 1e-9)
             lam = td_mean * np.power(np.maximum(vol_ratio, 1e-9), P["td_vol"]) * np.power(eff[0], P["td_eff"])
-            n_ptd = rng.poisson(np.maximum(lam, 0.0))
+            n_ptd = rng.poisson(np.maximum(lam, 0.0)); n_ptd_drawn = n_ptd
             td_rate = np.asarray([lines[i]["rec_td"] / max(lines[i]["rec"], 0.25) for i in recv])[:, None]
             td_w = td_rate * np.maximum(rec, 0) + 1e-9 * (rec > 0)
-            rec_td = np.minimum(_multinomial(rng, n_ptd, td_w), rec)   # a touchdown catch is a catch: never more scores than catches
+            # a touchdown catch is a catch: a man cannot score more often than
+            # he caught, and a budget that will not fit is carried, not binned
+            rec_td = _multinomial_capped(rng, n_ptd, td_w, rec)
+            ptd_short = _capped_short(n_ptd, rec)
             cmp_team = rec.sum(axis=0); yd_team = rec_yd.sum(axis=0); ptd_team = rec_td.sum(axis=0)
         else:
             tgt = rec = rec_yd = rec_td = np.zeros((0, n))
             cmp_team = np.zeros(n); yd_team = np.zeros(n); ptd_team = np.zeros(n, dtype=np.int64)
+            ptd_short = np.zeros(n, dtype=np.int64); n_ptd_drawn = np.zeros(n, dtype=np.int64)
         # ---- rushing: carries by shares, yards per carry, the team's rushing touchdowns ----
         rush = [i for i in idx if lines[i]["rush_att"] > 0]
         if rush:
@@ -230,26 +340,34 @@ def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
             car = _multinomial(rng, n_ra, shares)
             ypc = np.asarray([lines[i]["rush_yd"] / max(lines[i]["rush_att"], 0.25) for i in rush])[:, None]
             big = np.exp(rng.normal(0.0, P["ypc_sd"], size=(len(rush), n)) / np.sqrt(np.maximum(car, 1)) - 0.5 * P["ypc_sd"] ** 2 / np.maximum(car, 1))
-            rush_yd = car * ypc * big
+            rush_yd = np.rint(car * ypc * big)      # integers, as a box score is
             rtd_mean = sum(lines[i]["rush_td"] for i in rush)
             lam = rtd_mean * np.power(np.maximum(n_ra / max(ra_mean, 1e-9), 1e-9), P["rtd_vol"])
-            n_rtd = rng.poisson(np.maximum(lam, 0.0))
+            n_rtd = rng.poisson(np.maximum(lam, 0.0)); n_rtd_drawn = n_rtd
             rtd_rate = np.asarray([lines[i]["rush_td"] / max(lines[i]["rush_att"], 0.25) for i in rush])[:, None]
-            rush_td = np.minimum(_multinomial(rng, n_rtd, rtd_rate * np.maximum(car, 0) + 1e-9 * (car > 0)), car)
+            rush_td = _multinomial_capped(rng, n_rtd, rtd_rate * np.maximum(car, 0) + 1e-9 * (car > 0), car)
+            rtd_short = _capped_short(n_rtd, car)
             rtd_team = rush_td.sum(axis=0); ryd_team = rush_yd.sum(axis=0)
         else:
             car = rush_yd = rush_td = np.zeros((0, n))
             rtd_team = np.zeros(n, dtype=np.int64); ryd_team = np.zeros(n)
+            rtd_short = np.zeros(n, dtype=np.int64); n_rtd_drawn = np.zeros(n, dtype=np.int64)
         # ---- turnovers ----
         ints = {i: rng.poisson(lines[i]["int"] * pass_vol) for i in qbs}
         fums = {i: rng.poisson(np.full(n, lines[i]["fum"])) if lines[i]["fum"] > 0 else np.zeros(n, dtype=np.int64) for i in idx}
         # ---- the quarterback's line is the sum of the receivers' ----
         qb_share = np.asarray([lines[i]["pass_att"] for i in qbs]) / max(att_mean, 1e-9) if qbs else np.zeros(0)
         gv = np.zeros(n, dtype=np.int64)
+        # attempts: the targets plus the measured throwaways, as whole throws
+        att_team = np.rint(n_tgt / target_factor).astype(np.int64)
+        sh = qb_share / max(float(np.sum(qb_share)), 1e-12) if len(qb_share) else qb_share
+        a_s = _split_int(att_team, sh); c_s = _split_int(cmp_team.astype(np.int64), sh)
+        y_s = _split_int(yd_team.astype(np.int64), sh); t_s = _split_int(ptd_team.astype(np.int64), sh)
         for k, i in enumerate(qbs):
             c = comps[i]
-            c["pass_att"] = n_tgt / target_factor * qb_share[k]            # attempts: the targets plus the measured throwaways
-            c["pass_cmp"] = cmp_team * qb_share[k]; c["pass_yd"] = yd_team * qb_share[k]; c["pass_td"] = ptd_team * qb_share[k]
+            c["pass_att"] = a_s[k].astype(np.float64)
+            c["pass_cmp"] = c_s[k].astype(np.float64); c["pass_yd"] = y_s[k].astype(np.float64)
+            c["pass_td"] = t_s[k].astype(np.float64)
             c["int"] = ints[i]
             gv = gv + ints[i]
         for k, i in enumerate(recv):
@@ -271,6 +389,10 @@ def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
             pts[i] = fp
         team_out[t] = {"td": (ptd_team + rtd_team).astype(np.int64), "gv": gv, "yd": yd_team + ryd_team, "pa": yd_team,
                        "fp": sum(pts[i] for i in idx)}
+        # what the opportunities could not physically hold, so its size is
+        # known rather than absorbed: a drawn budget is never quietly binned
+        short[t] = {"pass_td": ptd_short, "rush_td": rtd_short}
+        budget[t] = {"pass_td": np.asarray(n_ptd_drawn), "rush_td": np.asarray(n_rtd_drawn)}
     out = []
     for i, p in enumerate(players):
         arr = pts[i]
@@ -286,6 +408,7 @@ def simulate_game(game, n=4000, rng=None, params=None, target_factor=None):
     return {"label": game.get("label"), "teams": teams, "players": out, "props": [], "stacks": [], "n_sims": n,
             "team_fp": {t: d["fp"] for t, d in team_out.items()},
             "team_def": {t: {"td": d["td"], "gv": d["gv"], "yd": d["yd"], "pa": d["pa"]} for t, d in team_out.items()},
+            "td_budget": budget, "td_short": short,
             "components": comps}
 
 
@@ -315,4 +438,26 @@ def check_invariants(sim, players, tol=1e-6):
         out[f"{t}:touchdowns within receptions"] = (bad_td == 0, bad_td)
     neg = sum(int((v < -tol).sum()) for c in comps.values() for v in c.values())
     out["nothing negative"] = (neg == 0, neg)
+    # The check that was missing: the allocation against the budget that was
+    # DRAWN, not against the post-clipping total the quarterback was handed.
+    # Clipping used to delete the overflow before this function looked, so
+    # every identity here passed while touchdowns went missing.
+    for t, b in (sim.get("td_budget") or {}).items():
+        sh = (sim.get("td_short") or {}).get(t, {})
+        for key, comp in (("pass_td", "rec_td"), ("rush_td", "rush_td")):
+            drawn = np.asarray(b[key]).astype(np.int64)
+            allocated = sum(comps[i][comp] for i in teams[t] if comp in comps[i])
+            allocated = np.asarray(allocated).astype(np.int64) if np.ndim(allocated) else np.zeros_like(drawn)
+            impossible = np.asarray(sh.get(key, np.zeros_like(drawn))).astype(np.int64)
+            # drawn_budget = allocated + impossible_surplus, exactly
+            lost = int((drawn - impossible - allocated).sum())
+            out[f"{t}:{key} drawn = allocated + impossible surplus"] = (lost == 0, lost)
+    # And the lattice: a box score is integers, so every component is whole.
+    for i, c in comps.items():
+        for k, v in c.items():
+            v = np.asarray(v)
+            bad = int((np.abs(v - np.rint(v)) > 1e-9).sum())
+            if bad:
+                out[f"player {i}:{k} whole numbers"] = (False, bad)
+    out.setdefault("every component is a whole number", (True, 0))
     return out

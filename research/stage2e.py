@@ -28,7 +28,6 @@ it. 2025 is not read here in any form.
 """
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -58,10 +57,17 @@ STEP = {"env_sd": 0.05, "env_rush": 0.3, "script": 0.05, "script_rush": 0.05, "a
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def to_x(params):
@@ -177,7 +183,15 @@ def smallest_model(fitter, best, fb):
     return out
 
 
-def run(log=print):
+def run(log=print, allow_dirty=False):
+    # The freeze has to be provable from history, not from a file's
+    # modification time: commit the fitting code, run this, commit the frozen
+    # parameters, and only then open the holdout. A dirty tree makes the
+    # artifact's stamped commit a commit that does not contain this script,
+    # which is exactly the provenance hole the audit found.
+    if not allow_dirty:
+        from research import provenance
+        provenance.require_clean("a frozen parameter artifact")
     t0 = time.time()
     rows = H.read_csv_gz(os.path.join(DATA, "player_weeks_2022_2025.csv.gz"))
     games = F.games_from_table(rows, S.TRAIN)

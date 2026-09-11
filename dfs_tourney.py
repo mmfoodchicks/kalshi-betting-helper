@@ -65,7 +65,7 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # Poisson where its mean is small; score buckets are a hundredth of a point;
 # the money columns' experimental label is built by money_gate; the board
 # records which simulator model made its worlds.
-ENGINE = 5
+ENGINE = 6
 
 
 def available():
@@ -263,10 +263,12 @@ POIS_LAM_MAX = 60.0
 POIS_K_MAX = 260
 
 
-# Log factorials, built on first use. At module level this was a numpy call
-# in a module the SERVER imports without numpy, so importing dfs_tourney there
-# raised AttributeError and the tournament route died; CI (which installs no
-# numpy either) caught it on the push. Nothing at module scope may touch np.
+# Log factorials, built on first use. At module level this was a numpy call,
+# and this module has to import where numpy does not exist: the guards run in
+# CI installs none, so the suite died on its own import and the commit went
+# red. (It did NOT take down a route -- nothing the web app serves imports
+# this module; that overstatement is corrected in limitation 9 of the audit
+# report.) Nothing at module scope may touch np.
 _LOG_FACT = None
 
 
@@ -442,9 +444,13 @@ def money_gate(field_n, contest_C):
     why = ("the first-place estimate rests on the field sample's extreme tail: with "
            f"{int(field_n):,} sampled lineups against {int(contest_C):,} entries, one sampled lineup "
            f"stands for {per_lineup:.1f} entries and the smallest mass the sample can report is "
-           f"1 in {int(field_n):,}. Ties are paid the way DraftKings pays them (Stage 3B) and the "
-           "duplicate count is measured rather than derived (Stage 3C); the resolution is what "
-           "keeps these columns experimental. Rank on top 1% and top 0.1%.")
+           f"1 in {int(field_n):,}. Ties are paid the way DraftKings pays them (Stage 3B). The "
+           "duplicate count is still measured rather than derived: an exact path-summed "
+           "construction probability now exists for a fixed lineup (dfs_pathprob), but against "
+           "three million draws it runs about 5% light at the median with one lineup 2.8 standard "
+           "errors low, so the undercount is neither resolved nor bounded and this link stays shut. "
+           "Resolution and duplication are what keep these columns experimental. Rank on top 1% "
+           "and top 0.1%.")
     return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct"],
             "authoritative": ok,
             "links": {"sample_resolves_the_contest": bool(resolves),
@@ -592,11 +598,76 @@ def run(W, X, f, grid, chunk=500, progress=None):
             "cash": r["cash"], "ev": r["ev"], "ev_notie": r["ev_notie"], "opt": opt, "n_worlds": N}
 
 
+def greedy_cover(P, k):
+    """Greedy shared-field cover over a (candidates, worlds) matrix of
+    per-world make-it probabilities. Returns (chosen rows best first,
+    P(at least one chosen makes it) after each pick).
+
+    One contest, one realised set of opponents, so within a world our entries
+    are NESTED, not independent: our best-scoring entry carries our best
+    rank, and no other entry of ours can clear a cut that one missed.
+    Per world the union is therefore the best entry's probability, which is
+    the row-wise maximum (the grid's top1/top01/cash columns are monotone in
+    the field mass above us, so the largest probability belongs to the
+    highest score -- guarded). The gain from adding a candidate is what it
+    lifts that maximum, summed over worlds:
+
+        gain_c = sum_w max(0, P[c, w] - covered_w)
+
+    Two identical entries therefore gain nothing from the second copy, which
+    is the whole point: the old product-of-misses form paid 19% for a pair of
+    10% twins, and paid most where the entries were most alike."""
+    P = np.asarray(P)
+    K, N = P.shape
+    if not K or not N:
+        return [], []
+    # rows held at once in the gain pass: 4M floats keeps the temporary near
+    # 30MB instead of the whole (candidates, worlds) block
+    rows_at_once = max(1, int(4_000_000 // max(N, 1)))
+    chosen = []
+    cov = np.zeros(N, dtype=np.float64)
+    p_any = []
+    for _ in range(min(k, K)):
+        gain = np.empty(K, dtype=np.float64)
+        for a in range(0, K, rows_at_once):
+            blk = P[a:a + rows_at_once].astype(np.float64, copy=False)
+            gain[a:a + rows_at_once] = np.maximum(blk - cov[None, :], 0.0).sum(axis=1)
+        if chosen:
+            gain[chosen] = -1.0
+        j = int(np.argmax(gain))
+        chosen.append(j)
+        cov = np.maximum(cov, P[j].astype(np.float64))
+        p_any.append(float(cov.mean()))
+    return chosen, p_any
+
+
 def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):
     """Greedy cover over candidate lineups, per contest: each pick adds the
     most `rank` probability (top1 or top01) in the worlds the picks so far
     leave uncovered. Returns, per contest, (chosen candidate positions best
-    first, P(at least one entry makes it) for every prefix length)."""
+    first, P(at least one entry makes it) for every prefix length).
+
+    Our entries all sit in ONE contest against ONE realised set of opponents,
+    so inside a single simulated world they are not independent draws. This
+    used to multiply (1 - P_j) across the picks, which is the answer for a
+    world where each entry meets its own fresh field; two identical lineups
+    with a 10% chance each came back as 19% instead of 10%, and twenty
+    correlated entries were overstated far worse. What is true is that the
+    events are NESTED: our highest-scoring entry has our best rank, so if it
+    misses the cut none of the others can make it, and
+
+        P(any of ours makes it | world) = P(our best-scoring one makes it)
+
+    which is max_j P_jw because the grid's top1/top01/cash columns are
+    monotone in the field mass above us (guarded). Diversification then comes
+    from which entry is our best in DIFFERENT worlds, which is what the
+    greedy step now buys: sum_w max(0, P_cand,w - covered_w).
+
+    The one approximation left is that each P_jw treats all C-1 opponents as
+    public-field draws when a handful of them are our own, known, lower
+    lineups; at twenty entries in an 832,342-entry contest that is 2.4e-5 of
+    the field and below the grid's own resolution, but it is not nothing in a
+    small contest, so `entries` is reported beside the numbers."""
     if not len(cand_idx):
         return [([], []) for _ in grids]
     K, M, N = Wc.shape[0], Wf.shape[0], X.shape[1]
@@ -620,20 +691,7 @@ def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"
             for gi, tab in enumerate(tabs):
                 P[gi, :, start + j] = tab[pos][Bk[j]]
     del same
-    out = []
-    for gi in range(len(grids)):
-        chosen, miss = [], np.ones(N, dtype=np.float64)   # P(no pick makes it) per world
-        p_any = []
-        for _ in range(min(k, len(cand_idx))):
-            gain = (miss[None, :] * P[gi]).sum(axis=1)
-            if chosen:
-                gain[chosen] = -1.0
-            j = int(np.argmax(gain))
-            chosen.append(j)
-            miss = miss * (1.0 - P[gi, j])
-            p_any.append(float(1.0 - miss.mean()))
-        out.append((chosen, p_any))
-    return out
+    return [greedy_cover(P[gi], k) for gi in range(len(grids))]
 
 
 def portfolio(W, X, f, grid, cand_idx, k, chunk=500):

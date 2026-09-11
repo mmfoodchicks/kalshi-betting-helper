@@ -15,7 +15,6 @@ here, and the report says so.
 import collections
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -33,17 +32,39 @@ DRAW_WORLDS = 6000        # the parameter-uncertainty draws rebuild a lighter bo
 DRAW_FIELD = 60_000
 DRAW_CAND = 20_000
 SEASON, WEEK = "2026", 1
-PROBES = (["Jared Goff", "Jahmyr Gibbs", "Travis Etienne", "Amon-Ra St. Brown", "Devaughn Vele",
-           "Jameson Williams", "Sam LaPorta", "Alvin Kamara", "Jets"],
-          ["Geno Smith", "Derrick Henry", "Jonathan Taylor", "Zay Flowers", "Josh Downs",
-           "Rashod Bateman", "Tyler Warren", "Justice Hill", "Falcons"])
+DRAFT_GROUP = 151307        # the Sunday main slate the permanent probes belong to
+
+
+def _probes():
+    """The owner's two entered lineups, resolved from the ONE place they are
+    defined. This module used to carry its own nine-name literals, and they
+    were a different pair of lineups: four of nine names wrong in L1 and
+    three of nine in L2. Stage 2F then reported those substitutes as the
+    owner's, which is how "L1 falls to 2,182nd under the constrained model"
+    came to be said about a lineup the owner never entered. A copied fixture
+    cannot be kept in step, so there is no copy any more."""
+    import dfs_tourney as T
+    pr = T.PROBES.get(("nfl", DRAFT_GROUP)) or []
+    if len(pr) != 2:
+        raise RuntimeError(f"expected two canonical probes for {DRAFT_GROUP}, found {len(pr)}")
+    return tuple(list(x) for x in pr)
+
+
+PROBES = _probes()
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def pools(feed_dir, models=("legacy", "constrained"), n=WORLDS, seed=BASE_SEED, log=print):
@@ -233,7 +254,7 @@ def run(slate_dir, feed_dir, log=print):
                                                        for j in np.argsort(-r["top1"])[:50]]))}
     log("[2F] parameter-uncertainty draws...")
     draws = parameter_draws(feed_dir, ents_base, log=log)
-    st = {"meta": {"stage": "2F", "commit": _commit(), "base_seed": BASE_SEED, "season": SEASON, "week": WEEK,
+    st = {"meta": {"stage": "2F", "commit": _commit(), "provenance": _prov(seed=BASE_SEED, model="legacy + constrained", data_split=f"{SEASON} week {WEEK}, current slate"), "base_seed": BASE_SEED, "season": SEASON, "week": WEEK,
                    "worlds": WORLDS, "field": FIELD_N, "candidates_drawn": CAND_N,
                    "built": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()), "seconds": round(time.time() - t0, 1)},
           "models": out, "parameter_draws": draws}

@@ -21,7 +21,6 @@ in the knob.
 """
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -47,10 +46,17 @@ CONTEST = {"id": 1, "name": "research millionaire", "entry_fee": 5.0, "max_entri
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def prep(slate_dir, log=print):
@@ -130,7 +136,7 @@ def portfolio_study(board, log=print):
             rows.append({"size": k, "p_any_top1": p_any1, "p_any_top01": p_any01,
                          "ev_total": float(rs["ev"][take].sum()), "ev_notie_total": float(rs["ev_notie"][take].sum()),
                          "roi_pct": 100.0 * (float(rs["ev"][take].sum()) - k * CONTEST["entry_fee"]) / (k * CONTEST["entry_fee"]),
-                         "win_sole_any_pct": 100.0 * float(1.0 - np.prod(1.0 - rs["win_sole"][take]))})
+                         "win_sole_best_pct": 100.0 * float(rs["win_sole"][take].max()) if len(take) else 0.0})
         out[name] = rows
     out["_picks"] = {k: [[ents[i]["name"] for i in idx_a[j]] for j in v[:3]] for k, v in picks.items()}
     out["_overlap"] = {f"{a} vs {b}": len(set(picks[a][:20]) & set(picks[b][:20]))
@@ -140,14 +146,23 @@ def portfolio_study(board, log=print):
 
 def _p_any(board, rows, grid, Wf, wf, Xs, chunk=400):
     """P(at least one of these entries makes the top 1% / top 0.1%) on the
-    scoring worlds, world by world so the entries' overlap counts."""
+    scoring worlds, world by world.
+
+    All of these entries sit in ONE contest against ONE realised field, so
+    within a world they are nested rather than independent: our best-scoring
+    entry holds our best rank, and nobody else can make a cut it missed. So
+    the per-world answer is the best entry's probability, which is the
+    maximum because the grid is monotone in the field mass above us. This
+    used to take prod(1 - p), the answer for entries that each meet their own
+    fresh field, which inflates every portfolio number and inflates them most
+    exactly where the entries are most alike."""
     import dfs_tourney as T
     P = len(board["ents"])
     Wk = T.lineup_matrix(rows.astype(np.int64), P)
     F_grid = grid["F"]
     N = Xs.shape[1]
-    miss1 = np.ones(N)
-    miss01 = np.ones(N)
+    cov1 = np.zeros(N)
+    cov01 = np.zeros(N)
     WfT = np.ascontiguousarray(Wf.T)
     WkT = np.ascontiguousarray(Wk.T)
     ch = T.chunk_for(max(len(rows), Wf.shape[0]), chunk)
@@ -157,9 +172,9 @@ def _p_any(board, rows, grid, Wf, wf, Xs, chunk=400):
         Bk = T._buckets(Xc @ WkT)
         for j in range(Bf.shape[0]):
             pos = T._world_tables(Bf[j], wf, F_grid)
-            miss1[start + j] = float(np.prod(1.0 - grid["top1"][pos][Bk[j]]))
-            miss01[start + j] = float(np.prod(1.0 - grid["top01"][pos][Bk[j]]))
-    return float(1.0 - miss1.mean()), float(1.0 - miss01.mean())
+            cov1[start + j] = float(np.max(grid["top1"][pos][Bk[j]])) if len(rows) else 0.0
+            cov01[start + j] = float(np.max(grid["top01"][pos][Bk[j]])) if len(rows) else 0.0
+    return float(cov1.mean()), float(cov01.mean())
 
 
 def unstacked_pool(board, log=print):
@@ -230,7 +245,7 @@ def run(slate_dir, log=print):
                  "legal_only_if_a_back_counts": int((loose_rb & ~strict_rb).sum())}
     log("[4C] the per-game cap...")
     cap = knob_study(board, "max_per_game", [4, 5, 6, None], log=log)
-    st = {"meta": {"stage": "4", "commit": _commit(), "base_seed": BASE_SEED, "slate_dir": os.path.basename(slate_dir.rstrip("/")),
+    st = {"meta": {"stage": "4", "commit": _commit(), "provenance": _prov(seed=BASE_SEED, model="legacy", data_split="7,500 build / 7,500 held out, cross-fit"), "base_seed": BASE_SEED, "slate_dir": os.path.basename(slate_dir.rstrip("/")),
                    "players": board["P"], "worlds": board["N"], "field": FIELD_N, "candidates": int(len(board["idx_c"])),
                    "build_worlds": int(len(board["build_worlds"])), "score_worlds": int(len(board["score_worlds"])),
                    "contest": {k: CONTEST[k] for k in ("name", "entry_fee", "max_entries", "places_paid", "first_prize")},
@@ -254,7 +269,7 @@ def write_report(st):
          "|---|---|---|---|---|---|---|---|"]
     for name in ("top1", "top01", "ev"):
         for r in st["portfolio_objective"][name]:
-            L.append(f"| {name} | {r['size']} | {r['p_any_top1']:.4f} | {r['p_any_top01']:.5f} | {r['win_sole_any_pct']:.4f}% | ${r['ev_total']:.2f} | ${r['ev_notie_total']:.2f} | {r['roi_pct']:+.0f}% |")
+            L.append(f"| {name} | {r['size']} | {r['p_any_top1']:.4f} | {r['p_any_top01']:.5f} | {r['win_sole_best_pct']:.4f}% | ${r['ev_total']:.2f} | ${r['ev_notie_total']:.2f} | {r['roi_pct']:+.0f}% |")
     L.append(f"\nOverlap of the top twenty between objectives: {json.dumps(st['portfolio_objective']['_overlap'])}.\n")
     L.append("## 4B: does a pass-catching back count as the stack partner\n")
     rc = st.get("rb_stack_counts") or {}

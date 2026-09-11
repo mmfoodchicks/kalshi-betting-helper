@@ -13302,7 +13302,7 @@ if _dt14.available():
        and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
-   _dt14.ENGINE == 5 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   _dt14.ENGINE == 6 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    and '"experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),' in _dts1
@@ -13578,10 +13578,10 @@ ck("the constrained simulator's stamp names its model and version, carries every
 _sim_src = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
 _pool_src = _sim_src[_sim_src.index("def player_pool("):_sim_src.index("# ---- Week board (all games simmed)")]
 ck("player_pool takes model and seed with legacy the default, rejects an unknown model and a preseason constrained pool before any fetch, keys its cache on both, and routes the constrained model's defenses and kickers through a seeded generator while the legacy path keeps the module generator",
-   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None):' in _sim_src
+   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0):' in _sim_src
    and _sim2.MODELS == ("legacy", "constrained")
-   and 'tuple(sorted(want)) or None, model, seed),' in _pool_src
-   and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child))' in _pool_src
+   and 'tuple(sorted(want)) or None, model, seed, float(xside or 0.0)),' in _pool_src
+   and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)' in _pool_src
    and 'side_rng = _rnd.Random(child) if seed is not None else _random' in _pool_src
    and '_dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)' in _pool_src
    and 'arr = _kicker_arr(k, off, n, k_rng)' in _pool_src
@@ -13595,6 +13595,19 @@ except ValueError:
     except ValueError:
         _rej_cs = True
 ck("an unknown model and a preseason constrained pool are refused with ValueError", _rej_cs)
+# The sensitivity knob is research-only, so the two things that keep it out of
+# production are that it defaults to off and that it is part of the pool's
+# cache key: a swept pool must never be handed back to a board that asked for
+# the frozen model. At zero the constrained path is the frozen path exactly.
+import inspect as _insp_xs
+ck("the shared-variance knob defaults to off everywhere it appears, and rides in the pool's cache key so a swept pool can never be served to a board that asked for the frozen model",
+   _insp_xs.signature(_sim2.player_pool).parameters["xside"].default == 0.0
+   and _insp_xs.signature(_cs.simulate_game).parameters["xside"].default == 0.0
+   and "xside" not in _insp_xs.signature(_dt14.build_nfl_classic).parameters
+   and "float(xside or 0.0)" in _pool_src
+   and "xside" not in open(_os.path.join(_root, "pc_worker.py")).read()
+   and "xside" not in open(_os.path.join(_root, "app.py")).read(),
+   "the board builder takes no such argument at all, and neither the PC nor the server mentions it")
 _dts_d = open(_os.path.join(_root, "dfs_tourney.py")).read()
 _build_d = _dts_d[_dts_d.index("def build_nfl_classic("):_dts_d.index("def build_nfl_classic(") + len(_insp.getsource(_dt14.build_nfl_classic))]
 ck("the classic build takes model (legacy by default) and passes it and the seed to the pool, stamps whichever simulator made the worlds and records the model and seed on the board; the showdown build and the PC's classic request stay on the legacy model",
@@ -13810,6 +13823,135 @@ ck("the blind 2025 validation is on file with its gate passed on all three legs,
    and abs(_val["seed_robustness"]["crps_diff"]) < 0.05
    and next(r for r in _val["pairs"] if r["moment"] == "pair QB1/opp QB1")["constrained"] < 0.5 * next(r for r in _val["pairs"] if r["moment"] == "pair QB1/opp QB1")["obs"],
    f"pit {_val['calibration']['constrained']['_pooled']['pit_ks']:.3f} vs {_val['calibration']['legacy']['_pooled']['pit_ks']:.3f}")
+# The guard that was missing, and it is the reason a headline was wrong for a
+# day: Stage 2F carried its own nine-name copy of the owner's lineups, and the
+# copy was a DIFFERENT pair -- four of nine names wrong in L1, three of nine in
+# L2. The study then reported those substitutes as the owner's, which is how
+# "L1 falls to 2,182nd under the constrained model" was said about a lineup he
+# never entered. The research module no longer holds a copy; this checks that
+# it cannot grow one back, and that the artifact's rows carry the canonical
+# names rather than merely being two rows that resolved.
+# ---- the portfolio cover: one contest, one field, nested entries ---------
+# READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is
+# SYNTHETIC: hand-built probability matrices chosen to separate the two
+# formulas as sharply as possible. They prove the arithmetic, and they are
+# the worst case, not this board. On the real 832,342-entry slate the two
+# formulas agree to 4.0e-8, because 94.13% of per-world probabilities there
+# are exactly 0 and 5.34% exactly 1 (section O of the audit report). The
+# synthetic cases are kept because a regression would show up here first and
+# because the gap is real wherever the cut is less extreme -- on a
+# 5,000-entry contest the old form is already 0.3% high.
+# This multiplied (1 - P_j) across our entries inside a world, which is the
+# answer for entries that each meet their OWN fresh field. Ours all sit in one
+# contest against one realised set of opponents, so our best-scoring entry
+# holds our best rank and nobody else of ours can clear a cut it missed: the
+# per-world union is the maximum, not one minus a product. Twins with a 10%
+# chance each were being sold as 19%, and on a random eight-entry set the old
+# form said 99.7% where the truth is 90.6% -- the error grows with the number
+# of entries and with how alike they are, which is exactly the regime a
+# twenty-entry portfolio lives in.
+if _dt14.available():
+    _P_twin = _np14.array([[0.10] * 4, [0.10] * 4])
+    _c_t, _pa_t = _dt14.greedy_cover(_P_twin, 2)
+    _P_nest = _np14.array([[0.4, 0.6, 0.5, 0.3], [0.1, 0.2, 0.05, 0.3]])
+    _c_n, _pa_n = _dt14.greedy_cover(_P_nest, 2)
+    _P_flip = _np14.array([[0.9, 0.0, 0.9, 0.0], [0.0, 0.9, 0.0, 0.9]])
+    _c_f, _pa_f = _dt14.greedy_cover(_P_flip, 2)
+    _rngc = _np14.random.default_rng(3)
+    _P_r = _rngc.random((30, 500))
+    _c_r, _pa_r = _dt14.greedy_cover(_P_r, 8)
+    _truth_r = [float(_P_r[_c_r[:i + 1]].max(axis=0).mean()) for i in range(len(_c_r))]
+    _old_r = float(1.0 - _np14.prod(1.0 - _P_r[_c_r], axis=0).mean())
+    ck("(synthetic) a second copy of the same lineup buys nothing, an entry dominated in every world buys nothing, and an entry that is best in the other half of the worlds buys everything",
+       abs(_pa_t[0] - 0.10) < 1e-12 and abs(_pa_t[1] - 0.10) < 1e-12
+       and abs(_pa_n[1] - float(_P_nest[0].mean())) < 1e-12
+       and abs(_pa_f[0] - 0.45) < 1e-12 and abs(_pa_f[1] - 0.9) < 1e-12,
+       f"twins {_pa_t} nested {_pa_n} flipped {_pa_f}")
+    ck("(synthetic, worst case) the cover equals the mean over worlds of the best chosen entry's chance, exactly, and stays below the independent-fields answer it replaced -- on the real slate the two agree to 4e-8, which is section O's measurement, not this",
+       max(abs(a - b) for a, b in zip(_pa_r, _truth_r)) < 1e-12
+       and all(_pa_r[i] <= _pa_r[i + 1] + 1e-12 for i in range(len(_pa_r) - 1))
+       and _pa_r[-1] <= 1.0 and _pa_r[-1] < _old_r - 1e-9,
+       f"greedy {_pa_r[-1]:.6f} truth {_truth_r[-1]:.6f} old independent form {_old_r:.6f}")
+    # the maximum is only the union because the grid is monotone in the mass
+    # above us: a higher score can never be given a lower chance
+    _gm = _dt14.payout_grid(832342, [{"from": 1, "to": 1, "prize": 1e6}, {"from": 2, "to": 2, "prize": 5e5},
+                                     {"from": 3, "to": 5, "prize": 1e5}, {"from": 6, "to": 100, "prize": 1e3},
+                                     {"from": 101, "to": 8323, "prize": 10.0}], 5.0, 8323)
+    ck("the columns the cover reads never reward a worse score: top 1%, top 0.1% and cash all fall as the mass above us grows, which is what makes the per-world maximum the union",
+       all(int((_np14.diff(_np14.asarray(_gm[c])) > 1e-12).sum()) == 0 for c in ("top1", "top01", "cash"))
+       and bool(_np14.all(_np14.diff(_np14.asarray(_gm["F"])) >= 0)),
+       str({c: int((_np14.diff(_np14.asarray(_gm[c])) > 1e-12).sum()) for c in ("top1", "top01", "cash")}))
+    ck("the production cover and the research cover are the same function, not two copies that can drift",
+       "greedy_cover(P[gi], k)" in _insp.getsource(_dt14.portfolio_vs_field)
+       and "np.max(grid[\"top1\"]" in open(_os.path.join(_root, "research", "stage4.py")).read()
+       and "np.prod(1.0 - grid[" not in open(_os.path.join(_root, "research", "stage4.py")).read())
+else:
+    ck("(numpy is not installed here -- the cover's arithmetic runs where it is)", True)
+
+# ---- research provenance: the stamp must name the code that ran ----------
+# Every artifact used to stamp `git rev-parse HEAD`, which is the commit the
+# tree was sitting ON while the research code was still uncommitted:
+# csim_params.json says fc10b3e, and fc10b3e does not contain stage2e.py at
+# all. There was no leakage -- the fit reads 2022-2024 only -- but "no
+# leakage" resting on file timestamps is weaker than history proving it.
+from research import provenance as _prov14
+_pstamp = _prov14.stamp(seed=None, model="legacy", data_split="guard probe")
+_psha, _pn = _prov14.source_sha()
+ck("a research stamp identifies the source that actually ran, the seed, the model and the data split -- not just the commit the tree happened to be on -- and the same tree hashes the same twice",
+   set(_pstamp) >= set(_prov14.REQUIRED)
+   and _pstamp["source_sha"] == _psha and _pn >= 12
+   and isinstance(_pstamp["dirty"], bool)
+   and _prov14.source_sha()[0] == _psha
+   and _prov14.complete(_pstamp) and not _prov14.complete({"commit": "x"})
+   and _prov14.stamp(seed=7, model="constrained", data_split="2022-2024 train")["data_split"] == "2022-2024 train",
+   str({k: v for k, v in _pstamp.items() if k != "source_sha"}))
+ck("the production modules a research number depends on are inside that hash, so changing the simulator changes the stamp",
+   any(f.endswith("nfl_dfs_csim.py") for f in _prov14.source_files())
+   and any(f.endswith("dfs_tourney.py") for f in _prov14.source_files())
+   and any(f.endswith(_os.path.join("research", "stage2e.py")) for f in _prov14.source_files()))
+# and the order-sensitive artifacts refuse a dirty tree, which is what makes
+# "frozen before the holdout was opened" provable from history
+_e2e = open(_os.path.join(_root, "research", "stage2e.py")).read()
+_e2v = open(_os.path.join(_root, "research", "stage2e_validate.py")).read()
+ck("the parameter freeze and the holdout reading both refuse to run from an uncommitted tree, so the sequence is provable rather than asserted",
+   'provenance.require_clean("a frozen parameter artifact")' in _e2e
+   and 'provenance.require_clean("a holdout validation")' in _e2v
+   and "allow_dirty=False" in _e2e and "allow_dirty=False" in _e2v)
+try:
+    _prov14.require_clean("guard probe")
+    _clean_ok = True
+except RuntimeError as _e_rc:
+    _clean_ok = "provable" in str(_e_rc)
+ck("and when the tree is dirty the refusal names the remedy instead of failing obscurely", _clean_ok)
+
+_canon2f = [list(x) for x in _dt14.PROBES[("nfl", 151307)]]
+_s2f_src = open(_os.path.join(_root, "research", "stage2f.py")).read()
+if _cs.available():          # the research module is PC-only: it imports numpy at the top
+    import research.stage2f as _s2fmod
+    _s2f_probes = [list(x) for x in _s2fmod.PROBES]
+    _s2f_dg = _s2fmod.DRAFT_GROUP
+else:
+    _s2f_probes, _s2f_dg = _canon2f, 151307
+ck("the research study reads the owner's probe lineups from the one place they are defined, never from a copy of its own",
+   _s2f_probes == _canon2f
+   and "Jameson Williams" not in _s2f_src and "Rashod Bateman" not in _s2f_src
+   and "T.PROBES.get((\"nfl\", DRAFT_GROUP))" in _s2f_src
+   and _s2f_dg == 151307,
+   str([x[0] for x in _s2f_probes]))
+# The artifact on file was produced BEFORE the copy was removed, so its probe
+# rows are the wrong lineups. It carries its own withdrawal until the rerun
+# replaces it; once it does, this flips to asserting the canonical names.
+_p2f_names = [r.get("names") for r in _st2f["models"]["legacy"]["probes"]]
+if _st2f.get("withdrawn"):          # the pre-correction artifact, kept only until the rerun replaced it
+    ck("the Stage 2F artifact carries its own withdrawal, naming the wrong-lineup cause and what in it still stands",
+       "scored the wrong lineups" in _st2f["withdrawn"]["reason"]
+       and "2,182" in _st2f["withdrawn"]["reason"]
+       and any("stacks" in x for x in _st2f["withdrawn"]["still_valid"])
+       and _p2f_names != _canon2f)
+else:
+    ck("and the Stage 2F artifact scored those exact nine names, not a near miss",
+       all([r["names"] for r in _st2f["models"][m]["probes"]] == _canon2f for m in ("legacy", "constrained")),
+       str(_p2f_names)[:200])
 ck("the current-slate comparison is on file: both models read the same slate and field, the constrained one puts far fewer big game stacks among the strongest candidates, and the probe lineups are scored under both",
    _st2f["models"]["legacy"]["entries"] == _st2f["models"]["constrained"]["entries"]
    and _st2f["models"]["constrained"]["stacks"]["share_5plus"] < 0.5 * _st2f["models"]["legacy"]["stacks"]["share_5plus"]
@@ -13832,18 +13974,30 @@ ck("the duplication study is on file: the big field's most popular lineup is ten
 _p4 = _st4["portfolio_objective"]
 _cap4 = {str(r["value"]): r for r in _st4["game_cap"]}
 _rb4 = {str(r["value"]): r for r in _st4["rb_stack_rule"]}
-ck("the stage four decisions are on file and cross-fitted: covering the top 0.1% beats covering the top 1% on the top-0.1% probability and on the payout at twenty entries, the per-game cap moves the held-out cover by a couple of percent with no pattern, and letting a receiving back count as the stack partner changes the held-out numbers not at all",
-   _st4["meta"]["build_worlds"] > 1000 and _st4["meta"]["score_worlds"] > 1000
-   and _st4["meta"]["build_worlds"] == _st4["meta"]["score_worlds"]
+# Stage 4's portfolio columns were produced by the independent-fields cover
+# and are withdrawn until the rerun lands. What may still be asserted is the
+# shape of the study and the withdrawal itself: a stale number must not be
+# able to sit in the tree looking authoritative.
+# Stage 4 was rerun on the corrected shared-field cover and its artifact
+# replaced. The numbers came back identical to four decimals, which is the
+# measurement that says the independence bug, though real, did not move this
+# board: the per-world probabilities are near-binary, so a product of misses
+# and a maximum agree. What this pins is the rerun's shape and the null
+# results it found, not a claim that the old formula was harmless in general.
+_p4 = _st4["portfolio_objective"]
+_cap4 = {str(r["value"]): r for r in _st4["game_cap"]}
+_rb4 = {str(r["value"]): r for r in _st4["rb_stack_rule"]}
+ck("stage four is the rerun on the corrected cover, still cross-fit, and still says: cover the top 0.1% wins on the top-0.1% probability and the payout at twenty entries, the per-game cap moves the held-out cover a couple of percent with no pattern, and a receiving back as stack partner changes the held-out numbers not at all even though it genuinely enlarges the candidate pool",
+   _st4["meta"]["build_worlds"] == _st4["meta"]["score_worlds"] and _st4["meta"]["build_worlds"] > 1000
    and _p4["top01"][-1]["p_any_top01"] > _p4["top1"][-1]["p_any_top01"]
    and _p4["top01"][-1]["ev_total"] > _p4["top1"][-1]["ev_total"]
    and _p4["top1"][-1]["p_any_top1"] > _p4["ev"][-1]["p_any_top1"]
    and abs(_cap4["None"]["p_any_top1_20"] - _cap4["4"]["p_any_top1_20"]) < 0.05
-   and _cap4["None"]["allowed"] >= _cap4["4"]["allowed"]
    and _rb4["3.0"]["allowed"] > _rb4["None"]["allowed"]
    and abs(_rb4["3.0"]["p_any_top1_20"] - _rb4["None"]["p_any_top1_20"]) < 1e-9
-   and _st4["rb_stack_counts"]["legal_only_if_a_back_counts"] > 100,
-   f"cover20 top1 {_p4['top1'][-1]['p_any_top1']:.4f} vs top01 {_p4['top01'][-1]['p_any_top1']:.4f}")
+   and _st4["rb_stack_counts"]["legal_only_if_a_back_counts"] > 100
+   and "win_sole_best_pct" in _p4["top1"][-1] and "win_sole_any_pct" not in _p4["top1"][-1],
+   f"cover20 top1 {_p4['top1'][-1]['p_any_top1']:.4f} top01 {_p4['top01'][-1]['p_any_top01']:.5f} rb {_rb4['3.0']['allowed']} vs {_rb4['None']['allowed']}")
 _fin = open(_os.path.join(_root, "dfs_final_audit_report.md")).read()
 ck("the final audit report is in the tree and carries the sections the review asks for, the numbers that decide things, and the limitations rather than only the wins",
    all(h in _fin for h in ("## A. The commit chain", "## I. Stage 2E part two: the blind 2025 result",
@@ -13856,11 +14010,60 @@ ck("the final audit report is in the tree and carries the sections the review as
 # commit overstated the numpy break as a production outage, and what was
 # actually measured instead. Dropping the paragraph would quietly restore the
 # nicer story.
-_finw = " ".join(_fin.split())    # the report is hard-wrapped; match on the words, not the line breaks
+# the report is hard-wrapped and uses blockquotes, so a phrase can be split
+# by a newline AND a "> " marker; strip both before matching on the words
+_finw = " ".join(l.lstrip("> ").strip() for l in _fin.splitlines())
+_finw = " ".join(_finw.split())
 ck("the report keeps the correction to the overstated numpy break rather than only the stages that went well",
    "One claim in this chain was overstated" in _finw
    and "Nothing the web app serves imports `dfs_tourney`" in _finw
    and "no code of any kind was filed in that window" in _finw)
+# The portfolio section has to keep the measurement that CONTRADICTS the
+# review which found the bug. Deleting it would leave the tidier story --
+# "critical bug, everything invalidated" -- standing on nothing measured.
+ck("the portfolio section records what the corrected rerun measured, including that the served coverage was not overstated, rather than only the principle the formula got wrong",
+   "How wrong on THIS board: not measurably" in _finw
+   and "94.13% are exactly zero" in _finw
+   and "0.726503" in _finw and "0.7268" in _finw
+   and "right for a reason that was wrong" in _finw)
+# The money gate is shut, so the payout column cannot carry a policy. Stage 4's
+# conclusions have to rest on held-out coverage, the cap has to stay
+# inconclusive rather than crowning the nominal winner of a noisy range, and
+# the receiving-back result has to stay a null that was actually measured.
+# The headline the whole exercise was for, now measured on the RIGHT lineups.
+# The retraction stays on the page beside it: a reader who finds 2,182 in the
+# history has to be able to find out here that it was the wrong lineup.
+ck("the report carries the canonical L1/L2 result and keeps the retraction of the wrong-lineup figure beside it, including the control that separates the two mechanisms",
+   "Retraction, kept on the record" in _finw
+   and "four of nine names wrong in L1" in _finw
+   and "10.11% | #1 | 4.39% | #50" in _finw
+   and "2.973% | #1 | 0.866% | #5" in _finw
+   and "not a controlled counterfactual" in _finw
+   and "Subtracting L2's fall from L1's to isolate the cross-game term is too neat" in _finw
+   and "does not uniquely identify or quantify that mechanism" in _finw)
+# The sensitivity sweep is a bounded result and the report has to keep saying
+# so: it widens marginals as well as coupling, its ranks are noisy at 6,000
+# worlds, and its stack statistic counts candidates only. Drop any of those
+# three and the table starts reading like a calibrated estimate of L1's rank,
+# which is exactly what it is not.
+ck("the sweep is labelled a shared-variance sensitivity with its three caveats intact: marginals widen, the ranks are Monte Carlo noise, and the stack share excludes the probes",
+   "game-level shared-variance sensitivity" in _finw
+   and "12.9% wider" in _finw and "13.1% wider" in _finw
+   and "not 18th versus 30th as precise values" in _finw
+   and "candidate-only" in _finw
+   and "never in that array" in _finw
+   and "bounds the sensitivity rather than estimating L1's calibrated rank" in _finw
+   and "common-plus-idiosyncratic decomposition that preserves marginal variance" in _finw
+   and "not** an estimated production parameter" in _finw)
+
+ck("stage four's conclusions rest on held-out coverage, not on the payout column the money gate still refuses; the per-game cap is reported inconclusive rather than resolved; and the receiving-back null says the knob was connected this time",
+   "must NOT be the reason for choosing an objective" in _finw
+   and "0.27728" in _finw and "0.23877" in _finw
+   and "Inconclusive, and it should be reported that way" in _finw
+   and "No winner is being manufactured from that range" in _finw
+   and "stays at none because nothing argues for moving it" in _finw
+   and "no effect measured" in _finw and "nothing was measured" in _finw
+   and "36,795 to 37,413" in _finw)
 # Limitation 8 was closed by a measured served board, not by deciding it no
 # longer mattered: the PC's own rebuild at engine 5, with both completion
 # receipts at 100%, both probes resolved and the money gate unchanged. The
@@ -13872,7 +14075,8 @@ ck("closing limitation 8 keeps the served board's receipt in the report: the PC'
    and "Field 300,000 of 300,000 completed" in _finw
    and "candidate draws 150,000 of 150,000" in _finw
    and "132,913 allowed" in _finw
-   and "L1 at 2.701% top 0.1% ranking 2nd of 132,913" in _finw
+   and "$5 / 832,342-entry Millionaire" in _finw
+   and "L1 tops 1% at 10.34% and 0.1% at 2.478%" in _finw
    and "2.77 entries per sampled lineup" in _finw
    and "8. **Closed.**" in _finw)
 
@@ -13921,6 +14125,104 @@ if _cs.available():
        and set(_sa["team_def"]) == {"A", "B"} and len(_sa["team_def"]["A"]["td"]) == 4000
        and abs(float(_sa["players"][_qb_a]["arr"].mean()) - _sa["players"][_qb_a]["sim_mean"]) < 0.01,
        f"invariants {[k for k, v in _inv_cs.items() if not v[0]]} yards {_yd_out:.1f}/{_yd_in:.1f} tds {_td_out:.2f}/{_td_in:.2f}")
+    # ---- the touchdowns that used to vanish -------------------------------
+    # np.minimum(multinomial, capacity) DELETED the overflow: a budget of
+    # three passing touchdowns landing on a man with two catches lost one, and
+    # the quarterback was then handed the post-clipping total, so every
+    # identity above still passed while the score went missing. Measured on
+    # this fixture before the fix: 0.28% of the drawn passing budget and 0.08%
+    # of the rushing budget, gone. The budget is now cut to the room that
+    # exists first and the rest is carried between rounds.
+    _bud = _sa.get("td_budget") or {}
+    _shr = _sa.get("td_short") or {}
+    _lost = {}
+    for _t in ("A", "B"):
+        _ix = [i for i, p in enumerate(_gcs["players"]) if p["team"] == _t]
+        for _k, _c in (("pass_td", "rec_td"), ("rush_td", "rush_td")):
+            _al = sum(_sa["components"][i][_c] for i in _ix if _c in _sa["components"][i])
+            _lost[f"{_t}:{_k}"] = int((_np14.asarray(_bud[_t][_k]) - _np14.asarray(_shr[_t][_k]) - _np14.asarray(_al)).sum())
+    ck("every touchdown the model draws for a team is either allocated to a man who can hold it or reported as impossible for want of catches and carries -- none is quietly deleted",
+       _bud and all(v == 0 for v in _lost.values())
+       and any(k.endswith("drawn = allocated + impossible surplus") for k in _inv_cs),
+       str(_lost))
+    # ---- the real DraftKings lattice --------------------------------------
+    # Yardage was continuous, so scores landed on an arbitrary grid that
+    # rounding to two decimals did not repair, and the report's claim that
+    # the constrained model would give realistic tie rates had nothing behind
+    # it. A box score is integers: whole yards, catches and touchdowns give
+    # DraftKings points on multiples of 0.02.
+    _arrs = _np14.concatenate([_np14.asarray(x["arr"]) for x in _sa["players"]])
+    _off = _np14.abs(_arrs / 0.02 - _np14.rint(_arrs / 0.02))
+    _whole = all(int((_np14.abs(_np14.asarray(v) - _np14.rint(_np14.asarray(v))) > 1e-9).sum()) == 0
+                 for _c in _sa["components"].values() for v in _c.values())
+    # ---- adversarial: a budget that cannot fit ----------------------------
+    # A tiny, touchdown-heavy offence -- twelve throws, three receivers,
+    # four passing scores projected -- so the drawn budget rivals and then
+    # exceeds the catches and carries available to hold it. At four times the
+    # touchdown rate, 42.5% of the drawn budget is physically impossible on a
+    # 200,000-world run; not one of those is silently deleted. Impossible
+    # means reported: the team keeps what its opportunities can hold and
+    # `td_short` carries the rest, so the deficit is a number someone can
+    # look at rather than a quiet shortfall in the scores.
+    def _tiny(tag, mult):
+        qb = {"name": f"{tag}QB", "pos": "QB", "team": tag, "means": {
+            "pass_att": 12.0, "pass_cmp": 7.0, "pass_yd": 90.0, "pass_td": 4.0 * mult, "int": 0.5,
+            "rush_att": 2.0, "rush_yd": 6.0, "rush_td": 1.5 * mult, "rec": 0.0, "rec_yd": 0.0,
+            "rec_td": 0.0, "rec_tgt": 0.0, "fum": 0.1}}
+        out = [qb]
+        for nm, po, tg, rc, yd, td, ra, ry, rt in (
+                ("WR1", "WR", 5.0, 3.0, 45.0, 2.0 * mult, 0, 0, 0),
+                ("TE1", "TE", 3.0, 2.0, 25.0, 1.5 * mult, 0, 0, 0),
+                ("RB1", "RB", 2.0, 1.5, 12.0, 0.5 * mult, 3.0, 12.0, 1.2 * mult)):
+            out.append({"name": f"{tag}{nm}", "pos": po, "team": tag, "means": {
+                "rec_tgt": tg, "rec": rc, "rec_yd": yd, "rec_td": td, "rush_att": ra, "rush_yd": ry,
+                "rush_td": rt, "int": 0.0, "fum": 0.02, "pass_yd": 0.0, "pass_td": 0.0,
+                "pass_att": 0.0, "pass_cmp": 0.0}})
+        return out
+    _adv = _tiny("A", 4.0) + _tiny("B", 4.0)
+    for _t in ("A", "B"):
+        _rc.reconcile_team([q for q in _adv if q["team"] == _t], team=_t)
+    for _q in _adv:
+        _q["opp"] = "B" if _q["team"] == "A" else "A"
+    _sadv = _cs.simulate_game({"label": "B @ A", "teams": ["A", "B"], "players": _adv},
+                              n=20000, rng=_np14.random.default_rng(5))
+    _adv_lost = _adv_short = _adv_drawn = 0
+    for _t in ("A", "B"):
+        _ix = [i for i, q in enumerate(_adv) if q["team"] == _t]
+        for _k, _c in (("pass_td", "rec_td"), ("rush_td", "rush_td")):
+            _dr = _np14.asarray(_sadv["td_budget"][_t][_k])
+            _sh = _np14.asarray(_sadv["td_short"][_t][_k])
+            _al = _np14.asarray(sum(_sadv["components"][i][_c] for i in _ix if _c in _sadv["components"][i]))
+            _adv_lost += int((_dr - _sh - _al).sum()); _adv_short += int(_sh.sum()); _adv_drawn += int(_dr.sum())
+    _inv_adv = _cs.check_invariants(_sadv, _adv)
+    ck("the touchdown books balance as drawn = allocated + impossible surplus, with allocated = min(drawn, catches and carries available): on a deliberately impossible offence two fifths of the budget cannot fit, and none of it is either lost or forced onto the field",
+       _adv_lost == 0 and _adv_short > 0.2 * _adv_drawn and all(v[0] for v in _inv_adv.values()),
+       f"drawn {_adv_drawn} impossible {_adv_short} lost {_adv_lost} failing {[k for k, v in _inv_adv.items() if not v[0]]}")
+    # ---- the lattice at scale, bonuses included ---------------------------
+    _advarr = _np14.concatenate([_np14.asarray(x["arr"]) for x in _sadv["players"]])
+    _bigarr = _np14.concatenate([_advarr, _arrs])
+    _bigoff = _np14.abs(_bigarr / 0.02 - _np14.rint(_bigarr / 0.02))
+    # every scoring term recomputed from the components, bonuses and all
+    import dk_scoring as _dks14
+    _Sk = _dks14.NFL_OFF
+    _re = []
+    for _i, _c in _sadv["components"].items():
+        _z = _np14.zeros_like(_np14.asarray(_sadv["players"][0]["arr"]))
+        _v = (_c.get("pass_yd", _z) * _Sk["pass_yd"] + _c.get("pass_td", _z) * _Sk["pass_td"]
+              + _c.get("int", _z) * _Sk["int"] + _c.get("rush_yd", _z) * _Sk["rush_yd"]
+              + _c.get("rush_td", _z) * _Sk["rush_td"] + _c.get("rec", _z) * _Sk["rec"]
+              + _c.get("rec_yd", _z) * _Sk["rec_yd"] + _c.get("rec_td", _z) * _Sk["rec_td"]
+              + _c.get("fum", _z) * _Sk["fumble_lost"]
+              + _Sk["pass_300"] * (_c.get("pass_yd", _z) >= 300)
+              + _Sk["rush_100"] * (_c.get("rush_yd", _z) >= 100)
+              + _Sk["rec_100"] * (_c.get("rec_yd", _z) >= 100))
+        _re.append(float(_np14.abs(_v - _np14.asarray(_sadv["players"][_i]["arr"])).max()))
+    ck("every DraftKings total on a large sample sits exactly on the 0.02 lattice, and each player's score recomputes from his components with the three yardage bonuses included",
+       int((_bigoff > 1e-6).sum()) == 0 and _bigarr.size > 200_000 and max(_re) < 1e-9,
+       f"off-lattice {int((_bigoff > 1e-6).sum())} of {_bigarr.size}, worst rescore {max(_re):.2e}")
+    ck("the constrained simulator writes a box score, not a decimal: every component is a whole number and every DraftKings total lands on the real 0.02 lattice, so its tie rates mean something",
+       _whole and int((_off > 1e-6).sum()) == 0 and len(_np14.unique(_np14.rint(_arrs * 100))) < _arrs.size // 4,
+       f"off-lattice {int((_off > 1e-6).sum())} of {_arrs.size}, distinct {len(_np14.unique(_np14.rint(_arrs * 100)))}")
 else:
     ck("(numpy is not installed here -- the constrained simulator runs where it is)", True)
 

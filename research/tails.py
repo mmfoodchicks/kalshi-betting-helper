@@ -31,7 +31,6 @@ of the nine ownerships) says how far wrong the obvious shortcut is.
 import collections
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -49,10 +48,17 @@ LEVELS = (1e-3, 1e-4, 1e-5, 1e-6)
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def load_slate(d):

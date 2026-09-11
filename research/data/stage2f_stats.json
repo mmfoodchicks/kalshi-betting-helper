@@ -1,35 +1,44 @@
 {
  "meta": {
   "base_seed": 20260912,
-  "built": "2026-09-10 23:59 UTC",
+  "built": "2026-09-11 18:00 UTC",
   "candidates_drawn": 60000,
-  "commit": "9b39e8c",
+  "commit": "59e563b",
   "field": 150000,
+  "provenance": {
+   "commit": "59e563b",
+   "data_split": "2026 week 1, current slate",
+   "dirty": true,
+   "model": "legacy + constrained",
+   "seed": 20260912,
+   "source_files": 19,
+   "source_sha": "e569ba4bea82f518c267dd34ea72c9c8b99e53306d8c329261288f4d504d436e"
+  },
   "season": "2026",
-  "seconds": 4272.1,
+  "seconds": 4324.0,
   "stage": "2F",
   "week": 1,
   "worlds": 20000
  },
  "models": {
   "constrained": {
-   "allowed": 53205,
+   "allowed": 53135,
    "best": {
-    "ev": 15.879835946005842,
+    "ev": 169.53939922331116,
     "names": [
      "Jared Goff",
-     "Bijan Robinson",
-     "Rico Dowdle",
+     "Ashton Jeanty",
+     "Derrick Henry",
      "Amon-Ra St. Brown",
-     "Tetairoa McMillan",
-     "Garrett Wilson",
+     "Devaughn Vele",
+     "Drake London",
      "Sam LaPorta",
-     "Tre Tucker",
-     "Eagles"
+     "Tee Higgins",
+     "Jets"
     ],
-    "top01_pct": 1.063125907149439,
-    "top1_pct": 6.080882805601797,
-    "win_sole_pct": 5.808118730680402e-05
+    "top01_pct": 1.0394888180100763,
+    "top1_pct": 5.889875356138514,
+    "win_sole_pct": 0.015115188172026117
    },
    "beta": 0.19454668492078783,
    "candidates": 66666,
@@ -37,97 +46,97 @@
    "entries": 243,
    "eval_worlds": 13334,
    "kappa": -1.953125,
-   "mean_proj_of_top50": 132.82399999999998,
+   "mean_proj_of_top50": 132.70600000000002,
    "probes": [
     {
      "available": true,
-     "ev": 4.835956052077426,
-     "ev_notie": 4.8383089638048835,
-     "mean": 125.36610412597656,
-     "median": 123.22500228881836,
+     "ev": 9.917096333300957,
+     "ev_notie": 9.917710402468199,
+     "mean": 135.53292846679688,
+     "median": 133.72000122070312,
      "names": [
       "Jared Goff",
       "Jahmyr Gibbs",
-      "Travis Etienne",
+      "Travis Etienne Jr.",
       "Amon-Ra St. Brown",
+      "Chris Olave",
       "Devaughn Vele",
-      "Jameson Williams",
-      "Sam LaPorta",
-      "Alvin Kamara",
-      "Jets"
+      "Tyler Warren",
+      "Tre Tucker",
+      "Steelers"
      ],
-     "of": 53205,
-     "p10": 88.2599967956543,
-     "p90": 165.75099945068362,
-     "p99": 204.09410980224612,
-     "rank_top01": 2917,
-     "rank_top1": 2182,
-     "top01_pct": 0.3285212748301747,
-     "top1_pct": 2.655886934116464,
-     "win_sole_pct": 1.690929865337682e-12
+     "of": 53135,
+     "p10": 99.80599975585938,
+     "p90": 173.08001251220702,
+     "p99": 211.7274026489258,
+     "rank_top01": 128,
+     "rank_top1": 50,
+     "top01_pct": 0.6166318193276228,
+     "top1_pct": 4.38535264307539,
+     "win_sole_pct": 3.2991070426508217e-07
     },
     {
      "available": true,
-     "ev": 1.4732193365426163,
-     "ev_notie": 1.4736510697026657,
-     "mean": 111.79857635498047,
-     "median": 110.32999420166016,
+     "ev": 86.55597307694572,
+     "ev_notie": 86.55674489031446,
+     "mean": 132.53260803222656,
+     "median": 131.0900115966797,
      "names": [
       "Geno Smith",
-      "Derrick Henry",
       "Jonathan Taylor",
+      "Derrick Henry",
       "Zay Flowers",
+      "Garrett Wilson",
       "Josh Downs",
-      "Rashod Bateman",
       "Tyler Warren",
-      "Justice Hill",
-      "Falcons"
+      "Breece Hall",
+      "Raiders"
      ],
-     "of": 53205,
-     "p10": 81.7129898071289,
-     "p90": 143.48700714111328,
-     "p99": 174.6104005432129,
-     "rank_top01": 46588,
-     "rank_top1": 47991,
-     "top01_pct": 0.030118511340493436,
-     "top1_pct": 0.4275646157184445,
-     "win_sole_pct": 8.531116592494946e-32
+     "of": 53135,
+     "p10": 98.13600387573243,
+     "p90": 168.1699981689453,
+     "p99": 204.36340393066408,
+     "rank_top01": 5,
+     "rank_top1": 38,
+     "top01_pct": 0.8658320585837301,
+     "top1_pct": 4.585749244312909,
+     "win_sole_pct": 0.007528665186841692
     }
    ],
    "stacks": {
-    "mean_per_game": 3.085,
+    "mean_per_game": 3.035,
     "per_game_dist": {
-     "2": 0.165,
-     "3": 0.595,
-     "4": 0.23,
+     "2": 0.2,
+     "3": 0.575,
+     "4": 0.215,
      "5": 0.01
     },
     "share_5plus": 0.01,
     "share_6plus": 0.0,
     "top": 200
    },
-   "top1_max": 0.06080882805601796,
-   "top1_p90": 0.021632658372511254,
+   "top1_max": 0.05889875356138514,
+   "top1_p90": 0.02163788814172607,
    "worlds": 20000
   },
   "legacy": {
-   "allowed": 52655,
+   "allowed": 52749,
    "best": {
-    "ev": 1316.542482383212,
+    "ev": 328.5653315941213,
     "names": [
-     "Geno Smith",
-     "Jonathan Taylor",
-     "Breece Hall",
-     "Zay Flowers",
-     "Garrett Wilson",
-     "Josh Downs",
-     "Tyler Warren",
-     "David Montgomery",
-     "Jaguars"
+     "Joe Burrow",
+     "Jahmyr Gibbs",
+     "Jaylen Warren",
+     "Ja'Marr Chase",
+     "Tee Higgins",
+     "Devaughn Vele",
+     "Sam LaPorta",
+     "Rico Dowdle",
+     "Jets"
     ],
-    "top01_pct": 2.5323724363315403,
-    "top1_pct": 9.06415076074495,
-    "win_sole_pct": 0.12781218048350307
+    "top01_pct": 1.849108060682977,
+    "top1_pct": 9.266314998187596,
+    "win_sole_pct": 0.03014369788323495
    },
    "beta": 0.19454668492078783,
    "candidates": 66666,
@@ -135,78 +144,78 @@
    "entries": 243,
    "eval_worlds": 13334,
    "kappa": -1.953125,
-   "mean_proj_of_top50": 132.314,
+   "mean_proj_of_top50": 132.982,
    "probes": [
     {
      "available": true,
-     "ev": 28.120906542468717,
-     "ev_notie": 28.128053011901876,
-     "mean": 124.4263916015625,
-     "median": 120.6450080871582,
+     "ev": 482.62868375787167,
+     "ev_notie": 482.97760675827567,
+     "mean": 134.27210998535156,
+     "median": 131.74000549316406,
      "names": [
       "Jared Goff",
       "Jahmyr Gibbs",
-      "Travis Etienne",
+      "Travis Etienne Jr.",
       "Amon-Ra St. Brown",
+      "Chris Olave",
       "Devaughn Vele",
-      "Jameson Williams",
-      "Sam LaPorta",
-      "Alvin Kamara",
-      "Jets"
+      "Tyler Warren",
+      "Tre Tucker",
+      "Steelers"
      ],
-     "of": 52655,
-     "p10": 81.9900001525879,
-     "p90": 171.51400299072267,
-     "p99": 217.88689605712892,
-     "rank_top01": 3,
-     "rank_top1": 3,
-     "top01_pct": 2.36275870054152,
-     "top1_pct": 8.779956835731385,
-     "win_sole_pct": 0.00011637801717687939
+     "of": 52749,
+     "p10": 97.6200050354004,
+     "p90": 174.2920028686524,
+     "p99": 211.94009735107423,
+     "rank_top01": 1,
+     "rank_top1": 1,
+     "top01_pct": 2.4447996997488644,
+     "top1_pct": 10.111842058911602,
+     "win_sole_pct": 0.04514316929784922
     },
     {
      "available": true,
-     "ev": 2.636143049769284,
-     "ev_notie": 2.636497326974369,
-     "mean": 110.987060546875,
-     "median": 109.03000259399414,
+     "ev": 1855.8871744876403,
+     "ev_notie": 1855.899430451995,
+     "mean": 131.49615478515625,
+     "median": 129.77999877929688,
      "names": [
       "Geno Smith",
-      "Derrick Henry",
       "Jonathan Taylor",
+      "Derrick Henry",
       "Zay Flowers",
+      "Garrett Wilson",
       "Josh Downs",
-      "Rashod Bateman",
       "Tyler Warren",
-      "Justice Hill",
-      "Falcons"
+      "Breece Hall",
+      "Raiders"
      ],
-     "of": 52655,
-     "p10": 79.4900001525879,
-     "p90": 145.16000366210938,
-     "p99": 176.1535124206543,
-     "rank_top01": 13327,
-     "rank_top1": 16753,
-     "top01_pct": 0.16697411128020712,
-     "top1_pct": 1.4493640843230837,
-     "win_sole_pct": 9.797162163068571e-20
+     "of": 52749,
+     "p10": 98.33000946044922,
+     "p90": 166.9600067138672,
+     "p99": 200.81699905395507,
+     "rank_top01": 1,
+     "rank_top1": 1,
+     "top01_pct": 2.9728513977499187,
+     "top1_pct": 9.850852508186568,
+     "win_sole_pct": 0.1803402457729343
     }
    ],
    "stacks": {
-    "mean_per_game": 3.765,
+    "mean_per_game": 3.81,
     "per_game_dist": {
-     "2": 0.01,
-     "3": 0.415,
-     "4": 0.4,
-     "5": 0.15,
-     "6": 0.025
+     "2": 0.035,
+     "3": 0.395,
+     "4": 0.355,
+     "5": 0.155,
+     "6": 0.06
     },
-    "share_5plus": 0.175,
-    "share_6plus": 0.025,
+    "share_5plus": 0.215,
+    "share_6plus": 0.06,
     "top": 200
    },
-   "top1_max": 0.09064150760744949,
-   "top1_p90": 0.02563700155912199,
+   "top1_max": 0.09266314998187597,
+   "top1_p90": 0.025654853874472677,
    "worlds": 20000
   }
  },
@@ -214,14 +223,14 @@
   {
    "best": [
     "Joe Burrow",
-    "Bijan Robinson",
-    "Jaylen Warren",
+    "Bucky Irving",
+    "Omarion Hampton",
     "Ja'Marr Chase",
     "Tee Higgins",
-    "Garrett Wilson",
+    "Drake London",
     "Sam LaPorta",
     "Devaughn Vele",
-    "Cardinals"
+    "Browns"
    ],
    "draw": 0,
    "params": {
@@ -242,25 +251,25 @@
     "ypr_sd": 0.7047
    },
    "probe_rank": [
-    539,
-    16173
+    16,
+    8
    ],
    "probe_top1": [
-    2.843,
-    0.375
+    4.498,
+    4.72
    ]
   },
   {
    "best": [
     "Jared Goff",
-    "Jeremiyah Love",
+    "De'Von Achane",
     "David Montgomery",
     "Amon-Ra St. Brown",
-    "Drake London",
-    "Garrett Wilson",
+    "Tee Higgins",
+    "Jalen Coker",
     "Sam LaPorta",
-    "Tre Tucker",
-    "Steelers"
+    "Luther Burden III",
+    "Dolphins"
    ],
    "draw": 1,
    "params": {
@@ -281,25 +290,25 @@
     "ypr_sd": 0.7057
    },
    "probe_rank": [
-    684,
-    16815
+    38,
+    1
    ],
    "probe_top1": [
-    2.749,
-    0.277
+    4.097,
+    5.283
    ]
   },
   {
    "best": [
     "Jalen Hurts",
-    "David Montgomery",
-    "Jaylen Warren",
+    "Rico Dowdle",
+    "Jahmyr Gibbs",
     "DeVonta Smith",
-    "Justin Jefferson",
-    "Amon-Ra St. Brown",
-    "Dallas Goedert",
-    "Tre Tucker",
-    "Jets"
+    "Garrett Wilson",
+    "Ja'Marr Chase",
+    "Sam LaPorta",
+    "Devaughn Vele",
+    "Browns"
    ],
    "draw": 2,
    "params": {
@@ -320,25 +329,25 @@
     "ypr_sd": 0.7062
    },
    "probe_rank": [
-    1400,
-    16176
+    5,
+    33
    ],
    "probe_top1": [
-    2.326,
-    0.377
+    5.093,
+    4.187
    ]
   },
   {
    "best": [
     "Jalen Hurts",
+    "Derrick Henry",
     "Breece Hall",
-    "Saquon Barkley",
     "DeVonta Smith",
-    "Drake London",
+    "Dontayvion Wicks",
     "Amon-Ra St. Brown",
-    "Gunnar Helm",
-    "Tre Tucker",
-    "Jets"
+    "Sam LaPorta",
+    "Garrett Wilson",
+    "Browns"
    ],
    "draw": 3,
    "params": {
@@ -359,24 +368,24 @@
     "ypr_sd": 0.706
    },
    "probe_rank": [
-    1203,
-    16776
+    83,
+    33
    ],
    "probe_top1": [
-    2.397,
-    0.291
+    3.641,
+    4.089
    ]
   },
   {
    "best": [
-    "Geno Smith",
-    "Jonathan Taylor",
-    "Chase Brown",
-    "Zay Flowers",
-    "Ladd McConkey",
+    "Bryce Young",
+    "Bijan Robinson",
+    "Omarion Hampton",
+    "Jalen Coker",
+    "Tetairoa McMillan",
     "Garrett Wilson",
-    "Sam LaPorta",
-    "David Montgomery",
+    "Tyler Warren",
+    "Tee Higgins",
     "Jets"
    ],
    "draw": 4,
@@ -398,25 +407,25 @@
     "ypr_sd": 0.7056
    },
    "probe_rank": [
-    2166,
-    14340
+    9,
+    9
    ],
    "probe_top1": [
-    2.06,
-    0.585
+    4.667,
+    4.737
    ]
   },
   {
    "best": [
-    "Joe Burrow",
-    "Jahmyr Gibbs",
-    "Bijan Robinson",
-    "Ja'Marr Chase",
-    "Tee Higgins",
-    "Devaughn Vele",
-    "Juwan Johnson",
-    "Tre Tucker",
-    "Browns"
+    "Jalen Hurts",
+    "Ashton Jeanty",
+    "David Montgomery",
+    "Amon-Ra St. Brown",
+    "DeVonta Smith",
+    "Garrett Wilson",
+    "Dallas Goedert",
+    "Jalen Nailor",
+    "Jets"
    ],
    "draw": 5,
    "params": {
@@ -437,12 +446,12 @@
     "ypr_sd": 0.7051
    },
    "probe_rank": [
-    1033,
-    15948
+    10,
+    7
    ],
    "probe_top1": [
-    2.495,
-    0.407
+    4.579,
+    4.754
    ]
   }
  ]

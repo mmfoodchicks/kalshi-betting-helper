@@ -20,7 +20,9 @@ that change what the board should be trusted for.
 | `9b39e8c` | 09-10 22:47 | 3B and 3D, tie-aware payout and the money gate |
 | `e054862` | 09-11 02:01 | 2F, 3A, 3C, 4 and this report |
 | `1366221` | 09-11 02:19 | the log-factorial table off module scope, and the guard that pins the numpy-free import surface |
-| (this push) | | the correction in limitation 9 |
+| `ee4f5a4` | 09-11 02:42 | the correction in limitation 9 |
+| `59e563b` | 09-11 03:52 | limitation 8 closed by the PC's engine-5 rebuild |
+| (this push) | | the correction pass: probe identity, the shared-field cover, the simulator's lattice and touchdown books, research provenance, and the exact-path duplication probe |
 
 ## B. What changed, by file
 
@@ -239,23 +241,136 @@ candidates.
 On the Stage 2F comparison (same slate, same field model, 20,000 worlds, the
 two simulators side by side):
 
-| Probe | legacy | constrained |
-|---|---|---|
-| L1, top 1% | 8.78% (#3) | 2.66% (#2,182) |
-| L1, top 0.1% | 2.363% (#3) | 0.329% (#2,917) |
-| L2, top 1% | 1.45% (#16,753) | 0.43% (#47,991) |
+**Retraction, kept on the record.** The first edition of this section said
+L1 fell from third to 2,182nd under the constrained model. That was measured
+on the wrong lineup. `research/stage2f.py` carried its own nine-name copy of
+the owner's two entries and the copy was a different pair: four of nine names
+wrong in L1, three of nine in L2. The tell was in the table and I did not
+read it, because the substitute L2 showed a 1.45% top-1% rate where the real
+L2 is near 10% on the same slate. The duplicated literal is deleted, the
+module resolves `dfs_tourney.PROBES`, and a guard fails the build if a copy
+reappears or if the artifact's rows do not carry those exact nine names.
 
-Under the better-calibrated model L1 is not a special lineup. Six parameter
-draws (each resampling every fitted parameter inside the wider of its
-profile half-width and the second fit's distance, then rebuilding the whole
-board on a lighter grid) put L1's top 1% between 2.06% and 2.84%: the
-collapse is not a knife-edge of the fitted values.
+**The canonical probes**, resolved from the one place they are defined:
 
-Part of that collapse is a correction the evidence demands (teammate
-correlations really are 0.39, not 0.64) and part is the known deficiency of
-section I (opposing-side coupling too weak, which penalises exactly the
-bring-back half of a game stack). I cannot split the two cleanly, and that
-is the honest state of the question the owner asked.
+- **L1** Jared Goff, Jahmyr Gibbs, Travis Etienne Jr., Amon-Ra St. Brown,
+  Chris Olave, Devaughn Vele, Tyler Warren, Tre Tucker, Steelers.
+  Three Lions and three Saints, and Detroit plays New Orleans: a six-man
+  single-game stack.
+- **L2** Geno Smith, Jonathan Taylor, Derrick Henry, Zay Flowers, Garrett
+  Wilson, Josh Downs, Tyler Warren, Breece Hall, Raiders. Three Jets, three
+  Colts, two Ravens, across three different games: same-team structure, no
+  game stack.
+
+**The rerun**, 2026-09-11, 4,324s, same slate and same field model for both,
+20,000 worlds, 66,666 candidate draws:
+
+| | legacy top 1% | rank | constrained top 1% | rank | legacy top 0.1% | rank | constrained top 0.1% | rank | p99 |
+|---|---|---|---|---|---|---|---|---|---|
+| L1 | 10.11% | #1 | 4.39% | #50 | 2.445% | #1 | 0.617% | #128 | 211.9 -> 211.7 |
+| L2 | 9.85% | #1 | 4.59% | #38 | 2.973% | #1 | 0.866% | #5 | 200.8 -> 204.4 |
+
+Ranks are against 52,749 allowed candidates under legacy and 53,135 under
+constrained. Under legacy both lineups beat every candidate on the board, the
+best of which reaches 9.27%; under constrained the best candidate reaches
+5.89% and both probes fall behind it. Six parameter draws, each resampling
+every fitted parameter inside the wider of its profile half-width and the
+second fit's distance and rebuilding on a lighter grid, put the probes'
+top 1% between 3.64% and 5.28%: the fall is not a knife-edge of the fitted
+values.
+
+**What the pair does and does not establish.** L2 is a useful comparator,
+not a controlled counterfactual, and an earlier draft of this section
+overclaimed by saying the teammate correction "hits both equally" because
+both carry three-man team groups. That is not established. The two lineups
+hold different players with different roles, target shares, rushing and
+receiving mixes, salaries, projections and team environments, so the
+constrained model's teammate correction can land on them very differently.
+Subtracting L2's fall from L1's to isolate the cross-game term is too neat
+and this report does not do it.
+
+What can be said: **L2 shows that a lineup with substantial same-team
+concentration can remain near the extreme tail under the constrained model,
+at 5th on the top 0.1%, while L1 suffers a much larger relative penalty at
+128th. That pattern is consistent with the constrained model's known
+under-coupling of opposing offences, but does not uniquely identify or
+quantify that mechanism.**
+
+**The p99 column is the most informative thing here, and it points away from
+a simple ceiling story.** L1's p99 barely moves, 211.9 to 211.7, while its
+top-0.1% rank falls from 1st to 128th. L2's p99 actually *rises*, 200.8 to
+204.4, while its top-1% probability roughly halves. So the constrained model
+did not chop the ceilings off these lineups. It changed the competitive
+environment around them: other constructions gained the individual variance
+the legacy model was missing, and the relative advantage of a highly
+correlated build shrank even as its absolute tail held or grew. That is the
+behaviour predicted for adding missing individual variance, and it means the
+change is in joint-tail structure and field competition rather than in
+absolute ceiling.
+
+**The answer to the question that started this, stated to the confidence the
+evidence supports.** Legacy materially overvalues L1 and very large game
+stacks generally; the constrained model and the population shift behind it
+(five-plus from one game falling 21.5% to 1.0%, six-plus 6.0% to zero) are
+strong evidence for that direction. But the constrained model also materially
+underestimates cross-team game correlation, so its exact penalty to a
+six-man bring-back stack is not calibrated. **L1's true tournament value is
+likely below legacy's estimate, but it cannot presently be pinned to the
+constrained 50th and 128th with high confidence.**
+
+### The game-level shared-variance sensitivity
+
+That measurement was then run (`research/xside_sweep.py`, artifact
+`research/data/xside_sweep.json`). Every fitted parameter is frozen; one
+experimental knob, defaulting to zero and never fitted, mixes a shared
+game-level efficiency draw into both offences. At zero the model is
+bit-identical to the frozen path.
+
+| xside | QB vs opposing QB | L1 top 0.1% (rank) | L1 p99 | L2 top 0.1% (rank) | L2 p99 | 5+ from one game |
+|---|---|---|---|---|---|---|
+| 0.000 | 0.035 | 0.550% (#135) | 208.0 | 0.850% (#12) | 203.4 | 3.0% |
+| 0.140 | 0.099 | 0.462% (#309) | 212.0 | 0.712% (#29) | 203.3 | 1.5% |
+| 0.200 | 0.149 | 0.466% (#275) | 214.5 | 0.650% (#46) | 203.9 | 1.5% |
+| 0.245 | 0.201 | 0.688% (#30) | 223.6 | 0.709% (#27) | 209.1 | 5.0% |
+| 0.280 | 0.241 | 0.713% (#18) | 221.0 | 0.775% (#11) | 210.8 | 7.0% |
+
+Three things have to be said about how to read that table, and none of them
+is optional.
+
+**It is a shared-VARIANCE sweep, not a coupling isolation.** The knob mixes
+the shared draw in on top of each offence's own efficiency rather than
+reallocating variance out of it, so raising it widens the marginals as well
+as the coupling. Measured directly over 8,000 worlds per game: at the top
+level the quarterback's own standard deviation is 12.9% wider than at zero
+and team points 13.1% wider, and both probes' p99 rise with it. So this is a
+**game-level shared-variance sensitivity**. L1's climb cannot be attributed
+to cross-side correlation alone.
+
+**The ranks are Monte Carlo noise at this resolution.** These boards run
+6,000 worlds against Stage 2F's 20,000; the zero row reads 135th where the
+full board reads 128th for the same lineup. The result is the *large
+recovery* across the sweep, not 18th versus 30th as precise values.
+
+**The 5+ and 6+ statistics are candidate-only.** They are computed over the
+sampler's allowed draws, and the probes are inserted afterwards as
+passengers and are never in that array. So L1 reaching 18th as an inserted
+probe is not in tension with six-from-one-game staying at 0.0% of the
+strongest candidates at every level: those measure different populations.
+
+**The supported conclusion, and the limit of it.** Legacy overvalues very
+large game stacks. Constrained v1 materially under-couples opposing offences
+and therefore over-penalises structures such as L1. Adding plausible shared
+game-level variance substantially restores L1's relative standing, but
+because this also widens the marginal distributions, the sweep bounds the
+sensitivity rather than estimating L1's calibrated rank. A constrained-v2
+common-plus-idiosyncratic decomposition that preserves marginal variance is
+required to resolve the question.
+
+The observed holdout values, 0.235 for quarterbacks and 0.262 for offences,
+fall between the 0.245 and 0.280 rows, so interpolating there is informative.
+It is **not** an estimated production parameter and must not be used as one.
+Nothing in this sweep is promoted: the frozen artifact is untouched, the knob
+defaults to zero, and no board the owner reads is built with it set.
 
 ## K. Stage 3A: the tail
 
@@ -368,25 +483,92 @@ at what the public builds.
 Chosen on 7,500 worlds, judged on 7,500 it never saw, tie-aware payouts
 throughout.
 
-| Objective | Entries | P(one in top 1%) | P(one in top 0.1%) | P(one wins outright) | Expected payout |
+Rerun 2026-09-11 on the corrected shared-field cover (3,184s). The outright
+column is now the strongest single entry rather than a union across entries,
+because only our best-scoring entry can win and the old column combined the
+per-lineup means as if they were independent.
+
+| Objective | Entries | P(one in top 1%) | P(one in top 0.1%) | best single outright | Expected payout |
 |---|---|---|---|---|---|
-| cover top 1% | 10 | 0.5547 | 0.1531 | 0.294% | $3,326 |
-| cover top 0.1% | 10 | 0.5300 | **0.1780** | **0.560%** | **$6,086** |
-| best by payout | 10 | 0.4150 | 0.1324 | 0.493% | $5,307 |
-| cover top 1% | 20 | **0.7671** | 0.2388 | 0.401% | $4,626 |
-| cover top 0.1% | 20 | 0.7098 | **0.2773** | **0.879%** | **$9,621** |
-| best by payout | 20 | 0.5929 | 0.2090 | 0.852% | $9,238 |
+| cover top 1% | 10 | 0.5547 | 0.1531 | - | $3,326 |
+| cover top 0.1% | 10 | 0.5300 | **0.1780** | - | **$6,086** |
+| best by payout | 10 | 0.4150 | 0.1324 | - | $5,307 |
+| cover top 1% | 20 | **0.7671** | 0.2388 | - | $4,626 |
+| cover top 0.1% | 20 | 0.7098 | **0.2773** | - | **$9,621** |
+| best by payout | 20 | 0.5929 | 0.2090 | - | $9,238 |
 
-At one entry all three objectives pick the same lineup; at five they
-coincide again on this slate. From ten entries up, covering the top 0.1%
-gives up about 5% of the top-1% probability and buys 16% more top-0.1%
-probability and nearly double the first-place probability. Taking the top k
-by payout is worse than both covers on both probabilities. The top twenty
-chosen by the two covers overlap in 7 lineups; by payout, in none.
+Every figure above came back identical to four decimals under the corrected
+cover. That is the measurement, not a coincidence: see the note below.
 
-**Recommendation: cover the top 0.1% for ten entries or more, the top 1%
-below that.** The engine's default is the top 1% cover; this is the one
-decision in the report I would change, and it is one line.
+> **WITHDRAWN, and with it the only recommendation this report made.** Every
+> "P(one of N ...)" figure above, in sections P and Q, and on the served
+> board, was produced by a cover that multiplied `(1 - P)` across our entries
+> inside a world. That is the arithmetic for entries each meeting their own
+> fresh public field. Ours all enter ONE contest against ONE realised set of
+> opponents, so they are nested rather than independent: our best-scoring
+> entry holds our best rank, and if it misses a cut none of the others can
+> clear it. The union in a world is the best entry's chance, not one minus a
+> product.
+>
+> How wrong in principle: two identical lineups with a 10% chance each came
+> back as 19% instead of 10%, and on uniformly random probabilities an
+> eight-entry set reports 99.7% against a true 90.6%.
+>
+> **How wrong on THIS board: not measurably.** That deserves saying plainly,
+> because it contradicts the review that found the bug and my own first
+> summary of it. On the live slate the per-world make-it probability is
+> almost perfectly binary -- of 200,000 entry-world pairs, 94.13% are exactly
+> zero, 5.34% are exactly one and 0.20% lie anywhere in between, and two of
+> our entries are both in that middle band in 0.01% of worlds. Where the
+> values are that binary, one minus a product and the maximum agree. On the
+> twenty chosen entries the two forms differ by 4.0e-8:
+>
+> | twenty-entry cover | product form | maximum | empirical same-field union |
+> |---|---|---|---|
+> | 832,342 entries, top 1% | 0.726503 | 0.726503 | 0.7268 |
+> | 5,000 entries, top 1% | 0.723174 | 0.720883 | not run |
+>
+> The empirical column takes the sampled field AS the contest and counts the
+> held-out worlds where at least one of ours actually landed in the top 1%,
+> integrating nothing. It agrees with the corrected figure to 0.0005 at every
+> size from one entry to twenty. The Stage 4 rerun says the same thing from
+> the other direction: every policy number came back identical to four
+> decimals. So the served 78% twenty-entry coverage was NOT overstated, and
+> the claim that this invalidates the coverage numbers does not survive
+> measurement.
+>
+> The fix stays, for two reasons that do not depend on the size of the error.
+> It is the correct semantics and exact by construction, and the error grows
+> as the cut stops being extreme: on a 5,000-entry contest, where 2.67% of
+> values fall in the open interval, the product form is already 0.3% high.
+> The greedy step was wrong in the same way and its selections are now
+> correct regardless of what the reported number does.
+>
+> The greedy gain is `sum_w max(0, P_cand,w - covered_w)`, not
+> `sum_w miss_w * P_cand,w` which paid for probability already covered. Both
+> the production cover and the research one now call a single function,
+> `dfs_tourney.greedy_cover`, with exact tests on identical candidates,
+> dominated candidates and candidates whose order flips between worlds.
+>
+> What was never touched by any of this: every per-lineup top-1% and
+> top-0.1% value and every rank. They do not use the union.
+>
+> **What the recommendation may rest on, and what it may not.** The money
+> gate is still closed: duplication is unresolved and the exact construction
+> probability runs about 5% light, so the payout column is a diagnostic, not
+> evidence. The $9,621 against $4,626 at twenty entries is therefore reported
+> and must NOT be the reason for choosing an objective. The defensible
+> argument is the held-out coverage alone: covering the top 0.1% returns
+> **0.27728** of the held-out worlds with an entry in the top 0.1%, against
+> **0.23877** for the top-1% cover, on worlds neither cover was chosen on.
+> That is a 16% relative gain in the thing being optimised, measured where it
+> counts, and it does not depend on a dollar figure.
+>
+> **So: cover the top 0.1% from ten entries up, on the coverage number.** The
+> engine's default stays the top-1% cover until that one line is changed
+> deliberately. The honest reading is that this conclusion was previously
+> right for a reason that was wrong, which is not the same as being right,
+> and the corrected cross-fit run is what now supports it.
 
 ## P. Stage 4B: a pass-catching back as the stack partner
 
@@ -403,11 +585,22 @@ a back projected for three or more targets; the highest is 5.4.
 | 4 or more | 37,207 | 0.7446 | 0.2135 |
 | 5 or more | 37,037 | 0.7446 | 0.2135 |
 
-Admitting them changes nothing at all: not one of the extra lineups reaches
-the top-twenty cover, and the held-out numbers are identical to four decimal
-places. **Recommendation: leave `RB_STACK_TARGETS` at never.** It is a
-freedom the evidence does not ask for, and the owner's instinct not to be
-limited without reason is met by the measurement rather than by the rule.
+**A genuine null, and worth more than it looks.** The first run of this
+study could not produce one: the cached pool carried no projected targets, so
+every setting returned the same 36,795 allowed candidates and the knob was
+provably doing nothing because it was not connected. It is connected now.
+The knob really does enlarge the candidate universe, from 36,795 to 37,413
+at a three-target bar, and admitting those lineups still changes the held-out
+numbers not at all, to four decimal places. Not one of the extra lineups
+reaches the top-twenty cover.
+
+That is the difference between "no effect measured" and "nothing was
+measured", and only the second run earns the first. **`RB_STACK_TARGETS`
+stays at never on this slate**, not because a back cannot be a useful stack
+partner in general, but because on these 59,917 unforced draws the 932
+lineups the rule excludes are not lineups worth entering. The owner's
+instinct not to be limited without a reason is answered by the measurement
+rather than by the rule.
 
 ## Q. Stage 4C: the per-game cap
 
@@ -418,14 +611,20 @@ limited without reason is met by the measurement rather than by the rule.
 | 6 | 52,146 (80.4%) | 0.7671 | 0.2388 | 10.00% |
 | none | 52,146 (80.4%) | 0.7671 | 0.2388 | 10.00% |
 
-The spread across caps is 2.7% of the top-1% cover and 5.3% of the
-top-0.1% cover, with no monotone pattern: cap five is nominally best and
-cap four nominally worst, which is the shape of noise, not of a rule. The
-strongest single lineup is identical under every cap. **Recommendation:
-leave `CL_MAX_PER_GAME` at none.** Under the constrained simulator the
-question nearly evaporates anyway: five-from-one-game falls from 17.5% to
-1.0% of the strongest 200 candidates, so the cap would bind on almost
-nothing.
+**Inconclusive, and it should be reported that way.** The four caps span
+0.7526 to 0.7726 on the held-out top-1% cover with no monotone relationship:
+five is nominally best, four nominally worst, six and none identical. That
+is the shape of noise, not of a rule, and nothing here distinguishes the
+options. The strongest single lineup is identical under every cap.
+
+No winner is being manufactured from that range. **`CL_MAX_PER_GAME` stays
+at none because nothing argues for moving it**, which is a different claim
+from "none is best" and is the only one the measurement supports. Choosing
+between four, five and six would need a measurement that actually separates
+them: more slates, more seeds, and enough worlds that the gap clears Monte
+Carlo error. Under the constrained simulator the question may evaporate
+anyway, since five-from-one-game falls from 17.5% to 1.0% of the strongest
+200 candidates, so the cap would bind on almost nothing.
 
 ## R. Stage 4D: the production board
 
@@ -461,10 +660,18 @@ of 150,000 on the same terms; 144,759 candidates of which 132,913 allowed;
 20,000 distinct hindsight-optimal lineups. All 243 pool rows carry a team, an
 opponent and a projection-feed game id, the 12 game keys hold exactly two
 teams each, and each of the 24 teams has exactly one opponent. Both probe
-lineups resolve as passengers: L1 at 2.701% top 0.1% ranking 2nd of 132,913,
-L2 at 2.927% ranking 1st, both legal, both illegal under a four-per-game cap,
-both with the tie-aware keys (`win_pct`, `win_any_pct`, `ev`, `ev_notie`) and
-no `ev_dup`. The money gate on the served board is the Stage 3D verdict
+lineups resolve as passengers. Every probe number is CONTEST-dependent, and
+the first edition of this section quoted the board's first contest by
+position rather than the one the rest of the report is about: those were the
+$4,444 MEGA Millionaire's 750-entry figures. Named properly, on the
+$5 / 832,342-entry Millionaire: L1 tops 1% at 10.34% and 0.1% at 2.478%,
+ranking 2nd and 2nd of 132,913; L2 at 9.49% and 2.867%, ranking 2nd and 1st.
+On the $4,444 / 750-entry MEGA Millionaire the same two read 9.71% / 2.701%
+and 8.93% / 2.927%. The ranks are identical either way, so no preference
+between the lineups changes, but a bare top-0.1% figure without its contest
+beside it is not a number. Both are legal, both are illegal under a
+four-per-game cap, and both carry the tie-aware keys (`win_pct`,
+`win_any_pct`, `ev`, `ev_notie`) with no `ev_dup`. The money gate on the served board is the Stage 3D verdict
 verbatim: not authoritative, the sample link false at 2.77 entries per
 sampled lineup, the tie link true, the duplicate link false.
 
@@ -533,7 +740,15 @@ model does not agree.
    numbers are in section R under "The served board". What remains is not a
    limitation of this work but the ordinary wait for the three showdown
    boards to rebuild at engine 5 on the PC's own schedule.
-9. **One claim in this chain was overstated, and this is the correction.**
+9. **The exact lineup probability is not exact yet.** `dfs_pathprob` sums
+   the sampler's own paths for a fixed lineup by driving `classic_sample`
+   rather than re-implementing it. Against three million draws on the twelve
+   most-duplicated lineups it lands within a median ratio of 0.953, but the
+   median sits below one and the worst case is 2.8 standard errors low, so a
+   small systematic undercount survives. It is labelled experimental, the
+   money gate's duplicate link stays shut because of it, and the number that
+   would close it is a bound on the undercount rather than another anecdote.
+10. **One claim in this chain was overstated, and this is the correction.**
    Commit `e054862` built the Poisson log-factorial table at module scope in
    `dfs_tourney`, which is a numpy call, and the server has no numpy: the
    module could not be imported there at all. The guards run in CI installs
@@ -615,6 +830,14 @@ over the five commits, final suite count in the commit message):
 5. **The duplicate estimator.** The sample overstates copies by 89% at the
    median. Would you shrink it toward something, and if so toward what,
    given that independence is 63 times wrong?
-6. **L1.** The better-calibrated model says it is lineup number 2,182. Part
-   of that is a real correction and part is the deficiency in question 1. Is
-   there a measurement that separates them without a new season?
+6. **L1.** *Answered in part, by the rerun rather than by argument.* The
+   better-calibrated model puts the real L1 at 50th of 53,135 on the top 1%
+   and 128th on the top 0.1%, not 2,182nd -- that figure belonged to the
+   wrong lineup and is retracted in section J. The measurement that separates
+   the two mechanisms turned out to be already in hand: L2 has the same
+   same-team structure and no game stack, and it falls only to 5th on the
+   top 0.1% where L1 falls to 128th. The shared part is the teammate
+   correction and should be believed; the excess on L1 tracks the
+   opposing-side weakness and should not. What remains open is the size of
+   the excess, which needs constrained v2 with the game-level shared latent,
+   validated prospectively on untouched 2026 weeks rather than on 2025.

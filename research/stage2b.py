@@ -9,7 +9,6 @@ With a raw directory the table is rebuilt; without one the committed table
 is read. The artifact stamps the code commit, the seed and the seasons."""
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -26,10 +25,17 @@ BASE_SEED = 20220901
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def _f(x, d=3):

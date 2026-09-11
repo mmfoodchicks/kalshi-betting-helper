@@ -29,7 +29,6 @@ stays experimental with the reasons listed.
 """
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -50,10 +49,17 @@ STACK_NAMES = ("QB+WR1", "QB+WR1+WR2", "QB+WR1+TE1", "game 5: QB+WR1+WR2+oppWR1+
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def legacy_sample(games, K):
@@ -168,7 +174,13 @@ def pair_table(obs_m, model_ms, scales):
     return rows, rmse
 
 
-def run(log=print):
+def run(log=print, allow_dirty=False):
+    # Reading the holdout is the one-way door. It may only be opened against
+    # a committed tree, so the parameters it judges are provably older than
+    # the reading.
+    if not allow_dirty:
+        from research import provenance
+        provenance.require_clean("a holdout validation")
     t0 = time.time()
     import nfl_dfs_csim as C
     if not C.PARAMS["fitted"]:

@@ -29,7 +29,6 @@ not read; 2025 projections are not touched until Stage 2E.
 import collections
 import json
 import os
-import subprocess
 import sys
 import time
 
@@ -53,10 +52,17 @@ VAR_COMPS = {"QB": ("pass_att", "pass_cmp", "pass_yd", "pass_td"),
 
 
 def _commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-    except Exception:
-        return "unknown"
+    """Kept for the artifacts that only record a hash; `_prov()` is what new
+    metadata blocks should carry. The commit alone was never enough: it names
+    the tree the research code was sitting on, not the code that ran."""
+    from research import provenance
+    return provenance.commit()
+
+
+def _prov(**extra):
+    """commit, dirty flag, and a hash over the source that actually ran."""
+    from research import provenance
+    return provenance.stamp(**extra)
 
 
 def team_weeks(rows, seasons):

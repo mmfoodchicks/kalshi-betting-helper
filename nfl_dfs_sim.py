@@ -619,7 +619,7 @@ def _kicker_arr(k, off, n, rng):
 MODELS = ("legacy", "constrained")
 
 
-def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None):
+def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -670,7 +670,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
         for gid, g in games.items():
             if model == "constrained":
                 child = _seeds.child_seed(seed, season, week, gid, "constrained") if seed is not None else None
-                sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child))
+                sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)
                 side_rng = _rnd.Random(child) if seed is not None else _random
                 for p in sim["players"]:
                     p["arr"] = _np.round(p["arr"], 2).tolist()
@@ -772,7 +772,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                           "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
-    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed),
+    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0)),
                    1800, build)
 
 
