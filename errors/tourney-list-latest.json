@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 4519,
+   "age_s": 28560,
    "built_ts": 1789096928,
    "contest": "NFL $3.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 151307,
@@ -15,7 +15,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 9028,
+   "age_s": 33069,
    "built_ts": 1789092419,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
    "dg": 153086,
@@ -31,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 11698,
+   "age_s": 35739,
    "built_ts": 1789089749,
    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
    "dg": 153085,
@@ -43,22 +43,6 @@
    "teams": [
     "DAL",
     "NYG"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 69063,
-   "built_ts": 1789000089,
-   "contest": "NFL $1.5M Thursday Night Showdown [$500K to 1st] (SF vs LAR)",
-   "dg": 153072,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "LAR vs SF",
-   "starts": "2026-09-11T00:35:00.0000000Z",
-   "teams": [
-    "LAR",
-    "SF"
    ],
    "worlds": 60000
   }

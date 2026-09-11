@@ -3,8 +3,8 @@
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
 | `NFLT-finals` | 325 | 09-04 11:43 | HTTPError: HTTP Error 403: Forbidden |
-| `NFL-espn-fetch` | 166 | 09-11 03:54 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 97 | 09-11 03:54 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 156 | 09-11 10:35 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 100 | 09-11 10:35 | _EspnBlocked: ESPN 403: parked 6h |
 | `FAN-pit` | 97 | 09-10 22:46 | HTTPError: HTTP Error 403: Forbidden |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
 | `BOARD-read` | 45 | 09-10 09:26 | ModuleNotFoundError: No module named 'numpy' |
