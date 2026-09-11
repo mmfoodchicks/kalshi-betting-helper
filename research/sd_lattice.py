@@ -8,8 +8,10 @@ simulator pins each player's mean by multiplying his whole point array by
 proj/raw, shifts a defense by a floating amount, and rounds to two decimals.
 DraftKings' offence lives on 0.02 -- 0.04 a passing yard, 0.1 a rushing or
 receiving yard, whole receptions, touchdowns and bonuses -- so a 0.01 grid is
-twice as fine as anything the house can print, and exact ties come out about
-half as likely as they really are.
+twice as fine as anything the house can print. The simulated support is
+therefore finer than the legal DraftKings support, which biases exact-tie
+probabilities DOWNWARD -- by how much is a separate question that the grid
+spacing does not answer and that this module does not claim to have measured.
 
     python3 -m research.sd_lattice <dir with the cached Sleeper feeds>
 """
@@ -70,7 +72,9 @@ def run(feed_dir, log=print):
                          "shift to the Sleeper mean",
                          "both land scores on a 0.01 grid; DK offence lives on 0.02"],
            "consequence": ["the sole-win column is decided by tie frequency, and a grid twice as "
-                           "fine as the real one makes exact ties about half as likely",
+                           "fine as the real one puts the simulated support off the legal one, "
+                           "which biases exact-tie probability downward; the magnitude is NOT "
+                           "implied by the spacing and is not measured here",
                            "dfs_tourney.SD_MONEY_LATTICE_OK is False, so the showdown money gate "
                            "stays shut for this reason independently of the field model"],
            "blocked_by": ["fixing it inside the legacy simulator would move every classic number "

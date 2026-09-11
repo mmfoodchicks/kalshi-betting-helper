@@ -1,0 +1,589 @@
+{
+ "board": {
+  "deltas": {
+   "any_minus_sole_discrete_pct": 0.02568,
+   "any_minus_sole_legacy_pct": 0.025109,
+   "ev_best_pct_diff": -5.84,
+   "sole_first_ratio": null,
+   "top01_best_abs_diff": 0.2574,
+   "top10_positions_identical": 10,
+   "top1_best_abs_diff": 1.443
+  },
+  "discrete": {
+   "any_first_mean_pct": 0.02568,
+   "beta": 0.0833,
+   "ev_best": 320.87,
+   "ev_notie_best": 65519.79,
+   "lineups": 4000,
+   "sole_first_mean_pct": 0.0,
+   "top01_best_pct": 6.7589,
+   "top10_by_top1": [
+    "Caleb Williams",
+    "Caleb Williams",
+    "Bryce Young",
+    "Caleb Williams",
+    "Caleb Williams",
+    "Bryce Young",
+    "D'Andre Swift",
+    "Bryce Young",
+    "Bryce Young",
+    "Colston Loveland"
+   ],
+   "top1_best_pct": 27.137
+  },
+  "legacy": {
+   "any_first_mean_pct": 0.025109,
+   "beta": 0.0816,
+   "ev_best": 340.77,
+   "ev_notie_best": 68670.5,
+   "lineups": 4000,
+   "sole_first_mean_pct": 0.0,
+   "top01_best_pct": 7.0163,
+   "top10_by_top1": [
+    "Caleb Williams",
+    "Caleb Williams",
+    "Bryce Young",
+    "Caleb Williams",
+    "Caleb Williams",
+    "Bryce Young",
+    "D'Andre Swift",
+    "Bryce Young",
+    "Bryce Young",
+    "Colston Loveland"
+   ],
+   "top1_best_pct": 28.58
+  }
+ },
+ "deltas": {
+  "mean_abs_points_median": 0.0373,
+  "mean_rel_pct_max": 16.52,
+  "mean_rel_pct_median": 0.8,
+  "pair_corr_max_abs_diff": 0.1057,
+  "pair_corr_median_abs_diff": 0.0088,
+  "sd_rel_pct_median": 1.35,
+  "tie_rate_ratio": 6.14
+ },
+ "meta": {
+  "game": "CAR @ CHI",
+  "provenance": {
+   "commit": "b4e3535",
+   "data_split": null,
+   "dirty": true,
+   "model": "legacy vs legacy-discrete",
+   "seed": null,
+   "source_files": 22,
+   "source_sha": "8389447866da707440ede95090c9f4f58c1deeaea9632e1b2ddc075ea6e9c392",
+   "worlds": 20000
+  },
+  "season": "2026",
+  "stage": "showdown discrete counterfactual (NOT promoted)",
+  "week": 1,
+  "worlds": 20000
+ },
+ "modes": {
+  "discrete": {
+   "distinct_values": 2332,
+   "off_lattice": 0,
+   "off_lattice_pct": 0.0,
+   "pair_tie_rate": 0.000626,
+   "players": [
+    {
+     "mean": 17.98,
+     "name": "Caleb Williams",
+     "p90": 29.4,
+     "p99": 41.36,
+     "pos": "QB",
+     "proj": 18.29,
+     "sd": 8.376
+    },
+    {
+     "mean": 17.195,
+     "name": "Bryce Young",
+     "p90": 28.36,
+     "p99": 40.84,
+     "pos": "QB",
+     "proj": 17.3,
+     "sd": 8.202
+    },
+    {
+     "mean": 15.18,
+     "name": "Tetairoa McMillan",
+     "p90": 25.3,
+     "p99": 36.6,
+     "pos": "WR",
+     "proj": 15.06,
+     "sd": 7.084
+    },
+    {
+     "mean": 13.703,
+     "name": "Colston Loveland",
+     "p90": 22.4,
+     "p99": 33.1,
+     "pos": "TE",
+     "proj": 13.93,
+     "sd": 6.259
+    },
+    {
+     "mean": 13.449,
+     "name": "D'Andre Swift",
+     "p90": 21.6,
+     "p99": 30.9,
+     "pos": "RB",
+     "proj": 13.55,
+     "sd": 5.879
+    },
+    {
+     "mean": 13.239,
+     "name": "Luther Burden",
+     "p90": 21.4,
+     "p99": 30.8,
+     "pos": "WR",
+     "proj": 13.27,
+     "sd": 5.819
+    },
+    {
+     "mean": 12.37,
+     "name": "Jalen Coker",
+     "p90": 20.2,
+     "p99": 29.7,
+     "pos": "WR",
+     "proj": 12.36,
+     "sd": 5.756
+    },
+    {
+     "mean": 11.156,
+     "name": "Rome Odunze",
+     "p90": 18.3,
+     "p99": 28.0,
+     "pos": "WR",
+     "proj": 11.29,
+     "sd": 5.393
+    },
+    {
+     "mean": 10.909,
+     "name": "Chuba Hubbard",
+     "p90": 17.5,
+     "p99": 26.2,
+     "pos": "RB",
+     "proj": 10.93,
+     "sd": 4.893
+    },
+    {
+     "mean": 10.129,
+     "name": "Jonathon Brooks",
+     "p90": 16.2,
+     "p99": 23.9,
+     "pos": "RB",
+     "proj": 10.03,
+     "sd": 4.51
+    },
+    {
+     "mean": 8.523,
+     "name": "Darren Waller",
+     "p90": 14.5,
+     "p99": 22.6,
+     "pos": "TE",
+     "proj": 8.56,
+     "sd": 4.52
+    },
+    {
+     "mean": 7.415,
+     "name": "Kyle Monangai",
+     "p90": 12.5,
+     "p99": 19.7,
+     "pos": "RB",
+     "proj": 7.36,
+     "sd": 3.909
+    },
+    {
+     "mean": 4.479,
+     "name": "Cole Kmet",
+     "p90": 8.1,
+     "p99": 13.4,
+     "pos": "TE",
+     "proj": 4.48,
+     "sd": 2.537
+    },
+    {
+     "mean": 3.77,
+     "name": "John Metchie",
+     "p90": 8.1,
+     "p99": 11.9,
+     "pos": "WR",
+     "proj": 3.79,
+     "sd": 2.431
+    },
+    {
+     "mean": 3.099,
+     "name": "Xavier Legette",
+     "p90": 7.9,
+     "p99": 10.5,
+     "pos": "WR",
+     "proj": 3.08,
+     "sd": 2.305
+    },
+    {
+     "mean": 3.77,
+     "name": "Kalif Raymond",
+     "p90": 6.0,
+     "p99": 10.7,
+     "pos": "WR",
+     "proj": 3.85,
+     "sd": 2.158
+    },
+    {
+     "mean": 3.125,
+     "name": "Zavion Thomas",
+     "p90": 4.6,
+     "p99": 10.3,
+     "pos": "WR",
+     "proj": 3.2,
+     "sd": 2.057
+    },
+    {
+     "mean": 2.413,
+     "name": "Tommy Tremble",
+     "p90": 3.6,
+     "p99": 9.4,
+     "pos": "TE",
+     "proj": 2.39,
+     "sd": 1.904
+    },
+    {
+     "mean": 1.859,
+     "name": "Feleipe Franks",
+     "p90": 2.6,
+     "p99": 3.0,
+     "pos": "TE",
+     "proj": 0.08,
+     "sd": 0.707
+    },
+    {
+     "mean": 1.998,
+     "name": "Jahdae Walker",
+     "p90": 2.5,
+     "p99": 8.3,
+     "pos": "WR",
+     "proj": 2.03,
+     "sd": 1.651
+    },
+    {
+     "mean": 1.949,
+     "name": "Sam Roush",
+     "p90": 2.2,
+     "p99": 8.0,
+     "pos": "TE",
+     "proj": 1.92,
+     "sd": 1.463
+    },
+    {
+     "mean": 1.545,
+     "name": "Jimmy Horn",
+     "p90": 2.1,
+     "p99": 8.0,
+     "pos": "WR",
+     "proj": 1.48,
+     "sd": 1.588
+    },
+    {
+     "mean": 1.628,
+     "name": "Ja'Tavion Sanders",
+     "p90": 1.9,
+     "p99": 7.8,
+     "pos": "TE",
+     "proj": 1.62,
+     "sd": 1.328
+    },
+    {
+     "mean": 1.293,
+     "name": "Mitchell Evans",
+     "p90": 1.8,
+     "p99": 7.7,
+     "pos": "TE",
+     "proj": 1.11,
+     "sd": 1.372
+    },
+    {
+     "mean": 0.391,
+     "name": "AJ Dillon",
+     "p90": 0.4,
+     "p99": 6.3,
+     "pos": "RB",
+     "proj": 0.36,
+     "sd": 0.737
+    },
+    {
+     "mean": 0.282,
+     "name": "Roschon Johnson",
+     "p90": 0.2,
+     "p99": 6.2,
+     "pos": "RB",
+     "proj": 0.25,
+     "sd": 0.899
+    },
+    {
+     "mean": 0.0,
+     "name": "Brycen Tremayne",
+     "p90": 0.0,
+     "p99": 0.0,
+     "pos": "WR",
+     "proj": 0.01,
+     "sd": 0.0
+    }
+   ],
+   "samples": 540000
+  },
+  "legacy": {
+   "distinct_values": 4410,
+   "off_lattice": 277555,
+   "off_lattice_pct": 51.4,
+   "pair_tie_rate": 0.000102,
+   "players": [
+    {
+     "mean": 18.29,
+     "name": "Caleb Williams",
+     "p90": 29.62,
+     "p99": 41.48,
+     "pos": "QB",
+     "proj": 18.29,
+     "sd": 8.331
+    },
+    {
+     "mean": 17.3,
+     "name": "Bryce Young",
+     "p90": 28.33,
+     "p99": 40.48,
+     "pos": "QB",
+     "proj": 17.3,
+     "sd": 8.105
+    },
+    {
+     "mean": 15.06,
+     "name": "Tetairoa McMillan",
+     "p90": 25.12,
+     "p99": 35.45,
+     "pos": "WR",
+     "proj": 15.06,
+     "sd": 6.933
+    },
+    {
+     "mean": 13.93,
+     "name": "Colston Loveland",
+     "p90": 22.6,
+     "p99": 33.84,
+     "pos": "TE",
+     "proj": 13.93,
+     "sd": 6.374
+    },
+    {
+     "mean": 13.55,
+     "name": "D'Andre Swift",
+     "p90": 21.69,
+     "p99": 30.72,
+     "pos": "RB",
+     "proj": 13.55,
+     "sd": 5.843
+    },
+    {
+     "mean": 13.27,
+     "name": "Luther Burden",
+     "p90": 21.28,
+     "p99": 30.08,
+     "pos": "WR",
+     "proj": 13.27,
+     "sd": 5.715
+    },
+    {
+     "mean": 12.36,
+     "name": "Jalen Coker",
+     "p90": 20.2,
+     "p99": 30.25,
+     "pos": "WR",
+     "proj": 12.36,
+     "sd": 5.679
+    },
+    {
+     "mean": 11.29,
+     "name": "Rome Odunze",
+     "p90": 18.57,
+     "p99": 27.44,
+     "pos": "WR",
+     "proj": 11.29,
+     "sd": 5.338
+    },
+    {
+     "mean": 10.93,
+     "name": "Chuba Hubbard",
+     "p90": 17.44,
+     "p99": 26.64,
+     "pos": "RB",
+     "proj": 10.93,
+     "sd": 4.936
+    },
+    {
+     "mean": 10.03,
+     "name": "Jonathon Brooks",
+     "p90": 15.95,
+     "p99": 23.55,
+     "pos": "RB",
+     "proj": 10.03,
+     "sd": 4.448
+    },
+    {
+     "mean": 8.56,
+     "name": "Darren Waller",
+     "p90": 14.54,
+     "p99": 23.0,
+     "pos": "TE",
+     "proj": 8.56,
+     "sd": 4.517
+    },
+    {
+     "mean": 7.36,
+     "name": "Kyle Monangai",
+     "p90": 12.48,
+     "p99": 19.16,
+     "pos": "RB",
+     "proj": 7.36,
+     "sd": 3.829
+    },
+    {
+     "mean": 4.48,
+     "name": "Cole Kmet",
+     "p90": 8.21,
+     "p99": 12.74,
+     "pos": "TE",
+     "proj": 4.48,
+     "sd": 2.48
+    },
+    {
+     "mean": 3.79,
+     "name": "John Metchie",
+     "p90": 8.14,
+     "p99": 11.68,
+     "pos": "WR",
+     "proj": 3.79,
+     "sd": 2.44
+    },
+    {
+     "mean": 3.08,
+     "name": "Xavier Legette",
+     "p90": 7.63,
+     "p99": 10.29,
+     "pos": "WR",
+     "proj": 3.08,
+     "sd": 2.314
+    },
+    {
+     "mean": 3.85,
+     "name": "Kalif Raymond",
+     "p90": 6.09,
+     "p99": 11.27,
+     "pos": "WR",
+     "proj": 3.85,
+     "sd": 2.206
+    },
+    {
+     "mean": 3.2,
+     "name": "Zavion Thomas",
+     "p90": 4.76,
+     "p99": 10.44,
+     "pos": "WR",
+     "proj": 3.2,
+     "sd": 2.119
+    },
+    {
+     "mean": 2.39,
+     "name": "Tommy Tremble",
+     "p90": 3.3,
+     "p99": 9.07,
+     "pos": "TE",
+     "proj": 2.39,
+     "sd": 1.913
+    },
+    {
+     "mean": 2.03,
+     "name": "Jahdae Walker",
+     "p90": 2.72,
+     "p99": 8.5,
+     "pos": "WR",
+     "proj": 2.03,
+     "sd": 1.636
+    },
+    {
+     "mean": 1.92,
+     "name": "Sam Roush",
+     "p90": 2.57,
+     "p99": 8.25,
+     "pos": "TE",
+     "proj": 1.92,
+     "sd": 1.483
+    },
+    {
+     "mean": 1.62,
+     "name": "Ja'Tavion Sanders",
+     "p90": 2.14,
+     "p99": 7.81,
+     "pos": "TE",
+     "proj": 1.62,
+     "sd": 1.315
+    },
+    {
+     "mean": 1.48,
+     "name": "Jimmy Horn",
+     "p90": 1.76,
+     "p99": 7.54,
+     "pos": "WR",
+     "proj": 1.48,
+     "sd": 1.4
+    },
+    {
+     "mean": 1.11,
+     "name": "Mitchell Evans",
+     "p90": 1.4,
+     "p99": 7.25,
+     "pos": "TE",
+     "proj": 1.11,
+     "sd": 1.142
+    },
+    {
+     "mean": 0.36,
+     "name": "AJ Dillon",
+     "p90": 0.4,
+     "p99": 0.58,
+     "pos": "RB",
+     "proj": 0.36,
+     "sd": 0.63
+    },
+    {
+     "mean": 0.25,
+     "name": "Roschon Johnson",
+     "p90": 0.19,
+     "p99": 5.79,
+     "pos": "RB",
+     "proj": 0.25,
+     "sd": 0.823
+    },
+    {
+     "mean": 0.08,
+     "name": "Feleipe Franks",
+     "p90": 0.11,
+     "p99": 0.14,
+     "pos": "TE",
+     "proj": 0.08,
+     "sd": 0.021
+    },
+    {
+     "mean": 0.01,
+     "name": "Brycen Tremayne",
+     "p90": 0.01,
+     "p99": 0.02,
+     "pos": "WR",
+     "proj": 0.01,
+     "sd": 0.004
+    }
+   ],
+   "samples": 540000
+  }
+ }
+}

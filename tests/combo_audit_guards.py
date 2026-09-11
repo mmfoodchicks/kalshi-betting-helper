@@ -13589,9 +13589,9 @@ ck("the constrained simulator's stamp names its model and version, carries every
 _sim_src = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
 _pool_src = _sim_src[_sim_src.index("def player_pool("):_sim_src.index("# ---- Week board (all games simmed)")]
 ck("player_pool takes model and seed with legacy the default, rejects an unknown model and a preseason constrained pool before any fetch, keys its cache on both, and routes the constrained model's defenses and kickers through a seeded generator while the legacy path keeps the module generator",
-   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0):' in _sim_src
+   'def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False):' in _sim_src
    and _sim2.MODELS == ("legacy", "constrained")
-   and 'tuple(sorted(want)) or None, model, seed, float(xside or 0.0)),' in _pool_src
+   and 'tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),' in _pool_src
    and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)' in _pool_src
    and 'side_rng = _rnd.Random(child) if seed is not None else _random' in _pool_src
    and '_dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)' in _pool_src
@@ -14010,6 +14010,17 @@ ck("the audit records the mechanism it measured rather than asserting one: the p
 # report that quietly drops its own scope section reads as a finished pass.
 _sdr = open(_os.path.join(_root, "showdown_audit_report.md")).read()
 _sdrw = " ".join(_sdr.split())
+ck("the report keeps the discrete investigation with its measured tie ratio, the ranking that did not move, and the column that did not resolve",
+   "Six times, not two" in _sdrw
+   and "6.14x" in _sdrw
+   and "identical, 10 of 10" in _sdrw
+   and "Sole-first did not resolve and is reported as not measured" in _sdrw
+   and "Not promoted" in _sdrw
+   and "small mean bias" in _sdrw)
+ck("and it keeps the audit of every repinned guard, including the one that had been pinning the defect",
+   "### Z4. The engine guard, which had been pinning the defect" in _sdrw
+   and "No assertion was weakened to let failing code through" in _sdrw
+   and _sdr.count("**Not a regression") >= 5)
 ck("the showdown report states its baseline, that only three of nine stages were done, the measured lattice share, the shut gate with its two open links, and that Classic was left alone",
    "a1c4836" in _sdrw and "stages S1, S2 and S3 of nine" in _sdrw
    and "47.35%" in _sdrw and "half a step" in _sdrw
@@ -14021,6 +14032,58 @@ ck("and it keeps the two places the reviewer was wrong or already satisfied, rat
    "partially falsified" in _sdrw
    and "already in place" in _sdrw
    and "already documented in code" in _sdrw)
+
+# ======================================================================
+# Showdown: the discrete legacy scorer, measured rather than inferred
+# ======================================================================
+# The lattice defect was called blocked between rewriting legacy (moves
+# classic) and promoting constrained (not this pass's call). There was a third
+# way: the legacy simulator ALREADY drew components and ALREADY scored them
+# with DK's exact scorer, so only the yards and catches were continuous, and
+# the real damage was the per-player multiply afterwards. Discrete mode keeps
+# the latents, draws whole, and pins the mean upstream.
+_sdd = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_discrete.json")))
+ck("the discrete counterfactual is on file and puts EVERY score on the DraftKings lattice where the production mode puts about half of them off it",
+   _sdd["modes"]["legacy"]["off_lattice_pct"] > 40.0
+   and _sdd["modes"]["discrete"]["off_lattice_pct"] == 0.0
+   and _sdd["modes"]["discrete"]["samples"] > 100_000,
+   f"legacy {_sdd['modes']['legacy']['off_lattice_pct']}% vs discrete {_sdd['modes']['discrete']['off_lattice_pct']}%")
+ck("and it is the same football model, not a new one: means, spreads and pair correlations barely move, which is what makes it a support fix rather than a model change",
+   _sdd["deltas"]["mean_rel_pct_median"] < 3.0
+   and _sdd["deltas"]["sd_rel_pct_median"] < 5.0
+   and _sdd["deltas"]["pair_corr_median_abs_diff"] < 0.05,
+   str(_sdd["deltas"]))
+# The size had to be MEASURED. The grid is twice as fine, and the tie rate is
+# six times off -- reasoning from the spacing would have understated it
+# threefold, which is the whole reason the narrower claim replaced it.
+ck("the cost of the lattice defect is measured, not inferred from the grid spacing: the exact-tie rate is several times off, and the number is on file rather than reasoned from 0.01 against 0.02",
+   _sdd["deltas"]["tie_rate_ratio"] > 3.0
+   and _sdd["modes"]["discrete"]["pair_tie_rate"] > _sdd["modes"]["legacy"]["pair_tie_rate"],
+   f"tie rate ratio {_sdd['deltas']['tie_rate_ratio']}x")
+ck("and the board-level reading says it is a money defect rather than a strategy one so far: the payout moves several percent while the top-ten order does not move at all",
+   abs(_sdd["board"]["deltas"]["ev_best_pct_diff"]) > 1.0
+   and _sdd["board"]["deltas"]["top10_positions_identical"] == 10
+   and _sdd["board"]["deltas"]["sole_first_ratio"] is None,   # did not resolve; reported as such
+   str(_sdd["board"]["deltas"]))
+# Nothing may be served with it.
+import inspect as _insp_sd
+ck("the discrete mode cannot reach production: it defaults off, it rides in the pool's cache key, and neither board builder accepts the argument at all",
+   _insp_sd.signature(_sim2.simulate_game).parameters["discrete"].default is False
+   and _insp_sd.signature(_sim2.player_pool).parameters["discrete"].default is False
+   and "discrete" not in _insp_sd.signature(_dt14.build_nfl_showdown).parameters
+   and "discrete" not in _insp_sd.signature(_dt14.build_nfl_classic).parameters
+   and "bool(discrete)),\n" in open(_os.path.join(_root, "nfl_dfs_sim.py")).read(),
+   "a swept pool must never be handed to a board that asked for the frozen model")
+ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
+   _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
+   and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == _sim2.DISCRETE_VERSION
+   and _sim2.sim_stamp(n=1, discrete=False)["discrete_version"] == 0
+   and _sim2.sim_stamp(n=1, discrete=False)["model"] == _sim2.SIM_MODEL)
+# The claim that had to be narrowed: nobody may say "about half" again.
+ck("no code or report infers the size of the tie bias from the grid spacing any more; the measured figure stands in its place",
+   "half as likely" not in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "half as likely" not in open(_os.path.join(_root, "research", "sd_lattice.py")).read()
+   and "6.1x" in _dt14.sd_money_gate(486_000, 132_000)["why"])
 
 # ---- the portfolio cover: one contest, one field, nested entries ---------
 # READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is

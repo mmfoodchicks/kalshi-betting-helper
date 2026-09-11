@@ -248,19 +248,34 @@ SIM_MODEL = "legacy-latent"
 SIM_MODEL_VERSION = 1
 
 
-def sim_stamp(n=None, preseason=False):
+DISCRETE_VERSION = 1      # showdown-only discrete legacy scorer; 0 means off
+
+
+def sim_stamp(n=None, preseason=False, discrete=False):
     """{model, version, params, ...}: enough to say which model, with which
     constants, generated a board's worlds. The game loop draws from the
     module RNG unseeded, so a build is reproducible in distribution, not
     draw for draw; the stamp says so rather than implying otherwise."""
-    return {"model": SIM_MODEL, "version": SIM_MODEL_VERSION, "projections": "sleeper-weekly",
+    return {"model": (SIM_MODEL + "-discrete" if discrete else SIM_MODEL),
+            "version": SIM_MODEL_VERSION,
+            "discrete_version": (DISCRETE_VERSION if discrete else 0),
+            "projections": "sleeper-weekly",
             "params": {"env_sd": _ENV_SD, "qb_sd": _QB_SD, "rush_sd": _RUSH_SD, "script_sd": _SCRIPT_SD,
                        "script_rush": _SCRIPT_RUSH, "script_pass": _SCRIPT_PASS, "td_sd": _TD_SD},
             "touchdowns": "poisson, independent per player",
             "receiving_noise": "none beyond the shared game, team-passing and script factors",
-            "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+            "marginals": ("component means scaled BEFORE the draw so the mean lands on Sleeper "
+                          "with whole yards and catches; no multiply touches a finished score"
+                          if discrete else
+                          "each player's points rescaled to the Sleeper mean after the loop"),
+            "lattice": ("every score recomputes from integer components through DraftKings' own "
+                        "scorer, so all of them are reachable" if discrete else
+                        "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)"),
             "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
             "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
+
+
+_CAL = []          # re-entrancy flag: the pin's own probe must not re-calibrate
 
 
 def _pois(mean, rng=_random):
@@ -298,13 +313,71 @@ def _prop_line(mean, step):
     return math.floor(mean) + 0.5          # receptions: X.5
 
 
-def simulate_game(game, n=4000, with_samples=False, preseason=False):
+def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
     correlation-aware component prop over/unders, and QB->receiver stacks.
     with_samples=True attaches each player's rescaled point array (`arr`) so a DFS
-    contest sim can score whole lineups with the within-game correlation intact."""
+    contest sim can score whole lineups with the within-game correlation intact.
+
+    discrete=True is the SHOWDOWN-ONLY experimental mode (nfl_dfs_sim.DISCRETE
+    _VERSION). It changes two things and nothing else:
+
+      * yards and receptions are drawn on their real integer support before
+        scoring, instead of staying continuous. Touchdowns, interceptions and
+        fumbles were always integers (Poisson), and `_ppr` was always the
+        exact DraftKings scorer, so the ONLY reason scores were landing off
+        the legal lattice was that the yardage feeding that scorer was not
+        whole;
+      * the mean is pinned UPSTREAM, by scaling each player's component means
+        before the draw, rather than by multiplying his finished point array
+        by proj/raw afterwards. The old multiply is what pushed every score
+        off the lattice, and no amount of rounding afterwards can undo it.
+
+    The latent structure -- the shared game factor, the quarterback latent,
+    the opposed scripts -- is untouched, so this is the same football model
+    with a legal support, not a new one. Default False: the classic path is
+    byte-identical to before this existed."""
     players = game["players"]
     teams = game.get("teams") or []
+    # The upstream mean pin. The old code let the simulation run at the raw
+    # component means and then multiplied each finished point array by
+    # proj/raw -- which is what pushed the scores off the legal lattice. Here
+    # the correction goes in BEFORE the draw: a short calibration run measures
+    # each player's raw mean, and his component means are scaled so the mean
+    # lands on the projection with the scores still whole.
+    #
+    # Points are close to linear in this scale (yards and receptions exactly,
+    # touchdowns through the Poisson mean), so one Newton-ish step on the
+    # ratio converges; the yardage bonuses are the only nonlinearity and they
+    # are small. What is left over is reported as pin_err rather than
+    # corrected by a multiply, because a multiply is the bug.
+    pin = [1.0] * len(players)
+    if discrete and not _CAL:
+        cal = max(400, min(2000, n // 4))
+        base = simulate_game(game, n=cal, with_samples=False, preseason=preseason,
+                             discrete=False)
+        raw_by = {r["name"]: r.get("sim_mean_raw") for r in base["players"]}
+        for i, pl in enumerate(players):
+            raw = raw_by.get(pl["name"]) or 0.0
+            proj = float(pl.get("proj_pts") or 0.0)
+            pin[i] = (proj / raw) if raw > 0 and proj > 0 else 1.0
+        # A second pass, this one DISCRETE, so the refinement sees the
+        # rounding it has to live with. Continuous linearity sizes the first
+        # step; only a discrete run can tell how far integer yards and whole
+        # catches actually move a small projection.
+        try:
+            _CAL.append(1)
+            probe = simulate_game({**game, "_pin": list(pin)}, n=cal, with_samples=False,
+                                  preseason=preseason, discrete=True)
+            got = {r["name"]: r["sim_mean_raw"] for r in probe["players"]}
+            for i, pl in enumerate(players):
+                have, proj = got.get(pl["name"]) or 0.0, float(pl.get("proj_pts") or 0.0)
+                if have > 0 and proj > 0:
+                    pin[i] *= proj / have
+        finally:
+            _CAL.pop()
+    elif discrete:
+        pin = list(game.get("_pin") or [1.0] * len(players))
     pts = {i: [] for i in range(len(players))}
     comp = {i: {k: [] for k, _, _, _ in _PROP_SPECS} for i in range(len(players))}
     fp_raw = {i: [] for i in range(len(players))}    # for the QB<->WR stack correlation
@@ -343,11 +416,18 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
             pass_f = env * ql * (1 - _SCRIPT_PASS * sc)      # trailing -> more pass
             rush_f = env * (1 + _SCRIPT_RUSH * sc) * max(0.0, gauss(1.0, _RUSH_SD))
             rec_f = env * ql * (1 - _SCRIPT_PASS * sc)       # receivers ride the QB latent
-            pass_yd, rush_yd = m["pass_yd"] * pass_f, m["rush_yd"] * rush_f
-            rec_yd, rec = m["rec_yd"] * rec_f, m["rec"] * rec_f
-            pass_td = _pois(m["pass_td"] * env * ql)
-            rush_td = _pois(m["rush_td"] * env * (1 + _SCRIPT_RUSH * sc))
-            rec_td = _pois(m["rec_td"] * env * ql)
+            k = pin[i] if discrete else 1.0          # the upstream mean pin
+            pass_yd, rush_yd = m["pass_yd"] * k * pass_f, m["rush_yd"] * k * rush_f
+            rec_yd, rec = m["rec_yd"] * k * rec_f, m["rec"] * k * rec_f
+            if discrete:
+                # a box score is integers: whole yards, whole catches
+                pass_yd = float(int(pass_yd + 0.5))
+                rush_yd = float(int(rush_yd + 0.5))
+                rec_yd = float(int(rec_yd + 0.5))
+                rec = float(int(rec + 0.5))
+            pass_td = _pois(m["pass_td"] * k * env * ql)
+            rush_td = _pois(m["rush_td"] * k * env * (1 + _SCRIPT_RUSH * sc))
+            rec_td = _pois(m["rec_td"] * k * env * ql)
             ints = _pois(m["int"])
             fums = _pois(m["fum"])
             fp = _ppr(pass_yd, pass_td, ints, rush_yd, rush_td,
@@ -383,11 +463,21 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False):
         arr = pts[i]
         raw = sum(arr) / len(arr)
         proj = pl["proj_pts"]
-        f = proj / raw if raw > 0 else 1.0                   # pin points-mean to Sleeper
-        arr = [x * f for x in arr]
+        if discrete:
+            # already pinned upstream; multiplying here is exactly what put
+            # 47% of the old scores on a grid DraftKings cannot print
+            f = 1.0
+        else:
+            f = proj / raw if raw > 0 else 1.0               # pin points-mean to Sleeper
+            arr = [x * f for x in arr]
         boom = proj * 1.5
         row = {"name": pl["name"], "pos": pl["pos"], "team": pl["team"], "opp": pl["opp"],
                "proj_pts": proj, "sim_mean": round(sum(arr) / len(arr), 1),
+               # the mean BEFORE any pinning, which the discrete mode's
+               # calibration pass reads to size its upstream scale
+               "sim_mean_raw": raw,
+               "pin_err_pct": (None if not discrete or not proj else
+                               round(100.0 * (sum(arr) / len(arr) - proj) / proj, 2)),
                "floor": round(pct(arr, 0.10), 1), "median": round(pct(arr, 0.50), 1),
                "ceiling": round(pct(arr, 0.90), 1),
                "boom_pct": round(100.0 * sum(1 for x in arr if x >= boom) / len(arr), 1),
@@ -619,7 +709,7 @@ def _kicker_arr(k, off, n, rng):
 MODELS = ("legacy", "constrained")
 
 
-def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0):
+def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="legacy", seed=None, xside=0.0, discrete=False):
     """Every DFS-relevant player for a week: skill players carry correlated point
     arrays from the game sims; DSTs carry independent Normal-sampled arrays from
     Sleeper's team-defense projection. {name: {pos, team, proj, ceiling, floor, arr}}.
@@ -676,7 +766,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                     p["arr"] = _np.round(p["arr"], 2).tolist()
                 sim["team_def"] = {t: {k: v.tolist() for k, v in d.items()} for t, d in sim["team_def"].items()}
             else:
-                sim = simulate_game(g, n=n, with_samples=True, preseason=preseason)
+                sim = simulate_game(g, n=n, with_samples=True, preseason=preseason, discrete=discrete)
             for t, d in (sim.get("team_def") or {}).items():
                 team_off[t] = d                 # this offense's own per-iteration output
                 team_rng[t] = side_rng
@@ -772,7 +862,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                           "ceiling": round(sorted(arr)[int(0.9 * len(arr))], 1),
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         return pool or None
-    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0)),
+    return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),
                    1800, build)
 
 

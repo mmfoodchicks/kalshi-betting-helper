@@ -496,9 +496,13 @@ SD_MONEY_TIES_PAID = True       # the same tie-aware payout classic uses
 #
 # That matters here more than anywhere else in the app: showdown's first-place
 # column is a SOLE-win probability, which is decided by how often scores tie,
-# and a score grid twice as fine as the real one makes exact ties about half
-# as likely as they truly are. The tie arithmetic is correct; it is being fed
-# scores the house could never print.
+# and a score grid finer than the legal one biases exact-tie probability
+# DOWNWARD. Measured on the same game rebuilt with integer components
+# (research/sd_discrete, 20,000 worlds): the exact-tie rate between two
+# lineups goes up 6.1x, and the best lineup's expected payout moves about 6%.
+# Six times, not the two the grid spacing would have suggested -- which is why
+# the size had to be measured rather than reasoned from the spacing. The tie
+# arithmetic is correct; it is being fed scores the house could never print.
 #
 # Fixing it means generating discrete stat lines and scoring them with DK's
 # rules, which the constrained simulator already does (0 of 1,600,000 off the
@@ -534,7 +538,11 @@ def sd_money_gate(n_legal, contest_C, field_calibrated=None):
            "occur under DraftKings scoring (the legacy simulator pins each mean by multiplying the "
            "whole array and rounds to hundredths, so scores sit on a 0.01 grid where DK's offence "
            "lives on 0.02). First place here is a SOLE-win probability decided by how often scores "
-           "tie, so a grid twice as fine as the real one understates ties and flatters it. Rank on "
+           "tie, and a simulated support finer than the legal one biases exact-tie probability "
+           "downward. Measured, not inferred (research/sd_discrete): rebuilding the same game on "
+           "integer yards and catches raises the exact-tie rate between two lineups by 6.1x, and "
+           "moves the best lineup's expected payout by about 6%. The top-ten ranking did not "
+           "change at all, so this is a money defect rather than a strategy one. Rank on "
            "top 1% and top 0.1%.")
     return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies"],
             "authoritative": ok,
