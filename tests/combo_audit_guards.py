@@ -13646,23 +13646,42 @@ if _dt14.available():
 else:
     ck("(numpy is not installed here -- the tie rule's own arithmetic runs where it is)", True)
 # Nothing at module scope may touch numpy. _LOG_FACT was a module-level
-# np.cumsum for one push: the server imports dfs_tourney WITHOUT numpy, so
-# importing it raised AttributeError and the tournament route died, and CI
-# (which installs no numpy either) went red on the commit. This re-imports
-# the PC-only modules in a subprocess where numpy cannot be imported, which
-# is exactly the server's situation.
+# np.cumsum for one push: dfs_tourney could then not be imported at all
+# without numpy, and the guards run in CI installs none, so the suite died on
+# the import and the commit went red. (The fix commit called that a dead
+# tournament route in production; it was not -- measured below, the web app
+# never imports this module. Limitation 9 of the audit report carries the
+# correction.) These two checks keep both halves true: the modules import
+# where numpy is absent, and the server keeps not needing them.
 _nonpdir = _tf14.mkdtemp(prefix="vigil-nonumpy-guard-")
 with open(_os.path.join(_nonpdir, "numpy.py"), "w") as _fh_np:
     _fh_np.write("raise ImportError('no numpy here (guard)')\n")
+_nonpenv = dict(_os.environ, PYTHONPATH=_nonpdir, VIGIL_NO_BG="1", VIGIL_ALLOW_OPEN="1")
 _nonp = _gsp.run([_gsy.executable, "-c",
                   "import dfs_tourney, nfl_dfs_csim, nfl_recon, nfl_dfs_sim\n"
                   "assert dfs_tourney.available() is False\n"
                   "assert nfl_dfs_csim.available() is False\n"
                   "print('ok')\n"],
-                 capture_output=True, text=True, cwd=_root,
-                 env=dict(_os.environ, PYTHONPATH=_nonpdir, VIGIL_NO_BG="1"))
-ck("every module the server imports still imports with numpy absent -- nothing numeric at module scope",
+                 capture_output=True, text=True, cwd=_root, env=_nonpenv)
+ck("every numeric module still imports with numpy absent -- nothing numeric at module scope",
    "ok" in (_nonp.stdout or ""), (_nonp.stderr or "").strip()[-300:])
+# The reason a numpy-free import is enough: the web app reads boards the PC
+# wrote and never loads the engine that built them. A one-core web worker
+# must not be able to start a 200,000 x 60,000 matrix job, and it cannot
+# import the code that would.
+_nosrv = _gsp.run([_gsy.executable, "-c",
+                   "import sys\n"
+                   "import app\n"
+                   "c = app.app.test_client()\n"
+                   "codes = [c.get(u).status_code for u in ('/healthz',"
+                   " '/api/dfs/tourney?sport=nfl&dg=151307', '/api/dfs/tourney/list')]\n"
+                   "assert codes == [200, 200, 200], codes\n"
+                   "assert 'dfs_tourney' not in sys.modules, 'the web app imported the engine'\n"
+                   "assert 'nfl_dfs_csim' not in sys.modules, 'the web app imported the simulator'\n"
+                   "print('ok')\n"],
+                  capture_output=True, text=True, cwd=_root, env=_nonpenv)
+ck("the served app answers the tournament routes without ever importing the engine or the simulator, on a machine with no numpy at all",
+   "ok" in (_nosrv.stdout or ""), (_nosrv.stderr or "").strip()[-300:])
 if _dt14.available():
     _g3 = _dt14.payout_grid(5000, _PAY3, 5.0, 100)
     _iF3 = int(_np14.searchsorted(_g3["F"], 1e-4))
@@ -13833,6 +13852,15 @@ ck("the final audit report is in the tree and carries the sections the review as
                            "## V. Questions for the adversarial review"))
    and "0.028" in _fin and "0.178" in _fin and "2.8 entries" in _fin
    and "2025 is spent as a holdout" in _fin)
+# A correction, once written, stays written: the report records that the fix
+# commit overstated the numpy break as a production outage, and what was
+# actually measured instead. Dropping the paragraph would quietly restore the
+# nicer story.
+_finw = " ".join(_fin.split())    # the report is hard-wrapped; match on the words, not the line breaks
+ck("the report keeps the correction to the overstated numpy break rather than only the stages that went well",
+   "One claim in this chain was overstated" in _finw
+   and "Nothing the web app serves imports `dfs_tourney`" in _finw
+   and "no code of any kind was filed in that window" in _finw)
 
 # ---- Stage 3D: the money columns are experimental for a stated reason ------
 # Three links: the sample must resolve the mass the contest asks about, ties

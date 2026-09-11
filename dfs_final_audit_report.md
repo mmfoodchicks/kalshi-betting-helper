@@ -18,7 +18,9 @@ that change what the board should be trusted for.
 | `fc10b3e` | 09-10 21:34 | 2D, the constrained team simulator as an alternate mode |
 | `448ea9c` | 09-10 22:46 | 2E, the fit on 2022-2024 and the blind 2025 validation |
 | `9b39e8c` | 09-10 22:47 | 3B and 3D, tie-aware payout and the money gate |
-| (this push) | | 2F, 3A, 3C, 4 and this report |
+| `e054862` | 09-11 02:01 | 2F, 3A, 3C, 4 and this report |
+| `1366221` | 09-11 02:19 | the log-factorial table off module scope, and the guard that pins the numpy-free import surface |
+| (this push) | | the correction in limitation 9 |
 
 ## B. What changed, by file
 
@@ -501,6 +503,22 @@ model does not agree.
    (section L). Expect it to matter more under the constrained model.
 8. **The production board in section R was built here, not served.** The
    served receipt has to come from the PC's own rebuild after this push.
+9. **One claim in this chain was overstated, and this is the correction.**
+   Commit `e054862` built the Poisson log-factorial table at module scope in
+   `dfs_tourney`, which is a numpy call, and the server has no numpy: the
+   module could not be imported there at all. The guards run in CI installs
+   no numpy either, so the suite crashed on the import and the commit went
+   red within three minutes. The fix commit `1366221` describes that as the
+   tournament route dying in production. It did not. Nothing the web app
+   serves imports `dfs_tourney` -- the routes read a pickle the PC wrote, and
+   `pc_worker` is the only importer, on the machine that does have numpy.
+   Measured after the fact by putting the broken module ahead of the repo
+   with numpy hidden and calling the routes: `/healthz`,
+   `/api/dfs/tourney` and `/api/dfs/tourney/list` all answered 200, and only
+   a direct `import dfs_tourney` raised. The error ledger for the day agrees:
+   no code of any kind was filed in that window. So the blast radius was a
+   red CI run, and the guard's value is preventing the break the next time
+   something on the server does import it, not repairing one that happened.
 
 ## U. Regression guards added
 
@@ -538,6 +556,12 @@ over the five commits, final suite count in the commit message):
 - **4B**: the stack knob off by default, legal at a four-target bar,
   illegal at six, with the published rule text saying a back does not count;
   projected targets reaching the engine from the pool.
+- **The numpy-free import surface**: every numeric module imports in a
+  subprocess where importing numpy raises, and the served app answers
+  `/healthz` and both tournament routes there without ever pulling
+  `dfs_tourney` or `nfl_dfs_csim` into `sys.modules`. Limitation 9's
+  correction is pinned too, so the nicer version of that story cannot come
+  back by deletion.
 
 ## V. Questions for the adversarial review
 
