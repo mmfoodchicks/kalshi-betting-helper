@@ -13861,6 +13861,20 @@ ck("the report keeps the correction to the overstated numpy break rather than on
    "One claim in this chain was overstated" in _finw
    and "Nothing the web app serves imports `dfs_tourney`" in _finw
    and "no code of any kind was filed in that window" in _finw)
+# Limitation 8 was closed by a measured served board, not by deciding it no
+# longer mattered: the PC's own rebuild at engine 5, with both completion
+# receipts at 100%, both probes resolved and the money gate unchanged. The
+# receipt has to stay in the report beside the closure, or the closure is an
+# assertion.
+ck("closing limitation 8 keeps the served board's receipt in the report: the PC's own engine-5 rebuild, both completions at 100%, both probes ranked, and the gate still refusing",
+   "The served board, measured after the deploy" in _finw
+   and "engine 5" in _finw and "3,546" in _finw
+   and "Field 300,000 of 300,000 completed" in _finw
+   and "candidate draws 150,000 of 150,000" in _finw
+   and "132,913 allowed" in _finw
+   and "L1 at 2.701% top 0.1% ranking 2nd of 132,913" in _finw
+   and "2.77 entries per sampled lineup" in _finw
+   and "8. **Closed.**" in _finw)
 
 # ---- Stage 3D: the money columns are experimental for a stated reason ------
 # Three links: the sample must resolve the mass the contest asks about, ties

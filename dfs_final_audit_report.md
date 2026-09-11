@@ -449,6 +449,30 @@ holding a defense against their own quarterback.
 The most popular build in the field (41.6 expected copies) is worth $3.28
 against a $5 entry.
 
+### The served board, measured after the deploy
+
+The PC pulled commit `1366221`, saw the engine go from 4 to 5, and rebuilt
+the same slate on its own hardware: built 2026-09-11 03:22:08 UTC in 3,546
+seconds, engine 5, serialization 3, model legacy, simulator stamped
+`legacy-latent` v1 with the same seven constants, 60,000 worlds split 20,000
+and 40,000. Field 300,000 of 300,000 completed, nothing rejected, no unfilled
+slot, no over-cap row, no row without a quarterback; candidate draws 150,000
+of 150,000 on the same terms; 144,759 candidates of which 132,913 allowed;
+20,000 distinct hindsight-optimal lineups. All 243 pool rows carry a team, an
+opponent and a projection-feed game id, the 12 game keys hold exactly two
+teams each, and each of the 24 teams has exactly one opponent. Both probe
+lineups resolve as passengers: L1 at 2.701% top 0.1% ranking 2nd of 132,913,
+L2 at 2.927% ranking 1st, both legal, both illegal under a four-per-game cap,
+both with the tie-aware keys (`win_pct`, `win_any_pct`, `ev`, `ev_notie`) and
+no `ev_dup`. The money gate on the served board is the Stage 3D verdict
+verbatim: not authoritative, the sample link false at 2.77 entries per
+sampled lineup, the tie link true, the duplicate link false.
+
+This is the receipt limitation 8 was waiting for, so that limitation is
+closed. The three showdown boards on file were built before the engine bump
+and are still read through the tab's engine-4 fallback until the PC rebuilds
+them on its own schedule.
+
 ## S. What to enter, by portfolio size
 
 From the production board's top-0.1% and top-1% lists, with the caveat of
@@ -501,8 +525,14 @@ model does not agree.
 7. **The tie measurement on the real board is small** only because the
    legacy simulator's rescale spreads scores off the DraftKings lattice
    (section L). Expect it to matter more under the constrained model.
-8. **The production board in section R was built here, not served.** The
-   served receipt has to come from the PC's own rebuild after this push.
+8. **Closed.** The production board in section R was built in the session,
+   not served, and the served receipt had to come from the PC's own rebuild.
+   It arrived: the PC rebuilt the same slate at engine 5 on 2026-09-11
+   03:22:08 UTC in 3,546 seconds, with both completion receipts at 100%, both
+   probes resolved, the game keys complete and the money gate unchanged. The
+   numbers are in section R under "The served board". What remains is not a
+   limitation of this work but the ordinary wait for the three showdown
+   boards to rebuild at engine 5 on the PC's own schedule.
 9. **One claim in this chain was overstated, and this is the correction.**
    Commit `e054862` built the Poisson log-factorial table at module scope in
    `dfs_tourney`, which is a numpy call, and the server has no numpy: the
