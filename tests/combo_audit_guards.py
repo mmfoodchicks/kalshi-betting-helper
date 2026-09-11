@@ -14046,6 +14046,27 @@ ck("the report carries the canonical L1/L2 result and keeps the retraction of th
 # worlds, and its stack statistic counts candidates only. Drop any of those
 # three and the table starts reading like a calibrated estimate of L1's rank,
 # which is exactly what it is not.
+# The sweep's artifact, pinned to what the report quotes. Its board numbers
+# are deterministic: two independent runs returned identical ranks and stack
+# shares for every level, and only the correlation diagnostic moved (it draws
+# on a different seed path), which is why the report treats the recovery as
+# the result and not any single rank.
+_xsw = _json2b.load(open(_os.path.join(_root, "research", "data", "xside_sweep.json")))
+_xl = {round(float(r["xside"]), 3): r for r in _xsw["levels"]}
+ck("the sensitivity sweep is on file with five levels, the knob off at the bottom, the coupling climbing to what the holdout observed, and it says of itself that nothing in it may be promoted",
+   len(_xsw["levels"]) == 5 and sorted(_xl) == [0.0, 0.14, 0.2, 0.245, 0.28]
+   and "NOT a fit, nothing promotable" in _xsw["meta"]["stage"]
+   and _xl[0.0]["qb_opp_corr"] < 0.05 and _xl[0.28]["qb_opp_corr"] > 0.22
+   and all(_xl[a]["qb_opp_corr"] < _xl[b]["qb_opp_corr"]
+           for a, b in zip([0.0, 0.14, 0.2, 0.245], [0.14, 0.2, 0.245, 0.28])),
+   str({k: round(v["qb_opp_corr"], 4) for k, v in sorted(_xl.items())}))
+ck("and the sweep's own numbers match what the report quotes: L1 climbing from the 130s to the teens on the top 0.1% while six-from-one-game stays extinct at every level",
+   _xl[0.0]["probes"][0]["rank_top01"] > 100 and _xl[0.28]["probes"][0]["rank_top01"] < 40
+   and all(r["stacks"]["share_6plus"] == 0.0 for r in _xsw["levels"])
+   and _xl[0.28]["stacks"]["share_5plus"] > _xl[0.0]["stacks"]["share_5plus"]
+   and all([q["names"] for q in r["probes"]] == _canon2f for r in _xsw["levels"]),
+   f"L1 top0.1% rank {_xl[0.0]['probes'][0]['rank_top01']} -> {_xl[0.28]['probes'][0]['rank_top01']}")
+
 ck("the sweep is labelled a shared-variance sensitivity with its three caveats intact: marginals widen, the ranks are Monte Carlo noise, and the stack share excludes the probes",
    "game-level shared-variance sensitivity" in _finw
    and "12.9% wider" in _finw and "13.1% wider" in _finw
