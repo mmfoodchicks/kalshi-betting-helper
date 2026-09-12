@@ -16004,6 +16004,109 @@ ck("and the S5 artifacts carry a seed in their provenance rather than the null t
         "ablate": _s5a["meta"]["provenance"]["seed"]}))
 
 
+# ---- S5.9 / S5.10 / the report --------------------------------------------
+_s5p = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_pairs.json")))
+_s5s = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_sens.json")))
+_s5rep = open(_os.path.join(_s5_root, "s5_rules_report.md")).read()
+_s5repw = " ".join(_s5rep.split())
+
+
+def _s5_mean(art, key, conv="optimistic", metric="top1"):
+    vals = []
+    for byseed in art["boards"].values():
+        for b in byseed.values():
+            for d in b["directions"].values():
+                p = d["portfolios"].get(key)
+                if not p:
+                    continue
+                pa = p["paired"]
+                pa = pa[conv][metric] if conv in pa else pa[f"{conv}_{metric}"]
+                vals.append(pa["point"])
+    return sum(vals) / max(len(vals), 1)
+
+
+# The interaction S5.9 went looking for, and the reason it is a finding rather
+# than a coincidence: neither rule does anything alone, and the subsumption
+# matrix PREDICTED that before the run. If a future change makes CPT-POS
+# independently admit lineups, this guard is the thing that notices the
+# prediction no longer holds.
+ck("S5.9 finds the super-additive pair its subsumption matrix predicted: CPT-POS admits nothing alone, CPT-SALARY almost nothing, and together they are an order of magnitude more",
+   abs(_s5_mean(_s5a, "ablate:CPT-SALARY") - 0.00345) < 1e-4
+   and _s5r["boards"]["153086"]["marginal_admissions"]["CPT-POS"] == 0
+   and _s5_mean(_s5p, "pair:CPT-SALARY+CPT-POS") > 10 * _s5_mean(_s5a, "ablate:CPT-SALARY"),
+   f"single {_s5_mean(_s5a, 'ablate:CPT-SALARY'):+.5f} vs pair "
+   f"{_s5_mean(_s5p, 'pair:CPT-SALARY+CPT-POS'):+.5f}")
+
+ck("and the pairs were PRE-DECLARED with reasons, with the untested higher-order combinations named rather than left implied",
+   len(_s5s) > 0 and len(_s5p["meta"]["pairs"]) == 4
+   and all(set(x) == {"pair", "why"} and len(x["pair"]) == 2 for x in _s5p["meta"]["pairs"])
+   and "subsumption matrix before this ran" in _s5p["meta"]["predeclared"]
+   and "cannot attribute" in _s5p["meta"]["untested"]
+   and set(_s5p["meta"]["excluded"]) == {"PUNT-ROLE", "MAX-KDST", "MAX-PUNT", "MAX-TE-TEAM"},
+   str([x["pair"] for x in _s5p["meta"]["pairs"]]))
+
+# S5.10: the escape hatch S4 had is NOT available here. S4's effect fell by two
+# thirds across the same sweep; this one does not move, so "it is only an
+# artifact of one beta" cannot be used to dismiss it.
+_s5_ts = _s5s["sweep"]["by_top_share"]
+_s5_dst = [_s5_ts[t]["directions"][d]["ablate:DST-OPP"]["optimistic"]["top1"]
+           for t in _s5_ts for d in _s5_ts[t]["directions"]]
+ck("S5.10 shows DST-OPP's effect does NOT ride the uncalibrated field knob: positive and sign-stable at every concentration, unlike S4's headline effect",
+   len(_s5_dst) == 6
+   and all(x["point"] > 0.05 for x in _s5_dst)
+   and all(x["sign_stable"] for x in _s5_dst)
+   and "no value here may become a production" in _s5s["sweep"]["note"],
+   str([round(x["point"], 4) for x in _s5_dst]))
+
+# The decision. S5 recommends keeping every rule, and the ONE reason that
+# outranks a stable, field-robust +0.047 is that the football tail disagrees.
+# If a later pass deletes that sentence the recommendation loses its basis, so
+# pin the mechanism and not just the verdict.
+ck("the S5 report recommends keeping every rule, and says plainly that the football tail is what holds DST-OPP back rather than leaving the +0.047 unexplained",
+   "**Recommendation: keep every rule.**" in _s5repw
+   and "INCONCLUSIVE \u2014 keep" in _s5repw
+   and "Every variant that raises Top 1% lowers the portfolio's football p99, on both boards, without exception" in _s5repw
+   and "What holds the recommendation back is section L, not section N" in _s5repw)
+
+ck("and it names the model limitation the flagged rule sits on, rather than treating a model-conditional gain as a strategy discovery",
+   "cross-side covariance" in _s5repw
+   and "Stage 2B\u20132F measured legacy-latent getting" in _s5repw
+   and "the one whose evidence depends most on the part of the simulator we have the least confidence in" in _s5repw)
+
+ck("and it separates redundant rules from harmless ones instead of calling a subsumed rule safe",
+   "Redundant:" in _s5repw
+   and "Removing any of them changes nothing **while its partner stands**" in _s5repw
+   and "This is redundancy, not harmlessness" in _s5repw)
+
+ck("and it records that every zero was checked against shortlist truncation, with the ranks that prove it",
+   "The zeros are real, not shortlist truncation" in _s5repw
+   and "161\u2013198" in _s5repw
+   and "the greedy still never picks one" in _s5repw)
+
+# S5.12 in the report has to agree with the executable condition, including on
+# the pair, whose admitted count is read from the artifact rather than derived.
+_s5_allow86 = _s5r["boards"]["153086"]["allowed"]
+_s5_pair_adm = (_s5p["boards"]["153086"]["20260912"]["directions"]["A_select_B_score"]
+                ["portfolios"]["pair:CPT-SALARY+CPT-POS"]["admitted"])
+ck("and the S4-rerun table matches the executable condition, for the pair as well as the singles",
+   _R5.s4_rerun_required(_s5_allow86,
+                         _s5_allow86 + _s5r["boards"]["153086"]["marginal_admissions"]["DST-OPP"],
+                         ["DST-OPP"])["rerun_required"] is True
+   and f"{_s5_allow86 + _s5_pair_adm:,}" in _s5repw
+   and "33,639" in _s5repw
+   and "+41.2%" in _s5repw,
+   f"pair admits {_s5_pair_adm:,} -> {_s5_allow86 + _s5_pair_adm:,}")
+
+ck("and the S5 report keeps the limitation that one of its two boards is NOT the board S4 used, with both counts",
+   "DAL @ NYG is not the board S4 used" in _s5repw
+   and "583,082 legal lineups against 22 and 427,048" in _s5repw
+   and "DEN @ KC reproduces byte-identically (777,056 / 23,820)" in _s5repw)
+
+ck("and every S5 artifact carries a non-null seed under the contract tightened at 96bf08b",
+   all(a["meta"]["provenance"]["seed"] is not None and _prov14.complete(a["meta"]["provenance"])
+       for a in (_s5r, _s5a, _s5p, _s5s)))
+
+
 # A red guard MUST be a red exit code. The suite used to exit 0 unless it
 # crashed outright, which made every "check $? explicitly" ritual theater --
 # the one thing the exit code was trusted to carry (guard failures) was the

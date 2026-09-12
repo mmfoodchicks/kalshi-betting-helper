@@ -1,0 +1,2451 @@
+{
+ "boards": {
+  "153085": {
+   "20260912": {
+    "classifier_mismatches": 0,
+    "directions": {
+     "A_select_B_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 92.9699,
+         "p99": 166.508
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.220058,
+          "top1": 0.73543
+         },
+         "pessimistic": {
+          "top01": 0.147883,
+          "top1": 0.718368
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 92.7784,
+         "p99": 165.1845
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.225928,
+          "top1": 0.752121
+         },
+         "pessimistic": {
+          "top01": 0.154288,
+          "top1": 0.736747
+         }
+        },
+        "overlap_with_baseline": 12,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.016674380019635816,
+           "ci_lo": -0.004384973053192846,
+           "point": 0.00586987057374181,
+           "share_positive": 0.869,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.02815719981851187,
+           "ci_lo": 0.005187381937846296,
+           "point": 0.01669105050901346,
+           "share_positive": 0.9985,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.016460412607567563,
+           "ci_lo": -0.0031192264543975943,
+           "point": 0.00640562528842492,
+           "share_positive": 0.9115,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.03003457399203169,
+           "ci_lo": 0.007141277173589725,
+           "point": 0.01837904870229575,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 54847,
+        "football_selected": {
+         "mean": 92.9699,
+         "p99": 166.508
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.220058,
+          "top1": 0.73543
+         },
+         "pessimistic": {
+          "top01": 0.147883,
+          "top1": 0.718368
+         }
+        },
+        "newly_admitted_selected": 0,
+        "overlap_with_baseline": 20,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54153,
+        "football_selected": {
+         "mean": 92.7573,
+         "p99": 165.226
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.231875,
+          "top1": 0.750661
+         },
+         "pessimistic": {
+          "top01": 0.161535,
+          "top1": 0.734409
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 16,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.019053449855675628,
+           "ci_lo": 0.0043889703025492615,
+           "point": 0.011817089549971065,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.023348518952922538,
+           "ci_lo": 0.006986173382084928,
+           "point": 0.015231350108884927,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.020706278565411428,
+           "ci_lo": 0.007066300931202893,
+           "point": 0.013652427243890505,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.024212907556776672,
+           "ci_lo": 0.007604889588950834,
+           "point": 0.016040565402051187,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60724,
+        "football_selected": {
+         "mean": 92.44,
+         "p99": 164.697
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.22685,
+          "top1": 0.744492
+         },
+         "pessimistic": {
+          "top01": 0.154511,
+          "top1": 0.728564
+         }
+        },
+        "newly_admitted_selected": 3,
+        "overlap_with_baseline": 15,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.014290509711060852,
+           "ci_lo": -0.0007732638228715923,
+           "point": 0.006792123949259613,
+           "share_positive": 0.962,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.018277353834098408,
+           "ci_lo": 1.804444706837423e-05,
+           "point": 0.009061722771734587,
+           "share_positive": 0.9755,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.013682131790159908,
+           "ci_lo": -0.0005110356888229424,
+           "point": 0.006628776436542035,
+           "share_positive": 0.9625,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.01960394227237942,
+           "ci_lo": 0.0011423228121654988,
+           "point": 0.010195678700367364,
+           "share_positive": 0.9855,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 100865,
+        "football_selected": {
+         "mean": 92.9699,
+         "p99": 166.508
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.220058,
+          "top1": 0.73543
+         },
+         "pessimistic": {
+          "top01": 0.147883,
+          "top1": 0.718368
+         }
+        },
+        "newly_admitted_selected": 0,
+        "overlap_with_baseline": 20,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ]
+     },
+     "B_select_A_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 93.1833,
+         "p99": 164.7977
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.21258,
+          "top1": 0.722457
+         },
+         "pessimistic": {
+          "top01": 0.146556,
+          "top1": 0.701747
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 93.3896,
+         "p99": 164.4748
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.217888,
+          "top1": 0.749102
+         },
+         "pessimistic": {
+          "top01": 0.144128,
+          "top1": 0.729884
+         }
+        },
+        "overlap_with_baseline": 14,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.01404668492728233,
+           "ci_lo": -0.0035139080296421525,
+           "point": 0.005308375053909851,
+           "share_positive": 0.881,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.03704054399443631,
+           "ci_lo": 0.016567581207204186,
+           "point": 0.02664498553229012,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.004841522499390642,
+           "ci_lo": -0.010024886017515354,
+           "point": -0.002427644699333626,
+           "share_positive": 0.2685,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.03891060938455328,
+           "ci_lo": 0.018018388313612403,
+           "point": 0.028136746046459236,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 54847,
+        "football_selected": {
+         "mean": 92.9125,
+         "p99": 164.2122
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.215326,
+          "top1": 0.725019
+         },
+         "pessimistic": {
+          "top01": 0.152182,
+          "top1": 0.705771
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 17,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.007821177983033261,
+           "ci_lo": -0.0021037306550403434,
+           "point": 0.002746354015115586,
+           "share_positive": 0.8535,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.009449822970090007,
+           "ci_lo": -0.004213803194779063,
+           "point": 0.002562049192928759,
+           "share_positive": 0.7645,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.009469799910353769,
+           "ci_lo": 0.0016983146476472228,
+           "point": 0.005626209966472132,
+           "share_positive": 0.9975,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.011006564980514416,
+           "ci_lo": -0.0027395536227722292,
+           "point": 0.004023529739357704,
+           "share_positive": 0.8765,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54153,
+        "football_selected": {
+         "mean": 92.7074,
+         "p99": 164.1671
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.225851,
+          "top1": 0.738511
+         },
+         "pessimistic": {
+          "top01": 0.163059,
+          "top1": 0.719302
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 12,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.022217542504495837,
+           "ci_lo": 0.003784510973843149,
+           "point": 0.013270773651116322,
+           "share_positive": 0.9965,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.026863480084969475,
+           "ci_lo": 0.005020006596295288,
+           "point": 0.01605358169307054,
+           "share_positive": 0.9985,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.024350478056653368,
+           "ci_lo": 0.008128795078440068,
+           "point": 0.016503141396511375,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.028732187874024172,
+           "ci_lo": 0.006269903790757142,
+           "point": 0.01755501634555363,
+           "share_positive": 0.998,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60724,
+        "football_selected": {
+         "mean": 92.798,
+         "p99": 163.8902
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.21636,
+          "top1": 0.7355
+         },
+         "pessimistic": {
+          "top01": 0.155194,
+          "top1": 0.71733
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 15,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.009946925276685935,
+           "ci_lo": -0.002287636836930714,
+           "point": 0.003780535436275139,
+           "share_positive": 0.8855,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.02163987625725274,
+           "ci_lo": 0.004170289900916136,
+           "point": 0.013042863889792871,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.013843292195363387,
+           "ci_lo": 0.0032810331394347737,
+           "point": 0.008638182546043193,
+           "share_positive": 0.999,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.02485504332636333,
+           "ci_lo": 0.006607631930525645,
+           "point": 0.015582745769889514,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 100865,
+        "football_selected": {
+         "mean": 92.9125,
+         "p99": 164.2122
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.215326,
+          "top1": 0.725019
+         },
+         "pessimistic": {
+          "top01": 0.152182,
+          "top1": 0.705771
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 17,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.007821177983033261,
+           "ci_lo": -0.0021037306550403434,
+           "point": 0.002746354015115586,
+           "share_positive": 0.8535,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.009449822970090007,
+           "ci_lo": -0.004213803194779063,
+           "point": 0.002562049192928759,
+           "share_positive": 0.7645,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.009469799910353769,
+           "ci_lo": 0.0016983146476472228,
+           "point": 0.005626209966472132,
+           "share_positive": 0.9975,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.011006564980514416,
+           "ci_lo": -0.0027395536227722292,
+           "point": 0.004023529739357704,
+           "share_positive": 0.8765,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ]
+     }
+    },
+    "draft_group_id": 153085,
+    "seed": 20260912,
+    "worlds": 8000
+   },
+   "771033": {
+    "classifier_mismatches": 0,
+    "directions": {
+     "A_select_B_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 92.7812,
+         "p99": 163.9314
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.233121,
+          "top1": 0.743497
+         },
+         "pessimistic": {
+          "top01": 0.165119,
+          "top1": 0.725825
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 92.576,
+         "p99": 162.9563
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.243772,
+          "top1": 0.759166
+         },
+         "pessimistic": {
+          "top01": 0.175085,
+          "top1": 0.742883
+         }
+        },
+        "overlap_with_baseline": 11,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.022637537402008752,
+           "ci_lo": -0.0015734490348220402,
+           "point": 0.010651552472793315,
+           "share_positive": 0.9605,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.02689932246129948,
+           "ci_lo": 0.0032901427555935957,
+           "point": 0.015668756411628057,
+           "share_positive": 0.992,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.021605988400926274,
+           "ci_lo": -0.0013618718137167068,
+           "point": 0.009966571479287641,
+           "share_positive": 0.954,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.028916672720418164,
+           "ci_lo": 0.004352167982966797,
+           "point": 0.017057675105741427,
+           "share_positive": 0.993,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 54847,
+        "football_selected": {
+         "mean": 93.1129,
+         "p99": 163.4987
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.217013,
+          "top1": 0.735177
+         },
+         "pessimistic": {
+          "top01": 0.148544,
+          "top1": 0.718334
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 14,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": -0.006685674480946771,
+           "ci_lo": -0.025491424327257386,
+           "point": -0.01610812527910452,
+           "share_positive": 0.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.0013753420314979038,
+           "ci_lo": -0.01844193957150651,
+           "point": -0.008319966743056512,
+           "share_positive": 0.0455,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": -0.0075110615412495585,
+           "ci_lo": -0.02561614901925501,
+           "point": -0.016574977542409424,
+           "share_positive": 0.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.002215442238916997,
+           "ci_lo": -0.017862114995708566,
+           "point": -0.007491594968983728,
+           "share_positive": 0.0715,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54153,
+        "football_selected": {
+         "mean": 93.1495,
+         "p99": 163.3054
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.236442,
+          "top1": 0.751663
+         },
+         "pessimistic": {
+          "top01": 0.16715,
+          "top1": 0.733912
+         }
+        },
+        "newly_admitted_selected": 3,
+        "overlap_with_baseline": 14,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.01308480491409387,
+           "ci_lo": -0.006474330991139306,
+           "point": 0.0033216767795765383,
+           "share_positive": 0.753,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.017738458522911033,
+           "ci_lo": -0.0018905190452509477,
+           "point": 0.008165556169408426,
+           "share_positive": 0.9455,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.011448164443712872,
+           "ci_lo": -0.00749340580625098,
+           "point": 0.0020316404396716584,
+           "share_positive": 0.6635,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.018023403286620412,
+           "ci_lo": -0.0022155316008945964,
+           "point": 0.008086919101805649,
+           "share_positive": 0.933,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60724,
+        "football_selected": {
+         "mean": 92.4952,
+         "p99": 162.25
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.226244,
+          "top1": 0.742061
+         },
+         "pessimistic": {
+          "top01": 0.161391,
+          "top1": 0.724882
+         }
+        },
+        "newly_admitted_selected": 5,
+        "overlap_with_baseline": 12,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.004160824433137882,
+           "ci_lo": -0.017259600945912595,
+           "point": -0.006876656535705919,
+           "share_positive": 0.1005,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.010471030604580375,
+           "ci_lo": -0.013192001587368,
+           "point": -0.0014358334599816405,
+           "share_positive": 0.3915,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.006438418921228593,
+           "ci_lo": -0.014202869798004447,
+           "point": -0.0037282693680670926,
+           "share_positive": 0.2285,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.010955454632258239,
+           "ci_lo": -0.012842451268760097,
+           "point": -0.0009429588228255947,
+           "share_positive": 0.416,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 100865,
+        "football_selected": {
+         "mean": 93.1129,
+         "p99": 163.4987
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.217013,
+          "top1": 0.735177
+         },
+         "pessimistic": {
+          "top01": 0.148544,
+          "top1": 0.718334
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 14,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": -0.006685674480946771,
+           "ci_lo": -0.025491424327257386,
+           "point": -0.01610812527910452,
+           "share_positive": 0.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.0013753420314979038,
+           "ci_lo": -0.01844193957150651,
+           "point": -0.008319966743056512,
+           "share_positive": 0.0455,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": -0.0075110615412495585,
+           "ci_lo": -0.02561614901925501,
+           "point": -0.016574977542409424,
+           "share_positive": 0.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.002215442238916997,
+           "ci_lo": -0.017862114995708566,
+           "point": -0.007491594968983728,
+           "share_positive": 0.0715,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ]
+     },
+     "B_select_A_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 93.9353,
+         "p99": 166.2538
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.22271,
+          "top1": 0.738869
+         },
+         "pessimistic": {
+          "top01": 0.155486,
+          "top1": 0.720475
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 93.8225,
+         "p99": 165.5073
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.233576,
+          "top1": 0.765611
+         },
+         "pessimistic": {
+          "top01": 0.169559,
+          "top1": 0.749077
+         }
+        },
+        "overlap_with_baseline": 14,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.01940472697363119,
+           "ci_lo": 0.002605454595950374,
+           "point": 0.01086629366664765,
+           "share_positive": 0.995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.03595346501419643,
+           "ci_lo": 0.016342573966239733,
+           "point": 0.026742485182962784,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.02185491981495056,
+           "ci_lo": 0.006775088209932025,
+           "point": 0.01407278817628602,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.03795600570309902,
+           "ci_lo": 0.018016105773391855,
+           "point": 0.02860180995008804,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 54847,
+        "football_selected": {
+         "mean": 93.9353,
+         "p99": 166.2538
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.22271,
+          "top1": 0.738869
+         },
+         "pessimistic": {
+          "top01": 0.155486,
+          "top1": 0.720475
+         }
+        },
+        "newly_admitted_selected": 0,
+        "overlap_with_baseline": 20,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54153,
+        "football_selected": {
+         "mean": 93.7144,
+         "p99": 165.8369
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.234949,
+          "top1": 0.75606
+         },
+         "pessimistic": {
+          "top01": 0.168448,
+          "top1": 0.737672
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 17,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.01909083646465053,
+           "ci_lo": 0.005832057405424225,
+           "point": 0.012239138736393406,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.024393693332582574,
+           "ci_lo": 0.009687327391784645,
+           "point": 0.017190827936118216,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.019617922550665638,
+           "ci_lo": 0.006482122810800505,
+           "point": 0.012962089850913482,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.024547309915934113,
+           "ci_lo": 0.009650434695443817,
+           "point": 0.01719718344783268,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60724,
+        "football_selected": {
+         "mean": 93.9719,
+         "p99": 165.8502
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.219859,
+          "top1": 0.748959
+         },
+         "pessimistic": {
+          "top01": 0.15241,
+          "top1": 0.729994
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 19,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0002515278438863288,
+           "ci_lo": -0.005938215184610767,
+           "point": -0.0028510063155970373,
+           "share_positive": 0.0385,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.014841490456031987,
+           "ci_lo": 0.00506705298683792,
+           "point": 0.010090601495655377,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": -0.00011851448068124424,
+           "ci_lo": -0.0059613321434259835,
+           "point": -0.0030755920160875252,
+           "share_positive": 0.02,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.014282204746034173,
+           "ci_lo": 0.00462598121968339,
+           "point": 0.009518889001307006,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 100865,
+        "football_selected": {
+         "mean": 93.9353,
+         "p99": 166.2538
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.22271,
+          "top1": 0.738869
+         },
+         "pessimistic": {
+          "top01": 0.155486,
+          "top1": 0.720475
+         }
+        },
+        "newly_admitted_selected": 0,
+        "overlap_with_baseline": 20,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.0,
+           "ci_lo": 0.0,
+           "point": 0.0,
+           "share_positive": 0.0,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ]
+     }
+    },
+    "draft_group_id": 153085,
+    "seed": 771033,
+    "worlds": 8000
+   }
+  },
+  "153086": {
+   "20260912": {
+    "classifier_mismatches": 0,
+    "directions": {
+     "A_select_B_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 75.3472,
+         "p99": 135.5313
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.173818,
+          "top1": 0.609969
+         },
+         "pessimistic": {
+          "top01": 0.130555,
+          "top1": 0.594218
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 76.0218,
+         "p99": 134.4536
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.199383,
+          "top1": 0.71391
+         },
+         "pessimistic": {
+          "top01": 0.127716,
+          "top1": 0.691286
+         }
+        },
+        "overlap_with_baseline": 7,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.03898411700322013,
+           "ci_lo": 0.013471478967808797,
+           "point": 0.025565007374538356,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.1206090930130248,
+           "ci_lo": 0.08816254523123253,
+           "point": 0.10394126100090159,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.007664695296757502,
+           "ci_lo": -0.013067806298419344,
+           "point": -0.0028384751212453116,
+           "share_positive": 0.3105,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.11378302406754431,
+           "ci_lo": 0.08111874895557408,
+           "point": 0.09706773916914171,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 75.0983,
+         "p99": 134.3585
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.180153,
+          "top1": 0.620888
+         },
+         "pessimistic": {
+          "top01": 0.137833,
+          "top1": 0.60492
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 18,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.010780090299910559,
+           "ci_lo": 0.0017235967394610687,
+           "point": 0.006334951180458932,
+           "share_positive": 0.9975,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.01817715204050577,
+           "ci_lo": 0.004553086746229915,
+           "point": 0.010918695849996225,
+           "share_positive": 0.9985,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.011344806914555824,
+           "ci_lo": 0.0034611608406866453,
+           "point": 0.007278447805295938,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.017894568618892822,
+           "ci_lo": 0.004396294905669384,
+           "point": 0.010702005070524824,
+           "share_positive": 0.998,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54435,
+        "football_selected": {
+         "mean": 75.1682,
+         "p99": 133.5687
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.200525,
+          "top1": 0.6733
+         },
+         "pessimistic": {
+          "top01": 0.154494,
+          "top1": 0.65799
+         }
+        },
+        "newly_admitted_selected": 6,
+        "overlap_with_baseline": 10,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.03803497321547888,
+           "ci_lo": 0.016551966039862715,
+           "point": 0.02670720953143502,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.07755892940866312,
+           "ci_lo": 0.04956808556729153,
+           "point": 0.06333087368825957,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.03419338685710381,
+           "ci_lo": 0.01464691752825191,
+           "point": 0.023939183920557463,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.0783331870619205,
+           "ci_lo": 0.049260367173382266,
+           "point": 0.0637715546185062,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 75.7168,
+         "p99": 134.956
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.199597,
+          "top1": 0.69798
+         },
+         "pessimistic": {
+          "top01": 0.130487,
+          "top1": 0.674778
+         }
+        },
+        "newly_admitted_selected": 9,
+        "overlap_with_baseline": 10,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.03682972259897676,
+           "ci_lo": 0.014814403366744422,
+           "point": 0.025778742115169426,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.10348111316622709,
+           "ci_lo": 0.07334708222136029,
+           "point": 0.08801154888900148,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.008630788664509672,
+           "ci_lo": -0.008826284308415125,
+           "point": -6.787449889438512e-05,
+           "share_positive": 0.496,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.09571169662136667,
+           "ci_lo": 0.06565279010943245,
+           "point": 0.08055963795400732,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 147667,
+        "football_selected": {
+         "mean": 75.0983,
+         "p99": 134.3585
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.180153,
+          "top1": 0.620888
+         },
+         "pessimistic": {
+          "top01": 0.137833,
+          "top1": 0.60492
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 18,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.010780090299910559,
+           "ci_lo": 0.0017235967394610687,
+           "point": 0.006334951180458932,
+           "share_positive": 0.9975,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.01817715204050577,
+           "ci_lo": 0.004553086746229915,
+           "point": 0.010918695849996225,
+           "share_positive": 0.9985,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.011344806914555824,
+           "ci_lo": 0.0034611608406866453,
+           "point": 0.007278447805295938,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.017894568618892822,
+           "ci_lo": 0.004396294905669384,
+           "point": 0.010702005070524824,
+           "share_positive": 0.998,
+           "sign_stable": true
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ]
+     },
+     "B_select_A_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 75.098,
+         "p99": 136.3527
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.174483,
+          "top1": 0.61075
+         },
+         "pessimistic": {
+          "top01": 0.132992,
+          "top1": 0.597439
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 76.0837,
+         "p99": 134.8912
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.194041,
+          "top1": 0.706113
+         },
+         "pessimistic": {
+          "top01": 0.125334,
+          "top1": 0.68714
+         }
+        },
+        "overlap_with_baseline": 9,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.031574774335740165,
+           "ci_lo": 0.007646703167378564,
+           "point": 0.019557983250278722,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.11109949658518452,
+           "ci_lo": 0.07944582527299596,
+           "point": 0.09536349945078854,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0022051149995710073,
+           "ci_lo": -0.017979352483289975,
+           "point": -0.007658005124611303,
+           "share_positive": 0.0745,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.10560921324070666,
+           "ci_lo": 0.07355729122251839,
+           "point": 0.0897005990752903,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 75.0356,
+         "p99": 135.6311
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.177005,
+          "top1": 0.620309
+         },
+         "pessimistic": {
+          "top01": 0.136632,
+          "top1": 0.607194
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 19,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.006256001646108891,
+           "ci_lo": -0.0010589885046970709,
+           "point": 0.0025220448647736552,
+           "share_positive": 0.9155,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.015657903025914955,
+           "ci_lo": 0.003779449052639541,
+           "point": 0.009559115575008442,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.007047457290132234,
+           "ci_lo": 0.00036954520330475886,
+           "point": 0.00364012322978306,
+           "share_positive": 0.984,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.015870069273552546,
+           "ci_lo": 0.003997892446162065,
+           "point": 0.00975539360859655,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54435,
+        "football_selected": {
+         "mean": 75.4882,
+         "p99": 135.3773
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.192792,
+          "top1": 0.665441
+         },
+         "pessimistic": {
+          "top01": 0.14665,
+          "top1": 0.653146
+         }
+        },
+        "newly_admitted_selected": 6,
+        "overlap_with_baseline": 11,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.028723436773774216,
+           "ci_lo": 0.008156465493438222,
+           "point": 0.018309343550610174,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.06775909705935015,
+           "ci_lo": 0.04035225088811832,
+           "point": 0.054691391667918726,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.02325153633741258,
+           "ci_lo": 0.003915119653940068,
+           "point": 0.01365806723024964,
+           "share_positive": 0.9975,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.06891772012353528,
+           "ci_lo": 0.04121416219093597,
+           "point": 0.05570741355030577,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 76.0745,
+         "p99": 135.8699
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.200921,
+          "top1": 0.704453
+         },
+         "pessimistic": {
+          "top01": 0.126167,
+          "top1": 0.684441
+         }
+        },
+        "newly_admitted_selected": 7,
+        "overlap_with_baseline": 12,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.03639191044998338,
+           "ci_lo": 0.016872649169074945,
+           "point": 0.026437889061644012,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.10714032745611733,
+           "ci_lo": 0.07934562102470955,
+           "point": 0.0937031763373363,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0011057858945988789,
+           "ci_lo": -0.014824118853207937,
+           "point": -0.006824238557508158,
+           "share_positive": 0.0485,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.10010278917196577,
+           "ci_lo": 0.07268121504878565,
+           "point": 0.08700222457402422,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 147667,
+        "football_selected": {
+         "mean": 75.0356,
+         "p99": 135.6311
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.177005,
+          "top1": 0.620309
+         },
+         "pessimistic": {
+          "top01": 0.136632,
+          "top1": 0.607194
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 19,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.006256001646108891,
+           "ci_lo": -0.0010589885046970709,
+           "point": 0.0025220448647736552,
+           "share_positive": 0.9155,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.015657903025914955,
+           "ci_lo": 0.003779449052639541,
+           "point": 0.009559115575008442,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.007047457290132234,
+           "ci_lo": 0.00036954520330475886,
+           "point": 0.00364012322978306,
+           "share_positive": 0.984,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.015870069273552546,
+           "ci_lo": 0.003997892446162065,
+           "point": 0.00975539360859655,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ]
+     }
+    },
+    "draft_group_id": 153086,
+    "seed": 20260912,
+    "worlds": 8000
+   },
+   "771033": {
+    "classifier_mismatches": 0,
+    "directions": {
+     "A_select_B_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 76.135,
+         "p99": 138.3569
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.16269,
+          "top1": 0.601183
+         },
+         "pessimistic": {
+          "top01": 0.121952,
+          "top1": 0.588482
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 76.5276,
+         "p99": 136.9553
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.196902,
+          "top1": 0.706894
+         },
+         "pessimistic": {
+          "top01": 0.126289,
+          "top1": 0.682547
+         }
+        },
+        "overlap_with_baseline": 6,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.046795484305930155,
+           "ci_lo": 0.020867732960904946,
+           "point": 0.03421208601031917,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.12207950694545187,
+           "ci_lo": 0.08840180495167421,
+           "point": 0.10571093944791066,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.015559133509313062,
+           "ci_lo": -0.006863178787080646,
+           "point": 0.004337091969820103,
+           "share_positive": 0.7675,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.11067155208559043,
+           "ci_lo": 0.07651355705080684,
+           "point": 0.09406549145616962,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 75.6436,
+         "p99": 136.9689
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.166313,
+          "top1": 0.609342
+         },
+         "pessimistic": {
+          "top01": 0.12605,
+          "top1": 0.597248
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 15,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.010134991955330831,
+           "ci_lo": -0.003504144003418211,
+           "point": 0.0036223119539723655,
+           "share_positive": 0.846,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.01793605635751094,
+           "ci_lo": -0.0013194282040619209,
+           "point": 0.008158729127323119,
+           "share_positive": 0.951,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.009985531678369726,
+           "ci_lo": -0.0018697195643043406,
+           "point": 0.004097557993249709,
+           "share_positive": 0.9025,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.018835050287452415,
+           "ci_lo": -0.00098076528807595,
+           "point": 0.00876636217230246,
+           "share_positive": 0.9645,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54435,
+        "football_selected": {
+         "mean": 76.071,
+         "p99": 136.1937
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.181446,
+          "top1": 0.67348
+         },
+         "pessimistic": {
+          "top01": 0.133116,
+          "top1": 0.657304
+         }
+        },
+        "newly_admitted_selected": 6,
+        "overlap_with_baseline": 9,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.02932387356812112,
+           "ci_lo": 0.006579016072442471,
+           "point": 0.01875600180048074,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.08696279313859445,
+           "ci_lo": 0.05710070026025246,
+           "point": 0.0722972939634669,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.02126727603566477,
+           "ci_lo": 0.000978056315274511,
+           "point": 0.011163626476151538,
+           "share_positive": 0.982,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.08341950820886453,
+           "ci_lo": 0.053450581601847715,
+           "point": 0.0688219228407049,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 76.5871,
+         "p99": 136.8572
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.175031,
+          "top1": 0.695008
+         },
+         "pessimistic": {
+          "top01": 0.107227,
+          "top1": 0.671788
+         }
+        },
+        "newly_admitted_selected": 8,
+        "overlap_with_baseline": 7,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.024521319886639494,
+           "ci_lo": 0.00026449985311618145,
+           "point": 0.012340341049966487,
+           "share_positive": 0.9775,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.11035614395050336,
+           "ci_lo": 0.076811040912292,
+           "point": 0.09382481703475853,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": -0.004786183850031681,
+           "ci_lo": -0.025051890683560892,
+           "point": -0.014725032679299598,
+           "share_positive": 0.0025,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.09954235421341313,
+           "ci_lo": 0.0661031117595089,
+           "point": 0.08330583832720356,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 147667,
+        "football_selected": {
+         "mean": 75.6436,
+         "p99": 136.9689
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.166313,
+          "top1": 0.609342
+         },
+         "pessimistic": {
+          "top01": 0.12605,
+          "top1": 0.597248
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 15,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.010134991955330831,
+           "ci_lo": -0.003504144003418211,
+           "point": 0.0036223119539723655,
+           "share_positive": 0.846,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.01793605635751094,
+           "ci_lo": -0.0013194282040619209,
+           "point": 0.008158729127323119,
+           "share_positive": 0.951,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.009985531678369726,
+           "ci_lo": -0.0018697195643043406,
+           "point": 0.004097557993249709,
+           "share_positive": 0.9025,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.018835050287452415,
+           "ci_lo": -0.00098076528807595,
+           "point": 0.00876636217230246,
+           "share_positive": 0.9645,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ]
+     },
+     "B_select_A_score": {
+      "folds_disjoint": true,
+      "portfolios": {
+       "baseline": {
+        "football_selected": {
+         "mean": 75.717,
+         "p99": 138.0889
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.167211,
+          "top1": 0.609451
+         },
+         "pessimistic": {
+          "top01": 0.124151,
+          "top1": 0.596814
+         }
+        },
+        "overlap_with_baseline": 20
+       },
+       "full_legal": {
+        "football_selected": {
+         "mean": 76.6215,
+         "p99": 136.3076
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.203582,
+          "top1": 0.70536
+         },
+         "pessimistic": {
+          "top01": 0.123201,
+          "top1": 0.681539
+         }
+        },
+        "overlap_with_baseline": 8,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.049095547595891596,
+           "ci_lo": 0.023068203389922427,
+           "point": 0.03637131210248448,
+           "share_positive": 1.0,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.11164299778010346,
+           "ci_lo": 0.07935386445823463,
+           "point": 0.09590914958189423,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.009465465285157054,
+           "ci_lo": -0.01193291514574539,
+           "point": -0.0009507744007350523,
+           "share_positive": 0.4335,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.10068453059176405,
+           "ci_lo": 0.06796114499091925,
+           "point": 0.08472514214747304,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POOL": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 75.7887,
+         "p99": 137.8034
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.167368,
+          "top1": 0.61419
+         },
+         "pessimistic": {
+          "top01": 0.123847,
+          "top1": 0.599836
+         }
+        },
+        "newly_admitted_selected": 1,
+        "overlap_with_baseline": 19,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.0033327022531359366,
+           "ci_lo": -0.0028717912430283295,
+           "point": 0.00015757436885633041,
+           "share_positive": 0.553,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.010137576965244999,
+           "ci_lo": -0.0005504976568859629,
+           "point": 0.004739406513188205,
+           "share_positive": 0.9605,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.002735658613306769,
+           "ci_lo": -0.003133171180873904,
+           "point": -0.0003045697893031521,
+           "share_positive": 0.433,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.008360702647859125,
+           "ci_lo": -0.0022409419135346713,
+           "point": 0.003021636127949209,
+           "share_positive": 0.8575,
+           "sign_stable": false
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+CPT-POS": {
+        "admitted": 54435,
+        "football_selected": {
+         "mean": 76.116,
+         "p99": 136.5006
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.169047,
+          "top1": 0.665245
+         },
+         "pessimistic": {
+          "top01": 0.12083,
+          "top1": 0.648506
+         }
+        },
+        "newly_admitted_selected": 9,
+        "overlap_with_baseline": 8,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.013139038465847443,
+           "ci_lo": -0.009332659867713559,
+           "point": 0.0018362566149770676,
+           "share_positive": 0.6205,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.07120368356460192,
+           "ci_lo": 0.041111617565385714,
+           "point": 0.05579360563668297,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0068133174457131705,
+           "ci_lo": -0.013642138933764288,
+           "point": -0.003321674192617776,
+           "share_positive": 0.274,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.06753531086717132,
+           "ci_lo": 0.036862545597175105,
+           "point": 0.0516914500453933,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+DST-OPP": {
+        "admitted": 60926,
+        "football_selected": {
+         "mean": 76.446,
+         "p99": 136.1153
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.188606,
+          "top1": 0.692599
+         },
+         "pessimistic": {
+          "top01": 0.108708,
+          "top1": 0.667976
+         }
+        },
+        "newly_admitted_selected": 9,
+        "overlap_with_baseline": 8,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.03397834923099012,
+           "ci_lo": 0.00888018325472463,
+           "point": 0.021394770696532745,
+           "share_positive": 0.9995,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.09930278798437846,
+           "ci_lo": 0.06751457258321018,
+           "point": 0.08314815477078713,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": -0.005182885574324197,
+           "ci_lo": -0.025546673886123288,
+           "point": -0.015443640598854494,
+           "share_positive": 0.0015,
+           "sign_stable": true
+          },
+          "top1": {
+           "ci_hi": 0.08706424793847249,
+           "ci_lo": 0.05550212407698451,
+           "point": 0.07116176065475915,
+           "share_positive": 1.0,
+           "sign_stable": true
+          }
+         }
+        }
+       },
+       "pair:CPT-SALARY+FLEX-POOL": {
+        "admitted": 147667,
+        "football_selected": {
+         "mean": 75.8271,
+         "p99": 137.7538
+        },
+        "held_out": {
+         "optimistic": {
+          "top01": 0.168577,
+          "top1": 0.61364
+         },
+         "pessimistic": {
+          "top01": 0.124372,
+          "top1": 0.598786
+         }
+        },
+        "newly_admitted_selected": 2,
+        "overlap_with_baseline": 18,
+        "paired": {
+         "optimistic": {
+          "top01": {
+           "ci_hi": 0.005511105420198673,
+           "ci_lo": -0.0028823675205942333,
+           "point": 0.0013662633805517426,
+           "share_positive": 0.755,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.011764720674027021,
+           "ci_lo": -0.0031190687766333054,
+           "point": 0.004189446801766715,
+           "share_positive": 0.86,
+           "sign_stable": false
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "ci_hi": 0.0038430550908083124,
+           "ci_lo": -0.003575996991770571,
+           "point": 0.0002207588851894835,
+           "share_positive": 0.559,
+           "sign_stable": false
+          },
+          "top1": {
+           "ci_hi": 0.009486858669247937,
+           "ci_lo": -0.005267693878969769,
+           "point": 0.0019718679259784315,
+           "share_positive": 0.693,
+           "sign_stable": false
+          }
+         }
+        }
+       }
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ]
+     }
+    },
+    "draft_group_id": 153086,
+    "seed": 771033,
+    "worlds": 8000
+   }
+  }
+ },
+ "meta": {
+  "boards": [
+   153086,
+   153085
+  ],
+  "excluded": {
+   "MAX-KDST": "546 marginal admissions, zero single-rule effect",
+   "MAX-PUNT": "zero marginal admissions; 100% subsumed by PUNT-ROLE",
+   "MAX-TE-TEAM": "zero marginal admissions",
+   "PUNT-ROLE": "single-rule effect noise-dominated (-0.0019, 1/8 stable)"
+  },
+  "money": "CLOSED -- no payout metric appears in this stage",
+  "pairs": [
+   {
+    "pair": [
+     "CPT-SALARY",
+     "CPT-POS"
+    ],
+    "why": "CPT-POS is 100% subsumed by CPT-SALARY on both boards, so a kicker or defense captain is enterable only when BOTH come off. The largest structurally predicted interaction."
+   },
+   {
+    "pair": [
+     "CPT-SALARY",
+     "CPT-POOL"
+    ],
+    "why": "same subsumption, at the depth gate: a depth-dropped captain is also always under the salary floor."
+   },
+   {
+    "pair": [
+     "CPT-SALARY",
+     "DST-OPP"
+    ],
+    "why": "the only two rules with a non-zero single-rule effect, so their combination is where additivity is most directly testable."
+   },
+   {
+    "pair": [
+     "CPT-SALARY",
+     "FLEX-POOL"
+    ],
+    "why": "the two largest marginal-admission sets (37k and 47k on DEN @ KC), so the pair with the most room to interact by volume."
+   }
+  ],
+  "predeclared": "PAIRS is closed and was written from S5.1's subsumption matrix before this ran, not chosen from its output",
+  "provenance": {
+   "commit": "b01e179",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy-latent-discrete",
+   "seed": {
+    "boards": [
+     20260912,
+     771033
+    ],
+    "bootstrap": 11
+   },
+   "source_files": 33,
+   "source_sha": "08825a1fdc07e6ea4ca38431632f06a5b005553dbeee7d0bc95b8ff29fabcc5f",
+   "worlds": 8000
+  },
+  "seeds": [
+   20260912,
+   771033
+  ],
+  "stage": "S5.9 pairwise rule removals",
+  "trigger": "S5.8's full-legal gain exceeds the sum of single-rule ablations by +0.0122 on average and +0.0341 in the worst cell, so an interaction exists that no single ablation can reach",
+  "untested": "three-or-more-rule combinations. The full-legal counterfactual is the only evidence about them and it cannot attribute."
+ }
+}

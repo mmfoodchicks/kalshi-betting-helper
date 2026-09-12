@@ -1,0 +1,1055 @@
+{
+ "meta": {
+  "candidates": {
+   "CPT-SALARY": [
+    {
+     "board": "153085",
+     "convention": "optimistic",
+     "delta_top1": -0.00832,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153085",
+     "convention": "pessimistic",
+     "delta_top1": -0.007491,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.010919,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.010702,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.009559,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.009755,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.008159,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.008766,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    }
+   ],
+   "DST-OPP": [
+    {
+     "board": "153085",
+     "convention": "optimistic",
+     "delta_top1": 0.009062,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153085",
+     "convention": "pessimistic",
+     "delta_top1": 0.010196,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153085",
+     "convention": "optimistic",
+     "delta_top1": 0.013043,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153085",
+     "convention": "pessimistic",
+     "delta_top1": 0.015583,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153085",
+     "convention": "optimistic",
+     "delta_top1": 0.01009,
+     "direction": "B_select_A_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153085",
+     "convention": "pessimistic",
+     "delta_top1": 0.009519,
+     "direction": "B_select_A_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.085976,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.078641,
+     "direction": "A_select_B_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.092772,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.085682,
+     "direction": "B_select_A_score",
+     "seed": "20260912"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.086951,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.076483,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "optimistic",
+     "delta_top1": 0.077542,
+     "direction": "B_select_A_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153086",
+     "convention": "pessimistic",
+     "delta_top1": 0.066621,
+     "direction": "B_select_A_score",
+     "seed": "771033"
+    }
+   ],
+   "PUNT-ROLE": [
+    {
+     "board": "153085",
+     "convention": "optimistic",
+     "delta_top1": -0.011329,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    },
+    {
+     "board": "153085",
+     "convention": "pessimistic",
+     "delta_top1": -0.010571,
+     "direction": "A_select_B_score",
+     "seed": "771033"
+    }
+   ]
+  },
+  "money": "CLOSED -- no payout metric appears in this stage",
+  "provenance": {
+   "commit": "ed7ffbc",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy-latent-discrete",
+   "seed": 20260912,
+   "source_files": 33,
+   "source_sha": "08825a1fdc07e6ea4ca38431632f06a5b005553dbeee7d0bc95b8ff29fabcc5f",
+   "worlds": 8000
+  },
+  "screen": "rules whose removal moved held-out Top 1% by >= 0.005 in at least one cell at either exact convention",
+  "stage": "S5.10 field-concentration sensitivity"
+ },
+ "sweep": {
+  "by_top_share": {
+   "0.001": {
+    "beta": 0.3786,
+    "directions": {
+     "A_select_B_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.014648743127444576,
+         "ci_lo": 0.002926454387952614,
+         "point": 0.008894296041938692,
+         "share_positive": 0.999,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.0183924998418154,
+         "ci_lo": 0.00331747456910603,
+         "point": 0.011047982295918073,
+         "share_positive": 0.998,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.011869817536663642,
+         "ci_lo": 0.0007965692994991751,
+         "point": 0.006250519118434625,
+         "share_positive": 0.986,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.019393082604742422,
+         "ci_lo": 0.00397906017023981,
+         "point": 0.011808190434500916,
+         "share_positive": 0.998,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.04289809659473016,
+         "ci_lo": 0.017596960726702013,
+         "point": 0.030027768649057828,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10523703599706757,
+         "ci_lo": 0.07459215670583298,
+         "point": 0.08955559277801543,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.01892097418814525,
+         "ci_lo": -0.002416407119116904,
+         "point": 0.008169564260615143,
+         "share_positive": 0.9275,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.10529724974045049,
+         "ci_lo": 0.07477045816222519,
+         "point": 0.0896761245361861,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0022585366444605247,
+         "ci_lo": -0.004971631950474135,
+         "point": -0.0013543889434149364,
+         "share_positive": 0.241,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.006592012235428896,
+         "ci_lo": -0.0035831356365881007,
+         "point": 0.0013527426030461587,
+         "share_positive": 0.7,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0018656570963138236,
+         "ci_lo": -0.00532312559295091,
+         "point": -0.0017585456586285274,
+         "share_positive": 0.1655,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.006327747905346117,
+         "ci_lo": -0.003888253425638237,
+         "point": 0.0011070785009289397,
+         "share_positive": 0.664,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.05082564454655452,
+         "ci_lo": 0.025074554713530206,
+         "point": 0.0374130902245379,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10759552084140951,
+         "ci_lo": 0.07741586495270979,
+         "point": 0.09189592257839399,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.02723903531212243,
+         "ci_lo": 0.004222589116916389,
+         "point": 0.015228628151049915,
+         "share_positive": 0.996,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10805733763219255,
+         "ci_lo": 0.07774603946305436,
+         "point": 0.0925351403823672,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     },
+     "B_select_A_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.002320053404630213,
+         "ci_lo": -0.014408055250683035,
+         "point": -0.005974190335669263,
+         "share_positive": 0.0725,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.015954240011454183,
+         "ci_lo": -0.005576837292182156,
+         "point": 0.005338344730728283,
+         "share_positive": 0.8265,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.002334766437459194,
+         "ci_lo": -0.013542351412393483,
+         "point": -0.005518947157356585,
+         "share_positive": 0.082,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.016644991520847034,
+         "ci_lo": -0.005038354151290648,
+         "point": 0.005953147715333143,
+         "share_positive": 0.854,
+         "sign_stable": false
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.036003284620880094,
+         "ci_lo": 0.00885834698511919,
+         "point": 0.022998652569787476,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.0880654044775864,
+         "ci_lo": 0.057415578480457835,
+         "point": 0.07266068431642111,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.012010537361711433,
+         "ci_lo": -0.012836196884467374,
+         "point": 0.00016881943733881388,
+         "share_positive": 0.487,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.08410565820303562,
+         "ci_lo": 0.05323697801033137,
+         "point": 0.06873687713652996,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.050333256417272765,
+         "ci_lo": 0.024285141689722727,
+         "point": 0.037334433025735025,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10842690451544203,
+         "ci_lo": 0.07671561122710448,
+         "point": 0.09236115405313564,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.027921454226619163,
+         "ci_lo": 0.004271128096108464,
+         "point": 0.016152870927501728,
+         "share_positive": 0.9965,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10391798346920142,
+         "ci_lo": 0.07184010943192645,
+         "point": 0.08782882410682655,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     }
+    },
+    "scenario": "flatter field",
+    "top_share": 0.001
+   },
+   "0.002": {
+    "beta": 0.4548,
+    "directions": {
+     "A_select_B_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.010780090299910559,
+         "ci_lo": 0.0017235967394610687,
+         "point": 0.006334951180458932,
+         "share_positive": 0.9975,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.01817715204050577,
+         "ci_lo": 0.004553086746229915,
+         "point": 0.010918695849996225,
+         "share_positive": 0.9985,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.011344806914555824,
+         "ci_lo": 0.0034611608406866453,
+         "point": 0.007278447805295938,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.017894568618892822,
+         "ci_lo": 0.004396294905669384,
+         "point": 0.010702005070524824,
+         "share_positive": 0.998,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.026758381719314897,
+         "ci_lo": 0.005218582738902358,
+         "point": 0.015768846796101885,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.10016400121126948,
+         "ci_lo": 0.07202015802677189,
+         "point": 0.08597591665717522,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": -0.002745411846490137,
+         "ci_lo": -0.02002105118295873,
+         "point": -0.011380326241015707,
+         "share_positive": 0.003,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.09298508827237088,
+         "ci_lo": 0.06411187134962922,
+         "point": 0.07864090268451134,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.03898411700322013,
+         "ci_lo": 0.013471478967808797,
+         "point": 0.025565007374538356,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.1206090930130248,
+         "ci_lo": 0.08816254523123253,
+         "point": 0.10394126100090159,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.007664695296757502,
+         "ci_lo": -0.013067806298419344,
+         "point": -0.0028384751212453116,
+         "share_positive": 0.3105,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.11378302406754431,
+         "ci_lo": 0.08111874895557408,
+         "point": 0.09706773916914171,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     },
+     "B_select_A_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.006256001646108891,
+         "ci_lo": -0.0010589885046970709,
+         "point": 0.0025220448647736552,
+         "share_positive": 0.9155,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.015657903025914955,
+         "ci_lo": 0.003779449052639541,
+         "point": 0.009559115575008442,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.007047457290132234,
+         "ci_lo": 0.00036954520330475886,
+         "point": 0.00364012322978306,
+         "share_positive": 0.984,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.015870069273552546,
+         "ci_lo": 0.003997892446162065,
+         "point": 0.00975539360859655,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.04175055195707859,
+         "ci_lo": 0.021789740728696466,
+         "point": 0.03167482903973891,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.1063489530985264,
+         "ci_lo": 0.07876879714509481,
+         "point": 0.09277184162112553,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.007179104278054923,
+         "ci_lo": -0.009250532415165243,
+         "point": -0.0012337744967040756,
+         "share_positive": 0.373,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0990786708663258,
+         "ci_lo": 0.07121443486273175,
+         "point": 0.08568224091518661,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.031574774335740165,
+         "ci_lo": 0.007646703167378564,
+         "point": 0.019557983250278722,
+         "share_positive": 0.9995,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.11109949658518452,
+         "ci_lo": 0.07944582527299596,
+         "point": 0.09536349945078854,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0022051149995710073,
+         "ci_lo": -0.017979352483289975,
+         "point": -0.007658005124611303,
+         "share_positive": 0.0745,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.10560921324070666,
+         "ci_lo": 0.07355729122251839,
+         "point": 0.0897005990752903,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     }
+    },
+    "scenario": "production",
+    "top_share": 0.002
+   },
+   "0.004": {
+    "beta": 0.5438,
+    "directions": {
+     "A_select_B_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.015333724027294571,
+         "ci_lo": 0.005311720090545881,
+         "point": 0.010314334903018705,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.02468611381533937,
+         "ci_lo": 0.010285202666374168,
+         "point": 0.017317599590601085,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.008522033909031066,
+         "ci_lo": -0.0001012838592452669,
+         "point": 0.0041553841747269905,
+         "share_positive": 0.9695,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.023408616206874244,
+         "ci_lo": 0.008852030551120622,
+         "point": 0.016098347852291035,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.02139997053119898,
+         "ci_lo": -0.0005222259163042284,
+         "point": 0.010755175553275237,
+         "share_positive": 0.968,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.11086689834274054,
+         "ci_lo": 0.07866948223234618,
+         "point": 0.09501319963046641,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": -0.0023964521033539216,
+         "ci_lo": -0.019076644485200602,
+         "point": -0.010839433791470295,
+         "share_positive": 0.005,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.09266979419445844,
+         "ci_lo": 0.06061933275870141,
+         "point": 0.07677014442067127,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.037609320494896355,
+         "ci_lo": 0.011559661491907958,
+         "point": 0.024567405940184594,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.1049227959095273,
+         "ci_lo": 0.07276917928680916,
+         "point": 0.08861182678694289,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.01850635561735111,
+         "ci_lo": -0.003222349108626861,
+         "point": 0.0076425015558471135,
+         "share_positive": 0.928,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.09190615122100738,
+         "ci_lo": 0.058202871044342755,
+         "point": 0.07453855220215286,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     },
+     "B_select_A_score": {
+      "ablate:CPT-SALARY": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.009375200760666978,
+         "ci_lo": -0.00232480367252591,
+         "point": 0.0035968541862251005,
+         "share_positive": 0.8905,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.022508662135602254,
+         "ci_lo": 0.007664331383906519,
+         "point": 0.015014209505760778,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.008776650567770142,
+         "ci_lo": -0.0025384052896866784,
+         "point": 0.0031950388595393844,
+         "share_positive": 0.8745,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.022140997298279057,
+         "ci_lo": 0.006947516063602178,
+         "point": 0.014319102469048174,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:DST-OPP": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0337861702649499,
+         "ci_lo": 0.014562526359439075,
+         "point": 0.024114667065818884,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.11205558451182546,
+         "ci_lo": 0.0839971287038206,
+         "point": 0.09816024546498517,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0013958806102896129,
+         "ci_lo": -0.013655230323532948,
+         "point": -0.006354953083623863,
+         "share_positive": 0.0525,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0941412114680219,
+         "ci_lo": 0.06671398755437745,
+         "point": 0.08041727045466666,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "ablate:PUNT-ROLE": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.0,
+         "ci_lo": 0.0,
+         "point": 0.0,
+         "share_positive": 0.0,
+         "sign_stable": false
+        }
+       }
+      },
+      "full_legal": {
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.04403577089633346,
+         "ci_lo": 0.01987381318257726,
+         "point": 0.0321221384722683,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": 0.12646637730087532,
+         "ci_lo": 0.09249052947616972,
+         "point": 0.10967203633461972,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.01057835688740984,
+         "ci_lo": -0.009305144581040372,
+         "point": 0.0008223504813520462,
+         "share_positive": 0.565,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": 0.11141416847866016,
+         "ci_lo": 0.07741412730884113,
+         "point": 0.09433470719526811,
+         "share_positive": 1.0,
+         "sign_stable": true
+        }
+       }
+      }
+     }
+    },
+    "scenario": "more concentrated",
+    "top_share": 0.004
+   }
+  },
+  "draft_group_id": 153086,
+  "note": "sensitivity scenarios only; no value here may become a production default, and none of them is a calibrated alternative",
+  "rules_swept": [
+   "CPT-SALARY",
+   "DST-OPP",
+   "PUNT-ROLE"
+  ],
+  "seed": 20260912,
+  "worlds": 8000
+ }
+}
