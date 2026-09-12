@@ -14428,6 +14428,120 @@ ck("and the worst relative residual is NAMED with its projection, so a 14% error
    f"{_sdo['means']['worst_residual']['abs_err_pts']} pts "
    f"({_sdo['means']['worst_residual']['rel_err_pct']}%)")
 
+# ======================================================================
+# S4.1 / S4.10: what the portfolio engine selects on, and what Top-q means
+# ======================================================================
+# TWO facts about the production engine, pinned because S4 turns on both and
+# neither was written down anywhere before.
+#
+# FIRST: portfolio coverage is reported on the SAME worlds it was selected on.
+# `build_nfl_showdown` scores every lineup over all N worlds, shortlists the
+# 1,200 best by top-1% over those worlds, greedily covers those worlds, and then
+# reports the greedy's own coverage vector as `p_any_top1_pct`. That is an
+# in-sample number, and the guard below states it rather than leaving a reader to
+# assume the reported figure is held out.
+_s4_src = open(_os.path.join(_root, "dfs_tourney.py")).read()
+_s4_sd = _s4_src[_s4_src.index("def build_nfl_showdown("):_s4_src.index("# ---- classic (nine slots)")]
+ck("the showdown board's reported portfolio coverage is IN-SAMPLE: one world set feeds the shortlist, the greedy cover and the reported number, with no held-out split anywhere",
+   'cand = ok[np.argsort(-res["top1"][ok])][:int(candidates)]' in _s4_sd
+   and "chosen, p_any = portfolio(W, X, f, grid, cand, kmax, chunk=chunk)" in _s4_sd
+   and '"p_any_top1_pct": round(100.0 * p_any[kk - 1], 1)' in _s4_sd
+   and "fold" not in _s4_sd.lower(),
+   "S4.2 adds the cross-fit; until then this is what the number means")
+ck("and the selection objective is top 1%, not top 0.1%: the greedy's rank argument is defaulted, never passed, so the tail objective has never driven a served board",
+   'def portfolio_vs_field(Wc, Wf, wf, X, grids, cand_idx, k, chunk=500, rank="top1"):' in _s4_src
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]" in _s4_src
+   and "rank=" not in _s4_sd,
+   "S4 asks whether it should be; it has not been tested before")
+
+# SECOND: Top-q counts only the field mass STRICTLY above a lineup, so every
+# opponent tied with us is treated as finishing behind us -- while win_sole and
+# ev in the same grid are tie-exact. The pessimistic end is computable from the
+# same table, because independent Poissons add: A + T is Poisson(lamA + lamT),
+# which is the table read at F' = 1 - (1 - strict) * exp(-level). Every
+# convention that treats a tie as neither a win nor a loss lies between the two.
+# The synthetic cases need payout_grid, which needs numpy. The server installs
+# none on purpose, so this block is gated exactly like every other numpy guard
+# here -- the artifact checks below it are plain JSON and run either way.
+if _dt14.available():
+    import math as _math_s4
+    import numpy as _nps4
+
+    def _s4_topq(grid, qname, strict, level, C):
+        _F, _tab = grid["F"], grid[qname]
+        _fe = min(1.0, max(0.0, 1.0 - (1.0 - strict) * _math_s4.exp(-level)))
+        _io = min(int(_nps4.searchsorted(_F, strict)), len(_F) - 1)
+        _ip = min(int(_nps4.searchsorted(_F, _fe)), len(_F) - 1)
+        return float(_tab[_io]), float(_tab[_ip])
+
+    # Candidate ENUMERATION is world-independent, so the lineup universe needs no
+    # cross-fit -- only the shortlist and the greedy use simulated performance.
+    # Proved by behaviour rather than by reading the source for suspicious words:
+    # the first version of this guard searched for the substring "arr" and failed
+    # on `np.asarray`, which is a test bug and not a finding.
+    _s4_pl = [{"salary": 5000 + 400 * i, "cpt_salary": 7500 + 600 * i,
+               "team": ("AAA" if i % 2 else "BBB"), "pos": ["QB", "RB", "WR", "TE", "K", "DST"][i % 6],
+               "arr": [float(i)] * 8, "proj": 10.0 - 0.3 * i} for i in range(9)]
+    _s4_i1, _s4_w1, _s4_a1 = _dt14.enumerate_showdown(_s4_pl, 50000, cpt_mult=1.5)
+    for _p in _s4_pl:                       # rewrite every simulated score
+        _p["arr"] = [float(-99 - _p["salary"])] * 8
+        _p["proj"] = 99.0
+    _s4_i2, _s4_w2, _s4_a2 = _dt14.enumerate_showdown(_s4_pl, 50000, cpt_mult=1.5)
+    ck("candidate ENUMERATION is world-independent: rewriting every player's simulated scores and projections leaves the legal lineup universe byte-identical, so only the shortlist and the greedy need a cross-fit",
+       _nps4.array_equal(_s4_i1, _s4_i2) and _nps4.array_equal(_s4_w1, _s4_w2)
+       and _nps4.array_equal(_s4_a1, _s4_a2) and len(_s4_i1) > 10,
+       f"{len(_s4_i1):,} lineups either way")
+
+    _s4_C = 1000
+    _s4_pay = [{"from": 1, "to": 1, "prize": 1000.0}, {"from": 2, "to": 10, "prize": 100.0},
+               {"from": 11, "to": 200, "prize": 10.0}]
+    _s4_grid = _dt14.payout_grid(_s4_C, _s4_pay, 10.0, 200)
+    # no tie at the cutoff: the two ends agree exactly
+    _s4_a = _s4_topq(_s4_grid, "top01", 0.0005, 0.0, _s4_C)
+    # a tie spanning the only top-0.1% seat (1 place in a 1,000-entry contest)
+    _s4_b = _s4_topq(_s4_grid, "top01", 0.0, 0.005, _s4_C)
+    # a multiway tie spanning several top-1% seats (10 places)
+    _s4_c = _s4_topq(_s4_grid, "top1", 0.004, 0.02, _s4_C)
+    ck("with no field mass level with us, the optimistic and pessimistic readings of Top-q are IDENTICAL -- the convention only exists where a tie exists",
+       abs(_s4_a[0] - _s4_a[1]) < 1e-12, f"{_s4_a[0]:.6f} vs {_s4_a[1]:.6f}")
+    ck("a tie spanning the single top-0.1% seat is where the convention bites hardest: production counts it as fully qualifying, the other end as fully missing",
+       _s4_b[0] > 0.99 and _s4_b[1] < 0.10,
+       f"optimistic {_s4_b[0]:.4f} vs pessimistic {_s4_b[1]:.4f} -- a small-contest artifact, "
+       "NOT live severity")
+    ck("a multiway tie spanning several top-1% seats moves it in the same direction but less, because there are more seats for the block to fall inside",
+       _s4_c[0] > _s4_c[1] and (_s4_c[0] - _s4_c[1]) < (_s4_b[0] - _s4_b[1]),
+       f"optimistic {_s4_c[0]:.4f} vs pessimistic {_s4_c[1]:.4f}")
+# The contest-field count contract, pinned so the ambiguity dies here. Every
+# ticket is graded against C-1 opponents, ALL of them drawn from the public field
+# model -- including the 19 that are actually our own other entries. The
+# approximation is named in portfolio_vs_field's docstring; what it is worth on
+# the live board is 19/88,234 = 2.2e-4 of the field, against an F grid that is
+# logspaced from 1e-9 so it resolves far finer than that near zero. So it is NOT
+# below the grid's resolution here, and it is a real if small optimism: our own
+# lower entries are counted as if they could outscore us.
+ck("a ticket is graded against C-1 opponents, every one of them a public-field draw, and the engine says so where it is approximated rather than leaving the count ambiguous",
+   "(C - 1)" in _s4_src
+   and "treats all C-1 opponents as\n    public-field draws when a handful of them are our own" in _s4_src
+   and "first = np.power(1.0 - F, C - 1)" in _s4_src,
+   "88,235 entries -> 88,234 opponents per ticket, not 88,215")
+_s4t = _json2b.load(open(_os.path.join(_root, "research", "data", "s4_ties.json")))
+ck("and on a LIVE board the whole span of defensible conventions is worth about one percent of the best lineup's metric, picks the same best lineup, and leaves the ranking almost unchanged -- so the convention is documented, not fixed, and the engine is not bumped for it",
+   _s4t["by_q"]["top01"]["relative_bracket_at_best"] < 0.05
+   and _s4t["by_q"]["top1"]["relative_bracket_at_best"] < 0.05
+   and _s4t["by_q"]["top01"]["best_lineup_same_under_both"] is True
+   and _s4t["by_q"]["top1"]["best_lineup_same_under_both"] is True
+   and _s4t["by_q"]["top01"]["rank_corr"] > 0.95
+   and _dt14.SD_ENGINE == 3,                       # NOT bumped for a 1% effect
+   f"top1 bracket {100 * _s4t['by_q']['top1']['relative_bracket_at_best']:.1f}%, "
+   f"top0.1% {100 * _s4t['by_q']['top01']['relative_bracket_at_best']:.1f}%")
+ck("the tied blocks are real and measured, so the narrow bracket is a fact about the cutoff width rather than an absence of ties",
+   _s4t["meta"]["tied_block_size"]["median"] > 1.0
+   and _s4t["meta"]["tied_block_size"]["p90"] > _s4t["meta"]["tied_block_size"]["median"],
+   f"tied block: median {_s4t['meta']['tied_block_size']['median']}, "
+   f"p90 {_s4t['meta']['tied_block_size']['p90']}, "
+   f"max {_s4t['meta']['tied_block_size']['max']} against "
+   f"{_s4t['by_q']['top01']['places']} top-0.1% places")
+
 # ---- the portfolio cover: one contest, one field, nested entries ---------
 # READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is
 # SYNTHETIC: hand-built probability matrices chosen to separate the two

@@ -1,0 +1,73 @@
+{
+ "by_q": {
+  "top01": {
+   "best_lineup_same_under_both": true,
+   "best_lineup_value": {
+    "optimistic": 0.024759,
+    "pessimistic": 0.024489
+   },
+   "bracket_width_at_best": 0.000271,
+   "bracket_width_mean": 2.2e-05,
+   "mean_over_enterable": {
+    "optimistic": 0.00036,
+    "pessimistic": 0.000338
+   },
+   "places": 88,
+   "rank_corr": 0.9975,
+   "relative_bracket_at_best": 0.0109,
+   "top20_overlap": 18,
+   "worlds_with_wide_bracket_pct": 0.015
+  },
+  "top1": {
+   "best_lineup_same_under_both": true,
+   "best_lineup_value": {
+    "optimistic": 0.086582,
+    "pessimistic": 0.085258
+   },
+   "bracket_width_at_best": 0.001324,
+   "bracket_width_mean": 4.7e-05,
+   "mean_over_enterable": {
+    "optimistic": 0.003233,
+    "pessimistic": 0.003186
+   },
+   "places": 882,
+   "rank_corr": 0.9952,
+   "relative_bracket_at_best": 0.0153,
+   "top20_overlap": 20,
+   "worlds_with_wide_bracket_pct": 0.041
+  }
+ },
+ "meta": {
+  "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+  "conventions": {
+   "bracket": "any convention that treats a tie as neither a win nor a loss lies between these two, so the width of the bracket is whether the convention matters at all",
+   "optimistic": "every tied opponent finishes behind us (PRODUCTION today)",
+   "pessimistic": "every tied opponent finishes ahead of us"
+  },
+  "draft_group_id": 153086,
+  "enterable": 23820,
+  "entries": 88235,
+  "field_beta": 0.4536,
+  "legal_lineups": 777056,
+  "provenance": {
+   "commit": "9d6ffaa",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy-latent-discrete",
+   "seed": null,
+   "source_files": 28,
+   "source_sha": "b69baafc11e6cd387dfab5721b3d51d3ef037aba87328a650a53e32020932517",
+   "worlds": 4000
+  },
+  "sd_engine": 3,
+  "simulator": "legacy-latent-discrete",
+  "stage": "S4.10 tie-at-cutoff semantics (measurement only)",
+  "tied_block_size": {
+   "max": 862.0,
+   "median": 19.58,
+   "p90": 103.35,
+   "p99": 238.97
+  },
+  "worlds": 4000
+ }
+}
