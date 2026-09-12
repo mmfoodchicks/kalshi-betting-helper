@@ -15724,6 +15724,286 @@ if FAIL:
     for n, d in FAIL:
         print(f"   - {n}   {d}")
 print("=" * 72)
+
+# ===========================================================================
+# S5 -- the shadow-forbidden rule study. Guards.
+#
+# S5 asks whether the owner's hard strategy rules protect the candidate
+# universe or quietly discard strong lineups. The whole stage rests on one
+# claim -- that a research classifier reproduces production's allowed boolean
+# exactly while also reporting WHY -- so that claim is what gets the
+# behavioural guard, on a synthetic pool built to fire every rule.
+#
+# The artifact checks are plain JSON and run with or without numpy. The
+# classifier checks need enumerate_showdown, so they are gated like every other
+# numpy block here.
+# ===========================================================================
+import ast as _ast5
+import json as _json5
+
+_s5_root = _root
+_s5_rules_path = _os.path.join(_s5_root, "research", "s5_rules.py")
+
+import nfl_dfs as _nd5
+
+# The rule constants S5's inventory was written against. If production retunes
+# one, the inventory's predicate prose goes stale silently -- the classifier
+# would still match production (it reads the same constants) while the REPORT
+# described a rule that no longer exists. Pin the values so the drift is loud.
+ck("the showdown owner-rule constants are the ones S5's inventory documents, so a retune cannot leave the report describing a rule that is gone",
+   _nd5._SD_MAX_KDST == 2 and _nd5._SD_MAX_PUNTS == 2
+   and _nd5._SD_PUNT_SALARY == 2000 and _nd5._SD_MIN_CPT_SALARY == 11000
+   and _nd5._SD_MAX_TE_PER_TEAM == 1
+   and set(_nd5._SD_GPP_CPT_POS) == {"QB", "RB", "WR", "TE"}
+   and set(_nd5._SD_PUNT_ROLES) == {"RB1", "RB2", "WR1", "WR2", "WR3", "TE1"},
+   str({"kdst": _nd5._SD_MAX_KDST, "punts": _nd5._SD_MAX_PUNTS,
+        "punt_salary": _nd5._SD_PUNT_SALARY, "cpt_floor": _nd5._SD_MIN_CPT_SALARY,
+        "te": _nd5._SD_MAX_TE_PER_TEAM}))
+
+# And the count of ways _sd_allowed can reject, so a SIXTH flex-side rule
+# cannot be added without S5 noticing. Counted from the AST rather than by
+# grepping for "return False", which would also match the string in a comment
+# or docstring -- the naked-substring mistake this suite has now made twice.
+_s5_sd_src = _ast5.parse(open(_os.path.join(_s5_root, "nfl_dfs.py")).read())
+_s5_fn = next(n for n in _ast5.walk(_s5_sd_src)
+              if isinstance(n, _ast5.FunctionDef) and n.name == "_sd_allowed")
+_s5_rejects = sum(1 for n in _ast5.walk(_s5_fn)
+                  if isinstance(n, _ast5.Return) and isinstance(n.value, _ast5.Constant)
+                  and n.value.value is False)
+ck("nfl_dfs._sd_allowed still has exactly the five flex-side rejections S5 catalogued, so a new rule cannot be added without the rule study noticing",
+   _s5_rejects == 5, f"{_s5_rejects} `return False` paths")
+
+# S5's own inventory: ids stable, categories disjoint, and DK legality kept out
+# of the owner-strategy set. Studying a legality rule as if it were a heuristic
+# would produce a recommendation to enter lineups DraftKings rejects.
+_s5_src = open(_s5_rules_path).read()
+_s5_mod = _ast5.parse(_s5_src)
+_s5_rules_node = next(n for n in _s5_mod.body
+                      if isinstance(n, _ast5.Assign)
+                      and any(getattr(t, "id", "") == "RULES" for t in n.targets))
+_S5_RULES = _ast5.literal_eval(_s5_rules_node.value)
+_S5_IDS = [r["id"] for r in _S5_RULES]
+_s5_leg_node = next(n for n in _s5_mod.body
+                    if isinstance(n, _ast5.Assign)
+                    and any(getattr(t, "id", "") == "LEGALITY" for t in n.targets))
+_S5_LEG = [r["id"] for r in _ast5.literal_eval(_s5_leg_node.value)]
+ck("every S5 rule carries a stable id and the full contract fields, the ids are unique, and no DK legality rule is catalogued as an owner heuristic",
+   len(_S5_IDS) == len(set(_S5_IDS)) == 9
+   and not (set(_S5_IDS) & set(_S5_LEG))
+   and all(set(r) >= {"id", "name", "predicate", "kind", "structural",
+                      "slate_dependent", "source", "why"} for r in _S5_RULES)
+   and all(r["kind"] in ("owner_strategy", "entry_pool") for r in _S5_RULES)
+   and {r["id"] for r in _S5_RULES if r["kind"] == "entry_pool"} == {"CPT-POOL", "FLEX-POOL"},
+   str({r["id"]: r["kind"] for r in _S5_RULES}))
+
+# S5.12: the condition is a computation, not a judgement call. Both triggers
+# fire independently, and a threshold retune inside the band does not.
+from research import s5_rules as _R5
+
+ck("the S4-rerun condition is executable and fires on EITHER trigger: a >10% move in the enterable count, or the removal of a structural rule",
+   _R5.s4_rerun_required(23820, 33639, ["DST-OPP"])["rerun_required"] is True
+   and _R5.s4_rerun_required(23820, 33639, ["DST-OPP"])["count_trigger"] is True
+   and _R5.s4_rerun_required(23820, 33639, ["DST-OPP"])["structural_trigger"] is True
+   # a structural removal alone triggers it even when the count barely moves
+   and _R5.s4_rerun_required(23820, 23830, ["DST-OPP"])["rerun_required"] is True
+   and _R5.s4_rerun_required(23820, 23830, ["DST-OPP"])["count_trigger"] is False
+   # a threshold rule moving the count inside the band does not
+   and _R5.s4_rerun_required(23820, 23900, ["MAX-KDST"])["rerun_required"] is False
+   # ...but the same threshold rule moving it outside the band does
+   and _R5.s4_rerun_required(23820, 30000, ["MAX-KDST"])["rerun_required"] is True,
+   str(_R5.s4_rerun_required(23820, 33639, ["DST-OPP"])))
+
+# S5.8: money may not reach a recommendation. Checked as exact string constants
+# and attribute names in the AST, because "ev" as a naked substring matches
+# "every" -- the mistake that cost this suite a false green earlier in the pass.
+_S5_MONEY = {"ev", "ev_notie", "roi", "roi_pct", "cash", "payout", "expected_copies"}
+for _rel in ("s5_ablate.py", "s5_sens.py", "s5_rules.py"):
+    _t = _ast5.parse(open(_os.path.join(_s5_root, "research", _rel)).read())
+    _consts = {n.value for n in _ast5.walk(_t)
+               if isinstance(n, _ast5.Constant) and isinstance(n.value, str)}
+    _attrs = {n.attr for n in _ast5.walk(_t) if isinstance(n, _ast5.Attribute)}
+    _bad = (_consts | _attrs) & _S5_MONEY
+    ck(f"research/{_rel} computes no money column, so no payout number can reach an S5 recommendation while the gate is shut",
+       not _bad, f"money symbols present: {sorted(_bad)}")
+
+if _dt14.available():
+    import numpy as _np5
+
+    # ---- the claim the whole stage rests on --------------------------------
+    # A synthetic pool built so every rule has something to fire on: two teams,
+    # a kicker and a defense each side, two tight ends on one team, punts with
+    # good and bad depth tags, a field-only player, and captains both above and
+    # below the salary floor. Then enumerate with PRODUCTION's own predicate and
+    # compare, lineup by lineup, with the research classifier.
+    def _s5_p(name, pos, team, sal, csal, depth=None, field=False):
+        p = {"name": name, "pos": pos, "team": team, "salary": sal,
+             "cpt_salary": csal, "arr": [1.0] * 4, "proj": 5.0}
+        if depth:
+            p["depth"] = depth
+        if field:
+            p["_field_only"] = True
+        return p
+
+    _s5_pool = [
+        _s5_p("A QB", "QB", "AAA", 11000, 16500, "QB1"),
+        _s5_p("A WR1", "WR", "AAA", 9000, 13500, "WR1"),
+        _s5_p("A TE1", "TE", "AAA", 4000, 6000, "TE1"),
+        _s5_p("A TE2", "TE", "AAA", 1800, 2700, "TE2"),      # punt, bad role
+        _s5_p("A K", "K", "AAA", 4200, 6300, "K1"),
+        _s5_p("A DST", "DST", "AAA", 3600, 5400, "DST1"),
+        _s5_p("B QB", "QB", "BBB", 10000, 15000, "QB1"),
+        _s5_p("B RB1", "RB", "BBB", 8000, 12000, "RB1"),
+        _s5_p("B WR1", "WR", "BBB", 1500, 2250, "WR1"),      # punt, good role
+        _s5_p("B K", "K", "BBB", 4000, 6000, "K1"),
+        _s5_p("B DST", "DST", "BBB", 3400, 5100, "DST1"),
+        _s5_p("B WR4", "WR", "BBB", 2000, 3000, "WR4", field=True),
+    ]
+
+    def _s5_prod_universe(pool):
+        """Production's own predicate, byte for byte -- the same closures the
+        builder and research.sd_board.universe install."""
+        def entry_ok(cap_p, picked):
+            got = []
+            for p in picked:
+                if p.get("_field_only") or not _nd5._sd_allowed(p, cap_p, got):
+                    return False
+                got.append(p)
+            return True
+
+        rich = sum(1 for p in pool if p.get("pos") in _nd5._SD_GPP_CPT_POS
+                   and not p.get("_field_only")
+                   and p["cpt_salary"] >= _nd5._SD_MIN_CPT_SALARY) >= 3
+
+        def cpt_ok(p):
+            if p.get("_field_only") or p.get("pos") not in _nd5._SD_GPP_CPT_POS:
+                return False
+            return (not rich) or p["cpt_salary"] >= _nd5._SD_MIN_CPT_SALARY
+
+        return _dt14.enumerate_showdown(pool, 50000, cpt_mult=1.5,
+                                        entry_ok=entry_ok, cpt_ok=cpt_ok)
+
+    _s5_idx, _s5_W, _s5_allow = _s5_prod_universe(_s5_pool)
+    _s5_masks = _R5.reason_masks(_s5_pool, _s5_idx)
+    _s5_shadow = _R5.shadow_allowed(_s5_masks)
+    _s5_mism = int((_s5_shadow != _s5_allow).sum())
+    ck("the S5 shadow classifier reproduces production's allowed boolean EXHAUSTIVELY on a synthetic pool built to fire every rule -- the claim the whole rule study rests on",
+       _s5_mism == 0 and len(_s5_idx) > 200 and 0 < int(_s5_allow.sum()) < len(_s5_idx),
+       f"{len(_s5_idx)} lineups, {int(_s5_allow.sum())} allowed, {_s5_mism} mismatches")
+
+    # every rule has to be exercised by that pool, or the guard above proves
+    # equivalence on a universe where half the rules never fired
+    _s5_fired = [r for r in _S5_IDS if bool(_s5_masks[r].any())]
+    ck("and the synthetic pool fires every one of the nine rules, so the equivalence is proved where the rules actually apply rather than where they are inert",
+       len(_s5_fired) == 9, f"fired: {_s5_fired}")
+
+    # S5.2: a forbidden lineup carries ALL its reasons, not the first one
+    # production happened to stop at. This is the property that makes
+    # attribution possible, and production cannot supply it.
+    _s5_nviol = _np5.zeros(len(_s5_idx), dtype=int)
+    for _r in _S5_IDS:
+        _s5_nviol += _s5_masks[_r].astype(int)
+    ck("every forbidden lineup carries ALL the rule ids it violates and every allowed lineup carries none, so attribution is never to whichever rule happened to be checked first",
+       bool((_s5_nviol[_s5_allow] == 0).all())
+       and bool((_s5_nviol[~_s5_allow] >= 1).all())
+       and int(_s5_nviol.max()) >= 3,
+       f"max simultaneous violations {int(_s5_nviol.max())}")
+
+    # S5.7: switching off R must leave every other rule enforced, and must admit
+    # exactly the lineups whose ONLY violation was R.
+    _s5_ok = True
+    _s5_why = []
+    for _r in _S5_IDS:
+        _ab = _R5.shadow_allowed(_s5_masks, (_r,))
+        _new = _ab & ~_s5_shadow
+        _only_r = _s5_masks[_r] & (_s5_nviol == 1)
+        if not bool((_new == _only_r).all()):
+            _s5_ok = False
+            _s5_why.append(f"{_r}: admitted set != exclusive set")
+        for _q in _S5_IDS:
+            if _q != _r and bool((_new & _s5_masks[_q]).any()):
+                _s5_ok = False
+                _s5_why.append(f"{_r}: admitted a lineup still violating {_q}")
+    ck("a single-rule ablation admits exactly the lineups whose ONLY violation was that rule, and keeps every other rule fully enforced",
+       _s5_ok, "; ".join(_s5_why) or "clean")
+
+    ck("and exclusive hits equal marginal admissions for every rule, which is the identity the report states rather than two independent measurements",
+       all(int((_s5_masks[_r] & (_s5_nviol == 1)).sum())
+           == int(((_R5.shadow_allowed(_s5_masks, (_r,)) & ~_s5_shadow)).sum())
+           for _r in _S5_IDS))
+
+    # S5.8: the full-legal counterfactual removes owner rules, never DraftKings'.
+    # Every enumerated lineup must still be submittable: six distinct players,
+    # under the cap at the captain's price, both teams.
+    _s5_sal = _np5.array([p["salary"] for p in _s5_pool])
+    _s5_csal = _np5.array([p["cpt_salary"] for p in _s5_pool])
+    _s5_team = _np5.array([p["team"] for p in _s5_pool])
+    _s5_cost = _s5_csal[_s5_idx[:, 0]] + _s5_sal[_s5_idx[:, 1:]].sum(axis=1)
+    _s5_distinct = _np5.array([len(set(r.tolist())) for r in _s5_idx])
+    _s5_teams = _np5.array([len(set(_s5_team[r].tolist())) for r in _s5_idx])
+    ck("the full-legal counterfactual is still DraftKings-legal: every enumerated lineup has six distinct players, fits the cap at the captain's price, and spans both teams",
+       bool((_s5_cost <= 50000).all()) and bool((_s5_distinct == 6).all())
+       and bool((_s5_teams >= 2).all()),
+       f"max cost {int(_s5_cost.max())}, min distinct {int(_s5_distinct.min())}, "
+       f"min teams {int(_s5_teams.min())}")
+
+    # S5.3: the scoring fold cannot reach the screen. Proved by behaviour, not
+    # by reading the source for suspicious names: overwrite every scoring-fold
+    # column with garbage and assert the selection-fold screen is unchanged.
+    from research import s5_ablate as _A5
+    _s5_X = _np5.asarray([[float((i * 7 + w) % 13) for w in range(8)]
+                          for i in range(len(_s5_pool))], dtype=_np5.float32)
+    _s5_f = _np5.full(len(_s5_idx), 1.0 / len(_s5_idx))
+    _s5_grid = _dt14.payout_grid(1000, [{"from": 1, "to": 1, "prize": 100.0},
+                                    {"from": 2, "to": 10, "prize": 5.0}], 1.0, 10)
+    _s5_sel, _s5_sco = _np5.arange(0, 4), _np5.arange(4, 8)
+    _s5_a = _A5.screen(_dt14, _s5_W, _s5_X, _s5_f, _s5_grid, _s5_sel,
+                       log=lambda *_a, **_k: None)
+    _s5_X2 = _s5_X.copy()
+    _s5_X2[:, _s5_sco] = -999.0
+    _s5_b = _A5.screen(_dt14, _s5_W, _s5_X2, _s5_f, _s5_grid, _s5_sel,
+                       log=lambda *_a, **_k: None)
+    ck("the scoring fold cannot change which candidates are retained: overwriting every scoring-fold world with garbage leaves the selection-fold screen byte-identical",
+       bool(_np5.array_equal(_s5_a, _s5_b)) and bool(_np5.isfinite(_s5_a).all()),
+       f"screen differs on {int((_s5_a != _s5_b).sum())} lineups")
+
+# ---- the artifacts, plain JSON, no numpy needed ---------------------------
+_s5r = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_rules.json")))
+ck("the S5 rule artifact proves the classifier equals production on EVERY enumerated lineup of both live boards, not on a sample",
+   all(b["classifier_mismatches"] == 0 for b in _s5r["boards"].values())
+   and all(b["legal"] > 500_000 for b in _s5r["boards"].values())
+   and all(0.0 < b["survival_pct"] < 10.0 for b in _s5r["boards"].values()),
+   str({k: (v["legal"], v["allowed"], v["survival_pct"], v["classifier_mismatches"])
+        for k, v in _s5r["boards"].items()}))
+
+ck("and it separates counts from cost: several rules reject six figures of lineups and admit nothing at all when switched off alone",
+   any(b["hits"][r] > 100_000 and b["marginal_admissions"][r] == 0
+       for b in _s5r["boards"].values() for r in b["hits"]),
+   str({k: {r: (v["hits"][r], v["marginal_admissions"][r]) for r in v["hits"]}
+        for k, v in _s5r["boards"].items()}))
+
+ck("and exclusive hits equal marginal admissions on both live boards too, as the identity requires",
+   all(b["exclusive_hits"] == b["marginal_admissions"] for b in _s5r["boards"].values()))
+
+_s5a = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_ablate.json")))
+_s5_cells = [d for byseed in _s5a["boards"].values() for b in byseed.values()
+             for d in b["directions"].values()]
+ck("every S5 cross-fit cell selects and scores on disjoint world folds, with the classifier still matching production on the board it ran",
+   len(_s5_cells) == 8
+   and all(c["folds_disjoint"] for c in _s5_cells)
+   and all(c["n_selection"] == c["n_scoring"] == 4000 for c in _s5_cells)
+   and all(b["classifier_mismatches"] == 0
+           for byseed in _s5a["boards"].values() for b in byseed.values()),
+   f"{len(_s5_cells)} cells")
+
+ck("and the S5 artifacts carry a seed in their provenance rather than the null that used to pass for one",
+   _s5r["meta"]["provenance"]["seed"] is not None
+   and _s5a["meta"]["provenance"]["seed"] is not None
+   and _prov14.complete(_s5r["meta"]["provenance"])
+   and _prov14.complete(_s5a["meta"]["provenance"]),
+   str({"rules": _s5r["meta"]["provenance"]["seed"],
+        "ablate": _s5a["meta"]["provenance"]["seed"]}))
+
+
 # A red guard MUST be a red exit code. The suite used to exit 0 unless it
 # crashed outright, which made every "check $? explicitly" ritual theater --
 # the one thing the exit code was trusted to carry (guard failures) was the

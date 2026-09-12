@@ -1,0 +1,490 @@
+{
+ "boards": {
+  "153085": {
+   "allowed": 22440,
+   "classifier_mismatches": 0,
+   "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
+   "draft_group_id": 153085,
+   "entries": 87145,
+   "exclusive_hits": {
+    "CPT-POOL": 0,
+    "CPT-POS": 0,
+    "CPT-SALARY": 37002,
+    "DST-OPP": 9656,
+    "FLEX-POOL": 27011,
+    "MAX-KDST": 537,
+    "MAX-PUNT": 0,
+    "MAX-TE-TEAM": 0,
+    "PUNT-ROLE": 19851
+   },
+   "field_only_players": 3,
+   "forbidden": 560642,
+   "hits": {
+    "CPT-POOL": 77758,
+    "CPT-POS": 103208,
+    "CPT-SALARY": 413331,
+    "DST-OPP": 124044,
+    "FLEX-POOL": 318867,
+    "MAX-KDST": 24272,
+    "MAX-PUNT": 24282,
+    "MAX-TE-TEAM": 68586,
+    "PUNT-ROLE": 319688
+   },
+   "legal": 583082,
+   "marginal_admissions": {
+    "CPT-POOL": 0,
+    "CPT-POS": 0,
+    "CPT-SALARY": 37002,
+    "DST-OPP": 9656,
+    "FLEX-POOL": 27011,
+    "MAX-KDST": 537,
+    "MAX-PUNT": 0,
+    "MAX-TE-TEAM": 0,
+    "PUNT-ROLE": 19851
+   },
+   "overlap": {
+    "CPT-POOL": {
+     "CPT-POOL": 77758,
+     "CPT-POS": 0,
+     "CPT-SALARY": 77758,
+     "DST-OPP": 17955,
+     "FLEX-POOL": 32070,
+     "MAX-KDST": 1890,
+     "MAX-PUNT": 4338,
+     "MAX-TE-TEAM": 6562,
+     "PUNT-ROLE": 39570
+    },
+    "CPT-POS": {
+     "CPT-POOL": 0,
+     "CPT-POS": 103208,
+     "CPT-SALARY": 103208,
+     "DST-OPP": 11934,
+     "FLEX-POOL": 57882,
+     "MAX-KDST": 12312,
+     "MAX-PUNT": 2520,
+     "MAX-TE-TEAM": 8768,
+     "PUNT-ROLE": 57893
+    },
+    "CPT-SALARY": {
+     "CPT-POOL": 77758,
+     "CPT-POS": 103208,
+     "CPT-SALARY": 413331,
+     "DST-OPP": 83663,
+     "FLEX-POOL": 220020,
+     "MAX-KDST": 19872,
+     "MAX-PUNT": 19872,
+     "MAX-TE-TEAM": 53405,
+     "PUNT-ROLE": 220080
+    },
+    "DST-OPP": {
+     "CPT-POOL": 17955,
+     "CPT-POS": 11934,
+     "CPT-SALARY": 83663,
+     "DST-OPP": 124044,
+     "FLEX-POOL": 58848,
+     "MAX-KDST": 13280,
+     "MAX-PUNT": 3081,
+     "MAX-TE-TEAM": 10969,
+     "PUNT-ROLE": 58917
+    },
+    "FLEX-POOL": {
+     "CPT-POOL": 32070,
+     "CPT-POS": 57882,
+     "CPT-SALARY": 220020,
+     "DST-OPP": 58848,
+     "FLEX-POOL": 318867,
+     "MAX-KDST": 8634,
+     "MAX-PUNT": 17754,
+     "MAX-TE-TEAM": 28938,
+     "PUNT-ROLE": 197554
+    },
+    "MAX-KDST": {
+     "CPT-POOL": 1890,
+     "CPT-POS": 12312,
+     "CPT-SALARY": 19872,
+     "DST-OPP": 13280,
+     "FLEX-POOL": 8634,
+     "MAX-KDST": 24272,
+     "MAX-PUNT": 96,
+     "MAX-TE-TEAM": 828,
+     "PUNT-ROLE": 8634
+    },
+    "MAX-PUNT": {
+     "CPT-POOL": 4338,
+     "CPT-POS": 2520,
+     "CPT-SALARY": 19872,
+     "DST-OPP": 3081,
+     "FLEX-POOL": 17754,
+     "MAX-KDST": 96,
+     "MAX-PUNT": 24282,
+     "MAX-TE-TEAM": 5514,
+     "PUNT-ROLE": 24282
+    },
+    "MAX-TE-TEAM": {
+     "CPT-POOL": 6562,
+     "CPT-POS": 8768,
+     "CPT-SALARY": 53405,
+     "DST-OPP": 10969,
+     "FLEX-POOL": 28938,
+     "MAX-KDST": 828,
+     "MAX-PUNT": 5514,
+     "MAX-TE-TEAM": 68586,
+     "PUNT-ROLE": 61086
+    },
+    "PUNT-ROLE": {
+     "CPT-POOL": 39570,
+     "CPT-POS": 57893,
+     "CPT-SALARY": 220080,
+     "DST-OPP": 58917,
+     "FLEX-POOL": 197554,
+     "MAX-KDST": 8634,
+     "MAX-PUNT": 24282,
+     "MAX-TE-TEAM": 61086,
+     "PUNT-ROLE": 319688
+    }
+   },
+   "players": 23,
+   "rich_gate": true,
+   "survival_pct": 3.8485,
+   "top_combinations": {
+    "CPT-POOL+CPT-SALARY": 17845,
+    "CPT-POOL+CPT-SALARY+FLEX-POOL+PUNT-ROLE": 12532,
+    "CPT-POS+CPT-SALARY": 17151,
+    "CPT-POS+CPT-SALARY+FLEX-POOL": 17360,
+    "CPT-POS+CPT-SALARY+FLEX-POOL+PUNT-ROLE": 26398,
+    "CPT-POS+CPT-SALARY+PUNT-ROLE": 12507,
+    "CPT-SALARY": 37002,
+    "CPT-SALARY+DST-OPP": 14066,
+    "CPT-SALARY+FLEX-POOL": 36852,
+    "CPT-SALARY+FLEX-POOL+PUNT-ROLE": 45103,
+    "CPT-SALARY+PUNT-ROLE": 19170,
+    "CPT-SALARY+PUNT-ROLE+MAX-TE-TEAM": 11950,
+    "FLEX-POOL": 27011,
+    "FLEX-POOL+PUNT-ROLE": 42971,
+    "PUNT-ROLE": 19851
+   },
+   "violations_histogram": {
+    "0": 22440,
+    "1": 94057,
+    "2": 176335,
+    "3": 163985,
+    "4": 98842,
+    "5": 24612,
+    "6": 2751,
+    "7": 60
+   }
+  },
+  "153086": {
+   "allowed": 23820,
+   "classifier_mismatches": 0,
+   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+   "draft_group_id": 153086,
+   "entries": 88235,
+   "exclusive_hits": {
+    "CPT-POOL": 0,
+    "CPT-POS": 0,
+    "CPT-SALARY": 37077,
+    "DST-OPP": 9819,
+    "FLEX-POOL": 47346,
+    "MAX-KDST": 546,
+    "MAX-PUNT": 0,
+    "MAX-TE-TEAM": 0,
+    "PUNT-ROLE": 20705
+   },
+   "field_only_players": 4,
+   "forbidden": 753236,
+   "hits": {
+    "CPT-POOL": 129413,
+    "CPT-POS": 131321,
+    "CPT-SALARY": 556515,
+    "DST-OPP": 159492,
+    "FLEX-POOL": 495325,
+    "MAX-KDST": 28498,
+    "MAX-PUNT": 7980,
+    "MAX-TE-TEAM": 83158,
+    "PUNT-ROLE": 408566
+   },
+   "legal": 777056,
+   "marginal_admissions": {
+    "CPT-POOL": 0,
+    "CPT-POS": 0,
+    "CPT-SALARY": 37077,
+    "DST-OPP": 9819,
+    "FLEX-POOL": 47346,
+    "MAX-KDST": 546,
+    "MAX-PUNT": 0,
+    "MAX-TE-TEAM": 0,
+    "PUNT-ROLE": 20705
+   },
+   "overlap": {
+    "CPT-POOL": {
+     "CPT-POOL": 129413,
+     "CPT-POS": 0,
+     "CPT-SALARY": 129413,
+     "DST-OPP": 29260,
+     "FLEX-POOL": 68440,
+     "MAX-KDST": 2812,
+     "MAX-PUNT": 1900,
+     "MAX-TE-TEAM": 9904,
+     "PUNT-ROLE": 64765
+    },
+    "CPT-POS": {
+     "CPT-POOL": 0,
+     "CPT-POS": 131321,
+     "CPT-SALARY": 131321,
+     "DST-OPP": 14618,
+     "FLEX-POOL": 85761,
+     "MAX-KDST": 14440,
+     "MAX-PUNT": 760,
+     "MAX-TE-TEAM": 10164,
+     "PUNT-ROLE": 70790
+    },
+    "CPT-SALARY": {
+     "CPT-POOL": 129413,
+     "CPT-POS": 131321,
+     "CPT-SALARY": 556515,
+     "DST-OPP": 109586,
+     "FLEX-POOL": 347647,
+     "MAX-KDST": 23579,
+     "MAX-PUNT": 6650,
+     "MAX-TE-TEAM": 65520,
+     "PUNT-ROLE": 285888
+    },
+    "DST-OPP": {
+     "CPT-POOL": 29260,
+     "CPT-POS": 14618,
+     "CPT-SALARY": 109586,
+     "DST-OPP": 159492,
+     "FLEX-POOL": 90263,
+     "MAX-KDST": 15578,
+     "MAX-PUNT": 931,
+     "MAX-TE-TEAM": 12826,
+     "PUNT-ROLE": 72727
+    },
+    "FLEX-POOL": {
+     "CPT-POOL": 68440,
+     "CPT-POS": 85761,
+     "CPT-SALARY": 347647,
+     "DST-OPP": 90263,
+     "FLEX-POOL": 495325,
+     "MAX-KDST": 12356,
+     "MAX-PUNT": 7164,
+     "MAX-TE-TEAM": 41850,
+     "PUNT-ROLE": 279212
+    },
+    "MAX-KDST": {
+     "CPT-POOL": 2812,
+     "CPT-POS": 14440,
+     "CPT-SALARY": 23579,
+     "DST-OPP": 15578,
+     "FLEX-POOL": 12356,
+     "MAX-KDST": 28498,
+     "MAX-PUNT": 24,
+     "MAX-TE-TEAM": 876,
+     "PUNT-ROLE": 9681
+    },
+    "MAX-PUNT": {
+     "CPT-POOL": 1900,
+     "CPT-POS": 760,
+     "CPT-SALARY": 6650,
+     "DST-OPP": 931,
+     "FLEX-POOL": 7164,
+     "MAX-KDST": 24,
+     "MAX-PUNT": 7980,
+     "MAX-TE-TEAM": 2166,
+     "PUNT-ROLE": 7980
+    },
+    "MAX-TE-TEAM": {
+     "CPT-POOL": 9904,
+     "CPT-POS": 10164,
+     "CPT-SALARY": 65520,
+     "DST-OPP": 12826,
+     "FLEX-POOL": 41850,
+     "MAX-KDST": 876,
+     "MAX-PUNT": 2166,
+     "MAX-TE-TEAM": 83158,
+     "PUNT-ROLE": 73868
+    },
+    "PUNT-ROLE": {
+     "CPT-POOL": 64765,
+     "CPT-POS": 70790,
+     "CPT-SALARY": 285888,
+     "DST-OPP": 72727,
+     "FLEX-POOL": 279212,
+     "MAX-KDST": 9681,
+     "MAX-PUNT": 7980,
+     "MAX-TE-TEAM": 73868,
+     "PUNT-ROLE": 408566
+    }
+   },
+   "players": 24,
+   "rich_gate": true,
+   "survival_pct": 3.0654,
+   "top_combinations": {
+    "CPT-POOL+CPT-SALARY": 23849,
+    "CPT-POOL+CPT-SALARY+FLEX-POOL": 23830,
+    "CPT-POOL+CPT-SALARY+FLEX-POOL+PUNT-ROLE": 26649,
+    "CPT-POS+CPT-SALARY": 17358,
+    "CPT-POS+CPT-SALARY+FLEX-POOL": 29721,
+    "CPT-POS+CPT-SALARY+FLEX-POOL+PUNT-ROLE": 37600,
+    "CPT-SALARY": 37077,
+    "CPT-SALARY+FLEX-POOL": 63244,
+    "CPT-SALARY+FLEX-POOL+DST-OPP": 17343,
+    "CPT-SALARY+FLEX-POOL+PUNT-ROLE": 67873,
+    "CPT-SALARY+FLEX-POOL+PUNT-ROLE+MAX-TE-TEAM": 16119,
+    "CPT-SALARY+PUNT-ROLE": 20563,
+    "FLEX-POOL": 47346,
+    "FLEX-POOL+PUNT-ROLE": 61644,
+    "PUNT-ROLE": 20705
+   },
+   "violations_histogram": {
+    "0": 23820,
+    "1": 115493,
+    "2": 234313,
+    "3": 233121,
+    "4": 137697,
+    "5": 29726,
+    "6": 2834,
+    "7": 52
+   }
+  }
+ },
+ "meta": {
+  "boards": [
+   153086,
+   153085
+  ],
+  "entry_pool_rules": [
+   "CPT-POOL",
+   "FLEX-POOL"
+  ],
+  "legality": [
+   {
+    "id": "DK-ROSTER",
+    "predicate": "exactly 1 captain + 5 distinct flex"
+   },
+   {
+    "id": "DK-CAP",
+    "predicate": "cpt_salary + sum(flex salary) <= nfl_dfs.CAP = 50000"
+   },
+   {
+    "id": "DK-TEAMS",
+    "predicate": "at least min_teams = 2 distinct teams"
+   }
+  ],
+  "money": "CLOSED -- no payout metric appears in this stage",
+  "owner_strategy_rules": [
+   "CPT-POS",
+   "CPT-SALARY",
+   "DST-OPP",
+   "MAX-KDST",
+   "MAX-PUNT",
+   "PUNT-ROLE",
+   "MAX-TE-TEAM"
+  ],
+  "provenance": {
+   "commit": "96bf08b",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy-latent-discrete",
+   "seed": 20260912,
+   "source_files": 30,
+   "source_sha": "46a7b5d9679e4a13c27dd74bbdb51a0e1e5f3c2e131da5fd2b701c3ba6fe47ad",
+   "worlds": 400
+  },
+  "rules": [
+   {
+    "id": "CPT-POOL",
+    "kind": "entry_pool",
+    "name": "captain must be in our entry pool",
+    "predicate": "captain is a _field_only player (depth-gate dropped, kept for the field)",
+    "slate_dependent": true,
+    "source": "dfs_tourney.build_nfl_showdown.cpt_ok / research.sd_board.universe",
+    "structural": true,
+    "why": "we cannot submit a player our own depth gate removed from the pool"
+   },
+   {
+    "id": "CPT-POS",
+    "kind": "owner_strategy",
+    "name": "no kicker or defense as captain",
+    "predicate": "captain pos not in nfl_dfs._SD_GPP_CPT_POS = {QB, RB, WR, TE}",
+    "slate_dependent": false,
+    "source": "nfl_dfs._SD_GPP_CPT_POS",
+    "structural": true,
+    "why": "ETR: outlier D/ST games are unpredictable and draw high ownership when targeted; WRs captained 31.4% of top-1% lineups"
+   },
+   {
+    "id": "CPT-SALARY",
+    "kind": "owner_strategy",
+    "name": "captain salary floor",
+    "predicate": "captain cpt_salary < nfl_dfs._SD_MIN_CPT_SALARY = 11000, applied only when the pool offers >= 3 eligible captains at that price",
+    "slate_dependent": true,
+    "source": "nfl_dfs._SD_MIN_CPT_SALARY + the `rich` gate in the builder",
+    "structural": false,
+    "why": "the winning captain paid >= $11,400 in 17 of 19 ETR-reviewed slates; the cap arithmetic likes a cheap captain and the record says it does not win"
+   },
+   {
+    "id": "FLEX-POOL",
+    "kind": "entry_pool",
+    "name": "every flex must be in our entry pool",
+    "predicate": "any flex is a _field_only player",
+    "slate_dependent": true,
+    "source": "dfs_tourney.build_nfl_showdown.entry_ok / research.sd_board.universe",
+    "structural": true,
+    "why": "same gate as CPT-POOL, at the other five slots"
+   },
+   {
+    "id": "DST-OPP",
+    "kind": "owner_strategy",
+    "name": "no defense facing our captain",
+    "predicate": "a flex DST whose team differs from the captain's, when the captain is not himself a DST",
+    "slate_dependent": false,
+    "source": "nfl_dfs._sd_allowed, first branch",
+    "structural": true,
+    "why": "the lineup would need one offense to score and to stall at once"
+   },
+   {
+    "id": "MAX-KDST",
+    "kind": "owner_strategy",
+    "name": "at most two kickers/defenses",
+    "predicate": "count of K or DST over all six roster slots >= 3",
+    "slate_dependent": false,
+    "source": "nfl_dfs._SD_MAX_KDST = 2",
+    "structural": false,
+    "why": "measured: lineups with more than two finished top-1% at a 1.1% rate"
+   },
+   {
+    "id": "MAX-PUNT",
+    "kind": "owner_strategy",
+    "name": "at most two punt-priced players",
+    "predicate": "count of slots whose FLEX salary <= nfl_dfs._SD_PUNT_SALARY = 2000 >= 3 (the captain counts at his flex salary, not his captain price)",
+    "slate_dependent": false,
+    "source": "nfl_dfs._SD_MAX_PUNTS = 2, _SD_PUNT_SALARY = 2000",
+    "structural": false,
+    "why": "no measured top finisher carried more than two $200-$2,000 punts"
+   },
+   {
+    "id": "PUNT-ROLE",
+    "kind": "owner_strategy",
+    "name": "a punt must have a job",
+    "predicate": "a FLEX player at salary <= 2000 whose depth tag is set and is not in nfl_dfs._SD_PUNT_ROLES = {RB1, RB2, WR1, WR2, WR3, TE1}; the captain slot is NOT checked by this rule in production",
+    "slate_dependent": true,
+    "source": "nfl_dfs._SD_PUNT_ROLES",
+    "structural": true,
+    "why": "a second-string tight end at punt price is a blocker with a lottery ticket"
+   },
+   {
+    "id": "MAX-TE-TEAM",
+    "kind": "owner_strategy",
+    "name": "one tight end per team",
+    "predicate": "some team supplies >= 2 tight ends across all six slots (nfl_dfs._SD_MAX_TE_PER_TEAM = 1)",
+    "slate_dependent": false,
+    "source": "nfl_dfs._SD_MAX_TE_PER_TEAM = 1",
+    "structural": false,
+    "why": "the owner: two tight ends from one team split one role, unlike two receivers who can each be a first read on different drives"
+   }
+  ],
+  "stage": "S5.0/S5.1 rule inventory + exhaustive shadow classifier",
+  "worlds": 400
+ }
+}
