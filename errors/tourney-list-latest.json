@@ -1,7 +1,23 @@
 {
  "boards": [
   {
-   "age_s": 3532,
+   "age_s": 22062,
+   "built_ts": 1789187744,
+   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+   "dg": 153086,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "DEN vs KC",
+   "starts": "2026-09-15T00:15:00.0000000Z",
+   "teams": [
+    "DEN",
+    "KC"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 25832,
    "built_ts": 1789183973,
    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
    "dg": 153085,
@@ -17,23 +33,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 11964,
-   "built_ts": 1789175543,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
-   "dg": 153086,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "DEN vs KC",
-   "starts": "2026-09-15T00:15:00.0000000Z",
-   "teams": [
-    "DEN",
-    "KC"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 21499,
+   "age_s": 43798,
    "built_ts": 1789166008,
    "contest": "NFL $3.5M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 151307,
