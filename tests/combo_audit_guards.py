@@ -15717,14 +15717,6 @@ ck("the DFS tab shows the tournament for an NFL showdown slate (portfolio sizes,
    and 'fetch("/api/dfs/tourney/request"' in _js14
    and "async function loadDfsTourneyList()" in _js14 and "boards on file" in _js14
    and "loadDfsTourney(${r.dg}, true)" in _js14 and "queued_ts" in _js14)
-
-print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
-if FAIL:
-    print("FAILURES:")
-    for n, d in FAIL:
-        print(f"   - {n}   {d}")
-print("=" * 72)
-
 # ===========================================================================
 # S5 -- the shadow-forbidden rule study. Guards.
 #
@@ -16008,6 +16000,30 @@ ck("and the S5 artifacts carry a seed in their provenance rather than the null t
 _s5p = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_pairs.json")))
 _s5s = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_sens.json")))
 _s5rep = open(_os.path.join(_s5_root, "s5_rules_report.md")).read()
+_s5t = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_tail.json")))
+
+import re as _re5
+
+
+def _s5_unquoted(text):
+    """The report with every "..." and `...` span removed -- so a term can
+    survive as a quoted retraction without counting as a live claim."""
+    return _re5.sub(r"`[^`]*`", " ", _re5.sub(r'"[^"]*"', " ", text))
+
+
+_s5_tails = {}
+for dg, byseed in _s5t["boards"].items():
+    for sd, b in byseed.items():
+        for d in b["directions"].values():
+            for k, v in d.items():
+                _s5_tails.setdefault((dg, k), []).append(v)
+
+
+def _s5_tail_mean(dg, k, field):
+    rows = _s5_tails.get((dg, k)) or []
+    return sum(r[field] for r in rows) / max(len(rows), 1)
+
+
 _s5repw = " ".join(_s5rep.split())
 
 
@@ -16062,18 +16078,55 @@ ck("S5.10 shows DST-OPP's effect does NOT ride the uncalibrated field knob: posi
 # outranks a stable, field-robust +0.047 is that the football tail disagrees.
 # If a later pass deletes that sentence the recommendation loses its basis, so
 # pin the mechanism and not just the verdict.
-# Repinned 2026-09-12 after independent review, and this one was pinning a FALSE
-# claim rather than a stale one: "every variant that raises Top 1% lowers the
-# portfolio's football p99, without exception" held for the mean of twenty
-# per-entry p99s and FAILS for the portfolio's worldwise-max tail, where two
-# variants improve. The recommendation is unchanged; its stated basis is now the
-# ATTRIBUTION of the gain, which is what this pins.
-ck("the S5 report recommends keeping every rule, and bases it on the gain being ownership-attributed rather than on a football contradiction it cannot support",
+# Repinned TWICE, and neither repin was staleness. Round one: this pinned "every
+# variant that raises Top 1% lowers the portfolio's football p99, without
+# exception", true of the mean of twenty per-entry p99s and FALSE of the
+# portfolio's worldwise-max tail. Round two: the replacement pinned "the gain is
+# ownership, not football", which is an ATTRIBUTION the artifacts do not identify
+# -- the football distribution is mixed, and production's optimistic Top-1% reads
+# field mass STRICTLY ABOVE the candidate, so its own ownership is not in the
+# metric. A guard must not freeze a causal claim the data cannot support. What it
+# pins now is the inseparability, which is what the decision actually rests on.
+ck("the S5 report recommends keeping every rule on the ground that the gain is INSEPARABLE from the uncalibrated field model, not on an attribution the artifacts cannot identify",
    "**Recommendation: keep every rule.**" in _s5repw
    and "INCONCLUSIVE" in _s5repw
-   and "The gain is ownership, not football" in _s5repw
-   and "A gain that is 100% ownership-derived is not a gain this app may act on" in _s5repw
-   and "What holds the recommendation back is section L's attribution of the gain" in _s5repw)
+   and "The gain is not separable from the uncalibrated field model" in _s5repw
+   and "field-weighting \u00d7 joint-football interaction" in _s5repw
+   and "The decomposition is not identified by this study" in _s5repw
+   # ...and the withdrawn attribution may not return as a live claim
+   and "the gain is ownership, not football" not in _s5_unquoted(_s5repw).lower()
+   and "100% ownership-derived" not in _s5_unquoted(_s5repw))
+
+# The withdrawn claim was withdrawn because the data say "mixed", so pin the
+# number that makes it mixed: on the board carrying the whole effect the expected
+# best score across the portfolio RISES. "The portfolio scores the same" was wrong.
+ck("and the football evidence is recorded as MIXED, including the worldwise-max mean RISING on the board that supplies the effect",
+   _s5_tail_mean("153086", "ablate:DST-OPP", "worldwise_max_mean")
+   > _s5_tail_mean("153086", "baseline", "worldwise_max_mean") + 0.4
+   and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99_9")
+   > _s5_tail_mean("153085", "baseline", "worldwise_max_p99_9")
+   and "football-only portfolio statistics are\n   **mixed**" in _s5rep.replace("\r", "")
+   or "football-only portfolio statistics are **mixed**" in _s5repw,
+   f"DEN max-mean {_s5_tail_mean('153086', 'baseline', 'worldwise_max_mean'):.4f} -> "
+   f"{_s5_tail_mean('153086', 'ablate:DST-OPP', 'worldwise_max_mean'):.4f}")
+
+# And the metric fact that killed the attribution: optimistic Top-q reads mass
+# STRICTLY ABOVE, so the candidate's own same-score mass is excluded. Asserted
+# against the code, not the prose, because this is the load-bearing part.
+if _dt14.available():
+    from research import s4_crossfit as _X4s5
+    ck("and production's optimistic convention really does exclude the candidate's own same-score mass, which is why its ownership cannot be the direct cause of its Top-1%",
+       float(_X4s5.equiv_mass(0.3, 0.2, "optimistic")) == 0.3
+       and float(_X4s5.equiv_mass(0.3, 0.2, "pessimistic")) > 0.3
+       and "strictly above" in _s5repw
+       and "is **excluded**" in _s5repw)
+
+# The proposed football arm must not reintroduce S4's leakage.
+ck("and the proposed field-free arm selects on the SELECTION fold, never on held-out scores, with a portfolio-native objective",
+   "select on the selection fold and grade held out" in _s5repw
+   and "E[max raw DK score across the 20 entries]" in _s5repw
+   and "reintroduces exactly the leakage S4 spent a stage removing" in _s5repw
+   and "selecting on held-out p99" in _s5repw)   # present only as the retraction
 
 ck("and it names the model limitation the flagged rule sits on, rather than treating a model-conditional gain as a strategy discovery",
    "cross-side covariance" in _s5repw
@@ -16120,16 +16173,7 @@ ck("and every S5 artifact carries a non-null seed under the contract tightened a
 
 
 # ---- S5 closure: the four contracts the independent review required ---------
-_s5t = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_tail.json")))
-
-
-import re as _re5
-
-
-def _s5_unquoted(text):
-    """The report with every "..." and `...` span removed -- so a term can
-    survive as a quoted retraction without counting as a live claim."""
-    return _re5.sub(r"`[^`]*`", " ", _re5.sub(r'"[^"]*"', " ", text))
+_s5pv = _json5.load(open(_os.path.join(_s5_root, "research", "data", "prov_verify.json")))
 
 
 # CONTRACT 1. "Provably inert" was too strong and CPT-POS is the counterexample:
@@ -16195,19 +16239,6 @@ ck("and field_weights cannot see the owner-allowed mask at all: no such paramete
 # exception" -- was TRUE of the mean of twenty per-entry p99s and FALSE of the
 # worldwise max. Both are now computed, and the guard pins the exceptions so the
 # withdrawn universal cannot quietly return.
-_s5_tails = {}
-for dg, byseed in _s5t["boards"].items():
-    for sd, b in byseed.items():
-        for d in b["directions"].values():
-            for k, v in d.items():
-                _s5_tails.setdefault((dg, k), []).append(v)
-
-
-def _s5_tail_mean(dg, k, field):
-    rows = _s5_tails.get((dg, k)) or []
-    return sum(r[field] for r in rows) / max(len(rows), 1)
-
-
 ck("the portfolio football tail is the p99 of the WORLDWISE MAXIMUM across the 20 entries, defined in the artifact and reported beside the per-entry statistic it replaced",
    "worldwise_max_p99" in _s5t["meta"]["portfolio_tail_definition"]
    and "max(raw DK score) across the portfolio's 20 entries" in _s5t["meta"]["portfolio_tail_definition"]
@@ -16224,13 +16255,13 @@ ck("and the withdrawn universal stays withdrawn: under the CORRECT statistic two
    f"CPT-SALARY DEN {_s5_tail_mean('153086', 'ablate:CPT-SALARY', 'worldwise_max_p99'):.2f} "
    f"vs {_s5_tail_mean('153086', 'baseline', 'worldwise_max_p99'):.2f}")
 
-ck("and DST-OPP's football verdict survives the correction on the right basis: still negative on both boards, but small, so the argument is the gain's ATTRIBUTION rather than a contradiction",
+ck("and DST-OPP's upper percentiles are still slightly down on both boards, which is recorded as part of a mixed picture rather than as a contradiction",
    _s5_tail_mean("153086", "ablate:DST-OPP", "worldwise_max_p99")
    < _s5_tail_mean("153086", "baseline", "worldwise_max_p99")
    and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99")
    < _s5_tail_mean("153085", "baseline", "worldwise_max_p99")
-   and "The gain is ownership, not football" in _s5repw
-   and "essentially all of the advantage is attributed to low modelled" in _s5repw)
+   and "\"Mixed\" is the\nonly word the data support" in _s5rep.replace("\r", "")
+   or '"Mixed" is the only word the data support' in _s5repw)
 
 # CONTRACT 4. Field robustness and slate robustness are different axes, and the
 # sweep ran on the board that carries the effect.
@@ -16246,11 +16277,93 @@ ck("and the multiplicity of the rule search is recorded rather than dressed as a
    and "the only reproducible candidate effect under this study" in _s5repw
    and "no multiplicity correction was applied" in _s5repw)
 
-ck("and the review's corrections are recorded with what they changed AND what they did not",
+# Repinned: the closing paragraph was rewritten in round two, and the sentence
+# that replaced it carries the more important point -- the recommendation never
+# needed the overclaim, so withdrawing it cost the decision nothing.
+ck("and both rounds of correction are recorded with what they changed AND what they did not, including that the recommendation never needed the withdrawn claim",
    "## U. What the independent review changed, and what it did not" in _s5repw
-   and "What did not change: the recommendation" in _s5repw
-   and "The production decision is identical; its justification is sounder" in _s5repw)
+   and "### Round two: review of `9187d4e`" in _s5repw
+   and "What did not change across either round: the recommendation" in _s5repw
+   and "The production decision is identical through two rounds of" in _s5repw
+   and "The recommendation never needed the\novercl".replace("\n", " ") in _s5repw)
 
+
+# ---- the provenance clean-state hole, and what it means for S5 --------------
+#
+# dirty() used `git status --untracked-files=no` while source_files() hashed every
+# research/*.py by listdir, INCLUDING untracked ones. So a brand-new module could
+# be hashed into source_sha, produce an artifact, be absent from the stamped
+# commit, and the stamp would still read dirty: false. A false-clean stamp is
+# worse than a dirty one, because a dirty one tells the truth. Four of five S5
+# artifacts carry exactly that stamp.
+ck("provenance.source_state() reports clean only when every hashed source is TRACKED and unmodified, so an untracked module can no longer produce a false-clean stamp",
+   hasattr(_prov14, "source_state")
+   and set(_prov14.source_state()[1]) >= {"untracked_sources", "modified_sources",
+                                          "hashed_sources"}
+   and _prov14.source_state()[1]["hashed_sources"] == len(_prov14.source_files()),
+   str(_prov14.source_state()[1]))
+
+# Behavioural: an untracked file inside research/ must make the stamp dirty. The
+# old implementation returned clean here, which is the whole defect.
+_s5_tmpsrc = _os.path.join(_root, "research", "_guard_untracked_probe.py")
+try:
+    with open(_s5_tmpsrc, "w") as _fh:
+        _fh.write("# transient probe written by the guard suite\n")
+    _s5_probe_clean, _s5_probe_detail = _prov14.source_state()
+    _s5_probe_stamp = _prov14.stamp(seed=1, model="m", data_split="d")
+    # realpath both sides: _root is "<repo>/tests/.." and provenance abspaths its
+    # own, so a raw string compare would silently never match
+    _s5_probe_hashed = _os.path.realpath(_s5_tmpsrc) in {
+        _os.path.realpath(x) for x in _prov14.source_files()}
+finally:
+    if _os.path.exists(_s5_tmpsrc):
+        _os.remove(_s5_tmpsrc)
+ck("and an UNTRACKED research module makes the stamp dirty rather than silently false-clean -- the defect reproduced, then shown fixed",
+   _s5_probe_hashed                       # it really is inside source_sha
+   and _s5_probe_clean is False
+   and "research/_guard_untracked_probe.py" in _s5_probe_detail["untracked_sources"]
+   and _s5_probe_stamp["dirty"] is True
+   and "dirty_detail" in _s5_probe_stamp,
+   str(_s5_probe_detail["untracked_sources"]))
+
+ck("and require_clean refuses an untracked source as well as a modified one, naming which it found",
+   "untracked_sources" in (_prov14.require_clean.__doc__ or "")
+   or "untracked" in (_prov14.require_clean.__doc__ or ""))
+
+# The separate, checkable record: which commit (if any) reconstructs each stamp.
+ck("the provenance verification records, per artifact, the first commit whose source recomputes the stamped hash -- and says NONE where the snapshot is not reconstructible",
+   len(_s5pv["artifacts"]) == 5
+   and all(set(v) >= {"stamped_commit", "stamped_dirty", "source_commit_verified",
+                      "reconstructible_from_git"} for v in _s5pv["artifacts"].values())
+   and sum(1 for v in _s5pv["artifacts"].values() if not v["reconstructible_from_git"]) == 3
+   and _s5pv["artifacts"]["s5_pairs.json"]["source_commit_verified"] != \
+       _s5pv["artifacts"]["s5_pairs.json"]["stamped_commit"]
+   and "NOT reconstructible from Git" in _s5pv["meta"]["what_null_means"],
+   str({k: (v["stamped_commit"], v["source_commit_verified"])
+        for k, v in _s5pv["artifacts"].items()}))
+
+# The report has to carry the finding, with one precise meaning per column.
+ck("and the report's provenance section states what each column means, shows the false-clean stamps, and does not omit s5_tail",
+   "### R1. The clean-state hole" in _s5repw
+   and "source verified at" in _s5repw
+   and "four of the five S5 artifacts above carry a false-clean" in _s5repw
+   and "`s5_tail.json`" in _s5repw
+   and "a false-clean stamp is worse than a dirty one" in _s5repw)
+
+ck("and the reproducibility claim is narrowed to the Sleeper side, with the DraftKings inputs named as still live",
+   "exact S5 reproduction remains non-hermetic until" in _s5repw
+   and "live-fetches the DraftKings slate" in _s5repw
+   and "427,048 legal lineups when the live A/B ran" in _s5repw
+   and "payout schedule" in _s5repw)
+
+
+
+print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
+if FAIL:
+    print("FAILURES:")
+    for n, d in FAIL:
+        print(f"   - {n}   {d}")
+print("=" * 72)
 
 # A red guard MUST be a red exit code. The suite used to exit 0 unless it
 # crashed outright, which made every "check $? explicitly" ritual theater --

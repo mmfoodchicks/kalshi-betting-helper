@@ -19,25 +19,30 @@ the rest, exactly one moves the production objective on its own: `DST-OPP`, the
 ban on rostering the defense that faces your captain, worth **+0.047** mean
 held-out Top 1%, stable in 7 of 8 cross-fit cells, and robust across a
 field-concentration sweep on the one board and seed it was swept on — which S4's
-headline effect was not. **Recommendation: keep every rule.** The reason is that
-the gain is almost entirely *ownership-attributed*: the selected portfolio's
-held-out football tail barely moves (−0.55% on DEN @ KC, −0.06% on DAL @ NYG)
-while its modelled Top 1% rises 14% relative, so essentially none of the
-advantage comes from scoring more points. A leverage gain computed by a
-placeholder ownership model is not a gain this app is licensed to bank — and the
-lineups producing it are captain-opposite-defense builds whose value rests on
-exactly the cross-side covariance Stage 2B–2F measured legacy-latent getting
-wrong. `DST-OPP` is the one reproducible candidate effect in this study,
-**INCONCLUSIVE** rather than harmful, with the experiment that would settle it
-named in section O.
+headline effect was not. **Recommendation: keep every rule.** The reason is not
+that the gain is fake: it is that the gain is **not separable** from the two
+things this app distrusts. `DST-OPP`'s Top-1% advantage is an interaction between
+the simulated joint score distribution and the **uncalibrated weighted opponent
+field**; football-only portfolio statistics neither independently validate it nor
+show it to be an ownership artifact (section L). Add that one of two boards
+supplies essentially the whole effect, that the lineups producing it are
+captain-opposite-defense builds resting on exactly the cross-side covariance
+Stage 2B–2F measured legacy-latent getting wrong, and that removing the rule is
+structural and reshapes the candidate universe by +41%. `DST-OPP` is the one
+reproducible candidate effect in this study, **INCONCLUSIVE** rather than
+harmful, with the experiment that would settle it named in section O.
 
-**Corrected 2026-09-12 after independent review of `321c0b7`.** An earlier
-revision said "four of nine rules are provably inert" and claimed "every ablation
-that raises Top 1% *lowers* the selected portfolio's p99". The first was too
-strong (see above). The second was **false under the correct statistic** — it was
-true of the mean of twenty per-entry p99s, which is not a portfolio tail. Section
-L carries both quantities and the re-weighted argument; section U records what the
-correction changed and what it did not.
+**Corrected twice, after two independent reviews.** The review of `321c0b7`
+withdrew "four of nine rules are provably inert" (too strong — see above) and
+found that "every ablation that raises Top 1% lowers the portfolio's p99" was
+**false under the correct statistic**, being true only of the mean of twenty
+per-entry p99s. The review of `9187d4e` then withdrew the replacement claim
+— *"the gain is ownership, not football"* — as an attribution the artifacts do
+**not** identify: the stored football distribution is mixed, not flat, and
+production's optimistic Top-1% metric uses field mass **strictly above** the
+candidate, so the candidate's own modelled ownership is not directly in the
+number at all. Section L carries the full distribution and the corrected reading;
+section U records both rounds.
 
 ---
 
@@ -383,44 +388,71 @@ checkable). Means over the four cells per board.
 | | `ablate:CPT-SALARY` | 0.73362 | 187.83 | **−0.11** | 165.12 | −0.25 |
 | | full legal | 0.75650 | 188.39 | **+0.45** | 164.53 | −0.84 |
 
-### What the correction changed
+### What the corrections changed
 
-**The withdrawn claim.** This section said *"Every variant that raises Top 1%
-lowers the portfolio's football p99, on both boards, without exception."* That is
-**false** under the portfolio-tail definition. It was true of the mean-of-entry
-statistic, which is not a portfolio tail. Under the correct statistic
-`ablate:CPT-SALARY` is **+0.16** on DEN @ KC and `full_legal` is **+0.45** on
-DAL @ NYG — two sign flips, so the "without exception" was doing work it had not
-earned.
+**Round one (review of `321c0b7`): the aggregation.** This section said *"Every
+variant that raises Top 1% lowers the portfolio's football p99, on both boards,
+without exception."* That is **false** under the portfolio-tail definition — it
+was true of the mean-of-entry statistic. `ablate:CPT-SALARY` is **+0.16** on
+DEN @ KC and `full_legal` is **+0.45** on DAL @ NYG: two sign flips, so "without
+exception" was doing work it had not earned.
 
-**What survives.** `DST-OPP` is negative on both boards (−0.89 and −0.12), so the
-one rule the recommendation turns on still has no football support. But the
-honest magnitudes are **−0.55%** and **−0.06%** of the baseline tail — small, and
-on DAL @ NYG indistinguishable from nothing.
+**Round two (review of `9187d4e`): the attribution.** The replacement claim —
+*"the gain is ownership, not football"*, *"the portfolio scores the same and
+places far better"*, *"essentially all of the advantage is attributed to low
+modelled ownership"* — is **also withdrawn**. Two reasons, both decisive.
 
-**And the corrected reading is a tighter argument, not a weaker one.** The
-portfolio football tail is **essentially unchanged** while modelled Top 1% rises
-**+14% relative** on DEN @ KC. That means the gain is not a football gain at all:
-the portfolio scores the same and *places* much better. So ~all of the advantage
-is attributed to low modelled ownership — which is precisely the quantity this app
-has no licence to trust. "The football tail is flat while the contest metric
-jumps" is a cleaner statement of the leverage finding than "the football tail gets
-worse", and it does not depend on a small negative number holding up.
+*The football distribution is mixed, not flat.* The full stored distribution for
+`DST-OPP`, which the single p99 row was hiding:
 
-**Why the two statistics diverge, which is itself informative.** Mean-of-entry
+| | DEN @ KC | Δ | DAL @ NYG | Δ |
+|---|---|---|---|---|
+| worldwise-max **mean** | 93.4849 → **94.0666** | **+0.5817** | 112.1273 → 112.1775 | +0.0503 |
+| p90 | 124.8110 → 124.8618 | +0.0507 | 151.1792 → 151.0700 | −0.1093 |
+| p95 | 135.4513 → 135.2495 | −0.2018 | 163.3219 → 163.2562 | −0.0656 |
+| p99 | 160.2015 → 159.3138 | −0.8877 | 187.9340 → 187.8120 | −0.1220 |
+| p99.9 | 186.2069 → 185.2869 | −0.9200 | 216.9416 → **217.6934** | **+0.7518** |
+
+On the board that supplies essentially the whole Top-1% effect, the **expected
+best score across the portfolio rises by 0.58 DK in every fold and seed cell**.
+That is genuine football-side diversification, not "scores the same". The upper
+percentiles fall slightly on DEN and DAL's extreme tail *rises*. "Mixed" is the
+only word the data support.
+
+*And the metric does not work the way the withdrawn claim assumed.* Production's
+optimistic Top-1% reads field mass **strictly above** the candidate:
+`_field_pass` computes `above = cumsum(hist[::-1])[::-1] − hist`, and
+`equiv_mass(..., "optimistic")` returns `strict` unchanged. The candidate's own
+bucket — its same-score mass, which is where its own modelled ownership lives —
+is **excluded**. Same-score mass enters only the tie conventions, which the
+production convention ignores. So "this lineup is low-owned, therefore its
+Top-1% is higher" is not the mechanism, and no number here isolates ownership as
+a cause.
+
+### The supported reading
+
+> `DST-OPP`'s Top-1% advantage is an interaction between the **simulated joint
+> score distribution** and the **uncalibrated weighted opponent field**: the
+> admitted lineups score well in worlds where the high-weight public
+> constructions score badly. Football-only portfolio statistics do not
+> independently validate the gain, and they do not show it to be an ownership
+> artifact either. The decomposition is not identified by this study.
+
+Which fits `DST-OPP` exactly, and tightens reason 2 in section O rather than
+competing with it: a captain-versus-opposing-defense build is valuable precisely
+when its scoring pattern runs counter to what the model says the public owns —
+and that pattern *is* cross-side football covariance, the part of legacy-latent
+Stage 2B–2F measured as limited. The mechanism and the known weakness are the
+same object.
+
+**Why the two aggregations diverge, which is itself informative.** Mean-of-entry
 p99 falls further than portfolio p99 in every case. The admitted lineups are
 individually lower-ceiling but *less correlated* with the rest of the portfolio —
-so the portfolio's best-in-world score barely moves while its average member's
-ceiling drops. That is exactly what a greedy **cover** objective is built to do,
-and it is visible only once the two aggregations are separated.
-
-The mechanism is still legible in section H: a Chiefs-defense captain whose own
-p99 is 120.8 against an allowed field averaging 137.1 per entry is not a
-higher-scoring lineup, it is a lower-scoring lineup almost nobody owns. In a
-tournament that can genuinely be better — leverage *is* the game. But the whole
-value of the trade is computed by `softmax(beta × projected points)` with beta
-solved so the most popular build holds 0.2% of the field, a figure from one
-published 2021 contest never fitted to real Showdown ownership.
+so the portfolio's best-in-world score holds up or improves while its average
+member's ceiling drops. That is exactly what a greedy **cover** objective is built
+to do, and it is visible only once the two aggregations are separated. It is also
+the cleanest piece of evidence that something real is happening on the football
+side, which is why the ownership-only story had to go.
 
 ## L2. The opponent field is invariant under every owner-rule ablation
 
@@ -565,14 +597,18 @@ masked rule's effect becomes live and has to be re-measured.
 Four reasons, re-weighted after the portfolio-tail correction. The football
 argument is now the *attribution* of the gain rather than a contradiction of it.
 
-1. **The gain is ownership, not football.** The portfolio's held-out football tail
-   barely moves — −0.55% on DEN @ KC and −0.06% on DAL @ NYG — while the modelled
-   Top 1% rises 14% relative. The portfolio scores the same and *places* far
-   better, so essentially all of the advantage is attributed to low modelled
-   ownership. That quantity comes from `softmax(beta × projected points)` with
-   beta fixed by one published 2021 contest, which is the single thing in this
-   system the money gate is shut *because of*. A gain that is 100%
-   ownership-derived is not a gain this app may act on.
+1. **The gain is not separable from the uncalibrated field model.** `DST-OPP`
+   raises held-out Top 1% materially, and football-only portfolio statistics are
+   **mixed**: the expected worldwise-max score improves (+0.58 DK on DEN @ KC)
+   while upper percentiles are flat to slightly lower, and DAL @ NYG's extreme
+   tail rises. The data therefore support neither "essentially all of the gain is
+   ownership" nor "there is an independent football advantage". The effect is an
+   interaction between the simulated joint score distribution and the weighted
+   opponent field — and that field is `softmax(beta × projected points)` with
+   beta fixed by one published 2021 contest, the single thing the money gate is
+   shut *because of*. An advantage that cannot be separated from an uncalibrated
+   model is not an advantage this app may act on. (Section L; the earlier
+   "ownership, not football" attribution is withdrawn.)
 
 2. **It sits on the model's known weak point.** `DST-OPP` bans rostering the
    defense that faces your captain — a lineup needing one offense to produce and
@@ -604,9 +640,24 @@ Named, so the next stage has a target rather than an instruction to think harder
 - **More boards.** Four to six Showdown slates with varied pool shapes would
   separate "property of the rule" from "property of DEN @ KC". Cheap compared to
   S9 and worth doing first.
-- **A football-objective arm.** Every portfolio here was selected for Top 1%. A
-  parallel arm selecting on held-out p99 would show whether `DST-OPP`'s
-  admissions are *ever* chosen by an objective the field model cannot touch.
+- **A field-free portfolio objective arm, selected on the SELECTION fold.**
+  Every portfolio here was selected for Top 1%, which is a field-weighted
+  objective. A parallel arm would show whether `DST-OPP`'s admissions are ever
+  chosen by an objective the field model cannot touch at all.
+
+  **Corrected:** an earlier revision proposed "selecting on held-out p99". That
+  reintroduces exactly the leakage S4 spent a stage removing — the scoring fold
+  must never choose candidates. The arm must **select on the selection fold and
+  grade on the held-out fold**, like everything else here.
+
+  And the objective should be *portfolio-native* rather than per-lineup, since
+  section L shows the two differ in a way that matters: greedily maximise
+  **selection-fold E[max raw DK score across the 20 entries]**, or fixed-score
+  exceedance coverage (the share of worlds where the portfolio's best entry
+  clears a fixed threshold), then grade held out. Both are computable from
+  `W[rows] @ X[:, sel]` with no field weights anywhere, so they test football
+  diversification directly. Cheap — no new screening pass is needed, only a
+  different greedy over the same shortlist.
 
 ## P. S4-rerun triggers, per proposed change
 
@@ -652,23 +703,94 @@ exists so that a later decision cannot skip the question.
 
 ## R. Provenance
 
-| artifact | sha256 (first 16) | bytes | generated at | dirty |
-|---|---|---|---|---|
-| `s5_rules.json` | see manifest | 12,907 | `b01e179` | no |
-| `s5_ablate.json` | see manifest | 957,451 | `b01e179` | no |
-| `s5_pairs.json` | see manifest | 64,770 | `ed7ffbc` | no |
-| `s5_sens.json` | see manifest | 26,991 | `ed7ffbc` | no |
+**This section was inconsistent with the artifacts and is rebuilt with one
+precise meaning per column.** An earlier revision had a "generated at" column
+that shifted several artifacts to the commit that first *contained* them and
+omitted `s5_tail.json` entirely. The columns now mean exactly this:
 
-Every S5 artifact carries a non-null seed in its provenance block, under the
-contract tightened at `96bf08b`: `None` now means "did not say" and fails
-`provenance.complete()`. Seeds are `{"boards": [20260912, 771033],
-"bootstrap": 11}` for the cross-fit stages and `20260912` for the inventory.
+- **stamped commit** — `meta.provenance.commit`, read from the artifact. This is
+  the HEAD the tree was sitting on when the run happened. Nothing more.
+- **stamped dirty** — `meta.provenance.dirty`, as recorded at the time.
+- **source verified at** — the *first* commit in history whose tree recomputes
+  the artifact's stamped `source_sha` exactly (`research/prov_verify.py`).
+  **none** means no commit does, so the exact source snapshot that produced the
+  artifact is not reconstructible from Git.
 
-**The Sleeper projection feeds are committed** (`research/data/feeds`), which the
-previous audit could not do — it found that no artifact could be reproduced
-because the feeds were live-fetched and absent from the bundle. S5 reruns from
-committed inputs. That also produced the reproducibility data point in section Q:
-one board came back byte-identical four days later and one did not.
+| artifact | bytes | stamped commit | stamped dirty | source verified at | reconstructible |
+|---|---|---|---|---|---|
+| `s5_rules.json` | 12,907 | `96bf08b` | false | **none** | **NO** |
+| `s5_ablate.json` | 957,451 | `96bf08b` | false | **none** | **NO** |
+| `s5_pairs.json` | 64,770 | `b01e179` | false | `ed7ffbc` | yes |
+| `s5_sens.json` | 26,991 | `ed7ffbc` | false | `ed7ffbc` | yes |
+| `s5_tail.json` | 31,546 | `321c0b7` | false | **none** | **NO** |
+
+### R1. The clean-state hole, found by audit and present in this very stage
+
+The independent review of `9187d4e` found that `provenance.dirty()` and
+`provenance.source_files()` had **incompatible contracts**:
+
+- `dirty()` ran `git status --porcelain --untracked-files=no`;
+- `source_files()` listed every `research/*.py` by `listdir`, **including
+  untracked files**.
+
+So a brand-new untracked research module could be hashed into `source_sha`,
+produce an artifact, be absent from the stamped commit, and the stamp would still
+say `dirty: false`. That is the exact defect this module was written to close, and
+a false-clean stamp is worse than a dirty one because a dirty one tells the truth.
+
+**It is not hypothetical — four of the five S5 artifacts above carry a false-clean
+stamp.** `s5_rules.json` and `s5_ablate.json` say `96bf08b, dirty: false`, and no
+commit in history reconstructs their source: when they ran, `s5_rules.py` existed
+only as an untracked file, and no commit has a `research/` containing it *without*
+the later S5 modules. `s5_pairs.json` says `b01e179` and verifies at `ed7ffbc`, a
+**later** commit. Only `s5_sens.json` is honest on both counts.
+
+**Fixed prospectively, historical artifacts NOT regenerated.** `source_state()`
+now returns clean only when every hashed path is **tracked and byte-identical to
+HEAD**; `dirty()` is its negation; the stamp carries a `dirty_detail` naming
+untracked versus modified sources, because those are different problems; and
+`require_clean()` refuses both. The artifact bytes above stay as they are — they
+are the evidence this audit verified against, and rewriting them to look tidy
+would destroy it. `prov_verify.json` is the separate, checkable record.
+
+### R2. What a `source_sha` can and cannot prove
+
+For an artifact with **source verified at = none**, the chain is: the numbers are
+internally consistent, the hash is stable, and the code that produced them is
+**not recoverable from Git**. That is strictly more information than
+`dirty: false` was conveying, and it is the honest answer for a run from a tree
+that was never committed in that exact state.
+
+### R3. Reproducibility is partial, and the missing half matters for S6
+
+The pinned Sleeper feeds (`research/data/feeds`, three files, hashes in the
+bundle manifest) make the **projection side** reproducible — the previous audit
+could not rerun anything at all. But **S5 as a whole is not hermetic**, and the
+earlier claim that the feeds "make S5 reproducible" was too broad:
+`research/sd_board.slate_and_contest` still live-fetches the DraftKings slate
+CSV, the player pool and the contest detail.
+
+DAL @ NYG proves it: 427,048 legal lineups when the live A/B ran, **583,082** on
+rebuild four days later, because its DK pool gained a player. DEN @ KC happened to
+reproduce byte-identically (777,056 / 23,820), which is luck rather than a
+property of the setup.
+
+> **Sleeper inputs are pinned; exact S5 reproduction remains non-hermetic until
+> the DraftKings slate, player pool and contest inputs are captured.**
+
+**This should be fixed before S6**, which is explicitly about scoring multiple
+contests — so contest metadata stops being incidental and becomes the subject.
+What to capture, with hashes: the DK slate CSV and player pool, contest id and
+name, field size (`max_entries` / `entered`), entry fee, places paid, and the full
+payout schedule. Every one of those is already read by `grids_by_size`, so a
+wrong or drifted value changes Top-q silently.
+
+### R4. Seeds
+
+Every S5 artifact carries a non-null seed under the contract tightened at
+`96bf08b`: `None` means "did not say" and fails `provenance.complete()`. Seeds are
+`{"boards": [20260912, 771033], "bootstrap": 11}` for the cross-fit stages and
+`20260912` for the inventory.
 
 Nothing in `research/` is imported by the app, the PC worker, or the guard
 suite's production paths.
@@ -742,10 +864,51 @@ cells is not a familywise-controlled family, and no correction was applied.
 `DST-OPP` is "the only reproducible candidate effect under this study", never a
 discovery at a stated significance level.
 
-**What did not change: the recommendation.** Keep every rule. Criterion 3
-(consistency across boards) was always weak and criterion 4 (football
-compatibility) still fails for `DST-OPP`, now on a smaller margin and a better
-argument. The production decision is identical; its justification is sounder.
+### Round two: review of `9187d4e`
+
+**5. "The gain is ownership, not football" withdrawn.** The replacement claim from
+round one was itself an attribution the artifacts do not identify. Two reasons:
+the stored football distribution is **mixed** — worldwise-max mean **+0.58 DK** on
+the board carrying the effect, upper percentiles slightly down, DAL's p99.9 up
++0.75 — and production's optimistic Top-1% reads field mass **strictly above** the
+candidate, excluding its own same-score mass, so the candidate's modelled
+ownership is not directly in the metric at all. The supported reading is a
+**field-weighting × joint-football interaction**, with the decomposition not
+identified. Section L. Two guards that had frozen the withdrawn attribution were
+repinned — a guard must not pin a causal claim the data cannot support.
+
+**6. The proposed football arm would have reintroduced S4's leakage.** An earlier
+revision suggested "a parallel arm selecting on held-out p99". The scoring fold
+must never select. Corrected to select on the selection fold and grade held out,
+and upgraded to a *portfolio-native* field-free objective — selection-fold
+E[max raw DK score across the 20 entries], or fixed-score exceedance coverage —
+since section L shows per-lineup and portfolio statistics diverge in a way that
+matters here.
+
+**7. The provenance clean-state hole.** `dirty()` ignored untracked files while
+`source_sha()` hashed them, so a new untracked module could produce an artifact
+stamped `dirty: false` at a commit that does not contain it. Four of five S5
+artifacts turn out to carry exactly that false-clean stamp (section R1). Fixed
+prospectively; historical artifacts untouched; `prov_verify.json` records which
+commit, if any, reconstructs each one.
+
+**8. Section R rebuilt and the reproducibility claim narrowed.** One precise
+meaning per column, `s5_tail.json` no longer omitted, and the feeds now described
+as pinning the Sleeper side only — DraftKings slate and contest inputs are still
+live-fetched, which DAL @ NYG's 427,048 → 583,082 already demonstrates. Capture
+list for S6 in section R3.
+
+**What did not change across either round: the recommendation.** Keep every rule.
+Criterion 3 (consistency across boards) was always weak, and criterion 4 now reads
+as *not independently validated* rather than *fails* — which is enough, because the
+bar was "football-only evidence is directionally compatible" and mixed evidence is
+not compatible. The production decision is identical through two rounds of
+correction; what improved is that its justification no longer rests on an
+attribution the data cannot make. **The recommendation never needed the
+overclaim:** it needs only that the advantage is inseparable from an uncalibrated
+field model and a known-weak covariance model, is concentrated on one of two
+slates, and would reshape the candidate universe by +41% if shipped. All four were
+true before either correction and remain true after.
 
 ## T. What S5 did not do
 

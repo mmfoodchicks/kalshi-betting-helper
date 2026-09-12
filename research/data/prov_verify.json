@@ -1,0 +1,56 @@
+{
+ "artifacts": {
+  "s5_ablate.json": {
+   "reconstructible_from_git": false,
+   "source_commit_verified": null,
+   "source_files_at_verified": null,
+   "stamped_commit": "96bf08b",
+   "stamped_dirty": false,
+   "stamped_source_files": 32,
+   "stamped_source_sha": "cec22ac6014282acd20243c54ed1251f73f3b3812ecdc11f51a795f31bb3aadf"
+  },
+  "s5_pairs.json": {
+   "reconstructible_from_git": true,
+   "source_commit_verified": "ed7ffbc",
+   "source_files_at_verified": 33,
+   "stamped_commit": "b01e179",
+   "stamped_dirty": false,
+   "stamped_source_files": 33,
+   "stamped_source_sha": "08825a1fdc07e6ea4ca38431632f06a5b005553dbeee7d0bc95b8ff29fabcc5f"
+  },
+  "s5_rules.json": {
+   "reconstructible_from_git": false,
+   "source_commit_verified": null,
+   "source_files_at_verified": null,
+   "stamped_commit": "96bf08b",
+   "stamped_dirty": false,
+   "stamped_source_files": 30,
+   "stamped_source_sha": "46a7b5d9679e4a13c27dd74bbdb51a0e1e5f3c2e131da5fd2b701c3ba6fe47ad"
+  },
+  "s5_sens.json": {
+   "reconstructible_from_git": true,
+   "source_commit_verified": "ed7ffbc",
+   "source_files_at_verified": 33,
+   "stamped_commit": "ed7ffbc",
+   "stamped_dirty": false,
+   "stamped_source_files": 33,
+   "stamped_source_sha": "08825a1fdc07e6ea4ca38431632f06a5b005553dbeee7d0bc95b8ff29fabcc5f"
+  },
+  "s5_tail.json": {
+   "reconstructible_from_git": false,
+   "source_commit_verified": null,
+   "source_files_at_verified": null,
+   "stamped_commit": "321c0b7",
+   "stamped_dirty": false,
+   "stamped_source_files": 34,
+   "stamped_source_sha": "eeecc19f4a63c5c8a8e84c9948b8991f7b8a2763403762da51a88cce2bda6269"
+  }
+ },
+ "meta": {
+  "commits_scanned": 203,
+  "head": "9187d4e",
+  "stage": "provenance verification: which commit reconstructs the source",
+  "what_null_means": "no commit in the scanned range recomputes the stamped source_sha, so the exact source snapshot that produced the artifact is NOT reconstructible from Git. Expected for an artifact run from an uncommitted tree; an honest answer, not a failure.",
+  "why": "provenance.commit is the HEAD the tree sat on. Before the 2026-09-12 contract repair, dirty() ignored untracked files while source_sha() hashed them, so commit+dirty could not establish that the stamped commit contained the code."
+ }
+}

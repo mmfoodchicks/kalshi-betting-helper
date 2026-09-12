@@ -48,10 +48,44 @@ def commit():
     return _git("rev-parse", "--short", "HEAD") or "unknown"
 
 
+def source_state():
+    """What Git can and cannot prove about the files that went into source_sha.
+
+    Returns (clean, detail). `clean` is True only when EVERY path source_sha()
+    hashes is tracked by Git and byte-identical to HEAD -- which is the only
+    condition under which the stamped commit can reconstruct the code that ran.
+
+    This is a contract repair, found by an independent audit on 2026-09-12 and
+    demonstrated by this repo's own S5 history. `dirty()` used to be
+
+        git status --porcelain --untracked-files=no
+
+    while `source_files()` lists every research/*.py by `listdir`, INCLUDING
+    untracked ones. The two contracts were incompatible, and the gap is exactly
+    the defect this module was written to close: a brand-new untracked research
+    module is hashed into source_sha, generates an artifact, is absent from the
+    stamped commit, and the stamp still says `dirty: false`. `s5_rules.json`
+    stamped commit 96bf08b with dirty false while `research/s5_rules.py` did not
+    exist at 96bf08b. A false-clean stamp is worse than a dirty one, because a
+    dirty one tells the truth.
+    """
+    rel = [os.path.relpath(p, ROOT) for p in source_files()]
+    tracked = set((_git("ls-files", "--", *rel) or "").splitlines())
+    untracked = sorted(r for r in rel if r not in tracked)
+    modified = sorted((_git("diff", "--name-only", "HEAD", "--", *rel) or "").splitlines())
+    clean = not untracked and not modified
+    return clean, {"untracked_sources": untracked, "modified_sources": modified,
+                   "hashed_sources": len(rel)}
+
+
 def dirty():
-    """True when a tracked file differs from HEAD, so the stamped commit is
-    not the code that ran."""
-    return bool(_git("status", "--porcelain", "--untracked-files=no"))
+    """True when the stamped commit cannot reconstruct the hashed source.
+
+    Either a hashed file differs from HEAD, or a hashed file is not in Git at
+    all. The second case is the one the old implementation missed.
+    """
+    clean, _detail = source_state()
+    return not clean
 
 
 def source_files():
@@ -98,8 +132,14 @@ def stamp(seed=None, model=None, data_split=None, **extra):
     the stage did not say, and `complete()` now refuses that.
     """
     sha, n = source_sha()
-    out = {"commit": commit(), "dirty": dirty(), "source_sha": sha, "source_files": n,
+    clean, detail = source_state()
+    out = {"commit": commit(), "dirty": not clean, "source_sha": sha, "source_files": n,
            "seed": seed, "model": model, "data_split": data_split}
+    # WHY it is dirty, so "dirty: true" is actionable rather than a flag. An
+    # untracked source is a different problem from a modified one: the first
+    # means the stamped commit does not contain the code at all.
+    if not clean:
+        out["dirty_detail"] = detail
     out.update(extra)
     return out
 
@@ -132,9 +172,18 @@ def complete(block):
 def require_clean(what):
     """Refuse to produce an order-sensitive artifact from an uncommitted
     tree. A parameter freeze that a holdout is later validated against has to
-    be provable from history, not from the modification time of a file."""
-    if dirty():
+    be provable from history, not from the modification time of a file.
+
+    Refuses BOTH failure modes since 2026-09-12: a modified hashed source, and
+    an untracked one. It used to refuse only the first, so a stage written in a
+    fresh file could pass this check while being invisible to the commit it
+    stamped.
+    """
+    clean, detail = source_state()
+    if not clean:
         raise RuntimeError(
             f"{what} must be produced from a committed tree so the freeze is provable: "
-            "commit the research code first, then run this, then commit the artifact, "
+            f"untracked sources {detail['untracked_sources']}, "
+            f"modified sources {detail['modified_sources']}. "
+            "Commit the research code first, then run this, then commit the artifact, "
             "and only then open the holdout")
