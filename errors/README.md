@@ -2,9 +2,9 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 158 | 09-12 09:27 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 120 | 09-12 09:27 | _EspnBlocked: ESPN 403: parked 6h |
-| `FAN-pit` | 79 | 09-11 22:39 | HTTPError: HTTP Error 403: Forbidden |
+| `NFL-espn-fetch` | 157 | 09-12 14:02 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 122 | 09-12 14:02 | _EspnBlocked: ESPN 403: parked 6h |
+| `FAN-pit` | 77 | 09-11 22:39 | HTTPError: HTTP Error 403: Forbidden |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
 | `BOARD-read` | 45 | 09-10 09:26 | ModuleNotFoundError: No module named 'numpy' |
 | `KAL-candles` | 14 | 09-10 12:13 | HTTPError: HTTP Error 429: Too Many Requests |
