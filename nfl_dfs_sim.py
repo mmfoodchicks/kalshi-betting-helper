@@ -20,6 +20,7 @@ import dk_scoring
 import errlog
 import json as _json
 import gzip as _gzip
+import math as _math
 import random as _random
 import time as _time
 import threading as _threading
@@ -248,7 +249,11 @@ SIM_MODEL = "legacy-latent"
 SIM_MODEL_VERSION = 1
 
 
-DISCRETE_VERSION = 1      # showdown-only discrete legacy scorer; 0 means off
+# 1 covered the offense only, and a promotion-readiness audit found the kicker
+# still multiplied and the defense still shifted by a fraction -- 47% and 44% of
+# their scores unprintable. 2 pins the kicker on its field-goal rate and spends
+# the defense's fractional shift as a coin, so the WHOLE showdown pool is legal.
+DISCRETE_VERSION = 2      # showdown-only discrete legacy scorer; 0 means off
 
 
 def sim_stamp(n=None, preseason=False, discrete=False):
@@ -269,9 +274,17 @@ def sim_stamp(n=None, preseason=False, discrete=False):
                           if discrete else
                           "each player's points rescaled to the Sleeper mean after the loop"),
             "lattice": ("every score recomputes from integer components through DraftKings' own "
-                        "scorer, so all of them are reachable" if discrete else
+                        "scorer -- offense, kicker and defense alike -- so all of them are "
+                        "reachable (research/sd_support)" if discrete else
                         "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)"),
-            "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+            "dst": ("components of the opposing offense in the same world, shifted to the "
+                    "Sleeper mean by whole points plus a coin for the fraction"
+                    if discrete else
+                    "components of the opposing offense in the same world, shifted to the Sleeper mean"),
+            "kicker": ("extra points off the offense's own touchdowns, field goals at a Poisson "
+                       "mean solved so the level lands on the projection"
+                       if discrete else
+                       "extra points and field goals off the offense, then rescaled to the projection"),
             "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
 
 
@@ -313,7 +326,8 @@ def _prop_line(mean, step):
     return math.floor(mean) + 0.5          # receptions: X.5
 
 
-def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False):
+def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=False,
+                  with_components=False):
     """Correlated MC of one game. Returns per-player fantasy-point distributions,
     correlation-aware component prop over/unders, and QB->receiver stacks.
     with_samples=True attaches each player's rescaled point array (`arr`) so a DFS
@@ -336,7 +350,15 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
     The latent structure -- the shared game factor, the quarterback latent,
     the opposed scripts -- is untouched, so this is the same football model
     with a legal support, not a new one. Default False: the classic path is
-    byte-identical to before this existed."""
+    byte-identical to before this existed.
+
+    with_components=True attaches each player's per-world stat line under
+    `comps` -- the nine numbers `_ppr` is paid on. It exists so an auditor can
+    recompute every score from the box score that produced it instead of
+    trusting that it was computed correctly (research/sd_support). It is
+    RESEARCH-ONLY and costs real memory: nine arrays a player, so a 55-man
+    showdown at 20,000 worlds is about 150 MB. Nothing in production passes
+    it, and the guard suite pins that."""
     players = game["players"]
     teams = game.get("teams") or []
     # The upstream mean pin. The old code let the simulation run at the raw
@@ -380,6 +402,11 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
         pin = list(game.get("_pin") or [1.0] * len(players))
     pts = {i: [] for i in range(len(players))}
     comp = {i: {k: [] for k, _, _, _ in _PROP_SPECS} for i in range(len(players))}
+    # The nine numbers DraftKings is paid on, kept only when an auditor asks.
+    _CKEYS = ("pass_yd", "pass_td", "int", "rush_yd", "rush_td", "rec", "rec_yd",
+              "rec_td", "fum")
+    full = ({i: {k: [] for k in _CKEYS} for i in range(len(players))}
+            if with_components else None)
     fp_raw = {i: [] for i in range(len(players))}    # for the QB<->WR stack correlation
     # Per-iteration offensive output by team. A defense's score is mostly a
     # function of what the OTHER offense did to it, and nothing here tracked
@@ -447,6 +474,13 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
             c = comp[i]
             c["pass_yd"].append(pass_yd); c["rush_yd"].append(rush_yd)
             c["rec_yd"].append(rec_yd); c["rec"].append(rec)
+            if full is not None:
+                fc = full[i]
+                fc["pass_yd"].append(pass_yd); fc["pass_td"].append(pass_td)
+                fc["int"].append(ints); fc["rush_yd"].append(rush_yd)
+                fc["rush_td"].append(rush_td); fc["rec"].append(rec)
+                fc["rec_yd"].append(rec_yd); fc["rec_td"].append(rec_td)
+                fc["fum"].append(fums)
         for t, v in by_team.items():
             team_fp[t].append(v)
             team_td[t].append(tds[t])
@@ -484,6 +518,14 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
                "bust_pct": round(100.0 * sum(1 for x in arr if x <= proj * 0.5) / len(arr), 1)}
         if with_samples:
             row["arr"] = [round(x, 2) for x in arr]
+        if full is not None:
+            # UNSCALED by construction: under discrete the pin is already in
+            # the components, and under legacy `arr` was multiplied by
+            # proj/raw afterwards, so the stat line recomputes the score only
+            # in discrete mode. That asymmetry IS the finding, so the arrays
+            # ship as drawn and the auditor measures it.
+            row["comps"] = full[i]
+            row["arr_raw"] = list(pts[i])
         out.append(row)
         # Component props (correlation is already baked into the samples).
         for key, lab, step, floor_mean in _PROP_SPECS:
@@ -668,7 +710,7 @@ def kicker_projections(season, week):
     return _cached(("nfl_k", season, week), 3600, build)
 
 
-def _kicker_arr(k, off, n, rng):
+def _kicker_arr(k, off, n, rng, discrete=False):
     """A kicker's per-iteration DK points off HIS OWN offense's simulated
     output: an extra point per offensive touchdown that iteration (made at
     his xpm/xpa), field goals as a Poisson whose mean rides the offense's
@@ -676,7 +718,24 @@ def _kicker_arr(k, off, n, rng):
     kick's distance drawn from the projection's own mix. Mean pinned to the
     projection like every other player; the shape and the correlation with
     his quarterback are the point -- a kicker in a shootout scores, one in
-    a shutout does not, and the old pool had no kicker at all."""
+    a shutout does not, and the old pool had no kicker at all.
+
+    A kicker's DK categories are all whole numbers (1 for the extra point, 3
+    / 4 / 5 for a field goal by distance), so `pts` below comes out of the
+    loop already legal -- and then the legacy path multiplies it by
+    projection/raw and throws that away. How much of it lands somewhere
+    DraftKings cannot print depends on whether that one factor happens to be a
+    multiple of 0.02, so it is arbitrary rather than bounded: 47% of a
+    kicker's scores on the week-1 CAR @ CHI pool, 95% on the week-2 DEN @ KC
+    one (research/sd_support).
+
+    discrete=True pins the level UPSTREAM instead, on the only lever that is
+    a real rate: the field-goal Poisson mean. Extra points are not scalable
+    here, because they are one per touchdown the offense actually scored in
+    that same world and moving them would break the tie to the game. Two
+    solve passes (the kick count is linear in its own mean, so one Newton
+    step converges), and whatever is left is REPORTED rather than multiplied
+    away -- a multiply is the defect, at any size."""
     tds, yds = off.get("td") or [], off.get("yd") or []
     if len(tds) < n or len(yds) < n:
         return None
@@ -685,25 +744,50 @@ def _kicker_arr(k, off, n, rng):
     tot_m = sum(m for _v, m in mix) or 1.0
     xp_rate = (k["xpm"] / k["xpa"]) if k["xpa"] else 0.94
     mean_yd = (sum(yds) / len(yds)) or 1.0
-    out = []
-    for i in range(n):
-        xp = sum(1 for _ in range(int(tds[i])) if rng.random() < xp_rate)
-        f = min(2.5, max(0.3, yds[i] / mean_yd))
-        made = _pois(fg_mean * f, rng)
-        pts = dk_scoring.NFL_K["xp"] * xp
-        for _ in range(made):
-            u = rng.random() * tot_m
-            for v, m in mix:
-                u -= m
-                if u <= 0:
-                    pts += v
-                    break
-            else:
-                pts += mix[-1][0]
-        out.append(float(pts))
-    raw = sum(out) / n
-    f = k["pts"] / raw if raw > 0 else 1.0
-    return [round(x * f, 2) for x in out]
+
+    def draw(scale=1.0):
+        out, xps = [], 0.0
+        for i in range(n):
+            xp = sum(1 for _ in range(int(tds[i])) if rng.random() < xp_rate)
+            f = min(2.5, max(0.3, yds[i] / mean_yd))
+            made = _pois(fg_mean * scale * f, rng)
+            pts = dk_scoring.NFL_K["xp"] * xp
+            for _ in range(made):
+                u = rng.random() * tot_m
+                for v, m in mix:
+                    u -= m
+                    if u <= 0:
+                        pts += v
+                        break
+                else:
+                    pts += mix[-1][0]
+            out.append(float(pts))
+            xps += dk_scoring.NFL_K["xp"] * xp
+        return out, xps / n
+
+    out, xp_mean = draw()
+    if not discrete:
+        raw = sum(out) / n
+        f = k["pts"] / raw if raw > 0 else 1.0
+        return [round(x * f, 2) for x in out]
+    want, scale = float(k["pts"] or 0.0), 1.0
+    for _ in range(2):
+        raw = sum(out) / n
+        fg_part = raw - xp_mean           # what the kicks, not the XPs, are worth
+        if want <= xp_mean:
+            # The extra points alone already clear the projection, and an extra
+            # point is one per touchdown his offense scored in that world -- not
+            # ours to scale without cutting the tie to the game. Kick as little
+            # as the rate allows and report the overshoot; do not multiply.
+            out, xp_mean = draw(0.0)
+            break
+        if fg_part <= 1e-9:
+            break
+        scale *= (want - xp_mean) / fg_part
+        out, xp_mean = draw(max(0.0, scale))
+        if abs(sum(out) / n - want) <= 0.01 * max(want, 1e-9):
+            break
+    return [round(x, 2) for x in out]
 
 
 MODELS = ("legacy", "constrained")
@@ -822,7 +906,34 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 # -4 is the WORST score DK's rules can produce (the 35+ points
                 # allowed tier; every other category only adds). A negative
                 # shift must not manufacture scores below it.
-                arr = [round(max(-4.0, x + shift), 2) for x in arr]
+                if discrete:
+                    # Every DK defensive category is a whole number and so is
+                    # every points-allowed tier, so `arr` arrives integral --
+                    # and a shift of, say, +1.37 then moves ALL of it off the
+                    # lattice. How much lands somewhere DraftKings cannot print
+                    # is decided by one accident -- whether the shift happens to
+                    # be a multiple of 0.02 -- so it ran 44% on one measured
+                    # board and 100% on the next (research/sd_support).
+                    #
+                    # An integer distribution cannot be moved by a fractional
+                    # amount and stay integral, so the fraction is spent as a
+                    # coin: floor(shift) always, one more point with
+                    # probability frac(shift). The mean lands exactly where
+                    # the plain shift put it, the support stays legal, and the
+                    # cost is one Bernoulli's variance -- at most 0.25 points
+                    # squared against a defense's ~60, under half a percent.
+                    # This is the only term in the whole model whose level
+                    # comes from outside the game (Sleeper knows the unit's
+                    # quality and the component model carries no personnel),
+                    # so it is the only one that needs the coin.
+                    base = _math.floor(shift)
+                    frac = shift - base
+                    _rg = team_rng.get(team, _random)   # the generator this defense was drawn on
+                    arr = [round(max(-4.0, x + base
+                                     + (1 if _rg.random() < frac else 0)), 2)
+                           for x in arr]
+                else:
+                    arr = [round(max(-4.0, x + shift), 2) for x in arr]
                 proj = d["proj"]
             else:
                 proj = d["proj"]
@@ -844,7 +955,7 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                 k_rng = team_rng.get(team, _random)
                 if not off or k["name"] in pool:
                     continue
-                arr = _kicker_arr(k, off, n, k_rng)
+                arr = _kicker_arr(k, off, n, k_rng, discrete=discrete)
                 if not arr:
                     continue
                 pool[k["name"]] = {"pos": "K", "team": team, "opp": None,

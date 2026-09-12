@@ -220,6 +220,14 @@ game both ways:
 | Pair correlations | 0.0088 median, 0.106 worst |
 | Off the DK lattice | **51.40% to 0.00%** |
 
+**Correction, from the promotion-readiness pass that followed (section Y4).**
+That 0.00% is measured on `simulate_game`, which returns **offensive players
+only**. The kicker and the defense were still being multiplied and shifted after
+scoring, so under `discrete=True` as shipped in `f41ea02` the defense was 100%
+illegal and the kicker 95% illegal on a live pool. The row above is true as
+written and misleading if read as "the pool is legal". `DISCRETE_VERSION` 2
+fixes the other half.
+
 **How much does the lattice defect actually cost?** This is the question the
 grid spacing cannot answer, and the answer is bigger than the spacing
 suggests.
@@ -262,6 +270,226 @@ median residual is 1.0% and the worst is 8.4%; below a point the pin cannot
 move a raw mean of zero at all. The old code bought a perfect mean with an
 illegal support. This buys a legal support with a small mean bias, and the
 tradeoff should be decided deliberately rather than by me.
+
+## Y3. Promotion readiness, part 1: who the outliers are
+
+Three summary numbers were published for the discrete mode, and none of them
+named anybody: means move 0.80% at the median and 16.5% at the worst, the worst
+pair correlation moves 0.106. A summary cannot tell a structural regression from
+the resolution of a Monte Carlo, so this pass measures the **noise floor** every
+delta has to beat: two LEGACY runs of the same game, the same 20,000 worlds,
+different generator state. If legacy disagrees with legacy by as much as it
+disagrees with discrete, there is nothing to explain.
+
+Measured on **DEN @ KC** (draft group 153086, the week-2 Monday night $1.5M),
+26 players, 20,000 worlds, three runs. `research/sd_outliers.py` →
+`research/data/sd_outliers.json`.
+
+**A methodological correction first.** `sd_discrete` built its pair list as
+`[n for n in common if std > 1.0][:14]` over a **sorted** name list, so "the
+worst correlation delta" was the worst among the alphabetically first fourteen
+players. That is not the worst pair and should not have been described as one.
+Both are now reported. On this board they happen to be the same pair, so the
+flaw did not change the answer here — but it could have, and the published
+0.106 came from a board where the set was smaller than the universe.
+
+### The worst pair, named
+
+| | |
+|---|---|
+| Pair | **Cyrus Allen (WR, KC) × Jalen Royals (WR, KC)** |
+| Projections | 1.38 and 1.29 DK points |
+| Legacy correlation | **+0.1556** |
+| Discrete correlation | **+0.3207** |
+| Delta | **+0.1651** |
+| Legacy-vs-legacy control on the same pair | +0.0024 |
+
+It is a real move, well outside the noise floor — and it is between the two
+lowest-projected receivers on the board, it moves correlation **up**, and the
+mechanism is visible: round a five-yard receiving line to whole yards and whole
+catches and a large share of worlds collapse onto zero, so "did he touch the
+ball at all" becomes an event driven almost entirely by the shared game factor.
+Two punt receivers therefore move together more, not less.
+
+### The whole distribution, against its floor
+
+| | legacy vs discrete | legacy vs legacy (floor) |
+|---|---|---|
+| Median \|Δ\| | 0.0097 | 0.0055 |
+| 95th percentile \|Δ\| | 0.0837 | 0.0188 |
+| Maximum \|Δ\| | 0.1651 | 0.0292 |
+
+253 pairs. The median move is barely above the floor; the tail is real.
+
+### The ten largest moves among relationships a roster is built on
+
+| Pair | legacy → discrete | Δ | floor | relationship |
+|---|---|---|---|---|
+| Cyrus Allen × Jalen Royals | +0.156 → +0.321 | +0.165 | +0.002 | same-team pass catchers |
+| Bo Nix × Tyler Badie | +0.204 → +0.317 | +0.113 | −0.016 | RB with own QB |
+| Jalen Royals × Travis Kelce | +0.276 → +0.382 | +0.106 | +0.005 | same-team pass catchers |
+| Jalen Royals × Rashee Rice | +0.291 → +0.394 | +0.103 | −0.001 | same-team pass catchers |
+| Jalen Royals × Noah Gray | +0.222 → +0.320 | +0.098 | −0.004 | same-team pass catchers |
+| Jalen Royals × Xavier Worthy | +0.250 → +0.341 | +0.091 | −0.001 | same-team pass catchers |
+| Cyrus Allen × Travis Kelce | +0.298 → +0.387 | +0.090 | +0.017 | same-team pass catchers |
+| Jalen Royals × Patrick Mahomes | +0.258 → +0.343 | +0.085 | −0.002 | QB with own pass catcher |
+| Cyrus Allen × Xavier Worthy | +0.269 → +0.352 | +0.083 | +0.008 | same-team pass catchers |
+| Cyrus Allen × Patrick Mahomes | +0.275 → +0.356 | +0.082 | +0.029 | QB with own pass catcher |
+
+**Every one of the ten involves Jalen Royals (1.29), Cyrus Allen (1.38) or
+Tyler Badie (0.99).** Not one is a pair of players a showdown roster is
+actually built on.
+
+### By relationship, which is the question that matters
+
+| Relationship | n | legacy | discrete | median \|Δ\| | floor | max \|Δ\| |
+|---|---|---|---|---|---|---|
+| QB with own pass catcher (the stack) | 15 | +0.4240 | +0.4020 | 0.0153 | 0.0060 | 0.0851 |
+| QB with the other QB (the shootout) | 1 | +0.1673 | +0.1735 | 0.0062 | 0.0033 | 0.0062 |
+| QB with an opposing pass catcher (bring-back) | 15 | +0.1130 | +0.1196 | 0.0086 | 0.0056 | 0.0267 |
+| RB with own QB | 6 | +0.2449 | +0.2696 | 0.0089 | 0.0126 | 0.1129 |
+| Two pass catchers, same team | 49 | +0.3143 | +0.3381 | 0.0155 | 0.0055 | 0.1651 |
+| Kicker with own QB | 2 | +0.4237 | +0.4169 | 0.0217 | 0.0076 | 0.0285 |
+| Defense with the opposing QB | 2 | −0.4368 | −0.4254 | 0.0115 | 0.0144 | 0.0156 |
+| Defense with own offense | 22 | −0.0524 | −0.0484 | 0.0142 | 0.0103 | 0.0301 |
+
+The stack weakens by 0.022 on the median correlation. The shootout coupling, the
+bring-back, the back-with-his-quarterback and the defense-against-the-arm are at
+or inside the floor. The kicker still rides his quarterback at +0.42 and the
+defense still opposes him at −0.43, which matters because version 2 rewrote both
+of those models (section Y4) and breaking that coupling is the only way to make
+those two slots worthless.
+
+The kicker and defense pairs are measured on the real pool at 8,000 worlds, not
+on `simulate_game`, which returns offensive players only — so the earlier pass
+could not have seen them at all.
+
+### The mean residual: rounding, not bias
+
+The worst residual for a player projected over a point is **Jalen Royals**:
+
+| | |
+|---|---|
+| Projection | 1.29 |
+| Legacy mean | 1.290 (legacy pins the mean to the projection exactly, by construction) |
+| Discrete mean | 1.354 |
+| Absolute error | **+0.064 DK points** |
+| Relative error | **+4.97%** |
+
+Banded by projection, the shape is decisive:
+
+| Band | n | median abs err | max abs err | median rel err | max rel err |
+|---|---|---|---|---|---|
+| 1–5 pts | 11 | 0.041 | 0.135 | 1.62% | 4.97% |
+| 5–10 pts | 4 | 0.069 | 0.108 | 0.89% | 1.13% |
+| 10–15 pts | 6 | 0.097 | 0.202 | 0.78% | 1.93% |
+| 15+ pts | 1 | 0.094 | 0.094 | 0.56% | 0.56% |
+
+**The absolute error never exceeds 0.21 DK points anywhere in the pool, and the
+relative error falls monotonically as the projection rises.** That is the
+signature of a fixed rounding granularity, not of a bias: a structural
+regression would not care how large the projection was. Below a point the
+relative numbers get loud and mean nothing — Nate Adkins at 0.32 projected shows
+−24%, which is 0.077 of a DK point.
+
+The legacy-vs-legacy control on means is exactly **0.000** at every band, because
+legacy pins each mean to the projection by fiat. So the discrete residual is
+entirely real. It is also, at every projection anyone rosters, under a fifth of a
+point.
+
+---
+
+## Y4. Promotion readiness, part 2: the support, validated to the lineup total
+
+`research/sd_support.py` → `research/data/sd_support.json`. DEN @ KC, 4,000
+worlds, 4,000 lineups sampled from the real 777,056-lineup legal universe (half
+uniform, half drawn on the field model's own weights, both without replacement
+so duplicate lineups cannot be counted as score ties).
+
+### Two findings came out of writing the validator
+
+**First: version 1 only fixed the offense.** The kicker's DK categories are all
+whole numbers (1 for an extra point, 3/4/5 for a field goal by distance) and so
+are the defense's, points-allowed tiers included — and both were then destroyed
+downstream. `_kicker_arr` multiplied its whole-point array by
+`projection / raw`, and the defense's array was shifted by a fractional number
+of points to reach Sleeper's level. Measured on this live pool under
+`discrete=True` as shipped in `f41ea02`:
+
+| Slot | illegal scores |
+|---|---|
+| DST | **100%** |
+| K | **95.3%** |
+| QB / RB / WR / TE | 0% (version 1 fixed these) |
+
+Any lineup holding a kicker or a defense was off the lattice with it, which is
+most of them. Fixed at the source, `DISCRETE_VERSION` 1 → 2:
+
+* the **kicker** is pinned on the only lever that is a real rate, its
+  field-goal Poisson mean, solved in two passes. Extra points are not scalable
+  here — there is one per touchdown his own offense scored in that same world,
+  and scaling them would cut the tie to the game. Points stay whole.
+* the **defense's** Sleeper shift is spent as whole points plus a coin:
+  `floor(shift)` always, one more point with probability `frac(shift)`. An
+  integer distribution cannot be moved by a fractional amount and stay
+  integral, so this is not a trick, it is the only way. The mean lands exactly
+  where the plain shift put it; the cost is one Bernoulli's variance, at most
+  0.25 points² against a defense's ~60, under half a percent.
+
+**Second: the legality of a total is not the legality of its parts.** A legal
+base score is an even number of hundredths. 1.5 × that is an exact integer
+number of hundredths, so the engine's 0.01 bucket (`dfs_tourney._RES = 100`)
+holds a captain's score exactly. But **54.2% of legacy base scores are ODD
+hundredths**, and 1.5 × an odd hundredth needs half a hundredth — which the
+engine has nowhere to put. So every legacy captain was being silently rounded
+by up to **0.005 points, inside the tie arithmetic the split payout is computed
+from**. That is a second defect of the old path, separate from the illegal
+support, and nobody had written it down.
+
+### The chain, end to end
+
+| Check | legacy | discrete (v2) |
+|---|---|---|
+| Offensive score recomputes from its own integer stat line through `_ppr` | **0 of 26** | **26 of 26** |
+| Worst recomputation error | 1.26 points | 7.1 × 10⁻¹⁵ |
+| Whole pool legal (QB, RB, WR, TE, **K**, **DST**) | **0 of 24** | **24 of 24** |
+| Captain multiplier is exactly 1.5 | yes | yes |
+| Captain's product lands on the engine's tie grid | **no** (0.005 pt error) | **yes** (exact) |
+| Base scores with odd hundredths | 54.2% | **0.0%** |
+| Engine's float32 bucket reproduces the exact total | **73.1%** | **100.000%** |
+| Worst bucket disagreement | 1 hundredth | **0** |
+
+The 27% disagreement under legacy is not float32 noise. It is the half-hundredth
+ambiguity: rounding the captain before the sum and rounding the total after it
+land on different buckets. The legacy total is not well defined at the
+resolution the engine counts ties on. Under discrete there is nothing to round
+and the two agree exactly, in every sampled lineup and every world.
+
+### The tie rate that actually decides a split payout
+
+The earlier pass measured **6.14x** between two PLAYER scores. That is not the
+payout number. A split payout turns on the six-player TOTAL, and adding six
+scores spreads the support, so the lineup-level ratio is smaller:
+
+| | legacy | discrete | ratio |
+|---|---|---|---|
+| Pairwise exact-tie rate, uniform lineups | 2.26 × 10⁻⁴ | 6.54 × 10⁻⁴ | **2.89x** |
+| Pairwise exact-tie rate, field-weighted lineups | 3.20 × 10⁻⁴ | 7.56 × 10⁻⁴ | **2.36x** |
+| Worlds where the top total of the sample is shared | 0.38% | **2.95%** | 7.8x |
+| Distinct totals per world, of 4,000 lineups | 2,360 | 1,678 | −29% |
+
+**2.36x at the lineup level, not 6.14x.** Quoting the player-pair figure as the
+payout figure would have overstated it by more than two.
+
+Two limits on that last row, stated rather than left to be assumed. The
+field-weighted sample is drawn without replacement on the field model's
+weights, which is successive sampling, so its inclusion probabilities are not
+exactly the field's — it is a sample concentrated where the field is, not the
+field. And "the top total of the sample is shared" is not "first place in an
+88,000-entry contest is shared": that one needs the analytic field mass the
+engine carries, and it is measured in section Y5 as `win_any` minus `win_sole`.
+
+---
 
 ## Z. Every guard repinned in b4e3535, and why none is an accepted regression
 
@@ -332,9 +560,19 @@ failing code through.
 
 ## U. Remaining limitations and what was not reached
 
-- **S3 is diagnosed, not fixed.** The lattice defect stands. It needs either a
-  discrete legacy scorer, which changes Classic, or the constrained model,
-  which is not promotable here.
+- **S3 now has a working fix that is not yet promoted.** The sentence that
+  stood here -- that a discrete legacy scorer "changes Classic" -- was wrong,
+  and section Y2 says why: the mode is a separate argument Classic never
+  passes, and the Classic path is byte-identical on a seeded digest of the
+  whole pool. `DISCRETE_VERSION` 2 puts the entire Showdown pool on the legal
+  support (section Y4). What remains is the decision to serve it.
+- **The kicker's pin has a floor, and it overshoots rather than multiplying.**
+  An extra point is one per touchdown his own offense scored in that world, so
+  it is not available to scale; a projection below what those extra points are
+  worth cannot be reached by kicking less. Measured at the degenerate end: a
+  kicker asked for 1.0 lands on 3.4. Real showdown kickers project 5-9 and land
+  within 0.10 points, so this is a bound worth stating rather than a defect in
+  practice.
 - **S4 portfolio cross-fit** was not reached. Showdown still selects and
   scores on the same worlds, and still surfaces top 1% rather than top 0.1%.
 - **S5 shadow-forbidden rule study** was not reached. The roughly 3% survival

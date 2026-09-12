@@ -1,0 +1,1436 @@
+{
+ "meta": {
+  "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+  "discrete_version": 2,
+  "draft_group_id": 153086,
+  "game": "KC @ DEN",
+  "provenance": {
+   "commit": "f41ea02",
+   "data_split": null,
+   "dirty": true,
+   "model": "legacy vs legacy-discrete",
+   "seed": null,
+   "source_files": 24,
+   "source_sha": "1c5b7ef4e2913e50883efe2364c12ff5c4bb58215f8f89c5777f6ba0a2cfb07f",
+   "worlds": 4000
+  },
+  "stage": "showdown support validation (NOT promoted)",
+  "worlds": 4000
+ },
+ "modes": {
+  "discrete": {
+   "build": {
+    "enterable": 23820,
+    "field_beta": 0.4536,
+    "legal_lineups": 777056,
+    "peak_rss_mb": 1079.1,
+    "pool_seconds": 1.0
+   },
+   "lineups": {
+    "base_all_even_hundredths": true,
+    "base_float_drift_hundredths": 0.0,
+    "base_odd_hundredth_pct": 0.0,
+    "captain_grid_err_max_hundredths": 0.0,
+    "captain_grid_err_points": 0.0,
+    "captain_multiplier_exact_1_5": true,
+    "captain_product_on_engine_grid": true,
+    "field_weighted": {
+     "distinct_totals_per_world_median": 1678,
+     "engine_bucket_matches_exact_pct": 100.0,
+     "engine_bucket_max_abs_diff_hundredths": 0,
+     "exact_tie_rate_pairwise": 0.00075645,
+     "top_shared_pct": 2.95,
+     "total_legal_by_construction": true,
+     "total_max_hundredths": 19924,
+     "total_min_hundredths": 832
+    },
+    "n_lineups_sampled": 4000,
+    "n_worlds": 4000,
+    "uniform": {
+     "distinct_totals_per_world_median": 1827,
+     "engine_bucket_matches_exact_pct": 100.0,
+     "engine_bucket_max_abs_diff_hundredths": 0,
+     "exact_tie_rate_pairwise": 0.00065369,
+     "top_shared_pct": 0.85,
+     "total_legal_by_construction": true,
+     "total_max_hundredths": 18613,
+     "total_min_hundredths": 60
+    },
+    "universe_lineups": 777056
+   },
+   "offense": {
+    "max_float_drift_hundredths": 0.0,
+    "n_players": 26,
+    "on_lattice": 26,
+    "players": [
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 16.892220000000002,
+      "name": "Bo Nix",
+      "pos": "QB",
+      "proj": 16.83,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 7.105427357601002e-15,
+      "sd": 8.140412045566244,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 14.506575000000002,
+      "name": "Jaylen Waddle",
+      "pos": "WR",
+      "proj": 14.43,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 6.441133772044717,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 13.605094999999999,
+      "name": "Patrick Mahomes",
+      "pos": "QB",
+      "proj": 13.46,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 7.105427357601002e-15,
+      "sd": 6.710425421757923,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 13.69625,
+      "name": "Kenneth Walker",
+      "pos": "RB",
+      "proj": 13.74,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 7.105427357601002e-15,
+      "sd": 5.552237021012341,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 13.018099999999999,
+      "name": "Rashee Rice",
+      "pos": "WR",
+      "proj": 12.81,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 5.8001127049394485,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 10.453025000000002,
+      "name": "Courtland Sutton",
+      "pos": "WR",
+      "proj": 10.36,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 4.903955123099619,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 10.157425,
+      "name": "J.K. Dobbins",
+      "pos": "RB",
+      "proj": 10.19,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 4.743007998029837,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 9.53055,
+      "name": "RJ Harvey",
+      "pos": "RB",
+      "proj": 9.57,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 4.452415265617078,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 9.515099999999999,
+      "name": "Travis Kelce",
+      "pos": "TE",
+      "proj": 9.51,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 4.348387286109645,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 8.380724999999998,
+      "name": "Xavier Worthy",
+      "pos": "WR",
+      "proj": 8.26,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 3.844663310925288,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 7.0773,
+      "name": "Pat Bryant",
+      "pos": "WR",
+      "proj": 7.15,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 3.266472058659005,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 4.28715,
+      "name": "Tyquan Thornton",
+      "pos": "WR",
+      "proj": 4.27,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.7763568394002505e-15,
+      "sd": 2.8376275085888207,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 4.243,
+      "name": "Marvin Mims",
+      "pos": "WR",
+      "proj": 4.29,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 2.4838862695381203,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.259375,
+      "name": "Emmett Johnson",
+      "pos": "RB",
+      "proj": 3.28,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 3.552713678800501e-15,
+      "sd": 2.308375426436306,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.7808,
+      "name": "Noah Gray",
+      "pos": "TE",
+      "proj": 3.66,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 8.881784197001252e-16,
+      "sd": 2.1842404537962388,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.9267,
+      "name": "Evan Engram",
+      "pos": "TE",
+      "proj": 3.86,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 8.881784197001252e-16,
+      "sd": 2.055118514830714,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.61935,
+      "name": "Troy Franklin",
+      "pos": "WR",
+      "proj": 2.65,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 8.881784197001252e-16,
+      "sd": 1.9695102379779599,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.708275,
+      "name": "Jonah Coleman",
+      "pos": "RB",
+      "proj": 2.67,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.7763568394002505e-15,
+      "sd": 1.9443235390168478,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.091475,
+      "name": "Adam Trautman",
+      "pos": "TE",
+      "proj": 2.08,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 4.440892098500626e-16,
+      "sd": 1.660697089891772,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.998825,
+      "name": "Lil'Jordan Humphrey",
+      "pos": "WR",
+      "proj": 2.01,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 4.440892098500626e-16,
+      "sd": 1.653325775331347,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.3486749999999998,
+      "name": "Cyrus Allen",
+      "pos": "WR",
+      "proj": 1.38,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 4.440892098500626e-16,
+      "sd": 1.2946421298470863,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.406525,
+      "name": "Jalen Royals",
+      "pos": "WR",
+      "proj": 1.29,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 4.440892098500626e-16,
+      "sd": 1.3153383307632298,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.953275,
+      "name": "Brashard Smith",
+      "pos": "RB",
+      "proj": 0.71,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.7763568394002505e-15,
+      "sd": 0.9081983673047426,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.1531500000000001,
+      "name": "Tyler Badie",
+      "pos": "RB",
+      "proj": 0.99,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.7763568394002505e-15,
+      "sd": 1.2997711635130238,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.26332500000000003,
+      "name": "Nate Adkins",
+      "pos": "TE",
+      "proj": 0.32,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 5.551115123125783e-17,
+      "sd": 0.6818522159346555,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "DEN",
+      "yards_integral": true
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.11442500000000003,
+      "name": "Nikko Remigio",
+      "pos": "WR",
+      "proj": 0.13,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 5.551115123125783e-17,
+      "sd": 0.0449935481485957,
+      "served_off_0_02_pct": 0.0,
+      "served_on_0_02": true,
+      "team": "KC",
+      "yards_integral": true
+     }
+    ],
+    "recompute_exact": 26,
+    "worst_recompute_err": 7.105427357601002e-15
+   },
+   "pool": {
+    "by_pos": {
+     "DST": {
+      "illegal_players": 0,
+      "n": 2,
+      "worst_pct": 0.0
+     },
+     "K": {
+      "illegal_players": 0,
+      "n": 2,
+      "worst_pct": 0.0
+     },
+     "QB": {
+      "illegal_players": 0,
+      "n": 2,
+      "worst_pct": 0.0
+     },
+     "RB": {
+      "illegal_players": 0,
+      "n": 5,
+      "worst_pct": 0.0
+     },
+     "TE": {
+      "illegal_players": 0,
+      "n": 4,
+      "worst_pct": 0.0
+     },
+     "WR": {
+      "illegal_players": 0,
+      "n": 9,
+      "worst_pct": 0.0
+     }
+    },
+    "illegal_players": 0,
+    "players": {
+     "Adam Trautman": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 2.05,
+      "pos": "TE",
+      "proj": 2.1,
+      "rule": "multiple of 0.02"
+     },
+     "Bo Nix": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 16.762,
+      "pos": "QB",
+      "proj": 16.8,
+      "rule": "multiple of 0.02"
+     },
+     "Broncos": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 7.173,
+      "pos": "DST",
+      "proj": 7.2,
+      "rule": "whole points, floor -4"
+     },
+     "Chiefs": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 8.525,
+      "pos": "DST",
+      "proj": 8.5,
+      "rule": "whole points, floor -4"
+     },
+     "Courtland Sutton": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 10.32,
+      "pos": "WR",
+      "proj": 10.4,
+      "rule": "multiple of 0.02"
+     },
+     "Emmett Johnson": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 3.198,
+      "pos": "RB",
+      "proj": 3.3,
+      "rule": "multiple of 0.02"
+     },
+     "Evan Engram": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 3.728,
+      "pos": "TE",
+      "proj": 3.9,
+      "rule": "multiple of 0.02"
+     },
+     "Harrison Butker": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 6.522,
+      "pos": "K",
+      "proj": 6.5,
+      "rule": "whole points, not negative"
+     },
+     "J.K. Dobbins": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 10.088,
+      "pos": "RB",
+      "proj": 10.2,
+      "rule": "multiple of 0.02"
+     },
+     "Jaylen Waddle": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 14.063,
+      "pos": "WR",
+      "proj": 14.4,
+      "rule": "multiple of 0.02"
+     },
+     "Jonah Coleman": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 2.652,
+      "pos": "RB",
+      "proj": 2.7,
+      "rule": "multiple of 0.02"
+     },
+     "Kenneth Walker III": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 13.941,
+      "pos": "RB",
+      "proj": 13.7,
+      "rule": "multiple of 0.02"
+     },
+     "Lil'Jordan Humphrey": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 2.029,
+      "pos": "WR",
+      "proj": 2.0,
+      "rule": "multiple of 0.02"
+     },
+     "Marvin Mims Jr.": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 4.337,
+      "pos": "WR",
+      "proj": 4.3,
+      "rule": "multiple of 0.02"
+     },
+     "Noah Gray": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 3.806,
+      "pos": "TE",
+      "proj": 3.7,
+      "rule": "multiple of 0.02"
+     },
+     "Pat Bryant": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 7.103,
+      "pos": "WR",
+      "proj": 7.2,
+      "rule": "multiple of 0.02"
+     },
+     "Patrick Mahomes": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 13.899,
+      "pos": "QB",
+      "proj": 13.5,
+      "rule": "multiple of 0.02"
+     },
+     "RJ Harvey": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 9.46,
+      "pos": "RB",
+      "proj": 9.6,
+      "rule": "multiple of 0.02"
+     },
+     "Rashee Rice": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 12.838,
+      "pos": "WR",
+      "proj": 12.8,
+      "rule": "multiple of 0.02"
+     },
+     "Travis Kelce": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 9.543,
+      "pos": "TE",
+      "proj": 9.5,
+      "rule": "multiple of 0.02"
+     },
+     "Troy Franklin": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 2.715,
+      "pos": "WR",
+      "proj": 2.6,
+      "rule": "multiple of 0.02"
+     },
+     "Tyquan Thornton": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 4.328,
+      "pos": "WR",
+      "proj": 4.3,
+      "rule": "multiple of 0.02"
+     },
+     "Wil Lutz": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 6.287,
+      "pos": "K",
+      "proj": 6.2,
+      "rule": "whole points, not negative"
+     },
+     "Xavier Worthy": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 0.0,
+      "mean": 8.304,
+      "pos": "WR",
+      "proj": 8.3,
+      "rule": "multiple of 0.02"
+     }
+    },
+    "worst": []
+   }
+  },
+  "legacy": {
+   "build": {
+    "enterable": 23820,
+    "field_beta": 0.4536,
+    "legal_lineups": 777056,
+    "peak_rss_mb": 89.9,
+    "pool_seconds": 0.7
+   },
+   "lineups": {
+    "base_all_even_hundredths": false,
+    "base_float_drift_hundredths": 0.0,
+    "base_odd_hundredth_pct": 54.2,
+    "captain_grid_err_max_hundredths": 0.5,
+    "captain_grid_err_points": 0.005,
+    "captain_multiplier_exact_1_5": true,
+    "captain_product_on_engine_grid": false,
+    "field_weighted": {
+     "distinct_totals_per_world_median": 2360,
+     "engine_bucket_matches_exact_pct": 73.1347,
+     "engine_bucket_max_abs_diff_hundredths": 1,
+     "exact_tie_rate_pairwise": 0.00032041,
+     "top_shared_pct": 0.375,
+     "total_legal_by_construction": false,
+     "total_max_hundredths": 21096,
+     "total_min_hundredths": 681
+    },
+    "n_lineups_sampled": 4000,
+    "n_worlds": 4000,
+    "uniform": {
+     "distinct_totals_per_world_median": 2694,
+     "engine_bucket_matches_exact_pct": 73.0638,
+     "engine_bucket_max_abs_diff_hundredths": 1,
+     "exact_tie_rate_pairwise": 0.00022565,
+     "top_shared_pct": 0.25,
+     "total_legal_by_construction": false,
+     "total_max_hundredths": 19859,
+     "total_min_hundredths": 234
+    },
+    "universe_lineups": 777056
+   },
+   "offense": {
+    "max_float_drift_hundredths": 0.0,
+    "n_players": 26,
+    "on_lattice": 0,
+    "players": [
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 16.830005,
+      "name": "Bo Nix",
+      "pos": "QB",
+      "proj": 16.83,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.2615545537864605,
+      "sd": 7.940867188158671,
+      "served_off_0_02_pct": 49.6,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 14.43005,
+      "name": "Jaylen Waddle",
+      "pos": "WR",
+      "proj": 14.43,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 1.1340025411380026,
+      "sd": 6.4939122913310126,
+      "served_off_0_02_pct": 48.75,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 13.4600275,
+      "name": "Patrick Mahomes",
+      "pos": "QB",
+      "proj": 13.46,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.6801939285877907,
+      "sd": 6.493214144338976,
+      "served_off_0_02_pct": 49.425,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 13.7399775,
+      "name": "Kenneth Walker",
+      "pos": "RB",
+      "proj": 13.74,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.4720425510562478,
+      "sd": 5.54294269089026,
+      "served_off_0_02_pct": 50.275,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 12.81002,
+      "name": "Rashee Rice",
+      "pos": "WR",
+      "proj": 12.81,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.03729036586404533,
+      "sd": 5.562579810627439,
+      "served_off_0_02_pct": 49.95,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 10.359897499999999,
+      "name": "Courtland Sutton",
+      "pos": "WR",
+      "proj": 10.36,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.20190697825764659,
+      "sd": 4.786549400611442,
+      "served_off_0_02_pct": 51.075,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 10.190042499999999,
+      "name": "J.K. Dobbins",
+      "pos": "RB",
+      "proj": 10.19,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.396038318638567,
+      "sd": 4.651161943342088,
+      "served_off_0_02_pct": 48.975,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 9.50995,
+      "name": "Travis Kelce",
+      "pos": "TE",
+      "proj": 9.51,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.02935358929713061,
+      "sd": 4.287701540161116,
+      "served_off_0_02_pct": 49.7,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 9.570049999999998,
+      "name": "RJ Harvey",
+      "pos": "RB",
+      "proj": 9.57,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.37831438176434773,
+      "sd": 4.412449081575899,
+      "served_off_0_02_pct": 49.2,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 8.26001,
+      "name": "Xavier Worthy",
+      "pos": "WR",
+      "proj": 8.26,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.4406557134929159,
+      "sd": 3.8487243665791397,
+      "served_off_0_02_pct": 49.05,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 7.1499524999999995,
+      "name": "Pat Bryant",
+      "pos": "WR",
+      "proj": 7.15,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.11977878971374878,
+      "sd": 3.359705109491568,
+      "served_off_0_02_pct": 49.675,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 4.270005,
+      "name": "Tyquan Thornton",
+      "pos": "WR",
+      "proj": 4.27,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.2583366566000045,
+      "sd": 2.7003247397257613,
+      "served_off_0_02_pct": 49.7,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 4.2899875,
+      "name": "Marvin Mims",
+      "pos": "WR",
+      "proj": 4.29,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.010744419225947155,
+      "sd": 2.474886608482043,
+      "served_off_0_02_pct": 49.375,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.2799849999999995,
+      "name": "Emmett Johnson",
+      "pos": "RB",
+      "proj": 3.28,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.49730759895843946,
+      "sd": 2.2361321181394893,
+      "served_off_0_02_pct": 50.95,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.8600175,
+      "name": "Evan Engram",
+      "pos": "TE",
+      "proj": 3.86,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.17230556335839609,
+      "sd": 2.0117223900662213,
+      "served_off_0_02_pct": 48.975,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 3.6600075,
+      "name": "Noah Gray",
+      "pos": "TE",
+      "proj": 3.66,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.10265798974447549,
+      "sd": 2.115062463603321,
+      "served_off_0_02_pct": 49.625,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.6500100000000004,
+      "name": "Troy Franklin",
+      "pos": "WR",
+      "proj": 2.65,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.2899609522512101,
+      "sd": 2.057942880621326,
+      "served_off_0_02_pct": 51.0,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.669955,
+      "name": "Jonah Coleman",
+      "pos": "RB",
+      "proj": 2.67,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.42712405428573774,
+      "sd": 2.0130915274708703,
+      "served_off_0_02_pct": 48.9,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.0800475,
+      "name": "Adam Trautman",
+      "pos": "TE",
+      "proj": 2.08,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.35569909756349816,
+      "sd": 1.692671268363633,
+      "served_off_0_02_pct": 49.525,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 2.009995,
+      "name": "Lil'Jordan Humphrey",
+      "pos": "WR",
+      "proj": 2.01,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.042660093239225816,
+      "sd": 1.6808018175784436,
+      "served_off_0_02_pct": 50.85,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.3800525,
+      "name": "Cyrus Allen",
+      "pos": "WR",
+      "proj": 1.38,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.011484042923132876,
+      "sd": 1.1890516062155376,
+      "served_off_0_02_pct": 49.325,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 1.289985,
+      "name": "Jalen Royals",
+      "pos": "WR",
+      "proj": 1.29,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.6146395365407766,
+      "sd": 1.12996694631967,
+      "served_off_0_02_pct": 49.9,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.99001,
+      "name": "Tyler Badie",
+      "pos": "RB",
+      "proj": 0.99,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.5011809181811433,
+      "sd": 1.0376696005473034,
+      "served_off_0_02_pct": 50.4,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.7100150000000001,
+      "name": "Brashard Smith",
+      "pos": "RB",
+      "proj": 0.71,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.35579729824481987,
+      "sd": 0.5525848349122513,
+      "served_off_0_02_pct": 51.0,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.32001750000000007,
+      "name": "Nate Adkins",
+      "pos": "TE",
+      "proj": 0.32,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.3253125492159823,
+      "sd": 0.5821786020576074,
+      "served_off_0_02_pct": 49.725,
+      "served_on_0_02": false,
+      "team": "DEN",
+      "yards_integral": false
+     },
+     {
+      "counts_integral": true,
+      "float_drift_hundredths": 0.0,
+      "mean": 0.130115,
+      "name": "Nikko Remigio",
+      "pos": "WR",
+      "proj": 0.13,
+      "recompute_max_abs_err_raw": 0.0,
+      "recompute_max_abs_err_served": 0.05106467167354692,
+      "sd": 0.04037557151298295,
+      "served_off_0_02_pct": 49.1,
+      "served_on_0_02": false,
+      "team": "KC",
+      "yards_integral": false
+     }
+    ],
+    "recompute_exact": 0,
+    "worst_recompute_err": 1.2615545537864605
+   },
+   "pool": {
+    "by_pos": {
+     "DST": {
+      "illegal_players": 2,
+      "n": 2,
+      "worst_pct": 100.0
+     },
+     "K": {
+      "illegal_players": 2,
+      "n": 2,
+      "worst_pct": 95.28
+     },
+     "QB": {
+      "illegal_players": 2,
+      "n": 2,
+      "worst_pct": 50.62
+     },
+     "RB": {
+      "illegal_players": 5,
+      "n": 5,
+      "worst_pct": 50.92
+     },
+     "TE": {
+      "illegal_players": 4,
+      "n": 4,
+      "worst_pct": 50.2
+     },
+     "WR": {
+      "illegal_players": 9,
+      "n": 9,
+      "worst_pct": 50.7
+     }
+    },
+    "illegal_players": 24,
+    "players": {
+     "Adam Trautman": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.2,
+      "mean": 2.08,
+      "pos": "TE",
+      "proj": 2.1,
+      "rule": "multiple of 0.02"
+     },
+     "Bo Nix": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.45,
+      "mean": 16.83,
+      "pos": "QB",
+      "proj": 16.8,
+      "rule": "multiple of 0.02"
+     },
+     "Broncos": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 100.0,
+      "mean": 7.165,
+      "pos": "DST",
+      "proj": 7.2,
+      "rule": "whole points, floor -4"
+     },
+     "Chiefs": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 100.0,
+      "mean": 8.527,
+      "pos": "DST",
+      "proj": 8.5,
+      "rule": "whole points, floor -4"
+     },
+     "Courtland Sutton": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.7,
+      "mean": 10.36,
+      "pos": "WR",
+      "proj": 10.4,
+      "rule": "multiple of 0.02"
+     },
+     "Emmett Johnson": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.4,
+      "mean": 3.28,
+      "pos": "RB",
+      "proj": 3.3,
+      "rule": "multiple of 0.02"
+     },
+     "Evan Engram": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.23,
+      "mean": 3.86,
+      "pos": "TE",
+      "proj": 3.9,
+      "rule": "multiple of 0.02"
+     },
+     "Harrison Butker": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 92.83,
+      "mean": 6.53,
+      "pos": "K",
+      "proj": 6.5,
+      "rule": "whole points, not negative"
+     },
+     "J.K. Dobbins": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.62,
+      "mean": 10.19,
+      "pos": "RB",
+      "proj": 10.2,
+      "rule": "multiple of 0.02"
+     },
+     "Jaylen Waddle": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.08,
+      "mean": 14.43,
+      "pos": "WR",
+      "proj": 14.4,
+      "rule": "multiple of 0.02"
+     },
+     "Jonah Coleman": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.9,
+      "mean": 2.67,
+      "pos": "RB",
+      "proj": 2.7,
+      "rule": "multiple of 0.02"
+     },
+     "Kenneth Walker III": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.92,
+      "mean": 13.74,
+      "pos": "RB",
+      "proj": 13.7,
+      "rule": "multiple of 0.02"
+     },
+     "Lil'Jordan Humphrey": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.4,
+      "mean": 2.01,
+      "pos": "WR",
+      "proj": 2.0,
+      "rule": "multiple of 0.02"
+     },
+     "Marvin Mims Jr.": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.38,
+      "mean": 4.29,
+      "pos": "WR",
+      "proj": 4.3,
+      "rule": "multiple of 0.02"
+     },
+     "Noah Gray": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.62,
+      "mean": 3.66,
+      "pos": "TE",
+      "proj": 3.7,
+      "rule": "multiple of 0.02"
+     },
+     "Pat Bryant": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.83,
+      "mean": 7.15,
+      "pos": "WR",
+      "proj": 7.2,
+      "rule": "multiple of 0.02"
+     },
+     "Patrick Mahomes": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.62,
+      "mean": 13.46,
+      "pos": "QB",
+      "proj": 13.5,
+      "rule": "multiple of 0.02"
+     },
+     "RJ Harvey": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.58,
+      "mean": 9.57,
+      "pos": "RB",
+      "proj": 9.6,
+      "rule": "multiple of 0.02"
+     },
+     "Rashee Rice": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.23,
+      "mean": 12.81,
+      "pos": "WR",
+      "proj": 12.8,
+      "rule": "multiple of 0.02"
+     },
+     "Travis Kelce": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.28,
+      "mean": 9.51,
+      "pos": "TE",
+      "proj": 9.5,
+      "rule": "multiple of 0.02"
+     },
+     "Troy Franklin": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 49.43,
+      "mean": 2.65,
+      "pos": "WR",
+      "proj": 2.6,
+      "rule": "multiple of 0.02"
+     },
+     "Tyquan Thornton": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.0,
+      "mean": 4.27,
+      "pos": "WR",
+      "proj": 4.3,
+      "rule": "multiple of 0.02"
+     },
+     "Wil Lutz": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 95.28,
+      "mean": 6.249,
+      "pos": "K",
+      "proj": 6.2,
+      "rule": "whole points, not negative"
+     },
+     "Xavier Worthy": {
+      "float_drift_hundredths": 0.0,
+      "illegal_pct": 50.18,
+      "mean": 8.26,
+      "pos": "WR",
+      "proj": 8.3,
+      "rule": "multiple of 0.02"
+     }
+    },
+    "worst": [
+     {
+      "illegal_pct": 100.0,
+      "name": "Chiefs",
+      "pos": "DST"
+     },
+     {
+      "illegal_pct": 100.0,
+      "name": "Broncos",
+      "pos": "DST"
+     },
+     {
+      "illegal_pct": 95.28,
+      "name": "Wil Lutz",
+      "pos": "K"
+     },
+     {
+      "illegal_pct": 92.83,
+      "name": "Harrison Butker",
+      "pos": "K"
+     },
+     {
+      "illegal_pct": 50.92,
+      "name": "Kenneth Walker III",
+      "pos": "RB"
+     },
+     {
+      "illegal_pct": 50.7,
+      "name": "Courtland Sutton",
+      "pos": "WR"
+     },
+     {
+      "illegal_pct": 50.62,
+      "name": "Patrick Mahomes",
+      "pos": "QB"
+     },
+     {
+      "illegal_pct": 50.62,
+      "name": "J.K. Dobbins",
+      "pos": "RB"
+     },
+     {
+      "illegal_pct": 50.58,
+      "name": "RJ Harvey",
+      "pos": "RB"
+     },
+     {
+      "illegal_pct": 50.4,
+      "name": "Lil'Jordan Humphrey",
+      "pos": "WR"
+     }
+    ]
+   }
+  }
+ },
+ "verdict": {
+  "captain_multiplier_exact": {
+   "discrete": true,
+   "legacy": true
+  },
+  "captain_product_representable": {
+   "discrete": true,
+   "legacy": false
+  },
+  "lineup_tie_rate_ratio": 2.36,
+  "offense_recomputes_exactly": {
+   "discrete": true,
+   "legacy": false
+  },
+  "totals_legal": {
+   "discrete": true,
+   "legacy": false
+  },
+  "whole_pool_legal": {
+   "discrete": true,
+   "legacy": false
+  }
+ }
+}

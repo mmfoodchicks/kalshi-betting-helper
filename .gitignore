@@ -33,3 +33,8 @@ futures_history/
 
 # backtest part files (merged into seeds/dfs_backtest_seed.json, which IS committed)
 seeds/part_*.json
+
+# research A/B handoff files: one per (board, mode), written by a child process
+# and combined into sd_live_ab.json. Intermediates, and a stale one read as
+# current is exactly the mistake that makes an A/B lie.
+research/data/_ab_*.json

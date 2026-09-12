@@ -13595,9 +13595,15 @@ ck("player_pool takes model and seed with legacy the default, rejects an unknown
    and 'sim = nfl_dfs_csim.simulate_game(g, n=n, rng=_np.random.default_rng(child), xside=xside)' in _pool_src
    and 'side_rng = _rnd.Random(child) if seed is not None else _random' in _pool_src
    and '_dst_from_components(d["td"], d["gv"], d["yd"], d["pa"], side_rng)' in _pool_src
-   and 'arr = _kicker_arr(k, off, n, k_rng)' in _pool_src
+   # The kicker call and its Poisson mean both grew an argument when the
+   # discrete mode was threaded through to the side models (see the support
+   # block below). Repinned to the new shape, plus the two defaults that keep
+   # the legacy draw identical: discrete=False and scale=1.0.
+   and 'arr = _kicker_arr(k, off, n, k_rng, discrete=discrete)' in _pool_src
+   and 'def _kicker_arr(k, off, n, rng, discrete=False):' in _sim_src
    and 'def _pois(mean, rng=_random):' in _sim_src and '_pois(_LG_FG * max(0.25, opp_yd[i] / _LG_YD), rng)' in _sim_src
-   and '_pois(fg_mean * f, rng)' in _sim_src)
+   and '_pois(fg_mean * scale * f, rng)' in _sim_src
+   and 'def draw(scale=1.0):' in _sim_src)
 try:
     _sim2.player_pool(1, n=10, season="2026", model="bogus"); _rej_cs = False
 except ValueError:
@@ -14084,6 +14090,163 @@ ck("no code or report infers the size of the tie bias from the grid spacing any 
    "half as likely" not in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "half as likely" not in open(_os.path.join(_root, "research", "sd_lattice.py")).read()
    and "6.1x" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+
+# ======================================================================
+# Showdown: the support, validated to the lineup total (promotion readiness)
+# ======================================================================
+import random as _rnd_sd
+# DISCRETE_VERSION 1 covered the OFFENSE. A promotion-readiness pass then asked
+# the question of the WHOLE pool and found the other half of the same defect:
+# the kicker's whole-number points were still multiplied by projection/raw, and
+# the defense's whole-number points were still shifted by a fractional number,
+# so 47% and 44% of them were unprintable and any lineup holding one was off
+# the lattice with them. Version 2 pins the kicker on its field-goal rate and
+# spends the defense's fractional shift as a coin.
+ck("the kicker's discrete points are WHOLE, which is the only support DraftKings can print for him, and the level still lands on the projection",
+   (lambda arr, arr0: all(float(x).is_integer() for x in arr)
+    and not all(float(x).is_integer() for x in arr0)
+    and abs(sum(arr) / len(arr) - 8.4) < 0.25)(
+       _sim2._kicker_arr({"name": "K", "pts": 8.4, "xpm": 47, "xpa": 50,
+                          "fg": [(3, 0.9), (4, 0.6), (5, 0.35)]},
+                         {"td": [2, 3, 1, 4, 0, 2, 3, 2] * 250,
+                          "yd": [340.0, 410.0, 250.0, 470.0, 180.0, 330.0, 395.0, 300.0] * 250},
+                         2000, _rnd_sd.Random(5), discrete=True),
+       _sim2._kicker_arr({"name": "K", "pts": 8.4, "xpm": 47, "xpa": 50,
+                          "fg": [(3, 0.9), (4, 0.6), (5, 0.35)]},
+                         {"td": [2, 3, 1, 4, 0, 2, 3, 2] * 250,
+                          "yd": [340.0, 410.0, 250.0, 470.0, 180.0, 330.0, 395.0, 300.0] * 250},
+                         2000, _rnd_sd.Random(5), discrete=False)),
+   "legacy multiplies a whole-point score by projection/raw; discrete solves the kick rate instead")
+# The bound that comes with the kicker's pin, stated rather than hidden: an
+# extra point is one per touchdown his own offense scored in that world, so it
+# is not ours to scale. A projection BELOW what those extra points are worth
+# cannot be reached by kicking less, and the mode overshoots rather than
+# multiplying. Real kickers project 5-9 on a showdown; this is the degenerate
+# end, and it is reported, not papered over.
+ck("the kicker's pin has a known floor and overshoots it honestly instead of reaching for a multiply: a projection under what his own extra points are worth cannot be reached by kicking less",
+   (lambda lo, hi: all(float(x).is_integer() for x in lo)
+    and sum(lo) / len(lo) > 1.0                      # asked for 1.0, cannot go that low
+    and abs(sum(hi) / len(hi) - 8.4) < 0.25)(        # asked for 8.4, lands on it
+       _sim2._kicker_arr({"name": "K", "pts": 1.0, "xpm": 49, "xpa": 50,
+                          "fg": [(3, 0.9), (4, 0.6), (5, 0.35)]},
+                         {"td": [3, 4, 3, 5, 2, 4, 3, 4] * 250, "yd": [400.0] * 2000},
+                         2000, _rnd_sd.Random(5), discrete=True),
+       _sim2._kicker_arr({"name": "K", "pts": 8.4, "xpm": 49, "xpa": 50,
+                          "fg": [(3, 0.9), (4, 0.6), (5, 0.35)]},
+                         {"td": [3, 4, 3, 5, 2, 4, 3, 4] * 250, "yd": [400.0] * 2000},
+                         2000, _rnd_sd.Random(5), discrete=True)),
+   "the overshoot is a reported pin error, never a rescale of a finished score")
+ck("and the defense's Sleeper shift is spent as whole points plus a coin, because an integer distribution cannot be moved by a fraction and stay integral",
+   "base = _math.floor(shift)" in _sim_src
+   and "+ (1 if _rg.random() < frac else 0)" in _sim_src
+   and "_rg = team_rng.get(team, _random)" in _sim_src
+   and "arr = [round(max(-4.0, x + shift), 2) for x in arr]" in _sim_src,   # legacy branch intact
+   "the legacy branch must survive beside it untouched")
+ck("the discrete contract is versioned, so a board built under version 1 cannot be mistaken for one built under 2",
+   _sim2.DISCRETE_VERSION == 2
+   and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == 2
+   and "research/sd_support" in _sim2.sim_stamp(n=1, discrete=True)["lattice"])
+ck("the auditor's box-score hook defaults off and no production path asks for it: it costs nine arrays a player and exists only so a score can be recomputed from the stat line that made it",
+   _insp_sd.signature(_sim2.simulate_game).parameters["with_components"].default is False
+   and "with_components" not in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "with_components" not in open(_os.path.join(_root, "nfl_dfs.py")).read()
+   and "with_components" not in open(_os.path.join(_root, "pc_worker.py")).read())
+_sds = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_support.json")))
+ck("the support validation is on file and is end to end: under discrete EVERY offensive score recomputes from its own integer stat line through DraftKings' scorer, and under legacy NOT ONE of them does",
+   _sds["verdict"]["offense_recomputes_exactly"]["discrete"] is True
+   and _sds["verdict"]["offense_recomputes_exactly"]["legacy"] is False
+   and _sds["modes"]["discrete"]["offense"]["worst_recompute_err"] < 1e-9,
+   f"legacy {_sds['modes']['legacy']['offense']['recompute_exact']}"
+   f"/{_sds['modes']['legacy']['offense']['n_players']} vs discrete "
+   f"{_sds['modes']['discrete']['offense']['recompute_exact']}"
+   f"/{_sds['modes']['discrete']['offense']['n_players']}")
+ck("and it covers the WHOLE pool, kickers and defenses included, which is where version 1 still had the defect",
+   _sds["verdict"]["whole_pool_legal"]["discrete"] is True
+   and _sds["verdict"]["whole_pool_legal"]["legacy"] is False
+   and all(v["illegal_players"] == 0 for v in [_sds["modes"]["discrete"]["pool"]])
+   and {"K", "DST"} <= set(_sds["modes"]["discrete"]["pool"]["by_pos"]),
+   f"legacy {_sds['modes']['legacy']['pool']['illegal_players']} illegal players, "
+   f"discrete {_sds['modes']['discrete']['pool']['illegal_players']}")
+# The second defect of the old path, and the one nobody had written down: the
+# captain multiplier is exact, but its PRODUCT has nowhere to live. 1.5 x an
+# odd number of hundredths needs half a hundredth, and the engine buckets at
+# 0.01 -- so every legacy captain was silently rounded by up to 0.005 points
+# inside the tie arithmetic the split payout is computed from.
+ck("the 1.5x captain multiplier is exact under both modes -- that was never the problem",
+   _sds["verdict"]["captain_multiplier_exact"]["legacy"] is True
+   and _sds["verdict"]["captain_multiplier_exact"]["discrete"] is True)
+ck("but only under discrete does the PRODUCT land on the 0.01 grid the engine counts ties on; a legacy captain's score was being rounded inside the tie arithmetic",
+   _sds["verdict"]["captain_product_representable"]["discrete"] is True
+   and _sds["verdict"]["captain_product_representable"]["legacy"] is False
+   and _sds["modes"]["legacy"]["lineups"]["base_odd_hundredth_pct"] > 20.0
+   and _sds["modes"]["discrete"]["lineups"]["base_odd_hundredth_pct"] == 0.0,
+   f"legacy odd hundredths {_sds['modes']['legacy']['lineups']['base_odd_hundredth_pct']}%, "
+   f"captain grid error {_sds['modes']['legacy']['lineups']['captain_grid_err_points']} pts")
+ck("and the engine's own bucket then reproduces the exact total for every sampled lineup under discrete, where under legacy it cannot",
+   _sds["modes"]["discrete"]["lineups"]["field_weighted"]["engine_bucket_matches_exact_pct"] == 100.0
+   and _sds["modes"]["discrete"]["lineups"]["uniform"]["engine_bucket_matches_exact_pct"] == 100.0
+   and _sds["modes"]["legacy"]["lineups"]["field_weighted"]["engine_bucket_matches_exact_pct"] < 99.0,
+   f"legacy {_sds['modes']['legacy']['lineups']['field_weighted']['engine_bucket_matches_exact_pct']}% "
+   f"vs discrete 100%")
+# The tie rate that matters to a split payout is measured on LINEUP TOTALS, and
+# it is NOT the player-pair rate: six scores added together spread the support,
+# so the lineup-level ratio is smaller than the 6.1x pair-level one. Quoting
+# the pair number as the payout number would overstate it.
+ck("the lineup-level exact-tie rate is measured separately from the player-pair rate, because a split payout turns on totals and adding six scores spreads the support",
+   _sds["verdict"]["lineup_tie_rate_ratio"] > 1.0
+   and _sds["verdict"]["lineup_tie_rate_ratio"] < _sdd["deltas"]["tie_rate_ratio"],
+   f"lineup totals {_sds['verdict']['lineup_tie_rate_ratio']}x vs player pairs "
+   f"{_sdd['deltas']['tie_rate_ratio']}x")
+
+# ---- the outliers, against the noise floor they have to beat -------------
+# A summary "worst pair moved 0.106" cannot tell a regression from Monte Carlo
+# resolution. Every delta is reported beside a legacy-vs-legacy control at the
+# same depth, and the earlier pass's pair list was an alphabetical slice of
+# fourteen players rather than the worst pair -- both corrections are on file.
+_sdo = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_outliers.json")))
+ck("the outlier attribution carries a Monte Carlo control, so a correlation move can be compared with what two identical legacy runs disagree by",
+   _sdo["pairs"]["mc_noise_p50"] > 0.0
+   and _sdo["pairs"]["mc_noise_max"] > 0.0
+   and _sdo["pairs"]["n_pairs_full"] > 100,
+   f"legacy-vs-discrete p50 {_sdo['pairs']['delta_p50']} max {_sdo['pairs']['delta_max']}; "
+   f"noise p50 {_sdo['pairs']['mc_noise_p50']} max {_sdo['pairs']['mc_noise_max']}")
+ck("the worst-moving pair is NAMED, with both correlations and both positions, instead of quoted as a number",
+   _sdo["pairs"]["worst_full_set"]["a"] and _sdo["pairs"]["worst_full_set"]["b"]
+   and _sdo["pairs"]["worst_full_set"]["a_pos"] and _sdo["pairs"]["worst_full_set"]["b_pos"]
+   and abs(_sdo["pairs"]["worst_full_set"]["delta"]) >= abs(_sdo["pairs"]["worst_truncated_set"]["delta"]),
+   f"{_sdo['pairs']['worst_full_set']['a']} x {_sdo['pairs']['worst_full_set']['b']}: "
+   f"{_sdo['pairs']['worst_full_set']['corr_a']} -> {_sdo['pairs']['worst_full_set']['corr_b']}")
+ck("the couplings a showdown roster is actually built on are reported one relationship at a time, the quarterback's own receivers and the two arms among them",
+   {"qb_own_pass_catcher", "qb_opposing_qb", "same_team_pass_catchers"}
+   <= set(_sdo["pairs"]["by_relationship"]),
+   str(sorted(_sdo["pairs"]["by_relationship"])))
+ck("the kicker and the defense are measured too, because version 2 changed both of their models and their only reason to be rostered is the coupling it could have broken",
+   {"k_own_qb", "dst_opposing_qb"} <= set(_sdo["kicker_and_defense"]["by_relationship"])
+   and _sdo["kicker_and_defense"]["by_relationship"]["k_own_qb"]["discrete_corr_median"] > 0.25
+   and _sdo["kicker_and_defense"]["by_relationship"]["dst_opposing_qb"]["discrete_corr_median"] < -0.25,
+   f"kicker/own QB {_sdo['kicker_and_defense']['by_relationship']['k_own_qb']['legacy_corr_median']}"
+   f" -> {_sdo['kicker_and_defense']['by_relationship']['k_own_qb']['discrete_corr_median']}, "
+   f"defense/opposing QB "
+   f"{_sdo['kicker_and_defense']['by_relationship']['dst_opposing_qb']['legacy_corr_median']}"
+   f" -> {_sdo['kicker_and_defense']['by_relationship']['dst_opposing_qb']['discrete_corr_median']}")
+# The decisive shape: a fixed rounding granularity makes a fixed ABSOLUTE
+# error, so the relative error has to fall as the projection rises. If the
+# error were structural it would not care how big the projection was.
+ck("the mean residual is banded by projection and behaves like rounding rather than bias: the absolute error stays small while the relative error falls as the projection rises",
+   len(_sdo["means"]["bands"]) >= 3
+   and max(b["abs_err_pts_max"] for b in _sdo["means"]["bands"]) < 1.0
+   and _sdo["means"]["bands"][0]["rel_err_pct_median"]
+   > _sdo["means"]["bands"][-1]["rel_err_pct_median"],
+   "; ".join(f"{b['band']}: abs {b['abs_err_pts_median']} rel {b['rel_err_pct_median']}%"
+             for b in _sdo["means"]["bands"]))
+ck("and the worst relative residual is NAMED with its projection, so a 14% error on a one-point punt play cannot be read as a 14% error on a lineup",
+   _sdo["means"]["worst_residual"]["name"]
+   and _sdo["means"]["worst_residual"]["proj"] < 5.0
+   and abs(_sdo["means"]["worst_residual"]["abs_err_pts"]) < 0.5,
+   f"{_sdo['means']['worst_residual']['name']} proj "
+   f"{_sdo['means']['worst_residual']['proj']}, "
+   f"{_sdo['means']['worst_residual']['abs_err_pts']} pts "
+   f"({_sdo['means']['worst_residual']['rel_err_pct']}%)")
 
 # ---- the portfolio cover: one contest, one field, nested entries ---------
 # READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is
