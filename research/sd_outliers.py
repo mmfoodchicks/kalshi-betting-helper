@@ -39,6 +39,14 @@ WORLDS = 20000          # the depth sd_discrete used, so its numbers reproduce
 DG_DEFAULT = 153086     # DEN @ KC, the week-2 Monday night $1.5M
 BANDS = ((1.0, 5.0), (5.0, 10.0), (10.0, 15.0), (15.0, 1e9))
 ROSTERABLE = 4.0        # DK points below which a showdown play is a punt
+# The two seed tables, named so the provenance stamp records what the runs
+# were actually seeded with. legacy and discrete share a seed on purpose --
+# that is what makes them the SAME draw scored two ways; legacy_b is the
+# reseed control.
+POOL_SEEDS = (("legacy", False, 303), ("legacy_b", False, 404),
+              ("discrete", True, 303))
+GAME_SEEDS = (("legacy", False, 101), ("legacy_b", False, 202),
+              ("discrete", True, 101))
 STRATEGIC = ("qb_own_pass_catcher", "qb_opposing_qb", "qb_opposing_pass_catcher",
              "rb_own_qb", "same_team_pass_catchers", "k_own_qb", "dst_opposing_qb",
              "dst_own_offense")
@@ -121,8 +129,7 @@ def side_pairs(S, slate, n=POOL_WORLDS, log=print):
     slots are worth rostering in a showdown at all."""
     from research import sd_board
     runs, meta = {}, {}
-    for tag, disc, seed in (("legacy", False, 303), ("legacy_b", False, 404),
-                            ("discrete", True, 303)):
+    for tag, disc, seed in POOL_SEEDS:
         S._cache.clear()
         ents, _secs, _rss = sd_board.ents_for(slate, sd_board.WEEK, disc, n_sims=n,
                                              seed=seed, log=lambda *_a, **_k: None)
@@ -192,8 +199,7 @@ def run(feed_dir, dg=DG_DEFAULT, log=print):
     log(f"[OUT] {game.get('label')}: {len(game['players'])} players x {WORLDS:,} worlds x 3 runs")
     runs = {}
     meta = {}
-    for tag, disc, seed in (("legacy", False, 101), ("legacy_b", False, 202),
-                            ("discrete", True, 101)):
+    for tag, disc, seed in GAME_SEEDS:
         S._random.seed(seed)
         sim = S.simulate_game(game, n=WORLDS, with_samples=True, discrete=disc)
         runs[tag] = {p["name"]: np.asarray(p["arr"], dtype=np.float64) for p in sim["players"]}
@@ -320,7 +326,8 @@ def run(feed_dir, dg=DG_DEFAULT, log=print):
                     "note": ("every delta is reported beside a legacy-vs-legacy control at the "
                              "same depth; a delta inside the control is at the measurement's "
                              "resolution limit, not a regression"),
-                    "provenance": _prov(worlds=WORLDS, model="legacy x2 vs legacy-discrete")},
+                    "provenance": _prov(worlds=WORLDS, model="legacy x2 vs legacy-discrete",
+                                        seed={"pool": POOL_SEEDS, "game": GAME_SEEDS})},
            "means": {"players": sorted(rows, key=lambda r: -(r["proj"] or 0)),
                      "worst_residual": worst, "bands": bands,
                      "n_movers": len(movers)},

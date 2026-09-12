@@ -42,6 +42,9 @@ DATA = os.path.join(ROOT, "research", "data")
 
 WORLDS = 20000          # the depth the measurement being tested was made at
 RUNS = 6                # 6 legacy runs -> 15 pairwise controls
+# The run seeds, named so the provenance stamp records the ladder the runs
+# actually walked rather than a null.
+CORR_SEED0, CORR_STEP = 9000, 17
 DG_DEFAULT = 153086
 
 
@@ -84,7 +87,7 @@ def run(feed_dir, dg=DG_DEFAULT, runs=RUNS, log=print):
         f"x {WORLDS:,} worlds, testing observed max |delta| = {observed}")
     arrs = []
     for i in range(runs):
-        S._random.seed(9000 + 17 * i)
+        S._random.seed(CORR_SEED0 + CORR_STEP * i)
         sim = S.simulate_game(game, n=WORLDS, with_samples=True, discrete=False)
         arrs.append({p["name"]: np.asarray(p["arr"], dtype=np.float64) for p in sim["players"]})
         log(f"[NULL]   legacy run {i + 1}/{runs} done")
@@ -113,7 +116,8 @@ def run(feed_dir, dg=DG_DEFAULT, runs=RUNS, log=print):
                              "of 32 correlated deltas is itself random. These are pairwise "
                              "legacy-vs-legacy controls over the SAME pairs, read off "
                              "sd_outliers.json rather than recomputed."),
-                    "provenance": _prov(worlds=WORLDS, model="legacy x N")},
+                    "provenance": _prov(worlds=WORLDS, model="legacy x N",
+                                        seed=[CORR_SEED0 + CORR_STEP * i for i in range(RUNS)])},
            "pairs": [list(p) for p in pairs],
            "observed": {"max_abs_delta": observed, "median_abs_delta": observed_p50,
                         "source": "research/data/sd_outliers.json (legacy vs legacy-latent-discrete)"},

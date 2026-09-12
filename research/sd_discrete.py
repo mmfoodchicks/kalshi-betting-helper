@@ -30,6 +30,10 @@ sys.path.insert(0, ROOT)
 DATA = os.path.join(ROOT, "research", "data")
 REPORTS = os.path.join(ROOT, "research", "reports")
 SEASON, WEEK, WORLDS = "2026", 1, 20000
+# The pair-choice draw is seeded; the simulator itself is not. Both halves go
+# into the provenance stamp, because "seeded" and "unseeded" are different
+# claims and a null said neither.
+PAIR_SEED = 5
 DK_STEP = 0.02
 
 
@@ -57,7 +61,7 @@ def tie_rate(A, k=6):
     exactly the same score -- the quantity the sole-win column depends on."""
     names = sorted(A)
     M = np.stack([A[n] for n in names])          # (players, worlds)
-    rng = np.random.default_rng(5)
+    rng = np.random.default_rng(PAIR_SEED)
     n_w = M.shape[1]
     hits = tot = 0
     for _ in range(400):
@@ -80,7 +84,8 @@ def run(feed_dir, log=print):
     log(f"[SDD] {g.get('label')}: {len(g['players'])} players x {WORLDS:,} worlds")
     out = {"meta": {"stage": "showdown discrete counterfactual (NOT promoted)",
                     "game": g.get("label"), "season": SEASON, "week": WEEK, "worlds": WORLDS,
-                    "provenance": _prov(worlds=WORLDS, model="legacy vs legacy-discrete")},
+                    "provenance": _prov(worlds=WORLDS, model="legacy vs legacy-discrete",
+                                        seed={"pair_choice": PAIR_SEED, "sim": "unseeded"})},
            "modes": {}}
     arrs = {}
     for mode, disc in (("legacy", False), ("discrete", True)):

@@ -41,6 +41,10 @@ DATA = os.path.join(ROOT, "research", "data")
 WORLDS = 4000          # the support property is per-world, so depth buys nothing
 LINEUPS = 4000         # sampled from the real legal universe
 DG_DEFAULT = 153086    # DEN @ KC, the week-2 Monday night $1.5M
+# Named so the provenance stamp reads the same constants the run seeds with,
+# instead of a null that claims the stage was unseeded.
+BOARD_SEED = 20260912
+LINEUPS_SEED = 7
 
 
 def _prov(**extra):
@@ -144,7 +148,7 @@ def pool_legality(pool, log=print):
 
 
 # ---- 2 + 3 + 4: captain, totals, ties --------------------------------------
-def lineup_support(ents, idx, f, n_worlds, n_lineups=LINEUPS, seed=7, log=print):
+def lineup_support(ents, idx, f, n_worlds, n_lineups=LINEUPS, seed=LINEUPS_SEED, log=print):
     """Final six-player totals in integer hundredths, and what they tie on.
 
     DraftKings pays a captain exactly 1.5x, and the engine puts exactly 1.5 in
@@ -267,14 +271,15 @@ def run(feed_dir, dg=DG_DEFAULT, log=print):
                     "draft_group_id": int(dg), "contest": contest.get("name"),
                     "game": game.get("label"), "worlds": WORLDS,
                     "discrete_version": S.DISCRETE_VERSION,
-                    "provenance": _prov(worlds=WORLDS, model="legacy vs legacy-discrete")},
+                    "provenance": _prov(worlds=WORLDS, model="legacy vs legacy-discrete",
+                                        seed={"board": BOARD_SEED, "lineups": LINEUPS_SEED})},
            "modes": {}}
     log(f"[SUP] {game.get('label')} / dg {dg} / {contest.get('name')}")
     for mode, disc in (("legacy", False), ("discrete", True)):
         S._cache.clear()
         sec = {"offense": offense_chain(S, game, disc, log=log)}
         ents, secs, rss = sd_board.ents_for(slate, sd_board.WEEK, disc, n_sims=WORLDS,
-                                           seed=20260912, log=log)
+                                           seed=BOARD_SEED, log=log)
         sec["pool"] = pool_legality({e["name"]: e for e in ents}, log=log)
         idx, W, allowed = sd_board.universe(ents)
         import dfs_tourney as T

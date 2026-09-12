@@ -34,6 +34,11 @@ def _prov(**extra):
     return provenance.stamp(**extra)
 
 
+def _unseeded():
+    from research import provenance
+    return provenance.UNSEEDED
+
+
 def run(feed_dir, log=print):
     import nfl_dfs_sim as S
     raw = json.load(open(os.path.join(feed_dir, f"proj_{SEASON}_{WEEK}.json")))
@@ -61,7 +66,8 @@ def run(feed_dir, log=print):
     out = {"meta": {"stage": "showdown DK-lattice audit (a measurement, not a fix)",
                     "season": SEASON, "week": WEEK, "worlds": WORLDS,
                     "model": "legacy", "dk_step": DK_STEP,
-                    "provenance": _prov(model="legacy", worlds=WORLDS)},
+                    "provenance": _prov(model="legacy", worlds=WORLDS,
+                                        seed=_unseeded())},
            "by_position": rows,
            "total": {"samples": int(tot_n), "off_lattice": int(tot_bad),
                      "off_lattice_pct": round(100.0 * tot_bad / max(tot_n, 1), 2),

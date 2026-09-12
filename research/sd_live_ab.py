@@ -132,9 +132,21 @@ def one(feed_dir, dg, mode, log=print):
     for i in port:
         for k in range(6):
             expo[ents[int(idx[i, k])]["name"]] += 1
-    # the split-payout haircut: how much of the untied expected payout the tie
-    # split takes off the best lineup. Experimental, like every money column on
-    # a showdown board.
+    # Two DIFFERENT tie quantities, and conflating them cost a report revision
+    # (2026-09-12), so they are named apart here.
+    #
+    # best.split_haircut_pct is a PAYOUT haircut on ONE lineup: the share of the
+    # best lineup's untied expected payout that tie-splitting removes. It runs
+    # 84-97% on a live primetime board. It is NOT an incidence and must never be
+    # quoted as "first place is shared X% of the time" -- it was, and it became
+    # the argument that the lattice defect was economically cheap.
+    #
+    # tie.mean_shared_first_pct_top200 is a CANDIDATE-LEVEL probability: for each
+    # of THIS build's own top-200 lineups by top-1% rank, the mass on a shared
+    # first place, averaged. It is about 200 hand-picked lineups, not about the
+    # contest. Nothing in this module estimates the contest-wide probability that
+    # first place is shared; that needs an estimator over the whole field and
+    # there isn't one. Both are experimental, like every money column here.
     best = int(order[0])
     tie_share = [(float(win[i]) - float(sole[i])) for i in order[:200]]
     out = {"mode": mode, "draft_group_id": int(dg), "contest": contest.get("name"),
@@ -242,7 +254,8 @@ def run_all(feed_dir, dgs=DGS, log=print):
         d = out["boards"][str(dg)]["delta"]
         log(f"[AB] dg {dg}: top-20 identical in {d['top20_slots_identical']}/20 slots, "
             f"overlap {d['top20_overlap']}/20, portfolio overlap {d['portfolio_overlap']}/{PORT_K}, "
-            f"best EV {d['ev_best_pct_diff']}%, shared-first x{d['shared_first_ratio_top200']}")
+            f"best EV {d['ev_best_pct_diff']}%, top200 mean shared-first mass "
+            f"x{d['shared_first_ratio_top200']}")
     with open(os.path.join(DATA, "sd_live_ab.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     # the per-mode files were the handoff between processes; everything in them
@@ -288,7 +301,8 @@ def run_control(feed_dir, dg, log=print):
     d = out["delta"]
     log(f"[AB] CONTROL dg {dg}: top-20 identical in {d['top20_slots_identical']}/20 slots, "
         f"overlap {d['top20_overlap']}/20, portfolio overlap {d['portfolio_overlap']}/{PORT_K}, "
-        f"best EV {d['ev_best_pct_diff']}%, shared-first x{d['shared_first_ratio_top200']}")
+        f"best EV {d['ev_best_pct_diff']}%, top200 mean shared-first mass "
+        f"x{d['shared_first_ratio_top200']}")
     with open(os.path.join(DATA, "sd_live_ab_control.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     for mode in ("legacy", "legacy_b"):

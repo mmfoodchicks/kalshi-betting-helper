@@ -524,20 +524,40 @@ SD_MONEY_TIES_PAID = True       # the same tie-aware payout classic uses
 # number, and the engine's 0.01 bucket reproduces the exact six-player total for
 # every sampled lineup in every world.
 #
-# What the LIVE boards said about severity, which is not what the controlled
-# board said. On the two week-2 primetime boards the probability that first
-# place is SHARED moved x1.07 and x0.94 -- opposite directions, inside the noise
-# of merely reseeding the same board. The reason is in the same output: under
-# LEGACY, first place on those contests is already shared 84.2% and 96.8% of the
-# time. Once the field is that concentrated, field size decides tie incidence
-# and the scoring grid barely matters. The defect is a correctness defect,
-# confirmed; its effect on first-place splitting on these boards is negligible,
-# and claiming otherwise from the controlled result alone would have been wrong.
+# What the LIVE boards said about severity -- and, corrected 2026-09-12 after an
+# independent audit read the artifact instead of this comment, what they did NOT
+# say. The numbers below were always right; an earlier version of this comment
+# attached the wrong EVENT to two of them.
 #
-# This link closing does NOT open the gate, and that matters more than ever now:
-# if 84-97% of first places are shared, the uncalibrated field model influences
-# payout economics far more than the lattice ever did. A legal football support
-# says nothing about whether the public is modelled correctly.
+# research/sd_live_ab measures ONE tie statistic: for each build's own top-200
+# lineups by top-1% rank, the mean probability mass sitting on a SHARED first
+# place, win_any - win_sole. That candidate-level mean moved x1.07 (DEN@KC) and
+# x0.94 (DAL@NYG) -- opposite directions, inside the noise of merely reseeding
+# the same board, which moved it x1.04. That is the whole of what the ratio
+# says, and it says it about 200 hand-picked lineups, not about the contest.
+#
+# It is NOT the probability that the contest's first place is shared. Nothing in
+# this tree measures that: it needs an estimator over the whole 88,000-entry
+# field, and none exists. This comment used to report 84.2% and 96.8% as that
+# incidence. Those two values are real but they are the LEGACY BEST LINEUP's
+# split_haircut_pct = 100 * (1 - ev / ev_notie) -- the share of its untied
+# expected payout that tie-splitting removes. A payout haircut is not an
+# incidence, and the substitution was not harmless: it was the whole argument
+# for "the field already ties, so the lattice was cheap."
+#
+# The money evidence runs the other way. Between the two modes the best lineup's
+# tie-aware expected payout moved -7.4% and -14.0%, against -0.03% for reseeding
+# the same board. The tie correction landed in the payout column, not in the
+# candidate shared-first one, so NO claim that the lattice was economically
+# negligible survives -- under this field model it looks expensive. What does
+# survive is the strategy result (top-20 overlap 17 and 19 of 20), which is why
+# the promotion was argued on correctness and never on money.
+#
+# This link closing does NOT open the gate. Both of the remaining open links
+# outrank it: tie-splitting removing 84-97% of the best lineup's untied payout
+# is itself an output of the uncalibrated field model, so that model drives
+# payout economics here more than the scoring grid ever did, and a legal
+# football support says nothing about whether the public is modelled correctly.
 SD_MONEY_LATTICE_OK = True
 # And the link that was missing from this gate entirely, which closing the
 # lattice one exposed. A legal support is a statement about the SCORING rules,
@@ -586,20 +606,24 @@ def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=Non
     why = ("the whole lineup universe is enumerated -- "
            f"{int(n_legal):,} legal lineups against {int(contest_C):,} entries -- so unlike the "
            "classic board nothing here is lost to sampling, and expected copies are exact given "
-           "the field's weights. The weights are the problem, and they are now the ONLY problem: "
+           "the field's weights. The weights are the larger of the two open problems: "
            "the public is modelled as softmax(beta x projected points) with beta solved so the "
            f"most popular build holds {100 * FIELD_TOP_SHARE:.1f}% of the field, a figure taken "
            "from ONE published contest and never fitted to real showdown ownership -- not captain "
            "rates, not flex rates, not team structures, not the duplication distribution. First "
            "place, payout and ROI inherit that uncertainty whole, and this board shows how much "
-           "that matters: it puts first place as SHARED 84-97% of the time on a live primetime "
-           "slate, so the field model drives the payout economics here more than anything else "
-           "does. The lattice link, which used to be open beside it, is closed: every score in a "
-           "showdown pool now recomputes from an integer stat line through DraftKings' own "
-           "scorer, kickers and defenses included (research/sd_support). That was fixed because "
-           "it was WRONG, not because it was costly -- on the two live boards tested it moved the "
-           "chance first place is shared by x1.07 and x0.94, in opposite directions, inside the "
-           "noise of reseeding. And fixing the SCORING rules is not validating the FOOTBALL: "
+           "that matters: under that model tie-splitting removes 84-97% of the BEST LINEUP's "
+           "untied expected payout on a live primetime slate, so the field model drives the "
+           "payout economics here more than anything else does. That 84-97% is a payout haircut, "
+           "NOT the chance first place is shared -- contest-wide shared-first incidence is not "
+           "measured anywhere in this tree. The lattice link, which used to be open beside it, "
+           "is closed: every score in a showdown pool now recomputes from an integer stat line "
+           "through DraftKings' own scorer, kickers and defenses included (research/sd_support). "
+           "That was fixed because it was WRONG; whether it was also costly is unresolved. "
+           "Across each build's top-200 candidate lineups the mean shared-first mass moved "
+           "x1.07 and x0.94, in opposite directions, inside the noise of reseeding -- while the "
+           "best lineup's expected payout moved -7.4% and -14.0% against -0.03% for a reseed. "
+           "And fixing the SCORING rules is not validating the FOOTBALL: "
            "showdown serves legacy-latent, whose teammate and opposing-side covariance are the "
            "known limitations Stage 2B-2F measured, and a six-man single-game roster is more "
            "exposed to them than a classic lineup is. That is a separate link and it is also "

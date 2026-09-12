@@ -1,9 +1,21 @@
 # Showdown correction pass: what was audited, what was fixed, what was not
 
 **Baseline** `a1c4836` (the frozen, audited Classic tree).
-**Head of this document** the documentation-coherence commit that follows
-`287823e`; `287823e` is the last commit that changed behaviour or numbers, and is
-the one to audit code against.
+**Head of this document** the semantic-correction commit that follows `bbca117`.
+`287823e` is still the last commit that changed a served number; this one changes
+research-module provenance stamping, a report retraction, and the guards that pin
+both. Audit served behaviour against `287823e`.
+
+**A claim in this document was withdrawn on 2026-09-12** after an independent
+audit read the artifacts rather than the report. The live tie statistic
+(×1.07 / ×0.94) is candidate-level, not a contest-wide shared-first incidence,
+and the 84.2% / 96.8% figures are payout haircuts rather than incidences.
+**Section Y5b is the retraction and it should be read before section Y5.** The
+discrete-v2 promotion is unaffected — it rested on legal score support, not on
+this — but the conclusion "the lattice was worth fixing because it was wrong, not
+because it was costly" is withdrawn: the money column moved −7.4% and −14.0%
+against a −0.03% reseed control, and whether the defect was expensive is
+**unresolved**.
 
 **Scope, by stage.** S1, S2 and S3 are done (sections D-G). The discrete-scorer
 investigation S3's blocker was referred to is done and **promoted for Showdown
@@ -42,22 +54,28 @@ than the first measurement of it suggested. Showdown's first-place column is a
 sole-win probability, so it is decided by how often scores tie, and 47% of the
 simulated scores could not occur under DraftKings scoring at all — measured in
 every position, kickers and defenses included. **That is fixed and the fix is
-now served for Showdown** (sections Y2-Y6). But the severity claim came down
-twice on the way: from "probably halves ties" (never measured, withdrawn), to
-6.14x between two player scores, to 2.36x between two lineup totals, to
-**×1.07 and ×0.94** on the chance first place is actually shared on two live
-88,000-entry contests — because a field that concentrated already shares first
-place 84% and 96.8% of the time. The defect was worth fixing because it was
-wrong, not because it was costly.
+now served for Showdown** (sections Y2-Y6). The severity claim came down twice
+on the way — from "probably halves ties" (never measured, withdrawn), to 6.14x
+between two player scores, to 2.36x between two lineup totals, to **×1.07 and
+×0.94** on two live 88,000-entry contests — but the third of those measures a
+different thing from the first two, and section Y5b **retracts** how this report
+described it. ×1.07/×0.94 is the mean shared-first probability mass across each
+build's own top-200 candidate lineups; contest-wide shared-first incidence was
+never measured. The money column moved much more than the candidate one:
+−7.4% and −14.0% on the best lineup's expected payout against −0.03% for a
+reseed. The defect was worth fixing because it was **wrong**; whether it was
+also expensive is unresolved, and the earlier "not because it was costly" is
+withdrawn.
 
 The money columns now carry a gate. It is shut on **two** links:
 `field_model_calibrated`, a placeholder taken from a single published contest,
 and `showdown_joint_model_validated`, added when closing the lattice link exposed
 that nothing gated the football model at all. Either one alone keeps the gate
 shut, so calibrating ownership would not open it. The field link is the larger of
-the two measured problems by a wide margin — if 84-97% of first places are
-shared, the model of the public drives payout economics far more than the scoring
-grid ever did.
+the two measured problems by a wide margin: under that model, tie-splitting
+removes 84-97% of the *best lineup's untied expected payout* on a live primetime
+board — a payout haircut, not an incidence — and that haircut is itself an
+output of the uncalibrated field model.
 
 S4 then asked whether the portfolio should be selected for Top 0.1% rather than
 Top 1%. On the evidence it should, and it is not: the tail objective improves
@@ -96,7 +114,8 @@ digest of its whole pool.
 comparing engines, and the Showdown artifact stamped no engine at all. A board
 whose numbers meant something older stayed authoritative forever.
 
-Classic and Showdown now version **separately**. `dfs_tourney.SD_ENGINE` is 2;
+Classic and Showdown now version **separately**. `dfs_tourney.SD_ENGINE` was set
+to 2 here and is **3** as of the discrete-v2 promotion (section Y6);
 the two change for different reasons and each rebuild is expensive enough (an
 hour against twenty minutes) that one shared number would spend the PC's
 evening on boards whose meaning never moved. An artifact with no engine stamp
@@ -296,12 +315,19 @@ single column most exposed to the defect.
 controlled board the ranking did not move in a single slot while the payout moved
 about 6% and the tie rate 6x, which read as a money defect rather than a strategy
 one. The first half held up on live boards; **the second half did not.** Section
-Y5 measures the chance first place is actually *shared* on two real 88,000-entry
-contests and finds ×1.07 and ×0.94 — opposite directions, inside reseeding
-noise — because the concentrated field already shares it 84% and 96.8% of the
-time. The tie rate moving 6x between two player scores, and 2.36x between two
-lineup totals, did not translate into a meaningful change in first-place
-splitting. The defect is real; its severity on these boards is not.
+Y5 measures the mean shared-first probability mass across each build's own
+top-200 candidate lineups on two real 88,000-entry contests and finds ×1.07 and
+×0.94 — opposite directions, inside reseeding noise. The tie rate moving 6x
+between two player scores, and 2.36x between two lineup totals, did not
+translate into a movement in *that* statistic.
+
+**Read section Y5b before this paragraph is used for anything.** An earlier
+version called ×1.07/×0.94 the contest's shared-first incidence and concluded
+the defect was cheap. It is a candidate-level quantity over 200 lineups, the
+contest-wide one was never measured, and the best lineup's expected payout moved
+−7.4% and −14.0% against −0.03% for a reseed. The defect is real; its severity
+on the *ranking* is small, and its severity on the *money* is unresolved and
+looks large.
 
 **Not promoted at `f41ea02`, promoted at the end of this pass.** When this
 section was written the mode was unreachable by design: `discrete` defaulted to
@@ -572,36 +598,55 @@ Beta is identical in both arms because the field model is built on Sleeper
 projections, which the mode does not touch. Every difference below is the
 scorer.
 
-### The severity claim comes DOWN
+### The candidate-level tie statistic barely moves — and what that does *not* mean
 
-This is the headline of the section, and it goes the opposite way from the
-controlled board:
+**Corrected 2026-09-12**, after an independent audit read `sd_live_ab.json`
+instead of this section. Every number below was right the first time; two of
+them were attached to the wrong event, and the wrong event was load-bearing.
+The retraction is recorded in full in section Y5b.
+
+The statistic this section measures is *candidate-level*: for each build's own
+top-200 lineups by top-1% rank, the mean probability mass on a **shared** first
+place, `win_any − win_sole`, averaged over those 200.
 
 | | DEN @ KC | DAL @ NYG | control (reseed only) |
 |---|---|---|---|
-| P(first place shared), ratio | **×1.07** | **×0.94** | ×1.04 |
-| P(first shared) under legacy | **84.2%** | **96.8%** | — |
+| top-200 mean shared-first mass, legacy | 0.050066% | 0.049665% | — |
+| top-200 mean shared-first mass, discrete | 0.053379% | 0.046709% | — |
+| ratio | **×1.07** | **×0.94** | ×1.04 |
 
 **The lattice defect materially changes raw lineup tie incidence in controlled
-experiments, but did not materially change shared-first incidence on the two
-tested live boards, because first place was already tied 84% and 96.8% of the
-time under the concentrated field model.** The two boards move in *opposite*
-directions and both sit inside the noise of merely reseeding. Once a field of
-88,000 entries is that concentrated, field size decides tie incidence and the
-scoring grid barely participates.
+experiments, but moved the top-200 candidates' mean shared-first mass by ×1.07
+and ×0.94 on the two tested live boards — opposite directions, both inside the
+noise of merely reseeding the same board (×1.04).** That is the whole of the
+claim. It is about 200 hand-picked lineups on two boards.
 
-So the three layers, each measured separately and each smaller than the last:
+**It is not a statement about the contest.** The probability that *the
+contest's* first place is shared was **not measured**, here or anywhere else in
+this tree. Estimating it needs an estimator over the whole 88,000-entry field,
+not over a build's own shortlist, and none exists. No contest-level incidence
+should be quoted from this artifact, including one inferred from these numbers.
 
-| Layer | Effect |
-|---|---|
-| Two player scores tying | 6.14x |
-| Two six-player lineup totals tying | 2.36x |
-| First place being shared, live boards | **×1.07 and ×0.94** |
+So the three layers, each measured separately, and the third measuring a
+different thing from the first two:
 
-It also reframes the money gate. If the model says 84-97% of first places are
-shared, the uncalibrated **field** model influences payout economics far more
-than the lattice ever did. The lattice was worth fixing because it was wrong,
-not because it was expensive.
+| Layer | Effect | What it is |
+|---|---|---|
+| Two player scores tying | 6.14x | exact-tie rate, controlled board |
+| Two six-player lineup totals tying | 2.36x | exact-tie rate, controlled board |
+| top-200 mean shared-first mass, live boards | **×1.07 and ×0.94** | candidate-level probability mass |
+
+The money gate is reframed, but by a different number than this section used to
+give. Under the field model, tie-splitting removes **84.2%** (DEN @ KC) and
+**96.8%** (DAL @ NYG) of the *best lineup's untied expected payout*
+(`split_haircut_pct = 100 × (1 − ev/ev_notie)`, legacy arm). That is a payout
+haircut on one lineup, not an incidence. It is large, and it is itself an output
+of the uncalibrated **field** model — which is the case for the field link
+outranking the lattice one, and it stands on its own without the incidence
+reading.
+
+What does **not** stand is "the lattice was worth fixing because it was wrong,
+not because it was expensive." See Y5b.
 
 ### What did move, and what did not
 
@@ -617,7 +662,8 @@ not because it was expensive.
 Read against the control: **top 0.1% is noise** — reseeding the same board moves
 it more (0.289) than the mode change does (0.086). **Expected payout is real** —
 reseeding moves it 0.03% while the mode moves it 7-14%, which is the tie
-correction arriving in the payout column rather than in the shared-first one.
+correction arriving in the payout column rather than in the candidate-level
+shared-first one — and, per Y5b, the reason no claim of cheapness survives.
 Top 1% falls ~0.39 points on both boards against a control of 0.163, so it is
 small, consistently signed, and about twice the noise.
 
@@ -677,6 +723,70 @@ scoring favours balanced builds. It is what happened on two boards.
 
 ---
 
+## Y5b. Retraction: the severity claim this section used to carry
+
+**Withdrawn 2026-09-12.** An independent audit of the bundle at `bbca117` — the
+first review of this pass to read the artifacts rather than the report — found
+that section Y5's headline statistic had been given an event it does not
+describe. Recorded here in full, because the withdrawn sentence had already been
+used to argue down the cost of a defect.
+
+**What was claimed.** *"The lattice defect ... did not materially change
+shared-first incidence on the two tested live boards, because first place was
+already tied 84% and 96.8% of the time under the concentrated field model."* And
+from that: *"the lattice was worth fixing because it was wrong, not because it
+was expensive."*
+
+**Why it is wrong.** Two separate errors, one on each half of the sentence.
+
+| | what the report called it | what `sd_live_ab.py` actually computes |
+|---|---|---|
+| ×1.07 / ×0.94 | "P(first place shared)" for the contest | ratio of `mean(win_any − win_sole)` over each build's **own top-200** lineups by top-1% rank |
+| 84.2% / 96.8% | "P(first shared) under legacy" | the legacy **best lineup's** `split_haircut_pct = 100 × (1 − ev/ev_notie)` — a payout haircut, exactly 84.156% and 96.758% |
+
+The first is a real quantity over the wrong population: 200 hand-picked
+candidates, not 88,000 entries. The second is not an incidence at all. A payout
+haircut and a probability that first place is shared are different objects; the
+report substituted one for the other and then built a severity conclusion on it.
+
+**The contest-wide quantity was never measured.** Not in this artifact, not
+anywhere in this tree. It would need an estimator over the whole field. No
+number in this report may be read as it, and none has been substituted for it
+here — including any figure derivable from the two above.
+
+**The economic conclusion goes with it.** The live boards' own money column
+argues the opposite of what was concluded:
+
+| | DEN @ KC | DAL @ NYG | control (reseed) |
+|---|---|---|---|
+| best lineup's tie-aware expected payout, legacy → discrete | −7.4% | −14.0% | −0.03% |
+
+Reseeding moves it 0.03%; the mode moves it 7–14%. Under this field model the
+lattice correction is **not** cheap — it is the largest money movement the A/B
+produced. These are experimental dollars under an uncalibrated field model and
+remain non-authoritative, but they cannot be used to call tie economics
+negligible, and neither can the misidentified 84–97%.
+
+**What survives.** The promotion of discrete-v2 is untouched: it rested on legal
+score support (section Y4 — 26/26 offensive scores recomputing to 7.1e-15, the
+whole 24-player board pool legal, the exact six-player total reproduced in every
+sampled world), and that evidence is unaffected. So is the *strategy* finding:
+top-20 overlap 17 and 19 of 20, ordering moving less than reseeding does. The
+promotion was argued on correctness and never on money, which is why this
+retraction changes the promotion's reasoning not at all.
+
+**What it cost.** This was the third severity figure in the pass to move, and
+the first to move for a reason that was not measurement. The other two shrank
+because small or synthetic cases do not survive real contest geometry. This one
+was never a measurement error — ×1.07, ×0.94, 84.156 and 96.758 are all exactly
+what the code produces. The failure was attaching the wrong event to a right
+number, and no guard in the suite could catch it: every guard asked "does this
+number still appear?", and the number did. Only reading the estimator against
+the sentence it supports catches this class. Recorded in section W as a standing
+audit rule.
+
+---
+
 ## Y6. The promotion decision
 
 ### The five criteria, and how each was settled
@@ -732,9 +842,11 @@ implementation of the existing legacy model on DraftKings-valid support. Not any
 of these:
 
 - **not** because expected payout improves — it falls 7-14%, and that is a
-  correction, not a gain;
-- **not** because tie economics improve — live impact on shared-first was
-  negligible and not even consistently signed;
+  correction, not a gain (and see Y5b: that fall is the *largest* movement the
+  A/B produced, so the fix is not cheap either);
+- **not** because tie economics improve — the candidate-level shared-first
+  statistic barely moved and was not even consistently signed, and whether
+  contest tie economics improve is **unmeasured**;
 - **not** because portfolio construction improves — unknown, and two slates
   cannot say;
 - **not** because the legacy correlation model becomes good — it does not, and
@@ -995,6 +1107,98 @@ least as much as it did before, and Z2.9 asserts something safer.
 
 ---
 
+## Z3. Every guard repinned for the semantic correction, and why none is an accepted regression
+
+Seven repins on 2026-09-12, all downstream of one finding: the live tie
+statistic had the wrong event attached to it (section Y5b). **No assertion was
+weakened to let failing code through.** Two of them — Z3.1 and Z3.5 — were
+asserting something that was *wrong*, not merely stale, which is the more serious
+category and the same one as Z2.9.
+
+### Z3.1. "The live boards moved shared-first by about nothing"
+
+- **Was**: `"x1.07 and x0.94" in why and "84-97%" in why`, under a description
+  that called the first a shared-first movement and the second an incidence.
+- **Now**: three guards. The gate must state the candidate-level definition
+  (`top-200 candidate lineups`); must say outright that 84-97% is a
+  `payout haircut` and `NOT the chance first place is shared`, and that
+  contest-wide incidence is `not measured anywhere in this tree`; and must carry
+  the `-7.4% and -14.0%` payout movement against its `-0.03%` control.
+- **Not a regression, and this one was wrong rather than stale**: the old guard
+  was pinning a misidentification. It passed for the entire life of the error,
+  because the numbers it checked for were real and present the whole time. The
+  new form pins the *definitions*, which is the only form that could have failed.
+
+### Z3.2. "It RETRACTS the live severity"
+
+- **Was**: `"did not materially change shared-first incidence on the two tested
+  live boards"` and `"84% and 96.8% of the time"` — a sentence the report has now
+  withdrawn.
+- **Now**: the retraction itself (`## Y5b. Retraction`), both misidentified
+  quantities named (`84.156% and 96.758%`, `payout haircut`), and the exact
+  definition (`own top-200`, `win_any − win_sole`).
+- **Not a regression**: keeping the withdrawn phrase alive to satisfy a guard
+  would be gaming it. This is the second time this particular guard has moved for
+  a reason that was not staleness.
+
+### Z3.3. Section O's regrown wording
+
+- **Was**: not guarded at all — section M's correction was pinned, section O's
+  copy of the same claim was not, and it kept the stronger version.
+- **Now**: `falls by about half` and `goes insignificant` must each appear
+  exactly once *and* quoted, so the withdrawn wording survives only as a visible
+  retraction; plus `**weakens materially**`, `+0.0210 → +0.0175 → +0.0068` and
+  `**one of the two fold directions**`.
+- **Not a regression**: a bare "not in" would have failed on the correction note
+  itself. The count-and-quote form is what distinguishes a live claim from a
+  recorded retraction.
+
+### Z3.4. The opponent-count absolute effect
+
+- **Was**: not guarded. `1.3e-5` was one early cell quoted as the result.
+- **Now**: `2.0e-5 to 2.3e-5 absolute (mean 2.0875e-5)` and `0.011% relative`,
+  with `1.3e-5` allowed only inside its quoted retraction.
+- **Not a regression**: same shape as the withdrawn −0.3% served-optimism
+  figure in section Q, and now guarded the same way.
+
+### Z3.5. `complete()` on a null seed
+
+- **Was**: `_prov14.complete(_prov14.stamp(seed=None, ...))` asserted **True**.
+- **Now**: asserted **False**, with `UNSEEDED` as the way a genuinely unseeded
+  stage says so, and a dict or list of seeds accepted for a stage with several.
+- **Not a regression, and this one was wrong the day it was written**: it encoded
+  "a null seed is a finished stamp" as a *requirement*, and six showdown-era
+  artifacts then stamped `seed: null` while running on hard-coded seeds. The
+  field whose whole job is reproducibility was silently optional and the guard
+  said that was correct. The new assertion fails against the old
+  `provenance.py`.
+
+### Z3.6. The seed constants
+
+- **Was**: nothing.
+- **Now**: six modules must *name* the seeds they run on, and the provenance
+  stamp must read those names — checked by parsing the AST for `Assign` targets
+  and for the `seed=` keyword of the `_prov()` call, not by substring.
+- **Not a regression, it is new coverage**: parsed rather than grepped because
+  these modules import numpy at module scope (so importing them would fail the
+  no-numpy run for an unrelated reason), and because `seed` as a naked substring
+  matches `seeds`, `unseeded` and most of the comments — the same mistake that
+  cost this suite two false greens earlier in this pass (`arr` inside
+  `np.asarray`, `ev` inside `every`).
+
+### Z3.7. The S4 → S5 conditionality
+
+- **Was**: nothing. S4's dependence on the `allowed` universe was a sentence in
+  a limitations list, with no exit criterion attached.
+- **Now**: the limitation, the counts (`23,820 enterable of 777,056 legal`), the
+  binding criterion (`S5 carries an S4 exit criterion, and it is binding`), its
+  threshold (`moves the enterable count by more than ~10%`) and its direction
+  (`S4's conclusion needs to wait for S5`).
+- **Not a regression, it is new coverage**: without it, S5 could change the
+  candidate space and silently invalidate S4's conclusion with nothing failing.
+
+---
+
 ## R. Provenance, and the staleness failure mode
 
 ### R1. Every artifact, its stamp, and its hash
@@ -1034,6 +1238,54 @@ What a reviewer should do with this: recompute the aggregates from the artifacts
 the JSON), rather than trusting that the prose transcribed them correctly. The
 field-sensitivity averages in section M were transcribed wrongly once and caught
 that way.
+
+**And read the estimator, not only the number.** Section Y5b is the case that
+recomputation alone would *not* have caught: ×1.07, ×0.94, 84.156 and 96.758 all
+recompute exactly from the artifact. What was wrong was the event the report
+attached to them. Checking a claim in this report means finding the function that
+produced the quantity — `research/sd_live_ab.py`'s `tie_share` for the first two,
+`split_haircut_pct` for the second two — and reading its definition beside the
+sentence.
+
+### R1b. What a `source_sha` on a dirty artifact can and cannot prove
+
+Raised by the independent audit, and the honest answer is narrower than the table
+might suggest. For the five dirty artifacts, `source_sha` proves only that *these
+bytes came from some exact source snapshot* — it pins a hash, not a retrievable
+tree. The bundle does not contain that snapshot, and it cannot be reconstructed
+from the stamped parent commit, because the whole point of `dirty: true` is that
+the tree differed from it. So for those five the chain is: the numbers are
+internally consistent and the hash is stable, but the code that produced them is
+not recoverable. Only the four clean artifacts carry a chain that runs all the
+way back to a commit.
+
+### R1c. Six artifacts stamped `seed: null` while running on fixed seeds
+
+Also from the independent audit, and it is a defect in the stamp rather than in
+any result. `provenance.complete()` documented a null seed as meaning
+"unseeded", and treated it as a finished stamp. Six showdown-era artifacts
+stamped null while their code sets seeds a few lines away:
+
+| artifact | seeds the code actually sets |
+|---|---|
+| `sd_support.json` | board `20260912`, lineup sampler `7` |
+| `s4_ties.json` | board `20260912` |
+| `sd_corr_null.json` | `9000 + 17i`, i = 0..5 |
+| `sd_outliers.json` | pool `303 / 404 / 303`, game `101 / 202 / 101` |
+| `sd_discrete.json` | pair choice `5` (the simulator itself unseeded) |
+| `s4_crossfit.json` | `(20260912, 771033)` in `meta.seeds`, bootstrap `11` — present, but not in the provenance block |
+| `sd_live_ab.json` | `20260912` — the one that stamped it correctly |
+
+**Fixed prospectively, and the historical artifacts are deliberately NOT
+regenerated.** Their bytes are the evidence the reviewer just verified against
+section R1; rewriting them to prettify their stamps would destroy that and prove
+nothing. What changed instead: `complete()` now refuses a null seed (None means
+"did not say"), `provenance.UNSEEDED` is how a stage that genuinely draws nothing
+seeded says so, every seed above is now a named constant that the stamp reads,
+and a guard parses each module's AST to keep the two from drifting apart
+(Z3.5, Z3.6). The next artifact each of these modules writes will carry its
+seeds; the ones already written still say null, and now that is legible as the
+gap it is.
 
 ### R2. Why the front of this report disagreed with its middle
 
@@ -1083,8 +1335,10 @@ summaries of everything rather than statements about one thing.
   more exposed to them than a classic one. Promoting the discrete scorer fixed
   the scoring rules and validated nothing about the football.
 - **The live severity of the lattice defect is known for two boards only.** Both
-  were primetime, both had ~88,000 entries and a field the model puts at 84-97%
-  shared first place. A smaller or flatter contest could behave differently, and
+  were primetime, both had ~88,000 entries and a field the model puts at an
+  84-97% tie-split haircut on the best lineup's untied expected payout (a payout
+  haircut, **not** a shared-first incidence — section Y5b). A smaller or flatter
+  contest could behave differently, and
   nothing here measures that.
 - **The portfolio shift toward balanced builds is not understood.** It appeared
   on both tested slates and exceeded a single structural control. Two slates and
@@ -1190,8 +1444,14 @@ every `k` on these boards). The 20-entry portfolio uses `C − 20` throughout
 selection **and** scoring, so the matrix does not shift as the greedy grows.
 Production uses `C − 1`, which counts our own 19 other entries as public
 opponents; for an at-least-one event they cannot outrank our best, so `C − 1`
-**understates** coverage. Measured, not sized from `19/C`: **1.3e-5 absolute,
-0.012% relative.** Too small to move production for.
+**understates** coverage. Measured, not sized from `19/C`: across the eight final
+cross-fit cells **2.0e-5 to 2.3e-5 absolute (mean 2.0875e-5), 0.011% relative**.
+Too small to move production for.
+
+*Corrected 2026-09-12.* This read "1.3e-5 absolute, 0.012% relative". The
+relative figure was right; the absolute one was a single early cell quoted as
+though it were the result, which is the same error as the withdrawn −0.3%
+served-optimism figure in section Q. The conclusion is unchanged.
 
 ### E. Tie-at-cutoff semantics
 
@@ -1345,9 +1605,18 @@ the decision rather than the measurement:
    probabilities you can trust — and the money gate is shut precisely because
    those probabilities are not trustworthy. Using experimental dollars to break
    the tie is exactly what this stage forbids.
-2. **The effect size rides on the uncalibrated knob.** It falls by about half
-   across a plausible field-concentration range on the tested board and seed, and
-   goes insignificant at the concentrated end under the production convention.
+2. **The effect size rides on the uncalibrated knob.** It **weakens materially**
+   across a plausible field-concentration range on the tested board and seed
+   — two-direction optimistic means +0.0210 → +0.0175 → +0.0068 — and at the
+   concentrated end **one of the two fold directions** loses significance under
+   the production convention (A→B +0.0008 ✗; B→A +0.0129 ✓, and both stay
+   significant under the pessimistic convention). Section M has the table.
+
+   *Corrected 2026-09-12.* This paragraph said "falls by about half" and "goes
+   insignificant at the concentrated end" — the stronger wording section M had
+   already withdrawn, regrown downstream. Same regrowth mechanism as the Classic
+   report's L1/L2 overclaim: a correction applied where it was raised and not
+   where it was repeated.
 
 **S7 is necessary and not sufficient.** The money gate has two open links, and
 they gate different halves of this decision. `field_model_calibrated` is what
@@ -1439,6 +1708,17 @@ probability before the split exists.
   evidence it is not.
 - **The tie convention is still inconsistent in production** — documented, 1.1%
   wide, deliberately not fixed.
+- **Every shortlist was drawn from `allowed`, not from the legal universe.** The
+  1,200 candidates in every cell came out of the ~3% of legal lineups that survive
+  today's owner rules — 23,820 enterable of 777,056 legal on DEN @ KC (3.07%),
+  13,838 of 427,048 on DAL @ NYG (3.24%). So the
+  whole Top-1%-vs-Top-0.1% comparison is **conditional on the current rule set**,
+  and the rule set is exactly what S5 is about to examine. This is a real
+  dependency, not a hypothetical one: if S5 finds a hard rule harmful and
+  production drops or loosens it, the candidate space S4 optimised over no longer
+  exists, and the objective comparison describes an obsolete universe. It is
+  recorded as an S5 **exit criterion** (section Y item 4), not as a reason to
+  rerun S4 now.
 
 ---
 
@@ -1481,7 +1761,7 @@ misled:
 
 `b4e3535` ~1,943 / 1,921 · `f41ea02` ~1,950 / 1,923 · `9d6ffaa` ~1,995 / 1,963 ·
 `ed70264` ~1,999 / 1,968 · `9cbd68d` ~2,015 / 1,982 · `287823e` ~2,023 / 1,990 ·
-this commit ~2,028 / 1,995.
+`bbca117` ~2,028 / 1,995.
 
 This was found by the report quoting its own commit's counts, which forced a
 re-measurement on the final tree and exposed the non-determinism. Self-reference
@@ -1499,6 +1779,33 @@ the new contract rather than the code being bent back: the two PC task pins,
 the rebuild-reason fixture, the engine guard, and the artifact guard. One
 guard I had written myself in S2 failed in S3 when the lattice link was added,
 and was corrected to assert the conjunction rather than a single key.
+
+### W1. The standing audit rules this pass earned
+
+Two, both paid for.
+
+**1. Treat a dramatic small-case result as a hypothesis until it survives the
+actual contest geometry, held-out worlds, and the real production path.** Every
+severity figure in this pass shrank on contact with a real board: "probably
+halves ties" (never measured, withdrawn) → 6.14x player pairs → 2.36x lineup
+totals → ×1.07/×0.94; a 150× tie-convention swing → a 1.1% bracket; 2.476% vs
+2.012% in-sample → about +0.02 held out. The mechanism was geometry, not noise,
+every time — a 1,000-entry contest makes top 0.1% a single seat, 300 worlds
+cannot estimate an 88-in-88,235 event, fourteen players cannot produce an
+outright winner.
+
+**2. Audit the estimator against the sentence, not the number against the
+report.** Section Y5b is the case. ×1.07, ×0.94, 84.156 and 96.758 were all
+exactly what the code produced; two of them were simply attached to an event
+they do not describe, and one of those was a payout haircut being read as a
+probability. Every guard covering that passage asked *"is this number still
+present?"* — and it was, so the suite stayed green through the whole life of the
+error. **No text-pinning guard can catch a semantic misattribution**, because the
+text it pins is the thing that is wrong. What caught it was reading
+`sd_live_ab.py`'s definition of `tie_share` beside the sentence that cited it.
+The corollary for this suite: a guard that pins a claim should, wherever it can,
+also pin the *definition* the claim depends on — which is what the repinned
+guards in section Z3 now do.
 
 ## Y. Recommended next, separated from production fixes
 
@@ -1524,3 +1831,16 @@ and the scorer promoted for Showdown (`9d6ffaa`), and S4's cross-fit ran
    Showdown strategy gates protect the owner from bad lineups or quietly discard
    good ones. The ~3% survival rate under owner rules has never been attributed to
    named rules.
+
+   **S5 carries an S4 exit criterion, and it is binding.** S4 shortlisted from
+   `allowed` — today's ~3% owner-rule subset — and never from the legal universe
+   (section P). So the Top-1%-vs-Top-0.1% conclusion is conditional on the rules
+   S5 is about to test. **If S5 materially changes or restructures the `allowed`
+   universe, a targeted S4 rerun on the new universe is required before the
+   objective comparison may be treated as current.** "Materially" is not left to
+   judgement: any rule change that moves the enterable count by more than ~10%,
+   or that removes a *structural* constraint (a captain-eligibility rule, a
+   stacking requirement, the game cap) rather than tightening a numeric threshold,
+   triggers it. Until that rerun runs, the S4 result is stamped against the old
+   rules and must be quoted with them. S5 does **not** need to wait for S4;
+   S4's conclusion needs to wait for S5.

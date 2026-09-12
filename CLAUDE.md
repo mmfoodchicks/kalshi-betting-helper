@@ -49,6 +49,18 @@ Single-user (the repo owner). Read this before touching anything.
   what was measured and what it cost. Match that density.
 - New behaviour ships with a guard in `tests/combo_audit_guards.py` that would
   have caught the bug it fixes.
+- **Treat a dramatic small-case result as a hypothesis** until it survives the
+  actual contest geometry, held-out worlds and the real production path. Every
+  severity figure in the showdown pass shrank on contact with a real board
+  ("probably halves ties" -> 6.14x -> 2.36x -> x1.07/x0.94; a 150x tie-convention
+  swing -> 1.1%). The mechanism was geometry, not noise, each time.
+- **A guard pins a number; only a reader pins its meaning.** Before quoting a
+  research figure, open the function that produced it and read the definition
+  beside the sentence. x1.07, x0.94, 84.156 and 96.758 were all exactly what the
+  code computed for two full commits while the report attached the wrong event to
+  two of them, and every guard stayed green because each asked "is this number
+  still present?" Where a guard can pin the definition as well as the claim, it
+  should.
 
 ## Reading the running app without touching it
 

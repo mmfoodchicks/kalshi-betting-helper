@@ -14038,15 +14038,51 @@ ck("the lattice link is now CLOSED, and the gate says so for the right reason: t
    and _dt14.sd_money_gate(486_000, 132_000)["authoritative"] is False
    and "recomputes from an integer stat line" in _dt14.sd_money_gate(486_000, 132_000)["why"]
    and "field model drives the payout economics" in _dt14.sd_money_gate(486_000, 132_000)["why"])
-# The severity claim that had to come DOWN. A controlled board said the tie rate
+# The severity claim, and the SEMANTIC correction that followed it (2026-09-12).
+#
+# The first repin brought the number down: a controlled board said the tie rate
 # moved 6.1x between player scores and 2.36x between lineup totals; the live
-# boards said the chance FIRST PLACE IS SHARED moved x1.07 and x0.94, in
-# opposite directions, because the concentrated field already shares it 84-97%
-# of the time. The gate must carry the smaller number, not the larger one.
-ck("and the gate does not inflate the severity: it says the live boards moved shared-first by about nothing, and names the field model as the bigger influence on the money",
-   "x1.07 and x0.94" in _dt14.sd_money_gate(486_000, 132_000)["why"]
-   and "inside the" in _dt14.sd_money_gate(486_000, 132_000)["why"]
-   and "84-97%" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+# boards moved x1.07 and x0.94. That much was right.
+#
+# What was wrong was the EVENT attached to those numbers, and an independent
+# audit of the artifact -- not of the report -- is what caught it. x1.07/x0.94
+# is the ratio of mean(win_any - win_sole) over each build's OWN top-200
+# lineups: candidate-level, 200 lineups, not the contest. And the 84.2%/96.8%
+# the gate quoted as "first place is shared that often" are the legacy BEST
+# LINEUP's split_haircut_pct = 100*(1 - ev/ev_notie) -- a payout haircut. The
+# contest-wide shared-first probability is measured NOWHERE in this tree.
+#
+# This mattered because the misread was load-bearing: it was the argument that
+# the lattice defect was economically cheap. The same artifact says the best
+# lineup's expected payout moved -7.4% and -14.0% against -0.03% for a reseed,
+# so the gate must carry that too and must NOT claim the fix was cheap.
+#
+# Note what no guard could have caught: every assertion here asked "is this
+# number still present?", and every number was. Only reading the estimator
+# against the sentence it supports finds this class of defect.
+_why14 = _dt14.sd_money_gate(486_000, 132_000)["why"]
+ck("the gate states the live tie statistic with its real definition -- candidate-level, over each build's top-200 -- and not as a contest-wide incidence",
+   "x1.07 and x0.94" in _why14
+   and "top-200 candidate lineups" in _why14
+   and "inside the" in _why14)
+ck("and the gate says outright that the 84-97% figure is a payout haircut, and that contest-wide shared-first incidence was never measured",
+   "84-97%" in _why14
+   and "payout haircut" in _why14
+   and "NOT the chance first place is shared" in _why14
+   and "contest-wide shared-first incidence is not" in _why14
+   and "measured anywhere in this tree" in _why14)
+ck("and the gate does NOT claim the lattice fix was cheap: it carries the payout movement that says otherwise, against its reseed control",
+   "-7.4% and -14.0%" in _why14
+   and "-0.03%" in _why14
+   and "whether it was also costly is unresolved" in _why14
+   and "not because it was costly" not in _why14)
+# The gate's own text contradicted its own links: it called the field weights
+# "the ONLY problem" while showdown_joint_model_validated sat open beside them.
+# The boolean was right; the sentence was stale.
+ck("and the gate does not call the field weights the ONLY problem while a second link is open beside them",
+   "ONLY problem" not in _why14
+   and _dt14.sd_money_gate(486_000, 132_000)["links"]["showdown_joint_model_validated"] is False
+   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False)
 ck("the audit records the mechanism it measured rather than asserting one: the per-player multiply, the defense's floating shift, and the rounding that puts both on a 0.01 grid",
    any("proj / raw" in m for m in _sdl["mechanism"])
    and any("floating additive" in m for m in _sdl["mechanism"])
@@ -14070,11 +14106,32 @@ ck("the report keeps the discrete investigation with its measured tie ratio, the
 ck("and it records the promotion for the ONE reason that justifies it, with the three reasons that do not",
    "It is the correct implementation of the existing legacy model" in _sdrw
    or "correct implementation of the existing legacy model on DraftKings-valid support" in _sdrw)
-ck("and it RETRACTS the live severity rather than leaving the controlled figure to stand as the cost",
-   "did not materially change shared-first incidence on the two tested live boards" in _sdrw
-   and "84% and 96.8% of the time" in _sdrw
+# Repinned 2026-09-12, and this is the second time this guard has moved for a
+# reason that was not staleness. It pinned the sentence "did not materially
+# change shared-first incidence on the two tested live boards ... 84% and 96.8%
+# of the time" -- which the report has now WITHDRAWN, because neither half of it
+# described the statistic it cited. Keeping the old phrase alive to satisfy a
+# guard would be pinning a retracted claim, so the assertion becomes the
+# retraction and its two corrected definitions. It fails against the old report.
+ck("and it RETRACTS the live severity claim, naming BOTH misidentified quantities rather than quietly restating the numbers",
+   "## Y5b. Retraction" in _sdrw
    and "\u00d71.07" in _sdrw and "\u00d70.94" in _sdrw
+   and "84.156% and 96.758%" in _sdrw
+   and "payout haircut" in _sdrw
    and "x1.07 and x0.94" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+ck("and the report defines the candidate-level statistic precisely, instead of calling it the contest's shared-first incidence",
+   "own top-200" in _sdrw
+   and "win_any \u2212 win_sole" in _sdrw
+   and "was **not measured**" in _sdrw)
+ck("and it does not substitute another inferred contest-level number for the one it withdrew",
+   "here or anywhere else in\nthis tree" in _sdr.replace("\r", "")
+   or "here or anywhere else in this tree" in _sdrw)
+ck("and it carries the money movement that stops 'the lattice was cheap' being reasserted",
+   "\u22127.4%" in _sdrw and "\u221214.0%" in _sdrw and "\u22120.03%" in _sdrw
+   and "is the largest money movement the A/B produced" in _sdrw)
+ck("and the retraction records that no guard could have caught it, because every guard asked whether the NUMBER was still there",
+   "every guard asked \"does this\nnumber still appear?\"" in _sdr.replace("\r", "")
+   or "every guard asked \"does this number still appear?\"" in _sdrw)
 ck("and it states the portfolio shift as what happened on two slates, NOT as a strategic rule",
    "modest shift toward balanced 3-3 portfolios on these two slates" in _sdrw
    and "not** a claim that discrete scoring favours balanced builds" in _sdrw)
@@ -14099,8 +14156,14 @@ ck("the showdown report states its baseline, that only three of nine stages were
 # adversarial review found five such contradictions. These guards now pin the
 # CURRENT scope line and the current head, so the same drift fails the suite
 # instead of waiting for a human to read the whole file.
+# Repinned 2026-09-12. The header used to say 287823e was "the last commit that
+# changed behaviour or numbers"; this commit changes research-module provenance
+# stamping, so that sentence had to get more precise rather than staying true by
+# accident. The guard follows it: what 287823e still owns is the last SERVED
+# number, which is the claim an auditor actually needs.
 ck("the report's front page agrees with its middle: the scope line names the stages actually reached, the head commit, and the two stages that were not",
-   "`287823e` is the last commit that changed behaviour or numbers" in _sdrw
+   "`287823e` is still the last commit that changed a served number" in _sdrw
+   and "Audit served behaviour against `287823e`" in _sdrw
    and "S4 is done at `9cbd68d` and closed at `287823e`" in _sdrw
    and "S5, S6, S8 and S9 were not reached" in _sdrw
    and "stages S1, S2 and S3 of nine" not in _sdrw,
@@ -14128,6 +14191,78 @@ ck("and the field-sensitivity wording is corrected to one fold direction and the
    "+0.0210, +0.0175, +0.0068" in _sdrw
    and "loses significance **in one of two fold directions**" in _sdrw
    and "0.009 was eyeballed rather than computed" in _sdrw)
+# ...and the correction has to hold DOWNSTREAM of where it was made. Section M
+# was corrected in the previous pass and section O quietly kept the stronger
+# wording -- the same regrowth as the Classic report's L1/L2 overclaim. A
+# correction that only lands where it was raised is not a correction.
+# The withdrawn wording stays VISIBLE in the correction note -- that is the house
+# style, a retraction the reader can see -- so a bare "not in" would fail on the
+# fix itself. The discriminating test is that no occurrence survives as a LIVE
+# claim: every one has to sit inside double quotes or backticks, marking it as
+# something the report used to say or as a string another section is discussing.
+# Counting occurrences was the first attempt and it was wrong -- the Z3 repin
+# audit quotes both phrases again in backticks, so the count moved while the
+# meaning did not. Strip the quoted spans and look at what is left.
+def _unquoted(text):
+    """The report with every "..." and `...` span removed."""
+    return _re.sub(r'`[^`]*`', ' ', _re.sub(r'"[^"]*"', ' ', text))
+
+
+_sdr_live = _unquoted(_sdrw)
+ck("and section O carries section M's corrected strength, with the 'falls by about half / goes insignificant' version surviving only as a quoted retraction",
+   "falls by about half" not in _sdr_live
+   and "goes insignificant" not in _sdr_live
+   and '"falls by about half"' in _sdrw
+   and "**weakens materially**" in _sdrw
+   and "+0.0210 \u2192 +0.0175 \u2192 +0.0068" in _sdrw
+   and "**one of the two fold directions**" in _sdrw)
+# The opponent-count figure was one early cell quoted as though it were the
+# result -- the same error as the withdrawn -0.3% served-optimism number. The
+# relative figure survived; the absolute one did not.
+ck("and the opponent-count effect is the eight-cell range, with the single early cell surviving only as a quoted retraction",
+   "1.3e-5" not in _sdr_live
+   and '"1.3e-5 absolute, 0.012% relative"' in _sdrw
+   and "2.0e-5 to 2.3e-5 absolute (mean 2.0875e-5)" in _sdrw
+   and "0.011% relative" in _sdrw)
+# S4 optimised inside `allowed`, which is exactly what S5 is about to change.
+# Without this the next stage could silently invalidate the last one.
+# The front of this document has to carry its own retraction. The previous pass
+# failed on exactly this -- a corrected middle under a stale header -- and the
+# guard for it pinned the header's scope line, which this correction does not
+# touch. So pin the retraction pointer too.
+ck("the report's header carries the withdrawn claim and points at the retraction, rather than leaving it to be discovered 700 lines in",
+   "Section Y5b is the retraction and it should be read before section Y5" in _sdrw
+   and "candidate-level, not a contest-wide shared-first incidence" in _sdrw
+   and "**unresolved**" in _sdrw)
+ck("and the engine number in the findings section no longer contradicts the production table",
+   "is **3** as of the discrete-v2 promotion" in _sdrw
+   and "| Showdown engine | `SD_ENGINE = 3` |" in _sdrw
+   and _dt14.SD_ENGINE == 3)
+ck("and the report records the seed-stamp gap, that it was fixed prospectively, and that the historical artifacts were deliberately NOT regenerated",
+   "### R1c. Six artifacts stamped `seed: null` while running on fixed seeds" in _sdrw
+   and "deliberately NOT\nregenerated" in _sdr.replace("\r", "")
+   and "9000 + 17i" in _sdrw
+   and "provenance.UNSEEDED" in _sdrw)
+ck("and it states what a source_sha on a dirty artifact can and cannot prove, rather than letting the hash imply a recoverable tree",
+   "### R1b." in _sdrw
+   and "it pins a hash, not a retrievable" in _sdrw
+   and "cannot be reconstructed" in _sdrw)
+ck("and section W carries both standing audit rules this pass earned, including the one no text-pinning guard can enforce",
+   "### W1. The standing audit rules this pass earned" in _sdrw
+   and "until it survives the\nactual contest geometry".replace("\n", " ") in _sdrw
+   and "**No text-pinning guard can catch a semantic misattribution**" in _sdrw)
+ck("and the repin audit for the semantic correction names all seven, with the two that were wrong rather than stale called out",
+   "## Z3. Every guard repinned for the semantic correction" in _sdrw
+   and "Z3.1" in _sdrw and "Z3.7" in _sdrw
+   and _sdrw.count("**Not a regression") >= 18
+   and "wrong rather than stale" in _sdrw
+   and "wrong the day it was written" in _sdrw)
+ck("and S4 records that it shortlisted from the owner-rule subset, with an explicit S5 exit criterion rather than a vague caveat",
+   "Every shortlist was drawn from `allowed`, not from the legal universe" in _sdrw
+   and "23,820 enterable of 777,056 legal" in _sdrw
+   and "S5 carries an S4 exit criterion, and it is binding" in _sdrw
+   and "moves the enterable count by more than ~10%" in _sdrw
+   and "S4's conclusion needs to wait for S5" in _sdrw)
 ck("and it keeps the two places the reviewer was wrong or already satisfied, rather than reporting a clean sweep of confirmations",
    "partially falsified" in _sdrw
    and "already in place" in _sdrw
@@ -14860,7 +14995,7 @@ else:
 # all. There was no leakage -- the fit reads 2022-2024 only -- but "no
 # leakage" resting on file timestamps is weaker than history proving it.
 from research import provenance as _prov14
-_pstamp = _prov14.stamp(seed=None, model="legacy", data_split="guard probe")
+_pstamp = _prov14.stamp(seed=20260912, model="legacy", data_split="guard probe")
 _psha, _pn = _prov14.source_sha()
 ck("a research stamp identifies the source that actually ran, the seed, the model and the data split -- not just the commit the tree happened to be on -- and the same tree hashes the same twice",
    set(_pstamp) >= set(_prov14.REQUIRED)
@@ -14870,6 +15005,77 @@ ck("a research stamp identifies the source that actually ran, the seed, the mode
    and _prov14.complete(_pstamp) and not _prov14.complete({"commit": "x"})
    and _prov14.stamp(seed=7, model="constrained", data_split="2022-2024 train")["data_split"] == "2022-2024 train",
    str({k: v for k, v in _pstamp.items() if k != "source_sha"}))
+# Repinned 2026-09-12, and this one WAS wrong rather than merely stale. The probe
+# above passed seed=None and asserted complete() -- encoding "a null seed is a
+# finished stamp" as a requirement. An artifact audit then found six showdown-era
+# artifacts stamping seed: null while running on hard-coded seeds (sd_support
+# builds at 20260912 and samples lineups at 7, s4_ties at 20260912, sd_corr_null
+# at 9000+17i), so the one field that makes a run reproducible was silently
+# optional and complete() said yes anyway. None now means "did not say" and is
+# incomplete; a stage that genuinely draws nothing seeded says so with UNSEEDED.
+# This assertion fails against the old provenance.py, which is the point.
+ck("a null seed is NOT a complete stamp -- it records that the stage did not say, which is different from saying it drew nothing",
+   _prov14.complete(_prov14.stamp(seed=20260912, model="m", data_split="d"))
+   and _prov14.complete(_prov14.stamp(seed=_prov14.UNSEEDED, model="m", data_split="d"))
+   and _prov14.complete(_prov14.stamp(seed={"board": 20260912, "lineups": 7},
+                                      model="m", data_split="d"))
+   and not _prov14.complete(_prov14.stamp(seed=None, model="m", data_split="d"))
+   and _prov14.UNSEEDED == "unseeded")
+# and every showdown-era module now NAMES the seeds it runs on, so the stamp
+# reads a constant instead of a literal that can drift away from it.
+#
+# Parsed as an AST, for two reasons. These modules import numpy at module scope,
+# so importing them would fail the no-numpy run of this suite for a reason that
+# has nothing to do with what is being tested. And a naked substring search for
+# "seed" matches "seeds", "unseeded" and half the comments in the file -- the
+# same mistake that cost this suite two false greens earlier in this pass ("arr"
+# inside "np.asarray", "ev" inside "every"). An Assign target is the symbol.
+import ast as _ast14
+
+
+def _module_consts(rel):
+    tree = _ast14.parse(open(_os.path.join(_root, rel)).read())
+    out = set()
+    for node in tree.body:
+        if isinstance(node, _ast14.Assign):
+            for t in node.targets:
+                if isinstance(t, _ast14.Name):
+                    out.add(t.id)
+                elif isinstance(t, _ast14.Tuple):
+                    out |= {e.id for e in t.elts if isinstance(e, _ast14.Name)}
+    return out
+
+
+def _stamp_seed_src(rel):
+    """The seed= keyword of the provenance stamp call, as source text."""
+    tree = _ast14.parse(open(_os.path.join(_root, rel)).read())
+    for node in _ast14.walk(tree):
+        if (isinstance(node, _ast14.Call) and isinstance(node.func, _ast14.Name)
+                and node.func.id == "_prov"):
+            for kw in node.keywords:
+                if kw.arg == "seed":
+                    return _ast14.dump(kw.value)
+    return ""
+
+
+for _mod, _names in (("sd_support", ("BOARD_SEED", "LINEUPS_SEED")),
+                     ("s4_ties", ("BOARD_SEED",)),
+                     ("sd_corr_null", ("CORR_SEED0", "CORR_STEP")),
+                     ("sd_discrete", ("PAIR_SEED",)),
+                     ("sd_outliers", ("POOL_SEEDS", "GAME_SEEDS")),
+                     ("s4_crossfit", ("SEEDS", "BOOT_SEED"))):
+    _rel = _os.path.join("research", _mod + ".py")
+    _consts, _sseed = _module_consts(_rel), _stamp_seed_src(_rel)
+    ck(f"research/{_mod}.py names the seeds it runs on AND its provenance stamp reads those names, so the stamp cannot drift from the run",
+       all(_n in _consts for _n in _names)
+       and all(f"id='{_n}'" in _sseed for _n in _names),
+       str({"missing_consts": [n for n in _names if n not in _consts],
+            "stamp_seed": _sseed[:160]}))
+# sd_lattice is the one that genuinely draws nothing seeded, and it has to say so
+# rather than pass the null that used to mean both things.
+ck("research/sd_lattice.py declares itself UNSEEDED instead of stamping a null that could mean either",
+   "_unseeded" in _stamp_seed_src(_os.path.join("research", "sd_lattice.py")),
+   _stamp_seed_src(_os.path.join("research", "sd_lattice.py")))
 ck("the production modules a research number depends on are inside that hash, so changing the simulator changes the stamp",
    any(f.endswith("nfl_dfs_csim.py") for f in _prov14.source_files())
    and any(f.endswith("dfs_tourney.py") for f in _prov14.source_files())

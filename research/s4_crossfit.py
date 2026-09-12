@@ -70,6 +70,7 @@ CENTRE = "half_mass"                           # a labelled approximation
 SEEDS = (20260912, 771033)
 DGS = (153086, 153085)
 BOOT = 2000                   # paired bootstrap resamples over scoring worlds
+BOOT_SEED = 11                # named so the provenance stamp records it too
 
 
 def _prov(**extra):
@@ -181,7 +182,7 @@ def coverage(P, order, sizes=SIZES):
     return out
 
 
-def paired_bootstrap(Pa, Pb, order_a, order_b, k, n=BOOT, seed=11):
+def paired_bootstrap(Pa, Pb, order_a, order_b, k, n=BOOT, seed=BOOT_SEED):
     """Paired bootstrap of (coverage_b - coverage_a) over SCORING worlds.
 
     The two portfolios are graded on the same worlds, so resampling worlds --
@@ -442,7 +443,8 @@ def run(feed_dir, dgs=DGS, seeds=SEEDS, log=print):
             "C - 20 throughout selection AND held-out scoring so the matrix does not shift "
             "as the greedy grows."),
         "money": "gate CLOSED; no payout figure is computed or cited in this stage",
-        "provenance": _prov(worlds=WORLDS, model="legacy-latent-discrete")},
+        "provenance": _prov(worlds=WORLDS, model="legacy-latent-discrete",
+                                        seed={"boards": list(SEEDS), "bootstrap": BOOT_SEED})},
         "boards": {}}
     for dg in dgs:
         out["boards"][str(dg)] = {}

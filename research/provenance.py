@@ -92,6 +92,10 @@ def stamp(seed=None, model=None, data_split=None, **extra):
     seasons or worlds the numbers were computed on -- "2022-2024 train",
     "2025 holdout", "7,500 build / 7,500 held out" -- which is the field that
     makes a blind result legible as blind.
+
+    `seed` takes every seed the stage actually set, not just the headline one:
+    a tuple, a dict, or UNSEEDED if it set none. Leaving it None records that
+    the stage did not say, and `complete()` now refuses that.
     """
     sha, n = source_sha()
     out = {"commit": commit(), "dirty": dirty(), "source_sha": sha, "source_files": n,
@@ -100,10 +104,29 @@ def stamp(seed=None, model=None, data_split=None, **extra):
     return out
 
 
+#: what a stage passes as `seed` when it genuinely draws nothing seeded --
+#: sd_lattice, which only reads a pool. Distinct from None, which now means
+#: "this stage did not record its seed" and is NOT a complete stamp.
+UNSEEDED = "unseeded"
+
+
 def complete(block):
-    """True when a stamp names everything in REQUIRED (a None seed is a real
-    answer -- unseeded -- so only a missing KEY is incomplete)."""
-    return isinstance(block, dict) and all(k in block for k in REQUIRED)
+    """True when a stamp names everything in REQUIRED *and* answers the seed
+    question one way or the other.
+
+    This used to read "a None seed is a real answer -- unseeded -- so only a
+    missing KEY is incomplete", and that was wrong in a way an audit caught on
+    2026-09-12: six showdown-era artifacts stamped `seed: null` while running on
+    hard-coded seeds elsewhere in the same file (sd_support builds at 20260912
+    and samples lineups at 7; s4_ties at 20260912; sd_corr_null at 9000+17i).
+    `complete()` passed all of them, so the one field whose whole job is to make
+    a run reproducible was silently optional. None and "unseeded" are different
+    claims and the stamp has to make the difference, or the block is not
+    self-contained. Historical artifacts are NOT regenerated to fix their
+    stamps -- the bytes are the evidence and rewriting them would destroy it.
+    """
+    return (isinstance(block, dict) and all(k in block for k in REQUIRED)
+            and block.get("seed") is not None)
 
 
 def require_clean(what):

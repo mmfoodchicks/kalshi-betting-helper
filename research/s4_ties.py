@@ -52,6 +52,7 @@ DATA = os.path.join(ROOT, "research", "data")
 
 WORLDS = 4000
 DG_DEFAULT = 153086
+BOARD_SEED = 20260912   # named so the provenance stamp cannot drift from it
 
 
 def _prov(**extra):
@@ -100,7 +101,7 @@ def run(feed_dir, dg=DG_DEFAULT, log=print):
     if not slate or not contest:
         raise SystemExit(f"draft group {dg} has no slate or contest")
     ents, _s, _r = sd_board.ents_for(slate, sd_board.WEEK, S.SD_DISCRETE,
-                                    n_sims=WORLDS, seed=20260912, log=log)
+                                    n_sims=WORLDS, seed=BOARD_SEED, log=log)
     idx, W, allowed = sd_board.universe(ents)
     f, beta = T.field_weights(ents, idx, cpt_mult=1.5)
     grid, C = sd_board.grid_for(contest)
@@ -148,7 +149,8 @@ def run(feed_dir, dg=DG_DEFAULT, log=print):
                         "p90": round(float(np.percentile(lamT, 90)), 2),
                         "p99": round(float(np.percentile(lamT, 99)), 2),
                         "max": round(float(lamT.max()), 2)},
-                    "provenance": _prov(worlds=N, model="legacy-latent-discrete")},
+                    "provenance": _prov(worlds=N, model="legacy-latent-discrete",
+                                        seed=BOARD_SEED)},
            "by_q": {}}
     for qname, q in (("top1", 0.01), ("top01", 0.001)):
         places = max(1, int(q * C))
