@@ -1,0 +1,3827 @@
+{
+ "boards": {
+  "153085": {
+   "delta": {
+    "build": {
+     "peak_rss_mb": [
+      2064.2,
+      2060.0
+     ],
+     "pool_seconds": [
+      2.1,
+      2.7
+     ],
+     "score_seconds": [
+      307.2,
+      302.5
+     ]
+    },
+    "ev_best_pct_diff": -14.0,
+    "portfolio_captains": {
+     "Cam Skattebo": [
+      2,
+      1
+     ],
+     "Dak Prescott": [
+      3,
+      4
+     ],
+     "Javonte Williams": [
+      5,
+      6
+     ],
+     "Jaxson Dart": [
+      10,
+      9
+     ]
+    },
+    "portfolio_overlap": 12,
+    "portfolio_structures": {
+     "discrete": {
+      "3-3": 7,
+      "4-2": 6,
+      "5-1": 7
+     },
+     "legacy": {
+      "3-3": 4,
+      "4-2": 9,
+      "5-1": 7
+     }
+    },
+    "shared_first_ratio_top200": 0.94,
+    "split_haircut_pp": -0.233,
+    "top01_best_abs_diff_pp": 0.2683,
+    "top01_best_se_pp": 0.0987,
+    "top1_best_abs_diff_pp": 0.386,
+    "top1_best_se_pp": 0.249,
+    "top20_overlap": 19,
+    "top20_rank_move_max": 7,
+    "top20_rank_move_median": 2.0,
+    "top20_same_captain_slots": 4,
+    "top20_slots_identical": 3,
+    "top20_structures": {
+     "discrete": {
+      "3-3": 1,
+      "4-2": 2,
+      "5-1": 17
+     },
+     "legacy": {
+      "3-3": 1,
+      "4-2": 2,
+      "5-1": 17
+     }
+    }
+   },
+   "discrete": {
+    "best": {
+     "ev": 36.38,
+     "ev_notie": 1046.95,
+     "split_haircut_pct": 96.525,
+     "top01_pct": 0.9153,
+     "top01_se_pct": 0.0869,
+     "top1_pct": 7.692,
+     "top1_se_pct": 0.243
+    },
+    "build": {
+     "chunk_worlds": 351,
+     "peak_rss_mb": 2060.0,
+     "pool_seconds": 2.7,
+     "portfolio_seconds": 77.7,
+     "score_seconds": 302.5
+    },
+    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
+    "discrete_version": 2,
+    "draft_group_id": 153085,
+    "enterable": 13838,
+    "enterable_structures": {
+     "3-3": 4899,
+     "4-2": 6823,
+     "5-1": 2116
+    },
+    "entries": 87145,
+    "entry_fee": 15.0,
+    "field_beta": 0.3708,
+    "legal_lineups": 427048,
+    "mode": "discrete",
+    "players": 22,
+    "portfolio": {
+     "captains": [
+      {
+       "entries": 9,
+       "name": "Jaxson Dart"
+      },
+      {
+       "entries": 6,
+       "name": "Javonte Williams"
+      },
+      {
+       "entries": 4,
+       "name": "Dak Prescott"
+      },
+      {
+       "entries": 1,
+       "name": "Cam Skattebo"
+      }
+     ],
+     "entries": [
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 36.38,
+       "ev_notie": 1046.95,
+       "flex": [
+        "Cam Skattebo",
+        "Isaiah Likely",
+        "Javonte Williams",
+        "Malik Nabers",
+        "Najee Harris"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9153,
+       "top1_pct": 7.692,
+       "win_any_pct": 0.40859,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 744.39,
+       "ev_notie": 840.0,
+       "flex": [
+        "CeeDee Lamb",
+        "Darnell Mooney",
+        "George Pickens",
+        "Jake Ferguson",
+        "Ryan Flournoy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 2.7122,
+       "top1_pct": 7.637,
+       "win_any_pct": 0.24329,
+       "win_sole_pct": 0.15495
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 50.17,
+       "ev_notie": 1116.07,
+       "flex": [
+        "Cam Skattebo",
+        "Giants",
+        "Javonte Williams",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.4326,
+       "top1_pct": 6.994,
+       "win_any_pct": 0.43399,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Cam Skattebo",
+       "captain_pos": "RB",
+       "captain_team": "NYG",
+       "ev": 109.53,
+       "ev_notie": 507.51,
+       "flex": [
+        "CeeDee Lamb",
+        "George Pickens",
+        "Giants",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 1.2403,
+       "top1_pct": 5.599,
+       "win_any_pct": 0.18075,
+       "win_sole_pct": 1e-05
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 310.87,
+       "ev_notie": 445.96,
+       "flex": [
+        "Brandon Aubrey",
+        "Cowboys",
+        "Dak Prescott",
+        "George Pickens",
+        "Isaiah Likely"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.1354,
+       "top1_pct": 4.65,
+       "win_any_pct": 0.13813,
+       "win_sole_pct": 0.03342
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 46.11,
+       "ev_notie": 506.59,
+       "flex": [
+        "Cam Skattebo",
+        "Cowboys",
+        "Darnell Mooney",
+        "Jaxson Dart",
+        "Malik Nabers"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.7235,
+       "top1_pct": 4.201,
+       "win_any_pct": 0.19208,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 30.89,
+       "ev_notie": 226.02,
+       "flex": [
+        "George Pickens",
+        "Javonte Williams",
+        "Jaxson Dart",
+        "Najee Harris",
+        "Ryan Flournoy"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.7243,
+       "top1_pct": 5.699,
+       "win_any_pct": 0.07531,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 89.9,
+       "ev_notie": 674.2,
+       "flex": [
+        "Dak Prescott",
+        "Darnell Mooney",
+        "Isaiah Likely",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9453,
+       "top1_pct": 4.188,
+       "win_any_pct": 0.25995,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 55.71,
+       "ev_notie": 1220.07,
+       "flex": [
+        "Cam Skattebo",
+        "Darnell Mooney",
+        "Dominic Zvada",
+        "Javonte Williams",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.3313,
+       "top1_pct": 6.198,
+       "win_any_pct": 0.47577,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 28.6,
+       "ev_notie": 181.43,
+       "flex": [
+        "CeeDee Lamb",
+        "George Pickens",
+        "Jaxson Dart",
+        "Najee Harris",
+        "Ryan Flournoy"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.5514,
+       "top1_pct": 3.585,
+       "win_any_pct": 0.0653,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 18.58,
+       "ev_notie": 266.7,
+       "flex": [
+        "Cam Skattebo",
+        "Dak Prescott",
+        "Jake Ferguson",
+        "Javonte Williams",
+        "Najee Harris"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.2768,
+       "top1_pct": 2.357,
+       "win_any_pct": 0.1,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 27.18,
+       "ev_notie": 375.93,
+       "flex": [
+        "George Pickens",
+        "Giants",
+        "Javonte Williams",
+        "Malik Nabers",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.3872,
+       "top1_pct": 2.97,
+       "win_any_pct": 0.14209,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 106.37,
+       "ev_notie": 237.74,
+       "flex": [
+        "Cam Skattebo",
+        "CeeDee Lamb",
+        "Cowboys",
+        "Dak Prescott",
+        "Najee Harris"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.9978,
+       "top1_pct": 4.624,
+       "win_any_pct": 0.0693,
+       "win_sole_pct": 0.0018
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 20.63,
+       "ev_notie": 140.56,
+       "flex": [
+        "Cam Skattebo",
+        "CeeDee Lamb",
+        "Dak Prescott",
+        "Najee Harris",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.3253,
+       "top1_pct": 3.329,
+       "win_any_pct": 0.05001,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 21.53,
+       "ev_notie": 139.02,
+       "flex": [
+        "CeeDee Lamb",
+        "Giants",
+        "Isaiah Likely",
+        "Jake Ferguson",
+        "Javonte Williams"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.3089,
+       "top1_pct": 2.209,
+       "win_any_pct": 0.0458,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 29.42,
+       "ev_notie": 264.15,
+       "flex": [
+        "Brandon Aubrey",
+        "Cam Skattebo",
+        "Javonte Williams",
+        "Jaxson Dart",
+        "Najee Harris"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.4597,
+       "top1_pct": 3.01,
+       "win_any_pct": 0.10002,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 33.33,
+       "ev_notie": 436.84,
+       "flex": [
+        "Cam Skattebo",
+        "Dominic Zvada",
+        "George Pickens",
+        "Giants",
+        "Javonte Williams"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.6844,
+       "top1_pct": 3.563,
+       "win_any_pct": 0.16487,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 68.74,
+       "ev_notie": 262.58,
+       "flex": [
+        "Cowboys",
+        "Isaiah Likely",
+        "Jaxson Dart",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.7579,
+       "top1_pct": 3.565,
+       "win_any_pct": 0.09481,
+       "win_sole_pct": 3e-05
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 192.55,
+       "ev_notie": 455.74,
+       "flex": [
+        "CeeDee Lamb",
+        "Cowboys",
+        "Jake Ferguson",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.3801,
+       "top1_pct": 5.649,
+       "win_any_pct": 0.15179,
+       "win_sole_pct": 0.00239
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 18.75,
+       "ev_notie": 201.37,
+       "flex": [
+        "Cam Skattebo",
+        "Dak Prescott",
+        "Darnell Mooney",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.2422,
+       "top1_pct": 2.034,
+       "win_any_pct": 0.075,
+       "win_sole_pct": 0.0
+      }
+     ],
+     "exposure": [
+      {
+       "name": "Jaxson Dart",
+       "slots": 17
+      },
+      {
+       "name": "Javonte Williams",
+       "slots": 15
+      },
+      {
+       "name": "Cam Skattebo",
+       "slots": 11
+      },
+      {
+       "name": "Dak Prescott",
+       "slots": 10
+      },
+      {
+       "name": "Ryan Flournoy",
+       "slots": 8
+      },
+      {
+       "name": "Malik Nabers",
+       "slots": 7
+      },
+      {
+       "name": "Najee Harris",
+       "slots": 7
+      },
+      {
+       "name": "CeeDee Lamb",
+       "slots": 7
+      },
+      {
+       "name": "George Pickens",
+       "slots": 7
+      },
+      {
+       "name": "Isaiah Likely",
+       "slots": 5
+      },
+      {
+       "name": "Darnell Mooney",
+       "slots": 5
+      },
+      {
+       "name": "Giants",
+       "slots": 5
+      }
+     ],
+     "k": 20,
+     "p_any_top1_pct": 61.44,
+     "structures": {
+      "3-3": 7,
+      "4-2": 6,
+      "5-1": 7
+     }
+    },
+    "seed": 20260912,
+    "sim_stamp": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 12000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "tie": {
+     "max_shared_first_pct_top200": 0.475772,
+     "mean_any_first_pct_top200": 0.065787,
+     "mean_shared_first_pct_top200": 0.046709,
+     "mean_sole_first_pct_top200": 0.019079
+    },
+    "top20": [
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 36.38,
+      "ev_notie": 1046.95,
+      "flex": [
+       "Cam Skattebo",
+       "Isaiah Likely",
+       "Javonte Williams",
+       "Malik Nabers",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 0.9153,
+      "top1_pct": 7.692,
+      "win_any_pct": 0.40859,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 744.39,
+      "ev_notie": 840.0,
+      "flex": [
+       "CeeDee Lamb",
+       "Darnell Mooney",
+       "George Pickens",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.7122,
+      "top1_pct": 7.637,
+      "win_any_pct": 0.24329,
+      "win_sole_pct": 0.15495
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 558.01,
+      "ev_notie": 613.3,
+      "flex": [
+       "Dak Prescott",
+       "Darnell Mooney",
+       "George Pickens",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.6865,
+      "top1_pct": 7.024,
+      "win_any_pct": 0.15595,
+      "win_sole_pct": 0.11221
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 50.17,
+      "ev_notie": 1116.07,
+      "flex": [
+       "Cam Skattebo",
+       "Giants",
+       "Javonte Williams",
+       "Malachi Fields",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4326,
+      "top1_pct": 6.994,
+      "win_any_pct": 0.43399,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "George Pickens",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 343.06,
+      "ev_notie": 372.54,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "Darnell Mooney",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.3926,
+      "top1_pct": 6.565,
+      "win_any_pct": 0.07627,
+      "win_sole_pct": 0.05502
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 504.86,
+      "ev_notie": 531.59,
+      "flex": [
+       "CeeDee Lamb",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.213,
+      "top1_pct": 6.505,
+      "win_any_pct": 0.14579,
+      "win_sole_pct": 0.12063
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 55.71,
+      "ev_notie": 1220.07,
+      "flex": [
+       "Cam Skattebo",
+       "Darnell Mooney",
+       "Dominic Zvada",
+       "Javonte Williams",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3313,
+      "top1_pct": 6.198,
+      "win_any_pct": 0.47577,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 440.16,
+      "ev_notie": 458.13,
+      "flex": [
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.2019,
+      "top1_pct": 6.139,
+      "win_any_pct": 0.11856,
+      "win_sole_pct": 0.10258
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 724.05,
+      "ev_notie": 772.38,
+      "flex": [
+       "Brandon Aubrey",
+       "CeeDee Lamb",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.1474,
+      "top1_pct": 6.067,
+      "win_any_pct": 0.24294,
+      "win_sole_pct": 0.19637
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 408.27,
+      "ev_notie": 441.25,
+      "flex": [
+       "CeeDee Lamb",
+       "Cowboys",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.1389,
+      "top1_pct": 6.054,
+      "win_any_pct": 0.10852,
+      "win_sole_pct": 0.08317
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 357.6,
+      "ev_notie": 374.78,
+      "flex": [
+       "Cowboys",
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9344,
+      "top1_pct": 5.767,
+      "win_any_pct": 0.0894,
+      "win_sole_pct": 0.07571
+     },
+     {
+      "captain": "Cam Skattebo",
+      "captain_pos": "RB",
+      "captain_team": "NYG",
+      "ev": 333.75,
+      "ev_notie": 454.88,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "George Pickens",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "4-2",
+      "top01_pct": 1.7536,
+      "top1_pct": 5.736,
+      "win_any_pct": 0.12884,
+      "win_sole_pct": 0.03745
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 195.82,
+      "ev_notie": 432.43,
+      "flex": [
+       "Brandon Aubrey",
+       "George Pickens",
+       "Jake Ferguson",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.5029,
+      "top1_pct": 5.713,
+      "win_any_pct": 0.13725,
+      "win_sole_pct": 0.00327
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 30.89,
+      "ev_notie": 226.02,
+      "flex": [
+       "George Pickens",
+       "Javonte Williams",
+       "Jaxson Dart",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "4-2",
+      "top01_pct": 0.7243,
+      "top1_pct": 5.699,
+      "win_any_pct": 0.07531,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 192.55,
+      "ev_notie": 455.74,
+      "flex": [
+       "CeeDee Lamb",
+       "Cowboys",
+       "Jake Ferguson",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3801,
+      "top1_pct": 5.649,
+      "win_any_pct": 0.15179,
+      "win_sole_pct": 0.00239
+     },
+     {
+      "captain": "Cam Skattebo",
+      "captain_pos": "RB",
+      "captain_team": "NYG",
+      "ev": 109.53,
+      "ev_notie": 507.51,
+      "flex": [
+       "CeeDee Lamb",
+       "George Pickens",
+       "Giants",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "3-3",
+      "top01_pct": 1.2403,
+      "top1_pct": 5.599,
+      "win_any_pct": 0.18075,
+      "win_sole_pct": 1e-05
+     },
+     {
+      "captain": "George Pickens",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 337.99,
+      "ev_notie": 352.43,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9495,
+      "top1_pct": 5.595,
+      "win_any_pct": 0.08302,
+      "win_sole_pct": 0.07217
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 352.82,
+      "ev_notie": 384.27,
+      "flex": [
+       "CeeDee Lamb",
+       "Cowboys",
+       "George Pickens",
+       "Malachi Fields",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.8102,
+      "top1_pct": 5.57,
+      "win_any_pct": 0.09367,
+      "win_sole_pct": 0.06801
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 537.31,
+      "ev_notie": 569.99,
+      "flex": [
+       "Brandon Aubrey",
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9143,
+      "top1_pct": 5.51,
+      "win_any_pct": 0.16079,
+      "win_sole_pct": 0.13327
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 69.81,
+      "ev_notie": 1097.17,
+      "flex": [
+       "Cam Skattebo",
+       "Dominic Zvada",
+       "Giants",
+       "Javonte Williams",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.0777,
+      "top1_pct": 5.441,
+      "win_any_pct": 0.4263,
+      "win_sole_pct": 0.0
+     }
+    ],
+    "top20_structures": {
+     "3-3": 1,
+     "4-2": 2,
+     "5-1": 17
+    },
+    "worlds": 12000
+   },
+   "legacy": {
+    "best": {
+     "ev": 42.3,
+     "ev_notie": 1304.69,
+     "split_haircut_pct": 96.758,
+     "top01_pct": 1.1836,
+     "top01_se_pct": 0.0987,
+     "top1_pct": 8.078,
+     "top1_se_pct": 0.249
+    },
+    "build": {
+     "chunk_worlds": 351,
+     "peak_rss_mb": 2064.2,
+     "pool_seconds": 2.1,
+     "portfolio_seconds": 77.5,
+     "score_seconds": 307.2
+    },
+    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
+    "discrete_version": 2,
+    "draft_group_id": 153085,
+    "enterable": 13838,
+    "enterable_structures": {
+     "3-3": 4899,
+     "4-2": 6823,
+     "5-1": 2116
+    },
+    "entries": 87145,
+    "entry_fee": 15.0,
+    "field_beta": 0.3708,
+    "legal_lineups": 427048,
+    "mode": "legacy",
+    "players": 22,
+    "portfolio": {
+     "captains": [
+      {
+       "entries": 10,
+       "name": "Jaxson Dart"
+      },
+      {
+       "entries": 5,
+       "name": "Javonte Williams"
+      },
+      {
+       "entries": 3,
+       "name": "Dak Prescott"
+      },
+      {
+       "entries": 2,
+       "name": "Cam Skattebo"
+      }
+     ],
+     "entries": [
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 42.3,
+       "ev_notie": 1304.69,
+       "flex": [
+        "Cam Skattebo",
+        "Isaiah Likely",
+        "Javonte Williams",
+        "Malik Nabers",
+        "Najee Harris"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.1836,
+       "top1_pct": 8.078,
+       "win_any_pct": 0.51,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 545.09,
+       "ev_notie": 609.81,
+       "flex": [
+        "CeeDee Lamb",
+        "Darnell Mooney",
+        "George Pickens",
+        "Jake Ferguson",
+        "Ryan Flournoy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 2.7127,
+       "top1_pct": 7.346,
+       "win_any_pct": 0.1566,
+       "win_sole_pct": 0.10084
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 45.59,
+       "ev_notie": 905.35,
+       "flex": [
+        "Cam Skattebo",
+        "Giants",
+        "Javonte Williams",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.0951,
+       "top1_pct": 6.729,
+       "win_any_pct": 0.35058,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Cam Skattebo",
+       "captain_pos": "RB",
+       "captain_team": "NYG",
+       "ev": 140.53,
+       "ev_notie": 666.06,
+       "flex": [
+        "CeeDee Lamb",
+        "George Pickens",
+        "Giants",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 1.2366,
+       "top1_pct": 5.282,
+       "win_any_pct": 0.24167,
+       "win_sole_pct": 1e-05
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 48.2,
+       "ev_notie": 523.96,
+       "flex": [
+        "Cam Skattebo",
+        "Cowboys",
+        "Darnell Mooney",
+        "Jaxson Dart",
+        "Malik Nabers"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.7292,
+       "top1_pct": 4.506,
+       "win_any_pct": 0.19757,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 42.76,
+       "ev_notie": 414.81,
+       "flex": [
+        "George Pickens",
+        "Javonte Williams",
+        "Jaxson Dart",
+        "Najee Harris",
+        "Ryan Flournoy"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.9451,
+       "top1_pct": 5.884,
+       "win_any_pct": 0.1545,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 55.06,
+       "ev_notie": 1099.82,
+       "flex": [
+        "Cam Skattebo",
+        "Darnell Mooney",
+        "Dominic Zvada",
+        "Javonte Williams",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.2376,
+       "top1_pct": 6.512,
+       "win_any_pct": 0.42802,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 71.96,
+       "ev_notie": 135.61,
+       "flex": [
+        "Cam Skattebo",
+        "CeeDee Lamb",
+        "Cowboys",
+        "Dak Prescott",
+        "Najee Harris"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.8118,
+       "top1_pct": 4.427,
+       "win_any_pct": 0.0394,
+       "win_sole_pct": 0.00143
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 77.71,
+       "ev_notie": 524.05,
+       "flex": [
+        "Dak Prescott",
+        "Darnell Mooney",
+        "Isaiah Likely",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.8934,
+       "top1_pct": 4.117,
+       "win_any_pct": 0.19674,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 59.95,
+       "ev_notie": 304.97,
+       "flex": [
+        "Brandon Aubrey",
+        "Cowboys",
+        "Dak Prescott",
+        "Isaiah Likely",
+        "Jaxson Dart"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.7944,
+       "top1_pct": 3.459,
+       "win_any_pct": 0.10111,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 21.76,
+       "ev_notie": 141.13,
+       "flex": [
+        "CeeDee Lamb",
+        "George Pickens",
+        "Giants",
+        "Javonte Williams",
+        "Najee Harris"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.2992,
+       "top1_pct": 2.865,
+       "win_any_pct": 0.05004,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 19.39,
+       "ev_notie": 273.24,
+       "flex": [
+        "Cam Skattebo",
+        "Dak Prescott",
+        "Jake Ferguson",
+        "Javonte Williams",
+        "Najee Harris"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.3017,
+       "top1_pct": 2.55,
+       "win_any_pct": 0.10072,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 35.77,
+       "ev_notie": 395.09,
+       "flex": [
+        "Isaiah Likely",
+        "Jake Ferguson",
+        "Javonte Williams",
+        "Malachi Fields",
+        "Malik Nabers"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.8295,
+       "top1_pct": 4.351,
+       "win_any_pct": 0.15001,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 25.64,
+       "ev_notie": 225.59,
+       "flex": [
+        "Cam Skattebo",
+        "CeeDee Lamb",
+        "Dak Prescott",
+        "Najee Harris",
+        "Ryan Flournoy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.3638,
+       "top1_pct": 3.154,
+       "win_any_pct": 0.0834,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 23.82,
+       "ev_notie": 219.38,
+       "flex": [
+        "Cam Skattebo",
+        "Cowboys",
+        "George Pickens",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.3516,
+       "top1_pct": 2.747,
+       "win_any_pct": 0.07866,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 40.66,
+       "ev_notie": 312.78,
+       "flex": [
+        "Cam Skattebo",
+        "Darnell Mooney",
+        "George Pickens",
+        "Giants",
+        "Malik Nabers"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.5604,
+       "top1_pct": 3.628,
+       "win_any_pct": 0.11698,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Dak Prescott",
+       "captain_pos": "QB",
+       "captain_team": "DAL",
+       "ev": 112.36,
+       "ev_notie": 258.29,
+       "flex": [
+        "CeeDee Lamb",
+        "Cowboys",
+        "Jake Ferguson",
+        "Jaxson Dart",
+        "Ryan Flournoy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.2893,
+       "top1_pct": 5.737,
+       "win_any_pct": 0.07762,
+       "win_sole_pct": 0.0011
+      },
+      {
+       "captain": "Cam Skattebo",
+       "captain_pos": "RB",
+       "captain_team": "NYG",
+       "ev": 20.28,
+       "ev_notie": 285.32,
+       "flex": [
+        "Dak Prescott",
+        "Isaiah Likely",
+        "Javonte Williams",
+        "Jaxson Dart",
+        "Najee Harris"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.3386,
+       "top1_pct": 2.46,
+       "win_any_pct": 0.10833,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaxson Dart",
+       "captain_pos": "QB",
+       "captain_team": "NYG",
+       "ev": 26.49,
+       "ev_notie": 506.7,
+       "flex": [
+        "Cam Skattebo",
+        "Javonte Williams",
+        "Malachi Fields",
+        "Malik Nabers",
+        "Ryan Flournoy"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.5399,
+       "top1_pct": 4.163,
+       "win_any_pct": 0.19274,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Javonte Williams",
+       "captain_pos": "RB",
+       "captain_team": "DAL",
+       "ev": 109.18,
+       "ev_notie": 372.77,
+       "flex": [
+        "Cam Skattebo",
+        "Dak Prescott",
+        "George Pickens",
+        "Jake Ferguson",
+        "Najee Harris"
+       ],
+       "structure": "4-2",
+       "top01_pct": 1.1723,
+       "top1_pct": 5.051,
+       "win_any_pct": 0.12872,
+       "win_sole_pct": 9e-05
+      }
+     ],
+     "exposure": [
+      {
+       "name": "Jaxson Dart",
+       "slots": 17
+      },
+      {
+       "name": "Javonte Williams",
+       "slots": 14
+      },
+      {
+       "name": "Cam Skattebo",
+       "slots": 13
+      },
+      {
+       "name": "Dak Prescott",
+       "slots": 10
+      },
+      {
+       "name": "Malik Nabers",
+       "slots": 8
+      },
+      {
+       "name": "Najee Harris",
+       "slots": 8
+      },
+      {
+       "name": "George Pickens",
+       "slots": 7
+      },
+      {
+       "name": "Ryan Flournoy",
+       "slots": 7
+      },
+      {
+       "name": "CeeDee Lamb",
+       "slots": 6
+      },
+      {
+       "name": "Isaiah Likely",
+       "slots": 5
+      },
+      {
+       "name": "Darnell Mooney",
+       "slots": 5
+      },
+      {
+       "name": "Jake Ferguson",
+       "slots": 5
+      }
+     ],
+     "k": 20,
+     "p_any_top1_pct": 61.28,
+     "structures": {
+      "3-3": 4,
+      "4-2": 9,
+      "5-1": 7
+     }
+    },
+    "sim_stamp": {
+     "discrete_version": 0,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+     "kicker": "extra points and field goals off the offense, then rescaled to the projection",
+     "lattice": "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)",
+     "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+     "model": "legacy-latent",
+     "n": 12000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "tie": {
+     "max_shared_first_pct_top200": 0.509998,
+     "mean_any_first_pct_top200": 0.067649,
+     "mean_shared_first_pct_top200": 0.049665,
+     "mean_sole_first_pct_top200": 0.017985
+    },
+    "top20": [
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 42.3,
+      "ev_notie": 1304.69,
+      "flex": [
+       "Cam Skattebo",
+       "Isaiah Likely",
+       "Javonte Williams",
+       "Malik Nabers",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1836,
+      "top1_pct": 8.078,
+      "win_any_pct": 0.51,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 545.09,
+      "ev_notie": 609.81,
+      "flex": [
+       "CeeDee Lamb",
+       "Darnell Mooney",
+       "George Pickens",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.7127,
+      "top1_pct": 7.346,
+      "win_any_pct": 0.1566,
+      "win_sole_pct": 0.10084
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 45.59,
+      "ev_notie": 905.35,
+      "flex": [
+       "Cam Skattebo",
+       "Giants",
+       "Javonte Williams",
+       "Malachi Fields",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.0951,
+      "top1_pct": 6.729,
+      "win_any_pct": 0.35058,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 543.11,
+      "ev_notie": 590.47,
+      "flex": [
+       "Dak Prescott",
+       "Darnell Mooney",
+       "George Pickens",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.5299,
+      "top1_pct": 6.624,
+      "win_any_pct": 0.16133,
+      "win_sole_pct": 0.11762
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 55.06,
+      "ev_notie": 1099.82,
+      "flex": [
+       "Cam Skattebo",
+       "Darnell Mooney",
+       "Dominic Zvada",
+       "Javonte Williams",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.2376,
+      "top1_pct": 6.512,
+      "win_any_pct": 0.42802,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "George Pickens",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 393.76,
+      "ev_notie": 427.51,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "Darnell Mooney",
+       "Jake Ferguson",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.1091,
+      "top1_pct": 6.224,
+      "win_any_pct": 0.10422,
+      "win_sole_pct": 0.07509
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 515.39,
+      "ev_notie": 541.08,
+      "flex": [
+       "CeeDee Lamb",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.1562,
+      "top1_pct": 6.165,
+      "win_any_pct": 0.15277,
+      "win_sole_pct": 0.12864
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 842.45,
+      "ev_notie": 885.31,
+      "flex": [
+       "Brandon Aubrey",
+       "CeeDee Lamb",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.3101,
+      "top1_pct": 6.149,
+      "win_any_pct": 0.27575,
+      "win_sole_pct": 0.2304
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 241.11,
+      "ev_notie": 530.66,
+      "flex": [
+       "Brandon Aubrey",
+       "George Pickens",
+       "Jake Ferguson",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.6784,
+      "top1_pct": 6.085,
+      "win_any_pct": 0.17552,
+      "win_sole_pct": 0.00429
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 408.17,
+      "ev_notie": 427.56,
+      "flex": [
+       "CeeDee Lamb",
+       "Cowboys",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.0276,
+      "top1_pct": 6.048,
+      "win_any_pct": 0.10656,
+      "win_sole_pct": 0.08979
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 42.76,
+      "ev_notie": 414.81,
+      "flex": [
+       "George Pickens",
+       "Javonte Williams",
+       "Jaxson Dart",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "4-2",
+      "top01_pct": 0.9451,
+      "top1_pct": 5.884,
+      "win_any_pct": 0.1545,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Dak Prescott",
+      "captain_pos": "QB",
+      "captain_team": "DAL",
+      "ev": 112.36,
+      "ev_notie": 258.29,
+      "flex": [
+       "CeeDee Lamb",
+       "Cowboys",
+       "Jake Ferguson",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.2893,
+      "top1_pct": 5.737,
+      "win_any_pct": 0.07762,
+      "win_sole_pct": 0.0011
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 65.08,
+      "ev_notie": 935.33,
+      "flex": [
+       "Cam Skattebo",
+       "Dominic Zvada",
+       "Giants",
+       "Javonte Williams",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1319,
+      "top1_pct": 5.671,
+      "win_any_pct": 0.36236,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 461.9,
+      "ev_notie": 478.08,
+      "flex": [
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.0562,
+      "top1_pct": 5.62,
+      "win_any_pct": 0.12532,
+      "win_sole_pct": 0.11019
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 377.84,
+      "ev_notie": 390.9,
+      "flex": [
+       "Cowboys",
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9158,
+      "top1_pct": 5.563,
+      "win_any_pct": 0.10193,
+      "win_sole_pct": 0.08963
+     },
+     {
+      "captain": "Jaxson Dart",
+      "captain_pos": "QB",
+      "captain_team": "NYG",
+      "ev": 88.35,
+      "ev_notie": 595.87,
+      "flex": [
+       "Darnell Mooney",
+       "Isaiah Likely",
+       "Javonte Williams",
+       "Malachi Fields",
+       "Malik Nabers"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.0395,
+      "top1_pct": 5.506,
+      "win_any_pct": 0.22579,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "CeeDee Lamb",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 582.7,
+      "ev_notie": 606.01,
+      "flex": [
+       "Brandon Aubrey",
+       "Dak Prescott",
+       "George Pickens",
+       "Jake Ferguson",
+       "Najee Harris"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9838,
+      "top1_pct": 5.44,
+      "win_any_pct": 0.17069,
+      "win_sole_pct": 0.14779
+     },
+     {
+      "captain": "Cam Skattebo",
+      "captain_pos": "RB",
+      "captain_team": "NYG",
+      "ev": 222.45,
+      "ev_notie": 299.88,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "George Pickens",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "4-2",
+      "top01_pct": 1.4586,
+      "top1_pct": 5.324,
+      "win_any_pct": 0.08322,
+      "win_sole_pct": 0.02423
+     },
+     {
+      "captain": "Cam Skattebo",
+      "captain_pos": "RB",
+      "captain_team": "NYG",
+      "ev": 140.53,
+      "ev_notie": 666.06,
+      "flex": [
+       "CeeDee Lamb",
+       "George Pickens",
+       "Giants",
+       "Jaxson Dart",
+       "Ryan Flournoy"
+      ],
+      "structure": "3-3",
+      "top01_pct": 1.2366,
+      "top1_pct": 5.282,
+      "win_any_pct": 0.24167,
+      "win_sole_pct": 1e-05
+     },
+     {
+      "captain": "George Pickens",
+      "captain_pos": "WR",
+      "captain_team": "DAL",
+      "ev": 300.35,
+      "ev_notie": 310.03,
+      "flex": [
+       "CeeDee Lamb",
+       "Dak Prescott",
+       "Jake Ferguson",
+       "Najee Harris",
+       "Ryan Flournoy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.7377,
+      "top1_pct": 5.281,
+      "win_any_pct": 0.07456,
+      "win_sole_pct": 0.06592
+     }
+    ],
+    "top20_structures": {
+     "3-3": 1,
+     "4-2": 2,
+     "5-1": 17
+    },
+    "worlds": 12000
+   }
+  },
+  "153086": {
+   "delta": {
+    "build": {
+     "peak_rss_mb": [
+      2188.6,
+      2190.8
+     ],
+     "pool_seconds": [
+      2.2,
+      2.9
+     ],
+     "score_seconds": [
+      536.3,
+      554.4
+     ]
+    },
+    "ev_best_pct_diff": -7.36,
+    "portfolio_captains": {
+     "Bo Nix": [
+      8,
+      9
+     ],
+     "Courtland Sutton": [
+      1,
+      0
+     ],
+     "Jaylen Waddle": [
+      2,
+      2
+     ],
+     "Kenneth Walker III": [
+      3,
+      4
+     ],
+     "Patrick Mahomes": [
+      4,
+      4
+     ],
+     "Rashee Rice": [
+      2,
+      1
+     ]
+    },
+    "portfolio_overlap": 15,
+    "portfolio_structures": {
+     "discrete": {
+      "3-3": 4,
+      "4-2": 5,
+      "5-1": 11
+     },
+     "legacy": {
+      "3-3": 1,
+      "4-2": 7,
+      "5-1": 12
+     }
+    },
+    "shared_first_ratio_top200": 1.07,
+    "split_haircut_pp": 0.254,
+    "top01_best_abs_diff_pp": 0.0855,
+    "top01_best_se_pp": 0.1282,
+    "top1_best_abs_diff_pp": 0.382,
+    "top1_best_se_pp": 0.248,
+    "top20_overlap": 17,
+    "top20_rank_move_max": 8,
+    "top20_rank_move_median": 2.0,
+    "top20_same_captain_slots": 9,
+    "top20_slots_identical": 4,
+    "top20_structures": {
+     "discrete": {
+      "4-2": 2,
+      "5-1": 18
+     },
+     "legacy": {
+      "4-2": 1,
+      "5-1": 19
+     }
+    }
+   },
+   "discrete": {
+    "best": {
+     "ev": 212.29,
+     "ev_notie": 1361.69,
+     "split_haircut_pct": 84.41,
+     "top01_pct": 2.0116,
+     "top01_se_pct": 0.1282,
+     "top1_pct": 7.655,
+     "top1_se_pct": 0.243
+    },
+    "build": {
+     "chunk_worlds": 193,
+     "peak_rss_mb": 2190.8,
+     "pool_seconds": 2.9,
+     "portfolio_seconds": 134.9,
+     "score_seconds": 554.4
+    },
+    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "discrete_version": 2,
+    "draft_group_id": 153086,
+    "enterable": 23820,
+    "enterable_structures": {
+     "3-3": 8490,
+     "4-2": 11710,
+     "5-1": 3620
+    },
+    "entries": 88235,
+    "entry_fee": 20.0,
+    "field_beta": 0.4536,
+    "legal_lineups": 777056,
+    "mode": "discrete",
+    "players": 24,
+    "portfolio": {
+     "captains": [
+      {
+       "entries": 9,
+       "name": "Bo Nix"
+      },
+      {
+       "entries": 4,
+       "name": "Patrick Mahomes"
+      },
+      {
+       "entries": 4,
+       "name": "Kenneth Walker III"
+      },
+      {
+       "entries": 2,
+       "name": "Jaylen Waddle"
+      },
+      {
+       "entries": 1,
+       "name": "Rashee Rice"
+      }
+     ],
+     "entries": [
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 212.29,
+       "ev_notie": 1361.69,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "Harrison Butker",
+        "Rashee Rice",
+        "Travis Kelce"
+       ],
+       "structure": "5-1",
+       "top01_pct": 2.0116,
+       "top1_pct": 7.655,
+       "win_any_pct": 0.25046,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 56.79,
+       "ev_notie": 1077.43,
+       "flex": [
+        "Broncos",
+        "Jaylen Waddle",
+        "Kenneth Walker III",
+        "Pat Bryant",
+        "RJ Harvey"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9976,
+       "top1_pct": 5.987,
+       "win_any_pct": 0.20872,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 105.77,
+       "ev_notie": 1928.94,
+       "flex": [
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.5154,
+       "top1_pct": 5.865,
+       "win_any_pct": 0.37701,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 247.56,
+       "ev_notie": 671.77,
+       "flex": [
+        "Chiefs",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Rashee Rice",
+        "Travis Kelce"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.4402,
+       "top1_pct": 6.488,
+       "win_any_pct": 0.11471,
+       "win_sole_pct": 0.00166
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 82.67,
+       "ev_notie": 1004.58,
+       "flex": [
+        "Broncos",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Rashee Rice",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.1154,
+       "top1_pct": 4.777,
+       "win_any_pct": 0.18835,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaylen Waddle",
+       "captain_pos": "WR",
+       "captain_team": "DEN",
+       "ev": 32.34,
+       "ev_notie": 770.36,
+       "flex": [
+        "Bo Nix",
+        "J.K. Dobbins",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "RJ Harvey"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.5404,
+       "top1_pct": 4.143,
+       "win_any_pct": 0.15,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 35.7,
+       "ev_notie": 597.85,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Pat Bryant"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.4901,
+       "top1_pct": 3.621,
+       "win_any_pct": 0.11556,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 38.02,
+       "ev_notie": 282.96,
+       "flex": [
+        "Bo Nix",
+        "J.K. Dobbins",
+        "Pat Bryant",
+        "Rashee Rice",
+        "Xavier Worthy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.6175,
+       "top1_pct": 4.548,
+       "win_any_pct": 0.05133,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaylen Waddle",
+       "captain_pos": "WR",
+       "captain_team": "DEN",
+       "ev": 82.59,
+       "ev_notie": 1484.08,
+       "flex": [
+        "Bo Nix",
+        "Broncos",
+        "Courtland Sutton",
+        "Kenneth Walker III",
+        "Pat Bryant"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.8858,
+       "top1_pct": 5.548,
+       "win_any_pct": 0.29175,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 153.64,
+       "ev_notie": 681.92,
+       "flex": [
+        "Chiefs",
+        "Harrison Butker",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Kenneth Walker III"
+       ],
+       "structure": "4-2",
+       "top01_pct": 1.2912,
+       "top1_pct": 5.513,
+       "win_any_pct": 0.11745,
+       "win_sole_pct": 3e-05
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 29.75,
+       "ev_notie": 944.24,
+       "flex": [
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Travis Kelce"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.4455,
+       "top1_pct": 4.27,
+       "win_any_pct": 0.18349,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 58.27,
+       "ev_notie": 166.6,
+       "flex": [
+        "Broncos",
+        "RJ Harvey",
+        "Rashee Rice",
+        "Travis Kelce",
+        "Xavier Worthy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.559,
+       "top1_pct": 3.094,
+       "win_any_pct": 0.02734,
+       "win_sole_pct": 0.00014
+      },
+      {
+       "captain": "Rashee Rice",
+       "captain_pos": "WR",
+       "captain_team": "KC",
+       "ev": 349.86,
+       "ev_notie": 486.57,
+       "flex": [
+        "Chiefs",
+        "J.K. Dobbins",
+        "Patrick Mahomes",
+        "Travis Kelce",
+        "Xavier Worthy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.671,
+       "top1_pct": 6.414,
+       "win_any_pct": 0.07254,
+       "win_sole_pct": 0.02386
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 72.74,
+       "ev_notie": 1481.74,
+       "flex": [
+        "Courtland Sutton",
+        "Harrison Butker",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.9486,
+       "top1_pct": 4.539,
+       "win_any_pct": 0.29171,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 89.6,
+       "ev_notie": 1700.86,
+       "flex": [
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Kenneth Walker III",
+        "Pat Bryant",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.1085,
+       "top1_pct": 5.685,
+       "win_any_pct": 0.33407,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 62.0,
+       "ev_notie": 1096.49,
+       "flex": [
+        "Broncos",
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Rashee Rice"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.1109,
+       "top1_pct": 5.745,
+       "win_any_pct": 0.21205,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 31.91,
+       "ev_notie": 560.29,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.3037,
+       "top1_pct": 2.925,
+       "win_any_pct": 0.1084,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 38.42,
+       "ev_notie": 199.28,
+       "flex": [
+        "Bo Nix",
+        "Harrison Butker",
+        "J.K. Dobbins",
+        "Pat Bryant",
+        "Patrick Mahomes"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.5471,
+       "top1_pct": 3.731,
+       "win_any_pct": 0.03402,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 66.56,
+       "ev_notie": 318.95,
+       "flex": [
+        "Chiefs",
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Rashee Rice"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.5076,
+       "top1_pct": 3.238,
+       "win_any_pct": 0.05912,
+       "win_sole_pct": 1e-05
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 52.93,
+       "ev_notie": 778.55,
+       "flex": [
+        "Broncos",
+        "Courtland Sutton",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Travis Kelce"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.7433,
+       "top1_pct": 4.52,
+       "win_any_pct": 0.15037,
+       "win_sole_pct": 0.0
+      }
+     ],
+     "exposure": [
+      {
+       "name": "Bo Nix",
+       "slots": 16
+      },
+      {
+       "name": "Jaylen Waddle",
+       "slots": 14
+      },
+      {
+       "name": "Pat Bryant",
+       "slots": 14
+      },
+      {
+       "name": "Patrick Mahomes",
+       "slots": 11
+      },
+      {
+       "name": "J.K. Dobbins",
+       "slots": 10
+      },
+      {
+       "name": "Rashee Rice",
+       "slots": 8
+      },
+      {
+       "name": "Kenneth Walker III",
+       "slots": 8
+      },
+      {
+       "name": "Chiefs",
+       "slots": 7
+      },
+      {
+       "name": "Courtland Sutton",
+       "slots": 7
+      },
+      {
+       "name": "Travis Kelce",
+       "slots": 6
+      },
+      {
+       "name": "Broncos",
+       "slots": 6
+      },
+      {
+       "name": "Harrison Butker",
+       "slots": 4
+      }
+     ],
+     "k": 20,
+     "p_any_top1_pct": 62.1,
+     "structures": {
+      "3-3": 4,
+      "4-2": 5,
+      "5-1": 11
+     }
+    },
+    "sim_stamp": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 12000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "tie": {
+     "max_shared_first_pct_top200": 0.377011,
+     "mean_any_first_pct_top200": 0.06181,
+     "mean_shared_first_pct_top200": 0.053379,
+     "mean_sole_first_pct_top200": 0.008431
+    },
+    "top20": [
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 212.29,
+      "ev_notie": 1361.69,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.0116,
+      "top1_pct": 7.655,
+      "win_any_pct": 0.25046,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 373.84,
+      "ev_notie": 1013.61,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.7705,
+      "top1_pct": 7.273,
+      "win_any_pct": 0.18243,
+      "win_sole_pct": 0.00379
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 504.2,
+      "ev_notie": 748.42,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9833,
+      "top1_pct": 7.018,
+      "win_any_pct": 0.11169,
+      "win_sole_pct": 0.03002
+     },
+     {
+      "captain": "Kenneth Walker III",
+      "captain_pos": "RB",
+      "captain_team": "KC",
+      "ev": 247.56,
+      "ev_notie": 671.77,
+      "flex": [
+       "Chiefs",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4402,
+      "top1_pct": 6.488,
+      "win_any_pct": 0.11471,
+      "win_sole_pct": 0.00166
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 381.05,
+      "ev_notie": 1030.48,
+      "flex": [
+       "Chiefs",
+       "Harrison Butker",
+       "Jaylen Waddle",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.6475,
+      "top1_pct": 6.42,
+      "win_any_pct": 0.18165,
+      "win_sole_pct": 0.00377
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 349.86,
+      "ev_notie": 486.57,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Patrick Mahomes",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.671,
+      "top1_pct": 6.414,
+      "win_any_pct": 0.07254,
+      "win_sole_pct": 0.02386
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 106.64,
+      "ev_notie": 225.19,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4555,
+      "top1_pct": 6.314,
+      "win_any_pct": 0.03296,
+      "win_sole_pct": 0.00115
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 908.06,
+      "ev_notie": 1091.34,
+      "flex": [
+       "Harrison Butker",
+       "J.K. Dobbins",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.8393,
+      "top1_pct": 6.182,
+      "win_any_pct": 0.18538,
+      "win_sole_pct": 0.1097
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 127.05,
+      "ev_notie": 493.99,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Rashee Rice",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3351,
+      "top1_pct": 6.16,
+      "win_any_pct": 0.08551,
+      "win_sole_pct": 0.0001
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 94.83,
+      "ev_notie": 478.78,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.206,
+      "top1_pct": 6.041,
+      "win_any_pct": 0.08142,
+      "win_sole_pct": 1e-05
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 56.79,
+      "ev_notie": 1077.43,
+      "flex": [
+       "Broncos",
+       "Jaylen Waddle",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "RJ Harvey"
+      ],
+      "structure": "5-1",
+      "top01_pct": 0.9976,
+      "top1_pct": 5.987,
+      "win_any_pct": 0.20872,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 538.11,
+      "ev_notie": 749.5,
+      "flex": [
+       "Chiefs",
+       "RJ Harvey",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.6984,
+      "top1_pct": 5.984,
+      "win_any_pct": 0.12531,
+      "win_sole_pct": 0.0443
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 105.77,
+      "ev_notie": 1928.94,
+      "flex": [
+       "Courtland Sutton",
+       "Jaylen Waddle",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Wil Lutz"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.5154,
+      "top1_pct": 5.865,
+      "win_any_pct": 0.37701,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 47.13,
+      "ev_notie": 298.58,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "J.K. Dobbins",
+       "Rashee Rice"
+      ],
+      "structure": "4-2",
+      "top01_pct": 0.8668,
+      "top1_pct": 5.749,
+      "win_any_pct": 0.05321,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 62.0,
+      "ev_notie": 1096.49,
+      "flex": [
+       "Broncos",
+       "Courtland Sutton",
+       "Jaylen Waddle",
+       "Pat Bryant",
+       "Rashee Rice"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1109,
+      "top1_pct": 5.745,
+      "win_any_pct": 0.21205,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 207.05,
+      "ev_notie": 357.54,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Kenneth Walker III",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.2447,
+      "top1_pct": 5.717,
+      "win_any_pct": 0.05973,
+      "win_sole_pct": 0.00878
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 106.7,
+      "ev_notie": 174.26,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1577,
+      "top1_pct": 5.703,
+      "win_any_pct": 0.02122,
+      "win_sole_pct": 0.00249
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 89.6,
+      "ev_notie": 1700.86,
+      "flex": [
+       "J.K. Dobbins",
+       "Jaylen Waddle",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Wil Lutz"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1085,
+      "top1_pct": 5.685,
+      "win_any_pct": 0.33407,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 262.56,
+      "ev_notie": 415.02,
+      "flex": [
+       "Harrison Butker",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3043,
+      "top1_pct": 5.602,
+      "win_any_pct": 0.06708,
+      "win_sole_pct": 0.01418
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 155.59,
+      "ev_notie": 287.51,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "RJ Harvey",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "4-2",
+      "top01_pct": 1.25,
+      "top1_pct": 5.556,
+      "win_any_pct": 0.04247,
+      "win_sole_pct": 0.00372
+     }
+    ],
+    "top20_structures": {
+     "4-2": 2,
+     "5-1": 18
+    },
+    "worlds": 12000
+   },
+   "legacy": {
+    "best": {
+     "ev": 229.16,
+     "ev_notie": 1446.31,
+     "split_haircut_pct": 84.156,
+     "top01_pct": 1.9261,
+     "top01_se_pct": 0.1255,
+     "top1_pct": 8.037,
+     "top1_se_pct": 0.248
+    },
+    "build": {
+     "chunk_worlds": 193,
+     "peak_rss_mb": 2188.6,
+     "pool_seconds": 2.2,
+     "portfolio_seconds": 129.8,
+     "score_seconds": 536.3
+    },
+    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "discrete_version": 2,
+    "draft_group_id": 153086,
+    "enterable": 23820,
+    "enterable_structures": {
+     "3-3": 8490,
+     "4-2": 11710,
+     "5-1": 3620
+    },
+    "entries": 88235,
+    "entry_fee": 20.0,
+    "field_beta": 0.4536,
+    "legal_lineups": 777056,
+    "mode": "legacy",
+    "players": 24,
+    "portfolio": {
+     "captains": [
+      {
+       "entries": 8,
+       "name": "Bo Nix"
+      },
+      {
+       "entries": 4,
+       "name": "Patrick Mahomes"
+      },
+      {
+       "entries": 3,
+       "name": "Kenneth Walker III"
+      },
+      {
+       "entries": 2,
+       "name": "Jaylen Waddle"
+      },
+      {
+       "entries": 2,
+       "name": "Rashee Rice"
+      },
+      {
+       "entries": 1,
+       "name": "Courtland Sutton"
+      }
+     ],
+     "entries": [
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 229.16,
+       "ev_notie": 1446.31,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "Harrison Butker",
+        "Rashee Rice",
+        "Travis Kelce"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.9261,
+       "top1_pct": 8.037,
+       "win_any_pct": 0.26714,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 45.82,
+       "ev_notie": 711.89,
+       "flex": [
+        "Broncos",
+        "Jaylen Waddle",
+        "Kenneth Walker III",
+        "Pat Bryant",
+        "RJ Harvey"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9596,
+       "top1_pct": 5.728,
+       "win_any_pct": 0.13438,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 112.19,
+       "ev_notie": 2011.95,
+       "flex": [
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.4118,
+       "top1_pct": 5.606,
+       "win_any_pct": 0.39388,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 312.01,
+       "ev_notie": 866.92,
+       "flex": [
+        "Chiefs",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Rashee Rice",
+        "Travis Kelce"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.5431,
+       "top1_pct": 6.944,
+       "win_any_pct": 0.1565,
+       "win_sole_pct": 0.00234
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 91.92,
+       "ev_notie": 1170.99,
+       "flex": [
+        "Broncos",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Rashee Rice",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9893,
+       "top1_pct": 4.882,
+       "win_any_pct": 0.22508,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaylen Waddle",
+       "captain_pos": "WR",
+       "captain_team": "DEN",
+       "ev": 41.95,
+       "ev_notie": 1276.88,
+       "flex": [
+        "Bo Nix",
+        "J.K. Dobbins",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "RJ Harvey"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.697,
+       "top1_pct": 4.355,
+       "win_any_pct": 0.25015,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 28.93,
+       "ev_notie": 375.61,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Pat Bryant"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.4318,
+       "top1_pct": 3.681,
+       "win_any_pct": 0.06873,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Jaylen Waddle",
+       "captain_pos": "WR",
+       "captain_team": "DEN",
+       "ev": 55.66,
+       "ev_notie": 795.19,
+       "flex": [
+        "Bo Nix",
+        "Broncos",
+        "Courtland Sutton",
+        "Kenneth Walker III",
+        "Pat Bryant"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.8432,
+       "top1_pct": 5.311,
+       "win_any_pct": 0.15093,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 47.65,
+       "ev_notie": 406.39,
+       "flex": [
+        "Bo Nix",
+        "J.K. Dobbins",
+        "Pat Bryant",
+        "Rashee Rice",
+        "Xavier Worthy"
+       ],
+       "structure": "3-3",
+       "top01_pct": 0.6184,
+       "top1_pct": 4.335,
+       "win_any_pct": 0.07623,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 151.32,
+       "ev_notie": 688.5,
+       "flex": [
+        "Chiefs",
+        "Harrison Butker",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Kenneth Walker III"
+       ],
+       "structure": "4-2",
+       "top01_pct": 1.1375,
+       "top1_pct": 5.31,
+       "win_any_pct": 0.12468,
+       "win_sole_pct": 3e-05
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 32.91,
+       "ev_notie": 1234.74,
+       "flex": [
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes",
+        "Travis Kelce"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.5737,
+       "top1_pct": 4.301,
+       "win_any_pct": 0.2419,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Rashee Rice",
+       "captain_pos": "WR",
+       "captain_team": "KC",
+       "ev": 211.55,
+       "ev_notie": 301.7,
+       "flex": [
+        "Chiefs",
+        "J.K. Dobbins",
+        "Kenneth Walker III",
+        "Travis Kelce",
+        "Xavier Worthy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.9958,
+       "top1_pct": 5.248,
+       "win_any_pct": 0.04594,
+       "win_sole_pct": 0.01352
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 81.64,
+       "ev_notie": 1566.81,
+       "flex": [
+        "Courtland Sutton",
+        "Harrison Butker",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.9853,
+       "top1_pct": 4.468,
+       "win_any_pct": 0.30845,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 57.32,
+       "ev_notie": 305.71,
+       "flex": [
+        "Broncos",
+        "J.K. Dobbins",
+        "RJ Harvey",
+        "Rashee Rice",
+        "Travis Kelce"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.5675,
+       "top1_pct": 3.48,
+       "win_any_pct": 0.05364,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 80.3,
+       "ev_notie": 1331.22,
+       "flex": [
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Kenneth Walker III",
+        "Pat Bryant",
+        "Wil Lutz"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.136,
+       "top1_pct": 5.397,
+       "win_any_pct": 0.25873,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Patrick Mahomes",
+       "captain_pos": "QB",
+       "captain_team": "KC",
+       "ev": 28.83,
+       "ev_notie": 433.43,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.3143,
+       "top1_pct": 2.752,
+       "win_any_pct": 0.08334,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Kenneth Walker III",
+       "captain_pos": "RB",
+       "captain_team": "KC",
+       "ev": 41.63,
+       "ev_notie": 605.87,
+       "flex": [
+        "Bo Nix",
+        "Chiefs",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "RJ Harvey"
+       ],
+       "structure": "4-2",
+       "top01_pct": 0.6101,
+       "top1_pct": 4.269,
+       "win_any_pct": 0.11668,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Bo Nix",
+       "captain_pos": "QB",
+       "captain_team": "DEN",
+       "ev": 53.04,
+       "ev_notie": 833.86,
+       "flex": [
+        "Broncos",
+        "Courtland Sutton",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Rashee Rice"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.8927,
+       "top1_pct": 4.942,
+       "win_any_pct": 0.15915,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Courtland Sutton",
+       "captain_pos": "WR",
+       "captain_team": "DEN",
+       "ev": 47.01,
+       "ev_notie": 943.88,
+       "flex": [
+        "Bo Nix",
+        "J.K. Dobbins",
+        "Jaylen Waddle",
+        "Pat Bryant",
+        "Patrick Mahomes"
+       ],
+       "structure": "5-1",
+       "top01_pct": 0.6746,
+       "top1_pct": 3.862,
+       "win_any_pct": 0.18353,
+       "win_sole_pct": 0.0
+      },
+      {
+       "captain": "Rashee Rice",
+       "captain_pos": "WR",
+       "captain_team": "KC",
+       "ev": 349.82,
+       "ev_notie": 454.87,
+       "flex": [
+        "Chiefs",
+        "Patrick Mahomes",
+        "RJ Harvey",
+        "Travis Kelce",
+        "Xavier Worthy"
+       ],
+       "structure": "5-1",
+       "top01_pct": 1.3971,
+       "top1_pct": 5.738,
+       "win_any_pct": 0.06802,
+       "win_sole_pct": 0.02839
+      }
+     ],
+     "exposure": [
+      {
+       "name": "Bo Nix",
+       "slots": 16
+      },
+      {
+       "name": "Jaylen Waddle",
+       "slots": 14
+      },
+      {
+       "name": "Pat Bryant",
+       "slots": 14
+      },
+      {
+       "name": "Patrick Mahomes",
+       "slots": 11
+      },
+      {
+       "name": "J.K. Dobbins",
+       "slots": 10
+      },
+      {
+       "name": "Chiefs",
+       "slots": 8
+      },
+      {
+       "name": "Rashee Rice",
+       "slots": 8
+      },
+      {
+       "name": "Kenneth Walker III",
+       "slots": 8
+      },
+      {
+       "name": "Travis Kelce",
+       "slots": 6
+      },
+      {
+       "name": "Courtland Sutton",
+       "slots": 6
+      },
+      {
+       "name": "Broncos",
+       "slots": 5
+      },
+      {
+       "name": "RJ Harvey",
+       "slots": 5
+      }
+     ],
+     "k": 20,
+     "p_any_top1_pct": 62.37,
+     "structures": {
+      "3-3": 1,
+      "4-2": 7,
+      "5-1": 12
+     }
+    },
+    "sim_stamp": {
+     "discrete_version": 0,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+     "kicker": "extra points and field goals off the offense, then rescaled to the projection",
+     "lattice": "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)",
+     "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+     "model": "legacy-latent",
+     "n": 12000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "tie": {
+     "max_shared_first_pct_top200": 0.393878,
+     "mean_any_first_pct_top200": 0.059205,
+     "mean_shared_first_pct_top200": 0.050066,
+     "mean_sole_first_pct_top200": 0.009139
+    },
+    "top20": [
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 229.16,
+      "ev_notie": 1446.31,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9261,
+      "top1_pct": 8.037,
+      "win_any_pct": 0.26714,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 186.71,
+      "ev_notie": 431.28,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.7243,
+      "top1_pct": 7.912,
+      "win_any_pct": 0.06309,
+      "win_sole_pct": 0.00147
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 470.16,
+      "ev_notie": 681.21,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 2.1076,
+      "top1_pct": 7.389,
+      "win_any_pct": 0.1064,
+      "win_sole_pct": 0.03115
+     },
+     {
+      "captain": "Kenneth Walker III",
+      "captain_pos": "RB",
+      "captain_team": "KC",
+      "ev": 312.01,
+      "ev_notie": 866.92,
+      "flex": [
+       "Chiefs",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.5431,
+      "top1_pct": 6.944,
+      "win_any_pct": 0.1565,
+      "win_sole_pct": 0.00234
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 134.34,
+      "ev_notie": 293.72,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4272,
+      "top1_pct": 6.769,
+      "win_any_pct": 0.04608,
+      "win_sole_pct": 0.0016
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 414.33,
+      "ev_notie": 1088.84,
+      "flex": [
+       "Chiefs",
+       "Harrison Butker",
+       "Jaylen Waddle",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.5285,
+      "top1_pct": 6.606,
+      "win_any_pct": 0.20091,
+      "win_sole_pct": 0.00469
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 76.0,
+      "ev_notie": 315.66,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.173,
+      "top1_pct": 6.519,
+      "win_any_pct": 0.04772,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 419.98,
+      "ev_notie": 581.8,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Patrick Mahomes",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.7451,
+      "top1_pct": 6.492,
+      "win_any_pct": 0.0893,
+      "win_sole_pct": 0.02992
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 890.9,
+      "ev_notie": 1048.87,
+      "flex": [
+       "Harrison Butker",
+       "J.K. Dobbins",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.9314,
+      "top1_pct": 6.296,
+      "win_any_pct": 0.16477,
+      "win_sole_pct": 0.10002
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 557.2,
+      "ev_notie": 757.07,
+      "flex": [
+       "Chiefs",
+       "RJ Harvey",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.7395,
+      "top1_pct": 6.29,
+      "win_any_pct": 0.12174,
+      "win_sole_pct": 0.04576
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 328.77,
+      "ev_notie": 512.01,
+      "flex": [
+       "Harrison Butker",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.5236,
+      "top1_pct": 6.175,
+      "win_any_pct": 0.081,
+      "win_sole_pct": 0.01752
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 202.88,
+      "ev_notie": 339.55,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Kenneth Walker III",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3135,
+      "top1_pct": 6.102,
+      "win_any_pct": 0.05187,
+      "win_sole_pct": 0.00763
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 132.38,
+      "ev_notie": 460.27,
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Harrison Butker",
+       "Rashee Rice",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4815,
+      "top1_pct": 6.101,
+      "win_any_pct": 0.07372,
+      "win_sole_pct": 0.0001
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 200.75,
+      "ev_notie": 363.1,
+      "flex": [
+       "Chiefs",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Rashee Rice",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.1211,
+      "top1_pct": 5.891,
+      "win_any_pct": 0.06102,
+      "win_sole_pct": 0.00715
+     },
+     {
+      "captain": "Rashee Rice",
+      "captain_pos": "WR",
+      "captain_team": "KC",
+      "ev": 349.82,
+      "ev_notie": 454.87,
+      "flex": [
+       "Chiefs",
+       "Patrick Mahomes",
+       "RJ Harvey",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3971,
+      "top1_pct": 5.738,
+      "win_any_pct": 0.06802,
+      "win_sole_pct": 0.02839
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 268.17,
+      "ev_notie": 401.63,
+      "flex": [
+       "Chiefs",
+       "Courtland Sutton",
+       "Rashee Rice",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.3339,
+      "top1_pct": 5.731,
+      "win_any_pct": 0.0649,
+      "win_sole_pct": 0.01652
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 45.82,
+      "ev_notie": 711.89,
+      "flex": [
+       "Broncos",
+       "Jaylen Waddle",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "RJ Harvey"
+      ],
+      "structure": "5-1",
+      "top01_pct": 0.9596,
+      "top1_pct": 5.728,
+      "win_any_pct": 0.13438,
+      "win_sole_pct": 0.0
+     },
+     {
+      "captain": "Patrick Mahomes",
+      "captain_pos": "QB",
+      "captain_team": "KC",
+      "ev": 127.77,
+      "ev_notie": 225.72,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "RJ Harvey",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "structure": "4-2",
+      "top01_pct": 1.0771,
+      "top1_pct": 5.723,
+      "win_any_pct": 0.03091,
+      "win_sole_pct": 0.00281
+     },
+     {
+      "captain": "Kenneth Walker III",
+      "captain_pos": "RB",
+      "captain_team": "KC",
+      "ev": 273.7,
+      "ev_notie": 471.3,
+      "flex": [
+       "Chiefs",
+       "J.K. Dobbins",
+       "Patrick Mahomes",
+       "Travis Kelce",
+       "Xavier Worthy"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.324,
+      "top1_pct": 5.653,
+      "win_any_pct": 0.07257,
+      "win_sole_pct": 0.00993
+     },
+     {
+      "captain": "Bo Nix",
+      "captain_pos": "QB",
+      "captain_team": "DEN",
+      "ev": 112.19,
+      "ev_notie": 2011.95,
+      "flex": [
+       "Courtland Sutton",
+       "Jaylen Waddle",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Wil Lutz"
+      ],
+      "structure": "5-1",
+      "top01_pct": 1.4118,
+      "top1_pct": 5.606,
+      "win_any_pct": 0.39388,
+      "win_sole_pct": 0.0
+     }
+    ],
+    "top20_structures": {
+     "4-2": 1,
+     "5-1": 19
+    },
+    "worlds": 12000
+   }
+  }
+ },
+ "meta": {
+  "boards": [
+   153086,
+   153085
+  ],
+  "money_gate": "CLOSED -- payout columns are diagnostics, not forecasts",
+  "n_sims": 12000,
+  "provenance": {
+   "commit": "f41ea02",
+   "data_split": null,
+   "dirty": true,
+   "model": "legacy vs legacy-discrete",
+   "seed": 20260912,
+   "source_files": 26,
+   "source_sha": "7d7dd97f9bda4b086a94c5603eb4be37049af1c337fde05d85ed9b891f566ca1",
+   "worlds": 12000
+  },
+  "seed": 20260912,
+  "stage": "live showdown A/B, legacy vs legacy-latent-discrete (NOT promoted)"
+ }
+}
