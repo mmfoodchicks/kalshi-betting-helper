@@ -1,0 +1,45 @@
+{
+ "draft_groups": {
+  "153085": {
+   "contests": {
+    "bytes": 182099,
+    "file": "contests_153085.json",
+    "normalization_version": 1,
+    "records": 14,
+    "retrieved_ts": 1789252124,
+    "sha256": "b8b837a828dbc5add6d43f5424b1079da4f0f5ae98426e3a47c4b28f8c506eb1",
+    "source": "dk.contests + dk.contest_detail (nfl, 153085)"
+   },
+   "slate": {
+    "bytes": 11518,
+    "file": "slate_153085.json",
+    "normalization_version": 1,
+    "records": 51,
+    "retrieved_ts": 1789252113,
+    "sha256": "cdb9b01ccc38b034770db65d6192958fa6c2e893d8e9979370107cee281bca88",
+    "source": "dk.slate_for(nfl, 153085)"
+   }
+  },
+  "153086": {
+   "contests": {
+    "bytes": 188141,
+    "file": "contests_153086.json",
+    "normalization_version": 1,
+    "records": 13,
+    "retrieved_ts": 1789252112,
+    "sha256": "9d621182f0075d6a28992791169ee689833dfc811fb328bba3215167e436039d",
+    "source": "dk.contests + dk.contest_detail (nfl, 153086)"
+   },
+   "slate": {
+    "bytes": 11832,
+    "file": "slate_153086.json",
+    "normalization_version": 1,
+    "records": 55,
+    "retrieved_ts": 1789252093,
+    "sha256": "16fcb742cecedff6ebf12fe182d7e4bbd65001ab9c5f994af5011c1941d5bdb4",
+    "source": "dk.slate_for(nfl, 153086)"
+   }
+  }
+ },
+ "normalization_version": 1
+}
