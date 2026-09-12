@@ -1113,8 +1113,15 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} available players "
                          f"(got {len(ents)} after dropping OUT/IR)"}
     teams = {e.get("team") for e in ents if e.get("team")}
+    # Showdown serves the discrete scorer on BOTH of its surfaces. Leaving the
+    # sheet on the old one would have the builder and the tournament board
+    # disagree about the same game, which is worse than either choice: the
+    # lineups this emits would be scored on a support the board says is illegal.
+    # Classic is untouched -- nfl_dfs_sim.SD_DISCRETE is read here and in
+    # dfs_tourney.build_nfl_showdown, nowhere else.
     pool = nfl_dfs_sim.player_pool(week, n=_SD_SIMS, preseason=preseason,
-                                   teams=teams) or {}
+                                   teams=teams,
+                                   discrete=nfl_dfs_sim.SD_DISCRETE) or {}
     _nidx, _norm = _norm_index(pool)
     _deep = _deep_fallback(pool, preseason)
     unmatched, excluded = [], []
@@ -1240,6 +1247,10 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             "lineup": rows, "contest_sim": csim,
             "entries": entries, "n_entries": len(entries),
             "rules": list(_SD_RULES), "n_sims": _SD_SIMS,
+            # which model made these worlds, so a sheet can be audited for its
+            # simulator the way a tournament board already can
+            "simulator": nfl_dfs_sim.sim_stamp(n=_SD_SIMS, preseason=preseason,
+                                               discrete=nfl_dfs_sim.SD_DISCRETE),
             "unmatched": unmatched[:20], "n_pool": len(ents),
             "excluded": excluded[:40], "n_excluded": len(excluded),
             "teams": teams,

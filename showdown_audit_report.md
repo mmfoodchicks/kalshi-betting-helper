@@ -20,16 +20,28 @@ wrong board, and all three are fixed: a Showdown board could not be
 invalidated by an engine change, its pool signature could not see a price or a
 status, and a failed rebuild burned its retry window.
 
-One finding is worse than the review framed it. Showdown's first-place column
-is a sole-win probability, so it is decided by how often scores tie, and 47%
-of the simulated scores cannot occur under DraftKings scoring at all. That is
-measured, in every position, kickers and defenses included.
+One finding is worse than the review framed it, and its severity is smaller
+than the first measurement of it suggested. Showdown's first-place column is a
+sole-win probability, so it is decided by how often scores tie, and 47% of the
+simulated scores could not occur under DraftKings scoring at all — measured in
+every position, kickers and defenses included. **That is fixed and the fix is
+now served for Showdown** (sections Y2-Y6). But the severity claim came down
+twice on the way: from "probably halves ties" (never measured, withdrawn), to
+6.14x between two player scores, to 2.36x between two lineup totals, to
+**×1.07 and ×0.94** on the chance first place is actually shared on two live
+88,000-entry contests — because a field that concentrated already shares first
+place 84% and 96.8% of the time. The defect was worth fixing because it was
+wrong, not because it was costly.
 
-The money columns now carry a gate. It is shut, for two independent reasons.
+The money columns now carry a gate. It is shut, on one link: the field model is
+a placeholder taken from a single published contest. That link now looks like
+the larger of the two problems by a wide margin — if 84-97% of first places are
+shared, the model of the public drives payout economics far more than the
+scoring grid ever did.
 
-No strategy default changed. No simulator was promoted. Classic is untouched
-except through shared code, and the shared change is proved inert for Classic
-by guard.
+One simulator was promoted, for Showdown only and for correctness only. No
+strategy default changed. Classic is untouched, and byte-identical on a seeded
+digest of its whole pool.
 
 ---
 
@@ -252,17 +264,24 @@ outright winner. That is a limitation of the test board, not a finding about
 the modes. It needs a real slate's lineup diversity to measure, and it is the
 single column most exposed to the defect.
 
-**What this changes.** The lattice defect is a **money** defect, not a
-strategy one, on the evidence so far: the ranking the owner reads did not move
-in a single slot, while the payout moved about 6% and the tie rate by 6x. That
-is consistent with the money gate being shut and the ranks being the thing to
-read.
+**What this changes — and the part of it that was later retracted.** On this
+controlled board the ranking did not move in a single slot while the payout moved
+about 6% and the tie rate 6x, which read as a money defect rather than a strategy
+one. The first half held up on live boards; **the second half did not.** Section
+Y5 measures the chance first place is actually *shared* on two real 88,000-entry
+contests and finds ×1.07 and ×0.94 — opposite directions, inside reseeding
+noise — because the concentrated field already shares it 84% and 96.8% of the
+time. The tie rate moving 6x between two player scores, and 2.36x between two
+lineup totals, did not translate into a meaningful change in first-place
+splitting. The defect is real; its severity on these boards is not.
 
-**Not promoted.** `discrete` defaults to False in both places it exists, rides
-in the pool's cache key, and neither `build_nfl_showdown` nor
-`build_nfl_classic` accepts it at all, so no production builder can be handed
-it even by mistake. The Classic path is byte-identical: the discrete branch is
-entered only on an explicit argument no production caller passes.
+**Not promoted at `f41ea02`, promoted at the end of this pass.** When this
+section was written the mode was unreachable by design: `discrete` defaulted to
+False, rode in the pool's cache key, and neither board builder accepted it. It
+is now served for **Showdown only** — see section Y6 for the decision and the
+five criteria it rests on. Classic's half of that isolation is unchanged and
+asserted harder: `build_nfl_classic` takes no such argument and the string
+appears nowhere in its body.
 
 **Remaining honest limitation of the mode itself.** Pinning upstream cannot be
 exact the way a multiply is. For players projected at a point or more the
@@ -491,6 +510,244 @@ engine carries, and it is measured in section Y5 as `win_any` minus `win_sole`.
 
 ---
 
+## Y5. Promotion readiness, part 3: the live-board A/B
+
+`research/sd_live_ab.py` → `research/data/sd_live_ab.json` and
+`sd_live_ab_control.json`. Two real boards, the production pipeline both ways
+(`enumerate_showdown`, `field_weights`, `payout_grid`, `run_vs_field`), one
+thing changed: whether the pool came out of the discrete scorer. Each build in
+its own process, so peak memory is that build's.
+
+| | DEN @ KC | DAL @ NYG |
+|---|---|---|
+| Contest | $1.5M Monday Night | $1.11M Sunday Night |
+| Entries / fee | 88,235 / $20 | 87,145 / $15 |
+| Legal lineups | 777,056 | 427,048 |
+| Enterable | 23,820 | 13,838 |
+| Worlds | 12,000 | 12,000 |
+| Field beta | 0.4536 (both arms) | 0.3708 (both arms) |
+
+Beta is identical in both arms because the field model is built on Sleeper
+projections, which the mode does not touch. Every difference below is the
+scorer.
+
+### The severity claim comes DOWN
+
+This is the headline of the section, and it goes the opposite way from the
+controlled board:
+
+| | DEN @ KC | DAL @ NYG | control (reseed only) |
+|---|---|---|---|
+| P(first place shared), ratio | **×1.07** | **×0.94** | ×1.04 |
+| P(first shared) under legacy | **84.2%** | **96.8%** | — |
+
+**The lattice defect materially changes raw lineup tie incidence in controlled
+experiments, but did not materially change shared-first incidence on the two
+tested live boards, because first place was already tied 84% and 96.8% of the
+time under the concentrated field model.** The two boards move in *opposite*
+directions and both sit inside the noise of merely reseeding. Once a field of
+88,000 entries is that concentrated, field size decides tie incidence and the
+scoring grid barely participates.
+
+So the three layers, each measured separately and each smaller than the last:
+
+| Layer | Effect |
+|---|---|
+| Two player scores tying | 6.14x |
+| Two six-player lineup totals tying | 2.36x |
+| First place being shared, live boards | **×1.07 and ×0.94** |
+
+It also reframes the money gate. If the model says 84-97% of first places are
+shared, the uncalibrated **field** model influences payout economics far more
+than the lattice ever did. The lattice was worth fixing because it was wrong,
+not because it was expensive.
+
+### What did move, and what did not
+
+| | DEN @ KC | DAL @ NYG | control |
+|---|---|---|---|
+| Best top 1% | 8.04% → 7.66% (±0.25) | 8.08% → 7.69% (±0.25) | 0.163 pts |
+| Best top 0.1% | 1.926% → 2.012% (±0.13) | 1.184% → 0.915% (±0.13) | **0.289 pts** |
+| Best expected payout | −7.4% | −14.0% | **−0.03%** |
+| Portfolio p_any top 1% | 61.28% → 61.44% | 62.37% → 62.10% | — |
+| Score time | 536s → 554s | 307s → 302s | 524s |
+| Peak RSS | 2,189 → 2,191 MB | 2,064 → 2,060 MB | 2,189 MB |
+
+Read against the control: **top 0.1% is noise** — reseeding the same board moves
+it more (0.289) than the mode change does (0.086). **Expected payout is real** —
+reseeding moves it 0.03% while the mode moves it 7-14%, which is the tie
+correction arriving in the payout column rather than in the shared-first one.
+Top 1% falls ~0.39 points on both boards against a control of 0.163, so it is
+small, consistently signed, and about twice the noise.
+
+One caution the control supplied for free: the analytic binomial standard error
+understates run-to-run variation, because the "best lineup" is a maximum over
+23,820 candidates and carries selection noise on top of sampling noise. The
+control's 0.289-point swing in top 0.1% is 2.2 of those SEs.
+
+### Ordering, captains and structures
+
+| | control (legacy vs legacy) | mode change |
+|---|---|---|
+| Top-20 slots identical | **2 / 20** | **4 / 20** |
+| Top-20 set overlap | 17 / 20 | 17 / 20 |
+| Same captain in slot | 9 / 20 | 9 / 20 |
+| Portfolio overlap | 16 / 20 | 15 / 20 |
+| Rank move, median / max | 1.0 / 5 | 2.0 / 8 |
+
+**The top twenty reorders LESS under the mode change than it does when the same
+board is merely reseeded.** Lineups at the top of a 777,056-lineup universe are
+separated by far less than the ±0.25-point error on each one's top-1%, so that
+reshuffling was always arithmetic. Criterion 4 passes on its own control.
+
+Captain exposure in the selected portfolio, every shift one entry of twenty:
+
+| DEN @ KC | | DAL @ NYG | |
+|---|---|---|---|
+| Bo Nix | 8 → 9 | Jaxson Dart | 10 → 9 |
+| Patrick Mahomes | 4 → 4 | Javonte Williams | 5 → 6 |
+| Kenneth Walker III | 3 → 4 | Dak Prescott | 3 → 4 |
+| Jaylen Waddle | 2 → 2 | Cam Skattebo | 2 → 1 |
+| Rashee Rice | 2 → 1 | | |
+| Courtland Sutton | 1 → 0 | | |
+
+Top-20 team structures are identical on DAL @ NYG (`5-1`:17, `4-2`:2, `3-3`:1)
+and move one lineup on DEN @ KC.
+
+### The one behaviour change that is probably real
+
+The greedy portfolio shifts toward balanced builds on both boards:
+
+| `3-3` entries of 20 | legacy | discrete | control |
+|---|---|---|---|
+| DEN @ KC | 1 | **4** | 2 |
+| DAL @ NYG | 4 | **7** | not run |
+
+The single control moved it by one; the mode moved it by three, in the same
+direction on both slates. Stated carefully, because the evidence does not
+support more: **discrete support produced a modest shift toward balanced 3-3
+portfolios on these two slates, reproducible across both of them and larger
+than the one control run's movement.** It is consistent with same-team stack
+correlation easing (+0.424 → +0.402) while cross-side coupling tightens
+slightly — the direction the Classic research has suggested the old latent
+structure gets wrong — but two slates and one structural control are nowhere
+near enough to infer a strategic rule, and this is **not** a claim that discrete
+scoring favours balanced builds. It is what happened on two boards.
+
+---
+
+## Y6. The promotion decision
+
+### The five criteria, and how each was settled
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| Support exactly valid | **Pass** | 26/26 offensive scores recompute from integer stat lines to 7.1e-15; whole pool legal, K and DST included; captain product exact; engine bucket reproduces the exact total 100.000% |
+| Meaningful means close | **Pass** | absolute error ≤ 0.21 DK points anywhere in the pool; ≤ 1.93% for every player projected ≥ 2; relative error falls monotonically with projection |
+| Correlation not materially regressed | **Pass, practically** | worst move between two rosterable players 0.0209, sitting in the body of a control distribution whose median maximum is 0.0192 and whose own maximum is 0.0273 |
+| Live-board ordering stable | **Pass** | top twenty reorders less than a reseed does (4/20 vs 2/20 identical); captains within one entry of twenty; structures near-identical |
+| Runtime acceptable | **Pass** | +3.4% / −1.6% scoring time, peak memory flat |
+
+On the third, and stated with the care the statistic deserves. A single control's
+observed maximum of 0.0188 was **not** a threshold, and treating it as one would
+have been the same mistake as inferring the tie bias from the grid spacing — the
+maximum of 32 correlated deltas is itself a random variable. So six independent
+legacy runs at the same depth were compared pairwise over the same 32 pairs
+(`research/sd_corr_null.py`):
+
+| max \|Δcorr\| over the 32 rosterable pairs | |
+|---|---|
+| Control comparisons, min | 0.0136 |
+| Control comparisons, median | 0.0192 |
+| Control comparisons, p90 | 0.0221 |
+| Control comparisons, max | 0.0273 |
+| **Observed, legacy vs discrete** | **0.0209** |
+
+**Across the 15 pairwise comparisons formed from six independent legacy runs,
+3/15 control comparisons produced a maximum rosterable-pair correlation change
+at least as large as the discrete-vs-legacy value. Because the pairwise controls
+share underlying runs, 3/15 is an empirical tail fraction rather than an
+independent-sample p-value.** An earlier draft of this section called it
+`p = 0.25`; that gave the number more inferential weight than it earned, and it
+is withdrawn. The practical conclusion is unchanged and sufficient: 0.0209 is
+ordinary simulation-scale variation for this statistic, so criterion 3 passes
+practically. A formal p-value would need disjoint control pairs and several
+times the compute, for a conclusion this evidence already supports.
+
+### Decision: promote, for one reason only
+
+`legacy-latent-discrete` version 2 becomes the Showdown-only production
+simulator. `nfl_dfs_sim.SD_DISCRETE = True`, read at exactly two call sites —
+`dfs_tourney.build_nfl_showdown` and `nfl_dfs._build_showdown` — so the
+tournament board and the lineup sheet cannot disagree about the same game.
+`SD_ENGINE` 2 → 3, so every board built under the old scorer is invalidated and
+rebuilt rather than served beside a new one.
+
+**The reason, in one sentence: `legacy-latent-discrete` v2 is a more correct
+implementation of the existing Showdown football model, because it produces legal
+DraftKings outcomes while preserving that model's strategically meaningful
+distributional behaviour within measured simulation noise.** It is the correct
+implementation of the existing legacy model on DraftKings-valid support. Not any
+of these:
+
+- **not** because expected payout improves — it falls 7-14%, and that is a
+  correction, not a gain;
+- **not** because tie economics improve — live impact on shared-first was
+  negligible and not even consistently signed;
+- **not** because portfolio construction improves — unknown, and two slates
+  cannot say;
+- **not** because the legacy correlation model becomes good — it does not, and
+  nothing here was fitted to anything.
+
+A simulated score DraftKings cannot print is wrong as a model of DraftKings.
+Under legacy, not one of 26 offensive scores recomputed from its own stat line,
+every kicker and defence score was off the legal support, and 54.2% of base
+scores put their captain's 1.5× half a hundredth away from the grid the tie
+arithmetic counts on. That is the whole case.
+
+### What stays fixed
+
+- **Classic is untouched.** `build_nfl_classic` takes no such argument and no
+  classic path passes one; the Classic pool is byte-identical on a seeded digest
+  of all 93 entries; `ENGINE` stays 6.
+- **The money gate stays SHUT, on two links, and one of them is new.** The
+  lattice link closes. `field_model_calibrated` remains false. And a link that
+  was missing from this gate entirely has been added:
+  **`showdown_joint_model_validated`**, also false.
+
+  Closing the lattice link exposed the hole. A legal support is a statement about
+  the *scoring rules*, not about the *football*. Showdown serves legacy-latent,
+  whose teammate covariance and opposing-side/game covariance are exactly the
+  limitations Stage 2B-2F measured — and a six-man single-game roster is *more*
+  exposed to them than a classic lineup, because all six spots come out of one
+  game's covariance. Without the new link, fitting public ownership perfectly
+  would have flipped the gate to authoritative and the app would have announced
+  authoritative EV on a knowingly unvalidated joint distribution. It is a real
+  term in the boolean, not a renamed label, so it cannot be forgotten:
+  `sd_money_gate(field_calibrated=True)` still returns false, and only
+  `field_calibrated=True, joint_validated=True` opens it.
+
+  **Promoting the discrete scorer did not validate the legacy correlation model
+  and is not evidence for it.**
+- **Nothing is claimed about EV, ROI, first place or expected copies.** Rank on
+  top 1% and top 0.1%.
+
+### Known costs, stated rather than buried
+
+1. The mean is no longer exact by construction. Legacy pinned it by fiat; this
+   pins it upstream and reports the residual. Worst case in the pool 0.21 DK
+   points, and below a point of projection the pin cannot move a raw mean of
+   zero at all.
+2. The kicker's pin has a floor: a projection below what his own extra points
+   are worth cannot be reached by kicking less, and the mode overshoots rather
+   than multiplying. A kicker asked for 1.0 lands on 3.4. Real showdown kickers
+   project 5-9 and land within 0.10.
+3. A modest, reproducible shift toward balanced portfolios on two slates
+   (Y5), not understood well enough to be called a strategy improvement.
+4. Expected payout falls 7-14% on live boards. Behind a shut gate either way.
+
+---
+
 ## Z. Every guard repinned in b4e3535, and why none is an accepted regression
 
 Six assertions across five guards changed. Each is listed with what it said,
@@ -546,26 +803,188 @@ one. One (Z5) follows an artifact-shape change and was re-strengthened. One
 (Z6) is my own, corrected within the pass. No assertion was weakened to let
 failing code through.
 
+## Z2. Every guard repinned for the promotion, and why none is an accepted regression
+
+Same four fields as section Z, because the same rule applies: a guard that stops
+failing because the assertion was loosened is a guard that has been disabled.
+
+### Z2.1. `player_pool`'s kicker call and its field-goal Poisson mean
+
+- **Old assertion.** `'arr = _kicker_arr(k, off, n, k_rng)' in _pool_src` and
+  `'_pois(fg_mean * f, rng)' in _sim_src`.
+- **New assertion.** The same two strings in their new shape
+  (`..., discrete=discrete)` and `_pois(fg_mean * scale * f, rng)`), **plus**
+  `def _kicker_arr(k, off, n, rng, discrete=False):` and
+  `def draw(scale=1.0):`.
+- **Contract change.** Threading the discrete mode into the side models moved
+  both call shapes.
+- **Not a regression.** Two assertions were *added*, and they are the two that
+  matter: the defaults `discrete=False` and `scale=1.0` are what keep the legacy
+  draw identical. The old guard pinned the call; the new one also pins the thing
+  that makes the call safe.
+
+### Z2.2. The defence's coin and which generator it draws on
+
+- **Old assertion.** `"+ (1 if _random.random() < frac else 0)" in _sim_src`.
+- **New assertion.** `"+ (1 if _rg.random() < frac else 0)"` plus
+  `"_rg = team_rng.get(team, _random)"`.
+- **Contract change.** The coin was moved onto the team's own generator so a
+  seeded constrained build stays reproducible draw for draw.
+- **Not a regression.** Mine, written earlier in the same session and then
+  invalidated by my own follow-up fix. The new form asserts strictly more: the
+  coin exists *and* it draws on the right generator.
+
+### Z2.3. "Calibrating the field is not enough while the scores are off the lattice"
+
+- **Old assertion.** `sd_money_gate(..., field_calibrated=True)["authoritative"]
+  is False` and exactly **2** of 4 links closed.
+- **New assertion.** The gate is shut today, `field_model_calibrated` is the
+  **only** open link, exactly **3** of 4 closed, an empty universe still cannot
+  open it — and, separately, that with the field calibrated every link *would*
+  close and the gate **would** open.
+- **Contract change.** The clause "while the scores are off the DraftKings
+  lattice" described a defect that no longer exists.
+- **Not a regression.** The invariant it protected — the gate opens only when
+  every link closes, and it is shut now — is asserted unchanged. A second guard
+  was added in the opposite direction, because a gate that can never open is a
+  label rather than a gate, and nothing was previously testing that.
+
+### Z2.4. The lattice link, which had been pinning the defect
+
+- **Old assertion.** `SD_MONEY_LATTICE_OK is False`,
+  `links["scores_on_the_dk_lattice"] is False`, and `"cannot occur under
+  DraftKings scoring" in why`.
+- **New assertion.** All three inverted, plus `"recomputes from an integer stat
+  line"` and `"field model drives the payout economics"` in the gate's text.
+- **Contract change.** The defect is fixed and validated end to end
+  (`research/sd_support`).
+- **Not a regression.** The *audit* this guard was protecting —
+  `research/data/sd_lattice.json`, measured on the legacy pool, 47.35% off the
+  lattice in every position — is asserted **unchanged** directly above it,
+  because it is a record of what was wrong, not a claim about what is. And a
+  new guard was added that the gate must carry the *smaller* live severity
+  figure (×1.07 and ×0.94) rather than the larger controlled one, so nobody can
+  re-inflate it later.
+
+### Z2.5. "The discrete mode cannot reach production"
+
+- **Old assertion.** `"discrete" not in signature(build_nfl_showdown)` and
+  `not in signature(build_nfl_classic)`.
+- **New assertion.** Split into three. The argument still defaults off and
+  still rides in the pool's cache key. Showdown serves it on **both** surfaces
+  through one constant, with the call-site counts pinned. And Classic's half is
+  now `"discrete" not in signature(build_nfl_classic)` **and** the string
+  `discrete` appearing nowhere in the whole `build_nfl_classic` body.
+- **Contract change.** This guard was holding a door shut while the decision
+  behind it was open. Section Y6 answers it, for Showdown only.
+- **Not a regression.** The Classic half is *strengthened*, from "the signature
+  has no such parameter" to "no classic path passes it anywhere". The Showdown
+  half is replaced by a harder assertion than the one removed: not merely that
+  the argument is absent, but that exactly two named call sites pass it and that
+  they are the two that must agree with each other.
+
+### Z2.6. The simulator stamp and the engine
+
+- **Old assertion.** The stamp ends in `-discrete` and carries
+  `DISCRETE_VERSION`; `SD_ENGINE >= 2`.
+- **New assertion.** Both served showdown artifacts — the board and the sheet —
+  call `sim_stamp(..., discrete=nfl_dfs_sim.SD_DISCRETE)`; the model is exactly
+  `legacy-latent-discrete` at `discrete_version` 2; `SD_ENGINE == 3`; a board
+  stamped 2 returns `"engine updated"`; and `ENGINE` is still **6**, so
+  Classic's engine did not move.
+- **Contract change.** A served board's numbers mean something new, so the
+  boards built under the old scorer must be invalidated rather than served
+  beside the new ones.
+- **Not a regression.** Every old clause survives; the new ones add the sheet
+  (which previously stamped nothing at all), the exact version, and the explicit
+  assertion that Classic's engine is unchanged.
+
+### Z2.7. My own call-site count, which counted comments
+
+- **Old assertion.** `_dfs_src_p.count("nfl_dfs_sim.SD_DISCRETE") == 2` and
+  `_nfd_src_p.count(...) == 3`.
+- **New assertion.** `count("discrete=nfl_dfs_sim.SD_DISCRETE") == 2` in both
+  files.
+- **Contract change.** None. The guard was simply wrong: it counted every
+  *mention* of the constant, comments included, so `dfs_tourney` returned 4 and
+  the guard failed against correct code.
+- **Not a regression.** It now counts **call sites**, which is what it was always
+  trying to pin. A comment naming the constant can no longer fail it, and adding
+  a third place that actually passes it still will.
+
+### Z2.8. "The measured figure stands in its place"
+
+- **Old assertion.** `"6.1x" in sd_money_gate(...)["why"]`.
+- **New assertion.** `"x1.07 and x0.94"` in the gate's text, plus the 6.14x and
+  2.36x ratios asserted on their own artifacts
+  (`sd_discrete.json`, `sd_support.json`).
+- **Contract change.** The gate's text now quotes the *live-board* measurements
+  rather than the controlled one, because the live ones are what the gate is
+  describing.
+- **Not a regression.** The requirement was never "the text says 6.1x" — it is
+  "no size is inferred from the grid spacing; a measured figure stands in its
+  place". The assertion now follows the requirement instead of the old number,
+  and the two controlled ratios are still pinned where they were measured. Three
+  assertions where there was one.
+
+### Z2.9. "With the field calibrated it would open" — wrong the day I wrote it
+
+- **Old assertion.** `sd_money_gate(field_calibrated=True)["authoritative"] is
+  True`.
+- **New assertion.** `field_calibrated=True` alone returns **false**;
+  `joint_validated=True` alone returns **false**; only both together return
+  true; and an empty universe still refuses even then.
+- **Contract change.** A fifth link, `showdown_joint_model_validated`, was added
+  to the gate because closing the lattice link exposed that nothing was gating on
+  the *football* model at all.
+- **Not a regression.** This is the one repin where the **old assertion was
+  unsafe**, not merely stale: it asserted that fitting public ownership alone
+  should make the money columns authoritative, which would have announced
+  authoritative EV over a joint distribution Stage 2B-2F measured as limited. The
+  property worth keeping — that the gate is not welded shut — is asserted
+  unchanged, now requiring both links. I wrote the unsafe version earlier in this
+  same pass; the reviewer caught it before it shipped.
+
+**No assertion was weakened to let failing code through.** Three guards failed
+because my own edits moved a contract or my own guard was miscounted (Z2.1, Z2.2,
+Z2.7); five were repinned because the promotion answered the question they were
+holding open (Z2.3-Z2.6, Z2.8); and one, Z2.9, was repinned because it asserted
+something that should never have been true. Every one of the nine asserts at
+least as much as it did before, and Z2.9 asserts something safer.
+
+---
+
 ## V. Production defaults after this pass
 
 | | Value | Why |
 |---|---|---|
-| Showdown simulator | legacy | unchanged; promoting anything is not this pass's call |
-| Showdown engine | `SD_ENGINE = 2` | separate from Classic's 6 |
+| Showdown simulator | **`legacy-latent-discrete` v2** | promoted (section Y6), both showdown surfaces, one switch |
+| Classic simulator | legacy | unchanged, byte-identical on a seeded digest |
+| Showdown engine | `SD_ENGINE = 3` | separate from Classic's 6, which did not move |
 | Showdown pool signature | rich | price, status and id sensitive |
 | Classic pool signature | names only | deliberate; an hour of rebuild for a price tweak is a bad trade |
 | Pre-lock refreshes | T-4h, T-2h, T-1h, T-25m | once each |
-| Showdown money gate | **shut**, two links open | lattice and field model |
+| Showdown money gate | **shut**, two links open | the field model (the elephant) and the joint football model |
 | Classic behaviour | unchanged | proved by guard |
 
 ## U. Remaining limitations and what was not reached
 
-- **S3 now has a working fix that is not yet promoted.** The sentence that
-  stood here -- that a discrete legacy scorer "changes Classic" -- was wrong,
-  and section Y2 says why: the mode is a separate argument Classic never
-  passes, and the Classic path is byte-identical on a seeded digest of the
-  whole pool. `DISCRETE_VERSION` 2 puts the entire Showdown pool on the legal
-  support (section Y4). What remains is the decision to serve it.
+- **S3 is fixed and promoted for Showdown** (sections Y2-Y6). The sentence that
+  stood here -- that a discrete legacy scorer "changes Classic" -- was wrong, and
+  section Y2 says why.
+- **Two money links remain open, and neither is the lattice.** The field model is
+  a placeholder from one published contest, and the Showdown **joint football
+  model** is knowingly limited -- legacy-latent's teammate and opposing-side
+  covariance are what Stage 2B-2F measured as wrong, and a single-game roster is
+  more exposed to them than a classic one. Promoting the discrete scorer fixed
+  the scoring rules and validated nothing about the football.
+- **The live severity of the lattice defect is known for two boards only.** Both
+  were primetime, both had ~88,000 entries and a field the model puts at 84-97%
+  shared first place. A smaller or flatter contest could behave differently, and
+  nothing here measures that.
+- **The portfolio shift toward balanced builds is not understood.** It appeared
+  on both tested slates and exceeded a single structural control. Two slates and
+  one control cannot say whether it generalises, and it is not claimed to.
 - **The kicker's pin has a floor, and it overshoots rather than multiplying.**
   An extra point is one per touchdown his own offense scored in that world, so
   it is not available to scale; a projection below what those extra points are
@@ -584,6 +1003,25 @@ failing code through.
 - **S8 fast-path cleanup** was not reached; the quick builder is unlabelled.
 - **S9 constrained-v2** was not started, correctly, since it sits behind all
   of the above.
+
+## X. Recorded for S7/S9: a validation flag must name what it validated
+
+Both remaining money links are booleans, and neither says what it is a statement
+*about*. `SD_MONEY_JOINT_MODEL_OK` will one day be set by validating a specific
+simulator at a specific version on a specific data split; if it is stored as a
+bare `True`, then serving a later model silently inherits evidence that was never
+collected about it. `SD_MONEY_FIELD_CALIBRATED` has the same shape — "calibrated"
+is only meaningful against the ownership data and the season it was fitted on.
+
+This is the same class of defect as finding S1: a board that could not be told
+its engine had moved. The fix belongs in the S7/S9 provenance work — both links
+recorded as `(model, version, split, date)` and compared against
+`nfl_dfs_sim.sim_stamp()` at gate time, rather than as flags. It is **not** built
+now, on purpose: inventing that contract before S7 has any calibration data to
+shape it would be guessing. Recorded in `dfs_tourney.py` beside the constant so
+the next pass cannot miss it.
+
+---
 
 ## W. Tests
 

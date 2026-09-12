@@ -13966,13 +13966,39 @@ ck("the showdown money gate refuses to call first place, payout, ROI or expected
    and _dt14.SD_MONEY_FIELD_CALIBRATED is False,
    str(_sdg["links"]))
 _sdg_links = ("lineup_universe_exhaustive", "ties_paid_as_the_house_pays_them",
-              "scores_on_the_dk_lattice", "field_model_calibrated")
-ck("the gate opens only when EVERY link closes: an enumerated universe is not enough, and calibrating the field is not enough while the scores are off the DraftKings lattice",
+              "scores_on_the_dk_lattice", "field_model_calibrated",
+              "showdown_joint_model_validated")
+# Repinned on promotion. The old form asserted that calibrating the field would
+# not be enough "while the scores are off the DraftKings lattice" -- and the
+# scores are no longer off it, so that clause had to go. What it was really
+# protecting is intact and still asserted: the gate opens only when EVERY link
+# closes, an enumerated universe alone is not enough, and TODAY it is shut.
+ck("the gate opens only when EVERY link closes: an enumerated universe is not enough, two links are still open, and the gate is shut today",
    all(k in _sdg["links"] for k in _sdg_links)
-   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False
+   and _sdg["authoritative"] is False
+   and sorted(k for k in _sdg_links if not _sdg["links"][k])
+   == ["field_model_calibrated", "showdown_joint_model_validated"]
    and _dt14.sd_money_gate(0, 132_000, field_calibrated=True)["authoritative"] is False
-   and sum(1 for k in _sdg_links if _sdg["links"][k]) == 2,
+   and sum(1 for k in _sdg_links if _sdg["links"][k]) == 3,
    str(_sdg["links"]))
+# Fixing the SCORING rules is not validating the FOOTBALL, and without this link
+# calibrating public ownership alone would have flipped the gate to authoritative
+# while the legacy joint model stayed exactly as unvalidated as Stage 2B-2F found
+# it. A showdown lineup is MORE exposed to that than a classic one: all six spots
+# come out of one game's covariance.
+ck("calibrating the public field alone can NEVER make these columns authoritative, because the football model is a separate link and it is open too",
+   _dt14.SD_MONEY_JOINT_MODEL_OK is False
+   and _sdg["links"]["showdown_joint_model_validated"] is False
+   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False
+   and _dt14.sd_money_gate(486_000, 132_000, joint_validated=True)["authoritative"] is False,
+   "a perfect ownership fit must not announce authoritative EV on an unvalidated joint model")
+ck("and the gate is still not welded shut: with BOTH the field model calibrated and the joint model validated every link closes and it WOULD open",
+   _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True,
+                       joint_validated=True)["authoritative"] is True
+   and _dt14.sd_money_gate(0, 132_000, field_calibrated=True,
+                           joint_validated=True)["authoritative"] is False
+   and _dt14.SD_MONEY_FIELD_CALIBRATED is False,
+   "a gate that can never open is a label, not a gate")
 _sd_src_s2 = open(_os.path.join(_root, "dfs_tourney.py")).read()
 ck("every showdown board carries that gate, so the tab's experimental labelling switches on for showdown exactly as it does for classic",
    '"experimental": sd_money_gate(len(idx), int(contest.get("max_entries")' in _sd_src_s2
@@ -14001,11 +14027,26 @@ ck("the showdown lattice audit is on file and says what the gate quotes: about h
    and all(abs(_sdl_by[p]["worst_residual_steps"] - 0.5) < 1e-6 for p in ("QB", "RB", "WR", "TE", "K", "DST"))
    and _sdl["meta"]["model"] == "legacy",
    str({p: _sdl_by[p]["off_lattice_pct"] for p in ("QB", "RB", "WR", "TE", "K", "DST")}))
-ck("and the board's money gate carries that as its own link, so first place stays experimental for the lattice reason even if the field model were calibrated tomorrow",
-   _dt14.SD_MONEY_LATTICE_OK is False
-   and _dt14.sd_money_gate(486_000, 132_000)["links"]["scores_on_the_dk_lattice"] is False
-   and _dt14.sd_money_gate(486_000, 132_000, field_calibrated=True)["authoritative"] is False
-   and "cannot occur under DraftKings scoring" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+# Repinned on promotion. This guard existed to stop the lattice defect being
+# quietly forgotten while the gate stayed shut for a different reason. It is
+# fixed now, so the assertion becomes its opposite -- and the audit it was
+# guarding (sd_lattice, measured on the legacy pool) is UNCHANGED above, because
+# it is a record of what was wrong, not a claim about what is.
+ck("the lattice link is now CLOSED, and the gate says so for the right reason: the scores are on DraftKings' lattice and the field model is what keeps first place experimental",
+   _dt14.SD_MONEY_LATTICE_OK is True
+   and _dt14.sd_money_gate(486_000, 132_000)["links"]["scores_on_the_dk_lattice"] is True
+   and _dt14.sd_money_gate(486_000, 132_000)["authoritative"] is False
+   and "recomputes from an integer stat line" in _dt14.sd_money_gate(486_000, 132_000)["why"]
+   and "field model drives the payout economics" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+# The severity claim that had to come DOWN. A controlled board said the tie rate
+# moved 6.1x between player scores and 2.36x between lineup totals; the live
+# boards said the chance FIRST PLACE IS SHARED moved x1.07 and x0.94, in
+# opposite directions, because the concentrated field already shares it 84-97%
+# of the time. The gate must carry the smaller number, not the larger one.
+ck("and the gate does not inflate the severity: it says the live boards moved shared-first by about nothing, and names the field model as the bigger influence on the money",
+   "x1.07 and x0.94" in _dt14.sd_money_gate(486_000, 132_000)["why"]
+   and "inside the" in _dt14.sd_money_gate(486_000, 132_000)["why"]
+   and "84-97%" in _dt14.sd_money_gate(486_000, 132_000)["why"])
 ck("the audit records the mechanism it measured rather than asserting one: the per-player multiply, the defense's floating shift, and the rounding that puts both on a 0.01 grid",
    any("proj / raw" in m for m in _sdl["mechanism"])
    and any("floating additive" in m for m in _sdl["mechanism"])
@@ -14021,8 +14062,26 @@ ck("the report keeps the discrete investigation with its measured tie ratio, the
    and "6.14x" in _sdrw
    and "identical, 10 of 10" in _sdrw
    and "Sole-first did not resolve and is reported as not measured" in _sdrw
-   and "Not promoted" in _sdrw
    and "small mean bias" in _sdrw)
+# Repinned on promotion: "Not promoted" could no longer be asserted, and keeping
+# the phrase alive in a historical sentence to satisfy a guard would be gaming
+# it. Replaced by the promotion's own invariants -- including the retraction,
+# which is the claim most at risk of being quietly dropped.
+ck("and it records the promotion for the ONE reason that justifies it, with the three reasons that do not",
+   "It is the correct implementation of the existing legacy model" in _sdrw
+   or "correct implementation of the existing legacy model on DraftKings-valid support" in _sdrw)
+ck("and it RETRACTS the live severity rather than leaving the controlled figure to stand as the cost",
+   "did not materially change shared-first incidence on the two tested live boards" in _sdrw
+   and "84% and 96.8% of the time" in _sdrw
+   and "\u00d71.07" in _sdrw and "\u00d70.94" in _sdrw
+   and "x1.07 and x0.94" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+ck("and it states the portfolio shift as what happened on two slates, NOT as a strategic rule",
+   "modest shift toward balanced 3-3 portfolios on these two slates" in _sdrw
+   and "not** a claim that discrete scoring favours balanced builds" in _sdrw)
+ck("and it keeps the audit of every guard repinned for the promotion too, with the same four fields",
+   "## Z2. Every guard repinned for the promotion" in _sdrw
+   and "No assertion was weakened to let failing code through" in _sdrw
+   and _sdr.count("**Not a regression") >= 11)
 ck("and it keeps the audit of every repinned guard, including the one that had been pinning the defect",
    "### Z4. The engine guard, which had been pinning the defect" in _sdrw
    and "No assertion was weakened to let failing code through" in _sdrw
@@ -14049,6 +14108,7 @@ ck("and it keeps the two places the reviewer was wrong or already satisfied, rat
 # the real damage was the per-player multiply afterwards. Discrete mode keeps
 # the latents, draws whole, and pins the mean upstream.
 _sdd = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_discrete.json")))
+_sds = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_support.json")))
 ck("the discrete counterfactual is on file and puts EVERY score on the DraftKings lattice where the production mode puts about half of them off it",
    _sdd["modes"]["legacy"]["off_lattice_pct"] > 40.0
    and _sdd["modes"]["discrete"]["off_lattice_pct"] == 0.0
@@ -14073,23 +14133,63 @@ ck("and the board-level reading says it is a money defect rather than a strategy
    str(_sdd["board"]["deltas"]))
 # Nothing may be served with it.
 import inspect as _insp_sd
-ck("the discrete mode cannot reach production: it defaults off, it rides in the pool's cache key, and neither board builder accepts the argument at all",
+# Repinned on promotion. The old form held the door shut on the discrete mode
+# entirely -- "neither board builder accepts the argument at all" -- while the
+# question of whether to serve it was open. It is answered now, for SHOWDOWN
+# ONLY, so the assertion becomes the narrower and harder one: the argument still
+# defaults off, still rides in the cache key, and the only two callers that pass
+# it are the two showdown surfaces. Classic's half is UNCHANGED and strengthened
+# -- it is no longer merely "the signature has no such parameter" but "no
+# classic path passes it anywhere".
+_dfs_src_p = open(_os.path.join(_root, "dfs_tourney.py")).read()
+_nfd_src_p = open(_os.path.join(_root, "nfl_dfs.py")).read()
+ck("the discrete mode still defaults off and still rides in the pool's cache key, so nothing gets it by accident",
    _insp_sd.signature(_sim2.simulate_game).parameters["discrete"].default is False
    and _insp_sd.signature(_sim2.player_pool).parameters["discrete"].default is False
-   and "discrete" not in _insp_sd.signature(_dt14.build_nfl_showdown).parameters
-   and "discrete" not in _insp_sd.signature(_dt14.build_nfl_classic).parameters
-   and "bool(discrete)),\n" in open(_os.path.join(_root, "nfl_dfs_sim.py")).read(),
-   "a swept pool must never be handed to a board that asked for the frozen model")
+   and "bool(discrete)),\n" in open(_os.path.join(_root, "nfl_dfs_sim.py")).read())
+ck("SHOWDOWN serves it, on both of its surfaces, through one greppable switch -- the tournament board and the lineup sheet cannot disagree about the same game",
+   _sim2.SD_DISCRETE is True
+   and "discrete=nfl_dfs_sim.SD_DISCRETE) or {}" in _dfs_src_p
+   and "discrete=nfl_dfs_sim.SD_DISCRETE) or {}" in _nfd_src_p
+   # Count CALL SITES, not mentions: a comment naming the constant must not be
+   # able to fail this, and the first version of this guard counted both.
+   and _dfs_src_p.count("discrete=nfl_dfs_sim.SD_DISCRETE") == 2     # the pool and the stamp
+   and _nfd_src_p.count("discrete=nfl_dfs_sim.SD_DISCRETE") == 2,    # the pool and the stamp
+   "one constant, reversible in one line")
+ck("CLASSIC does not, and that is asserted harder than before: its builder takes no such argument AND no classic path passes one anywhere",
+   "discrete" not in _insp_sd.signature(_dt14.build_nfl_classic).parameters
+   and "discrete" not in _dfs_src_p[_dfs_src_p.index("def build_nfl_classic("):],
+   "the Classic pool must be the frozen model, byte for byte")
+ck("every served showdown artifact stamps which model made its worlds, so a board can be audited for its simulator and not only for its numbers",
+   '"simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason,' in _dfs_src_p
+   and "discrete=nfl_dfs_sim.SD_DISCRETE)" in _dfs_src_p
+   and '"simulator": nfl_dfs_sim.sim_stamp(n=_SD_SIMS, preseason=preseason,' in _nfd_src_p
+   and _sim2.sim_stamp(n=1, discrete=True)["model"] == "legacy-latent-discrete"
+   and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == 2)
+ck("and the showdown engine moved, so every board built under the old scorer is invalidated and rebuilt rather than served beside the new ones",
+   _dt14.SD_ENGINE == 3
+   and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
+   and _pw_s1._rebuild_reason(_sdb(engine=2), "AAA", None, {}, 1, None)[0] == "engine updated"
+   and _dt14.ENGINE == 6,                      # classic's engine did NOT move
+   "showdown's numbers mean something new; classic's do not")
 ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
    _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
    and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == _sim2.DISCRETE_VERSION
    and _sim2.sim_stamp(n=1, discrete=False)["discrete_version"] == 0
    and _sim2.sim_stamp(n=1, discrete=False)["model"] == _sim2.SIM_MODEL)
 # The claim that had to be narrowed: nobody may say "about half" again.
-ck("no code or report infers the size of the tie bias from the grid spacing any more; the measured figure stands in its place",
+# Repinned on promotion. The requirement has never been "the text says 6.1x" --
+# it is "no size is inferred from the grid spacing; a MEASURED figure stands in
+# its place". The gate's text now carries the live-board measurements instead of
+# the controlled one, which is a better figure for the same requirement, so the
+# assertion follows the requirement rather than the old number. The 6.1x and
+# 2.36x measurements remain pinned on their own artifacts below.
+ck("no code or report infers the size of the tie bias from the grid spacing any more; a MEASURED figure stands in its place",
    "half as likely" not in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "half as likely" not in open(_os.path.join(_root, "research", "sd_lattice.py")).read()
-   and "6.1x" in _dt14.sd_money_gate(486_000, 132_000)["why"])
+   and "x1.07 and x0.94" in _dt14.sd_money_gate(486_000, 132_000)["why"]
+   and _sdd["deltas"]["tie_rate_ratio"] > 3.0                      # 6.1x, on its artifact
+   and _sds["verdict"]["lineup_tie_rate_ratio"] > 1.0)             # 2.36x, on its artifact
 
 # ======================================================================
 # Showdown: the support, validated to the lineup total (promotion readiness)
@@ -14151,7 +14251,6 @@ ck("the auditor's box-score hook defaults off and no production path asks for it
    and "with_components" not in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "with_components" not in open(_os.path.join(_root, "nfl_dfs.py")).read()
    and "with_components" not in open(_os.path.join(_root, "pc_worker.py")).read())
-_sds = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_support.json")))
 ck("the support validation is on file and is end to end: under discrete EVERY offensive score recomputes from its own integer stat line through DraftKings' scorer, and under legacy NOT ONE of them does",
    _sds["verdict"]["offense_recomputes_exactly"]["discrete"] is True
    and _sds["verdict"]["offense_recomputes_exactly"]["legacy"] is False
@@ -14239,6 +14338,87 @@ ck("the mean residual is banded by projection and behaves like rounding rather t
    > _sdo["means"]["bands"][-1]["rel_err_pct_median"],
    "; ".join(f"{b['band']}: abs {b['abs_err_pts_median']} rel {b['rel_err_pct_median']}%"
              for b in _sdo["means"]["bands"]))
+# ---- the live boards, and the severity that came DOWN -------------------
+# A controlled board can show a defect exists. Only a real one can say what it
+# costs, and here the real ones said "much less than the controlled board
+# implied" -- which is the opposite of the direction these studies usually
+# drift, and the reason both were run.
+_sdnull_ctl = _json2b.load(open(_os.path.join(_root, "research", "data",
+                                                "sd_live_ab_control.json")))
+_sdab = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_live_ab.json")))
+_sdab_b = _sdab["boards"]
+ck("the live A/B is on file for two real primetime boards, built through the production pipeline with only the pool's mode changed",
+   len(_sdab_b) == 2
+   and all(b["legacy"]["legal_lineups"] > 400_000 for b in _sdab_b.values())
+   and all(b["legacy"]["entries"] > 80_000 for b in _sdab_b.values())
+   and all(b["legacy"]["worlds"] >= 12_000 for b in _sdab_b.values())
+   and all(b["legacy"]["field_beta"] == b["discrete"]["field_beta"] for b in _sdab_b.values()),
+   "the field model must be identical in both arms: it is built on Sleeper projections, "
+   "which the mode does not touch")
+ck("and it retracts the severity the controlled board suggested: the chance first place is SHARED barely moved, in opposite directions on the two boards",
+   all(0.85 <= b["delta"]["shared_first_ratio_top200"] <= 1.2 for b in _sdab_b.values())
+   and min(b["delta"]["shared_first_ratio_top200"] for b in _sdab_b.values()) < 1.0
+   and max(b["delta"]["shared_first_ratio_top200"] for b in _sdab_b.values()) > 1.0,
+   str({k: v["delta"]["shared_first_ratio_top200"] for k, v in _sdab_b.items()}))
+ck("because the concentrated field already shares first place most of the time under LEGACY, which is why the grid barely matters and the field model matters more",
+   all(b["legacy"]["best"]["split_haircut_pct"] > 80.0 for b in _sdab_b.values()),
+   str({k: v["legacy"]["best"]["split_haircut_pct"] for k, v in _sdab_b.items()}))
+ck("what a strategy change would have broken first did NOT break: same captains in the portfolio, every exposure within one entry of twenty",
+   all(all(abs(a - b) <= 1 for a, b in d["delta"]["portfolio_captains"].values())
+       for d in _sdab_b.values()),
+   str({k: v["delta"]["portfolio_captains"] for k, v in _sdab_b.items()}))
+ck("and the ordering is stable against its OWN control: the top twenty reorders no more under the mode change than it does when the same board is merely reseeded",
+   _sdnull_ctl["delta"]["top20_slots_identical"] <= _sdab_b["153086"]["delta"]["top20_slots_identical"]
+   and _sdab_b["153086"]["delta"]["top20_overlap"] >= _sdnull_ctl["delta"]["top20_overlap"],
+   f"control {_sdnull_ctl['delta']['top20_slots_identical']}/20 identical, "
+   f"{_sdnull_ctl['delta']['top20_overlap']}/20 overlap; mode change "
+   f"{_sdab_b['153086']['delta']['top20_slots_identical']}/20 and "
+   f"{_sdab_b['153086']['delta']['top20_overlap']}/20")
+ck("runtime and memory are operationally unchanged, so nothing about this promotion costs the PC an evening",
+   all(b["discrete"]["build"]["score_seconds"] < 1.25 * b["legacy"]["build"]["score_seconds"]
+       for b in _sdab_b.values())
+   and all(b["discrete"]["build"]["peak_rss_mb"] < 1.1 * b["legacy"]["build"]["peak_rss_mb"]
+           for b in _sdab_b.values()),
+   str({k: v["delta"]["build"] for k, v in _sdab_b.items()}))
+
+# ---- the null distribution: one observed maximum is not a threshold -------
+# The worst correlation move between two ROSTERABLE players was 0.0209 against a
+# single legacy-vs-legacy control whose maximum was 0.0188. Close enough to look
+# reassuring and not close enough to conclude anything: the maximum of 32
+# correlated deltas is itself a random variable. Several controls give it a
+# distribution, and the observed value has to be located inside it.
+_sdcn = _json2b.load(open(_os.path.join(_root, "research", "data", "sd_corr_null.json")))
+ck("the worst rosterable correlation move is located in a NULL DISTRIBUTION of legacy-vs-legacy maxima, not against one control run's observed maximum",
+   _sdcn["meta"]["pairwise_controls"] >= 10
+   and _sdcn["meta"]["n_pairs"] == _sdo["pairs"]["rosterable_n_pairs"]
+   and _sdcn["observed"]["max_abs_delta"] == _sdo["pairs"]["rosterable_delta_max"],
+   f"{_sdcn['meta']['pairwise_controls']} controls over "
+   f"{_sdcn['meta']['n_pairs']} pairs at {_sdcn['meta']['worlds']:,} worlds")
+ck("and it sits INSIDE that distribution, so the correlation criterion passes on the control scale rather than on a single lucky comparison",
+   _sdcn["verdict"]["inside_null"] is True
+   and _sdcn["verdict"]["empirical_tail_fraction"] > 0.05
+   and _sdcn["observed"]["max_abs_delta"] <= _sdcn["null_max_abs_delta"]["max"],
+   f"observed {_sdcn['observed']['max_abs_delta']} vs null min "
+   f"{_sdcn['null_max_abs_delta']['min']} p50 {_sdcn['null_max_abs_delta']['p50']} "
+   f"max {_sdcn['null_max_abs_delta']['max']}, tail fraction "
+   f"{_sdcn['verdict']['empirical_tail_fraction']}")
+# Six runs make fifteen pairwise comparisons, and each run appears in five of
+# them -- so the fifteen share variance and are not fifteen independent
+# observations. The artifact must NOT call that a p-value, and neither must the
+# report. Pinned because the first version of both did.
+ck("and it refuses to call that fraction a p-value, because six runs sharing across fifteen pairs are not fifteen independent samples",
+   "not_a_p_value" in _sdcn["verdict"]
+   and "p_value" not in set(_sdcn["verdict"]) - {"not_a_p_value"}
+   and _sdcn["verdict"]["independent_runs"] < _sdcn["verdict"]["controls"]
+   and "empirical tail fraction" in _sdcn["verdict"]["not_a_p_value"]
+   and "EMPIRICAL TAIL FRACTION" in open(_os.path.join(
+       _root, "research", "sd_corr_null.py")).read(),
+   f"{_sdcn['verdict']['independent_runs']} runs -> "
+   f"{_sdcn['verdict']['controls']} dependent comparisons")
+ck("and the null is built from the SAME pair set, read off the earlier artifact rather than recomputed, so the two numbers cannot be measuring different pairs",
+   'json.load(open(os.path.join(DATA, "sd_outliers.json")))'
+   in open(_os.path.join(_root, "research", "sd_corr_null.py")).read()
+   and len(_sdcn["pairs"]) == _sdcn["meta"]["n_pairs"])
 ck("and the worst relative residual is NAMED with its projection, so a 14% error on a one-point punt play cannot be read as a 14% error on a lineup",
    _sdo["means"]["worst_residual"]["name"]
    and _sdo["means"]["worst_residual"]["proj"] < 5.0

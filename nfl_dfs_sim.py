@@ -256,6 +256,25 @@ SIM_MODEL_VERSION = 1
 DISCRETE_VERSION = 2      # showdown-only discrete legacy scorer; 0 means off
 
 
+# Showdown serves the discrete scorer; Classic never does. One constant, so the
+# decision is greppable and reversible in one line.
+#
+# Promoted after the readiness study in showdown_audit_report.md sections
+# Y3-Y6, against five criteria and a Monte Carlo control for every one of them.
+# The case is CORRECTNESS, not money: a simulated score that DraftKings cannot
+# print is wrong as a model of DraftKings, and under legacy not one of 26
+# offensive scores recomputed from its own stat line while 54.2% of them put
+# their captain's 1.5x somewhere the engine's 0.01 tie bucket cannot hold it.
+# What it cost: player means move at most 0.21 DK points, the worst correlation
+# move between two rosterable players is 0.021 against a legacy-vs-legacy noise
+# maximum of 0.019, the top twenty reorders LESS than two legacy runs do
+# (4 of 20 slots identical against the control's 2 of 20), captain exposure
+# shifts by at most one entry of twenty, and scoring costs 3% more time at flat
+# memory. The money gate stays SHUT: a legal support says nothing about the
+# field model.
+SD_DISCRETE = True
+
+
 def sim_stamp(n=None, preseason=False, discrete=False):
     """{model, version, params, ...}: enough to say which model, with which
     constants, generated a board's worlds. The game loop draws from the

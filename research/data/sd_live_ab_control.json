@@ -1,0 +1,1934 @@
+{
+ "delta": {
+  "build": {
+   "peak_rss_mb": [
+    2188.6,
+    2189.3
+   ],
+   "pool_seconds": [
+    2.2,
+    2.2
+   ],
+   "score_seconds": [
+    536.3,
+    524.5
+   ]
+  },
+  "ev_best_pct_diff": -0.03,
+  "portfolio_captains": {
+   "Bo Nix": [
+    8,
+    8
+   ],
+   "Courtland Sutton": [
+    1,
+    1
+   ],
+   "Jaylen Waddle": [
+    2,
+    2
+   ],
+   "Kenneth Walker III": [
+    3,
+    4
+   ],
+   "Patrick Mahomes": [
+    4,
+    4
+   ],
+   "Rashee Rice": [
+    2,
+    1
+   ]
+  },
+  "portfolio_overlap": 16,
+  "portfolio_structures": {
+   "discrete": {
+    "3-3": 2,
+    "4-2": 7,
+    "5-1": 11
+   },
+   "legacy": {
+    "3-3": 1,
+    "4-2": 7,
+    "5-1": 12
+   }
+  },
+  "shared_first_ratio_top200": 1.04,
+  "split_haircut_pp": 0.291,
+  "top01_best_abs_diff_pp": 0.2891,
+  "top01_best_se_pp": 0.1344,
+  "top1_best_abs_diff_pp": 0.163,
+  "top1_best_se_pp": 0.25,
+  "top20_overlap": 17,
+  "top20_rank_move_max": 5,
+  "top20_rank_move_median": 1.0,
+  "top20_same_captain_slots": 9,
+  "top20_slots_identical": 2,
+  "top20_structures": {
+   "discrete": {
+    "4-2": 2,
+    "5-1": 18
+   },
+   "legacy": {
+    "4-2": 1,
+    "5-1": 19
+   }
+  }
+ },
+ "legacy": {
+  "best": {
+   "ev": 229.16,
+   "ev_notie": 1446.31,
+   "split_haircut_pct": 84.156,
+   "top01_pct": 1.9261,
+   "top01_se_pct": 0.1255,
+   "top1_pct": 8.037,
+   "top1_se_pct": 0.248
+  },
+  "build": {
+   "chunk_worlds": 193,
+   "peak_rss_mb": 2188.6,
+   "pool_seconds": 2.2,
+   "portfolio_seconds": 129.8,
+   "score_seconds": 536.3
+  },
+  "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+  "discrete_version": 2,
+  "draft_group_id": 153086,
+  "enterable": 23820,
+  "enterable_structures": {
+   "3-3": 8490,
+   "4-2": 11710,
+   "5-1": 3620
+  },
+  "entries": 88235,
+  "entry_fee": 20.0,
+  "field_beta": 0.4536,
+  "legal_lineups": 777056,
+  "mode": "legacy",
+  "players": 24,
+  "portfolio": {
+   "captains": [
+    {
+     "entries": 8,
+     "name": "Bo Nix"
+    },
+    {
+     "entries": 4,
+     "name": "Patrick Mahomes"
+    },
+    {
+     "entries": 3,
+     "name": "Kenneth Walker III"
+    },
+    {
+     "entries": 2,
+     "name": "Jaylen Waddle"
+    },
+    {
+     "entries": 2,
+     "name": "Rashee Rice"
+    },
+    {
+     "entries": 1,
+     "name": "Courtland Sutton"
+    }
+   ],
+   "entries": [
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 229.16,
+     "ev_notie": 1446.31,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Harrison Butker",
+      "Rashee Rice",
+      "Travis Kelce"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.9261,
+     "top1_pct": 8.037,
+     "win_any_pct": 0.26714,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 45.82,
+     "ev_notie": 711.89,
+     "flex": [
+      "Broncos",
+      "Jaylen Waddle",
+      "Kenneth Walker III",
+      "Pat Bryant",
+      "RJ Harvey"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.9596,
+     "top1_pct": 5.728,
+     "win_any_pct": 0.13438,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 112.19,
+     "ev_notie": 2011.95,
+     "flex": [
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.4118,
+     "top1_pct": 5.606,
+     "win_any_pct": 0.39388,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 312.01,
+     "ev_notie": 866.92,
+     "flex": [
+      "Chiefs",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Rashee Rice",
+      "Travis Kelce"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.5431,
+     "top1_pct": 6.944,
+     "win_any_pct": 0.1565,
+     "win_sole_pct": 0.00234
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 91.92,
+     "ev_notie": 1170.99,
+     "flex": [
+      "Broncos",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Rashee Rice",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.9893,
+     "top1_pct": 4.882,
+     "win_any_pct": 0.22508,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 41.95,
+     "ev_notie": 1276.88,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "RJ Harvey"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.697,
+     "top1_pct": 4.355,
+     "win_any_pct": 0.25015,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 28.93,
+     "ev_notie": 375.61,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.4318,
+     "top1_pct": 3.681,
+     "win_any_pct": 0.06873,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 55.66,
+     "ev_notie": 795.19,
+     "flex": [
+      "Bo Nix",
+      "Broncos",
+      "Courtland Sutton",
+      "Kenneth Walker III",
+      "Pat Bryant"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.8432,
+     "top1_pct": 5.311,
+     "win_any_pct": 0.15093,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 47.65,
+     "ev_notie": 406.39,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Pat Bryant",
+      "Rashee Rice",
+      "Xavier Worthy"
+     ],
+     "structure": "3-3",
+     "top01_pct": 0.6184,
+     "top1_pct": 4.335,
+     "win_any_pct": 0.07623,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 151.32,
+     "ev_notie": 688.5,
+     "flex": [
+      "Chiefs",
+      "Harrison Butker",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Kenneth Walker III"
+     ],
+     "structure": "4-2",
+     "top01_pct": 1.1375,
+     "top1_pct": 5.31,
+     "win_any_pct": 0.12468,
+     "win_sole_pct": 3e-05
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 32.91,
+     "ev_notie": 1234.74,
+     "flex": [
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Travis Kelce"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.5737,
+     "top1_pct": 4.301,
+     "win_any_pct": 0.2419,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Rashee Rice",
+     "captain_pos": "WR",
+     "captain_team": "KC",
+     "ev": 211.55,
+     "ev_notie": 301.7,
+     "flex": [
+      "Chiefs",
+      "J.K. Dobbins",
+      "Kenneth Walker III",
+      "Travis Kelce",
+      "Xavier Worthy"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.9958,
+     "top1_pct": 5.248,
+     "win_any_pct": 0.04594,
+     "win_sole_pct": 0.01352
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 81.64,
+     "ev_notie": 1566.81,
+     "flex": [
+      "Courtland Sutton",
+      "Harrison Butker",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.9853,
+     "top1_pct": 4.468,
+     "win_any_pct": 0.30845,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 57.32,
+     "ev_notie": 305.71,
+     "flex": [
+      "Broncos",
+      "J.K. Dobbins",
+      "RJ Harvey",
+      "Rashee Rice",
+      "Travis Kelce"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.5675,
+     "top1_pct": 3.48,
+     "win_any_pct": 0.05364,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 80.3,
+     "ev_notie": 1331.22,
+     "flex": [
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Kenneth Walker III",
+      "Pat Bryant",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.136,
+     "top1_pct": 5.397,
+     "win_any_pct": 0.25873,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 28.83,
+     "ev_notie": 433.43,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.3143,
+     "top1_pct": 2.752,
+     "win_any_pct": 0.08334,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 41.63,
+     "ev_notie": 605.87,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "RJ Harvey"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.6101,
+     "top1_pct": 4.269,
+     "win_any_pct": 0.11668,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 53.04,
+     "ev_notie": 833.86,
+     "flex": [
+      "Broncos",
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Rashee Rice"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.8927,
+     "top1_pct": 4.942,
+     "win_any_pct": 0.15915,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Courtland Sutton",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 47.01,
+     "ev_notie": 943.88,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.6746,
+     "top1_pct": 3.862,
+     "win_any_pct": 0.18353,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Rashee Rice",
+     "captain_pos": "WR",
+     "captain_team": "KC",
+     "ev": 349.82,
+     "ev_notie": 454.87,
+     "flex": [
+      "Chiefs",
+      "Patrick Mahomes",
+      "RJ Harvey",
+      "Travis Kelce",
+      "Xavier Worthy"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.3971,
+     "top1_pct": 5.738,
+     "win_any_pct": 0.06802,
+     "win_sole_pct": 0.02839
+    }
+   ],
+   "exposure": [
+    {
+     "name": "Bo Nix",
+     "slots": 16
+    },
+    {
+     "name": "Jaylen Waddle",
+     "slots": 14
+    },
+    {
+     "name": "Pat Bryant",
+     "slots": 14
+    },
+    {
+     "name": "Patrick Mahomes",
+     "slots": 11
+    },
+    {
+     "name": "J.K. Dobbins",
+     "slots": 10
+    },
+    {
+     "name": "Chiefs",
+     "slots": 8
+    },
+    {
+     "name": "Rashee Rice",
+     "slots": 8
+    },
+    {
+     "name": "Kenneth Walker III",
+     "slots": 8
+    },
+    {
+     "name": "Travis Kelce",
+     "slots": 6
+    },
+    {
+     "name": "Courtland Sutton",
+     "slots": 6
+    },
+    {
+     "name": "Broncos",
+     "slots": 5
+    },
+    {
+     "name": "RJ Harvey",
+     "slots": 5
+    }
+   ],
+   "k": 20,
+   "p_any_top1_pct": 62.37,
+   "structures": {
+    "3-3": 1,
+    "4-2": 7,
+    "5-1": 12
+   }
+  },
+  "sim_stamp": {
+   "discrete_version": 0,
+   "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+   "kicker": "extra points and field goals off the offense, then rescaled to the projection",
+   "lattice": "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)",
+   "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+   "model": "legacy-latent",
+   "n": 12000,
+   "params": {
+    "env_sd": 0.18,
+    "qb_sd": 0.26,
+    "rush_sd": 0.24,
+    "script_pass": 0.12,
+    "script_rush": 0.14,
+    "script_sd": 1.0,
+    "td_sd": 0.0
+   },
+   "preseason": false,
+   "projections": "sleeper-weekly",
+   "receiving_noise": "none beyond the shared game, team-passing and script factors",
+   "seed": null,
+   "touchdowns": "poisson, independent per player",
+   "version": 1
+  },
+  "tie": {
+   "max_shared_first_pct_top200": 0.393878,
+   "mean_any_first_pct_top200": 0.059205,
+   "mean_shared_first_pct_top200": 0.050066,
+   "mean_sole_first_pct_top200": 0.009139
+  },
+  "top20": [
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 229.16,
+    "ev_notie": 1446.31,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.9261,
+    "top1_pct": 8.037,
+    "win_any_pct": 0.26714,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 186.71,
+    "ev_notie": 431.28,
+    "flex": [
+     "Chiefs",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.7243,
+    "top1_pct": 7.912,
+    "win_any_pct": 0.06309,
+    "win_sole_pct": 0.00147
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 470.16,
+    "ev_notie": 681.21,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 2.1076,
+    "top1_pct": 7.389,
+    "win_any_pct": 0.1064,
+    "win_sole_pct": 0.03115
+   },
+   {
+    "captain": "Kenneth Walker III",
+    "captain_pos": "RB",
+    "captain_team": "KC",
+    "ev": 312.01,
+    "ev_notie": 866.92,
+    "flex": [
+     "Chiefs",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5431,
+    "top1_pct": 6.944,
+    "win_any_pct": 0.1565,
+    "win_sole_pct": 0.00234
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 134.34,
+    "ev_notie": 293.72,
+    "flex": [
+     "Chiefs",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.4272,
+    "top1_pct": 6.769,
+    "win_any_pct": 0.04608,
+    "win_sole_pct": 0.0016
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 414.33,
+    "ev_notie": 1088.84,
+    "flex": [
+     "Chiefs",
+     "Harrison Butker",
+     "Jaylen Waddle",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5285,
+    "top1_pct": 6.606,
+    "win_any_pct": 0.20091,
+    "win_sole_pct": 0.00469
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 76.0,
+    "ev_notie": 315.66,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.173,
+    "top1_pct": 6.519,
+    "win_any_pct": 0.04772,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 419.98,
+    "ev_notie": 581.8,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Patrick Mahomes",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.7451,
+    "top1_pct": 6.492,
+    "win_any_pct": 0.0893,
+    "win_sole_pct": 0.02992
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 890.9,
+    "ev_notie": 1048.87,
+    "flex": [
+     "Harrison Butker",
+     "J.K. Dobbins",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.9314,
+    "top1_pct": 6.296,
+    "win_any_pct": 0.16477,
+    "win_sole_pct": 0.10002
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 557.2,
+    "ev_notie": 757.07,
+    "flex": [
+     "Chiefs",
+     "RJ Harvey",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.7395,
+    "top1_pct": 6.29,
+    "win_any_pct": 0.12174,
+    "win_sole_pct": 0.04576
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 328.77,
+    "ev_notie": 512.01,
+    "flex": [
+     "Harrison Butker",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5236,
+    "top1_pct": 6.175,
+    "win_any_pct": 0.081,
+    "win_sole_pct": 0.01752
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 202.88,
+    "ev_notie": 339.55,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Kenneth Walker III",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3135,
+    "top1_pct": 6.102,
+    "win_any_pct": 0.05187,
+    "win_sole_pct": 0.00763
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 132.38,
+    "ev_notie": 460.27,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Rashee Rice",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.4815,
+    "top1_pct": 6.101,
+    "win_any_pct": 0.07372,
+    "win_sole_pct": 0.0001
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 200.75,
+    "ev_notie": 363.1,
+    "flex": [
+     "Chiefs",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Rashee Rice",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.1211,
+    "top1_pct": 5.891,
+    "win_any_pct": 0.06102,
+    "win_sole_pct": 0.00715
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 349.82,
+    "ev_notie": 454.87,
+    "flex": [
+     "Chiefs",
+     "Patrick Mahomes",
+     "RJ Harvey",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3971,
+    "top1_pct": 5.738,
+    "win_any_pct": 0.06802,
+    "win_sole_pct": 0.02839
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 268.17,
+    "ev_notie": 401.63,
+    "flex": [
+     "Chiefs",
+     "Courtland Sutton",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3339,
+    "top1_pct": 5.731,
+    "win_any_pct": 0.0649,
+    "win_sole_pct": 0.01652
+   },
+   {
+    "captain": "Bo Nix",
+    "captain_pos": "QB",
+    "captain_team": "DEN",
+    "ev": 45.82,
+    "ev_notie": 711.89,
+    "flex": [
+     "Broncos",
+     "Jaylen Waddle",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "RJ Harvey"
+    ],
+    "structure": "5-1",
+    "top01_pct": 0.9596,
+    "top1_pct": 5.728,
+    "win_any_pct": 0.13438,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 127.77,
+    "ev_notie": 225.72,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "RJ Harvey",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "4-2",
+    "top01_pct": 1.0771,
+    "top1_pct": 5.723,
+    "win_any_pct": 0.03091,
+    "win_sole_pct": 0.00281
+   },
+   {
+    "captain": "Kenneth Walker III",
+    "captain_pos": "RB",
+    "captain_team": "KC",
+    "ev": 273.7,
+    "ev_notie": 471.3,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Patrick Mahomes",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.324,
+    "top1_pct": 5.653,
+    "win_any_pct": 0.07257,
+    "win_sole_pct": 0.00993
+   },
+   {
+    "captain": "Bo Nix",
+    "captain_pos": "QB",
+    "captain_team": "DEN",
+    "ev": 112.19,
+    "ev_notie": 2011.95,
+    "flex": [
+     "Courtland Sutton",
+     "Jaylen Waddle",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Wil Lutz"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.4118,
+    "top1_pct": 5.606,
+    "win_any_pct": 0.39388,
+    "win_sole_pct": 0.0
+   }
+  ],
+  "top20_structures": {
+   "4-2": 1,
+   "5-1": 19
+  },
+  "worlds": 12000
+ },
+ "legacy_b": {
+  "best": {
+   "ev": 229.08,
+   "ev_notie": 1472.89,
+   "split_haircut_pct": 84.447,
+   "top01_pct": 2.2152,
+   "top01_se_pct": 0.1344,
+   "top1_pct": 8.2,
+   "top1_se_pct": 0.25
+  },
+  "build": {
+   "chunk_worlds": 193,
+   "peak_rss_mb": 2189.3,
+   "pool_seconds": 2.2,
+   "portfolio_seconds": 134.1,
+   "score_seconds": 524.5
+  },
+  "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+  "discrete_version": 2,
+  "draft_group_id": 153086,
+  "enterable": 23820,
+  "enterable_structures": {
+   "3-3": 8490,
+   "4-2": 11710,
+   "5-1": 3620
+  },
+  "entries": 88235,
+  "entry_fee": 20.0,
+  "field_beta": 0.4536,
+  "legal_lineups": 777056,
+  "mode": "legacy_b",
+  "players": 24,
+  "portfolio": {
+   "captains": [
+    {
+     "entries": 8,
+     "name": "Bo Nix"
+    },
+    {
+     "entries": 4,
+     "name": "Patrick Mahomes"
+    },
+    {
+     "entries": 4,
+     "name": "Kenneth Walker III"
+    },
+    {
+     "entries": 2,
+     "name": "Jaylen Waddle"
+    },
+    {
+     "entries": 1,
+     "name": "Rashee Rice"
+    },
+    {
+     "entries": 1,
+     "name": "Courtland Sutton"
+    }
+   ],
+   "entries": [
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 229.08,
+     "ev_notie": 1472.89,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Harrison Butker",
+      "Rashee Rice",
+      "Travis Kelce"
+     ],
+     "structure": "5-1",
+     "top01_pct": 2.2152,
+     "top1_pct": 8.2,
+     "win_any_pct": 0.2743,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 113.93,
+     "ev_notie": 2024.08,
+     "flex": [
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.5338,
+     "top1_pct": 5.839,
+     "win_any_pct": 0.39418,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 68.73,
+     "ev_notie": 1332.95,
+     "flex": [
+      "Broncos",
+      "Jaylen Waddle",
+      "Kenneth Walker III",
+      "Pat Bryant",
+      "RJ Harvey"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.0319,
+     "top1_pct": 5.618,
+     "win_any_pct": 0.25882,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 218.92,
+     "ev_notie": 347.48,
+     "flex": [
+      "Chiefs",
+      "J.K. Dobbins",
+      "Rashee Rice",
+      "Travis Kelce",
+      "Xavier Worthy"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.2018,
+     "top1_pct": 5.167,
+     "win_any_pct": 0.05717,
+     "win_sole_pct": 0.01218
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 85.88,
+     "ev_notie": 1053.09,
+     "flex": [
+      "Broncos",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Rashee Rice",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.8707,
+     "top1_pct": 4.817,
+     "win_any_pct": 0.20069,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 127.86,
+     "ev_notie": 564.7,
+     "flex": [
+      "Chiefs",
+      "Harrison Butker",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Kenneth Walker III"
+     ],
+     "structure": "4-2",
+     "top01_pct": 1.1868,
+     "top1_pct": 5.63,
+     "win_any_pct": 0.09615,
+     "win_sole_pct": 2e-05
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 33.8,
+     "ev_notie": 1312.7,
+     "flex": [
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Travis Kelce"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.6443,
+     "top1_pct": 4.295,
+     "win_any_pct": 0.25833,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 43.47,
+     "ev_notie": 641.91,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "RJ Harvey"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.7518,
+     "top1_pct": 4.174,
+     "win_any_pct": 0.12257,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 72.04,
+     "ev_notie": 1294.48,
+     "flex": [
+      "Broncos",
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Rashee Rice"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.9002,
+     "top1_pct": 5.53,
+     "win_any_pct": 0.25107,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 32.47,
+     "ev_notie": 213.21,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Pat Bryant",
+      "Rashee Rice",
+      "Xavier Worthy"
+     ],
+     "structure": "3-3",
+     "top01_pct": 0.5619,
+     "top1_pct": 4.382,
+     "win_any_pct": 0.03594,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 34.75,
+     "ev_notie": 891.79,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "RJ Harvey"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.6967,
+     "top1_pct": 4.0,
+     "win_any_pct": 0.17103,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 39.92,
+     "ev_notie": 607.46,
+     "flex": [
+      "Harrison Butker",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Kenneth Walker III",
+      "Pat Bryant"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.5917,
+     "top1_pct": 3.688,
+     "win_any_pct": 0.11715,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Rashee Rice",
+     "captain_pos": "WR",
+     "captain_team": "KC",
+     "ev": 380.51,
+     "ev_notie": 496.45,
+     "flex": [
+      "Chiefs",
+      "Patrick Mahomes",
+      "RJ Harvey",
+      "Travis Kelce",
+      "Xavier Worthy"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.3804,
+     "top1_pct": 5.827,
+     "win_any_pct": 0.07422,
+     "win_sole_pct": 0.03078
+    },
+    {
+     "captain": "Patrick Mahomes",
+     "captain_pos": "QB",
+     "captain_team": "KC",
+     "ev": 22.28,
+     "ev_notie": 227.89,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.2589,
+     "top1_pct": 2.959,
+     "win_any_pct": 0.04171,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Jaylen Waddle",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 65.92,
+     "ev_notie": 1031.91,
+     "flex": [
+      "Bo Nix",
+      "Broncos",
+      "Courtland Sutton",
+      "Kenneth Walker III",
+      "Pat Bryant"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.8254,
+     "top1_pct": 4.938,
+     "win_any_pct": 0.20043,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 42.33,
+     "ev_notie": 202.99,
+     "flex": [
+      "Broncos",
+      "J.K. Dobbins",
+      "RJ Harvey",
+      "Rashee Rice",
+      "Travis Kelce"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.5142,
+     "top1_pct": 3.397,
+     "win_any_pct": 0.03454,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 57.25,
+     "ev_notie": 250.48,
+     "flex": [
+      "Chiefs",
+      "Courtland Sutton",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Rashee Rice"
+     ],
+     "structure": "3-3",
+     "top01_pct": 0.4515,
+     "top1_pct": 3.233,
+     "win_any_pct": 0.04241,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Bo Nix",
+     "captain_pos": "QB",
+     "captain_team": "DEN",
+     "ev": 72.19,
+     "ev_notie": 1154.46,
+     "flex": [
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Kenneth Walker III",
+      "Pat Bryant",
+      "Wil Lutz"
+     ],
+     "structure": "5-1",
+     "top01_pct": 1.1523,
+     "top1_pct": 5.695,
+     "win_any_pct": 0.22509,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Courtland Sutton",
+     "captain_pos": "WR",
+     "captain_team": "DEN",
+     "ev": 48.43,
+     "ev_notie": 984.26,
+     "flex": [
+      "Bo Nix",
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes"
+     ],
+     "structure": "5-1",
+     "top01_pct": 0.5935,
+     "top1_pct": 3.808,
+     "win_any_pct": 0.19179,
+     "win_sole_pct": 0.0
+    },
+    {
+     "captain": "Kenneth Walker III",
+     "captain_pos": "RB",
+     "captain_team": "KC",
+     "ev": 30.24,
+     "ev_notie": 237.6,
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Travis Kelce"
+     ],
+     "structure": "4-2",
+     "top01_pct": 0.4257,
+     "top1_pct": 3.453,
+     "win_any_pct": 0.04206,
+     "win_sole_pct": 0.0
+    }
+   ],
+   "exposure": [
+    {
+     "name": "Bo Nix",
+     "slots": 16
+    },
+    {
+     "name": "Jaylen Waddle",
+     "slots": 14
+    },
+    {
+     "name": "Pat Bryant",
+     "slots": 14
+    },
+    {
+     "name": "Patrick Mahomes",
+     "slots": 10
+    },
+    {
+     "name": "J.K. Dobbins",
+     "slots": 10
+    },
+    {
+     "name": "Kenneth Walker III",
+     "slots": 9
+    },
+    {
+     "name": "Chiefs",
+     "slots": 8
+    },
+    {
+     "name": "Rashee Rice",
+     "slots": 8
+    },
+    {
+     "name": "Travis Kelce",
+     "slots": 6
+    },
+    {
+     "name": "Courtland Sutton",
+     "slots": 6
+    },
+    {
+     "name": "Broncos",
+     "slots": 5
+    },
+    {
+     "name": "RJ Harvey",
+     "slots": 5
+    }
+   ],
+   "k": 20,
+   "p_any_top1_pct": 62.18,
+   "structures": {
+    "3-3": 2,
+    "4-2": 7,
+    "5-1": 11
+   }
+  },
+  "seed": 20260913,
+  "sim_stamp": {
+   "discrete_version": 0,
+   "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean",
+   "kicker": "extra points and field goals off the offense, then rescaled to the projection",
+   "lattice": "scores sit on a 0.01 grid; DK offence lives on 0.02 (research/sd_lattice)",
+   "marginals": "each player's points rescaled to the Sleeper mean after the loop",
+   "model": "legacy-latent",
+   "n": 12000,
+   "params": {
+    "env_sd": 0.18,
+    "qb_sd": 0.26,
+    "rush_sd": 0.24,
+    "script_pass": 0.12,
+    "script_rush": 0.14,
+    "script_sd": 1.0,
+    "td_sd": 0.0
+   },
+   "preseason": false,
+   "projections": "sleeper-weekly",
+   "receiving_noise": "none beyond the shared game, team-passing and script factors",
+   "seed": null,
+   "touchdowns": "poisson, independent per player",
+   "version": 1
+  },
+  "tie": {
+   "max_shared_first_pct_top200": 0.394183,
+   "mean_any_first_pct_top200": 0.061604,
+   "mean_shared_first_pct_top200": 0.052178,
+   "mean_sole_first_pct_top200": 0.009426
+  },
+  "top20": [
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 229.08,
+    "ev_notie": 1472.89,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 2.2152,
+    "top1_pct": 8.2,
+    "win_any_pct": 0.2743,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 517.31,
+    "ev_notie": 757.39,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.9945,
+    "top1_pct": 7.205,
+    "win_any_pct": 0.12829,
+    "win_sole_pct": 0.03775
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 301.66,
+    "ev_notie": 763.78,
+    "flex": [
+     "Chiefs",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.8016,
+    "top1_pct": 7.134,
+    "win_any_pct": 0.13178,
+    "win_sole_pct": 0.00296
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 376.29,
+    "ev_notie": 951.56,
+    "flex": [
+     "Chiefs",
+     "Harrison Butker",
+     "Jaylen Waddle",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.8585,
+    "top1_pct": 7.1,
+    "win_any_pct": 0.16372,
+    "win_sole_pct": 0.00383
+   },
+   {
+    "captain": "Kenneth Walker III",
+    "captain_pos": "RB",
+    "captain_team": "KC",
+    "ev": 223.86,
+    "ev_notie": 592.69,
+    "flex": [
+     "Chiefs",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5515,
+    "top1_pct": 6.71,
+    "win_any_pct": 0.09364,
+    "win_sole_pct": 0.00128
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 196.07,
+    "ev_notie": 263.6,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Patrick Mahomes",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.4333,
+    "top1_pct": 6.519,
+    "win_any_pct": 0.03475,
+    "win_sole_pct": 0.01164
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 148.69,
+    "ev_notie": 744.51,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.2443,
+    "top1_pct": 6.454,
+    "win_any_pct": 0.13601,
+    "win_sole_pct": 1e-05
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 496.22,
+    "ev_notie": 671.76,
+    "flex": [
+     "Chiefs",
+     "RJ Harvey",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.7836,
+    "top1_pct": 6.404,
+    "win_any_pct": 0.10174,
+    "win_sole_pct": 0.03716
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 261.46,
+    "ev_notie": 629.28,
+    "flex": [
+     "Chiefs",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3259,
+    "top1_pct": 6.315,
+    "win_any_pct": 0.10843,
+    "win_sole_pct": 0.00349
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 813.15,
+    "ev_notie": 959.99,
+    "flex": [
+     "Harrison Butker",
+     "J.K. Dobbins",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.8392,
+    "top1_pct": 6.287,
+    "win_any_pct": 0.1505,
+    "win_sole_pct": 0.09119
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 102.37,
+    "ev_notie": 176.01,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "Kenneth Walker III",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3526,
+    "top1_pct": 6.101,
+    "win_any_pct": 0.0225,
+    "win_sole_pct": 0.00287
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 128.42,
+    "ev_notie": 466.7,
+    "flex": [
+     "Bo Nix",
+     "Chiefs",
+     "Harrison Butker",
+     "Rashee Rice",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.2844,
+    "top1_pct": 5.971,
+    "win_any_pct": 0.0815,
+    "win_sole_pct": 0.00011
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 246.39,
+    "ev_notie": 382.5,
+    "flex": [
+     "Harrison Butker",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5641,
+    "top1_pct": 5.914,
+    "win_any_pct": 0.06038,
+    "win_sole_pct": 0.01305
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 174.29,
+    "ev_notie": 330.67,
+    "flex": [
+     "Chiefs",
+     "J.K. Dobbins",
+     "RJ Harvey",
+     "Rashee Rice",
+     "Travis Kelce"
+    ],
+    "structure": "4-2",
+    "top01_pct": 1.1628,
+    "top1_pct": 5.898,
+    "win_any_pct": 0.05491,
+    "win_sole_pct": 0.00499
+   },
+   {
+    "captain": "Bo Nix",
+    "captain_pos": "QB",
+    "captain_team": "DEN",
+    "ev": 113.93,
+    "ev_notie": 2024.08,
+    "flex": [
+     "Courtland Sutton",
+     "Jaylen Waddle",
+     "Pat Bryant",
+     "Patrick Mahomes",
+     "Wil Lutz"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.5338,
+    "top1_pct": 5.839,
+    "win_any_pct": 0.39418,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 380.51,
+    "ev_notie": 496.45,
+    "flex": [
+     "Chiefs",
+     "Patrick Mahomes",
+     "RJ Harvey",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.3804,
+    "top1_pct": 5.827,
+    "win_any_pct": 0.07422,
+    "win_sole_pct": 0.03078
+   },
+   {
+    "captain": "Rashee Rice",
+    "captain_pos": "WR",
+    "captain_team": "KC",
+    "ev": 169.91,
+    "ev_notie": 394.77,
+    "flex": [
+     "Chiefs",
+     "Harrison Butker",
+     "Jaylen Waddle",
+     "Patrick Mahomes",
+     "Travis Kelce"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.0712,
+    "top1_pct": 5.696,
+    "win_any_pct": 0.06895,
+    "win_sole_pct": 0.0024
+   },
+   {
+    "captain": "Bo Nix",
+    "captain_pos": "QB",
+    "captain_team": "DEN",
+    "ev": 72.19,
+    "ev_notie": 1154.46,
+    "flex": [
+     "J.K. Dobbins",
+     "Jaylen Waddle",
+     "Kenneth Walker III",
+     "Pat Bryant",
+     "Wil Lutz"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.1523,
+    "top1_pct": 5.695,
+    "win_any_pct": 0.22509,
+    "win_sole_pct": 0.0
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 376.13,
+    "ev_notie": 565.6,
+    "flex": [
+     "Chiefs",
+     "Courtland Sutton",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Xavier Worthy"
+    ],
+    "structure": "5-1",
+    "top01_pct": 1.2863,
+    "top1_pct": 5.663,
+    "win_any_pct": 0.09168,
+    "win_sole_pct": 0.02333
+   },
+   {
+    "captain": "Patrick Mahomes",
+    "captain_pos": "QB",
+    "captain_team": "KC",
+    "ev": 127.86,
+    "ev_notie": 564.7,
+    "flex": [
+     "Chiefs",
+     "Harrison Butker",
+     "J.K. Dobbins",
+     "Jaylen Waddle",
+     "Kenneth Walker III"
+    ],
+    "structure": "4-2",
+    "top01_pct": 1.1868,
+    "top1_pct": 5.63,
+    "win_any_pct": 0.09615,
+    "win_sole_pct": 2e-05
+   }
+  ],
+  "top20_structures": {
+   "4-2": 2,
+   "5-1": 18
+  },
+  "worlds": 12000
+ },
+ "meta": {
+  "board": 153086,
+  "n_sims": 12000,
+  "provenance": {
+   "commit": "c206e2c",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy vs legacy",
+   "seed": null,
+   "source_files": 26,
+   "source_sha": "8fb021091f8f02e82516493197bbcddf03810813a415fee0e707f0e239d49146",
+   "worlds": 12000
+  },
+  "seeds": [
+   null,
+   20260913
+  ],
+  "stage": "live showdown Monte Carlo control: legacy vs legacy (NOT promoted)",
+  "why": "the noise floor for every ordering and payout claim in sd_live_ab.json: same model, same depth, different draws"
+ }
+}

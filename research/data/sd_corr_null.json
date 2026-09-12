@@ -1,0 +1,193 @@
+{
+ "meta": {
+  "draft_group_id": 153086,
+  "game": "KC @ DEN",
+  "legacy_runs": 6,
+  "n_pairs": 32,
+  "note": "a single control's observed maximum is not a threshold: the maximum of 32 correlated deltas is itself random. These are pairwise legacy-vs-legacy controls over the SAME pairs, read off sd_outliers.json rather than recomputed.",
+  "pairwise_controls": 15,
+  "provenance": {
+   "commit": "c206e2c",
+   "data_split": null,
+   "dirty": true,
+   "model": "legacy x N",
+   "seed": null,
+   "source_files": 27,
+   "source_sha": "d98709391071807c20b8371bc99ee90edfc1bdd3b35203a58de24b8b3a0ba3d1",
+   "worlds": 20000
+  },
+  "stage": "null distribution for the worst rosterable correlation move",
+  "worlds": 20000
+ },
+ "null_max_abs_delta": {
+  "max": 0.0273,
+  "min": 0.0136,
+  "p50": 0.0192,
+  "p90": 0.0221,
+  "values": [
+   0.0136,
+   0.0148,
+   0.0155,
+   0.0161,
+   0.0177,
+   0.0186,
+   0.0186,
+   0.0192,
+   0.0195,
+   0.0201,
+   0.0203,
+   0.0206,
+   0.021,
+   0.0228,
+   0.0273
+  ]
+ },
+ "null_median_abs_delta": {
+  "max": 0.0072,
+  "p50": 0.0053
+ },
+ "observed": {
+  "max_abs_delta": 0.0209,
+  "median_abs_delta": 0.0067,
+  "source": "research/data/sd_outliers.json (legacy vs legacy-latent-discrete)"
+ },
+ "pairs": [
+  [
+   "Bo Nix",
+   "Courtland Sutton"
+  ],
+  [
+   "Bo Nix",
+   "J.K. Dobbins"
+  ],
+  [
+   "Bo Nix",
+   "Jaylen Waddle"
+  ],
+  [
+   "Bo Nix",
+   "Marvin Mims"
+  ],
+  [
+   "Bo Nix",
+   "Pat Bryant"
+  ],
+  [
+   "Bo Nix",
+   "Patrick Mahomes"
+  ],
+  [
+   "Bo Nix",
+   "RJ Harvey"
+  ],
+  [
+   "Bo Nix",
+   "Rashee Rice"
+  ],
+  [
+   "Bo Nix",
+   "Travis Kelce"
+  ],
+  [
+   "Bo Nix",
+   "Tyquan Thornton"
+  ],
+  [
+   "Bo Nix",
+   "Xavier Worthy"
+  ],
+  [
+   "Courtland Sutton",
+   "Jaylen Waddle"
+  ],
+  [
+   "Courtland Sutton",
+   "Marvin Mims"
+  ],
+  [
+   "Courtland Sutton",
+   "Pat Bryant"
+  ],
+  [
+   "Courtland Sutton",
+   "Patrick Mahomes"
+  ],
+  [
+   "Jaylen Waddle",
+   "Marvin Mims"
+  ],
+  [
+   "Jaylen Waddle",
+   "Pat Bryant"
+  ],
+  [
+   "Jaylen Waddle",
+   "Patrick Mahomes"
+  ],
+  [
+   "Kenneth Walker",
+   "Patrick Mahomes"
+  ],
+  [
+   "Marvin Mims",
+   "Pat Bryant"
+  ],
+  [
+   "Marvin Mims",
+   "Patrick Mahomes"
+  ],
+  [
+   "Pat Bryant",
+   "Patrick Mahomes"
+  ],
+  [
+   "Patrick Mahomes",
+   "Rashee Rice"
+  ],
+  [
+   "Patrick Mahomes",
+   "Travis Kelce"
+  ],
+  [
+   "Patrick Mahomes",
+   "Tyquan Thornton"
+  ],
+  [
+   "Patrick Mahomes",
+   "Xavier Worthy"
+  ],
+  [
+   "Rashee Rice",
+   "Travis Kelce"
+  ],
+  [
+   "Rashee Rice",
+   "Tyquan Thornton"
+  ],
+  [
+   "Rashee Rice",
+   "Xavier Worthy"
+  ],
+  [
+   "Travis Kelce",
+   "Tyquan Thornton"
+  ],
+  [
+   "Travis Kelce",
+   "Xavier Worthy"
+  ],
+  [
+   "Tyquan Thornton",
+   "Xavier Worthy"
+  ]
+ ],
+ "verdict": {
+  "controls": 15,
+  "controls_at_or_above_observed": 3,
+  "empirical_tail_fraction": 0.2,
+  "independent_runs": 6,
+  "inside_null": true,
+  "not_a_p_value": "the pairwise controls share underlying runs, so this is an empirical tail fraction, not a p-value from independent samples",
+  "reading": "inside the null: the observed worst move is no larger than what identical runs produce"
+ }
+}

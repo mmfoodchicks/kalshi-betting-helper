@@ -77,7 +77,16 @@ ENGINE = 6
 #    stamp at all, so they read as 0 and rebuild.
 # 2: engine stamped, a salary- and status-sensitive pool signature, and
 #    pre-lock refreshes.
-SD_ENGINE = 2
+# 3: the worlds are scored on the DraftKings lattice. Every player score in a
+#    showdown pool -- offense, kicker and defense -- now recomputes exactly
+#    from an integer stat line through DK's own scorer, so a captain's 1.5x
+#    lands on the 0.01 bucket the tie arithmetic counts on instead of half a
+#    hundredth away from it. The numbers mean something different: expected
+#    payout falls 7-14% on the live boards (against 0.03% when the same board
+#    is merely reseeded), because field mass that used to miss a score now
+#    lands level with it. Strategy did NOT move -- the top twenty reorders
+#    less than two legacy runs do. nfl_dfs_sim.SD_DISCRETE, engine 3.
+SD_ENGINE = 3
 
 
 def available():
@@ -498,22 +507,69 @@ SD_MONEY_TIES_PAID = True       # the same tie-aware payout classic uses
 # column is a SOLE-win probability, which is decided by how often scores tie,
 # and a score grid finer than the legal one biases exact-tie probability
 # DOWNWARD. Measured on the same game rebuilt with integer components
-# (research/sd_discrete, 20,000 worlds): the exact-tie rate between two
-# lineups goes up 6.1x, and the best lineup's expected payout moves about 6%.
-# Six times, not the two the grid spacing would have suggested -- which is why
-# the size had to be measured rather than reasoned from the spacing. The tie
-# arithmetic is correct; it is being fed scores the house could never print.
+# (research/sd_discrete, 20,000 worlds): the exact-tie rate between two player
+# scores goes up 6.1x, and between two six-player LINEUP TOTALS 2.36x, which is
+# the one a split payout turns on. Both had to be measured; the grid spacing
+# implies neither.
 #
-# Fixing it means generating discrete stat lines and scoring them with DK's
-# rules, which the constrained simulator already does (0 of 1,600,000 off the
-# lattice after the classic pass). Doing it inside the legacy simulator would
-# change every classic number that has just been validated, and promoting the
-# constrained model is not this pass's decision. So the defect is recorded,
-# the link is open, and the gate stays shut for this reason as well.
-SD_MONEY_LATTICE_OK = False
+# CLOSED, 2026-09-12, and the severity is smaller than this comment used to
+# imply. The fix was neither of the two options listed here before. The legacy
+# simulator already drew components and already scored them with DK's own
+# scorer, so only the yards and catches were continuous and the real damage was
+# a multiply afterwards; nfl_dfs_sim.SD_DISCRETE draws them whole and pins the
+# mean upstream. Showdown serves it, Classic does not, and the Classic path is
+# byte-identical on a seeded digest of the whole pool. Validated end to end in
+# research/sd_support: 26 of 26 offensive scores recompute from their own
+# integer stat lines to 7.1e-15, every kicker and defense score is a whole
+# number, and the engine's 0.01 bucket reproduces the exact six-player total for
+# every sampled lineup in every world.
+#
+# What the LIVE boards said about severity, which is not what the controlled
+# board said. On the two week-2 primetime boards the probability that first
+# place is SHARED moved x1.07 and x0.94 -- opposite directions, inside the noise
+# of merely reseeding the same board. The reason is in the same output: under
+# LEGACY, first place on those contests is already shared 84.2% and 96.8% of the
+# time. Once the field is that concentrated, field size decides tie incidence
+# and the scoring grid barely matters. The defect is a correctness defect,
+# confirmed; its effect on first-place splitting on these boards is negligible,
+# and claiming otherwise from the controlled result alone would have been wrong.
+#
+# This link closing does NOT open the gate, and that matters more than ever now:
+# if 84-97% of first places are shared, the uncalibrated field model influences
+# payout economics far more than the lattice ever did. A legal football support
+# says nothing about whether the public is modelled correctly.
+SD_MONEY_LATTICE_OK = True
+# And the link that was missing from this gate entirely, which closing the
+# lattice one exposed. A legal support is a statement about the SCORING rules,
+# not about the football. Showdown serves legacy-latent, whose joint structure
+# has known, measured limitations -- teammate covariance and opposing-side /
+# game covariance are exactly what Stage 2B-2F found it getting wrong, and a
+# showdown lineup is MORE exposed to them than a classic one because all six
+# roster spots come out of a single game's covariance.
+#
+# Without this link, calibrating public ownership alone would flip the gate to
+# authoritative and the app would announce authoritative EV while the
+# game-outcome joint distribution remained a known research limitation. That
+# would be too strong a claim, so the gate requires this too. Nothing in this
+# pass validated the legacy correlation model, and promoting the discrete
+# scorer explicitly did not: it is a more correct IMPLEMENTATION of that model,
+# not evidence for it.
+# WHEN THIS EVENTUALLY FLIPS, it must not flip as a timeless boolean. A
+# validation is always OF something: a simulator name and version, a data split,
+# a date. Validate model-v2, later serve model-v3, and a bare True silently
+# inherits the old evidence -- which is the same class of mistake as a board that
+# could not be told its engine had moved. The same applies to
+# SD_MONEY_FIELD_CALIBRATED: "calibrated" is only meaningful against the
+# ownership data and season it was fitted on. Both belong in the S7/S9
+# provenance work as (model, version, split) records that the gate compares
+# against nfl_dfs_sim.sim_stamp(), not as flags. Recorded here so the next pass
+# cannot miss it; deliberately NOT built now, because guessing at that shape
+# before S7 has any calibration data would be inventing a contract.
+SD_MONEY_JOINT_MODEL_OK = False
 
 
-def sd_money_gate(n_legal, contest_C, field_calibrated=None):
+
+def sd_money_gate(n_legal, contest_C, field_calibrated=None, joint_validated=None):
     """Whether a showdown board's money columns may be published as
     authoritative. Same shape as `money_gate` so the tab can read either.
 
@@ -524,29 +580,35 @@ def sd_money_gate(n_legal, contest_C, field_calibrated=None):
     as good as an uncalibrated field model, and that link is the one that
     keeps the gate shut."""
     cal = SD_MONEY_FIELD_CALIBRATED if field_calibrated is None else bool(field_calibrated)
+    joint = SD_MONEY_JOINT_MODEL_OK if joint_validated is None else bool(joint_validated)
     exhaustive = int(n_legal) > 0
-    ok = bool(cal and exhaustive and SD_MONEY_TIES_PAID and SD_MONEY_LATTICE_OK)
+    ok = bool(cal and exhaustive and SD_MONEY_TIES_PAID and SD_MONEY_LATTICE_OK and joint)
     why = ("the whole lineup universe is enumerated -- "
            f"{int(n_legal):,} legal lineups against {int(contest_C):,} entries -- so unlike the "
            "classic board nothing here is lost to sampling, and expected copies are exact given "
-           "the field's weights. The weights are the problem: the public is modelled as "
-           "softmax(beta x projected points) with beta solved so the most popular build holds "
-           f"{100 * FIELD_TOP_SHARE:.1f}% of the field, a figure taken from ONE published contest "
-           "and never fitted to real showdown ownership -- not captain rates, not flex rates, not "
-           "team structures, not the duplication distribution. First place, payout and ROI inherit "
-           "that uncertainty whole. Second, and separately: 48.7% of the simulated scores cannot "
-           "occur under DraftKings scoring (the legacy simulator pins each mean by multiplying the "
-           "whole array and rounds to hundredths, so scores sit on a 0.01 grid where DK's offence "
-           "lives on 0.02). First place here is a SOLE-win probability decided by how often scores "
-           "tie, and a simulated support finer than the legal one biases exact-tie probability "
-           "downward. Measured, not inferred (research/sd_discrete): rebuilding the same game on "
-           "integer yards and catches raises the exact-tie rate between two lineups by 6.1x, and "
-           "moves the best lineup's expected payout by about 6%. The top-ten ranking did not "
-           "change at all, so this is a money defect rather than a strategy one. Rank on "
-           "top 1% and top 0.1%.")
+           "the field's weights. The weights are the problem, and they are now the ONLY problem: "
+           "the public is modelled as softmax(beta x projected points) with beta solved so the "
+           f"most popular build holds {100 * FIELD_TOP_SHARE:.1f}% of the field, a figure taken "
+           "from ONE published contest and never fitted to real showdown ownership -- not captain "
+           "rates, not flex rates, not team structures, not the duplication distribution. First "
+           "place, payout and ROI inherit that uncertainty whole, and this board shows how much "
+           "that matters: it puts first place as SHARED 84-97% of the time on a live primetime "
+           "slate, so the field model drives the payout economics here more than anything else "
+           "does. The lattice link, which used to be open beside it, is closed: every score in a "
+           "showdown pool now recomputes from an integer stat line through DraftKings' own "
+           "scorer, kickers and defenses included (research/sd_support). That was fixed because "
+           "it was WRONG, not because it was costly -- on the two live boards tested it moved the "
+           "chance first place is shared by x1.07 and x0.94, in opposite directions, inside the "
+           "noise of reseeding. And fixing the SCORING rules is not validating the FOOTBALL: "
+           "showdown serves legacy-latent, whose teammate and opposing-side covariance are the "
+           "known limitations Stage 2B-2F measured, and a six-man single-game roster is more "
+           "exposed to them than a classic lineup is. That is a separate link and it is also "
+           "open, so calibrating ownership alone could never make these columns authoritative. "
+           "Rank on top 1% and top 0.1%.")
     return {"columns": ["win_pct", "win_any_pct", "ev", "ev_notie", "roi_pct", "expected_copies"],
             "authoritative": ok,
             "links": {"lineup_universe_exhaustive": bool(exhaustive),
+                      "showdown_joint_model_validated": bool(joint),
                       "ties_paid_as_the_house_pays_them": bool(SD_MONEY_TIES_PAID),
                       "scores_on_the_dk_lattice": bool(SD_MONEY_LATTICE_OK),
                       "field_model_calibrated": bool(cal)},
@@ -842,7 +904,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             week = 1
     log(f"[tourney] {slate.get('n_players')} players, {contest['name']}, week {week}: "
         f"simulating {n_sims:,} games of {' vs '.join(sorted(teams))}...")
-    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, teams=teams) or {}
+    pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, teams=teams,
+                                   discrete=nfl_dfs_sim.SD_DISCRETE) or {}
     nidx, norm = nfl_dfs._norm_index(pool)
     excluded = []
     for e in ents:
@@ -1008,7 +1071,8 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             # served on Sunday used to look identical to one made at lock.
             "kickoff_ts": _starts_ts,
             "mins_before_lock": (None if not _starts_ts else int(round((_starts_ts - _built) / 60.0))),
-            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason),
+            "simulator": nfl_dfs_sim.sim_stamp(n=int(n_sims), preseason=preseason,
+                                               discrete=nfl_dfs_sim.SD_DISCRETE),
             "pool_sig": pool_sig_rich(slate["csv"]), "pool_sig_kind": "rich",
             "contest": {k: contest.get(k) for k in ("id", "name", "entry_fee", "prize_pool",
                                                     "first_prize", "places_paid", "max_entries",
