@@ -587,9 +587,13 @@ failing code through.
 
 ## W. Tests
 
-Full suite with numpy: **1,941 passed, 0 failed**. With numpy hidden:
-**1,919 passed, 0 failed**. pyflakes clean across root and research modules.
-Secret scan clean.
+Full suite with numpy: **1,974 passed, 0 failed**. With numpy hidden:
+**1,947 passed, 0 failed**. Both exit codes checked explicitly, and the first
+attempt at that check was worthless: a `grep` appended after the suite in the
+same compound command meant the shell reported the grep's status, so a red
+suite (1,972 passed, **2 failed**) came back as exit 0. Read the log, not the
+status line. pyflakes clean across root and research modules. Secret scan
+clean.
 
 Five pre-existing guards failed when the contract changed and were repinned to
 the new contract rather than the code being bent back: the two PC task pins,

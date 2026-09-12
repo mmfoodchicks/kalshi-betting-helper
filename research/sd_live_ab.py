@@ -73,13 +73,20 @@ def one(feed_dir, dg, mode, log=print):
     import dfs_tourney as T
     from research import sd_board
     discrete = (mode == "discrete")
+    # The ORDERING question cannot be read without a noise floor. "legacy_b" is
+    # legacy again at the same depth on a different generator state, so the
+    # top-20 reshuffling it produces is what Monte Carlo alone does to this
+    # board -- and anything the discrete mode does inside that is not a
+    # strategy change. Same discipline as the correlation control in
+    # research/sd_outliers; "legacy" and "discrete" are untouched by it.
+    seed = SEED + (1 if mode == "legacy_b" else 0)
     S = sd_board.feeds(feed_dir)
     S._cache.clear()
     slate, contest = sd_board.slate_and_contest(dg)
     if not slate or not contest:
         raise SystemExit(f"draft group {dg} has no slate or contest")
     ents, pool_secs, _rss0 = sd_board.ents_for(slate, sd_board.WEEK, discrete,
-                                              n_sims=N_SIMS, seed=SEED, log=log)
+                                              n_sims=N_SIMS, seed=seed, log=log)
     idx, W, allowed = sd_board.universe(ents)
     if idx is None:
         raise SystemExit("no legal lineups")
@@ -134,7 +141,7 @@ def one(feed_dir, dg, mode, log=print):
            "entries": int(C), "entry_fee": float(contest.get("entry_fee") or 0.0),
            "players": len(ents), "legal_lineups": int(len(idx)),
            "enterable": int(allowed.sum()), "worlds": int(N),
-           "field_beta": round(float(beta), 4),
+           "field_beta": round(float(beta), 4), "seed": int(seed),
            "discrete_version": S.DISCRETE_VERSION,
            "sim_stamp": S.sim_stamp(N, False, discrete),
            "build": {"pool_seconds": round(pool_secs, 1),
@@ -249,10 +256,55 @@ def run_all(feed_dir, dgs=DGS, log=print):
     return out
 
 
+def run_control(feed_dir, dg, log=print):
+    """Legacy against legacy, same depth, different generator state.
+
+    This is the floor every ordering claim in the A/B has to clear. A top-20
+    that reshuffles under the discrete mode means nothing until you know how
+    much it reshuffles when NOTHING changes but the draws -- the lineups at the
+    top of a 777,056-lineup universe are separated by far less than the
+    Monte Carlo error on each one, so some reshuffling is arithmetic, not
+    strategy."""
+    got = {}
+    for mode in ("legacy", "legacy_b"):
+        path = os.path.join(DATA, f"_ab_{dg}_{mode}.json")
+        if mode == "legacy" and os.path.exists(path):
+            log(f"[AB] reusing the A/B's own legacy arm for {dg}")
+        else:
+            cmd = [sys.executable, "-m", "research.sd_live_ab", "one", feed_dir, str(dg), mode]
+            log(f"[AB] spawning {' '.join(cmd[2:])}")
+            r = subprocess.run(cmd, cwd=ROOT, env={**os.environ, "VIGIL_NO_BG": "1"})
+            if r.returncode != 0 or not os.path.exists(path):
+                raise SystemExit(f"{mode} build for {dg} failed (rc {r.returncode})")
+        got[mode] = json.load(open(path))
+    out = {"meta": {"stage": "live showdown Monte Carlo control: legacy vs legacy (NOT promoted)",
+                    "n_sims": N_SIMS, "board": int(dg),
+                    "seeds": [got["legacy"].get("seed"), got["legacy_b"].get("seed")],
+                    "why": ("the noise floor for every ordering and payout claim in "
+                            "sd_live_ab.json: same model, same depth, different draws"),
+                    "provenance": _prov(worlds=N_SIMS, model="legacy vs legacy")},
+           "delta": compare(got["legacy"], got["legacy_b"]),
+           "legacy": got["legacy"], "legacy_b": got["legacy_b"]}
+    d = out["delta"]
+    log(f"[AB] CONTROL dg {dg}: top-20 identical in {d['top20_slots_identical']}/20 slots, "
+        f"overlap {d['top20_overlap']}/20, portfolio overlap {d['portfolio_overlap']}/{PORT_K}, "
+        f"best EV {d['ev_best_pct_diff']}%, shared-first x{d['shared_first_ratio_top200']}")
+    with open(os.path.join(DATA, "sd_live_ab_control.json"), "w") as fh:
+        json.dump(out, fh, indent=1, sort_keys=True)
+    for mode in ("legacy", "legacy_b"):
+        path = os.path.join(DATA, f"_ab_{dg}_{mode}.json")
+        if os.path.exists(path):
+            os.remove(path)
+    return out
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     if what == "one":
         one(sys.argv[2], int(sys.argv[3]), sys.argv[4])
+    elif what == "control":
+        run_control(sys.argv[2], int(sys.argv[3]))
+        print("live showdown Monte Carlo control written")
     else:
         fd = sys.argv[2] if len(sys.argv) > 2 else os.path.join(DATA, "feeds")
         dgs = tuple(int(x) for x in sys.argv[3:]) or DGS
