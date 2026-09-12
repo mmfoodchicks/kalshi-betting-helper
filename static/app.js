@@ -8366,8 +8366,17 @@ function renderDfsTourney(d) {
   if (rr.p_any_sizes) {
     const sizes = rr.p_any_sizes.map((x) => String(x[0]));
     if (!sizes.includes(_dfsTourneyK)) _dfsTourneyK = sizes[0];
-    sizeBtns = rr.p_any_sizes.map(([k, p]) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${String(k) === _dfsTourneyK ? "font-weight:bold;text-decoration:underline" : ""}">${k} entries · ${pct(p, 0)} any top 1%</a>`).join("");
+    sizeBtns = rr.p_any_sizes.map(([k, p]) => `<a href="#" onclick="dfsTourneyPick('${k}');return false" style="margin-right:8px;${String(k) === _dfsTourneyK ? "font-weight:bold;text-decoration:underline" : ""}">${k} entries · ${pct(p, 0)} any top 1% (in-sample)</a>`).join("");
     portRows = (((d.portfolio || {})[_dfsTourneyK]) || {}).entries || [];
+    // The coverage figure above is a SELECTION score, not a forecast: the
+    // shortlist, the greedy cover and the number all read the same worlds.
+    // Measured optimism against held-out worlds is +2.7% mean, +7.4% worst
+    // (research/s4_crossfit). Say so next to it rather than letting it read as
+    // a probability.
+    const basis = (((d.portfolio || {})[_dfsTourneyK]) || {}).p_any_basis;
+    if (basis && basis.in_sample) {
+      sizeBtns += `<div class="small" style="margin-top:2px;opacity:.75">↑ in-sample: these worlds also chose the lineups. Held-out is about ${basis.measured_optimism_pct.mean}% lower on average, ${basis.measured_optimism_pct.worst}% at worst.</div>`;
+    }
   } else {
     const n = rr.portfolio.length;
     const kk = Math.min(n, Math.max(1, parseInt(_dfsTourneyK, 10) || 5));

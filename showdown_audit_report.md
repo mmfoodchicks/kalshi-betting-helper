@@ -1035,10 +1035,23 @@ size of that optimism**, same portfolio graded both ways:
 | Top 1% | 0.60660 | 0.60872 | −0.3% |
 | Top 0.1% | 0.20051 | 0.19249 | **+4.2%** |
 
-The sparse tail metric is the one in-sample evaluation inflates; the dense one
-barely notices. Enumeration is proved world-independent behaviourally —
-overwrite every simulated score and the legal universe is byte-identical — so
-only the shortlist and the greedy needed a fold.
+**CORRECTION to the first version of this section.** The figures above are one
+cell (DEN @ KC, seed 1, A→B) and were wrongly presented as the result. Across all
+eight cells:
+
+| metric | optimism, mean of 8 cells | range |
+|---|---|---|
+| Top 1% — **the metric the board serves** | **+2.71%** | −1.43% to +7.38% |
+| Top 0.1% | **+8.49%** | +4.17% to +14.46% |
+
+The sparse tail metric is inflated roughly three times as much, but the served
+metric is **not** unaffected: `p_any_top1_pct` is optimistic by a few percent on
+average and by 7.4% at worst. The earlier "−0.3%, the dense one barely notices"
+was generalised from a single cell and is withdrawn. Consequence in section Q.
+
+Enumeration is proved world-independent behaviourally — overwrite every simulated
+score and the legal universe is byte-identical — so only the shortlist and the
+greedy needed a fold.
 
 ### C. Cross-fit design
 
@@ -1166,6 +1179,13 @@ read as a result.
 
 ### M. Field-concentration sensitivity — the finding that decides it
 
+**Scope: ONE board (DEN @ KC, draft group 153086) and ONE seed (20260912), both
+fold directions, three concentrations.** Not the full two-board two-seed grid the
+main comparison used. So what follows is "on the tested board and seed, the gain
+fell monotonically as concentration rose", not a universal property of the
+objective — the conservative decision does not need the stronger claim and has
+not earned it.
+
 Same football worlds, the field's one knob moved either side of its placeholder.
 **Scenarios only; none may become a default and none is a calibrated
 alternative.**
@@ -1176,11 +1196,12 @@ alternative.**
 | 0.002 production | 0.454 | +0.0155 ✓ | +0.0191 ✓ | +0.0195 ✓ | +0.0246 ✓ |
 | 0.004 concentrated | 0.543 | **+0.0008 ✗** | +0.0104 ✓ | +0.0129 ✓ | +0.0242 ✓ |
 
-No sign flips. But the gain **halves monotonically** as the field concentrates —
-about +0.022, +0.018, +0.009 at the optimistic convention — and at the
-concentrated end it loses significance under production's own tie convention.
-The effect size depends materially on the single parameter that is a placeholder
-taken from one published 2021 contest.
+No sign flips. But on this board and seed the gain **falls monotonically** as the
+field concentrates — about +0.022, +0.018, +0.009 at the optimistic convention —
+and at the concentrated end it loses significance under production's own tie
+convention. The effect size depends materially on the single parameter that is a
+placeholder taken from one published 2021 contest. Whether that monotone fall
+repeats on other boards and seeds is **unmeasured**.
 
 ### N. Money diagnostics
 
@@ -1205,18 +1226,74 @@ the decision rather than the measurement:
    probabilities you can trust — and the money gate is shut precisely because
    those probabilities are not trustworthy. Using experimental dollars to break
    the tie is exactly what this stage forbids.
-2. **The effect size rides on the uncalibrated knob.** It halves across a
-   plausible field-concentration range and goes insignificant at the concentrated
-   end under the production convention. S7 is therefore a genuine prerequisite,
-   not a formality.
+2. **The effect size rides on the uncalibrated knob.** It falls by about half
+   across a plausible field-concentration range on the tested board and seed, and
+   goes insignificant at the concentrated end under the production convention.
+
+**S7 is necessary and not sufficient.** The money gate has two open links, and
+they gate different halves of this decision. `field_model_calibrated` is what
+S7 would close, and it is what the sensitivity above is sensitive to — the FIELD
+side. `showdown_joint_model_validated` is independently open and gates the
+FOOTBALL side: legacy-latent's teammate and opposing-side covariance are what
+Stage 2B–2F measured as limited, and a six-man single-game roster is more exposed
+to them than a classic lineup. Calibrating public ownership alone would not
+license authoritative EV, and therefore would not on its own license a
+payout-weighted choice between Top 1% and Top 0.1%. Both links have to close.
 
 So: **Top 1% remains the production selection objective.** Nothing in
 `dfs_tourney` changes. This is recorded as research, and it has made S7 the
 next thing worth doing rather than a box to tick.
 
-What would change the decision: a calibrated field model (S7) that lands at or
-flatter than the current placeholder, plus a payout-weighted comparison once the
-money gate can open.
+**The frozen interpretation.** Selecting for Top 0.1% materially improves
+held-out Top-0.1% coverage under the tested Showdown model. The improvement is
+reproducible across boards, seeds, fold directions and tie conventions, but comes
+with a larger absolute loss in Top-1% coverage and is materially sensitive to the
+uncalibrated public-field concentration model. Because neither the public-field
+model nor the Showdown joint football model is validated for authoritative payout
+economics, S4 does not justify changing the production portfolio objective. Top 1%
+remains the production objective.
+
+Neither "Top 0.1% failed" nor "Top 0.1% should replace Top 1%" is supported.
+
+What would change the decision: a calibrated field model (S7) landing at or
+flatter than the current placeholder, **and** joint-model validation (the other
+open gate link), **and** a payout-weighted comparison once both allow it.
+
+### Q. The served coverage number, and what was done about it
+
+S4.1 proved the served `p_any_top1_pct` is in-sample. Leaving the **objective**
+at Top 1% is one decision; leaving the served **evaluation** unlabelled is a
+separate one, and the measured optimism settles it:
+
+| metric | optimism vs held-out, mean of 8 cells | worst |
+|---|---|---|
+| Top 1% (served) | **+2.7%** | **+7.4%** |
+| Top 0.1% | +8.5% | +14.5% |
+
+A few percent is not nothing, and the tab rendered the figure as a bare
+probability — "20 entries · 62% any top 1%".
+
+**Decision: label it now, cross-fit it later, and name the cost of the real fix.**
+
+* the artifact carries `p_any_basis` beside every size: `in_sample: true`, why,
+  the measured optimism, where it was measured, and what the fix is;
+* the tab says so under the figure — "in-sample: these worlds also chose the
+  lineups. Held-out is about 2.7% lower on average, 7.4% at worst";
+* **no number changed**, so no board is invalidated and `SD_ENGINE` stays 3.
+
+The honest fix is a disjoint selection/scoring split inside
+`build_nfl_showdown`, which costs either half the worlds per step or twice the
+build — a real price for a board that already takes twenty minutes on the PC.
+That is a production change with a runtime budget attached, and it belongs in a
+stage that is allowed to make one. Until then the number is labelled rather than
+quietly trusted, which is the condition for a research cross-fit and a served
+figure coexisting honestly.
+
+Top 0.1% is deliberately **not** served as a coverage figure at all: its
+in-sample optimism is three times larger, and nothing should display it as a
+probability before the split exists.
+
+---
 
 ### P. Remaining limitations
 
@@ -1228,8 +1305,15 @@ money gate can open.
 - **4,000 scoring worlds per cell.** Enough for the paired difference, not enough
   to quote an absolute tail coverage as calibrated. The absolute numbers here are
   model-conditional; only the paired differences are the result.
-- **The 1,200-lineup shortlist is binding** (of 23,820 enterable). Whether a
-  larger shortlist would favour either objective differently is unmeasured.
+- **The 1,200-lineup shortlist is binding and was never varied.** 1,200 of 23,820
+  enterable, at a single value in every cell. Making the shortlist
+  objective-specific was essential — a shared Top-1% shortlist would have handed
+  the tail objective a candidate set preselected for its opponent and could have
+  produced a biased null — but the CUTOFF itself is an unresolved methodological
+  choice. Whether 1,200 is large enough to be non-binding for either objective,
+  and whether a larger one would favour one of them, is unmeasured. Not rerun,
+  because there is no evidence it is constraining; recorded because there is no
+  evidence it is not.
 - **The tie convention is still inconsistent in production** — documented, 1.1%
   wide, deliberately not fixed.
 

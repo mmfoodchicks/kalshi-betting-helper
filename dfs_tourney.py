@@ -1035,6 +1035,26 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
         if not kk:
             continue
         ports[str(k)] = {"p_any_top1_pct": round(100.0 * p_any[kk - 1], 1),
+                         # What that number IS, because it is not an unbiased
+                         # forecast and used to look like one. The shortlist, the
+                         # greedy cover and this figure all read the SAME worlds,
+                         # so it is an in-sample selection score. S4 measured the
+                         # optimism on held-out worlds across eight cross-fit
+                         # cells: +2.7% on average and +7.4% at worst for this
+                         # top-1% metric (and +8.5% / +14.5% for top 0.1%, which
+                         # is why the tail metric is not served as coverage at
+                         # all). The honest fix is a disjoint selection/scoring
+                         # split in the builder, which costs half the worlds per
+                         # step or twice the build; until that is done the number
+                         # is labelled rather than quietly trusted.
+                         "p_any_basis": {
+                             "in_sample": True,
+                             "why": ("selection and evaluation share one world set; "
+                                     "this is a selection score, not a held-out "
+                                     "probability"),
+                             "measured_optimism_pct": {"mean": 2.7, "worst": 7.4},
+                             "measured_in": "research/s4_crossfit.py (8 cross-fit cells)",
+                             "fix": "disjoint selection/scoring worlds in the builder"},
                          "entries": [row(int(cand[j]), "cover") for j in chosen[:kk]]}
     t4 = time.time()
     # per-player: share of hindsight-optimal worlds at captain and at flex

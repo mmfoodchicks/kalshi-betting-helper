@@ -14714,11 +14714,48 @@ ck("the money gate stayed shut through S4 and no payout figure was computed to d
    and not [k for _d, _s, _n, r in _s4x_cells for k in r
             if k in ("ev", "ev_notie", "roi_pct", "payout")],
    _s4x["meta"]["money"])
-_s4rw = " ".join(open(_os.path.join(_root, "showdown_audit_report.md")).read().split())
+_sdr_raw = open(_os.path.join(_root, "showdown_audit_report.md")).read()
+_s4rw = " ".join(_sdr_raw.split())
+# The served number is in-sample and now SAYS so, in the artifact and on the tab.
+# Measured optimism across the eight cross-fit cells: +2.7% mean / +7.4% worst for
+# the served top-1% metric. The first write-up quoted -0.3% from a SINGLE cell and
+# called the served metric unaffected; that is withdrawn in the report and this
+# guard exists so the served figure cannot lose its label again.
+ck("every served portfolio size carries an explicit in-sample basis beside its coverage figure, with the measured optimism and the fix named",
+   '"p_any_basis": {' in _s4_sd
+   and '"in_sample": True' in _s4_sd
+   and '"measured_optimism_pct": {"mean": 2.7, "worst": 7.4}' in _s4_sd
+   and "disjoint selection/scoring worlds in the builder" in _s4_sd,
+   "a selection score must not render as a forecast")
+ck("and the tab says it too, under the number, rather than leaving it to read as a probability",
+   "any top 1% (in-sample)" in _js_s1
+   and "these worlds also chose the lineups" in _js_s1
+   and "basis.measured_optimism_pct.worst" in _js_s1)
+ck("no board was invalidated for the label, because no number changed",
+   _dt14.SD_ENGINE == 3 and _dt14.ENGINE == 6,
+   "labelling a figure is not a change in what the figure says")
+ck("the report carries the CORRECTED optimism figures and withdraws the single-cell version",
+   "CORRECTION to the first version of this section" in _s4rw
+   and "+2.71%" in _s4rw and "+8.49%" in _s4rw
+   and "generalised from a single cell and is withdrawn" in _s4rw)
+ck("and it scopes the field sweep to the one board and seed it actually ran on",
+   "Scope: ONE board" in _s4rw
+   and "not a universal property of the objective" in _s4rw
+   and "is **unmeasured**" in _s4rw)
+ck("and records the 1,200 shortlist cutoff as an unresolved choice rather than a validated one",
+   "binding and was never varied" in _s4rw
+   and "recorded because there is no\n  evidence it is not" in _sdr_raw.replace("\r", ""))
+ck("and says S7 is necessary and NOT sufficient, naming the joint-model link as the other half",
+   "S7 is necessary and not sufficient" in _s4rw
+   and "Both links have to close" in _s4rw
+   and "gates the\nFOOTBALL side" in _sdr_raw.replace("\r", ""))
+ck("and freezes the interpretation so neither half can be quoted alone",
+   'Neither "Top 0.1% failed" nor "Top 0.1% should replace Top 1%" is supported' in _s4rw
+   and "materially sensitive to the\nuncalibrated public-field concentration model" in _sdr_raw.replace("\r", ""))
 ck("the S4 report states the decision, the trade that blocks it, and the prerequisite it identified, rather than reporting the favourable half",
    "Production-objective decision: **unchanged**" in _s4rw
    and "coverage cannot price it" in _s4rw
-   and "S7 is therefore a genuine prerequisite" in _s4rw
+   and "S7 is necessary and not sufficient" in _s4rw
    and "Top 1% remains the production selection objective" in _s4rw)
 ck("and it keeps the pilot that pointed the WRONG way, labelled as the estimator noise it was rather than deleted",
    "pointed the comparison the wrong way entirely" in _s4rw
