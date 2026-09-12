@@ -9,19 +9,35 @@ asserts that rather than trusting it.
 hard owner rule, if any, excludes lineups that remain strong when selected on one
 set of worlds and judged on another?*
 
-**The answer, in one paragraph.** Four of nine rules are provably inert — they
-admit nothing when switched off alone, because another rule rejects everything
-they reject. Of the rest, exactly one moves the production objective:
-`DST-OPP`, the ban on rostering the defense that faces your captain, worth
-**+0.047** mean held-out Top 1% and stable in 7 of 8 cross-fit cells. It survives
-a field-concentration sweep, which S4's headline effect did not. But the
-football-only evidence runs the other way — every ablation that raises Top 1%
-*lowers* the selected portfolio's 99th-percentile DK score — and the lineups
-driving the gain are captain-opposite-defense builds whose value depends on
+**The answer, in one paragraph.** Four of nine rules have **zero marginal
+admissions when disabled individually under the current production rule set** —
+another rule already rejects everything they reject. That is a statement about
+the current *conjunction*, not about the rules: `CPT-POS` has zero marginal
+admissions alone and a **+0.038** effect when disabled alongside `CPT-SALARY`
+(section K), so it plainly has strategic effect that another rule is masking. Of
+the rest, exactly one moves the production objective on its own: `DST-OPP`, the
+ban on rostering the defense that faces your captain, worth **+0.047** mean
+held-out Top 1%, stable in 7 of 8 cross-fit cells, and robust across a
+field-concentration sweep on the one board and seed it was swept on — which S4's
+headline effect was not. **Recommendation: keep every rule.** The reason is that
+the gain is almost entirely *ownership-attributed*: the selected portfolio's
+held-out football tail barely moves (−0.55% on DEN @ KC, −0.06% on DAL @ NYG)
+while its modelled Top 1% rises 14% relative, so essentially none of the
+advantage comes from scoring more points. A leverage gain computed by a
+placeholder ownership model is not a gain this app is licensed to bank — and the
+lineups producing it are captain-opposite-defense builds whose value rests on
 exactly the cross-side covariance Stage 2B–2F measured legacy-latent getting
-wrong. **Recommendation: keep every rule.** `DST-OPP` is recorded as the one
-genuine candidate, INCONCLUSIVE rather than harmful, with the specific experiment
-that would settle it named in section O.
+wrong. `DST-OPP` is the one reproducible candidate effect in this study,
+**INCONCLUSIVE** rather than harmful, with the experiment that would settle it
+named in section O.
+
+**Corrected 2026-09-12 after independent review of `321c0b7`.** An earlier
+revision said "four of nine rules are provably inert" and claimed "every ablation
+that raises Top 1% *lowers* the selected portfolio's p99". The first was too
+strong (see above). The second was **false under the correct statistic** — it was
+true of the mean of twenty per-entry p99s, which is not a portfolio tail. Section
+L carries both quantities and the re-weighted argument; section U records what the
+correction changed and what it did not.
 
 ---
 
@@ -147,7 +163,7 @@ rule-order attribution would have been meaningless: assigning each lineup to its
 "first" failed rule would have produced a ranking of the order the code happens
 to check in.
 
-## F. The rule-overlap matrix, and which rules are redundant
+## F. The rule-overlap matrix, and which rules are masked by another
 
 The zero-marginal rules, and what subsumes them:
 
@@ -163,10 +179,17 @@ The zero-marginal rules, and what subsumes them:
 | `MAX-TE-TEAM` | `153085` | 68,586 | (no single rule) |
 
 "Subsumed" means **100%** of that rule's hits on that board are also hits of the
-named rule, on both boards independently. This is redundancy, not harmlessness:
-`CPT-POS` cannot be shown to protect anything *while `CPT-SALARY` stands*, and
-that conditional matters — section K shows removing both together is a different
-question with a different answer.
+named rule, on both boards independently.
+
+**This is masking, not inertness, and the distinction is the whole point.** The
+correct statement about such a rule is: *zero marginal admissions when disabled
+individually under the current production rule set.* Nothing stronger. `CPT-POS`
+cannot be shown to protect anything *while `CPT-SALARY` stands* — and section K
+measures what happens when it does not stand: **+0.038**, an order of magnitude
+above anything either rule does alone. A rule with zero marginal admissions is a
+rule whose effect is currently **masked**, and if its masking partner is ever
+retuned or removed the masked effect becomes live. Calling such a rule inert,
+redundant or harmless would licence exactly the wrong conclusion.
 
 ## G. Cross-fit design
 
@@ -261,9 +284,10 @@ Measured rather than assumed:
 `FLEX-POOL` puts 161–198 of its admissions **inside** the shortlist — one ranked
 as high as 2nd in its whole union — and the greedy still never picks one.
 `PUNT-ROLE` the same with 132–224. So those zeros are the rules being free, not
-the shortlist hiding their value. Without this column the "apparently harmless"
-verdicts would have rested on an untested assumption, which is why it was added
-mid-run.
+the shortlist hiding their value. Without this column the zero verdicts would
+have rested on an untested assumption, which is why it was added mid-run. Note
+what the column does **not** establish: it is still a statement about these rules
+*under the current conjunction*, measured at one shortlist size.
 
 ## J. The full-legal counterfactual
 
@@ -327,39 +351,106 @@ do not sum to full-legal's +0.061 — they compete for the same slots.
 evidence about them and it cannot attribute. Pairs beyond the four declared are
 also untested — all 36 would have been a search, not a test.
 
-## L. Football-only evidence — the half the field model cannot move
+## L. Football-only evidence — and the aggregation that had to be fixed
 
-Held-out DK score of the 20 selected entries, no field model anywhere, averaged
-over the four cells per board.
+**Two different statistics, and an earlier revision of this section used the
+wrong one for the claim it was making.**
 
-| board | portfolio | held-out Top 1% | football mean | football p99 |
-|---|---|---|---|---|
-| DEN @ KC | baseline | 0.60784 | 75.57 | **137.08** |
-| | `ablate:DST-OPP` | 0.69365 | 76.12 (+0.54) | 135.86 (**−1.22**) |
-| | `ablate:CPT-SALARY` | 0.61618 | 75.39 (−0.18) | 136.19 (−0.89) |
-| | `pair:CPT-SALARY+CPT-POS` | 0.66937 | 75.71 (+0.14) | 135.41 (**−1.67**) |
-| | full legal | 0.70807 | 76.31 (+0.74) | 135.65 (**−1.43**) |
-| DAL @ NYG | baseline | 0.73506 | 93.22 | **165.37** |
-| | `ablate:DST-OPP` | 0.74341 | 93.04 (−0.18) | 164.48 (−0.89) |
-| | `ablate:CPT-SALARY` | 0.73362 | 93.23 (+0.02) | 165.12 (−0.25) |
-| | `pair:CPT-SALARY+CPT-POS` | 0.74922 | 93.08 (−0.14) | 164.63 (−0.74) |
-| | full legal | 0.75650 | 93.14 (−0.08) | 164.53 (−0.84) |
+`mean-of-entry p99` — the mean, over the 20 selected entries, of each entry's own
+held-out p99. Descriptive: *how high does a typical entry in this portfolio
+reach.* This is what `s5_ablate.football_selected.p99` records and what this
+section previously reported as "the portfolio's football p99".
 
-**Every variant that raises Top 1% lowers the portfolio's football p99, on both
-boards, without exception.** The mean is mixed and small; the tail is
-consistently negative. The effect is modest in relative terms (−0.9% to −1.2% of
-p99) against a large relative Top-1% gain (+14% on DEN @ KC), so this is not a
-contradiction of equal magnitude — but it is a contradiction of **direction**,
-and S5.11 asks for directional compatibility.
+`portfolio p99` — for each held-out world take the **maximum** raw DK score
+across the 20 entries, then take the p99 of that worldwise-max distribution. This
+is the portfolio-level tail: a 20-entry submission delivers its best entry in any
+given world, and it is the football analogue of Top-q coverage, which the contest
+metric already computes as a worldwise max.
 
-The mechanism is legible in section H: the admitted lineups are leverage plays.
-A Chiefs-defense captain at p99 120.8 against an allowed field at 137.1 is not a
-higher-scoring lineup; it is a lower-scoring lineup almost nobody owns. In a
-tournament that can genuinely be better — leverage *is* the game. But the
-entire value of the trade is computed by the ownership model, and that model is
-`softmax(beta × projected points)` with beta solved so the most popular build
-holds 0.2% of the field, a figure taken from one published 2021 contest and never
-fitted to real Showdown ownership.
+Both, from the portfolios the artifacts already recorded (`research/s5_tail.py`;
+no re-selection, so the old figure is reproduced exactly and the relabel is
+checkable). Means over the four cells per board.
+
+| board | portfolio | held-out Top 1% | **portfolio p99** | Δ | (old) mean-of-entry p99 | Δ |
+|---|---|---|---|---|---|---|
+| DEN @ KC | baseline | 0.60784 | **160.20** | — | 137.08 | — |
+| | `ablate:DST-OPP` | 0.69365 | 159.31 | **−0.89** | 135.86 | −1.22 |
+| | `ablate:CPT-SALARY` | 0.61618 | 160.36 | **+0.16** | 136.19 | −0.89 |
+| | `ablate:FLEX-POOL` / `MAX-KDST` / `PUNT-ROLE` | 0.60784 | 160.20 | 0.00 | 137.08 | 0.00 |
+| | full legal | 0.70807 | 159.29 | **−0.91** | 135.65 | −1.43 |
+| DAL @ NYG | baseline | 0.73506 | **187.93** | — | 165.37 | — |
+| | `ablate:DST-OPP` | 0.74341 | 187.81 | **−0.12** | 164.48 | −0.89 |
+| | `ablate:CPT-SALARY` | 0.73362 | 187.83 | **−0.11** | 165.12 | −0.25 |
+| | full legal | 0.75650 | 188.39 | **+0.45** | 164.53 | −0.84 |
+
+### What the correction changed
+
+**The withdrawn claim.** This section said *"Every variant that raises Top 1%
+lowers the portfolio's football p99, on both boards, without exception."* That is
+**false** under the portfolio-tail definition. It was true of the mean-of-entry
+statistic, which is not a portfolio tail. Under the correct statistic
+`ablate:CPT-SALARY` is **+0.16** on DEN @ KC and `full_legal` is **+0.45** on
+DAL @ NYG — two sign flips, so the "without exception" was doing work it had not
+earned.
+
+**What survives.** `DST-OPP` is negative on both boards (−0.89 and −0.12), so the
+one rule the recommendation turns on still has no football support. But the
+honest magnitudes are **−0.55%** and **−0.06%** of the baseline tail — small, and
+on DAL @ NYG indistinguishable from nothing.
+
+**And the corrected reading is a tighter argument, not a weaker one.** The
+portfolio football tail is **essentially unchanged** while modelled Top 1% rises
+**+14% relative** on DEN @ KC. That means the gain is not a football gain at all:
+the portfolio scores the same and *places* much better. So ~all of the advantage
+is attributed to low modelled ownership — which is precisely the quantity this app
+has no licence to trust. "The football tail is flat while the contest metric
+jumps" is a cleaner statement of the leverage finding than "the football tail gets
+worse", and it does not depend on a small negative number holding up.
+
+**Why the two statistics diverge, which is itself informative.** Mean-of-entry
+p99 falls further than portfolio p99 in every case. The admitted lineups are
+individually lower-ceiling but *less correlated* with the rest of the portfolio —
+so the portfolio's best-in-world score barely moves while its average member's
+ceiling drops. That is exactly what a greedy **cover** objective is built to do,
+and it is visible only once the two aggregations are separated.
+
+The mechanism is still legible in section H: a Chiefs-defense captain whose own
+p99 is 120.8 against an allowed field averaging 137.1 per entry is not a
+higher-scoring lineup, it is a lower-scoring lineup almost nobody owns. In a
+tournament that can genuinely be better — leverage *is* the game. But the whole
+value of the trade is computed by `softmax(beta × projected points)` with beta
+solved so the most popular build holds 0.2% of the field, a figure from one
+published 2021 contest never fitted to real Showdown ownership.
+
+## L2. The opponent field is invariant under every owner-rule ablation
+
+Required by the review, and the right thing to require: disabling an **owner**
+rule must change which lineups *we* may enter, not who the modelled opponents
+are. If `field_weights` were renormalised over the enlarged owner universe, every
+ablation would conflate "we may now enter this" with "the public now behaves
+differently", and the +0.047 would be partly an artifact of moving the opponents.
+
+Two reasons it holds, one structural and one measured.
+
+**Structural.** `dfs_tourney.field_weights(players, idx, cpt_mult, top_share)`
+has no `allowed` parameter at all. It is a softmax over projected points across
+the lineups in `idx`, and every S5 call site passes the **full legal universe**,
+once per board, before any ablation universe is constructed. The owner-allowed
+mask is applied only when choosing *candidates*.
+
+**Measured** (`research/s5_tail.field_invariance`): compute `(f, beta)` from the
+full universe, then rebuild the owner-allowed mask with each of the nine rules
+disabled in turn and recompute. Across all nine ablations on all four
+board × seed combinations, `f` is **byte-identical** and there is exactly **one**
+beta value per board — 0.454838 on DEN @ KC, 0.305193 on DAL @ NYG.
+
+The artifact also records the size of the defect that does **not** exist, so the
+avoided confound is on file rather than merely asserted. Had the field been
+renormalised over the owner-allowed subset, beta would have moved from **0.4548
+to 0.3075** on DEN @ KC (−0.147, a 32% change) and 0.3052 to 0.2072 on
+DAL @ NYG. That is not a rounding error; it would have changed every Top-q
+number in the stage. A guard now proves the invariance behaviourally rather than
+leaving it to the function signature.
 
 ## M. Model-conditional contest evidence
 
@@ -382,15 +473,42 @@ alternative.**
 | 0.002 production | 0.455 | **+0.0860** | **+0.0928** | **+0.0109** | **+0.0096** |
 | 0.004 concentrated | 0.544 | **+0.0950** | **+0.0982** | **+0.0173** | **+0.0150** |
 
-**`DST-OPP` does not depend on the field knob.** +0.073 to +0.098 across the
-whole range, sign-stable at both exact conventions in all six cells. This is the
-opposite of S4's headline effect, which fell by two thirds across the same range
-— and it means the "it is only an artifact of one beta setting" escape is not
-available here. `PUNT-ROLE` is 0.000 at every setting but one (+0.0014, not
-stable), confirming it as noise.
+**Scope, stated as tightly as corrected S4 states its own.** This sweep covers
+**one board** (DEN @ KC, draft group `153086`), **one seed** (`20260912`), **both
+fold directions**, and **three concentrations** (top share 0.001 / 0.002 / 0.004).
+It is not the two-board two-seed grid the main comparison used. So the supported
+statement is:
 
-So the sensitivity sweep **strengthens** the case against `DST-OPP` rather than
-dissolving it. What holds the recommendation back is section L, not section N.
+> *On the tested board and seed, `DST-OPP`'s modelled Top-1% benefit survives all
+> three field concentrations without changing sign.*
+
+Nothing wider. In particular **this does not touch the board heterogeneity in
+section I.** Field robustness and slate robustness are different axes: the sweep
+says the effect does not ride the beta knob *on DEN @ KC*, while section I says
+DEN @ KC supplies essentially the whole effect and DAL @ NYG is near null
+(+0.001 to +0.013). A sweep run on the board that carries the effect cannot
+speak to the board that does not.
+
+With that scope: +0.073 to +0.098 across the range, sign-stable at both exact
+conventions in all six cells. That is the opposite of S4's headline effect, which
+fell by two thirds across the same range, so the "it is only an artifact of one
+beta setting" escape is **not available** for this rule on this board.
+`PUNT-ROLE` is 0.000 at every setting but one (+0.0014, not stable), confirming
+it as noise.
+
+So the sweep removes one explanation for `DST-OPP` rather than supporting its
+removal. What holds the recommendation back is section L's attribution of the
+gain and the model limitation in section O — not section N.
+
+### A statistical footnote, recorded rather than blocking
+
+Nine single-rule tests, four pre-declared pairs and a full-legal counterfactual
+across eight cells is **not** a familywise-controlled hypothesis family, and no
+multiplicity correction was applied. Since S5 promotes no rule change, nothing
+rests on a formal significance threshold. `DST-OPP` is therefore described
+throughout as **the only reproducible candidate effect under this study** — not as
+a discovery at any stated significance level. The paired bootstraps are
+descriptive interval estimates for each comparison taken on its own.
 
 ## O. Recommendation, per rule
 
@@ -400,64 +518,79 @@ production-objective coverage improves, the improvement is consistent across
 boards/seeds/directions, **football-only tail evidence is directionally
 compatible**, and the result is not an artifact of one field setting.
 
-| rule | marginal | Δ held-out Top 1% | stable | football p99 | verdict | S4 rerun if changed? |
+The football column below is the **portfolio p99** (section L), not the
+mean-of-entry statistic an earlier revision used.
+
+| rule | marginal (single) | Δ held-out Top 1% | stable | portfolio p99 | verdict | S4 rerun if changed? |
 |---|---|---|---|---|---|---|
-| `DST-OPP` | 9,656–9,819 | **+0.047** | 7/8 | **worse on both boards** | **INCONCLUSIVE — keep** | **yes** (structural) |
-| `CPT-POS` (with `CPT-SALARY`) | 0 alone | **+0.038** paired | 7/8 | **worst of any variant** | **INCONCLUSIVE — keep** | **yes** (structural) |
-| `CPT-SALARY` | 37,002–37,077 | +0.003 | 2/8 | −0.25 to −0.89 | apparently harmless — keep | no (threshold, <10%) |
-| `PUNT-ROLE` | 19,851–20,705 | −0.002 | 1/8 | ≈0 | apparently harmless — keep | n/a |
-| `FLEX-POOL` | 27,011–47,346 | +0.000 | 0/8 | 0.00 | apparently harmless — keep | n/a |
-| `MAX-KDST` | 537–546 | +0.000 | 0/8 | 0.00 | apparently harmless — keep | n/a |
-| `CPT-POOL` | 0 | 0.000 | — | 0.00 | redundant given `CPT-SALARY` | n/a |
-| `MAX-PUNT` | 0 | 0.000 | — | 0.00 | redundant given `PUNT-ROLE` | n/a |
-| `MAX-TE-TEAM` | 0 | 0.000 | — | 0.00 | redundant given the others | n/a |
+| `DST-OPP` | 9,656–9,819 | **+0.047** | 7/8 | −0.89 DEN / −0.12 DAL | **INCONCLUSIVE — keep** | **yes** (structural) |
+| `CPT-POS` (only with `CPT-SALARY`) | 0 alone | **+0.038** paired | 7/8 | −1.67 mean-of-entry; portfolio n/m | **INCONCLUSIVE — keep** | **yes** (structural) |
+| `CPT-SALARY` | 37,002–37,077 | +0.003 | 2/8 | +0.16 DEN / −0.11 DAL | no candidate effect — keep | no (threshold, >10% though: **yes**) |
+| `PUNT-ROLE` | 19,851–20,705 | −0.002 | 1/8 | 0.00 / −0.11 | no candidate effect — keep | n/a |
+| `FLEX-POOL` | 27,011–47,346 | +0.000 | 0/8 | 0.00 | no candidate effect — keep | n/a |
+| `MAX-KDST` | 537–546 | +0.000 | 0/8 | 0.00 | no candidate effect — keep | n/a |
+| `CPT-POOL` | **0 under the current conjunction** | 0.000 | — | 0.00 | masked by `CPT-SALARY` — keep | yes (structural) |
+| `MAX-PUNT` | **0 under the current conjunction** | 0.000 | — | 0.00 | masked by `PUNT-ROLE` — keep | no |
+| `MAX-TE-TEAM` | **0 under the current conjunction** | 0.000 | — | 0.00 | masked by the union of the others — keep | no |
 
-**Ranking.**
+`CPT-SALARY`'s rerun column is corrected from an earlier revision: its marginal
+set is 37,077 on DEN @ KC, **+155.7%** of the allowed universe, so the count
+trigger fires even though the rule is a threshold rather than a structural one.
 
-*Most likely harmful (but not established):* `DST-OPP`, and the
-`CPT-SALARY`+`CPT-POS` pair. Both clear four of the five criteria. Both fail the
-football one.
+**Ranking.** Categories chosen so that none of them can be read as "this rule
+does nothing".
 
-*Inconclusive:* nothing else — the remaining rules do not reach the first
-criterion.
+*The only reproducible candidate effects:* `DST-OPP`, and the
+`CPT-SALARY`+`CPT-POS` pair. Both clear four of the five criteria and fail the
+football one. Neither is promoted.
 
-*Apparently harmless under current evidence:* `CPT-SALARY`, `PUNT-ROLE`,
-`FLEX-POOL`, `MAX-KDST`. "Harmless under current evidence" is not "correct" — it
-means the model does not rate what they discard, under a model whose covariance
-is known to be limited.
+*No candidate effect under this study:* `CPT-SALARY`, `PUNT-ROLE`, `FLEX-POOL`,
+`MAX-KDST`. Their admissions reach the shortlist — 104–281, 132–224, 161–198 and
+3–28 respectively — and the greedy either does not pick them or gains nothing by
+it. That is evidence about *the model's opinion of what they discard*, under a
+model whose covariance is known to be limited. It is not evidence the rules are
+correct.
 
-*Redundant:* `CPT-POOL`, `MAX-PUNT`, `MAX-TE-TEAM`. Each rejects lineups another
-rule also rejects, 100% of the time, on both boards. Removing any of them changes
-nothing **while its partner stands**. That is not a reason to remove them — it is
-a reason to know that the partner is doing the work.
+*Zero marginal admissions when disabled individually, under the current
+production rule set:* `CPT-POOL`, `MAX-PUNT`, `MAX-TE-TEAM`. Each rejects only
+lineups another rule also rejects — 100% of the time, on both boards — so
+disabling it alone changes nothing **while its masking partner stands**. These
+rules are **not** inert, redundant or harmless in any general sense: `CPT-POS` is
+in the same category and the `CPT-SALARY`+`CPT-POS` pair is the largest
+interaction in the study. If a masking partner is ever retuned or removed, the
+masked rule's effect becomes live and has to be re-measured.
 
 ### Why `DST-OPP` is held rather than removed
 
-Four reasons, in order of weight.
+Four reasons, re-weighted after the portfolio-tail correction. The football
+argument is now the *attribution* of the gain rather than a contradiction of it.
 
-1. **The football tail goes the wrong way.** Every Top-1%-improving variant
-   lowers held-out p99, on both boards, without exception. The gain is placement,
-   not scoring.
+1. **The gain is ownership, not football.** The portfolio's held-out football tail
+   barely moves — −0.55% on DEN @ KC and −0.06% on DAL @ NYG — while the modelled
+   Top 1% rises 14% relative. The portfolio scores the same and *places* far
+   better, so essentially all of the advantage is attributed to low modelled
+   ownership. That quantity comes from `softmax(beta × projected points)` with
+   beta fixed by one published 2021 contest, which is the single thing in this
+   system the money gate is shut *because of*. A gain that is 100%
+   ownership-derived is not a gain this app may act on.
 
 2. **It sits on the model's known weak point.** `DST-OPP` bans rostering the
-   defense that faces your captain — a lineup that needs one offense to produce
-   and the other to be stopped. Its value is a *cross-side covariance* quantity,
-   and cross-side covariance is precisely what Stage 2B–2F measured
-   legacy-latent getting wrong. The one rule S5 flags is the one whose evidence
-   depends most on the part of the simulator we have the least confidence in.
-   That is not a coincidence to shrug at; it is the single best reason to wait.
+   defense that faces your captain — a lineup needing one offense to produce and
+   the other to be stopped. Its value is a *cross-side covariance* quantity, and
+   cross-side covariance is precisely what Stage 2B–2F measured legacy-latent
+   getting wrong. The one rule S5 flags is the one whose evidence depends most on
+   the part of the simulator we have least confidence in. Not a coincidence to
+   shrug at.
 
 3. **One board supplies the effect.** +0.078 to +0.093 on DEN @ KC against
-   +0.001 to +0.013 on DAL @ NYG. Two boards cannot tell a property of the rule
-   from a property of one game's player pool — and DEN @ KC happens to pair two
-   strong offenses with two defenses the model likes.
+   +0.001 to +0.013 on DAL @ NYG. Two boards cannot separate a property of the
+   rule from a property of one game's player pool, and section N's field sweep
+   does not help here: it ran on DEN @ KC, the board that carries the effect.
 
-4. **It is structural, so removing it triggers the S4 rerun.** Its marginal set
-   is 9,819 lineups, 41% of the allowed universe, which clears the 10% count
-   trigger on its own; and it bans a shape rather than setting a number, which
-   clears the structural trigger independently. The Top-1%-versus-Top-0.1%
-   conclusion would have to be re-measured on the new universe before it could be
-   quoted again.
+4. **It is structural, so removal triggers the S4 rerun.** 9,819 marginal
+   admissions is +41.2% of the allowed universe, clearing the count trigger
+   alone; and it bans a shape rather than setting a number, clearing the
+   structural trigger independently.
 
 ### What would settle it
 
@@ -555,7 +688,7 @@ Guards added for S5, beyond the artifact assertions:
   cannot be added without S5 noticing;
 - the shadow classifier is proved equal to production on a synthetic pool built
   so all nine rules fire — and a second guard asserts all nine *do* fire, so the
-  equivalence is not proved on a universe where half the rules are inert;
+  equivalence is not proved on a universe where half the rules never fire;
 - every forbidden lineup carries all its reasons and every allowed lineup none;
 - a single-rule ablation admits exactly the exclusive set and keeps every other
   rule enforced;
@@ -566,6 +699,53 @@ Guards added for S5, beyond the artifact assertions:
 - no S5 module contains an `ev`/`roi`/`cash`/`payout` symbol, checked as exact
   AST constants and attribute names rather than substrings — `"ev"` matches
   `"every"`, which cost this suite a false green earlier in the pass.
+
+## U. What the independent review changed, and what it did not
+
+Four methodological contracts tightened after review of `321c0b7`. Recorded in
+full because two of them changed a claim, not just a word.
+
+**1. "Provably inert" withdrawn.** Four rules have **zero marginal admissions
+when disabled individually under the current production rule set**. That is all
+that was shown. `CPT-POS` is the standing counterexample to the stronger reading:
+zero alone, **+0.038** paired with `CPT-SALARY`. The words *inert*, *redundant*
+and *harmless* are gone from the verdicts, the ranking and the guards; the
+replacement is *masked*, which carries the conditional. This matters later: if a
+masking partner is retuned, the masked effect becomes live.
+
+**2. The portfolio tail was not a portfolio tail — and the claim built on it was
+false.** `football_selected.p99` is the mean of twenty per-entry p99s. The
+portfolio quantity is the p99 of the worldwise maximum across the twenty entries.
+Recomputed in `research/s5_tail.py` from the recorded portfolios, so the old
+figure is reproduced beside the new one. The withdrawn sentence — *"every variant
+that raises Top 1% lowers the portfolio's football p99, on both boards, without
+exception"* — is **false** under the correct statistic: `ablate:CPT-SALARY` is
++0.16 on DEN @ KC and `full_legal` is +0.45 on DAL @ NYG. `DST-OPP` remains
+negative on both boards but by −0.55% and −0.06%, which is small. The argument is
+now the *attribution* of the gain (ownership, not football) rather than a
+contradiction, and section L explains why the two aggregations diverge — the
+admitted lineups are individually lower-ceiling but less correlated, which is what
+a greedy cover is built to exploit.
+
+**3. Field invariance proved rather than assumed.** Section L2. One beta per
+board across all nine ablations, `f` byte-identical, plus the size of the
+confound that would have existed had the field been renormalised over the
+owner-allowed subset (beta 0.4548 → 0.3075 on DEN @ KC). Guarded behaviourally.
+
+**4. The field sweep's scope narrowed to what it ran on.** One board, one seed,
+both directions, three concentrations — and explicitly *not* a statement about
+the DEN-versus-DAL heterogeneity, which is a different axis. A sweep on the board
+that carries the effect cannot speak for the board that does not.
+
+Plus a footnote: nine rule tests, four pairs and a counterfactual across eight
+cells is not a familywise-controlled family, and no correction was applied.
+`DST-OPP` is "the only reproducible candidate effect under this study", never a
+discovery at a stated significance level.
+
+**What did not change: the recommendation.** Keep every rule. Criterion 3
+(consistency across boards) was always weak and criterion 4 (football
+compatibility) still fails for `DST-OPP`, now on a smaller margin and a better
+argument. The production decision is identical; its justification is sounder.
 
 ## T. What S5 did not do
 

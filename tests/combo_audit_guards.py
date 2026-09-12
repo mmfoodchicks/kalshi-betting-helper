@@ -16062,21 +16062,33 @@ ck("S5.10 shows DST-OPP's effect does NOT ride the uncalibrated field knob: posi
 # outranks a stable, field-robust +0.047 is that the football tail disagrees.
 # If a later pass deletes that sentence the recommendation loses its basis, so
 # pin the mechanism and not just the verdict.
-ck("the S5 report recommends keeping every rule, and says plainly that the football tail is what holds DST-OPP back rather than leaving the +0.047 unexplained",
+# Repinned 2026-09-12 after independent review, and this one was pinning a FALSE
+# claim rather than a stale one: "every variant that raises Top 1% lowers the
+# portfolio's football p99, without exception" held for the mean of twenty
+# per-entry p99s and FAILS for the portfolio's worldwise-max tail, where two
+# variants improve. The recommendation is unchanged; its stated basis is now the
+# ATTRIBUTION of the gain, which is what this pins.
+ck("the S5 report recommends keeping every rule, and bases it on the gain being ownership-attributed rather than on a football contradiction it cannot support",
    "**Recommendation: keep every rule.**" in _s5repw
-   and "INCONCLUSIVE \u2014 keep" in _s5repw
-   and "Every variant that raises Top 1% lowers the portfolio's football p99, on both boards, without exception" in _s5repw
-   and "What holds the recommendation back is section L, not section N" in _s5repw)
+   and "INCONCLUSIVE" in _s5repw
+   and "The gain is ownership, not football" in _s5repw
+   and "A gain that is 100% ownership-derived is not a gain this app may act on" in _s5repw
+   and "What holds the recommendation back is section L's attribution of the gain" in _s5repw)
 
 ck("and it names the model limitation the flagged rule sits on, rather than treating a model-conditional gain as a strategy discovery",
    "cross-side covariance" in _s5repw
    and "Stage 2B\u20132F measured legacy-latent getting" in _s5repw
-   and "the one whose evidence depends most on the part of the simulator we have the least confidence in" in _s5repw)
+   and "the one whose evidence depends most on" in _s5repw
+   and "the part of the simulator we have least confidence in" in _s5repw)
 
-ck("and it separates redundant rules from harmless ones instead of calling a subsumed rule safe",
-   "Redundant:" in _s5repw
-   and "Removing any of them changes nothing **while its partner stands**" in _s5repw
-   and "This is redundancy, not harmlessness" in _s5repw)
+# Repinned: the review rejected "redundant" and "harmless" as descriptions of a
+# rule with zero marginal admissions, because CPT-POS has zero alone and the
+# study's largest interaction paired. The guard now pins the MASKING language and
+# the conditional that comes with it.
+ck("and it describes a rule with zero marginal admissions as MASKED under the current rule set, with the conditional that the effect becomes live if its partner moves",
+   "masked by" in _s5repw
+   and "disabling it alone changes nothing **while its masking partner stands**" in _s5repw
+   and "the masked rule's effect becomes live and has to be re-measured" in _s5repw)
 
 ck("and it records that every zero was checked against shortlist truncation, with the ranks that prove it",
    "The zeros are real, not shortlist truncation" in _s5repw
@@ -16105,6 +16117,139 @@ ck("and the S5 report keeps the limitation that one of its two boards is NOT the
 ck("and every S5 artifact carries a non-null seed under the contract tightened at 96bf08b",
    all(a["meta"]["provenance"]["seed"] is not None and _prov14.complete(a["meta"]["provenance"])
        for a in (_s5r, _s5a, _s5p, _s5s)))
+
+
+# ---- S5 closure: the four contracts the independent review required ---------
+_s5t = _json5.load(open(_os.path.join(_s5_root, "research", "data", "s5_tail.json")))
+
+
+import re as _re5
+
+
+def _s5_unquoted(text):
+    """The report with every "..." and `...` span removed -- so a term can
+    survive as a quoted retraction without counting as a live claim."""
+    return _re5.sub(r"`[^`]*`", " ", _re5.sub(r'"[^"]*"', " ", text))
+
+
+# CONTRACT 1. "Provably inert" was too strong and CPT-POS is the counterexample:
+# zero marginal admissions alone, +0.038 paired with CPT-SALARY. So the words
+# inert / redundant / harmless may not appear as LIVE claims anywhere -- only
+# inside quotes, or in a sentence that explicitly rejects them. Checked on the
+# unquoted text so the retraction itself does not trip it.
+_s5_live = _s5_unquoted(_s5repw)
+_s5_banned = [w for w in ("provably inert", "apparently harmless", "redundant given")
+              if w in _s5_live]
+ck("the S5 report makes no live claim that a rule is inert, redundant or harmless -- only that it has zero marginal admissions when disabled individually under the current rule set",
+   not _s5_banned
+   and "zero marginal admissions when disabled individually under the current" in _s5repw
+   and "masking is" in _s5_unquoted(open(_os.path.join(_s5_root, "research", "s5_ablate.py")).read())
+   or not _s5_banned and "masked by" in _s5repw,
+   f"live banned terms: {_s5_banned}")
+
+ck("and it keeps the counterexample that makes the distinction necessary: a rule with zero marginal admissions alone carrying the study's largest interaction",
+   "**not** inert, redundant or harmless in any general sense" in _s5repw
+   and "This is masking, not inertness" in _s5repw
+   and _s5r["boards"]["153086"]["marginal_admissions"]["CPT-POS"] == 0
+   and _s5_mean(_s5p, "pair:CPT-SALARY+CPT-POS") > 0.03)
+
+# CONTRACT 2. The opponent field must not move when an OWNER rule comes off.
+# Disabling "which lineups we may enter" must not change "who the opponents are".
+# Measured across every ablation on every board/seed, and the avoided confound is
+# recorded: renormalising over the allowed subset would have moved beta ~32%.
+_s5_fi = [b["field_invariance"] for byseed in _s5t["boards"].values()
+          for b in byseed.values()]
+ck("the modelled opponent field is IDENTICAL under every owner-rule ablation, so an ablation changes our candidate universe and not the public",
+   len(_s5_fi) == 4
+   and all(x["field_identical_under_every_ablation"] for x in _s5_fi)
+   and all(len(set(x["beta_by_ablation"].values())) == 1 for x in _s5_fi)
+   and all(x["field_weights_takes_allowed"] is False for x in _s5_fi),
+   str([sorted(set(x["beta_by_ablation"].values())) for x in _s5_fi]))
+
+ck("and the confound it avoids is recorded with its size, rather than the invariance being left to the function signature",
+   all(abs(x["counterfactual_if_renormalised_over_allowed"]["beta_shift"]) > 0.05
+       for x in _s5_fi),
+   str([x["counterfactual_if_renormalised_over_allowed"]["beta_shift"] for x in _s5_fi]))
+
+# ...and proved behaviourally, not only read off an artifact: field_weights must
+# take no `allowed` argument, and every S5 call site must pass the FULL universe.
+_s5_fw = next(n for n in _ast5.walk(_ast5.parse(open(_os.path.join(_s5_root, "dfs_tourney.py")).read()))
+              if isinstance(n, _ast5.FunctionDef) and n.name == "field_weights")
+_s5_fw_args = [a.arg for a in _s5_fw.args.args]
+_s5_fw_calls = []
+for _rel in ("s5_ablate.py", "s5_pairs.py", "s5_sens.py", "s5_tail.py"):
+    for n in _ast5.walk(_ast5.parse(open(_os.path.join(_s5_root, "research", _rel)).read())):
+        if (isinstance(n, _ast5.Call) and isinstance(n.func, _ast5.Attribute)
+                and n.func.attr == "field_weights"):
+            _s5_fw_calls.append((_rel, [_ast5.dump(a) for a in n.args]))
+ck("and field_weights cannot see the owner-allowed mask at all: no such parameter exists, and every S5 call site passes the whole legal universe rather than a filtered one",
+   "allowed" not in _s5_fw_args
+   and len(_s5_fw_calls) >= 4
+   # the universe argument is the bare name `idx` everywhere except s5_tail's
+   # deliberate counterfactual, which passes idx[ok] to MEASURE the defect
+   and all(("id='idx'" in a[1] or rel == "s5_tail.py") for rel, a in _s5_fw_calls),
+   f"args {_s5_fw_args}; {len(_s5_fw_calls)} call sites")
+
+# CONTRACT 3. The portfolio tail has to be the portfolio's tail. The earlier
+# claim -- "every variant that raises Top 1% lowers the portfolio p99, without
+# exception" -- was TRUE of the mean of twenty per-entry p99s and FALSE of the
+# worldwise max. Both are now computed, and the guard pins the exceptions so the
+# withdrawn universal cannot quietly return.
+_s5_tails = {}
+for dg, byseed in _s5t["boards"].items():
+    for sd, b in byseed.items():
+        for d in b["directions"].values():
+            for k, v in d.items():
+                _s5_tails.setdefault((dg, k), []).append(v)
+
+
+def _s5_tail_mean(dg, k, field):
+    rows = _s5_tails.get((dg, k)) or []
+    return sum(r[field] for r in rows) / max(len(rows), 1)
+
+
+ck("the portfolio football tail is the p99 of the WORLDWISE MAXIMUM across the 20 entries, defined in the artifact and reported beside the per-entry statistic it replaced",
+   "worldwise_max_p99" in _s5t["meta"]["portfolio_tail_definition"]
+   and "max(raw DK score) across the portfolio's 20 entries" in _s5t["meta"]["portfolio_tail_definition"]
+   and all("worldwise_max_p99" in r and "mean_of_entry_p99" in r
+           for rows in _s5_tails.values() for r in rows))
+
+ck("and the withdrawn universal stays withdrawn: under the CORRECT statistic two variants IMPROVE the portfolio tail, which is why 'without exception' was wrong",
+   _s5_tail_mean("153086", "ablate:CPT-SALARY", "worldwise_max_p99")
+   > _s5_tail_mean("153086", "baseline", "worldwise_max_p99")
+   and _s5_tail_mean("153085", "full_legal", "worldwise_max_p99")
+   > _s5_tail_mean("153085", "baseline", "worldwise_max_p99")
+   and "is **false** under the portfolio-tail definition" in _s5repw
+   and "without exception" not in _s5_unquoted(_s5repw),
+   f"CPT-SALARY DEN {_s5_tail_mean('153086', 'ablate:CPT-SALARY', 'worldwise_max_p99'):.2f} "
+   f"vs {_s5_tail_mean('153086', 'baseline', 'worldwise_max_p99'):.2f}")
+
+ck("and DST-OPP's football verdict survives the correction on the right basis: still negative on both boards, but small, so the argument is the gain's ATTRIBUTION rather than a contradiction",
+   _s5_tail_mean("153086", "ablate:DST-OPP", "worldwise_max_p99")
+   < _s5_tail_mean("153086", "baseline", "worldwise_max_p99")
+   and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99")
+   < _s5_tail_mean("153085", "baseline", "worldwise_max_p99")
+   and "The gain is ownership, not football" in _s5repw
+   and "essentially all of the advantage is attributed to low modelled" in _s5repw)
+
+# CONTRACT 4. Field robustness and slate robustness are different axes, and the
+# sweep ran on the board that carries the effect.
+ck("the field-sensitivity claim is scoped to the board, seed, directions and concentrations actually swept, and explicitly does not speak to the board heterogeneity",
+   "**one board** (DEN @ KC, draft group `153086`), **one seed**" in _s5repw
+   and "does not touch the board heterogeneity" in _s5repw
+   and "Field robustness and slate robustness are different axes" in _s5repw
+   and _s5s["sweep"]["draft_group_id"] == 153086
+   and _s5s["sweep"]["seed"] == 20260912)
+
+ck("and the multiplicity of the rule search is recorded rather than dressed as a significance claim",
+   "not** a familywise-controlled hypothesis family" in _s5repw
+   and "the only reproducible candidate effect under this study" in _s5repw
+   and "no multiplicity correction was applied" in _s5repw)
+
+ck("and the review's corrections are recorded with what they changed AND what they did not",
+   "## U. What the independent review changed, and what it did not" in _s5repw
+   and "What did not change: the recommendation" in _s5repw
+   and "The production decision is identical; its justification is sounder" in _s5repw)
 
 
 # A red guard MUST be a red exit code. The suite used to exit 0 unless it

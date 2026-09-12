@@ -4,7 +4,10 @@ classifier proved equivalent to production over the WHOLE legal universe.
 Production answers one boolean per lineup ("may we enter it?") and stops at the
 first failure, so it can never say WHY a lineup is forbidden or what else was
 also wrong with it. S5 needs the reason set, because a rule that rejects 400,000
-lineups every one of which another rule also rejects costs nothing to remove.
+lineups every one of which another rule ALSO rejects admits nothing when disabled
+on its own -- which is a fact about the current conjunction of rules and NOT a
+finding that the rule does no work. See s5_pairs.py: CPT-POS is exactly such a
+rule and it carries the largest interaction in the study.
 
 Three categories, and keeping them apart is the whole point of S5.0:
 

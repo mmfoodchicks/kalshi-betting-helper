@@ -20,10 +20,16 @@ them is entitled to see the identity rather than take it on trust.
 Then the part counts cannot answer (S5.7): for each rule with a non-empty
 marginal set, shortlist and greedily build a 20-entry portfolio over
 allowed + marginal_R on the SELECTION fold, and grade it on the HELD-OUT fold
-against the baseline portfolio built the same way over allowed alone. A rule
-that rejects 400,000 lineups and never contributes one to the portfolio is
-strategically free; a rule whose removal inserts entries that then hold up out
-of sample is not.
+against the baseline portfolio built the same way over allowed alone.
+
+What a zero here does and does not mean, because an earlier revision of this
+docstring overstated it: a rule that rejects 400,000 lineups and never
+contributes one to the portfolio has ZERO MARGINAL ADMISSIONS UNDER THE CURRENT
+CONJUNCTION OF RULES. It is not "inert", "redundant" or "strategically free" --
+CPT-POS has zero marginal admissions alone and a +0.038 effect the moment
+CPT-SALARY comes off beside it (research/s5_pairs.py). A zero means the rule's
+effect is currently MASKED by another rule, and masking is a property of the
+configuration, not of the rule.
 
 Two metric families, because the field model is a placeholder (S5.5):
 
