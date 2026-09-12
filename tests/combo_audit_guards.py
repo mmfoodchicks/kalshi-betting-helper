@@ -14524,6 +14524,66 @@ ck("a ticket is graded against C-1 opponents, every one of them a public-field d
    and "treats all C-1 opponents as\n    public-field draws when a handful of them are our own" in _s4_src
    and "first = np.power(1.0 - F, C - 1)" in _s4_src,
    "88,235 entries -> 88,234 opponents per ticket, not 88,215")
+# S4.3: the analytic coverage against an EMPIRICAL same-field contest.
+#
+# The three synthetic union regressions (a duplicate buys nothing, a dominated
+# entry buys nothing, a complementary entry buys everything) are in the portfolio
+# block below, from the Classic pass. What was missing is the one that tests the
+# whole chain at once against ground truth rather than against itself.
+#
+# The analytic column models the number of opponents above us as POISSON with
+# lambda = -(C-1) ln(1 - F), then reads an interpolated grid. The truth, given
+# the field model, is BINOMIAL(C - k, F): each of the C - k public opponents
+# independently lands above us with probability F. So drawing that binomial and
+# counting exact ranks tests the Poisson substitution AND the grid interpolation
+# together, which nothing else here does.
+if _dt14.available():
+    _s4e_C, _s4e_k = 10_000, 20
+    _s4e_ce = _s4e_C - _s4e_k + 1
+    # Grade against the grid's OWN cutoff, not the real contest's. For C = 10,000
+    # and k = 20 they differ (99 seats against 100), which is exactly what the
+    # cross-fit's `places_match_real_contest` flag exists to catch -- the first
+    # version of this guard mismatched them and read as a 24-SE production defect
+    # when it was a test bug. On the live boards the counts do match at every k.
+    _s4e_places = max(1, int(0.01 * _s4e_ce))
+    _s4e_grid = _dt14.payout_grid(_s4e_ce, [{"from": 1, "to": 1, "prize": 1000.0}],
+                                  10.0, _s4e_places)
+    _s4e_rng = _nps4.random.default_rng(404)
+    _s4e_F = _nps4.array([1e-5, 1e-4, 5e-4, 1e-3, 3e-3, 6e-3, 1e-2, 1.5e-2, 3e-2])
+    _s4e_i = _nps4.minimum(_nps4.searchsorted(_s4e_grid["F"], _s4e_F),
+                           len(_s4e_grid["F"]) - 1)
+    _s4e_Fg = _s4e_grid["F"][_s4e_i]            # the mass the grid actually used
+    _s4e_ana = _s4e_grid["top1"][_s4e_i]
+    _s4e_emp = (_s4e_rng.binomial(_s4e_ce - 1, _s4e_Fg[:, None],
+                                  size=(len(_s4e_F), 40_000))
+                <= _s4e_places - 1).mean(axis=1)
+    # An absolute tolerance, not pure Monte Carlo error: the Normal-on-the-rank
+    # substitution production makes once lambda passes 60 carries its own small
+    # bias at the steep point, and pretending MC error is the only error would
+    # make this guard flake on an approximation that is deliberate and sized.
+    ck("the analytic Top-q column agrees with an EMPIRICAL same-field contest -- opponents drawn binomially and ranked exactly -- across masses from comfortably-in to comfortably-out, including the steep transition",
+       float(_nps4.max(_nps4.abs(_s4e_ana - _s4e_emp))) < 0.02,
+       f"worst |analytic - empirical| = {float(_nps4.max(_nps4.abs(_s4e_ana - _s4e_emp))):.4f} "
+       f"over F = {_s4e_F.tolist()}")
+    # And the union, tested where the two formulas disagree most: three entries
+    # scoring IDENTICALLY in every world. At least one qualifies exactly when
+    # that one score qualifies -- p, not 3p -- and an empirical contest settles
+    # which formula is right instead of checking a formula against itself.
+    _s4u_i = int(_nps4.searchsorted(_s4e_grid["F"], 1e-2))
+    _s4u_p = float(_s4e_grid["top1"][_s4u_i])
+    _s4u_P = _nps4.full((3, 4000), _s4u_p)
+    _s4u_max = float(_nps4.max(_s4u_P, axis=0).mean())                  # shared field
+    _s4u_prod = float((1.0 - _nps4.prod(1.0 - _s4u_P, axis=0)).mean())  # independent fields
+    _s4u_emp = float((_s4e_rng.binomial(_s4e_ce - 1, float(_s4e_grid["F"][_s4u_i]),
+                                        size=200_000) <= _s4e_places - 1).mean())
+    ck("and the UNION is settled empirically where the two formulas disagree most: three entries with identical scores qualify as often as ONE of them does, which is the row-wise max and not the product of misses",
+       abs(_s4u_max - _s4u_emp) < 0.02
+       and abs(_s4u_prod - _s4u_emp) > 10.0 * abs(_s4u_max - _s4u_emp)
+       and _s4u_prod > _s4u_max,
+       f"shared-field {_s4u_max:.5f} vs empirical {_s4u_emp:.5f}; the independent-fields form "
+       f"says {_s4u_prod:.5f}, wrong by {abs(_s4u_prod - _s4u_emp):.5f} against the shared "
+       f"field's {abs(_s4u_max - _s4u_emp):.5f}")
+
 _s4t = _json2b.load(open(_os.path.join(_root, "research", "data", "s4_ties.json")))
 ck("and on a LIVE board the whole span of defensible conventions is worth about one percent of the best lineup's metric, picks the same best lineup, and leaves the ranking almost unchanged -- so the convention is documented, not fixed, and the engine is not bumped for it",
    _s4t["by_q"]["top01"]["relative_bracket_at_best"] < 0.05
@@ -14541,6 +14601,128 @@ ck("the tied blocks are real and measured, so the narrow bracket is a fact about
    f"p90 {_s4t['meta']['tied_block_size']['p90']}, "
    f"max {_s4t['meta']['tied_block_size']['max']} against "
    f"{_s4t['by_q']['top01']['places']} top-0.1% places")
+
+# ======================================================================
+# S4.2-S4.9: the cross-fit, and the objective decision it did NOT justify
+# ======================================================================
+_s4x = _json2b.load(open(_os.path.join(_root, "research", "data", "s4_crossfit.json")))
+_s4x_cells = [(dg, sd, nm, r) for dg, bs in _s4x["boards"].items()
+              for sd, b in bs.items() for nm, r in b["directions"].items()]
+_s4x_src = open(_os.path.join(_root, "research", "s4_crossfit.py")).read()
+ck("the cross-fit is on file for both boards, both seeds and BOTH fold directions, with the folds provably disjoint in every cell",
+   len(_s4x_cells) == 8
+   and all(r["folds_disjoint"] is True for _d, _s, _n, r in _s4x_cells)
+   and all(r["n_selection"] >= 4000 and r["n_scoring"] >= 4000 for _d, _s, _n, r in _s4x_cells)
+   and all(set(range(*r["selection_worlds"])) != set(range(*r["scoring_worlds"]))
+           for _d, _s, _n, r in _s4x_cells),
+   f"{len(_s4x_cells)} cells, "
+   f"{_s4x_cells[0][3]['n_selection']} select / {_s4x_cells[0][3]['n_scoring']} score worlds")
+# The requirement that decides whether the experiment is even fair: each
+# objective shortlists on ITS OWN metric, and the scoring fold is never touched
+# during selection. A Top-1% shortlist for both would hand the tail objective a
+# candidate set preselected for its opponent.
+ck("each objective builds its OWN shortlist from its OWN metric on the SELECTION fold, and the scoring fold is never referenced during selection",
+   "shortlists[obj] = ok[np.argsort(-m)[:CANDIDATES]]" in _s4x_src
+   and "want_all=ok, grid=grids[PORT_K]" in _s4x_src
+   and "qnames=OBJECTIVES)" in _s4x_src
+   and "st_sel, lv_sel = _field_pass(T, W, X, f, rows, sel)" in _s4x_src
+   and "st_sco, lv_sco = _field_pass(T, W, X, f, allrows, sco)" in _s4x_src
+   # the scoring fold's columns are not even constructed until selection is done
+   and _s4x_src.index("st_sel, lv_sel = _field_pass") < _s4x_src.index("st_sco, lv_sco = _field_pass")
+   and _s4x_src.index("c, p_any = T.greedy_cover(P, PORT_K)") < _s4x_src.index("st_sco, lv_sco ="),
+   "selection reads `sel` only; `sco` is touched after the greedy has finished")
+ck("and the shortlist is BINDING, so that requirement is not vacuous",
+   all(r["shortlist_is_binding"] is True for _d, _s, _n, r in _s4x_cells)
+   and all(r["shortlist_size"] < r["enterable"] for _d, _s, _n, r in _s4x_cells),
+   f"{_s4x_cells[0][3]['shortlist_size']:,} of {_s4x_cells[0][3]['enterable']:,} enterable")
+ck("a submission of exactly k entries is scored against C - k public opponents, and the qualifying place counts are asserted unchanged rather than assumed",
+   all(g["places_match_real_contest"] is True
+       for _d, _s, _n, r in _s4x_cells for g in r["grid_contract"].values())
+   and all(r["grid_contract"]["20"]["public_opponents"]
+           == r["grid_contract"]["1"]["public_opponents"] - 19
+           for _d, _s, _n, r in _s4x_cells),
+   str(_s4x_cells[0][3]["grid_contract"]["20"]))
+ck("and production's C-1 count is measured rather than reasoned about: it treats our own other entries as public opponents, which UNDERSTATES an at-least-one event, and the size is small enough to leave alone",
+   all(r["opponent_count_effect"]["absolute"] >= 0 for _d, _s, _n, r in _s4x_cells)
+   and max(abs(r["opponent_count_effect"]["relative_pct"]) for _d, _s, _n, r in _s4x_cells) < 1.0,
+   f"{_s4x_cells[0][3]['opponent_count_effect']['absolute']:.2e} absolute, "
+   f"{_s4x_cells[0][3]['opponent_count_effect']['relative_pct']}% relative")
+# The result, stated as a DIRECTION and a robustness property rather than as a
+# number. Pinning one coverage figure as universal truth would be the kind of
+# guard this suite is not for.
+_s4x_d01 = [r["paired"][c]["top01"]["point"] for _d, _s, _n, r in _s4x_cells
+            for c in ("optimistic", "pessimistic")]
+_s4x_d1 = [r["paired"][c]["top1"]["point"] for _d, _s, _n, r in _s4x_cells
+           for c in ("optimistic", "pessimistic")]
+ck("selecting for Top 0.1% improves held-out Top 0.1% coverage in EVERY cell, at both exact tie conventions, so the convention cannot reverse the direction",
+   all(x >= 0 for x in _s4x_d01)
+   and sum(1 for _d, _s, _n, r in _s4x_cells
+           if r["paired"]["optimistic"]["top01"]["sign_stable"]
+           and r["paired"]["pessimistic"]["top01"]["sign_stable"]) >= 7,
+   f"{sum(1 for x in _s4x_d01 if x > 0)}/{len(_s4x_d01)} positive, "
+   f"min {min(_s4x_d01):+.5f} max {max(_s4x_d01):+.5f}")
+ck("and it COSTS held-out Top 1% coverage in every cell, by more in absolute terms than it gains -- the trade that coverage alone cannot price",
+   all(x <= 0 for x in _s4x_d1)
+   and abs(sum(_s4x_d1) / len(_s4x_d1)) > abs(sum(_s4x_d01) / len(_s4x_d01)),
+   f"mean top0.1% gain {sum(_s4x_d01) / len(_s4x_d01):+.5f} against mean top1% cost "
+   f"{sum(_s4x_d1) / len(_s4x_d1):+.5f}")
+ck("neither objective shows a selection-stability pathology: fold-to-fold portfolio overlap is comparable for both",
+   all(abs(b["fold_stability"]["top1"]["overlap"] - b["fold_stability"]["top01"]["overlap"]) <= 6
+       for bs in _s4x["boards"].values() for b in bs.values()),
+   str({dg: {sd: [b["fold_stability"]["top1"]["overlap"],
+                  b["fold_stability"]["top01"]["overlap"]]
+             for sd, b in bs.items()} for dg, bs in _s4x["boards"].items()}))
+# S4.7: the conclusion's dependence on the one uncalibrated knob, which is why
+# the objective did NOT change.
+_s4s = _s4x["field_sensitivity"]["by_top_share"]
+_s4s_all = [_s4s[k]["directions"][n][c]["top01"] for k in _s4s
+            for n in _s4s[k]["directions"] for c in ("optimistic", "pessimistic")]
+ck("the field-concentration sensitivity ran on the same football worlds at three concentrations, and every scenario is labelled as a scenario that may not become a default",
+   len(_s4s) == 3 and "may become a production" in _s4x["field_sensitivity"]["note"]
+   and sorted(float(k) for k in _s4s) == [0.001, 0.002, 0.004],
+   str({k: _s4s[k]["beta"] for k in sorted(_s4s)}))
+ck("the direction survives every concentration -- no sign flip anywhere -- but the effect SHRINKS as the field concentrates and goes insignificant at the concentrated end, which is why S4 did not change the production objective",
+   all(x["point"] >= 0 for x in _s4s_all)
+   and (sum(x["point"] for x in _s4s["0.004"]["directions"]["A_select_B_score"].values()
+            if isinstance(x, dict) and "point" in x) or 0) >= 0
+   and _s4s["0.004"]["directions"]["A_select_B_score"]["optimistic"]["top01"]["sign_stable"] is False
+   and _s4s["0.001"]["directions"]["A_select_B_score"]["optimistic"]["top01"]["sign_stable"] is True,
+   f"flatter {_s4s['0.001']['directions']['A_select_B_score']['optimistic']['top01']['point']:+.5f}"
+   f" -> production "
+   f"{_s4s['0.002']['directions']['A_select_B_score']['optimistic']['top01']['point']:+.5f}"
+   f" -> concentrated "
+   f"{_s4s['0.004']['directions']['A_select_B_score']['optimistic']['top01']['point']:+.5f}")
+# S4.9: nothing moved, and nothing can move without a deliberate change.
+import inspect as _insp_s4
+ck("and PRODUCTION DID NOT CHANGE: the greedy still defaults to top 1%, no caller passes a rank, and S4 touched no production module at all",
+   _insp_s4.signature(_dt14.portfolio_vs_field).parameters["rank"].default == "top1"
+   and "rank=" not in _s4_sd
+   and "return portfolio_vs_field(W, W, f, X, [grid], cand_idx, k, chunk=chunk)[0]" in _s4_src,
+   "an objective change would have to be written, not inherited")
+# Assert the ABSENCE of money by naming the exact symbols, not by searching for
+# the letters "ev": the first version of this guard did that and matched "every",
+# which is the second naked-substring failure in this pass (the first searched
+# for "arr" and matched `np.asarray`). A substring test on source text is only a
+# test if the substring cannot occur by accident.
+ck("the money gate stayed shut through S4 and no payout figure was computed to decide the objective: the cross-fit never reads an ev column, never calls run_vs_field, and its artifact carries no payout field",
+   _sdg["authoritative"] is False
+   and "money" in _s4x["meta"] and "CLOSED" in _s4x["meta"]["money"]
+   and '"ev"' not in _s4x_src
+   and "ev_notie" not in _s4x_src
+   and "run_vs_field" not in _s4x_src
+   and "[\"ev\"]" not in _s4x_src
+   and not [k for _d, _s, _n, r in _s4x_cells for k in r
+            if k in ("ev", "ev_notie", "roi_pct", "payout")],
+   _s4x["meta"]["money"])
+_s4rw = " ".join(open(_os.path.join(_root, "showdown_audit_report.md")).read().split())
+ck("the S4 report states the decision, the trade that blocks it, and the prerequisite it identified, rather than reporting the favourable half",
+   "Production-objective decision: **unchanged**" in _s4rw
+   and "coverage cannot price it" in _s4rw
+   and "S7 is therefore a genuine prerequisite" in _s4rw
+   and "Top 1% remains the production selection objective" in _s4rw)
+ck("and it keeps the pilot that pointed the WRONG way, labelled as the estimator noise it was rather than deleted",
+   "pointed the comparison the wrong way entirely" in _s4rw
+   and "88-in-88,235" in _s4rw)
 
 # ---- the portfolio cover: one contest, one field, nested entries ---------
 # READ THIS BEFORE QUOTING THE NUMBERS BELOW. Everything in this block is

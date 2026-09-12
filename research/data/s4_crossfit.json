@@ -1,0 +1,3764 @@
+{
+ "boards": {
+  "153085": {
+   "20260912": {
+    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
+    "directions": {
+     "A_select_B_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.030023,
+           "10": 0.116601,
+           "20": 0.179553,
+           "5": 0.073992
+          },
+          "top1": {
+           "1": 0.079986,
+           "10": 0.423388,
+           "20": 0.557877,
+           "5": 0.286228
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.030135,
+           "10": 0.127044,
+           "20": 0.192488,
+           "5": 0.080576
+          },
+          "top1": {
+           "1": 0.080112,
+           "10": 0.430554,
+           "20": 0.563999,
+           "5": 0.291292
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.0299,
+           "10": 0.103233,
+           "20": 0.161773,
+           "5": 0.06678
+          },
+          "top1": {
+           "1": 0.07992,
+           "10": 0.416434,
+           "20": 0.551528,
+           "5": 0.282612
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.025537,
+         "10": 0.129258,
+         "20": 0.200515,
+         "5": 0.079618
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         15,
+         30,
+         27,
+         32,
+         16,
+         52,
+         57,
+         61,
+         13,
+         45,
+         39,
+         84,
+         12,
+         121,
+         117,
+         137,
+         78,
+         53,
+         80
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.005181,
+           "10": 0.10467,
+           "20": 0.151334,
+           "5": 0.067673
+          },
+          "top1": {
+           "1": 0.077623,
+           "10": 0.452367,
+           "20": 0.598662,
+           "5": 0.292087
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.00794,
+           "10": 0.117934,
+           "20": 0.169023,
+           "5": 0.074549
+          },
+          "top1": {
+           "1": 0.082973,
+           "10": 0.460263,
+           "20": 0.608717,
+           "5": 0.299254
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 1.1e-05,
+           "10": 0.088609,
+           "20": 0.131108,
+           "5": 0.058167
+          },
+          "top1": {
+           "1": 0.071605,
+           "10": 0.444738,
+           "20": 0.590073,
+           "5": 0.285005
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.072503,
+         "10": 0.438668,
+         "20": 0.606603,
+         "5": 0.282532
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         2,
+         18,
+         21,
+         58,
+         84,
+         85,
+         8,
+         9,
+         48,
+         428,
+         284,
+         12,
+         220,
+         106,
+         305,
+         104,
+         276,
+         54
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.2903,
+       "overlap": 9,
+       "top01": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "Dak Prescott": 4,
+         "George Pickens": 1,
+         "Javonte Williams": 6,
+         "Jaxson Dart": 7
+        },
+        "dst_slots": 10,
+        "flex_top": {
+         "Cam Skattebo": 7,
+         "CeeDee Lamb": 7,
+         "Cowboys": 6,
+         "Dak Prescott": 7,
+         "George Pickens": 7,
+         "Isaiah Likely": 6,
+         "Jake Ferguson": 6,
+         "Javonte Williams": 7,
+         "Malachi Fields": 7,
+         "Malik Nabers": 10
+        },
+        "k_slots": 6,
+        "salary_left_median": 400,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 1,
+         "4-2": 6,
+         "5-1": 13
+        }
+       },
+       "top1": {
+        "captains": {
+         "Cam Skattebo": 1,
+         "Dak Prescott": 4,
+         "Javonte Williams": 6,
+         "Jaxson Dart": 9
+        },
+        "dst_slots": 9,
+        "flex_top": {
+         "Cam Skattebo": 10,
+         "CeeDee Lamb": 5,
+         "Dak Prescott": 7,
+         "George Pickens": 8,
+         "Isaiah Likely": 5,
+         "Javonte Williams": 8,
+         "Jaxson Dart": 7,
+         "Malik Nabers": 9,
+         "Najee Harris": 8,
+         "Ryan Flournoy": 6
+        },
+        "k_slots": 5,
+        "salary_left_median": 150,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 4,
+         "4-2": 9,
+         "5-1": 7
+        }
+       }
+      },
+      "enterable": 13838,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 87145,
+        "places_match_real_contest": true,
+        "public_opponents": 87144,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "10": {
+        "grid_entry_count": 87136,
+        "places_match_real_contest": true,
+        "public_opponents": 87135,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "20": {
+        "grid_entry_count": 87126,
+        "places_match_real_contest": true,
+        "public_opponents": 87125,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "5": {
+        "grid_entry_count": 87141,
+        "places_match_real_contest": true,
+        "public_opponents": 87140,
+        "top01_places": 87,
+        "top1_places": 871
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.01,
+       "top01_cov_C_minus_1": 0.192468,
+       "top01_cov_C_minus_20": 0.192488
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.0383985494153415,
+         "ci_lo": 0.01825750828361147,
+         "point": 0.028218338205291363,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.027570327732354048,
+         "ci_lo": -0.054014120039589865,
+         "point": -0.0407841921519625,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.033674101445211026,
+         "ci_lo": 0.012724246118779203,
+         "point": 0.023465116081004305,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.031553557480599556,
+         "ci_lo": -0.05800487702589428,
+         "point": -0.04471732915160177,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.04027020823857827,
+         "ci_lo": 0.020999935528594575,
+         "point": 0.030665045550573037,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.02525671211203023,
+         "ci_lo": -0.05176387410304927,
+         "point": -0.03854510976335803,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        148956,
+        260162,
+        161571,
+        231409,
+        166600,
+        138725,
+        245411,
+        170679,
+        171549,
+        262341,
+        239225,
+        159904,
+        158075,
+        106236,
+        240575,
+        165239,
+        247801,
+        137433,
+        239230,
+        150218
+       ],
+       "top1": [
+        171549,
+        148956,
+        166600,
+        260162,
+        231409,
+        170679,
+        243555,
+        240565,
+        161571,
+        150218,
+        239948,
+        171124,
+        165032,
+        144663,
+        139578,
+        156321,
+        160640,
+        171465,
+        240309,
+        245411
+       ]
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     },
+     "B_select_A_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.025463,
+           "10": 0.114968,
+           "20": 0.171258,
+           "5": 0.064991
+          },
+          "top1": {
+           "1": 0.070102,
+           "10": 0.372316,
+           "20": 0.526359,
+           "5": 0.238283
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.025535,
+           "10": 0.125245,
+           "20": 0.190474,
+           "5": 0.070405
+          },
+          "top1": {
+           "1": 0.070168,
+           "10": 0.376866,
+           "20": 0.531764,
+           "5": 0.240903
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.025389,
+           "10": 0.106997,
+           "20": 0.150348,
+           "5": 0.060441
+          },
+          "top1": {
+           "1": 0.070013,
+           "10": 0.367797,
+           "20": 0.520806,
+           "5": 0.236222
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.030137,
+         "10": 0.13318,
+         "20": 0.208675,
+         "5": 0.082585
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         10,
+         19,
+         30,
+         39,
+         34,
+         21,
+         25,
+         37,
+         16,
+         36,
+         85,
+         38,
+         9,
+         71,
+         101,
+         23,
+         116,
+         98,
+         103
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.005919,
+           "10": 0.098851,
+           "20": 0.142118,
+           "5": 0.064086
+          },
+          "top1": {
+           "1": 0.067484,
+           "10": 0.426255,
+           "20": 0.579566,
+           "5": 0.266462
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.009776,
+           "10": 0.115839,
+           "20": 0.164423,
+           "5": 0.076616
+          },
+          "top1": {
+           "1": 0.072492,
+           "10": 0.433497,
+           "20": 0.588313,
+           "5": 0.272737
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 1.3e-05,
+           "10": 0.081565,
+           "20": 0.120385,
+           "5": 0.051563
+          },
+          "top1": {
+           "1": 0.06253,
+           "10": 0.418736,
+           "20": 0.570452,
+           "5": 0.259498
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.082984,
+         "10": 0.462618,
+         "20": 0.631725,
+         "5": 0.308038
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         3,
+         20,
+         2,
+         13,
+         53,
+         46,
+         82,
+         228,
+         196,
+         247,
+         232,
+         456,
+         176,
+         128,
+         261,
+         15,
+         190,
+         163
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.25,
+       "overlap": 8,
+       "top01": {
+        "captains": {
+         "Cam Skattebo": 3,
+         "Dak Prescott": 4,
+         "George Pickens": 1,
+         "Javonte Williams": 4,
+         "Jaxson Dart": 8
+        },
+        "dst_slots": 9,
+        "flex_top": {
+         "Cam Skattebo": 7,
+         "CeeDee Lamb": 6,
+         "Dak Prescott": 5,
+         "Darnell Mooney": 5,
+         "George Pickens": 8,
+         "Isaiah Likely": 7,
+         "Javonte Williams": 10,
+         "Malachi Fields": 6,
+         "Malik Nabers": 10,
+         "Ryan Flournoy": 8
+        },
+        "k_slots": 5,
+        "salary_left_median": 400,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 1,
+         "4-2": 7,
+         "5-1": 12
+        }
+       },
+       "top1": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "Dak Prescott": 4,
+         "Javonte Williams": 4,
+         "Jaxson Dart": 10
+        },
+        "dst_slots": 11,
+        "flex_top": {
+         "Cam Skattebo": 9,
+         "CeeDee Lamb": 7,
+         "Dak Prescott": 6,
+         "George Pickens": 7,
+         "Giants": 6,
+         "Javonte Williams": 10,
+         "Jaxson Dart": 7,
+         "Malik Nabers": 8,
+         "Najee Harris": 6,
+         "Ryan Flournoy": 8
+        },
+        "k_slots": 4,
+        "salary_left_median": 200,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 4,
+         "4-2": 8,
+         "5-1": 8
+        }
+       }
+      },
+      "enterable": 13838,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 87145,
+        "places_match_real_contest": true,
+        "public_opponents": 87144,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "10": {
+        "grid_entry_count": 87136,
+        "places_match_real_contest": true,
+        "public_opponents": 87135,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "20": {
+        "grid_entry_count": 87126,
+        "places_match_real_contest": true,
+        "public_opponents": 87125,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "5": {
+        "grid_entry_count": 87141,
+        "places_match_real_contest": true,
+        "public_opponents": 87140,
+        "top01_places": 87,
+        "top1_places": 871
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2.1e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.011,
+       "top01_cov_C_minus_1": 0.190453,
+       "top01_cov_C_minus_20": 0.190474
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.039713986090616944,
+         "ci_lo": 0.01845515431657837,
+         "point": 0.029140045380077077,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03961140013484325,
+         "ci_lo": -0.06780348243967957,
+         "point": -0.053206839819201976,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.03704167186268757,
+         "ci_lo": 0.015069834801121326,
+         "point": 0.026051629158584874,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.04298170990277119,
+         "ci_lo": -0.07133378077882163,
+         "point": -0.05654941356464366,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.04018294141510014,
+         "ci_lo": 0.019671414270403816,
+         "point": 0.029962781928865333,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.035873654825854466,
+         "ci_lo": -0.06409718868286401,
+         "point": -0.04964619413649417,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        148956,
+        262341,
+        161571,
+        171325,
+        231409,
+        166600,
+        260162,
+        144699,
+        245411,
+        138725,
+        159904,
+        240565,
+        161602,
+        106236,
+        240575,
+        171549,
+        260166,
+        170020,
+        150218,
+        170679
+       ],
+       "top1": [
+        171549,
+        148956,
+        166600,
+        260162,
+        161571,
+        150218,
+        240565,
+        239230,
+        170679,
+        167172,
+        231573,
+        165514,
+        160640,
+        169861,
+        261763,
+        239098,
+        139578,
+        144663,
+        166292,
+        165132
+       ]
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     }
+    },
+    "draft_group_id": 153085,
+    "enterable": 13838,
+    "entries": 87145,
+    "field_beta": 0.3708,
+    "fold_stability": {
+     "top01": {
+      "jaccard": 0.5385,
+      "overlap": 14
+     },
+     "top1": {
+      "jaccard": 0.3793,
+      "overlap": 11
+     }
+    },
+    "legal_lineups": 427048,
+    "portfolios": {
+     "A_select_B_score": {
+      "top01": [
+       148956,
+       260162,
+       161571,
+       231409,
+       166600,
+       138725,
+       245411,
+       170679,
+       171549,
+       262341,
+       239225,
+       159904,
+       158075,
+       106236,
+       240575,
+       165239,
+       247801,
+       137433,
+       239230,
+       150218
+      ],
+      "top1": [
+       171549,
+       148956,
+       166600,
+       260162,
+       231409,
+       170679,
+       243555,
+       240565,
+       161571,
+       150218,
+       239948,
+       171124,
+       165032,
+       144663,
+       139578,
+       156321,
+       160640,
+       171465,
+       240309,
+       245411
+      ]
+     },
+     "B_select_A_score": {
+      "top01": [
+       148956,
+       262341,
+       161571,
+       171325,
+       231409,
+       166600,
+       260162,
+       144699,
+       245411,
+       138725,
+       159904,
+       240565,
+       161602,
+       106236,
+       240575,
+       171549,
+       260166,
+       170020,
+       150218,
+       170679
+      ],
+      "top1": [
+       171549,
+       148956,
+       166600,
+       260162,
+       161571,
+       150218,
+       240565,
+       239230,
+       170679,
+       167172,
+       231573,
+       165514,
+       160640,
+       169861,
+       261763,
+       239098,
+       139578,
+       144663,
+       166292,
+       165132
+      ]
+     }
+    },
+    "sd_engine": 3,
+    "seed": 20260912,
+    "simulator": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 8000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "worlds": 8000
+   },
+   "771033": {
+    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
+    "directions": {
+     "A_select_B_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.021934,
+           "10": 0.108383,
+           "20": 0.175317,
+           "5": 0.063131
+          },
+          "top1": {
+           "1": 0.066469,
+           "10": 0.403099,
+           "20": 0.545828,
+           "5": 0.277308
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.022043,
+           "10": 0.123454,
+           "20": 0.192603,
+           "5": 0.073286
+          },
+          "top1": {
+           "1": 0.066505,
+           "10": 0.409144,
+           "20": 0.552054,
+           "5": 0.281938
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.021845,
+           "10": 0.092641,
+           "20": 0.154944,
+           "5": 0.054264
+          },
+          "top1": {
+           "1": 0.066428,
+           "10": 0.396697,
+           "20": 0.539917,
+           "5": 0.273278
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.028804,
+         "10": 0.134474,
+         "20": 0.201554,
+         "5": 0.084967
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         18,
+         19,
+         23,
+         30,
+         12,
+         16,
+         53,
+         17,
+         58,
+         66,
+         116,
+         56,
+         82,
+         156,
+         123,
+         80,
+         182,
+         90,
+         138
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.006574,
+           "10": 0.096189,
+           "20": 0.137629,
+           "5": 0.06197
+          },
+          "top1": {
+           "1": 0.084319,
+           "10": 0.441205,
+           "20": 0.593466,
+           "5": 0.294458
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.011511,
+           "10": 0.1121,
+           "20": 0.160335,
+           "5": 0.073163
+          },
+          "top1": {
+           "1": 0.089625,
+           "10": 0.449098,
+           "20": 0.603086,
+           "5": 0.301643
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 1.4e-05,
+           "10": 0.078721,
+           "20": 0.112301,
+           "5": 0.049485
+          },
+          "top1": {
+           "1": 0.078003,
+           "10": 0.433827,
+           "20": 0.583555,
+           "5": 0.287073
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.080402,
+         "10": 0.443179,
+         "20": 0.611921,
+         "5": 0.302687
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         2,
+         15,
+         45,
+         4,
+         82,
+         117,
+         44,
+         172,
+         326,
+         43,
+         137,
+         12,
+         429,
+         74,
+         655,
+         180,
+         401,
+         240
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.2903,
+       "overlap": 9,
+       "top01": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "Dak Prescott": 4,
+         "George Pickens": 1,
+         "Javonte Williams": 4,
+         "Jaxson Dart": 9
+        },
+        "dst_slots": 10,
+        "flex_top": {
+         "Cam Skattebo": 7,
+         "CeeDee Lamb": 7,
+         "George Pickens": 8,
+         "Giants": 5,
+         "Isaiah Likely": 9,
+         "Jake Ferguson": 6,
+         "Javonte Williams": 8,
+         "Malachi Fields": 8,
+         "Malik Nabers": 10,
+         "Ryan Flournoy": 6
+        },
+        "k_slots": 6,
+        "salary_left_median": 250,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 1,
+         "4-2": 6,
+         "5-1": 13
+        }
+       },
+       "top1": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "Dak Prescott": 4,
+         "Javonte Williams": 3,
+         "Jaxson Dart": 11
+        },
+        "dst_slots": 9,
+        "flex_top": {
+         "Cam Skattebo": 10,
+         "CeeDee Lamb": 6,
+         "Dak Prescott": 6,
+         "George Pickens": 8,
+         "Isaiah Likely": 5,
+         "Jake Ferguson": 5,
+         "Javonte Williams": 11,
+         "Malik Nabers": 8,
+         "Najee Harris": 7,
+         "Ryan Flournoy": 8
+        },
+        "k_slots": 5,
+        "salary_left_median": 200,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 4,
+         "4-2": 8,
+         "5-1": 8
+        }
+       }
+      },
+      "enterable": 13838,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 87145,
+        "places_match_real_contest": true,
+        "public_opponents": 87144,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "10": {
+        "grid_entry_count": 87136,
+        "places_match_real_contest": true,
+        "public_opponents": 87135,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "20": {
+        "grid_entry_count": 87126,
+        "places_match_real_contest": true,
+        "public_opponents": 87125,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "5": {
+        "grid_entry_count": 87141,
+        "places_match_real_contest": true,
+        "public_opponents": 87140,
+        "top01_places": 87,
+        "top1_places": 871
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.01,
+       "top01_cov_C_minus_1": 0.192583,
+       "top01_cov_C_minus_20": 0.192603
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.0473537333659474,
+         "ci_lo": 0.028077192237052528,
+         "point": 0.03768808784928764,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03442661489784851,
+         "ci_lo": -0.061247965956644834,
+         "point": -0.047638669561043075,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.04244288713861035,
+         "ci_lo": 0.021711040654030494,
+         "point": 0.0322686146388714,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03786890562134697,
+         "ci_lo": -0.06448916595239161,
+         "point": -0.05103204681433962,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.05167078383810414,
+         "ci_lo": 0.03349865504484743,
+         "point": 0.042642703863682976,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.030243143132336264,
+         "ci_lo": -0.0572773448699044,
+         "point": -0.04363846712009638,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        148956,
+        166600,
+        260162,
+        161571,
+        231409,
+        138725,
+        144699,
+        171549,
+        262341,
+        165239,
+        245411,
+        170679,
+        159904,
+        106408,
+        240575,
+        165026,
+        161602,
+        247801,
+        137221,
+        171465
+       ],
+       "top1": [
+        171549,
+        148956,
+        166600,
+        260162,
+        231409,
+        161571,
+        240565,
+        170679,
+        245411,
+        167410,
+        165398,
+        150218,
+        159685,
+        144699,
+        157906,
+        170020,
+        145782,
+        261763,
+        167172,
+        157014
+       ]
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     },
+     "B_select_A_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.026583,
+           "10": 0.106374,
+           "20": 0.168716,
+           "5": 0.068476
+          },
+          "top1": {
+           "1": 0.067393,
+           "10": 0.389484,
+           "20": 0.531564,
+           "5": 0.231994
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.026641,
+           "10": 0.117581,
+           "20": 0.187632,
+           "5": 0.074621
+          },
+          "top1": {
+           "1": 0.067444,
+           "10": 0.395564,
+           "20": 0.537963,
+           "5": 0.23525
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.02651,
+           "10": 0.09386,
+           "20": 0.148672,
+           "5": 0.062388
+          },
+          "top1": {
+           "1": 0.067337,
+           "10": 0.384108,
+           "20": 0.525169,
+           "5": 0.228658
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.022903,
+         "10": 0.133795,
+         "20": 0.204962,
+         "5": 0.080537
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         12,
+         3,
+         19,
+         26,
+         37,
+         36,
+         11,
+         42,
+         56,
+         14,
+         31,
+         17,
+         82,
+         61,
+         44,
+         101,
+         91,
+         113,
+         112
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.005559,
+           "10": 0.102273,
+           "20": 0.138814,
+           "5": 0.063277
+          },
+          "top1": {
+           "1": 0.075722,
+           "10": 0.433097,
+           "20": 0.586563,
+           "5": 0.289289
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.01021,
+           "10": 0.117816,
+           "20": 0.162528,
+           "5": 0.073633
+          },
+          "top1": {
+           "1": 0.08039,
+           "10": 0.439923,
+           "20": 0.596392,
+           "5": 0.295829
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 1.3e-05,
+           "10": 0.084349,
+           "20": 0.112625,
+           "5": 0.052207
+          },
+          "top1": {
+           "1": 0.070976,
+           "10": 0.425718,
+           "20": 0.576553,
+           "5": 0.282439
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.089641,
+         "10": 0.456109,
+         "20": 0.622051,
+         "5": 0.306
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         3,
+         1,
+         7,
+         39,
+         20,
+         2,
+         96,
+         98,
+         22,
+         78,
+         167,
+         108,
+         30,
+         338,
+         156,
+         137,
+         265,
+         522,
+         358
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.2903,
+       "overlap": 9,
+       "top01": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "CeeDee Lamb": 1,
+         "Dak Prescott": 4,
+         "Javonte Williams": 5,
+         "Jaxson Dart": 8
+        },
+        "dst_slots": 9,
+        "flex_top": {
+         "Cam Skattebo": 8,
+         "Dak Prescott": 5,
+         "Darnell Mooney": 7,
+         "George Pickens": 8,
+         "Isaiah Likely": 6,
+         "Javonte Williams": 9,
+         "Jaxson Dart": 6,
+         "Malachi Fields": 5,
+         "Malik Nabers": 10,
+         "Ryan Flournoy": 6
+        },
+        "k_slots": 8,
+        "salary_left_median": 250,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 2,
+         "4-2": 6,
+         "5-1": 12
+        }
+       },
+       "top1": {
+        "captains": {
+         "Cam Skattebo": 2,
+         "CeeDee Lamb": 1,
+         "Dak Prescott": 2,
+         "Javonte Williams": 3,
+         "Jaxson Dart": 12
+        },
+        "dst_slots": 8,
+        "flex_top": {
+         "Cam Skattebo": 9,
+         "Dak Prescott": 8,
+         "Darnell Mooney": 6,
+         "George Pickens": 8,
+         "Giants": 5,
+         "Isaiah Likely": 6,
+         "Javonte Williams": 12,
+         "Malik Nabers": 8,
+         "Najee Harris": 6,
+         "Ryan Flournoy": 8
+        },
+        "k_slots": 5,
+        "salary_left_median": 200,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 4,
+         "4-2": 9,
+         "5-1": 7
+        }
+       }
+      },
+      "enterable": 13838,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 87145,
+        "places_match_real_contest": true,
+        "public_opponents": 87144,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "10": {
+        "grid_entry_count": 87136,
+        "places_match_real_contest": true,
+        "public_opponents": 87135,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "20": {
+        "grid_entry_count": 87126,
+        "places_match_real_contest": true,
+        "public_opponents": 87125,
+        "top01_places": 87,
+        "top1_places": 871
+       },
+       "5": {
+        "grid_entry_count": 87141,
+        "places_match_real_contest": true,
+        "public_opponents": 87140,
+        "top01_places": 87,
+        "top1_places": 871
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.011,
+       "top01_cov_C_minus_1": 0.187612,
+       "top01_cov_C_minus_20": 0.187632
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.03901614495679893,
+         "ci_lo": 0.020597815743050855,
+         "point": 0.029901877371116187,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.04286528840399901,
+         "ci_lo": -0.06756650037515421,
+         "point": -0.054998610984436626,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.03453391454935411,
+         "ci_lo": 0.015481437789378353,
+         "point": 0.02510370529179381,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.04639976716339567,
+         "ci_lo": -0.07097275819180217,
+         "point": -0.05842912204921152,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.04469530837662295,
+         "ci_lo": 0.027172148182554173,
+         "point": 0.03604629192507021,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03932924554436235,
+         "ci_lo": -0.06401789487921059,
+         "point": -0.05138388603508893,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        92281,
+        166600,
+        137085,
+        159904,
+        260162,
+        171549,
+        171325,
+        138725,
+        245411,
+        231645,
+        262341,
+        161571,
+        144699,
+        247801,
+        159685,
+        158075,
+        234898,
+        150218,
+        170679,
+        240565
+       ],
+       "top1": [
+        171549,
+        148956,
+        166600,
+        260162,
+        240565,
+        150218,
+        161571,
+        231573,
+        170679,
+        245411,
+        159685,
+        167410,
+        88045,
+        171465,
+        266161,
+        157014,
+        165295,
+        161318,
+        169758,
+        165514
+       ]
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     }
+    },
+    "draft_group_id": 153085,
+    "enterable": 13838,
+    "entries": 87145,
+    "field_beta": 0.3708,
+    "fold_stability": {
+     "top01": {
+      "jaccard": 0.3793,
+      "overlap": 11
+     },
+     "top1": {
+      "jaccard": 0.4286,
+      "overlap": 12
+     }
+    },
+    "legal_lineups": 427048,
+    "portfolios": {
+     "A_select_B_score": {
+      "top01": [
+       148956,
+       166600,
+       260162,
+       161571,
+       231409,
+       138725,
+       144699,
+       171549,
+       262341,
+       165239,
+       245411,
+       170679,
+       159904,
+       106408,
+       240575,
+       165026,
+       161602,
+       247801,
+       137221,
+       171465
+      ],
+      "top1": [
+       171549,
+       148956,
+       166600,
+       260162,
+       231409,
+       161571,
+       240565,
+       170679,
+       245411,
+       167410,
+       165398,
+       150218,
+       159685,
+       144699,
+       157906,
+       170020,
+       145782,
+       261763,
+       167172,
+       157014
+      ]
+     },
+     "B_select_A_score": {
+      "top01": [
+       92281,
+       166600,
+       137085,
+       159904,
+       260162,
+       171549,
+       171325,
+       138725,
+       245411,
+       231645,
+       262341,
+       161571,
+       144699,
+       247801,
+       159685,
+       158075,
+       234898,
+       150218,
+       170679,
+       240565
+      ],
+      "top1": [
+       171549,
+       148956,
+       166600,
+       260162,
+       240565,
+       150218,
+       161571,
+       231573,
+       170679,
+       245411,
+       159685,
+       167410,
+       88045,
+       171465,
+       266161,
+       157014,
+       165295,
+       161318,
+       169758,
+       165514
+      ]
+     }
+    },
+    "sd_engine": 3,
+    "seed": 771033,
+    "simulator": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 8000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "worlds": 8000
+   }
+  },
+  "153086": {
+   "20260912": {
+    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "directions": {
+     "A_select_B_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.018113,
+           "10": 0.099625,
+           "20": 0.15108,
+           "5": 0.06392
+          },
+          "top1": {
+           "1": 0.07107,
+           "10": 0.382006,
+           "20": 0.556295,
+           "5": 0.237268
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.018337,
+           "10": 0.109093,
+           "20": 0.168848,
+           "5": 0.068137
+          },
+          "top1": {
+           "1": 0.071386,
+           "10": 0.386645,
+           "20": 0.562983,
+           "5": 0.240341
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.017903,
+           "10": 0.091308,
+           "20": 0.134802,
+           "5": 0.059655
+          },
+          "top1": {
+           "1": 0.070783,
+           "10": 0.377695,
+           "20": 0.548843,
+           "5": 0.234008
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.019713,
+         "10": 0.123785,
+         "20": 0.19326,
+         "5": 0.075783
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         5,
+         17,
+         15,
+         24,
+         26,
+         31,
+         4,
+         35,
+         63,
+         70,
+         75,
+         83,
+         66,
+         41,
+         79,
+         20,
+         68,
+         77
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.018113,
+           "10": 0.083249,
+           "20": 0.132982,
+           "5": 0.048791
+          },
+          "top1": {
+           "1": 0.07107,
+           "10": 0.422382,
+           "20": 0.598225,
+           "5": 0.250192
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.018337,
+           "10": 0.097328,
+           "20": 0.153362,
+           "5": 0.055577
+          },
+          "top1": {
+           "1": 0.071386,
+           "10": 0.431489,
+           "20": 0.608007,
+           "5": 0.25683
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.017903,
+           "10": 0.07121,
+           "20": 0.115703,
+           "5": 0.042396
+          },
+          "top1": {
+           "1": 0.070783,
+           "10": 0.413782,
+           "20": 0.589095,
+           "5": 0.243342
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.069741,
+         "10": 0.434245,
+         "20": 0.614972,
+         "5": 0.265458
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         9,
+         19,
+         35,
+         18,
+         63,
+         48,
+         95,
+         5,
+         54,
+         2,
+         42,
+         116,
+         36,
+         102,
+         51,
+         268,
+         135,
+         155,
+         263
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.3333,
+       "overlap": 10,
+       "top01": {
+        "captains": {
+         "Bo Nix": 9,
+         "Courtland Sutton": 1,
+         "Jaylen Waddle": 1,
+         "Kenneth Walker III": 3,
+         "Patrick Mahomes": 4,
+         "Rashee Rice": 2
+        },
+        "dst_slots": 10,
+        "flex_top": {
+         "Chiefs": 7,
+         "Harrison Butker": 8,
+         "J.K. Dobbins": 9,
+         "Jaylen Waddle": 13,
+         "Kenneth Walker III": 5,
+         "Pat Bryant": 11,
+         "Patrick Mahomes": 8,
+         "RJ Harvey": 7,
+         "Rashee Rice": 7,
+         "Travis Kelce": 6
+        },
+        "k_slots": 12,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "4-2": 6,
+         "5-1": 14
+        }
+       },
+       "top1": {
+        "captains": {
+         "Bo Nix": 8,
+         "Jaylen Waddle": 3,
+         "Kenneth Walker III": 4,
+         "Patrick Mahomes": 4,
+         "Rashee Rice": 1
+        },
+        "dst_slots": 13,
+        "flex_top": {
+         "Bo Nix": 8,
+         "Broncos": 5,
+         "Chiefs": 8,
+         "J.K. Dobbins": 12,
+         "Jaylen Waddle": 9,
+         "Kenneth Walker III": 5,
+         "Pat Bryant": 14,
+         "Patrick Mahomes": 6,
+         "Rashee Rice": 9,
+         "Travis Kelce": 7
+        },
+        "k_slots": 6,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 3,
+         "4-2": 8,
+         "5-1": 9
+        }
+       }
+      },
+      "enterable": 23820,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 88235,
+        "places_match_real_contest": true,
+        "public_opponents": 88234,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "10": {
+        "grid_entry_count": 88226,
+        "places_match_real_contest": true,
+        "public_opponents": 88225,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "20": {
+        "grid_entry_count": 88216,
+        "places_match_real_contest": true,
+        "public_opponents": 88215,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "5": {
+        "grid_entry_count": 88231,
+        "places_match_real_contest": true,
+        "public_opponents": 88230,
+        "top01_places": 88,
+        "top1_places": 882
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2.1e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.012,
+       "top01_cov_C_minus_1": 0.168827,
+       "top01_cov_C_minus_20": 0.168848
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.027333572342919485,
+         "ci_lo": 0.009349733572796717,
+         "point": 0.018098620890799562,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.02732530619595788,
+         "ci_lo": -0.05640835790552358,
+         "point": -0.04193040703510837,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.02502628747950283,
+         "ci_lo": 0.006497697950491666,
+         "point": 0.015486594420137677,
+         "share_positive": 0.9995,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.030572977998731463,
+         "ci_lo": -0.05944052747193675,
+         "point": -0.04502380349634359,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.02771432782028097,
+         "ci_lo": 0.010640193753796143,
+         "point": 0.019098787660182758,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.02553192886354259,
+         "ci_lo": -0.05454273265241119,
+         "point": -0.04025236692171215,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        246202,
+        235234,
+        200920,
+        198010,
+        235031,
+        209793,
+        149757,
+        211424,
+        237825,
+        206335,
+        149490,
+        276892,
+        196800,
+        383313,
+        199734,
+        141557,
+        414822,
+        267400,
+        225989,
+        205147
+       ],
+       "top1": [
+        246202,
+        211424,
+        199734,
+        222320,
+        235031,
+        149490,
+        206335,
+        211581,
+        149780,
+        383313,
+        235234,
+        371084,
+        221347,
+        198010,
+        149489,
+        276892,
+        245884,
+        383636,
+        141022,
+        209581
+       ]
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     },
+     "B_select_A_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.018161,
+           "10": 0.096798,
+           "20": 0.160108,
+           "5": 0.060062
+          },
+          "top1": {
+           "1": 0.068746,
+           "10": 0.377562,
+           "20": 0.551208,
+           "5": 0.247103
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.019351,
+           "10": 0.106412,
+           "20": 0.178821,
+           "5": 0.065594
+          },
+          "top1": {
+           "1": 0.06939,
+           "10": 0.380894,
+           "20": 0.556664,
+           "5": 0.249293
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.016872,
+           "10": 0.086969,
+           "20": 0.139413,
+           "5": 0.055881
+          },
+          "top1": {
+           "1": 0.067908,
+           "10": 0.373468,
+           "20": 0.545294,
+           "5": 0.244208
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.020281,
+         "10": 0.121521,
+         "20": 0.191485,
+         "5": 0.074046
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         4,
+         10,
+         9,
+         25,
+         19,
+         28,
+         57,
+         37,
+         8,
+         71,
+         36,
+         14,
+         87,
+         80,
+         68,
+         61,
+         12,
+         59,
+         139
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.018161,
+           "10": 0.080502,
+           "20": 0.137144,
+           "5": 0.051196
+          },
+          "top1": {
+           "1": 0.068746,
+           "10": 0.424083,
+           "20": 0.597718,
+           "5": 0.261832
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.019351,
+           "10": 0.094265,
+           "20": 0.159343,
+           "5": 0.057237
+          },
+          "top1": {
+           "1": 0.06939,
+           "10": 0.429953,
+           "20": 0.605394,
+           "5": 0.266382
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.016872,
+           "10": 0.064672,
+           "20": 0.11482,
+           "5": 0.044682
+          },
+          "top1": {
+           "1": 0.067908,
+           "10": 0.417956,
+           "20": 0.589122,
+           "5": 0.257216
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.073184,
+         "10": 0.441774,
+         "20": 0.62152,
+         "5": 0.277491
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         6,
+         16,
+         3,
+         27,
+         52,
+         54,
+         50,
+         154,
+         7,
+         43,
+         107,
+         5,
+         15,
+         240,
+         61,
+         35,
+         407,
+         11,
+         490
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.4815,
+       "overlap": 13,
+       "top01": {
+        "captains": {
+         "Bo Nix": 9,
+         "Jaylen Waddle": 2,
+         "Kenneth Walker III": 3,
+         "Patrick Mahomes": 5,
+         "Rashee Rice": 1
+        },
+        "dst_slots": 13,
+        "flex_top": {
+         "Chiefs": 8,
+         "Harrison Butker": 7,
+         "J.K. Dobbins": 9,
+         "Jaylen Waddle": 12,
+         "Kenneth Walker III": 6,
+         "Pat Bryant": 10,
+         "Patrick Mahomes": 6,
+         "RJ Harvey": 6,
+         "Rashee Rice": 6,
+         "Travis Kelce": 7
+        },
+        "k_slots": 11,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 1,
+         "4-2": 5,
+         "5-1": 14
+        }
+       },
+       "top1": {
+        "captains": {
+         "Bo Nix": 9,
+         "Jaylen Waddle": 2,
+         "Kenneth Walker III": 3,
+         "Patrick Mahomes": 4,
+         "Rashee Rice": 2
+        },
+        "dst_slots": 13,
+        "flex_top": {
+         "Bo Nix": 7,
+         "Chiefs": 8,
+         "Courtland Sutton": 7,
+         "J.K. Dobbins": 9,
+         "Jaylen Waddle": 12,
+         "Kenneth Walker III": 6,
+         "Pat Bryant": 15,
+         "Patrick Mahomes": 6,
+         "Rashee Rice": 6,
+         "Travis Kelce": 7
+        },
+        "k_slots": 6,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 2,
+         "4-2": 8,
+         "5-1": 10
+        }
+       }
+      },
+      "enterable": 23820,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 88235,
+        "places_match_real_contest": true,
+        "public_opponents": 88234,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "10": {
+        "grid_entry_count": 88226,
+        "places_match_real_contest": true,
+        "public_opponents": 88225,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "20": {
+        "grid_entry_count": 88216,
+        "places_match_real_contest": true,
+        "public_opponents": 88215,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "5": {
+        "grid_entry_count": 88231,
+        "places_match_real_contest": true,
+        "public_opponents": 88230,
+        "top01_places": 88,
+        "top1_places": 882
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2.3e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.013,
+       "top01_cov_C_minus_1": 0.178798,
+       "top01_cov_C_minus_20": 0.178821
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.030682090343126123,
+         "ci_lo": 0.015171432499170866,
+         "point": 0.022964384115197044,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03449448822195554,
+         "ci_lo": -0.05876342540636687,
+         "point": -0.04651044977551423,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.027105765719299527,
+         "ci_lo": 0.011159729995336657,
+         "point": 0.019478489631597304,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.036581737296538255,
+         "ci_lo": -0.06101120630387401,
+         "point": -0.048730847771341235,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.03179335578120102,
+         "ci_lo": 0.017497094505637956,
+         "point": 0.024592665370871538,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.03172667211401484,
+         "ci_lo": -0.05609724134688145,
+         "point": -0.04382823720478201,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        235234,
+        278251,
+        200920,
+        149780,
+        371084,
+        235031,
+        199734,
+        212351,
+        209793,
+        236195,
+        149490,
+        211424,
+        150294,
+        235271,
+        198010,
+        196800,
+        205147,
+        246210,
+        206335,
+        383313
+       ],
+       "top1": [
+        235234,
+        211424,
+        199734,
+        149780,
+        206335,
+        149490,
+        383313,
+        252872,
+        211581,
+        209793,
+        235031,
+        222320,
+        278251,
+        371084,
+        245884,
+        149489,
+        212351,
+        204938,
+        200920,
+        276735
+       ]
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     }
+    },
+    "draft_group_id": 153086,
+    "enterable": 23820,
+    "entries": 88235,
+    "field_beta": 0.4536,
+    "fold_stability": {
+     "top01": {
+      "jaccard": 0.4286,
+      "overlap": 12
+     },
+     "top1": {
+      "jaccard": 0.4815,
+      "overlap": 13
+     }
+    },
+    "legal_lineups": 777056,
+    "portfolios": {
+     "A_select_B_score": {
+      "top01": [
+       246202,
+       235234,
+       200920,
+       198010,
+       235031,
+       209793,
+       149757,
+       211424,
+       237825,
+       206335,
+       149490,
+       276892,
+       196800,
+       383313,
+       199734,
+       141557,
+       414822,
+       267400,
+       225989,
+       205147
+      ],
+      "top1": [
+       246202,
+       211424,
+       199734,
+       222320,
+       235031,
+       149490,
+       206335,
+       211581,
+       149780,
+       383313,
+       235234,
+       371084,
+       221347,
+       198010,
+       149489,
+       276892,
+       245884,
+       383636,
+       141022,
+       209581
+      ]
+     },
+     "B_select_A_score": {
+      "top01": [
+       235234,
+       278251,
+       200920,
+       149780,
+       371084,
+       235031,
+       199734,
+       212351,
+       209793,
+       236195,
+       149490,
+       211424,
+       150294,
+       235271,
+       198010,
+       196800,
+       205147,
+       246210,
+       206335,
+       383313
+      ],
+      "top1": [
+       235234,
+       211424,
+       199734,
+       149780,
+       206335,
+       149490,
+       383313,
+       252872,
+       211581,
+       209793,
+       235031,
+       222320,
+       278251,
+       371084,
+       245884,
+       149489,
+       212351,
+       204938,
+       200920,
+       276735
+      ]
+     }
+    },
+    "sd_engine": 3,
+    "seed": 20260912,
+    "simulator": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 8000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "worlds": 8000
+   },
+   "771033": {
+    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "directions": {
+     "A_select_B_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.021236,
+           "10": 0.114447,
+           "20": 0.168382,
+           "5": 0.075638
+          },
+          "top1": {
+           "1": 0.079733,
+           "10": 0.405523,
+           "20": 0.552954,
+           "5": 0.260688
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.02222,
+           "10": 0.127007,
+           "20": 0.185429,
+           "5": 0.081578
+          },
+          "top1": {
+           "1": 0.080155,
+           "10": 0.410135,
+           "20": 0.558105,
+           "5": 0.263422
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.020161,
+           "10": 0.10333,
+           "20": 0.149994,
+           "5": 0.070241
+          },
+          "top1": {
+           "1": 0.079363,
+           "10": 0.400418,
+           "20": 0.547489,
+           "5": 0.258113
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.025011,
+         "10": 0.140206,
+         "20": 0.211238,
+         "5": 0.081983
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         12,
+         15,
+         13,
+         27,
+         14,
+         28,
+         18,
+         24,
+         65,
+         43,
+         58,
+         55,
+         2,
+         90,
+         56,
+         40,
+         99,
+         81
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.021236,
+           "10": 0.087253,
+           "20": 0.138862,
+           "5": 0.061611
+          },
+          "top1": {
+           "1": 0.079733,
+           "10": 0.418839,
+           "20": 0.59204,
+           "5": 0.271175
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.02222,
+           "10": 0.099608,
+           "20": 0.158031,
+           "5": 0.069535
+          },
+          "top1": {
+           "1": 0.080155,
+           "10": 0.425075,
+           "20": 0.598907,
+           "5": 0.275474
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.020161,
+           "10": 0.072904,
+           "20": 0.118808,
+           "5": 0.05519
+          },
+          "top1": {
+           "1": 0.079363,
+           "10": 0.412401,
+           "20": 0.585237,
+           "5": 0.266361
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.085454,
+         "10": 0.450054,
+         "20": 0.637666,
+         "5": 0.293081
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         6,
+         13,
+         4,
+         25,
+         122,
+         60,
+         17,
+         39,
+         144,
+         8,
+         128,
+         36,
+         191,
+         103,
+         11,
+         32,
+         420,
+         1048,
+         228
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.4286,
+       "overlap": 12,
+       "top01": {
+        "captains": {
+         "Bo Nix": 10,
+         "Jaylen Waddle": 3,
+         "Kenneth Walker III": 1,
+         "Patrick Mahomes": 5,
+         "Rashee Rice": 1
+        },
+        "dst_slots": 11,
+        "flex_top": {
+         "Broncos": 6,
+         "Courtland Sutton": 6,
+         "Harrison Butker": 6,
+         "J.K. Dobbins": 8,
+         "Jaylen Waddle": 10,
+         "Kenneth Walker III": 7,
+         "Pat Bryant": 11,
+         "RJ Harvey": 8,
+         "Rashee Rice": 8,
+         "Travis Kelce": 8
+        },
+        "k_slots": 10,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "4-2": 4,
+         "5-1": 16
+        }
+       },
+       "top1": {
+        "captains": {
+         "Bo Nix": 10,
+         "Courtland Sutton": 1,
+         "Jaylen Waddle": 2,
+         "Kenneth Walker III": 2,
+         "Patrick Mahomes": 3,
+         "Rashee Rice": 2
+        },
+        "dst_slots": 12,
+        "flex_top": {
+         "Bo Nix": 7,
+         "Chiefs": 7,
+         "Harrison Butker": 5,
+         "J.K. Dobbins": 12,
+         "Jaylen Waddle": 12,
+         "Kenneth Walker III": 6,
+         "Pat Bryant": 13,
+         "Patrick Mahomes": 6,
+         "Rashee Rice": 6,
+         "Travis Kelce": 6
+        },
+        "k_slots": 8,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 2,
+         "4-2": 7,
+         "5-1": 11
+        }
+       }
+      },
+      "enterable": 23820,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 88235,
+        "places_match_real_contest": true,
+        "public_opponents": 88234,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "10": {
+        "grid_entry_count": 88226,
+        "places_match_real_contest": true,
+        "public_opponents": 88225,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "20": {
+        "grid_entry_count": 88216,
+        "places_match_real_contest": true,
+        "public_opponents": 88215,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "5": {
+        "grid_entry_count": 88231,
+        "places_match_real_contest": true,
+        "public_opponents": 88230,
+        "top01_places": 88,
+        "top1_places": 882
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2.2e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.012,
+       "top01_cov_C_minus_1": 0.185407,
+       "top01_cov_C_minus_20": 0.185429
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.037536749620442844,
+         "ci_lo": 0.021815031659236074,
+         "point": 0.02952038448610864,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.026794305287352115,
+         "ci_lo": -0.051196717549762065,
+         "point": -0.03908568153305677,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.035597564414963506,
+         "ci_lo": 0.019016598036616338,
+         "point": 0.027398432159215596,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.028879653375979305,
+         "ci_lo": -0.052997927964572596,
+         "point": -0.04080183357559187,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.03870770226084986,
+         "ci_lo": 0.024166767955751366,
+         "point": 0.031186362687159366,
+         "share_positive": 1.0,
+         "sign_stable": true
+        },
+        "top1": {
+         "ci_hi": -0.02545160655862072,
+         "ci_lo": -0.049773577610738765,
+         "point": -0.037748591670353535,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        235234,
+        246202,
+        200920,
+        199734,
+        149780,
+        209793,
+        269860,
+        211424,
+        235031,
+        198010,
+        383313,
+        205147,
+        212351,
+        206335,
+        237817,
+        211581,
+        371084,
+        244463,
+        225989,
+        360902
+       ],
+       "top1": [
+        235234,
+        209793,
+        200920,
+        278251,
+        198010,
+        149489,
+        383313,
+        371084,
+        235031,
+        221347,
+        149780,
+        223624,
+        205147,
+        245884,
+        211581,
+        199734,
+        212351,
+        399229,
+        277933,
+        204869
+       ]
+      },
+      "scoring_worlds": [
+       4000,
+       7999
+      ],
+      "selection_worlds": [
+       0,
+       3999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     },
+     "B_select_A_score": {
+      "by_objective": {
+       "top01": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.021318,
+           "10": 0.122066,
+           "20": 0.172514,
+           "5": 0.078072
+          },
+          "top1": {
+           "1": 0.073735,
+           "10": 0.398574,
+           "20": 0.573134,
+           "5": 0.262537
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.02155,
+           "10": 0.131365,
+           "20": 0.192952,
+           "5": 0.081977
+          },
+          "top1": {
+           "1": 0.073891,
+           "10": 0.402073,
+           "20": 0.579997,
+           "5": 0.264767
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.02115,
+           "10": 0.110212,
+           "20": 0.149089,
+           "5": 0.072107
+          },
+          "top1": {
+           "1": 0.073542,
+           "10": 0.394736,
+           "20": 0.56655,
+           "5": 0.260439
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.022366,
+         "10": 0.129405,
+         "20": 0.202293,
+         "5": 0.081586
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         1,
+         6,
+         13,
+         27,
+         31,
+         46,
+         41,
+         15,
+         3,
+         67,
+         73,
+         64,
+         49,
+         35,
+         87,
+         9,
+         107,
+         105,
+         116
+        ]
+       },
+       "top1": {
+        "held_out": {
+         "half_mass": {
+          "top01": {
+           "1": 0.024084,
+           "10": 0.108728,
+           "20": 0.170436,
+           "5": 0.066836
+          },
+          "top1": {
+           "1": 0.085063,
+           "10": 0.430512,
+           "20": 0.620326,
+           "5": 0.281372
+          }
+         },
+         "optimistic": {
+          "top01": {
+           "1": 0.025008,
+           "10": 0.121298,
+           "20": 0.192948,
+           "5": 0.073567
+          },
+          "top1": {
+           "1": 0.085446,
+           "10": 0.436639,
+           "20": 0.62757,
+           "5": 0.285605
+          }
+         },
+         "pessimistic": {
+          "top01": {
+           "1": 0.022484,
+           "10": 0.095711,
+           "20": 0.143735,
+           "5": 0.059324
+          },
+          "top1": {
+           "1": 0.084654,
+           "10": 0.42478,
+           "20": 0.613266,
+           "5": 0.278037
+          }
+         }
+        },
+        "in_sample_coverage": {
+         "1": 0.080162,
+         "10": 0.440594,
+         "20": 0.618571,
+         "5": 0.285428
+        },
+        "shortlist_rank_of_picks": [
+         0,
+         13,
+         16,
+         3,
+         33,
+         14,
+         6,
+         75,
+         63,
+         36,
+         21,
+         86,
+         161,
+         143,
+         56,
+         283,
+         38,
+         23,
+         44,
+         31
+        ]
+       }
+      },
+      "composition": {
+       "duplicates_top01": 0,
+       "duplicates_top1": 0,
+       "jaccard": 0.4286,
+       "overlap": 12,
+       "top01": {
+        "captains": {
+         "Bo Nix": 9,
+         "Courtland Sutton": 1,
+         "Jaylen Waddle": 1,
+         "Kenneth Walker III": 4,
+         "Patrick Mahomes": 5
+        },
+        "dst_slots": 11,
+        "flex_top": {
+         "Bo Nix": 5,
+         "Chiefs": 7,
+         "Harrison Butker": 7,
+         "J.K. Dobbins": 9,
+         "Jaylen Waddle": 12,
+         "Pat Bryant": 12,
+         "Patrick Mahomes": 8,
+         "RJ Harvey": 5,
+         "Rashee Rice": 9,
+         "Travis Kelce": 8
+        },
+        "k_slots": 10,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 2,
+         "4-2": 3,
+         "5-1": 15
+        }
+       },
+       "top1": {
+        "captains": {
+         "Bo Nix": 11,
+         "Jaylen Waddle": 2,
+         "Kenneth Walker III": 3,
+         "Patrick Mahomes": 3,
+         "Rashee Rice": 1
+        },
+        "dst_slots": 13,
+        "flex_top": {
+         "Bo Nix": 5,
+         "Broncos": 6,
+         "Chiefs": 7,
+         "Courtland Sutton": 6,
+         "J.K. Dobbins": 10,
+         "Jaylen Waddle": 12,
+         "Pat Bryant": 13,
+         "Patrick Mahomes": 7,
+         "Rashee Rice": 7,
+         "Travis Kelce": 7
+        },
+        "k_slots": 7,
+        "salary_left_median": 300,
+        "salary_left_min": 0,
+        "structures": {
+         "3-3": 1,
+         "4-2": 7,
+         "5-1": 12
+        }
+       }
+      },
+      "enterable": 23820,
+      "folds_disjoint": true,
+      "grid_contract": {
+       "1": {
+        "grid_entry_count": 88235,
+        "places_match_real_contest": true,
+        "public_opponents": 88234,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "10": {
+        "grid_entry_count": 88226,
+        "places_match_real_contest": true,
+        "public_opponents": 88225,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "20": {
+        "grid_entry_count": 88216,
+        "places_match_real_contest": true,
+        "public_opponents": 88215,
+        "top01_places": 88,
+        "top1_places": 882
+       },
+       "5": {
+        "grid_entry_count": 88231,
+        "places_match_real_contest": true,
+        "public_opponents": 88230,
+        "top01_places": 88,
+        "top1_places": 882
+       }
+      },
+      "n_scoring": 4000,
+      "n_selection": 4000,
+      "opponent_count_effect": {
+       "absolute": 2e-05,
+       "note": "C-1 treats our other 19 entries as public opponents. For an at-least-one event they cannot outrank our best, so C-1 UNDERSTATES coverage. Measured here as the 20-entry top-0.1% coverage read off the C-20 grid minus the C-1 grid.",
+       "relative_pct": 0.01,
+       "top01_cov_C_minus_1": 0.192932,
+       "top01_cov_C_minus_20": 0.192952
+      },
+      "paired": {
+       "half_mass": {
+        "top01": {
+         "ci_hi": 0.011068014437117975,
+         "ci_lo": -0.0062483948449351566,
+         "point": 0.0020783237127832703,
+         "share_positive": 0.6695,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": -0.03514091539949008,
+         "ci_lo": -0.05955174093415521,
+         "point": -0.04719158962185872,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "optimistic": {
+        "top01": {
+         "ci_hi": 0.009359283511287505,
+         "ci_lo": -0.008856896489498526,
+         "point": 3.6363837575783544e-06,
+         "share_positive": 0.489,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": -0.03554989094804335,
+         "ci_lo": -0.060049164913281015,
+         "point": -0.047573851188230654,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       },
+       "pessimistic": {
+        "top01": {
+         "ci_hi": 0.01403191930362192,
+         "ci_lo": -0.0026894657640227264,
+         "point": 0.005353714468051651,
+         "share_positive": 0.8985,
+         "sign_stable": false
+        },
+        "top1": {
+         "ci_hi": -0.03473843182267618,
+         "ci_lo": -0.05899884660963137,
+         "point": -0.04671589745255712,
+         "share_positive": 0.0,
+         "sign_stable": true
+        }
+       }
+      },
+      "portfolio": {
+       "top01": [
+        246202,
+        235234,
+        149780,
+        199734,
+        200920,
+        211424,
+        209793,
+        198010,
+        150294,
+        235371,
+        149490,
+        414822,
+        225989,
+        206335,
+        235008,
+        141022,
+        237825,
+        203106,
+        383313,
+        222320
+       ],
+       "top1": [
+        235234,
+        209793,
+        200920,
+        149780,
+        212351,
+        199734,
+        278251,
+        149490,
+        222320,
+        235031,
+        211424,
+        383313,
+        221347,
+        211581,
+        206335,
+        245884,
+        371084,
+        150294,
+        198010,
+        205147
+       ]
+      },
+      "scoring_worlds": [
+       0,
+       3999
+      ],
+      "selection_worlds": [
+       4000,
+       7999
+      ],
+      "shortlist_is_binding": true,
+      "shortlist_size": 1200
+     }
+    },
+    "draft_group_id": 153086,
+    "enterable": 23820,
+    "entries": 88235,
+    "field_beta": 0.4536,
+    "fold_stability": {
+     "top01": {
+      "jaccard": 0.3793,
+      "overlap": 11
+     },
+     "top1": {
+      "jaccard": 0.6,
+      "overlap": 15
+     }
+    },
+    "legal_lineups": 777056,
+    "portfolios": {
+     "A_select_B_score": {
+      "top01": [
+       235234,
+       246202,
+       200920,
+       199734,
+       149780,
+       209793,
+       269860,
+       211424,
+       235031,
+       198010,
+       383313,
+       205147,
+       212351,
+       206335,
+       237817,
+       211581,
+       371084,
+       244463,
+       225989,
+       360902
+      ],
+      "top1": [
+       235234,
+       209793,
+       200920,
+       278251,
+       198010,
+       149489,
+       383313,
+       371084,
+       235031,
+       221347,
+       149780,
+       223624,
+       205147,
+       245884,
+       211581,
+       199734,
+       212351,
+       399229,
+       277933,
+       204869
+      ]
+     },
+     "B_select_A_score": {
+      "top01": [
+       246202,
+       235234,
+       149780,
+       199734,
+       200920,
+       211424,
+       209793,
+       198010,
+       150294,
+       235371,
+       149490,
+       414822,
+       225989,
+       206335,
+       235008,
+       141022,
+       237825,
+       203106,
+       383313,
+       222320
+      ],
+      "top1": [
+       235234,
+       209793,
+       200920,
+       149780,
+       212351,
+       199734,
+       278251,
+       149490,
+       222320,
+       235031,
+       211424,
+       383313,
+       221347,
+       211581,
+       206335,
+       245884,
+       371084,
+       150294,
+       198010,
+       205147
+      ]
+     }
+    },
+    "sd_engine": 3,
+    "seed": 771033,
+    "simulator": {
+     "discrete_version": 2,
+     "dst": "components of the opposing offense in the same world, shifted to the Sleeper mean by whole points plus a coin for the fraction",
+     "kicker": "extra points off the offense's own touchdowns, field goals at a Poisson mean solved so the level lands on the projection",
+     "lattice": "every score recomputes from integer components through DraftKings' own scorer -- offense, kicker and defense alike -- so all of them are reachable (research/sd_support)",
+     "marginals": "component means scaled BEFORE the draw so the mean lands on Sleeper with whole yards and catches; no multiply touches a finished score",
+     "model": "legacy-latent-discrete",
+     "n": 8000,
+     "params": {
+      "env_sd": 0.18,
+      "qb_sd": 0.26,
+      "rush_sd": 0.24,
+      "script_pass": 0.12,
+      "script_rush": 0.14,
+      "script_sd": 1.0,
+      "td_sd": 0.0
+     },
+     "preseason": false,
+     "projections": "sleeper-weekly",
+     "receiving_noise": "none beyond the shared game, team-passing and script factors",
+     "seed": null,
+     "touchdowns": "poisson, independent per player",
+     "version": 1
+    },
+    "worlds": 8000
+   }
+  }
+ },
+ "field_sensitivity": {
+  "by_top_share": {
+   "0.001": {
+    "beta": 0.3774,
+    "directions": {
+     "A_select_B_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.03377788044188267,
+        "ci_lo": 0.011663291816154761,
+        "point": 0.022661013911103336,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.036018461734586484,
+        "ci_lo": -0.06412603012312902,
+        "point": -0.05053002133721736,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.03405189618030853,
+        "ci_lo": 0.013175545587082888,
+        "point": 0.02368116955099164,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.031625640885566846,
+        "ci_lo": -0.060465808775130636,
+        "point": -0.0467304164017484,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     },
+     "B_select_A_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.028822367379631713,
+        "ci_lo": 0.010412289870352335,
+        "point": 0.019401124492613844,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.05176445699754264,
+        "ci_lo": -0.0779083160183765,
+        "point": -0.06529979959679733,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.033162076922526935,
+        "ci_lo": 0.015798998804893466,
+        "point": 0.02424261378375917,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.05018305842266579,
+        "ci_lo": -0.07575370017492394,
+        "point": -0.06341986449740343,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     }
+    },
+    "scenario": "flatter field",
+    "top_share": 0.001
+   },
+   "0.002": {
+    "beta": 0.4536,
+    "directions": {
+     "A_select_B_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.02502628747950283,
+        "ci_lo": 0.006497697950491666,
+        "point": 0.015486594420137677,
+        "share_positive": 0.9995,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.030572977998731463,
+        "ci_lo": -0.05944052747193675,
+        "point": -0.04502380349634359,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.02771432782028097,
+        "ci_lo": 0.010640193753796143,
+        "point": 0.019098787660182758,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.02553192886354259,
+        "ci_lo": -0.05454273265241119,
+        "point": -0.04025236692171215,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     },
+     "B_select_A_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.027105765719299527,
+        "ci_lo": 0.011159729995336657,
+        "point": 0.019478489631597304,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.036581737296538255,
+        "ci_lo": -0.06101120630387401,
+        "point": -0.048730847771341235,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.03179335578120102,
+        "ci_lo": 0.017497094505637956,
+        "point": 0.024592665370871538,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.03172667211401484,
+        "ci_lo": -0.05609724134688145,
+        "point": -0.04382823720478201,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     }
+    },
+    "scenario": "production",
+    "top_share": 0.002
+   },
+   "0.004": {
+    "beta": 0.5428,
+    "directions": {
+     "A_select_B_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.009610719443236337,
+        "ci_lo": -0.008051338408419482,
+        "point": 0.0007823194137488829,
+        "share_positive": 0.561,
+        "sign_stable": false
+       },
+       "top1": {
+        "ci_hi": -0.0175992147156373,
+        "ci_lo": -0.04390581609756844,
+        "point": -0.030763054378690043,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.017837376886063117,
+        "ci_lo": 0.002958801167454951,
+        "point": 0.010400797961350051,
+        "share_positive": 0.997,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.010742776582769613,
+        "ci_lo": -0.03710355966329992,
+        "point": -0.02414923018060528,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     },
+     "B_select_A_score": {
+      "optimistic": {
+       "top01": {
+        "ci_hi": 0.02186071005393315,
+        "ci_lo": 0.00364600699024508,
+        "point": 0.012869188588584516,
+        "share_positive": 0.996,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.04334864003906239,
+        "ci_lo": -0.07087894788528831,
+        "point": -0.057332280869350806,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      },
+      "pessimistic": {
+       "top01": {
+        "ci_hi": 0.03145361213169758,
+        "ci_lo": 0.0166032727693148,
+        "point": 0.02418801965348614,
+        "share_positive": 1.0,
+        "sign_stable": true
+       },
+       "top1": {
+        "ci_hi": -0.035334532694081065,
+        "ci_lo": -0.06255006076247907,
+        "point": -0.04881240984324873,
+        "share_positive": 0.0,
+        "sign_stable": true
+       }
+      }
+     }
+    },
+    "scenario": "more concentrated",
+    "top_share": 0.004
+   }
+  },
+  "draft_group_id": 153086,
+  "note": "sensitivity scenarios only; no value here may become a production default, and none of them is a calibrated alternative",
+  "seed": 20260912,
+  "worlds": 8000
+ },
+ "meta": {
+  "boards": [
+   153086,
+   153085
+  ],
+  "candidates": 1200,
+  "money": "gate CLOSED; no payout figure is computed or cited in this stage",
+  "objectives": [
+   "top1",
+   "top01"
+  ],
+  "opponent_count_contract": "a submission of exactly k entries faces C - k public opponents; the grid for size k is built at C - k + 1 entries so its internal C-1 is exactly C - k, and the qualifying place counts are asserted unchanged. The 20-entry portfolio uses C - 20 throughout selection AND held-out scoring so the matrix does not shift as the greedy grows.",
+  "portfolio_k": 20,
+  "provenance": {
+   "commit": "ed70264",
+   "data_split": null,
+   "dirty": false,
+   "model": "legacy-latent-discrete",
+   "seed": null,
+   "source_files": 29,
+   "source_sha": "4756dc028e9f96df84e3d021aca7639185c7c78239df15079b30c4471f6df368",
+   "worlds": 8000
+  },
+  "question": "does selecting for Top 0.1% beat selecting for Top 1% on HELD-OUT extreme-tail coverage, or is the in-sample gap an artifact of the leakage S4.1 found?",
+  "seeds": [
+   20260912,
+   771033
+  ],
+  "sizes": [
+   1,
+   5,
+   10,
+   20
+  ],
+  "stage": "S4 portfolio objective cross-fit (RESEARCH; nothing promoted)",
+  "tie_conventions": {
+   "half_mass": "APPROXIMATION, reported as a centre point only. Halving the tie intensity is Poisson thinning, which conditional on T tied opponents puts Binomial(T, 1/2) ahead of us rather than the Uniform{0..T} a true random place in the block gives -- same mean, different distribution. The decision rests on the two exact endpoints. Exact fractional credit, if ever needed: E[min(1, d/(T+1))] = P(T<=d-1) + (d/mu) P(T>=d+1).",
+   "optimistic": "EXACT. only field mass strictly above counts (production today)",
+   "pessimistic": "EXACT. every tied opponent finishes ahead of us"
+  },
+  "worlds_total": 8000
+ }
+}

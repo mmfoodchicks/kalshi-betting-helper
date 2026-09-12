@@ -363,6 +363,59 @@ def board(feed_dir, dg, seed, log=print):
             "directions": res, "fold_stability": stab, "portfolios": ports_by_dir}
 
 
+TOP_SHARES = (0.001, 0.002, 0.004)      # flatter, production, more concentrated
+
+
+def sensitivity(feed_dir, dg, seed, log=print):
+    """S4.7: does the conclusion survive a differently-concentrated public field?
+
+    The field model is a placeholder -- one knob, beta, solved so the most popular
+    build holds FIELD_TOP_SHARE of the field, from a single published contest. A
+    conclusion that only holds at that one arbitrary value is not a conclusion, so
+    the same football worlds are re-scored against a flatter field and a more
+    concentrated one. These are SENSITIVITY SCENARIOS and none of them may become
+    a default; the point is not to find a better beta.
+    """
+    import dfs_tourney as T
+    from research import sd_board
+    S = sd_board.feeds(feed_dir)
+    S._cache.clear()
+    slate, contest = sd_board.slate_and_contest(dg)
+    ents, _s, _r = sd_board.ents_for(slate, sd_board.WEEK, S.SD_DISCRETE,
+                                    n_sims=WORLDS, seed=seed, log=lambda *_a, **_k: None)
+    idx, W, allowed = sd_board.universe(ents)
+    C = int(contest.get("max_entries") or contest.get("entered") or 0) or 10000
+    grids, gmeta = grids_by_size(contest, C)
+    N = min(WORLDS, min(len(e["arr"]) for e in ents))
+    X = np.asarray([e["arr"][:N] for e in ents], dtype=np.float32)
+    ok = np.where(allowed)[0]
+    half = N // 2
+    A, B = np.arange(0, half), np.arange(half, N)
+    out = {}
+    for ts in TOP_SHARES:
+        f, beta = T.field_weights(ents, idx, cpt_mult=1.5, top_share=ts)
+        cells = {}
+        for name, sel, sco in (("A_select_B_score", A, B), ("B_select_A_score", B, A)):
+            r, _ports = one_direction(T, ents, W, ok, X, f, grids, gmeta, C, sel, sco,
+                                      log=lambda *_a, **_k: None)
+            cells[name] = {c: {m: r["paired"][c][m] for m in OBJECTIVES} for c in ENDPOINTS}
+        out[str(ts)] = {"top_share": ts, "beta": round(float(beta), 4),
+                        "scenario": ("flatter field" if ts < 0.002 else
+                                     "production" if ts == 0.002 else "more concentrated"),
+                        "directions": cells}
+        for name in cells:
+            for c in ENDPOINTS:
+                d = cells[name][c]["top01"]
+                log(f"[S4S] top_share {ts:.3f} beta {beta:.4f} {name[:3]} {c:12s} "
+                    f"top0.1% delta {d['point']:+.5f} "
+                    f"[{d['ci_lo']:+.5f},{d['ci_hi']:+.5f}] "
+                    f"{'STABLE' if d['sign_stable'] else 'not stable'}")
+    return {"draft_group_id": int(dg), "seed": int(seed), "worlds": int(N),
+            "note": ("sensitivity scenarios only; no value here may become a production "
+                     "default, and none of them is a calibrated alternative"),
+            "by_top_share": out}
+
+
 def run(feed_dir, dgs=DGS, seeds=SEEDS, log=print):
     out = {"meta": {
         "stage": "S4 portfolio objective cross-fit (RESEARCH; nothing promoted)",
@@ -395,6 +448,8 @@ def run(feed_dir, dgs=DGS, seeds=SEEDS, log=print):
         out["boards"][str(dg)] = {}
         for seed in seeds:
             out["boards"][str(dg)][str(seed)] = board(feed_dir, dg, seed, log=log)
+    log("[S4S] field-concentration sensitivity (one board, one seed, both directions)")
+    out["field_sensitivity"] = sensitivity(feed_dir, dgs[0], seeds[0], log=log)
     with open(os.path.join(DATA, "s4_crossfit.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     return out

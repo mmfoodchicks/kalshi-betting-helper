@@ -1004,6 +1004,237 @@ least as much as it did before, and Z2.9 asserts something safer.
 - **S9 constrained-v2** was not started, correctly, since it sits behind all
   of the above.
 
+## S4. The portfolio objective: Top 1% or Top 0.1%?
+
+Baseline `9d6ffaa`. Portfolio methodology only; the money gate stays shut
+throughout and no dollar figure decides anything below.
+`research/s4_ties.py`, `research/s4_crossfit.py` →
+`research/data/s4_ties.json`, `s4_crossfit.json`.
+
+### A. The old methodology
+
+| | |
+|---|---|
+| Candidate enumeration | `enumerate_showdown`: salary, team, position, roster rules. **World-independent** |
+| Lineup metrics | `run(W, X, f, grid)` over **all N worlds** |
+| Shortlist | the 1,200 best by Top 1%, over **all N worlds** |
+| Greedy selection | `portfolio(...)` over **all N worlds** |
+| Reported coverage | `p_any_top1_pct` = the greedy's own coverage vector, over **all N worlds** |
+| Objective | Top 1%. `portfolio()` never passes `rank`, so `top01` has never driven a board |
+| Union | row-wise max (shared field), correct since the Classic pass |
+| Top-q | `P(A ≤ places−1)`, `A` = count **strictly above**; Poisson where its mean is small, Normal on the rank otherwise |
+
+### B. Leakage: confirmed, and doubled
+
+One world set feeds the shortlist, the greedy and the reported number. Every
+portfolio coverage figure on a served Showdown board is in-sample. **Measured
+size of that optimism**, same portfolio graded both ways:
+
+| metric | in-sample | held-out | optimism |
+|---|---|---|---|
+| Top 1% | 0.60660 | 0.60872 | −0.3% |
+| Top 0.1% | 0.20051 | 0.19249 | **+4.2%** |
+
+The sparse tail metric is the one in-sample evaluation inflates; the dense one
+barely notices. Enumeration is proved world-independent behaviourally —
+overwrite every simulated score and the legal universe is byte-identical — so
+only the shortlist and the greedy needed a fold.
+
+### C. Cross-fit design
+
+One pool of 8,000 worlds, fold A = first 4,000, fold B = second 4,000, disjoint
+and guarded. Select on A score on B, select on B score on A, reported apart. Two
+boards × two seeds × two directions = 8 cells.
+
+**The shortlist follows the objective**: the Top-1% experiment shortlists by
+Top 1% on its selection fold, the Top-0.1% experiment by Top 0.1% on its own.
+Running both through a Top-1% shortlist would hand the tail objective a
+candidate set preselected for its opponent. The shortlist is binding
+(1,200 of 23,820 enterable), so this matters.
+
+### D. Shared-field coverage semantics
+
+Coverage is the mean over scoring worlds of the **row-wise maximum** over the
+selected prefix — one contest, one realised field, our entries nested. Validated
+against an **empirical** contest rather than against itself: opponents drawn
+binomially and ranked exactly, across masses from comfortably-in to
+comfortably-out including the steep transition, worst absolute disagreement
+**0.0069**. Three entries scoring identically qualify as often as one of them
+does (0.43588 against an empirical 0.44077), where the independent-fields form
+claims 0.82048.
+
+**Opponent count.** A submission of exactly `k` entries faces `C − k` public
+opponents; the grid for size `k` is built at `C − k + 1` so its internal count is
+exactly that, with the qualifying place counts asserted unchanged (882 and 88 at
+every `k` on these boards). The 20-entry portfolio uses `C − 20` throughout
+selection **and** scoring, so the matrix does not shift as the greedy grows.
+Production uses `C − 1`, which counts our own 19 other entries as public
+opponents; for an at-least-one event they cannot outrank our best, so `C − 1`
+**understates** coverage. Measured, not sized from `19/C`: **1.3e-5 absolute,
+0.012% relative.** Too small to move production for.
+
+### E. Tie-at-cutoff semantics
+
+Top-q counts only mass strictly above, so tied opponents are treated as
+finishing behind us, while `win_sole` and `ev` in the same grid are tie-exact.
+A real inconsistency, measured with an exact bracket (independent Poissons add,
+so the pessimistic end is the same table at `F' = 1 − (1−strict)·exp(−level)`):
+**1.5% of the best lineup's Top 1%, 1.1% of its Top 0.1%**, same best lineup,
+rank correlation 0.995+. Documented, not changed; `SD_ENGINE` stays 3. Every S4
+result below is reported at **both exact endpoints**.
+
+### F–G. Top 1% vs Top 0.1%, both directions
+
+Held-out Top-0.1% coverage at 20 entries, paired bootstrap over scoring worlds:
+
+| board | seed | dir | Top1-sel | Top0.1-sel | Δ optimistic | Δ pessimistic |
+|---|---|---|---|---|---|---|
+| DEN@KC | 1 | A→B | 0.15336 | 0.16885 | **+0.0155** ✓ | **+0.0191** ✓ |
+| DEN@KC | 1 | B→A | 0.15934 | 0.17882 | **+0.0195** ✓ | **+0.0246** ✓ |
+| DEN@KC | 2 | A→B | 0.15803 | 0.18543 | **+0.0274** ✓ | **+0.0312** ✓ |
+| DEN@KC | 2 | B→A | 0.19295 | 0.19295 | +0.0000 — | +0.0054 — |
+| DAL@NYG | 1 | A→B | 0.16902 | 0.19249 | **+0.0235** ✓ | **+0.0307** ✓ |
+| DAL@NYG | 1 | B→A | 0.16442 | 0.19047 | **+0.0261** ✓ | **+0.0300** ✓ |
+| DAL@NYG | 2 | A→B | 0.16034 | 0.19260 | **+0.0323** ✓ | **+0.0426** ✓ |
+| DAL@NYG | 2 | B→A | 0.16253 | 0.18763 | **+0.0251** ✓ | **+0.0361** ✓ |
+
+✓ = 95% CI excludes zero. **Eight of eight positive, seven of eight stable at
+both exact endpoints.** The null cell is a genuine null — point estimate
+3.6e-06, portfolios 12/20 overlapping, not a collapsed calculation.
+
+**The reverse cost, and it is larger.** Held-out Top-1% coverage, all eight
+cells stable:
+
+| | Top1-selected | Top0.1-selected | Δ |
+|---|---|---|---|
+| held-out Top 1% | ~0.603 | ~0.555 | **−0.041 to −0.058** |
+| held-out Top 0.1% | ~0.165 | ~0.186 | **+0.015 to +0.043** |
+
+Selecting for the tail buys about +0.025 of Top-0.1% coverage and sells about
+−0.050 of Top-1% coverage. In absolute coverage the sale is bigger than the
+purchase.
+
+### H. Portfolio-size curves
+
+Held-out Top-0.1% delta, averaged over the eight cells, each size scored against
+`C − k` opponents as a hypothetical submission of exactly `k` entries:
+
+| k | Top1-sel | Top0.1-sel | Δ |
+|---|---|---|---|
+| 1 | 0.01554 | 0.02323 | +0.0077 |
+| 5 | 0.06923 | 0.07452 | +0.0053 |
+| 10 | 0.10952 | 0.12090 | +0.0114 |
+| 20 | 0.16500 | 0.18616 | +0.0212 |
+
+The advantage is present throughout construction, not only at the twentieth
+lineup.
+
+### I–J. Uncertainty and seeds
+
+Paired bootstrap (2,000 resamples) over scoring worlds, which removes the noise
+both portfolios share — the only reason a ±0.25-point-scale difference is
+readable at all. Two independent seeds per board; the single unstable cell is one
+seed in one direction on one board, and every other cell in that group is stable.
+
+### K. Composition (DEN@KC, seed 1, A→B)
+
+| | Top1-selected | Top0.1-selected |
+|---|---|---|
+| Captains | Nix 8, Walker 4, Mahomes 4, Waddle 3 | Nix 9, Walker 3, Sutton 1, Waddle 1 |
+| Structures | 5-1: 9, 4-2: 8, 3-3: 3 | 5-1: **14**, 4-2: 6, 3-3: **0** |
+| K slots | 6 | **12** |
+| DST slots | 13 | 10 |
+| Salary left | median 300, min 0 | median 300, min 0 |
+| Overlap | 10/20, Jaccard 0.333 | duplicates: none either side |
+
+The tail objective concentrates on one team and doubles its kicker usage — a
+coherent tail story, on one board and one direction, claimed no further.
+
+### L. Fold-to-fold selection stability
+
+| board | seed | Top 1% | Top 0.1% |
+|---|---|---|---|
+| DAL@NYG | 1 | 11/20 | 14/20 |
+| DAL@NYG | 2 | 12/20 | 11/20 |
+| DEN@KC | 1 | 13/20 | 12/20 |
+| DEN@KC | 2 | 15/20 | 11/20 |
+
+Comparable. **No instability pathology.** A 600-world pilot showed 2/20 for the
+tail objective and pointed the comparison the wrong way entirely; that was
+estimator noise on an 88-in-88,235 event, and it is the reason the pilot was not
+read as a result.
+
+### M. Field-concentration sensitivity — the finding that decides it
+
+Same football worlds, the field's one knob moved either side of its placeholder.
+**Scenarios only; none may become a default and none is a calibrated
+alternative.**
+
+| concentration | β | A→B opt | A→B pes | B→A opt | B→A pes |
+|---|---|---|---|---|---|
+| 0.001 flatter | 0.377 | +0.0227 ✓ | +0.0237 ✓ | +0.0194 ✓ | +0.0242 ✓ |
+| 0.002 production | 0.454 | +0.0155 ✓ | +0.0191 ✓ | +0.0195 ✓ | +0.0246 ✓ |
+| 0.004 concentrated | 0.543 | **+0.0008 ✗** | +0.0104 ✓ | +0.0129 ✓ | +0.0242 ✓ |
+
+No sign flips. But the gain **halves monotonically** as the field concentrates —
+about +0.022, +0.018, +0.009 at the optimistic convention — and at the
+concentrated end it loses significance under production's own tie convention.
+The effect size depends materially on the single parameter that is a placeholder
+taken from one published 2021 contest.
+
+### N. Money diagnostics
+
+None computed. The gate is shut on `field_model_calibrated` and
+`showdown_joint_model_validated`, and the decision below rests on held-out
+coverage alone.
+
+### O. Production-objective decision: **unchanged**
+
+Selecting for Top 0.1% **does** improve held-out Top 0.1% coverage. That is
+established about as well as this stage can establish anything: every cell
+positive, seven of eight stable, both boards, both seeds, both fold directions,
+both exact tie conventions, and the advantage builds across portfolio sizes
+rather than appearing at the last lineup.
+
+It is still **not enough to switch production**, for two reasons that are about
+the decision rather than the measurement:
+
+1. **The trade is not free and coverage cannot price it.** +0.025 of Top-0.1%
+   coverage costs −0.050 of Top-1% coverage, stable in all eight cells. Which
+   side wins depends on how much more a higher finish pays, weighted by finish
+   probabilities you can trust — and the money gate is shut precisely because
+   those probabilities are not trustworthy. Using experimental dollars to break
+   the tie is exactly what this stage forbids.
+2. **The effect size rides on the uncalibrated knob.** It halves across a
+   plausible field-concentration range and goes insignificant at the concentrated
+   end under the production convention. S7 is therefore a genuine prerequisite,
+   not a formality.
+
+So: **Top 1% remains the production selection objective.** Nothing in
+`dfs_tourney` changes. This is recorded as research, and it has made S7 the
+next thing worth doing rather than a box to tick.
+
+What would change the decision: a calibrated field model (S7) that lands at or
+flatter than the current placeholder, plus a payout-weighted comparison once the
+money gate can open.
+
+### P. Remaining limitations
+
+- **Two boards, both primetime, both ~88,000 entries, both week 2.** Smaller or
+  flatter contests are unmeasured.
+- **One simulator.** `legacy-latent-discrete` v2 is a correct implementation of
+  a model whose covariance structure Stage 2B–2F measured as limited. A better
+  football model could move the objective comparison.
+- **4,000 scoring worlds per cell.** Enough for the paired difference, not enough
+  to quote an absolute tail coverage as calibrated. The absolute numbers here are
+  model-conditional; only the paired differences are the result.
+- **The 1,200-lineup shortlist is binding** (of 23,820 enterable). Whether a
+  larger shortlist would favour either objective differently is unmeasured.
+- **The tie convention is still inconsistent in production** — documented, 1.1%
+  wide, deliberately not fixed.
+
+---
+
 ## X. Recorded for S7/S9: a validation flag must name what it validated
 
 Both remaining money links are booleans, and neither says what it is a statement
