@@ -1,9 +1,26 @@
 # Showdown correction pass: what was audited, what was fixed, what was not
 
 **Baseline** `a1c4836` (the frozen, audited Classic tree).
-**This pass** stages S1, S2 and S3 of nine, plus the discrete-scorer
-investigation that S3's blocker was referred to (section Y2). S4 through S9 were not reached and
-are listed as such rather than summarised as if they had been.
+**Head of this document** the documentation-coherence commit that follows
+`287823e`; `287823e` is the last commit that changed behaviour or numbers, and is
+the one to audit code against.
+
+**Scope, by stage.** S1, S2 and S3 are done (sections D-G). The discrete-scorer
+investigation S3's blocker was referred to is done and **promoted for Showdown
+only** at `9d6ffaa` (sections Y2-Y6). S4 is done at `9cbd68d` and closed at
+`287823e`, and it did **not** change the production objective (section S4).
+**S5, S6, S8 and S9 were not reached** and are listed as such rather than
+summarised as if they had been. S7 is not reached either, and is now a named
+prerequisite rather than merely a later stage.
+
+**The front and back of this document have to agree with its middle**, because
+people read one page of it. They did not. An earlier revision kept a header
+saying S4 through S9 were unreached, a findings table saying the same, an
+executive claiming one open gate link, a test section quoting suite counts from
+two commits earlier, and a "recommended next" section advising work already
+finished. An adversarial review found all five. They are corrected here, and
+section R records the failure mode, because an append-only research log presented
+as a final report is its own defect.
 
 Everything below was reproduced against the code before it was touched. Where
 the reviewer was right, the mechanism was fixed rather than the test. Where
@@ -33,11 +50,21 @@ twice on the way: from "probably halves ties" (never measured, withdrawn), to
 place 84% and 96.8% of the time. The defect was worth fixing because it was
 wrong, not because it was costly.
 
-The money columns now carry a gate. It is shut, on one link: the field model is
-a placeholder taken from a single published contest. That link now looks like
-the larger of the two problems by a wide margin — if 84-97% of first places are
-shared, the model of the public drives payout economics far more than the
-scoring grid ever did.
+The money columns now carry a gate. It is shut on **two** links:
+`field_model_calibrated`, a placeholder taken from a single published contest,
+and `showdown_joint_model_validated`, added when closing the lattice link exposed
+that nothing gated the football model at all. Either one alone keeps the gate
+shut, so calibrating ownership would not open it. The field link is the larger of
+the two measured problems by a wide margin — if 84-97% of first places are
+shared, the model of the public drives payout economics far more than the scoring
+grid ever did.
+
+S4 then asked whether the portfolio should be selected for Top 0.1% rather than
+Top 1%. On the evidence it should, and it is not: the tail objective improves
+held-out tail coverage in every cross-fit cell, but costs more Top-1% coverage
+than this unvalidated economic model may price, and its size rides on the
+uncalibrated field knob. **Top 1% remains the production objective**, and the
+served coverage figure is now labelled in-sample.
 
 One simulator was promoted, for Showdown only and for correctness only. No
 strategy default changed. Classic is untouched, and byte-identical on a seeded
@@ -56,7 +83,8 @@ digest of its whole pool.
 | 3 | Showdown runs the legacy simulator | **Confirmed**; the "make the model explicit" half was **already done** |
 | 4 | Scores are off the DraftKings lattice | **Confirmed, and larger than claimed** |
 | 5 | Money shown without an authority gate | **Confirmed**; the placeholder was already documented in code |
-| 6-10 | Rules, portfolio, multi-contest, fast path, identity | **Not reached this pass** |
+| 7 | Portfolio selects and scores on the same worlds | **Confirmed** in S4.1, and worse than stated -- the shortlist leaks too. Measured, labelled, objective unchanged |
+| 6, 8, 9, 10 | Rules (S5), multi-contest (S6), fast path (S8), identity (S9) | **Not reached** |
 
 ---
 
@@ -472,6 +500,19 @@ support, and nobody had written it down.
 | Offensive score recomputes from its own integer stat line through `_ppr` | **0 of 26** | **26 of 26** |
 | Worst recomputation error | 1.26 points | 7.1 × 10⁻¹⁵ |
 | Whole pool legal (QB, RB, WR, TE, **K**, **DST**) | **0 of 24** | **24 of 24** |
+
+**Why the denominators differ, 26 and 24.** They are two different populations and
+the row labels were too terse to say so. **26** is every offensive player
+`simulate_game` returns for the game — the full Sleeper-projected skill pool,
+before any DFS filtering — which is the right population for "does a score
+recompute from its stat line", since that question is about the scorer. **24** is
+the showdown board's own entry pool: the same players after `_apply_depth` drops
+the WR4s and third backs, plus the field-only extras added back, plus the two
+kickers and two defences the board can actually roster. That is the right
+population for "is every score a lineup could contain legal", since that question
+is about the board. Neither number is a subset of the other — 24 adds K and DST
+and removes depth-gated skill players — so "whole Showdown pool 26/26" is a
+shorthand that should not be used, and is not used below.
 | Captain multiplier is exactly 1.5 | yes | yes |
 | Captain's product lands on the engine's tie grid | **no** (0.005 pt error) | **yes** (exact) |
 | Base scores with odd hundredths | 54.2% | **0.0%** |
@@ -642,7 +683,7 @@ scoring favours balanced builds. It is what happened on two boards.
 
 | Criterion | Verdict | Evidence |
 |---|---|---|
-| Support exactly valid | **Pass** | 26/26 offensive scores recompute from integer stat lines to 7.1e-15; whole pool legal, K and DST included; captain product exact; engine bucket reproduces the exact total 100.000% |
+| Support exactly valid | **Pass** | **26 of 26** offensive scores (the game's full skill pool) recompute from integer stat lines to 7.1e-15; **24 of 24** board-pool scores legal, K and DST included; captain product exact; engine bucket reproduces the exact total 100.000%. Two populations, not one — see the note under section Y4's table |
 | Meaningful means close | **Pass** | absolute error ≤ 0.21 DK points anywhere in the pool; ≤ 1.93% for every player projected ≥ 2; relative error falls monotonically with projection |
 | Correlation not materially regressed | **Pass, practically** | worst move between two rosterable players 0.0209, sitting in the body of a control distribution whose median maximum is 0.0192 and whose own maximum is 0.0273 |
 | Live-board ordering stable | **Pass** | top twenty reorders less than a reseed does (4/20 vs 2/20 identical); captains within one entry of twenty; structures near-identical |
@@ -954,6 +995,69 @@ least as much as it did before, and Z2.9 asserts something safer.
 
 ---
 
+## R. Provenance, and the staleness failure mode
+
+### R1. Every artifact, its stamp, and its hash
+
+An adversarial review could not verify the provenance claim because this document
+named the artifact files without exposing their stamps. Here they are. `commit` and
+`dirty` come from each artifact's own `meta.provenance` (written by
+`research/provenance.py` at generation time); `source_sha` is that module's digest
+of the source files it considered; the last column is sha256 of the artifact file
+itself, truncated, so a reviewer can confirm the file they hold is the file
+described.
+
+| artifact | generated at | dirty tree | source_sha | sha256(file) |
+|---|---|---|---|---|
+| `s4_crossfit.json` | `ed70264` | no | `4756dc028e9f96df` | `eb3eea5e6aba0081` |
+| `s4_ties.json` | `9d6ffaa` | no | `b69baafc11e6cd38` | `fb9e2b2beaa8d8b0` |
+| `sd_corr_null.json` | `c206e2c` | **yes** | `d98709391071807c` | `a6ff1807b4b775db` |
+| `sd_discrete.json` | `b4e3535` | **yes** | `8389447866da7074` | `4ba4e9a6bc853232` |
+| `sd_lattice.json` | `a1c4836` | **yes** | `964f741b8f031308` | `3bc63e8e8c750af2` |
+| `sd_live_ab.json` | `f41ea02` | **yes** | `7d7dd97f9bda4b08` | `cf2146a66d0bcc8c` |
+| `sd_live_ab_control.json` | `c206e2c` | no | `8fb021091f8f02e8` | `ce4af6ea078a347b` |
+| `sd_outliers.json` | `d7fcf66` | no | `8fb021091f8f02e8` | `700c4ab6c4d1efc3` |
+| `sd_support.json` | `f41ea02` | **yes** | `1c5b7ef4e2913e50` | `7f230ee6960f9744` |
+
+**5 of 9 artifacts were generated from a DIRTY tree** — `sd_corr_null.json`, `sd_discrete.json`, `sd_lattice.json`, `sd_live_ab.json`, `sd_support.json`.
+For those, `commit` names the parent commit, **not** the exact tree that produced
+the numbers, because uncommitted edits were present when they ran.
+`provenance.require_clean()` exists and is only called for order-sensitive
+artifacts, so nothing enforced it here. That is a real limit on independent
+reproduction: re-running those five from the named commit may not reproduce them
+bit for bit. The four clean ones — `s4_crossfit.json`, `s4_ties.json`,
+`sd_live_ab_control.json`, `sd_outliers.json` — carry the stronger claim, and the
+S4 result rests on the first of those.
+
+What a reviewer should do with this: recompute the aggregates from the artifacts
+(the key ones are summarised in the tables above and every underlying row is in
+the JSON), rather than trusting that the prose transcribed them correctly. The
+field-sensitivity averages in section M were transcribed wrongly once and caught
+that way.
+
+### R2. Why the front of this report disagreed with its middle
+
+This document was written by appending a section per pass. Each pass updated the
+sections it was about and left the header, the findings table, the executive
+summary, the test counts and the "recommended next" list describing the world as
+it was several commits earlier. By `287823e` the first page said S4 had not been
+reached while the middle contained S4's completed cross-fit, and the last page
+recommended doing it.
+
+Nothing in the guard suite caught that, because the report guards pin individual
+sentences — that a correction is still present, that a retraction has not been
+deleted — and a pinned sentence can be perfectly true while the page around it has
+gone stale. Five such contradictions were found by a human reading the document
+front to back, which is the one test that was not automated.
+
+The lesson, recorded rather than just fixed: **a report assembled by appending is a
+research log, and calling it a final audit document is a claim about coherence that
+appending does not earn.** The scope line, the findings table, the test counts and
+the next-steps list are the four places that go stale first, because they are
+summaries of everything rather than statements about one thing.
+
+---
+
 ## V. Production defaults after this pass
 
 | | Value | Why |
@@ -992,8 +1096,11 @@ least as much as it did before, and Z2.9 asserts something safer.
   kicker asked for 1.0 lands on 3.4. Real showdown kickers project 5-9 and land
   within 0.10 points, so this is a bound worth stating rather than a defect in
   practice.
-- **S4 portfolio cross-fit** was not reached. Showdown still selects and
-  scores on the same worlds, and still surfaces top 1% rather than top 0.1%.
+- **S4 portfolio cross-fit is done** (`9cbd68d`, closed `287823e`) and its
+  limitations are listed in section S4.P rather than here. Showdown still selects
+  and scores on the same worlds in PRODUCTION -- the cross-fit lives in research
+  and the served figure is labelled in-sample, which is a disclosure and not a
+  fix.
 - **S5 shadow-forbidden rule study** was not reached. The roughly 3% survival
   rate under owner rules is unmeasured by me and unattributed to named rules.
 - **S6 multi-contest scoring** was not reached; one board, one contest.
@@ -1196,12 +1303,24 @@ alternative.**
 | 0.002 production | 0.454 | +0.0155 ✓ | +0.0191 ✓ | +0.0195 ✓ | +0.0246 ✓ |
 | 0.004 concentrated | 0.543 | **+0.0008 ✗** | +0.0104 ✓ | +0.0129 ✓ | +0.0242 ✓ |
 
-No sign flips. But on this board and seed the gain **falls monotonically** as the
-field concentrates — about +0.022, +0.018, +0.009 at the optimistic convention —
-and at the concentrated end it loses significance under production's own tie
-convention. The effect size depends materially on the single parameter that is a
-placeholder taken from one published 2021 contest. Whether that monotone fall
-repeats on other boards and seeds is **unmeasured**.
+No sign flips. On this board and seed the gain **falls monotonically** as the
+field concentrates. Averaging the two fold directions at the optimistic
+convention: **+0.0210, +0.0175, +0.0068**.
+
+Two corrections to an earlier revision of this paragraph, both from the
+adversarial review. It said "+0.022, +0.018, +0.009"; the last figure is
+**+0.0068**, and 0.009 was eyeballed rather than computed. And it said the gain
+"loses significance under production's own tie convention" at the concentrated
+end, which is **too broad**: at top share 0.004 the optimistic convention is
++0.0008 and not significant in A→B, but +0.0129 and **still significant** in
+B→A, and both directions stay significant under the pessimistic convention. The
+accurate statement is that it loses significance **in one of two fold directions**
+under the production convention.
+
+The conclusion is unchanged and does not need the stronger version: the point
+estimate weakens materially with concentration, never flips sign, and the effect
+size depends on a single parameter taken from one published 2021 contest. Whether
+the monotone fall repeats on other boards and seeds is **unmeasured**.
 
 ### N. Money diagnostics
 
@@ -1269,6 +1388,10 @@ separate one, and the measured optimism settles it:
 |---|---|---|
 | Top 1% (served) | **+2.7%** | **+7.4%** |
 | Top 0.1% | +8.5% | +14.5% |
+
+All four figures are **relative** percentages, not percentage points: the served
+Top-1% coverage reads about 2.7% higher than its held-out value, which on a
+coverage near 0.60 is roughly 0.016 absolute.
 
 A few percent is not nothing, and the tab rendered the figure as a bare
 probability — "20 entries · 62% any top 1%".
@@ -1340,8 +1463,31 @@ the next pass cannot miss it.
 
 ## W. Tests
 
-Full suite with numpy: **1,974 passed, 0 failed**. With numpy hidden:
-**1,947 passed, 0 failed**. Both exit codes checked explicitly, and the first
+**Zero failures, with numpy and with numpy hidden, both exit codes checked
+explicitly as the final statement of the command.** That is the invariant; the
+count is not.
+
+**The suite's total check count is NOT deterministic, and this report previously
+quoted it as if it were.** Some guards are conditional on live market data: the
+one-game-slate block emits five extra checks only when a game on the current slate
+actually has three bettable legs, and when the market does not offer that it
+reports "no game on this slate has 3 bettable legs" and moves on. Two runs of the
+same tree, minutes apart, returned 2,033 and 2,028 with numpy — a five-check
+difference caused entirely by what was trading, not by the code.
+
+So the counts below are **approximate and partly market-driven**, recorded for
+orientation rather than as a checksum. Anyone using them to verify a tree will be
+misled:
+
+`b4e3535` ~1,943 / 1,921 · `f41ea02` ~1,950 / 1,923 · `9d6ffaa` ~1,995 / 1,963 ·
+`ed70264` ~1,999 / 1,968 · `9cbd68d` ~2,015 / 1,982 · `287823e` ~2,023 / 1,990 ·
+this commit ~2,028 / 1,995.
+
+This was found by the report quoting its own commit's counts, which forced a
+re-measurement on the final tree and exposed the non-determinism. Self-reference
+turned out to be a useful accident.
+
+The first
 attempt at that check was worthless: a `grep` appended after the suite in the
 same compound command meant the shell reported the grep's status, so a red
 suite (1,972 passed, **2 failed**) came back as exit 0. Read the log, not the
@@ -1356,11 +1502,25 @@ and was corrected to assert the conjunction rather than a single key.
 
 ## Y. Recommended next, separated from production fixes
 
-1. **Decide the lattice question deliberately.** It is the single largest
-   defect in the Showdown numbers and both routes out of it are decisions
-   about Classic and about promotion, not implementation details.
-2. **S4 before S5.** A cross-fit split is cheap and makes every later strategy
-   claim admissible; the rule study is worth little without it.
-3. **S7 is a data question, not a modelling one.** Until historical Showdown
-   ownership exists in the repo, the field link cannot close, and no amount of
-   making the current slate look sensible substitutes for it.
+*Items 1 and 2 of the original list are done: the lattice question was decided
+and the scorer promoted for Showdown (`9d6ffaa`), and S4's cross-fit ran
+(`9cbd68d`, closed `287823e`). What remains:*
+
+1. **S7 is a data question, not a modelling one.** Until historical Showdown
+   ownership exists in the repo, the field link cannot close, no amount of making
+   the current slate look sensible substitutes for it, and S4's objective
+   comparison stays undecidable because its effect size rides on that knob.
+2. **S9 / joint-model validation is the other half, and is independent of S7.**
+   Calibrating ownership alone would not license authoritative EV: legacy-latent's
+   teammate and opposing-side covariance are what Stage 2B-2F measured as limited,
+   and a six-man single-game roster is more exposed to them than a classic lineup.
+   Both gate links must close before any payout-weighted choice between Top 1% and
+   Top 0.1% is admissible.
+3. **A production cross-fit for the served coverage figure.** S4 labelled it;
+   labelling is not fixing. The split costs half the worlds per step or twice the
+   build on a board that already takes the PC twenty minutes, so it needs a stage
+   with a runtime budget.
+4. **S5, the rule study**, which is now the obvious next target: whether the
+   Showdown strategy gates protect the owner from bad lineups or quietly discard
+   good ones. The ~3% survival rate under owner rules has never been attributed to
+   named rules.

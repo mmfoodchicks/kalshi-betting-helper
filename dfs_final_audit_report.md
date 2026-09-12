@@ -22,7 +22,7 @@ that change what the board should be trusted for.
 | `1366221` | 09-11 02:19 | the log-factorial table off module scope, and the guard that pins the numpy-free import surface |
 | `ee4f5a4` | 09-11 02:42 | the correction in limitation 9 |
 | `59e563b` | 09-11 03:52 | limitation 8 closed by the PC's engine-5 rebuild |
-| (this push) | | the correction pass: probe identity, the shared-field cover, the simulator's lattice and touchdown books, research provenance, and the exact-path duplication probe |
+| `b3d99c5` | | the correction pass: probe identity, the shared-field cover, the simulator's lattice and touchdown books, research provenance, and the exact-path duplication probe |
 
 ## B. What changed, by file
 
@@ -824,20 +824,40 @@ over the five commits, final suite count in the commit message):
    band average with a deterministic count, and the two branches meet with a
    step worth a ten-thousandth of the top prize, which I clamp. Is the clamp
    acceptable, or would you rather see the discontinuity left visible?
-4. **Stage 4's power.** One slate, 7,500 scoring worlds, differences of a
-   few percent. What would you want before changing the portfolio objective
-   to the top 0.1% cover, which is the one change section O recommends?
+4. **Stage 4's power.** *Superseded, and answered.* This asked what would be
+   wanted before changing the portfolio objective to the top-0.1% cover. The
+   Showdown pass then ran that experiment properly -- disjoint selection and
+   scoring folds, objective-specific shortlists, two boards, two seeds, both fold
+   directions, both exact tie conventions, paired bootstrap -- and the answer is
+   in `showdown_audit_report.md` section S4. The tail objective **does** improve
+   held-out tail coverage, and the objective **did not change**, because it costs
+   more top-1% coverage than an unvalidated economic model may price and its size
+   rides on the uncalibrated field knob. Note that the recommendation in section O
+   of THIS document predates that experiment and is superseded by it.
 5. **The duplicate estimator.** The sample overstates copies by 89% at the
    median. Would you shrink it toward something, and if so toward what,
    given that independence is 63 times wrong?
 6. **L1.** *Answered in part, by the rerun rather than by argument.* The
    better-calibrated model puts the real L1 at 50th of 53,135 on the top 1%
    and 128th on the top 0.1%, not 2,182nd -- that figure belonged to the
-   wrong lineup and is retracted in section J. The measurement that separates
-   the two mechanisms turned out to be already in hand: L2 has the same
-   same-team structure and no game stack, and it falls only to 5th on the
-   top 0.1% where L1 falls to 128th. The shared part is the teammate
-   correction and should be believed; the excess on L1 tracks the
-   opposing-side weakness and should not. What remains open is the size of
-   the excess, which needs constrained v2 with the game-level shared latent,
-   validated prospectively on untouched 2026 weeks rather than on 2025.
+   wrong lineup and is retracted in section J.
+
+   **An earlier revision of this item then reintroduced the overclaim section J
+   exists to reject, and an adversarial review caught it.** It said L2 "separates
+   the two mechanisms", that the shared part is the teammate correction and the
+   excess on L1 tracks the opposing-side weakness. Section J says the opposite and
+   says it for a reason: L2 is a **comparator, not a controlled counterfactual**.
+   It differs from L1 in more than the game stack, nothing holds the other
+   differences fixed, and subtracting its fall from L1's to isolate a cross-game
+   term is, in section J's words, "too neat". That subtraction is withdrawn again
+   here, and the fact that it grew back once is itself worth knowing: a corrected
+   claim can reappear in a later section of the same document written at a
+   different time.
+
+   What the two probes support is narrower. Both fall sharply under the
+   better-calibrated model; L1 falls further; the two differ in both team structure
+   and game stacking, so the *attribution* of L1's extra fall between those two
+   causes is **not identified by this comparison**. Establishing it needs a
+   controlled design -- constrained v2 with the game-level shared latent, holding
+   team structure fixed -- validated prospectively on untouched 2026 weeks rather
+   than on 2025.

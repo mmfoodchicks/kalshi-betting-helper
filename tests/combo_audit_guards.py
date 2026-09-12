@@ -14087,12 +14087,47 @@ ck("and it keeps the audit of every repinned guard, including the one that had b
    and "No assertion was weakened to let failing code through" in _sdrw
    and _sdr.count("**Not a regression") >= 5)
 ck("the showdown report states its baseline, that only three of nine stages were done, the measured lattice share, the shut gate with its two open links, and that Classic was left alone",
-   "a1c4836" in _sdrw and "stages S1, S2 and S3 of nine" in _sdrw
+   "a1c4836" in _sdrw and "287823e" in _sdrw
+   and "S5, S6, S8 and S9 were not reached" in _sdrw
    and "47.35%" in _sdrw and "half a step" in _sdrw
    and "Authoritative: false" in _sdrw
-   and "S4 portfolio cross-fit** was not reached" in _sdrw
    and "S7 historical field calibration** was not reached" in _sdrw
    and "Classic behaviour | unchanged" in _sdrw)
+# Repinned: "stages S1, S2 and S3 of nine" and "S4 portfolio cross-fit was not
+# reached" both became FALSE when S4 ran, and an append-only report left them
+# sitting at the front and back of a document whose middle contradicted them. An
+# adversarial review found five such contradictions. These guards now pin the
+# CURRENT scope line and the current head, so the same drift fails the suite
+# instead of waiting for a human to read the whole file.
+ck("the report's front page agrees with its middle: the scope line names the stages actually reached, the head commit, and the two stages that were not",
+   "`287823e` is the last commit that changed behaviour or numbers" in _sdrw
+   and "S4 is done at `9cbd68d` and closed at `287823e`" in _sdrw
+   and "S5, S6, S8 and S9 were not reached" in _sdrw
+   and "stages S1, S2 and S3 of nine" not in _sdrw,
+   "an append-only log presented as a final report is its own defect")
+ck("and its executive, findings table, test counts and next-steps list are current rather than describing an earlier commit",
+   "shut on **two** links" in _sdrw
+   and "Portfolio selects and scores on the same worlds" in _sdrw
+   and "Zero failures, with numpy and with numpy hidden" in _sdrw
+   and "total check count is NOT deterministic" in _sdrw
+   and "partly market-driven" in _sdrw
+   and "Items 1 and 2 of the original list are done" in _sdrw
+   and "1,974 passed" not in _sdrw,
+   "the four places a report goes stale first: scope, findings, tests, next steps")
+ck("and it exposes every artifact's provenance stamp, including that five of nine were generated from a dirty tree",
+   "## R. Provenance, and the staleness failure mode" in _sdrw
+   and "5 of 9 artifacts were generated from a DIRTY tree" in _sdrw
+   and "sha256(file)" in _sdrw
+   and "may not reproduce them" in _sdrw,
+   "a reviewer could not verify provenance from the report alone")
+ck("and it reconciles the two score-population denominators instead of letting a 26/26 shorthand stand",
+   "Why the denominators differ, 26 and 24" in _sdrw
+   and 'so "whole Showdown pool 26/26" is a' in _sdrw
+   and "Neither number is a subset of the other" in _sdrw)
+ck("and the field-sensitivity wording is corrected to one fold direction and the recomputed averages",
+   "+0.0210, +0.0175, +0.0068" in _sdrw
+   and "loses significance **in one of two fold directions**" in _sdrw
+   and "0.009 was eyeballed rather than computed" in _sdrw)
 ck("and it keeps the two places the reviewer was wrong or already satisfied, rather than reporting a clean sweep of confirmations",
    "partially falsified" in _sdrw
    and "already in place" in _sdrw
