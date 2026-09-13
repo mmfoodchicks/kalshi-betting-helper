@@ -2,14 +2,14 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 149 | 09-13 11:47 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 120 | 09-13 11:47 | _EspnBlocked: ESPN 403: parked 6h |
-| `FAN-pit` | 59 | 09-13 03:10 | HTTPError: HTTP Error 403: Forbidden |
+| `NFL-espn-fetch` | 146 | 09-13 16:07 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 118 | 09-13 16:07 | _EspnBlocked: ESPN 403: parked 6h |
+| `FAN-pit` | 59 | 09-13 15:11 | HTTPError: HTTP Error 403: Forbidden |
 | `HTTP-api_baseball_sliplog` | 59 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
 | `BOARD-read` | 45 | 09-10 09:26 | ModuleNotFoundError: No module named 'numpy' |
-| `KAL-candles` | 10 | 09-13 03:05 | HTTPError: HTTP Error 429: Too Many Requests |
-| `SIM-child` | 8 | 09-11 20:28 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
-| `NFLT-espn-blocked` | 5 | 09-13 11:47 | _EspnBlocked: ESPN 403: parked 6h |
+| `SIM-child` | 10 | 09-13 14:26 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
+| `KAL-candles` | 8 | 09-13 13:35 | HTTPError: HTTP Error 429: Too Many Requests |
+| `NFLT-espn-blocked` | 7 | 09-13 16:07 | _EspnBlocked: ESPN 403: parked 6h |
 | `CFB-week-group` | 2 | 09-07 11:35 | HTTPError: HTTP Error 403: Forbidden |
 | `DK-lobby-empty` | 1 | 09-07 18:39 | nascar: lobby answered with no draft groups |
 | `JS-error` | 1 | 09-09 13:37 | Uncaught ReferenceError: mine is not defined @ https://vigil-vdoh.onrender.com/static/app.js?v=1788960295:3754:12 |
