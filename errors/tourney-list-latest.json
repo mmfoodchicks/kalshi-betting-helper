@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 1699,
-   "built_ts": 1789330772,
+   "age_s": 17919,
+   "built_ts": 1789343654,
    "contest": "NFL Showdown $1.11M Sunday Night Showdown [$250K to 1st] (DAL @ NYG)",
    "dg": 153085,
    "entries": 87145,
@@ -17,7 +17,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 15626,
+   "age_s": 44728,
    "built_ts": 1789316844,
    "contest": "NFL $3M MEGA Millionaire [$1M to 1st]",
    "dg": 151307,
@@ -31,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 53639,
+   "age_s": 82741,
    "built_ts": 1789278831,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
    "dg": 153086,
