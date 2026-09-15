@@ -1,14 +1,14 @@
-# Error ledger — updated 2026-09-14
+# Error ledger — updated 2026-09-15
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 145 | 09-14 21:13 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 114 | 09-14 21:13 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 144 | 09-15 02:25 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 113 | 09-15 02:25 | _EspnBlocked: ESPN 403: parked 6h |
 | `BOARD-read` | 45 | 09-10 09:26 | ModuleNotFoundError: No module named 'numpy' |
 | `FAN-pit` | 45 | 09-14 09:36 | HTTPError: HTTP Error 403: Forbidden |
+| `SIM-child` | 12 | 09-15 04:31 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `HTTP-api_baseball_sliplog` | 11 | 09-08 13:03 | TypeError: unsupported operand type(s) for +: 'float' and 'NoneType' |
 | `NFLT-espn-blocked` | 11 | 09-13 22:31 | _EspnBlocked: ESPN 403: parked 6h |
-| `SIM-child` | 10 | 09-13 14:26 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `KAL-candles` | 5 | 09-13 13:35 | HTTPError: HTTP Error 429: Too Many Requests |
 | `CFB-week-group` | 3 | 09-13 18:28 | HTTPError: HTTP Error 403: Forbidden |
 | `DK-lobby-empty` | 2 | 09-14 09:32 | lol: lobby answered with no draft groups |
