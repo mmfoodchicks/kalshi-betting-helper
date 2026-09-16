@@ -1,22 +1,5 @@
 {
- "boards": [
-  {
-   "age_s": 77948,
-   "built_ts": 1789429191,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
-   "dg": 153086,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "DEN vs KC",
-   "starts": "2026-09-15T00:15:00.0000000Z",
-   "teams": [
-    "DEN",
-    "KC"
-   ],
-   "worlds": 60000
-  }
- ],
+ "boards": [],
  "pending": [],
  "sport": "nfl"
 }
