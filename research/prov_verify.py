@@ -57,8 +57,12 @@ def sha_at(commit, prod):
     rels = [f"research/{fn}" for fn in sorted(
         x for x in tree.splitlines() if x.endswith(".py"))]
     for fn in prod:
-        if _git("cat-file", "-e", f"{commit}:{fn}") == "" and _git(
-                "ls-tree", "--name-only", f"{commit}", "--", fn):
+        # ls-tree is the whole test. An earlier version ANDed it with
+        # `_git("cat-file", "-e", ...) == ""`, which is always true here because
+        # _git returns "" both when the object exists (cat-file -e prints
+        # nothing) and when the call fails. The behaviour was right and the
+        # condition was a lie about what was being checked.
+        if _git("ls-tree", "--name-only", f"{commit}", "--", fn):
             rels.append(fn)
     h = hashlib.sha256()
     for rel in rels:

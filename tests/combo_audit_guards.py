@@ -16105,8 +16105,7 @@ ck("and the football evidence is recorded as MIXED, including the worldwise-max 
    > _s5_tail_mean("153086", "baseline", "worldwise_max_mean") + 0.4
    and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99_9")
    > _s5_tail_mean("153085", "baseline", "worldwise_max_p99_9")
-   and "football-only portfolio statistics are\n   **mixed**" in _s5rep.replace("\r", "")
-   or "football-only portfolio statistics are **mixed**" in _s5repw,
+   and "football-only portfolio statistics are **mixed**" in _s5repw,
    f"DEN max-mean {_s5_tail_mean('153086', 'baseline', 'worldwise_max_mean'):.4f} -> "
    f"{_s5_tail_mean('153086', 'ablate:DST-OPP', 'worldwise_max_mean'):.4f}")
 
@@ -16165,7 +16164,13 @@ ck("and the S4-rerun table matches the executable condition, for the pair as wel
 ck("and the S5 report keeps the limitation that one of its two boards is NOT the board S4 used, with both counts",
    "DAL @ NYG is not the board S4 used" in _s5repw
    and "583,082 legal lineups against 22 and 427,048" in _s5repw
-   and "DEN @ KC reproduces byte-identically (777,056 / 23,820)" in _s5repw)
+   # Repinned: "DEN @ KC reproduces byte-identically" was an overclaim resting on
+   # three matching integers -- no bytes were compared, and salaries, projections
+   # and statuses could all have moved underneath them. The guard pinned the
+   # phrase, so it kept the overclaim alive; it now pins the correction.
+   and "That is a count match, not a byte match" in _s5repw
+   and "an overclaim resting on three\n  integers".replace("\n  ", " ") in _s5repw
+   and "DEN @ KC reproduces byte-identically (777,056 / 23,820)" not in _s5repw)
 
 ck("and every S5 artifact carries a non-null seed under the contract tightened at 96bf08b",
    all(a["meta"]["provenance"]["seed"] is not None and _prov14.complete(a["meta"]["provenance"])
@@ -16187,8 +16192,14 @@ _s5_banned = [w for w in ("provably inert", "apparently harmless", "redundant gi
 ck("the S5 report makes no live claim that a rule is inert, redundant or harmless -- only that it has zero marginal admissions when disabled individually under the current rule set",
    not _s5_banned
    and "zero marginal admissions when disabled individually under the current" in _s5repw
-   and "masking is" in _s5_unquoted(open(_os.path.join(_s5_root, "research", "s5_ablate.py")).read())
-   or not _s5_banned and "masked by" in _s5repw,
+   and "masked by" in _s5repw
+   # Read RAW, not through _s5_unquoted: that helper strips `"..."` spans from
+   # MARKDOWN, and run over Python source it eats the module docstring the
+   # sentence lives in. Before the `or`-precedence repair this conjunct was
+   # silently false and a second branch carried the guard, so the guard passed
+   # while asserting less than its name.
+   and "masking is a property of the\nconfiguration, not of the rule" in
+       open(_os.path.join(_s5_root, "research", "s5_ablate.py")).read(),
    f"live banned terms: {_s5_banned}")
 
 ck("and it keeps the counterexample that makes the distinction necessary: a rule with zero marginal admissions alone carrying the study's largest interaction",
@@ -16260,8 +16271,7 @@ ck("and DST-OPP's upper percentiles are still slightly down on both boards, whic
    < _s5_tail_mean("153086", "baseline", "worldwise_max_p99")
    and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99")
    < _s5_tail_mean("153085", "baseline", "worldwise_max_p99")
-   and "\"Mixed\" is the\nonly word the data support" in _s5rep.replace("\r", "")
-   or '"Mixed" is the only word the data support' in _s5repw)
+   and '"Mixed" is the only word the data support' in _s5repw)
 
 # CONTRACT 4. Field robustness and slate robustness are different axes, and the
 # sweep ran on the board that carries the effect.
@@ -16326,9 +16336,26 @@ ck("and an UNTRACKED research module makes the stamp dirty rather than silently 
    and "dirty_detail" in _s5_probe_stamp,
    str(_s5_probe_detail["untracked_sources"]))
 
-ck("and require_clean refuses an untracked source as well as a modified one, naming which it found",
-   "untracked_sources" in (_prov14.require_clean.__doc__ or "")
-   or "untracked" in (_prov14.require_clean.__doc__ or ""))
+# Behaviour, not a docstring. The previous form was `"untracked_sources" in doc
+# or "untracked" in doc` -- the first string CONTAINS the second, so it collapsed
+# to one prose check that tested nothing about what require_clean does.
+_s5_rc_probe = _os.path.join(_root, "research", "_guard_require_clean_probe.py")
+try:
+    with open(_s5_rc_probe, "w") as _fh:
+        _fh.write("# transient probe written by the guard suite\n")
+    try:
+        _prov14.require_clean("guard probe")
+        _s5_rc_raised, _s5_rc_msg = False, ""
+    except RuntimeError as _e:
+        _s5_rc_raised, _s5_rc_msg = True, str(_e)
+finally:
+    if _os.path.exists(_s5_rc_probe):
+        _os.remove(_s5_rc_probe)
+ck("and require_clean REFUSES an untracked source, not merely a modified one, and names which it found",
+   _s5_rc_raised
+   and "untracked sources" in _s5_rc_msg
+   and "_guard_require_clean_probe.py" in _s5_rc_msg,
+   _s5_rc_msg[:120])
 
 # The separate, checkable record: which commit (if any) reconstructs each stamp.
 ck("the provenance verification records, per artifact, the first commit whose source recomputes the stamped hash -- and says NONE where the snapshot is not reconstructible",

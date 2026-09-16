@@ -47,8 +47,8 @@
   }
  },
  "meta": {
-  "commits_scanned": 203,
-  "head": "9187d4e",
+  "commits_scanned": 205,
+  "head": "8c772f7",
   "stage": "provenance verification: which commit reconstructs the source",
   "what_null_means": "no commit in the scanned range recomputes the stamped source_sha, so the exact source snapshot that produced the artifact is NOT reconstructible from Git. Expected for an artifact run from an uncommitted tree; an honest answer, not a failure.",
   "why": "provenance.commit is the HEAD the tree sat on. Before the 2026-09-12 contract repair, dirty() ignored untracked files while source_sha() hashed them, so commit+dirty could not establish that the stamped commit contained the code."

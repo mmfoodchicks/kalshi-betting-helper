@@ -28,8 +28,11 @@ source is not pinned for the other and conflating them is how the previous
 overclaim happened.
 
 NO credentials are captured: dk's endpoints are the public lobby and contest
-routes, and the snapshot is the response body only. A guard asserts no
-credential-shaped key reaches the files.
+routes, and the snapshot is the response body only. `_scan` walks EVERY key of
+every snapshot before it is written -- no truncation, and it raises rather than
+returning a partial result. It first walked only the first 200 list elements,
+which left 77% of an 881-row lobby listing uninspected while this paragraph
+claimed otherwise.
 
 `replay()` is the offline reader. Research modules take a capture directory and
 never touch the network.
@@ -75,18 +78,46 @@ def _sha(path):
     return hashlib.sha256(b).hexdigest(), len(b)
 
 
-def _scan(obj, path="$"):
-    """Every key in a snapshot, so a credential cannot ride along unnoticed."""
-    bad = []
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if any(f in str(k).lower() for f in FORBIDDEN):
-                bad.append(f"{path}.{k}")
-            bad += _scan(v, f"{path}.{k}")
-    elif isinstance(obj, list):
-        for i, v in enumerate(obj[:200]):
-            bad += _scan(v, f"{path}[{i}]")
-    return bad
+#: node budget for _scan. Generous enough for any DK payload seen (the largest
+#: is ~880 lobby rows) and small enough to stop a pathological blob. Exhausting
+#: it RAISES rather than returning a short answer -- see below.
+SCAN_BUDGET = 2_000_000
+
+
+def _scan(obj, path="$", budget=None):
+    """EVERY key in a snapshot, so a credential cannot ride along unnoticed.
+
+    Every key means every key. The first version of this walked only the first
+    200 elements of any list, which on a lobby listing of 881 contests left 681
+    rows -- 77% of the payload -- uninspected, while the module docstring claimed
+    the files were guarded. A credential planted at index 400 was not detected;
+    that was measured, not imagined. A partial scan that reports "clean" is worse
+    than no scan, because it is quoted as evidence.
+
+    So there is no truncation. There is a node BUDGET instead, and running out of
+    it raises: a scan that cannot finish must fail the write, never return a
+    short list that reads as a pass. Fail closed, loudly.
+    """
+    counter = [SCAN_BUDGET if budget is None else budget]
+
+    def walk(o, p):
+        counter[0] -= 1
+        if counter[0] < 0:
+            raise RuntimeError(
+                f"credential scan exceeded its {SCAN_BUDGET:,}-node budget at {p}; "
+                "refusing to report a partial scan as clean")
+        out = []
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if any(f in str(k).lower() for f in FORBIDDEN):
+                    out.append(f"{p}.{k}")
+                out += walk(v, f"{p}.{k}")
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                out += walk(v, f"{p}[{i}]")
+        return out
+
+    return walk(obj, path)
 
 
 #: how many contests to pull full detail for. This slate lists 881 on one draft
@@ -105,10 +136,13 @@ def select(rows, top=DETAIL_TOP, buckets=MAX_USER_BUCKETS):
     """Which contests to pull full detail for: the richest, plus guaranteed
     coverage of every entry-limit bucket, plus the smallest and largest fields.
 
-    Deterministic given the lobby listing -- sorted by prize pool then id, so a
-    recapture picks the same set and the manifest hashes stay comparable. The
-    lobby row already carries entry_fee, entries and max_entries_per_user, so
-    this selection needs no detail calls of its own.
+    Deterministic GIVEN THE LOBBY LISTING -- sorted by prize pool then id, with
+    no dependence on dict or network ordering. That is a weaker promise than it
+    may read as: DraftKings adds and fills contests, so a later capture can see a
+    different listing and legitimately select a different set. The determinism is
+    over the input, not over time. The lobby row already carries entry_fee,
+    entries and max_entries_per_user, so this selection needs no detail calls of
+    its own.
     """
     def key(c):
         return (-(c.get("prize_pool") or 0), int(c.get("id") or 0))

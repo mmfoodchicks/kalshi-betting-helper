@@ -697,8 +697,13 @@ exists so that a later decision cannot skip the question.
 - **DAL @ NYG is not the board S4 used.** Rebuilt from feeds captured
   2026-09-12 it has 23 pool players and 583,082 legal lineups against 22 and
   427,048 when the live A/B ran, because its DK pool gained a player. DEN @ KC
-  reproduces byte-identically (777,056 / 23,820). Cross-stage comparisons on
-  DAL @ NYG need that caveat; comparisons on DEN @ KC do not.
+  returns the same three counts (777,056 legal / 23,820 allowed / 24 pool
+  players). **That is a count match, not a byte match** — salaries, projections,
+  statuses and player identities could all have moved with those three integers
+  unchanged, and nothing in this stage compared them. An earlier revision said
+  "reproduces byte-identically", which was an overclaim resting on three
+  integers. Cross-stage comparisons on DAL @ NYG need the caveat; comparisons on
+  DEN @ KC rest on a weaker match than that phrase implied.
 - **Field sensitivity ran on one board and one seed**, like S4's.
 
 ## R. Provenance
@@ -772,8 +777,8 @@ CSV, the player pool and the contest detail.
 
 DAL @ NYG proves it: 427,048 legal lineups when the live A/B ran, **583,082** on
 rebuild four days later, because its DK pool gained a player. DEN @ KC happened to
-reproduce byte-identically (777,056 / 23,820), which is luck rather than a
-property of the setup.
+return the same three counts (777,056 / 23,820 / 24) — a count match, not a byte
+match — which is luck rather than a property of the setup.
 
 > **Sleeper inputs are pinned; exact S5 reproduction remains non-hermetic until
 > the DraftKings slate, player pool and contest inputs are captured.**
