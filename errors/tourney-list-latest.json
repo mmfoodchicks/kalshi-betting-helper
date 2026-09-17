@@ -1,5 +1,36 @@
 {
- "boards": [],
+ "boards": [
+  {
+   "age_s": 4747,
+   "built_ts": 1789675276,
+   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (DET @ BUF)",
+   "dg": 153434,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "BUF vs DET",
+   "starts": "2026-09-18T00:15:00.0000000Z",
+   "teams": [
+    "BUF",
+    "DET"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 7263,
+   "built_ts": 1789672760,
+   "contest": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 153428,
+   "entries": 6006,
+   "entry_fee": 555.0,
+   "kind": "classic",
+   "label": "Sunday main (13 games)",
+   "n_contests": 2,
+   "starts": "2026-09-20T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  }
+ ],
  "pending": [],
  "sport": "nfl"
 }
