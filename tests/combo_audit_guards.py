@@ -16587,6 +16587,49 @@ ck("and s5_tail's docstring says what field_invariance() measures (determinism) 
    "It is a determinism check" in open(_os.path.join(_s5_root, "research", "s5_tail.py")).read()
    and "That STRUCTURAL\nfact" in open(_os.path.join(_s5_root, "research", "s5_tail.py")).read())
 
+
+# ---- 2026-09-18: the dependence DST-OPP turns on, measured -------------------
+# S5 section O reason 2 used to hold the rule for a phrase. It now holds it for
+# a number, and the number is pinned with its sign, its interval and the served
+# model's value beside it -- so the report cannot drift back to "unmeasured" or
+# quietly flip the direction.
+_dstd = _json18.load(open(_os.path.join(_root, "research", "data", "dst_dependence.json")))
+_dst_team = _dstd["historical"]["team"]["giveaways_vs_offense_dk"]
+_dst_qb = _dstd["historical"]["qb1"]["giveaways_vs_dk"]
+_dst_att = _dstd["historical"]["qb1"]["ints_vs_attempts"]
+ck("the giveaway dependence is measured on at least two thousand team-weeks across four seasons, and giveaways FALL with production: team-level r negative with its 95% interval clear of zero, and the lead quarterback's likewise",
+   _dstd["historical"]["n_team_weeks"] >= 2000
+   and _dstd["historical"]["seasons"] == ["2022", "2023", "2024", "2025"]
+   and _dst_team["pearson"] < -0.05 and _dst_team["pearson_ci95"][1] < 0
+   and _dst_qb["pearson"] < -0.10 and _dst_qb["pearson_ci95"][1] < 0,
+   f"team r {_dst_team['pearson']} CI {_dst_team['pearson_ci95']}; QB1 r {_dst_qb['pearson']}")
+
+ck("and the opposite pull is recorded too -- interceptions RISE with attempts -- so the net sign cannot be read as the only effect",
+   _dst_att["pearson"] > 0.10 and _dst_att["pearson_ci95"][0] > 0
+   and 10 * _dst_att["slope_per_unit_x"] > 0.15)
+
+_dst_sim = _dstd["served_model"].get("by_team") or {}
+ck("the served simulator's football dependence between a side's production and its giveaways is ZERO once DraftKings' -1 per giveaway is removed from the score, on both sides of the pinned game -- the code claim pinned by measurement",
+   len(_dst_sim) == 2
+   and all(abs(r["qb1_giveaways_vs_dk_with_penalty_removed"]) < 0.03 for r in _dst_sim.values())
+   and all(-0.08 < r["team_giveaways_vs_offense_dk"] < 0 for r in _dst_sim.values())
+   and all(r["team_giveaways_vs_offense_dk"] > _dst_team["pearson"] for r in _dst_sim.values()),
+   str(_dst_sim))
+
+ck("and the artifact is provenance-clean and reconstructible: stamped at a commit that contains the module that wrote it",
+   _dstd["meta"]["provenance"]["dirty"] is False
+   and _dstd["meta"]["provenance"]["seed"] is not None)
+
+_dst_rep = " ".join(open(_os.path.join(_root, "research", "reports", "dst_dependence.md")).read().split())
+ck("the DST-dependence report states the direction, the served model's value, and the consequence -- the rule is vindicated and +0.047 is an over-estimate -- and the S5 report's reason 2 and S9 target carry the same measured figures",
+   "**−0.113**" in _dst_rep and "[−0.154, −0.071]" in _dst_rep
+   and "The model over-values those builds" in _dst_rep
+   and "the rule is vindicated by history" in _dst_rep
+   and "**r = −0.113**, 95% CI [−0.154, −0.071]" in _s5repw
+   and "the +0.047 measured for removing the rule is on this evidence an over-estimate" in _s5repw
+   and "in a direction that is unmeasured" not in _s5repw
+   and "So the answer is the second branch" in _s5repw)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

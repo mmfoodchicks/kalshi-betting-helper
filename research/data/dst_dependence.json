@@ -1,0 +1,466 @@
+{
+ "historical": {
+  "cross_side": {
+   "giveaways_vs_opp_offense_dk": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 543,
+      "x_mean": 56.28,
+      "y_mean": 1.1657
+     },
+     "Q2": {
+      "n": 543,
+      "x_mean": 76.94,
+      "y_mean": 1.2707
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 92.87,
+      "y_mean": 1.2376
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 118.9,
+      "y_mean": 1.2665
+     }
+    },
+    "n": 2173,
+    "pearson": 0.0331,
+    "pearson_ci95": [
+     -0.0075,
+     0.072
+    ],
+    "slope_per_unit_x": 0.00154,
+    "spearman": 0.0311,
+    "spearman_ci95": [
+     -0.011,
+     0.0707
+    ],
+    "x": "opponent offensive DK points",
+    "y": "team giveaways"
+   },
+   "offense_dk_vs_opp_offense_dk": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 543,
+      "x_mean": 56.28,
+      "y_mean": 81.7367
+     },
+     "Q2": {
+      "n": 543,
+      "x_mean": 76.94,
+      "y_mean": 83.8149
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 92.87,
+      "y_mean": 86.8094
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 118.9,
+      "y_mean": 92.7445
+     }
+    },
+    "n": 2173,
+    "pearson": 0.1801,
+    "pearson_ci95": [
+     0.1339,
+     0.2235
+    ],
+    "slope_per_unit_x": 0.17993,
+    "spearman": 0.1704,
+    "spearman_ci95": [
+     0.1269,
+     0.2126
+    ],
+    "x": "opponent offensive DK points",
+    "y": "team offensive DK points"
+   }
+  },
+  "n_paired_games": 2173,
+  "n_player_weeks": 27520,
+  "n_team_weeks": 2173,
+  "not_measurable_here": [
+   "sacks (no column)",
+   "points allowed (no column)",
+   "the DST score itself (no defense rows); needs the team-week source"
+  ],
+  "qb1": {
+   "giveaways_vs_dk": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 539,
+      "x_mean": 7.67,
+      "y_mean": 1.1447
+     },
+     "Q2": {
+      "n": 547,
+      "x_mean": 13.98,
+      "y_mean": 0.9378
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 19.47,
+      "y_mean": 0.8656
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 28.39,
+      "y_mean": 0.7114
+     }
+    },
+    "n": 2173,
+    "pearson": -0.1545,
+    "pearson_ci95": [
+     -0.1941,
+     -0.1153
+    ],
+    "slope_per_unit_x": -0.01833,
+    "spearman": -0.1544,
+    "spearman_ci95": [
+     -0.1945,
+     -0.1123
+    ],
+    "x": "QB1 DraftKings points",
+    "y": "QB1 giveaways (INT + lost FUM)"
+   },
+   "ints_vs_attempts": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 485,
+      "x_mean": 21.17,
+      "y_mean": 0.4907
+     },
+     "Q2": {
+      "n": 593,
+      "x_mean": 28.67,
+      "y_mean": 0.6307
+     },
+     "Q3": {
+      "n": 464,
+      "x_mean": 33.85,
+      "y_mean": 0.7306
+     },
+     "Q4 high": {
+      "n": 631,
+      "x_mean": 42.04,
+      "y_mean": 0.9271
+     }
+    },
+    "n": 2173,
+    "pearson": 0.1974,
+    "pearson_ci95": [
+     0.1582,
+     0.2359
+    ],
+    "slope_per_unit_x": 0.02005,
+    "spearman": 0.1982,
+    "spearman_ci95": [
+     0.1605,
+     0.2377
+    ],
+    "x": "QB1 passing attempts",
+    "y": "QB1 interceptions"
+   },
+   "ints_vs_dk": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 539,
+      "x_mean": 7.67,
+      "y_mean": 0.872
+     },
+     "Q2": {
+      "n": 547,
+      "x_mean": 13.98,
+      "y_mean": 0.766
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 19.47,
+      "y_mean": 0.6556
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 28.39,
+      "y_mean": 0.5349
+     }
+    },
+    "n": 2173,
+    "pearson": -0.1436,
+    "pearson_ci95": [
+     -0.1842,
+     -0.1017
+    ],
+    "slope_per_unit_x": -0.01489,
+    "spearman": -0.1434,
+    "spearman_ci95": [
+     -0.1832,
+     -0.1016
+    ],
+    "x": "QB1 DraftKings points",
+    "y": "QB1 interceptions"
+   },
+   "ints_vs_yards": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 530,
+      "x_mean": 133.86,
+      "y_mean": 0.6755
+     },
+     "Q2": {
+      "n": 546,
+      "x_mean": 199.6,
+      "y_mean": 0.696
+     },
+     "Q3": {
+      "n": 545,
+      "x_mean": 247.49,
+      "y_mean": 0.6826
+     },
+     "Q4 high": {
+      "n": 552,
+      "x_mean": 321.83,
+      "y_mean": 0.7717
+     }
+    },
+    "n": 2173,
+    "pearson": 0.0549,
+    "pearson_ci95": [
+     0.0125,
+     0.0975
+    ],
+    "slope_per_unit_x": 0.00063,
+    "spearman": 0.0429,
+    "spearman_ci95": [
+     0.0012,
+     0.0849
+    ],
+    "x": "QB1 passing yards",
+    "y": "QB1 interceptions"
+   }
+  },
+  "seasons": [
+   "2022",
+   "2023",
+   "2024",
+   "2025"
+  ],
+  "team": {
+   "giveaways_vs_offense_dk": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 543,
+      "x_mean": 56.35,
+      "y_mean": 1.4494
+     },
+     "Q2": {
+      "n": 543,
+      "x_mean": 76.94,
+      "y_mean": 1.2652
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 92.87,
+      "y_mean": 1.1105
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 118.9,
+      "y_mean": 1.1158
+     }
+    },
+    "n": 2173,
+    "pearson": -0.1131,
+    "pearson_ci95": [
+     -0.1539,
+     -0.0709
+    ],
+    "slope_per_unit_x": -0.00524,
+    "spearman": -0.12,
+    "spearman_ci95": [
+     -0.1623,
+     -0.0766
+    ],
+    "x": "team offensive DK points",
+    "y": "team giveaways (INT + lost FUM)"
+   },
+   "giveaways_vs_pass_attempts": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 466,
+      "x_mean": 22.6,
+      "y_mean": 0.9635
+     },
+     "Q2": {
+      "n": 509,
+      "x_mean": 29.11,
+      "y_mean": 1.0825
+     },
+     "Q3": {
+      "n": 602,
+      "x_mean": 34.31,
+      "y_mean": 1.2292
+     },
+     "Q4 high": {
+      "n": 596,
+      "x_mean": 42.91,
+      "y_mean": 1.5839
+     }
+    },
+    "n": 2173,
+    "pearson": 0.2033,
+    "pearson_ci95": [
+     0.1627,
+     0.2435
+    ],
+    "slope_per_unit_x": 0.02914,
+    "spearman": 0.2119,
+    "spearman_ci95": [
+     0.1694,
+     0.252
+    ],
+    "x": "team passing attempts",
+    "y": "team giveaways"
+   },
+   "giveaways_vs_total_yards": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 539,
+      "x_mean": 249.17,
+      "y_mean": 1.3043
+     },
+     "Q2": {
+      "n": 543,
+      "x_mean": 322.94,
+      "y_mean": 1.256
+     },
+     "Q3": {
+      "n": 540,
+      "x_mean": 375.49,
+      "y_mean": 1.1833
+     },
+     "Q4 high": {
+      "n": 551,
+      "x_mean": 449.49,
+      "y_mean": 1.1978
+     }
+    },
+    "n": 2173,
+    "pearson": -0.0367,
+    "pearson_ci95": [
+     -0.0774,
+     0.0059
+    ],
+    "slope_per_unit_x": -0.00053,
+    "spearman": -0.0359,
+    "spearman_ci95": [
+     -0.0774,
+     0.0075
+    ],
+    "x": "team pass + rush yards",
+    "y": "team giveaways"
+   },
+   "ints_vs_pass_attempts": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 466,
+      "x_mean": 22.6,
+      "y_mean": 0.5107
+     },
+     "Q2": {
+      "n": 509,
+      "x_mean": 29.11,
+      "y_mean": 0.6326
+     },
+     "Q3": {
+      "n": 602,
+      "x_mean": 34.31,
+      "y_mean": 0.7542
+     },
+     "Q4 high": {
+      "n": 596,
+      "x_mean": 42.91,
+      "y_mean": 1.0084
+     }
+    },
+    "n": 2173,
+    "pearson": 0.212,
+    "pearson_ci95": [
+     0.1728,
+     0.2507
+    ],
+    "slope_per_unit_x": 0.02333,
+    "spearman": 0.215,
+    "spearman_ci95": [
+     0.1765,
+     0.2557
+    ],
+    "x": "team passing attempts",
+    "y": "team interceptions"
+   }
+  }
+ },
+ "meta": {
+  "bootstrap": 2000,
+  "descriptive_only": "2025 was the Stage 2E holdout; nothing here is fitted",
+  "provenance": {
+   "commit": "b5cf744",
+   "data_split": null,
+   "dirty": false,
+   "model": "history vs legacy-latent-discrete",
+   "seed": 20260918,
+   "source_files": 38,
+   "source_sha": "03174060eb38ef61c27ea3790e63e3494d18e2fa0390fc22fc9eed42a4de5c1d"
+  },
+  "question": "does an offense that produces more in a game give the ball away more or less in that same game -- the covariance a captain-plus-opposing-defense build turns on",
+  "seed": 20260918,
+  "source": "research/data/player_weeks_2022_2025.csv.gz",
+  "stage": "the DST dependence DST-OPP uses: history vs the served simulator"
+ },
+ "reading": {
+  "qb1_ints_vs_attempts": {
+   "ci95": [
+    0.1582,
+    0.2359
+   ],
+   "pearson": 0.1974,
+   "per_10_attempts": 0.2005
+  },
+  "served_model_team_value": {
+   "DEN": -0.0384,
+   "KC": -0.0437
+  },
+  "team_giveaways_vs_offense_dk": {
+   "ci95": [
+    -0.1539,
+    -0.0709
+   ],
+   "pearson": -0.1131,
+   "per_10_dk_points": -0.0524
+  },
+  "what_it_means_for_dst_opp": "if real giveaways RISE with volume/production, the opposing defense scores more in exactly the worlds the captain does, so captain-plus-opposing-DST builds are UNDER-valued by a simulator that draws giveaways independently, and DST-OPP's +0.047 is if anything low; if giveaways FALL with production, those builds are OVER-valued and the rule is vindicated. The sign and size are above; the DST score itself (sacks, points allowed) is not measurable from this table."
+ },
+ "served_model": {
+  "by_team": {
+   "DEN": {
+    "qb1": "Bo Nix",
+    "qb1_giveaways_vs_dk": -0.1132,
+    "qb1_giveaways_vs_dk_with_penalty_removed": -0.0037,
+    "qb1_ints_vs_pass_yards": -0.0106,
+    "team_giveaways_vs_offense_dk": -0.0384
+   },
+   "KC": {
+    "qb1": "Patrick Mahomes",
+    "qb1_giveaways_vs_dk": -0.1407,
+    "qb1_giveaways_vs_dk_with_penalty_removed": -0.0157,
+    "qb1_ints_vs_pass_yards": 0.0021,
+    "team_giveaways_vs_offense_dk": -0.0437
+   }
+  },
+  "game": "DEN @ KC (pinned feeds)",
+  "mechanism": "ints = _pois(m[\"int\"]); fums = _pois(m[\"fum\"]) -- drawn at the raw mean with no env, quarterback or script factor; the only remaining coupling to production is DraftKings' -1 per interception and per lost fumble inside the score itself",
+  "model": "legacy-latent-discrete",
+  "worlds": 6000
+ }
+}
