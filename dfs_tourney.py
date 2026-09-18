@@ -225,6 +225,45 @@ def _norm_loss(a):
     return _npdf_arr(a) - a * (1.0 - _ncdf_arr(a))
 
 
+def contest_capacity(contest):
+    """The contest's field size for the payout grid: DraftKings' maximumEntries
+    and nothing else. None when the detail record does not carry it.
+
+    This used to be `max_entries or entered or 10000`. `entered` is the CURRENT
+    fill, and a board is built hours before lock, when fill is lowest -- the S6
+    capture read the $1.5M DEN @ KC contest at 1,267 of 88,235 entries (1.4%).
+    A detail record without maximumEntries would therefore have been modelled
+    at about a seventieth of its size, with every Top-q line, the tie grid and
+    the payout curve wrong by that factor and nothing in the output saying so.
+    A guess that wrong is worse than no board; the callers refuse to build."""
+    try:
+        mx = int((contest or {}).get("max_entries") or 0)
+    except (TypeError, ValueError):
+        mx = 0
+    return mx if mx > 0 else None
+
+
+def _contests_with_capacity(details, kind="classic"):
+    """The contest records a payout grid can be sized for, in the order given.
+
+    Fail closed, never guess, never poison the siblings: a record without a
+    payout ladder or without maximumEntries is dropped with a TOURN-capacity
+    ledger note that names the contest, and every valid contest beside it goes
+    on to be built. One malformed DraftKings record used to be modelled on its
+    current fill; it must never take the whole slate down either."""
+    kept = []
+    for c in details or []:
+        if not c or not c.get("payouts"):
+            continue
+        if contest_capacity(c) is None:
+            errlog.note("TOURN-capacity", msg=f"{kind} contest detail carries no maximumEntries; "
+                        "dropped rather than modelled on the current fill",
+                        path=str(c.get("id")))
+            continue
+        kept.append(c)
+    return kept
+
+
 def cum_prize(payouts, n):
     """Prize money paid to positions 1..n in total. `n` may be an array and
     may be fractional -- a position part-way through a bracket is prorated,
@@ -493,10 +532,12 @@ SD_MONEY_FIELD_CALIBRATED = False
 # against historical contests supports it, and never because a board looks
 # sensible.
 SD_MONEY_TIES_PAID = True       # the same tie-aware payout classic uses
-# Measured on the live pool, 1,952,000 simulated scores: 48.7% of them cannot
-# occur under DraftKings scoring at all (49.8% of quarterbacks, 50.1% of
-# receivers, 48.3% of kickers, 40.6% of defenses; the residual is exactly half
-# a lattice step, so they sit on odd hundredths). The legacy simulator pins
+# Measured on the live pool, 1,972,000 simulated scores: 47.35% of them cannot
+# occur under DraftKings scoring at all (50.2% of quarterbacks, 50.1% of
+# receivers, 45.8% of kickers, 31.2% of defenses -- research/data/sd_lattice.json;
+# an earlier version of this comment quoted a different run, 1,952,000 / 48.7%,
+# that no artifact carries; the residual is exactly half a lattice step, so
+# they sit on odd hundredths). The legacy simulator pins
 # each player's mean by MULTIPLYING his whole point array by proj/raw, shifts
 # a defense by a floating amount, and rounds to two decimals -- so the scores
 # land on a 0.01 grid, and DraftKings' offensive scoring lives on 0.02
@@ -997,7 +1038,11 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     own_c, own_f = field_ownership(ents, idx, f)
     for i, e in enumerate(ents):
         e["own"] = round(float(own_c[i] + own_f[i]), 1)
-    C = int(contest.get("max_entries") or contest.get("entered") or 0) or 10000
+    C = contest_capacity(contest)
+    if C is None:
+        errlog.note("TOURN-capacity", msg="showdown contest detail carries no maximumEntries; "
+                    "refusing to build on the current fill", path=str(contest.get("id")))
+        return None
     t2 = time.time()
     chunk = chunk_for(len(idx), chunk)
     log(f"[tourney] {len(idx):,} legal lineups, {int(allowed.sum()):,} we may enter "
@@ -1076,7 +1121,17 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                              "why": ("selection and evaluation share one world set; "
                                      "this is a selection score, not a held-out "
                                      "probability"),
-                             "measured_optimism_pct": {"mean": 2.7, "worst": 7.4},
+                             # RELATIVE percent of the held-out figure, not
+                             # percentage points: 0.6045 held-out vs 0.6209
+                             # in-sample is +2.7% relative and +1.6 points.
+                             # Two of the eight cells are NEGATIVE (-0.3%,
+                             # -1.4%): held-out beat in-sample there, so this
+                             # is a sign-mixed mean, served as the best
+                             # available correction and labelled as such.
+                             "measured_optimism_pct": {"mean": 2.7, "worst": 7.4,
+                                                       "unit": "relative percent of the held-out value",
+                                                       "points_mean": 1.6, "points_worst": 4.3,
+                                                       "cells_negative": 2, "cells": 8},
                              "measured_in": "research/s4_crossfit.py (8 cross-fit cells)",
                              "fix": "disjoint selection/scoring worlds in the builder"},
                          "entries": [row(int(cand[j]), "cover") for j in chosen[:kk]]}
@@ -1134,8 +1189,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
                                      f"{100 * FIELD_TOP_SHARE:.1f}% of the field (a 231-way tie "
                                      "won DraftKings' 2021 GB-DET showdown Millionaire). "
                                      "Dollar figures assume the sim is the truth; read the ranks.")},
-            "experimental": sd_money_gate(len(idx), int(contest.get("max_entries")
-                                                          or contest.get("entered") or 0)),
+            "experimental": sd_money_gate(len(idx), C),
             "rules": list(nfl_dfs._SD_RULES),
             "top_win": [row(int(i), "win") for i in by_win],
             "top_ev": [row(int(i), "ev") for i in by_ev],
@@ -2030,7 +2084,7 @@ def probe_rows(probes, ents, Wf, wf, Xe, grids, contests, res, allowed, f_count,
     S = np.stack([Xe[r].sum(axis=0) for r in idx_p])          # (probes, evaluation worlds)
     for gi, c in enumerate(contests):
         r, rp = res[gi], resp[gi]
-        C = int(c.get("max_entries") or c.get("entered") or 10000)
+        C = contest_capacity(c)
         fee = float(c.get("entry_fee") or 1.0)
         rows_out = []
         j = 0
@@ -2123,11 +2177,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
         want = [int(c) for c in contest_ids]
     else:
         want = [int(c["id"]) for c in rows if float(c.get("prize_pool") or 0) >= float(min_pool)]
-    contests = []
-    for cid in want[:6]:
-        c = dk.contest_detail(cid)
-        if c and c.get("payouts"):
-            contests.append(c)
+    contests = _contests_with_capacity([dk.contest_detail(cid) for cid in want[:6]])
     if not contests:
         return None
     contests.sort(key=lambda c: -float(c.get("prize_pool") or 0))
@@ -2254,7 +2304,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     is_opt = np.asarray([opt_count.get(k, 0) for k in keys_k])
     copies_share = np.asarray([f_count.get(k, 0) / M for k in keys_k])
     Wc = lineup_matrix(idx_k, P)
-    grids = [payout_grid(int(c.get("max_entries") or c.get("entered") or 10000),
+    grids = [payout_grid(contest_capacity(c),
                          c.get("payouts") or [], float(c.get("entry_fee") or 1.0),
                          int(c.get("places_paid") or 1)) for c in contests]
     t4 = time.time()
@@ -2278,7 +2328,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
     def row(i, gi, rank_by):
         r = res[gi]
         c = contests[gi]
-        C = int(c.get("max_entries") or c.get("entered") or 10000)
+        C = contest_capacity(c)
         fee = float(c.get("entry_fee") or 1.0)
         copies = float(C * copies_share[i])                 # np.float64 here leaked into the pickle
         lineup = [{"slot": CL_SLOTS[k], "name": ents[idx_k[i, k]]["name"], "pos": ents[idx_k[i, k]]["pos"],
@@ -2366,7 +2416,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             # top 300 by it at Spearman 0.51 (measured 2026-09-10). EV and
             # ROI inherit it through the first prize. Kept for comparison
             # while the tail estimator is validated; the tab labels them.
-            "experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),
+            "experimental": money_gate(M, max(contest_capacity(c) for c in contests)),
             "payout": {"ties": "DraftKings splits the tied positions' prizes equally; ev pays that rule "
                                "over the distribution of how many finish above and level (dfs_tourney.tie_payout)",
                        "win_pct": "first outright", "win_any_pct": "first or a share of it",

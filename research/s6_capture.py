@@ -214,6 +214,56 @@ def capture(dgs=DGS, capdir=CAP, log=print):
     return man
 
 
+def capture_detail(dg, cid, capdir=CAP, log=print):
+    """Add ONE contest's full detail to an existing capture, and re-hash.
+
+    Why this exists: the first capture's select() covered every entry-limit
+    bucket and both field-size extremes but ranked by prize pool, so all 27
+    details it took share one ladder topology (steep top, flat tail). On draft
+    group 153086 alone, 401 of the 881 lobby rows are Double Ups, Satellites,
+    Winner-Take-Alls, Beginner or Qualifier contests, and NONE was captured.
+    For a stage whose stated risk is one contest getting another's payout
+    ladder, the corpus needs a second ladder shape. The lobby listing cannot be
+    re-fetched for a played draft group, so this appends to the file already
+    on disk rather than re-running capture().
+
+    The file's sha256 changes, and the manifest is rewritten to say so, with
+    the added id and when it was added kept beside the original retrieval
+    stamp -- a capture that quietly changed under its own hash is exactly what
+    the manifest exists to prevent."""
+    import dk
+    man = manifest(capdir)
+    ent = man["draft_groups"][str(dg)]
+    rec = ent["contests"]
+    path = os.path.join(capdir, rec["file"])
+    with open(path) as fh:
+        blob = json.load(fh)
+    if str(cid) in (blob.get("detail") or {}):
+        log(f"[S6C] dg {dg}: contest {cid} already captured")
+        return rec
+    d = dk.contest_detail(int(cid))
+    if not d:
+        raise SystemExit(f"contest {cid} returned no detail")
+    lobby_ids = {str(r.get("id")) for r in blob.get("lobby") or []}
+    if str(cid) not in lobby_ids:
+        raise SystemExit(f"contest {cid} is not on the captured lobby for dg {dg}")
+    blob.setdefault("detail", {})[str(cid)] = d
+    bad = _scan(blob)
+    if bad:
+        raise RuntimeError(f"refusing to write {rec['file']}: credential-shaped keys {bad}")
+    with open(path, "w") as fh:
+        json.dump(blob, fh, sort_keys=True)
+    sha, n = _sha(path)
+    rec.update({"sha256": sha, "bytes": n, "records": len(blob["detail"])})
+    rec.setdefault("added", []).append({"id": int(cid), "ts": int(time.time()),
+                                        "kind": d.get("kind"), "name": d.get("name")})
+    with open(os.path.join(capdir, "manifest.json"), "w") as fh:
+        json.dump(man, fh, indent=1, sort_keys=True)
+    log(f"[S6C] dg {dg}: added {cid} ({d.get('kind')}, {d.get('name')}); "
+        f"{rec['records']} details, sha {sha[:12]}")
+    return rec
+
+
 # ---- the offline side ------------------------------------------------------
 def manifest(capdir=CAP):
     with open(os.path.join(capdir, "manifest.json")) as fh:
@@ -272,5 +322,8 @@ if __name__ == "__main__":
         bad = {k: v for k, v in verify().items() if not v["match"]}
         print("capture verify:", "clean" if not bad else f"MISMATCH {bad}")
         raise SystemExit(1 if bad else 0)
+    if args and args[0] == "add":
+        capture_detail(int(args[1]), int(args[2]))
+        raise SystemExit(0)
     capture(tuple(int(x) for x in args) or DGS)
     print("DK inputs captured")

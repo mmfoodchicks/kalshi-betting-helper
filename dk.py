@@ -203,6 +203,17 @@ def contest_detail(contest_id):
         # payout curve for each, so the picker has to say which this is.
         kind = ("double_up" if mx and paid / mx >= 0.4 and fee and first <= 2.5 * fee
                 else "gpp")
+        # The ladder must account for the whole pool. On the 27 contests the
+        # S6 capture pinned it does so EXACTLY; a mismatch means DK changed the
+        # shape, a tier was dropped, or the pool is not what the lobby said,
+        # and every payout column downstream would be wrong by the gap.
+        try:
+            ladder = sum((int(t["to"]) - int(t["from"]) + 1) * float(t["prize"]) for t in tiers)
+            if pool > 0 and abs(ladder - pool) > 0.01 * pool:
+                errlog.note("DK-payout-sum", msg=f"ladder sums to {ladder:,.0f} against a "
+                            f"{pool:,.0f} pool ({len(tiers)} tiers)", path=str(cid))
+        except (TypeError, ValueError, KeyError) as e:
+            errlog.note("DK-payout-sum", e, path=str(cid))
         return {"id": cid, "name": c.get("name"), "sport": c.get("sport"),
                 "draft_group_id": c.get("draftGroupId"),
                 "entry_fee": fee, "prize_pool": pool, "first_prize": first,
@@ -210,7 +221,10 @@ def contest_detail(contest_id):
                 "max_entries_per_user": c.get("maximumEntriesPerUser"),
                 "starts": c.get("contestStartTime"), "state": c.get("contestState"),
                 "game_type_id": c.get("gameTypeId"), "kind": kind,
-                "payouts": tiers[:60]}
+                # every tier: a cap of 60 used to truncate deeper ladders
+                # silently, and payout_grid would have priced the schedule
+                # short with nothing saying so
+                "payouts": tiers}
     return racing._cached(("dk_contest", cid), 600, build)
 
 

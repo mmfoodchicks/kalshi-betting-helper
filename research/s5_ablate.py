@@ -26,8 +26,11 @@ What a zero here does and does not mean, because an earlier revision of this
 docstring overstated it: a rule that rejects 400,000 lineups and never
 contributes one to the portfolio has ZERO MARGINAL ADMISSIONS UNDER THE CURRENT
 CONJUNCTION OF RULES. It is not "inert", "redundant" or "strategically free" --
-CPT-POS has zero marginal admissions alone and a +0.038 effect the moment
-CPT-SALARY comes off beside it (research/s5_pairs.py). A zero means the rule's
+CPT-POS has zero marginal admissions alone (its own effect is 0.000000 in all
+eight cells). The CPT-SALARY+CPT-POS pair is worth +0.037844 where CPT-SALARY
+alone is +0.003452, so releasing CPT-POS on top of CPT-SALARY adds +0.034392
+(research/s5_pairs.py). That increment CONTAINS the interaction; it is not a
+pure "CPT-POS effect", and the pair total used to be quoted here as one. A zero means the rule's
 effect is currently MASKED by another rule, and masking is a property of the
 configuration, not of the rule.
 

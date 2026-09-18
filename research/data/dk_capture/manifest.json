@@ -2,12 +2,20 @@
  "draft_groups": {
   "153085": {
    "contests": {
-    "bytes": 182099,
+    "added": [
+     {
+      "id": 195526179,
+      "kind": "double_up",
+      "name": "NFL Showdown $5 Double Up (DAL @ NYG)",
+      "ts": 1789763660
+     }
+    ],
+    "bytes": 182526,
     "file": "contests_153085.json",
     "normalization_version": 1,
-    "records": 14,
+    "records": 15,
     "retrieved_ts": 1789252124,
-    "sha256": "b8b837a828dbc5add6d43f5424b1079da4f0f5ae98426e3a47c4b28f8c506eb1",
+    "sha256": "5fa27ae08ab5453d36949eef76248790ab4caf8d4d0f790c4caeafbc2040ec97",
     "source": "dk.contests + dk.contest_detail (nfl, 153085)"
    },
    "slate": {
@@ -22,12 +30,20 @@
   },
   "153086": {
    "contests": {
-    "bytes": 188141,
+    "added": [
+     {
+      "id": 195526281,
+      "kind": "double_up",
+      "name": "NFL Showdown $2 Double Up (DEN @ KC)",
+      "ts": 1789763659
+     }
+    ],
+    "bytes": 188567,
     "file": "contests_153086.json",
     "normalization_version": 1,
-    "records": 13,
+    "records": 14,
     "retrieved_ts": 1789252112,
-    "sha256": "9d621182f0075d6a28992791169ee689833dfc811fb328bba3215167e436039d",
+    "sha256": "4417d655b72fe2c3df1f8c4c349406bb21dc33d940d758de8eb9aaaa3f350d10",
     "source": "dk.contests + dk.contest_detail (nfl, 153086)"
    },
    "slate": {

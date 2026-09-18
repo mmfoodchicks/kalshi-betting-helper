@@ -518,8 +518,10 @@ ck("the same side of one ladder still conflicts",
 ck("a NO on Over resolves to the Under side and bands with a real Under",
    _MS._market_conflict([_over, {"group": "Total",
                                  "kref": {"t": "total", "n": 46, "over": True,
-                                          "no": True}}]) is False
-   or True)
+                                          "no": True}}]) is False)
+# (this used to end in `or True`, which made it pass regardless -- 2026-09-18
+# re-audit; the real condition holds, so dropping the `or` changes nothing
+# but what the guard asserts)
 ck("two moneylines still conflict",
    _MS._market_conflict([{"group": "ML", "kref": {"t": "ml", "team": "ARI"}},
                          {"group": "ML", "kref": {"t": "ml", "team": "ARI"}}]))
@@ -1099,8 +1101,39 @@ ck("'3h' is looser than '1h', which is looser than any",
 ck("an unknown window filters nothing",
    _CB._in_window({"date": "20260806"}, "nonsense", _now)[0]
    and _CB._in_window({"date": "20260806"}, None, _now)[0])
-ck("window_counts reports the no-clock population",
-   "no_clock" in _CB.window_counts.__doc__ or True)
+# This used to be `"no_clock" in __doc__ or True` -- vacuous, and the docstring
+# condition was FALSE (it says "for want of a clock"). Now the function is
+# exercised: three matches on a stubbed board -- one starting in thirty
+# minutes, one with no start time, one not combo-eligible -- must count as
+# any=2, 1h=1 and no_clock=1. The tennis modules window_counts imports are
+# stubbed in sys.modules for the call and restored after, so this runs
+# hermetically. 2026-09-18 re-audit, at the reviewer's request for behaviour.
+import sys as _sys_wc
+import types as _types_wc
+import datetime as _dt_wc
+_wc_now = _CB._tn_now()
+_wc_board = {"matches": [
+    {"date": _wc_now.strftime("%Y%m%d"), "start": (_wc_now + _dt_wc.timedelta(minutes=30)).isoformat(),
+     "combo_ok": True},
+    {"date": _wc_now.strftime("%Y%m%d"), "combo_ok": True},                 # no clock
+    {"date": _wc_now.strftime("%Y%m%d"), "start": (_wc_now + _dt_wc.timedelta(minutes=30)).isoformat(),
+     "combo_ok": False},                                                     # not eligible
+]}
+_wc_saved = {k: _sys_wc.modules.get(k) for k in ("tennis_prices", "tennis_live", "tennis_tape")}
+try:
+    _m = _types_wc.ModuleType("tennis_prices"); _m.board = lambda: _wc_board; _sys_wc.modules["tennis_prices"] = _m
+    _m = _types_wc.ModuleType("tennis_live"); _m.attach = lambda b: b; _sys_wc.modules["tennis_live"] = _m
+    _m = _types_wc.ModuleType("tennis_tape"); _m.attach = lambda b: b; _sys_wc.modules["tennis_tape"] = _m
+    _wc_out = _CB.window_counts()
+finally:
+    for _k, _v in _wc_saved.items():
+        if _v is None:
+            _sys_wc.modules.pop(_k, None)
+        else:
+            _sys_wc.modules[_k] = _v
+ck("window_counts reports the no-clock population: a match with no start time is counted under `no_clock`, one inside the hour under `1h`, and an ineligible one under neither",
+   _wc_out.get("any") == 2 and _wc_out.get("1h") == 1 and _wc_out.get("no_clock") == 1,
+   str(_wc_out))
 
 _win = set(_CB._WINDOWS)
 ck("the endpoint accepts exactly the windows the filter implements",
@@ -13313,7 +13346,9 @@ ck("the board stamps its engine semantics, the field's targets and achieved rece
    _dt14.ENGINE == 6 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
-   and '"experimental": money_gate(M, max((int(c.get("max_entries") or c.get("entered") or 0)) for c in contests)),' in _dts1
+   # repinned 2026-09-18: the field size is DraftKings' maximumEntries via
+   # contest_capacity, never `entered` (the current fill) or a made-up 10000
+   and '"experimental": money_gate(M, max(contest_capacity(c) for c in contests)),' in _dts1
    and _pcw16m._rebuild_reason({"kind": "classic", "engine": 1, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] == "engine updated"
    and _pcw16m._rebuild_reason({"kind": "classic", "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] == "engine updated"
    and _pcw16m._rebuild_reason({"kind": "classic", "engine": _dt14.ENGINE, "pool_sig": "abc", "built_ts": 100}, "abc", None, {}, 7, None)[0] is None
@@ -14001,7 +14036,10 @@ ck("and the gate is still not welded shut: with BOTH the field model calibrated 
    "a gate that can never open is a label, not a gate")
 _sd_src_s2 = open(_os.path.join(_root, "dfs_tourney.py")).read()
 ck("every showdown board carries that gate, so the tab's experimental labelling switches on for showdown exactly as it does for classic",
-   '"experimental": sd_money_gate(len(idx), int(contest.get("max_entries")' in _sd_src_s2
+   # repinned 2026-09-18: the gate reads the same C the build refused to
+   # guess -- contest_capacity(contest), None => no board
+   '"experimental": sd_money_gate(len(idx), C),' in _sd_src_s2
+   and "C = contest_capacity(contest)" in _sd_src_s2
    and "const exp = d.experimental && Array.isArray(d.experimental.columns) ? d.experimental : null;" in _js_s1
    and "experimental EV</th>" in _js_s1)
 # The freshness of a board is now part of what it says about itself.
@@ -14894,7 +14932,10 @@ _s4rw = " ".join(_sdr_raw.split())
 ck("every served portfolio size carries an explicit in-sample basis beside its coverage figure, with the measured optimism and the fix named",
    '"p_any_basis": {' in _s4_sd
    and '"in_sample": True' in _s4_sd
-   and '"measured_optimism_pct": {"mean": 2.7, "worst": 7.4}' in _s4_sd
+   # repinned 2026-09-18: the label now says its UNIT (relative percent) and
+   # the point equivalent, because "2.7% lower" beside "62%" read as points
+   and '"measured_optimism_pct": {"mean": 2.7, "worst": 7.4,' in _s4_sd
+   and '"unit": "relative percent of the held-out value"' in _s4_sd
    and "disjoint selection/scoring worlds in the builder" in _s4_sd,
    "a selection score must not render as a forecast")
 ck("and the tab says it too, under the number, rather than leaving it to read as a probability",
@@ -16100,12 +16141,19 @@ ck("the S5 report recommends keeping every rule on the ground that the gain is I
 # The withdrawn claim was withdrawn because the data say "mixed", so pin the
 # number that makes it mixed: on the board carrying the whole effect the expected
 # best score across the portfolio RISES. "The portfolio scores the same" was wrong.
-ck("and the football evidence is recorded as MIXED, including the worldwise-max mean RISING on the board that supplies the effect",
-   _s5_tail_mean("153086", "ablate:DST-OPP", "worldwise_max_mean")
-   > _s5_tail_mean("153086", "baseline", "worldwise_max_mean") + 0.4
-   and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99_9")
-   > _s5_tail_mean("153085", "baseline", "worldwise_max_p99_9")
-   and "football-only portfolio statistics are **mixed**" in _s5repw,
+# Repinned 2026-09-18. This used to ALSO pin DAL's p99.9 rising, which is
+# {+3.01, 0, 0, 0} across its four cells -- one order statistic of 4,000
+# worlds moving in one cell. A guard must not freeze a sign the statistic
+# cannot resolve. It now pins the one robust football fact (DEN worldwise-max
+# mean up in EVERY cell) and the report's statement that the tail is
+# under-resolved.
+_s5_den_cells = [d["ablate:DST-OPP"]["worldwise_max_mean"] - d["baseline"]["worldwise_max_mean"]
+                 for byseed in _s5t["boards"]["153086"].values() for d in byseed["directions"].values()]
+ck("and the football evidence is recorded as MIXED AND UNDER-RESOLVED above p95, with the one robust fact -- DEN worldwise-max mean rising in every cell -- pinned per cell rather than as a mean",
+   len(_s5_den_cells) == 4 and all(x > 0.4 for x in _s5_den_cells)
+   and "under-resolved above p95" in _s5repw
+   and "one cell moving, three exactly zero" in _s5repw
+   and "football-only portfolio statistics are **mixed, and above p95 under-resolved**" in _s5repw,
    f"DEN max-mean {_s5_tail_mean('153086', 'baseline', 'worldwise_max_mean'):.4f} -> "
    f"{_s5_tail_mean('153086', 'ablate:DST-OPP', 'worldwise_max_mean'):.4f}")
 
@@ -16127,11 +16175,24 @@ ck("and the proposed field-free arm selects on the SELECTION fold, never on held
    and "reintroduces exactly the leakage S4 spent a stage removing" in _s5repw
    and "selecting on held-out p99" in _s5repw)   # present only as the retraction
 
-ck("and it names the model limitation the flagged rule sits on, rather than treating a model-conditional gain as a strategy discovery",
-   "cross-side covariance" in _s5repw
-   and "Stage 2B\u20132F measured legacy-latent getting" in _s5repw
-   and "the one whose evidence depends most on" in _s5repw
-   and "the part of the simulator we have least confidence in" in _s5repw)
+# Repinned 2026-09-18. The sentence this used to freeze -- that DST-OPP sat on
+# legacy-latent's "known cross-side weakness" -- was backwards: the blind-2025
+# table has legacy's within-team pair error at 0.267 and cross-side at 0.105,
+# and cross-side under-coupling is the CONSTRAINED model's failure. The guard
+# now pins the corrected mechanism (same-offense giveaways drawn independent
+# of output), the numbers that show the earlier attribution was wrong, and the
+# absence of the old sentence as a live claim.
+ck("and it names the SPECIFIC dependence the flagged rule sits on -- the captain's own offense producing while that same offense gives the ball away, which the served simulator draws as independent -- rather than a generic 'cross-side weakness'",
+   "It sits on a dependence the served model does not represent" in _s5repw
+   and "Turnovers are independent of offensive output in every simulated world" in _s5repw
+   and 'ints = _pois(m["int"])' in _s5repw
+   and "0.267 within a team and 0.105 across sides" in _s5repw
+   and "Cross-side under-coupling is the *constrained* research model's failure" in _s5repw
+   and "cross-side covariance is precisely what Stage 2B" not in _s5_unquoted(_s5repw))
+
+ck("and the simulator really does draw turnovers independent of the offensive environment, so the report's mechanism claim is pinned to the code and not only to prose",
+   'ints = _pois(m["int"])' in open(_os.path.join(_s5_root, "nfl_dfs_sim.py")).read()
+   and 'fums = _pois(m["fum"])' in open(_os.path.join(_s5_root, "nfl_dfs_sim.py")).read())
 
 # Repinned: the review rejected "redundant" and "harmless" as descriptions of a
 # rule with zero marginal admissions, because CPT-POS has zero alone and the
@@ -16182,7 +16243,7 @@ _s5pv = _json5.load(open(_os.path.join(_s5_root, "research", "data", "prov_verif
 
 
 # CONTRACT 1. "Provably inert" was too strong and CPT-POS is the counterexample:
-# zero marginal admissions alone, +0.038 paired with CPT-SALARY. So the words
+# zero marginal admissions alone, +0.0344 added when released on top of CPT-SALARY. So the words
 # inert / redundant / harmless may not appear as LIVE claims anywhere -- only
 # inside quotes, or in a sentence that explicitly rejects them. Checked on the
 # unquoted text so the retraction itself does not trip it.
@@ -16266,12 +16327,23 @@ ck("and the withdrawn universal stays withdrawn: under the CORRECT statistic two
    f"CPT-SALARY DEN {_s5_tail_mean('153086', 'ablate:CPT-SALARY', 'worldwise_max_p99'):.2f} "
    f"vs {_s5_tail_mean('153086', 'baseline', 'worldwise_max_p99'):.2f}")
 
-ck("and DST-OPP's upper percentiles are still slightly down on both boards, which is recorded as part of a mixed picture rather than as a contradiction",
-   _s5_tail_mean("153086", "ablate:DST-OPP", "worldwise_max_p99")
-   < _s5_tail_mean("153086", "baseline", "worldwise_max_p99")
-   and _s5_tail_mean("153085", "ablate:DST-OPP", "worldwise_max_p99")
-   < _s5_tail_mean("153085", "baseline", "worldwise_max_p99")
-   and '"Mixed" is the only word the data support' in _s5repw)
+# Repinned 2026-09-18: the p99 means ARE lower on both boards, but the cells
+# behind them are sign-mixed ({+0.05, -0.35, -1.62, -1.63} on DEN), so the
+# guard no longer asks the report to describe them as "slightly down". It pins
+# the resolution fact the report now states: at 4,000 held-out worlds the seven
+# variants collapse to <= 3 distinct p99.9 values in EVERY cell.
+_s5_p999_distinct = [len({d[v]["worldwise_max_p99_9"] for v in d})
+                     for byseed in _s5t["boards"].values() for b in byseed.values()
+                     for d in b["directions"].values()]
+ck("and the upper percentiles are recorded as UNDER-RESOLVED, with the resolution pinned: seven variants collapse to at most three distinct p99.9 values in every one of the eight cells",
+   # 2 boards x 2 seeds x 2 fold directions = 8 cells (an earlier draft of this
+   # very guard wrote `== 16 or == 8 and ...`, the `or`-precedence bug it exists
+   # to hunt; caught before it ran)
+   len(_s5_p999_distinct) == 8
+   and all(n <= 3 for n in _s5_p999_distinct)
+   and "order statistic" in _s5repw
+   and "cannot be resolved by this design" in _s5repw,
+   f"distinct p99.9 per cell: {_s5_p999_distinct}")
 
 # CONTRACT 4. Field robustness and slate robustness are different axes, and the
 # sweep ran on the board that carries the effect.
@@ -16384,6 +16456,136 @@ ck("and the reproducibility claim is narrowed to the Sleeper side, with the Draf
    and "payout schedule" in _s5repw)
 
 
+
+
+# ---- 2026-09-18 re-audit: the cleanup commit's contracts ----------------------
+# Each of these pins a defect the independent re-audit found, so it cannot
+# return by deletion. Behaviour where behaviour exists; prose only where the
+# claim IS prose.
+import json as _json18
+import inspect as _insp18
+import errlog as _errlog18
+_cap18 = _os.path.join(_root, "research", "data", "dk_capture")
+_caps18 = {}
+for _dg18 in ("153086", "153085"):
+    with open(_os.path.join(_cap18, f"contests_{_dg18}.json")) as _fh:
+        _caps18[_dg18] = _json18.load(_fh)
+
+def _ladder18(d):
+    return sum((int(t["to"]) - int(t["from"]) + 1) * float(t["prize"]) for t in d.get("payouts") or [])
+
+_id_rows18 = [(dg, cid, d) for dg, blob in _caps18.items() for cid, d in blob["detail"].items()]
+ck("every captured contest's payout ladder sums EXACTLY to its prize pool -- the identity S6 must carry per contest, and the one that would catch a truncated or reshaped ladder",
+   len(_id_rows18) >= 29
+   and all(abs(_ladder18(d) - float(d["prize_pool"])) < 0.01 for _, _, d in _id_rows18),
+   str([(cid, round(_ladder18(d)), d["prize_pool"]) for _, cid, d in _id_rows18
+        if abs(_ladder18(d) - float(d["prize_pool"])) >= 0.01][:4]))
+
+ck("and the lobby's `entries` is the contest CAPACITY (equals detail.max_entries for every captured contest), so nothing may read it as the current fill",
+   all(int(next(r for r in blob["lobby"] if str(r["id"]) == cid)["entries"]) == int(d["max_entries"])
+       for dg, blob in _caps18.items() for cid, d in blob["detail"].items()))
+
+ck("and the capture now holds a second ladder TOPOLOGY -- at least one Double Up per draft group, a one-row flat prize across ~44% of the field -- because 401 of 881 lobby rows were non-GPP and none had been captured",
+   all(any(d.get("kind") == "double_up" and len(d.get("payouts") or []) == 1
+           and 0.40 <= int(d["places_paid"]) / int(d["max_entries"]) <= 0.50
+           for d in blob["detail"].values())
+       for blob in _caps18.values())
+   and all(any(a.get("kind") == "double_up" for a in ent["contests"].get("added", []))
+           for ent in _json18.load(open(_os.path.join(_cap18, "manifest.json")))["draft_groups"].values()))
+
+# The field-size fallback. `max_entries or entered or 10000` would have modelled
+# a contest without maximumEntries on its CURRENT fill: 1.4% of capacity at the
+# capture. The semantics the sign-off pinned: never fall back to entrants; a
+# malformed contest files an identifiable ledger event naming it; no result for
+# that contest; valid siblings continue; the research path raises.
+import dfs_tourney as _T18
+ck("contest_capacity reads DraftKings' maximumEntries and NOTHING else: a record without it returns None rather than the current fill or a made-up 10,000",
+   _T18.contest_capacity({"max_entries": 88235, "entered": 1267}) == 88235
+   and _T18.contest_capacity({"entered": 1267}) is None
+   and _T18.contest_capacity({"max_entries": 0, "entered": 1267}) is None
+   and _T18.contest_capacity({"max_entries": "n/a"}) is None
+   and _T18.contest_capacity({}) is None and _T18.contest_capacity(None) is None)
+
+_good18 = {"id": 900001, "max_entries": 5000, "entered": 40, "payouts": [{"from": 1, "to": 1, "prize": 100.0}]}
+_bad18a = {"id": 900002, "entered": 40, "payouts": [{"from": 1, "to": 1, "prize": 100.0}]}         # no capacity
+_good18b = {"id": 900003, "max_entries": 300, "entered": 12, "payouts": [{"from": 1, "to": 1, "prize": 10.0}]}
+_bad18b = {"id": 900004, "max_entries": 0, "entered": 9, "payouts": [{"from": 1, "to": 1, "prize": 10.0}]}   # zero capacity
+# errlog THROTTLES a code (a second note inside _THROTTLE_S is held and folded
+# into the next write), so counting ledger rows or n right after two back-to-
+# back notes measures the throttle, not the helper. Pin the helper's own
+# behaviour instead: record every note it files through a stub, then restore
+# the real one -- two calls, this code, the two malformed ids, and the reason.
+_notes18 = []
+_real_note18 = _T18.errlog.note
+try:
+    _T18.errlog.note = lambda code, exc=None, msg="", path=None: _notes18.append((code, msg, path))
+    _kept18 = _T18._contests_with_capacity([_good18, _bad18a, _good18b, _bad18b, None])
+finally:
+    _T18.errlog.note = _real_note18
+ck("a malformed contest is DROPPED with a TOURN-capacity ledger event naming it and the reason, one event per malformed record, and the valid siblings continue in order -- behaviour, not a source pin",
+   [c["id"] for c in _kept18] == [900001, 900003]
+   and len(_notes18) == 2
+   and all(code == "TOURN-capacity" for code, _, _ in _notes18)
+   and {path for _, _, path in _notes18} == {"900002", "900004"}
+   and all("maximumEntries" in msg for _, msg, _ in _notes18),
+   f"kept {[c['id'] for c in _kept18]}; notes {_notes18}")
+# ...and the real ledger does receive the code (throttled or not, at least one row)
+_real_note18("TOURN-capacity", msg="guard probe: classic contest detail carries no maximumEntries", path="900002")
+ck("and the real ledger carries the TOURN-capacity code so the event is findable in errors/latest.json",
+   any(r.get("code") == "TOURN-capacity" for r in _errlog18.recent(limit=50, code="TOURN-capacity")))
+
+_src18 = open(_os.path.join(_root, "dfs_tourney.py")).read()
+ck("and no builder falls back to `entered` or 10000 any more: the classic build assembles through _contests_with_capacity, the showdown build returns None on a missing capacity with the same ledger id, and the research path raises",
+   'or contest.get("entered")' not in _src18
+   and 'or c.get("entered")' not in _src18
+   and "contests = _contests_with_capacity([dk.contest_detail(cid) for cid in want[:6]])" in _src18
+   and "C = contest_capacity(contest)\n    if C is None:" in _src18
+   and _src18.count('errlog.note("TOURN-capacity"') == 2
+   and 'raise ValueError' in _insp18.getsource(__import__("research.sd_board", fromlist=["grid_for"]).grid_for))
+
+# The discrete calibration re-entrancy flag was a module-level list; under
+# gunicorn's eight threads two concurrent sheets could each see the other's
+# flag, skip calibration and cache an unpinned pool. The probe is told apart
+# by the `_pin` key it carries, and nothing else.
+_sim18 = open(_os.path.join(_root, "nfl_dfs_sim.py")).read()
+ck("the discrete mean pin's probe is distinguished by the `_pin` key in the game dict, not by a shared module-level flag two request threads could see",
+   "_CAL" not in _sim18
+   and 'if discrete and "_pin" not in game:' in _sim18
+   and 'pin = list(game["_pin"])' in _sim18)
+
+ck("and the DK contest reader keeps EVERY payout tier (no `[:60]` cap) and files a DK-payout-sum note when a ladder disagrees with its pool by more than 1%",
+   "tiers[:60]" not in open(_os.path.join(_root, "dk.py")).read()
+   and 'errlog.note("DK-payout-sum"' in open(_os.path.join(_root, "dk.py")).read())
+
+ck("and the served in-sample optimism label carries its UNIT (relative percent of the held-out figure), the point equivalent, and how many measured cells went the other way",
+   '"unit": "relative percent of the held-out value"' in _src18
+   and '"points_mean": 1.6' in _src18 and '"cells_negative": 2' in _src18
+   and "relative, i.e. about" in open(_os.path.join(_root, "static", "app.js")).read())
+
+ck("and the two stale production comments now carry the artifact's figures: 1,972,000 / 47.35% for the lattice, 95.3% / 100% for the kicker and defense under discrete v1",
+   "1,972,000 simulated scores: 47.35%" in _src18
+   and "95.3% of the\n# kicker's scores and 100% of the defense's" in _sim18)
+
+# CPT-POS: four quantities, kept distinct everywhere. Zero alone; CPT-SALARY
+# alone +0.003452; the pair +0.037844; releasing CPT-POS on top adds +0.034392,
+# an increment that contains the interaction and is NOT a pure CPT-POS effect.
+_s5abl18 = open(_os.path.join(_s5_root, "research", "s5_ablate.py")).read()
+ck("and the CPT-POS attribution keeps its four quantities distinct and never calls the +0.0344 increment a pure CPT-POS effect",
+   "+0.034392" in _s5abl18 and "+0.037844" in _s5abl18 and "+0.003452" in _s5abl18
+   and "CONTAINS the interaction" in _s5abl18
+   and "a +0.038 effect the moment" not in _s5abl18
+   and "releasing `CPT-POS` on top of `CPT-SALARY` adds **+0.0344**" in _s5repw
+   and "increment that contains the interaction" in _s5repw
+   and abs(_s5_mean(_s5p, "pair:CPT-SALARY+CPT-POS") - 0.037844) < 1e-6
+   # the pair total lives in the pairs artifact, CPT-SALARY alone in the
+   # ablation artifact; the first draft of this guard read both from the pairs
+   # file, got 0 for the single, and failed -- on my own work, as intended
+   and abs(_s5_mean(_s5a, "ablate:CPT-SALARY") - 0.003452) < 1e-6
+   and abs(_s5_mean(_s5p, "pair:CPT-SALARY+CPT-POS") - _s5_mean(_s5a, "ablate:CPT-SALARY") - 0.034392) < 1e-6)
+
+ck("and s5_tail's docstring says what field_invariance() measures (determinism) and what proves invariance (the structural AST check), rather than calling the tautological loop a measurement",
+   "It is a determinism check" in open(_os.path.join(_s5_root, "research", "s5_tail.py")).read()
+   and "That STRUCTURAL\nfact" in open(_os.path.join(_s5_root, "research", "s5_tail.py")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

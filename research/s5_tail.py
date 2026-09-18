@@ -31,9 +31,19 @@ artifact of moving the opponents.
 
 `dfs_tourney.field_weights(players, idx, ...)` takes the FULL legal `idx` and has
 no `allowed` parameter at all, and every S5 call site passes the whole universe
-and computes it once per board rather than once per ablation. So invariance holds
-by construction -- but "by construction" is exactly the sort of claim this pass
-has learned to prove, so it is measured here and guarded in the suite.
+and computes it once per board rather than once per ablation. That STRUCTURAL
+fact -- checked by the suite as an AST walk over the S5 modules' call sites --
+is the proof of invariance.
+
+What field_invariance() below measures is weaker than its name, and an
+independent re-audit (2026-09-18) said so: its loop builds an ablated owner
+universe, discards it, and calls field_weights with arguments identical to the
+baseline call, so `field_identical_under_every_ablation` can only be false if
+field_weights is non-deterministic. It is a determinism check, kept because the
+artifact already carries it, not the invariance measurement the 9187d4e commit
+message described. The counterfactual block beside it IS a measurement: it
+passes the owner-allowed subset on purpose and records how far beta would have
+moved (about -32% on DEN @ KC) had the field been renormalised that way.
 """
 import json
 import os

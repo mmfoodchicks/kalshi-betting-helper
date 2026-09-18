@@ -52,8 +52,14 @@ def slate_and_contest(dg, contest_id=None):
 
 
 def ents_for(slate, week, discrete, n_sims=12000, seed=None, preseason=False,
-            season=SEASON, log=print):
+            season=SEASON, log=print, model="legacy"):
     """The board's player entries, with the pool built under `discrete`.
+
+    `model` names the game simulator ("legacy" or "constrained"); it exists so
+    the Showdown legacy-vs-constrained structural A/B can swap ONLY the
+    football model and keep everything downstream identical. Under
+    "constrained" the `discrete` flag is ignored by player_pool (that model is
+    integer-valued by construction) and `seed` seeds the worlds themselves.
 
     Returns (ents, seconds, peak_rss_mb). `seed` seeds the legacy module RNG
     first, so the two modes start from the same generator state -- they do NOT
@@ -72,7 +78,8 @@ def ents_for(slate, week, discrete, n_sims=12000, seed=None, preseason=False,
         nfl_dfs_sim._random.seed(int(seed))
     t0 = time.time()
     pool = nfl_dfs_sim.player_pool(week, n=int(n_sims), preseason=preseason, season=season,
-                                  teams=teams, discrete=discrete) or {}
+                                  teams=teams, discrete=discrete, model=model,
+                                  seed=(int(seed) if (seed is not None and model == "constrained") else None)) or {}
     secs = time.time() - t0
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
     nidx, norm = nfl_dfs._norm_index(pool)
@@ -131,7 +138,12 @@ def universe(ents):
 def grid_for(contest):
     """The payout grid and the field cap the builder would use."""
     import dfs_tourney as T
-    C = int(contest.get("max_entries") or contest.get("entered") or 0) or 10000
+    C = T.contest_capacity(contest)
+    if C is None:
+        # research fails loud: a contest without maximumEntries used to be
+        # modelled on its CURRENT fill (1.4% of capacity at the S6 capture)
+        raise ValueError(f"contest {contest.get('id')} carries no maximumEntries; "
+                         "refusing to size the field on the current fill")
     grid = T.payout_grid(C, contest.get("payouts") or [],
                         float(contest.get("entry_fee") or 1.0),
                         int(contest.get("places_paid") or max(1, C // 5)))

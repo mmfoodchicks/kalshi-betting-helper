@@ -13,11 +13,15 @@ set of worlds and judged on another?*
 admissions when disabled individually under the current production rule set** —
 another rule already rejects everything they reject. That is a statement about
 the current *conjunction*, not about the rules: `CPT-POS` has zero marginal
-admissions alone and a **+0.038** effect when disabled alongside `CPT-SALARY`
-(section K), so it plainly has strategic effect that another rule is masking. Of
+admissions alone (its own effect is 0 in all eight cells), while the
+`CPT-SALARY`+`CPT-POS` pair is worth **+0.0378** where `CPT-SALARY` alone is
++0.0035 — so releasing `CPT-POS` on top of `CPT-SALARY` adds **+0.0344**, an
+increment that contains the interaction and is not a pure `CPT-POS` effect
+(section K). It plainly has strategic effect that another rule is masking. Of
 the rest, exactly one moves the production objective on its own: `DST-OPP`, the
 ban on rostering the defense that faces your captain, worth **+0.047** mean
-held-out Top 1%, stable in 7 of 8 cross-fit cells, and robust across a
+held-out Top 1%, positive in all 8 cross-fit cells (bootstrap-stable in 7; one
+DAL cell's interval straddles zero), and robust across a
 field-concentration sweep on the one board and seed it was swept on — which S4's
 headline effect was not. **Recommendation: keep every rule.** The reason is not
 that the gain is fake: it is that the gain is **not separable** from the two
@@ -26,8 +30,9 @@ the simulated joint score distribution and the **uncalibrated weighted opponent
 field**; football-only portfolio statistics neither independently validate it nor
 show it to be an ownership artifact (section L). Add that one of two boards
 supplies essentially the whole effect, that the lineups producing it are
-captain-opposite-defense builds resting on exactly the cross-side covariance
-Stage 2B–2F measured legacy-latent getting wrong, and that removing the rule is
+captain-opposite-defense builds whose value turns on a dependence the served
+simulator does not model at all — the captain's own offense producing while that
+same offense gives the ball away (section O, reason 2) — and that removing the rule is
 structural and reshapes the candidate universe by +41%. `DST-OPP` is the one
 reproducible candidate effect in this study, **INCONCLUSIVE** rather than
 harmful, with the experiment that would settle it named in section O.
@@ -190,7 +195,7 @@ named rule, on both boards independently.
 correct statement about such a rule is: *zero marginal admissions when disabled
 individually under the current production rule set.* Nothing stronger. `CPT-POS`
 cannot be shown to protect anything *while `CPT-SALARY` stands* — and section K
-measures what happens when it does not stand: **+0.038**, an order of magnitude
+measures what happens when it does not stand: **+0.0344** added when `CPT-POS` is released on top of `CPT-SALARY` (pair +0.0378; the increment contains the interaction), an order of magnitude
 above anything either rule does alone. A rule with zero marginal admissions is a
 rule whose effect is currently **masked**, and if its masking partner is ever
 retuned or removed the masked effect becomes live. Calling such a rule inert,
@@ -414,10 +419,23 @@ modelled ownership"* — is **also withdrawn**. Two reasons, both decisive.
 | p99.9 | 186.2069 → 185.2869 | −0.9200 | 216.9416 → **217.6934** | **+0.7518** |
 
 On the board that supplies essentially the whole Top-1% effect, the **expected
-best score across the portfolio rises by 0.58 DK in every fold and seed cell**.
-That is genuine football-side diversification, not "scores the same". The upper
-percentiles fall slightly on DEN and DAL's extreme tail *rises*. "Mixed" is the
-only word the data support.
+best score across the portfolio rises in every fold and seed cell, by +0.51 to
++0.63 DK** (mean +0.58). That is genuine football-side diversification, not
+"scores the same", and it is the one row of this table that holds cell by cell.
+
+**The rest of the table is under-resolved and must not be read for sign.**
+Each scoring fold has 4,000 held-out worlds, so p99.9 is order statistic
+3995.001 — one world's maximum with four values above it — and p99 rests on
+about forty. Per cell (2026-09-18 re-audit of `s5_tail.json`): DEN p99 is
+{+0.05, −0.35, −1.62, −1.63}; DEN p99.9 is {0.0, −2.00, −1.68, 0.0}; DAL p99.9,
+the "+0.75" this table shows, is **{+3.01, 0.0, 0.0, 0.0}** — one cell moving,
+three exactly zero. Across all eight cells the seven variants collapse to two
+or three distinct p99.9 values, and `full_legal` repeatedly lands on the same
+p99.9 as a single-rule ablation. The mean and p90 separate every distinct
+portfolio in every cell; p99.9 fails to separate 1.6 of them on average. So the
+supported reading is: the worldwise-max mean rises on DEN, and the upper
+percentiles cannot be resolved by this design. "Mixed" was the right word for
+the wrong reason; "under-resolved above p95" is the right reason.
 
 *And the metric does not work the way the withdrawn claim assumed.* Production's
 optimistic Top-1% reads field mass **strictly above** the candidate:
@@ -441,8 +459,9 @@ a cause.
 Which fits `DST-OPP` exactly, and tightens reason 2 in section O rather than
 competing with it: a captain-versus-opposing-defense build is valuable precisely
 when its scoring pattern runs counter to what the model says the public owns —
-and that pattern *is* cross-side football covariance, the part of legacy-latent
-Stage 2B–2F measured as limited. The mechanism and the known weakness are the
+and that pattern depends on the captain's own offense producing while that same
+offense turns the ball over, a dependence the served simulator draws as
+independent (section O, reason 2). The mechanism and the modelling gap are the
 same object.
 
 **Why the two aggregations diverge, which is itself informative.** Mean-of-entry
@@ -556,7 +575,7 @@ mean-of-entry statistic an earlier revision used.
 | rule | marginal (single) | Δ held-out Top 1% | stable | portfolio p99 | verdict | S4 rerun if changed? |
 |---|---|---|---|---|---|---|
 | `DST-OPP` | 9,656–9,819 | **+0.047** | 7/8 | −0.89 DEN / −0.12 DAL | **INCONCLUSIVE — keep** | **yes** (structural) |
-| `CPT-POS` (only with `CPT-SALARY`) | 0 alone | **+0.038** paired | 7/8 | −1.67 mean-of-entry; portfolio n/m | **INCONCLUSIVE — keep** | **yes** (structural) |
+| `CPT-POS` (only with `CPT-SALARY`) | 0 alone | **+0.0344** added on top of `CPT-SALARY` (pair +0.0378) | 7/8 | −1.67 mean-of-entry; portfolio n/m | **INCONCLUSIVE — keep** | **yes** (structural) |
 | `CPT-SALARY` | 37,002–37,077 | +0.003 | 2/8 | +0.16 DEN / −0.11 DAL | no candidate effect — keep | no (threshold, >10% though: **yes**) |
 | `PUNT-ROLE` | 19,851–20,705 | −0.002 | 1/8 | 0.00 / −0.11 | no candidate effect — keep | n/a |
 | `FLEX-POOL` | 27,011–47,346 | +0.000 | 0/8 | 0.00 | no candidate effect — keep | n/a |
@@ -599,10 +618,12 @@ argument is now the *attribution* of the gain rather than a contradiction of it.
 
 1. **The gain is not separable from the uncalibrated field model.** `DST-OPP`
    raises held-out Top 1% materially, and football-only portfolio statistics are
-   **mixed**: the expected worldwise-max score improves (+0.58 DK on DEN @ KC)
-   while upper percentiles are flat to slightly lower, and DAL @ NYG's extreme
-   tail rises. The data therefore support neither "essentially all of the gain is
-   ownership" nor "there is an independent football advantage". The effect is an
+   **mixed, and above p95 under-resolved**: the expected worldwise-max score
+   improves on DEN @ KC in all four cells (+0.51 to +0.63 DK), while the upper
+   percentiles cannot be read for sign at 4,000 held-out worlds (section L; the
+   DAL p99.9 "rise" is one cell of four, the other three exactly zero). The data
+   therefore support neither "essentially all of the gain is ownership" nor
+   "there is an independent football advantage". The effect is an
    interaction between the simulated joint score distribution and the weighted
    opponent field — and that field is `softmax(beta × projected points)` with
    beta fixed by one published 2021 contest, the single thing the money gate is
@@ -610,13 +631,29 @@ argument is now the *attribution* of the gain rather than a contradiction of it.
    model is not an advantage this app may act on. (Section L; the earlier
    "ownership, not football" attribution is withdrawn.)
 
-2. **It sits on the model's known weak point.** `DST-OPP` bans rostering the
-   defense that faces your captain — a lineup needing one offense to produce and
-   the other to be stopped. Its value is a *cross-side covariance* quantity, and
-   cross-side covariance is precisely what Stage 2B–2F measured legacy-latent
-   getting wrong. The one rule S5 flags is the one whose evidence depends most on
-   the part of the simulator we have least confidence in. Not a coincidence to
-   shrug at.
+2. **It sits on a dependence the served model does not represent.** *Rewritten
+   2026-09-18 after an independent re-audit; the earlier text was wrong twice.*
+   `DST-OPP` bans rostering the defense that faces your captain. Captain
+   Mahomes plus the DEN defense: DEN DST's score is a function of **KC's** own
+   offensive output — turnovers, sacks, points allowed. That is not "one
+   offense produces and the other is stopped"; it is the same offense producing
+   and being stopped. The covariance the rule turns on is captain output versus
+   that same offense's giveaways, and in the served simulator interceptions and
+   fumbles are drawn at their raw mean with no game, quarterback or script
+   factor (`nfl_dfs_sim.py`, `ints = _pois(m["int"])`, `fums = _pois(m["fum"])`)
+   and then consumed by the defense's scorer. **Turnovers are independent of
+   offensive output in every simulated world.** The dependence `DST-OPP` needs is
+   not weak in the model; it is absent, in a direction that is unmeasured.
+
+   The earlier text said this rule sat on legacy-latent's "known cross-side
+   weakness". The blind-2025 table (`stage2e_validation.json`) says the
+   opposite: legacy's mean absolute pair-correlation error is **0.267 within a
+   team and 0.105 across sides**, and the pair a captain-versus-defense build
+   most resembles, team offense against opposing offense, is one legacy gets
+   within 0.06 (0.323 modelled, 0.262 observed). Cross-side under-coupling is the
+   *constrained* research model's failure (0.082 against 0.262), not the served
+   model's. The S9 target below names the specific dependence to measure, not
+   "cross-side covariance" in general.
 
 3. **One board supplies the effect.** +0.078 to +0.093 on DEN @ KC against
    +0.001 to +0.013 on DAL @ NYG. Two boards cannot separate a property of the
@@ -632,11 +669,15 @@ argument is now the *attribution* of the gain rather than a contradiction of it.
 
 Named, so the next stage has a target rather than an instruction to think harder:
 
-- **S9 / joint-model validation on cross-side covariance specifically.** If
-  legacy-latent's opposing-side coupling is validated, the `DST-OPP` Top-1% gain
-  becomes a real number rather than a model artifact. If it is found wrong in the
-  direction that inflates captain-opposite-defense builds, the rule is vindicated
-  and this finding dissolves.
+- **S9 / the specific dependence `DST-OPP` uses, measured from history.** From
+  the 2022–2025 player-week table: interceptions and lost fumbles against passing
+  attempts, yards and DK points for the same offense in the same game, at the
+  player and team-week level, compared with what legacy simulates (zero, by
+  construction). If real giveaways rise with volume, captain-plus-opposing-defense
+  builds are under-valued by the model and the +0.047 is if anything low; if they
+  fall with efficiency, the builds are over-valued and the rule is vindicated.
+  Either answer replaces a guess with a number. Sacks and points allowed are not
+  in the table and would need the team-week source.
 - **More boards.** Four to six Showdown slates with varied pool shapes would
   separate "property of the rule" from "property of DEN @ KC". Cheap compared to
   S9 and worth doing first.
@@ -835,7 +876,10 @@ full because two of them changed a claim, not just a word.
 **1. "Provably inert" withdrawn.** Four rules have **zero marginal admissions
 when disabled individually under the current production rule set**. That is all
 that was shown. `CPT-POS` is the standing counterexample to the stronger reading:
-zero alone, **+0.038** paired with `CPT-SALARY`. The words *inert*, *redundant*
+zero alone; the `CPT-SALARY`+`CPT-POS` pair is +0.0378 against +0.0035 for
+`CPT-SALARY` alone, so releasing `CPT-POS` on top adds **+0.0344** — an
+increment containing the interaction, not a pure `CPT-POS` effect (an earlier
+revision quoted the pair total as `CPT-POS`'s own). The words *inert*, *redundant*
 and *harmless* are gone from the verdicts, the ranking and the guards; the
 replacement is *masked*, which carries the conditional. This matters later: if a
 masking partner is retuned, the masked effect becomes live.

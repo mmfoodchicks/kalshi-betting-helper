@@ -250,8 +250,10 @@ SIM_MODEL_VERSION = 1
 
 
 # 1 covered the offense only, and a promotion-readiness audit found the kicker
-# still multiplied and the defense still shifted by a fraction -- 47% and 44% of
-# their scores unprintable. 2 pins the kicker on its field-goal rate and spends
+# still multiplied and the defense still shifted by a fraction -- 95.3% of the
+# kicker's scores and 100% of the defense's unprintable on the live DEN @ KC pool
+# (research/data/sd_support.json; an earlier version of this comment said 47%
+# and 44%, figures no artifact carries). 2 pins the kicker on its field-goal rate and spends
 # the defense's fractional shift as a coin, so the WHOLE showdown pool is legal.
 DISCRETE_VERSION = 2      # showdown-only discrete legacy scorer; 0 means off
 
@@ -307,7 +309,11 @@ def sim_stamp(n=None, preseason=False, discrete=False):
             "seed": None, "n": (int(n) if n else None), "preseason": bool(preseason)}
 
 
-_CAL = []          # re-entrancy flag: the pin's own probe must not re-calibrate
+# The pin's own probe passes `_pin` in the game dict, and that key -- not a
+# module-level flag -- is what tells the probe call apart from the outer call.
+# A shared list used to do this job; under gunicorn's eight request threads two
+# concurrent showdown sheets on a cold cache could see it set by each other,
+# skip calibration, and cache an UNPINNED pool for half an hour with no error.
 
 
 def _pois(mean, rng=_random):
@@ -393,7 +399,7 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
     # are small. What is left over is reported as pin_err rather than
     # corrected by a multiply, because a multiply is the bug.
     pin = [1.0] * len(players)
-    if discrete and not _CAL:
+    if discrete and "_pin" not in game:
         cal = max(400, min(2000, n // 4))
         base = simulate_game(game, n=cal, with_samples=False, preseason=preseason,
                              discrete=False)
@@ -406,19 +412,15 @@ def simulate_game(game, n=4000, with_samples=False, preseason=False, discrete=Fa
         # rounding it has to live with. Continuous linearity sizes the first
         # step; only a discrete run can tell how far integer yards and whole
         # catches actually move a small projection.
-        try:
-            _CAL.append(1)
-            probe = simulate_game({**game, "_pin": list(pin)}, n=cal, with_samples=False,
-                                  preseason=preseason, discrete=True)
-            got = {r["name"]: r["sim_mean_raw"] for r in probe["players"]}
-            for i, pl in enumerate(players):
-                have, proj = got.get(pl["name"]) or 0.0, float(pl.get("proj_pts") or 0.0)
-                if have > 0 and proj > 0:
-                    pin[i] *= proj / have
-        finally:
-            _CAL.pop()
+        probe = simulate_game({**game, "_pin": list(pin)}, n=cal, with_samples=False,
+                              preseason=preseason, discrete=True)
+        got = {r["name"]: r["sim_mean_raw"] for r in probe["players"]}
+        for i, pl in enumerate(players):
+            have, proj = got.get(pl["name"]) or 0.0, float(pl.get("proj_pts") or 0.0)
+            if have > 0 and proj > 0:
+                pin[i] *= proj / have
     elif discrete:
-        pin = list(game.get("_pin") or [1.0] * len(players))
+        pin = list(game["_pin"])
     pts = {i: [] for i in range(len(players))}
     comp = {i: {k: [] for k, _, _, _ in _PROP_SPECS} for i in range(len(players))}
     # The nine numbers DraftKings is paid on, kept only when an auditor asks.

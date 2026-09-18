@@ -8370,12 +8370,13 @@ function renderDfsTourney(d) {
     portRows = (((d.portfolio || {})[_dfsTourneyK]) || {}).entries || [];
     // The coverage figure above is a SELECTION score, not a forecast: the
     // shortlist, the greedy cover and the number all read the same worlds.
-    // Measured optimism against held-out worlds is +2.7% mean, +7.4% worst
-    // (research/s4_crossfit). Say so next to it rather than letting it read as
-    // a probability.
+    // Measured optimism against held-out worlds is +2.7% mean, +7.4% worst,
+    // RELATIVE to the held-out figure (about 1.6 and 4.3 points), and two of
+    // the eight cells went the other way (research/s4_crossfit). Say the unit
+    // next to it: "2.7% lower" beside "62%" reads as points otherwise.
     const basis = (((d.portfolio || {})[_dfsTourneyK]) || {}).p_any_basis;
     if (basis && basis.in_sample) {
-      sizeBtns += `<div class="small" style="margin-top:2px;opacity:.75">↑ in-sample: these worlds also chose the lineups. Held-out is about ${basis.measured_optimism_pct.mean}% lower on average, ${basis.measured_optimism_pct.worst}% at worst.</div>`;
+      sizeBtns += `<div class="small" style="margin-top:2px;opacity:.75">↑ in-sample: these worlds also chose the lineups. Held-out is about ${basis.measured_optimism_pct.mean}% lower on average (relative, i.e. about ${basis.measured_optimism_pct.points_mean != null ? basis.measured_optimism_pct.points_mean : "?"} points), ${basis.measured_optimism_pct.worst}% at worst; ${basis.measured_optimism_pct.cells_negative != null ? basis.measured_optimism_pct.cells_negative + " of " + basis.measured_optimism_pct.cells + " measured cells went the other way" : ""}.</div>`;
     }
   } else {
     const n = rr.portfolio.length;
