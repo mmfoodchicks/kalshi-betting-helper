@@ -11,8 +11,10 @@ and WR1/TE1 at 0.520 against -0.006; its mean absolute pair error is 0.267
 within a team and 0.105 across sides. The constrained research model fixes the
 within-team half (0.033) and is KNOWN DEFICIENT on the other (0.124; QB against
 opposing QB 0.033 vs 0.235 observed, team offense against opposing offense
-0.082 vs 0.262). The served Showdown portfolios from the live A/B are 17 to 19
-of 20 five-one stacks. Nobody had run the counterfactual.
+0.082 vs 0.262). The live A/B's TOP-20 LISTS by Top-1% rank were 17 to 19 of
+20 five-one stacks (its 20-entry portfolios were mixed, 7 to 12 five-one; an
+earlier version of this docstring and of the audit document attached the
+top-20 figure to the portfolio). Nobody had run the counterfactual.
 
 So: same pinned DraftKings slate and contest (research/data/dk_capture, S6.0),
 same pinned Sleeper feeds (research/data/feeds), same seeds, same legal
@@ -37,9 +39,21 @@ Nothing here is promoted, nothing here is economic, and finishing this does
 not resume the S6 plumbing. Each arm runs in its own process so peak RSS is
 that build's alone.
 
+The fences are enforced, not recited. The first run of this study (2026-09-18
+21:30 UTC) built its DEN @ KC served arm on 24 players and 777,056 legal
+lineups and its three other arms on 23 and 583,565: the depth-chart gate read
+Sleeper's LIVE roster in each process, and Marvin Mims Jr. was listed Out
+between the first arm and the second, eight minutes apart. Nothing refused, and
+the "portfolio overlap 2 of 20" that run reported on DEN was partly a change of
+universe. That artifact was discarded. The roster is now a pinned input
+(research/data/feeds/players_2026_1.json, sd_board.feeds refuses to run
+without it) and run_all refuses to write a board whose arms disagree on
+players, legal lineups, enterable set or field beta (universe_fence).
+
     python3 -m research.sd_model_ab all [dg ...]
     python3 -m research.sd_model_ab arm <dg> <discrete|discrete_b|constrained|constrained_b>
 """
+import hashlib
 import json
 import os
 import subprocess
@@ -69,6 +83,8 @@ MODEL_OF = {"discrete": "legacy", "discrete_b": "legacy",
 #: the fences, verbatim, carried in the artifact so no reader can lose them
 FENCES = (
     "same pinned slate inputs (S6 capture) and pinned Sleeper feeds",
+    "same pinned Sleeper roster / depth chart (research/data/feeds/players_2026_1.json): "
+    "the input that moved mid-run on 2026-09-18 when it was read live",
     "same seeds per arm pair; the _b arm is the Monte Carlo floor",
     "same public-field representation: softmax(beta x projection) over the same legal universe",
     "the football model is the ONLY changed variable",
@@ -148,7 +164,10 @@ def correlation_table(ents, N):
     def get(team, name):
         if name.startswith("opp "):
             other = teams[1] if team == teams[0] else teams[0]
-            return arrs.get((other, name[4:]))
+            key = name[4:]
+            if key == "offense":        # the blind validation's name for the side aggregate
+                key = "team offense"
+            return arrs.get((other, key))
         return arrs.get((team, name))
 
     def block(pairs):
@@ -241,12 +260,17 @@ def arm(dg, mode, log=print):
     Sp = (W[port] @ X).astype(np.float64)
     wmax = Sp.max(axis=0)
     best = int(order[0])
+    # the universe fingerprint the fence compares across arms: who was on the
+    # board, and as what (a field-only extra is not a rosterable player)
+    universe_sha = hashlib.sha256(json.dumps(sorted(
+        (e["name"], e["pos"], e.get("team") or "", bool(e.get("_field_only"))) for e in ents)).encode()).hexdigest()[:16]
     out = {"mode": mode, "model": model, "draft_group_id": int(dg),
            "contest": contest.get("name"), "contest_id": int(contest["id"]),
            "entries": int(C), "entry_fee": float(contest.get("entry_fee") or 0.0),
            "players": len(ents), "legal_lineups": int(len(idx)),
            "enterable": int(allowed.sum()), "worlds": int(N),
            "field_beta": round(float(beta), 4), "seed": int(seed),
+           "universe_sha": universe_sha, "roster": sd_board.roster_stamp(FEEDS),
            "sim_stamp": T.simulator_stamp(model, N, seed) if model == "constrained"
            else S.sim_stamp(N, False, True),
            "build": {"pool_seconds": round(pool_secs, 1), "score_seconds": round(score_secs, 1),
@@ -328,7 +352,50 @@ def compare_arms(a, b):
     return d
 
 
-def run_all(dgs=DGS, log=print):
+#: what every arm of a board must agree on before a comparison is written
+UNIVERSE_KEYS = ("players", "legal_lineups", "enterable", "field_beta", "universe_sha")
+
+
+def universe_fence(got):
+    """The fence 'same legal universe, same public field' as a refusal, not a
+    sentence. Every arm of a board must have built on the same players, the
+    same legal lineups, the same enterable set and the same field beta; a
+    comparison across two universes is not the A/B and is not written. Found
+    the hard way on 2026-09-18 (see the module docstring)."""
+    prints = {mode: tuple(a.get(k) for k in UNIVERSE_KEYS) for mode, a in got.items()}
+    if len(set(prints.values())) != 1:
+        raise SystemExit("universe fence violated -- the arms did not build on the same board: "
+                         + "; ".join(f"{m}={dict(zip(UNIVERSE_KEYS, p))}" for m, p in prints.items()))
+    return dict(zip(UNIVERSE_KEYS, next(iter(prints.values()))))
+
+
+def _spawn_arms(jobs, parallel, log):
+    """Run [(dg, mode)] as child processes, at most `parallel` at once. The
+    arms are independent (each reads only pinned files and writes its own
+    _ab_<dg>_<mode>.json), so the order they finish in cannot matter; a failed
+    child stops everything, because a half-run is not a run."""
+    pending, running = list(jobs), {}
+    while pending or running:
+        while pending and len(running) < parallel:
+            dg, mode = pending.pop(0)
+            cmd = [sys.executable, "-m", "research.sd_model_ab", "arm", str(dg), mode]
+            log(f"[MAB] spawning {' '.join(cmd[2:])}")
+            running[(dg, mode)] = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "VIGIL_NO_BG": "1"})
+        for key, p in list(running.items()):
+            rc = p.poll()
+            if rc is None:
+                continue
+            del running[key]
+            if rc != 0 or not os.path.exists(os.path.join(DATA, f"_ab_{key[0]}_{key[1]}.json")):
+                for q in running.values():
+                    q.terminate()
+                raise SystemExit(f"{key[1]} build for {key[0]} failed (rc {rc})")
+        time.sleep(2.0)
+
+
+def run_all(dgs=DGS, log=print, parallel=None):
+    from research import sd_board
+    parallel = int(parallel or os.environ.get("SD_MODEL_AB_PARALLEL") or 1)
     out = {"meta": {"stage": "Showdown legacy-vs-constrained STRUCTURAL A/B (NOT a promotion test)",
                     "question": ("does removing legacy's known same-team over-correlation materially "
                                  "change the lineups and portfolio Showdown recommends?"),
@@ -336,7 +403,8 @@ def run_all(dgs=DGS, log=print):
                     "n_sims": N_SIMS, "seed": SEED, "boards": list(dgs),
                     "primary_contests": {str(k): v for k, v in PRIMARY.items()},
                     "inputs": {"draftkings": "research/data/dk_capture (S6.0 capture, sha256 in its manifest)",
-                               "sleeper": "research/data/feeds (pinned)"},
+                               "sleeper": "research/data/feeds (pinned)",
+                               "roster": sd_board.roster_stamp(FEEDS)},
                     "interpretation_split": {
                         "within_team": ("constrained has blind-2025 support here (mean abs error 0.033 "
                                         "vs legacy 0.267); a change in same-team stacking is the "
@@ -350,18 +418,12 @@ def run_all(dgs=DGS, log=print):
                     "money_gate": "CLOSED -- every payout column here is a diagnostic",
                     "provenance": _prov(worlds=N_SIMS, model="legacy-discrete vs constrained", seed=SEED)},
            "boards": {}}
+    _spawn_arms([(dg, mode) for dg in dgs for mode in ARMS], parallel, log)
     for dg in dgs:
-        got = {}
-        for mode in ARMS:
-            path = os.path.join(DATA, f"_ab_{dg}_{mode}.json")
-            cmd = [sys.executable, "-m", "research.sd_model_ab", "arm", str(dg), mode]
-            log(f"[MAB] spawning {' '.join(cmd[2:])}")
-            r = subprocess.run(cmd, cwd=ROOT, env={**os.environ, "VIGIL_NO_BG": "1"})
-            if r.returncode != 0 or not os.path.exists(path):
-                raise SystemExit(f"{mode} build for {dg} failed (rc {r.returncode})")
-            got[mode] = json.load(open(path))
+        got = {mode: json.load(open(os.path.join(DATA, f"_ab_{dg}_{mode}.json"))) for mode in ARMS}
         out["boards"][str(dg)] = {
             "arms": got,
+            "universe": universe_fence(got),
             "delta_model": compare_arms(got["discrete"], got["constrained"]),
             "floor_discrete": compare_arms(got["discrete"], got["discrete_b"]),
             "floor_constrained": compare_arms(got["constrained"], got["constrained_b"])}

@@ -21,18 +21,102 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 SEASON, WEEK = "2026", 1
+#: the two pinned Showdown draft groups (S6.0 capture); the CLI default
+PINNED_DGS = (153086, 153085)
+#: Sleeper's roster / depth chart, captured beside the projection feeds. The
+#: depth-chart gate (nfl_dfs._apply_depth -> nfl_adp.consensus) read LIVE
+#: Sleeper in every research process until 2026-09-18, when the football A/B's
+#: first DEN @ KC arm built on 24 players and 777,056 legal lineups and the next
+#: three on 23 and 583,565: Marvin Mims Jr. was listed Out between the two
+#: processes, eight minutes apart. A fence that is not pinned is not a fence.
+ROSTER_FILE = "players_{season}_{week}.json"
+#: the only fields nfl_adp.consensus reads, so the capture stays small enough
+#: to commit (the live blob is ~12 MB for every player in the league)
+_ROSTER_FIELDS = ("position", "full_name", "search_rank", "injury_status", "team",
+                  "years_exp", "status", "depth_chart_position", "depth_chart_order", "active")
+
+
+def roster_path(feed_dir, season=SEASON, week=WEEK):
+    return os.path.join(feed_dir, ROSTER_FILE.format(season=season, week=week))
 
 
 def feeds(feed_dir, season=SEASON, week=WEEK):
-    """Pin the Sleeper projection feeds to a captured copy so the two modes
-    see byte-identical inputs even if Sleeper moves mid-study."""
+    """Pin the Sleeper projection feeds AND the Sleeper roster to captured
+    copies so every arm of a study sees byte-identical inputs even if Sleeper
+    moves mid-study. Refuses to run without the roster capture: a study that
+    silently reads the live depth chart is the fence break of 2026-09-18."""
     import json
+    import nfl_adp
     import nfl_dfs_sim as S
+    import racing
     raw = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}.json")))
     dfn = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_def.json")))
     kck = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_k.json")))
     S._get = lambda url: (dfn if "DEF" in url else kck if "position[]=K" in url else raw)
+    path = roster_path(feed_dir, season, week)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path}: no pinned roster; capture one with "
+                                "`python3 -m research.sd_board capture-roster` before any study runs")
+    players = json.load(open(path))["players"]
+    nfl_adp._fetch_players = lambda: dict(players)
+    racing._form_cache.pop(("nfl_consensus",), None)   # a live copy may already sit in this process
     return S
+
+
+def roster_stamp(feed_dir, season=SEASON, week=WEEK):
+    """What roster a study ran on: the file, its sha256, when it was captured."""
+    import hashlib
+    import json
+    path = roster_path(feed_dir, season, week)
+    blob = open(path, "rb").read()
+    meta = json.loads(blob).get("meta") or {}
+    return {"file": os.path.relpath(path, ROOT), "sha256": hashlib.sha256(blob).hexdigest(),
+            "captured_utc": meta.get("captured_utc"), "records": meta.get("records"),
+            "teams": meta.get("teams")}
+
+
+def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print):
+    """Capture the Sleeper roster records the depth-chart gate can consult for
+    the pinned draft groups: every record on the slates' teams plus every
+    record whose normalised name matches a slate player (a man DraftKings lists
+    on one team and Sleeper on another still has to be found). Only the fields
+    nfl_adp.consensus reads are kept."""
+    import datetime
+    import hashlib
+    import json
+    import nfl_adp
+    import nfl_dfs
+    import simulate
+    from research import s6_capture
+    teams, names = set(), set()
+    for dg in dgs:
+        slate, _ = s6_capture.replay(int(dg))
+        if not slate:
+            raise SystemExit(f"no pinned slate for draft group {dg}")
+        for e in nfl_dfs.showdown_pool(simulate.parse_dk_csv(slate["csv"])):
+            if e.get("team"):
+                teams.add(e["team"])
+            names.add(nfl_adp._norm(e["name"]))
+    live = nfl_adp._fetch_players()
+    kept = {}
+    for pid, p in live.items():
+        if p.get("position") not in nfl_adp._POS:
+            continue
+        if (p.get("team") or "") in teams or nfl_adp._norm(p.get("full_name") or "") in names:
+            kept[pid] = {k: p.get(k) for k in _ROSTER_FIELDS}
+    out = {"meta": {"captured_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    "source": nfl_adp._URL, "season": season, "week": week,
+                    "draft_groups": [int(d) for d in dgs], "teams": sorted(teams),
+                    "records": len(kept), "fields": list(_ROSTER_FIELDS),
+                    "why": ("the depth-chart gate is an input to the legal universe; unpinned, it "
+                            "moved between two arms of the football A/B on 2026-09-18")},
+           "players": kept}
+    path = roster_path(feed_dir, season, week)
+    with open(path, "w") as fh:
+        json.dump(out, fh, indent=1, sort_keys=True)
+    log(f"[roster] {len(kept)} Sleeper records for {sorted(teams)} -> {os.path.relpath(path, ROOT)} "
+        f"sha256 {hashlib.sha256(open(path, 'rb').read()).hexdigest()[:12]}")
+    return out
 
 
 def slate_and_contest(dg, contest_id=None):
@@ -148,3 +232,12 @@ def grid_for(contest):
                         float(contest.get("entry_fee") or 1.0),
                         int(contest.get("places_paid") or max(1, C // 5)))
     return grid, C
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:]
+    if a and a[0] == "capture-roster":
+        capture_roster(os.path.join(ROOT, "research", "data", "feeds"),
+                       tuple(int(x) for x in a[1:]) or PINNED_DGS)
+    else:
+        print("usage: python3 -m research.sd_board capture-roster [dg ...]")
