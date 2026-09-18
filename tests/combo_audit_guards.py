@@ -16630,6 +16630,159 @@ ck("the DST-dependence report states the direction, the served model's value, an
    and "in a direction that is unmeasured" not in _s5repw
    and "So the answer is the second branch" in _s5repw)
 
+
+# ---- 2026-09-18 football A/B: the fence as behaviour --------------------------
+# The first run of research/sd_model_ab built one DEN @ KC arm on 24 players
+# and 777,056 legal lineups and the other three on 23 and 583,565: the
+# depth-chart gate (nfl_dfs._apply_depth -> nfl_adp.consensus) read Sleeper's
+# LIVE roster in every research process, Marvin Mims Jr. was listed Out between
+# two arms eight minutes apart, and nothing refused. "Same pinned inputs" was a
+# sentence. These pin the repair by behaviour: the roster is a file, feeds()
+# refuses without it and reads nothing live with it, and the A/B refuses to
+# compare arms that did not build on the same universe.
+import shutil as _sh19
+import tempfile as _tmp19
+import time as _time19
+import nfl_adp as _adp19
+import nfl_dfs_sim as _S19
+import racing as _rac19
+from research import sd_board as _sdb19
+
+_feeds19 = _os.path.join(_root, "research", "data", "feeds")
+_roster19 = _sdb19.roster_path(_feeds19)
+_rost19 = _json18.load(open(_roster19)) if _os.path.exists(_roster19) else {}
+ck("the Sleeper roster the depth-chart gate consults is a pinned file beside the projection feeds, carrying its capture time, its source and the fields consensus() reads, with the record count it claims",
+   bool(_rost19) and bool(_rost19.get("meta", {}).get("captured_utc"))
+   and _rost19["meta"].get("source") == _adp19._URL
+   and set(_rost19["meta"].get("fields") or []) >= {"position", "full_name", "team", "status", "injury_status",
+                                                     "depth_chart_order", "active"}
+   and _rost19["meta"].get("records") == len(_rost19.get("players") or {}) > 50
+   and set(_rost19["meta"].get("teams") or []) == {"DEN", "KC", "DAL", "NYG"})
+
+_tmpd19 = _tmp19.mkdtemp(prefix="guard-feeds-")
+for _f19 in ("proj_2026_1.json", "proj_2026_1_def.json", "proj_2026_1_k.json"):
+    with open(_os.path.join(_tmpd19, _f19), "w") as _fh:
+        _fh.write("[]")
+_live19, _get19 = _adp19._fetch_players, _S19._get      # restored below: the suite shares this process
+_calls19 = []
+def _leak19():
+    _calls19.append(1)
+    return {"9": {"position": "QB", "full_name": "Live Leak", "team": "ZZZ", "status": "Active",
+                  "depth_chart_order": 1, "active": True}}
+_adp19._fetch_players = _leak19
+try:
+    try:
+        _sdb19.feeds(_tmpd19)
+        _raised19 = False
+    except FileNotFoundError:
+        _raised19 = True
+    ck("sd_board.feeds refuses to run without the roster capture, before anything is fetched -- a study cannot fall back to the live depth chart silently",
+       _raised19 and not _calls19)
+    with open(_os.path.join(_tmpd19, "players_2026_1.json"), "w") as _fh:
+        _json18.dump({"meta": {"records": 1},
+                      "players": {"1": {"position": "WR", "full_name": "Fence Test", "search_rank": 5,
+                                        "injury_status": None, "team": "ZZZ", "years_exp": 1, "status": "Active",
+                                        "depth_chart_position": "LWR", "depth_chart_order": 1, "active": True}}}, _fh)
+    # a live copy already cached in this process must not survive the pin
+    _rac19._form_cache[("nfl_consensus",)] = (_time19.time(), {"live leak": {"team": "ZZZ", "depth": 1}}, 43200)
+    _sdb19.feeds(_tmpd19)
+    _recs19 = _adp19.consensus()
+    ck("with the capture present, consensus() IS the capture: the in-process live copy is evicted, the live fetch is never called, and the captured player is the only record the depth-chart gate can see",
+       list(_recs19) == ["fence test"] and _recs19["fence test"]["team"] == "ZZZ"
+       and _recs19["fence test"]["depth"] == 1 and not _calls19, str(_recs19)[:120])
+finally:
+    _adp19._fetch_players, _S19._get = _live19, _get19
+    _rac19._form_cache.pop(("nfl_consensus",), None)
+    _sh19.rmtree(_tmpd19, ignore_errors=True)
+
+if _dt14.available():
+    from research import sd_model_ab as _mab19
+    _u19 = {"players": 23, "legal_lineups": 583565, "enterable": 23820, "field_beta": 0.4426, "universe_sha": "abc"}
+    try:
+        _mab19.universe_fence({"discrete": dict(_u19, players=24, legal_lineups=777056, universe_sha="xyz"),
+                               "discrete_b": _u19, "constrained": _u19, "constrained_b": _u19})
+        _fence19 = False
+    except SystemExit as _e:
+        _fence19 = "777056" in str(_e) and "583565" in str(_e)
+    ck("the A/B refuses to compare arms that did not build on the same universe, and the refusal names both universes -- the 24-versus-23-player DEN board of the first run could not have been written",
+       _fence19 and _mab19.universe_fence({m: dict(_u19) for m in _mab19.ARMS}) == _u19)
+    ck("the fence compares every quantity the first run showed can drift -- players, legal lineups, enterable set, field beta and the board fingerprint -- and run_all applies it before any comparison is written",
+       set(_mab19.UNIVERSE_KEYS) == {"players", "legal_lineups", "enterable", "field_beta", "universe_sha"}
+       and "universe_fence(got)" in _insp18.getsource(_mab19.run_all)
+       and _insp18.getsource(_mab19.run_all).index("universe_fence(got)") < _insp18.getsource(_mab19.run_all).index("compare_arms("))
+    ck("the roster is named among the fences the artifact carries, and the cross-side 'opp offense' moment resolves to the side aggregate in the table itself, so no post-hoc rebuild is needed",
+       any("pinned Sleeper roster" in f for f in _mab19.FENCES)
+       and 'if key == "offense"' in _insp18.getsource(_mab19.correlation_table))
+
+
+# ---- 2026-09-18 football A/B: the artifact, pinned as the numbers it holds ------
+# research/data/sd_model_ab.json, run under the roster pin. Each pin names the
+# quantity it pins (the lesson of 84.156 / 96.758: a guard pins a number, only a
+# reader pins its meaning), and the fence is recomputed from the arms rather
+# than read back from the artifact's own summary of itself.
+import hashlib as _hashlib19
+_mabd = _json18.load(open(_os.path.join(_root, "research", "data", "sd_model_ab.json")))
+_mabB = _mabd["boards"]
+_mabK = ("players", "legal_lineups", "enterable", "field_beta", "universe_sha")
+ck("the football A/B artifact is provenance-clean, and every arm of both boards carries the SAME roster capture as the file on disk (sha256 of the file, not a name)",
+   _mabd["meta"]["provenance"]["dirty"] is False
+   and _mabd["meta"]["inputs"]["roster"]["sha256"] == _hashlib19.sha256(open(_roster19, "rb").read()).hexdigest()
+   and all(a["roster"]["sha256"] == _mabd["meta"]["inputs"]["roster"]["sha256"]
+           for b in _mabB.values() for a in b["arms"].values())
+   and set(_mabB) == {"153086", "153085"} and all(set(b["arms"]) == set(_mab19.ARMS) if _dt14.available() else len(b["arms"]) == 4
+                                                  for b in _mabB.values()))
+ck("every board's four arms built on ONE universe -- recomputed from the arms, not read from the fence's own summary -- and the pinned DEN board is the 23-player one (583,565 legal lineups), DAL the 24-player one (779,329)",
+   all(len({tuple(a.get(k) for k in _mabK) for a in b["arms"].values()}) == 1 for b in _mabB.values())
+   and all(b["universe"] == dict(zip(_mabK, (b["arms"]["discrete"].get(k) for k in _mabK))) for b in _mabB.values())
+   and (_mabB["153086"]["universe"]["players"], _mabB["153086"]["universe"]["legal_lineups"]) == (23, 583565)
+   and (_mabB["153085"]["universe"]["players"], _mabB["153085"]["universe"]["legal_lineups"]) == (24, 779329),
+   str({dg: b["universe"] for dg, b in _mabB.items()}))
+_mabW = {dg: b["delta_model"]["correlations"]["within_team"] for dg, b in _mabB.items()}
+_mabX = {dg: b["delta_model"]["correlations"]["cross_side"] for dg, b in _mabB.items()}
+ck("the swap did what the blind validation said: within-team moments move by > 0.25 on both boards against Monte Carlo floors under 0.01; served WR1/WR2 sits above 0.5 and constrained's within 0.02 of zero",
+   all(w["mean_abs_delta"] > 0.25 for w in _mabW.values())
+   and all(b["floor_discrete"]["correlations"]["within_team"]["mean_abs_delta"] < 0.01
+           and b["floor_constrained"]["correlations"]["within_team"]["mean_abs_delta"] < 0.01 for b in _mabB.values())
+   and all(w["pairs"]["pair WR1/WR2"]["a"] > 0.5 and abs(w["pairs"]["pair WR1/WR2"]["b"]) < 0.02 for w in _mabW.values()))
+ck("and the cross-side half moved too, in the direction the validation calls constrained's KNOWN deficiency -- team offense/opp offense falls from above 0.25 to under 0.1 on both boards -- so nothing here can be read as constrained being right",
+   all(x["mean_abs_delta"] > 0.1 and x["pairs"]["pair team offense/opp offense"]["a"] > 0.25
+       and x["pairs"]["pair team offense/opp offense"]["b"] < 0.1 for x in _mabX.values())
+   and all(b["floor_discrete"]["correlations"]["cross_side"]["mean_abs_delta"] < 0.01 for b in _mabB.values()))
+ck("the portfolio is replaced by the model swap and kept by a reseed: overlap with served <= 3 of 20 under constrained on both boards, against reseed floors >= 14",
+   all(b["delta_model"]["portfolio_overlap"] <= 3 and b["floor_discrete"]["portfolio_overlap"] >= 14 for b in _mabB.values()))
+_mabS = {dg: b["delta_model"]["portfolio_structures"] for dg, b in _mabB.items()}
+ck("the structure mix is pinned as the counts the report states (5-1/4-2/3-3): DEN served 10/7/3 -> constrained 9/3/8 with the reseed floor 10/6/4, so DEN's five-one did not move beyond the floor; DAL 9/7/4 -> 5/7/8 with the floor 7/7/6",
+   _mabS["153086"]["discrete"] == {"5-1": 10, "4-2": 7, "3-3": 3} and _mabS["153086"]["constrained"] == {"5-1": 9, "4-2": 3, "3-3": 8}
+   and _mabB["153086"]["floor_discrete"]["portfolio_structures"]["discrete_b"] == {"5-1": 10, "4-2": 6, "3-3": 4}
+   and _mabS["153085"]["discrete"] == {"5-1": 9, "4-2": 7, "3-3": 4} and _mabS["153085"]["constrained"] == {"5-1": 5, "4-2": 7, "3-3": 8}
+   and _mabB["153085"]["floor_discrete"]["portfolio_structures"]["discrete_b"] == {"5-1": 7, "4-2": 7, "3-3": 6},
+   str(_mabS))
+ck("the top-20 list parts the boards: DEN stays five-one under both models (>= 18 of 20) while DAL's five-one count halves (13 -> 7) with the ordering uncorrelated (Spearman < 0 against a reseed floor > 0.8)",
+   _mabB["153086"]["delta_model"]["top20_structures"]["constrained"].get("5-1", 0) >= 18
+   and _mabB["153086"]["delta_model"]["top20_structures"]["discrete"].get("5-1", 0) >= 18
+   and _mabB["153085"]["delta_model"]["top20_structures"]["discrete"]["5-1"] == 13
+   and _mabB["153085"]["delta_model"]["top20_structures"]["constrained"]["5-1"] == 7
+   and _mabB["153085"]["delta_model"]["top20_rank_spearman"] < 0
+   and _mabB["153085"]["floor_discrete"]["top20_rank_spearman"] > 0.8)
+ck("every Top-q number the board serves is model-conditional by about half: the best lineup's Top-1% falls 40-55% under the swap and moves under 10% under a reseed, and the portfolio's in-sample coverage falls >= 10 points on both boards",
+   all(0.40 <= 1 - b["arms"]["constrained"]["best"]["top1_pct"] / b["arms"]["discrete"]["best"]["top1_pct"] <= 0.55 for b in _mabB.values())
+   and all(abs(1 - b["arms"]["discrete_b"]["best"]["top1_pct"] / b["arms"]["discrete"]["best"]["top1_pct"]) < 0.10 for b in _mabB.values())
+   and all(b["arms"]["discrete"]["portfolio"]["p_any_top1_pct"] - b["arms"]["constrained"]["portfolio"]["p_any_top1_pct"] >= 10
+           for b in _mabB.values()))
+ck("the artifact carries its fences verbatim -- the roster pin, the not-a-promotion-test line, the interpretation split in three parts -- and the money gate is shut",
+   any("pinned Sleeper roster" in f for f in _mabd["meta"]["fences"])
+   and "this is not a promotion test" in _mabd["meta"]["fences"]
+   and set(_mabd["meta"]["interpretation_split"]) == {"within_team", "cross_side", "dst"}
+   and _mabd["meta"]["money_gate"].startswith("CLOSED"))
+_mab_rep = " ".join(open(_os.path.join(_root, "research", "reports", "sd_model_ab.md")).read().split())
+ck("the A/B report records both corrections to the record -- the top-20/portfolio conflation and the first run's broken fence, by name and by both lineup counts -- states the fence, the split reading, and the structure counts the artifact holds",
+   "not a promotion test" in _mab_rep and "The first run broke its own fence" in _mab_rep
+   and "Marvin Mims Jr." in _mab_rep and "583,565" in _mab_rep and "777,056" in _mab_rep
+   and "top-20 list by Top-1% rank" in _mab_rep
+   and "10 / 7 / 3" in _mab_rep and "9 / 3 / 8" in _mab_rep and "5 / 7 / 8" in _mab_rep and "7 / 7 / 6" in _mab_rep
+   and "Constrained is not promoted" in _mab_rep and "No money conclusion" in _mab_rep
+   and "S6 plumbing stays blocked" in _mab_rep and "is **not** shipped" in _mab_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
