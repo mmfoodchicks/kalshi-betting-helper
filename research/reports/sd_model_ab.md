@@ -4,9 +4,13 @@
 four arms each, provenance clean at `dc34b17` (`research/data/sd_model_ab.json`).**
 The question was narrow: *does removing legacy's known same-team
 over-correlation materially change the lineups and the portfolio Showdown
-recommends?* The answer is **yes for the lineups, modestly for the structure
-mix, and by 41–54% for every modelled Top-q number the board serves** — with
-two corrections to the record, entered first.
+recommends?* The answer, in the words the review settled on: **specific
+recommended lineups are highly model-sensitive; team-split structure is
+model-sensitive but substantially more stable, with strong board
+heterogeneity; and every modelled Top-q number the board serves moves by
+41–54%** — with two corrections to the record, entered first, and one
+limitation stated before any number: this is a whole-model swap, not a
+covariance experiment (section 1.1).
 
 ## 0. Two corrections to the record, before the result
 
@@ -75,6 +79,32 @@ served model on these boards reproduces the validated legacy figures to a few
 hundredths; constrained reproduces its own. The instrument measures what it
 claims to.
 
+### 1.1 What else changed: this is a whole-model swap, not one parameter
+
+The two arms differ in more than same-team dependence. Constrained-v1 also
+changes opposing-side dependence (visibly, above), the reconciliation of the
+passing line, the touchdown allocation and the per-player marginal
+distributions. The last of these is measured here, from the same pinned pools
+the arms ran on, because it is the one a reader could mistake for a
+covariance effect:
+
+| Per-player marginals, non-field-only players | DEN @ KC (20 players) | DAL @ NYG (20 players) |
+|---|---|---|
+| Projection the public field is built from | identical in every case (20/20) | identical (20/20) |
+| Simulated mean, mean absolute change | 0.18 DK points (max 0.93) | 0.22 (max 1.34) |
+| Simulated standard deviation, constrained / served | median **1.47×** (range 0.93–1.78) | median **1.42×** (0.94–2.01) |
+
+Quarterbacks and kickers keep their spread (ratios 0.93–0.98); nearly every
+running back, receiver and tight end is **40–100% wider** under constrained,
+with p99 tails 20–70% higher (Emmett Johnson 10.4 → 16.8; Emari Demercado
+16.5 → 28.0). So the swap moved the marginals as well as the covariance, and
+the field did not move at all. Therefore this study supports *"Showdown
+outputs are highly sensitive to the football model"* and does **not** support
+*"removing the +0.5 teammate correlation caused the Top-1 probability to
+halve"*. The correlation table shows what changed; it does not say which
+change moved which lineup. Isolating the covariance would need a legacy
+model with only its dependence altered, which does not exist.
+
 ## 2. The portfolio
 
 | | DEN served | DEN floor | DEN constrained | DAL served | DAL floor | DAL constrained |
@@ -87,9 +117,9 @@ claims to.
 | Lead captain | Nix 8 | Nix 9 | Nix 5 | Dart 12 | Dart 12 | Dart 9 |
 | P(≥1 of 20 in Top 1%), in-sample | 62.3% | 62.6% | **50.1%** | 74.3% | 75.6% | **58.5%** |
 
-**The lineups are replaced.** Reseeding keeps 14–15 of the 20 portfolio
-entries; swapping the football model keeps 2–3. Whatever the portfolio is
-optimising, its specific answer is a property of the football dependence
+**The specific lineups are highly model-sensitive.** Reseeding keeps 14–15 of
+the 20 portfolio entries; swapping the football model keeps 2–3. Whatever the
+portfolio is optimising, its specific answer is a property of the football
 model, not of the slate.
 
 **The structure mix moves modestly, toward 3-3, and five-one does not
@@ -126,22 +156,32 @@ obvious mechanism for the top of the list and the other confirms it.
 | Top 1% | 7.99% | 8.09% | **4.75%** | 11.76% | 12.70% | **5.47%** |
 | Top 0.1% | 2.13% | 1.98% | **0.89%** | 1.83% | 2.02% | **0.95%** |
 
-The Top-1% figure the board serves for its best lineup falls by **41% and 54%**
+**Every figure in this table is in-sample**: the shortlist, the greedy cover
+and the number itself read the same worlds, on each arm's own worlds. The
+Top-1% figure the board serves for its best lineup falls by **41% and 54%**
 when the football model changes; reseeding moves it by 1–8%. The portfolio's
-coverage figure falls by 12 and 16 points. Under the fence these are
-sensitivities, not corrections: constrained under-couples the two sides of the
-game (its team-offense/opp-offense on these boards is 0.07–0.08 against 0.26
-observed), so its lower numbers are not "right" either. What is established is
-that every Top-q number Showdown serves is conditional on a covariance
-structure the blind validation puts 0.5 away from the season, and moves by
-about half when that structure is corrected.
+coverage figure falls by 12 and 16 points. These are **model-output
+sensitivity diagnostics, not estimates of degradation in real performance**:
+under the fence constrained under-couples the two sides of the game (its
+team-offense/opp-offense on these boards is 0.07–0.08 against 0.26 observed)
+and widens every skill player's marginal (section 1.1), so its lower numbers
+are not "right" either. What is established is that every Top-q number
+Showdown serves is conditional on the football model to about half its
+value. A future version can split each model's worlds — select the
+portfolio on one half, grade it on the other, and reverse — but the reseed
+control already makes the sensitivity result stand, and S7 is not held for
+it.
 
 ## 5. What this does and does not license
 
 - **Served Showdown strategy stays explicitly model-limited.** The portfolio
   entries, the ranking order on DAL @ NYG, and the level of every Top-q column
-  are model-determined to a degree far above the Monte Carlo floor. That was
+  are model-sensitive to a degree far above the Monte Carlo floor. That was
   the review's condition for "yes", and it is met.
+- **The difference is not attributed to teammate covariance.** The arms
+  differ in marginals, cross-side dependence and reconciliation as well
+  (section 1.1); the big percentages are not a causal teammate-correlation
+  experiment and must not be quoted as one.
 - **Constrained is not promoted and nothing here argues for it.** Its
   within-team half has blind support; its cross-side half is known deficient
   and is visibly deficient in the table above. A portfolio it prefers is not
@@ -169,12 +209,16 @@ for that draft group changed three times, and every arm here saw the same one.
 The DEN @ KC pinned universe holds 583,565 against the live A/B's 777,056 for
 the reason in section 0.2: Sleeper's roster, not DraftKings' pool.
 
-One production finding fell out of the fence break and is **not** shipped
-here, because it is a production change nobody has agreed to yet:
-`nfl_adp.consensus()` answers a failed Sleeper fetch with an empty roster, and
-`racing._cached` keeps that empty answer for twelve hours, so one truncated
-blob switches the depth-chart gate off for every board a worker builds until
-then, with no ledger row (the `NFLD-depth` note fires only if `consensus()`
-raises, which it never does). Verified by behaviour: with the fetch raising,
-two calls make one attempt, the cache holds `{}` at 43,200 s, and a
-practice-squad name passes the gate. Recorded as task #5 for agreement.
+One production finding fell out of the fence break, was reported here as
+**not shipped** pending agreement, and was then approved and fixed the next
+day (`338802c`): `nfl_adp.consensus()` answered a failed Sleeper fetch with an
+empty roster and `racing._cached` kept that answer for twelve hours, so one
+truncated blob switched the depth-chart gate off for every board a worker
+built until then, with no ledger row. Verified by behaviour before the fix
+(with the fetch raising, two calls made one attempt, the cache held `{}` at
+43,200 s, and a practice-squad name passed the gate). The contract now in
+force: a failure is never an empty roster; a failed result never enters the
+success cache and is retried after five minutes; a build runs on a
+last-known-good copy up to 36 hours old, stamped on the board as
+`roster_source`, or refuses with an `NFLD-roster` ledger row; research stays
+pinned to the captured file.

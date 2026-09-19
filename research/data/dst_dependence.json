@@ -84,7 +84,8 @@
   "not_measurable_here": [
    "sacks (no column)",
    "points allowed (no column)",
-   "the DST score itself (no defense rows); needs the team-week source"
+   "the DST score itself (no defense rows); needs the team-week source",
+   "captain-role DK vs the OPPOSING DST's DK by role -- the relationship DST-OPP constrains directly -- for the same reason: no DST score here"
   ],
   "qb1": {
    "giveaways_vs_dk": {
@@ -123,6 +124,44 @@
      -0.1123
     ],
     "x": "QB1 DraftKings points",
+    "y": "QB1 giveaways (INT + lost FUM)"
+   },
+   "giveaways_vs_dk_penalty_removed": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 542,
+      "x_mean": 8.75,
+      "y_mean": 0.9797
+     },
+     "Q2": {
+      "n": 542,
+      "x_mean": 14.92,
+      "y_mean": 0.9317
+     },
+     "Q3": {
+      "n": 545,
+      "x_mean": 20.33,
+      "y_mean": 0.8899
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 29.18,
+      "y_mean": 0.8566
+     }
+    },
+    "n": 2173,
+    "pearson": -0.0362,
+    "pearson_ci95": [
+     -0.0758,
+     0.0037
+    ],
+    "slope_per_unit_x": -0.00434,
+    "spearman": -0.0408,
+    "spearman_ci95": [
+     -0.0824,
+     0.0007
+    ],
+    "x": "QB1 DraftKings points with the -1 per giveaway added back",
     "y": "QB1 giveaways (INT + lost FUM)"
    },
    "ints_vs_attempts": {
@@ -285,6 +324,44 @@
     "x": "team offensive DK points",
     "y": "team giveaways (INT + lost FUM)"
    },
+   "giveaways_vs_offense_dk_penalty_removed": {
+    "by_quartile_of_x": {
+     "Q1 low": {
+      "n": 543,
+      "x_mean": 57.76,
+      "y_mean": 1.372
+     },
+     "Q2": {
+      "n": 543,
+      "x_mean": 78.22,
+      "y_mean": 1.2762
+     },
+     "Q3": {
+      "n": 543,
+      "x_mean": 93.98,
+      "y_mean": 1.1344
+     },
+     "Q4 high": {
+      "n": 544,
+      "x_mean": 120.04,
+      "y_mean": 1.1581
+     }
+    },
+    "n": 2173,
+    "pearson": -0.067,
+    "pearson_ci95": [
+     -0.1081,
+     -0.0251
+    ],
+    "slope_per_unit_x": -0.00312,
+    "spearman": -0.0768,
+    "spearman_ci95": [
+     -0.1197,
+     -0.0324
+    ],
+    "x": "team offensive DK points with the -1 per giveaway added back",
+    "y": "team giveaways (INT + lost FUM)"
+   },
    "giveaways_vs_pass_attempts": {
     "by_quartile_of_x": {
      "Q1 low": {
@@ -405,13 +482,13 @@
   "bootstrap": 2000,
   "descriptive_only": "2025 was the Stage 2E holdout; nothing here is fitted",
   "provenance": {
-   "commit": "b5cf744",
+   "commit": "338802c",
    "data_split": null,
    "dirty": false,
    "model": "history vs legacy-latent-discrete",
    "seed": 20260918,
    "source_files": 38,
-   "source_sha": "03174060eb38ef61c27ea3790e63e3494d18e2fa0390fc22fc9eed42a4de5c1d"
+   "source_sha": "edb5b767b40622d02bb214adbf10c318bbdd5b97e663abc846b2e78d8b61e01d"
   },
   "question": "does an offense that produces more in a game give the ball away more or less in that same game -- the covariance a captain-plus-opposing-defense build turns on",
   "seed": 20260918,
@@ -419,6 +496,26 @@
   "stage": "the DST dependence DST-OPP uses: history vs the served simulator"
  },
  "reading": {
+  "penalty_removed": {
+   "history_qb1": -0.0362,
+   "history_qb1_ci95": [
+    -0.0758,
+    0.0037
+   ],
+   "history_team": -0.067,
+   "history_team_ci95": [
+    -0.1081,
+    -0.0251
+   ],
+   "served_qb1": {
+    "DEN": -0.0037,
+    "KC": -0.0157
+   },
+   "served_team": {
+    "DEN": -0.0049,
+    "KC": -0.0044
+   }
+  },
   "qb1_ints_vs_attempts": {
    "ci95": [
     0.1582,
@@ -439,7 +536,7 @@
    "pearson": -0.1131,
    "per_10_dk_points": -0.0524
   },
-  "what_it_means_for_dst_opp": "if real giveaways RISE with volume/production, the opposing defense scores more in exactly the worlds the captain does, so captain-plus-opposing-DST builds are UNDER-valued by a simulator that draws giveaways independently, and DST-OPP's +0.047 is if anything low; if giveaways FALL with production, those builds are OVER-valued and the rule is vindicated. The sign and size are above; the DST score itself (sacks, points allowed) is not measurable from this table."
+  "what_it_means_for_dst_opp": "the served simulator shares each interception and lost fumble between the quarterback (-1) and the opposing defense (+2), so it does NOT have zero captain/DST covariance from turnovers; what it omits is the football-state dependence of the turnover process. The penalty-removed pair above is the like-for-like measure of that omission. If history's penalty-removed dependence is negative and the simulator's is zero, the simulator understates part of the real anti-correlation between offensive production and opposing-defense scoring, which makes the S5 DST-OPP benefit suspect in the direction of over-valuation; it does not say how much of the +0.047 would survive a corrected joint model. The DST score itself (sacks, points allowed) is not measurable from this table."
  },
  "served_model": {
   "by_team": {
@@ -448,14 +545,16 @@
     "qb1_giveaways_vs_dk": -0.1132,
     "qb1_giveaways_vs_dk_with_penalty_removed": -0.0037,
     "qb1_ints_vs_pass_yards": -0.0106,
-    "team_giveaways_vs_offense_dk": -0.0384
+    "team_giveaways_vs_offense_dk": -0.0384,
+    "team_giveaways_vs_offense_dk_with_penalty_removed": -0.0049
    },
    "KC": {
     "qb1": "Patrick Mahomes",
     "qb1_giveaways_vs_dk": -0.1407,
     "qb1_giveaways_vs_dk_with_penalty_removed": -0.0157,
     "qb1_ints_vs_pass_yards": 0.0021,
-    "team_giveaways_vs_offense_dk": -0.0437
+    "team_giveaways_vs_offense_dk": -0.0437,
+    "team_giveaways_vs_offense_dk_with_penalty_removed": -0.0044
    }
   },
   "game": "DEN @ KC (pinned feeds)",

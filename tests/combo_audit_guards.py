@@ -10257,9 +10257,11 @@ _recs59 = {
     "kimani vidal": {"status": "Active", "active": True, "depth": 3, "injury": None},
     "will dissly": {"status": "Active", "active": True, "depth": 1, "injury": "Out"},
     "cut guy": {"status": "Inactive", "active": False, "depth": 1, "injury": None}}
-_oc59 = _na59.consensus
+_oc59 = _na59.roster            # the gate's seam since 2026-09-19: roster(), never consensus()
+_olr59 = dict(_nd59._LAST_ROSTER)
 try:
-    _na59.consensus = lambda: _recs59
+    _na59.roster = lambda now=None: (_recs59, {"source": "stub", "records": len(_recs59), "fetched_utc": None,
+                                               "age_s": 0, "error": None})
     _pool59 = [
         {"name": "Justin Herbert", "pos": "QB", "team": "LAC", "proj": 19.0},
         {"name": "Ladd McConkey", "pos": "WR", "team": "LAC", "proj": 13.3},
@@ -10295,7 +10297,9 @@ try:
     ck("August keeps its measured inverted-usage pool: the gate is regular season only",
        len(_pre59) == len(_pool59) and not _pex59)
 finally:
-    _na59.consensus = _oc59
+    _na59.roster = _oc59
+    _nd59._LAST_ROSTER.clear()
+    _nd59._LAST_ROSTER.update(_olr59)
 _bsrc59 = _insp.getsource(_nd59.build)
 ck("in season an unprojected player is left out, never handed DK's average; "
    "the responses name the excluded and the rows carry depth",
@@ -10305,7 +10309,7 @@ ck("in season an unprojected player is left out, never handed DK's average; "
    and '"depth": p.get("depth")' in _bsrc59
    and "ents, _dx = _apply_depth(ents, preseason)" in _insp.getsource(_nd59))
 ck("the roster record carries the depth chart, and NFL's DK average is read",
-   '"depth": p.get("depth_chart_order")' in _insp.getsource(_na59.consensus)
+   '"depth": p.get("depth_chart_order")' in _insp.getsource(_na59._build)
    and "_AVG_PPG_ATTR_NFL = 90" in open(_os.path.join(_root, "dk.py")).read())
 _js59 = open(_os.path.join(_root, "static", "app.js")).read()
 ck("the lineup shows each player's depth tag and who the gate left out",
@@ -16184,7 +16188,7 @@ ck("and the proposed field-free arm selects on the SELECTION fold, never on held
 # absence of the old sentence as a live claim.
 ck("and it names the SPECIFIC dependence the flagged rule sits on -- the captain's own offense producing while that same offense gives the ball away, which the served simulator draws as independent -- rather than a generic 'cross-side weakness'",
    "It sits on a dependence the served model does not represent" in _s5repw
-   and "Turnovers are independent of offensive output in every simulated world" in _s5repw
+   and "The turnover process is independent of offensive output in every simulated world" in _s5repw
    and 'ints = _pois(m["int"])' in _s5repw
    and "0.267 within a team and 0.105 across sides" in _s5repw
    and "Cross-side under-coupling is the *constrained* research model's failure" in _s5repw
@@ -16620,15 +16624,36 @@ ck("and the artifact is provenance-clean and reconstructible: stamped at a commi
    _dstd["meta"]["provenance"]["dirty"] is False
    and _dstd["meta"]["provenance"]["seed"] is not None)
 
+# 2026-09-19, the reviewer's like-for-like point: history's DK score carries the
+# same -1 per giveaway the simulator's does, so the raw figures compare a
+# scoring identity with a scoring identity. Only the penalty-removed pair
+# isolates the football dependence, and it shrinks the claim: direction at the
+# team level, nothing at the quarterback level, no magnitude for +0.047.
+_dst_pr = _dstd["reading"]["penalty_removed"]
+ck("like for like -- DraftKings' -1 per giveaway added back to BOTH sides -- history's team-level dependence stays negative with its interval clear of zero and smaller than the raw figure, its QB1-level dependence has an interval through zero, and the served model carries none at either level",
+   _dst_pr["history_team"] < -0.03 and _dst_pr["history_team_ci95"][1] < 0
+   and _dst_pr["history_team"] > _dst_team["pearson"]
+   and _dst_pr["history_qb1_ci95"][0] < 0 < _dst_pr["history_qb1_ci95"][1]
+   and len(_dst_pr["served_team"]) == 2 and all(abs(v) < 0.02 for v in _dst_pr["served_team"].values())
+   and all(abs(v) < 0.03 for v in _dst_pr["served_qb1"].values()),
+   str(_dst_pr))
 _dst_rep = " ".join(open(_os.path.join(_root, "research", "reports", "dst_dependence.md")).read().split())
-ck("the DST-dependence report states the direction, the served model's value, and the consequence -- the rule is vindicated and +0.047 is an over-estimate -- and the S5 report's reason 2 and S9 target carry the same measured figures",
+ck("the DST-dependence report and the S5 report's reason 2 and S9 target carry the like-for-like figures and the reviewer's wording -- 'likely understates part of', 'suspect in the direction of over-valuation', 'does not identify how much of the +0.047' -- and the raw quartile run beside its penalty-removed run; 'over-estimate' survives only as a retraction",
    "**−0.113**" in _dst_rep and "[−0.154, −0.071]" in _dst_rep
-   and "The model over-values those builds" in _dst_rep
-   and "the rule is vindicated by history" in _dst_rep
-   and "**r = −0.113**, 95% CI [−0.154, −0.071]" in _s5repw
-   and "the +0.047 measured for removing the rule is on this evidence an over-estimate" in _s5repw
-   and "in a direction that is unmeasured" not in _s5repw
-   and "So the answer is the second branch" in _s5repw)
+   and "**−0.067**" in _dst_rep and "[−0.108, −0.025]" in _dst_rep and "[−0.076, +0.004]" in _dst_rep
+   and "0.98 → 0.93 → 0.89 → 0.86" in _dst_rep
+   and "likely understates part of the real anti-correlation" in _dst_rep
+   and "suspect in the direction of over-valuation" in _dst_rep
+   and "does **not** identify how much of the +0.047 would survive" in _dst_rep
+   and "does not have zero captain/DST covariance from turnovers" in _dst_rep
+   and "The model over-values those builds" not in _dst_rep
+   and "**r = −0.067**, CI [−0.108, −0.025]" in _s5repw
+   and "suspect in the direction of over-valuation" in _s5repw
+   and "does not identify how much of the +0.047 would survive" in _s5repw
+   and "So the answer is the second branch in direction only" in _s5repw
+   and "is on this evidence an over-estimate" not in _s5repw
+   and "the rule is vindicated" not in _s5repw
+   and "in a direction that is unmeasured" not in _s5repw)
 
 
 # ---- 2026-09-18 football A/B: the fence as behaviour --------------------------
@@ -16645,7 +16670,6 @@ import tempfile as _tmp19
 import time as _time19
 import nfl_adp as _adp19
 import nfl_dfs_sim as _S19
-import racing as _rac19
 from research import sd_board as _sdb19
 
 _feeds19 = _os.path.join(_root, "research", "data", "feeds")
@@ -16664,6 +16688,7 @@ for _f19 in ("proj_2026_1.json", "proj_2026_1_def.json", "proj_2026_1_k.json"):
     with open(_os.path.join(_tmpd19, _f19), "w") as _fh:
         _fh.write("[]")
 _live19, _get19 = _adp19._fetch_players, _S19._get      # restored below: the suite shares this process
+_pin19, _rost19_mem = _adp19._PINNED, dict(_adp19._roster)
 _calls19 = []
 def _leak19():
     _calls19.append(1)
@@ -16683,16 +16708,21 @@ try:
                       "players": {"1": {"position": "WR", "full_name": "Fence Test", "search_rank": 5,
                                         "injury_status": None, "team": "ZZZ", "years_exp": 1, "status": "Active",
                                         "depth_chart_position": "LWR", "depth_chart_order": 1, "active": True}}}, _fh)
-    # a live copy already cached in this process must not survive the pin
-    _rac19._form_cache[("nfl_consensus",)] = (_time19.time(), {"live leak": {"team": "ZZZ", "depth": 1}}, 43200)
+    # a fresh live copy already in this process must not outrank the pin
+    _adp19._roster.update(data={"live leak": {"team": "ZZZ", "depth": 1}}, fetched=_time19.time(),
+                          failed=0.0, error=None, source="live")
     _sdb19.feeds(_tmpd19)
-    _recs19 = _adp19.consensus()
-    ck("with the capture present, consensus() IS the capture: the in-process live copy is evicted, the live fetch is never called, and the captured player is the only record the depth-chart gate can see",
+    _recs19, _st19 = _adp19.roster()
+    ck("with the capture present, roster() IS the capture before any cache or network: the fresh in-process live copy is not consulted, the live fetch is never called, the captured player is the only record the depth-chart gate can see, and the stamp says pinned with the file named",
        list(_recs19) == ["fence test"] and _recs19["fence test"]["team"] == "ZZZ"
-       and _recs19["fence test"]["depth"] == 1 and not _calls19, str(_recs19)[:120])
+       and _recs19["fence test"]["depth"] == 1 and not _calls19
+       and _st19["source"] == "pinned" and _st19["file"].endswith("players_2026_1.json")
+       and _adp19.consensus() is _recs19, str((_recs19, _st19))[:160])
 finally:
     _adp19._fetch_players, _S19._get = _live19, _get19
-    _rac19._form_cache.pop(("nfl_consensus",), None)
+    _adp19._PINNED = _pin19
+    _adp19._roster.clear()
+    _adp19._roster.update(_rost19_mem)
     _sh19.rmtree(_tmpd19, ignore_errors=True)
 
 if _dt14.available():
@@ -16781,7 +16811,131 @@ ck("the A/B report records both corrections to the record -- the top-20/portfoli
    and "top-20 list by Top-1% rank" in _mab_rep
    and "10 / 7 / 3" in _mab_rep and "9 / 3 / 8" in _mab_rep and "5 / 7 / 8" in _mab_rep and "7 / 7 / 6" in _mab_rep
    and "Constrained is not promoted" in _mab_rep and "No money conclusion" in _mab_rep
-   and "S6 plumbing stays blocked" in _mab_rep and "is **not** shipped" in _mab_rep)
+   and "S6 plumbing stays blocked" in _mab_rep
+   and "was then approved and fixed the next" in _mab_rep and "`338802c`" in _mab_rep)
+
+
+# ---- 2026-09-19 the roster contract: a failed fetch is never an empty roster ----
+# Before: consensus() answered a failed or truncated Sleeper fetch with {} and
+# racing._cached stored it for twelve hours, so one bad blob switched the
+# depth-chart gate off for every board the worker built until then, with no
+# ledger row. Approved by the reviewer on 2026-09-19 with a contract; each
+# clause below is a behaviour under a fake clock, never a sentence.
+import nfl_dfs as _nd20
+import errlog as _el20
+import tempfile as _tmp20
+
+class _Clock20:
+    def __init__(self):
+        self.now = 1000.0
+    def time(self):
+        return self.now
+    def __getattr__(self, k):
+        return getattr(_time19, k)
+
+_tmpd20 = _tmp20.mkdtemp(prefix="guard-roster-")
+_env20 = _os.environ.get("VIGIL_SIM_CACHE_DIR")
+_os.environ["VIGIL_SIM_CACHE_DIR"] = _tmpd20
+_clk20 = _Clock20()
+_time20, _fetch20, _pin20, _mem20 = _adp19.time, _adp19._fetch_players, _adp19._PINNED, dict(_adp19._roster)
+_last20 = dict(_nd20._LAST_ROSTER)
+_adp19.time = _clk20
+_adp19._PINNED = None
+_adp19._roster.update(data=None, fetched=0.0, failed=0.0, error=None, source=None)
+_calls20 = []
+def _boom20():
+    _calls20.append("boom")
+    raise RuntimeError("proxy truncated the 12 MB blob")
+_good20 = {"1": {"position": "WR", "full_name": "Fence Test", "search_rank": 5, "injury_status": None,
+                 "team": "ZZZ", "years_exp": 1, "status": "Active", "depth_chart_position": "LWR",
+                 "depth_chart_order": 1, "active": True}}
+def _ok20():
+    _calls20.append("ok")
+    return dict(_good20)
+_wease20 = [{"name": "Theo Wease Jr.", "pos": "WR", "team": "LAC", "proj": 8.6}]
+try:
+    _adp19._fetch_players = _boom20
+    _r1, _s1 = _adp19.roster()
+    _r2, _s2 = _adp19.roster()
+    ck("a failed roster fetch is NOT an empty roster: roster() answers (None, unavailable) with the error stamped, a second call inside the retry window makes no second attempt, and consensus() gives the rank-only callers {}",
+       _r1 is None and _s1["source"] == "unavailable" and "truncated" in (_s1["error"] or "")
+       and _r2 is None and _calls20 == ["boom"] and _adp19.consensus() == {} and _calls20 == ["boom"],
+       str((_s1, _calls20))[:160])
+    try:
+        _nd20._apply_depth(list(_wease20), preseason=False)
+        _refused20 = False
+    except _nd20.RosterUnavailable as _e:
+        _refused20 = _e.state["source"] == "unavailable"
+    ck("with no trustworthy roster the depth-chart gate REFUSES (RosterUnavailable) instead of keeping the practice-squad name, the board stamp reads unavailable, and both failures are ledger rows (ADP-players, NFLD-roster)",
+       _refused20 and _nd20.roster_state()["source"] == "unavailable"
+       and bool(_el20.recent(5, "ADP-players", 1)) and bool(_el20.recent(5, "NFLD-roster", 1)))
+    _clk20.now = 1000.0 + _adp19.ROSTER_RETRY_S + 1
+    _adp19._fetch_players = _ok20
+    _r3, _s3 = _adp19.roster()
+    ck("after the retry window a VALID response is fetched and served live -- not masked by the cached failure -- and written to the shared last-known-good store",
+       bool(_r3) and "fence test" in _r3 and _s3["source"] == "live" and _s3["error"] is None
+       and _calls20 == ["boom", "ok"] and _os.path.exists(_os.path.join(_tmpd20, "roster_lkg.json")),
+       str((_s3, _calls20))[:160])
+    _clk20.now += _adp19.ROSTER_TTL_S - 2
+    _r4, _s4 = _adp19.roster()
+    ck("inside the TTL the copy is served without a fetch",
+       _r4 is _r3 and _calls20 == ["boom", "ok"] and _s4["source"] == "live")
+    _clk20.now += 4
+    _adp19._fetch_players = _boom20
+    _r5, _s5 = _adp19.roster()
+    _kept20, _exc20 = _nd20._apply_depth(list(_wease20), preseason=False)
+    ck("past the TTL with Sleeper down, the last-known-good copy is served, stamped last-known-good with its age and the live error, and the gate stays ON: the practice-squad name is excluded as not on the roster",
+       _r5 is _r3 and _s5["source"] == "last-known-good" and _s5["age_s"] >= _adp19.ROSTER_TTL_S
+       and "truncated" in (_s5["error"] or "") and not _kept20 and _exc20
+       and _exc20[0]["why"].startswith("not on any roster")
+       and _nd20.roster_state()["source"] == "last-known-good", str((_s5, _kept20, _exc20))[:200])
+    _clk20.now = _adp19._roster["fetched"] + _adp19.ROSTER_MAX_AGE_S + 1
+    _adp19._roster["failed"] = 0.0
+    _r6, _s6 = _adp19.roster()
+    ck("past the maximum age the stale copy is refused: (None, unavailable) -- 'stale but available' never becomes 'current'",
+       _r6 is None and _s6["source"] == "unavailable" and _s6["age_s"] > _adp19.ROSTER_MAX_AGE_S)
+    _adp19._roster.update(data=None, fetched=0.0, failed=0.0, error=None, source=None)
+    _clk20.now = 1000.0 + _adp19.ROSTER_RETRY_S + 61
+    _n20 = len(_calls20)
+    _r7, _s7 = _adp19.roster()
+    ck("a cold process (a fresh slate subprocess, a restarted worker) starts from the shared store within the TTL, stamped disk, with no fetch at all",
+       bool(_r7) and "fence test" in _r7 and _s7["source"] == "disk" and len(_calls20) == _n20, str(_s7)[:160])
+    _adp19._roster.update(data=None, fetched=0.0, failed=0.0, error=None, source=None)
+    _os.remove(_os.path.join(_tmpd20, "roster_lkg.json"))
+    _adp19._fetch_players = lambda: {}
+    _r8, _s8 = _adp19.roster()
+    ck("an EMPTY blob is a failed fetch, not an authoritative empty roster",
+       _r8 is None and _s8["source"] == "unavailable" and "no skill-position records" in (_s8["error"] or ""))
+finally:
+    _adp19.time, _adp19._fetch_players, _adp19._PINNED = _time20, _fetch20, _pin20
+    _adp19._roster.clear()
+    _adp19._roster.update(_mem20)
+    _nd20._LAST_ROSTER.clear()
+    _nd20._LAST_ROSTER.update(_last20)
+    if _env20 is None:
+        _os.environ.pop("VIGIL_SIM_CACHE_DIR", None)
+    else:
+        _os.environ["VIGIL_SIM_CACHE_DIR"] = _env20
+    _sh19.rmtree(_tmpd20, ignore_errors=True)
+
+# the four builders convert the refusal into their own shape and stamp the roster
+# source on every board they do build (the two tourney builders return None like
+# TOURN-capacity; the two sheet builders answer {"error", "roster_source"})
+_src20 = {n: _insp18.getsource(f) for n, f in (("build_nfl_showdown", _dt14.build_nfl_showdown),
+                                                ("build_nfl_classic", _dt14.build_nfl_classic),
+                                                ("_build_showdown", _nd20._build_showdown),
+                                                ("build", _nd20.build))}
+ck("every builder that runs the depth-chart gate handles RosterUnavailable (no board with the gate off) and stamps roster_source on the boards it does build",
+   all("RosterUnavailable" in t for t in _src20.values())
+   and all('"roster_source":' in t for t in _src20.values())
+   and "return None" in _src20["build_nfl_showdown"].split("RosterUnavailable")[1][:80]
+   and "return None" in _src20["build_nfl_classic"].split("RosterUnavailable")[1][:80]
+   and '"error"' in _src20["_build_showdown"].split("RosterUnavailable")[1][:200]
+   and '"error"' in _src20["build"].split("RosterUnavailable")[1][:200],
+   str({n: ("RosterUnavailable" in t, '"roster_source":' in t) for n, t in _src20.items()}))
+ck("consensus() no longer routes through racing's cache (the store that kept a failure for twelve hours) and nfl_adp names the three contract constants",
+   "import racing" not in _insp18.getsource(_adp19) and "racing._cached(" not in _insp18.getsource(_adp19)
+   and _adp19.ROSTER_RETRY_S < _adp19.ROSTER_TTL_S < _adp19.ROSTER_MAX_AGE_S)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

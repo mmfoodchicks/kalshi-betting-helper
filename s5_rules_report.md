@@ -641,20 +641,28 @@ argument is now the *attribution* of the gain rather than a contradiction of it.
    that same offense's giveaways, and in the served simulator interceptions and
    fumbles are drawn at their raw mean with no game, quarterback or script
    factor (`nfl_dfs_sim.py`, `ints = _pois(m["int"])`, `fums = _pois(m["fum"])`)
-   and then consumed by the defense's scorer. **Turnovers are independent of
-   offensive output in every simulated world.** The dependence `DST-OPP` needs is
-   not weak in the model; it is absent — and, measured on 2026-09-18
-   (`research/reports/dst_dependence.md`), it runs the way that vindicates the
-   rule: over 2,173 team-weeks from 2022–2025, a side's giveaways fall as its
-   production rises (team giveaways against team offensive DK points
-   **r = −0.113**, 95% CI [−0.154, −0.071]; the lead quarterback's giveaways
-   against his own DK points **r = −0.154**), while the served simulator carries
-   **−0.04** at the team level, all of it DraftKings' −1 per giveaway inside the
-   score and none of it football. In real games the opposing defense scores
-   *less* in exactly the captain's best worlds, so captain-plus-opposing-defense
-   builds are more anti-correlated than the model thinks, the model over-values
-   them, and the +0.047 measured for removing the rule is on this evidence an
-   over-estimate.
+   and then consumed by the defense's scorer. **The turnover process is
+   independent of offensive output in every simulated world** (the −1 / +2 the
+   score itself attaches to a shared interception is there in the model and in
+   history alike). The dependence `DST-OPP` needs is not weak in the model; it
+   is absent — and, measured on 2026-09-18 and re-measured like for like on
+   2026-09-19 (`research/reports/dst_dependence.md`), it runs in the direction
+   that keeps the rule, by a modest amount: over 2,173 team-weeks from
+   2022–2025, team giveaways against team offensive DK points is **r = −0.113**,
+   95% CI [−0.154, −0.071] raw and **r = −0.067**, CI [−0.108, −0.025] with
+   DraftKings' −1 per giveaway added back to both sides, while the served
+   simulator carries −0.04 raw and **−0.005** with the penalty removed: the
+   football dependence is small in history and absent in the model. At the
+   quarterback level, like for like, history's −0.036 (interval through zero)
+   and the model's −0.004 / −0.016 agree. Historical evidence therefore
+   indicates the served simulator omits state-dependent turnover behaviour at
+   the team level and likely understates part of the real anti-correlation
+   between offensive production and opposing-defense scoring, which makes the
+   +0.047 measured for removing the rule suspect in the direction of
+   over-valuation — but it does not identify how much of the +0.047 would
+   survive a corrected joint model. (The first version of this paragraph
+   called the +0.047 an over-estimate outright; the reviewer's like-for-like
+   point retracted that step.)
 
    The earlier text said this rule sat on legacy-latent's "known cross-side
    weakness". The blind-2025 table (`stage2e_validation.json`) says the
@@ -680,17 +688,22 @@ argument is now the *attribution* of the gain rather than a contradiction of it.
 
 Named, so the next stage has a target rather than an instruction to think harder:
 
-- **S9 / the specific dependence `DST-OPP` uses — measured 2026-09-18.** From
-  the 2022–2025 player-week table (`research/reports/dst_dependence.md`):
-  giveaways *rise* with volume (+0.20 interceptions per 10 attempts, r = +0.197)
-  and *fall* with production (team giveaways against team offensive DK points
-  r = −0.113, CI [−0.154, −0.071]; by quartile of the quarterback's DK points his
-  giveaways run 1.14 → 0.94 → 0.87 → 0.71), and production wins on net. The
-  served simulator's team-level value is −0.04, entirely the −1-per-giveaway
-  scoring penalty (−0.004 and −0.016 with the penalty removed). So the answer
-  is the second branch: captain-plus-opposing-defense builds are over-valued by
-  the model and the rule is vindicated. Still open, and needing the team-week
-  source: sacks (not modelled at all) and points allowed (modelled in-world).
+- **S9 / the specific dependence `DST-OPP` uses — measured 2026-09-18, like
+  for like 2026-09-19.** From the 2022–2025 player-week table
+  (`research/reports/dst_dependence.md`): giveaways *rise* with volume (+0.20
+  interceptions per 10 attempts, r = +0.197) and, at the team level, *fall*
+  with production even after the scoring penalty is removed from both sides
+  (r = −0.067, CI [−0.108, −0.025]; raw r = −0.113); at the quarterback level
+  the penalty-removed dependence is −0.036 with an interval through zero (the
+  raw quartile run 1.14 → 0.94 → 0.87 → 0.71 becomes 0.98 → 0.93 → 0.89 →
+  0.86). The served simulator's penalty-removed values are −0.005 / −0.004
+  (team) and −0.004 / −0.016 (quarterback). So the answer is the second branch
+  in direction only: captain-plus-opposing-defense builds are likely
+  over-valued by the model at the team level, the rule is kept, and the size
+  of the effect on +0.047 is not identified. Still open, and needing the
+  team-week source: sacks (not modelled at all), points allowed (modelled
+  in-world), and the rule's direct object, captain-role DK against the
+  opposing DST's DK.
 - **More boards.** Four to six Showdown slates with varied pool shapes would
   separate "property of the rule" from "property of DEN @ KC". Cheap compared to
   S9 and worth doing first.
