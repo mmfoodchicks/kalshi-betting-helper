@@ -188,7 +188,7 @@ def content_identity(partials, strict=True):
     report = {"rule": "every input a partial's numbers depend on must be byte-identical between the seeds' commit and now; the partials' own stamps are kept as written",
               "seed_runs_commit": c, "seed_runs_source_sha": (stored[0] if len(stored) == 1 else stored), "recomputed_at_that_commit": recomputed,
               "source_files_at_that_commit": n_files, "files": files, "this_module": {"producing_functions_and_constants": funcs,
-                                                                                     "assembly_only_code_may_change": ["_agg", "_agg_diag", "_rows", "_top_players", "ownership_diagnostics", "assemble", "content_identity", "source_sha_at", "_defs", "_git_show"]},
+                                                                                     "assembly_only_code_may_change": ["_agg", "_agg_diag", "_rows", "_top_players", "ownership_diagnostics", "real_by_slot", "assemble", "content_identity", "source_sha_at", "_defs", "_git_show"]},
               "config": config, "refused": refuse, "passed": not refuse}
     if strict and refuse:
         raise SystemExit("content identity refused assembly:\n  " + "\n  ".join(refuse))
@@ -372,8 +372,9 @@ def _agg(vals):
     v = [float(x) for x in vals if x is not None]
     if not v:
         return None
-    return {"mean": round(float(np.mean(v)), 4), "sd": (round(float(np.std(v, ddof=1)), 4) if len(v) > 1 else None),
-            "min": round(min(v), 4), "max": round(max(v), 4)}
+    sig = lambda x: float(f"{x:.6g}")  # noqa: E731  (six significant figures: a collision of 2e-8 must not round to 0)
+    return {"mean": sig(float(np.mean(v))), "sd": (sig(float(np.std(v, ddof=1))) if len(v) > 1 else None),
+            "min": sig(min(v)), "max": sig(max(v))}
 
 
 def _agg_diag(diags):
@@ -503,7 +504,27 @@ def _top_players(served, per_seed, real, ents, top=TOP_TABLE):
     return out
 
 
-def assemble(outdir, log=print):
+def real_by_slot(path):
+    """{name: {slot: pct of active lineups}} from the pinned export, hash
+    verified before it is read (the first artifact keeps any-slot ownership
+    only; the slot split is what says whether a miss is structural, e.g. a
+    tight end the public plays at FLEX)."""
+    man = json.load(open(os.path.join(DATA, "dk_standings", "manifest.json")))["files"][f"contest-standings-{CONTEST}.csv.gz"]
+    std = C.load_standings(path, man["csv_sha256"])
+    cnt = collections.Counter()
+    n = 0
+    for e in std["entries"]:
+        if e["lineup"]:
+            n += 1
+            for slot, nm in e["lineup"]:
+                cnt[(nm, slot)] += 1
+    out = {}
+    for (nm, slot), k in cnt.items():
+        out.setdefault(nm, {})[slot] = round(100.0 * k / n, 3)
+    return {"sha256": std["sha256"], "active_lineups": n, "by_slot_pct": out}
+
+
+def assemble(outdir, standings_csv=None, log=print):
     from research import provenance, s6_capture
     d, man = served_board()
     ents = served_pool(d)
@@ -526,6 +547,9 @@ def assemble(outdir, log=print):
         raise SystemExit("assembly runs on a clean tree only, so its own stamp can reconstruct this code")
     served_pct = {p["name"]: float(p["field_pct"]) for p in d["players"]}
     real_own = real["ownership_any_slot_pct"]
+    slots = real_by_slot(standings_csv) if standings_csv else None
+    if slots and slots["active_lineups"] != FIELD_N:
+        raise SystemExit(f"the export has {slots['active_lineups']} active lineups, not {FIELD_N}")
     served_cmp = compare_ownership(served_pct, real_own, ents)
     served_diag = ownership_diagnostics(served_pct, real_own, ents)
     diag = [ownership_diagnostics(s["ownership_any_slot_pct"], real_own, ents) for s in per_seed]
@@ -565,6 +589,10 @@ def assemble(outdir, log=print):
                                  "seconds": {"calibration": _agg([s["calibration"]["seconds"] for s in per_seed]), "sample": _agg([s["sample"]["seconds"] for s in per_seed])}}},
            "structure": _rows(None, d, per_seed, real, log=log),
            "players_top50_by_real": _top_players(d, per_seed, real, ents),
+           "real_by_slot": ({"standings_sha256": slots["sha256"], "active_lineups": slots["active_lineups"],
+                             "top50_by_real": {t["name"]: slots["by_slot_pct"].get(t["name"]) for t in _top_players(d, per_seed, real, ents)},
+                             "note": "pct of active lineups holding the player at that roster slot, from the pinned export; the sampler's slot mix is in each partial's empirical.flex_position_pct"}
+                            if slots else None),
            "coverage": served_cmp["coverage"]}
     path = os.path.join(DATA, "cl_sampler.json")
     with open(path, "w") as fh:
@@ -578,6 +606,6 @@ if __name__ == "__main__":
     if len(sys.argv) >= 4 and sys.argv[1] == "seed":
         run_seed(int(sys.argv[2]), sys.argv[3])
     elif len(sys.argv) >= 3 and sys.argv[1] == "assemble":
-        assemble(sys.argv[2])
+        assemble(sys.argv[2], standings_csv=(sys.argv[3] if len(sys.argv) > 3 else None))
     else:
-        raise SystemExit("usage: python3 -m research.cl_sampler seed <seed> <scratch dir> | assemble <scratch dir>")
+        raise SystemExit("usage: python3 -m research.cl_sampler seed <seed> <scratch dir> | assemble <scratch dir> [standings csv]")
