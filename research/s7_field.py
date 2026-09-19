@@ -9,10 +9,10 @@ the reviewer's order of 2026-09-19 was: freeze the raw file, reconcile it,
 report the raw empirical table with the placeholder model beside every
 comparable quantity, and fit NOTHING in this artifact.
 
-Inputs, all pinned:
-  research/data/dk_standings/contest-standings-<cid>.csv.gz   the frozen export (manifest hashes it)
-  research/data/dk_capture  draft group 153434 (DET @ BUF) and contest 195677825
-  research/data/feeds       Sleeper week-2 projections and roster
+Inputs, all pinned (three contests, see CONTESTS):
+  research/data/dk_standings/contest-standings-<cid>.csv.gz   the frozen exports (manifest hashes them)
+  research/data/dk_capture  each contest's draft group and detail
+  research/data/feeds       Sleeper projections and rosters per week
 
 Two caveats the reader must carry. The DraftKings pool and the Sleeper feeds
 for this board were captured AFTER the game (the contest was exported after it
@@ -49,9 +49,18 @@ DATA = os.path.join(ROOT, "research", "data")
 FEEDS = os.path.join(DATA, "feeds")
 STANDINGS = os.path.join(DATA, "dk_standings")
 
-CONTEST = 195677825
-DG = 153434
-WEEK = 2
+#: the Showdown contests with a frozen standings export, oldest first. `captured`
+#: says what is and is not a pre-lock capture, per contest; the reader carries it.
+CONTESTS = {
+    193391013: {"dg": 151820, "week": 1, "roster": "players_2026_1_nesea.json", "label": "NE @ SEA, Wednesday Kickoff Millionaire",
+                "captured": ("pool and roster captured post-game (2026-09-19); the week-1 Sleeper feeds were captured "
+                             "2026-09-12, AFTER this game (2026-09-10)")},
+    195526287: {"dg": 153086, "week": 1, "roster": None, "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+                "captured": ("pool, contest and week-1 feeds captured PRE-LOCK by S6 on 2026-09-12 (the game was 2026-09-14); "
+                             "roster captured 2026-09-18, post-game")},
+    195677825: {"dg": 153434, "week": 2, "roster": None, "label": "DET @ BUF, Thursday Night Showdown",
+                "captured": "pool, week-2 feeds and roster all captured post-game (2026-09-19)"},
+}
 SEED = 20260912
 CPT_MULT = 1.5
 CAP = 50000
@@ -111,7 +120,10 @@ def dk_pool(slate):
 
 def reconcile(std, pool, detail):
     """The three checks the reviewer named. Nothing is dropped silently: every
-    row is classified and the classes sum to the row count."""
+    row is classified and the classes sum to the row count. A contest that did
+    not fill has fewer rows than its capacity; the export then holds every
+    entry that exists, and the ownership check (whose denominator is the row
+    count) is what confirms that the rows ARE the field."""
     E = std["entries"]
     n = len(E)
     empty = sum(1 for e in E if e["lineup"] is None and not _norm(e["raw"]))
@@ -146,7 +158,8 @@ def reconcile(std, pool, detail):
                       "diff_pp": round(100 * (ours - pct), 3)})
     worst = max(diffs, key=lambda d: abs(d["diff_pp"])) if diffs else None
     C = int(detail.get("max_entries") or 0)
-    out = {"rows": {"parsed": n, "official_field_size": C, "reconciles": n == C,
+    out = {"rows": {"parsed": n, "capacity": C, "reconciles": n == C, "overlay_entries": max(0, C - n),
+                    "field_size_used": n,
                     "distinct_entry_ids": len(ids), "ids_unique": len(ids) == n,
                     "empty_lineup_rows": empty, "malformed_lineup_rows": malformed,
                     "with_lineup": n - empty - malformed,
@@ -158,6 +171,12 @@ def reconcile(std, pool, detail):
                          "worst": worst, "denominator": "all entries, including empty ones",
                          "reconciles_within_rounding": bool(diffs) and max(abs(d["diff_pp"]) for d in diffs) <= 0.01,
                          "note": "DraftKings' %Drafted per CPT and FLEX slot recomputed from the raw lineups; rounding is 0.01 pp"}}
+    # rows reconcile either to the capacity (a full contest) or, for one that did
+    # not fill, to DraftKings' own ownership denominator (the check just above)
+    out["rows"]["reconciles"] = bool(n == C or (n < C and out["ownership"]["reconciles_within_rounding"]))
+    out["rows"]["note_capacity"] = ("filled to capacity" if n == C else
+                                    f"{n:,} entries against a capacity of {C:,}: the contest did not fill; the ownership "
+                                    f"recomputation over {n:,} rows reproduces DraftKings' percentages, so the rows are the field")
     out["all_checks_pass"] = bool(out["rows"]["reconciles"] and out["rows"]["ids_unique"] and malformed == 0
                                   and out["lineups"]["unresolved_entries"] == 0 and out["ownership"]["reconciles_within_rounding"])
     return out
@@ -225,25 +244,28 @@ def empirical(std, pool, detail):
             "share_from_150_max_users_pct": round(100 * users.get(150, 0) / n_all, 2)}
 
 
-def model_field(slate, pool, detail, log=print):
+def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log=print):
     """The placeholder field as production would enumerate it at lock,
     reconstructed: the pinned pool and feeds, the depth-chart RANK rule, injury
     statuses cleared (see the module docstring), softmax(beta x projection)
-    with beta solved for FIELD_TOP_SHARE."""
+    with beta solved for FIELD_TOP_SHARE. `n_entries` is the field the
+    duplicate expectation is drawn for (the entries that exist, not the
+    capacity, when a contest did not fill)."""
     import dfs_tourney as T
     import nfl_adp
     from research import sd_board
-    S = sd_board.feeds(FEEDS, week=WEEK)
+    S = sd_board.feeds(FEEDS, week=week, roster_name=roster_name)
     S._cache.clear()
     recs, stamp = nfl_adp._PINNED
     cleared = {k: dict(v, injury=None, injury_return=False) for k, v in recs.items()}
-    nfl_adp._PINNED = (cleared, dict(stamp, injury_statuses="CLEARED for the lock-time reconstruction: the capture is "
-                                                          "post-game and the export shows players the post-game roster "
-                                                          "lists Out (DJ Moore, 43% owned)"))
-    ents, _, _ = sd_board.ents_for(slate, WEEK, True, n_sims=300, seed=SEED, log=lambda *a, **k: None, model="legacy")
+    nfl_adp._PINNED = (cleared, dict(stamp, injury_statuses="CLEARED for the lock-time reconstruction: every roster "
+                                                          "capture here is post-game and the exports show players the "
+                                                          "post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; "
+                                                          "Marvin Mims Jr. in DEN @ KC)"))
+    ents, _, _ = sd_board.ents_for(slate, week, True, n_sims=300, seed=SEED, log=lambda *a, **k: None, model="legacy")
     idx, W, allowed = sd_board.universe(ents)
     f, beta = T.field_weights(ents, idx, cpt_mult=CPT_MULT)
-    C = int(detail["max_entries"])
+    C = int(n_entries or detail["max_entries"])
     own_c, own_f = T.field_ownership(ents, idx, f)
     name_of = [e["name"] for e in ents]
     pos_of = np.asarray([e["pos"] for e in ents])
@@ -437,46 +459,80 @@ def winner(std, pool, M):
     return out
 
 
-def run(log=print):
-    from research import provenance, s6_capture, sd_board
-    path = os.path.join(STANDINGS, f"contest-standings-{CONTEST}.csv.gz")
-    man = json.load(open(os.path.join(STANDINGS, "manifest.json")))
+def one(cid, spec, man, log=print):
+    from research import s6_capture, sd_board
+    path = os.path.join(STANDINGS, f"contest-standings-{cid}.csv.gz")
     std = load_standings(path)
-    slate, details = s6_capture.replay(DG)
-    detail = details[str(CONTEST)]
+    slate, details = s6_capture.replay(spec["dg"])
+    detail = details[str(cid)]
     pool = dk_pool(slate)
     rec = reconcile(std, pool, detail)
-    log(f"[S7] {CONTEST}: rows {rec['rows']['parsed']:,} vs field {rec['rows']['official_field_size']:,}; "
+    log(f"[S7] {cid} {spec['label']}: rows {rec['rows']['parsed']:,} vs capacity {rec['rows']['capacity']:,}; "
         f"empty {rec['rows']['empty_lineup_rows']}, malformed {rec['rows']['malformed_lineup_rows']}, unresolved {rec['lineups']['unresolved_entries']}; "
         f"ownership max |diff| {rec['ownership']['max_abs_diff_pp']} pp; all checks {'PASS' if rec['all_checks_pass'] else 'FAIL'}")
     emp = empirical(std, pool, detail)
-    M = model_field(slate, pool, detail, log)
+    M = model_field(slate, pool, detail, spec["week"], spec["roster"], n_entries=len(std["entries"]), log=log)
     bins = by_bin(std, pool, M)
     win = winner(std, pool, M)
-    log(f"[S7] real: {emp['distinct_lineups']:,} distinct lineups, chalk {emp['max_lineup_share_pct']}% ({emp['max_lineup_copies']} copies), "
-        f"structures {emp['structure_pct']}, salary left mean ${emp['salary_left']['mean']}; "
-        f"model: chalk {M['summary']['max_lineup_share_pct']}%, structures {M['summary']['structure_pct']}, salary left mean ${M['summary']['salary_left']['mean']}; "
-        f"outside the model's universe {bins['outside_share_pct']}% of entries")
-    out = {"meta": {"stage": "S7 first artifact: the Showdown field as it actually entered, fit-free",
-                    "contest": {k: detail.get(k) for k in ("id", "name", "entry_fee", "max_entries", "prize_pool", "first_prize", "places_paid", "draft_group_id", "starts")},
-                    "standings_file": {"file": os.path.basename(path), **{k: v for k, v in man["files"][os.path.basename(path)].items() if k in ("csv_sha256", "gz_sha256", "rows_excluding_header", "csv_mtime_in_zip")}},
-                    "inputs": {"draftkings": s6_capture.dk_hashes(DG), "sleeper": s6_capture.sleeper_hashes(FEEDS),
-                               "roster": {**sd_board.roster_stamp(FEEDS, week=WEEK),
-                                          "injury_statuses": M["roster_stamp"]["injury_statuses"]}},
-                    "caveats": ["the DraftKings pool and the Sleeper week-2 feeds were captured AFTER the game; salaries do not "
-                                "change after lock, but Sleeper's projections are not versioned, so the projection column is "
-                                "not proven equal to what was served at lock",
-                                "the roster capture is post-game; for the model universe injury statuses were CLEARED and the "
-                                "depth-chart rank rule kept (DJ Moore: 43% owned, listed Out post-game)",
-                                "nothing here is fitted; beta is the placeholder solved for FIELD_TOP_SHARE = 0.002",
-                                "one contest; the two-way cross-fit needs a second Showdown standings export"],
+    log(f"[S7] {cid}: real {emp['distinct_lineups']:,} distinct, chalk {emp['max_lineup_share_pct']}% ({emp['max_lineup_copies']} copies), "
+        f"structures {emp['structure_pct']}, salary left ${emp['salary_left']['mean']}; model chalk {M['summary']['max_lineup_share_pct']}%, "
+        f"structures {M['summary']['structure_pct']}, salary left ${M['summary']['salary_left']['mean']}; "
+        f"outside the model's universe {bins['outside_share_pct']}%; winner admitted {win['admitted_by_our_rules']}")
+    return {"label": spec["label"], "captured": spec["captured"], "week": spec["week"],
+            "contest": {k: detail.get(k) for k in ("id", "name", "entry_fee", "max_entries", "prize_pool", "first_prize", "places_paid", "draft_group_id", "starts")},
+            "standings_file": {"file": os.path.basename(path), **{k: v for k, v in man["files"][os.path.basename(path)].items()
+                                                                 if k in ("csv_sha256", "gz_sha256", "rows_excluding_header", "csv_mtime_in_zip", "note")}},
+            "inputs": {"draftkings": s6_capture.dk_hashes(spec["dg"]),
+                       "roster": {**sd_board.roster_stamp(FEEDS, week=spec["week"], name=spec["roster"]),
+                                  "injury_statuses": M["roster_stamp"]["injury_statuses"]}},
+            "reconciliation": rec, "empirical": emp,
+            "model": {**M["summary"], "field_only_players": M["field_only"], "universe_players": M["name_of"]},
+            "observed_vs_model": bins, "winner": win,
+            "pool_players_without_projection": sorted(set(pool) - set(M["name_of"]))}
+
+
+def summary_row(cid, r):
+    e, m, b = r["empirical"], r["model"], r["observed_vs_model"]
+    return {"contest": cid, "label": r["label"], "entries": r["reconciliation"]["rows"]["parsed"],
+            "capacity": r["reconciliation"]["rows"]["capacity"], "checks_pass": r["reconciliation"]["all_checks_pass"],
+            "distinct_lineups": e["distinct_lineups"],
+            "chalk_share_pct": {"real": e["max_lineup_share_pct"], "model": m["max_lineup_share_pct"]},
+            "effective_lineups": {"real": e["effective_lineups"]["inverse_sum_p2"], "model": m["effective_lineups"]["inverse_sum_p2"]},
+            "outside_universe_pct": b["outside_share_pct"],
+            "cpt_qb_pct": {"real": e["cpt_position_mix_pct"].get("QB", 0.0), "model": m["cpt_position_mix_pct"].get("QB", 0.0)},
+            "cpt_rb_pct": {"real": e["cpt_position_mix_pct"].get("RB", 0.0), "model": m["cpt_position_mix_pct"].get("RB", 0.0)},
+            "five_one_pct": {"real": e["structure_pct"].get("5-1", 0.0), "model": m["structure_pct"].get("5-1", 0.0)},
+            "no_k_dst_pct": {"real": e["k_dst_slots_pct"].get("0", 0.0), "model": m["k_dst_slots_pct"].get("0", 0.0)},
+            "salary_left_mean": {"real": e["salary_left"]["mean"], "model": m["salary_left"]["mean"]},
+            "top_band_observed_over_model": {f"{x['log10_p_from']}..{x['log10_p_to']}": x["observed_over_model"] for x in b["bins"] if x["log10_p_from"] >= -4},
+            "real_chalk_model_rank": b["chalk"]["most_duplicated_real_lineup"]["model_rank"],
+            "model_chalk_observed_copies": b["chalk"]["model_most_probable_lineup"]["observed_copies"],
+            "rank_corr_obs_vs_model": b["rank_correlation_observed_vs_model_over_observed_lineups"],
+            "winner": {"points": r["winner"]["points"], "tied": r["winner"]["tied_entries_at_top"], "copies": r["winner"]["exact_lineup_copies"],
+                       "model_rank": r["winner"].get("model_rank_of_lineup"), "admitted": r["winner"]["admitted_by_our_rules"],
+                       "rules_failed": r["winner"].get("rules_failed")}}
+
+
+def run(log=print):
+    from research import provenance, s6_capture
+    man = json.load(open(os.path.join(STANDINGS, "manifest.json")))
+    results = {str(cid): one(cid, spec, man, log) for cid, spec in CONTESTS.items()}
+    out = {"meta": {"stage": "S7 first artifact: the Showdown field as it actually entered, fit-free, three contests",
+                    "contests": {str(cid): spec["label"] for cid, spec in CONTESTS.items()},
+                    "inputs": {"sleeper_feeds": s6_capture.sleeper_hashes(FEEDS)},
+                    "caveats": ["captures are per contest (see each contest's `captured`): only DEN @ KC has a pre-lock pool "
+                                "and feed capture; NE @ SEA and DET @ BUF pools were captured after their games, and Sleeper's "
+                                "projections are not versioned, so their projection columns are not proven equal to what was "
+                                "served at lock",
+                                "every roster capture is post-game; for the model universe injury statuses were CLEARED and "
+                                "the depth-chart rank rule kept (DJ Moore: 43% owned in DET @ BUF, listed Out post-game)",
+                                "nothing here is fitted; beta is the placeholder solved for FIELD_TOP_SHARE = 0.002 on each board",
+                                "the expected-duplicate column is drawn for the entries that exist, not the capacity, where a "
+                                "contest did not fill (NE @ SEA: 126,020 of 132,352)"],
                     "fit_free": True,
                     "provenance": provenance.stamp(worlds=None, model="placeholder softmax field, unfitted", seed=SEED)},
-           "reconciliation": rec, "empirical": emp,
-           "model": {**M["summary"], "field_only_players": M["field_only"],
-                     "universe_players": M["name_of"]},
-           "observed_vs_model": bins, "winner": win,
-           "pool_players_without_projection": sorted(set(pool) - set(M["name_of"]))}
+           "summary": [summary_row(int(cid), r) for cid, r in results.items()],
+           "contests": results}
     with open(os.path.join(DATA, "s7_field.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     return out

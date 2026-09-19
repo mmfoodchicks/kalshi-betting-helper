@@ -22,6 +22,51 @@
    "why_not_committed": "167 MB CSV / 28 MB gzipped against a 5.6 MB repository that Render clones on every deploy; the bytes stay with the owner's zip and are pinned here by hash so any later copy can be verified",
    "zip_sha256": "0cd410143f258cad86376ba8a211e0fd7eff2b663f896ccb49b16d78faaa5697"
   },
+  "contest-standings-193391013.csv.gz": {
+   "committed": true,
+   "contest_detail_at_freeze": {
+    "draft_group_id": 151820,
+    "entry_fee": 20.0,
+    "first_prize": 1000000.0,
+    "max_entries": 132352,
+    "name": "NFL Showdown $2.25M Wednesday Kickoff Millionaire [$1M to 1st, TD Throne Eligible] (NE @ SEA)",
+    "places_paid": 26495,
+    "prize_pool": 2250000.0,
+    "starts": "2026-09-10T00:20:00.0000000Z",
+    "state": "Completed"
+   },
+   "contest_id": 193391013,
+   "csv_bytes": 19894471,
+   "csv_mtime_in_zip": "2026-09-11 00:56 UTC",
+   "csv_sha256": "4720e263f30326adc0e283eff5796ce86171750db82e03ed216a32dbafd4a147",
+   "gz_sha256": "d8f11b5217505e8cc2a4d4587d4e49e1f37fa9da7f61c45329e9334519374aa4",
+   "kind": "showdown",
+   "note": "126,020 rows against a capacity of 132,352: the contest did not fill (overlay of 6,332 entries); the export holds the entries that exist",
+   "rows_excluding_header": 126020,
+   "zip_sha256": "ee264b8bd9c9b8195a835223752432d8d41f95f356e66ebc9c1ad016c047ba29"
+  },
+  "contest-standings-195526287.csv.gz": {
+   "committed": true,
+   "contest_detail_at_freeze": {
+    "draft_group_id": 153086,
+    "entry_fee": 20.0,
+    "first_prize": 500000.0,
+    "max_entries": 88235,
+    "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "places_paid": 19130,
+    "prize_pool": 1500000.0,
+    "starts": "2026-09-15T00:15:00.0000000Z",
+    "state": "Completed"
+   },
+   "contest_id": 195526287,
+   "csv_bytes": 13479106,
+   "csv_mtime_in_zip": "2026-09-15 04:13 UTC",
+   "csv_sha256": "2af56b5a7b5c92856af7ac3013522da94cc43c20da134b8f0ba3c451f7cb4918",
+   "gz_sha256": "c162f42cedf4518041f5e9694ade65876432b8a2a73043e109384b6d6cdb4778",
+   "kind": "showdown",
+   "rows_excluding_header": 88235,
+   "zip_sha256": "b179bb68ca9441622d23ea644929ab10788b8204d57bcaee3bac2dd3e6bf1669"
+  },
   "contest-standings-195677825.csv.gz": {
    "committed": true,
    "contest_detail_at_freeze": {
@@ -39,13 +84,14 @@
    "csv_bytes": 13398136,
    "csv_mtime_in_zip": "2026-09-18 04:14 UTC",
    "csv_sha256": "7c884dac7efaf1f49c2c204a144ece449107aaa5371487599c022b16b5fbcbef",
+   "frozen_utc": "2026-09-19 11:46 UTC",
    "gz_sha256": "1c734a30c6c83edba5ff06be8c84e34ba6e654d4255a068c11c37f4e1dad35d7",
    "kind": "showdown",
    "rows_excluding_header": 88235,
    "zip_sha256": "c61518b7601190d588638c04b707cc959ffd8f8fe3e9c9bc1f95a606dd1a332b"
   }
  },
- "frozen_utc": "2026-09-19 11:46:58 UTC",
+ "frozen_utc": "2026-09-19 12:10:03 UTC",
  "source": "DraftKings 'Export full standings' CSV, exported by the owner from a logged-in account, delivered as zip",
  "why": "the reviewer's S7 order of 2026-09-19: freeze the raw DraftKings standings exports BEFORE any parsing logic evolves; every later S7 artifact must reconcile to these bytes"
 }

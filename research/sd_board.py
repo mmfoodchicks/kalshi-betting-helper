@@ -36,11 +36,14 @@ _ROSTER_FIELDS = ("position", "full_name", "search_rank", "injury_status", "team
                   "years_exp", "status", "depth_chart_position", "depth_chart_order", "active")
 
 
-def roster_path(feed_dir, season=SEASON, week=WEEK):
-    return os.path.join(feed_dir, ROSTER_FILE.format(season=season, week=week))
+def roster_path(feed_dir, season=SEASON, week=WEEK, name=None):
+    """`name` overrides the default file: S7 pinned a second week-1 board
+    (NE @ SEA) after the A/B artifact had pinned players_2026_1.json by hash,
+    so that board's roster lives beside it under its own name."""
+    return os.path.join(feed_dir, name or ROSTER_FILE.format(season=season, week=week))
 
 
-def feeds(feed_dir, season=SEASON, week=WEEK):
+def feeds(feed_dir, season=SEASON, week=WEEK, roster_name=None):
     """Pin the Sleeper projection feeds AND the Sleeper roster to captured
     copies so every arm of a study sees byte-identical inputs even if Sleeper
     moves mid-study. Refuses to run without the roster capture: a study that
@@ -52,7 +55,7 @@ def feeds(feed_dir, season=SEASON, week=WEEK):
     dfn = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_def.json")))
     kck = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_k.json")))
     S._get = lambda url: (dfn if "DEF" in url else kck if "position[]=K" in url else raw)
-    path = roster_path(feed_dir, season, week)
+    path = roster_path(feed_dir, season, week, roster_name)
     if not os.path.exists(path):
         raise FileNotFoundError(f"{path}: no pinned roster; capture one with "
                                 "`python3 -m research.sd_board capture-roster` before any study runs")
@@ -95,11 +98,11 @@ def capture_feeds(feed_dir, season=SEASON, week=WEEK, log=print):
     return out
 
 
-def roster_stamp(feed_dir, season=SEASON, week=WEEK):
+def roster_stamp(feed_dir, season=SEASON, week=WEEK, name=None):
     """What roster a study ran on: the file, its sha256, when it was captured."""
     import hashlib
     import json
-    path = roster_path(feed_dir, season, week)
+    path = roster_path(feed_dir, season, week, name)
     blob = open(path, "rb").read()
     meta = json.loads(blob).get("meta") or {}
     return {"file": os.path.relpath(path, ROOT), "sha256": hashlib.sha256(blob).hexdigest(),
@@ -107,7 +110,7 @@ def roster_stamp(feed_dir, season=SEASON, week=WEEK):
             "teams": meta.get("teams")}
 
 
-def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print):
+def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print, name=None):
     """Capture the Sleeper roster records the depth-chart gate can consult for
     the pinned draft groups: every record on the slates' teams plus every
     record whose normalised name matches a slate player (a man DraftKings lists
@@ -143,7 +146,7 @@ def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print
                     "why": ("the depth-chart gate is an input to the legal universe; unpinned, it "
                             "moved between two arms of the football A/B on 2026-09-18")},
            "players": kept}
-    path = roster_path(feed_dir, season, week)
+    path = roster_path(feed_dir, season, week, name)
     with open(path, "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     log(f"[roster] {len(kept)} Sleeper records for {sorted(teams)} -> {os.path.relpath(path, ROOT)} "

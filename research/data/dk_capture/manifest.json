@@ -1,5 +1,25 @@
 {
  "draft_groups": {
+  "151820": {
+   "contests": {
+    "bytes": 1427,
+    "file": "contests_151820.json",
+    "normalization_version": 1,
+    "records": 1,
+    "retrieved_ts": 1789819807,
+    "sha256": "58d9a7425125daaed9c609e02446194d66df078bdbd1a40b9fe4ca3888f1930b",
+    "source": "dk.contests + dk.contest_detail (nfl, 151820)"
+   },
+   "slate": {
+    "bytes": 11585,
+    "file": "slate_151820.json",
+    "normalization_version": 1,
+    "records": 68,
+    "retrieved_ts": 1789819807,
+    "sha256": "395998273ae0bc5de82c2dc0d5856f0298205597c40ae4e2c18cc6b76ad04676",
+    "source": "dk.slate_for(nfl, 151820)"
+   }
+  },
   "153085": {
    "contests": {
     "added": [
