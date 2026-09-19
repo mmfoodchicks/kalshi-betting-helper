@@ -349,6 +349,7 @@ def by_bin(std, pool, M):
     # the chalk: is the most duplicated real lineup the model's most probable?
     top_obs = rows[np.argmax(obs)]
     model_rank_of_top_obs = int((f > f[top_obs]).sum()) + 1
+    top_obs_names = (M["name_of"][int(idx[top_obs, 0])], [M["name_of"][int(x)] for x in idx[top_obs, 1:]])
     top_model = int(np.argmax(f))
     return {"entries_inside_universe": int(obs.sum()), "entries_outside_universe": outside_entries,
             "outside_share_pct": round(100 * outside_entries / n_all, 2),
@@ -356,13 +357,50 @@ def by_bin(std, pool, M):
             "bins": bins,
             "chalk": {"most_duplicated_real_lineup": {"copies": int(obs.max()), "model_prob_pct": round(100 * float(f[top_obs]), 4),
                                                       "model_rank": model_rank_of_top_obs,
-                                                      "cpt": M["name_of"][int(idx[top_obs, 0])], "flex": sorted(M["name_of"][int(x)] for x in idx[top_obs, 1:])},
+                                                      "cpt": M["name_of"][int(idx[top_obs, 0])], "flex": sorted(M["name_of"][int(x)] for x in idx[top_obs, 1:]),
+                                                      "admitted_by_our_rules": bool(M["allowed"][top_obs]),
+                                                      "rules_failed": rules_failed(top_obs_names[0], top_obs_names[1], M)},
                       "model_most_probable_lineup": {"model_prob_pct": round(100 * float(f[top_model]), 4),
                                                      "observed_copies": int(lc.get(top_model, 0)),
                                                      "cpt": M["name_of"][int(idx[top_model, 0])], "flex": sorted(M["name_of"][int(x)] for x in idx[top_model, 1:])}},
             "rank_correlation_observed_vs_model_over_observed_lineups": (
                 round(float(np.corrcoef(np.argsort(np.argsort(-obs)), np.argsort(np.argsort(-f[rows])))[0, 1]), 3) if len(rows) > 2 else None),
             "observed_lineups_matched": int(len(rows))}
+
+
+def rules_failed(cpt, flex, M):
+    """Which of the app's showdown rules (nfl_dfs._SD_RULES, in that order) a
+    lineup breaks, by name, plus the roster gate: the answer to 'would our
+    optimizer have admitted it', spelled out rather than a bare False."""
+    import nfl_dfs
+    name_idx = {nm: i for i, nm in enumerate(M["name_of"])}
+    ents = M["ents"]
+    if cpt not in name_idx or any(nm not in name_idx for nm in flex):
+        return ["outside the model universe (a player with no Sleeper projection)"]
+    cap = ents[name_idx[cpt]]
+    picks = [ents[name_idx[nm]] for nm in flex]
+    out = []
+    if cap.get("pos") in ("K", "DST"):
+        out.append(nfl_dfs._SD_RULES[1])
+    if any(p["pos"] == "DST" and cap.get("pos") != "DST" and p.get("team") != cap.get("team") for p in picks):
+        out.append(nfl_dfs._SD_RULES[0])
+    kd = (1 if cap.get("pos") in ("K", "DST") else 0) + sum(1 for p in picks if p["pos"] in ("K", "DST"))
+    punts = (1 if cap.get("salary", 0) <= nfl_dfs._SD_PUNT_SALARY else 0) + sum(1 for p in picks if p["salary"] <= nfl_dfs._SD_PUNT_SALARY)
+    if kd > nfl_dfs._SD_MAX_KDST or punts > nfl_dfs._SD_MAX_PUNTS:
+        out.append(nfl_dfs._SD_RULES[2])
+    tes = collections.Counter(p.get("team") for p in [cap] + picks if p.get("pos") == "TE")
+    if any(v > 1 for v in tes.values()):
+        out.append(nfl_dfs._SD_RULES[3])
+    for p in picks:
+        if p["salary"] <= nfl_dfs._SD_PUNT_SALARY:
+            tag = (p.get("depth") or "").split("\u00b7")[0]
+            if tag and tag not in nfl_dfs._SD_PUNT_ROLES:
+                out.append(nfl_dfs._SD_RULES[4])
+                break
+    fo = [p["name"] for p in [cap] + picks if p.get("_field_only")]
+    if fo:
+        out.append(f"{nfl_dfs._SD_RULES[5]} (field-only here: {', '.join(fo)})")
+    return out
 
 
 def winner(std, pool, M):
@@ -393,7 +431,8 @@ def winner(std, pool, M):
         out.update({"model_prob_pct": round(100 * float(f[row]), 5), "model_rank_of_lineup": int((f > f[row]).sum()) + 1,
                     "projected_points": round(float(M["proj_lineup"][row]), 2),
                     "projection_rank_in_universe": int((M["proj_lineup"] > M["proj_lineup"][row]).sum()) + 1,
-                    "admitted_by_our_rules": bool(M["allowed"][row])})
+                    "admitted_by_our_rules": bool(M["allowed"][row]),
+                    "rules_failed": rules_failed(c, fl, M)})
     return out
 
 
