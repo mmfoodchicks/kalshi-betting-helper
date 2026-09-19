@@ -17313,6 +17313,77 @@ ck("the likelihood-optimal beta and the concentration-matching beta pull in oppo
    and "wants a hotter field under every common beta" in _s7b_rep and "not a near-lock snapshot" in _s7b_rep
    and "No beta matches both ends" in _s7b_rep and "it cannot" in _s7b_rep)
 
+# ---- S7, third artifact: projection plus one linear salary-left feature (research/s7_salary.py) ----
+_s7s = _json18.load(open(_os.path.join(_root, "research", "data", "s7_salary.json")))
+_s7sc = _s7s["contests"]
+_s7sp = {str(p["held_out"]): p for p in _s7s["principal"]}
+_s7sf = _s7s["fits"]
+_s7s_src = open(_os.path.join(_root, "research", "s7_salary.py")).read()
+_s7s_rep = " ".join(open(_os.path.join(_root, "research", "reports", "s7_salary.md")).read().split())
+ck("the salary stage is pre-registered and touches nothing in production: the model is log w = beta x - gamma s and nothing else (the utility is the one line in Board2.logw), three nested arms, the principal criterion and the three non-evidence items are stamped before the numbers, gamma is free in sign, production_unchanged is stamped, the provenance is clean, and FIELD_TOP_SHARE / SD_MONEY_FIELD_CALIBRATED are what they were",
+   "theta[0] * self.x - theta[1] * self.s" in _s7s_src and _s7s_src.count("def logw") == 1
+   and all(tok not in _s7s_src for tok in ("_apply_depth", "_sd_allowed", "entry_ok", "cpt_ok"))
+   and set(_s7s["meta"]["arms"]) == {"projection_only", "salary_only", "projection_plus_salary"}
+   and "held-out delta-NLL" in _s7s["meta"]["principal_criterion"] and len(_s7s["meta"]["not_evidence"]) == 3
+   and any("sign of gamma" in x for x in _s7s["meta"]["not_evidence"]) and any("nested model cannot lose" in x for x in _s7s["meta"]["not_evidence"])
+   and "gamma free in sign" in _s7s["meta"]["model"] and "nothing else" in _s7s["meta"]["model"]
+   and _s7s["meta"]["production_unchanged"] is True and _s7s["meta"]["provenance"]["dirty"] is False
+   and _dt7b.FIELD_TOP_SHARE == 0.002 and _dt7b.SD_MONEY_FIELD_CALIBRATED is False)
+ck("the three arms converged on every board and the projection-only arm reproduces the beta artifact's MLEs exactly; the two-feature MLEs are (0.1207, 0.8168) / (0.1756, 0.9665) / (0.0601, 1.5875), gamma positive everywhere (the expected sign, stamped not evidence) and beta down from 0.33 / 0.43 / 0.30 to 0.12 / 0.18 / 0.06",
+   all(_s7sf[arm]["own"][c]["converged"] and _s7sf[arm]["own"][c]["max_abs_score"] < 1e-8 for arm in _s7sf for c in _s7ids)
+   and [_s7sf["projection_only"]["own"][c]["theta"][0] for c in _s7ids] == [_s7bs[c]["beta"]["own_mle"] for c in _s7ids]
+   and [_s7sf["projection_plus_salary"]["own"][c]["theta"] for c in _s7ids] == [[0.12069, 0.81677], [0.1756, 0.96653], [0.0601, 1.5875]]
+   and all(_s7sf["projection_plus_salary"]["own"][c]["theta"][1] > 0 for c in _s7ids)
+   and [_s7sf["salary_only"]["own"][c]["theta"][1] for c in _s7ids] == [1.05559, 1.22226, 1.71613])
+ck("the principal criterion is met in every direction: projection+salary beats projection-only on the held-out board by 0.23 to 1.01 nats per entry in all eight transfers (leave-one-out entry-weighted 0.409 / 0.776 / 0.857), the user-cluster bootstrap intervals exclude zero by more than ten standard errors and its SE is two to four times the naive one, and the held-out gains are 87 / 118 / 93% of the in-sample ones",
+   all(v < 0 for c in _s7ids for v in _s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"].values())
+   and sum(len(_s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"]) for c in _s7ids) == 12
+   and 0.22 <= min(abs(v) for c in _s7ids for v in _s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"].values()) <= 0.24
+   and 1.0 <= max(abs(v) for c in _s7ids for v in _s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"].values()) <= 1.02
+   and [_s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"]["loo_entry_weighted"] for c in _s7ids] == [-0.4092, -0.77578, -0.85667]
+   and all(_s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["ci95_user_cluster"][0] > 10 * _s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["se_user_cluster"] for c in _s7ids)
+   and all(2.0 <= _s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["se_user_cluster"] / _s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["se_naive_per_entry"] <= 4.5 for c in _s7ids)
+   and [_s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["users"] for c in _s7ids] == [41603, 26301, 23533]
+   and [round(100 * _s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["mean"] / -_s7sp[c]["in_sample_delta_at_own_mle_not_evidence"]) for c in _s7ids] == [87, 118, 93])
+ck("salary alone beats projection alone on every held-out board (by 0.33 / 0.66 / 0.85 nats) and projection keeps only 0.080 / 0.114 / 0.006 nats of independent information beyond salary; gamma spans 0.82-1.59 across the boards' own fits and every transferred gamma lies in 0.88-1.21",
+   [_s7sp[c]["salary_only_minus_projection_only_loo_entry_weighted"] for c in _s7ids] == [-0.32969, -0.6614, -0.8508]
+   and [round(_s7sp[c]["nll_loo_entry_weighted"]["salary_only"] - _s7sp[c]["nll_loo_entry_weighted"]["projection_plus_salary"], 3) for c in _s7ids] == [0.08, 0.114, 0.006]
+   and all(0.87 <= _s7sf["projection_plus_salary"]["leave_one_out"][c][wk]["theta"][1] <= 1.21 for c in _s7ids for wk in ("entry_weighted", "contest_balanced"))
+   and all(0.87 <= _s7sf["projection_plus_salary"]["pooled_all"][wk]["theta"][1] <= 1.21 for wk in ("entry_weighted", "contest_balanced")))
+ck("both means are checksums and the over-identifying moments fail the other way: at the two-feature MLE both moment residuals are zero, the observed variance of x is now 1.34 / 1.13 / 1.10 of the model's (the beta-only family was too wide, this one is too narrow), the observed salary-left variance is 1.94 / 1.78 / 1.45 of the model's, and beta and gamma are identified with a parameter correlation of -0.58 / -0.45 / -0.35 whose nominal standard errors are flagged as understating the uncertainty",
+   all(abs(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["likelihood"]["moment_residual_x"]) < 1e-4 and abs(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["likelihood"]["moment_residual_s"]) < 1e-4 for c in _s7ids)
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["second_moments"]["var_x"]["ratio_observed_over_model"] for c in _s7ids] == [1.3402, 1.1279, 1.1034]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["second_moments"]["var_s"]["ratio_observed_over_model"] for c in _s7ids] == [1.9397, 1.7848, 1.4539]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["hessian"]["parameter_correlation"] for c in _s7ids] == [-0.58026, -0.448, -0.35001]
+   and all("understate" in _s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["hessian"]["caveat"] for c in _s7ids))
+ck("salary does not deliver concentration: at the two-feature MLE the top lineup's share is lower than the beta-only model's on every board (0.070 / 0.061 / 0.034% against 0.442 / 0.361 / 1.323% observed), lineups with 51+ copies hold 3.5 / 0.1 / 0.0% of the model's field against 34.6 / 14.4 / 22.1%, while the expected number of distinct lineups moves toward the observed count on every board",
+   [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["max_share_pct"]["model"] for c in _s7ids] == [0.07, 0.0614, 0.0335]
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["max_share_pct"]["model"] < _s7sc[c]["graded"]["projection_only"]["own_mle"]["shape"]["max_share_pct"]["model"] for c in _s7ids)
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["duplication"]["51-plus"]["model_entry_share_pct"] for c in _s7ids] == [3.5, 0.1, 0.0]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["duplication"]["51-plus"]["observed_entry_share_pct"] for c in _s7ids] == [34.59, 14.43, 22.1]
+   and all(abs(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["distinct_lineups"]["model_expected"] - _s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["shape"]["distinct_lineups"]["observed"])
+           < abs(_s7sc[c]["graded"]["projection_only"]["own_mle"]["shape"]["distinct_lineups"]["model_expected"] - _s7sc[c]["graded"]["projection_only"]["own_mle"]["shape"]["distinct_lineups"]["observed"]) for c in _s7ids))
+ck("ordering moved, as only a second feature can move it: the real chalk goes from utility rank 4,119 / 2 / 3,218 to 694 / 2 / 308, the utility's top 1,000 holds 34.0 / 22.9 / 21.0% of the field against 23.3 / 14.8 / 11.6% under projection alone, the Spearman over all observed lineups moves by under 0.05, and the winner's rank is stamped diagnostic only",
+   [_s7sc[c]["graded"]["projection_only"]["own_mle"]["ordering"]["real_chalk_model_rank"] for c in _s7ids] == [4119, 2, 3218]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["ordering"]["real_chalk_model_rank"] for c in _s7ids] == [694, 2, 308]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["ordering"]["observed_mass_in_model_top_k_pct"]["1000"] for c in _s7ids] == [33.954, 22.869, 21.038]
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["ordering"]["observed_mass_in_model_top_k_pct"]["1000"] > _s7sc[c]["graded"]["projection_only"]["own_mle"]["ordering"]["observed_mass_in_model_top_k_pct"]["1000"] + 8 for c in _s7ids)
+   and all(abs(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["ordering"]["spearman_observed_count_vs_utility"] - _s7sc[c]["graded"]["projection_only"]["own_mle"]["ordering"]["spearman_observed_count_vs_utility"]) < 0.05 for c in _s7ids)
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["ordering"]["winner"]["diagnostic_only"] is True for c in _s7ids))
+ck("out of objective after the salary fit: the share leaving $1,000+ falls from 70.6 / 72.3 / 65.0% to 48.1 / 40.8 / 22.5% against 39.3 / 36.1 / 20.4% observed, the captain mix improves on DEN @ KC and DET @ BUF (27.6 to 12.2, 49.6 to 20.2) and worsens on NE @ SEA (31.0 to 36.1), 5-1 stays under everywhere, and the excluded entries' salary profile matches the representable ones within $220",
+   [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["out_of_objective"]["salary_left_share_ge_1000_pct"]["model"] for c in _s7ids] == [48.06, 40.78, 22.54]
+   and [_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["out_of_objective"]["cpt_position_mix_pct"]["l1_pp"] for c in _s7ids] == [36.1, 12.24, 20.21]
+   and [_s7sc[c]["graded"]["projection_only"]["own_mle"]["out_of_objective"]["cpt_position_mix_pct"]["l1_pp"] for c in _s7ids] == [30.99, 27.59, 49.6]
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["out_of_objective"]["structure_pct"]["model"]["5-1"] < _s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["out_of_objective"]["structure_pct"]["observed"]["5-1"] for c in _s7ids)
+   and all(abs(_s7sc[c]["excluded_entries_salary_profile"]["excluded"]["mean_k"] - _s7sc[c]["excluded_entries_salary_profile"]["representable"]["mean_k"]) < 0.22 for c in _s7ids))
+ck("the salary report leads with the transfer result and its limit, names the band effect, keeps duplication an outcome, claims nothing for production, defers S5, and states what the family earns",
+   "Salary survives the transfer test on every direction" in _s7s_rep and "The gain comes from putting the field in the right salary band" in _s7s_rep
+   and "Duplication stays an outcome, not a feature" in _s7s_rep and "not evidence" in _s7s_rep
+   and "Salary alone beats projection alone on every board" in _s7s_rep
+   and "`SD_MONEY_FIELD_CALIBRATED` stays False" in _s7s_rep and "S5 stays deferred" in _s7s_rep
+   and "preferred research field family for prospective validation" in _s7s_rep
+   and "never against the historical +0.047078" in _s7s_rep and "Pre-registered before the run" in _s7s_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
