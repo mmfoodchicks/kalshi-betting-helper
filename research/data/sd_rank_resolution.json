@@ -2,9 +2,9 @@
  "boards": {
   "153085": {
    "build": {
-    "main_pass_s": 123.8,
-    "peak_rss_mb": 2259.3,
-    "pre_pass_s": 16.1
+    "pass1_s": 128.9,
+    "pass2_s": 130.3,
+    "peak_rss_mb": 2241.0
    },
    "contest_id": 195526138,
    "curve_check": {
@@ -31,15 +31,31 @@
    "objectives": {
     "top10": {
      "best_pct": 1.0024,
-     "fold_portfolio_overlap_mean": 12.33,
-     "fold_portfolio_vs_full_overlap": [
-      16,
-      15,
-      15
-     ],
-     "fold_rank_corr_mean": 0.412,
-     "fold_top20_overlap_mean": 15.0,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 12.33,
+      "rank_corr_mean": 0.441,
+      "top20_overlap_mean": 15.0
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 12.33,
+      "rank_corr_mean": 0.669,
+      "top20_overlap_mean": 15.0
+     },
      "k": 10,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 3.24,
+      "within_2se_of_twentieth": 28
+     },
+     "paired": {
+      "best_vs_twentieth_z": 6.12,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 2.018,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 41
+     },
      "share_of_field_pct": 0.0115,
      "top5": [
       {
@@ -70,21 +86,35 @@
      ],
      "top50_rel_se_median_12000": 0.1519,
      "top50_rel_se_median_4000": 0.2632,
-     "top50_spread_over_noise": 3.24,
-     "twentieth_pct": 0.3735,
-     "within_2se_of_twentieth": 28
+     "twentieth_pct": 0.3735
     },
     "top20": {
      "best_pct": 1.4339,
-     "fold_portfolio_overlap_mean": 12.0,
-     "fold_portfolio_vs_full_overlap": [
-      15,
-      16,
-      15
-     ],
-     "fold_rank_corr_mean": 0.51,
-     "fold_top20_overlap_mean": 14.33,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 12.0,
+      "rank_corr_mean": 0.518,
+      "top20_overlap_mean": 14.33
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 12.0,
+      "rank_corr_mean": 0.71,
+      "top20_overlap_mean": 14.33
+     },
      "k": 20,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 3.81,
+      "within_2se_of_twentieth": 24
+     },
+     "paired": {
+      "best_vs_twentieth_z": 7.22,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.908,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 36
+     },
      "share_of_field_pct": 0.023,
      "top5": [
       {
@@ -115,21 +145,35 @@
      ],
      "top50_rel_se_median_12000": 0.1257,
      "top50_rel_se_median_4000": 0.2177,
-     "top50_spread_over_noise": 3.81,
-     "twentieth_pct": 0.5419,
-     "within_2se_of_twentieth": 24
+     "twentieth_pct": 0.5419
     },
     "top50": {
      "best_pct": 2.3194,
-     "fold_portfolio_overlap_mean": 14.0,
-     "fold_portfolio_vs_full_overlap": [
-      15,
-      18,
-      15
-     ],
-     "fold_rank_corr_mean": 0.621,
-     "fold_top20_overlap_mean": 15.33,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 14.0,
+      "rank_corr_mean": 0.633,
+      "top20_overlap_mean": 15.33
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 14.0,
+      "rank_corr_mean": 0.772,
+      "top20_overlap_mean": 15.33
+     },
      "k": 50,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 4.58,
+      "within_2se_of_twentieth": 25
+     },
+     "paired": {
+      "best_vs_twentieth_z": 8.66,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.831,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 35
+     },
      "share_of_field_pct": 0.0574,
      "top5": [
       {
@@ -160,21 +204,35 @@
      ],
      "top50_rel_se_median_12000": 0.0948,
      "top50_rel_se_median_4000": 0.1642,
-     "top50_spread_over_noise": 4.58,
-     "twentieth_pct": 0.9297,
-     "within_2se_of_twentieth": 25
+     "twentieth_pct": 0.9297
     },
     "top87": {
      "best_pct": 3.2149,
-     "fold_portfolio_overlap_mean": 15.33,
-     "fold_portfolio_vs_full_overlap": [
-      16,
-      18,
-      18
-     ],
-     "fold_rank_corr_mean": 0.676,
-     "fold_top20_overlap_mean": 16.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 15.33,
+      "rank_corr_mean": 0.673,
+      "top20_overlap_mean": 16.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 15.33,
+      "rank_corr_mean": 0.785,
+      "top20_overlap_mean": 16.67
+     },
      "k": 87,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 4.95,
+      "within_2se_of_twentieth": 22
+     },
+     "paired": {
+      "best_vs_twentieth_z": 10.81,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.757,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 30
+     },
      "share_of_field_pct": 0.0998,
      "top5": [
       {
@@ -205,21 +263,35 @@
      ],
      "top50_rel_se_median_12000": 0.0786,
      "top50_rel_se_median_4000": 0.1362,
-     "top50_spread_over_noise": 4.95,
-     "twentieth_pct": 1.344,
-     "within_2se_of_twentieth": 22
+     "twentieth_pct": 1.344
     },
     "top871": {
      "best_pct": 11.7607,
-     "fold_portfolio_overlap_mean": 12.67,
-     "fold_portfolio_vs_full_overlap": [
-      13,
-      13,
-      14
-     ],
-     "fold_rank_corr_mean": 0.869,
-     "fold_top20_overlap_mean": 16.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 12.33,
+      "rank_corr_mean": 0.875,
+      "top20_overlap_mean": 16.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 12.67,
+      "rank_corr_mean": 0.901,
+      "top20_overlap_mean": 16.67
+     },
      "k": 871,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 5.91,
+      "within_2se_of_twentieth": 15
+     },
+     "paired": {
+      "best_vs_twentieth_z": 13.75,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.584,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 19
+     },
      "share_of_field_pct": 0.9995,
      "top5": [
       {
@@ -250,21 +322,35 @@
      ],
      "top50_rel_se_median_12000": 0.0354,
      "top50_rel_se_median_4000": 0.0613,
-     "top50_spread_over_noise": 5.91,
-     "twentieth_pct": 6.4834,
-     "within_2se_of_twentieth": 15
+     "twentieth_pct": 6.4834
     },
     "top88": {
      "best_pct": 3.2361,
-     "fold_portfolio_overlap_mean": 15.33,
-     "fold_portfolio_vs_full_overlap": [
-      16,
-      18,
-      18
-     ],
-     "fold_rank_corr_mean": 0.676,
-     "fold_top20_overlap_mean": 16.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 15.33,
+      "rank_corr_mean": 0.672,
+      "top20_overlap_mean": 16.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 15.33,
+      "rank_corr_mean": 0.784,
+      "top20_overlap_mean": 16.67
+     },
      "k": 88,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 4.95,
+      "within_2se_of_twentieth": 22
+     },
+     "paired": {
+      "best_vs_twentieth_z": 10.82,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.758,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 30
+     },
      "share_of_field_pct": 0.101,
      "top5": [
       {
@@ -295,21 +381,35 @@
      ],
      "top50_rel_se_median_12000": 0.0784,
      "top50_rel_se_median_4000": 0.1357,
-     "top50_spread_over_noise": 4.95,
-     "twentieth_pct": 1.3582,
-     "within_2se_of_twentieth": 22
+     "twentieth_pct": 1.3582
     },
     "top882": {
      "best_pct": 11.8668,
-     "fold_portfolio_overlap_mean": 12.67,
-     "fold_portfolio_vs_full_overlap": [
-      13,
-      13,
-      13
-     ],
-     "fold_rank_corr_mean": 0.87,
-     "fold_top20_overlap_mean": 16.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 12.33,
+      "rank_corr_mean": 0.876,
+      "top20_overlap_mean": 16.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 12.33,
+      "rank_corr_mean": 0.901,
+      "top20_overlap_mean": 16.67
+     },
      "k": 882,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 5.93,
+      "within_2se_of_twentieth": 15
+     },
+     "paired": {
+      "best_vs_twentieth_z": 13.75,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.54,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 18
+     },
      "share_of_field_pct": 1.0121,
      "top5": [
       {
@@ -340,20 +440,19 @@
      ],
      "top50_rel_se_median_12000": 0.0353,
      "top50_rel_se_median_4000": 0.0611,
-     "top50_spread_over_noise": 5.93,
-     "twentieth_pct": 6.5523,
-     "within_2se_of_twentieth": 15
+     "twentieth_pct": 6.5523
     }
    },
+   "per_world_kept": 636,
    "seed": 20260912,
-   "shortlist": 718,
+   "shortlist": 300,
    "worlds": 12000
   },
   "153086": {
    "build": {
-    "main_pass_s": 94.7,
-    "peak_rss_mb": 2156.8,
-    "pre_pass_s": 13.3
+    "pass1_s": 100.6,
+    "pass2_s": 96.1,
+    "peak_rss_mb": 2136.8
    },
    "contest_id": 195526287,
    "curve_check": {
@@ -378,15 +477,31 @@
    "objectives": {
     "top10": {
      "best_pct": 0.5875,
-     "fold_portfolio_overlap_mean": 9.67,
-     "fold_portfolio_vs_full_overlap": [
-      12,
-      14,
-      15
-     ],
-     "fold_rank_corr_mean": 0.383,
-     "fold_top20_overlap_mean": 12.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 9.67,
+      "rank_corr_mean": 0.428,
+      "top20_overlap_mean": 12.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 9.67,
+      "rank_corr_mean": 0.695,
+      "top20_overlap_mean": 13.0
+     },
      "k": 10,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 2.06,
+      "within_2se_of_twentieth": 39
+     },
+     "paired": {
+      "best_vs_twentieth_z": 3.62,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.914,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 67
+     },
      "share_of_field_pct": 0.0113,
      "top5": [
       {
@@ -417,21 +532,35 @@
      ],
      "top50_rel_se_median_12000": 0.1661,
      "top50_rel_se_median_4000": 0.2876,
-     "top50_spread_over_noise": 2.06,
-     "twentieth_pct": 0.2918,
-     "within_2se_of_twentieth": 39
+     "twentieth_pct": 0.2918
     },
     "top20": {
      "best_pct": 0.8455,
-     "fold_portfolio_overlap_mean": 10.33,
-     "fold_portfolio_vs_full_overlap": [
-      15,
-      14,
-      15
-     ],
-     "fold_rank_corr_mean": 0.512,
-     "fold_top20_overlap_mean": 14.33,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 10.33,
+      "rank_corr_mean": 0.549,
+      "top20_overlap_mean": 14.33
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 10.33,
+      "rank_corr_mean": 0.725,
+      "top20_overlap_mean": 14.33
+     },
      "k": 20,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 2.47,
+      "within_2se_of_twentieth": 33
+     },
+     "paired": {
+      "best_vs_twentieth_z": 4.15,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.857,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 57
+     },
      "share_of_field_pct": 0.0227,
      "top5": [
       {
@@ -462,21 +591,35 @@
      ],
      "top50_rel_se_median_12000": 0.1375,
      "top50_rel_se_median_4000": 0.2382,
-     "top50_spread_over_noise": 2.47,
-     "twentieth_pct": 0.4375,
-     "within_2se_of_twentieth": 33
+     "twentieth_pct": 0.4375
     },
     "top50": {
      "best_pct": 1.4439,
-     "fold_portfolio_overlap_mean": 11.67,
-     "fold_portfolio_vs_full_overlap": [
-      12,
-      12,
-      15
-     ],
-     "fold_rank_corr_mean": 0.637,
-     "fold_top20_overlap_mean": 15.0,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 11.67,
+      "rank_corr_mean": 0.667,
+      "top20_overlap_mean": 15.0
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 11.67,
+      "rank_corr_mean": 0.804,
+      "top20_overlap_mean": 15.0
+     },
      "k": 50,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 2.92,
+      "within_2se_of_twentieth": 28
+     },
+     "paired": {
+      "best_vs_twentieth_z": 4.88,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.807,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 44
+     },
      "share_of_field_pct": 0.0567,
      "top5": [
       {
@@ -507,21 +650,35 @@
      ],
      "top50_rel_se_median_12000": 0.1004,
      "top50_rel_se_median_4000": 0.1739,
-     "top50_spread_over_noise": 2.92,
-     "twentieth_pct": 0.7952,
-     "within_2se_of_twentieth": 28
+     "twentieth_pct": 0.7952
     },
     "top88": {
      "best_pct": 2.1282,
-     "fold_portfolio_overlap_mean": 13.0,
-     "fold_portfolio_vs_full_overlap": [
-      16,
-      15,
-      16
-     ],
-     "fold_rank_corr_mean": 0.708,
-     "fold_top20_overlap_mean": 14.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 13.0,
+      "rank_corr_mean": 0.731,
+      "top20_overlap_mean": 14.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 13.0,
+      "rank_corr_mean": 0.842,
+      "top20_overlap_mean": 14.67
+     },
      "k": 88,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 3.32,
+      "within_2se_of_twentieth": 25
+     },
+     "paired": {
+      "best_vs_twentieth_z": 5.78,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.759,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 32
+     },
      "share_of_field_pct": 0.0997,
      "top5": [
       {
@@ -552,21 +709,35 @@
      ],
      "top50_rel_se_median_12000": 0.0826,
      "top50_rel_se_median_4000": 0.143,
-     "top50_spread_over_noise": 3.32,
-     "twentieth_pct": 1.1884,
-     "within_2se_of_twentieth": 25
+     "twentieth_pct": 1.1884
     },
     "top882": {
      "best_pct": 7.9926,
-     "fold_portfolio_overlap_mean": 11.33,
-     "fold_portfolio_vs_full_overlap": [
-      14,
-      14,
-      13
-     ],
-     "fold_rank_corr_mean": 0.896,
-     "fold_top20_overlap_mean": 15.67,
+     "fold_agreement_all_worlds_shortlist": {
+      "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+      "portfolio_overlap_mean": 12.0,
+      "rank_corr_mean": 0.879,
+      "top20_overlap_mean": 15.67
+     },
+     "fold_agreement_third_fold_shortlist": {
+      "note": "the compared set is the strongest SHORT lineups on the third fold: identical for both folds and independent of both folds' worlds",
+      "portfolio_overlap_mean": 11.67,
+      "rank_corr_mean": 0.905,
+      "top20_overlap_mean": 15.67
+     },
      "k": 882,
+     "marginal_screen": {
+      "note": "descriptive only: each lineup's OWN standard error; lineups share the worlds, so this is not the uncertainty of a gap between two lineups",
+      "top50_spread_over_median_se": 4.04,
+      "within_2se_of_twentieth": 23
+     },
+     "paired": {
+      "best_vs_twentieth_z": 7.13,
+      "note": "worldwise differences against the 20th place of the full ranking; the standard error of the paired difference is the uncertainty of the gap",
+      "paired_se_over_marginal_se_median": 1.624,
+      "shortlist": 300,
+      "within_2se_of_twentieth": 30
+     },
      "share_of_field_pct": 0.9996,
      "top5": [
       {
@@ -597,13 +768,12 @@
      ],
      "top50_rel_se_median_12000": 0.0381,
      "top50_rel_se_median_4000": 0.066,
-     "top50_spread_over_noise": 4.04,
-     "twentieth_pct": 5.6102,
-     "within_2se_of_twentieth": 23
+     "twentieth_pct": 5.6102
     }
    },
+   "per_world_kept": 670,
    "seed": 20260912,
-   "shortlist": 752,
+   "shortlist": 300,
    "worlds": 12000
   }
  },
@@ -623,17 +793,17 @@
    "an economic claim; the field is uncalibrated"
   ],
   "provenance": {
-   "commit": "596bd61",
+   "commit": "2764f29",
    "data_split": null,
    "dirty": false,
    "model": "legacy-discrete",
    "seed": 20260912,
    "source_files": 39,
-   "source_sha": "640e773ed29ec1407a40d5df5f929d04d3d6ecd9c91cf424529e93b35634347c",
+   "source_sha": "cf72100369deb0a723513e09f98268e00998f233fc6522b5f694c3a4dfb1637e",
    "worlds": 12000
   },
   "question": "is P(rank <= 10 / 20 / 50) usable at 4,000 and 12,000 football worlds, or only the served Top 0.1% and Top 1%?",
-  "shortlist_per_objective": 400,
+  "shortlist_per_objective": 300,
   "stage": "rank resolution of the exact Showdown engine at the served world count"
  }
 }

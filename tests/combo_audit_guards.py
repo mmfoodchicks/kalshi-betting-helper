@@ -16853,16 +16853,18 @@ def _ok20():
     _calls20.append("ok")
     return dict(_good20)
 _wease20 = [{"name": "Theo Wease Jr.", "pos": "WR", "team": "LAC", "proj": 8.6}]
+_far20 = 10 * 3600      # a KNOWN lock ten hours away: the far-from-lock contract (the lock-relative
+                        # and unknown-lock allowances have their own block below)
 try:
     _adp19._fetch_players = _boom20
-    _r1, _s1 = _adp19.roster()
-    _r2, _s2 = _adp19.roster()
+    _r1, _s1 = _adp19.roster(seconds_to_lock=_far20)
+    _r2, _s2 = _adp19.roster(seconds_to_lock=_far20)
     ck("a failed roster fetch is NOT an empty roster: roster() answers (None, unavailable) with the error stamped, a second call inside the retry window makes no second attempt, and consensus() gives the rank-only callers {}",
        _r1 is None and _s1["source"] == "unavailable" and "truncated" in (_s1["error"] or "")
        and _r2 is None and _calls20 == ["boom"] and _adp19.consensus() == {} and _calls20 == ["boom"],
        str((_s1, _calls20))[:160])
     try:
-        _nd20._apply_depth(list(_wease20), preseason=False)
+        _nd20._apply_depth(list(_wease20), preseason=False, seconds_to_lock=_far20)
         _refused20 = False
     except _nd20.RosterUnavailable as _e:
         _refused20 = _e.state["source"] == "unavailable"
@@ -16871,19 +16873,19 @@ try:
        and bool(_el20.recent(5, "ADP-players", 1)) and bool(_el20.recent(5, "NFLD-roster", 1)))
     _clk20.now = 1000.0 + _adp19.ROSTER_RETRY_S + 1
     _adp19._fetch_players = _ok20
-    _r3, _s3 = _adp19.roster()
+    _r3, _s3 = _adp19.roster(seconds_to_lock=_far20)
     ck("after the retry window a VALID response is fetched and served live -- not masked by the cached failure -- and written to the shared last-known-good store",
        bool(_r3) and "fence test" in _r3 and _s3["source"] == "live" and _s3["error"] is None
        and _calls20 == ["boom", "ok"] and _os.path.exists(_os.path.join(_tmpd20, "roster_lkg.json")),
        str((_s3, _calls20))[:160])
     _clk20.now += _adp19.ROSTER_TTL_S - 2
-    _r4, _s4 = _adp19.roster()
+    _r4, _s4 = _adp19.roster(seconds_to_lock=_far20)
     ck("inside the TTL the copy is served without a fetch",
        _r4 is _r3 and _calls20 == ["boom", "ok"] and _s4["source"] == "live")
     _clk20.now += 4
     _adp19._fetch_players = _boom20
-    _r5, _s5 = _adp19.roster()
-    _kept20, _exc20 = _nd20._apply_depth(list(_wease20), preseason=False)
+    _r5, _s5 = _adp19.roster(seconds_to_lock=_far20)
+    _kept20, _exc20 = _nd20._apply_depth(list(_wease20), preseason=False, seconds_to_lock=_far20)
     ck("past the TTL with Sleeper down, the last-known-good copy is served, stamped last-known-good with its age and the live error, and the gate stays ON: the practice-squad name is excluded as not on the roster",
        _r5 is _r3 and _s5["source"] == "last-known-good" and _s5["age_s"] >= _adp19.ROSTER_TTL_S
        and "truncated" in (_s5["error"] or "") and not _kept20 and _exc20
@@ -16891,19 +16893,19 @@ try:
        and _nd20.roster_state()["source"] == "last-known-good", str((_s5, _kept20, _exc20))[:200])
     _clk20.now = _adp19._roster["fetched"] + _adp19.ROSTER_MAX_AGE_S + 1
     _adp19._roster["failed"] = 0.0
-    _r6, _s6 = _adp19.roster()
+    _r6, _s6 = _adp19.roster(seconds_to_lock=_far20)
     ck("past the maximum age the stale copy is refused: (None, unavailable) -- 'stale but available' never becomes 'current'",
        _r6 is None and _s6["source"] == "unavailable" and _s6["age_s"] > _adp19.ROSTER_MAX_AGE_S)
     _adp19._roster.update(data=None, fetched=0.0, failed=0.0, error=None, source=None)
     _clk20.now = 1000.0 + _adp19.ROSTER_RETRY_S + 61
     _n20 = len(_calls20)
-    _r7, _s7 = _adp19.roster()
+    _r7, _s7 = _adp19.roster(seconds_to_lock=_far20)
     ck("a cold process (a fresh slate subprocess, a restarted worker) starts from the shared store within the TTL, stamped disk, with no fetch at all",
        bool(_r7) and "fence test" in _r7 and _s7["source"] == "disk" and len(_calls20) == _n20, str(_s7)[:160])
     _adp19._roster.update(data=None, fetched=0.0, failed=0.0, error=None, source=None)
     _os.remove(_os.path.join(_tmpd20, "roster_lkg.json"))
     _adp19._fetch_players = lambda: {}
-    _r8, _s8 = _adp19.roster()
+    _r8, _s8 = _adp19.roster(seconds_to_lock=_far20)
     ck("an EMPTY blob is a failed fetch, not an authoritative empty roster",
        _r8 is None and _s8["source"] == "unavailable" and "no skill-position records" in (_s8["error"] or ""))
 finally:
@@ -16944,10 +16946,11 @@ ck("consensus() no longer routes through racing's cache (the store that kept a f
 # inactive that changes thousands of Showdown combinations. Inside a pre-lock
 # window the copy must be younger than the window is long.
 import pc_worker as _pw20
-ck("the roster allowance's minute thresholds ARE pc_worker's pre-lock refresh windows (T-4h, T-2h, T-1h, T-25m), and inside each the allowance is the window's own length; far from lock or with no lock time it is 36 hours",
+ck("the roster allowance's minute thresholds ARE pc_worker's pre-lock refresh windows (T-4h, T-2h, T-1h, T-25m), and inside each the allowance is the window's own length; far from lock it is 36 hours; an UNKNOWN lock time is not 'far from lock' but the conservative one-hour allowance",
    tuple(hi for hi, _ in _adp19.ROSTER_LOCK_WINDOWS) == tuple(w[0] for w in _pw20._PRELOCK_WINDOWS)
    and all(age == hi * 60 for hi, age in _adp19.ROSTER_LOCK_WINDOWS)
-   and _adp19.roster_max_age_for(None) == _adp19.ROSTER_MAX_AGE_S == 36 * 3600
+   and _adp19.roster_max_age_for(None) == _adp19.ROSTER_UNKNOWN_LOCK_AGE_S == 3600
+   and _adp19.ROSTER_MAX_AGE_S == 36 * 3600
    and _adp19.roster_max_age_for(10 * 3600) == 36 * 3600
    and _adp19.roster_max_age_for(200 * 60) == 4 * 3600 and _adp19.roster_max_age_for(100 * 60) == 2 * 3600
    and _adp19.roster_max_age_for(40 * 60) == 3600 and _adp19.roster_max_age_for(20 * 60) == 25 * 60
@@ -16986,8 +16989,17 @@ try:
     _k21, _x21 = _nd20._apply_depth(list(_wease20), preseason=False, seconds_to_lock=20 * 60)
     _st21 = _nd20.roster_state()
     ck("a 15-minute-old copy IS accepted at T-20: the gate runs (the practice-squad name excluded) and the board stamps age 900 against allowance 1500",
-       not _k21 and _x21 and _st21["age_s"] == 900 and _st21["max_age_s"] == 1500 and _st21["seconds_to_lock"] == 1200,
-       str(_st21))
+       not _k21 and _x21 and _st21["age_s"] == 900 and _st21["max_age_s"] == 1500 and _st21["seconds_to_lock"] == 1200
+       and _st21["lock"] == "known", str(_st21))
+    # a missing clock must not mean "far from lock" (the reviewer's defensive condition)
+    _adp19._roster["fetched"], _adp19._roster["failed"] = _clk21.now - 20 * 3600, 0.0
+    _r4, _s4 = _adp19.roster(seconds_to_lock=None)
+    _adp19._roster["fetched"], _adp19._roster["failed"] = _clk21.now - 40 * 60, 0.0
+    _r5, _s5 = _adp19.roster(seconds_to_lock=None)
+    ck("with the lock time missing or unparseable and Sleeper down, a 20-hour-old last-known-good copy is REFUSED under the conservative one-hour allowance and the stamp says why; a 40-minute-old copy is accepted under it, with the same reason stamped",
+       _r4 is None and _s4["source"] == "unavailable" and _s4["max_age_s"] == 3600 and _s4["lock"].startswith("unknown")
+       and bool(_r5) and _s5["max_age_s"] == 3600 and _s5["lock"].startswith("unknown") and _s5["seconds_to_lock"] is None,
+       str((_s4, _s5))[:220])
 finally:
     _adp19.time, _adp19._fetch_players, _adp19._PINNED = _time21, _fetch21, _pin21
     _adp19._roster.clear()
@@ -17012,10 +17024,14 @@ ck("every builder hands the gate its lock time (the contest's or slate's DraftKi
 # ---- 2026-09-19 rank resolution: measured, and the withdrawn sentence pinned ---
 # "Unresolvable by construction" confused football-world noise with 10 / C;
 # the engine integrates contest rank analytically inside a world. The artifact
-# pins what the measurement found, and that the extension of the rank curves
-# reproduces production's own columns.
+# pins what the measurement found, that the extension of the rank curves
+# reproduces production's own columns, and -- the reviewer's pre-freeze check
+# -- that the uncertainty around 20th place is PAIRED (lineups share worlds)
+# and the fold-to-fold set is chosen by the third fold, not by the folds
+# compared.
 _resd = _json18.load(open(_os.path.join(_root, "research", "data", "sd_rank_resolution.json")))
 _resB = _resd["boards"]
+_resK = {"153086": (88, 882), "153085": (87, 871)}
 def _res_obj(dg, k):
     return _resB[dg]["objectives"][f"top{k}"]
 ck("the rank-curve extension reproduces production's own top1 / top01 columns on both boards (checked before use), and the served Top-1% column reproduces the football A/B's served arm exactly, tying the two artifacts",
@@ -17023,24 +17039,40 @@ ck("the rank-curve extension reproduces production's own top1 / top01 columns on
    and abs(_res_obj("153086", 882)["best_pct"] - _mabB["153086"]["arms"]["discrete"]["best"]["top1_pct"]) < 0.001
    and abs(_res_obj("153085", 871)["best_pct"] - _mabB["153085"]["arms"]["discrete"]["best"]["top1_pct"]) < 0.001
    and _resd["meta"]["provenance"]["dirty"] is False and all(b["worlds"] == 12000 for b in _resB.values()))
-ck("Top-10 is resolved coarsely, not unresolvable: at 12,000 worlds the strongest lineups carry a 15-17% relative standard error and the best lineup stands two to three noise units above its shortlist; Top-1% carries under 4%",
+ck("the uncertainty around 20th place is the PAIRED worldwise difference, and it is larger than the marginal screen said: the paired SE of a gap runs 1.5-2.1x a lineup's own SE on every objective, and more lineups sit within two paired SEs of 20th than within two marginal SEs",
+   all(1.5 <= o["paired"]["paired_se_over_marginal_se_median"] <= 2.1 for b in _resB.values() for o in b["objectives"].values())
+   and all(o["paired"]["within_2se_of_twentieth"] > o["marginal_screen"]["within_2se_of_twentieth"]
+           for b in _resB.values() for o in b["objectives"].values())
+   and all("descriptive only" in o["marginal_screen"]["note"] for b in _resB.values() for o in b["objectives"].values()))
+ck("Top-10 is resolved coarsely, not unresolvable: at 12,000 worlds the strongest lineups carry a 15-17% relative standard error and the best lineup stands more than three paired SEs above 20th place; Top-1% carries under 4% and stands more than seven",
    all(0.12 < _res_obj(dg, 10)["top50_rel_se_median_12000"] < 0.20 for dg in _resB)
-   and all(_res_obj(dg, 10)["top50_spread_over_noise"] >= 2.0 for dg in _resB)
-   and all(_res_obj(dg, k)["top50_rel_se_median_12000"] < 0.04 for dg, k in (("153086", 882), ("153085", 871))))
-ck("and not resolved enough to order a top 20 at 4,000 worlds: fold-to-fold rank correlation under 0.5 for Top-10 against above 0.85 for Top-1%, with more lineups inside two standard errors of twentieth place under Top-10 than under Top-1% on both boards",
-   all(_res_obj(dg, 10)["fold_rank_corr_mean"] < 0.5 for dg in _resB)
-   and all(_res_obj(dg, k)["fold_rank_corr_mean"] > 0.85 for dg, k in (("153086", 882), ("153085", 871)))
-   and all(_res_obj(dg, 10)["within_2se_of_twentieth"] > _res_obj(dg, k)["within_2se_of_twentieth"]
-           for dg, k in (("153086", 882), ("153085", 871))))
-ck("resolution degrades smoothly with k on both boards (rank correlation rises monotonically from Top-10 through Top-20, Top-50 and Top-0.1% to Top-1%), so there is no cliff to quote",
-   all(_res_obj(dg, 10)["fold_rank_corr_mean"] < _res_obj(dg, 20)["fold_rank_corr_mean"]
-       < _res_obj(dg, 50)["fold_rank_corr_mean"] < _res_obj(dg, k01)["fold_rank_corr_mean"] < _res_obj(dg, k1)["fold_rank_corr_mean"]
-       for dg, k01, k1 in (("153086", 88, 882), ("153085", 87, 871))))
+   and all(_res_obj(dg, 10)["paired"]["best_vs_twentieth_z"] > 3.0 for dg in _resB)
+   and all(_res_obj(dg, k1)["top50_rel_se_median_12000"] < 0.04 and _res_obj(dg, k1)["paired"]["best_vs_twentieth_z"] > 7.0
+           for dg, (_k01, k1) in _resK.items()))
+ck("and not resolved enough to order a top 20 at 4,000 worlds, on a set chosen by the THIRD fold (independent of the two compared): rank correlation 0.6-0.75 for Top-10 against above 0.88 for Top-1%, with more lineups inside two paired SEs of 20th under Top-10 than under Top-1% on both boards",
+   all(0.6 < _res_obj(dg, 10)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"] < 0.75 for dg in _resB)
+   and all(_res_obj(dg, k1)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"] > 0.88 for dg, (_k01, k1) in _resK.items())
+   and all(_res_obj(dg, 10)["paired"]["within_2se_of_twentieth"] > _res_obj(dg, k1)["paired"]["within_2se_of_twentieth"]
+           for dg, (_k01, k1) in _resK.items())
+   and all("third fold" in o["fold_agreement_third_fold_shortlist"]["note"] for b in _resB.values() for o in b["objectives"].values()))
+ck("the all-worlds-chosen set is reported beside the third-fold set, labelled, and it reads LOWER for Top-10 (selection noise mixed in), which is why the first version's 0.38-0.41 was retracted",
+   all(_res_obj(dg, 10)["fold_agreement_all_worlds_shortlist"]["rank_corr_mean"] < 0.5 for dg in _resB)
+   and all(_res_obj(dg, 10)["fold_agreement_all_worlds_shortlist"]["rank_corr_mean"]
+           < _res_obj(dg, 10)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"] for dg in _resB))
+ck("resolution degrades smoothly with k on both boards (third-fold rank correlation rises monotonically from Top-10 through Top-20, Top-50 and Top-0.1% to Top-1%), so there is no cliff to quote",
+   all(_res_obj(dg, 10)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"]
+       < _res_obj(dg, 20)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"]
+       < _res_obj(dg, 50)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"]
+       < _res_obj(dg, k01)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"]
+       < _res_obj(dg, k1)["fold_agreement_third_fold_shortlist"]["rank_corr_mean"]
+       for dg, (k01, k1) in _resK.items()))
 _res_rep = " ".join(open(_os.path.join(_root, "research", "reports", "sd_rank_resolution.md")).read().split())
-ck("the resolution report withdraws the sentence by name, states both halves (not unresolvable; not enough to order a top 20 at 4,000 worlds), and licenses no objective change before S7",
+ck("the resolution report withdraws the sentence by name, records both statistical corrections (paired SE, third-fold set) with the numbers they changed, states both halves of the result, and licenses no objective change before S7",
    "\"unresolvable by construction\" was wrong and is withdrawn" in _res_rep
    and "Top-10 is not unresolvable" in _res_rep
    and "not resolved enough to order a top 20 at 4,000 worlds" in _res_rep
+   and "1.5–2.0× the marginal SE" in _res_rep and "chosen by the **third fold**" in _res_rep
+   and "from 0.38–0.41 to 0.67–0.70" in _res_rep
    and "No objective change: S7 comes first" in _res_rep
    and "exact match, both boards" in _res_rep)
 
