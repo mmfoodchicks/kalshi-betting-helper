@@ -153,7 +153,7 @@ def board(dg, log=print):
                 sums[w // BLOCK] += vals
                 sq += vals * vals
                 if P is not None:
-                    P[:, :, w] = vals[keep].T
+                    P[:, :, w] = vals[keep]                  # (short, nK)
         return sums, sq, P, time.time() - t0
 
     # pre-pass: a shortlist per objective from the first 1,000 worlds
