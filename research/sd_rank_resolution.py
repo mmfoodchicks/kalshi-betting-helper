@@ -25,10 +25,15 @@ On the pinned boards, served model, one pool at the A/B's seed:
     on each 4,000-world fold and compared fold to fold.
 
 Reported per objective: the relative standard error of the strongest lineups
-at 4,000 and 12,000 worlds; how far the top-50's spread exceeds its noise;
-fold-to-fold rank correlation and top-20 overlap; fold-to-fold portfolio
-overlap; and how many lineups are within two standard errors of the 20th
-place, i.e. how much of the top 20 the worlds actually decide.
+at 4,000 and 12,000 worlds; how many lineups are within two standard errors
+of the 20th place and how far the best lineup stands above it, both from the
+PAIRED worldwise difference against the 20th place (every lineup is scored on
+the same worlds, so a lineup's own standard error is not the uncertainty of
+its gap to another -- the reviewer's point of 2026-09-19; the marginal
+version is kept, labelled descriptive); and fold-to-fold rank correlation,
+top-20 overlap and greedy-cover portfolio overlap on a set chosen by the
+THIRD fold, identical for the two folds compared and independent of both
+folds' worlds (the all-worlds-chosen set is reported beside it, labelled).
 
 Not a promotion, not an objective change: S7 comes first. If Top-10 is stable
 it is a candidate surrogate objective for later; if it is not, the sentence
@@ -56,7 +61,7 @@ from research import sd_model_ab as MAB     # noqa: E402  the pinned boards, see
 KS = (10, 20, 50, 88, 882)
 BLOCK = 1000                 # worlds per accumulation block
 FOLD = 4000                  # the S5 held-out fold size
-SHORT = 400                  # strongest lineups per objective kept world by world
+SHORT = 300                  # strongest lineups per objective (per fold and on all worlds) kept world by world
 PORT_K = 20
 
 
@@ -156,78 +161,122 @@ def board(dg, log=print):
                     P[:, :, w] = vals[keep]                  # (short, nK)
         return sums, sq, P, time.time() - t0
 
-    # pre-pass: a shortlist per objective from the first 1,000 worlds
-    s_pre, _, _, t_pre = sweep(BLOCK)
-    est_pre = s_pre[0] / BLOCK
-    keep = sorted(set(int(i) for c in range(nK) for i in np.argsort(-est_pre[:, c])[:SHORT]))
-    log(f"[RES] dg {dg}: pre-pass {t_pre:.0f}s, shortlist {len(keep)} lineups across {nK} objectives")
-    sums, sq, P, t_main = sweep(N, keep=np.asarray(keep))
-    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
+    # pass 1: every enterable lineup's block sums and sums of squares
+    sums, sq, _, t_main = sweep(N)
     est = sums.sum(axis=0) / N                                  # (K, nK) at N worlds
     var = np.maximum(sq / N - est * est, 0.0)
-    se = np.sqrt(var / N)
+    se = np.sqrt(var / N)                                       # each lineup's own (marginal) standard error
     nf = N // FOLD
     folds = [sums[i * (FOLD // BLOCK):(i + 1) * (FOLD // BLOCK)].sum(axis=0) / FOLD for i in range(nf)]
+    # shortlists: per objective, the strongest SHORT on all worlds (for the
+    # paired comparison against the 20th place of the full ranking) and on
+    # each fold separately (so a fold pair can be compared on a set chosen by
+    # the THIRD fold -- identical for both and independent of either's worlds:
+    # the reviewer's condition of 2026-09-19)
+    short_all = {c: [int(i) for i in np.argsort(-est[:, c])[:SHORT]] for c in range(nK)}
+    short_fold = {(c, i): [int(x) for x in np.argsort(-folds[i][:, c])[:SHORT]] for c in range(nK) for i in range(nf)}
+    keep = sorted(set(i for v in short_all.values() for i in v) | set(i for v in short_fold.values() for i in v))
+    log(f"[RES] dg {dg}: pass 1 {t_main:.0f}s; per-world values kept for {len(keep)} lineups "
+        f"(union of {nK} all-world and {nK * nf} fold shortlists of {SHORT})")
+    # pass 2: per-world values for that union
+    _, _, P, t_p = sweep(N, keep=np.asarray(keep))
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
     keep_pos = {int(i): p for p, i in enumerate(keep)}
     out = {"draft_group_id": int(dg), "contest_id": int(contest["id"]), "entries": int(C),
            "worlds": int(N), "fold_worlds": FOLD, "folds": nf, "legal_lineups": int(len(idx)),
-           "enterable": int(K), "shortlist": len(keep), "field_beta": round(float(beta), 4),
-           "seed": MAB.SEED, "ks": list(ks), "curve_check": check,
-           "build": {"pre_pass_s": round(t_pre, 1), "main_pass_s": round(t_main, 1),
-                     "peak_rss_mb": round(rss, 1)},
+           "enterable": int(K), "shortlist": SHORT, "per_world_kept": len(keep),
+           "field_beta": round(float(beta), 4), "seed": MAB.SEED, "ks": list(ks), "curve_check": check,
+           "build": {"pass1_s": round(t_main, 1), "pass2_s": round(t_p, 1), "peak_rss_mb": round(rss, 1)},
            "objectives": {}}
     for c, k in enumerate(ks):
         col = est[:, c]
         order = np.argsort(-col)
         top50, top20 = order[:50], order[:20]
         rel = se[top50, c] / np.maximum(col[top50], 1e-12)
+        twentieth_i = int(top20[-1])
+        twentieth = float(col[twentieth_i])
+        sa = short_all[c]
+        # -- the marginal screen: each lineup's own SE, a descriptive quantity only
+        #    (every lineup is scored on the SAME worlds, so their estimates are
+        #    correlated and a lineup's own SE is not the uncertainty of its gap
+        #    to another lineup)
+        marg_within = int(np.sum(np.abs(col[sa] - twentieth) <= 2.0 * se[sa, c]))
         spread = float(col[top50].std())
         noise = float(np.median(se[top50, c]))
-        # fold-to-fold: ranking of the objective's own shortlist, its top 20, and its portfolio
-        short_c = [int(i) for i in order[:SHORT]]
-        pos_c = np.asarray([keep_pos[i] for i in short_c if i in keep_pos])
-        rc, ov, pov = [], [], []
-        port_full = None
-        if len(pos_c) >= PORT_K:
-            Pc = P[pos_c, c, :]                                  # (short, N)
-            chosen_full, _ = T.greedy_cover(Pc, PORT_K)
-            port_full = set(int(pos_c[j]) for j in chosen_full)
-            ports = []
-            for i in range(nf):
-                sl = slice(i * FOLD, (i + 1) * FOLD)
-                ch, _ = T.greedy_cover(Pc[:, sl], PORT_K)
-                ports.append(set(int(pos_c[j]) for j in ch))
-            for i in range(nf):
-                for j in range(i + 1, nf):
-                    fi, fj = folds[i][short_c, c], folds[j][short_c, c]
-                    rc.append(_rank_corr(fi, fj))
-                    ti = set(int(x) for x in np.asarray(short_c)[np.argsort(-fi)[:PORT_K]])
-                    tj = set(int(x) for x in np.asarray(short_c)[np.argsort(-fj)[:PORT_K]])
-                    ov.append(len(ti & tj))
-                    pov.append(len(ports[i] & ports[j]))
-            port_vs_full = [len(p & port_full) for p in ports]
-        else:
-            port_vs_full = []
-        twentieth = float(col[top20[-1]])
-        within = int(np.sum(np.abs(col[order[:SHORT]] - twentieth) <= 2.0 * se[order[:SHORT], c]))
+        # -- the paired comparison: worldwise differences against the 20th place,
+        #    whose standard error is the uncertainty of the GAP
+        pj = P[keep_pos[twentieth_i], c, :].astype(np.float64)
+        paired_within, ratios, best_z = 0, [], None
+        for i in sa:
+            d = P[keep_pos[i], c, :].astype(np.float64) - pj
+            se_pair = float(d.std() / np.sqrt(N))
+            if i != twentieth_i and abs(float(d.mean())) <= 2.0 * se_pair:
+                paired_within += 1
+            if se[i, c] > 0:
+                ratios.append(se_pair / float(se[i, c]))
+            if i == int(order[0]):
+                best_z = float(d.mean() / se_pair) if se_pair > 0 else None
+        # -- fold agreement on a set chosen by the third fold: rank correlation,
+        #    top-20 list overlap and greedy-cover portfolio overlap; the
+        #    all-worlds shortlist version is kept beside it, labelled
+        rc, ov, pov, rc_all, ov_all, pov_all = [], [], [], [], [], []
+        for i in range(nf):
+            for j in range(i + 1, nf):
+                for label, sc in (("third", None), ("all", sa)):
+                    if sc is None:
+                        third = [x for x in range(nf) if x not in (i, j)]
+                        sc = short_fold[(c, third[0])]
+                    fi, fj = folds[i][sc, c], folds[j][sc, c]
+                    ti = set(int(x) for x in np.asarray(sc)[np.argsort(-fi)[:PORT_K]])
+                    tj = set(int(x) for x in np.asarray(sc)[np.argsort(-fj)[:PORT_K]])
+                    pos = np.asarray([keep_pos[x] for x in sc])
+                    Pc = P[pos, c, :]
+                    ci, _ = T.greedy_cover(Pc[:, i * FOLD:(i + 1) * FOLD], PORT_K)
+                    cj, _ = T.greedy_cover(Pc[:, j * FOLD:(j + 1) * FOLD], PORT_K)
+                    pi_, pj_ = set(int(sc[x]) for x in ci), set(int(sc[x]) for x in cj)
+                    (rc if label == "third" else rc_all).append(_rank_corr(fi, fj))
+                    (ov if label == "third" else ov_all).append(len(ti & tj))
+                    (pov if label == "third" else pov_all).append(len(pi_ & pj_))
         out["objectives"][f"top{k}"] = {
             "k": int(k), "share_of_field_pct": round(100.0 * k / C, 4),
             "best_pct": round(100.0 * float(col[order[0]]), 4),
             "twentieth_pct": round(100.0 * twentieth, 4),
             "top50_rel_se_median_12000": round(float(np.median(rel)), 4),
             "top50_rel_se_median_4000": round(float(np.median(rel)) * float(np.sqrt(N / FOLD)), 4),
-            "top50_spread_over_noise": round(spread / noise, 2) if noise > 0 else None,
-            "fold_rank_corr_mean": round(float(np.mean(rc)), 3) if rc else None,
-            "fold_top20_overlap_mean": round(float(np.mean(ov)), 2) if ov else None,
-            "fold_portfolio_overlap_mean": round(float(np.mean(pov)), 2) if pov else None,
-            "fold_portfolio_vs_full_overlap": port_vs_full,
-            "within_2se_of_twentieth": within,
+            "marginal_screen": {
+                "note": ("descriptive only: each lineup's OWN standard error; lineups share the worlds, "
+                         "so this is not the uncertainty of a gap between two lineups"),
+                "top50_spread_over_median_se": round(spread / noise, 2) if noise > 0 else None,
+                "within_2se_of_twentieth": marg_within},
+            "paired": {
+                "note": ("worldwise differences against the 20th place of the full ranking; the standard "
+                         "error of the paired difference is the uncertainty of the gap"),
+                "within_2se_of_twentieth": paired_within,
+                "best_vs_twentieth_z": (round(best_z, 2) if best_z is not None else None),
+                "paired_se_over_marginal_se_median": (round(float(np.median(ratios)), 3) if ratios else None),
+                "shortlist": len(sa)},
+            "fold_agreement_third_fold_shortlist": {
+                "note": ("the compared set is the strongest SHORT lineups on the third fold: identical for "
+                         "both folds and independent of both folds' worlds"),
+                "rank_corr_mean": round(float(np.mean(rc)), 3) if rc else None,
+                "top20_overlap_mean": round(float(np.mean(ov)), 2) if ov else None,
+                "portfolio_overlap_mean": round(float(np.mean(pov)), 2) if pov else None},
+            "fold_agreement_all_worlds_shortlist": {
+                "note": "the compared set is the strongest SHORT on all 12,000 worlds (chosen with the folds' own worlds)",
+                "rank_corr_mean": round(float(np.mean(rc_all)), 3) if rc_all else None,
+                "top20_overlap_mean": round(float(np.mean(ov_all)), 2) if ov_all else None,
+                "portfolio_overlap_mean": round(float(np.mean(pov_all)), 2) if pov_all else None},
             "top5": [{"i": int(i), "pct": round(100.0 * float(col[i]), 4), "se_pct": round(100.0 * float(se[i, c]), 4)}
                      for i in order[:5]]}
-        log(f"[RES] dg {dg} top{k:<4d} best {100 * col[order[0]]:.3f}% rel-SE(4k) {out['objectives'][f'top{k}']['top50_rel_se_median_4000']:.3f} "
-            f"spread/noise {out['objectives'][f'top{k}']['top50_spread_over_noise']} fold rank corr {out['objectives'][f'top{k}']['fold_rank_corr_mean']} "
-            f"top20 overlap {out['objectives'][f'top{k}']['fold_top20_overlap_mean']} portfolio overlap {out['objectives'][f'top{k}']['fold_portfolio_overlap_mean']} "
-            f"within 2se of 20th {within}")
+        o = out["objectives"][f"top{k}"]
+        log(f"[RES] dg {dg} top{k:<4d} best {100 * col[order[0]]:.3f}% rel-SE(4k) {o['top50_rel_se_median_4000']:.3f} "
+            f"| paired: within 2se of 20th {paired_within} best-vs-20th z {o['paired']['best_vs_twentieth_z']} "
+            f"paired/marginal se {o['paired']['paired_se_over_marginal_se_median']} "
+            f"| third-fold set: rank corr {o['fold_agreement_third_fold_shortlist']['rank_corr_mean']} "
+            f"top20 {o['fold_agreement_third_fold_shortlist']['top20_overlap_mean']} "
+            f"portfolio {o['fold_agreement_third_fold_shortlist']['portfolio_overlap_mean']} "
+            f"| all-worlds set: rank corr {o['fold_agreement_all_worlds_shortlist']['rank_corr_mean']} "
+            f"| marginal screen within {marg_within}")
     with open(os.path.join(DATA, f"_res_{dg}.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     return out

@@ -181,13 +181,19 @@ ROSTER_RETRY_S = 300            # after a failure, no new attempt sooner than th
 # older than the window's purpose: inside a window the roster must be younger
 # than the window is long.
 ROSTER_LOCK_WINDOWS = ((240, 4 * 3600), (120, 2 * 3600), (60, 3600), (25, 25 * 60))
+# A missing or unparseable lock time must not accidentally mean "far from lock"
+# (the reviewer's defensive condition, 2026-09-19): when the build is relying
+# on a last-known-good copy rather than a fresh fetch and cannot say how far
+# from lock it is, the allowance is the T-1h window's, and the stamp says why.
+ROSTER_UNKNOWN_LOCK_AGE_S = 3600
 
 
 def roster_max_age_for(seconds_to_lock):
     """The oldest last-known-good roster a build this far from lock may run on.
-    Unknown lock time (None) reads as far from lock."""
+    Unknown lock time (None) is NOT far from lock: it gets the conservative
+    allowance."""
     if seconds_to_lock is None:
-        return ROSTER_MAX_AGE_S
+        return ROSTER_UNKNOWN_LOCK_AGE_S
     mins = float(seconds_to_lock) / 60.0
     allowed = ROSTER_MAX_AGE_S
     for hi, age in ROSTER_LOCK_WINDOWS:
@@ -240,6 +246,8 @@ def _state(st, now, source, max_age_s=ROSTER_MAX_AGE_S, seconds_to_lock=None):
             "age_s": (int(now - fetched) if fetched else None),
             "ttl_s": ROSTER_TTL_S, "max_age_s": int(max_age_s),
             "seconds_to_lock": (None if seconds_to_lock is None else int(seconds_to_lock)),
+            "lock": ("unknown: conservative allowance, not 'far from lock'" if seconds_to_lock is None
+                     else "known"),
             "error": st.get("error")}
 
 
