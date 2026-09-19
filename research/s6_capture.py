@@ -186,10 +186,17 @@ def _write(name, payload, source, records, capdir=CAP):
             "normalization_version": NORM_VERSION}
 
 
-def capture(dgs=DGS, capdir=CAP, log=print):
-    """Fetch once, store, hash. The only function in S6 that touches DK."""
+def capture(dgs=DGS, capdir=CAP, log=print, merge=False, contest_ids=()):
+    """Fetch once, store, hash. The only function in S6 that touches DK.
+
+    `merge=True` keeps the manifest's other draft groups (and their `added`
+    records) instead of rewriting the manifest from scratch; `contest_ids`
+    names details to fetch explicitly. Both exist for S7, which pinned the
+    DET @ BUF group AFTER its game, when the lobby no longer listed its
+    contests but the draftables and the contest detail were still served."""
     import dk
-    man = {"normalization_version": NORM_VERSION, "draft_groups": {}}
+    man = (manifest(capdir) if merge and os.path.exists(os.path.join(capdir, "manifest.json"))
+           else {"normalization_version": NORM_VERSION, "draft_groups": {}})
     for dg in dgs:
         slate = dk.slate_for("nfl", draft_group_id=int(dg))
         if not slate:
@@ -198,9 +205,11 @@ def capture(dgs=DGS, capdir=CAP, log=print):
                                slate.get("n_players") or 0, capdir)}
         rows = dk.contests("nfl", draft_group_id=int(dg)) or []
         details = {}
-        for cid in select(rows):
+        for cid in list(select(rows)) + [int(c) for c in contest_ids]:
+            if str(cid) in details:
+                continue
             d = dk.contest_detail(cid)
-            if d:
+            if d and int(d.get("draft_group_id") or dg) == int(dg):
                 details[str(cid)] = d
         ent["contests"] = _write(f"contests_{dg}.json",
                                  {"lobby": rows, "detail": details},

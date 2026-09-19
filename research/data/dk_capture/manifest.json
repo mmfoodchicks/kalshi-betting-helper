@@ -55,6 +55,26 @@
     "sha256": "16fcb742cecedff6ebf12fe182d7e4bbd65001ab9c5f994af5011c1941d5bdb4",
     "source": "dk.slate_for(nfl, 153086)"
    }
+  },
+  "153434": {
+   "contests": {
+    "bytes": 1435,
+    "file": "contests_153434.json",
+    "normalization_version": 1,
+    "records": 1,
+    "retrieved_ts": 1789818525,
+    "sha256": "41b6c07402dcdc337229280da28adf2e423364882df4132bb01051324e38a932",
+    "source": "dk.contests + dk.contest_detail (nfl, 153434)"
+   },
+   "slate": {
+    "bytes": 8446,
+    "file": "slate_153434.json",
+    "normalization_version": 1,
+    "records": 47,
+    "retrieved_ts": 1789818525,
+    "sha256": "e112a1f0d69bce0afe7035f5ceafaf3aef74100cd946f9edec2e122d2b4c0bf3",
+    "source": "dk.slate_for(nfl, 153434)"
+   }
   }
  },
  "normalization_version": 1

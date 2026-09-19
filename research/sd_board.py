@@ -65,6 +65,36 @@ def feeds(feed_dir, season=SEASON, week=WEEK):
     return S
 
 
+def capture_feeds(feed_dir, season=SEASON, week=WEEK, log=print):
+    """Pin Sleeper's three projection feeds for a week, fetched by the URLs the
+    simulator itself uses (nfl_dfs_sim.weekly_games, the DEF and K builders),
+    so feeds() replays exactly what production would have read. Returns the
+    capture stamp; the caller records WHEN it was captured -- Sleeper's weekly
+    projections are not versioned, so a capture after the games cannot be
+    proven to equal what was served at lock."""
+    import datetime
+    import json
+    import nfl_dfs_sim as S
+    base = S._PROJ.format(season=season, week=week) + "?season_type=regular"
+    q = "&".join(f"position[]={p}" for p in S._POS)
+    files = {f"proj_{season}_{week}.json": f"{base}&{q}&order_by=pts_ppr",
+             f"proj_{season}_{week}_def.json": f"{base}&position[]=DEF&order_by=pts_ppr",
+             f"proj_{season}_{week}_k.json": f"{base}&position[]=K&order_by=pts_std"}
+    out = {"captured_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+           "files": {}}
+    os.makedirs(feed_dir, exist_ok=True)
+    for fn, url in files.items():
+        rows = S._get(url)
+        if not isinstance(rows, list) or not rows:
+            raise SystemExit(f"{url}: empty or malformed feed; nothing pinned")
+        path = os.path.join(feed_dir, fn)
+        with open(path, "w") as fh:
+            json.dump(rows, fh, sort_keys=True)
+        out["files"][fn] = {"url": url, "records": len(rows)}
+        log(f"[feeds] {fn}: {len(rows)} records <- {url}")
+    return out
+
+
 def roster_stamp(feed_dir, season=SEASON, week=WEEK):
     """What roster a study ran on: the file, its sha256, when it was captured."""
     import hashlib
@@ -238,8 +268,11 @@ def grid_for(contest):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    feed_dir = os.path.join(ROOT, "research", "data", "feeds")
     if a and a[0] == "capture-roster":
-        capture_roster(os.path.join(ROOT, "research", "data", "feeds"),
-                       tuple(int(x) for x in a[1:]) or PINNED_DGS)
+        week = int(a[1]) if len(a) > 1 else WEEK
+        capture_roster(feed_dir, tuple(int(x) for x in a[2:]) or PINNED_DGS, week=week)
+    elif a and a[0] == "capture-feeds":
+        capture_feeds(feed_dir, week=int(a[1]) if len(a) > 1 else WEEK)
     else:
-        print("usage: python3 -m research.sd_board capture-roster [dg ...]")
+        print("usage: python3 -m research.sd_board capture-roster [week] [dg ...] | capture-feeds [week]")
