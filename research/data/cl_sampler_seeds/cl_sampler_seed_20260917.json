@@ -1,0 +1,1130 @@
+{
+ "beta": 0.194547,
+ "calibration": {
+  "final_draw": {
+   "collision": 5.000250012500625e-08,
+   "max_own": 0.3982,
+   "mean_salary": 49293.735,
+   "top_share": 0.00015
+  },
+  "n": 20000,
+  "seconds": 290.7,
+  "targets": {
+   "max_own": 0.38,
+   "salary_used": 49400.0
+  }
+ },
+ "empirical": {
+  "active_entries": 831028,
+  "bring_back_pct": {
+   "all_entries": 34.96,
+   "among_stacked": 34.99,
+   "definition": "a WR or TE from the quarterback's opponent",
+   "model": 35.0
+  },
+  "collision": {
+   "compared": "distinct_pairs (the constant's definition: P(two random distinct entries hold the same lineup); the statistic dfs_tourney._collision reports for a sampled field); sum_p2 is the plug-in HHI, descriptive only, and cannot be compared to the constant: its floor 1/N exceeds the constant",
+   "distinct_pairs": 1.98231495377875e-08,
+   "effective_lineups": 817559.9,
+   "effective_lineups_pairs": 50446070.5,
+   "hhi_floor_1_over_n": 1.2033288890386364e-06,
+   "identity_n_hhi_minus_1_over_n_minus_1": 1.9823149537787385e-08,
+   "model_reported": 1.2e-07,
+   "ratio_hhi_over_model_not_like_for_like": 10.19,
+   "ratio_real_over_model": 0.17,
+   "sum_p2": 1.2231520147226553e-06
+  },
+  "distinct_lineups": 827351,
+  "dst_vs_own_qb_pct": {
+   "definition": "the defense's opponent is the quarterback's team",
+   "model": 8.0,
+   "real": 0.377
+  },
+  "dst_vs_own_rb_pct": 10.38,
+  "duplicates": {
+   "1-1": {
+    "entries": 824640,
+    "entry_share_pct": 99.23,
+    "lineups": 824640
+   },
+   "11-50": {
+    "entries": 198,
+    "entry_share_pct": 0.02,
+    "lineups": 12
+   },
+   "2-2": {
+    "entries": 4546,
+    "entry_share_pct": 0.55,
+    "lineups": 2273
+   },
+   "3-5": {
+    "entries": 1269,
+    "entry_share_pct": 0.15,
+    "lineups": 373
+   },
+   "51-plus": {
+    "entries": 0,
+    "entry_share_pct": 0.0,
+    "lineups": 0
+   },
+   "6-10": {
+    "entries": 375,
+    "entry_share_pct": 0.05,
+    "lineups": 53
+   }
+  },
+  "flex_position_pct": {
+   "RB": 29.87,
+   "WR": 70.13
+  },
+  "max_lineup_copies": 29,
+  "max_lineup_share_pct": 0.0035,
+  "max_ownership": {
+   "any_slot_pct": 39.6,
+   "any_slot_pct_of_all_rows": 39.6,
+   "by_slot_pct": {
+    "FLEX": 1.93,
+    "RB": 37.66
+   },
+   "model_target": 0.38,
+   "player": "Jahmyr Gibbs"
+  },
+  "ownership_any_slot_pct": {
+   "Aaron Jones Sr.": 1.527,
+   "Aaron Rodgers": 1.9565,
+   "Adonai Mitchell": 1.8744,
+   "Alec Pierce": 2.7579,
+   "Amon-Ra St. Brown": 23.7663,
+   "Andrei Iosivas": 1.8694,
+   "Antonio Williams": 1.0138,
+   "Ashton Dulin": 1.1119,
+   "Ashton Jeanty": 8.4337,
+   "Austin Hooper": 0.3463,
+   "Baker Mayfield": 5.279,
+   "Barion Brown": 2.258,
+   "Bears": 2.2761,
+   "Bengals": 2.3258,
+   "Bhayshul Tuten": 2.3817,
+   "Bijan Robinson": 21.8156,
+   "Bills": 1.5719,
+   "Blake Whiteheart": 0.3177,
+   "Braelon Allen": 0.6242,
+   "Breece Hall": 6.91,
+   "Brenton Strange": 1.9269,
+   "Brian Robinson Jr.": 0.6597,
+   "Brian Thomas Jr.": 3.8621,
+   "Brock Wright": 0.3982,
+   "Browns": 14.5516,
+   "Bryce Lance": 1.557,
+   "Bryce Young": 2.6115,
+   "Buccaneers": 2.4442,
+   "Bucky Irving": 5.1038,
+   "C.J. Stroud": 2.1019,
+   "Cade Otton": 2.1697,
+   "Cade Stover": 0.307,
+   "Caleb Douglas": 3.9537,
+   "Caleb Williams": 5.504,
+   "Calvin Ridley": 2.1197,
+   "Cam Ward": 2.6098,
+   "Cardinals": 22.6967,
+   "Carnell Tate": 3.4711,
+   "Chargers": 1.8406,
+   "Charlie Kolar": 0.5899,
+   "Chase Brown": 12.1046,
+   "Chig Okonkwo": 2.5199,
+   "Chimere Dike": 1.2636,
+   "Chris Bell": 2.0116,
+   "Chris Brooks": 0.6552,
+   "Chris Godwin Jr.": 5.6792,
+   "Chris Olave": 11.9096,
+   "Chris Rodriguez Jr.": 1.1309,
+   "Christian Watson": 5.2015,
+   "Chuba Hubbard": 2.3046,
+   "Colbie Young": 1.2867,
+   "Cole Kmet": 0.7445,
+   "Colston Loveland": 9.8851,
+   "Colts": 4.455,
+   "Commanders": 5.3543,
+   "Cooper Rush": 0.529,
+   "D'Andre Swift": 4.4116,
+   "DJ Moore": 6.6827,
+   "DK Metcalf": 3.6656,
+   "Dallas Goedert": 4.0982,
+   "Dalton Kincaid": 4.1737,
+   "Dalton Schultz": 1.6998,
+   "Daniel Bellinger": 0.7192,
+   "Daniel Jones": 1.6789,
+   "Darnell Washington": 0.6941,
+   "Darren Waller": 1.5758,
+   "David Montgomery": 6.0074,
+   "David Njoku": 0.7,
+   "Dawson Knox": 1.0719,
+   "De'Von Achane": 10.7205,
+   "DeVonta Smith": 14.6709,
+   "Denzel Boston": 1.8303,
+   "Derrick Henry": 7.6511,
+   "Deshaun Watson": 1.0369,
+   "Devaughn Vele": 3.9917,
+   "Devontez Walker": 1.3401,
+   "Dolphins": 2.4136,
+   "Dontayvion Wicks": 3.1704,
+   "Drake London": 6.1109,
+   "Drew Sample": 0.3823,
+   "Dylan Sampson": 0.8369,
+   "Eagles": 2.2548,
+   "Elic Ayomanor": 1.0149,
+   "Elijah Higgins": 0.3543,
+   "Emeka Egbuka": 8.5802,
+   "Erick All Jr.": 0.4227,
+   "Falcons": 2.679,
+   "Garrett Wilson": 7.1576,
+   "Geno Smith": 1.7285,
+   "Germie Bernard": 1.2006,
+   "Greg Dulcich": 1.8138,
+   "Gunnar Helm": 1.3516,
+   "Harold Fannin Jr.": 3.5368,
+   "Ian Thomas": 0.4096,
+   "Isaac TeSlaa": 1.1133,
+   "Isaiah Davis": 0.8225,
+   "Isaiah Williams": 2.3333,
+   "Ja'Kobi Lane": 2.7176,
+   "Ja'Marr Chase": 29.5211,
+   "Jack Bech": 1.8697,
+   "Jackson Hawes": 0.5339,
+   "Jacob Saylors": 0.5865,
+   "Jacoby Brissett": 1.2119,
+   "Jacory Croskey-Merritt": 1.8001,
+   "Jaguars": 2.2458,
+   "Jahan Dotson": 1.0991,
+   "Jahdae Walker": 1.3895,
+   "Jahmyr Gibbs": 39.5967,
+   "Jakobi Meyers": 3.5641,
+   "Jalen Coker": 4.1251,
+   "Jalen Hurts": 10.0466,
+   "Jalen Nailor": 3.2314,
+   "Jalen Tolbert": 1.3468,
+   "James Cook III": 11.1983,
+   "Jameson Williams": 6.3804,
+   "Jared Goff": 5.6445,
+   "Jauan Jennings": 2.0594,
+   "Jayden Daniels": 4.7399,
+   "Jayden Reed": 4.1361,
+   "Jaylen Warren": 3.7863,
+   "Jaylen Wright": 0.4556,
+   "Jaylin Noel": 1.2983,
+   "Jeremiyah Love": 3.5446,
+   "Jerry Jeudy": 1.7553,
+   "Jets": 5.0809,
+   "Joe Burrow": 11.4922,
+   "John Bates": 0.4423,
+   "John Metchie III": 1.8127,
+   "Johnny Mundt": 0.464,
+   "Jonathan Taylor": 18.5082,
+   "Jonathon Brooks": 1.7955,
+   "Jonnu Smith": 0.4087,
+   "Jordan Addison": 4.1297,
+   "Jordan Love": 2.6512,
+   "Jordan Mason": 1.5103,
+   "Josh Allen": 8.9768,
+   "Josh Downs": 4.3563,
+   "Josh Oliver": 0.4097,
+   "Josh Whyle": 0.3206,
+   "Justice Hill": 0.7954,
+   "Justin Herbert": 4.383,
+   "Justin Jefferson": 14.8476,
+   "Juwan Johnson": 2.9526,
+   "KC Concepcion": 2.4129,
+   "Kaleb Johnson": 0.4967,
+   "Kalif Raymond": 1.4925,
+   "Kayshon Boutte": 2.3034,
+   "Keaton Mitchell": 0.9684,
+   "Keenan Allen": 1.9297,
+   "Kendre Miller": 0.629,
+   "Kendrick Bourne": 1.2157,
+   "Kenny Gainwell": 2.8614,
+   "Kenyon Sadiq": 0.9079,
+   "Keon Coleman": 1.635,
+   "Kevin Coleman Jr.": 2.4086,
+   "Khalil Shakir": 5.2624,
+   "Kirk Cousins": 2.0247,
+   "Kyle Monangai": 1.0967,
+   "Kyle Pitts Sr.": 3.0371,
+   "Kyler Murray": 3.9231,
+   "Ladd McConkey": 6.7338,
+   "Lamar Jackson": 8.6066,
+   "LeQuint Allen Jr.": 0.4782,
+   "Lions": 1.7033,
+   "Luther Burden III": 5.9963,
+   "Makai Lemon": 2.5535,
+   "Malik Washington": 2.8091,
+   "Malik Willis": 2.4091,
+   "MarShawn Lloyd": 1.6561,
+   "Mark Andrews": 4.1462,
+   "Marlin Klein": 0.3884,
+   "Marvin Harrison Jr.": 2.4018,
+   "Mason Taylor": 0.8837,
+   "Matt Hibner": 0.4629,
+   "Matthew Golden": 2.3017,
+   "Michael Mayer": 1.6317,
+   "Michael Pittman Jr.": 2.9225,
+   "Michael Wilson": 2.8052,
+   "Mike Gesicki": 1.0909,
+   "Mike Washington Jr.": 1.0337,
+   "Mo Alie-Cox": 0.2697,
+   "Nate Boerkircher": 0.3652,
+   "Nico Collins": 12.427,
+   "Noah Fant": 0.6236,
+   "Olamide Zaccheaus": 1.255,
+   "Ollie Gordon II": 0.4295,
+   "Omar Cooper Jr.": 1.0416,
+   "Omarion Hampton": 8.944,
+   "Oronde Gadsden II": 0.9862,
+   "Packers": 1.7761,
+   "Panthers": 3.4627,
+   "Parker Washington": 5.3597,
+   "Pat Freiermuth": 1.2827,
+   "Payne Durham": 0.3243,
+   "Quentin Johnston": 4.0385,
+   "Quinshon Judkins": 2.2966,
+   "Rachaad White": 1.5853,
+   "Raiders": 2.7228,
+   "Rashod Bateman": 2.8542,
+   "Ravens": 2.0337,
+   "Ray Davis": 0.6978,
+   "Rico Dowdle": 2.9999,
+   "Rome Odunze": 4.2298,
+   "Saints": 7.0682,
+   "Sam LaPorta": 6.1032,
+   "Samaje Perine": 0.7984,
+   "Saquon Barkley": 9.7924,
+   "Seth McGowan": 0.4182,
+   "Steelers": 2.3851,
+   "Stefon Diggs": 4.6428,
+   "T.J. Hockenson": 1.651,
+   "Tank Bigsby": 0.7428,
+   "Ted Hurst III": 1.8212,
+   "Tee Higgins": 11.37,
+   "Terry McLaurin": 7.3269,
+   "Tetairoa McMillan": 8.3273,
+   "Texans": 2.0356,
+   "Tez Johnson": 2.2702,
+   "Titans": 2.1159,
+   "Tommy Tremble": 0.4297,
+   "Tony Pollard": 2.3772,
+   "Travis Etienne Jr.": 7.5443,
+   "Tre Tucker": 3.9976,
+   "Tre' Harris": 1.7836,
+   "Trevor Lawrence": 4.8328,
+   "Trey McBride": 15.6179,
+   "Tucker Kraft": 3.6753,
+   "Tyjae Spears": 1.472,
+   "Tyler Allgeier": 1.4156,
+   "Tyler Shough": 4.0219,
+   "Tyler Warren": 7.7197,
+   "Vikings": 2.5062,
+   "Wan'Dale Robinson": 3.6041,
+   "Will Kacmarek": 0.6618,
+   "Woody Marks": 1.4549,
+   "Xavier Hutchinson": 1.5676,
+   "Xavier Legette": 0.938,
+   "Zachariah Branch": 0.7009,
+   "Zavion Thomas": 1.0562,
+   "Zay Flowers": 12.8659
+  },
+  "ownership_top": [
+   {
+    "any_slot_pct": 39.6,
+    "name": "Jahmyr Gibbs",
+    "pos": "RB",
+    "team": "DET"
+   },
+   {
+    "any_slot_pct": 29.52,
+    "name": "Ja'Marr Chase",
+    "pos": "WR",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 23.77,
+    "name": "Amon-Ra St. Brown",
+    "pos": "WR",
+    "team": "DET"
+   },
+   {
+    "any_slot_pct": 22.7,
+    "name": "Cardinals",
+    "pos": "DST",
+    "team": "ARI"
+   },
+   {
+    "any_slot_pct": 21.82,
+    "name": "Bijan Robinson",
+    "pos": "RB",
+    "team": "ATL"
+   },
+   {
+    "any_slot_pct": 18.51,
+    "name": "Jonathan Taylor",
+    "pos": "RB",
+    "team": "IND"
+   },
+   {
+    "any_slot_pct": 15.62,
+    "name": "Trey McBride",
+    "pos": "TE",
+    "team": "ARI"
+   },
+   {
+    "any_slot_pct": 14.85,
+    "name": "Justin Jefferson",
+    "pos": "WR",
+    "team": "MIN"
+   },
+   {
+    "any_slot_pct": 14.67,
+    "name": "DeVonta Smith",
+    "pos": "WR",
+    "team": "PHI"
+   },
+   {
+    "any_slot_pct": 14.55,
+    "name": "Browns",
+    "pos": "DST",
+    "team": "CLE"
+   },
+   {
+    "any_slot_pct": 12.87,
+    "name": "Zay Flowers",
+    "pos": "WR",
+    "team": "BAL"
+   },
+   {
+    "any_slot_pct": 12.43,
+    "name": "Nico Collins",
+    "pos": "WR",
+    "team": "HOU"
+   },
+   {
+    "any_slot_pct": 12.1,
+    "name": "Chase Brown",
+    "pos": "RB",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 11.91,
+    "name": "Chris Olave",
+    "pos": "WR",
+    "team": "NO"
+   },
+   {
+    "any_slot_pct": 11.49,
+    "name": "Joe Burrow",
+    "pos": "QB",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 11.37,
+    "name": "Tee Higgins",
+    "pos": "WR",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 11.2,
+    "name": "James Cook III",
+    "pos": "RB",
+    "team": "BUF"
+   },
+   {
+    "any_slot_pct": 10.72,
+    "name": "De'Von Achane",
+    "pos": "RB",
+    "team": "MIA"
+   },
+   {
+    "any_slot_pct": 10.05,
+    "name": "Jalen Hurts",
+    "pos": "QB",
+    "team": "PHI"
+   },
+   {
+    "any_slot_pct": 9.89,
+    "name": "Colston Loveland",
+    "pos": "TE",
+    "team": "CHI"
+   }
+  ],
+  "players_from_one_game_max_pct": {
+   "1": 0.28,
+   "2": 30.92,
+   "3": 44.21,
+   "4": 19.41,
+   "5": 4.6,
+   "6": 0.54,
+   "7": 0.03,
+   "8": 0.0
+  },
+  "players_from_one_team_max_pct": {
+   "1": 6.08,
+   "2": 53.48,
+   "3": 32.65,
+   "4": 7.29,
+   "5": 0.49,
+   "6": 0.0
+  },
+  "players_from_qb_game_pct": {
+   "1": 8.89,
+   "2": 32.02,
+   "3": 35.88,
+   "4": 18.12,
+   "5": 4.52,
+   "6": 0.53,
+   "7": 0.03,
+   "8": 0.0
+  },
+  "players_used": 240,
+  "pool_players": 240,
+  "punts_under_3000_pct": {
+   "0": 14.56,
+   "1": 76.97,
+   "2": 8.47
+  },
+  "salary_used": {
+   "mean": 49286.6,
+   "median": 49800.0,
+   "model": 49400.0,
+   "p10_p25_p75_p90": [
+    47700.0,
+    49300.0,
+    50000.0,
+    50000.0
+   ],
+   "share_at_cap_pct": 30.83,
+   "share_ge_49500_pct": 70.74,
+   "share_le_48000_pct": 12.09
+  },
+  "share_from_150_max_users_pct": null,
+  "stack_pct": {
+   "0_1_2_3plus": [
+    17.35,
+    48.97,
+    28.97,
+    4.71
+   ],
+   "definition": "WR/TE teammates of the quarterback, a back not counted (the sampler's definition)",
+   "model": [
+    17.4,
+    49.0,
+    28.9,
+    4.7
+   ],
+   "with_backs_counted": [
+    15.59,
+    45.78,
+    30.89,
+    7.74
+   ]
+  },
+  "top_lineups": [
+   {
+    "copies": 29,
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Bijan Robinson",
+     "Caleb Douglas",
+     "Cardinals",
+     "Isaiah Williams",
+     "Jahmyr Gibbs",
+     "Jameson Williams",
+     "Jared Goff",
+     "Trey McBride"
+    ]
+   },
+   {
+    "copies": 27,
+    "lineup": [
+     "Bijan Robinson",
+     "Caleb Douglas",
+     "Cardinals",
+     "Colston Loveland",
+     "Isaiah Williams",
+     "Ja'Marr Chase",
+     "Jahmyr Gibbs",
+     "Joe Burrow",
+     "Tee Higgins"
+    ]
+   },
+   {
+    "copies": 26,
+    "lineup": [
+     "Barion Brown",
+     "Bijan Robinson",
+     "Caleb Douglas",
+     "Cardinals",
+     "Colston Loveland",
+     "Ja'Marr Chase",
+     "Jahmyr Gibbs",
+     "Joe Burrow",
+     "Tee Higgins"
+    ]
+   }
+  ],
+  "user_max_entry_brackets": null
+ },
+ "kappa": -1.984375,
+ "ownership_any_slot_pct": {
+  "Aaron Jones Sr.": 1.527,
+  "Aaron Rodgers": 1.9565,
+  "Adonai Mitchell": 1.8744,
+  "Alec Pierce": 2.7579,
+  "Amon-Ra St. Brown": 23.7663,
+  "Andrei Iosivas": 1.8694,
+  "Antonio Williams": 1.0138,
+  "Ashton Dulin": 1.1119,
+  "Ashton Jeanty": 8.4337,
+  "Austin Hooper": 0.3463,
+  "Baker Mayfield": 5.279,
+  "Barion Brown": 2.258,
+  "Bears": 2.2761,
+  "Bengals": 2.3258,
+  "Bhayshul Tuten": 2.3817,
+  "Bijan Robinson": 21.8156,
+  "Bills": 1.5719,
+  "Blake Whiteheart": 0.3177,
+  "Braelon Allen": 0.6242,
+  "Breece Hall": 6.91,
+  "Brenton Strange": 1.9269,
+  "Brian Robinson Jr.": 0.6597,
+  "Brian Thomas Jr.": 3.8621,
+  "Brock Wright": 0.3982,
+  "Browns": 14.5516,
+  "Bryce Lance": 1.557,
+  "Bryce Young": 2.6115,
+  "Buccaneers": 2.4442,
+  "Bucky Irving": 5.1038,
+  "C.J. Stroud": 2.1019,
+  "Cade Otton": 2.1697,
+  "Cade Stover": 0.307,
+  "Caleb Douglas": 3.9537,
+  "Caleb Williams": 5.504,
+  "Calvin Ridley": 2.1197,
+  "Cam Ward": 2.6098,
+  "Cardinals": 22.6967,
+  "Carnell Tate": 3.4711,
+  "Chargers": 1.8406,
+  "Charlie Kolar": 0.5899,
+  "Chase Brown": 12.1046,
+  "Chig Okonkwo": 2.5199,
+  "Chimere Dike": 1.2636,
+  "Chris Bell": 2.0116,
+  "Chris Brooks": 0.6552,
+  "Chris Godwin Jr.": 5.6792,
+  "Chris Olave": 11.9096,
+  "Chris Rodriguez Jr.": 1.1309,
+  "Christian Watson": 5.2015,
+  "Chuba Hubbard": 2.3046,
+  "Colbie Young": 1.2867,
+  "Cole Kmet": 0.7445,
+  "Colston Loveland": 9.8851,
+  "Colts": 4.455,
+  "Commanders": 5.3543,
+  "Cooper Rush": 0.529,
+  "D'Andre Swift": 4.4116,
+  "DJ Moore": 6.6827,
+  "DK Metcalf": 3.6656,
+  "Dallas Goedert": 4.0982,
+  "Dalton Kincaid": 4.1737,
+  "Dalton Schultz": 1.6998,
+  "Daniel Bellinger": 0.7192,
+  "Daniel Jones": 1.6789,
+  "Darnell Washington": 0.6941,
+  "Darren Waller": 1.5758,
+  "David Montgomery": 6.0074,
+  "David Njoku": 0.7,
+  "Dawson Knox": 1.0719,
+  "De'Von Achane": 10.7205,
+  "DeVonta Smith": 14.6709,
+  "Denzel Boston": 1.8303,
+  "Derrick Henry": 7.6511,
+  "Deshaun Watson": 1.0369,
+  "Devaughn Vele": 3.9917,
+  "Devontez Walker": 1.3401,
+  "Dolphins": 2.4136,
+  "Dontayvion Wicks": 3.1704,
+  "Drake London": 6.1109,
+  "Drew Sample": 0.3823,
+  "Dylan Sampson": 0.8369,
+  "Eagles": 2.2548,
+  "Elic Ayomanor": 1.0149,
+  "Elijah Higgins": 0.3543,
+  "Emeka Egbuka": 8.5802,
+  "Erick All Jr.": 0.4227,
+  "Falcons": 2.679,
+  "Garrett Wilson": 7.1576,
+  "Geno Smith": 1.7285,
+  "Germie Bernard": 1.2006,
+  "Greg Dulcich": 1.8138,
+  "Gunnar Helm": 1.3516,
+  "Harold Fannin Jr.": 3.5368,
+  "Ian Thomas": 0.4096,
+  "Isaac TeSlaa": 1.1133,
+  "Isaiah Davis": 0.8225,
+  "Isaiah Williams": 2.3333,
+  "Ja'Kobi Lane": 2.7176,
+  "Ja'Marr Chase": 29.5211,
+  "Jack Bech": 1.8697,
+  "Jackson Hawes": 0.5339,
+  "Jacob Saylors": 0.5865,
+  "Jacoby Brissett": 1.2119,
+  "Jacory Croskey-Merritt": 1.8001,
+  "Jaguars": 2.2458,
+  "Jahan Dotson": 1.0991,
+  "Jahdae Walker": 1.3895,
+  "Jahmyr Gibbs": 39.5967,
+  "Jakobi Meyers": 3.5641,
+  "Jalen Coker": 4.1251,
+  "Jalen Hurts": 10.0466,
+  "Jalen Nailor": 3.2314,
+  "Jalen Tolbert": 1.3468,
+  "James Cook III": 11.1983,
+  "Jameson Williams": 6.3804,
+  "Jared Goff": 5.6445,
+  "Jauan Jennings": 2.0594,
+  "Jayden Daniels": 4.7399,
+  "Jayden Reed": 4.1361,
+  "Jaylen Warren": 3.7863,
+  "Jaylen Wright": 0.4556,
+  "Jaylin Noel": 1.2983,
+  "Jeremiyah Love": 3.5446,
+  "Jerry Jeudy": 1.7553,
+  "Jets": 5.0809,
+  "Joe Burrow": 11.4922,
+  "John Bates": 0.4423,
+  "John Metchie III": 1.8127,
+  "Johnny Mundt": 0.464,
+  "Jonathan Taylor": 18.5082,
+  "Jonathon Brooks": 1.7955,
+  "Jonnu Smith": 0.4087,
+  "Jordan Addison": 4.1297,
+  "Jordan Love": 2.6512,
+  "Jordan Mason": 1.5103,
+  "Josh Allen": 8.9768,
+  "Josh Downs": 4.3563,
+  "Josh Oliver": 0.4097,
+  "Josh Whyle": 0.3206,
+  "Justice Hill": 0.7954,
+  "Justin Herbert": 4.383,
+  "Justin Jefferson": 14.8476,
+  "Juwan Johnson": 2.9526,
+  "KC Concepcion": 2.4129,
+  "Kaleb Johnson": 0.4967,
+  "Kalif Raymond": 1.4925,
+  "Kayshon Boutte": 2.3034,
+  "Keaton Mitchell": 0.9684,
+  "Keenan Allen": 1.9297,
+  "Kendre Miller": 0.629,
+  "Kendrick Bourne": 1.2157,
+  "Kenny Gainwell": 2.8614,
+  "Kenyon Sadiq": 0.9079,
+  "Keon Coleman": 1.635,
+  "Kevin Coleman Jr.": 2.4086,
+  "Khalil Shakir": 5.2624,
+  "Kirk Cousins": 2.0247,
+  "Kyle Monangai": 1.0967,
+  "Kyle Pitts Sr.": 3.0371,
+  "Kyler Murray": 3.9231,
+  "Ladd McConkey": 6.7338,
+  "Lamar Jackson": 8.6066,
+  "LeQuint Allen Jr.": 0.4782,
+  "Lions": 1.7033,
+  "Luther Burden III": 5.9963,
+  "Makai Lemon": 2.5535,
+  "Malik Washington": 2.8091,
+  "Malik Willis": 2.4091,
+  "MarShawn Lloyd": 1.6561,
+  "Mark Andrews": 4.1462,
+  "Marlin Klein": 0.3884,
+  "Marvin Harrison Jr.": 2.4018,
+  "Mason Taylor": 0.8837,
+  "Matt Hibner": 0.4629,
+  "Matthew Golden": 2.3017,
+  "Michael Mayer": 1.6317,
+  "Michael Pittman Jr.": 2.9225,
+  "Michael Wilson": 2.8052,
+  "Mike Gesicki": 1.0909,
+  "Mike Washington Jr.": 1.0337,
+  "Mo Alie-Cox": 0.2697,
+  "Nate Boerkircher": 0.3652,
+  "Nico Collins": 12.427,
+  "Noah Fant": 0.6236,
+  "Olamide Zaccheaus": 1.255,
+  "Ollie Gordon II": 0.4295,
+  "Omar Cooper Jr.": 1.0416,
+  "Omarion Hampton": 8.944,
+  "Oronde Gadsden II": 0.9862,
+  "Packers": 1.7761,
+  "Panthers": 3.4627,
+  "Parker Washington": 5.3597,
+  "Pat Freiermuth": 1.2827,
+  "Payne Durham": 0.3243,
+  "Quentin Johnston": 4.0385,
+  "Quinshon Judkins": 2.2966,
+  "Rachaad White": 1.5853,
+  "Raiders": 2.7228,
+  "Rashod Bateman": 2.8542,
+  "Ravens": 2.0337,
+  "Ray Davis": 0.6978,
+  "Rico Dowdle": 2.9999,
+  "Rome Odunze": 4.2298,
+  "Saints": 7.0682,
+  "Sam LaPorta": 6.1032,
+  "Samaje Perine": 0.7984,
+  "Saquon Barkley": 9.7924,
+  "Seth McGowan": 0.4182,
+  "Steelers": 2.3851,
+  "Stefon Diggs": 4.6428,
+  "T.J. Hockenson": 1.651,
+  "Tank Bigsby": 0.7428,
+  "Ted Hurst III": 1.8212,
+  "Tee Higgins": 11.37,
+  "Terry McLaurin": 7.3269,
+  "Tetairoa McMillan": 8.3273,
+  "Texans": 2.0356,
+  "Tez Johnson": 2.2702,
+  "Titans": 2.1159,
+  "Tommy Tremble": 0.4297,
+  "Tony Pollard": 2.3772,
+  "Travis Etienne Jr.": 7.5443,
+  "Tre Tucker": 3.9976,
+  "Tre' Harris": 1.7836,
+  "Trevor Lawrence": 4.8328,
+  "Trey McBride": 15.6179,
+  "Tucker Kraft": 3.6753,
+  "Tyjae Spears": 1.472,
+  "Tyler Allgeier": 1.4156,
+  "Tyler Shough": 4.0219,
+  "Tyler Warren": 7.7197,
+  "Vikings": 2.5062,
+  "Wan'Dale Robinson": 3.6041,
+  "Will Kacmarek": 0.6618,
+  "Woody Marks": 1.4549,
+  "Xavier Hutchinson": 1.5676,
+  "Xavier Legette": 0.938,
+  "Zachariah Branch": 0.7009,
+  "Zavion Thomas": 1.0562,
+  "Zay Flowers": 12.8659
+ },
+ "production_receipts": {
+  "collision_distinct_pairs": 1.98231495377875e-08,
+  "field_stats": {
+   "bring_back": 0.3496440553146224,
+   "dst_vs_own_qb": 0.003767622751579971,
+   "max_own": 0.39596740422705373,
+   "mean_salary": 49286.608513792555,
+   "n": 831028,
+   "stack_dist": [
+    0.17346587599936464,
+    0.4897344012476114,
+    0.2897002267071627,
+    0.04709949604586127
+   ]
+  },
+  "top_share": 3.489653778212046e-05
+ },
+ "provenance": {
+  "commit": "0e4c20a",
+  "data_split": null,
+  "dirty": false,
+  "model": "dfs_tourney.calibrate_field + classic_sample, the constants as served, on the served pre-lock pool",
+  "seed": 20260917,
+  "source_files": 45,
+  "source_sha": "5ca92171b5a00b99cf99f18cff80dfcb7042317b74ee1b002224ccfbc447fc76",
+  "worlds": 831028
+ },
+ "sample": {
+  "chunk": 100000,
+  "n": 831028,
+  "seconds": 159.1
+ },
+ "seed": 20260917,
+ "vs_real": {
+  "bias_pp": 0.01,
+  "coverage": {
+   "largest_outside_pool": [
+    {
+     "name": "Travis Hunter",
+     "real_pct": 0.36
+    },
+    {
+     "name": "Hollywood Brown",
+     "real_pct": 0.27
+    },
+    {
+     "name": "Brock Bowers",
+     "real_pct": 0.27
+    },
+    {
+     "name": "Kimani Vidal",
+     "real_pct": 0.14
+    },
+    {
+     "name": "Joshua Palmer",
+     "real_pct": 0.05
+    },
+    {
+     "name": "Roman Wilson",
+     "real_pct": 0.05
+    },
+    {
+     "name": "Nick Westbrook-Ikhine",
+     "real_pct": 0.04
+    },
+    {
+     "name": "Theo Wease Jr.",
+     "real_pct": 0.04
+    }
+   ],
+   "real_players_outside_pool": 425,
+   "real_slots_on_pool_players_pct": 99.733,
+   "real_slots_outside_pool_pct": 0.267
+  },
+  "largest_over": [
+   {
+    "diff_pp": 20.71,
+    "name": "Cardinals",
+    "real_pct": 1.99,
+    "sampled_pct": 22.7
+   },
+   {
+    "diff_pp": 10.76,
+    "name": "Trey McBride",
+    "real_pct": 4.85,
+    "sampled_pct": 15.62
+   },
+   {
+    "diff_pp": 7.33,
+    "name": "Bijan Robinson",
+    "real_pct": 14.49,
+    "sampled_pct": 21.82
+   },
+   {
+    "diff_pp": 7.3,
+    "name": "James Cook III",
+    "real_pct": 3.9,
+    "sampled_pct": 11.2
+   },
+   {
+    "diff_pp": 7.15,
+    "name": "Browns",
+    "real_pct": 7.41,
+    "sampled_pct": 14.55
+   },
+   {
+    "diff_pp": 6.8,
+    "name": "Nico Collins",
+    "real_pct": 5.63,
+    "sampled_pct": 12.43
+   },
+   {
+    "diff_pp": 6.38,
+    "name": "Saints",
+    "real_pct": 0.69,
+    "sampled_pct": 7.07
+   },
+   {
+    "diff_pp": 5.93,
+    "name": "Josh Allen",
+    "real_pct": 3.05,
+    "sampled_pct": 8.98
+   }
+  ],
+  "largest_under": [
+   {
+    "diff_pp": -25.87,
+    "name": "Michael Mayer",
+    "real_pct": 27.51,
+    "sampled_pct": 1.63
+   },
+   {
+    "diff_pp": -15.58,
+    "name": "Jaguars",
+    "real_pct": 17.83,
+    "sampled_pct": 2.25
+   },
+   {
+    "diff_pp": -12.9,
+    "name": "Chris Olave",
+    "real_pct": 24.81,
+    "sampled_pct": 11.91
+   },
+   {
+    "diff_pp": -11.28,
+    "name": "Saquon Barkley",
+    "real_pct": 21.07,
+    "sampled_pct": 9.79
+   },
+   {
+    "diff_pp": -10.94,
+    "name": "Omarion Hampton",
+    "real_pct": 19.88,
+    "sampled_pct": 8.94
+   },
+   {
+    "diff_pp": -10.18,
+    "name": "Juwan Johnson",
+    "real_pct": 13.13,
+    "sampled_pct": 2.95
+   },
+   {
+    "diff_pp": -8.69,
+    "name": "Garrett Wilson",
+    "real_pct": 15.84,
+    "sampled_pct": 7.16
+   },
+   {
+    "diff_pp": -8.67,
+    "name": "Quentin Johnston",
+    "real_pct": 12.71,
+    "sampled_pct": 4.04
+   }
+  ],
+  "mae_pp": 2.16,
+  "pearson": 0.7516,
+  "players_in_pool": 240,
+  "rmse_pp": 3.814,
+  "spearman": 0.8556,
+  "top20_by_real": {
+   "bias_pp": -6.303,
+   "mae_pp": 8.352
+  },
+  "top50_by_real": {
+   "bias_pp": -3.563,
+   "mae_pp": 5.219,
+   "rmse_pp": 6.961,
+   "spearman": 0.3209
+  }
+ },
+ "vs_served": {
+  "bias_pp": 0.003,
+  "coverage": {
+   "largest_outside_pool": [],
+   "real_players_outside_pool": 0,
+   "real_slots_on_pool_players_pct": 99.911,
+   "real_slots_outside_pool_pct": 0.0
+  },
+  "largest_over": [
+   {
+    "diff_pp": 0.2,
+    "name": "Jahmyr Gibbs",
+    "real_pct": 39.4,
+    "sampled_pct": 39.6
+   },
+   {
+    "diff_pp": 0.13,
+    "name": "Terry McLaurin",
+    "real_pct": 7.2,
+    "sampled_pct": 7.33
+   },
+   {
+    "diff_pp": 0.13,
+    "name": "Jalen Coker",
+    "real_pct": 4.0,
+    "sampled_pct": 4.13
+   },
+   {
+    "diff_pp": 0.12,
+    "name": "Ja'Marr Chase",
+    "real_pct": 29.4,
+    "sampled_pct": 29.52
+   },
+   {
+    "diff_pp": 0.11,
+    "name": "Bryce Young",
+    "real_pct": 2.5,
+    "sampled_pct": 2.61
+   },
+   {
+    "diff_pp": 0.11,
+    "name": "Kevin Coleman Jr.",
+    "real_pct": 2.3,
+    "sampled_pct": 2.41
+   },
+   {
+    "diff_pp": 0.1,
+    "name": "Tre Tucker",
+    "real_pct": 3.9,
+    "sampled_pct": 4.0
+   },
+   {
+    "diff_pp": 0.09,
+    "name": "Saquon Barkley",
+    "real_pct": 9.7,
+    "sampled_pct": 9.79
+   }
+  ],
+  "largest_under": [
+   {
+    "diff_pp": -0.16,
+    "name": "Omarion Hampton",
+    "real_pct": 9.1,
+    "sampled_pct": 8.94
+   },
+   {
+    "diff_pp": -0.1,
+    "name": "James Cook III",
+    "real_pct": 11.3,
+    "sampled_pct": 11.2
+   },
+   {
+    "diff_pp": -0.1,
+    "name": "Bucky Irving",
+    "real_pct": 5.2,
+    "sampled_pct": 5.1
+   },
+   {
+    "diff_pp": -0.09,
+    "name": "Michael Wilson",
+    "real_pct": 2.9,
+    "sampled_pct": 2.81
+   },
+   {
+    "diff_pp": -0.08,
+    "name": "Bijan Robinson",
+    "real_pct": 21.9,
+    "sampled_pct": 21.82
+   },
+   {
+    "diff_pp": -0.08,
+    "name": "Ja'Kobi Lane",
+    "real_pct": 2.8,
+    "sampled_pct": 2.72
+   },
+   {
+    "diff_pp": -0.08,
+    "name": "Trey McBride",
+    "real_pct": 15.7,
+    "sampled_pct": 15.62
+   },
+   {
+    "diff_pp": -0.08,
+    "name": "Ted Hurst III",
+    "real_pct": 1.9,
+    "sampled_pct": 1.82
+   }
+  ],
+  "mae_pp": 0.036,
+  "pearson": 1.0,
+  "players_in_pool": 240,
+  "rmse_pp": 0.047,
+  "spearman": 0.9995,
+  "top20_by_real": {
+   "bias_pp": 0.001,
+   "mae_pp": 0.056
+  },
+  "top50_by_real": {
+   "bias_pp": 0.007,
+   "mae_pp": 0.049,
+   "rmse_pp": 0.065,
+   "spearman": 0.9996
+  }
+ }
+}
