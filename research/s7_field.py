@@ -188,6 +188,81 @@ def reconcile(std, pool, detail):
     return out
 
 
+def points_check(path, std):
+    """Every active entry's Points recomputed from DraftKings' own role-specific
+    FPTS table (the CPT row already carries the 1.5x): the parser's lineup and
+    the export's score must agree, entry by entry. The right-hand table is
+    keyed by (player, slot); keying it by player alone would overwrite the CPT
+    row with the FLEX row and the check would fail by tens of points -- which
+    is how a first version of this check failed."""
+    fp = {}
+    for r in csv.reader(gzip.open(path, "rt", encoding="utf-8-sig")):
+        if len(r) > 10 and r[7].strip() and r[8].strip().upper() in ("CPT", "FLEX"):
+            fp[(_norm(r[7]), r[8].strip().upper())] = float(r[10] or 0.0)
+    maxd, n = 0.0, 0
+    for e in std["entries"]:
+        if e["lineup"] is None:
+            continue
+        c, fl = e["lineup"]
+        if (c, "CPT") in fp and all((x, "FLEX") in fp for x in fl):
+            maxd = max(maxd, abs(fp[(c, "CPT")] + sum(fp[(x, "FLEX")] for x in fl) - e["points"]))
+            n += 1
+    return {"entries_checked": n, "max_abs_diff_points": round(maxd, 6), "reconciles": n > 0 and maxd < 0.001}
+
+
+def field_rules(std, pool):
+    """The four owner rules that can be read off the standings alone (the
+    independent S7 study's screen, reproduced with production's definitions:
+    nfl_dfs._sd_allowed), per entry, for the whole field and by finishing
+    group; plus each winner's duplicate rank among the unique lineups. The
+    salary, punt and depth-chart rules need the pool and the roster and are
+    not part of this screen (the artifact's `winner.rules_failed` applies the
+    full set to the winner and the chalk).
+
+    Definitions, so a reader can reproduce the independent study's slightly
+    different figures: DST-OPP here bars the opposing defense beside ANY
+    non-DST captain (production), the independent screen beside an offensive
+    captain only; the tight-end count here comes from the DraftKings pool's
+    positions, so an unprojected tight end (Jackson Hawes) counts."""
+    import nfl_dfs
+    E = [e for e in std["entries"] if e["lineup"]]
+    n_all = len(std["entries"])
+
+    def fails(e):
+        c, fl = e["lineup"]
+        cp, picks = pool[c], [pool[x] for x in fl]
+        r = []
+        if cp["pos"] in ("K", "DST"):
+            r.append(nfl_dfs._SD_RULES[1])
+        if sum(1 for p in [cp] + picks if p["pos"] in ("K", "DST")) > nfl_dfs._SD_MAX_KDST:
+            r.append(nfl_dfs._SD_RULES[2])
+        if cp["pos"] != "DST" and any(p["pos"] == "DST" and p["team"] != cp["team"] for p in picks):
+            r.append(nfl_dfs._SD_RULES[0])
+        if any(v > 1 for v in collections.Counter(p["team"] for p in [cp] + picks if p["pos"] == "TE").values()):
+            r.append(nfl_dfs._SD_RULES[3])
+        return r
+    F_ = {e["entry_id"]: fails(e) for e in E}
+    k1, k01 = max(1, int(0.01 * n_all)), max(1, int(0.001 * n_all))
+
+    def group(sel):
+        cnt = collections.Counter(r for e in sel for r in F_[e["entry_id"]])
+        return {"entries": len(sel), "failing_any_pct": round(100 * sum(1 for e in sel if F_[e["entry_id"]]) / max(1, len(sel)), 2),
+                "by_rule": {r: v for r, v in cnt.most_common()}}
+    lc = collections.Counter((e["lineup"][0], tuple(sorted(e["lineup"][1]))) for e in E)
+    best = max(e["points"] for e in E)
+    w = next(e for e in E if e["points"] == best)
+    wc = lc[(w["lineup"][0], tuple(sorted(w["lineup"][1])))]
+    return {"rules": [nfl_dfs._SD_RULES[i] for i in (1, 2, 0, 3)],
+            "field": {"failing_any_pct_of_active": round(100 * sum(1 for e in E if F_[e["entry_id"]]) / len(E), 2),
+                      "failing_any_pct_of_all_entries": round(100 * sum(1 for e in E if F_[e["entry_id"]]) / n_all, 2),
+                      "by_rule_pct_of_all_entries": {r: round(100 * sum(1 for e in E if r in F_[e["entry_id"]]) / n_all, 2)
+                                                     for r in [nfl_dfs._SD_RULES[i] for i in (1, 2, 0, 3)]}},
+            "top_1pct_by_rank": group([e for e in E if e["rank"] <= k1]),
+            "top_01pct_by_rank": group([e for e in E if e["rank"] <= k01]),
+            "winner_duplicate_rank": {"copies": wc, "rank_among_unique_lineups": 1 + sum(1 for v in lc.values() if v > wc),
+                                      "lineups_with_the_same_copy_count": sum(1 for v in lc.values() if v == wc)}}
+
+
 def _structure(names, pool):
     c = collections.Counter(pool[nm]["team"] for nm in names)
     return "-".join(str(x) for x in sorted(c.values(), reverse=True))
@@ -505,6 +580,8 @@ def one(cid, spec, man, log=print):
     detail = details[str(cid)]
     pool = dk_pool(slate)
     rec = reconcile(std, pool, detail)
+    rec["points"] = points_check(path, std)
+    rec["all_checks_pass"] = bool(rec["all_checks_pass"] and rec["points"]["reconciles"])
     log(f"[S7] {cid} {spec['label']}: rows {rec['rows']['parsed']:,} vs capacity {rec['rows']['capacity']:,}; "
         f"empty {rec['rows']['empty_lineup_rows']}, malformed {rec['rows']['malformed_lineup_rows']}, unresolved {rec['lineups']['unresolved_entries']}; "
         f"ownership max |diff| {rec['ownership']['max_abs_diff_pp']} pp; all checks {'PASS' if rec['all_checks_pass'] else 'FAIL'}")
@@ -523,7 +600,7 @@ def one(cid, spec, man, log=print):
             "inputs": {"draftkings": s6_capture.dk_hashes(spec["dg"]),
                        "roster": {**sd_board.roster_stamp(FEEDS, week=spec["week"], name=spec["roster"]),
                                   "injury_statuses": M["roster_stamp"]["injury_statuses"]}},
-            "reconciliation": rec, "empirical": emp,
+            "reconciliation": rec, "empirical": emp, "field_rules": field_rules(std, pool),
             "model": {**M["summary"], "field_only_players": M["field_only"], "universe_players": M["name_of"]},
             "observed_vs_model": bins, "winner": win,
             "pool_players_without_projection": sorted(set(pool) - set(M["name_of"]))}
@@ -547,6 +624,9 @@ def summary_row(cid, r):
             "real_chalk_model_rank": b["chalk"]["most_duplicated_real_lineup"]["model_rank"],
             "model_chalk_observed_copies": b["chalk"]["model_most_probable_lineup"]["observed_copies"],
             "rank_corr_obs_vs_model": b["rank_correlation_observed_vs_model_over_observed_lineups"],
+            "field_failing_any_of_four_rules_pct": r["field_rules"]["field"]["failing_any_pct_of_active"],
+            "top_01pct_failing_pct": r["field_rules"]["top_01pct_by_rank"]["failing_any_pct"],
+            "winner_duplicate_rank": r["field_rules"]["winner_duplicate_rank"]["rank_among_unique_lineups"],
             "winner": {"points": r["winner"]["points"], "tied": r["winner"]["tied_entries_at_top"], "copies": r["winner"]["exact_lineup_copies"],
                        "model_rank": r["winner"].get("model_rank_of_lineup"), "admitted": r["winner"]["admitted_by_our_rules"],
                        "rules_failed": r["winner"].get("rules_failed")}}
