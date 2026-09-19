@@ -1,0 +1,7361 @@
+{
+ "contests": {
+  "193391013": {
+   "captured": "pool and roster captured post-game (2026-09-19); the week-1 Sleeper feeds were captured 2026-09-12, AFTER this game (2026-09-10)",
+   "fit": {
+    "leave_one_out": {
+     "contest_balanced": {
+      "beta": 0.36248,
+      "note": null
+     },
+     "entry_weighted": {
+      "beta": 0.36832,
+      "note": null
+     },
+     "fitted_on": [
+      195526287,
+      195677825
+     ]
+    },
+    "own_mle": {
+     "beta": 0.33177,
+     "note": null
+    }
+   },
+   "graded": {
+    "loo_contest_balanced": {
+     "beta": 0.36248,
+     "likelihood": {
+      "model_mean_x": 87.3482,
+      "model_var_x": 25.74,
+      "moment_residual": 0.849674,
+      "nll_per_entry_nats": 10.03426,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.9679
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 43.83,
+       "max_abs_diff_pp": 10.66,
+       "top_observed": [
+        {
+         "model": 13.69,
+         "name": "Rhamondre Stevenson",
+         "observed": 15.34
+        },
+        {
+         "model": 18.57,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 15.27
+        },
+        {
+         "model": 23.57,
+         "name": "Drake Maye",
+         "observed": 14.78
+        },
+        {
+         "model": 1.42,
+         "name": "Jadarian Price",
+         "observed": 12.08
+        },
+        {
+         "model": 10.09,
+         "name": "A.J. Brown",
+         "observed": 9.12
+        },
+        {
+         "model": 11.74,
+         "name": "Sam Darnold",
+         "observed": 5.23
+        },
+        {
+         "model": 1.44,
+         "name": "Rashid Shaheed",
+         "observed": 4.71
+        },
+        {
+         "model": 2.57,
+         "name": "Romeo Doubs",
+         "observed": 3.82
+        },
+        {
+         "model": 3.14,
+         "name": "Hunter Henry",
+         "observed": 3.58
+        },
+        {
+         "model": 2.88,
+         "name": "Seahawks",
+         "observed": 3.47
+        },
+        {
+         "model": 3.21,
+         "name": "AJ Barner",
+         "observed": 2.46
+        },
+        {
+         "model": 0.72,
+         "name": "Jason Myers",
+         "observed": 2.28
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.7,
+        "QB": 20.1,
+        "RB": 29.62,
+        "TE": 6.28,
+        "WR": 36.77
+       },
+       "l1_pp": 32.57,
+       "model": {
+        "DST": 4.26,
+        "K": 1.26,
+        "QB": 35.32,
+        "RB": 16.08,
+        "TE": 7.42,
+        "WR": 35.66
+       },
+       "observed": {
+        "DST": 4.67,
+        "K": 2.77,
+        "QB": 20.01,
+        "RB": 29.87,
+        "TE": 6.45,
+        "WR": 36.24
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 119.25,
+       "max_abs_diff_pp": 20.39,
+       "top_observed": [
+        {
+         "model": 55.33,
+         "name": "Drake Maye",
+         "observed": 60.98
+        },
+        {
+         "model": 56.1,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 53.9
+        },
+        {
+         "model": 47.42,
+         "name": "Rhamondre Stevenson",
+         "observed": 46.34
+        },
+        {
+         "model": 46.26,
+         "name": "Sam Darnold",
+         "observed": 45.4
+        },
+        {
+         "model": 41.96,
+         "name": "A.J. Brown",
+         "observed": 40.3
+        },
+        {
+         "model": 13.58,
+         "name": "Jadarian Price",
+         "observed": 33.97
+        },
+        {
+         "model": 10.11,
+         "name": "Jason Myers",
+         "observed": 27.04
+        },
+        {
+         "model": 25.33,
+         "name": "Hunter Henry",
+         "observed": 26.55
+        },
+        {
+         "model": 21.08,
+         "name": "Romeo Doubs",
+         "observed": 22.84
+        },
+        {
+         "model": 25.91,
+         "name": "AJ Barner",
+         "observed": 19.57
+        },
+        {
+         "model": 24.1,
+         "name": "Seahawks",
+         "observed": 18.47
+        },
+        {
+         "model": 14.13,
+         "name": "Rashid Shaheed",
+         "observed": 17.94
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 42.11,
+        "1": 41.75,
+        "2": 14.95,
+        "3": 0.97,
+        "4": 0.22
+       },
+       "l1_pp": 13.1,
+       "model": {
+        "0": 45.44,
+        "1": 44.47,
+        "2": 9.61,
+        "3": 0.48,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 41.02,
+        "1": 42.34,
+        "2": 15.41,
+        "3": 1.0,
+        "4": 0.23
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1287.9,
+       "model_mean": 2270.1,
+       "model_share_ge_1000_pct": 67.0,
+       "observed_mean": 1280.9,
+       "observed_share_ge_1000_pct": 39.28
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.73,
+        "4-2": 47.74,
+        "5-1": 13.53
+       },
+       "l1_pp": 5.03,
+       "model": {
+        "3-3": 38.88,
+        "4-2": 49.9,
+        "5-1": 11.22
+       },
+       "observed": {
+        "3-3": 38.55,
+        "4-2": 47.71,
+        "5-1": 13.73
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.059,
+        "observed_over_model": 4.071,
+        "observed_pct": 0.24,
+        "universe_lineups": 156692
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.425,
+        "observed_over_model": 1.21,
+        "observed_pct": 0.514,
+        "universe_lineups": 115946
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.499,
+        "observed_over_model": 1.005,
+        "observed_pct": 2.511,
+        "universe_lineups": 71270
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 12.185,
+        "observed_over_model": 1.047,
+        "observed_pct": 12.76,
+        "universe_lineups": 35721
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 41.923,
+        "observed_over_model": 1.231,
+        "observed_pct": 51.599,
+        "universe_lineups": 13872
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 39.345,
+        "observed_over_model": 0.765,
+        "observed_pct": 30.102,
+        "universe_lineups": 1816
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 3.557,
+        "observed_over_model": 0.62,
+        "observed_pct": 2.204,
+        "universe_lineups": 28
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 29178.4,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 11.81,
+         "lineups": 14365.2
+        },
+        "11-50": {
+         "entry_share_pct": 35.47,
+         "lineups": 2165.5
+        },
+        "2-2": {
+         "entry_share_pct": 7.81,
+         "lineups": 4749.5
+        },
+        "3-5": {
+         "entry_share_pct": 15.78,
+         "lineups": 5150.5
+        },
+        "51-plus": {
+         "entry_share_pct": 13.3,
+         "lineups": 194.9
+        },
+        "6-10": {
+         "entry_share_pct": 15.82,
+         "lineups": 2552.9
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 5344.2,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.504,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 8.673,
+        "observed": 4.833
+       },
+       "1000": {
+        "model": 32.357,
+        "observed": 23.248
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1803,
+       "observed": 0.4417
+      }
+     }
+    },
+    "loo_entry_weighted": {
+     "beta": 0.36832,
+     "likelihood": {
+      "model_mean_x": 87.4966,
+      "model_var_x": 25.0824,
+      "moment_residual": 0.998128,
+      "nll_per_entry_nats": 10.03966,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.9933
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 44.06,
+       "max_abs_diff_pp": 10.7,
+       "top_observed": [
+        {
+         "model": 13.76,
+         "name": "Rhamondre Stevenson",
+         "observed": 15.34
+        },
+        {
+         "model": 18.6,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 15.27
+        },
+        {
+         "model": 23.75,
+         "name": "Drake Maye",
+         "observed": 14.78
+        },
+        {
+         "model": 1.38,
+         "name": "Jadarian Price",
+         "observed": 12.08
+        },
+        {
+         "model": 10.06,
+         "name": "A.J. Brown",
+         "observed": 9.12
+        },
+        {
+         "model": 11.74,
+         "name": "Sam Darnold",
+         "observed": 5.23
+        },
+        {
+         "model": 1.41,
+         "name": "Rashid Shaheed",
+         "observed": 4.71
+        },
+        {
+         "model": 2.53,
+         "name": "Romeo Doubs",
+         "observed": 3.82
+        },
+        {
+         "model": 3.14,
+         "name": "Hunter Henry",
+         "observed": 3.58
+        },
+        {
+         "model": 2.89,
+         "name": "Seahawks",
+         "observed": 3.47
+        },
+        {
+         "model": 3.22,
+         "name": "AJ Barner",
+         "observed": 2.46
+        },
+        {
+         "model": 0.7,
+         "name": "Jason Myers",
+         "observed": 2.28
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.7,
+        "QB": 20.1,
+        "RB": 29.62,
+        "TE": 6.28,
+        "WR": 36.77
+       },
+       "l1_pp": 32.87,
+       "model": {
+        "DST": 4.26,
+        "K": 1.22,
+        "QB": 35.48,
+        "RB": 16.08,
+        "TE": 7.41,
+        "WR": 35.55
+       },
+       "observed": {
+        "DST": 4.67,
+        "K": 2.77,
+        "QB": 20.01,
+        "RB": 29.87,
+        "TE": 6.45,
+        "WR": 36.24
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 120.57,
+       "max_abs_diff_pp": 20.57,
+       "top_observed": [
+        {
+         "model": 55.49,
+         "name": "Drake Maye",
+         "observed": 60.98
+        },
+        {
+         "model": 56.32,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 53.9
+        },
+        {
+         "model": 47.67,
+         "name": "Rhamondre Stevenson",
+         "observed": 46.34
+        },
+        {
+         "model": 46.43,
+         "name": "Sam Darnold",
+         "observed": 45.4
+        },
+        {
+         "model": 42.04,
+         "name": "A.J. Brown",
+         "observed": 40.3
+        },
+        {
+         "model": 13.39,
+         "name": "Jadarian Price",
+         "observed": 33.97
+        },
+        {
+         "model": 9.96,
+         "name": "Jason Myers",
+         "observed": 27.04
+        },
+        {
+         "model": 25.41,
+         "name": "Hunter Henry",
+         "observed": 26.55
+        },
+        {
+         "model": 20.99,
+         "name": "Romeo Doubs",
+         "observed": 22.84
+        },
+        {
+         "model": 26.01,
+         "name": "AJ Barner",
+         "observed": 19.57
+        },
+        {
+         "model": 24.19,
+         "name": "Seahawks",
+         "observed": 18.47
+        },
+        {
+         "model": 13.97,
+         "name": "Rashid Shaheed",
+         "observed": 17.94
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 42.11,
+        "1": 41.75,
+        "2": 14.95,
+        "3": 0.97,
+        "4": 0.22
+       },
+       "l1_pp": 13.31,
+       "model": {
+        "0": 45.55,
+        "1": 44.47,
+        "2": 9.52,
+        "3": 0.47,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 41.02,
+        "1": 42.34,
+        "2": 15.41,
+        "3": 1.0,
+        "4": 0.23
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1287.9,
+       "model_mean": 2221.2,
+       "model_share_ge_1000_pct": 66.33,
+       "observed_mean": 1280.9,
+       "observed_share_ge_1000_pct": 39.28
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.73,
+        "4-2": 47.74,
+        "5-1": 13.53
+       },
+       "l1_pp": 5.09,
+       "model": {
+        "3-3": 38.9,
+        "4-2": 49.91,
+        "5-1": 11.19
+       },
+       "observed": {
+        "3-3": 38.55,
+        "4-2": 47.71,
+        "5-1": 13.73
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.057,
+        "observed_over_model": 4.29,
+        "observed_pct": 0.243,
+        "universe_lineups": 152101
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.406,
+        "observed_over_model": 1.353,
+        "observed_pct": 0.549,
+        "universe_lineups": 112058
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.385,
+        "observed_over_model": 1.093,
+        "observed_pct": 2.607,
+        "universe_lineups": 68752
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 11.801,
+        "observed_over_model": 1.091,
+        "observed_pct": 12.872,
+        "universe_lineups": 34802
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 41.347,
+        "observed_over_model": 1.242,
+        "observed_pct": 51.343,
+        "universe_lineups": 13625
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 40.054,
+        "observed_over_model": 0.75,
+        "observed_pct": 30.036,
+        "universe_lineups": 1814
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 3.943,
+        "observed_over_model": 0.576,
+        "observed_pct": 2.27,
+        "universe_lineups": 30
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 28449.7,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 11.45,
+         "lineups": 13916.9
+        },
+        "11-50": {
+         "entry_share_pct": 35.61,
+         "lineups": 2164.2
+        },
+        "2-2": {
+         "entry_share_pct": 7.6,
+         "lineups": 4621.4
+        },
+        "3-5": {
+         "entry_share_pct": 15.41,
+         "lineups": 5030.3
+        },
+        "51-plus": {
+         "entry_share_pct": 14.37,
+         "lineups": 207.5
+        },
+        "6-10": {
+         "entry_share_pct": 15.56,
+         "lineups": 2509.5
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 5022.6,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.583,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 9.059,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 33.33,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1904,
+       "observed": 0.4417
+      }
+     }
+    },
+    "own_mle": {
+     "beta": 0.33177,
+     "likelihood": {
+      "model_mean_x": 86.4985,
+      "model_var_x": 29.7728,
+      "moment_residual": -0.0,
+      "nll_per_entry_nats": 10.0209,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.8368
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 42.55,
+       "max_abs_diff_pp": 10.45,
+       "top_observed": [
+        {
+         "model": 13.32,
+         "name": "Rhamondre Stevenson",
+         "observed": 15.34
+        },
+        {
+         "model": 18.34,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 15.27
+        },
+        {
+         "model": 22.62,
+         "name": "Drake Maye",
+         "observed": 14.78
+        },
+        {
+         "model": 1.63,
+         "name": "Jadarian Price",
+         "observed": 12.08
+        },
+        {
+         "model": 10.24,
+         "name": "A.J. Brown",
+         "observed": 9.12
+        },
+        {
+         "model": 11.77,
+         "name": "Sam Darnold",
+         "observed": 5.23
+        },
+        {
+         "model": 1.63,
+         "name": "Rashid Shaheed",
+         "observed": 4.71
+        },
+        {
+         "model": 2.78,
+         "name": "Romeo Doubs",
+         "observed": 3.82
+        },
+        {
+         "model": 3.16,
+         "name": "Hunter Henry",
+         "observed": 3.58
+        },
+        {
+         "model": 2.86,
+         "name": "Seahawks",
+         "observed": 3.47
+        },
+        {
+         "model": 3.2,
+         "name": "AJ Barner",
+         "observed": 2.46
+        },
+        {
+         "model": 0.84,
+         "name": "Jason Myers",
+         "observed": 2.28
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.7,
+        "QB": 20.1,
+        "RB": 29.62,
+        "TE": 6.28,
+        "WR": 36.77
+       },
+       "l1_pp": 30.99,
+       "model": {
+        "DST": 4.27,
+        "K": 1.49,
+        "QB": 34.4,
+        "RB": 16.09,
+        "TE": 7.55,
+        "WR": 36.2
+       },
+       "observed": {
+        "DST": 4.67,
+        "K": 2.77,
+        "QB": 20.01,
+        "RB": 29.87,
+        "TE": 6.45,
+        "WR": 36.24
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 113.76,
+       "max_abs_diff_pp": 19.39,
+       "top_observed": [
+        {
+         "model": 54.4,
+         "name": "Drake Maye",
+         "observed": 60.98
+        },
+        {
+         "model": 54.89,
+         "name": "Jaxon Smith-Njigba",
+         "observed": 53.9
+        },
+        {
+         "model": 46.1,
+         "name": "Rhamondre Stevenson",
+         "observed": 46.34
+        },
+        {
+         "model": 45.34,
+         "name": "Sam Darnold",
+         "observed": 45.4
+        },
+        {
+         "model": 41.51,
+         "name": "A.J. Brown",
+         "observed": 40.3
+        },
+        {
+         "model": 14.58,
+         "name": "Jadarian Price",
+         "observed": 33.97
+        },
+        {
+         "model": 10.9,
+         "name": "Jason Myers",
+         "observed": 27.04
+        },
+        {
+         "model": 24.89,
+         "name": "Hunter Henry",
+         "observed": 26.55
+        },
+        {
+         "model": 21.52,
+         "name": "Romeo Doubs",
+         "observed": 22.84
+        },
+        {
+         "model": 25.38,
+         "name": "AJ Barner",
+         "observed": 19.57
+        },
+        {
+         "model": 23.64,
+         "name": "Seahawks",
+         "observed": 18.47
+        },
+        {
+         "model": 14.97,
+         "name": "Rashid Shaheed",
+         "observed": 17.94
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 42.11,
+        "1": 41.75,
+        "2": 14.95,
+        "3": 0.97,
+        "4": 0.22
+       },
+       "l1_pp": 11.96,
+       "model": {
+        "0": 44.81,
+        "1": 44.53,
+        "2": 10.12,
+        "3": 0.54,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 41.02,
+        "1": 42.34,
+        "2": 15.41,
+        "3": 1.0,
+        "4": 0.23
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1287.9,
+       "model_mean": 2559.8,
+       "model_share_ge_1000_pct": 70.62,
+       "observed_mean": 1280.9,
+       "observed_share_ge_1000_pct": 39.28
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.73,
+        "4-2": 47.74,
+        "5-1": 13.53
+       },
+       "l1_pp": 4.75,
+       "model": {
+        "3-3": 38.8,
+        "4-2": 49.84,
+        "5-1": 11.36
+       },
+       "observed": {
+        "3-3": 38.55,
+        "4-2": 47.71,
+        "5-1": 13.73
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.07,
+        "observed_over_model": 2.246,
+        "observed_pct": 0.157,
+        "universe_lineups": 186092
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.516,
+        "observed_over_model": 0.749,
+        "observed_pct": 0.387,
+        "universe_lineups": 140917
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 3.08,
+        "observed_over_model": 0.665,
+        "observed_pct": 2.049,
+        "universe_lineups": 87891
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 14.439,
+        "observed_over_model": 0.824,
+        "observed_pct": 11.894,
+        "universe_lineups": 42620
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 45.789,
+        "observed_over_model": 1.178,
+        "observed_pct": 53.943,
+        "universe_lineups": 15504
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 34.968,
+        "observed_over_model": 0.873,
+        "observed_pct": 30.544,
+        "universe_lineups": 1731
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 1.129,
+        "observed_over_model": 0.873,
+        "observed_pct": 0.986,
+        "universe_lineups": 10
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 33433.3,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 14.04,
+         "lineups": 17076.0
+        },
+        "11-50": {
+         "entry_share_pct": 33.67,
+         "lineups": 2120.5
+        },
+        "2-2": {
+         "entry_share_pct": 9.05,
+         "lineups": 5502.0
+        },
+        "3-5": {
+         "entry_share_pct": 17.82,
+         "lineups": 5829.6
+        },
+        "51-plus": {
+         "entry_share_pct": 8.26,
+         "lineups": 131.1
+        },
+        "6-10": {
+         "entry_share_pct": 17.15,
+         "lineups": 2774.1
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 7482.5,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.129,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 6.8,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 27.324,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1334,
+       "observed": 0.4417
+      }
+     }
+    },
+    "pooled_all_contest_balanced": {
+     "beta": 0.35144,
+     "likelihood": {
+      "model_mean_x": 87.0569,
+      "model_var_x": 27.0705,
+      "moment_residual": 0.558428,
+      "nll_per_entry_nats": 10.02648,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.9203
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.063,
+        "observed_over_model": 3.277,
+        "observed_pct": 0.206,
+        "universe_lineups": 166790
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.455,
+        "observed_over_model": 0.991,
+        "observed_pct": 0.451,
+        "universe_lineups": 124213
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.685,
+        "observed_over_model": 0.884,
+        "observed_pct": 2.374,
+        "universe_lineups": 76703
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 12.949,
+        "observed_over_model": 0.949,
+        "observed_pct": 12.287,
+        "universe_lineups": 38066
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 43.207,
+        "observed_over_model": 1.217,
+        "observed_pct": 52.576,
+        "universe_lineups": 14424
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 37.969,
+        "observed_over_model": 0.791,
+        "observed_pct": 30.037,
+        "universe_lineups": 1803
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 2.664,
+        "observed_over_model": 0.754,
+        "observed_pct": 2.008,
+        "universe_lineups": 22
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 30621.9,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 12.56,
+         "lineups": 15267.0
+        },
+        "11-50": {
+         "entry_share_pct": 35.04,
+         "lineups": 2160.0
+        },
+        "2-2": {
+         "entry_share_pct": 8.23,
+         "lineups": 5004.1
+        },
+        "3-5": {
+         "entry_share_pct": 16.49,
+         "lineups": 5385.4
+        },
+        "51-plus": {
+         "entry_share_pct": 11.37,
+         "lineups": 171.2
+        },
+        "6-10": {
+         "entry_share_pct": 16.31,
+         "lineups": 2634.1
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 6019.0,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.361,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 7.97,
+        "observed": 4.833
+       },
+       "1000": {
+        "model": 30.531,
+        "observed": 23.248
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1623,
+       "observed": 0.4417
+      }
+     }
+    },
+    "pooled_all_entry_weighted": {
+     "beta": 0.35141,
+     "likelihood": {
+      "model_mean_x": 87.056,
+      "model_var_x": 27.0748,
+      "moment_residual": 0.557518,
+      "nll_per_entry_nats": 10.02646,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.9202
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.063,
+        "observed_over_model": 3.274,
+        "observed_pct": 0.206,
+        "universe_lineups": 166790
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.455,
+        "observed_over_model": 0.99,
+        "observed_pct": 0.451,
+        "universe_lineups": 124213
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.686,
+        "observed_over_model": 0.884,
+        "observed_pct": 2.374,
+        "universe_lineups": 76703
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 12.953,
+        "observed_over_model": 0.949,
+        "observed_pct": 12.287,
+        "universe_lineups": 38066
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 43.208,
+        "observed_over_model": 1.217,
+        "observed_pct": 52.576,
+        "universe_lineups": 14424
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 37.964,
+        "observed_over_model": 0.791,
+        "observed_pct": 30.037,
+        "universe_lineups": 1803
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 2.663,
+        "observed_over_model": 0.754,
+        "observed_pct": 2.008,
+        "universe_lineups": 22
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 30626.4,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 12.56,
+         "lineups": 15269.9
+        },
+        "11-50": {
+         "entry_share_pct": 35.04,
+         "lineups": 2160.0
+        },
+        "2-2": {
+         "entry_share_pct": 8.23,
+         "lineups": 5004.9
+        },
+        "3-5": {
+         "entry_share_pct": 16.49,
+         "lineups": 5386.1
+        },
+        "51-plus": {
+         "entry_share_pct": 11.37,
+         "lineups": 171.2
+        },
+        "6-10": {
+         "entry_share_pct": 16.31,
+         "lineups": 2634.4
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 6021.2,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.36,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 7.968,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 30.525,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1622,
+       "observed": 0.4417
+      }
+     }
+    },
+    "production_beta_on_this_universe": {
+     "beta": 0.2913,
+     "likelihood": {
+      "model_mean_x": 85.1551,
+      "model_var_x": 37.0717,
+      "moment_residual": -1.343421,
+      "nll_per_entry_nats": 10.04709,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.6721
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.088,
+        "observed_over_model": 0.83,
+        "observed_pct": 0.073,
+        "universe_lineups": 228693
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.678,
+        "observed_over_model": 0.467,
+        "observed_pct": 0.317,
+        "universe_lineups": 183407
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 4.123,
+        "observed_over_model": 0.375,
+        "observed_pct": 1.547,
+        "universe_lineups": 117414
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 18.242,
+        "observed_over_model": 0.583,
+        "observed_pct": 10.643,
+        "universe_lineups": 54880
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 51.589,
+        "observed_over_model": 1.149,
+        "observed_pct": 59.272,
+        "universe_lineups": 18057
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 25.272,
+        "observed_over_model": 1.113,
+        "observed_pct": 28.137,
+        "universe_lineups": 1387
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 40348.4,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 17.94,
+         "lineups": 21816.2
+        },
+        "11-50": {
+         "entry_share_pct": 28.35,
+         "lineups": 1893.6
+        },
+        "2-2": {
+         "entry_share_pct": 11.08,
+         "lineups": 6734.9
+        },
+        "3-5": {
+         "entry_share_pct": 20.82,
+         "lineups": 6835.6
+        },
+        "51-plus": {
+         "entry_share_pct": 3.3,
+         "lineups": 59.2
+        },
+        "6-10": {
+         "entry_share_pct": 18.51,
+         "lineups": 3009.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 12008.1,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.741,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 4.728,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 21.017,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0858,
+       "observed": 0.4417
+      }
+     }
+    },
+    "top_share_rule_resolved_here": {
+     "beta": 0.37368,
+     "likelihood": {
+      "model_mean_x": 87.6295,
+      "model_var_x": 24.5056,
+      "moment_residual": 1.131001,
+      "nll_per_entry_nats": 10.04537,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 1.0167
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.055,
+        "observed_over_model": 4.539,
+        "observed_pct": 0.249,
+        "universe_lineups": 147329
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.392,
+        "observed_over_model": 1.482,
+        "observed_pct": 0.581,
+        "universe_lineups": 108310
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.335,
+        "observed_over_model": 1.189,
+        "observed_pct": 2.776,
+        "universe_lineups": 66777
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 11.545,
+        "observed_over_model": 1.15,
+        "observed_pct": 13.281,
+        "universe_lineups": 33597
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 40.214,
+        "observed_over_model": 1.254,
+        "observed_pct": 50.442,
+        "universe_lineups": 13218
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 40.921,
+        "observed_over_model": 0.734,
+        "observed_pct": 30.022,
+        "universe_lineups": 1855
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 4.531,
+        "observed_over_model": 0.565,
+        "observed_pct": 2.561,
+        "universe_lineups": 34
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 27801.8,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 11.12,
+         "lineups": 13522.3
+        },
+        "11-50": {
+         "entry_share_pct": 35.7,
+         "lineups": 2160.8
+        },
+        "2-2": {
+         "entry_share_pct": 7.41,
+         "lineups": 4507.6
+        },
+        "3-5": {
+         "entry_share_pct": 15.09,
+         "lineups": 4922.5
+        },
+        "51-plus": {
+         "entry_share_pct": 15.36,
+         "lineups": 218.9
+        },
+        "6-10": {
+         "entry_share_pct": 15.32,
+         "lineups": 2469.7
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 4747.1,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.659,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 9.422,
+        "observed": 4.833
+       },
+       "1000": {
+        "model": 34.225,
+        "observed": 23.248
+       }
+      },
+      "max_share_pct": {
+       "model": 0.2,
+       "observed": 0.4417
+      }
+     }
+    },
+    "transfer_from_195526287": {
+     "beta": 0.43428,
+     "likelihood": {
+      "model_mean_x": 88.9473,
+      "model_var_x": 19.3522,
+      "moment_residual": 2.448763,
+      "nll_per_entry_nats": 10.15541,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 1.2874
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.04,
+        "observed_over_model": 7.043,
+        "observed_pct": 0.28,
+        "universe_lineups": 106684
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.275,
+        "observed_over_model": 3.84,
+        "observed_pct": 1.057,
+        "universe_lineups": 75685
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 1.619,
+        "observed_over_model": 2.362,
+        "observed_pct": 3.824,
+        "universe_lineups": 45863
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 8.606,
+        "observed_over_model": 1.827,
+        "observed_pct": 15.727,
+        "universe_lineups": 24786
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 32.81,
+        "observed_over_model": 1.403,
+        "observed_pct": 46.03,
+        "universe_lineups": 10472
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 45.137,
+        "observed_over_model": 0.641,
+        "observed_pct": 28.942,
+        "universe_lineups": 1842
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 11.507,
+        "observed_over_model": 0.339,
+        "observed_pct": 3.9,
+        "universe_lineups": 72
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 21642.3,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 8.19,
+         "lineups": 9958.4
+        },
+        "11-50": {
+         "entry_share_pct": 34.58,
+         "lineups": 2021.8
+        },
+        "2-2": {
+         "entry_share_pct": 5.65,
+         "lineups": 3437.0
+        },
+        "3-5": {
+         "entry_share_pct": 11.86,
+         "lineups": 3860.7
+        },
+        "51-plus": {
+         "entry_share_pct": 27.06,
+         "lineups": 330.1
+        },
+        "6-10": {
+         "entry_share_pct": 12.66,
+         "lineups": 2034.3
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 2593.4,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 2.686,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 14.049,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 44.411,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.3335,
+       "observed": 0.4417
+      }
+     }
+    },
+    "transfer_from_195677825": {
+     "beta": 0.30091,
+     "likelihood": {
+      "model_mean_x": 85.5016,
+      "model_var_x": 35.0844,
+      "moment_residual": -0.996884,
+      "nll_per_entry_nats": 10.03586,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.7101
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.083,
+        "observed_over_model": 1.141,
+        "observed_pct": 0.095,
+        "universe_lineups": 217430
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.631,
+        "observed_over_model": 0.499,
+        "observed_pct": 0.315,
+        "universe_lineups": 172356
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 3.808,
+        "observed_over_model": 0.438,
+        "observed_pct": 1.67,
+        "universe_lineups": 109456
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 17.171,
+        "observed_over_model": 0.633,
+        "observed_pct": 10.862,
+        "universe_lineups": 51818
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 50.135,
+        "observed_over_model": 1.153,
+        "observed_pct": 57.801,
+        "universe_lineups": 17497
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 28.162,
+        "observed_over_model": 1.038,
+        "observed_pct": 29.24,
+        "universe_lineups": 1510
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 38552.0,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 16.9,
+         "lineups": 20545.3
+        },
+        "11-50": {
+         "entry_share_pct": 29.92,
+         "lineups": 1967.3
+        },
+        "2-2": {
+         "entry_share_pct": 10.55,
+         "lineups": 6413.8
+        },
+        "3-5": {
+         "entry_share_pct": 20.09,
+         "lineups": 6587.2
+        },
+        "51-plus": {
+         "entry_share_pct": 4.29,
+         "lineups": 74.7
+        },
+        "6-10": {
+         "entry_share_pct": 18.25,
+         "lineups": 2963.6
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 10696.4,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.823,
+        "observed": 0.986
+       },
+       "100": {
+        "model": 5.179,
+        "observed": 4.898
+       },
+       "1000": {
+        "model": 22.471,
+        "observed": 23.256
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0958,
+       "observed": 0.4417
+      }
+     }
+    },
+    "uniform": {
+     "beta": 0.0,
+     "likelihood": {
+      "model_mean_x": 53.0134,
+      "model_var_x": 182.6396,
+      "moment_residual": -33.485097,
+      "nll_per_entry_nats": 13.85565,
+      "observed_mean_x": 86.4985,
+      "observed_var_x": 24.9141,
+      "var_ratio_observed_over_model": 0.1364
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 100.0,
+        "observed_over_model": 1.0,
+        "observed_pct": 100.0,
+        "universe_lineups": 1040958
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 114754.7,
+       "observed": 16949
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 88.98,
+         "lineups": 108183.3
+        },
+        "11-50": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "2-2": {
+         "entry_share_pct": 10.39,
+         "lineups": 6318.1
+        },
+        "3-5": {
+         "entry_share_pct": 0.63,
+         "lineups": 253.3
+        },
+        "51-plus": {
+         "entry_share_pct": -0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.25,
+         "lineups": 7596
+        },
+        "11-50": {
+         "entry_share_pct": 35.62,
+         "lineups": 1965
+        },
+        "2-2": {
+         "entry_share_pct": 3.99,
+         "lineups": 2426
+        },
+        "3-5": {
+         "entry_share_pct": 8.63,
+         "lineups": 2799
+        },
+        "51-plus": {
+         "entry_share_pct": 34.59,
+         "lineups": 419
+        },
+        "6-10": {
+         "entry_share_pct": 10.92,
+         "lineups": 1744
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 1040958.0,
+       "observed": 2020.8
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.001,
+        "observed": 0.067
+       },
+       "100": {
+        "model": 0.01,
+        "observed": 0.767
+       },
+       "1000": {
+        "model": 0.096,
+        "observed": 1.755
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0001,
+       "observed": 0.4417
+      }
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 1427,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 151820)",
+       "file": "contests_151820.json",
+       "records": 1,
+       "retrieved_ts": 1789819807,
+       "sha256": "58d9a7425125daaed9c609e02446194d66df078bdbd1a40b9fe4ca3888f1930b"
+      },
+      "slate": {
+       "bytes": 11585,
+       "endpoint": "dk.slate_for(nfl, 151820)",
+       "file": "slate_151820.json",
+       "records": 68,
+       "retrieved_ts": 1789819807,
+       "sha256": "395998273ae0bc5de82c2dc0d5856f0298205597c40ae4e2c18cc6b76ad04676"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    }
+   },
+   "integrity": "post-game reconstruction (pool, roster and feeds captured after the game)",
+   "label": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "nll_scan": [
+    {
+     "beta": 0.0,
+     "nll_per_entry_nats": 13.85565
+    },
+    {
+     "beta": 0.05,
+     "nll_per_entry_nats": 12.41158
+    },
+    {
+     "beta": 0.1,
+     "nll_per_entry_nats": 11.40565
+    },
+    {
+     "beta": 0.15,
+     "nll_per_entry_nats": 10.75518
+    },
+    {
+     "beta": 0.2,
+     "nll_per_entry_nats": 10.35896
+    },
+    {
+     "beta": 0.25,
+     "nll_per_entry_nats": 10.137
+    },
+    {
+     "beta": 0.3,
+     "nll_per_entry_nats": 10.03678
+    },
+    {
+     "beta": 0.35,
+     "nll_per_entry_nats": 10.0257
+    },
+    {
+     "beta": 0.4,
+     "nll_per_entry_nats": 10.08332
+    },
+    {
+     "beta": 0.45,
+     "nll_per_entry_nats": 10.19625
+    },
+    {
+     "beta": 0.5,
+     "nll_per_entry_nats": 10.35519
+    },
+    {
+     "beta": 0.55,
+     "nll_per_entry_nats": 10.55325
+    },
+    {
+     "beta": 0.6,
+     "nll_per_entry_nats": 10.78506
+    },
+    {
+     "beta": 0.65,
+     "nll_per_entry_nats": 11.04622
+    },
+    {
+     "beta": 0.7,
+     "nll_per_entry_nats": 11.33303
+    },
+    {
+     "beta": 0.75,
+     "nll_per_entry_nats": 11.64232
+    },
+    {
+     "beta": 0.8,
+     "nll_per_entry_nats": 11.9713
+    },
+    {
+     "beta": 0.85,
+     "nll_per_entry_nats": 12.31758
+    },
+    {
+     "beta": 0.9,
+     "nll_per_entry_nats": 12.67905
+    },
+    {
+     "beta": 0.95,
+     "nll_per_entry_nats": 13.05386
+    },
+    {
+     "beta": 1.0,
+     "nll_per_entry_nats": 13.44041
+    },
+    {
+     "beta": 1.05,
+     "nll_per_entry_nats": 13.8373
+    },
+    {
+     "beta": 1.1,
+     "nll_per_entry_nats": 14.24332
+    },
+    {
+     "beta": 1.15,
+     "nll_per_entry_nats": 14.65741
+    },
+    {
+     "beta": 1.2,
+     "nll_per_entry_nats": 15.07865
+    }
+   ],
+   "ordering_beta_invariant": {
+    "model_top_lineup": {
+     "cpt": "Drake Maye",
+     "flex": [
+      "Eli Raridon",
+      "Hunter Henry",
+      "Jaxon Smith-Njigba",
+      "Rhamondre Stevenson",
+      "Sam Darnold"
+     ],
+     "observed_copies": 136,
+     "observed_rank": 69
+    },
+    "note": "invariant to beta: the softmax is monotone in x, so no value of the knob can change any of these",
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.986,
+     "100": 4.898,
+     "1000": 23.256,
+     "10000": 73.51
+    },
+    "real_chalk": {
+     "copies": 537,
+     "cpt": "Jadarian Price",
+     "flex": [
+      "Drake Maye",
+      "Hunter Henry",
+      "Jason Myers",
+      "Jaxon Smith-Njigba",
+      "Rhamondre Stevenson"
+     ],
+     "model_rank": 4109
+    },
+    "spearman_observed_count_vs_x_over_observed_lineups": 0.3168,
+    "winner": {
+     "copies": 23,
+     "model_rank": 2790,
+     "points": 101.020004,
+     "tied": 23
+    }
+   },
+   "saturated_nll_per_entry_nats": 8.55665,
+   "support": {
+    "active_entries": 125800,
+    "legal_but_not_enumerated": 0,
+    "representable_entries": 121587,
+    "representable_pct": 96.65,
+    "statement": "conditional on the 96.7% of active entries whose six players all carry a Sleeper projection under the game's teams; the other 3.3% hold a player Sleeper never projected and are outside the likelihood, not repaired",
+    "unrepresentable_by_player": [
+     {
+      "entries": 1664,
+      "name": "Montorie Foster Jr."
+     },
+     {
+      "entries": 975,
+      "name": "Lan Larison"
+     },
+     {
+      "entries": 171,
+      "name": "Tanner Arkin"
+     },
+     {
+      "entries": 171,
+      "name": "TreVeyon Henderson"
+     },
+     {
+      "entries": 166,
+      "name": "Brady Russell"
+     },
+     {
+      "entries": 163,
+      "name": "Cameron Latu"
+     },
+     {
+      "entries": 162,
+      "name": "Tory Horton"
+     },
+     {
+      "entries": 154,
+      "name": "Velus Jones Jr."
+     },
+     {
+      "entries": 114,
+      "name": "Efton Chism III"
+     },
+     {
+      "entries": 113,
+      "name": "Jacardia Wright"
+     }
+    ],
+    "unrepresentable_pct": 3.35
+   },
+   "uniform_nll_per_entry_nats": 13.85565,
+   "universe": {
+    "gated_universe_in_first_artifact": {
+     "lineups": 319933,
+     "players": 21
+    },
+    "legal_lineups": 1040958,
+    "legality": "production's enumerate_showdown: under the $50,000 cap with the 1.5x captain salary, both teams; no owner rule, no depth gate, no field-only cap",
+    "players": 25,
+    "players_without_projection": [
+     "Behren Morton",
+     "Brady Russell",
+     "CJ Dippre",
+     "Cameron Dorner",
+     "Cameron Latu",
+     "Cody White",
+     "Drew Lock",
+     "Efton Chism III",
+     "Emmanuel Henderson Jr.",
+     "Hassan Haskins",
+     "Irvin Charles",
+     "Jacardia Wright",
+     "Jack Westover",
+     "Jake Bobo",
+     "Jalen Milroe",
+     "Jam Miller",
+     "Jeremiah Webb",
+     "Jimmy Kibble",
+     "Julian Hicks",
+     "Julian Hill",
+     "Kayshon Boutte",
+     "Kobe Prentice",
+     "Kyle Dixon",
+     "Lan Larison",
+     "Lance Mason",
+     "Mitch Van Vooren",
+     "Montorie Foster Jr.",
+     "Myles Montgomery",
+     "Nick DeGennaro",
+     "Nick Kallerup",
+     "Nick Vannett",
+     "Rashad Rochelle",
+     "Ricky White III",
+     "Robbie Ouzts",
+     "Shane Zylstra",
+     "Tanner Arkin",
+     "Tejhaun Palmer",
+     "Terrell Jennings",
+     "Tommy DeVito",
+     "Tory Horton",
+     "TreVeyon Henderson",
+     "Velus Jones Jr.",
+     "Zach Charbonnet"
+    ],
+    "roster": {
+     "captured_utc": "2026-09-19 12:10:08 UTC",
+     "file": "research/data/feeds/players_2026_1_nesea.json",
+     "injury_statuses": "CLEARED (as in the first artifact); the gate itself is not applied here",
+     "records": 69,
+     "sha256": "ee7486cf388947f9a200bbfabe2674784c67b4b786e73900f668a1db7b669e9c",
+     "teams": [
+      "NE",
+      "SEA"
+     ]
+    }
+   },
+   "universe_sensitivity": [
+    {
+     "beta": 0.30882,
+     "legal_lineups": 225351,
+     "lowest_projection_kept": 3.6,
+     "note": null,
+     "observed_mean_x": 86.63,
+     "players": 20,
+     "representable_pct": 89.16,
+     "uniform_mean_x": 64.0
+    },
+    {
+     "beta": 0.32271,
+     "legal_lineups": 436676,
+     "lowest_projection_kept": 2.4,
+     "note": null,
+     "observed_mean_x": 86.56,
+     "players": 22,
+     "representable_pct": 93.01,
+     "uniform_mean_x": 59.759
+    },
+    {
+     "beta": 0.32901,
+     "legal_lineups": 790727,
+     "lowest_projection_kept": 0.3,
+     "note": null,
+     "observed_mean_x": 86.489,
+     "players": 24,
+     "representable_pct": 96.33,
+     "uniform_mean_x": 55.094
+    },
+    {
+     "beta": 0.33177,
+     "legal_lineups": 1040958,
+     "lowest_projection_kept": 0.3,
+     "note": null,
+     "observed_mean_x": 86.499,
+     "players": 25,
+     "representable_pct": 96.65,
+     "uniform_mean_x": 53.013
+    }
+   ],
+   "week": 1
+  },
+  "195526287": {
+   "captured": "pool, contest and week-1 feeds captured PRE-LOCK by S6 on 2026-09-12 (the game was 2026-09-14); roster captured 2026-09-18, post-game",
+   "fit": {
+    "leave_one_out": {
+     "contest_balanced": {
+      "beta": 0.31675,
+      "note": null
+     },
+     "entry_weighted": {
+      "beta": 0.3206,
+      "note": null
+     },
+     "fitted_on": [
+      193391013,
+      195677825
+     ]
+    },
+    "own_mle": {
+     "beta": 0.43428,
+     "note": null
+    }
+   },
+   "graded": {
+    "loo_contest_balanced": {
+     "beta": 0.31675,
+     "likelihood": {
+      "model_mean_x": 67.7246,
+      "model_var_x": 33.2589,
+      "moment_residual": -2.981319,
+      "nll_per_entry_nats": 10.79679,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.3914
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 33.03,
+       "max_abs_diff_pp": 7.76,
+       "top_observed": [
+        {
+         "model": 24.4,
+         "name": "Bo Nix",
+         "observed": 16.64
+        },
+        {
+         "model": 8.05,
+         "name": "Kenneth Walker III",
+         "observed": 14.48
+        },
+        {
+         "model": 9.76,
+         "name": "Patrick Mahomes",
+         "observed": 11.04
+        },
+        {
+         "model": 13.95,
+         "name": "Jaylen Waddle",
+         "observed": 10.53
+        },
+        {
+         "model": 7.75,
+         "name": "Rashee Rice",
+         "observed": 9.14
+        },
+        {
+         "model": 3.75,
+         "name": "Travis Kelce",
+         "observed": 6.04
+        },
+        {
+         "model": 5.37,
+         "name": "J.K. Dobbins",
+         "observed": 5.74
+        },
+        {
+         "model": 4.17,
+         "name": "Courtland Sutton",
+         "observed": 5.04
+        },
+        {
+         "model": 2.18,
+         "name": "Broncos",
+         "observed": 3.43
+        },
+        {
+         "model": 2.5,
+         "name": "Xavier Worthy",
+         "observed": 3.37
+        },
+        {
+         "model": 3.37,
+         "name": "RJ Harvey",
+         "observed": 3.33
+        },
+        {
+         "model": 2.55,
+         "name": "Pat Bryant",
+         "observed": 2.12
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.79,
+        "QB": 27.77,
+        "RB": 24.2,
+        "TE": 7.71,
+        "WR": 32.99
+       },
+       "l1_pp": 17.18,
+       "model": {
+        "DST": 6.17,
+        "K": 2.88,
+        "QB": 34.16,
+        "RB": 17.97,
+        "TE": 5.36,
+        "WR": 33.46
+       },
+       "observed": {
+        "DST": 4.55,
+        "K": 2.81,
+        "QB": 27.68,
+        "RB": 24.17,
+        "TE": 7.75,
+        "WR": 33.04
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 140.26,
+       "max_abs_diff_pp": 14.75,
+       "top_observed": [
+        {
+         "model": 51.58,
+         "name": "Bo Nix",
+         "observed": 59.93
+        },
+        {
+         "model": 37.72,
+         "name": "Patrick Mahomes",
+         "observed": 52.46
+        },
+        {
+         "model": 35.15,
+         "name": "Kenneth Walker III",
+         "observed": 44.53
+        },
+        {
+         "model": 44.14,
+         "name": "Jaylen Waddle",
+         "observed": 37.42
+        },
+        {
+         "model": 33.79,
+         "name": "Rashee Rice",
+         "observed": 34.71
+        },
+        {
+         "model": 22.86,
+         "name": "Travis Kelce",
+         "observed": 29.5
+        },
+        {
+         "model": 14.26,
+         "name": "Harrison Butker",
+         "observed": 26.14
+        },
+        {
+         "model": 27.86,
+         "name": "J.K. Dobbins",
+         "observed": 25.53
+        },
+        {
+         "model": 23.26,
+         "name": "Courtland Sutton",
+         "observed": 23.99
+        },
+        {
+         "model": 12.54,
+         "name": "Wil Lutz",
+         "observed": 20.85
+        },
+        {
+         "model": 21.23,
+         "name": "Pat Bryant",
+         "observed": 18.99
+        },
+        {
+         "model": 21.07,
+         "name": "RJ Harvey",
+         "observed": 18.81
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 40.07,
+        "1": 40.58,
+        "2": 17.07,
+        "3": 1.97,
+        "4": 0.31
+       },
+       "l1_pp": 12.06,
+       "model": {
+        "0": 37.71,
+        "1": 46.71,
+        "2": 14.29,
+        "3": 1.27,
+        "4": 0.02
+       },
+       "observed": {
+        "0": 39.81,
+        "1": 40.68,
+        "2": 17.2,
+        "3": 2.0,
+        "4": 0.31
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1072.2,
+       "model_mean": 4105.4,
+       "model_share_ge_1000_pct": 82.52,
+       "observed_mean": 1073.2,
+       "observed_share_ge_1000_pct": 36.05
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.22,
+        "4-2": 46.81,
+        "5-1": 14.96
+       },
+       "l1_pp": 5.49,
+       "model": {
+        "3-3": 36.8,
+        "4-2": 49.58,
+        "5-1": 13.63
+       },
+       "observed": {
+        "3-3": 38.17,
+        "4-2": 46.83,
+        "5-1": 15.0
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.303,
+        "observed_over_model": 0.065,
+        "observed_pct": 0.02,
+        "universe_lineups": 802837
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 2.105,
+        "observed_over_model": 0.051,
+        "observed_pct": 0.107,
+        "universe_lineups": 590295
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 10.503,
+        "observed_over_model": 0.099,
+        "observed_pct": 1.04,
+        "universe_lineups": 311722
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 35.405,
+        "observed_over_model": 0.63,
+        "observed_pct": 22.308,
+        "universe_lineups": 114801
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 47.219,
+        "observed_over_model": 1.49,
+        "observed_pct": 70.36,
+        "universe_lineups": 20739
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 4.429,
+        "observed_over_model": 1.389,
+        "observed_pct": 6.151,
+        "universe_lineups": 320
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 53165.4,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 43.63,
+         "lineups": 37851.5
+        },
+        "11-50": {
+         "entry_share_pct": 4.2,
+         "lineups": 256.9
+        },
+        "2-2": {
+         "entry_share_pct": 19.03,
+         "lineups": 8255.9
+        },
+        "3-5": {
+         "entry_share_pct": 23.02,
+         "lineups": 5582.9
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 10.11,
+         "lineups": 1218.2
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 41988.4,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.28,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 1.833,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 9.68,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0395,
+       "observed": 0.3608
+      }
+     }
+    },
+    "loo_entry_weighted": {
+     "beta": 0.3206,
+     "likelihood": {
+      "model_mean_x": 67.8514,
+      "model_var_x": 32.5866,
+      "moment_residual": -2.854578,
+      "nll_per_entry_nats": 10.78556,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.3995
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 33.39,
+       "max_abs_diff_pp": 7.97,
+       "top_observed": [
+        {
+         "model": 24.61,
+         "name": "Bo Nix",
+         "observed": 16.64
+        },
+        {
+         "model": 8.02,
+         "name": "Kenneth Walker III",
+         "observed": 14.48
+        },
+        {
+         "model": 9.77,
+         "name": "Patrick Mahomes",
+         "observed": 11.04
+        },
+        {
+         "model": 14.03,
+         "name": "Jaylen Waddle",
+         "observed": 10.53
+        },
+        {
+         "model": 7.73,
+         "name": "Rashee Rice",
+         "observed": 9.14
+        },
+        {
+         "model": 3.73,
+         "name": "Travis Kelce",
+         "observed": 6.04
+        },
+        {
+         "model": 5.38,
+         "name": "J.K. Dobbins",
+         "observed": 5.74
+        },
+        {
+         "model": 4.15,
+         "name": "Courtland Sutton",
+         "observed": 5.04
+        },
+        {
+         "model": 2.17,
+         "name": "Broncos",
+         "observed": 3.43
+        },
+        {
+         "model": 2.47,
+         "name": "Xavier Worthy",
+         "observed": 3.37
+        },
+        {
+         "model": 3.35,
+         "name": "RJ Harvey",
+         "observed": 3.33
+        },
+        {
+         "model": 2.55,
+         "name": "Pat Bryant",
+         "observed": 2.12
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.79,
+        "QB": 27.77,
+        "RB": 24.2,
+        "TE": 7.71,
+        "WR": 32.99
+       },
+       "l1_pp": 17.45,
+       "model": {
+        "DST": 6.16,
+        "K": 2.84,
+        "QB": 34.38,
+        "RB": 17.89,
+        "TE": 5.3,
+        "WR": 33.42
+       },
+       "observed": {
+        "DST": 4.55,
+        "K": 2.81,
+        "QB": 27.68,
+        "RB": 24.17,
+        "TE": 7.75,
+        "WR": 33.04
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 139.82,
+       "max_abs_diff_pp": 14.79,
+       "top_observed": [
+        {
+         "model": 51.74,
+         "name": "Bo Nix",
+         "observed": 59.93
+        },
+        {
+         "model": 37.83,
+         "name": "Patrick Mahomes",
+         "observed": 52.46
+        },
+        {
+         "model": 35.19,
+         "name": "Kenneth Walker III",
+         "observed": 44.53
+        },
+        {
+         "model": 44.35,
+         "name": "Jaylen Waddle",
+         "observed": 37.42
+        },
+        {
+         "model": 33.86,
+         "name": "Rashee Rice",
+         "observed": 34.71
+        },
+        {
+         "model": 22.87,
+         "name": "Travis Kelce",
+         "observed": 29.5
+        },
+        {
+         "model": 14.22,
+         "name": "Harrison Butker",
+         "observed": 26.14
+        },
+        {
+         "model": 27.96,
+         "name": "J.K. Dobbins",
+         "observed": 25.53
+        },
+        {
+         "model": 23.24,
+         "name": "Courtland Sutton",
+         "observed": 23.99
+        },
+        {
+         "model": 12.49,
+         "name": "Wil Lutz",
+         "observed": 20.85
+        },
+        {
+         "model": 21.34,
+         "name": "Pat Bryant",
+         "observed": 18.99
+        },
+        {
+         "model": 21.05,
+         "name": "RJ Harvey",
+         "observed": 18.81
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 40.07,
+        "1": 40.58,
+        "2": 17.07,
+        "3": 1.97,
+        "4": 0.31
+       },
+       "l1_pp": 12.15,
+       "model": {
+        "0": 37.69,
+        "1": 46.76,
+        "2": 14.28,
+        "3": 1.26,
+        "4": 0.02
+       },
+       "observed": {
+        "0": 39.81,
+        "1": 40.68,
+        "2": 17.2,
+        "3": 2.0,
+        "4": 0.31
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1072.2,
+       "model_mean": 4041.5,
+       "model_share_ge_1000_pct": 82.17,
+       "observed_mean": 1073.2,
+       "observed_share_ge_1000_pct": 36.05
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.22,
+        "4-2": 46.81,
+        "5-1": 14.96
+       },
+       "l1_pp": 5.5,
+       "model": {
+        "3-3": 36.81,
+        "4-2": 49.58,
+        "5-1": 13.61
+       },
+       "observed": {
+        "3-3": 38.17,
+        "4-2": 46.83,
+        "5-1": 15.0
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.299,
+        "observed_over_model": 0.069,
+        "observed_pct": 0.021,
+        "universe_lineups": 790213
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 2.056,
+        "observed_over_model": 0.056,
+        "observed_pct": 0.114,
+        "universe_lineups": 574460
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 10.292,
+        "observed_over_model": 0.103,
+        "observed_pct": 1.056,
+        "universe_lineups": 303651
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 34.815,
+        "observed_over_model": 0.64,
+        "observed_pct": 22.283,
+        "universe_lineups": 112127
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 47.675,
+        "observed_over_model": 1.458,
+        "observed_pct": 69.524,
+        "universe_lineups": 20715
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 4.829,
+        "observed_over_model": 1.447,
+        "observed_pct": 6.987,
+        "universe_lineups": 344
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 52536.5,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 42.87,
+         "lineups": 37193.2
+        },
+        "11-50": {
+         "entry_share_pct": 4.6,
+         "lineups": 278.7
+        },
+        "2-2": {
+         "entry_share_pct": 18.89,
+         "lineups": 8192.7
+        },
+        "3-5": {
+         "entry_share_pct": 23.18,
+         "lineups": 5613.1
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 10.46,
+         "lineups": 1258.8
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 40155.7,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.293,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 1.905,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 9.984,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0414,
+       "observed": 0.3608
+      }
+     }
+    },
+    "own_mle": {
+     "beta": 0.43428,
+     "likelihood": {
+      "model_mean_x": 70.706,
+      "model_var_x": 19.4445,
+      "moment_residual": -0.0,
+      "nll_per_entry_nats": 10.63726,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.6695
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 46.46,
+       "max_abs_diff_pp": 13.6,
+       "top_observed": [
+        {
+         "model": 30.23,
+         "name": "Bo Nix",
+         "observed": 16.64
+        },
+        {
+         "model": 6.9,
+         "name": "Kenneth Walker III",
+         "observed": 14.48
+        },
+        {
+         "model": 9.64,
+         "name": "Patrick Mahomes",
+         "observed": 11.04
+        },
+        {
+         "model": 15.88,
+         "name": "Jaylen Waddle",
+         "observed": 10.53
+        },
+        {
+         "model": 7.09,
+         "name": "Rashee Rice",
+         "observed": 9.14
+        },
+        {
+         "model": 3.18,
+         "name": "Travis Kelce",
+         "observed": 6.04
+        },
+        {
+         "model": 5.48,
+         "name": "J.K. Dobbins",
+         "observed": 5.74
+        },
+        {
+         "model": 3.43,
+         "name": "Courtland Sutton",
+         "observed": 5.04
+        },
+        {
+         "model": 1.84,
+         "name": "Broncos",
+         "observed": 3.43
+        },
+        {
+         "model": 1.87,
+         "name": "Xavier Worthy",
+         "observed": 3.37
+        },
+        {
+         "model": 2.64,
+         "name": "RJ Harvey",
+         "observed": 3.33
+        },
+        {
+         "model": 2.62,
+         "name": "Pat Bryant",
+         "observed": 2.12
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 4.53,
+        "K": 2.79,
+        "QB": 27.77,
+        "RB": 24.2,
+        "TE": 7.71,
+        "WR": 32.99
+       },
+       "l1_pp": 27.59,
+       "model": {
+        "DST": 6.15,
+        "K": 2.01,
+        "QB": 39.88,
+        "RB": 15.62,
+        "TE": 4.09,
+        "WR": 32.26
+       },
+       "observed": {
+        "DST": 4.55,
+        "K": 2.81,
+        "QB": 27.68,
+        "RB": 24.17,
+        "TE": 7.75,
+        "WR": 33.04
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 143.01,
+       "max_abs_diff_pp": 19.0,
+       "top_observed": [
+        {
+         "model": 54.73,
+         "name": "Bo Nix",
+         "observed": 59.93
+        },
+        {
+         "model": 40.76,
+         "name": "Patrick Mahomes",
+         "observed": 52.46
+        },
+        {
+         "model": 35.35,
+         "name": "Kenneth Walker III",
+         "observed": 44.53
+        },
+        {
+         "model": 49.93,
+         "name": "Jaylen Waddle",
+         "observed": 37.42
+        },
+        {
+         "model": 35.29,
+         "name": "Rashee Rice",
+         "observed": 34.71
+        },
+        {
+         "model": 22.97,
+         "name": "Travis Kelce",
+         "observed": 29.5
+        },
+        {
+         "model": 13.07,
+         "name": "Harrison Butker",
+         "observed": 26.14
+        },
+        {
+         "model": 30.67,
+         "name": "J.K. Dobbins",
+         "observed": 25.53
+        },
+        {
+         "model": 22.38,
+         "name": "Courtland Sutton",
+         "observed": 23.99
+        },
+        {
+         "model": 10.9,
+         "name": "Wil Lutz",
+         "observed": 20.85
+        },
+        {
+         "model": 25.08,
+         "name": "Pat Bryant",
+         "observed": 18.99
+        },
+        {
+         "model": 20.11,
+         "name": "RJ Harvey",
+         "observed": 18.81
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 40.07,
+        "1": 40.58,
+        "2": 17.07,
+        "3": 1.97,
+        "4": 0.31
+       },
+       "l1_pp": 14.91,
+       "model": {
+        "0": 36.49,
+        "1": 48.14,
+        "2": 14.3,
+        "3": 1.07,
+        "4": 0.01
+       },
+       "observed": {
+        "0": 39.81,
+        "1": 40.68,
+        "2": 17.2,
+        "3": 2.0,
+        "4": 0.31
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 1072.2,
+       "model_mean": 2714.1,
+       "model_share_ge_1000_pct": 72.33,
+       "observed_mean": 1073.2,
+       "observed_share_ge_1000_pct": 36.05
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 38.22,
+        "4-2": 46.81,
+        "5-1": 14.96
+       },
+       "l1_pp": 6.12,
+       "model": {
+        "3-3": 36.97,
+        "4-2": 49.89,
+        "5-1": 13.14
+       },
+       "observed": {
+        "3-3": 38.17,
+        "4-2": 46.83,
+        "5-1": 15.0
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.159,
+        "observed_over_model": 0.442,
+        "observed_pct": 0.07,
+        "universe_lineups": 433403
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 1.002,
+        "observed_over_model": 0.375,
+        "observed_pct": 0.376,
+        "universe_lineups": 281744
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 5.232,
+        "observed_over_model": 0.428,
+        "observed_pct": 2.237,
+        "universe_lineups": 152381
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 21.598,
+        "observed_over_model": 1.093,
+        "observed_pct": 23.604,
+        "universe_lineups": 66546
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 48.703,
+        "observed_over_model": 1.165,
+        "observed_pct": 56.753,
+        "universe_lineups": 17807
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 23.033,
+        "observed_over_model": 0.716,
+        "observed_pct": 16.492,
+        "universe_lineups": 1223
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.251,
+        "observed_over_model": 1.697,
+        "observed_pct": 0.425,
+        "universe_lineups": 2
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 36665.1,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 25.97,
+         "lineups": 22532.6
+        },
+        "11-50": {
+         "entry_share_pct": 20.42,
+         "lineups": 989.2
+        },
+        "2-2": {
+         "entry_share_pct": 13.86,
+         "lineups": 6011.3
+        },
+        "3-5": {
+         "entry_share_pct": 22.04,
+         "lineups": 5224.4
+        },
+        "51-plus": {
+         "entry_share_pct": 1.57,
+         "lineups": 20.7
+        },
+        "6-10": {
+         "entry_share_pct": 16.13,
+         "lineups": 1886.8
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 12236.8,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.874,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 4.909,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 20.882,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1389,
+       "observed": 0.3608
+      }
+     }
+    },
+    "pooled_all_contest_balanced": {
+     "beta": 0.35144,
+     "likelihood": {
+      "model_mean_x": 68.7808,
+      "model_var_x": 27.8661,
+      "moment_residual": -1.925172,
+      "nll_per_entry_nats": 10.71222,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.4672
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.254,
+        "observed_over_model": 0.122,
+        "observed_pct": 0.031,
+        "universe_lineups": 679185
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 1.657,
+        "observed_over_model": 0.109,
+        "observed_pct": 0.18,
+        "universe_lineups": 465660
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 8.431,
+        "observed_over_model": 0.153,
+        "observed_pct": 1.286,
+        "universe_lineups": 249109
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 30.538,
+        "observed_over_model": 0.72,
+        "observed_pct": 21.973,
+        "universe_lineups": 97012
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 50.289,
+        "observed_over_model": 1.323,
+        "observed_pct": 66.538,
+        "universe_lineups": 20488
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 8.798,
+        "observed_over_model": 1.134,
+        "observed_pct": 9.973,
+        "universe_lineups": 571
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 47699.9,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 37.28,
+         "lineups": 32342.7
+        },
+        "11-50": {
+         "entry_share_pct": 8.36,
+         "lineups": 470.8
+        },
+        "2-2": {
+         "entry_share_pct": 17.59,
+         "lineups": 7630.9
+        },
+        "3-5": {
+         "entry_share_pct": 23.79,
+         "lineups": 5714.8
+        },
+        "51-plus": {
+         "entry_share_pct": 0.05,
+         "lineups": 0.7
+        },
+        "6-10": {
+         "entry_share_pct": 12.93,
+         "lineups": 1540.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 28422.2,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.407,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 2.544,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 12.584,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0594,
+       "observed": 0.3608
+      }
+     }
+    },
+    "pooled_all_entry_weighted": {
+     "beta": 0.35141,
+     "likelihood": {
+      "model_mean_x": 68.7799,
+      "model_var_x": 27.8706,
+      "moment_residual": -1.926109,
+      "nll_per_entry_nats": 10.71228,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.4671
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.254,
+        "observed_over_model": 0.122,
+        "observed_pct": 0.031,
+        "universe_lineups": 679185
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 1.658,
+        "observed_over_model": 0.108,
+        "observed_pct": 0.18,
+        "universe_lineups": 465660
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 8.434,
+        "observed_over_model": 0.153,
+        "observed_pct": 1.286,
+        "universe_lineups": 249109
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 30.541,
+        "observed_over_model": 0.719,
+        "observed_pct": 21.973,
+        "universe_lineups": 97012
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 50.285,
+        "observed_over_model": 1.323,
+        "observed_pct": 66.538,
+        "universe_lineups": 20488
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 8.796,
+        "observed_over_model": 1.134,
+        "observed_pct": 9.973,
+        "universe_lineups": 571
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 47705.0,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 37.29,
+         "lineups": 32347.6
+        },
+        "11-50": {
+         "entry_share_pct": 8.35,
+         "lineups": 470.6
+        },
+        "2-2": {
+         "entry_share_pct": 17.59,
+         "lineups": 7631.6
+        },
+        "3-5": {
+         "entry_share_pct": 23.79,
+         "lineups": 5714.8
+        },
+        "51-plus": {
+         "entry_share_pct": 0.05,
+         "lineups": 0.7
+        },
+        "6-10": {
+         "entry_share_pct": 12.93,
+         "lineups": 1539.7
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 28432.6,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.407,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 2.543,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 12.581,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0594,
+       "observed": 0.3608
+      }
+     }
+    },
+    "production_beta_on_this_universe": {
+     "beta": 0.4548,
+     "likelihood": {
+      "model_mean_x": 71.0899,
+      "model_var_x": 18.0046,
+      "moment_residual": 0.3839,
+      "nll_per_entry_nats": 10.64125,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.7231
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.143,
+        "observed_over_model": 0.613,
+        "observed_pct": 0.088,
+        "universe_lineups": 391245
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.899,
+        "observed_over_model": 0.491,
+        "observed_pct": 0.441,
+        "universe_lineups": 250929
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 4.668,
+        "observed_over_model": 0.54,
+        "observed_pct": 2.519,
+        "universe_lineups": 135582
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 19.864,
+        "observed_over_model": 1.217,
+        "observed_pct": 24.178,
+        "universe_lineups": 61102
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 47.603,
+        "observed_over_model": 1.155,
+        "observed_pct": 54.976,
+        "universe_lineups": 17042
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 26.399,
+        "observed_over_model": 0.655,
+        "observed_pct": 17.305,
+        "universe_lineups": 1323
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.403,
+        "observed_over_model": 1.108,
+        "observed_pct": 0.446,
+        "universe_lineups": 3
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 34363.0,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 23.84,
+         "lineups": 20683.7
+        },
+        "11-50": {
+         "entry_share_pct": 23.0,
+         "lineups": 1087.7
+        },
+        "2-2": {
+         "entry_share_pct": 13.0,
+         "lineups": 5637.5
+        },
+        "3-5": {
+         "entry_share_pct": 21.23,
+         "lineups": 5021.6
+        },
+        "51-plus": {
+         "entry_share_pct": 2.66,
+         "lineups": 33.9
+        },
+        "6-10": {
+         "entry_share_pct": 16.27,
+         "lineups": 1898.5
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 10085.9,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.033,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 5.652,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 23.182,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1676,
+       "observed": 0.3608
+      }
+     }
+    },
+    "top_share_rule_resolved_here": {
+     "beta": 0.47495,
+     "likelihood": {
+      "model_mean_x": 71.4399,
+      "model_var_x": 16.7622,
+      "moment_residual": 0.733911,
+      "nll_per_entry_nats": 10.65255,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.7766
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.13,
+        "observed_over_model": 0.827,
+        "observed_pct": 0.107,
+        "universe_lineups": 350181
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.79,
+        "observed_over_model": 0.657,
+        "observed_pct": 0.519,
+        "universe_lineups": 221684
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 4.19,
+        "observed_over_model": 0.673,
+        "observed_pct": 2.818,
+        "universe_lineups": 123095
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 18.318,
+        "observed_over_model": 1.346,
+        "observed_pct": 24.657,
+        "universe_lineups": 56456
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 45.143,
+        "observed_over_model": 1.159,
+        "observed_pct": 52.311,
+        "universe_lineups": 16178
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 30.389,
+        "observed_over_model": 0.625,
+        "observed_pct": 19.003,
+        "universe_lineups": 1519
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 1.021,
+        "observed_over_model": 0.519,
+        "observed_pct": 0.53,
+        "universe_lineups": 8
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 32254.7,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 21.95,
+         "lineups": 19045.9
+        },
+        "11-50": {
+         "entry_share_pct": 25.2,
+         "lineups": 1168.2
+        },
+        "2-2": {
+         "entry_share_pct": 12.19,
+         "lineups": 5288.7
+        },
+        "3-5": {
+         "entry_share_pct": 20.38,
+         "lineups": 4811.4
+        },
+        "51-plus": {
+         "entry_share_pct": 4.03,
+         "lineups": 49.7
+        },
+        "6-10": {
+         "entry_share_pct": 16.24,
+         "lineups": 1890.7
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 8384.0,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.208,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 6.444,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 25.515,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.2,
+       "observed": 0.3608
+      }
+     }
+    },
+    "transfer_from_193391013": {
+     "beta": 0.33177,
+     "likelihood": {
+      "model_mean_x": 68.2049,
+      "model_var_x": 30.7461,
+      "moment_residual": -2.501035,
+      "nll_per_entry_nats": 10.75567,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.4234
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.283,
+        "observed_over_model": 0.09,
+        "observed_pct": 0.025,
+        "universe_lineups": 748043
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 1.877,
+        "observed_over_model": 0.067,
+        "observed_pct": 0.126,
+        "universe_lineups": 528966
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 9.533,
+        "observed_over_model": 0.119,
+        "observed_pct": 1.131,
+        "universe_lineups": 283881
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 33.326,
+        "observed_over_model": 0.666,
+        "observed_pct": 22.19,
+        "universe_lineups": 106934
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 48.919,
+        "observed_over_model": 1.403,
+        "observed_pct": 68.626,
+        "universe_lineups": 20648
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 6.028,
+        "observed_over_model": 1.308,
+        "observed_pct": 7.885,
+        "universe_lineups": 411
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 50742.3,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 40.75,
+         "lineups": 35350.9
+        },
+        "11-50": {
+         "entry_share_pct": 5.85,
+         "lineups": 345.2
+        },
+        "2-2": {
+         "entry_share_pct": 18.44,
+         "lineups": 7999.0
+        },
+        "3-5": {
+         "entry_share_pct": 23.52,
+         "lineups": 5677.2
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.1
+        },
+        "6-10": {
+         "entry_share_pct": 11.43,
+         "lineups": 1370.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 35347.5,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.331,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 2.122,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 10.891,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0473,
+       "observed": 0.3608
+      }
+     }
+    },
+    "transfer_from_195677825": {
+     "beta": 0.30091,
+     "likelihood": {
+      "model_mean_x": 67.1747,
+      "model_var_x": 36.2478,
+      "moment_residual": -3.53131,
+      "nll_per_entry_nats": 10.84831,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.3591
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.329,
+        "observed_over_model": 0.042,
+        "observed_pct": 0.014,
+        "universe_lineups": 865886
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 2.344,
+        "observed_over_model": 0.041,
+        "observed_pct": 0.097,
+        "universe_lineups": 656478
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 11.533,
+        "observed_over_model": 0.082,
+        "observed_pct": 0.941,
+        "universe_lineups": 346818
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 38.282,
+        "observed_over_model": 0.609,
+        "observed_pct": 23.314,
+        "universe_lineups": 125900
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 44.498,
+        "observed_over_model": 1.595,
+        "observed_pct": 70.976,
+        "universe_lineups": 20240
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 2.978,
+        "observed_over_model": 1.56,
+        "observed_pct": 4.647,
+        "universe_lineups": 229
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 55804.8,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 46.9,
+         "lineups": 40687.7
+        },
+        "11-50": {
+         "entry_share_pct": 2.76,
+         "lineups": 175.0
+        },
+        "2-2": {
+         "entry_share_pct": 19.57,
+         "lineups": 8490.7
+        },
+        "3-5": {
+         "entry_share_pct": 22.19,
+         "lineups": 5410.0
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 8.58,
+         "lineups": 1041.3
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 50646.7,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.233,
+        "observed": 0.567
+       },
+       "100": {
+        "model": 1.559,
+        "observed": 2.163
+       },
+       "1000": {
+        "model": 8.482,
+        "observed": 14.891
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0323,
+       "observed": 0.3608
+      }
+     }
+    },
+    "uniform": {
+     "beta": 0.0,
+     "likelihood": {
+      "model_mean_x": 40.5199,
+      "model_var_x": 129.493,
+      "moment_residual": -30.186026,
+      "nll_per_entry_nats": 15.06347,
+      "observed_mean_x": 70.706,
+      "observed_var_x": 13.0183,
+      "var_ratio_observed_over_model": 0.1005
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 100.0,
+        "observed_over_model": 1.0,
+        "observed_pct": 100.0,
+        "universe_lineups": 3483231
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 85679.6,
+       "observed": 17725
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 97.54,
+         "lineups": 84617.1
+        },
+        "11-50": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "2-2": {
+         "entry_share_pct": 2.43,
+         "lineups": 1053.7
+        },
+        "3-5": {
+         "entry_share_pct": 0.03,
+         "lineups": 8.8
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 9.38,
+         "lineups": 8135
+        },
+        "11-50": {
+         "entry_share_pct": 40.67,
+         "lineups": 1729
+        },
+        "2-2": {
+         "entry_share_pct": 6.38,
+         "lineups": 2769
+        },
+        "3-5": {
+         "entry_share_pct": 13.81,
+         "lineups": 3186
+        },
+        "51-plus": {
+         "entry_share_pct": 14.43,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 15.34,
+         "lineups": 1751
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 3483231.0,
+       "observed": 3297.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.0,
+        "observed": 0.017
+       },
+       "100": {
+        "model": 0.003,
+        "observed": 0.467
+       },
+       "1000": {
+        "model": 0.029,
+        "observed": 3.309
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0,
+       "observed": 0.3608
+      }
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 188567,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 153086)",
+       "file": "contests_153086.json",
+       "records": 14,
+       "retrieved_ts": 1789252112,
+       "sha256": "4417d655b72fe2c3df1f8c4c349406bb21dc33d940d758de8eb9aaaa3f350d10"
+      },
+      "slate": {
+       "bytes": 11832,
+       "endpoint": "dk.slate_for(nfl, 153086)",
+       "file": "slate_153086.json",
+       "records": 55,
+       "retrieved_ts": 1789252093,
+       "sha256": "16fcb742cecedff6ebf12fe182d7e4bbd65001ab9c5f994af5011c1941d5bdb4"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    }
+   },
+   "integrity": "highest integrity: pool, contest and feeds captured pre-lock (about 50 h before kickoff); roster post-game",
+   "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "nll_scan": [
+    {
+     "beta": 0.0,
+     "nll_per_entry_nats": 15.06347
+    },
+    {
+     "beta": 0.05,
+     "nll_per_entry_nats": 13.71784
+    },
+    {
+     "beta": 0.1,
+     "nll_per_entry_nats": 12.69273
+    },
+    {
+     "beta": 0.15,
+     "nll_per_entry_nats": 11.95006
+    },
+    {
+     "beta": 0.2,
+     "nll_per_entry_nats": 11.43137
+    },
+    {
+     "beta": 0.25,
+     "nll_per_entry_nats": 11.07994
+    },
+    {
+     "beta": 0.3,
+     "nll_per_entry_nats": 10.85153
+    },
+    {
+     "beta": 0.35,
+     "nll_per_entry_nats": 10.71502
+    },
+    {
+     "beta": 0.4,
+     "nll_per_entry_nats": 10.64922
+    },
+    {
+     "beta": 0.45,
+     "nll_per_entry_nats": 10.63962
+    },
+    {
+     "beta": 0.5,
+     "nll_per_entry_nats": 10.67605
+    },
+    {
+     "beta": 0.55,
+     "nll_per_entry_nats": 10.75117
+    },
+    {
+     "beta": 0.6,
+     "nll_per_entry_nats": 10.85948
+    },
+    {
+     "beta": 0.65,
+     "nll_per_entry_nats": 10.99669
+    },
+    {
+     "beta": 0.7,
+     "nll_per_entry_nats": 11.15941
+    },
+    {
+     "beta": 0.75,
+     "nll_per_entry_nats": 11.34483
+    },
+    {
+     "beta": 0.8,
+     "nll_per_entry_nats": 11.55062
+    },
+    {
+     "beta": 0.85,
+     "nll_per_entry_nats": 11.77479
+    },
+    {
+     "beta": 0.9,
+     "nll_per_entry_nats": 12.0156
+    },
+    {
+     "beta": 0.95,
+     "nll_per_entry_nats": 12.27156
+    },
+    {
+     "beta": 1.0,
+     "nll_per_entry_nats": 12.54135
+    },
+    {
+     "beta": 1.05,
+     "nll_per_entry_nats": 12.82382
+    },
+    {
+     "beta": 1.1,
+     "nll_per_entry_nats": 13.11795
+    },
+    {
+     "beta": 1.15,
+     "nll_per_entry_nats": 13.42282
+    },
+    {
+     "beta": 1.2,
+     "nll_per_entry_nats": 13.73764
+    }
+   ],
+   "ordering_beta_invariant": {
+    "model_top_lineup": {
+     "cpt": "Jaylen Waddle",
+     "flex": [
+      "Bo Nix",
+      "Chiefs",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Rashee Rice"
+     ],
+     "observed_copies": 56,
+     "observed_rank": 123
+    },
+    "note": "invariant to beta: the softmax is monotone in x, so no value of the knob can change any of these",
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.567,
+     "100": 2.163,
+     "1000": 14.891,
+     "10000": 57.251
+    },
+    "real_chalk": {
+     "copies": 313,
+     "cpt": "Bo Nix",
+     "flex": [
+      "J.K. Dobbins",
+      "Jaylen Waddle",
+      "Pat Bryant",
+      "Patrick Mahomes",
+      "Travis Kelce"
+     ],
+     "model_rank": 2
+    },
+    "spearman_observed_count_vs_x_over_observed_lineups": 0.248,
+    "winner": {
+     "copies": 44,
+     "model_rank": 19623,
+     "points": 124.61,
+     "tied": 44
+    }
+   },
+   "saturated_nll_per_entry_nats": 8.91605,
+   "support": {
+    "active_entries": 87909,
+    "legal_but_not_enumerated": 0,
+    "representable_entries": 86751,
+    "representable_pct": 98.68,
+    "statement": "conditional on the 98.7% of active entries whose six players all carry a Sleeper projection under the game's teams; the other 1.3% hold a player Sleeper never projected and are outside the likelihood, not repaired",
+    "unrepresentable_by_player": [
+     {
+      "entries": 431,
+      "name": "Justin Fields"
+     },
+     {
+      "entries": 284,
+      "name": "Jake Briningstool"
+     },
+     {
+      "entries": 268,
+      "name": "Adam Prentice"
+     },
+     {
+      "entries": 67,
+      "name": "Jarrett Stidham"
+     },
+     {
+      "entries": 29,
+      "name": "Jared Wiley"
+     },
+     {
+      "entries": 18,
+      "name": "Ben VanSumeren"
+     },
+     {
+      "entries": 15,
+      "name": "Michael Bandy"
+     },
+     {
+      "entries": 13,
+      "name": "Cody Schrader"
+     },
+     {
+      "entries": 12,
+      "name": "Nate Carter"
+     },
+     {
+      "entries": 9,
+      "name": "Dane Key"
+     }
+    ],
+    "unrepresentable_pct": 1.32
+   },
+   "uniform_nll_per_entry_nats": 15.06347,
+   "universe": {
+    "gated_universe_in_first_artifact": {
+     "lineups": 777056,
+     "players": 24
+    },
+    "legal_lineups": 3483231,
+    "legality": "production's enumerate_showdown: under the $50,000 cap with the 1.5x captain salary, both teams; no owner rule, no depth gate, no field-only cap",
+    "players": 30,
+    "players_without_projection": [
+     "Adam Prentice",
+     "Andrew Armstrong",
+     "Ben VanSumeren",
+     "Caleb Lohner",
+     "Cody Schrader",
+     "Dallen Bentley",
+     "Dane Key",
+     "Garrett Nussmeier",
+     "Jake Briningstool",
+     "James Winchester",
+     "Jared Wiley",
+     "Jarrett Stidham",
+     "Jaydn Ott",
+     "Jeff Caldwell",
+     "Jimmy Holiday",
+     "John Michael Gyllenborg",
+     "Justin Fields",
+     "Kolbe Katsis",
+     "Lucas Krull",
+     "Michael Bandy",
+     "Mitchell Fraboni",
+     "Nate Carter",
+     "Omari Evans",
+     "Sam Ehlinger",
+     "Thomas Odukoya"
+    ],
+    "roster": {
+     "captured_utc": "2026-09-18 22:41:13 UTC",
+     "file": "research/data/feeds/players_2026_1.json",
+     "injury_statuses": "CLEARED (as in the first artifact); the gate itself is not applied here",
+     "records": 104,
+     "sha256": "b8095d57e0acd93f0afbe63bd791fc1660a382471a1ce6135180b23a4a705b29",
+     "teams": [
+      "DAL",
+      "DEN",
+      "KC",
+      "NYG"
+     ]
+    }
+   },
+   "universe_sensitivity": [
+    {
+     "beta": 0.38341,
+     "legal_lineups": 220373,
+     "lowest_projection_kept": 3.3,
+     "note": null,
+     "observed_mean_x": 71.03,
+     "players": 20,
+     "representable_pct": 80.96,
+     "uniform_mean_x": 55.59
+    },
+    {
+     "beta": 0.39908,
+     "legal_lineups": 430117,
+     "lowest_projection_kept": 2.6,
+     "note": null,
+     "observed_mean_x": 70.911,
+     "players": 22,
+     "representable_pct": 88.98,
+     "uniform_mean_x": 52.274
+    },
+    {
+     "beta": 0.41384,
+     "legal_lineups": 777056,
+     "lowest_projection_kept": 2.0,
+     "note": null,
+     "observed_mean_x": 70.916,
+     "players": 24,
+     "representable_pct": 91.59,
+     "uniform_mean_x": 49.227
+    },
+    {
+     "beta": 0.43428,
+     "legal_lineups": 3483231,
+     "lowest_projection_kept": 0.1,
+     "note": null,
+     "observed_mean_x": 70.706,
+     "players": 30,
+     "representable_pct": 98.68,
+     "uniform_mean_x": 40.52
+    }
+   ],
+   "week": 1
+  },
+  "195677825": {
+   "captured": "pool, week-2 feeds and roster all captured post-game (2026-09-19)",
+   "fit": {
+    "leave_one_out": {
+     "contest_balanced": {
+      "beta": 0.37788,
+      "note": null
+     },
+     "entry_weighted": {
+      "beta": 0.36955,
+      "note": null
+     },
+     "fitted_on": [
+      193391013,
+      195526287
+     ]
+    },
+    "own_mle": {
+     "beta": 0.30091,
+     "note": null
+    }
+   },
+   "graded": {
+    "loo_contest_balanced": {
+     "beta": 0.37788,
+     "likelihood": {
+      "model_mean_x": 92.2726,
+      "model_var_x": 21.5681,
+      "moment_residual": 1.968201,
+      "nll_per_entry_nats": 10.64865,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.8361
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 65.47,
+       "max_abs_diff_pp": 22.49,
+       "top_observed": [
+        {
+         "model": 12.6,
+         "name": "Josh Allen",
+         "observed": 21.03
+        },
+        {
+         "model": 36.15,
+         "name": "Jahmyr Gibbs",
+         "observed": 13.66
+        },
+        {
+         "model": 15.31,
+         "name": "James Cook III",
+         "observed": 11.29
+        },
+        {
+         "model": 3.92,
+         "name": "Dalton Kincaid",
+         "observed": 10.01
+        },
+        {
+         "model": 2.78,
+         "name": "DJ Moore",
+         "observed": 9.31
+        },
+        {
+         "model": 2.91,
+         "name": "Jameson Williams",
+         "observed": 7.03
+        },
+        {
+         "model": 3.26,
+         "name": "Amon-Ra St. Brown",
+         "observed": 6.61
+        },
+        {
+         "model": 5.52,
+         "name": "Sam LaPorta",
+         "observed": 5.93
+        },
+        {
+         "model": 2.71,
+         "name": "Khalil Shakir",
+         "observed": 3.19
+        },
+        {
+         "model": 3.59,
+         "name": "Jared Goff",
+         "observed": 2.43
+        },
+        {
+         "model": 0.24,
+         "name": "Joshua Palmer",
+         "observed": 1.58
+        },
+        {
+         "model": 2.7,
+         "name": "Bills",
+         "observed": 1.45
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 1.76,
+        "K": 1.66,
+        "QB": 24.18,
+        "RB": 27.1,
+        "TE": 15.69,
+        "WR": 29.62
+       },
+       "l1_pp": 59.16,
+       "model": {
+        "DST": 3.71,
+        "K": 1.6,
+        "QB": 16.19,
+        "RB": 53.5,
+        "TE": 11.78,
+        "WR": 13.22
+       },
+       "observed": {
+        "DST": 2.09,
+        "K": 1.86,
+        "QB": 23.46,
+        "RB": 25.54,
+        "TE": 17.07,
+        "WR": 29.98
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 199.8,
+       "max_abs_diff_pp": 23.68,
+       "top_observed": [
+        {
+         "model": 49.2,
+         "name": "Josh Allen",
+         "observed": 58.0
+        },
+        {
+         "model": 54.38,
+         "name": "Jahmyr Gibbs",
+         "observed": 47.7
+        },
+        {
+         "model": 34.16,
+         "name": "Sam LaPorta",
+         "observed": 39.97
+        },
+        {
+         "model": 25.53,
+         "name": "Dalton Kincaid",
+         "observed": 34.59
+        },
+        {
+         "model": 20.7,
+         "name": "DJ Moore",
+         "observed": 34.26
+        },
+        {
+         "model": 21.59,
+         "name": "Amon-Ra St. Brown",
+         "observed": 28.7
+        },
+        {
+         "model": 50.13,
+         "name": "James Cook III",
+         "observed": 26.45
+        },
+        {
+         "model": 22.87,
+         "name": "Jared Goff",
+         "observed": 25.78
+        },
+        {
+         "model": 11.18,
+         "name": "Tyler Bass",
+         "observed": 24.96
+        },
+        {
+         "model": 21.27,
+         "name": "Jameson Williams",
+         "observed": 23.54
+        },
+        {
+         "model": 5.48,
+         "name": "Joshua Palmer",
+         "observed": 21.28
+        },
+        {
+         "model": 21.0,
+         "name": "Khalil Shakir",
+         "observed": 20.46
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 48.93,
+        "1": 37.7,
+        "2": 12.62,
+        "3": 0.69,
+        "4": 0.05
+       },
+       "l1_pp": 10.32,
+       "model": {
+        "0": 45.69,
+        "1": 43.59,
+        "2": 10.2,
+        "3": 0.52,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 44.4,
+        "1": 39.72,
+        "2": 14.98,
+        "3": 0.83,
+        "4": 0.07
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 626.9,
+       "model_mean": 1621.4,
+       "model_share_ge_1000_pct": 55.98,
+       "observed_mean": 618.2,
+       "observed_share_ge_1000_pct": 20.42
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 33.47,
+        "4-2": 50.61,
+        "5-1": 15.92
+       },
+       "l1_pp": 10.58,
+       "model": {
+        "3-3": 39.43,
+        "4-2": 49.45,
+        "5-1": 11.13
+       },
+       "observed": {
+        "3-3": 34.15,
+        "4-2": 49.43,
+        "5-1": 16.41
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.049,
+        "observed_over_model": 0.478,
+        "observed_pct": 0.023,
+        "universe_lineups": 131834
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.359,
+        "observed_over_model": 0.299,
+        "observed_pct": 0.107,
+        "universe_lineups": 98161
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.394,
+        "observed_over_model": 1.021,
+        "observed_pct": 2.444,
+        "universe_lineups": 66430
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 13.712,
+        "observed_over_model": 1.891,
+        "observed_pct": 25.923,
+        "universe_lineups": 39586
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 45.446,
+        "observed_over_model": 1.176,
+        "observed_pct": 53.438,
+        "universe_lineups": 15329
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 36.44,
+        "observed_over_model": 0.48,
+        "observed_pct": 17.494,
+        "universe_lineups": 1775
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 1.593,
+        "observed_over_model": 0.341,
+        "observed_pct": 0.543,
+        "universe_lineups": 12
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 24240.7,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 17.93,
+         "lineups": 13037.1
+        },
+        "11-50": {
+         "entry_share_pct": 27.83,
+         "lineups": 1106.2
+        },
+        "2-2": {
+         "entry_share_pct": 11.54,
+         "lineups": 4194.3
+        },
+        "3-5": {
+         "entry_share_pct": 21.0,
+         "lineups": 4134.7
+        },
+        "51-plus": {
+         "entry_share_pct": 3.95,
+         "lineups": 40.5
+        },
+        "6-10": {
+         "entry_share_pct": 17.74,
+         "lineups": 1727.8
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 6799.3,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.382,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 7.168,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 28.497,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1793,
+       "observed": 1.3232
+      }
+     }
+    },
+    "loo_entry_weighted": {
+     "beta": 0.36955,
+     "likelihood": {
+      "model_mean_x": 92.09,
+      "model_var_x": 22.2879,
+      "moment_residual": 1.785559,
+      "nll_per_entry_nats": 10.63301,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.8091
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 64.77,
+       "max_abs_diff_pp": 22.03,
+       "top_observed": [
+        {
+         "model": 12.62,
+         "name": "Josh Allen",
+         "observed": 21.03
+        },
+        {
+         "model": 35.69,
+         "name": "Jahmyr Gibbs",
+         "observed": 13.66
+        },
+        {
+         "model": 15.2,
+         "name": "James Cook III",
+         "observed": 11.29
+        },
+        {
+         "model": 3.95,
+         "name": "Dalton Kincaid",
+         "observed": 10.01
+        },
+        {
+         "model": 2.84,
+         "name": "DJ Moore",
+         "observed": 9.31
+        },
+        {
+         "model": 2.96,
+         "name": "Jameson Williams",
+         "observed": 7.03
+        },
+        {
+         "model": 3.36,
+         "name": "Amon-Ra St. Brown",
+         "observed": 6.61
+        },
+        {
+         "model": 5.5,
+         "name": "Sam LaPorta",
+         "observed": 5.93
+        },
+        {
+         "model": 2.75,
+         "name": "Khalil Shakir",
+         "observed": 3.19
+        },
+        {
+         "model": 3.68,
+         "name": "Jared Goff",
+         "observed": 2.43
+        },
+        {
+         "model": 0.25,
+         "name": "Joshua Palmer",
+         "observed": 1.58
+        },
+        {
+         "model": 2.7,
+         "name": "Bills",
+         "observed": 1.45
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 1.76,
+        "K": 1.66,
+        "QB": 24.18,
+        "RB": 27.1,
+        "TE": 15.69,
+        "WR": 29.62
+       },
+       "l1_pp": 58.13,
+       "model": {
+        "DST": 3.73,
+        "K": 1.65,
+        "QB": 16.3,
+        "RB": 52.96,
+        "TE": 11.82,
+        "WR": 13.53
+       },
+       "observed": {
+        "DST": 2.09,
+        "K": 1.86,
+        "QB": 23.46,
+        "RB": 25.54,
+        "TE": 17.07,
+        "WR": 29.98
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 198.52,
+       "max_abs_diff_pp": 23.24,
+       "top_observed": [
+        {
+         "model": 48.87,
+         "name": "Josh Allen",
+         "observed": 58.0
+        },
+        {
+         "model": 54.43,
+         "name": "Jahmyr Gibbs",
+         "observed": 47.7
+        },
+        {
+         "model": 33.8,
+         "name": "Sam LaPorta",
+         "observed": 39.97
+        },
+        {
+         "model": 25.48,
+         "name": "Dalton Kincaid",
+         "observed": 34.59
+        },
+        {
+         "model": 20.82,
+         "name": "DJ Moore",
+         "observed": 34.26
+        },
+        {
+         "model": 21.85,
+         "name": "Amon-Ra St. Brown",
+         "observed": 28.7
+        },
+        {
+         "model": 49.69,
+         "name": "James Cook III",
+         "observed": 26.45
+        },
+        {
+         "model": 23.07,
+         "name": "Jared Goff",
+         "observed": 25.78
+        },
+        {
+         "model": 11.32,
+         "name": "Tyler Bass",
+         "observed": 24.96
+        },
+        {
+         "model": 21.37,
+         "name": "Jameson Williams",
+         "observed": 23.54
+        },
+        {
+         "model": 5.61,
+         "name": "Joshua Palmer",
+         "observed": 21.28
+        },
+        {
+         "model": 21.04,
+         "name": "Khalil Shakir",
+         "observed": 20.46
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 48.93,
+        "1": 37.7,
+        "2": 12.62,
+        "3": 0.69,
+        "4": 0.05
+       },
+       "l1_pp": 10.2,
+       "model": {
+        "0": 45.64,
+        "1": 43.58,
+        "2": 10.25,
+        "3": 0.53,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 44.4,
+        "1": 39.72,
+        "2": 14.98,
+        "3": 0.83,
+        "4": 0.07
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 626.9,
+       "model_mean": 1666.5,
+       "model_share_ge_1000_pct": 56.9,
+       "observed_mean": 618.2,
+       "observed_share_ge_1000_pct": 20.42
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 33.47,
+        "4-2": 50.61,
+        "5-1": 15.92
+       },
+       "l1_pp": 10.47,
+       "model": {
+        "3-3": 39.37,
+        "4-2": 49.45,
+        "5-1": 11.18
+       },
+       "observed": {
+        "3-3": 34.15,
+        "4-2": 49.43,
+        "5-1": 16.41
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.051,
+        "observed_over_model": 0.348,
+        "observed_pct": 0.018,
+        "universe_lineups": 138152
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.379,
+        "observed_over_model": 0.243,
+        "observed_pct": 0.092,
+        "universe_lineups": 103054
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.482,
+        "observed_over_model": 0.869,
+        "observed_pct": 2.157,
+        "universe_lineups": 68939
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 14.254,
+        "observed_over_model": 1.775,
+        "observed_pct": 25.3,
+        "universe_lineups": 41299
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 46.716,
+        "observed_over_model": 1.173,
+        "observed_pct": 54.794,
+        "universe_lineups": 15812
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 34.828,
+        "observed_over_model": 0.495,
+        "observed_pct": 17.25,
+        "universe_lineups": 1722
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 1.283,
+        "observed_over_model": 0.282,
+        "observed_pct": 0.362,
+        "universe_lineups": 10
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 24964.7,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 18.62,
+         "lineups": 13537.5
+        },
+        "11-50": {
+         "entry_share_pct": 26.76,
+         "lineups": 1075.1
+        },
+        "2-2": {
+         "entry_share_pct": 11.92,
+         "lineups": 4334.2
+        },
+        "3-5": {
+         "entry_share_pct": 21.52,
+         "lineups": 4239.8
+        },
+        "51-plus": {
+         "entry_share_pct": 3.29,
+         "lineups": 34.4
+        },
+        "6-10": {
+         "entry_share_pct": 17.89,
+         "lineups": 1743.6
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 7384.7,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.283,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 6.745,
+        "observed": 2.37
+       },
+       "1000": {
+        "model": 27.317,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1656,
+       "observed": 1.3232
+      }
+     }
+    },
+    "own_mle": {
+     "beta": 0.30091,
+     "likelihood": {
+      "model_mean_x": 90.3044,
+      "model_var_x": 30.5631,
+      "moment_residual": -0.0,
+      "nll_per_entry_nats": 10.56851,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.59
+     },
+     "out_of_objective": {
+      "cpt_ownership_pct": {
+       "l1_pp_over_all_players": 58.65,
+       "max_abs_diff_pp": 18.01,
+       "top_observed": [
+        {
+         "model": 12.68,
+         "name": "Josh Allen",
+         "observed": 21.03
+        },
+        {
+         "model": 31.67,
+         "name": "Jahmyr Gibbs",
+         "observed": 13.66
+        },
+        {
+         "model": 14.19,
+         "name": "James Cook III",
+         "observed": 11.29
+        },
+        {
+         "model": 4.22,
+         "name": "Dalton Kincaid",
+         "observed": 10.01
+        },
+        {
+         "model": 3.38,
+         "name": "DJ Moore",
+         "observed": 9.31
+        },
+        {
+         "model": 3.43,
+         "name": "Jameson Williams",
+         "observed": 7.03
+        },
+        {
+         "model": 4.25,
+         "name": "Amon-Ra St. Brown",
+         "observed": 6.61
+        },
+        {
+         "model": 5.27,
+         "name": "Sam LaPorta",
+         "observed": 5.93
+        },
+        {
+         "model": 3.1,
+         "name": "Khalil Shakir",
+         "observed": 3.19
+        },
+        {
+         "model": 4.45,
+         "name": "Jared Goff",
+         "observed": 2.43
+        },
+        {
+         "model": 0.38,
+         "name": "Joshua Palmer",
+         "observed": 1.58
+        },
+        {
+         "model": 2.66,
+         "name": "Bills",
+         "observed": 1.45
+        }
+       ]
+      },
+      "cpt_position_mix_pct": {
+       "all_active": {
+        "DST": 1.76,
+        "K": 1.66,
+        "QB": 24.18,
+        "RB": 27.1,
+        "TE": 15.69,
+        "WR": 29.62
+       },
+       "l1_pp": 49.6,
+       "model": {
+        "DST": 3.87,
+        "K": 2.19,
+        "QB": 17.13,
+        "RB": 48.23,
+        "TE": 12.21,
+        "WR": 16.37
+       },
+       "observed": {
+        "DST": 2.09,
+        "K": 1.86,
+        "QB": 23.46,
+        "RB": 25.54,
+        "TE": 17.07,
+        "WR": 29.98
+       }
+      },
+      "flex_ownership_pct": {
+       "l1_pp_over_all_players": 187.75,
+       "max_abs_diff_pp": 19.59,
+       "top_observed": [
+        {
+         "model": 46.13,
+         "name": "Josh Allen",
+         "observed": 58.0
+        },
+        {
+         "model": 54.36,
+         "name": "Jahmyr Gibbs",
+         "observed": 47.7
+        },
+        {
+         "model": 30.89,
+         "name": "Sam LaPorta",
+         "observed": 39.97
+        },
+        {
+         "model": 25.04,
+         "name": "Dalton Kincaid",
+         "observed": 34.59
+        },
+        {
+         "model": 21.82,
+         "name": "DJ Moore",
+         "observed": 34.26
+        },
+        {
+         "model": 24.0,
+         "name": "Amon-Ra St. Brown",
+         "observed": 28.7
+        },
+        {
+         "model": 46.04,
+         "name": "James Cook III",
+         "observed": 26.45
+        },
+        {
+         "model": 24.59,
+         "name": "Jared Goff",
+         "observed": 25.78
+        },
+        {
+         "model": 12.49,
+         "name": "Tyler Bass",
+         "observed": 24.96
+        },
+        {
+         "model": 22.11,
+         "name": "Jameson Williams",
+         "observed": 23.54
+        },
+        {
+         "model": 6.75,
+         "name": "Joshua Palmer",
+         "observed": 21.28
+        },
+        {
+         "model": 21.29,
+         "name": "Khalil Shakir",
+         "observed": 20.46
+        }
+       ]
+      },
+      "k_dst_slots_pct": {
+       "all_active": {
+        "0": 48.93,
+        "1": 37.7,
+        "2": 12.62,
+        "3": 0.69,
+        "4": 0.05
+       },
+       "l1_pp": 8.98,
+       "model": {
+        "0": 44.99,
+        "1": 43.62,
+        "2": 10.76,
+        "3": 0.63,
+        "4": 0.0
+       },
+       "observed": {
+        "0": 44.4,
+        "1": 39.72,
+        "2": 14.98,
+        "3": 0.83,
+        "4": 0.07
+       }
+      },
+      "salary_left": {
+       "all_active_mean": 626.9,
+       "model_mean": 2151.4,
+       "model_share_ge_1000_pct": 64.98,
+       "observed_mean": 618.2,
+       "observed_share_ge_1000_pct": 20.42
+      },
+      "structure_pct": {
+       "all_active": {
+        "3-3": 33.47,
+        "4-2": 50.61,
+        "5-1": 15.92
+       },
+       "l1_pp": 9.4,
+       "model": {
+        "3-3": 38.83,
+        "4-2": 49.46,
+        "5-1": 11.72
+       },
+       "observed": {
+        "3-3": 34.15,
+        "4-2": 49.43,
+        "5-1": 16.41
+       }
+      },
+      "support": "model and 'observed' on the representable entries; 'all_active' is every active entry (the first artifact's basis)"
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.077,
+        "observed_over_model": 0.143,
+        "observed_pct": 0.011,
+        "universe_lineups": 203152
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.575,
+        "observed_over_model": 0.067,
+        "observed_pct": 0.039,
+        "universe_lineups": 155983
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 3.704,
+        "observed_over_model": 0.176,
+        "observed_pct": 0.652,
+        "universe_lineups": 103364
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 20.095,
+        "observed_over_model": 1.07,
+        "observed_pct": 21.502,
+        "universe_lineups": 58387
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 54.989,
+        "observed_over_model": 1.164,
+        "observed_pct": 63.983,
+        "universe_lineups": 19804
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 20.549,
+        "observed_over_model": 0.671,
+        "observed_pct": 13.796,
+        "universe_lineups": 1224
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 31993.2,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 25.87,
+         "lineups": 18809.8
+        },
+        "11-50": {
+         "entry_share_pct": 15.13,
+         "lineups": 684.2
+        },
+        "2-2": {
+         "entry_share_pct": 15.64,
+         "lineups": 5685.3
+        },
+        "3-5": {
+         "entry_share_pct": 25.58,
+         "lineups": 5085.1
+        },
+        "51-plus": {
+         "entry_share_pct": 0.29,
+         "lineups": 3.6
+        },
+        "6-10": {
+         "entry_share_pct": 17.49,
+         "lineups": 1725.1
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 15052.3,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.653,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 3.842,
+        "observed": 2.37
+       },
+       "1000": {
+        "model": 18.188,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0805,
+       "observed": 1.3232
+      }
+     }
+    },
+    "pooled_all_contest_balanced": {
+     "beta": 0.35144,
+     "likelihood": {
+      "model_mean_x": 91.6711,
+      "model_var_x": 24.023,
+      "moment_residual": 1.366744,
+      "nll_per_entry_nats": 10.60442,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.7506
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.057,
+        "observed_over_model": 0.361,
+        "observed_pct": 0.021,
+        "universe_lineups": 152093
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.419,
+        "observed_over_model": 0.151,
+        "observed_pct": 0.063,
+        "universe_lineups": 113804
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.756,
+        "observed_over_model": 0.597,
+        "observed_pct": 1.646,
+        "universe_lineups": 76469
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 15.545,
+        "observed_over_model": 1.592,
+        "observed_pct": 24.745,
+        "universe_lineups": 44891
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 48.865,
+        "observed_over_model": 1.163,
+        "observed_pct": 56.84,
+        "universe_lineups": 16785
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 31.636,
+        "observed_over_model": 0.518,
+        "observed_pct": 16.392,
+        "universe_lineups": 1644
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.714,
+        "observed_over_model": 0.379,
+        "observed_pct": 0.271,
+        "universe_lineups": 6
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 26626.9,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 20.24,
+         "lineups": 14715.3
+        },
+        "11-50": {
+         "entry_share_pct": 24.15,
+         "lineups": 995.2
+        },
+        "2-2": {
+         "entry_share_pct": 12.81,
+         "lineups": 4655.8
+        },
+        "3-5": {
+         "entry_share_pct": 22.65,
+         "lineups": 4470.3
+        },
+        "51-plus": {
+         "entry_share_pct": 2.06,
+         "lineups": 22.3
+        },
+        "6-10": {
+         "entry_share_pct": 18.1,
+         "lineups": 1767.9
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 8859.8,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.086,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 5.88,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 24.797,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1385,
+       "observed": 1.3232
+      }
+     }
+    },
+    "pooled_all_entry_weighted": {
+     "beta": 0.35141,
+     "likelihood": {
+      "model_mean_x": 91.6703,
+      "model_var_x": 24.0264,
+      "moment_residual": 1.365936,
+      "nll_per_entry_nats": 10.60438,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.7505
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.057,
+        "observed_over_model": 0.361,
+        "observed_pct": 0.021,
+        "universe_lineups": 152093
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.419,
+        "observed_over_model": 0.151,
+        "observed_pct": 0.063,
+        "universe_lineups": 113804
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.758,
+        "observed_over_model": 0.597,
+        "observed_pct": 1.646,
+        "universe_lineups": 76469
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 15.548,
+        "observed_over_model": 1.592,
+        "observed_pct": 24.745,
+        "universe_lineups": 44891
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 48.865,
+        "observed_over_model": 1.163,
+        "observed_pct": 56.84,
+        "universe_lineups": 16785
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 31.631,
+        "observed_over_model": 0.518,
+        "observed_pct": 16.392,
+        "universe_lineups": 1644
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.714,
+        "observed_over_model": 0.38,
+        "observed_pct": 0.271,
+        "universe_lineups": 6
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 26630.1,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 20.24,
+         "lineups": 14717.6
+        },
+        "11-50": {
+         "entry_share_pct": 24.15,
+         "lineups": 995.1
+        },
+        "2-2": {
+         "entry_share_pct": 12.81,
+         "lineups": 4656.4
+        },
+        "3-5": {
+         "entry_share_pct": 22.65,
+         "lineups": 4470.7
+        },
+        "51-plus": {
+         "entry_share_pct": 2.05,
+         "lineups": 22.3
+        },
+        "6-10": {
+         "entry_share_pct": 18.1,
+         "lineups": 1767.9
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 8862.8,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.086,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 5.878,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 24.793,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1385,
+       "observed": 1.3232
+      }
+     }
+    },
+    "production_beta_on_this_universe": {
+     "beta": 0.3514,
+     "likelihood": {
+      "model_mean_x": 91.6701,
+      "model_var_x": 24.0273,
+      "moment_residual": 1.365729,
+      "nll_per_entry_nats": 10.60437,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.7505
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.057,
+        "observed_over_model": 0.36,
+        "observed_pct": 0.021,
+        "universe_lineups": 152093
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.419,
+        "observed_over_model": 0.151,
+        "observed_pct": 0.063,
+        "universe_lineups": 113804
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.758,
+        "observed_over_model": 0.597,
+        "observed_pct": 1.646,
+        "universe_lineups": 76469
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 15.549,
+        "observed_over_model": 1.591,
+        "observed_pct": 24.745,
+        "universe_lineups": 44891
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 48.865,
+        "observed_over_model": 1.163,
+        "observed_pct": 56.84,
+        "universe_lineups": 16785
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 31.629,
+        "observed_over_model": 0.518,
+        "observed_pct": 16.392,
+        "universe_lineups": 1644
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.714,
+        "observed_over_model": 0.38,
+        "observed_pct": 0.271,
+        "universe_lineups": 6
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 26630.9,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 20.24,
+         "lineups": 14718.2
+        },
+        "11-50": {
+         "entry_share_pct": 24.15,
+         "lineups": 995.0
+        },
+        "2-2": {
+         "entry_share_pct": 12.81,
+         "lineups": 4656.6
+        },
+        "3-5": {
+         "entry_share_pct": 22.65,
+         "lineups": 4470.8
+        },
+        "51-plus": {
+         "entry_share_pct": 2.05,
+         "lineups": 22.3
+        },
+        "6-10": {
+         "entry_share_pct": 18.1,
+         "lineups": 1768.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 8863.6,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.086,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 5.878,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 24.791,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1385,
+       "observed": 1.3232
+      }
+     }
+    },
+    "top_share_rule_resolved_here": {
+     "beta": 0.38953,
+     "likelihood": {
+      "model_mean_x": 92.5184,
+      "model_var_x": 20.6334,
+      "moment_residual": 2.214047,
+      "nll_per_entry_nats": 10.67303,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.8739
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.046,
+        "observed_over_model": 0.565,
+        "observed_pct": 0.026,
+        "universe_lineups": 123337
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.337,
+        "observed_over_model": 0.371,
+        "observed_pct": 0.125,
+        "universe_lineups": 91712
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 2.246,
+        "observed_over_model": 1.272,
+        "observed_pct": 2.856,
+        "universe_lineups": 62406
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 12.876,
+        "observed_over_model": 2.041,
+        "observed_pct": 26.279,
+        "universe_lineups": 37474
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 44.218,
+        "observed_over_model": 1.187,
+        "observed_pct": 52.468,
+        "universe_lineups": 14864
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 38.196,
+        "observed_over_model": 0.462,
+        "observed_pct": 17.635,
+        "universe_lineups": 1803
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 2.075,
+        "observed_over_model": 0.28,
+        "observed_pct": 0.58,
+        "universe_lineups": 15
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 23268.7,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 17.02,
+         "lineups": 12376.9
+        },
+        "11-50": {
+         "entry_share_pct": 29.22,
+         "lineups": 1144.4
+        },
+        "2-2": {
+         "entry_share_pct": 11.02,
+         "lineups": 4006.8
+        },
+        "3-5": {
+         "entry_share_pct": 20.28,
+         "lineups": 3989.5
+        },
+        "51-plus": {
+         "entry_share_pct": 4.95,
+         "lineups": 49.2
+        },
+        "6-10": {
+         "entry_share_pct": 17.5,
+         "lineups": 1701.9
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 6064.8,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 1.529,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 7.786,
+        "observed": 2.37
+       },
+       "1000": {
+        "model": 30.167,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.2,
+       "observed": 1.3232
+      }
+     }
+    },
+    "transfer_from_193391013": {
+     "beta": 0.33177,
+     "likelihood": {
+      "model_mean_x": 91.1774,
+      "model_var_x": 26.2262,
+      "moment_residual": 0.87304,
+      "nll_per_entry_nats": 10.58232,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.6876
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.064,
+        "observed_over_model": 0.216,
+        "observed_pct": 0.014,
+        "universe_lineups": 170456
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.472,
+        "observed_over_model": 0.114,
+        "observed_pct": 0.054,
+        "universe_lineups": 128421
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 3.089,
+        "observed_over_model": 0.369,
+        "observed_pct": 1.14,
+        "universe_lineups": 85692
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 17.011,
+        "observed_over_model": 1.357,
+        "observed_pct": 23.079,
+        "universe_lineups": 49334
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 51.334,
+        "observed_over_model": 1.164,
+        "observed_pct": 59.752,
+        "universe_lineups": 18029
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 27.908,
+        "observed_over_model": 0.57,
+        "observed_pct": 15.914,
+        "universe_lineups": 1525
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 0.113,
+        "observed_over_model": 0.219,
+        "observed_pct": 0.025,
+        "universe_lineups": 1
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 28581.7,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 22.22,
+         "lineups": 16153.7
+        },
+        "11-50": {
+         "entry_share_pct": 20.86,
+         "lineups": 888.3
+        },
+        "2-2": {
+         "entry_share_pct": 13.85,
+         "lineups": 5033.4
+        },
+        "3-5": {
+         "entry_share_pct": 23.85,
+         "lineups": 4719.3
+        },
+        "51-plus": {
+         "entry_share_pct": 1.12,
+         "lineups": 12.7
+        },
+        "6-10": {
+         "entry_share_pct": 18.11,
+         "lineups": 1774.3
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 10846.2,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.898,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 5.021,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 22.142,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.1131,
+       "observed": 1.3232
+      }
+     }
+    },
+    "transfer_from_195526287": {
+     "beta": 0.43428,
+     "likelihood": {
+      "model_mean_x": 93.3722,
+      "model_var_x": 17.6711,
+      "moment_residual": 3.067801,
+      "nll_per_entry_nats": 10.7917,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 1.0205
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-9..-8",
+        "model_pct": 0.036,
+        "observed_over_model": 1.133,
+        "observed_pct": 0.041,
+        "universe_lineups": 98255
+       },
+       {
+        "log10_p": "-8..-7",
+        "model_pct": 0.266,
+        "observed_over_model": 1.058,
+        "observed_pct": 0.282,
+        "universe_lineups": 73034
+       },
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 1.816,
+        "observed_over_model": 2.615,
+        "observed_pct": 4.748,
+        "universe_lineups": 50431
+       },
+       {
+        "log10_p": "-6..-5",
+        "model_pct": 10.613,
+        "observed_over_model": 2.706,
+        "observed_pct": 28.719,
+        "universe_lineups": 30778
+       },
+       {
+        "log10_p": "-5..-4",
+        "model_pct": 37.927,
+        "observed_over_model": 1.236,
+        "observed_pct": 46.877,
+        "universe_lineups": 12584
+       },
+       {
+        "log10_p": "-4..-3",
+        "model_pct": 43.211,
+        "observed_over_model": 0.413,
+        "observed_pct": 17.832,
+        "universe_lineups": 1943
+       },
+       {
+        "log10_p": "-3..-2",
+        "model_pct": 6.125,
+        "observed_over_model": 0.238,
+        "observed_pct": 1.461,
+        "universe_lineups": 43
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 19936.3,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 14.04,
+         "lineups": 10210.6
+        },
+        "11-50": {
+         "entry_share_pct": 33.16,
+         "lineups": 1235.3
+        },
+        "2-2": {
+         "entry_share_pct": 9.27,
+         "lineups": 3369.1
+        },
+        "3-5": {
+         "entry_share_pct": 17.65,
+         "lineups": 3461.8
+        },
+        "51-plus": {
+         "entry_share_pct": 9.63,
+         "lineups": 85.7
+        },
+        "6-10": {
+         "entry_share_pct": 16.24,
+         "lineups": 1573.7
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 3959.2,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 2.201,
+        "observed": 0.362
+       },
+       "100": {
+        "model": 10.443,
+        "observed": 2.362
+       },
+       "1000": {
+        "model": 36.729,
+        "observed": 11.595
+       }
+      },
+      "max_share_pct": {
+       "model": 0.2964,
+       "observed": 1.3232
+      }
+     }
+    },
+    "uniform": {
+     "beta": 0.0,
+     "likelihood": {
+      "model_mean_x": 52.857,
+      "model_var_x": 267.3413,
+      "moment_residual": -37.447387,
+      "nll_per_entry_nats": 14.1031,
+      "observed_mean_x": 90.3044,
+      "observed_var_x": 18.0325,
+      "var_ratio_observed_over_model": 0.0675
+     },
+     "shape": {
+      "bins": [
+       {
+        "log10_p": "-7..-6",
+        "model_pct": 100.0,
+        "observed_over_model": 1.0,
+        "observed_pct": 100.0,
+        "universe_lineups": 1333214
+       }
+      ],
+      "distinct_lineups": {
+       "model_expected": 70754.3,
+       "observed": 11917
+      },
+      "duplication": {
+       "model": {
+        "1-1": {
+         "entry_share_pct": 94.69,
+         "lineups": 68842.7
+        },
+        "11-50": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "2-2": {
+         "entry_share_pct": 5.16,
+         "lineups": 1877.0
+        },
+        "3-5": {
+         "entry_share_pct": 0.14,
+         "lineups": 34.6
+        },
+        "51-plus": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        },
+        "6-10": {
+         "entry_share_pct": 0.0,
+         "lineups": 0.0
+        }
+       },
+       "observed": {
+        "1-1": {
+         "entry_share_pct": 6.63,
+         "lineups": 4823
+        },
+        "11-50": {
+         "entry_share_pct": 40.08,
+         "lineups": 1386
+        },
+        "2-2": {
+         "entry_share_pct": 5.19,
+         "lineups": 1886
+        },
+        "3-5": {
+         "entry_share_pct": 12.15,
+         "lineups": 2345
+        },
+        "51-plus": {
+         "entry_share_pct": 22.1,
+         "lineups": 155
+        },
+        "6-10": {
+         "entry_share_pct": 13.85,
+         "lineups": 1322
+        }
+       }
+      },
+      "effective_lineups_inverse_sum_p2": {
+       "model": 1333214.0,
+       "observed": 1366.2
+      },
+      "mass_in_model_top_k_pct": {
+       "10": {
+        "model": 0.001,
+        "observed": 0.083
+       },
+       "100": {
+        "model": 0.008,
+        "observed": 0.33
+       },
+       "1000": {
+        "model": 0.075,
+        "observed": 1.516
+       }
+      },
+      "max_share_pct": {
+       "model": 0.0001,
+       "observed": 1.3232
+      }
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 1435,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 153434)",
+       "file": "contests_153434.json",
+       "records": 1,
+       "retrieved_ts": 1789818525,
+       "sha256": "41b6c07402dcdc337229280da28adf2e423364882df4132bb01051324e38a932"
+      },
+      "slate": {
+       "bytes": 8446,
+       "endpoint": "dk.slate_for(nfl, 153434)",
+       "file": "slate_153434.json",
+       "records": 47,
+       "retrieved_ts": 1789818525,
+       "sha256": "e112a1f0d69bce0afe7035f5ceafaf3aef74100cd946f9edec2e122d2b4c0bf3"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    }
+   },
+   "integrity": "post-game reconstruction (pool, feeds and roster captured after the game)",
+   "label": "DET @ BUF, Thursday Night Showdown",
+   "nll_scan": [
+    {
+     "beta": 0.0,
+     "nll_per_entry_nats": 14.1031
+    },
+    {
+     "beta": 0.05,
+     "nll_per_entry_nats": 12.56349
+    },
+    {
+     "beta": 0.1,
+     "nll_per_entry_nats": 11.61257
+    },
+    {
+     "beta": 0.15,
+     "nll_per_entry_nats": 11.06412
+    },
+    {
+     "beta": 0.2,
+     "nll_per_entry_nats": 10.76104
+    },
+    {
+     "beta": 0.25,
+     "nll_per_entry_nats": 10.61218
+    },
+    {
+     "beta": 0.3,
+     "nll_per_entry_nats": 10.56852
+    },
+    {
+     "beta": 0.35,
+     "nll_per_entry_nats": 10.60248
+    },
+    {
+     "beta": 0.4,
+     "nll_per_entry_nats": 10.69732
+    },
+    {
+     "beta": 0.45,
+     "nll_per_entry_nats": 10.84207
+    },
+    {
+     "beta": 0.5,
+     "nll_per_entry_nats": 11.02902
+    },
+    {
+     "beta": 0.55,
+     "nll_per_entry_nats": 11.25244
+    },
+    {
+     "beta": 0.6,
+     "nll_per_entry_nats": 11.50788
+    },
+    {
+     "beta": 0.65,
+     "nll_per_entry_nats": 11.79174
+    },
+    {
+     "beta": 0.7,
+     "nll_per_entry_nats": 12.10101
+    },
+    {
+     "beta": 0.75,
+     "nll_per_entry_nats": 12.43314
+    },
+    {
+     "beta": 0.8,
+     "nll_per_entry_nats": 12.78591
+    },
+    {
+     "beta": 0.85,
+     "nll_per_entry_nats": 13.15733
+    },
+    {
+     "beta": 0.9,
+     "nll_per_entry_nats": 13.54566
+    },
+    {
+     "beta": 0.95,
+     "nll_per_entry_nats": 13.9493
+    },
+    {
+     "beta": 1.0,
+     "nll_per_entry_nats": 14.36682
+    },
+    {
+     "beta": 1.05,
+     "nll_per_entry_nats": 14.79691
+    },
+    {
+     "beta": 1.1,
+     "nll_per_entry_nats": 15.23838
+    },
+    {
+     "beta": 1.15,
+     "nll_per_entry_nats": 15.69017
+    },
+    {
+     "beta": 1.2,
+     "nll_per_entry_nats": 16.15128
+    }
+   ],
+   "ordering_beta_invariant": {
+    "model_top_lineup": {
+     "cpt": "Jahmyr Gibbs",
+     "flex": [
+      "Bills",
+      "Dalton Kincaid",
+      "Jackson Hawes",
+      "James Cook III",
+      "Josh Allen"
+     ],
+     "observed_copies": 18,
+     "observed_rank": 839
+    },
+    "note": "invariant to beta: the softmax is monotone in x, so no value of the knob can change any of these",
+    "observed_mass_in_model_top_k_pct": {
+     "10": 0.362,
+     "100": 2.362,
+     "1000": 11.595,
+     "10000": 55.424
+    },
+    "real_chalk": {
+     "copies": 962,
+     "cpt": "Dalton Kincaid",
+     "flex": [
+      "DJ Moore",
+      "Jahmyr Gibbs",
+      "Josh Allen",
+      "Joshua Palmer",
+      "Sam LaPorta"
+     ],
+     "model_rank": 3197
+    },
+    "spearman_observed_count_vs_x_over_observed_lineups": 0.1852,
+    "winner": {
+     "copies": 17,
+     "model_rank": 31601,
+     "points": 174.51,
+     "tied": 17
+    }
+   },
+   "saturated_nll_per_entry_nats": 8.37478,
+   "support": {
+    "active_entries": 88023,
+    "legal_but_not_enumerated": 0,
+    "representable_entries": 72701,
+    "representable_pct": 82.59,
+    "statement": "conditional on the 82.6% of active entries whose six players all carry a Sleeper projection under the game's teams; the other 17.4% hold a player Sleeper never projected and are outside the likelihood, not repaired",
+    "unrepresentable_by_player": [
+     {
+      "entries": 11731,
+      "name": "Frank Gore Jr."
+     },
+     {
+      "entries": 1608,
+      "name": "Greg Dortch"
+     },
+     {
+      "entries": 956,
+      "name": "Keleki Latu"
+     },
+     {
+      "entries": 505,
+      "name": "Jackson Meeks"
+     },
+     {
+      "entries": 234,
+      "name": "Ty Johnson"
+     },
+     {
+      "entries": 156,
+      "name": "Skyler Bell"
+     },
+     {
+      "entries": 123,
+      "name": "Jabari Small"
+     },
+     {
+      "entries": 54,
+      "name": "Kyle Allen"
+     },
+     {
+      "entries": 51,
+      "name": "Trent Sherfield Sr."
+     },
+     {
+      "entries": 50,
+      "name": "Joshua Dobbs"
+     }
+    ],
+    "unrepresentable_pct": 17.41
+   },
+   "uniform_nll_per_entry_nats": 14.1031,
+   "universe": {
+    "gated_universe_in_first_artifact": {
+     "lineups": 421702,
+     "players": 22
+    },
+    "legal_lineups": 1333214,
+    "legality": "production's enumerate_showdown: under the $50,000 cap with the 1.5x captain salary, both teams; no owner rule, no depth gate, no field-only cap",
+    "players": 26,
+    "players_without_projection": [
+     "Brock Lampe",
+     "Dominic Lovett",
+     "Frank Gore Jr.",
+     "Greg Dortch",
+     "Isiah Pacheco",
+     "Ja'Mori Maclin",
+     "Jabari Small",
+     "Jackson Meeks",
+     "Joshua Dobbs",
+     "Keleki Latu",
+     "Kendrick Law",
+     "Kyle Allen",
+     "Lucky Jackson",
+     "Luke Altmyer",
+     "Shane Buechele",
+     "Skyler Bell",
+     "Stephen Gosnell",
+     "Thomas Gordon",
+     "Trent Sherfield Sr.",
+     "Ty Johnson",
+     "Tyrell Shavers"
+    ],
+    "roster": {
+     "captured_utc": "2026-09-19 11:48:47 UTC",
+     "file": "research/data/feeds/players_2026_2.json",
+     "injury_statuses": "CLEARED (as in the first artifact); the gate itself is not applied here",
+     "records": 44,
+     "sha256": "df353f274d815a68c65f6a7ac39251d201a90e11343f2394053ff02c1a2245bf",
+     "teams": [
+      "BUF",
+      "DET"
+     ]
+    }
+   },
+   "universe_sensitivity": [
+    {
+     "beta": 0.28673,
+     "legal_lineups": 213032,
+     "lowest_projection_kept": 2.3,
+     "note": null,
+     "observed_mean_x": 90.211,
+     "players": 20,
+     "representable_pct": 54.97,
+     "uniform_mean_x": 65.279
+    },
+    {
+     "beta": 0.28765,
+     "legal_lineups": 420783,
+     "lowest_projection_kept": 1.7,
+     "note": null,
+     "observed_mean_x": 90.264,
+     "players": 22,
+     "representable_pct": 79.19,
+     "uniform_mean_x": 61.06
+    },
+    {
+     "beta": 0.29279,
+     "legal_lineups": 774297,
+     "lowest_projection_kept": 0.7,
+     "note": null,
+     "observed_mean_x": 90.302,
+     "players": 24,
+     "representable_pct": 81.3,
+     "uniform_mean_x": 56.751
+    },
+    {
+     "beta": 0.30091,
+     "legal_lineups": 1333214,
+     "lowest_projection_kept": 0.3,
+     "note": null,
+     "observed_mean_x": 90.304,
+     "players": 26,
+     "representable_pct": 82.59,
+     "uniform_mean_x": 52.857
+    }
+   ],
+   "week": 2
+  }
+ },
+ "meta": {
+  "contests": {
+   "193391013": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "195526287": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "195677825": "DET @ BUF, Thursday Night Showdown"
+  },
+  "fences": [
+   "support first: the universe is every DraftKings pool player with a Sleeper projection under the game's teams, production's legality, depth gate lifted, no owner rule; each board's representable share is stated before its fit",
+   "no substitute for a missing projection: entries holding an unprojected player are outside the likelihood and reported",
+   "counts only: beta maximises the likelihood of the exact-lineup counts (captain identity included); captain mix, structures, salary left, K/DST and duplication are graded after the fit and never enter it",
+   "ordering statistics are invariant to beta in this family and are reported once per board, labelled so",
+   "transfer: six single-board directions and leave-one-contest-out pooling, entry-weighted and contest-balanced",
+   "leave-one-out is a reconstruction sensitivity: only DEN @ KC has pre-lock inputs",
+   "no new feature, no second parameter; the top-K universe refit is a sensitivity of the parameterisation, not a fit anything downstream uses"
+  ],
+  "fit_free": false,
+  "inputs": {
+   "first_artifact": "research/data/s7_field.json",
+   "sleeper_feeds": {
+    "files": {
+     "players_2026_1.json": {
+      "bytes": 27661,
+      "sha256": "b8095d57e0acd93f0afbe63bd791fc1660a382471a1ce6135180b23a4a705b29"
+     },
+     "players_2026_1_nesea.json": {
+      "bytes": 18545,
+      "sha256": "ee7486cf388947f9a200bbfabe2674784c67b4b786e73900f668a1db7b669e9c"
+     },
+     "players_2026_2.json": {
+      "bytes": 11964,
+      "sha256": "df353f274d815a68c65f6a7ac39251d201a90e11343f2394053ff02c1a2245bf"
+     },
+     "proj_2026_1.json": {
+      "bytes": 2154419,
+      "sha256": "24b6aae894482e9215dff1365ce03ee6ba5f6014751c9c3cee91f6f515c109cc"
+     },
+     "proj_2026_1_def.json": {
+      "bytes": 34208,
+      "sha256": "9c51771ce016ca53624815a4207788d23f86ef2c4a4a75f796829fc048bba781"
+     },
+     "proj_2026_1_k.json": {
+      "bytes": 108980,
+      "sha256": "6fa11f27047bb11b954539e28413528d301ae707586f92bad2a21083a0bffa61"
+     },
+     "proj_2026_2.json": {
+      "bytes": 2163337,
+      "sha256": "18ccf9ee3ec59993ff56f19df1a06c5308f0c18aabb47c9f7bd9afcbe767660a"
+     },
+     "proj_2026_2_def.json": {
+      "bytes": 34192,
+      "sha256": "16d39bf49bca893d6ace02213257d07181cb7c93243657e4929bdb9fdeb5477a"
+     },
+     "proj_2026_2_k.json": {
+      "bytes": 109048,
+      "sha256": "02340c4a070e0eabd473337e1dd9634cac9bb6b4383e41a18cebfd7f70bf3ff0"
+     }
+    },
+    "source": "sleeper"
+   }
+  },
+  "pooled_all_three": {
+   "contest_balanced": {
+    "beta": 0.35144,
+    "note": null
+   },
+   "entry_weighted": {
+    "beta": 0.35141,
+    "note": null
+   }
+  },
+  "provenance": {
+   "commit": "0dc108c",
+   "data_split": null,
+   "dirty": false,
+   "model": "softmax(beta x projection) over the lifted universe; beta by maximum likelihood",
+   "seed": 20260912,
+   "source_files": 41,
+   "source_sha": "897c530429f7106742eb3f8f5a0ef78b4b8b14e95f6071e91254590628fea456",
+   "worlds": null
+  },
+  "stage": "S7 second artifact: the softmax field's one knob fitted by maximum likelihood to the exact-lineup counts of three real Showdown fields"
+ },
+ "summary": [
+  {
+   "beta": {
+    "loo_contest_balanced": 0.36248,
+    "loo_entry_weighted": 0.36832,
+    "own_mle": 0.33177,
+    "production": 0.2913,
+    "top_share_rule_here": 0.37368
+   },
+   "beta_by_universe_top_k": {
+    "20": 0.30882,
+    "22": 0.32271,
+    "24": 0.32901,
+    "25": 0.33177
+   },
+   "contest": 193391013,
+   "distinct_lineups": {
+    "model_expected": 33433.3,
+    "observed": 16949
+   },
+   "effective_lineups": {
+    "loo_entry_weighted": 5022.6,
+    "observed": 2020.8,
+    "own_mle": 7482.5,
+    "production": 12008.1
+   },
+   "integrity": "post-game reconstruction (pool, roster and feeds captured after the game)",
+   "label": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "max_share_pct": {
+    "loo_entry_weighted": 0.1904,
+    "observed": 0.4417,
+    "own_mle": 0.1334,
+    "production": 0.0858
+   },
+   "nll_per_entry": {
+    "loo_contest_balanced": 10.03426,
+    "loo_entry_weighted": 10.03966,
+    "own_mle": 10.0209,
+    "pooled_all_contest_balanced": 10.02648,
+    "pooled_all_entry_weighted": 10.02646,
+    "production_beta_on_this_universe": 10.04709,
+    "top_share_rule_resolved_here": 10.04537,
+    "transfer_from_195526287": 10.15541,
+    "transfer_from_195677825": 10.03586,
+    "uniform": 13.85565
+   },
+   "ordering": {
+    "observed_mass_in_model_top_1000_pct": 23.256,
+    "real_chalk_model_rank": 4109,
+    "spearman": 0.3168
+   },
+   "out_of_objective_l1_pp_at_own_mle": {
+    "cpt_position_mix_pct": 30.99,
+    "k_dst_slots_pct": 11.96,
+    "structure_pct": 4.75
+   },
+   "representable_pct": 96.65,
+   "salary_left_mean": {
+    "observed": 1280.9,
+    "own_mle": 2559.8
+   },
+   "saturated": 8.55665,
+   "uniform": 13.85565,
+   "var_ratio_at_own_mle": 0.8368
+  },
+  {
+   "beta": {
+    "loo_contest_balanced": 0.31675,
+    "loo_entry_weighted": 0.3206,
+    "own_mle": 0.43428,
+    "production": 0.4548,
+    "top_share_rule_here": 0.47495
+   },
+   "beta_by_universe_top_k": {
+    "20": 0.38341,
+    "22": 0.39908,
+    "24": 0.41384,
+    "30": 0.43428
+   },
+   "contest": 195526287,
+   "distinct_lineups": {
+    "model_expected": 36665.1,
+    "observed": 17725
+   },
+   "effective_lineups": {
+    "loo_entry_weighted": 40155.7,
+    "observed": 3297.2,
+    "own_mle": 12236.8,
+    "production": 10085.9
+   },
+   "integrity": "highest integrity: pool, contest and feeds captured pre-lock (about 50 h before kickoff); roster post-game",
+   "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "max_share_pct": {
+    "loo_entry_weighted": 0.0414,
+    "observed": 0.3608,
+    "own_mle": 0.1389,
+    "production": 0.1676
+   },
+   "nll_per_entry": {
+    "loo_contest_balanced": 10.79679,
+    "loo_entry_weighted": 10.78556,
+    "own_mle": 10.63726,
+    "pooled_all_contest_balanced": 10.71222,
+    "pooled_all_entry_weighted": 10.71228,
+    "production_beta_on_this_universe": 10.64125,
+    "top_share_rule_resolved_here": 10.65255,
+    "transfer_from_193391013": 10.75567,
+    "transfer_from_195677825": 10.84831,
+    "uniform": 15.06347
+   },
+   "ordering": {
+    "observed_mass_in_model_top_1000_pct": 14.891,
+    "real_chalk_model_rank": 2,
+    "spearman": 0.248
+   },
+   "out_of_objective_l1_pp_at_own_mle": {
+    "cpt_position_mix_pct": 27.59,
+    "k_dst_slots_pct": 14.91,
+    "structure_pct": 6.12
+   },
+   "representable_pct": 98.68,
+   "salary_left_mean": {
+    "observed": 1073.2,
+    "own_mle": 2714.1
+   },
+   "saturated": 8.91605,
+   "uniform": 15.06347,
+   "var_ratio_at_own_mle": 0.6695
+  },
+  {
+   "beta": {
+    "loo_contest_balanced": 0.37788,
+    "loo_entry_weighted": 0.36955,
+    "own_mle": 0.30091,
+    "production": 0.3514,
+    "top_share_rule_here": 0.38953
+   },
+   "beta_by_universe_top_k": {
+    "20": 0.28673,
+    "22": 0.28765,
+    "24": 0.29279,
+    "26": 0.30091
+   },
+   "contest": 195677825,
+   "distinct_lineups": {
+    "model_expected": 31993.2,
+    "observed": 11917
+   },
+   "effective_lineups": {
+    "loo_entry_weighted": 7384.7,
+    "observed": 1366.2,
+    "own_mle": 15052.3,
+    "production": 8863.6
+   },
+   "integrity": "post-game reconstruction (pool, feeds and roster captured after the game)",
+   "label": "DET @ BUF, Thursday Night Showdown",
+   "max_share_pct": {
+    "loo_entry_weighted": 0.1656,
+    "observed": 1.3232,
+    "own_mle": 0.0805,
+    "production": 0.1385
+   },
+   "nll_per_entry": {
+    "loo_contest_balanced": 10.64865,
+    "loo_entry_weighted": 10.63301,
+    "own_mle": 10.56851,
+    "pooled_all_contest_balanced": 10.60442,
+    "pooled_all_entry_weighted": 10.60438,
+    "production_beta_on_this_universe": 10.60437,
+    "top_share_rule_resolved_here": 10.67303,
+    "transfer_from_193391013": 10.58232,
+    "transfer_from_195526287": 10.7917,
+    "uniform": 14.1031
+   },
+   "ordering": {
+    "observed_mass_in_model_top_1000_pct": 11.595,
+    "real_chalk_model_rank": 3197,
+    "spearman": 0.1852
+   },
+   "out_of_objective_l1_pp_at_own_mle": {
+    "cpt_position_mix_pct": 49.6,
+    "k_dst_slots_pct": 8.98,
+    "structure_pct": 9.4
+   },
+   "representable_pct": 82.59,
+   "salary_left_mean": {
+    "observed": 618.2,
+    "own_mle": 2151.4
+   },
+   "saturated": 8.37478,
+   "uniform": 14.1031,
+   "var_ratio_at_own_mle": 0.59
+  }
+ ]
+}

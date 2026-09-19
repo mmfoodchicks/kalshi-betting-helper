@@ -17182,6 +17182,93 @@ ck("the S7 report states the caveats, the three checks on three contests, the tw
    and "never against the historical +0.047078" in _s7_rep
    and "Three observations, not targets" in _s7_rep)
 
+# ---- S7, second artifact: the one knob fitted (research/s7_beta.py) -----------
+import math as _math7b
+import dfs_tourney as _dt7b
+_s7b = _json18.load(open(_os.path.join(_root, "research", "data", "s7_beta.json")))
+_s7bc = _s7b["contests"]
+_s7bs = {str(r["contest"]): r for r in _s7b["summary"]}
+_s7b_src = open(_os.path.join(_root, "research", "s7_beta.py")).read()
+ck("S7's fit runs under the adopted fences and touches nothing in production: the universe is production's enumeration with no predicate, no depth gate and no owner rule (the module never names _apply_depth, _sd_allowed, entry_ok or cpt_ok), fit_free is stamped False, the provenance is clean, every fence is stamped on the artifact, and FIELD_TOP_SHARE / SD_MONEY_FIELD_CALIBRATED are what they were",
+   _s7b["meta"]["fit_free"] is False and _s7b["meta"]["provenance"]["dirty"] is False
+   and "T.enumerate_showdown(players, CAP, cpt_mult=CPT_MULT)" in _s7b_src
+   and all(tok not in _s7b_src for tok in ("_apply_depth", "_sd_allowed", "entry_ok", "cpt_ok"))
+   and any("counts only" in f for f in _s7b["meta"]["fences"]) and any("no substitute for a missing projection" in f for f in _s7b["meta"]["fences"])
+   and any("invariant to beta" in f for f in _s7b["meta"]["fences"]) and any("reconstruction sensitivity" in f for f in _s7b["meta"]["fences"])
+   and _dt7b.FIELD_TOP_SHARE == 0.002 and _dt7b.SD_MONEY_FIELD_CALIBRATED is False)
+ck("support first: the representable share of each field is stated before its fit (96.65 / 98.68 / 82.59%), every representable entry was found in the enumeration, the unrepresentable share is the players Sleeper never projected and is labelled not repaired, and the lifted universes (25 / 30 / 26 players; 1,040,958 / 3,483,231 / 1,333,214 lineups) are stamped beside the first artifact's gated ones",
+   [_s7bc[c]["support"]["representable_pct"] for c in _s7ids] == [96.65, 98.68, 82.59]
+   and all(_s7bc[c]["support"]["legal_but_not_enumerated"] == 0 for c in _s7ids)
+   and all("not repaired" in _s7bc[c]["support"]["statement"] for c in _s7ids)
+   and _s7bc["195677825"]["support"]["unrepresentable_by_player"][0]["name"] == "Frank Gore Jr."
+   and [_s7bc[c]["universe"]["players"] for c in _s7ids] == [25, 30, 26]
+   and [_s7bc[c]["universe"]["legal_lineups"] for c in _s7ids] == [1040958, 3483231, 1333214]
+   and all(_s7bc[c]["universe"]["gated_universe_in_first_artifact"]["lineups"] == _s7c[c]["model"]["universe_lineups"] for c in _s7ids)
+   and "highest integrity" in _s7bc["195526287"]["integrity"] and all("reconstruction" in _s7bc[c]["integrity"] for c in ("193391013", "195677825")))
+ck("the fit is the moment condition solved: the residual at each board's MLE is zero, the uniform NLL is log of the universe (the definition, not a number), the MLE (0.3318 / 0.4343 / 0.3009) moves 0.02-0.05 from production's 0.2%-rule value on the same board (0.2913 / 0.4548 / 0.3514, equal to the first artifact's), improves the per-entry NLL by 0.004-0.036 nats, and leaves 1.46 / 1.72 / 2.19 nats against the empirical distribution that no beta reaches",
+   all(abs(_s7bc[c]["graded"]["own_mle"]["likelihood"]["moment_residual"]) < 1e-4 for c in _s7ids)
+   and all(abs(_s7bc[c]["uniform_nll_per_entry_nats"] - _math7b.log(_s7bc[c]["universe"]["legal_lineups"])) < 1e-4 for c in _s7ids)
+   and [_s7bs[c]["beta"]["own_mle"] for c in _s7ids] == [0.33177, 0.43428, 0.30091]
+   and [_s7bs[c]["beta"]["production"] for c in _s7ids] == [0.2913, 0.4548, 0.3514]
+   and all(_s7bs[c]["beta"]["production"] == _s7c[c]["model"]["beta"] for c in _s7ids)
+   and all(0.02 <= abs(_s7bs[c]["beta"]["own_mle"] - _s7bs[c]["beta"]["production"]) <= 0.051 for c in _s7ids)
+   and [_s7bs[c]["nll_per_entry"]["own_mle"] for c in _s7ids] == [10.0209, 10.63726, 10.56851]
+   and [_s7bs[c]["nll_per_entry"]["production_beta_on_this_universe"] for c in _s7ids] == [10.04709, 10.64125, 10.60437]
+   and all(0.0039 <= _s7bs[c]["nll_per_entry"]["production_beta_on_this_universe"] - _s7bs[c]["nll_per_entry"]["own_mle"] <= 0.036 for c in _s7ids)   # DEN @ KC: 0.00399
+   and [round(_s7bs[c]["nll_per_entry"]["own_mle"] - _s7bs[c]["saturated"], 2) for c in _s7ids] == [1.46, 1.72, 2.19])
+ck("the family's own test fails on every board: the observed variance of projected points is 0.84 / 0.67 / 0.59 of what the family fixes at the MLE, the fitted field spreads over 3.7 / 3.7 / 11.0 times too many effective lineups (7,483 / 12,237 / 15,052 against 2,021 / 3,297 / 1,366), holds the top lineup at 0.13 / 0.14 / 0.08% against 0.44 / 0.36 / 1.32%, and puts 8.3 / 1.6 / 0.3% of entries in lineups with 51+ copies against 34.6 / 14.4 / 22.1%",
+   [_s7bs[c]["var_ratio_at_own_mle"] for c in _s7ids] == [0.8368, 0.6695, 0.59]
+   and [_s7bs[c]["effective_lineups"]["own_mle"] for c in _s7ids] == [7482.5, 12236.8, 15052.3]
+   and [_s7bs[c]["effective_lineups"]["observed"] for c in _s7ids] == [2020.8, 3297.2, 1366.2]
+   and [round(_s7bs[c]["effective_lineups"]["own_mle"] / _s7bs[c]["effective_lineups"]["observed"], 1) for c in _s7ids] == [3.7, 3.7, 11.0]
+   and [_s7bs[c]["max_share_pct"]["own_mle"] for c in _s7ids] == [0.1334, 0.1389, 0.0805]
+   and [_s7bs[c]["max_share_pct"]["observed"] for c in _s7ids] == [0.4417, 0.3608, 1.3232]
+   and [_s7bc[c]["graded"]["own_mle"]["shape"]["duplication"]["observed"]["51-plus"]["entry_share_pct"] for c in _s7ids] == [34.59, 14.43, 22.1]
+   and [_s7bc[c]["graded"]["own_mle"]["shape"]["duplication"]["model"]["51-plus"]["entry_share_pct"] for c in _s7ids] == [8.26, 1.57, 0.29])
+ck("ordering is invariant to beta and is reported once per board, labelled so: Spearman 0.317 / 0.248 / 0.185 between observed counts and projected points, the real chalk at model rank 4,109 / 2 / 3,197, 23.3 / 14.9 / 11.6% of observed entries in the projection's top 1,000 lineups, and the winners at 2,790 / 19,623 / 31,601",
+   all("invariant to beta" in _s7bc[c]["ordering_beta_invariant"]["note"] for c in _s7ids)
+   and [_s7bs[c]["ordering"]["spearman"] for c in _s7ids] == [0.3168, 0.248, 0.1852]
+   and [_s7bs[c]["ordering"]["real_chalk_model_rank"] for c in _s7ids] == [4109, 2, 3197]
+   and [_s7bs[c]["ordering"]["observed_mass_in_model_top_1000_pct"] for c in _s7ids] == [23.256, 14.891, 11.595]
+   and [_s7bc[c]["ordering_beta_invariant"]["winner"]["model_rank"] for c in _s7ids] == [2790, 19623, 31601]
+   and _s7bc["195526287"]["ordering_beta_invariant"]["real_chalk"]["cpt"] == "Bo Nix")
+ck("no beta transfers to the highest-integrity board: NE @ SEA and DET @ BUF carry each other's beta within 0.015 nats, DEN @ KC's beta costs them 0.13 and 0.22 nats and theirs cost it 0.12 and 0.21, the leave-one-out beta (0.32) costs DEN @ KC 0.15 nats where production's placeholder costs 0.004, and entry-weighted and contest-balanced pooling agree within 0.01 in beta on every fold",
+   abs(_s7bs["193391013"]["nll_per_entry"]["transfer_from_195677825"] - _s7bs["193391013"]["nll_per_entry"]["own_mle"]) <= 0.015
+   and abs(_s7bs["195677825"]["nll_per_entry"]["transfer_from_193391013"] - _s7bs["195677825"]["nll_per_entry"]["own_mle"]) <= 0.015
+   and round(_s7bs["193391013"]["nll_per_entry"]["transfer_from_195526287"] - _s7bs["193391013"]["nll_per_entry"]["own_mle"], 2) == 0.13
+   and round(_s7bs["195677825"]["nll_per_entry"]["transfer_from_195526287"] - _s7bs["195677825"]["nll_per_entry"]["own_mle"], 2) == 0.22
+   and round(_s7bs["195526287"]["nll_per_entry"]["transfer_from_193391013"] - _s7bs["195526287"]["nll_per_entry"]["own_mle"], 2) == 0.12
+   and round(_s7bs["195526287"]["nll_per_entry"]["transfer_from_195677825"] - _s7bs["195526287"]["nll_per_entry"]["own_mle"], 2) == 0.21
+   and [_s7bs[c]["beta"]["loo_entry_weighted"] for c in _s7ids] == [0.36832, 0.3206, 0.36955]
+   and round(_s7bs["195526287"]["nll_per_entry"]["loo_entry_weighted"] - _s7bs["195526287"]["nll_per_entry"]["own_mle"], 2) == 0.15
+   and all(abs(_s7bs[c]["beta"]["loo_entry_weighted"] - _s7bs[c]["beta"]["loo_contest_balanced"]) < 0.01 for c in _s7ids)
+   and _s7bs["195526287"]["nll_per_entry"]["loo_entry_weighted"] > _s7bs["195526287"]["nll_per_entry"]["production_beta_on_this_universe"])
+ck("the out-of-objective metrics were never fitted and the fitted beta does not carry them: the captain position mix is off by 31.0 / 27.6 / 49.6 pp, the model leaves $2,560 / $2,714 / $2,151 unspent against the public's $1,281 / $1,073 / $618, and 5-1 is still under (11.4 / 13.1 / 11.7% against 13.7 / 15.0 / 16.4%), each recorded as a model-form failure before any parameter is added",
+   [_s7bs[c]["out_of_objective_l1_pp_at_own_mle"]["cpt_position_mix_pct"] for c in _s7ids] == [30.99, 27.59, 49.6]
+   and [_s7bs[c]["salary_left_mean"]["own_mle"] for c in _s7ids] == [2559.8, 2714.1, 2151.4]
+   and [_s7bs[c]["salary_left_mean"]["observed"] for c in _s7ids] == [1280.9, 1073.2, 618.2]
+   and [_s7bc[c]["graded"]["own_mle"]["out_of_objective"]["structure_pct"]["model"]["5-1"] for c in _s7ids] == [11.36, 13.14, 11.72]
+   and [_s7bc[c]["graded"]["own_mle"]["out_of_objective"]["structure_pct"]["observed"]["5-1"] for c in _s7ids] == [13.73, 15.0, 16.41]
+   and all("out_of_objective" not in _s7bc[c]["graded"]["uniform"] for c in _s7ids)
+   and all("support" in _s7bc[c]["graded"]["own_mle"]["out_of_objective"] for c in _s7ids))
+ck("beta is the public read against a universe, not the public alone: refitted on each board's 20 / 22 / 24 highest-projected players it rises monotonically with the universe on every board, and at twenty players DEN @ KC is still the highest (0.309 / 0.383 / 0.287), so the tail explains about a quarter of its excess (0.118 over the other two boards' mean on the full universes, 0.086 at twenty players) and the rest is the board; the sensitivity is stamped as a diagnostic nothing downstream uses",
+   [_s7bs[c]["beta_by_universe_top_k"]["20"] for c in _s7ids] == [0.30882, 0.38341, 0.28673]
+   and all([r["beta"] for r in _s7bc[c]["universe_sensitivity"]] == sorted(r["beta"] for r in _s7bc[c]["universe_sensitivity"]) for c in _s7ids)
+   and all(_s7bc[c]["universe_sensitivity"][-1]["beta"] == _s7bs[c]["beta"]["own_mle"] for c in _s7ids)
+   and round(_s7bs["195526287"]["beta"]["own_mle"] - (_s7bs["193391013"]["beta"]["own_mle"] + _s7bs["195677825"]["beta"]["own_mle"]) / 2, 3) == 0.118
+   and round(_s7bs["195526287"]["beta_by_universe_top_k"]["20"] - (_s7bs["193391013"]["beta_by_universe_top_k"]["20"] + _s7bs["195677825"]["beta_by_universe_top_k"]["20"]) / 2, 3) == 0.086
+   and any("not a fit anything downstream uses" in f for f in _s7b["meta"]["fences"]))
+_s7b_rep = " ".join(open(_os.path.join(_root, "research", "reports", "s7_beta.md")).read().split())
+ck("the S7 fit report leads with the verdict, states support first, labels ordering beta-invariant, keeps the two 5-1 observations apart, names the transfer failure onto the highest-integrity board without blaming the inputs, changes nothing in production, and defers the S5 rerun to a controlled comparison",
+   "The knob's value was roughly right; the family is wrong in shape, and fitting the knob does not fix it" in _s7b_rep
+   and "## 1. Support first" in _s7b_rep and "conditional on the 82.6% of its field" in _s7b_rep
+   and "Ordering is invariant to beta" in _s7b_rep and "no fit can move them" in _s7b_rep
+   and "This stays separate from the other 5-1" in _s7b_rep
+   and "not obviously the inputs" in _s7b_rep and "the caveat cuts the unusual way" in _s7b_rep
+   and "`SD_MONEY_FIELD_CALIBRATED` stays False and nothing downstream changes" in _s7b_rep
+   and "never compared against the historical +0.047078" in _s7b_rep
+   and "not a fit anything downstream uses" in _s7b_rep and "about a quarter of DEN @ KC's excess" in _s7b_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
