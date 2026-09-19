@@ -194,13 +194,47 @@ _DEPTH_KEEP = {"QB": 1, "RB": 2, "WR": 3, "TE": 2}
 _INJ_OUT = {"OUT", "DOUBTFUL", "IR", "PUP", "SUS", "SUSPENDED", "NA", "COV"}
 
 
-def _depth_records():
+class RosterUnavailable(RuntimeError):
+    """No trustworthy roster for the depth-chart gate: the live fetch failed and
+    no last-known-good copy is within nfl_adp.ROSTER_MAX_AGE_S. Builders refuse
+    rather than build a board with the gate silently off (contract of
+    2026-09-19; the failure used to be an authoritative empty roster)."""
+    def __init__(self, state):
+        super().__init__(f"roster unavailable ({state.get('source')}): {state.get('error') or 'no copy'}; "
+                         f"last fetched {state.get('fetched_utc') or 'never'}")
+        self.state = state
+
+
+_LAST_ROSTER = {"state": None}
+
+
+def _depth_source():
+    """(records or None, state) from nfl_adp.roster(); a crash in the roster
+    machinery itself is ledgered and reads as unavailable."""
     try:
         import nfl_adp
-        return (nfl_adp.consensus() or {}), nfl_adp._norm
+        return nfl_adp.roster()
     except Exception as _e:
         errlog.note("NFLD-depth", _e)
-        return {}, None
+        return None, {"source": "unavailable", "error": f"{type(_e).__name__}: {_e}",
+                      "fetched_utc": None, "age_s": None, "records": 0}
+
+
+def _depth_records():
+    """(records, norm) for the callers that only READ the roster (the rebuild
+    trigger's status classes): {} when none is trustworthy, which those callers
+    already treat as "say nothing". The gate itself goes through _depth_source."""
+    import nfl_adp
+    recs, _st = _depth_source()
+    return (recs or {}), nfl_adp._norm
+
+
+def roster_state():
+    """The roster stamp a board carries: the state the depth-chart gate actually
+    used for this build (source, fetched_utc, age_s, max_age_s, error)."""
+    if _LAST_ROSTER["state"] is None:
+        _LAST_ROSTER["state"] = _depth_source()[1]
+    return dict(_LAST_ROSTER["state"])
 
 
 def _depth_verdict(p, recs, norm):
@@ -236,7 +270,18 @@ def _apply_depth(players, preseason):
     survives every team's slot convention."""
     if preseason:
         return players, []
-    recs, norm = _depth_records()
+    import nfl_adp
+    recs, state = _depth_source()
+    _LAST_ROSTER["state"] = state
+    if recs is None:
+        # the contract: never build with the gate silently off. Ledger it under
+        # a stable id and let the builder refuse (None / {"error"}), the same
+        # shape as TOURN-capacity, so one Sleeper outage cannot kill the PC loop
+        errlog.note("NFLD-roster", msg=f"no trustworthy roster for the depth-chart gate "
+                                       f"({state.get('source')}: {state.get('error')}); the build is refused "
+                                       f"rather than made with the gate off", path=state.get("fetched_utc"))
+        raise RosterUnavailable(state)
+    norm = nfl_adp._norm
     kept, excluded, groups = [], [], {}
     for p in players:
         ok, why, order, q = _depth_verdict(p, recs, norm)
@@ -1151,7 +1196,11 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
             unmatched.append(e["name"])
         e["proj"] = round(e["proj"], 1)
     ents = [e for e in ents if not e.get("_drop")]
-    ents, _dx = _apply_depth(ents, preseason)
+    try:
+        ents, _dx = _apply_depth(ents, preseason)
+    except RosterUnavailable as _e:
+        return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
+                         f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
     excluded += _dx
     if len(ents) < len(SHOWDOWN_ROSTER):
         return {"error": f"showdown needs {len(SHOWDOWN_ROSTER)} rostered, projected "
@@ -1253,6 +1302,7 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
                                                discrete=nfl_dfs_sim.SD_DISCRETE),
             "unmatched": unmatched[:20], "n_pool": len(ents),
             "excluded": excluded[:40], "n_excluded": len(excluded),
+            "roster_source": roster_state(),
             "teams": teams,
             "note": "Showdown Captain Mode: 1 CPT at 1.5x points and 1.5x salary, "
                     "plus 5 FLEX from any position, spanning both teams. Players DK "
@@ -1333,7 +1383,11 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                         "salary": int(c["salary"]),
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
-    players, _dx = _apply_depth(players, preseason)
+    try:
+        players, _dx = _apply_depth(players, preseason)
+    except RosterUnavailable as _e:
+        return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
+                         f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
     excluded += _dx
     if _by_pos(players) is None:
         return {"error": "the slate doesn't cover every roster slot with rostered, "
@@ -1463,6 +1517,7 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
             "lineup": rows, "contest_sim": csim, "contest_probe": probe_rows,
             "unmatched": unmatched[:20],
             "excluded": excluded[:40], "n_excluded": len(excluded),
+            "roster_source": roster_state(),
             "n_pool": len(players),
             "note": "Projections pinned to Sleeper; floor/ceiling + QB-WR correlation from the "
                     "game sim. Ownership is a model estimate of the field. In season the "

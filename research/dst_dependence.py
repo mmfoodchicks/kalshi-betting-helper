@@ -181,12 +181,23 @@ def historical(log=print):
         # the dependence DST-OPP turns on: a side's production vs its own giveaways
         "team": {
             "giveaways_vs_offense_dk": rel("team offensive DK points", off_dk, "team giveaways (INT + lost FUM)", give),
+            "giveaways_vs_offense_dk_penalty_removed": rel("team offensive DK points with the -1 per giveaway added back",
+                                                           [d + g for d, g in zip(off_dk, give)],
+                                                           "team giveaways (INT + lost FUM)", give),
             "giveaways_vs_pass_attempts": rel("team passing attempts", att, "team giveaways", give),
             "giveaways_vs_total_yards": rel("team pass + rush yards", yd, "team giveaways", give),
             "ints_vs_pass_attempts": rel("team passing attempts", att, "team interceptions", ints),
         },
         "qb1": {
             "giveaways_vs_dk": rel("QB1 DraftKings points", q_dk, "QB1 giveaways (INT + lost FUM)", q_give),
+            # apples to apples with the served model's penalty-removed row (the
+            # reviewer's 2026-09-19 correction): history's DK score carries the
+            # same -1 per giveaway the simulator's does, so the mechanical part
+            # is in BOTH raw figures and only the penalty-removed pair isolates
+            # the football dependence
+            "giveaways_vs_dk_penalty_removed": rel("QB1 DraftKings points with the -1 per giveaway added back",
+                                                   [d + g for d, g in zip(q_dk, q_give)],
+                                                   "QB1 giveaways (INT + lost FUM)", q_give),
             "ints_vs_attempts": rel("QB1 passing attempts", q_att, "QB1 interceptions", q_int),
             "ints_vs_yards": rel("QB1 passing yards", q_yd, "QB1 interceptions", q_int),
             "ints_vs_dk": rel("QB1 DraftKings points", q_dk, "QB1 interceptions", q_int),
@@ -200,7 +211,9 @@ def historical(log=print):
                                                 "team offensive DK points", [t["off_dk"] for t, _ in paired]),
         },
         "not_measurable_here": ["sacks (no column)", "points allowed (no column)",
-                                "the DST score itself (no defense rows); needs the team-week source"],
+                                "the DST score itself (no defense rows); needs the team-week source",
+                                "captain-role DK vs the OPPOSING DST's DK by role -- the relationship "
+                                "DST-OPP constrains directly -- for the same reason: no DST score here"],
     }
     return out
 
@@ -244,7 +257,8 @@ def served_model(n=6000, seed=SEED, log=print):
     for team, d in by_team.items():
         if d["dk"] is None:
             continue
-        r = {"team_giveaways_vs_offense_dk": round(_pearson(d["dk"], d["give"]), 4)}
+        r = {"team_giveaways_vs_offense_dk": round(_pearson(d["dk"], d["give"]), 4),
+             "team_giveaways_vs_offense_dk_with_penalty_removed": round(_pearson(d["dk"] + d["give"], d["give"]), 4)}
         if d["qb"] is not None:
             q = d["qb"]
             r["qb1"] = q["name"]
@@ -276,13 +290,26 @@ def run(log=print):
                "team_giveaways_vs_offense_dk": {"pearson": tg["pearson"], "ci95": tg["pearson_ci95"],
                                                 "per_10_dk_points": round(10 * tg["slope_per_unit_x"], 4)},
                "served_model_team_value": {t: r["team_giveaways_vs_offense_dk"] for t, r in (sim.get("by_team") or {}).items()},
+               # the like-for-like pair: football dependence with DraftKings' own penalty out of BOTH sides
+               "penalty_removed": {
+                   "history_team": hist["team"]["giveaways_vs_offense_dk_penalty_removed"]["pearson"],
+                   "history_team_ci95": hist["team"]["giveaways_vs_offense_dk_penalty_removed"]["pearson_ci95"],
+                   "history_qb1": hist["qb1"]["giveaways_vs_dk_penalty_removed"]["pearson"],
+                   "history_qb1_ci95": hist["qb1"]["giveaways_vs_dk_penalty_removed"]["pearson_ci95"],
+                   "served_team": {t: r["team_giveaways_vs_offense_dk_with_penalty_removed"]
+                                   for t, r in (sim.get("by_team") or {}).items()},
+                   "served_qb1": {t: r.get("qb1_giveaways_vs_dk_with_penalty_removed")
+                                  for t, r in (sim.get("by_team") or {}).items()}},
                "what_it_means_for_dst_opp": (
-                   "if real giveaways RISE with volume/production, the opposing defense scores more in "
-                   "exactly the worlds the captain does, so captain-plus-opposing-DST builds are "
-                   "UNDER-valued by a simulator that draws giveaways independently, and DST-OPP's "
-                   "+0.047 is if anything low; if giveaways FALL with production, those builds are "
-                   "OVER-valued and the rule is vindicated. The sign and size are above; the DST score "
-                   "itself (sacks, points allowed) is not measurable from this table.")}}
+                   "the served simulator shares each interception and lost fumble between the quarterback "
+                   "(-1) and the opposing defense (+2), so it does NOT have zero captain/DST covariance from "
+                   "turnovers; what it omits is the football-state dependence of the turnover process. The "
+                   "penalty-removed pair above is the like-for-like measure of that omission. If history's "
+                   "penalty-removed dependence is negative and the simulator's is zero, the simulator "
+                   "understates part of the real anti-correlation between offensive production and "
+                   "opposing-defense scoring, which makes the S5 DST-OPP benefit suspect in the direction of "
+                   "over-valuation; it does not say how much of the +0.047 would survive a corrected joint "
+                   "model. The DST score itself (sacks, points allowed) is not measurable from this table.")}}
     with open(os.path.join(DATA, "dst_dependence.json"), "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     log(f"[DST] QB1 INT vs attempts: r={key['pearson']:+.3f} CI {key['pearson_ci95']} "

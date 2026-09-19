@@ -984,7 +984,10 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             e["_drop"] = True
     ents = [e for e in ents if not e.get("_drop")]
     by_name = {e["name"]: e for e in ents}
-    ents, dx = nfl_dfs._apply_depth(ents, preseason)
+    try:
+        ents, dx = nfl_dfs._apply_depth(ents, preseason)
+    except nfl_dfs.RosterUnavailable:
+        return None                     # ledgered as NFLD-roster; no board with the gate off
     # The depth gate is OUR rule, not the public's: a WR4 with a real
     # projection is in thousands of their lineups, so he stays in the field's
     # pool (never in ours) and his boom worlds count against us honestly.
@@ -1197,6 +1200,7 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             "portfolio": ports,
             "players": players_out,
             "excluded": excluded[:40],
+            "roster_source": nfl_dfs.roster_state(),
             "timings": {"sims_s": round(t1 - t0, 1), "enumerate_s": round(t2 - t1, 1),
                         "score_s": round(t3 - t2, 1), "portfolio_s": round(t4 - t3, 1),
                         "total_s": round(t4 - t0, 1)}})
@@ -2214,7 +2218,10 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                      "ceiling": sim.get("ceiling"), "floor": sim.get("floor"), "arr": sim["arr"],
                      "rec_tgt": float(sim.get("rec_tgt") or 0.0)})
     by_name = {e["name"]: e for e in ents}
-    ents, dx = nfl_dfs._apply_depth(ents, preseason)
+    try:
+        ents, dx = nfl_dfs._apply_depth(ents, preseason)
+    except nfl_dfs.RosterUnavailable:
+        return None                     # ledgered as NFLD-roster; no board with the gate off
     extra = []
     for d in dx:
         e = by_name.get(d["name"])
@@ -2447,6 +2454,7 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
             "results": results,
             "players": players_out,
             "excluded": excluded[:60],
+            "roster_source": nfl_dfs.roster_state(),
             "timings": {"sims_s": round(t1 - t0, 1), "optimal_s": round(t2 - t1, 1),
                         "field_s": round(t3 - t2, 1), "candidates_s": round(t4 - t3, 1),
                         "score_s": round(t5 - t4, 1), "portfolio_s": round(t6 - t5, 1),

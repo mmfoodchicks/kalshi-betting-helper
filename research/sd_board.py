@@ -48,7 +48,6 @@ def feeds(feed_dir, season=SEASON, week=WEEK):
     import json
     import nfl_adp
     import nfl_dfs_sim as S
-    import racing
     raw = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}.json")))
     dfn = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_def.json")))
     kck = json.load(open(os.path.join(feed_dir, f"proj_{season}_{week}_k.json")))
@@ -57,9 +56,12 @@ def feeds(feed_dir, season=SEASON, week=WEEK):
     if not os.path.exists(path):
         raise FileNotFoundError(f"{path}: no pinned roster; capture one with "
                                 "`python3 -m research.sd_board capture-roster` before any study runs")
-    players = json.load(open(path))["players"]
-    nfl_adp._fetch_players = lambda: dict(players)
-    racing._form_cache.pop(("nfl_consensus",), None)   # a live copy may already sit in this process
+    cap = json.load(open(path))
+    # the pin is a STATE, not a patched fetch: nfl_adp.roster() answers from it
+    # before any cache or network is consulted, and stamps the source "pinned"
+    nfl_adp._PINNED = (nfl_adp._build(cap["players"]),
+                       {"file": os.path.relpath(path, ROOT),
+                        "captured_utc": (cap.get("meta") or {}).get("captured_utc")})
     return S
 
 

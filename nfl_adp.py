@@ -23,11 +23,13 @@ the consensus and injury feeds update through the summer, the board self-correct
 import gzip
 import http.client
 import json
+import os
 import re
+import time
 import unicodedata
 import urllib.request
 
-import racing
+import errlog
 
 _URL = "https://api.sleeper.app/v1/players/nfl"
 _POS = {"QB", "RB", "WR", "TE"}
@@ -149,44 +151,152 @@ def _norm(name):
     return " ".join(s.split())
 
 
-def consensus():
-    """{norm_name: {rank, team, pos, injury, injury_return, fa, years_exp, status}}
-    for skill-position players. Cached 12h (it tracks news / injury updates)."""
-    def build():
+# ---- the roster the depth-chart gate consults ---------------------------------
+# A failed or truncated fetch used to become an authoritative EMPTY roster:
+# consensus() answered the exception with {} and racing._cached stored that for
+# twelve hours, so one bad blob switched nfl_dfs._apply_depth's gate off for
+# every board the worker built until then, with no ledger row (the NFLD-depth
+# note fired only if consensus() raised, which it never did). Found 2026-09-18
+# while pinning the roster for the football A/B and verified by behaviour: two
+# calls, one attempt, {} cached at 43,200 s, a practice-squad name through the
+# gate. The contract agreed with the reviewer on 2026-09-19:
+#   * a failure or a malformed response is never an empty roster;
+#   * a failed result never enters the success cache, and Sleeper is tried
+#     again after ROSTER_RETRY_S rather than masked for twelve hours;
+#   * a build may use a last-known-good copy up to ROSTER_MAX_AGE_S old with
+#     its source and age stamped on the board, or it refuses with a ledger
+#     event (nfl_dfs.RosterUnavailable) -- the gate is never silently off;
+#   * research stays pinned to an immutable capture (research.sd_board.feeds).
+ROSTER_TTL_S = 12 * 3600        # a copy is current for this long (it tracks news / injuries)
+ROSTER_MAX_AGE_S = 36 * 3600    # older than this, a last-known-good copy is refused
+ROSTER_RETRY_S = 300            # after a failure, no new attempt sooner than this
+_roster = {"data": None, "fetched": 0.0, "failed": 0.0, "error": None, "source": None}
+_PINNED = None                  # research only: (records, stamp) from a captured file
+
+
+def _lkg_path():
+    """Beside the other shared stores (boardshare): the data disk when there is
+    one, so a fresh slate subprocess and a restarted worker start from the last
+    good roster instead of a 12 MB fetch, and every process gates on one copy."""
+    return os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR") or os.environ.get("DEEP_CACHE_DIR") or "/tmp",
+                        "roster_lkg.json")
+
+
+def _save_lkg(data, ts):
+    try:
+        path = _lkg_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = f"{path}.{os.getpid()}.tmp"
+        with open(tmp, "w") as fh:
+            json.dump({"fetched": float(ts), "records": len(data), "data": data}, fh)
+        os.replace(tmp, path)
+    except Exception as e:
+        errlog.note("ADP-lkg-write", e, path=_lkg_path())
+
+
+def _load_lkg():
+    """(data, fetched_ts) from the shared store, or (None, 0.0)."""
+    try:
+        path = _lkg_path()
+        if not os.path.exists(path):
+            return None, 0.0
+        with open(path) as fh:
+            d = json.load(fh)
+        data = d.get("data") or None
+        return (data, float(d.get("fetched") or 0.0)) if data else (None, 0.0)
+    except Exception as e:
+        errlog.note("ADP-lkg-read", e, path=_lkg_path())
+        return None, 0.0
+
+
+def _state(st, now, source):
+    fetched = float(st.get("fetched") or 0.0)
+    return {"source": source, "records": len(st["data"]) if st.get("data") else 0,
+            "fetched_utc": (time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(fetched)) if fetched else None),
+            "age_s": (int(now - fetched) if fetched else None),
+            "ttl_s": ROSTER_TTL_S, "max_age_s": ROSTER_MAX_AGE_S, "error": st.get("error")}
+
+
+def roster(now=None):
+    """(records, state): the roster the depth-chart gate may consult, or
+    (None, state) when no copy is trustworthy. `records` is the
+    {norm_name: row} map consensus() always produced; `state` says where it
+    came from (pinned / live / disk / last-known-good / unavailable), when it
+    was fetched and how old it is, so a board can carry that stamp."""
+    now = time.time() if now is None else float(now)
+    if _PINNED is not None:
+        recs, stamp = _PINNED
+        return recs, {"source": "pinned", "records": len(recs), "age_s": 0, "error": None, **stamp}
+    st = _roster
+    if st["data"] is None:                      # cold process: the shared last-known-good first
+        data, ts = _load_lkg()
+        if data:
+            st.update(data=data, fetched=ts, source="disk")
+    if st["data"] is not None and now - st["fetched"] < ROSTER_TTL_S:
+        return st["data"], _state(st, now, st.get("source") or "live")
+    if now - st["failed"] >= ROSTER_RETRY_S:
         try:
-            d = _fetch_players()
-        except Exception:
-            return {}
-        out = {}
-        for _pid, p in (d or {}).items():
-            if p.get("position") not in _POS:
-                continue
-            nm = _norm(p.get("full_name") or "")
-            if not nm:
-                continue
-            sr = p.get("search_rank")
-            sr = sr if isinstance(sr, (int, float)) and sr > 0 else None
-            inj = (p.get("injury_status") or "").strip()
-            team = (p.get("team") or "").strip() or None
-            row = {"rank": sr, "team": team, "pos": p.get("position"),
-                   "name": p.get("full_name"),
-                   "injury": inj or None, "injury_return": inj in _RETURN,
-                   "fa": team is None, "years_exp": p.get("years_exp"),
-                   "status": p.get("status"),
-                   # Sleeper's depth chart: slot (LWR/RWR/SWR/RB/TE/QB) and
-                   # order within it (1 = starter). A practice-squad player
-                   # reads as Active with NO entry -- that absence is the
-                   # DFS builder's roster gate (nfl_dfs._depth_verdict).
-                   "depth_pos": p.get("depth_chart_position"),
-                   "depth": p.get("depth_chart_order"),
-                   "active": p.get("active")}
-            # Two players can normalize to the same key (rare); keep the better
-            # (lower) consensus rank so a star isn't shadowed by a namesake scrub.
-            prev = out.get(nm)
-            if prev is None or (sr is not None and (prev["rank"] is None or sr < prev["rank"])):
-                out[nm] = row
-        return out
-    return racing._cached(("nfl_consensus",), 12 * 3600, build) or {}
+            data = _build(_fetch_players())
+            st.update(data=data, fetched=now, failed=0.0, error=None, source="live")
+            _save_lkg(data, now)
+            return data, _state(st, now, "live")
+        except Exception as e:
+            st["failed"], st["error"] = now, f"{type(e).__name__}: {e}"
+            errlog.note("ADP-players", e, msg="Sleeper roster fetch failed; the depth-chart gate uses a "
+                                              "last-known-good copy within ROSTER_MAX_AGE_S or refuses")
+    if st["data"] is not None and now - st["fetched"] < ROSTER_MAX_AGE_S:
+        return st["data"], _state(st, now, "last-known-good")
+    return None, _state(st, now, "unavailable")
+
+
+def consensus():
+    """{norm_name: row} for the callers that only want a rank map (best-ball
+    value, preseason usage, ADP blending): the roster when one is trustworthy,
+    else {} -- those callers already treat {} as "no ranks". The depth-chart
+    gate does NOT come through here; it reads roster() and refuses on None."""
+    return roster()[0] or {}
+
+
+def _build(d):
+    """{norm_name: {rank, team, pos, injury, injury_return, fa, years_exp,
+    status, depth_pos, depth, active}} for skill-position players, from
+    Sleeper's raw players blob. Raises on an empty or malformed blob: that is a
+    failed fetch, not a roster with nobody on it."""
+    if not isinstance(d, dict):
+        raise ValueError(f"Sleeper players blob is {type(d).__name__}, not a dict")
+    out = {}
+    for _pid, p in d.items():
+        if not isinstance(p, dict):
+            continue
+        if p.get("position") not in _POS:
+            continue
+        nm = _norm(p.get("full_name") or "")
+        if not nm:
+            continue
+        sr = p.get("search_rank")
+        sr = sr if isinstance(sr, (int, float)) and sr > 0 else None
+        inj = (p.get("injury_status") or "").strip()
+        team = (p.get("team") or "").strip() or None
+        row = {"rank": sr, "team": team, "pos": p.get("position"),
+               "name": p.get("full_name"),
+               "injury": inj or None, "injury_return": inj in _RETURN,
+               "fa": team is None, "years_exp": p.get("years_exp"),
+               "status": p.get("status"),
+               # Sleeper's depth chart: slot (LWR/RWR/SWR/RB/TE/QB) and
+               # order within it (1 = starter). A practice-squad player
+               # reads as Active with NO entry -- that absence is the
+               # DFS builder's roster gate (nfl_dfs._depth_verdict).
+               "depth_pos": p.get("depth_chart_position"),
+               "depth": p.get("depth_chart_order"),
+               "active": p.get("active")}
+        # Two players can normalize to the same key (rare); keep the better
+        # (lower) consensus rank so a star isn't shadowed by a namesake scrub.
+        prev = out.get(nm)
+        if prev is None or (sr is not None and (prev["rank"] is None or sr < prev["rank"])):
+            out[nm] = row
+    if not out:
+        raise ValueError("Sleeper players blob carried no skill-position records")
+    return out
 
 
 _GAMES = 17
