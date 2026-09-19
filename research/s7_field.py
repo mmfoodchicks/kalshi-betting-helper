@@ -282,7 +282,14 @@ def empirical(std, pool, detail):
     keys = [(e["lineup"][0], tuple(sorted(e["lineup"][1]))) for e in E]
     lc = collections.Counter(keys)
     counts = np.asarray(sorted(lc.values(), reverse=True), dtype=np.float64)
-    share = counts / n_all
+    share = counts / n_all              # share of the FIELD, DraftKings' own ownership denominator (blanks included)
+    # concentration is a property of the distribution over submitted lineups,
+    # so it is normalised over ACTIVE entries; a first version divided by all
+    # rows while summing over active lineups only, a sub-normalised vector the
+    # independent study caught (its (all / active)^2 scaling reproduced the
+    # error exactly). The null-state variant treats "no lineup" as one state.
+    p_act = counts / len(E)
+    p_null = np.concatenate([counts / n_all, [(n_all - len(E)) / n_all]])
     dup = {}
     for lo, hi in DUP_BUCKETS:
         m = (counts >= lo) & (counts <= hi)
@@ -309,8 +316,13 @@ def empirical(std, pool, detail):
                              "structure": _structure([k[0]] + list(k[1]), pool)} for k, v in lc.most_common(5)],
             "lineup_mass_pct": {"top_10": round(100 * float(share[:10].sum()), 2), "top_100": round(100 * float(share[:100].sum()), 2),
                                 "top_1pct_of_lineups": round(100 * float(share[:max(1, len(share) // 100)].sum()), 2)},
-            "effective_lineups": {"inverse_sum_p2": round(float(1.0 / np.sum(share ** 2)), 1),
-                                  "exp_entropy": round(float(np.exp(-np.sum(share * np.log(share)))), 1)},
+            "share_denominator": "all entries including blanks, DraftKings' ownership denominator (max share, lineup mass, duplicate shares)",
+            "effective_lineups": {"inverse_sum_p2": round(float(1.0 / np.sum(p_act ** 2)), 1),
+                                  "exp_entropy": round(float(np.exp(-np.sum(p_act * np.log(p_act)))), 1),
+                                  "basis": "conditional on active lineups (p sums to one over submitted lineups)",
+                                  "with_null_state": {"inverse_sum_p2": round(float(1.0 / np.sum(p_null ** 2)), 1),
+                                                      "exp_entropy": round(float(np.exp(-np.sum(p_null[p_null > 0] * np.log(p_null[p_null > 0])))), 1),
+                                                      "basis": "blank entries as one null state over all entries"}},
             "duplicates": dup,
             "cpt_ownership": top(cpt), "flex_ownership": top(flx), "combined_ownership": top(comb),
             "cpt_position_mix_pct": {p: round(100 * v / len(E), 2) for p, v in cpt_pos.most_common()},
