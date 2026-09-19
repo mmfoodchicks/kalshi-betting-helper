@@ -17384,6 +17384,53 @@ ck("the salary report leads with the transfer result and its limit, names the ba
    and "preferred research field family for prospective validation" in _s7s_rep
    and "never against the historical +0.047078" in _s7s_rep and "Pre-registered before the run" in _s7s_rep)
 
+# ---- S7 freeze and the prospective protocol (research/s7_prospective.py) --------
+_s7fz = _json18.load(open(_os.path.join(_root, "research", "data", "s7_frozen_field.json")))
+_s7p_src = open(_os.path.join(_root, "research", "s7_prospective.py")).read()
+ck("the salary stage carries the reviewer's three caveats as stamps: the bootstrap interval says it is conditional on the trained parameters, the excluded-entry profile says what three marginal summaries can and cannot show, and the top-1,000 composition is stamped unweighted with its cutoff ties counted and the tie-break stated; the numbers did not move",
+   all(_s7sp[c]["loo_entry_weighted_user_cluster_bootstrap"]["conditional_on"].startswith("the trained parameters") for c in _s7ids)
+   and all("not that it introduces no bias" in _s7sc[c]["excluded_entries_salary_profile"]["reads"] for c in _s7ids)
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["top_1000_composition"]["basis"].startswith("UNWEIGHTED") for c in _s7ids)
+   and all(_s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["top_1000_composition"]["tie_break"]["lineups_at_cutoff"]
+           >= _s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["top_1000_composition"]["tie_break"]["of_which_included"] >= 1 for c in _s7ids)
+   and all("universe row order" in _s7sc[c]["graded"]["projection_plus_salary"]["own_mle"]["top_1000_composition"]["tie_break"]["rule"] for c in _s7ids)
+   and any("conditional on the trained parameters" in x for x in _s7s["meta"]["additions_stated_before_the_run"])
+   and [_s7sp[c]["delta_nll_projection_plus_salary_minus_projection_only"]["loo_entry_weighted"] for c in _s7ids] == [-0.4092, -0.77578, -0.85667])
+ck("the prospective parameters are frozen by copy and hash from the salary artifact, before any new contest: primary = contest-balanced projection+salary (0.11213, 1.04523), secondary = entry-weighted (0.11556, 0.99494), projection-only baseline 0.35144, salary-only diagnostic 1.25121; the rules, the candidate next feature with its sign warning, the never-a-feature clause and the recorded-not-built hypothesis travel with them; production is stamped unchanged",
+   _s7fz["primary"]["theta"] == _s7sf["projection_plus_salary"]["pooled_all"]["contest_balanced"]["theta"] == [0.11213, 1.04523]
+   and _s7fz["secondary"]["theta"] == _s7sf["projection_plus_salary"]["pooled_all"]["entry_weighted"]["theta"] == [0.11556, 0.99494]
+   and _s7fz["projection_only_baseline"]["theta"] == _s7sf["projection_only"]["pooled_all"]["contest_balanced"]["theta"] == [0.35144, 0.0]
+   and _s7fz["salary_only_diagnostic"]["theta"] == _s7sf["salary_only"]["pooled_all"]["contest_balanced"]["theta"] == [0.0, 1.25121]
+   and _s7fz["source_artifact"]["file"] == "research/data/s7_salary.json"
+   and _s7fz["source_artifact"]["sha256"] == __import__("hashlib").sha256(open(_os.path.join(_root, "research", "data", "s7_salary.json"), "rb").read()).hexdigest()
+   and "cross-slate generalisation" in _s7fz["primary"]["why"]
+   and any("no refit of beta or gamma per slate" in r for r in _s7fz["rules"]) and any("at least 3 genuinely pre-lock" in r for r in _s7fz["rules"])
+   and any("refuses a capture stamped after" in r for r in _s7fz["rules"])
+   and _s7fz["candidate_next_feature_if_the_residual_repeats"]["feature"] == "delta * I[salary_left == 0]"
+   and "disagree on its sign" in _s7fz["candidate_next_feature_if_the_residual_repeats"]["warning"]
+   and "realised duplication" in _s7fz["not_a_feature"] and "mixture of user-level" in _s7fz["recorded_hypothesis_not_built"]
+   and _s7fz["production"]["changed"] is False and _s7fz["production"]["SD_MONEY_FIELD_CALIBRATED"] is False
+   and _s7fz["provenance"]["dirty"] is False and _s7fz["provenance"]["seed"] == "UNSEEDED")
+ck("the prospective scorer can fit nothing and refuses a post-lock capture: the module never calls a fitter or a moment solver, scores the production arm without the retrospective diagnostic MLE and with the captured injury statuses, gates the next feature round on three pre-lock contests, and scores five named arms under the frozen file's principal criterion",
+   "fit(" not in _s7p_src.replace("def fit", "").replace("fit_free", "").replace("fits_called", "").replace("fitted", "").replace("refit", "").replace("benefit", "")
+   and "solve_moment" not in _s7p_src and "SS.fit" not in _s7p_src and "SB.solve" not in _s7p_src
+   and "with_mle=False" in _s7p_src and "clear_injuries=False" in _s7p_src
+   and "refuses a post-lock capture" in _s7p_src and "MIN_CONTESTS_BEFORE_NEXT_FEATURE = 3" in _s7p_src
+   and [a["name"] for a in _s7fz["arms"]] == ["production_field", "projection_only_frozen", "projection_plus_salary_frozen_primary",
+                                             "projection_plus_salary_frozen_secondary", "salary_only_diagnostic"]
+   and "negative = salary helps" in _s7fz["principal_criterion"]
+   and set(_s7fz["graded_without_fitting"]) >= {"support coverage", "chalk rank", "salary-left distribution", "captain mix", "heavy-duplication mass", "top-lineup share"}
+   and _dt7b.FIELD_TOP_SHARE == 0.002 and _dt7b.SD_MONEY_FIELD_CALIBRATED is False)
+ck("the salary report closes on the reviewer's decision: the retrospective baseline frozen at bc7a52c, no new retrospective feature, the prospective stage with the frozen primary (0.112, 1.045) and secondary, the $0 indicator waiting on prospective data with its sign warning, duplication never a feature, the user-mixture hypothesis recorded not built, S5 shut, and the DET @ BUF reading kept as a statement about lineup popularity rather than football",
+   "The retrospective baseline is frozen here" in _s7s_rep and "commit bc7a52c" in _s7s_rep
+   and "No new retrospective feature" in _s7s_rep and "beta 0.112 and gamma 1.045" in _s7s_rep
+   and "If the residual repeats prospectively" in _s7s_rep and "two boards want a bonus at the cap and the third may want the opposite" in _s7s_rep
+   and "realised duplication is never a feature" in _s7s_rep and "Recorded, not built" in _s7s_rep
+   and "S5 stays shut" in _s7s_rep and "Those are different jobs" in _s7s_rep
+   and "conditional on the trained parameters" in _s7s_rep and "cannot establish that it introduces no bias" in _s7s_rep
+   and "UNWEIGHTED" in _s7s_rep and "broken deterministically by universe row order" in _s7s_rep
+   and "does not bias the feature" not in _s7s_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

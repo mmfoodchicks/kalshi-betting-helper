@@ -1,0 +1,127 @@
+{
+ "arms": [
+  {
+   "name": "production_field",
+   "what": "the served placeholder on its own gated universe (depth gate applied, injury statuses as captured, beta from the 0.2% rule), scored on its own support; likelihood not comparable to the lifted-support arms"
+  },
+  {
+   "arm": "projection_only",
+   "name": "projection_only_frozen",
+   "source": "projection_only_baseline"
+  },
+  {
+   "arm": "projection_plus_salary",
+   "name": "projection_plus_salary_frozen_primary",
+   "source": "primary"
+  },
+  {
+   "arm": "projection_plus_salary",
+   "name": "projection_plus_salary_frozen_secondary",
+   "source": "secondary"
+  },
+  {
+   "arm": "salary_only",
+   "name": "salary_only_diagnostic",
+   "source": "salary_only_diagnostic"
+  }
+ ],
+ "candidate_next_feature_if_the_residual_repeats": {
+  "checksums_if_fitted": [
+   "mean projection",
+   "mean salary left",
+   "P(salary left = 0)"
+  ],
+  "condition": "prospective contests reproduce the retrospective residual: salary mean roughly right, salary tail roughly right, a consistent unexplained spike at exactly $0",
+  "feature": "delta * I[salary_left == 0]",
+  "test_if_fitted": "held-out NLL and the rest of the salary distribution",
+  "warning": "the three retrospective boards disagree on its sign (model share at $0: NE @ SEA 7.69% against 13.92%, DEN @ KC 4.68% against 6.67%, DET @ BUF 15.00% against 13.24%), so it is not fitted now"
+ },
+ "frozen_utc": "2026-09-19 16:38:42 UTC",
+ "graded_without_fitting": [
+  "support coverage",
+  "exact-lineup likelihood",
+  "chalk rank",
+  "top-10/100/1000 observed mass",
+  "salary-left distribution",
+  "captain mix",
+  "5-1 / 4-2 / 3-3",
+  "K/DST usage",
+  "effective lineups",
+  "top-lineup share",
+  "heavy-duplication mass"
+ ],
+ "model": "log w = beta * x - gamma * s; x = projected points (1.5x captain), s = salary left / 1000; gamma free in sign; nothing else",
+ "not_a_feature": "realised duplication: it is the outcome the field model is asked to predict",
+ "primary": {
+  "arm": "projection_plus_salary",
+  "pooling": "contest_balanced",
+  "theta": [
+   0.11213,
+   1.04523
+  ],
+  "why": "the target is cross-slate generalisation; a larger contest must not define the universal research parameter by its size"
+ },
+ "principal_criterion": "per-entry NLL of projection+salary (frozen primary) minus projection-only (frozen baseline) on the representable support of a contest captured before lock; negative = salary helps",
+ "production": {
+  "SD_MONEY_FIELD_CALIBRATED": false,
+  "changed": false,
+  "note": "what a winning arm earns is preferred research family status for prospective validation, not production calibration; S5 stays deferred"
+ },
+ "projection_only_baseline": {
+  "arm": "projection_only",
+  "pooling": "contest_balanced",
+  "theta": [
+   0.35144,
+   0.0
+  ]
+ },
+ "provenance": {
+  "commit": "2009e79",
+  "data_split": null,
+  "dirty": false,
+  "model": "frozen parameters copied from s7_salary.json; nothing fitted",
+  "seed": "UNSEEDED",
+  "source_files": 43,
+  "source_sha": "e7b9eb2e3c48c03692264070c07d0c6c7f000a97a0b1bbc123d4585af0097c94",
+  "worlds": null
+ },
+ "recorded_hypothesis_not_built": "the field is a mixture of user-level lineup-generation strategies rather than IID entries from one universal softmax (a model-family change, for after prospective validation)",
+ "rules": [
+  "no refit of beta or gamma per slate",
+  "no new parameter after seeing a contest",
+  "score a contest before any of its counts changes anything",
+  "at least 3 genuinely pre-lock captured contests before another feature-selection round",
+  "the scorer refuses a capture stamped after the earliest contest start"
+ ],
+ "salary_only_diagnostic": {
+  "arm": "salary_only",
+  "pooling": "contest_balanced",
+  "theta": [
+   0.0,
+   1.25121
+  ]
+ },
+ "secondary": {
+  "arm": "projection_plus_salary",
+  "pooling": "entry_weighted",
+  "theta": [
+   0.11556,
+   0.99494
+  ],
+  "why": "sensitivity arm; the two poolings differ by under 0.05 in gamma"
+ },
+ "source_artifact": {
+  "file": "research/data/s7_salary.json",
+  "provenance": {
+   "commit": "2009e79",
+   "data_split": null,
+   "dirty": false,
+   "model": "softmax(beta x - gamma s) over the lifted universe; theta by maximum likelihood (Newton)",
+   "seed": 20260912,
+   "source_files": 43,
+   "source_sha": "e7b9eb2e3c48c03692264070c07d0c6c7f000a97a0b1bbc123d4585af0097c94",
+   "worlds": null
+  },
+  "sha256": "239e63263e96f22a438dcf7c2c303fa3d18ed29a280e05cc378f82bb10f0d1b1"
+ }
+}

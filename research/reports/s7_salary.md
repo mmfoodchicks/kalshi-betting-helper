@@ -35,8 +35,9 @@ The support is the beta fit's: the same representable entries (96.65 /
 board, projected or not: DraftKings salaries do not change after lock, so the
 reconstruction caveats on NE @ SEA and DET @ BUF do not touch this feature.
 The entries outside the support (they hold a player Sleeper never projected)
-have a salary profile like the entries inside it, so the exclusion does not
-bias the feature:
+are profiled beside the entries inside it. Three marginal summaries can show
+that the exclusion does not appear to materially explain the salary-left
+result; they cannot establish that it introduces no bias:
 
 | Board | Representable entries: mean salary left, share leaving $1,000+ | Excluded entries: mean, share leaving $1,000+ | Universe mean salary left |
 |---|---|---|---|
@@ -44,8 +45,12 @@ bias the feature:
 | DEN @ KC | $1,073, 36.05% (86,751 entries) | $993, 26.51% (1,158 entries) | $20,346 |
 | DET @ BUF | $618, 20.42% (72,701 entries) | $668, 21.35% (15,322 entries) | $17,862 |
 
-The universe's mean salary left is $17,600 to $20,300 (most legal lineups
-are cheap junk); the public's is $618 to $1,281. A projection-only softmax
+On the board with the large support hole, DET @ BUF (17.4% excluded), the
+excluded and included profiles are similar ($668 against $618 left; 21.4%
+against 20.4% leaving $1,000 or more). DEN @ KC's excluded entries leave
+$1,000 or more less often (26.5% against 36.1%), but they are 1.3% of its
+field. The universe's mean salary left is $17,600 to $20,300 (most legal
+lineups are cheap junk); the public's is $618 to $1,281. A projection-only softmax
 reached $2,151 to $2,714 at its MLE. That gap is what the one new coefficient
 is asked to close.
 
@@ -112,8 +117,13 @@ two-feature model). The uncertainty that respects multi-entry users:
 | DEN @ KC | 0.776 | 0.0171 | 0.0041 | [0.742, 0.809] | 26,301, 86,751 |
 | DET @ BUF | 0.857 | 0.0080 | 0.0035 | [0.840, 0.873] | 23,533, 72,701 |
 
-The cluster standard error is two to four times the naive one, and the
-intervals still sit more than ten standard errors from zero. Against the beta
+These intervals are conditional on the trained parameters: only the
+held-out board's users are resampled and the source-board fit is held
+fixed; a full training-plus-evaluation interval would refit on resampled
+source users in every replicate, and the stage was not rerun for that
+because the effects are far too large for it to matter. The cluster
+standard error is two to four times the naive one, and the intervals still
+sit more than ten standard errors from zero. Against the beta
 fit's 0.004 to 0.036 nats, one salary coefficient is worth 0.23 to 1.01 nats
 per entry out of sample.
 
@@ -267,8 +277,13 @@ utility the top inverts: the public is now thicker than the model in the top
 1,001 to 10,000 band. The model has found the right neighbourhood and is
 too flat inside it.
 
-**The composition of the top 1,000** (the utility's top 1,000 lineups against
-the 1,000 most-duplicated real lineups, unweighted):
+**The composition of the top 1,000, UNWEIGHTED** (a secondary diagnostic:
+the utility's 1,000 highest lineups against the 1,000 most-duplicated real
+unique lineups, each lineup counting once on either side; it answers "what
+kinds of lineups live in each side's favourite set", not "what share of the
+field has each property"; ties at the observed cutoff count are broken
+deterministically by universe row order, ascending, and the artifact stamps
+the cutoff count, the lineups tied at it and how many of those are included):
 
 | Board | Captain position mix, model top 1,000 / observed top 1,000 | Mean salary left, model / observed | 5-1 share, model / observed |
 |---|---|---|---|
@@ -292,23 +307,75 @@ Settled, on three contests with the stated reconstruction caveats:
   decisively.
 - Salary alone beats projection alone on every board. Projection retains a
   small, board-dependent independent contribution (0.08 / 0.11 / 0.006 nats
-  beyond salary out of sample).
+  beyond salary out of sample). On DET @ BUF, once a lineup's salary left is
+  known, this projection adds almost no independent information about which
+  lineups the public chose. That is not a statement about projecting
+  football outcomes; it is a statement about this projection as a
+  description of human lineup popularity conditional on salary. Those are
+  different jobs.
 - Salary moves the real chalk into the top few hundred of the utility order
   on the two boards where the projection had it at rank 4,000 and 3,000.
+  Salary explains where the public shops. It does not explain why thousands
+  of people pile into the same small subset once they are there.
 - Salary does not reproduce concentration or duplication, the point mass at
   $0, the salary-left variance, the captain mix on NE @ SEA, or the 5-1
-  share. The linear term is not a nonlinear one, and the linear one has now
-  earned the question of whether a nonlinear one is needed.
+  share.
 
 Not settled, and not claimed: money EV. Three contests, two of them
 reconstructed after the game, identify a defect and compare simple families;
 they do not certify a field model. `SD_MONEY_FIELD_CALIBRATED` stays False.
-Projection+salary is the preferred research field family for prospective
-validation: capture upcoming Showdown contests before lock, freeze the model
-and its parameters, and score it after the game. That is the point at which
-the same three contests stop being the only teacher.
 
-S5 stays deferred. When it runs, it is the controlled comparison: the same
-current source with the placeholder field against the same current source
-with the chosen research field, identical worlds, universe and seeds, never
-against the historical +0.047078.
+**The retrospective baseline is frozen here** (commit bc7a52c, CI run 97;
+the reviewer's decision of 2026-09-19). These three contests have been asked
+many questions, and selecting the next residual feature on the same boards
+would quietly turn the process into iterative training on three contests.
+So:
+
+- **No new retrospective feature.** The $0 point mass is not fitted now,
+  and realised duplication is never a feature: it is the outcome the model is
+  asked to predict, and feeding it back would use the answer to predict the
+  answer.
+- **The next stage is prospective validation of the frozen family**
+  (`research/s7_prospective.py`, `research/data/s7_frozen_field.json`). The
+  primary parameter set is the all-three contest-balanced fit, beta 0.112
+  and gamma 1.045, chosen because the target is cross-slate generalisation
+  and a larger contest must not define the universal research parameter by
+  its size; the entry-weighted fit (0.116, 0.995) is the secondary
+  sensitivity arm; the contest-balanced projection-only beta (0.351) is the
+  research baseline and the contest-balanced salary-only gamma (1.251) a
+  diagnostic arm. Neither beta nor gamma is refitted per slate. For each
+  Showdown contest captured before lock, five arms are scored after the
+  game: the served production field untouched, projection only, projection
+  plus salary (primary and secondary), salary only. The principal criterion
+  is the per-entry NLL of projection+salary against projection-only on the
+  representable support, then support coverage, likelihood, chalk rank,
+  top-10/100/1,000 mass, the salary-left distribution, captain mix,
+  structures, K/DST, effective lineups, top share and heavy-duplication mass,
+  all graded without fitting. A contest is scored before any of its counts
+  changes anything, and at least three genuinely pre-lock contests come
+  before another feature-selection round.
+- **If the residual repeats prospectively** (salary mean and tail roughly
+  right, a consistent unexplained spike at exactly $0), the next single
+  feature is delta times an indicator of salary left equal to zero: pre-game,
+  exact, one coefficient, tied to a measured residual. The three retrospective
+  boards already warn that it may not transfer (model share at $0 7.69%
+  against 13.92% observed on NE @ SEA, 4.68% against 6.67% on DEN @ KC,
+  15.00% against 13.24% on DET @ BUF; two boards want a bonus at the cap and
+  the third may want the opposite), which is exactly why it waits for
+  prospective data. If it is ever fitted, the three checksums are the mean
+  projection, the mean salary left and the probability of leaving exactly
+  $0; the test remains held-out NLL and the rest of the salary distribution.
+- **Recorded, not built:** the cluster bootstrap showed that a 150-max-entry
+  contest is not 88,000 independent decisions. If the duplication and
+  concentration failure survives the salary model prospectively, one
+  hypothesis for a later model-family change is that the field is a mixture
+  of user-level lineup-generation strategies rather than IID entries from one
+  universal softmax. That is a more principled account of the overdispersion
+  than a duplication coefficient, and it is not the next experiment.
+
+S5 stays shut. The sequence is: freeze projection+salary, capture before
+lock, score the frozen model, repeat, decide the next feature or family, and
+only then the controlled S5 rerun: the same current source with the
+placeholder field against the same current source with the prospectively
+supported field, identical worlds, universe and seeds, never against the
+historical +0.047078.

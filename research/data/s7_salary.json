@@ -9,6 +9,7 @@
      "share_at_zero_pct": 11.68,
      "share_ge_1000_pct": 39.85
     },
+    "reads": "three marginal summaries; they can show that the support exclusion does not appear to materially explain the salary-left result, not that it introduces no bias",
     "representable": {
      "entries": 121587,
      "mean_k": 1.2809,
@@ -373,6 +374,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 4.1,
@@ -419,6 +421,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -662,6 +670,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 4.1,
@@ -708,6 +717,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -1591,6 +1606,7 @@
        "gamma": 1.1823
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.3,
@@ -1638,6 +1654,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -1884,6 +1906,7 @@
        "gamma": 0.81677
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.9,
@@ -1931,6 +1954,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -2814,6 +2843,7 @@
        "gamma": 1.38203
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 1.2,
@@ -2861,6 +2891,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -3104,6 +3140,7 @@
        "gamma": 1.05559
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 1.2,
@@ -3151,6 +3188,12 @@
          "4-2": 47.2,
          "5-1": 12.0
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 26,
+        "lineups_at_cutoff": 38,
+        "of_which_included": 33,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -3774,6 +3817,7 @@
      "share_at_zero_pct": 8.29,
      "share_ge_1000_pct": 26.51
     },
+    "reads": "three marginal summaries; they can show that the support exclusion does not appear to materially explain the salary-left result, not that it introduces no bias",
     "representable": {
      "entries": 86751,
      "mean_k": 1.0732,
@@ -4138,6 +4182,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 6.7,
@@ -4185,6 +4230,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -4428,6 +4479,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 6.7,
@@ -4475,6 +4527,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -5358,6 +5416,7 @@
        "gamma": 1.00232
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 4.7,
@@ -5405,6 +5464,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -5651,6 +5716,7 @@
        "gamma": 0.96653
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 5.1,
@@ -5698,6 +5764,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -6581,6 +6653,7 @@
        "gamma": 1.20091
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.5,
@@ -6628,6 +6701,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -6871,6 +6950,7 @@
        "gamma": 1.22226
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.5,
@@ -6918,6 +6998,12 @@
          "4-2": 46.3,
          "5-1": 15.3
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 18,
+        "lineups_at_cutoff": 86,
+        "of_which_included": 76,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -7541,6 +7627,7 @@
      "share_at_zero_pct": 10.5,
      "share_ge_1000_pct": 21.35
     },
+    "reads": "three marginal summaries; they can show that the support exclusion does not appear to materially explain the salary-left result, not that it introduces no bias",
     "representable": {
      "entries": 72701,
      "mean_k": 0.6182,
@@ -7905,6 +7992,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 3.7,
@@ -7952,6 +8040,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -8195,6 +8289,7 @@
        "gamma": 0.0
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 3.7,
@@ -8242,6 +8337,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -9125,6 +9226,7 @@
        "gamma": 0.87887
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 3.5,
@@ -9172,6 +9274,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -9418,6 +9526,7 @@
        "gamma": 1.5875
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 3.0,
@@ -9465,6 +9574,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -10348,6 +10463,7 @@
        "gamma": 1.11786
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.0,
@@ -10395,6 +10511,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -10638,6 +10760,7 @@
        "gamma": 1.71613
       },
       "top_1000_composition": {
+       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
        "model_top_1000_by_utility": {
         "cpt_position_mix_pct": {
          "DST": 2.0,
@@ -10685,6 +10808,12 @@
          "4-2": 46.6,
          "5-1": 17.4
         }
+       },
+       "tie_break": {
+        "cutoff_copies": 15,
+        "lineups_at_cutoff": 79,
+        "of_which_included": 6,
+        "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"
        }
       }
      },
@@ -11715,8 +11844,9 @@
  },
  "meta": {
   "additions_stated_before_the_run": [
-   "user-cluster bootstrap SE on the held-out delta-NLL (users resampled, entries move with their user)",
-   "salary-left profile of the entries outside the representable support"
+   "user-cluster bootstrap SE on the held-out delta-NLL (users resampled, entries move with their user); its intervals are conditional on the trained parameters",
+   "salary-left profile of the entries outside the representable support (three marginal summaries: they can show the exclusion does not appear to explain the result, not that it introduces no bias)",
+   "top-1,000 composition as an explicitly unweighted, tie-defined secondary diagnostic"
   ],
   "arms": {
    "projection_only": {
@@ -11790,13 +11920,13 @@
   "principal_criterion": "held-out delta-NLL per entry of projection+salary relative to projection-only, on a board whose counts did not fit gamma: six single-board directions and leave-one-contest-out with entry-weighted and contest-balanced pooling",
   "production_unchanged": true,
   "provenance": {
-   "commit": "b26f4b7",
+   "commit": "2009e79",
    "data_split": null,
    "dirty": false,
    "model": "softmax(beta x - gamma s) over the lifted universe; theta by maximum likelihood (Newton)",
    "seed": 20260912,
-   "source_files": 42,
-   "source_sha": "e61fcb794ac095e6b2084df6fa518ce97c99262bc2e6e158fa9938303e1a8122",
+   "source_files": 43,
+   "source_sha": "e7b9eb2e3c48c03692264070c07d0c6c7f000a97a0b1bbc123d4585af0097c94",
    "worlds": null
   },
   "stage": "S7 third artifact: projection plus one linear salary-left feature, three nested arms, pre-registered"
@@ -11818,6 +11948,7 @@
      0.37426,
      0.44638
     ],
+    "conditional_on": "the trained parameters: only the held-out board's users are resampled and the source-board fit is held fixed; a full training-plus-evaluation interval would refit on resampled source users per replicate",
     "entries": 121587,
     "mean": 0.4092,
     "replicates": 1000,
@@ -11864,6 +11995,7 @@
      0.74175,
      0.80856
     ],
+    "conditional_on": "the trained parameters: only the held-out board's users are resampled and the source-board fit is held fixed; a full training-plus-evaluation interval would refit on resampled source users per replicate",
     "entries": 86751,
     "mean": 0.77577,
     "replicates": 1000,
@@ -11910,6 +12042,7 @@
      0.84042,
      0.87308
     ],
+    "conditional_on": "the trained parameters: only the held-out board's users are resampled and the source-board fit is held fixed; a full training-plus-evaluation interval would refit on resampled source users per replicate",
     "entries": 72701,
     "mean": 0.85667,
     "replicates": 1000,
