@@ -337,7 +337,7 @@ def empirical(std, pool, detail):
             "share_from_150_max_users_pct": round(100 * users.get(150, 0) / n_all, 2)}
 
 
-def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log=print):
+def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log=print, feed_dir=None, clear_injuries=True):
     """The placeholder field as production would enumerate it at lock,
     reconstructed: the pinned pool and feeds, the depth-chart RANK rule, injury
     statuses cleared (see the module docstring), softmax(beta x projection)
@@ -347,14 +347,19 @@ def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log
     import dfs_tourney as T
     import nfl_adp
     from research import sd_board
-    S = sd_board.feeds(FEEDS, week=week, roster_name=roster_name)
+    feed_dir = feed_dir or FEEDS
+    S = sd_board.feeds(feed_dir, week=week, roster_name=roster_name)
     S._cache.clear()
     recs, stamp = nfl_adp._PINNED
-    cleared = {k: dict(v, injury=None, injury_return=False) for k, v in recs.items()}
-    nfl_adp._PINNED = (cleared, dict(stamp, injury_statuses="CLEARED for the lock-time reconstruction: every roster "
-                                                          "capture here is post-game and the exports show players the "
-                                                          "post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; "
-                                                          "Marvin Mims Jr. in DEN @ KC)"))
+    if clear_injuries:
+        cleared = {k: dict(v, injury=None, injury_return=False) for k, v in recs.items()}
+        nfl_adp._PINNED = (cleared, dict(stamp, injury_statuses="CLEARED for the lock-time reconstruction: every roster "
+                                                              "capture here is post-game and the exports show players the "
+                                                              "post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; "
+                                                              "Marvin Mims Jr. in DEN @ KC)"))
+    else:
+        # a PRE-LOCK capture: the statuses are the information production had, so they stay
+        nfl_adp._PINNED = (recs, dict(stamp, injury_statuses="AS CAPTURED (pre-lock capture; production's gate sees these)"))
     ents, _, _ = sd_board.ents_for(slate, week, True, n_sims=300, seed=SEED, log=lambda *a, **k: None, model="legacy")
     idx, W, allowed = sd_board.universe(ents)
     f, beta = T.field_weights(ents, idx, cpt_mult=CPT_MULT)
@@ -391,7 +396,7 @@ def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log
         exp_dup[f"{lo}-{hi if hi < 10 ** 9 else 'plus'}"] = {"lineups": round(n_lineups, 1), "entries": round(n_entries, 1),
                                                             "entry_share_pct": round(100 * n_entries / C, 2)}
     proj_lineup = proj[idx[:, 0]] * CPT_MULT + proj[idx[:, 1:]].sum(axis=1)
-    raw = json.load(open(os.path.join(FEEDS, f"proj_2026_{week}.json")))
+    raw = json.load(open(os.path.join(feed_dir, f"proj_2026_{week}.json")))
     proj_rows = {}
     for r in raw:
         pl = r.get("player") or {}

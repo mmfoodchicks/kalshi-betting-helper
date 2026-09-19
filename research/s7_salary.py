@@ -256,7 +256,9 @@ def excluded_salary_profile(std, pool, players):
             return None
         return {"entries": int(len(v)), "mean_k": round(float(v.mean()), 4), "median_k": round(float(np.median(v)), 4),
                 "share_ge_1000_pct": round(100 * float((v >= 1.0).mean()), 2), "share_at_zero_pct": round(100 * float((v == 0).mean()), 2)}
-    return {"representable": prof(inside), "excluded": prof(outside)}
+    return {"representable": prof(inside), "excluded": prof(outside),
+            "reads": ("three marginal summaries; they can show that the support exclusion does not appear to materially "
+                      "explain the salary-left result, not that it introduces no bias")}
 
 
 # ---- grading ----------------------------------------------------------------------
@@ -367,7 +369,14 @@ def grade(B, theta, arm, players, idx, pool, std, full=False):
         mc, oc = _dist(cpos, p), _dist(cpos, obs_w)
         ms, os_ = _dist(struct_key, p), _dist(struct_key, obs_w)
         mk, ok = _dist(kd, p), _dist(kd, obs_w)
-        top_obs_rows = B.rows[np.argsort(-B.n, kind="stable")[:1000]]
+        # the 1,000 most-duplicated observed lineups: ties at the cutoff count
+        # are broken deterministically by universe row order (ascending), and
+        # the tie situation at the boundary is stamped beside the composition
+        obs_order = np.argsort(-B.n, kind="stable")
+        top_obs_rows = B.rows[obs_order[:1000]]
+        cut = int(B.n[obs_order[min(999, len(obs_order) - 1)]])
+        tied_all = int((B.n == cut).sum())
+        tied_in = int((B.n[obs_order[:1000]] == cut).sum())
         best = max(e["points"] for e in std["entries"])
         w_ = next(e for e in std["entries"] if e["points"] == best and e["lineup"])
         name_idx = {q["name"]: i for i, q in enumerate(players)}
@@ -382,7 +391,10 @@ def grade(B, theta, arm, players, idx, pool, std, full=False):
                                    "k_dst_slots_pct": {"model": mk, "observed": ok, "l1_pp": _l1(mk, ok)},
                                    "salary_left_share_ge_1000_pct": {"model": out["salary_left"]["model"]["ge_1000_pct"], "observed": out["salary_left"]["observed"]["ge_1000_pct"]}}
         out["top_1000_composition"] = {"model_top_1000_by_utility": composition(order[:1000], players, idx, B.s, B.x + B.x_max),
-                                       "observed_1000_most_duplicated": composition(top_obs_rows, players, idx, B.s, B.x + B.x_max)}
+                                       "observed_1000_most_duplicated": composition(top_obs_rows, players, idx, B.s, B.x + B.x_max),
+                                       "basis": "UNWEIGHTED: each of the 1,000 lineups counts once on either side; a secondary diagnostic of what kinds of lineups live in each side's favourite set, not of what share of the field has each property",
+                                       "tie_break": {"cutoff_copies": cut, "lineups_at_cutoff": tied_all, "of_which_included": tied_in,
+                                                     "rule": "ties at the cutoff broken by universe row order, ascending (deterministic)"}}
         out["ordering"]["winner"] = win
     return out
 
@@ -404,8 +416,8 @@ def rank_bins(B, theta):
 
 
 # ---- the run -------------------------------------------------------------------------
-def build(cid, spec, log=print):
-    bd = SB.build(cid, spec, log)
+def build(cid, spec, log=print, capdir=None, feed_dir=None, standings_dir=None):
+    bd = SB.build(cid, spec, log, capdir=capdir, feed_dir=feed_dir, standings_dir=standings_dir)
     s = salary_left(bd["players"], bd["idx"])
     B = bd["B"]
     B2 = Board2(cid, B.x + B.x_max, s, B.rows, B.n, bd["support"]["active_entries"])
@@ -433,7 +445,9 @@ def cluster_bootstrap(delta, users, rng, reps=BOOT):
     return {"mean": round(float(delta.mean()), 5), "se_user_cluster": round(float(draws.std(ddof=1)), 5),
             "se_naive_per_entry": round(float(delta.std(ddof=1) / math.sqrt(len(delta))), 5),
             "users": int(U), "entries": int(len(delta)), "replicates": reps,
-            "ci95_user_cluster": [round(float(np.percentile(draws, 2.5)), 5), round(float(np.percentile(draws, 97.5)), 5)]}
+            "ci95_user_cluster": [round(float(np.percentile(draws, 2.5)), 5), round(float(np.percentile(draws, 97.5)), 5)],
+            "conditional_on": ("the trained parameters: only the held-out board's users are resampled and the source-board fit is "
+                               "held fixed; a full training-plus-evaluation interval would refit on resampled source users per replicate")}
 
 
 def run(log=print):
@@ -511,8 +525,11 @@ def run(log=print):
                     "model": "log w = beta * x - gamma * s; x = projected points (1.5x captain), s = salary left / 1000; gamma free in sign; nothing else",
                     "arms": {arm: {"beta_free": f[0], "gamma_free": f[1]} for arm, f in ARMS.items()},
                     "principal_criterion": PRINCIPAL, "not_evidence": list(NOT_EVIDENCE),
-                    "additions_stated_before_the_run": ["user-cluster bootstrap SE on the held-out delta-NLL (users resampled, entries move with their user)",
-                                                        "salary-left profile of the entries outside the representable support"],
+                    "additions_stated_before_the_run": ["user-cluster bootstrap SE on the held-out delta-NLL (users resampled, entries move with their user); "
+                                                        "its intervals are conditional on the trained parameters",
+                                                        "salary-left profile of the entries outside the representable support (three marginal summaries: "
+                                                        "they can show the exclusion does not appear to explain the result, not that it introduces no bias)",
+                                                        "top-1,000 composition as an explicitly unweighted, tie-defined secondary diagnostic"],
                     "contests": {str(cid): spec["label"] for cid, spec in CONTESTS.items()},
                     "inputs": {"sleeper_feeds": s6_capture.sleeper_hashes(F.FEEDS), "beta_artifact": "research/data/s7_beta.json"},
                     "production_unchanged": True,

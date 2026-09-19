@@ -74,7 +74,7 @@ BETA_HI = 12.0     # production's bisection bracket (dfs_tourney.field_weights);
 
 
 # ---- the lifted universe ---------------------------------------------------
-def lifted_pool(slate, week, roster_name=None, log=print):
+def lifted_pool(slate, week, roster_name=None, log=print, feed_dir=None):
     """Every DraftKings pool player with a Sleeper projection under the game's
     teams: production's pool builder and matcher (nfl_dfs.showdown_pool,
     nfl_dfs_sim.player_pool, nfl_dfs._pool_match) with the depth-chart gate
@@ -87,7 +87,7 @@ def lifted_pool(slate, week, roster_name=None, log=print):
     import nfl_dfs_sim
     import simulate
     from research import sd_board
-    S = sd_board.feeds(F.FEEDS, week=week, roster_name=roster_name)
+    S = sd_board.feeds(feed_dir or F.FEEDS, week=week, roster_name=roster_name)
     S._cache.clear()
     recs, stamp = nfl_adp._PINNED
     nfl_adp._PINNED = ({k: dict(v, injury=None, injury_return=False) for k, v in recs.items()},
@@ -459,7 +459,7 @@ def pooled_score(boards_sel, weights, beta):
             "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field"}
 
 
-def production_on_own_universe(bd):
+def production_on_own_universe(bd, with_mle=True, feed_dir=None, clear_injuries=True):
     """The served placeholder exactly as the first artifact reconstructed it
     (depth gate applied, injury statuses cleared, field-only extras, beta from
     the 0.2% rule on THAT universe): the historical-fidelity baseline. Its
@@ -467,23 +467,28 @@ def production_on_own_universe(bd):
     set than the lifted universe's, so its likelihood is on its own support
     and is not comparable to the lifted-universe rows; the shape columns are."""
     M = F.model_field(bd["slate"], bd["pool"], bd["detail"], bd["spec"]["week"], bd["spec"]["roster"],
-                      n_entries=len(bd["std"]["entries"]), log=lambda *a, **k: None)
+                      n_entries=len(bd["std"]["entries"]), log=lambda *a, **k: None, feed_dir=feed_dir, clear_injuries=clear_injuries)
     rows, n, miss = observed_counts(bd["std"], M["ents"], M["idx"])
     f = np.asarray(M["f"], dtype=np.float64)
     N = float(n.sum())
     q = n / N
     # the rule tested on its OWN universe: the counts MLE on the gated support,
     # so "the 0.2% rule is not validated" does not rest on the lifted universe alone
-    Bg = Board(bd["B"].cid, np.asarray(M["proj_lineup"], dtype=np.float64), rows, n)
-    beta_g, note_g = solve_moment([Bg], [1.0])
     nll_rule = float(-(n * np.log(f[rows])).sum() / N)
-    mle_here = {"beta": round(float(beta_g), 5), "note": note_g, "nll_per_entry_nats": round(Bg.nll_per_entry(beta_g), 5),
-                "rule_minus_mle_nats": round(nll_rule - Bg.nll_per_entry(beta_g), 5),
-                "rule_beta_minus_mle_beta": round(float(M["beta"]) - float(beta_g), 5),
-                "max_share_pct_at_mle": round(100 * float(Bg.probs(beta_g).max()), 4),
-                "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it"}
+    if with_mle:
+        # a diagnostic fit on the gated support (retrospective stages only; the
+        # prospective scorer passes with_mle=False and fits nothing)
+        Bg = Board(bd["B"].cid, np.asarray(M["proj_lineup"], dtype=np.float64), rows, n)
+        beta_g, note_g = solve_moment([Bg], [1.0])
+        mle_here = {"beta": round(float(beta_g), 5), "note": note_g, "nll_per_entry_nats": round(Bg.nll_per_entry(beta_g), 5),
+                    "rule_minus_mle_nats": round(nll_rule - Bg.nll_per_entry(beta_g), 5),
+                    "rule_beta_minus_mle_beta": round(float(M["beta"]) - float(beta_g), 5),
+                    "max_share_pct_at_mle": round(100 * float(Bg.probs(beta_g).max()), 4),
+                    "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it"}
+    else:
+        mle_here = {"skipped": "prospective scoring fits nothing on the contest's counts"}
     return {"beta": round(float(M["beta"]), 5), "players": len(M["ents"]), "legal_lineups": int(len(M["idx"])),
-            "mle_on_this_support": mle_here,
+            "mle_on_this_support": mle_here, "injury_statuses": M["roster_stamp"]["injury_statuses"],
             "support_pct_of_active": round(100 * N / bd["support"]["active_entries"], 2), "entries_on_support": int(N),
             "legal_but_not_enumerated": miss["legal_but_missing"],
             "nll_per_entry_nats_on_its_support": round(nll_rule, 5),
@@ -525,13 +530,15 @@ def universe_sensitivity(bd, log=print):
 
 
 # ---- the run -----------------------------------------------------------------
-def build(cid, spec, log=print):
+def build(cid, spec, log=print, capdir=None, feed_dir=None, standings_dir=None):
+    """`capdir` / `feed_dir` point a prospective stage at a per-capture
+    directory; the retrospective stages use the pinned defaults."""
     from research import s6_capture
-    path = os.path.join(F.STANDINGS, f"contest-standings-{cid}.csv.gz")
+    path = os.path.join(standings_dir or F.STANDINGS, f"contest-standings-{cid}.csv.gz")
     std = F.load_standings(path)
-    slate, details = s6_capture.replay(spec["dg"])
+    slate, details = s6_capture.replay(spec["dg"], capdir=capdir or s6_capture.CAP)
     pool = F.dk_pool(slate)
-    players, dropped, roster_stamp = lifted_pool(slate, spec["week"], spec["roster"], log)
+    players, dropped, roster_stamp = lifted_pool(slate, spec["week"], spec["roster"], log, feed_dir=feed_dir)
     idx, x = enumerate_lifted(players)
     rows, n, miss = observed_counts(std, players, idx)
     active = sum(1 for e in std["entries"] if e["lineup"])

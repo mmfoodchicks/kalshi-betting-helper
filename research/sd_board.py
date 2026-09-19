@@ -110,7 +110,7 @@ def roster_stamp(feed_dir, season=SEASON, week=WEEK, name=None):
             "teams": meta.get("teams")}
 
 
-def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print, name=None):
+def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print, name=None, capdir=None):
     """Capture the Sleeper roster records the depth-chart gate can consult for
     the pinned draft groups: every record on the slates' teams plus every
     record whose normalised name matches a slate player (a man DraftKings lists
@@ -125,7 +125,7 @@ def capture_roster(feed_dir, dgs=PINNED_DGS, season=SEASON, week=WEEK, log=print
     from research import s6_capture
     teams, names = set(), set()
     for dg in dgs:
-        slate, _ = s6_capture.replay(int(dg))
+        slate, _ = s6_capture.replay(int(dg), capdir=capdir or s6_capture.CAP)
         if not slate:
             raise SystemExit(f"no pinned slate for draft group {dg}")
         for e in nfl_dfs.showdown_pool(simulate.parse_dk_csv(slate["csv"])):
