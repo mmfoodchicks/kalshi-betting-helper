@@ -396,6 +396,12 @@ def by_bin(std, pool, M):
             reasons[nm] = f"projected under another team ({', '.join(sorted(set(t or '?' for t, _ in prj)))})"
         else:
             reasons[nm] = "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+    # the irreducible hole: entries containing a player Sleeper never projected.
+    # The gate's share can be lifted for a fit (the field is not bound by our
+    # rules, and every roster capture here is post-game); this one cannot.
+    unprojected = {nm for nm, why in reasons.items() if why == "no Sleeper projection"}
+    outside_unprojected = sum(1 for e in std["entries"] if e["lineup"]
+                              and any(nm in unprojected for nm in [e["lineup"][0]] + e["lineup"][1]))
     # the chalk: is the most duplicated real lineup the model's most probable?
     top_obs = rows[np.argmax(obs)]
     model_rank_of_top_obs = int((f > f[top_obs]).sum()) + 1
@@ -407,6 +413,8 @@ def by_bin(std, pool, M):
                                   for nm, v in outside.most_common(12)],
             "outside_by_reason_pct": {why: round(100 * sum(v for nm, v in outside.items() if reasons.get(nm) == why) / n_all, 2)
                                       for why in sorted(set(reasons.values()))},
+            "outside_by_reason_note": "share of entries containing such a player; an entry with two outside players counts under both reasons",
+            "outside_if_gate_lifted_pct": round(100 * outside_unprojected / n_all, 2),
             "bins": bins,
             "chalk": {"most_duplicated_real_lineup": {"copies": int(obs.max()), "model_prob_pct": round(100 * float(f[top_obs]), 4),
                                                       "model_rank": model_rank_of_top_obs,
@@ -529,6 +537,7 @@ def summary_row(cid, r):
             "chalk_share_pct": {"real": e["max_lineup_share_pct"], "model": m["max_lineup_share_pct"]},
             "effective_lineups": {"real": e["effective_lineups"]["inverse_sum_p2"], "model": m["effective_lineups"]["inverse_sum_p2"]},
             "outside_universe_pct": b["outside_share_pct"],
+            "outside_if_gate_lifted_pct": b["outside_if_gate_lifted_pct"],
             "cpt_qb_pct": {"real": e["cpt_position_mix_pct"].get("QB", 0.0), "model": m["cpt_position_mix_pct"].get("QB", 0.0)},
             "cpt_rb_pct": {"real": e["cpt_position_mix_pct"].get("RB", 0.0), "model": m["cpt_position_mix_pct"].get("RB", 0.0)},
             "five_one_pct": {"real": e["structure_pct"].get("5-1", 0.0), "model": m["structure_pct"].get("5-1", 0.0)},
