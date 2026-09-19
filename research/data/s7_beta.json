@@ -2261,6 +2261,15 @@
      "model": 0.2,
      "observed_on_its_support": 0.8995
     },
+    "mle_on_this_support": {
+     "beta": 0.32306,
+     "max_share_pct_at_mle": 0.283,
+     "nll_per_entry_nats": 9.22476,
+     "note": null,
+     "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it",
+     "rule_beta_minus_mle_beta": -0.03181,
+     "rule_minus_mle_nats": 0.01672
+    },
     "nll_per_entry_nats_on_its_support": 9.24148,
     "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
     "players": 21,
@@ -4729,6 +4738,15 @@
     "max_share_pct": {
      "model": 0.2,
      "observed_on_its_support": 0.3887
+    },
+    "mle_on_this_support": {
+     "beta": 0.41384,
+     "max_share_pct_at_mle": 0.1396,
+     "nll_per_entry_nats": 10.35451,
+     "note": null,
+     "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it",
+     "rule_beta_minus_mle_beta": 0.041,
+     "rule_minus_mle_nats": 0.01465
     },
     "nll_per_entry_nats_on_its_support": 10.36916,
     "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
@@ -7218,6 +7236,15 @@
      "model": 0.2,
      "observed_on_its_support": 1.4711
     },
+    "mle_on_this_support": {
+     "beta": 0.29113,
+     "max_share_pct_at_mle": 0.1056,
+     "nll_per_entry_nats": 10.17113,
+     "note": null,
+     "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it",
+     "rule_beta_minus_mle_beta": 0.06025,
+     "rule_minus_mle_nats": 0.04839
+    },
     "nll_per_entry_nats_on_its_support": 10.21953,
     "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
     "players": 22,
@@ -7537,13 +7564,13 @@
    }
   },
   "provenance": {
-   "commit": "fa21af4",
+   "commit": "7cec556",
    "data_split": null,
    "dirty": false,
    "model": "softmax(beta x projection) over the lifted universe; beta by maximum likelihood",
    "seed": 20260912,
    "source_files": 41,
-   "source_sha": "60511aeaa828953c1c223a64347385961769a294e35cc3868e1520054dd0698c",
+   "source_sha": "aad868e11497f0729f37aa7fc54a301a244fd97d79dc7b2c49cc372aa06967c9",
    "worlds": null
   },
   "stage": "S7 second artifact: the softmax field's one knob fitted by maximum likelihood to the exact-lineup counts of three real Showdown fields"
@@ -7609,7 +7636,9 @@
     "structure_pct": 4.75
    },
    "production_on_own_universe": {
+    "mle_beta_here": 0.32306,
     "nll_per_entry_nats_on_its_support": 9.24148,
+    "rule_minus_mle_nats": 0.01672,
     "support_pct_of_active": 47.46
    },
    "rank_bins": {
@@ -7713,7 +7742,9 @@
     "structure_pct": 6.12
    },
    "production_on_own_universe": {
+    "mle_beta_here": 0.41384,
     "nll_per_entry_nats_on_its_support": 10.36916,
+    "rule_minus_mle_nats": 0.01465,
     "support_pct_of_active": 91.59
    },
    "rank_bins": {
@@ -7817,7 +7848,9 @@
     "structure_pct": 9.4
    },
    "production_on_own_universe": {
+    "mle_beta_here": 0.29113,
     "nll_per_entry_nats_on_its_support": 10.21953,
+    "rule_minus_mle_nats": 0.04839,
     "support_pct_of_active": 74.29
    },
    "rank_bins": {

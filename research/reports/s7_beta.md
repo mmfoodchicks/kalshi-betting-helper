@@ -8,11 +8,20 @@ labelled beta-invariant, six single-board transfers plus leave-one-contest-out
 with both poolings, the out-of-objective metrics graded afterward, no owner
 rule anywhere near the field, no new feature, no second parameter.
 
-**The knob's value was roughly right; the family is wrong in shape, and fitting
-the knob does not fix it.** The maximum-likelihood beta moves 0.02 to 0.05 from
-the value production's 0.2% rule already solves for on each board and improves
-the per-entry log-likelihood by 0.004 to 0.036 nats, out of a 1.5 to 2.2 nats
-gap that the family leaves against the empirical distribution. At the fitted
+**The deployed beta values happen to be in the right broad numerical range.
+The universal 0.2%-top-share calibration rule is not validated, and the
+projection-only softmax family is wrong in shape; fitting the knob does not
+fix it.** The deployed values (0.291 / 0.455 / 0.351, the rule solved on the
+gated universe) sit within 0.02 to 0.05 of the maximum-likelihood betas on
+the lifted universe and cost 0.004 to 0.036 nats per entry against them, out
+of a 1.5 to 2.2 nats gap that the family leaves against the empirical
+distribution. That nearness is a coincidence of two universes, not a
+validation of the rule: re-solved on the same universe as the fit, the rule
+gives 0.374 / 0.475 / 0.390 and is worse than the MLE on every board (by
+0.024 / 0.016 / 0.104 nats); and on its own gated universe, the one production serves, the rule's beta
+(0.291 / 0.455 / 0.351) is off that support's counts MLE (0.323 / 0.414 /
+0.291) by -0.03 / +0.04 / +0.06 and 0.017 / 0.015 / 0.048 nats worse. The
+rule is not validated on either universe. At the fitted
 beta the model still spreads the field over 3.7 to 11 times too many effective
 lineups, leaves $1,280 to $1,640 too much salary on the table, and misses the
 captain position mix by 28 to 50 percentage points. No single beta transfers
@@ -156,16 +165,13 @@ historical validation, and the caveat cuts the unusual way: the two
 post-game boards agree with each other, and the board whose inputs were
 captured before lock is the one no other board's beta fits.
 
-### 6.1 Why DEN @ KC's beta is higher: the universe's tail, measured
+### 6.1 Beta moves with the represented choice set: the universe-tail sensitivity
 
-Beta multiplies raw projected points and the softmax is normalised over the
-whole universe. The MLE solves E_beta[x] = observed mean, and every
-low-projected lineup added to the universe lowers E_beta[x] at a given beta,
-so a board with a longer tail of near-zero players needs a higher beta to
-reach the same observed mean. DEN @ KC enumerates 30 projected players
-against 25 and 26. Each board refitted on its K highest-projected players
-only (entries holding a player outside the top K leave the support; the
-share kept is beside each row):
+DEN @ KC enumerates 30 projected players against 25 and 26, so the first
+question about its higher beta is whether the universe's size, not the
+public, moves the estimate. Each board refitted on its K highest-projected
+players only (entries holding a player outside the top K leave the support;
+the share kept is beside each row):
 
 | Board | K = 20 | K = 22 | K = 24 | full universe |
 |---|---|---|---|---|
@@ -173,15 +179,27 @@ share kept is beside each row):
 | DEN @ KC | 0.383 (81.0%) | 0.399 (89.0%) | 0.414 (91.6%) | **0.434** (30 players, 98.7%) |
 | DET @ BUF | 0.287 (55.0%) | 0.288 (79.2%) | 0.293 (81.3%) | 0.301 (26 players, 82.6%) |
 
-Beta rises with the universe on every board, so a beta is not a property of
-the public alone: it is the public read against a particular universe, and
-production's per-board 0.2% rule re-solves it on each universe where a
-transferred constant would not. The tail explains about a quarter of DEN @
-KC's excess, not all of it: over the other two boards' mean its beta is
-0.118 higher on the full universes and 0.086 higher at twenty players. The
-rest is the board. The twenty-player rows are on a shrinking support (DET @
-BUF keeps 55% of its field there) and are a diagnostic of the
-parameterisation, not a fit anything downstream uses.
+Beta rises with the universe on every board. In a correctly specified
+softmax it would not: if the field were p(i) proportional to exp(beta x_i)
+with one true beta, conditioning on the lineups made of the top-K players
+would give p(i | subset) proportional to exp(beta x_i) with the same beta;
+the normaliser changes and the coefficient does not. The systematic drift
+(0.309 to 0.332, 0.383 to 0.434, 0.287 to 0.301) is therefore further
+evidence of misspecification and support sensitivity, not a mechanical
+property of a bigger universe and not evidence for production's per-board
+re-solving of the rule. The observed mean projection barely moves between
+the top-20 support and the full one (86.63 to 86.50, 71.03 to 70.71, 90.21
+to 90.30) while the uniform mean falls by 11 to 15 points: the public holds
+far fewer entries in the tail than a softmax carrying the core's beta would
+put there, the same thin tail sections 3 and 6.4 show. The conclusion is
+the reviewer's: raw beta estimates are empirically sensitive to the
+represented choice set because the projection-only softmax is misspecified;
+a universal transferred beta is not supported by these data, and neither is
+the 0.2%-share recalibration rule. On a common twenty-player support the
+spread across boards narrows from 0.118 to 0.086 over the other two boards'
+mean, and DEN @ KC stays the highest at every K. The twenty-player rows are
+on a shrinking support (DET @ BUF keeps 55% of its field there) and are a
+diagnostic of the parameterisation, not a fit anything downstream uses.
 
 ### 6.2 The score equation, and which boards want hotter or colder
 
@@ -223,7 +241,7 @@ fitted beta).
 | DEN @ KC | 91.59%, 0.4548, 10.369 (8.763, 13.563), 0.20% / 0.39%, 7,451 / 2,900 | 10.641, 0.168%, 10,086 | 0.4749, 10.653, 0.200%, 8,384 | 0.4343, 10.637, 0.139%, 12,237 |
 | DET @ BUF | 74.29%, 0.3514, 10.220 (8.224, 12.952), 0.20% / 1.47%, 5,889 / 1,186 | 10.604, 0.139%, 8,864 | 0.3895, 10.673, 0.200%, 6,065 | 0.3009, 10.569, 0.081%, 15,052 |
 
-Read across a row. Lifting the gate (i to ii) keeps the beta and changes the universe: the top share falls from the rule's 0.2% to 0.09 / 0.17 / 0.14% and the effective number of lineups rises from 4,900 / 7,451 / 5,889 to 12,008 / 10,086 / 8,864, because the tail the gate had removed now holds mass. Re-solving the rule on the bigger universe (ii to iii) raises the beta on every board and moves it away from the MLE on every board; its likelihood is within 0.002 nats of the raw value's on NE @ SEA and worse on DEN @ KC (10.653 against 10.641) and DET @ BUF (10.673 against 10.604). The MLE (iv) beats both by 0.004 to 0.036 nats. The served placeholder's own-universe row is on its own support (47.5 / 91.6 / 74.3% of active entries) and its likelihood is not comparable to the other three columns; on that support the real field is 5.4 / 2.6 / 5.0 times more concentrated than the placeholder.
+Read across a row. Lifting the gate (i to ii) keeps the beta and changes the universe: the top share falls from the rule's 0.2% to 0.09 / 0.17 / 0.14% and the effective number of lineups rises from 4,900 / 7,451 / 5,889 to 12,008 / 10,086 / 8,864, because the tail the gate had removed now holds mass. Re-solving the rule on the bigger universe (ii to iii) raises the beta on every board and moves it away from the MLE on every board; its likelihood is within 0.002 nats of the raw value's on NE @ SEA and worse on DEN @ KC (10.653 against 10.641) and DET @ BUF (10.673 against 10.604). The MLE (iv) beats both by 0.004 to 0.036 nats. The served placeholder's own-universe row is on its own support (47.5 / 91.6 / 74.3% of active entries) and its likelihood is not comparable to the other three columns; on that support the real field is 5.4 / 2.6 / 5.0 times more concentrated than the placeholder. The rule can still be tested there against the counts MLE on the same gated support: that MLE is 0.323 / 0.414 / 0.291 against the rule's 0.291 / 0.455 / 0.351, and the rule is worse by 0.017 / 0.015 / 0.048 nats per entry. The rule loses to the counts MLE on its own universe as well as on the lifted one.
 
 ## 6.4 Calibration over fixed projection-rank bins
 
@@ -263,12 +281,16 @@ The independent study's taxonomy, applied board by board:
   likelihood-optimal beta and the concentration-matching beta pull in
   opposite directions on two boards of three.
 - **Case C (ordering reasonable and mean matched, but captain, salary,
-  structure and variance still wrong; the one-dimensional family is
-  structurally inadequate)**: every board, and this is the finding. The mean
-  is matched by construction; the variance ratio is 0.84 / 0.67 / 0.59, the
-  salary left is $1,280 to $1,640 too high, the captain mix 28 to 50 pp off,
-  the effective number of lineups 3.7 to 11 times too many, all at the
-  fitted beta.
+  structure and variance still wrong)**: no board, under the definition as
+  given, because Case C assumes a reasonable ordering and the ordering here
+  is poor. The boards are **Case B plus an independently demonstrated shape
+  failure after moment matching**: the ordering is poor, and even after beta
+  matches the projection mean the remaining distribution is still wrong. The
+  mean is matched by construction; the variance ratio is 0.84 / 0.67 / 0.59,
+  the salary left is $1,280 to $1,640 too high, the captain mix 28 to 50 pp
+  off, the effective number of lineups 3.7 to 11 times too many, all at the
+  fitted beta. That shape failure, not a relabelled Case C, is the finding;
+  the taxonomy is not redefined after the answer.
 - **Case D (fitted beta varies heavily by contest; no evidence for a
   universal temperature)**: partly. The MLEs span 0.30 to 0.43, DEN @ KC is
   the outlier and the board with pre-lock inputs, about a quarter of its
@@ -309,11 +331,14 @@ is added:
 
 ## 8. What this settles and what it does not
 
-Settled: fitting the one knob is not the fix. The counts MLE moves beta by at
-most 0.05 from where the 0.2% rule already puts it and buys 0.004 to 0.036
-nats per entry; the family then misses concentration, duplication, salary,
-captain and the second moment by amounts no beta reaches, and no beta
-transfers to the highest-integrity board. `SD_MONEY_FIELD_CALIBRATED` stays
+Settled: fitting the one knob is not the fix. The counts MLE sits within
+0.05 of the deployed values and buys 0.004 to 0.036 nats per entry against
+them; the 0.2% rule itself, re-solved on the fit's universe, is worse than
+the MLE on every board, so the deployed values are near the MLE by
+coincidence of two universes and the rule is not validated; the family then
+misses concentration, duplication, salary, captain and the second moment by
+amounts no beta reaches, and no beta transfers to the highest-integrity
+board. `SD_MONEY_FIELD_CALIBRATED` stays
 False and nothing downstream changes.
 
 Not settled: what replaces the family. That is a modelling decision the

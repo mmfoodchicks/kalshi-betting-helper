@@ -17251,7 +17251,7 @@ ck("the out-of-objective metrics were never fitted and the fitted beta does not 
    and [_s7bc[c]["graded"]["own_mle"]["out_of_objective"]["structure_pct"]["observed"]["5-1"] for c in _s7ids] == [13.73, 15.0, 16.41]
    and all("out_of_objective" not in _s7bc[c]["graded"]["uniform"] for c in _s7ids)
    and all("support" in _s7bc[c]["graded"]["own_mle"]["out_of_objective"] for c in _s7ids))
-ck("beta is the public read against a universe, not the public alone: refitted on each board's 20 / 22 / 24 highest-projected players it rises monotonically with the universe on every board, and at twenty players DEN @ KC is still the highest (0.309 / 0.383 / 0.287), so the tail explains about a quarter of its excess (0.118 over the other two boards' mean on the full universes, 0.086 at twenty players) and the rest is the board; the sensitivity is stamped as a diagnostic nothing downstream uses",
+ck("beta moves with the represented choice set, which a correctly specified softmax forbids (conditioning on the top-K subset keeps the coefficient): refitted on each board's 20 / 22 / 24 highest-projected players it rises monotonically with the universe on every board (further misspecification evidence, not a point for the per-board rule), at twenty players DEN @ KC is still the highest (0.309 / 0.383 / 0.287), the spread over the other two boards' mean narrows from 0.118 to 0.086, and the sensitivity is stamped as a diagnostic nothing downstream uses",
    [_s7bs[c]["beta_by_universe_top_k"]["20"] for c in _s7ids] == [0.30882, 0.38341, 0.28673]
    and all([r["beta"] for r in _s7bc[c]["universe_sensitivity"]] == sorted(r["beta"] for r in _s7bc[c]["universe_sensitivity"]) for c in _s7ids)
    and all(_s7bc[c]["universe_sensitivity"][-1]["beta"] == _s7bs[c]["beta"]["own_mle"] for c in _s7ids)
@@ -17260,14 +17260,17 @@ ck("beta is the public read against a universe, not the public alone: refitted o
    and any("not a fit anything downstream uses" in f for f in _s7b["meta"]["fences"]))
 _s7b_rep = " ".join(open(_os.path.join(_root, "research", "reports", "s7_beta.md")).read().split())
 ck("the S7 fit report leads with the verdict, states support first, labels ordering beta-invariant, keeps the two 5-1 observations apart, names the transfer failure onto the highest-integrity board without blaming the inputs, changes nothing in production, and defers the S5 rerun to a controlled comparison",
-   "The knob's value was roughly right; the family is wrong in shape, and fitting the knob does not fix it" in _s7b_rep
+   "The deployed beta values happen to be in the right broad numerical range" in _s7b_rep
+   and "The universal 0.2%-top-share calibration rule is not validated" in _s7b_rep
+   and "The rule is not validated on either universe" in _s7b_rep
    and "## 1. Support first" in _s7b_rep and "conditional on the 82.6% of its field" in _s7b_rep
    and "Ordering is invariant to beta" in _s7b_rep and "no fit can move them" in _s7b_rep
    and "This stays separate from the other 5-1" in _s7b_rep
    and "not obviously the inputs" in _s7b_rep and "the caveat cuts the unusual way" in _s7b_rep
    and "`SD_MONEY_FIELD_CALIBRATED` stays False and nothing downstream changes" in _s7b_rep
    and "never compared against the historical +0.047078" in _s7b_rep
-   and "not a fit anything downstream uses" in _s7b_rep and "about a quarter of DEN @ KC's excess" in _s7b_rep)
+   and "not a fit anything downstream uses" in _s7b_rep and "further evidence of misspecification and support sensitivity" in _s7b_rep
+   and "neither is the 0.2%-share recalibration rule" in _s7b_rep and "point in favour" not in _s7b_rep)
 
 ck("a pooled fit's checksum is its score equation, not three zero residuals: on every pooled and leave-one-out fit the weighted sum of the fitted boards' mean residuals is zero, under the common beta DEN @ KC's residual is negative (it wants a hotter field) and the other two boards' are positive, and the held-out residuals under the leave-one-out betas are +0.998 / -2.855 / +1.786 projected points",
    all(abs(_s7b["meta"]["pooled_all_three"][k]["score"]["weighted_mean_residual"]) < 1e-4 for k in ("entry_weighted", "contest_balanced"))
@@ -17277,11 +17280,14 @@ ck("a pooled fit's checksum is its score equation, not three zero residuals: on 
    and [_s7bs[c]["held_out_residual_under_loo_beta"]["entry_weighted"] for c in _s7ids] == [0.99813, -2.85458, 1.78556]
    and "hotter" in _s7b["meta"]["pooled_all_three"]["entry_weighted"]["score"]["reads"]
    and any("never three separate zero residuals" in f for f in _s7b["meta"]["fences"]))
-ck("the decomposition has its three baselines: the served placeholder on its own gated universe holds 47.46 / 91.59 / 74.29% of active entries (its beta equal to the first artifact's, its likelihood stamped not comparable), the same value on the lifted universe drops the top share from 0.2% to 0.086 / 0.168 / 0.139%, and the 0.2% rule re-solved on the lifted universe (0.3737 / 0.4749 / 0.3895) sits further from the MLE than the raw value on every board",
+ck("the decomposition has its three baselines and the rule loses on both universes: the served placeholder on its own gated universe holds 47.46 / 91.59 / 74.29% of active entries (its beta equal to the first artifact's, its likelihood stamped not comparable), on that same support the counts MLE is 0.323 / 0.414 / 0.291 and the rule is 0.017 / 0.015 / 0.048 nats worse, the same value on the lifted universe drops the top share from 0.2% to 0.086 / 0.168 / 0.139%, and the 0.2% rule re-solved on the lifted universe (0.3737 / 0.4749 / 0.3895) sits further from the MLE than the raw value on every board",
    [_s7bc[c]["production_model_on_its_own_universe"]["support_pct_of_active"] for c in _s7ids] == [47.46, 91.59, 74.29]
    and all(abs(_s7bc[c]["production_model_on_its_own_universe"]["beta"] - _s7c[c]["model"]["beta"]) < 6e-5 for c in _s7ids)
    and all(_s7bc[c]["production_model_on_its_own_universe"]["max_share_pct"]["model"] == 0.2 for c in _s7ids)
    and [_s7bc[c]["production_model_on_its_own_universe"]["nll_per_entry_nats_on_its_support"] for c in _s7ids] == [9.24148, 10.36916, 10.21953]
+   and [_s7bc[c]["production_model_on_its_own_universe"]["mle_on_this_support"]["beta"] for c in _s7ids] == [0.32306, 0.41384, 0.29113]
+   and [_s7bc[c]["production_model_on_its_own_universe"]["mle_on_this_support"]["rule_minus_mle_nats"] for c in _s7ids] == [0.01672, 0.01465, 0.04839]
+   and all(_s7bc[c]["production_model_on_its_own_universe"]["mle_on_this_support"]["rule_minus_mle_nats"] > 0 for c in _s7ids)
    and all("not comparable" in _s7bc[c]["production_model_on_its_own_universe"]["note"] for c in _s7ids)
    and [_s7bs[c]["max_share_pct"]["production"] for c in _s7ids] == [0.0858, 0.1676, 0.1385]
    and [_s7bs[c]["beta"]["top_share_rule_here"] for c in _s7ids] == [0.37368, 0.47495, 0.38953]
@@ -17301,7 +17307,8 @@ ck("the likelihood-optimal beta and the concentration-matching beta pull in oppo
    and all(_s7bs[c]["max_share_pct"]["own_mle"] < _s7bs[c]["max_share_pct"]["production"] for c in ("195526287", "195677825"))
    and "not a near-lock snapshot" in _s7bc["195526287"]["integrity"] and "50 hours" in _s7bc["195526287"]["integrity"]
    and "6.5 Reading the failure" in _s7b_rep and "Case A (ordering good, concentration wrong; beta may be enough)**: no board" in _s7b_rep
-   and "Case C" in _s7b_rep and "every board, and this is the finding" in _s7b_rep
+   and "Case B plus an independently demonstrated shape failure after moment matching" in _s7b_rep
+   and "no board, under the definition as given" in _s7b_rep and "the taxonomy is not redefined after the answer" in _s7b_rep
    and "does not by itself say whether the projections or the functional form deserve the blame" in _s7b_rep
    and "wants a hotter field under every common beta" in _s7b_rep and "not a near-lock snapshot" in _s7b_rep
    and "No beta matches both ends" in _s7b_rep and "it cannot" in _s7b_rep)
