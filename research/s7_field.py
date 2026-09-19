@@ -389,13 +389,13 @@ def by_bin(std, pool, M):
     for nm in list(outside):
         if nm.startswith("("):
             continue
-        rows = M["proj_rows"].get(_norm_key(nm))
-        if not rows:
-            reasons[nm] = "no Sleeper projection row"
-        elif not any(t in M["teams"] for t, _ in rows):
-            reasons[nm] = f"projected under another team ({', '.join(sorted(set(t or '?' for t, _ in rows)))})"
+        prj = M["proj_rows"].get(_norm_key(nm))
+        if not prj or all(pts is None for _, pts in prj):
+            reasons[nm] = "no Sleeper projection"
+        elif not any(t in M["teams"] for t, _ in prj):
+            reasons[nm] = f"projected under another team ({', '.join(sorted(set(t or '?' for t, _ in prj)))})"
         else:
-            reasons[nm] = "projected, dropped by the depth-chart gate beyond the field-only extras"
+            reasons[nm] = "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
     # the chalk: is the most duplicated real lineup the model's most probable?
     top_obs = rows[np.argmax(obs)]
     model_rank_of_top_obs = int((f > f[top_obs]).sum()) + 1
