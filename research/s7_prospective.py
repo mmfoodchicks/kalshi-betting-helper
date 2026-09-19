@@ -14,7 +14,9 @@ the game, and fit nothing on the new counts.
 What this module does, and refuses to do:
 
   freeze     copies the pooled all-three fits out of research/data/s7_salary.json
-             into research/data/s7_frozen_field.json with the source hash. The
+             into research/data/s7_frozen_field.json with the source hash, ONCE:
+             a re-freeze with identical content returns the file untouched and
+             a differing one is refused (immutable by contract). The
              primary parameter set is the contest-balanced projection+salary
              fit (beta 0.112, gamma 1.045); the entry-weighted fit (0.116,
              0.995) is the secondary sensitivity arm; the contest-balanced
@@ -33,11 +35,17 @@ What this module does, and refuses to do:
              hash into research/data/dk_standings and its manifest.
   score      builds the lifted universe from the PRE-LOCK capture (it refuses a
              capture stamped after lock), scores the frozen arms on the
-             representable support, and writes research/data/s7_prospective_<cid>.json
-             plus a row in the ledger research/data/s7_prospective.json.
-             Nothing is fitted: this module never calls a fitter, and the
-             production-field arm is scored without the diagnostic MLE the
-             retrospective stage carried.
+             representable support, and writes research/data/s7_prospective_<cid>_<stamp>.json
+             (one artifact per capture stamp, never overwritten) plus the
+             ledger research/data/s7_prospective.json, which keeps every
+             scored run per contest: the latest valid pre-lock capture is the
+             primary, every earlier valid capture is a timing-sensitivity arm
+             scored with the same frozen parameters and retained beside it,
+             never part of the pass/fail criterion. Nothing is fitted: this
+             module never calls a fitter, and the production-field arm is
+             scored without the diagnostic MLE the retrospective stage carried.
+             The feature-round gate counts distinct slates (games), not
+             contest ids; contests sharing a pool are one test.
 
 Arms scored on every prospective contest:
   1. the served production field, untouched: the placeholder on its own gated
@@ -61,7 +69,10 @@ heavy-duplication mass.
 
 Rules: no refit of beta or gamma per slate; no new parameter after seeing a
 contest; score before any of its counts changes anything; at least three
-genuinely pre-lock captured contests before another feature-selection round.
+distinct genuinely pre-lock captured slates (games) before another
+feature-selection round, contests sharing a pool counting as one test; the
+frozen file is immutable once written; the latest valid pre-lock capture is
+the primary and every earlier valid capture a timing-sensitivity arm.
 If prospective contests reproduce the retrospective residual (salary mean and
 tail roughly right, a consistent unexplained spike at exactly $0), the next
 single feature is delta * I[salary_left == 0]; the three retrospective boards
@@ -100,7 +111,7 @@ PRO = os.path.join(DATA, "prospective")
 FROZEN = os.path.join(DATA, "s7_frozen_field.json")
 LEDGER = os.path.join(DATA, "s7_prospective.json")
 SEED = F.SEED
-MIN_CONTESTS_BEFORE_NEXT_FEATURE = 3
+MIN_SLATES_BEFORE_NEXT_FEATURE = 3     # distinct games, not contest ids: three contests on one pool are one test
 ARMS = (
     {"name": "production_field", "what": "the served placeholder on its own gated universe (depth gate applied, injury statuses as captured, "
                                          "beta from the 0.2% rule), scored on its own support; likelihood not comparable to the lifted-support arms"},
@@ -115,7 +126,11 @@ GRADED = ("support coverage", "exact-lineup likelihood", "chalk rank", "top-10/1
           "captain mix", "5-1 / 4-2 / 3-3", "K/DST usage", "effective lineups", "top-lineup share", "heavy-duplication mass")
 RULES = ("no refit of beta or gamma per slate", "no new parameter after seeing a contest",
          "score a contest before any of its counts changes anything",
-         f"at least {MIN_CONTESTS_BEFORE_NEXT_FEATURE} genuinely pre-lock captured contests before another feature-selection round",
+         f"at least {MIN_SLATES_BEFORE_NEXT_FEATURE} distinct genuinely pre-lock captured slates (games) before another feature-selection round; "
+         "contests sharing a pool and a game environment are one test, and are counted separately as metadata",
+         "the frozen parameter file is immutable: a re-freeze with identical parameters leaves it byte-for-byte unchanged, a differing one is refused",
+         "the latest valid pre-lock capture is the primary; every earlier valid capture is a timing-sensitivity arm scored with the same frozen "
+         "parameters, retained beside it, and never part of the pass/fail criterion",
          "the scorer refuses a capture stamped after the earliest contest start")
 
 
@@ -128,9 +143,21 @@ def _utc(ts=None):
 
 
 # ---- freeze ------------------------------------------------------------------
-def freeze(log=print):
+def _core(frozen):
+    """The immutable content: everything except the stamp and the provenance
+    of the freeze itself."""
+    return {k: v for k, v in frozen.items() if k not in ("frozen_utc", "provenance")}
+
+
+def freeze(src=None, target=None, log=print):
+    """Write the frozen file ONCE. If it exists and the newly computed core
+    (parameters, rules, the source artifact's hash and provenance) is
+    identical, return it untouched, stamp and all; if anything differs,
+    refuse. A pre-registration that can be rewritten after the results exist
+    is not a pre-registration."""
     from research import provenance
-    src = os.path.join(DATA, "s7_salary.json")
+    src = src or os.path.join(DATA, "s7_salary.json")
+    target = target or FROZEN
     sal = json.load(open(src))
     P = sal["fits"]
     pick = lambda arm, wk: [float(v) for v in P[arm]["pooled_all"][wk]["theta"]]
@@ -154,10 +181,18 @@ def freeze(log=print):
            "recorded_hypothesis_not_built": "the field is a mixture of user-level lineup-generation strategies rather than IID entries from one universal softmax (a model-family change, for after prospective validation)",
            "production": {"changed": False, "SD_MONEY_FIELD_CALIBRATED": False, "note": "what a winning arm earns is preferred research family status for prospective validation, not production calibration; S5 stays deferred"},
            "provenance": provenance.stamp(worlds=None, model="frozen parameters copied from s7_salary.json; nothing fitted", seed="UNSEEDED")}
-    with open(FROZEN, "w") as fh:
+    if os.path.exists(target):
+        existing = json.load(open(target))
+        if _core(existing) == _core(out):
+            log(f"[S7p] frozen file unchanged (idempotent re-freeze; frozen_utc {existing['frozen_utc']} kept): {os.path.relpath(target, ROOT)}")
+            return existing
+        diff = sorted(k for k in set(_core(existing)) | set(_core(out)) if _core(existing).get(k) != _core(out).get(k))
+        raise SystemExit(f"refuse: {os.path.relpath(target, ROOT)} exists and the newly computed content differs in {diff}; "
+                         "the frozen parameters are immutable once written")
+    with open(target, "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     log(f"[S7p] frozen: primary {out['primary']['theta']}, secondary {out['secondary']['theta']}, "
-        f"projection-only {out['projection_only_baseline']['theta']}, salary-only {out['salary_only_diagnostic']['theta']} -> {os.path.relpath(FROZEN, ROOT)}")
+        f"projection-only {out['projection_only_baseline']['theta']}, salary-only {out['salary_only_diagnostic']['theta']} -> {os.path.relpath(target, ROOT)}")
     return out
 
 
@@ -170,6 +205,17 @@ def upcoming(log=print):
     if not rows:
         log("  no one-game NFL draft groups posted")
     return rows
+
+
+def slate_identity(slate, details):
+    """One game = one slate: the two teams on the pool and the kickoff date
+    (DraftKings' Eastern-time start string, date part). Second-half and
+    fourth-quarter draft groups of the same game share it, deliberately."""
+    import nfl_dfs
+    import simulate
+    teams = sorted({e.get("team") for e in nfl_dfs.showdown_pool(simulate.parse_dk_csv(slate["csv"])) if e.get("team")})
+    starts = sorted(str(d.get("starts") or "") for d in details.values() if d.get("starts"))
+    return "/".join(teams) + " " + (starts[0][:10] if starts else "?")
 
 
 def capture(dgs, week, contest_ids=(), note="", log=print):
@@ -191,6 +237,7 @@ def capture(dgs, week, contest_ids=(), note="", log=print):
         now = time.time()
         gpp = max(details.values(), key=lambda d: float(d.get("prize_pool") or 0)) if details else None
         info = {"draft_group": int(dg), "week": int(week), "capture_stamp": stamp, "captured_utc": _utc(now),
+                "slate_identity": slate_identity(slate, details),
                 "lock_utc": _utc(lock) if lock else None, "hours_to_lock": round((lock - now) / 3600.0, 3) if lock else None,
                 "pre_lock": bool(lock and lock > now),
                 "contests_detailed": sorted(details), "biggest_gpp_detailed": ({"id": gpp.get("id"), "name": gpp.get("name"), "max_entries": gpp.get("max_entries"),
@@ -236,17 +283,59 @@ def standings(cid, path, log=print):
 
 
 # ---- score ------------------------------------------------------------------------
-def latest_pre_lock_capture(dg, stamp=None):
-    base = os.path.join(PRO, str(int(dg)))
-    stamps = sorted(os.listdir(base)) if os.path.isdir(base) else []
-    if stamp:
-        assert stamp in stamps, f"no capture {stamp} for draft group {dg}"
-        stamps = [stamp]
-    for st in reversed(stamps):
-        info = json.load(open(os.path.join(base, st, "capture.json")))
+def pre_lock_captures(dg, pro=None):
+    """Every capture of a draft group stamped before lock, oldest first; a
+    post-lock capture is never returned."""
+    base = os.path.join(pro or PRO, str(int(dg)))
+    out = []
+    for st in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        path = os.path.join(base, st, "capture.json")
+        if not os.path.exists(path):
+            continue
+        info = json.load(open(path))
         if info.get("pre_lock"):
-            return os.path.join(base, st), info
-    raise SystemExit(f"draft group {dg}: no capture stamped before lock; prospective scoring refuses a post-lock capture")
+            out.append((st, os.path.join(base, st), info))
+    return out
+
+
+def latest_pre_lock_capture(dg, stamp=None, pro=None):
+    """The primary capture: the latest valid pre-lock one. With `stamp`, that
+    capture, which must itself be pre-lock (a post-lock stamp is refused, not
+    silently skipped)."""
+    valid = pre_lock_captures(dg, pro)
+    if stamp:
+        hit = [v for v in valid if v[0] == stamp]
+        if not hit:
+            raise SystemExit(f"draft group {dg}: capture {stamp} is missing or stamped after lock; prospective scoring refuses it")
+        return hit[0][1], hit[0][2]
+    if not valid:
+        raise SystemExit(f"draft group {dg}: no capture stamped before lock; prospective scoring refuses a post-lock capture")
+    return valid[-1][1], valid[-1][2]
+
+
+def ledger_update(ledger, cid, row, valid_stamps):
+    """Pure: merge one scored run into the ledger. Runs are keyed by capture
+    stamp and never overwrite each other; the primary is the latest valid
+    pre-lock capture among the scored runs, every other scored run is a
+    timing-sensitivity arm, and the gate counts distinct slates."""
+    cid = int(cid)
+    ent = ledger["contests"].get(str(cid)) or {"contest": cid, "label": row["label"], "draft_group": row["draft_group"],
+                                                "slate_identity": row["slate_identity"], "runs": {}}
+    ent["runs"][row["capture_stamp"]] = row
+    scored = sorted(ent["runs"])
+    ent["primary_stamp"] = scored[-1]
+    ent["primary"] = ent["runs"][scored[-1]]
+    ent["capture_sensitivity"] = [ent["runs"][st] for st in scored[:-1]]
+    ent["unscored_pre_lock_captures"] = [st for st in valid_stamps if st not in ent["runs"]]
+    ent["reads"] = ("primary = the latest valid pre-lock capture scored; capture_sensitivity = earlier valid captures scored with the same "
+                    "frozen parameters, retained beside it, never part of the pass/fail criterion")
+    ledger["contests"][str(cid)] = ent
+    slates = {e["slate_identity"] for e in ledger["contests"].values()}
+    ledger["meta"]["prospective_contests_scored"] = len(ledger["contests"])
+    ledger["meta"]["distinct_slates_scored"] = len(slates)
+    ledger["meta"]["slates"] = sorted(slates)
+    ledger["meta"]["feature_selection_round_allowed"] = len(slates) >= MIN_SLATES_BEFORE_NEXT_FEATURE
+    return ledger
 
 
 def score(cid, dg, week, stamp=None, log=print):
@@ -254,7 +343,10 @@ def score(cid, dg, week, stamp=None, log=print):
     cid, dg, week = int(cid), int(dg), int(week)
     frozen = json.load(open(FROZEN))
     capdir, info = latest_pre_lock_capture(dg, stamp)
+    valid = pre_lock_captures(dg)
+    role = "primary" if info["capture_stamp"] == valid[-1][0] else "timing_sensitivity"
     slate, details = s6_capture.replay(dg, capdir=capdir)
+    ident = info.get("slate_identity") or slate_identity(slate, details)
     detail = details.get(str(cid))
     detail_source = "pre-lock capture"
     if detail is None:
@@ -291,8 +383,11 @@ def score(cid, dg, week, stamp=None, log=print):
                  "delta_nll_salary_only_minus_projection_only": round(nll["salary_only_diagnostic"] - nll["projection_only_frozen"], 5),
                  "user_cluster_bootstrap_primary": {**boot, "sign": "positive = projection+salary assigns higher probability to this contest's entries"}}
     out = {"meta": {"stage": "S7 prospective: the frozen field family scored on a contest captured before lock; nothing fitted",
-                    "contest": cid, "label": spec["label"], "draft_group": dg, "week": week,
+                    "contest": cid, "label": spec["label"], "draft_group": dg, "week": week, "slate_identity": ident,
                     "capture": {**info, "directory": os.path.relpath(capdir, ROOT)}, "contest_detail_source": detail_source,
+                    "role": role, "role_reads": ("primary = the latest valid pre-lock capture; timing_sensitivity = an earlier valid capture scored "
+                                                 "with the same frozen parameters, retained beside the primary, never part of the pass/fail criterion"),
+                    "pre_lock_captures_available": [v[0] for v in valid],
                     "frozen": {"file": os.path.relpath(FROZEN, ROOT), "sha256": _sha(FROZEN), "frozen_utc": frozen["frozen_utc"]},
                     "fit_free": True, "fits_called": 0, "rules": list(RULES),
                     "provenance": provenance.stamp(worlds=None, model="frozen parameters; nothing fitted", seed=SEED)},
@@ -305,16 +400,14 @@ def score(cid, dg, week, stamp=None, log=print):
            "production_field": prod, "arms": graded, "principal": principal,
            "inputs": {"draftkings": s6_capture.dk_hashes(dg, capdir=capdir), "sleeper_feeds": s6_capture.sleeper_hashes(capdir),
                       "standings": json.load(open(os.path.join(F.STANDINGS, "manifest.json")))["files"].get(f"contest-standings-{cid}.csv.gz")}}
-    path = os.path.join(DATA, f"s7_prospective_{cid}.json")
+    path = os.path.join(DATA, f"s7_prospective_{cid}_{info['capture_stamp']}.json")
+    assert not os.path.exists(path), f"{path} exists; a scored run is never overwritten"
     with open(path, "w") as fh:
         json.dump(out, fh, indent=1, sort_keys=True)
     row = summary_row(out)
-    ledger = json.load(open(LEDGER)) if os.path.exists(LEDGER) else {"meta": {"stage": "S7 prospective ledger: one row per contest scored with the frozen field family",
-                                                                              "frozen": os.path.relpath(FROZEN, ROOT), "rules": list(RULES)}, "contests": []}
-    ledger["contests"] = [r for r in ledger["contests"] if r["contest"] != cid] + [row]
-    ledger["contests"].sort(key=lambda r: r["contest"])
-    ledger["meta"]["pre_lock_contests_scored"] = len(ledger["contests"])
-    ledger["meta"]["feature_selection_round_allowed"] = len(ledger["contests"]) >= MIN_CONTESTS_BEFORE_NEXT_FEATURE
+    ledger = json.load(open(LEDGER)) if os.path.exists(LEDGER) else {"meta": {"stage": "S7 prospective ledger: every scored run per contest, keyed by capture stamp; the primary is the latest valid pre-lock capture",
+                                                                              "frozen": os.path.relpath(FROZEN, ROOT), "rules": list(RULES)}, "contests": {}}
+    ledger = ledger_update(ledger, cid, row, [v[0] for v in valid])
     with open(LEDGER, "w") as fh:
         json.dump(ledger, fh, indent=1, sort_keys=True)
     log(f"[S7p] {cid} {spec['label']}: representable {bd['support']['representable_pct']}%; NLL projection-only {nll['projection_only_frozen']}, "
@@ -328,6 +421,7 @@ def summary_row(out):
     g = out["arms"]; p = out["principal"]
     pri = g["projection_plus_salary_frozen_primary"]; po = g["projection_only_frozen"]
     return {"contest": out["meta"]["contest"], "label": out["meta"]["label"], "draft_group": out["meta"]["draft_group"], "week": out["meta"]["week"],
+            "slate_identity": out["meta"]["slate_identity"], "role": out["meta"]["role"],
             "capture_stamp": out["meta"]["capture"]["capture_stamp"], "hours_to_lock": out["meta"]["capture"]["hours_to_lock"],
             "active_entries": out["support"]["active_entries"], "representable_pct": out["support"]["representable_pct"],
             "nll_per_entry": {name: g[name]["likelihood"]["nll_per_entry_nats"] for name in g},
