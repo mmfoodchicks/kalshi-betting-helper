@@ -180,8 +180,14 @@
      }
     },
     "effective_lineups": {
-     "exp_entropy": 5579.9,
-     "inverse_sum_p2": 2152.9
+     "basis": "conditional on active lineups (p sums to one over submitted lineups)",
+     "exp_entropy": 5654.8,
+     "inverse_sum_p2": 2145.4,
+     "with_null_state": {
+      "basis": "blank entries as one null state over all entries",
+      "exp_entropy": 5642.1,
+      "inverse_sum_p2": 2138.8
+     }
     },
     "entries_with_resolved_lineup": 125800,
     "flex_ownership": [
@@ -272,6 +278,7 @@
      "share_at_zero_pct": 13.84,
      "share_ge_1000_pct": 39.3
     },
+    "share_denominator": "all entries including blanks, DraftKings' ownership denominator (max share, lineup mass, duplicate shares)",
     "share_from_150_max_users_pct": 23.33,
     "structure_pct": {
      "3-3": 38.73,
@@ -378,6 +385,47 @@
       "entries": 3048,
       "share_pct": 2.42
      }
+    }
+   },
+   "field_rules": {
+    "field": {
+     "by_rule_pct_of_all_entries": {
+      "at most two kickers/defenses and two $2,000-or-under punts": 1.19,
+      "no defense beside the opposing team's captain": 8.46,
+      "no kicker or defense as a GPP captain": 7.21,
+      "one tight end per team": 0.95
+     },
+     "failing_any_pct_of_active": 16.75,
+     "failing_any_pct_of_all_entries": 16.72
+    },
+    "rules": [
+     "no kicker or defense as a GPP captain",
+     "at most two kickers/defenses and two $2,000-or-under punts",
+     "no defense beside the opposing team's captain",
+     "one tight end per team"
+    ],
+    "top_01pct_by_rank": {
+     "by_rule": {
+      "at most two kickers/defenses and two $2,000-or-under punts": 30,
+      "no defense beside the opposing team's captain": 71
+     },
+     "entries": 152,
+     "failing_any_pct": 60.53
+    },
+    "top_1pct_by_rank": {
+     "by_rule": {
+      "at most two kickers/defenses and two $2,000-or-under punts": 55,
+      "no defense beside the opposing team's captain": 363,
+      "no kicker or defense as a GPP captain": 90,
+      "one tight end per team": 3
+     },
+     "entries": 1261,
+     "failing_any_pct": 38.78
+    },
+    "winner_duplicate_rank": {
+     "copies": 23,
+     "lineups_with_the_same_copy_count": 69,
+     "rank_among_unique_lineups": 1121
     }
    },
    "inputs": {
@@ -963,6 +1011,11 @@
       "slot": "CPT"
      }
     },
+    "points": {
+     "entries_checked": 125800,
+     "max_abs_diff_points": 1e-05,
+     "reconciles": true
+    },
     "rows": {
      "capacity": 132352,
      "distinct_entry_ids": 126020,
@@ -1192,8 +1245,14 @@
      }
     },
     "effective_lineups": {
-     "exp_entropy": 7514.1,
-     "inverse_sum_p2": 3406.4
+     "basis": "conditional on active lineups (p sums to one over submitted lineups)",
+     "exp_entropy": 7738.2,
+     "inverse_sum_p2": 3381.2,
+     "with_null_state": {
+      "basis": "blank entries as one null state over all entries",
+      "exp_entropy": 7671.2,
+      "inverse_sum_p2": 3255.0
+     }
     },
     "entries_with_resolved_lineup": 87909,
     "flex_ownership": [
@@ -1284,6 +1343,7 @@
      "share_at_zero_pct": 6.69,
      "share_ge_1000_pct": 35.92
     },
+    "share_denominator": "all entries including blanks, DraftKings' ownership denominator (max share, lineup mass, duplicate shares)",
     "share_from_150_max_users_pct": 26.52,
     "structure_pct": {
      "3-3": 38.22,
@@ -1390,6 +1450,42 @@
       "entries": 1938,
       "share_pct": 2.2
      }
+    }
+   },
+   "field_rules": {
+    "field": {
+     "by_rule_pct_of_all_entries": {
+      "at most two kickers/defenses and two $2,000-or-under punts": 2.27,
+      "no defense beside the opposing team's captain": 7.37,
+      "no kicker or defense as a GPP captain": 7.3,
+      "one tight end per team": 1.23
+     },
+     "failing_any_pct_of_active": 16.61,
+     "failing_any_pct_of_all_entries": 16.55
+    },
+    "rules": [
+     "no kicker or defense as a GPP captain",
+     "at most two kickers/defenses and two $2,000-or-under punts",
+     "no defense beside the opposing team's captain",
+     "one tight end per team"
+    ],
+    "top_01pct_by_rank": {
+     "by_rule": {},
+     "entries": 88,
+     "failing_any_pct": 0.0
+    },
+    "top_1pct_by_rank": {
+     "by_rule": {
+      "no defense beside the opposing team's captain": 8,
+      "one tight end per team": 30
+     },
+     "entries": 902,
+     "failing_any_pct": 4.21
+    },
+    "winner_duplicate_rank": {
+     "copies": 44,
+     "lineups_with_the_same_copy_count": 15,
+     "rank_among_unique_lineups": 205
     }
    },
    "inputs": {
@@ -1966,6 +2062,11 @@
       "slot": "FLEX"
      }
     },
+    "points": {
+     "entries_checked": 87909,
+     "max_abs_diff_points": 1e-05,
+     "reconciles": true
+    },
     "rows": {
      "capacity": 88235,
      "distinct_entry_ids": 88235,
@@ -2194,8 +2295,14 @@
      }
     },
     "effective_lineups": {
-     "exp_entropy": 5106.3,
-     "inverse_sum_p2": 1623.8
+     "basis": "conditional on active lineups (p sums to one over submitted lineups)",
+     "exp_entropy": 5199.8,
+     "inverse_sum_p2": 1616.0,
+     "with_null_state": {
+      "basis": "blank entries as one null state over all entries",
+      "exp_entropy": 5180.8,
+      "inverse_sum_p2": 1608.8
+     }
     },
     "entries_with_resolved_lineup": 88023,
     "flex_ownership": [
@@ -2286,6 +2393,7 @@
      "share_at_zero_pct": 12.76,
      "share_ge_1000_pct": 20.58
     },
+    "share_denominator": "all entries including blanks, DraftKings' ownership denominator (max share, lineup mass, duplicate shares)",
     "share_from_150_max_users_pct": 23.97,
     "structure_pct": {
      "3-3": 33.47,
@@ -2392,6 +2500,44 @@
       "entries": 1998,
       "share_pct": 2.26
      }
+    }
+   },
+   "field_rules": {
+    "field": {
+     "by_rule_pct_of_all_entries": {
+      "at most two kickers/defenses and two $2,000-or-under punts": 0.74,
+      "no defense beside the opposing team's captain": 5.96,
+      "no kicker or defense as a GPP captain": 3.41,
+      "one tight end per team": 8.68
+     },
+     "failing_any_pct_of_active": 18.09,
+     "failing_any_pct_of_all_entries": 18.04
+    },
+    "rules": [
+     "no kicker or defense as a GPP captain",
+     "at most two kickers/defenses and two $2,000-or-under punts",
+     "no defense beside the opposing team's captain",
+     "one tight end per team"
+    ],
+    "top_01pct_by_rank": {
+     "by_rule": {
+      "one tight end per team": 66
+     },
+     "entries": 159,
+     "failing_any_pct": 41.51
+    },
+    "top_1pct_by_rank": {
+     "by_rule": {
+      "no defense beside the opposing team's captain": 9,
+      "one tight end per team": 244
+     },
+     "entries": 885,
+     "failing_any_pct": 27.68
+    },
+    "winner_duplicate_rank": {
+     "copies": 17,
+     "lineups_with_the_same_copy_count": 69,
+     "rank_among_unique_lineups": 1006
     }
    },
    "inputs": {
@@ -2958,6 +3104,11 @@
       "slot": "FLEX"
      }
     },
+    "points": {
+     "entries_checked": 88023,
+     "max_abs_diff_points": 2e-05,
+     "reconciles": true
+    },
     "rows": {
      "capacity": 88235,
      "distinct_entry_ids": 88235,
@@ -3067,13 +3218,13 @@
    }
   },
   "provenance": {
-   "commit": "8ffe6f3",
+   "commit": "1cb64f4",
    "data_split": null,
    "dirty": false,
    "model": "placeholder softmax field, unfitted",
    "seed": 20260912,
    "source_files": 40,
-   "source_sha": "50c756c9bb23549ccac6c13ceb7f1b02b2075509acb76fc26f1182e4cafd02ed",
+   "source_sha": "828f102c3349e23cfd7a50a4262319fb6844ea0e378d05a09ef4098d5a2f791d",
    "worlds": null
   },
   "stage": "S7 first artifact: the Showdown field as it actually entered, fit-free, three contests"
@@ -3098,9 +3249,10 @@
    "distinct_lineups": 18620,
    "effective_lineups": {
     "model": 4900.3,
-    "real": 2152.9
+    "real": 2145.4
    },
    "entries": 126020,
+   "field_failing_any_of_four_rules_pct": 16.75,
    "five_one_pct": {
     "model": 8.92,
     "real": 13.53
@@ -3119,6 +3271,7 @@
     "model": 3220.5,
     "real": 1287.9
    },
+   "top_01pct_failing_pct": 60.53,
    "top_band_observed_over_model": {
     "-3..-2": 0.478,
     "-4..-3": 0.547
@@ -3130,7 +3283,8 @@
     "points": 101.020004,
     "rules_failed": [],
     "tied": 23
-   }
+   },
+   "winner_duplicate_rank": 1121
   },
   {
    "capacity": 88235,
@@ -3151,9 +3305,10 @@
    "distinct_lineups": 18539,
    "effective_lineups": {
     "model": 7451.4,
-    "real": 3406.4
+    "real": 3381.2
    },
    "entries": 88235,
+   "field_failing_any_of_four_rules_pct": 16.61,
    "five_one_pct": {
     "model": 13.66,
     "real": 14.96
@@ -3172,6 +3327,7 @@
     "model": 2377.2,
     "real": 1072.2
    },
+   "top_01pct_failing_pct": 0.0,
    "top_band_observed_over_model": {
     "-3..-2": 0.459,
     "-4..-3": 0.607
@@ -3183,7 +3339,8 @@
     "points": 124.61,
     "rules_failed": [],
     "tied": 44
-   }
+   },
+   "winner_duplicate_rank": 205
   },
   {
    "capacity": 88235,
@@ -3204,9 +3361,10 @@
    "distinct_lineups": 14746,
    "effective_lineups": {
     "model": 5889.2,
-    "real": 1623.8
+    "real": 1616.0
    },
    "entries": 88235,
+   "field_failing_any_of_four_rules_pct": 18.09,
    "five_one_pct": {
     "model": 10.89,
     "real": 15.92
@@ -3225,6 +3383,7 @@
     "model": 1612.3,
     "real": 626.9
    },
+   "top_01pct_failing_pct": 41.51,
    "top_band_observed_over_model": {
     "-3..-2": 0.184,
     "-4..-3": 0.458
@@ -3239,7 +3398,8 @@
      "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out (field-only here: Joshua Palmer)"
     ],
     "tied": 17
-   }
+   },
+   "winner_duplicate_rank": 1006
   }
  ]
 }

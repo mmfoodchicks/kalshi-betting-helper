@@ -17146,14 +17146,39 @@ ck("S7's first artifact fits nothing and carries its caveats: fit_free is stampe
    and all("CLEARED" in _s7c[c]["inputs"]["roster"]["injury_statuses"] for c in _s7ids)
    and _s7c["193391013"]["inputs"]["roster"]["file"].endswith("players_2026_1_nesea.json")
    and _s7c["195526287"]["inputs"]["roster"]["sha256"] == _mabd["meta"]["inputs"]["roster"]["sha256"])
+ck("the effective number of lineups is normalised over submitted lineups and equals the independent study's to the digit (2,145 / 3,381 / 1,616), with the null-state variant beside it; the first version's sub-normalised vector (2,153 / 3,406 / 1,624) is gone",
+   [_s7c[c]["empirical"]["effective_lineups"]["inverse_sum_p2"] for c in _s7ids] == [2145.4, 3381.2, 1616.0]
+   and [_s7c[c]["empirical"]["effective_lineups"]["with_null_state"]["inverse_sum_p2"] for c in _s7ids] == [2138.8, 3255.0, 1608.8]
+   and all("conditional on active lineups" in _s7c[c]["empirical"]["effective_lineups"]["basis"] for c in _s7ids)
+   and all("blanks" in _s7c[c]["empirical"]["share_denominator"] for c in _s7ids))
+ck("a fourth reconciliation check: every active entry's Points recomputed from DraftKings' role-specific FPTS table agrees to 0.0001 on all three contests, so the parsed lineups are the scored lineups",
+   all(_s7c[c]["reconciliation"]["points"]["reconciles"] is True and _s7c[c]["reconciliation"]["points"]["max_abs_diff_points"] < 1e-4
+       and _s7c[c]["reconciliation"]["points"]["entries_checked"] == _s7c[c]["reconciliation"]["rows"]["with_lineup"] for c in _s7ids))
+_s7fr = {c: _s7c[c]["field_rules"] for c in _s7ids}
+ck("the four recoverable owner rules remove a sixth of every real field (16.75 / 16.61 / 18.09% of active entries) and their bite is slate-dependent at the top: 60.5% of NE @ SEA's top 0.1% fails (DST-OPP and K+DST), none of DEN @ KC's, 41.5% of DET @ BUF's -- every one the tight-end rule -- reproducing the independent study exactly on two boards and within 1.3 pp on the third",
+   [_s7fr[c]["field"]["failing_any_pct_of_active"] for c in _s7ids] == [16.75, 16.61, 18.09]
+   and [_s7fr[c]["top_01pct_by_rank"]["failing_any_pct"] for c in _s7ids] == [60.53, 0.0, 41.51]
+   and [_s7fr[c]["top_1pct_by_rank"]["failing_any_pct"] for c in _s7ids] == [38.78, 4.21, 27.68]
+   and set(_s7fr["193391013"]["top_01pct_by_rank"]["by_rule"]) == {"no defense beside the opposing team's captain", "at most two kickers/defenses and two $2,000-or-under punts"}
+   and set(_s7fr["195677825"]["top_01pct_by_rank"]["by_rule"]) == {"one tight end per team"}
+   and _s7fr["195526287"]["top_01pct_by_rank"]["by_rule"] == {}
+   and [_s7fr[c]["winner_duplicate_rank"]["rank_among_unique_lineups"] for c in _s7ids] == [1121, 205, 1006])
 _s7_rep = " ".join(open(_os.path.join(_root, "research", "reports", "s7_field.md")).read().split())
+ck("the S7 report carries the three-column reconciliation with the independent study, names the one definitional difference (DST-OPP beside any non-DST captain, kickers included) and the one residual (DET @ BUF's tight-end rule) instead of voting",
+   "Reconciliation with the independent S7 study" in _s7_rep
+   and "(all / active)² = 1.0035, 1.0074, 1.0048" in _s7_rep and "the study was right" in _s7_rep
+   and "Support coverage first" in _s7_rep and "No substitutes for a missing projection" in _s7_rep
+   and "reconstruction sensitivity, not a clean historical validation" in _s7_rep
+   and "Two 5-1 observations stay separate" in _s7_rep
+   and "kickers included" in _s7_rep and "The only residual is DET @ BUF's tight-end rule" in _s7_rep
+   and "nothing was renormalised to active lineups" in _s7_rep)
 ck("the S7 report states the caveats, the three checks on three contests, the two universe holes and their difference, the DEN @ KC chalk at model rank 2, that it settles nothing about beta, and the leave-one-out cross-fit as the next step",
    "Nothing here is fitted" in _s7_rep and "injury statuses were **cleared**" in _s7_rep
    and "all three checks pass on all three contests" in _s7_rep
    and "Two different holes" in _s7_rep and "a fit must lift it" in _s7_rep
    and "is its second-ranked lineup" in _s7_rep
    and "This artifact fits nothing, so it settles nothing about beta" in _s7_rep
-   and "leave-one-out over three contests" in _s7_rep
+   and "Leave-one-contest-out is a reconstruction sensitivity" in _s7_rep
    and "never against the historical +0.047078" in _s7_rep
    and "Three observations, not targets" in _s7_rep)
 
