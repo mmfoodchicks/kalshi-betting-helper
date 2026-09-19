@@ -1,0 +1,41 @@
+{
+ "biggest_gpp_detailed": {
+  "id": 195785961,
+  "max_entries": 78431,
+  "name": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
+  "prize_pool": 1000000.0
+ },
+ "capture_stamp": "20260919T164739Z",
+ "captured_utc": "2026-09-19 16:47:50 UTC",
+ "contests_detailed": [
+  "195776843",
+  "195777100",
+  "195777101",
+  "195777102",
+  "195785958",
+  "195785959",
+  "195785960",
+  "195785961",
+  "195785962",
+  "195785963",
+  "195785966",
+  "195785969",
+  "195785977",
+  "195795708"
+ ],
+ "draft_group": 153448,
+ "files": {
+  "contests_153448.json": "dd73d7e28a366fdce5fa01eb81c84e9e6157bccdaefda4daffcb2a403e8f0c78",
+  "manifest.json": "2b4c37cb01fff201b3f0a82776bd68d03e34b5d358edbf041a15e894b3802177",
+  "players_2026_3.json": "49d6fa9e8327796eb5b70c52a1623db9c19e2512fb5f109ef53e32de2b80cbdd",
+  "proj_2026_3.json": "674fc0e45476393de39119fff737c4a48ed7ffb0e659e624db51fc70ec937930",
+  "proj_2026_3_def.json": "07b647a998b19fa45b86f58c445750c73d90027554aa12d15ef254ecbd85b5f1",
+  "proj_2026_3_k.json": "23c06d9fd5d2772daefad7482677cad2ef732416caa182165e4e5709c50ec170",
+  "slate_153448.json": "cddb5d26413544859a1cfcbf967859763260f7d668849dc07ab00ed081b55562"
+ },
+ "hours_to_lock": 31.536,
+ "lock_utc": "2026-09-21 00:20:00 UTC",
+ "note": "first prospective captures, run from the research session on 2026-09-19 after the freeze (863bd4a); a second capture nearer lock is intended if a session is open then",
+ "pre_lock": true,
+ "week": 3
+}

@@ -1,0 +1,40 @@
+{
+ "biggest_gpp_detailed": {
+  "id": 195786068,
+  "max_entries": 88235,
+  "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
+  "prize_pool": 1500000.0
+ },
+ "capture_stamp": "20260919T164739Z",
+ "captured_utc": "2026-09-19 16:47:56 UTC",
+ "contests_detailed": [
+  "195777139",
+  "195777396",
+  "195786047",
+  "195786048",
+  "195786050",
+  "195786066",
+  "195786067",
+  "195786068",
+  "195786069",
+  "195786070",
+  "195786083",
+  "195786112",
+  "195795764"
+ ],
+ "draft_group": 153449,
+ "files": {
+  "contests_153449.json": "aa0ec01bd517c0cc243ee26f290e2f526f7a654a0c14b8675b9336f39f47ac0e",
+  "manifest.json": "1a81e8afbd9c72754ac89804772c7d682332429d5ed8f21f0ae4ccd9232796f2",
+  "players_2026_3.json": "ff2d98382ce96b7cb42cc426038bdff9fa941e8b077b8a1ad074dbf19b72b5ba",
+  "proj_2026_3.json": "674fc0e45476393de39119fff737c4a48ed7ffb0e659e624db51fc70ec937930",
+  "proj_2026_3_def.json": "07b647a998b19fa45b86f58c445750c73d90027554aa12d15ef254ecbd85b5f1",
+  "proj_2026_3_k.json": "23c06d9fd5d2772daefad7482677cad2ef732416caa182165e4e5709c50ec170",
+  "slate_153449.json": "e086d36c8eed7bd2a48a97db1d7c4bfafa9d1af886e79de515d7ad5f369c69b7"
+ },
+ "hours_to_lock": 55.451,
+ "lock_utc": "2026-09-22 00:15:00 UTC",
+ "note": "first prospective captures, run from the research session on 2026-09-19 after the freeze (863bd4a); a second capture nearer lock is intended if a session is open then",
+ "pre_lock": true,
+ "week": 3
+}
