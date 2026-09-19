@@ -10,6 +10,20 @@
     "sha256": "76f0c9e125143debfe7dda162fd2cf7786261b96a4917298357c12c66b1f561f",
     "source": "dk.contests + dk.contest_detail (nfl, 151307)"
    },
+   "served_board": {
+    "built_ts": 1789316844,
+    "built_utc": "2026-09-13T16:27:24Z",
+    "bytes": 975057,
+    "file": "served_board_151307.json",
+    "lock_utc": "2026-09-13T17:00:00Z",
+    "normalization_version": 1,
+    "pre_lock": true,
+    "records": 240,
+    "retrieved_ts": 1789850047,
+    "scan_note": "research.s6_capture._scan flags two keys by name only ($.experimental.authoritative, a bool; $.simulator.params.script_pass, a model constant); neither is a credential",
+    "sha256": "7c6e3a9f03d36495ef577d86583de9d208db48bb51837f64755744f3eccf372a",
+    "source": "the app's own served classic board (/api/dfs/tourney?sport=nfl&dg=151307), pulled by .github/workflows/error-log.yml into the sim-history branch as errors/tourney-151307.json (commit 35756fc, snapshot 2026-09-13T20:47 UTC), copied byte for byte; the board's own built_ts is 2026-09-13T16:27:24 UTC, 33 minutes before the 17:00 UTC lock"
+   },
    "slate": {
     "bytes": 56835,
     "file": "slate_151307.json",
