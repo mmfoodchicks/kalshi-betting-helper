@@ -16495,7 +16495,8 @@ ck("and the capture now holds a second ladder TOPOLOGY -- at least one Double Up
            for d in blob["detail"].values())
        for blob in _caps18.values())
    and all(any(a.get("kind") == "double_up" for a in ent["contests"].get("added", []))
-           for ent in _json18.load(open(_os.path.join(_cap18, "manifest.json")))["draft_groups"].values()))
+           for dg, ent in _json18.load(open(_os.path.join(_cap18, "manifest.json")))["draft_groups"].items()
+           if dg in _caps18))     # the S6 groups; S7's post-game groups carry one contest each, by design
 
 # The field-size fallback. `max_entries or entered or 10000` would have modelled
 # a contest without maximumEntries on its CURRENT fill: 1.4% of capacity at the
@@ -17075,6 +17076,86 @@ ck("the resolution report withdraws the sentence by name, records both statistic
    and "from 0.38–0.41 to 0.67–0.70" in _res_rep
    and "No objective change: S7 comes first" in _res_rep
    and "exact match, both boards" in _res_rep)
+
+
+# ---- 2026-09-19 S7 first artifact: the field as it entered, fit-free ----------
+# The first measurement of the one guess every Showdown money number rests on,
+# on three exported contests. Pins: the raw files are frozen by hash and the
+# artifact names them; the three reconciliation checks pass on every contest;
+# the misses are the numbers the report states; nothing is fitted; the caveats
+# travel with the artifact; the universe holes carry their reasons.
+import gzip as _gz22
+import hashlib as _hl22
+_s7m = _json18.load(open(_os.path.join(_root, "research", "data", "dk_standings", "manifest.json")))
+_s7dir = _os.path.join(_root, "research", "data", "dk_standings")
+_s7ids = ("193391013", "195526287", "195677825")
+ck("the three Showdown standings exports are frozen: each committed gz hashes to the manifest's gz sha256 and decompresses to its csv sha256, with the row counts recorded (126,020 / 88,235 / 88,235); the classic Millionaire export is pinned by hash and marked not committed with the reason",
+   all(_hl22.sha256(open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
+       == _s7m["files"][f"contest-standings-{c}.csv.gz"]["gz_sha256"]
+       and _hl22.sha256(_gz22.open(_os.path.join(_s7dir, f"contest-standings-{c}.csv.gz"), "rb").read()).hexdigest()
+       == _s7m["files"][f"contest-standings-{c}.csv.gz"]["csv_sha256"]
+       and _s7m["files"][f"contest-standings-{c}.csv.gz"]["committed"] is True for c in _s7ids)
+   and [_s7m["files"][f"contest-standings-{c}.csv.gz"]["rows_excluding_header"] for c in _s7ids] == [126020, 88235, 88235]
+   and "did not fill" in _s7m["files"]["contest-standings-193391013.csv.gz"]["note"]
+   and _s7m["files"]["contest-standings-193028206.csv.gz"]["committed"] is False
+   and "clones on every deploy" in _s7m["files"]["contest-standings-193028206.csv.gz"]["why_not_committed"])
+_s7 = _json18.load(open(_os.path.join(_root, "research", "data", "s7_field.json")))
+_s7c = _s7["contests"]
+_s7s = {str(r["contest"]): r for r in _s7["summary"]}
+ck("S7 reconciles before it reports, on every contest: rows equal the capacity or, where the contest did not fill, are confirmed as the field by DraftKings' own ownership percentages; every lineup is 1 CPT + 5 FLEX resolved to the pool; ownership is reproduced within 0.01 pp; the artifact names each frozen file by hash",
+   set(_s7c) == set(_s7ids)
+   and all(_s7c[c]["reconciliation"]["all_checks_pass"] is True for c in _s7ids)
+   and _s7c["193391013"]["reconciliation"]["rows"]["overlay_entries"] == 6332
+   and [_s7c[c]["reconciliation"]["rows"]["empty_lineup_rows"] for c in _s7ids] == [220, 326, 212]
+   and all(_s7c[c]["reconciliation"]["lineups"]["unresolved_entries"] == 0 for c in _s7ids)
+   and all(_s7c[c]["reconciliation"]["ownership"]["max_abs_diff_pp"] <= 0.01 for c in _s7ids)
+   and all(_s7c[c]["standings_file"]["csv_sha256"] == _s7m["files"][f"contest-standings-{c}.csv.gz"]["csv_sha256"] for c in _s7ids))
+ck("the shape of the miss repeats on all three boards: the real chalk exceeds the 0.2% knob (0.43 / 0.36 / 1.09), the field's effective lineup count is under half the model's, the field leaves under 60% of the model's salary, plays 5-1 more often, and the model's own top two probability bands are under-played (observed/model under 0.65)",
+   [_s7s[c]["chalk_share_pct"]["real"] for c in _s7ids] == [0.426, 0.355, 1.09]
+   and all(_s7s[c]["chalk_share_pct"]["model"] == 0.2 for c in _s7ids)
+   and all(_s7s[c]["effective_lineups"]["real"] * 2 < _s7s[c]["effective_lineups"]["model"] for c in _s7ids)
+   and all(_s7s[c]["salary_left_mean"]["real"] < 0.6 * _s7s[c]["salary_left_mean"]["model"] for c in _s7ids)
+   and all(_s7s[c]["five_one_pct"]["real"] > _s7s[c]["five_one_pct"]["model"] for c in _s7ids)
+   and all(v < 0.65 for c in _s7ids for v in _s7s[c]["top_band_observed_over_model"].values()))
+ck("the universe holes carry their reasons: as served 52.5 / 8.4 / 25.7% of entries are outside; with the depth-chart gate lifted 3.3 / 1.3 / 17.4% remain (players Sleeper never projected); NE @ SEA's hole is A.J. Brown, projected and dropped by the gate on the post-game roster; DET @ BUF's is Frank Gore Jr., unprojected",
+   [_s7s[c]["outside_universe_pct"] for c in _s7ids] == [52.45, 8.38, 25.65]
+   and [_s7s[c]["outside_if_gate_lifted_pct"] for c in _s7ids] == [3.33, 1.31, 17.36]
+   and _s7c["193391013"]["observed_vs_model"]["outside_by_player"][0]["name"] == "A.J. Brown"
+   and "dropped by the depth-chart gate" in _s7c["193391013"]["observed_vs_model"]["outside_by_player"][0]["why"]
+   and _s7c["195677825"]["observed_vs_model"]["outside_by_player"][0]["name"] == "Frank Gore Jr."
+   and _s7c["195677825"]["observed_vs_model"]["outside_by_player"][0]["why"] == "no Sleeper projection")
+ck("on the one board with a pre-lock capture (DEN @ KC) the model's ordering is nearly right at the top -- the real chalk is its second-ranked lineup -- while on the two post-game-feed boards the real chalk sits near model rank 1,900; the model's most probable lineup was played under 60% of the 0.2% it asserts on every board (54%, 32%, 11% of the knob)",
+   _s7s["195526287"]["real_chalk_model_rank"] == 2
+   and _s7s["193391013"]["real_chalk_model_rank"] > 1000 and _s7s["195677825"]["real_chalk_model_rank"] > 1000
+   and all(_s7s[c]["model_chalk_observed_copies"] < 0.6 * 0.002 * _s7s[c]["entries"] for c in _s7ids)
+   and _s7s["195677825"]["model_chalk_observed_copies"] < 0.15 * 0.002 * 88235
+   and all(_s7s[c]["rank_corr_obs_vs_model"] < 0.6 for c in _s7ids))
+ck("the winners are diagnostic rows, not targets: DET @ BUF's breaks 'one tight end per team' and uses a field-only player; DEN @ KC's is an admitted 5-1 that 44 entries played; NE @ SEA's is admitted; each names its model rank and its tie count",
+   _s7c["195677825"]["winner"]["admitted_by_our_rules"] is False
+   and "one tight end per team" in _s7c["195677825"]["winner"]["rules_failed"]
+   and any("Joshua Palmer" in r for r in _s7c["195677825"]["winner"]["rules_failed"])
+   and _s7c["195526287"]["winner"]["admitted_by_our_rules"] is True and _s7c["195526287"]["winner"]["structure"] == "5-1"
+   and _s7c["195526287"]["winner"]["tied_entries_at_top"] == 44
+   and _s7c["193391013"]["winner"]["admitted_by_our_rules"] is True
+   and all(_s7c[c]["winner"]["model_rank_of_lineup"] > 1000 for c in _s7ids))
+ck("S7's first artifact fits nothing and carries its caveats: fit_free is stamped, beta is the placeholder, each contest states what was and was not captured pre-lock, the cleared injury statuses are stamped on every roster input, and the provenance is clean",
+   _s7["meta"]["fit_free"] is True and _s7["meta"]["provenance"]["dirty"] is False
+   and any("nothing here is fitted" in c for c in _s7["meta"]["caveats"])
+   and any("CLEARED" in c for c in _s7["meta"]["caveats"])
+   and "PRE-LOCK" in _s7c["195526287"]["captured"] and "post-game" in _s7c["193391013"]["captured"]
+   and all("CLEARED" in _s7c[c]["inputs"]["roster"]["injury_statuses"] for c in _s7ids)
+   and _s7c["193391013"]["inputs"]["roster"]["file"].endswith("players_2026_1_nesea.json")
+   and _s7c["195526287"]["inputs"]["roster"]["sha256"] == _mabd["meta"]["inputs"]["roster"]["sha256"])
+_s7_rep = " ".join(open(_os.path.join(_root, "research", "reports", "s7_field.md")).read().split())
+ck("the S7 report states the caveats, the three checks on three contests, the two universe holes and their difference, the DEN @ KC chalk at model rank 2, that it settles nothing about beta, and the leave-one-out cross-fit as the next step",
+   "Nothing here is fitted" in _s7_rep and "injury statuses were **cleared**" in _s7_rep
+   and "all three checks pass on all three contests" in _s7_rep
+   and "Two different holes" in _s7_rep and "a fit must lift it" in _s7_rep
+   and "is its second-ranked lineup" in _s7_rep
+   and "This artifact fits nothing, so it settles nothing about beta" in _s7_rep
+   and "leave-one-out over three contests" in _s7_rep
+   and "never against the historical +0.047078" in _s7_rep
+   and "Three observations, not targets" in _s7_rep)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

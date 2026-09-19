@@ -1,0 +1,3245 @@
+{
+ "contests": {
+  "193391013": {
+   "captured": "pool and roster captured post-game (2026-09-19); the week-1 Sleeper feeds were captured 2026-09-12, AFTER this game (2026-09-10)",
+   "contest": {
+    "draft_group_id": 151820,
+    "entry_fee": 20.0,
+    "first_prize": 1000000.0,
+    "id": 193391013,
+    "max_entries": 132352,
+    "name": "NFL Showdown $2.25M Wednesday Kickoff Millionaire [$1M to 1st, TD Throne Eligible] (NE @ SEA)",
+    "places_paid": 26495,
+    "prize_pool": 2250000.0,
+    "starts": "2026-09-10T00:20:00.0000000Z"
+   },
+   "empirical": {
+    "combined_ownership": [
+     {
+      "name": "Drake Maye",
+      "pct": 75.94
+     },
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 69.68
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 61.44
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 51.16
+     },
+     {
+      "name": "A.J. Brown",
+      "pct": 49.76
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 45.45
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 29.57
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 28.74
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 26.23
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 22.3
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 21.54
+     },
+     {
+      "name": "Seahawks",
+      "pct": 21.36
+     },
+     {
+      "name": "George Holani",
+      "pct": 17.19
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 15.75
+     },
+     {
+      "name": "Andy Borregales",
+      "pct": 12.61
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 15.75
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 15.23
+     },
+     {
+      "name": "Drake Maye",
+      "pct": 14.77
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 11.92
+     },
+     {
+      "name": "A.J. Brown",
+      "pct": 9.25
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 5.28
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 4.62
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 3.77
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 3.47
+     },
+     {
+      "name": "Seahawks",
+      "pct": 3.36
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 2.39
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 2.22
+     },
+     {
+      "name": "George Holani",
+      "pct": 2.07
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 1.89
+     },
+     {
+      "name": "Patriots",
+      "pct": 1.15
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 4.53,
+     "K": 2.7,
+     "QB": 20.1,
+     "RB": 29.62,
+     "TE": 6.28,
+     "WR": 36.77
+    },
+    "distinct_lineups": 18620,
+    "duplicates": {
+     "1-1": {
+      "entries": 8743,
+      "entry_share_pct": 6.94,
+      "lineups": 8743
+     },
+     "11-50": {
+      "entries": 44475,
+      "entry_share_pct": 35.29,
+      "lineups": 2028
+     },
+     "2-2": {
+      "entries": 5256,
+      "entry_share_pct": 4.17,
+      "lineups": 2628
+     },
+     "3-5": {
+      "entries": 11180,
+      "entry_share_pct": 8.87,
+      "lineups": 2985
+     },
+     "51-plus": {
+      "entries": 42338,
+      "entry_share_pct": 33.6,
+      "lineups": 422
+     },
+     "6-10": {
+      "entries": 13808,
+      "entry_share_pct": 10.96,
+      "lineups": 1814
+     }
+    },
+    "effective_lineups": {
+     "exp_entropy": 5579.9,
+     "inverse_sum_p2": 2152.9
+    },
+    "entries_with_resolved_lineup": 125800,
+    "flex_ownership": [
+     {
+      "name": "Drake Maye",
+      "pct": 61.17
+     },
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 53.93
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 46.22
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 45.88
+     },
+     {
+      "name": "A.J. Brown",
+      "pct": 40.52
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 33.53
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 26.52
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 26.1
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 22.46
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 19.15
+     },
+     {
+      "name": "Seahawks",
+      "pct": 18.0
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 17.68
+     },
+     {
+      "name": "George Holani",
+      "pct": 15.13
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 13.86
+     },
+     {
+      "name": "Andy Borregales",
+      "pct": 12.13
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 42.11,
+     "1": 41.75,
+     "2": 14.95,
+     "3": 0.97,
+     "4": 0.22
+    },
+    "lineup_mass_pct": {
+     "top_10": 3.03,
+     "top_100": 14.94,
+     "top_1pct_of_lineups": 21.69
+    },
+    "max_lineup_copies": 537,
+    "max_lineup_share_pct": 0.426,
+    "salary_left": {
+     "mean": 1287.9,
+     "median": 600.0,
+     "p10_p25_p75_p90": [
+      0.0,
+      200.0,
+      1600.0,
+      3400.0
+     ],
+     "share_at_zero_pct": 13.84,
+     "share_ge_1000_pct": 39.3
+    },
+    "share_from_150_max_users_pct": 23.33,
+    "structure_pct": {
+     "3-3": 38.73,
+     "4-2": 47.74,
+     "5-1": 13.53
+    },
+    "top_lineups": [
+     {
+      "copies": 537,
+      "cpt": "Jadarian Price",
+      "flex": [
+       "Drake Maye",
+       "Hunter Henry",
+       "Jason Myers",
+       "Jaxon Smith-Njigba",
+       "Rhamondre Stevenson"
+      ],
+      "share_pct": 0.426,
+      "structure": "3-3"
+     },
+     {
+      "copies": 504,
+      "cpt": "Rhamondre Stevenson",
+      "flex": [
+       "DeMario Douglas",
+       "Drake Maye",
+       "George Holani",
+       "Jaxon Smith-Njigba",
+       "Sam Darnold"
+      ],
+      "share_pct": 0.4,
+      "structure": "3-3"
+     },
+     {
+      "copies": 427,
+      "cpt": "Rhamondre Stevenson",
+      "flex": [
+       "A.J. Brown",
+       "DeMario Douglas",
+       "Drake Maye",
+       "George Holani",
+       "Jaxon Smith-Njigba"
+      ],
+      "share_pct": 0.339,
+      "structure": "4-2"
+     },
+     {
+      "copies": 392,
+      "cpt": "Rhamondre Stevenson",
+      "flex": [
+       "AJ Barner",
+       "Drake Maye",
+       "Hunter Henry",
+       "Jadarian Price",
+       "Jaxon Smith-Njigba"
+      ],
+      "share_pct": 0.311,
+      "structure": "3-3"
+     },
+     {
+      "copies": 353,
+      "cpt": "Jadarian Price",
+      "flex": [
+       "Drake Maye",
+       "Hunter Henry",
+       "Jaxon Smith-Njigba",
+       "Sam Darnold",
+       "Seahawks"
+      ],
+      "share_pct": 0.28,
+      "structure": "4-2"
+     }
+    ],
+    "user_max_entry_brackets": {
+     "1": {
+      "entries": 29034,
+      "share_pct": 23.04
+     },
+     "10": {
+      "entries": 2550,
+      "share_pct": 2.02
+     },
+     "150": {
+      "entries": 29400,
+      "share_pct": 23.33
+     },
+     "2": {
+      "entries": 12298,
+      "share_pct": 9.76
+     },
+     "3": {
+      "entries": 7239,
+      "share_pct": 5.74
+     },
+     "4": {
+      "entries": 4336,
+      "share_pct": 3.44
+     },
+     "5": {
+      "entries": 5420,
+      "share_pct": 4.3
+     },
+     "6": {
+      "entries": 3048,
+      "share_pct": 2.42
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 1427,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 151820)",
+       "file": "contests_151820.json",
+       "records": 1,
+       "retrieved_ts": 1789819807,
+       "sha256": "58d9a7425125daaed9c609e02446194d66df078bdbd1a40b9fe4ca3888f1930b"
+      },
+      "slate": {
+       "bytes": 11585,
+       "endpoint": "dk.slate_for(nfl, 151820)",
+       "file": "slate_151820.json",
+       "records": 68,
+       "retrieved_ts": 1789819807,
+       "sha256": "395998273ae0bc5de82c2dc0d5856f0298205597c40ae4e2c18cc6b76ad04676"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    },
+    "roster": {
+     "captured_utc": "2026-09-19 12:10:08 UTC",
+     "file": "research/data/feeds/players_2026_1_nesea.json",
+     "injury_statuses": "CLEARED for the lock-time reconstruction: every roster capture here is post-game and the exports show players the post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; Marvin Mims Jr. in DEN @ KC)",
+     "records": 69,
+     "sha256": "ee7486cf388947f9a200bbfabe2674784c67b4b786e73900f668a1db7b669e9c",
+     "teams": [
+      "NE",
+      "SEA"
+     ]
+    }
+   },
+   "label": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "model": {
+    "beta": 0.2913,
+    "combined_ownership": [
+     {
+      "name": "Drake Maye",
+      "pct": 81.91
+     },
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 80.45
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 64.28
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 63.85
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 30.81
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 30.76
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 29.65
+     },
+     {
+      "name": "Seahawks",
+      "pct": 28.83
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 21.2
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 21.09
+     },
+     {
+      "name": "DeMario Douglas",
+      "pct": 19.76
+     },
+     {
+      "name": "Patriots",
+      "pct": 19.66
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 19.63
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 14.98
+     },
+     {
+      "name": "Eli Raridon",
+      "pct": 14.32
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Drake Maye",
+      "pct": 24.32
+     },
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 21.02
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 14.3
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 13.74
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 3.53
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 3.32
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 3.22
+     },
+     {
+      "name": "Seahawks",
+      "pct": 2.87
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 2.25
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 2.15
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 1.7
+     },
+     {
+      "name": "Patriots",
+      "pct": 1.4
+     },
+     {
+      "name": "DeMario Douglas",
+      "pct": 1.36
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 1.15
+     },
+     {
+      "name": "Andy Borregales",
+      "pct": 0.87
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 4.27,
+     "K": 2.02,
+     "QB": 38.06,
+     "RB": 17.86,
+     "TE": 7.66,
+     "WR": 30.13
+    },
+    "effective_lineups": {
+     "exp_entropy": 14139.0,
+     "inverse_sum_p2": 4900.3
+    },
+    "enterable_under_our_rules": 15938,
+    "expected_duplicates": {
+     "1-1": {
+      "entries": 12739.2,
+      "entry_share_pct": 10.11,
+      "lineups": 12739.2
+     },
+     "11-50": {
+      "entries": 51657.9,
+      "entry_share_pct": 40.99,
+      "lineups": 2555.1
+     },
+     "2-2": {
+      "entries": 8265.4,
+      "entry_share_pct": 6.56,
+      "lineups": 4132.7
+     },
+     "3-5": {
+      "entries": 16693.0,
+      "entry_share_pct": 13.25,
+      "lineups": 4468.2
+     },
+     "51-plus": {
+      "entries": 17894.6,
+      "entry_share_pct": 14.2,
+      "lineups": 213.1
+     },
+     "6-10": {
+      "entries": 18770.0,
+      "entry_share_pct": 14.89,
+      "lineups": 2470.9
+     }
+    },
+    "field_only_players": [
+     "Emanuel Wilson"
+    ],
+    "flex_ownership": [
+     {
+      "name": "Jaxon Smith-Njigba",
+      "pct": 59.43
+     },
+     {
+      "name": "Drake Maye",
+      "pct": 57.59
+     },
+     {
+      "name": "Sam Darnold",
+      "pct": 50.1
+     },
+     {
+      "name": "Rhamondre Stevenson",
+      "pct": 49.98
+     },
+     {
+      "name": "AJ Barner",
+      "pct": 27.54
+     },
+     {
+      "name": "Hunter Henry",
+      "pct": 27.49
+     },
+     {
+      "name": "Romeo Doubs",
+      "pct": 26.11
+     },
+     {
+      "name": "Seahawks",
+      "pct": 25.96
+     },
+     {
+      "name": "Jadarian Price",
+      "pct": 18.95
+     },
+     {
+      "name": "Rashid Shaheed",
+      "pct": 18.94
+     },
+     {
+      "name": "DeMario Douglas",
+      "pct": 18.4
+     },
+     {
+      "name": "Patriots",
+      "pct": 18.26
+     },
+     {
+      "name": "Cooper Kupp",
+      "pct": 17.92
+     },
+     {
+      "name": "Jason Myers",
+      "pct": 13.83
+     },
+     {
+      "name": "Eli Raridon",
+      "pct": 13.68
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 38.4,
+     "1": 47.44,
+     "2": 13.26,
+     "3": 0.88,
+     "4": 0.01
+    },
+    "lineup_mass_pct": {
+     "top_10": 1.7,
+     "top_100": 8.83,
+     "top_1pct_of_lineups": 57.21
+    },
+    "max_lineup_share_pct": 0.2,
+    "players_in_universe": 21,
+    "salary_left": {
+     "mean": 3220.5,
+     "median": 2500.0,
+     "p10_p25_p75_p90": [
+      400.0,
+      1100.0,
+      4600.0,
+      7000.0
+     ],
+     "share_at_zero_pct": 2.18,
+     "share_ge_1000_pct": 77.95
+    },
+    "structure_pct": {
+     "3-3": 41.33,
+     "4-2": 49.75,
+     "5-1": 8.92
+    },
+    "top_share_setting": 0.002,
+    "universe_lineups": 319933,
+    "universe_players": [
+     "Jason Myers",
+     "Andy Borregales",
+     "Seahawks",
+     "Patriots",
+     "Jaxon Smith-Njigba",
+     "Rashid Shaheed",
+     "Cooper Kupp",
+     "Drake Maye",
+     "Sam Darnold",
+     "Rhamondre Stevenson",
+     "Corey Kiner",
+     "Jadarian Price",
+     "George Holani",
+     "Romeo Doubs",
+     "Mack Hollins",
+     "DeMario Douglas",
+     "Hunter Henry",
+     "Eli Raridon",
+     "AJ Barner",
+     "Elijah Arroyo",
+     "Emanuel Wilson"
+    ]
+   },
+   "observed_vs_model": {
+    "bins": [
+     {
+      "log10_p_from": -9,
+      "log10_p_to": -8,
+      "model_entry_share_pct": 0.03,
+      "observed_distinct_lineups": 39,
+      "observed_entry_share_pct": 0.032,
+      "observed_over_model": 1.074,
+      "universe_lineups": 72104
+     },
+     {
+      "log10_p_from": -8,
+      "log10_p_to": -7,
+      "model_entry_share_pct": 0.3,
+      "observed_distinct_lineups": 157,
+      "observed_entry_share_pct": 0.182,
+      "observed_over_model": 0.606,
+      "universe_lineups": 79551
+     },
+     {
+      "log10_p_from": -7,
+      "log10_p_to": -6,
+      "model_entry_share_pct": 2.131,
+      "observed_distinct_lineups": 485,
+      "observed_entry_share_pct": 0.494,
+      "observed_over_model": 0.232,
+      "universe_lineups": 58428
+     },
+     {
+      "log10_p_from": -6,
+      "log10_p_to": -5,
+      "model_entry_share_pct": 11.056,
+      "observed_distinct_lineups": 2042,
+      "observed_entry_share_pct": 3.063,
+      "observed_over_model": 0.277,
+      "universe_lineups": 33053
+     },
+     {
+      "log10_p_from": -5,
+      "log10_p_to": -4,
+      "model_entry_share_pct": 38.179,
+      "observed_distinct_lineups": 4048,
+      "observed_entry_share_pct": 17.456,
+      "observed_over_model": 0.457,
+      "universe_lineups": 11875
+     },
+     {
+      "log10_p_from": -4,
+      "log10_p_to": -3,
+      "model_entry_share_pct": 44.525,
+      "observed_distinct_lineups": 1746,
+      "observed_entry_share_pct": 24.338,
+      "observed_over_model": 0.547,
+      "universe_lineups": 2112
+     },
+     {
+      "log10_p_from": -3,
+      "log10_p_to": -2,
+      "model_entry_share_pct": 3.777,
+      "observed_distinct_lineups": 27,
+      "observed_entry_share_pct": 1.805,
+      "observed_over_model": 0.478,
+      "universe_lineups": 27
+     }
+    ],
+    "chalk": {
+     "model_most_probable_lineup": {
+      "cpt": "Drake Maye",
+      "flex": [
+       "Eli Raridon",
+       "Hunter Henry",
+       "Jaxon Smith-Njigba",
+       "Rhamondre Stevenson",
+       "Sam Darnold"
+      ],
+      "model_prob_pct": 0.2,
+      "observed_copies": 136
+     },
+     "most_duplicated_real_lineup": {
+      "admitted_by_our_rules": false,
+      "copies": 537,
+      "cpt": "Jadarian Price",
+      "flex": [
+       "Drake Maye",
+       "Hunter Henry",
+       "Jason Myers",
+       "Jaxon Smith-Njigba",
+       "Rhamondre Stevenson"
+      ],
+      "model_prob_pct": 0.0114,
+      "model_rank": 1823,
+      "rules_failed": []
+     }
+    },
+    "entries_inside_universe": 59699,
+    "entries_outside_universe": 66101,
+    "observed_lineups_matched": 8547,
+    "outside_by_player": [
+     {
+      "entries": 62711,
+      "name": "A.J. Brown",
+      "share_pct": 49.76,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 3242,
+      "name": "Kyle Williams",
+      "share_pct": 2.57,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 1664,
+      "name": "Montorie Foster Jr.",
+      "share_pct": 1.32,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 984,
+      "name": "Eric Saubert",
+      "share_pct": 0.78,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 975,
+      "name": "Lan Larison",
+      "share_pct": 0.77,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 405,
+      "name": "Reggie Gilliam",
+      "share_pct": 0.32,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 171,
+      "name": "Tanner Arkin",
+      "share_pct": 0.14,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 171,
+      "name": "TreVeyon Henderson",
+      "share_pct": 0.14,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 166,
+      "name": "Brady Russell",
+      "share_pct": 0.13,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 163,
+      "name": "Cameron Latu",
+      "share_pct": 0.13,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 162,
+      "name": "Tory Horton",
+      "share_pct": 0.13,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 154,
+      "name": "Velus Jones Jr.",
+      "share_pct": 0.12,
+      "why": "no Sleeper projection"
+     }
+    ],
+    "outside_by_reason_note": "share of entries containing such a player; an entry with two outside players counts under both reasons",
+    "outside_by_reason_pct": {
+     "no Sleeper projection": 3.39,
+     "projected under another team (HOU)": 0.03,
+     "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras": 53.44
+    },
+    "outside_if_gate_lifted_pct": 3.33,
+    "outside_share_pct": 52.45,
+    "rank_correlation_observed_vs_model_over_observed_lineups": 0.533
+   },
+   "pool_players_without_projection": [
+    "A.J. Brown",
+    "Behren Morton",
+    "Brady Russell",
+    "CJ Dippre",
+    "Cameron Dorner",
+    "Cameron Latu",
+    "Cody White",
+    "Drew Lock",
+    "Efton Chism III",
+    "Emmanuel Henderson Jr.",
+    "Eric Saubert",
+    "Hassan Haskins",
+    "Irvin Charles",
+    "Jacardia Wright",
+    "Jack Westover",
+    "Jake Bobo",
+    "Jalen Milroe",
+    "Jam Miller",
+    "Jeremiah Webb",
+    "Jimmy Kibble",
+    "Julian Hicks",
+    "Julian Hill",
+    "Kayshon Boutte",
+    "Kobe Prentice",
+    "Kyle Dixon",
+    "Kyle Williams",
+    "Lan Larison",
+    "Lance Mason",
+    "Mitch Van Vooren",
+    "Montorie Foster Jr.",
+    "Myles Montgomery",
+    "Nick DeGennaro",
+    "Nick Kallerup",
+    "Nick Vannett",
+    "Rashad Rochelle",
+    "Reggie Gilliam",
+    "Ricky White III",
+    "Robbie Ouzts",
+    "Shane Zylstra",
+    "Tanner Arkin",
+    "Tejhaun Palmer",
+    "Terrell Jennings",
+    "Tommy DeVito",
+    "Tory Horton",
+    "TreVeyon Henderson",
+    "Velus Jones Jr.",
+    "Zach Charbonnet"
+   ],
+   "reconciliation": {
+    "all_checks_pass": true,
+    "lineups": {
+     "note": "every entry with a lineup has exactly 1 CPT and 5 FLEX (parse_lineup raises otherwise) and every name resolves to one DraftKings pool player",
+     "pool_size": 68,
+     "resolved_to_pool": 125800,
+     "unresolved_entries": 0,
+     "unresolved_names": {}
+    },
+    "ownership": {
+     "denominator": "all entries, including empty ones",
+     "dk_rows": 99,
+     "max_abs_diff_pp": 0.005,
+     "note": "DraftKings' %Drafted per CPT and FLEX slot recomputed from the raw lineups; rounding is 0.01 pp",
+     "reconciles_within_rounding": true,
+     "worst": {
+      "diff_pp": -0.005,
+      "dk_pct": 9.25,
+      "name": "A.J. Brown",
+      "ours_pct": 9.25,
+      "slot": "CPT"
+     }
+    },
+    "rows": {
+     "capacity": 132352,
+     "distinct_entry_ids": 126020,
+     "empty_lineup_rows": 220,
+     "field_size_used": 126020,
+     "ids_unique": true,
+     "malformed_lineup_rows": 0,
+     "note": "an empty lineup is an entry that never set one (points 0, rank last); counted, not dropped",
+     "note_capacity": "126,020 entries against a capacity of 132,352: the contest did not fill; the ownership recomputation over 126,020 rows reproduces DraftKings' percentages, so the rows are the field",
+     "overlay_entries": 6332,
+     "parsed": 126020,
+     "reconciles": true,
+     "with_lineup": 125800
+    }
+   },
+   "standings_file": {
+    "csv_mtime_in_zip": "2026-09-11 00:56 UTC",
+    "csv_sha256": "4720e263f30326adc0e283eff5796ce86171750db82e03ed216a32dbafd4a147",
+    "file": "contest-standings-193391013.csv.gz",
+    "gz_sha256": "d8f11b5217505e8cc2a4d4587d4e49e1f37fa9da7f61c45329e9334519374aa4",
+    "note": "126,020 rows against a capacity of 132,352: the contest did not fill (overlay of 6,332 entries); the export holds the entries that exist",
+    "rows_excluding_header": 126020
+   },
+   "week": 1,
+   "winner": {
+    "admitted_by_our_rules": true,
+    "cpt": "Jaxon Smith-Njigba",
+    "exact_lineup_copies": 23,
+    "exact_lineup_share_pct": 0.018,
+    "flex": [
+     "Drake Maye",
+     "Rhamondre Stevenson",
+     "Jadarian Price",
+     "Seahawks",
+     "Mack Hollins"
+    ],
+    "in_model_universe": true,
+    "k_dst_slots": 1,
+    "model_prob_pct": 0.01497,
+    "model_rank_of_lineup": 1239,
+    "points": 101.020004,
+    "projected_points": 87.85,
+    "projection_rank_in_universe": 1239,
+    "rules_failed": [],
+    "salary_left": 500,
+    "structure": "3-3",
+    "tied_entries_at_top": 23
+   }
+  },
+  "195526287": {
+   "captured": "pool, contest and week-1 feeds captured PRE-LOCK by S6 on 2026-09-12 (the game was 2026-09-14); roster captured 2026-09-18, post-game",
+   "contest": {
+    "draft_group_id": 153086,
+    "entry_fee": 20.0,
+    "first_prize": 500000.0,
+    "id": 195526287,
+    "max_entries": 88235,
+    "name": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (DEN @ KC)",
+    "places_paid": 19130,
+    "prize_pool": 1500000.0,
+    "starts": "2026-09-15T00:15:00.0000000Z"
+   },
+   "empirical": {
+    "combined_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 76.26
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 63.22
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 58.84
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 47.86
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 43.81
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 35.3
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 31.04
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 28.9
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 27.54
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 22.02
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 21.83
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 20.84
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 20.5
+     },
+     {
+      "name": "Broncos",
+      "pct": 20.04
+     },
+     {
+      "name": "Evan Engram",
+      "pct": 18.44
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 16.54
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 14.49
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 11.02
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 10.51
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 9.1
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 5.99
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 5.69
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 5.02
+     },
+     {
+      "name": "Broncos",
+      "pct": 3.39
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 3.34
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 3.3
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 2.09
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 1.61
+     },
+     {
+      "name": "Evan Engram",
+      "pct": 1.4
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 1.17
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 4.53,
+     "K": 2.79,
+     "QB": 27.77,
+     "RB": 24.2,
+     "TE": 7.71,
+     "WR": 32.99
+    },
+    "distinct_lineups": 18539,
+    "duplicates": {
+     "1-1": {
+      "entries": 8798,
+      "entry_share_pct": 9.97,
+      "lineups": 8798
+     },
+     "11-50": {
+      "entries": 35339,
+      "entry_share_pct": 40.05,
+      "lineups": 1734
+     },
+     "2-2": {
+      "entries": 5710,
+      "entry_share_pct": 6.47,
+      "lineups": 2855
+     },
+     "3-5": {
+      "entries": 12143,
+      "entry_share_pct": 13.76,
+      "lineups": 3233
+     },
+     "51-plus": {
+      "entries": 12517,
+      "entry_share_pct": 14.19,
+      "lineups": 155
+     },
+     "6-10": {
+      "entries": 13402,
+      "entry_share_pct": 15.19,
+      "lineups": 1764
+     }
+    },
+    "effective_lineups": {
+     "exp_entropy": 7514.1,
+     "inverse_sum_p2": 3406.4
+    },
+    "entries_with_resolved_lineup": 87909,
+    "flex_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 59.72
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 52.19
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 44.35
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 37.36
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 34.71
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 29.31
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 25.93
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 25.34
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 23.88
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 20.66
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 18.74
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 18.72
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 17.16
+     },
+     {
+      "name": "Evan Engram",
+      "pct": 17.05
+     },
+     {
+      "name": "Broncos",
+      "pct": 16.64
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 40.07,
+     "1": 40.58,
+     "2": 17.07,
+     "3": 1.97,
+     "4": 0.31
+    },
+    "lineup_mass_pct": {
+     "top_10": 2.18,
+     "top_100": 10.72,
+     "top_1pct_of_lineups": 15.83
+    },
+    "max_lineup_copies": 313,
+    "max_lineup_share_pct": 0.355,
+    "salary_left": {
+     "mean": 1072.2,
+     "median": 600.0,
+     "p10_p25_p75_p90": [
+      100.0,
+      200.0,
+      1400.0,
+      2600.0
+     ],
+     "share_at_zero_pct": 6.69,
+     "share_ge_1000_pct": 35.92
+    },
+    "share_from_150_max_users_pct": 26.52,
+    "structure_pct": {
+     "3-3": 38.22,
+     "4-2": 46.81,
+     "5-1": 14.96
+    },
+    "top_lineups": [
+     {
+      "copies": 313,
+      "cpt": "Bo Nix",
+      "flex": [
+       "J.K. Dobbins",
+       "Jaylen Waddle",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "share_pct": 0.355,
+      "structure": "4-2"
+     },
+     {
+      "copies": 311,
+      "cpt": "Patrick Mahomes",
+      "flex": [
+       "Bo Nix",
+       "Harrison Butker",
+       "Kenneth Walker III",
+       "Pat Bryant",
+       "Travis Kelce"
+      ],
+      "share_pct": 0.352,
+      "structure": "4-2"
+     },
+     {
+      "copies": 196,
+      "cpt": "Kenneth Walker III",
+      "flex": [
+       "Bo Nix",
+       "Harrison Butker",
+       "J.K. Dobbins",
+       "Pat Bryant",
+       "Patrick Mahomes"
+      ],
+      "share_pct": 0.222,
+      "structure": "3-3"
+     },
+     {
+      "copies": 168,
+      "cpt": "Evan Engram",
+      "flex": [
+       "Bo Nix",
+       "Jaylen Waddle",
+       "Patrick Mahomes",
+       "Rashee Rice",
+       "Travis Kelce"
+      ],
+      "share_pct": 0.19,
+      "structure": "3-3"
+     },
+     {
+      "copies": 168,
+      "cpt": "Pat Bryant",
+      "flex": [
+       "Bo Nix",
+       "J.K. Dobbins",
+       "Jaylen Waddle",
+       "Kenneth Walker III",
+       "Rashee Rice"
+      ],
+      "share_pct": 0.19,
+      "structure": "4-2"
+     }
+    ],
+    "user_max_entry_brackets": {
+     "1": {
+      "entries": 17451,
+      "share_pct": 19.78
+     },
+     "10": {
+      "entries": 1770,
+      "share_pct": 2.01
+     },
+     "150": {
+      "entries": 23400,
+      "share_pct": 26.52
+     },
+     "2": {
+      "entries": 7558,
+      "share_pct": 8.57
+     },
+     "3": {
+      "entries": 5106,
+      "share_pct": 5.79
+     },
+     "4": {
+      "entries": 3680,
+      "share_pct": 4.17
+     },
+     "5": {
+      "entries": 3830,
+      "share_pct": 4.34
+     },
+     "6": {
+      "entries": 1938,
+      "share_pct": 2.2
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 188567,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 153086)",
+       "file": "contests_153086.json",
+       "records": 14,
+       "retrieved_ts": 1789252112,
+       "sha256": "4417d655b72fe2c3df1f8c4c349406bb21dc33d940d758de8eb9aaaa3f350d10"
+      },
+      "slate": {
+       "bytes": 11832,
+       "endpoint": "dk.slate_for(nfl, 153086)",
+       "file": "slate_153086.json",
+       "records": 55,
+       "retrieved_ts": 1789252093,
+       "sha256": "16fcb742cecedff6ebf12fe182d7e4bbd65001ab9c5f994af5011c1941d5bdb4"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    },
+    "roster": {
+     "captured_utc": "2026-09-18 22:41:13 UTC",
+     "file": "research/data/feeds/players_2026_1.json",
+     "injury_statuses": "CLEARED for the lock-time reconstruction: every roster capture here is post-game and the exports show players the post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; Marvin Mims Jr. in DEN @ KC)",
+     "records": 104,
+     "sha256": "b8095d57e0acd93f0afbe63bd791fc1660a382471a1ce6135180b23a4a705b29",
+     "teams": [
+      "DAL",
+      "DEN",
+      "KC",
+      "NYG"
+     ]
+    }
+   },
+   "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "model": {
+    "beta": 0.4548,
+    "combined_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 85.64
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 66.65
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 49.96
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 41.74
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 40.01
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 38.08
+     },
+     {
+      "name": "Chiefs",
+      "pct": 37.99
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 31.64
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 27.1
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 25.68
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 23.04
+     },
+     {
+      "name": "Broncos",
+      "pct": 21.01
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 18.93
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 15.02
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 12.35
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 30.29
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 15.96
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 9.25
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 6.72
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 6.11
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 5.8
+     },
+     {
+      "name": "Chiefs",
+      "pct": 4.91
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 3.38
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 3.25
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 3.04
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 2.62
+     },
+     {
+      "name": "Broncos",
+      "pct": 2.01
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 1.89
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 1.18
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 0.93
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 6.92,
+     "K": 2.11,
+     "QB": 39.54,
+     "RB": 15.01,
+     "TE": 4.16,
+     "WR": 32.25
+    },
+    "effective_lineups": {
+     "exp_entropy": 23190.2,
+     "inverse_sum_p2": 7451.4
+    },
+    "enterable_under_our_rules": 23820,
+    "expected_duplicates": {
+     "1-1": {
+      "entries": 15839.6,
+      "entry_share_pct": 17.95,
+      "lineups": 15839.6
+     },
+     "11-50": {
+      "entries": 25346.7,
+      "entry_share_pct": 28.73,
+      "lineups": 1343.9
+     },
+     "2-2": {
+      "entries": 9840.9,
+      "entry_share_pct": 11.15,
+      "lineups": 4920.5
+     },
+     "3-5": {
+      "entries": 17747.1,
+      "entry_share_pct": 20.11,
+      "lineups": 4806.7
+     },
+     "51-plus": {
+      "entries": 4310.2,
+      "entry_share_pct": 4.88,
+      "lineups": 61.6
+     },
+     "6-10": {
+      "entries": 15150.5,
+      "entry_share_pct": 17.17,
+      "lineups": 2027.0
+     }
+    },
+    "field_only_players": [
+     "Marvin Mims Jr.",
+     "Troy Franklin",
+     "Jonah Coleman",
+     "Lil'Jordan Humphrey"
+    ],
+    "flex_ownership": [
+     {
+      "name": "Bo Nix",
+      "pct": 55.35
+     },
+     {
+      "name": "Jaylen Waddle",
+      "pct": 50.68
+     },
+     {
+      "name": "Patrick Mahomes",
+      "pct": 40.71
+     },
+     {
+      "name": "Rashee Rice",
+      "pct": 35.02
+     },
+     {
+      "name": "Kenneth Walker III",
+      "pct": 33.9
+     },
+     {
+      "name": "Chiefs",
+      "pct": 33.08
+     },
+     {
+      "name": "J.K. Dobbins",
+      "pct": 32.28
+     },
+     {
+      "name": "Pat Bryant",
+      "pct": 28.6
+     },
+     {
+      "name": "Travis Kelce",
+      "pct": 23.85
+     },
+     {
+      "name": "Courtland Sutton",
+      "pct": 22.29
+     },
+     {
+      "name": "RJ Harvey",
+      "pct": 20.42
+     },
+     {
+      "name": "Broncos",
+      "pct": 19.0
+     },
+     {
+      "name": "Xavier Worthy",
+      "pct": 17.04
+     },
+     {
+      "name": "Harrison Butker",
+      "pct": 13.84
+     },
+     {
+      "name": "Wil Lutz",
+      "pct": 11.42
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 32.59,
+     "1": 49.69,
+     "2": 16.48,
+     "3": 1.23,
+     "4": 0.01
+    },
+    "lineup_mass_pct": {
+     "top_10": 1.23,
+     "top_100": 6.75,
+     "top_1pct_of_lineups": 65.22
+    },
+    "max_lineup_share_pct": 0.2,
+    "players_in_universe": 24,
+    "salary_left": {
+     "mean": 2377.2,
+     "median": 1800.0,
+     "p10_p25_p75_p90": [
+      300.0,
+      700.0,
+      3400.0,
+      5300.0
+     ],
+     "share_at_zero_pct": 1.84,
+     "share_ge_1000_pct": 68.74
+    },
+    "structure_pct": {
+     "3-3": 36.3,
+     "4-2": 50.04,
+     "5-1": 13.66
+    },
+    "top_share_setting": 0.002,
+    "universe_lineups": 777056,
+    "universe_players": [
+     "Wil Lutz",
+     "Harrison Butker",
+     "Broncos",
+     "Chiefs",
+     "Kenneth Walker III",
+     "Emmett Johnson",
+     "Bo Nix",
+     "Patrick Mahomes",
+     "Rashee Rice",
+     "Xavier Worthy",
+     "Tyquan Thornton",
+     "Courtland Sutton",
+     "Jaylen Waddle",
+     "Pat Bryant",
+     "J.K. Dobbins",
+     "RJ Harvey",
+     "Travis Kelce",
+     "Noah Gray",
+     "Evan Engram",
+     "Adam Trautman",
+     "Marvin Mims Jr.",
+     "Troy Franklin",
+     "Jonah Coleman",
+     "Lil'Jordan Humphrey"
+    ]
+   },
+   "observed_vs_model": {
+    "bins": [
+     {
+      "log10_p_from": -9,
+      "log10_p_to": -8,
+      "model_entry_share_pct": 0.057,
+      "observed_distinct_lineups": 51,
+      "observed_entry_share_pct": 0.059,
+      "observed_over_model": 1.037,
+      "universe_lineups": 146743
+     },
+     {
+      "log10_p_from": -8,
+      "log10_p_to": -7,
+      "model_entry_share_pct": 0.46,
+      "observed_distinct_lineups": 202,
+      "observed_entry_share_pct": 0.287,
+      "observed_over_model": 0.623,
+      "universe_lineups": 123541
+     },
+     {
+      "log10_p_from": -7,
+      "log10_p_to": -6,
+      "model_entry_share_pct": 2.972,
+      "observed_distinct_lineups": 962,
+      "observed_entry_share_pct": 1.443,
+      "observed_over_model": 0.486,
+      "universe_lineups": 83653
+     },
+     {
+      "log10_p_from": -6,
+      "log10_p_to": -5,
+      "model_entry_share_pct": 15.652,
+      "observed_distinct_lineups": 5585,
+      "observed_entry_share_pct": 17.872,
+      "observed_over_model": 1.142,
+      "universe_lineups": 46349
+     },
+     {
+      "log10_p_from": -5,
+      "log10_p_to": -4,
+      "model_entry_share_pct": 46.049,
+      "observed_distinct_lineups": 7203,
+      "observed_entry_share_pct": 50.616,
+      "observed_over_model": 1.099,
+      "universe_lineups": 15694
+     },
+     {
+      "log10_p_from": -4,
+      "log10_p_to": -3,
+      "model_entry_share_pct": 33.663,
+      "observed_distinct_lineups": 1261,
+      "observed_entry_share_pct": 20.433,
+      "observed_over_model": 0.607,
+      "universe_lineups": 1619
+     },
+     {
+      "log10_p_from": -3,
+      "log10_p_to": -2,
+      "model_entry_share_pct": 1.141,
+      "observed_distinct_lineups": 9,
+      "observed_entry_share_pct": 0.524,
+      "observed_over_model": 0.459,
+      "universe_lineups": 9
+     }
+    ],
+    "chalk": {
+     "model_most_probable_lineup": {
+      "cpt": "Jaylen Waddle",
+      "flex": [
+       "Bo Nix",
+       "Chiefs",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Rashee Rice"
+      ],
+      "model_prob_pct": 0.2,
+      "observed_copies": 56
+     },
+     "most_duplicated_real_lineup": {
+      "admitted_by_our_rules": true,
+      "copies": 313,
+      "cpt": "Bo Nix",
+      "flex": [
+       "J.K. Dobbins",
+       "Jaylen Waddle",
+       "Pat Bryant",
+       "Patrick Mahomes",
+       "Travis Kelce"
+      ],
+      "model_prob_pct": 0.1593,
+      "model_rank": 2,
+      "rules_failed": []
+     }
+    },
+    "entries_inside_universe": 80519,
+    "entries_outside_universe": 7390,
+    "observed_lineups_matched": 15293,
+    "outside_by_player": [
+     {
+      "entries": 2947,
+      "name": "Cyrus Allen",
+      "share_pct": 3.34,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 1981,
+      "name": "Brashard Smith",
+      "share_pct": 2.25,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 972,
+      "name": "Nate Adkins",
+      "share_pct": 1.1,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 431,
+      "name": "Justin Fields",
+      "share_pct": 0.49,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 297,
+      "name": "Jalen Royals",
+      "share_pct": 0.34,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 284,
+      "name": "Jake Briningstool",
+      "share_pct": 0.32,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 268,
+      "name": "Adam Prentice",
+      "share_pct": 0.3,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 93,
+      "name": "Nikko Remigio",
+      "share_pct": 0.11,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 67,
+      "name": "Jarrett Stidham",
+      "share_pct": 0.08,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 29,
+      "name": "Jared Wiley",
+      "share_pct": 0.03,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 21,
+      "name": "Tyler Badie",
+      "share_pct": 0.02,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 18,
+      "name": "Ben VanSumeren",
+      "share_pct": 0.02,
+      "why": "no Sleeper projection"
+     }
+    ],
+    "outside_by_reason_note": "share of entries containing such a player; an entry with two outside players counts under both reasons",
+    "outside_by_reason_pct": {
+     "no Sleeper projection": 1.33,
+     "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras": 7.15
+    },
+    "outside_if_gate_lifted_pct": 1.31,
+    "outside_share_pct": 8.38,
+    "rank_correlation_observed_vs_model_over_observed_lineups": 0.415
+   },
+   "pool_players_without_projection": [
+    "Adam Prentice",
+    "Andrew Armstrong",
+    "Ben VanSumeren",
+    "Brashard Smith",
+    "Caleb Lohner",
+    "Cody Schrader",
+    "Cyrus Allen",
+    "Dallen Bentley",
+    "Dane Key",
+    "Garrett Nussmeier",
+    "Jake Briningstool",
+    "Jalen Royals",
+    "James Winchester",
+    "Jared Wiley",
+    "Jarrett Stidham",
+    "Jaydn Ott",
+    "Jeff Caldwell",
+    "Jimmy Holiday",
+    "John Michael Gyllenborg",
+    "Justin Fields",
+    "Kolbe Katsis",
+    "Lucas Krull",
+    "Michael Bandy",
+    "Mitchell Fraboni",
+    "Nate Adkins",
+    "Nate Carter",
+    "Nikko Remigio",
+    "Omari Evans",
+    "Sam Ehlinger",
+    "Thomas Odukoya",
+    "Tyler Badie"
+   ],
+   "reconciliation": {
+    "all_checks_pass": true,
+    "lineups": {
+     "note": "every entry with a lineup has exactly 1 CPT and 5 FLEX (parse_lineup raises otherwise) and every name resolves to one DraftKings pool player",
+     "pool_size": 55,
+     "resolved_to_pool": 87909,
+     "unresolved_entries": 0,
+     "unresolved_names": {}
+    },
+    "ownership": {
+     "denominator": "all entries, including empty ones",
+     "dk_rows": 85,
+     "max_abs_diff_pp": 0.005,
+     "note": "DraftKings' %Drafted per CPT and FLEX slot recomputed from the raw lineups; rounding is 0.01 pp",
+     "reconciles_within_rounding": true,
+     "worst": {
+      "diff_pp": 0.005,
+      "dk_pct": 59.72,
+      "name": "Bo Nix",
+      "ours_pct": 59.72,
+      "slot": "FLEX"
+     }
+    },
+    "rows": {
+     "capacity": 88235,
+     "distinct_entry_ids": 88235,
+     "empty_lineup_rows": 326,
+     "field_size_used": 88235,
+     "ids_unique": true,
+     "malformed_lineup_rows": 0,
+     "note": "an empty lineup is an entry that never set one (points 0, rank last); counted, not dropped",
+     "note_capacity": "filled to capacity",
+     "overlay_entries": 0,
+     "parsed": 88235,
+     "reconciles": true,
+     "with_lineup": 87909
+    }
+   },
+   "standings_file": {
+    "csv_mtime_in_zip": "2026-09-15 04:13 UTC",
+    "csv_sha256": "2af56b5a7b5c92856af7ac3013522da94cc43c20da134b8f0ba3c451f7cb4918",
+    "file": "contest-standings-195526287.csv.gz",
+    "gz_sha256": "c162f42cedf4518041f5e9694ade65876432b8a2a73043e109384b6d6cdb4778",
+    "rows_excluding_header": 88235
+   },
+   "week": 1,
+   "winner": {
+    "admitted_by_our_rules": true,
+    "cpt": "Kenneth Walker III",
+    "exact_lineup_copies": 44,
+    "exact_lineup_share_pct": 0.05,
+    "flex": [
+     "Patrick Mahomes",
+     "Rashee Rice",
+     "Travis Kelce",
+     "Chiefs",
+     "Evan Engram"
+    ],
+    "in_model_universe": true,
+    "k_dst_slots": 1,
+    "model_prob_pct": 0.00112,
+    "model_rank_of_lineup": 16209,
+    "points": 124.61,
+    "projected_points": 68.65,
+    "projection_rank_in_universe": 16209,
+    "rules_failed": [],
+    "salary_left": 300,
+    "structure": "5-1",
+    "tied_entries_at_top": 44
+   }
+  },
+  "195677825": {
+   "captured": "pool, week-2 feeds and roster all captured post-game (2026-09-19)",
+   "contest": {
+    "draft_group_id": 153434,
+    "entry_fee": 20.0,
+    "first_prize": 500000.0,
+    "id": 195677825,
+    "max_entries": 88235,
+    "name": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (DET @ BUF)",
+    "places_paid": 19130,
+    "prize_pool": 1500000.0,
+    "starts": "2026-09-18T00:15:00.0000000Z"
+   },
+   "empirical": {
+    "combined_ownership": [
+     {
+      "name": "Josh Allen",
+      "pct": 80.24
+     },
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 64.43
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 43.18
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 43.13
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 43.1
+     },
+     {
+      "name": "James Cook III",
+      "pct": 38.11
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 38.08
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 29.3
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 28.48
+     },
+     {
+      "name": "Tyler Bass",
+      "pct": 24.21
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 22.05
+     },
+     {
+      "name": "Joshua Palmer",
+      "pct": 20.12
+     },
+     {
+      "name": "Jake Bates",
+      "pct": 17.17
+     },
+     {
+      "name": "Bills",
+      "pct": 15.38
+     },
+     {
+      "name": "Dawson Knox",
+      "pct": 13.64
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Josh Allen",
+      "pct": 21.69
+     },
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 15.02
+     },
+     {
+      "name": "James Cook III",
+      "pct": 11.17
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 9.31
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 9.22
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 7.34
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 6.7
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 5.39
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 2.87
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 2.41
+     },
+     {
+      "name": "Joshua Palmer",
+      "pct": 1.32
+     },
+     {
+      "name": "Bills",
+      "pct": 1.22
+     },
+     {
+      "name": "Tyler Bass",
+      "pct": 1.16
+     },
+     {
+      "name": "Keon Coleman",
+      "pct": 0.98
+     },
+     {
+      "name": "Isaac TeSlaa",
+      "pct": 0.92
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 1.76,
+     "K": 1.66,
+     "QB": 24.18,
+     "RB": 27.1,
+     "TE": 15.69,
+     "WR": 29.62
+    },
+    "distinct_lineups": 14746,
+    "duplicates": {
+     "1-1": {
+      "entries": 6244,
+      "entry_share_pct": 7.08,
+      "lineups": 6244
+     },
+     "11-50": {
+      "entries": 34300,
+      "entry_share_pct": 38.87,
+      "lineups": 1641
+     },
+     "2-2": {
+      "entries": 4582,
+      "entry_share_pct": 5.19,
+      "lineups": 2291
+     },
+     "3-5": {
+      "entries": 10559,
+      "entry_share_pct": 11.97,
+      "lineups": 2805
+     },
+     "51-plus": {
+      "entries": 20349,
+      "entry_share_pct": 23.06,
+      "lineups": 193
+     },
+     "6-10": {
+      "entries": 11989,
+      "entry_share_pct": 13.59,
+      "lineups": 1572
+     }
+    },
+    "effective_lineups": {
+     "exp_entropy": 5106.3,
+     "inverse_sum_p2": 1623.8
+    },
+    "entries_with_resolved_lineup": 88023,
+    "flex_ownership": [
+     {
+      "name": "Josh Allen",
+      "pct": 58.55
+     },
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 49.41
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 37.71
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 33.92
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 33.87
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 30.73
+     },
+     {
+      "name": "James Cook III",
+      "pct": 26.93
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 26.07
+     },
+     {
+      "name": "Tyler Bass",
+      "pct": 23.04
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 22.59
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 19.17
+     },
+     {
+      "name": "Joshua Palmer",
+      "pct": 18.8
+     },
+     {
+      "name": "Jake Bates",
+      "pct": 16.68
+     },
+     {
+      "name": "Bills",
+      "pct": 14.16
+     },
+     {
+      "name": "Dawson Knox",
+      "pct": 13.01
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 48.93,
+     "1": 37.7,
+     "2": 12.62,
+     "3": 0.69,
+     "4": 0.05
+    },
+    "lineup_mass_pct": {
+     "top_10": 4.47,
+     "top_100": 16.67,
+     "top_1pct_of_lineups": 20.21
+    },
+    "max_lineup_copies": 962,
+    "max_lineup_share_pct": 1.09,
+    "salary_left": {
+     "mean": 626.9,
+     "median": 400.0,
+     "p10_p25_p75_p90": [
+      0.0,
+      100.0,
+      900.0,
+      1500.0
+     ],
+     "share_at_zero_pct": 12.76,
+     "share_ge_1000_pct": 20.58
+    },
+    "share_from_150_max_users_pct": 23.97,
+    "structure_pct": {
+     "3-3": 33.47,
+     "4-2": 50.61,
+     "5-1": 15.92
+    },
+    "top_lineups": [
+     {
+      "copies": 962,
+      "cpt": "Dalton Kincaid",
+      "flex": [
+       "DJ Moore",
+       "Jahmyr Gibbs",
+       "Josh Allen",
+       "Joshua Palmer",
+       "Sam LaPorta"
+      ],
+      "share_pct": 1.09,
+      "structure": "4-2"
+     },
+     {
+      "copies": 456,
+      "cpt": "Josh Allen",
+      "flex": [
+       "DJ Moore",
+       "Dalton Kincaid",
+       "Frank Gore Jr.",
+       "Jahmyr Gibbs",
+       "Sam LaPorta"
+      ],
+      "share_pct": 0.517,
+      "structure": "4-2"
+     },
+     {
+      "copies": 361,
+      "cpt": "DJ Moore",
+      "flex": [
+       "Dalton Kincaid",
+       "Jahmyr Gibbs",
+       "Jake Bates",
+       "Josh Allen",
+       "Joshua Palmer"
+      ],
+      "share_pct": 0.409,
+      "structure": "4-2"
+     },
+     {
+      "copies": 357,
+      "cpt": "Dalton Kincaid",
+      "flex": [
+       "Amon-Ra St. Brown",
+       "Dawson Knox",
+       "Jahmyr Gibbs",
+       "Josh Allen",
+       "Joshua Palmer"
+      ],
+      "share_pct": 0.405,
+      "structure": "4-2"
+     },
+     {
+      "copies": 348,
+      "cpt": "Josh Allen",
+      "flex": [
+       "Dalton Kincaid",
+       "Jahmyr Gibbs",
+       "Joshua Palmer",
+       "Sam LaPorta",
+       "Tyler Bass"
+      ],
+      "share_pct": 0.394,
+      "structure": "4-2"
+     }
+    ],
+    "user_max_entry_brackets": {
+     "1": {
+      "entries": 16219,
+      "share_pct": 18.38
+     },
+     "10": {
+      "entries": 2110,
+      "share_pct": 2.39
+     },
+     "150": {
+      "entries": 21150,
+      "share_pct": 23.97
+     },
+     "2": {
+      "entries": 9468,
+      "share_pct": 10.73
+     },
+     "3": {
+      "entries": 5481,
+      "share_pct": 6.21
+     },
+     "4": {
+      "entries": 3444,
+      "share_pct": 3.9
+     },
+     "5": {
+      "entries": 4075,
+      "share_pct": 4.62
+     },
+     "6": {
+      "entries": 1998,
+      "share_pct": 2.26
+     }
+    }
+   },
+   "inputs": {
+    "draftkings": {
+     "files": {
+      "contests": {
+       "bytes": 1435,
+       "endpoint": "dk.contests + dk.contest_detail (nfl, 153434)",
+       "file": "contests_153434.json",
+       "records": 1,
+       "retrieved_ts": 1789818525,
+       "sha256": "41b6c07402dcdc337229280da28adf2e423364882df4132bb01051324e38a932"
+      },
+      "slate": {
+       "bytes": 8446,
+       "endpoint": "dk.slate_for(nfl, 153434)",
+       "file": "slate_153434.json",
+       "records": 47,
+       "retrieved_ts": 1789818525,
+       "sha256": "e112a1f0d69bce0afe7035f5ceafaf3aef74100cd946f9edec2e122d2b4c0bf3"
+      }
+     },
+     "normalization_version": 1,
+     "source": "draftkings"
+    },
+    "roster": {
+     "captured_utc": "2026-09-19 11:48:47 UTC",
+     "file": "research/data/feeds/players_2026_2.json",
+     "injury_statuses": "CLEARED for the lock-time reconstruction: every roster capture here is post-game and the exports show players the post-game roster lists Out (DJ Moore, 43% owned in DET @ BUF; Marvin Mims Jr. in DEN @ KC)",
+     "records": 44,
+     "sha256": "df353f274d815a68c65f6a7ac39251d201a90e11343f2394053ff02c1a2245bf",
+     "teams": [
+      "BUF",
+      "DET"
+     ]
+    }
+   },
+   "label": "DET @ BUF, Thursday Night Showdown",
+   "model": {
+    "beta": 0.3514,
+    "combined_ownership": [
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 86.85
+     },
+     {
+      "name": "James Cook III",
+      "pct": 62.45
+     },
+     {
+      "name": "Josh Allen",
+      "pct": 55.04
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 43.38
+     },
+     {
+      "name": "Bills",
+      "pct": 32.79
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 31.14
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 27.03
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 26.21
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 26.04
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 25.03
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 24.37
+     },
+     {
+      "name": "Ray Davis",
+      "pct": 23.88
+     },
+     {
+      "name": "Lions",
+      "pct": 19.43
+     },
+     {
+      "name": "Dawson Knox",
+      "pct": 18.79
+     },
+     {
+      "name": "Brock Wright",
+      "pct": 16.47
+     }
+    ],
+    "cpt_ownership": [
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 31.07
+     },
+     {
+      "name": "James Cook III",
+      "pct": 14.87
+     },
+     {
+      "name": "Josh Allen",
+      "pct": 10.59
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 6.67
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 4.68
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 3.84
+     },
+     {
+      "name": "Bills",
+      "pct": 3.81
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 3.44
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 3.43
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 3.27
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 3.26
+     },
+     {
+      "name": "Ray Davis",
+      "pct": 1.91
+     },
+     {
+      "name": "Lions",
+      "pct": 1.54
+     },
+     {
+      "name": "Dawson Knox",
+      "pct": 1.42
+     },
+     {
+      "name": "Tyler Bass",
+      "pct": 1.25
+     }
+    ],
+    "cpt_position_mix_pct": {
+     "DST": 5.35,
+     "K": 2.42,
+     "QB": 14.43,
+     "RB": 49.21,
+     "TE": 13.7,
+     "WR": 14.88
+    },
+    "effective_lineups": {
+     "exp_entropy": 15977.5,
+     "inverse_sum_p2": 5889.2
+    },
+    "enterable_under_our_rules": 29426,
+    "expected_duplicates": {
+     "1-1": {
+      "entries": 11284.8,
+      "entry_share_pct": 12.79,
+      "lineups": 11284.8
+     },
+     "11-50": {
+      "entries": 30540.8,
+      "entry_share_pct": 34.61,
+      "lineups": 1608.4
+     },
+     "2-2": {
+      "entries": 8146.3,
+      "entry_share_pct": 9.23,
+      "lineups": 4073.1
+     },
+     "3-5": {
+      "entries": 16516.3,
+      "entry_share_pct": 18.72,
+      "lineups": 4439.5
+     },
+     "51-plus": {
+      "entries": 5706.5,
+      "entry_share_pct": 6.47,
+      "lineups": 75.8
+     },
+     "6-10": {
+      "entries": 16040.3,
+      "entry_share_pct": 18.18,
+      "lineups": 2132.8
+     }
+    },
+    "field_only_players": [
+     "Sione Vaki",
+     "Joshua Palmer"
+    ],
+    "flex_ownership": [
+     {
+      "name": "Jahmyr Gibbs",
+      "pct": 55.78
+     },
+     {
+      "name": "James Cook III",
+      "pct": 47.58
+     },
+     {
+      "name": "Josh Allen",
+      "pct": 44.46
+     },
+     {
+      "name": "Sam LaPorta",
+      "pct": 36.71
+     },
+     {
+      "name": "Bills",
+      "pct": 28.98
+     },
+     {
+      "name": "Dalton Kincaid",
+      "pct": 26.45
+     },
+     {
+      "name": "Jared Goff",
+      "pct": 23.18
+     },
+     {
+      "name": "Khalil Shakir",
+      "pct": 22.79
+     },
+     {
+      "name": "Jameson Williams",
+      "pct": 22.6
+     },
+     {
+      "name": "Ray Davis",
+      "pct": 21.97
+     },
+     {
+      "name": "DJ Moore",
+      "pct": 21.76
+     },
+     {
+      "name": "Amon-Ra St. Brown",
+      "pct": 21.11
+     },
+     {
+      "name": "Lions",
+      "pct": 17.89
+     },
+     {
+      "name": "Dawson Knox",
+      "pct": 17.37
+     },
+     {
+      "name": "Brock Wright",
+      "pct": 15.54
+     }
+    ],
+    "k_dst_slots_pct": {
+     "0": 35.81,
+     "1": 48.12,
+     "2": 15.16,
+     "3": 0.91,
+     "4": 0.0
+    },
+    "lineup_mass_pct": {
+     "top_10": 1.56,
+     "top_100": 7.64,
+     "top_1pct_of_lineups": 59.13
+    },
+    "max_lineup_share_pct": 0.2,
+    "players_in_universe": 22,
+    "salary_left": {
+     "mean": 1612.3,
+     "median": 1100.0,
+     "p10_p25_p75_p90": [
+      100.0,
+      400.0,
+      2300.0,
+      3700.0
+     ],
+     "share_at_zero_pct": 5.88,
+     "share_ge_1000_pct": 55.8
+    },
+    "structure_pct": {
+     "3-3": 39.66,
+     "4-2": 49.45,
+     "5-1": 10.89
+    },
+    "top_share_setting": 0.002,
+    "universe_lineups": 421702,
+    "universe_players": [
+     "Tyler Bass",
+     "Jake Bates",
+     "Bills",
+     "Lions",
+     "Jahmyr Gibbs",
+     "Jacob Saylors",
+     "Josh Allen",
+     "Amon-Ra St. Brown",
+     "Jameson Williams",
+     "Isaac TeSlaa",
+     "Jared Goff",
+     "James Cook III",
+     "Ray Davis",
+     "DJ Moore",
+     "Khalil Shakir",
+     "Keon Coleman",
+     "Dalton Kincaid",
+     "Dawson Knox",
+     "Sam LaPorta",
+     "Brock Wright",
+     "Sione Vaki",
+     "Joshua Palmer"
+    ]
+   },
+   "observed_vs_model": {
+    "bins": [
+     {
+      "log10_p_from": -9,
+      "log10_p_to": -8,
+      "model_entry_share_pct": 0.026,
+      "observed_distinct_lineups": 9,
+      "observed_entry_share_pct": 0.01,
+      "observed_over_model": 0.396,
+      "universe_lineups": 66302
+     },
+     {
+      "log10_p_from": -8,
+      "log10_p_to": -7,
+      "model_entry_share_pct": 0.222,
+      "observed_distinct_lineups": 31,
+      "observed_entry_share_pct": 0.036,
+      "observed_over_model": 0.164,
+      "universe_lineups": 58548
+     },
+     {
+      "log10_p_from": -7,
+      "log10_p_to": -6,
+      "model_entry_share_pct": 1.701,
+      "observed_distinct_lineups": 348,
+      "observed_entry_share_pct": 0.592,
+      "observed_over_model": 0.348,
+      "universe_lineups": 45920
+     },
+     {
+      "log10_p_from": -6,
+      "log10_p_to": -5,
+      "model_entry_share_pct": 11.177,
+      "observed_distinct_lineups": 3193,
+      "observed_entry_share_pct": 12.984,
+      "observed_over_model": 1.162,
+      "universe_lineups": 31158
+     },
+     {
+      "log10_p_from": -5,
+      "log10_p_to": -4,
+      "model_entry_share_pct": 43.779,
+      "observed_distinct_lineups": 5141,
+      "observed_entry_share_pct": 41.335,
+      "observed_over_model": 0.944,
+      "universe_lineups": 14186
+     },
+     {
+      "log10_p_from": -4,
+      "log10_p_to": -3,
+      "model_entry_share_pct": 40.888,
+      "observed_distinct_lineups": 1416,
+      "observed_entry_share_pct": 18.733,
+      "observed_over_model": 0.458,
+      "universe_lineups": 1983
+     },
+     {
+      "log10_p_from": -3,
+      "log10_p_to": -2,
+      "model_entry_share_pct": 2.205,
+      "observed_distinct_lineups": 16,
+      "observed_entry_share_pct": 0.407,
+      "observed_over_model": 0.184,
+      "universe_lineups": 16
+     }
+    ],
+    "chalk": {
+     "model_most_probable_lineup": {
+      "cpt": "Jahmyr Gibbs",
+      "flex": [
+       "Bills",
+       "Brock Wright",
+       "James Cook III",
+       "Josh Allen",
+       "Sam LaPorta"
+      ],
+      "model_prob_pct": 0.2,
+      "observed_copies": 20
+     },
+     "most_duplicated_real_lineup": {
+      "admitted_by_our_rules": false,
+      "copies": 962,
+      "cpt": "Dalton Kincaid",
+      "flex": [
+       "DJ Moore",
+       "Jahmyr Gibbs",
+       "Josh Allen",
+       "Joshua Palmer",
+       "Sam LaPorta"
+      ],
+      "model_prob_pct": 0.0103,
+      "model_rank": 1911,
+      "rules_failed": [
+       "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out (field-only here: Joshua Palmer)"
+      ]
+     }
+    },
+    "entries_inside_universe": 65394,
+    "entries_outside_universe": 22629,
+    "observed_lineups_matched": 10168,
+    "outside_by_player": [
+     {
+      "entries": 11731,
+      "name": "Frank Gore Jr.",
+      "share_pct": 13.3,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 5641,
+      "name": "Jackson Hawes",
+      "share_pct": 6.39,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 1608,
+      "name": "Greg Dortch",
+      "share_pct": 1.82,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 1045,
+      "name": "Tay Martin",
+      "share_pct": 1.18,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 956,
+      "name": "Keleki Latu",
+      "share_pct": 1.08,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 656,
+      "name": "Tyler Conklin",
+      "share_pct": 0.74,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 624,
+      "name": "Tom Kennedy",
+      "share_pct": 0.71,
+      "why": "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras"
+     },
+     {
+      "entries": 505,
+      "name": "Jackson Meeks",
+      "share_pct": 0.57,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 234,
+      "name": "Ty Johnson",
+      "share_pct": 0.27,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 156,
+      "name": "Skyler Bell",
+      "share_pct": 0.18,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 123,
+      "name": "Jabari Small",
+      "share_pct": 0.14,
+      "why": "no Sleeper projection"
+     },
+     {
+      "entries": 54,
+      "name": "Kyle Allen",
+      "share_pct": 0.06,
+      "why": "no Sleeper projection"
+     }
+    ],
+    "outside_by_reason_note": "share of entries containing such a player; an entry with two outside players counts under both reasons",
+    "outside_by_reason_pct": {
+     "no Sleeper projection": 17.68,
+     "projected; dropped by the depth-chart gate (post-game roster capture) beyond the field-only extras": 9.03
+    },
+    "outside_if_gate_lifted_pct": 17.36,
+    "outside_share_pct": 25.65,
+    "rank_correlation_observed_vs_model_over_observed_lineups": 0.301
+   },
+   "pool_players_without_projection": [
+    "Brock Lampe",
+    "Dominic Lovett",
+    "Frank Gore Jr.",
+    "Greg Dortch",
+    "Isiah Pacheco",
+    "Ja'Mori Maclin",
+    "Jabari Small",
+    "Jackson Hawes",
+    "Jackson Meeks",
+    "Joshua Dobbs",
+    "Keleki Latu",
+    "Kendrick Law",
+    "Kyle Allen",
+    "Lucky Jackson",
+    "Luke Altmyer",
+    "Shane Buechele",
+    "Skyler Bell",
+    "Stephen Gosnell",
+    "Tay Martin",
+    "Thomas Gordon",
+    "Tom Kennedy",
+    "Trent Sherfield Sr.",
+    "Ty Johnson",
+    "Tyler Conklin",
+    "Tyrell Shavers"
+   ],
+   "reconciliation": {
+    "all_checks_pass": true,
+    "lineups": {
+     "note": "every entry with a lineup has exactly 1 CPT and 5 FLEX (parse_lineup raises otherwise) and every name resolves to one DraftKings pool player",
+     "pool_size": 47,
+     "resolved_to_pool": 88023,
+     "unresolved_entries": 0,
+     "unresolved_names": {}
+    },
+    "ownership": {
+     "denominator": "all entries, including empty ones",
+     "dk_rows": 86,
+     "max_abs_diff_pp": 0.005,
+     "note": "DraftKings' %Drafted per CPT and FLEX slot recomputed from the raw lineups; rounding is 0.01 pp",
+     "reconciles_within_rounding": true,
+     "worst": {
+      "diff_pp": 0.005,
+      "dk_pct": 30.73,
+      "name": "Amon-Ra St. Brown",
+      "ours_pct": 30.73,
+      "slot": "FLEX"
+     }
+    },
+    "rows": {
+     "capacity": 88235,
+     "distinct_entry_ids": 88235,
+     "empty_lineup_rows": 212,
+     "field_size_used": 88235,
+     "ids_unique": true,
+     "malformed_lineup_rows": 0,
+     "note": "an empty lineup is an entry that never set one (points 0, rank last); counted, not dropped",
+     "note_capacity": "filled to capacity",
+     "overlay_entries": 0,
+     "parsed": 88235,
+     "reconciles": true,
+     "with_lineup": 88023
+    }
+   },
+   "standings_file": {
+    "csv_mtime_in_zip": "2026-09-18 04:14 UTC",
+    "csv_sha256": "7c884dac7efaf1f49c2c204a144ece449107aaa5371487599c022b16b5fbcbef",
+    "file": "contest-standings-195677825.csv.gz",
+    "gz_sha256": "1c734a30c6c83edba5ff06be8c84e34ba6e654d4255a068c11c37f4e1dad35d7",
+    "rows_excluding_header": 88235
+   },
+   "week": 2,
+   "winner": {
+    "admitted_by_our_rules": false,
+    "cpt": "Josh Allen",
+    "exact_lineup_copies": 17,
+    "exact_lineup_share_pct": 0.019,
+    "flex": [
+     "Amon-Ra St. Brown",
+     "Jared Goff",
+     "Dalton Kincaid",
+     "Joshua Palmer",
+     "Dawson Knox"
+    ],
+    "in_model_universe": true,
+    "k_dst_slots": 0,
+    "model_prob_pct": 0.00071,
+    "model_rank_of_lineup": 19809,
+    "points": 174.51,
+    "projected_points": 85.3,
+    "projection_rank_in_universe": 19809,
+    "rules_failed": [
+     "one tight end per team",
+     "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out (field-only here: Joshua Palmer)"
+    ],
+    "salary_left": 100,
+    "structure": "4-2",
+    "tied_entries_at_top": 17
+   }
+  }
+ },
+ "meta": {
+  "caveats": [
+   "captures are per contest (see each contest's `captured`): only DEN @ KC has a pre-lock pool and feed capture; NE @ SEA and DET @ BUF pools were captured after their games, and Sleeper's projections are not versioned, so their projection columns are not proven equal to what was served at lock",
+   "every roster capture is post-game; for the model universe injury statuses were CLEARED and the depth-chart rank rule kept (DJ Moore: 43% owned in DET @ BUF, listed Out post-game)",
+   "nothing here is fitted; beta is the placeholder solved for FIELD_TOP_SHARE = 0.002 on each board",
+   "the expected-duplicate column is drawn for the entries that exist, not the capacity, where a contest did not fill (NE @ SEA: 126,020 of 132,352)"
+  ],
+  "contests": {
+   "193391013": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "195526287": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "195677825": "DET @ BUF, Thursday Night Showdown"
+  },
+  "fit_free": true,
+  "inputs": {
+   "sleeper_feeds": {
+    "files": {
+     "players_2026_1.json": {
+      "bytes": 27661,
+      "sha256": "b8095d57e0acd93f0afbe63bd791fc1660a382471a1ce6135180b23a4a705b29"
+     },
+     "players_2026_1_nesea.json": {
+      "bytes": 18545,
+      "sha256": "ee7486cf388947f9a200bbfabe2674784c67b4b786e73900f668a1db7b669e9c"
+     },
+     "players_2026_2.json": {
+      "bytes": 11964,
+      "sha256": "df353f274d815a68c65f6a7ac39251d201a90e11343f2394053ff02c1a2245bf"
+     },
+     "proj_2026_1.json": {
+      "bytes": 2154419,
+      "sha256": "24b6aae894482e9215dff1365ce03ee6ba5f6014751c9c3cee91f6f515c109cc"
+     },
+     "proj_2026_1_def.json": {
+      "bytes": 34208,
+      "sha256": "9c51771ce016ca53624815a4207788d23f86ef2c4a4a75f796829fc048bba781"
+     },
+     "proj_2026_1_k.json": {
+      "bytes": 108980,
+      "sha256": "6fa11f27047bb11b954539e28413528d301ae707586f92bad2a21083a0bffa61"
+     },
+     "proj_2026_2.json": {
+      "bytes": 2163337,
+      "sha256": "18ccf9ee3ec59993ff56f19df1a06c5308f0c18aabb47c9f7bd9afcbe767660a"
+     },
+     "proj_2026_2_def.json": {
+      "bytes": 34192,
+      "sha256": "16d39bf49bca893d6ace02213257d07181cb7c93243657e4929bdb9fdeb5477a"
+     },
+     "proj_2026_2_k.json": {
+      "bytes": 109048,
+      "sha256": "02340c4a070e0eabd473337e1dd9634cac9bb6b4383e41a18cebfd7f70bf3ff0"
+     }
+    },
+    "source": "sleeper"
+   }
+  },
+  "provenance": {
+   "commit": "8ffe6f3",
+   "data_split": null,
+   "dirty": false,
+   "model": "placeholder softmax field, unfitted",
+   "seed": 20260912,
+   "source_files": 40,
+   "source_sha": "50c756c9bb23549ccac6c13ceb7f1b02b2075509acb76fc26f1182e4cafd02ed",
+   "worlds": null
+  },
+  "stage": "S7 first artifact: the Showdown field as it actually entered, fit-free, three contests"
+ },
+ "summary": [
+  {
+   "capacity": 132352,
+   "chalk_share_pct": {
+    "model": 0.2,
+    "real": 0.426
+   },
+   "checks_pass": true,
+   "contest": 193391013,
+   "cpt_qb_pct": {
+    "model": 38.06,
+    "real": 20.1
+   },
+   "cpt_rb_pct": {
+    "model": 17.86,
+    "real": 29.62
+   },
+   "distinct_lineups": 18620,
+   "effective_lineups": {
+    "model": 4900.3,
+    "real": 2152.9
+   },
+   "entries": 126020,
+   "five_one_pct": {
+    "model": 8.92,
+    "real": 13.53
+   },
+   "label": "NE @ SEA, Wednesday Kickoff Millionaire",
+   "model_chalk_observed_copies": 136,
+   "no_k_dst_pct": {
+    "model": 38.4,
+    "real": 42.11
+   },
+   "outside_if_gate_lifted_pct": 3.33,
+   "outside_universe_pct": 52.45,
+   "rank_corr_obs_vs_model": 0.533,
+   "real_chalk_model_rank": 1823,
+   "salary_left_mean": {
+    "model": 3220.5,
+    "real": 1287.9
+   },
+   "top_band_observed_over_model": {
+    "-3..-2": 0.478,
+    "-4..-3": 0.547
+   },
+   "winner": {
+    "admitted": true,
+    "copies": 23,
+    "model_rank": 1239,
+    "points": 101.020004,
+    "rules_failed": [],
+    "tied": 23
+   }
+  },
+  {
+   "capacity": 88235,
+   "chalk_share_pct": {
+    "model": 0.2,
+    "real": 0.355
+   },
+   "checks_pass": true,
+   "contest": 195526287,
+   "cpt_qb_pct": {
+    "model": 39.54,
+    "real": 27.77
+   },
+   "cpt_rb_pct": {
+    "model": 15.01,
+    "real": 24.2
+   },
+   "distinct_lineups": 18539,
+   "effective_lineups": {
+    "model": 7451.4,
+    "real": 3406.4
+   },
+   "entries": 88235,
+   "five_one_pct": {
+    "model": 13.66,
+    "real": 14.96
+   },
+   "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
+   "model_chalk_observed_copies": 56,
+   "no_k_dst_pct": {
+    "model": 32.59,
+    "real": 40.07
+   },
+   "outside_if_gate_lifted_pct": 1.31,
+   "outside_universe_pct": 8.38,
+   "rank_corr_obs_vs_model": 0.415,
+   "real_chalk_model_rank": 2,
+   "salary_left_mean": {
+    "model": 2377.2,
+    "real": 1072.2
+   },
+   "top_band_observed_over_model": {
+    "-3..-2": 0.459,
+    "-4..-3": 0.607
+   },
+   "winner": {
+    "admitted": true,
+    "copies": 44,
+    "model_rank": 16209,
+    "points": 124.61,
+    "rules_failed": [],
+    "tied": 44
+   }
+  },
+  {
+   "capacity": 88235,
+   "chalk_share_pct": {
+    "model": 0.2,
+    "real": 1.09
+   },
+   "checks_pass": true,
+   "contest": 195677825,
+   "cpt_qb_pct": {
+    "model": 14.43,
+    "real": 24.18
+   },
+   "cpt_rb_pct": {
+    "model": 49.21,
+    "real": 27.1
+   },
+   "distinct_lineups": 14746,
+   "effective_lineups": {
+    "model": 5889.2,
+    "real": 1623.8
+   },
+   "entries": 88235,
+   "five_one_pct": {
+    "model": 10.89,
+    "real": 15.92
+   },
+   "label": "DET @ BUF, Thursday Night Showdown",
+   "model_chalk_observed_copies": 20,
+   "no_k_dst_pct": {
+    "model": 35.81,
+    "real": 48.93
+   },
+   "outside_if_gate_lifted_pct": 17.36,
+   "outside_universe_pct": 25.65,
+   "rank_corr_obs_vs_model": 0.301,
+   "real_chalk_model_rank": 1911,
+   "salary_left_mean": {
+    "model": 1612.3,
+    "real": 626.9
+   },
+   "top_band_observed_over_model": {
+    "-3..-2": 0.184,
+    "-4..-3": 0.458
+   },
+   "winner": {
+    "admitted": false,
+    "copies": 17,
+    "model_rank": 19809,
+    "points": 174.51,
+    "rules_failed": [
+     "one tight end per team",
+     "roster gate: QB1, RB1-2, WR1-3, TE1-2 by Sleeper's depth chart; OUT/IR/doubtful out (field-only here: Joshua Palmer)"
+    ],
+    "tied": 17
+   }
+  }
+ ]
+}
