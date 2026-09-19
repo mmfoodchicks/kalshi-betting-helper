@@ -17589,6 +17589,90 @@ ck("UFC reblend: applying one shuffled index list to both fighters keeps entry k
    and all(abs(s - (fa["fair_win"] / 100.0)) < 0.01 for s, (fa, _fb, _w) in zip(_ufc_win_share, _ufc_bouts))
    and max(_ufc_cross) < 0.08 and "rng.shuffle(idx)" in open(_os.path.join(_root, "simulate.py")).read())
 
+# ---- Task 8, second artifact: the classic sampler's field against the real one (research/cl_sampler.py) ----
+_cls = _json18.load(open(_os.path.join(_root, "research", "data", "cl_sampler.json")))
+_cls_rep = " ".join(open(_os.path.join(_root, "research", "reports", "cl_sampler.md")).read().split())
+_cls_src = open(_os.path.join(_root, "research", "cl_sampler.py")).read()
+_cls_id = _cls["meta"]["content_identity"]
+_cls_sv, _cls_su = _cls["served"], _cls["rerun"]["summary"]
+_cls_st = {r["quantity"]: r for r in _cls["structure"]}
+_near = lambda x, v, tol: x is not None and abs(float(x) - v) <= tol  # noqa: E731
+ck("artifact 2 was assembled on content identity, not a provenance waiver: the partials' commit is 0e4c20a with their stored source hash recomputed from that commit's tree, every identity file (the sampler, the grading module, the pinned pre-lock board, its manifest, the first artifact) and every producing function and constant of the module byte-identical between that commit and now, every seed's config matching, the assembly stamped clean at a later commit, the partials' stamps kept as written, and the module refusing by SystemExit on any difference",
+   _cls_id["passed"] is True and _cls_id["seed_runs_commit"] == "0e4c20a" and _cls_id["seed_runs_source_sha"] == _cls_id["recomputed_at_that_commit"]
+   and _cls_id["source_files_at_that_commit"] == 45
+   and set(_cls_id["files"]) >= {"dfs_tourney.py", "research/cl_field.py", "research/data/dk_classic/served_board_151307.json", "research/data/dk_classic/manifest.json", "research/data/cl_field.json"}
+   and all(v["identical"] for v in _cls_id["files"].values())
+   and set(_cls_id["this_module"]["producing_functions_and_constants"]) >= {"sample_field", "grade", "compare_ownership", "served_pool", "run_seed", "SEEDS", "FIELD_N", "CAL_N", "CHUNK"}
+   and all(v["identical"] for v in _cls_id["this_module"]["producing_functions_and_constants"].values())
+   and len(_cls_id["config"]) == 5 and all(c["ok"] for c in _cls_id["config"])
+   and _cls["meta"]["provenance"]["dirty"] is False and _cls["meta"]["provenance"]["commit"] != "0e4c20a" and _cls["meta"]["provenance"]["seed_runs_commit"] == "0e4c20a"
+   and "the partials' own stamps are kept as written" in _cls_id["rule"]
+   and 'raise SystemExit("content identity refused assembly' in _cls_src and "if strict and refuse:" in _cls_src
+   and all(p["provenance"]["commit"] == "0e4c20a" and p["provenance"]["dirty"] is False for p in _cls["rerun"]["per_seed"]))
+try:
+    from research import cl_sampler as _CLS
+except ImportError:
+    _CLS = None
+if _CLS is None:
+    ck("(skipped under the no-numpy suite for a stated reason: the content-identity refusal test imports research.cl_sampler, which needs numpy; the structural pins above still run) the check refuses a re-stamped commit and a changed config", True)
+else:
+    import copy as _cp_cls
+    _cls_parts = [_json18.load(open(_os.path.join(_root, "research", "data", "cl_sampler_seeds", f"cl_sampler_seed_{s}.json"))) for s in _CLS.SEEDS]
+    _cls_ok = _CLS.content_identity(_cls_parts, strict=False)["passed"]
+    _cls_b1 = _cp_cls.deepcopy(_cls_parts); _cls_b1[0]["provenance"]["commit"] = "e955d97"
+    _cls_b2 = _cp_cls.deepcopy(_cls_parts); _cls_b2[2]["sample"]["chunk"] = 50000
+    _cls_r1 = _CLS.content_identity(_cls_b1, strict=False); _cls_r2 = _CLS.content_identity(_cls_b2, strict=False)
+    try:
+        _CLS.content_identity(_cls_b2, strict=True); _cls_strict = False
+    except SystemExit:
+        _cls_strict = True
+    ck("the content-identity check passes the real partials and refuses a partial re-stamped at a commit where the module did not exist and a partial with a changed chunk, in strict mode by SystemExit",
+       _cls_ok and not _cls_r1["passed"] and not _cls_r2["passed"] and _cls_strict and any("chunk" in r or "config" in r for r in _cls_r2["refused"]))
+ck("the served pre-lock build (2026-09-13 16:27:24 UTC, 32.6 minutes before lock; beta 0.194, kappa -1.9844; pool 240 = 216 gate-kept + 24 field-only, reconciled to the pinned draft group) against the real field over its pool: MAE 2.159 pp and Spearman 0.857 overall, Spearman 0.316 over the real top 50, bias -6.30 pp over the real top 20; its top 10 hold 66.5% of the real mass the real top 10 hold (3 of 10 overlap), its top 20 74.3% (9 of 20), its top 50 81.2% (35 of 50); the largest misses are Michael Mayer 1.6% against 27.51% (20.83% at TE plus 6.68% at FLEX in the export) and the Cardinals defense 22.7% against 1.99%; the pool covers 99.733% of the real roster slots and the 425 real players outside it hold 0.267%",
+   _cls_sv["built_utc"] == "2026-09-13T16:27:24Z" and _cls_sv["minutes_before_lock"] == 32.6 and _cls_sv["beta"] == 0.194 and _cls_sv["kappa"] == -1.9844 and _cls_sv["n"] == 300000
+   and _cls_sv["pool"]["served_players"] == 240 and _cls_sv["pool"]["gate_kept"] == 216 and _cls_sv["pool"]["field_only"] == 24 and _cls_sv["pool"]["all_checks_pass"] is True
+   and _cls_sv["vs_real"]["mae_pp"] == 2.159 and _cls_sv["vs_real"]["spearman"] == 0.8571 and _cls_sv["vs_real"]["top50_by_real"]["spearman"] == 0.3161 and _cls_sv["vs_real"]["top20_by_real"]["bias_pp"] == -6.302
+   and _cls_sv["diagnostics"]["real_mass_captured_by_samplers_top"]["top10"] == {"capture_ratio": 0.6651, "overlap_players": 3, "real_slot_share_of_real_top_pct": 26.242, "real_slot_share_of_samplers_top_pct": 17.453}
+   and _cls_sv["diagnostics"]["real_mass_captured_by_samplers_top"]["top20"]["capture_ratio"] == 0.7433 and _cls_sv["diagnostics"]["real_mass_captured_by_samplers_top"]["top20"]["overlap_players"] == 9
+   and _cls_sv["diagnostics"]["real_mass_captured_by_samplers_top"]["top50"]["capture_ratio"] == 0.8119 and _cls_sv["diagnostics"]["real_mass_captured_by_samplers_top"]["top50"]["overlap_players"] == 35
+   and _cls_sv["vs_real"]["largest_under"][0] == {"diff_pp": -25.91, "name": "Michael Mayer", "real_pct": 27.51, "sampled_pct": 1.6}
+   and _cls_sv["vs_real"]["largest_over"][0] == {"diff_pp": 20.71, "name": "Cardinals", "real_pct": 1.99, "sampled_pct": 22.7}
+   and _cls["real_by_slot"]["top50_by_real"]["Michael Mayer"] == {"FLEX": 6.675, "TE": 20.831} and _cls["real_by_slot"]["active_lineups"] == 831028
+   and _cls["real_by_slot"]["standings_sha256"] == "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244"
+   and _cls["coverage"]["real_slots_on_pool_players_pct"] == 99.733 and _cls["coverage"]["real_players_outside_pool"] == 425 and _cls["coverage"]["real_slots_outside_pool_pct"] == 0.267)
+ck("the five re-runs reproduce the served build (MAE against it 0.058 pp, Spearman 0.9992) and its miss (MAE against real 2.164 pp with sd 0.021; top-50 Spearman 0.318 with sd 0.004; top-20 bias -6.28 pp), realise the drawn rates as set (stack 17.4 / 49.0 / 28.9 / 4.7 against real 19.2 / 53.0 / 26.1 / 1.7; bring-back 35.0 against 32.2; defense against own QB 0.37% realised against 0.50% real), land the two calibration targets short of the public (max ownership 39.9% against 42.8%, mean salary $49,303 against $49,850; kappa negative on every seed), and diverge in construction and concentration: a tight end at FLEX 0.0% against 21.4%, a WR at FLEX 70.5% against 36.1%, one punt 77.3% against 48.4%, $48,000 or less 11.7% against 0.6%, exactly $50,000 31.2% against 49.9%, a defense against one of the lineup's backs 10.4% against 2.4%, 99.2% of entries in unique lineups against 89.8%, the most-copied lineup 29 copies against 346, and the distinct-entry collision 2.1e-8 against the real 1.30e-6 with the plug-in HHI (1.22e-6 against 2.50e-6) kept apart",
+   _near(_cls_su["vs_served"]["mae_pp"]["mean"], 0.0582, 0.001) and _near(_cls_su["vs_served"]["spearman"]["mean"], 0.9992, 0.0005)
+   and _near(_cls_su["vs_real"]["mae_pp"]["mean"], 2.164, 0.001) and _near(_cls_su["vs_real"]["mae_pp"]["sd"], 0.021, 0.002)
+   and _near(_cls_su["vs_real_top50"]["spearman"]["mean"], 0.3183, 0.001) and _near(_cls_su["vs_real_top50"]["spearman"]["sd"], 0.0039, 0.001)
+   and _near(_cls_su["diagnostics"]["top20_by_real"]["bias_pp"]["mean"], -6.2752, 0.01)
+   and all(_near(_cls_st[q]["rerun_realised"]["mean"], v, 0.02) for q, v in (("stack: naked QB (%)", 17.374), ("stack: one WR/TE teammate (%)", 48.99), ("stack: two (%)", 28.944), ("stack: three or more (%)", 4.692), ("bring-back, all entries (%)", 35.002)))
+   and _cls_st["stack: naked QB (%)"]["real"] == 19.16 and _cls_st["bring-back, all entries (%)"]["real"] == 32.15
+   and _near(_cls_st["defense against own QB (%)"]["rerun_realised"]["mean"], 0.3684, 0.005) and _cls_st["defense against own QB (%)"]["real"] == 0.495 and _cls_st["defense against own QB (%)"]["target_input"] == 8.0
+   and _near(_cls_st["most-owned player, any slot (% of lineups)"]["rerun_realised"]["mean"], 39.924, 0.01) and _cls_st["most-owned player, any slot (% of lineups)"]["real"] == 42.82 and _cls_st["most-owned player, any slot (% of lineups)"]["target_input"] == 38.0
+   and _near(_cls_st["mean salary used ($)"]["rerun_realised"]["mean"], 49303.1, 1.0) and _cls_st["mean salary used ($)"]["real"] == 49849.9
+   and _cls_su["kappa"]["max"] < 0
+   and _cls_st["FLEX is a TE (%)"]["rerun_realised"]["max"] == 0.0 and _cls_st["FLEX is a TE (%)"]["real"] == 21.36
+   and _near(_cls_st["FLEX is a WR (%)"]["rerun_realised"]["mean"], 70.496, 0.01) and _near(_cls_st["punts under $3,000: 1 (%)"]["rerun_realised"]["mean"], 77.252, 0.01) and _cls_st["punts under $3,000: 1 (%)"]["real"] == 48.39
+   and _near(_cls_st["share at $48,000 or less (%)"]["rerun_realised"]["mean"], 11.738, 0.01) and _cls_st["share at $48,000 or less (%)"]["real"] == 0.6
+   and _near(_cls_st["share at exactly $50,000 (%)"]["rerun_realised"]["mean"], 31.22, 0.01) and _cls_st["share at exactly $50,000 (%)"]["real"] == 49.91
+   and _near(_cls_st["defense against one of the lineup's backs (%)"]["rerun_realised"]["mean"], 10.3726, 0.01) and _cls_st["defense against one of the lineup's backs (%)"]["real"] == 2.446
+   and _near(_cls_st["entries in lineups with 1-1 copies (%)"]["rerun_realised"]["mean"], 99.178, 0.01) and _cls_st["entries in lineups with 1-1 copies (%)"]["real"] == 89.76
+   and _near(_cls_st["most-copied lineup (copies)"]["rerun_realised"]["mean"], 28.6, 0.01) and _cls_st["most-copied lineup (copies)"]["real"] == 346
+   and _near(_cls_st["distinct-entry collision (pairs holding the same lineup / all pairs)"]["rerun_realised"]["mean"], 2.12816e-08, 1e-10)
+   and abs(_cls_st["distinct-entry collision (pairs holding the same lineup / all pairs)"]["real"] - 1.2963992e-06) < 1e-12
+   and _cls_st["distinct-entry collision (pairs holding the same lineup / all pairs)"]["target_input"] == 1.2e-07 and _near(_cls_st["distinct-entry collision (pairs holding the same lineup / all pairs)"]["served_realised"], 4.5e-08, 1e-10)
+   and _near(_cls_st["plug-in HHI (sum of squared lineup shares)"]["rerun_realised"]["mean"], 1.22461e-06, 1e-9) and _cls_st["plug-in HHI (sum of squared lineup shares)"]["real"] > 1.0 / 831028
+   and "kept apart" in _cls["meta"]["collision_definitions"] and "not five independent validations" in _cls["meta"]["reruns_are"])
+ck("the second artifact's report carries the verdict (the untouched sampler on the exact production pre-lock pool does not reproduce the real field where tournament economics are decided), keeps the four columns and both collision definitions apart, calls the reruns stochastic reproducibility rather than five validations, resolves the first artifact's defense-against-own-QB reading as a target beside a realisation, states the pool is not the reason, and closes on one slate and no production change, with the withdrawn wording absent",
+   "Does the untouched classic field sampler, on the exact production pre-lock input pool, reproduce the real public field at the levels that matter for tournament economics? No." in _cls_rep
+   and "stochastic reproducibility, not five independent validations" in _cls_rep and "content identity, not a waiver" in _cls_rep
+   and "TARGET (an input constant), the SERVED realisation, the RE-RUN realisation" in _cls_rep and "Both collision definitions are kept apart everywhere" in _cls_rep
+   and "was a target beside a realisation and is resolved here, not a sixteen-fold miss" in _cls_rep and "The pool is not the reason" in _cls_rep
+   and "sampler has no tight-end-at-FLEX path at all" in _cls_rep and "offered for the next study, not a fit" in _cls_rep
+   and "One slate" in _cls_rep and "No production change follows from this artifact" in _cls_rep
+   and "21 times" not in _cls_rep and "measurably off" not in _cls_rep and "curve was right" not in _cls_rep
+   and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_FIELD_COLLISION == 1.2e-7 and _dt7b.CL_BRING_BACK == 0.35)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
