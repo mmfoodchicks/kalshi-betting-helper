@@ -71,6 +71,12 @@ def _norm(name):
     return " ".join(str(name or "").split())
 
 
+def _norm_key(name):
+    """The pool matcher's key: lower case, suffixes and punctuation out."""
+    import nfl_adp
+    return nfl_adp._norm(name)
+
+
 def parse_lineup(text):
     """'CPT A FLEX B FLEX C ...' -> (cpt, [b, c, d, e, f]) or None for an empty
     entry; raises on any other shape (an entry is never silently reshaped)."""
@@ -298,8 +304,14 @@ def model_field(slate, pool, detail, week, roster_name=None, n_entries=None, log
         exp_dup[f"{lo}-{hi if hi < 10 ** 9 else 'plus'}"] = {"lineups": round(n_lineups, 1), "entries": round(n_entries, 1),
                                                             "entry_share_pct": round(100 * n_entries / C, 2)}
     proj_lineup = proj[idx[:, 0]] * CPT_MULT + proj[idx[:, 1:]].sum(axis=1)
+    raw = json.load(open(os.path.join(FEEDS, f"proj_2026_{week}.json")))
+    proj_rows = {}
+    for r in raw:
+        pl = r.get("player") or {}
+        key = _norm_key(pl.get("full_name") or f"{pl.get('first_name', '')} {pl.get('last_name', '')}")
+        proj_rows.setdefault(key, []).append((r.get("team"), (r.get("stats") or {}).get("pts_ppr")))
     return {"ents": ents, "idx": idx, "allowed": allowed, "f": f, "beta": float(beta), "C": C,
-            "roster_stamp": nfl_adp._PINNED[1],
+            "roster_stamp": nfl_adp._PINNED[1], "proj_rows": proj_rows, "teams": set(e["team"] for e in ents),
             "proj_lineup": proj_lineup, "name_of": name_of, "pool_names": [e["name"] for e in ents if not e.get("_field_only")],
             "field_only": [e["name"] for e in ents if e.get("_field_only")],
             "summary": {"universe_lineups": int(len(idx)), "enterable_under_our_rules": int(allowed.sum()),
@@ -369,6 +381,21 @@ def by_bin(std, pool, M):
                      "observed_entry_share_pct": round(100 * float(obs[m_obs].sum() / n_all), 3),
                      "observed_distinct_lineups": int(m_obs.sum()),
                      "observed_over_model": (round(float(obs[m_obs].sum() / n_all / f[m_all].sum()), 3) if f[m_all].sum() > 0 else None)})
+    # WHY each outside player is outside: no Sleeper projection row at all, a
+    # projection filed under another team (the pool builder filters by the
+    # game's teams, so a man traded in during the week has no line), or a
+    # projection that the depth-chart gate dropped beyond the field-only extras
+    reasons = {}
+    for nm in list(outside):
+        if nm.startswith("("):
+            continue
+        rows = M["proj_rows"].get(_norm_key(nm))
+        if not rows:
+            reasons[nm] = "no Sleeper projection row"
+        elif not any(t in M["teams"] for t, _ in rows):
+            reasons[nm] = f"projected under another team ({', '.join(sorted(set(t or '?' for t, _ in rows)))})"
+        else:
+            reasons[nm] = "projected, dropped by the depth-chart gate beyond the field-only extras"
     # the chalk: is the most duplicated real lineup the model's most probable?
     top_obs = rows[np.argmax(obs)]
     model_rank_of_top_obs = int((f > f[top_obs]).sum()) + 1
@@ -376,7 +403,10 @@ def by_bin(std, pool, M):
     top_model = int(np.argmax(f))
     return {"entries_inside_universe": int(obs.sum()), "entries_outside_universe": outside_entries,
             "outside_share_pct": round(100 * outside_entries / n_all, 2),
-            "outside_by_player": [{"name": nm, "entries": v, "share_pct": round(100 * v / n_all, 2)} for nm, v in outside.most_common(12)],
+            "outside_by_player": [{"name": nm, "entries": v, "share_pct": round(100 * v / n_all, 2), "why": reasons.get(nm)}
+                                  for nm, v in outside.most_common(12)],
+            "outside_by_reason_pct": {why: round(100 * sum(v for nm, v in outside.items() if reasons.get(nm) == why) / n_all, 2)
+                                      for why in sorted(set(reasons.values()))},
             "bins": bins,
             "chalk": {"most_duplicated_real_lineup": {"copies": int(obs.max()), "model_prob_pct": round(100 * float(f[top_obs]), 4),
                                                       "model_rank": model_rank_of_top_obs,
