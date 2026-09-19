@@ -208,16 +208,39 @@ class RosterUnavailable(RuntimeError):
 _LAST_ROSTER = {"state": None}
 
 
-def _depth_source():
+def iso_ts(v):
+    """DraftKings' start time as epoch seconds, or None. Their strings carry a
+    trailing Z and sometimes seven fractional digits, which datetime refuses."""
+    import datetime
+    t = str(v or "")[:19]
+    if not t:
+        return None
+    try:
+        return int(datetime.datetime.fromisoformat(t).replace(
+            tzinfo=datetime.timezone.utc).timestamp())
+    except ValueError:
+        return None
+
+
+def seconds_to_lock(starts):
+    """Seconds until a DraftKings start string, or None when it is unreadable;
+    what the depth-chart gate's roster allowance is set from."""
+    import time as _t
+    ts = iso_ts(starts)
+    return None if ts is None else float(ts) - _t.time()
+
+
+def _depth_source(seconds_to_lock=None):
     """(records or None, state) from nfl_adp.roster(); a crash in the roster
     machinery itself is ledgered and reads as unavailable."""
     try:
         import nfl_adp
-        return nfl_adp.roster()
+        return nfl_adp.roster(seconds_to_lock=seconds_to_lock)
     except Exception as _e:
         errlog.note("NFLD-depth", _e)
         return None, {"source": "unavailable", "error": f"{type(_e).__name__}: {_e}",
-                      "fetched_utc": None, "age_s": None, "records": 0}
+                      "fetched_utc": None, "age_s": None, "records": 0, "max_age_s": None,
+                      "seconds_to_lock": seconds_to_lock}
 
 
 def _depth_records():
@@ -261,7 +284,7 @@ def _depth_verdict(p, recs, norm):
     return True, None, int(d), inj == "QUESTIONABLE"
 
 
-def _apply_depth(players, preseason):
+def _apply_depth(players, preseason, seconds_to_lock=None):
     """Split a pool into (kept, excluded) by the roster gate. Within each
     team's position group the survivors are RANKED -- depth-chart order
     first, projection second -- and only the top _DEPTH_KEEP stay, tagged
@@ -271,7 +294,7 @@ def _apply_depth(players, preseason):
     if preseason:
         return players, []
     import nfl_adp
-    recs, state = _depth_source()
+    recs, state = _depth_source(seconds_to_lock)
     _LAST_ROSTER["state"] = state
     if recs is None:
         # the contract: never build with the gate silently off. Ledger it under
@@ -1197,7 +1220,8 @@ def _build_showdown(csv_players, week, objective, contest, contest_size,
         e["proj"] = round(e["proj"], 1)
     ents = [e for e in ents if not e.get("_drop")]
     try:
-        ents, _dx = _apply_depth(ents, preseason)
+        ents, _dx = _apply_depth(ents, preseason,
+                                 seconds_to_lock(contest.get("starts")) if isinstance(contest, dict) else None)
     except RosterUnavailable as _e:
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}
@@ -1384,7 +1408,8 @@ def build(csv_text, week=1, objective="projection", stack=True, contest=None,
                         "proj": round(proj, 1), "ceiling": ceiling, "floor": floor,
                         "elig": elig, "arr": samp})
     try:
-        players, _dx = _apply_depth(players, preseason)
+        players, _dx = _apply_depth(players, preseason,
+                                    seconds_to_lock(contest.get("starts")) if isinstance(contest, dict) else None)
     except RosterUnavailable as _e:
         return {"error": f"no trustworthy roster for the depth-chart gate; the sheet is not built with the "
                          f"gate off ({_e})", "roster_source": _e.state, "excluded": excluded[:40]}

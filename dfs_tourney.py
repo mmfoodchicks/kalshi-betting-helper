@@ -984,8 +984,12 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
             e["_drop"] = True
     ents = [e for e in ents if not e.get("_drop")]
     by_name = {e["name"]: e for e in ents}
+    _starts_ts = _iso_ts(contest.get("starts") or (slate.get("starts") if isinstance(slate, dict) else None))
     try:
-        ents, dx = nfl_dfs._apply_depth(ents, preseason)
+        # the roster allowance is lock-relative: inside a pre-lock window the
+        # last-known-good copy must be younger than the window is long
+        ents, dx = nfl_dfs._apply_depth(ents, preseason,
+                                        None if not _starts_ts else float(_starts_ts) - time.time())
     except nfl_dfs.RosterUnavailable:
         return None                     # ledgered as NFLD-roster; no board with the gate off
     # The depth gate is OUR rule, not the public's: a WR4 with a real
@@ -1163,7 +1167,6 @@ def build_nfl_showdown(dg, contest_id=None, n_sims=60000, n_worlds=None, chunk=5
     except Exception as e:
         errlog.note("TOURN-status", e)
         st_sig, st_cls = None, {}
-    _starts_ts = _iso_ts(contest.get("starts") or (slate.get("starts") if isinstance(slate, dict) else None))
     _built = int(time.time())
     return plain({"version": VERSION, "engine": SD_ENGINE,
             "kind": "showdown", "sport": "nfl", "draft_group_id": int(dg),
@@ -1849,17 +1852,11 @@ def calibrate_field(players, rng, n=40000, max_own=CL_FIELD_MAX_OWN, salary_used
 
 
 def _iso_ts(v):
-    """DraftKings' start time as epoch seconds, or None. Their strings carry a
-    trailing Z and sometimes seven fractional digits, which datetime refuses."""
-    import datetime
-    t = str(v or "")[:19]
-    if not t:
-        return None
-    try:
-        return int(datetime.datetime.fromisoformat(t).replace(
-            tzinfo=datetime.timezone.utc).timestamp())
-    except ValueError:
-        return None
+    """DraftKings' start time as epoch seconds, or None. Lives in nfl_dfs now
+    (the depth-chart gate's lock-relative roster allowance needs it too);
+    pc_worker still reads it here."""
+    import nfl_dfs
+    return nfl_dfs.iso_ts(v)
 
 
 def pool_sig_rich(csv_text):
@@ -2219,7 +2216,8 @@ def build_nfl_classic(dg, min_pool=1_000_000, contest_ids=None, n_sims=60000, n_
                      "rec_tgt": float(sim.get("rec_tgt") or 0.0)})
     by_name = {e["name"]: e for e in ents}
     try:
-        ents, dx = nfl_dfs._apply_depth(ents, preseason)
+        ents, dx = nfl_dfs._apply_depth(ents, preseason,
+                                        nfl_dfs.seconds_to_lock(slate.get("starts") if isinstance(slate, dict) else None))
     except nfl_dfs.RosterUnavailable:
         return None                     # ledgered as NFLD-roster; no board with the gate off
     extra = []

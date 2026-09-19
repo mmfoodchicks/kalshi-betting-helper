@@ -168,8 +168,32 @@ def _norm(name):
 #     event (nfl_dfs.RosterUnavailable) -- the gate is never silently off;
 #   * research stays pinned to an immutable capture (research.sd_board.feeds).
 ROSTER_TTL_S = 12 * 3600        # a copy is current for this long (it tracks news / injuries)
-ROSTER_MAX_AGE_S = 36 * 3600    # older than this, a last-known-good copy is refused
+ROSTER_MAX_AGE_S = 36 * 3600    # far from lock: older than this, a last-known-good copy is refused
 ROSTER_RETRY_S = 300            # after a failure, no new attempt sooner than this
+# Near lock the allowance is the WINDOW's, not 36 hours (the reviewer's point of
+# 2026-09-19): a valid roster captured Monday morning, Sleeper down, the
+# mandatory T-25m rebuild at 20 hours of age would otherwise produce a freshly
+# built, correctly stamped board from a roster old enough to miss the single
+# late inactive that changes thousands of Showdown combinations. Observability
+# does not make stale input safe. The minute thresholds are pc_worker's
+# pre-lock refresh windows (_PRELOCK_WINDOWS: T-4h, T-2h, T-1h, T-25m), pinned
+# equal by a guard, so a mandatory freshness check cannot be satisfied by data
+# older than the window's purpose: inside a window the roster must be younger
+# than the window is long.
+ROSTER_LOCK_WINDOWS = ((240, 4 * 3600), (120, 2 * 3600), (60, 3600), (25, 25 * 60))
+
+
+def roster_max_age_for(seconds_to_lock):
+    """The oldest last-known-good roster a build this far from lock may run on.
+    Unknown lock time (None) reads as far from lock."""
+    if seconds_to_lock is None:
+        return ROSTER_MAX_AGE_S
+    mins = float(seconds_to_lock) / 60.0
+    allowed = ROSTER_MAX_AGE_S
+    for hi, age in ROSTER_LOCK_WINDOWS:
+        if mins <= hi:
+            allowed = age
+    return allowed
 _roster = {"data": None, "fetched": 0.0, "failed": 0.0, "error": None, "source": None}
 _PINNED = None                  # research only: (records, stamp) from a captured file
 
@@ -209,44 +233,50 @@ def _load_lkg():
         return None, 0.0
 
 
-def _state(st, now, source):
+def _state(st, now, source, max_age_s=ROSTER_MAX_AGE_S, seconds_to_lock=None):
     fetched = float(st.get("fetched") or 0.0)
     return {"source": source, "records": len(st["data"]) if st.get("data") else 0,
             "fetched_utc": (time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(fetched)) if fetched else None),
             "age_s": (int(now - fetched) if fetched else None),
-            "ttl_s": ROSTER_TTL_S, "max_age_s": ROSTER_MAX_AGE_S, "error": st.get("error")}
+            "ttl_s": ROSTER_TTL_S, "max_age_s": int(max_age_s),
+            "seconds_to_lock": (None if seconds_to_lock is None else int(seconds_to_lock)),
+            "error": st.get("error")}
 
 
-def roster(now=None):
+def roster(now=None, seconds_to_lock=None):
     """(records, state): the roster the depth-chart gate may consult, or
     (None, state) when no copy is trustworthy. `records` is the
     {norm_name: row} map consensus() always produced; `state` says where it
     came from (pinned / live / disk / last-known-good / unavailable), when it
-    was fetched and how old it is, so a board can carry that stamp."""
+    was fetched, how old it is and how old it was allowed to be, so a board
+    can carry that stamp. `seconds_to_lock` sets the allowance
+    (roster_max_age_for); a fresh copy inside the TTL is always fine."""
     now = time.time() if now is None else float(now)
+    max_age_s = roster_max_age_for(seconds_to_lock)
     if _PINNED is not None:
         recs, stamp = _PINNED
-        return recs, {"source": "pinned", "records": len(recs), "age_s": 0, "error": None, **stamp}
+        return recs, {"source": "pinned", "records": len(recs), "age_s": 0, "error": None,
+                      "max_age_s": None, "seconds_to_lock": None, **stamp}
     st = _roster
     if st["data"] is None:                      # cold process: the shared last-known-good first
         data, ts = _load_lkg()
         if data:
             st.update(data=data, fetched=ts, source="disk")
-    if st["data"] is not None and now - st["fetched"] < ROSTER_TTL_S:
-        return st["data"], _state(st, now, st.get("source") or "live")
+    if st["data"] is not None and now - st["fetched"] < min(ROSTER_TTL_S, max_age_s):
+        return st["data"], _state(st, now, st.get("source") or "live", max_age_s, seconds_to_lock)
     if now - st["failed"] >= ROSTER_RETRY_S:
         try:
             data = _build(_fetch_players())
             st.update(data=data, fetched=now, failed=0.0, error=None, source="live")
             _save_lkg(data, now)
-            return data, _state(st, now, "live")
+            return data, _state(st, now, "live", max_age_s, seconds_to_lock)
         except Exception as e:
             st["failed"], st["error"] = now, f"{type(e).__name__}: {e}"
             errlog.note("ADP-players", e, msg="Sleeper roster fetch failed; the depth-chart gate uses a "
-                                              "last-known-good copy within ROSTER_MAX_AGE_S or refuses")
-    if st["data"] is not None and now - st["fetched"] < ROSTER_MAX_AGE_S:
-        return st["data"], _state(st, now, "last-known-good")
-    return None, _state(st, now, "unavailable")
+                                              "last-known-good copy within its lock-relative allowance or refuses")
+    if st["data"] is not None and now - st["fetched"] < max_age_s:
+        return st["data"], _state(st, now, "last-known-good", max_age_s, seconds_to_lock)
+    return None, _state(st, now, "unavailable", max_age_s, seconds_to_lock)
 
 
 def consensus():

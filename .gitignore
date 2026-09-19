@@ -38,3 +38,4 @@ seeds/part_*.json
 # and combined into sd_live_ab.json. Intermediates, and a stale one read as
 # current is exactly the mistake that makes an A/B lie.
 research/data/_ab_*.json
+research/data/_res_*.json
