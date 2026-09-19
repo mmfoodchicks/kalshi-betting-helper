@@ -277,6 +277,7 @@ def model_field(slate, pool, detail, log=print):
                                                             "entry_share_pct": round(100 * n_entries / C, 2)}
     proj_lineup = proj[idx[:, 0]] * CPT_MULT + proj[idx[:, 1:]].sum(axis=1)
     return {"ents": ents, "idx": idx, "allowed": allowed, "f": f, "beta": float(beta), "C": C,
+            "roster_stamp": nfl_adp._PINNED[1],
             "proj_lineup": proj_lineup, "name_of": name_of, "pool_names": [e["name"] for e in ents if not e.get("_field_only")],
             "field_only": [e["name"] for e in ents if e.get("_field_only")],
             "summary": {"universe_lineups": int(len(idx)), "enterable_under_our_rules": int(allowed.sum()),
@@ -460,7 +461,8 @@ def run(log=print):
                     "contest": {k: detail.get(k) for k in ("id", "name", "entry_fee", "max_entries", "prize_pool", "first_prize", "places_paid", "draft_group_id", "starts")},
                     "standings_file": {"file": os.path.basename(path), **{k: v for k, v in man["files"][os.path.basename(path)].items() if k in ("csv_sha256", "gz_sha256", "rows_excluding_header", "csv_mtime_in_zip")}},
                     "inputs": {"draftkings": s6_capture.dk_hashes(DG), "sleeper": s6_capture.sleeper_hashes(FEEDS),
-                               "roster": sd_board.roster_stamp(FEEDS, week=WEEK)},
+                               "roster": {**sd_board.roster_stamp(FEEDS, week=WEEK),
+                                          "injury_statuses": M["roster_stamp"]["injury_statuses"]}},
                     "caveats": ["the DraftKings pool and the Sleeper week-2 feeds were captured AFTER the game; salaries do not "
                                 "change after lock, but Sleeper's projections are not versioned, so the projection column is "
                                 "not proven equal to what was served at lock",
