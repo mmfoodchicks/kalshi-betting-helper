@@ -1014,6 +1014,17 @@ def _reblend_bout(fa, fb, seed=0):
     rng = random.Random(seed)
     idx = ([win_idx[rng.randrange(len(win_idx))] for _ in range(n_win)]
            + [loss_idx[rng.randrange(len(loss_idx))] for _ in range(n - n_win)])
+    # The list above is every win draw, then every loss draw. dfs_sim and
+    # _contest_sim score a lineup by picking ONE index across every fighter on
+    # the card, so an ordering shared by every bout (wins first) is read as a
+    # joint world in which every A-side wins together: on independent
+    # synthetic bouts the blended arrays showed a large positive cross-bout
+    # correlation where the unblended arrays sat at zero (measured 2026-09-19,
+    # research/reports/ufc_331_receipt.md). Shuffling the list once per bout,
+    # and applying the SAME shuffled list to both fighters, keeps the
+    # within-bout pairing (entry k is still one fight, exactly one side banks
+    # the win) and returns unrelated bouts to independence.
+    rng.shuffle(idx)
     for f, arr in ((fa, aa), (fb, ba)):
         res = [arr[i] for i in idx]
         s = sorted(res)

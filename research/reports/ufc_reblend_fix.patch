@@ -9,17 +9,17 @@
 +    # The list above is every win draw, then every loss draw. dfs_sim and
 +    # _contest_sim score a lineup by picking ONE index across every fighter on
 +    # the card, so an ordering shared by every bout (wins first) is read as a
-+    # joint world in which every A-side wins together: measured 2026-09-19 on
-+    # independent synthetic bouts, cross-bout correlation of the blended
-+    # arrays 0.31-0.55 where the unblended arrays sat at 0.00. Shuffling the
-+    # list once per bout, and applying the SAME shuffled list to both
-+    # fighters, keeps the within-bout pairing (entry k is still one fight,
-+    # exactly one side banks the win) and returns unrelated bouts to
-+    # independence.
++    # joint world in which every A-side wins together: on independent
++    # synthetic bouts the blended arrays showed a large positive cross-bout
++    # correlation where the unblended arrays sat at zero (measured 2026-09-19,
++    # research/reports/ufc_331_receipt.md). Shuffling the list once per bout,
++    # and applying the SAME shuffled list to both fighters, keeps the
++    # within-bout pairing (entry k is still one fight, exactly one side banks
++    # the win) and returns unrelated bouts to independence.
 +    rng.shuffle(idx)
      for f, arr in ((fa, aa), (fb, ba)):
 
-# ---- the guard, to be appended to tests/combo_audit_guards.py with the fix ----
+# ---- the guard, as appended to tests/combo_audit_guards.py with the fix (applied in the first post-lock push) ----
 # ---- UFC: the Kalshi reblend must not manufacture cross-bout correlation (reviewer, 2026-09-19) ----
 import random as _rnd_ufc
 import simulate as _sim_ufc
@@ -46,7 +46,7 @@ for fa, fb, won in _ufc_bouts:
     _ufc_win_share.append(sum(won[int(v)] for v in fa["blend_arr"]) / len(fa["blend_arr"]))
 _ufc_cross = [abs(_ufc_corr([won0[int(v)] for v in _ufc_bouts[0][0]["blend_arr"]], [wonk[int(v)] for v in fk["blend_arr"]]))
               for (fk, _fb, wonk) in _ufc_bouts[1:] for won0 in [_ufc_bouts[0][2]]]
-ck("UFC reblend: applying one shuffled index list to both fighters keeps entry k one fight (A's value is minus B's at every index), lands each bout's win share within a point of its blended target, and leaves unrelated bouts independent (absolute cross-bout correlation of the win indicator under 0.08 on 2,000 samples; the unshuffled list measured 0.31-0.55)",
+ck("UFC reblend: applying one shuffled index list to both fighters keeps entry k one fight (A's value is minus B's at every index), lands each bout's win share within a point of its blended target, and leaves unrelated bouts independent (absolute cross-bout correlation of the win indicator under 0.08 on 2,000 samples; the unshuffled list read as a large positive correlation, see research/reports/ufc_331_receipt.md)",
    _ufc_ok and _ufc_pair_ok
    and all(abs(s - (fa["fair_win"] / 100.0)) < 0.01 for s, (fa, _fb, _w) in zip(_ufc_win_share, _ufc_bouts))
    and max(_ufc_cross) < 0.08 and "rng.shuffle(idx)" in open(_os.path.join(_root, "simulate.py")).read())

@@ -17557,6 +17557,38 @@ ck("the classic report states the reconciliation, the per-roster-position owners
    and "This artifact fits nothing and changes nothing" in _cl8_rep and "The constants are not edited here" in _cl8_rep
    and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_FIELD_COLLISION == 1.2e-7)
 
+# ---- UFC: the Kalshi reblend must not manufacture cross-bout correlation (reviewer, 2026-09-19) ----
+import random as _rnd_ufc
+import simulate as _sim_ufc
+
+
+def _ufc_synth_bout(p_win, n=2000, seed=0):
+    r = _rnd_ufc.Random(seed)
+    won = [1 if r.random() < p_win else 0 for _ in range(n)]
+    # the value encodes the index, so the pairing can be checked exactly
+    fa = {"name": "A", "won_arr": won, "dk_arr": [float(i) for i in range(n)], "fair_win": 100 * p_win + 4.0, "kalshi_cents": 50}
+    fb = {"name": "B", "won_arr": [1 - w for w in won], "dk_arr": [-float(i) for i in range(n)]}
+    return fa, fb, won
+
+
+def _ufc_corr(x, y):
+    n = len(x); mx = sum(x) / n; my = sum(y) / n
+    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y)); sxx = sum((a - mx) ** 2 for a in x); syy = sum((b - my) ** 2 for b in y)
+    return sxy / ((sxx * syy) ** 0.5 or 1.0)
+
+
+_ufc_bouts = [_ufc_synth_bout(p, seed=i) for i, p in enumerate((0.5, 0.62, 0.71, 0.36, 0.8))]
+_ufc_ok = all(_sim_ufc._reblend_bout(fa, fb, seed=i) for i, (fa, fb, _w) in enumerate(_ufc_bouts))
+_ufc_pair_ok = all(all(a == -b for a, b in zip(fa["blend_arr"], fb["blend_arr"])) for fa, fb, _w in _ufc_bouts)
+_ufc_win_share = [sum(won[int(v)] for v in fa["blend_arr"]) / len(fa["blend_arr"]) for fa, _fb, won in _ufc_bouts]
+_ufc_won0 = _ufc_bouts[0][2]
+_ufc_cross = [abs(_ufc_corr([_ufc_won0[int(v)] for v in _ufc_bouts[0][0]["blend_arr"]], [wonk[int(v)] for v in fk["blend_arr"]]))
+              for (fk, _fb, wonk) in _ufc_bouts[1:]]
+ck("UFC reblend: applying one shuffled index list to both fighters keeps entry k one fight (A's value is minus B's at every index), lands each bout's win share within a point of its blended target, and leaves unrelated bouts independent (absolute cross-bout correlation of the win indicator under 0.08 on 2,000 samples; the unshuffled list read as a large positive correlation, see research/reports/ufc_331_receipt.md)",
+   _ufc_ok and _ufc_pair_ok
+   and all(abs(s - (fa["fair_win"] / 100.0)) < 0.01 for s, (fa, _fb, _w) in zip(_ufc_win_share, _ufc_bouts))
+   and max(_ufc_cross) < 0.08 and "rng.shuffle(idx)" in open(_os.path.join(_root, "simulate.py")).read())
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
