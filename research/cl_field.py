@@ -19,9 +19,18 @@ model's own definitions:
             sampler's own.max() counts a player wherever he sits; DraftKings'
             %Drafted column is per roster position, so Gibbs reads 38.58% at
             RB in the export and 42.75% across RB and FLEX)
-  collision sum over lineups of (copies / entries)^2, the probability two
-            random entries hold the same lineup; 1 / that is the effective
-            number of lineups
+  collision two statistics, kept apart (the reviewer's correction of
+            2026-09-19): the plug-in HHI, the sum over lineups of
+            (copies / entries)^2, is the descriptive concentration figure
+            (1 / HHI is the effective number of lineups) and has a floor of
+            1 / entries even when every lineup is unique, 1.20e-6 on this
+            field; the DISTINCT-ENTRY collision, the sum over lineups of
+            copies * (copies - 1) over entries * (entries - 1), is the
+            unbiased estimate of P(two random distinct entries hold the same
+            lineup), which is what CL_FIELD_COLLISION means and exactly the
+            statistic the sampler's own dfs_tourney._collision reports, so
+            that is the one the constant is compared to; the plug-in HHI is
+            never compared to it (the constant sits below the HHI's floor)
 
 Inputs: the owner's export (167 MB, uncommitted; pinned by sha256 in
 research/data/dk_standings/manifest.json and verified here before anything is
@@ -166,15 +175,22 @@ def _wq(values, qs):
     return [float(np.percentile(values, q)) for q in qs]
 
 
-def empirical(std, pool):
+def empirical(lineups, pool, n_all=None, user_entries=None):
+    """The field's shape under the sampler's own definitions. `lineups` is a
+    list of [(slot, name)] * 9 (export order or the sampler's slot order; only
+    the slot labels matter), so the same function grades the real export and a
+    sampled field alike. `n_all` is DraftKings' denominator (all rows, blank
+    ones included) for the per-position ownership and the user brackets;
+    `user_entries` the per-row max-entries number from the export."""
     import dfs_tourney as T
-    E = [e for e in std["entries"] if e["lineup"] and all(nm in pool for _, nm in e["lineup"])]
-    n_all = len(std["entries"])
+    E = [lu for lu in lineups if lu and all(nm in pool for _, nm in lu)]
+    n_all = int(n_all) if n_all else len(E)
     N = len(E)
-    lc = collections.Counter(tuple(sorted(nm for _, nm in e["lineup"])) for e in E)
+    lc = collections.Counter(tuple(sorted(nm for _, nm in lu)) for lu in E)
     counts = np.asarray(sorted(lc.values(), reverse=True), dtype=np.float64)
     p_act = counts / N
-    collision = float((p_act ** 2).sum())
+    collision = float((p_act ** 2).sum())                       # plug-in HHI: floor 1/N even when every lineup is unique
+    pairs = float((counts * (counts - 1)).sum()) / (N * (N - 1))  # distinct-entry collision: dfs_tourney._collision's own statistic
     dup = {}
     for lo, hi in DUP_BUCKETS:
         m = (counts >= lo) & (counts <= hi)
@@ -184,9 +200,8 @@ def empirical(std, pool):
     stacks = collections.Counter(); stacks_rb = collections.Counter(); bring = 0; bring_stacked = 0; stacked = 0
     dst_vs_qb = 0; dst_vs_rb = 0; same_team_max = collections.Counter(); same_game_max = collections.Counter()
     sal_used = []; punts = collections.Counter(); flex_pos = collections.Counter(); qb_game_count = collections.Counter()
-    users = collections.Counter(e["user_entries"] for e in std["entries"])
-    for e in E:
-        lu = e["lineup"]
+    users = collections.Counter(user_entries or ())
+    for lu in E:
         names = [nm for _, nm in lu]
         rows = [pool[nm] for nm in names]
         qb = next(pool[nm] for s, nm in lu if s == "QB")
@@ -219,14 +234,22 @@ def empirical(std, pool):
     return {"active_entries": N, "distinct_lineups": len(lc), "max_lineup_copies": int(counts[0]),
             "max_lineup_share_pct": round(100 * float(p_act[0]), 4),
             "top_lineups": [{"copies": int(v), "lineup": list(k)} for k, v in lc.most_common(3)],
-            "collision": {"sum_p2": collision, "effective_lineups": round(1.0 / collision, 1),
-                          "model_reported": T.CL_FIELD_COLLISION, "ratio_real_over_model": round(collision / T.CL_FIELD_COLLISION, 2)},
+            "collision": {"sum_p2": collision, "effective_lineups": round(1.0 / collision, 1), "hhi_floor_1_over_n": 1.0 / N,
+                          "distinct_pairs": pairs, "effective_lineups_pairs": (round(1.0 / pairs, 1) if pairs > 0 else None),
+                          "identity_n_hhi_minus_1_over_n_minus_1": (N * collision - 1.0) / (N - 1.0),
+                          "model_reported": T.CL_FIELD_COLLISION,
+                          "ratio_real_over_model": round(pairs / T.CL_FIELD_COLLISION, 2),
+                          "ratio_hhi_over_model_not_like_for_like": round(collision / T.CL_FIELD_COLLISION, 2),
+                          "compared": "distinct_pairs (the constant's definition: P(two random distinct entries hold the same lineup); "
+                                      "the statistic dfs_tourney._collision reports for a sampled field); sum_p2 is the plug-in HHI, "
+                                      "descriptive only, and cannot be compared to the constant: its floor 1/N exceeds the constant"},
             "duplicates": dup,
             "max_ownership": {"player": top_any[0], "any_slot_pct": round(100 * top_any[1] / N, 2),
                               "any_slot_pct_of_all_rows": round(100 * top_any[1] / n_all, 2),
                               "by_slot_pct": {s: round(100 * own_slot[(top_any[0], s)] / n_all, 2) for s in ("RB", "FLEX", "WR", "TE", "QB", "DST") if own_slot[(top_any[0], s)]},
                               "model_target": T.CL_FIELD_MAX_OWN},
             "ownership_top": [{"name": nm, "pos": pool[nm]["pos"], "team": pool[nm]["team"], "any_slot_pct": round(100 * v / N, 2)} for nm, v in own_any.most_common(20)],
+            "ownership_any_slot_pct": {nm: round(100 * v / N, 4) for nm, v in own_any.most_common()},
             "players_used": len(own_any), "pool_players": len(pool),
             "stack_pct": {"definition": "WR/TE teammates of the quarterback, a back not counted (the sampler's definition)",
                           "0_1_2_3plus": [round(100 * stacks[k] / N, 2) for k in (0, 1, 2, 3)], "model": [round(100 * x, 1) for x in T.CL_STACK_DIST],
@@ -243,8 +266,9 @@ def empirical(std, pool):
             "players_from_qb_game_pct": {str(k): round(100 * v / N, 2) for k, v in sorted(qb_game_count.items())},
             "punts_under_3000_pct": {str(k): round(100 * v / N, 2) for k, v in sorted(punts.items())},
             "flex_position_pct": {k: round(100 * v / N, 2) for k, v in flex_pos.most_common()},
-            "user_max_entry_brackets": {str(k): {"entries": v, "share_pct": round(100 * v / n_all, 2)} for k, v in sorted(users.items(), key=lambda kv: -kv[1])[:8]},
-            "share_from_150_max_users_pct": round(100 * users.get(150, 0) / n_all, 2)}
+            "user_max_entry_brackets": ({str(k): {"entries": v, "share_pct": round(100 * v / n_all, 2)} for k, v in sorted(users.items(), key=lambda kv: -kv[1])[:8]}
+                                        if users else None),
+            "share_from_150_max_users_pct": (round(100 * users.get(150, 0) / n_all, 2) if users else None)}
 
 
 def constants_table(emp):
@@ -259,8 +283,14 @@ def constants_table(emp):
              "reads": f"any entry; among stacked entries {emp['bring_back_pct']['among_stacked']}%"},
             {"constant": "CL_DST_VS_OWN_QB", "model": T.CL_DST_VS_OWN_QB, "real": round(emp["dst_vs_own_qb_pct"]["real"] / 100, 5),
              "reads": "share of the field whose defense faces its own quarterback"},
-            {"constant": "CL_FIELD_COLLISION", "model": T.CL_FIELD_COLLISION, "real": emp["collision"]["sum_p2"],
-             "reads": f"effective lineups {emp['collision']['effective_lineups']:,.0f}; the most-copied lineup has {emp['max_lineup_copies']} copies"}]
+            {"constant": "CL_FIELD_COLLISION", "model": T.CL_FIELD_COLLISION, "real": emp["collision"]["distinct_pairs"],
+             "reads": f"distinct-entry collision, the constant's own definition and the sampler's own statistic (dfs_tourney._collision): "
+                      f"{emp['collision']['ratio_real_over_model']} times the reported rate, "
+                      + (f"one pair in {emp['collision']['effective_lineups_pairs']:,.0f}" if emp['collision']['effective_lineups_pairs'] else "no colliding pair at all")
+                      + f" against one in {1 / T.CL_FIELD_COLLISION:,.0f}; the plug-in HHI {emp['collision']['sum_p2']:.2e} (effective lineups "
+                      f"{emp['collision']['effective_lineups']:,.0f}) is the descriptive figure and is not compared: its floor is 1/N = "
+                      f"{emp['collision']['hhi_floor_1_over_n']:.2e} even when every lineup is unique, above the constant; "
+                      f"the most-copied lineup has {emp['max_lineup_copies']} copies"}]
 
 
 def run(path, log=print):
@@ -274,7 +304,8 @@ def run(path, log=print):
     log(f"[CL] rows {rec['rows']['parsed']:,} vs capacity {rec['rows']['capacity']:,}; blank {rec['rows']['blank_lineup_rows']}, malformed {rec['rows']['malformed_lineup_rows']}, "
         f"unresolved {rec['lineups']['unresolved_entries']} {rec['lineups']['unresolved_names']}; ownership max |diff| {rec['ownership']['max_abs_diff_pp']} pp; "
         f"points max |diff| {rec['points']['max_abs_diff_points']}; all checks {'PASS' if rec['all_checks_pass'] else 'FAIL'}")
-    emp = empirical(std, pool)
+    emp = empirical([e["lineup"] for e in std["entries"]], pool, n_all=len(std["entries"]),
+                    user_entries=[e["user_entries"] for e in std["entries"]])
     table = constants_table(emp)
     for row in table:
         log(f"[CL] {row['constant']}: model {row['model']} real {row['real']} ({row['reads']})")
@@ -285,6 +316,11 @@ def run(path, log=print):
                     "inputs": {"draftkings": s6_capture.dk_hashes(DG, capdir=CAPDIR),
                                "captured": "draft group 151307 captured after the game (2026-09-19); salaries, teams and games do not change after lock; no Sleeper input is used"},
                     "fit_free": True,
+                    "corrections": ["2026-09-19, the reviewer: CL_FIELD_COLLISION is P(two random distinct entries hold the same lineup), so the like-for-like "
+                                    "real figure is the distinct-entry collision sum c(c-1) / N(N-1), not the plug-in HHI sum (c/N)^2, whose floor 1/N "
+                                    "already exceeds the constant; both are kept, the pair statistic is the one compared",
+                                    "2026-09-19, the reviewer: the constants are input targets and benchmarks; the sampler's realised output is a "
+                                    "separate measurement (the second artifact), so no statement here is about the realised field"],
                     "provenance": provenance.stamp(worlds=None, model="none: raw standings against the classic field model's hand-set constants", seed="UNSEEDED")},
            "reconciliation": rec, "empirical": emp, "constants": table}
     with open(os.path.join(DATA, "cl_field.json"), "w") as fh:

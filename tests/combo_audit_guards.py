@@ -17516,6 +17516,7 @@ _cl8e, _cl8r = _cl8["empirical"], _cl8["reconciliation"]
 _cl8c = {c["constant"]: c for c in _cl8["constants"]}
 _cl8_rep = " ".join(open(_os.path.join(_root, "research", "reports", "cl_field.md")).read().split())
 _cl8_src = open(_os.path.join(_root, "research", "cl_field.py")).read()
+_cl8_coll = _cl8e["collision"]
 ck("the classic export is read only against its pinned hash and reconciles on all four checks: 832,342 rows equal the capacity, 1,314 blank and 0 malformed lineups, 0 unresolved names against draft group 151307, DraftKings' per-roster-position %Drafted reproduced to 0.005 pp over 1,088 rows, and every active entry's points recomputed to 0.00003; the artifact fits nothing, uses no Sleeper input, and is provenance-clean",
    "refusing to read an unpinned export" in _cl8_src and _cl8["meta"]["standings_file"]["sha256"] == "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244"
    and _cl8["meta"]["standings_file"]["committed"] is False
@@ -17524,21 +17525,35 @@ ck("the classic export is read only against its pinned hash and reconciles on al
    and _cl8r["points"]["entries_checked"] == 831028 and _cl8r["points"]["max_abs_diff_points"] < 1e-4 and _cl8r["all_checks_pass"] is True
    and "ROSTER POSITION" in _cl8r["ownership"]["note"]
    and _cl8["meta"]["fit_free"] is True and _cl8["meta"]["provenance"]["dirty"] is False and "no Sleeper input" in _cl8["meta"]["inputs"]["captured"])
-ck("the classic field model's six hand-set constants beside the week-1 Millionaire: the most-owned player held 42.82% of lineups any slot against the 38% target (38.58% at RB plus 4.17% at FLEX in DraftKings' per-position column), the field spent $49,850 against $49,400 with 49.91% at exactly the cap, the defense faced its own quarterback in 0.495% of entries against the model's 8%, the collision rate was 2.50e-6 against the reported 1.2e-7 (400,044 effective lineups; 346 copies of the most-copied lineup), while the stack distribution (19.16 / 53.04 / 26.14 / 1.66%) and the bring-back rate (32.15%) were close to the published trend and the stated assumption",
+ck("the classic field model's six hand-set targets and benchmarks beside the week-1 Millionaire: the most-owned player held 42.82% of lineups any slot against the 38% target (38.58% at RB plus 4.17% at FLEX in DraftKings' per-position column), the field spent $49,850 against $49,400 with 49.91% at exactly the cap, the defense faced its own quarterback in 0.495% of entries against the model's 8%, the distinct-entry collision was 1.30e-6 against the reported 1.2e-7 (10.8 times; one pair in 771,367; 346 copies of the most-copied lineup; the plug-in HHI 2.50e-6 with its 400,044 effective lineups kept apart), while the stack distribution (19.16 / 53.04 / 26.14 / 1.66%) and the bring-back rate (32.15%) were close to the published trend and the stated assumption",
    _cl8e["max_ownership"]["player"] == "Jahmyr Gibbs" and _cl8e["max_ownership"]["any_slot_pct"] == 42.82
    and _cl8e["max_ownership"]["by_slot_pct"] == {"RB": 38.58, "FLEX": 4.17} and _cl8c["CL_FIELD_MAX_OWN"]["model"] == _dt7b.CL_FIELD_MAX_OWN == 0.38
    and _cl8e["salary_used"]["mean"] == 49849.9 and _cl8e["salary_used"]["share_at_cap_pct"] == 49.91 and _cl8c["CL_SALARY_USED"]["model"] == _dt7b.CL_SALARY_USED
    and _cl8e["dst_vs_own_qb_pct"]["real"] == 0.495 and _cl8c["CL_DST_VS_OWN_QB"]["model"] == _dt7b.CL_DST_VS_OWN_QB == 0.08
-   and _cl8e["collision"]["ratio_real_over_model"] == 20.83 and _cl8e["collision"]["effective_lineups"] == 400043.8 and _cl8e["max_lineup_copies"] == 346
-   and _cl8c["CL_FIELD_COLLISION"]["model"] == _dt7b.CL_FIELD_COLLISION
+   and _cl8_coll["ratio_real_over_model"] == 10.8 and round(_cl8_coll["effective_lineups_pairs"]) == 771367
+   and _cl8_coll["effective_lineups"] == 400043.8 and _cl8e["max_lineup_copies"] == 346
+   and _cl8c["CL_FIELD_COLLISION"]["model"] == _dt7b.CL_FIELD_COLLISION and _cl8c["CL_FIELD_COLLISION"]["real"] == _cl8_coll["distinct_pairs"]
    and _cl8e["stack_pct"]["0_1_2_3plus"] == [19.16, 53.04, 26.14, 1.66] and _cl8c["CL_STACK_DIST"]["model"] == list(_dt7b.CL_STACK_DIST)
    and _cl8e["bring_back_pct"]["all_entries"] == 32.15 and _cl8e["bring_back_pct"]["among_stacked"] == 34.52 and _cl8c["CL_BRING_BACK"]["model"] == _dt7b.CL_BRING_BACK
    and _cl8e["distinct_lineups"] == 773891 and _cl8e["duplicates"]["1-1"]["entry_share_pct"] == 89.76 and _cl8e["duplicates"]["51-plus"]["entry_share_pct"] == 0.51
-   and _cl8e["players_used"] == 665 and _cl8e["pool_players"] == 746 and _cl8e["share_from_150_max_users_pct"] == 22.67)
-ck("the classic report states the reconciliation, the per-roster-position ownership definition, the two constants that were close and the four that were off, our two rules' bite on this field, and that nothing is edited or fitted",
-   "Four of the classic field model's six hand-set constants are measurably off" in _cl8_rep
-   and "per roster position" in _cl8_rep and "42.82%" in _cl8_rep and "The curve was right and the target was wrong" in _cl8_rep
-   and "21 times more collisions" in _cl8_rep and "excludes the 5.8% of the field" in _cl8_rep and "excludes the 15% that plays two" in _cl8_rep
+   and _cl8e["players_used"] == 665 and _cl8e["pool_players"] == 746 and _cl8e["share_from_150_max_users_pct"] == 22.67
+   and abs(sum(_cl8e["ownership_any_slot_pct"].values()) - 900.0) < 0.05 and len(_cl8e["ownership_any_slot_pct"]) == 665)
+ck("the collision comparison is like for like (the reviewer, 2026-09-19): the artifact keeps the plug-in HHI and the distinct-entry collision apart, the HHI sits above its own floor 1/N and the constant sits below that floor (so the plug-in could never have matched it), the pair statistic equals (N*HHI - 1)/(N - 1) to machine precision and is the value the constants table compares, the module computes it with the same expression as dfs_tourney._collision, and the report states the floor and the corrected ratio",
+   _cl8_coll["sum_p2"] >= _cl8_coll["hhi_floor_1_over_n"] > _dt7b.CL_FIELD_COLLISION
+   and abs(_cl8_coll["hhi_floor_1_over_n"] - 1.0 / 831028) < 1e-18
+   and _cl8_coll["distinct_pairs"] < _cl8_coll["sum_p2"]
+   and abs(_cl8_coll["distinct_pairs"] - 1.2963992e-06) < 1e-12
+   and abs(_cl8_coll["identity_n_hhi_minus_1_over_n_minus_1"] - _cl8_coll["distinct_pairs"]) < 1e-15
+   and _cl8_coll["compared"].startswith("distinct_pairs")
+   and "(counts * (counts - 1)).sum()) / (N * (N - 1))" in _cl8_src
+   and "(counts * (counts - 1)).sum()) / (n * (n - 1))" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "floor is 1.20e-6" in _cl8_rep and "one pair in 771,367" in _cl8_rep and "10.8 times" in _cl8_rep
+   and any("distinct-entry collision" in c for c in _cl8["meta"]["corrections"]))
+ck("the classic report states the reconciliation, the per-roster-position ownership definition, the reviewer's wording (on this contest four of the six public-field targets and benchmarks differ materially from the observed field; the realised sampler comparison is a separate measurement), keeps the curve claim and the constants-off claim out, our two rules' bite on this field, and that nothing is edited or fitted",
+   "four of the six public-field targets and benchmarks differ materially from the observed field" in _cl8_rep and "realised sampler comparison" in _cl8_rep
+   and "The curve was right and the target was wrong" not in _cl8_rep and "constants are measurably off" not in _cl8_rep and "21 times more collisions" not in _cl8_rep
+   and "per roster position" in _cl8_rep and "42.82%" in _cl8_rep
+   and "excludes the 5.8% of the field" in _cl8_rep and "excludes the 15% that plays two" in _cl8_rep
    and "This artifact fits nothing and changes nothing" in _cl8_rep and "The constants are not edited here" in _cl8_rep
    and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_FIELD_COLLISION == 1.2e-7)
 
