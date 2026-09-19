@@ -50,11 +50,13 @@ the re-run can be checked against the served board's stamps.
     python3 -m research.cl_sampler seed <seed> <scratch dir>   # one seed, its partial file
     python3 -m research.cl_sampler assemble <scratch dir>      # the artifact from the partials
 """
+import ast
 import collections
 import datetime
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -79,6 +81,118 @@ TOP_TABLE = 50
 
 def _sha(path):
     return hashlib.sha256(open(path, "rb").read()).hexdigest()
+
+
+# ---- content identity: what a seed partial's numbers depend on -------------
+# HEAD moves for unrelated work after the seeds run (UFC 331 landed between
+# the seed runs and this assembly). The assembler therefore does not ask
+# "was HEAD the seeds' commit?" but "is every input that could change a
+# partial's numbers byte-identical between the seeds' commit and now?": the
+# functions and constants of this module that produced the partials (the
+# assembly-only code below them may change), the sampler and the first
+# artifact's grading function as whole files, the pinned pre-lock board and
+# its manifest, the real field's artifact, and each partial's own config. Any
+# one difference refuses assembly; the partials' stamps are never rewritten.
+PRODUCING_FUNCTIONS = ("served_board", "served_pool", "grading_pool", "lineups_from_idx", "sample_field",
+                       "_rankdata", "compare_ownership", "grade", "real_side", "run_seed")
+PRODUCING_CONSTANTS = ("SEEDS", "FIELD_N", "CAL_N", "CHUNK", "TOP_TABLE")
+IDENTITY_FILES = ("dfs_tourney.py", "research/cl_field.py", "research/data/dk_classic/served_board_151307.json",
+                  "research/data/dk_classic/manifest.json", "research/data/cl_field.json")
+THIS_FILE = "research/cl_sampler.py"
+
+
+def _git_show(commit, path):
+    """The file's bytes at a commit, or None when it did not exist there."""
+    try:
+        return subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        return None
+
+
+def _defs(src):
+    """{name: source text} of every top-level function and every assignment
+    to one of PRODUCING_CONSTANTS, by the AST, so a comment or a docstring
+    elsewhere in the file cannot break or fake identity."""
+    tree = ast.parse(src)
+    out = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            out[node.name] = ast.get_source_segment(src, node)
+        elif isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id in PRODUCING_CONSTANTS:
+                    out[t.id] = ast.get_source_segment(src, node)
+    return out
+
+
+def source_sha_at(commit):
+    """research.provenance.source_sha recomputed over that commit's tree (the
+    same file list and order), so a partial's stored source_sha can be shown
+    to be that commit's code rather than taken on faith."""
+    from research import provenance
+    listing = subprocess.check_output(["git", "ls-tree", "--name-only", commit, "research/"], cwd=ROOT, text=True).split()
+    files = sorted((p for p in listing if p.endswith(".py")), key=os.path.basename)
+    files += [p for p in provenance._PROD if _git_show(commit, p) is not None]
+    h = hashlib.sha256()
+    for path in files:
+        h.update(path.encode())
+        h.update(_git_show(commit, path))
+    return h.hexdigest(), len(files)
+
+
+def content_identity(partials, strict=True):
+    """The check, and its receipt. Returns the report; with `strict` refuses
+    (SystemExit) on any mismatch, listing every one."""
+    import dfs_tourney as T
+    refuse = []
+    commits = sorted({p["provenance"]["commit"] for p in partials})
+    if len(commits) != 1:
+        refuse.append(f"the partials come from {len(commits)} commits: {commits}")
+    if any(p["provenance"].get("dirty") for p in partials):
+        refuse.append("a partial was stamped dirty")
+    c = commits[0] if commits else None
+    stored = sorted({p["provenance"]["source_sha"] for p in partials})
+    recomputed, n_files = (source_sha_at(c) if c else (None, 0))
+    if len(stored) != 1 or stored[0] != recomputed:
+        refuse.append(f"stored source_sha {stored} is not commit {c}'s source hash {recomputed}")
+    files = {}
+    for path in IDENTITY_FILES:
+        then = _git_show(c, path) if c else None
+        now = open(os.path.join(ROOT, path), "rb").read() if os.path.exists(os.path.join(ROOT, path)) else None
+        rec = {"sha256_at_seed_commit": (hashlib.sha256(then).hexdigest() if then is not None else None),
+               "sha256_now": (hashlib.sha256(now).hexdigest() if now is not None else None)}
+        rec["identical"] = then is not None and now is not None and then == now
+        files[path] = rec
+        if not rec["identical"]:
+            refuse.append(f"{path} differs from its content at {c} (or is missing)")
+    then_src = _git_show(c, THIS_FILE) if c else None
+    now_src = open(os.path.join(ROOT, THIS_FILE), "rb").read()
+    funcs = {}
+    if then_src is None:
+        refuse.append(f"{THIS_FILE} did not exist at {c}")
+    else:
+        d_then, d_now = _defs(then_src.decode()), _defs(now_src.decode())
+        for name in PRODUCING_FUNCTIONS + PRODUCING_CONSTANTS:
+            same = name in d_then and name in d_now and d_then[name] == d_now[name]
+            funcs[name] = {"identical": same, "sha256_now": (hashlib.sha256(d_now[name].encode()).hexdigest() if name in d_now else None)}
+            if not same:
+                refuse.append(f"{THIS_FILE}::{name} differs from its source at {c} (or is missing)")
+    config = []
+    want_targets = {"max_own": T.CL_FIELD_MAX_OWN, "salary_used": T.CL_SALARY_USED}
+    for p in partials:
+        ok = (p["seed"] in SEEDS and p["provenance"].get("seed") == p["seed"] and p["sample"]["n"] == FIELD_N and p["provenance"].get("worlds") == FIELD_N
+              and p["calibration"]["n"] == CAL_N and p["sample"]["chunk"] == CHUNK and p["calibration"]["targets"] == want_targets)
+        config.append({"seed": p["seed"], "ok": ok})
+        if not ok:
+            refuse.append(f"seed {p['seed']}: config differs from this module's (n, cal_n, chunk, targets or seed list)")
+    report = {"rule": "every input a partial's numbers depend on must be byte-identical between the seeds' commit and now; the partials' own stamps are kept as written",
+              "seed_runs_commit": c, "seed_runs_source_sha": (stored[0] if len(stored) == 1 else stored), "recomputed_at_that_commit": recomputed,
+              "source_files_at_that_commit": n_files, "files": files, "this_module": {"producing_functions_and_constants": funcs,
+                                                                                     "assembly_only_code_may_change": ["_agg", "_agg_diag", "_rows", "_top_players", "ownership_diagnostics", "assemble", "content_identity", "source_sha_at", "_defs", "_git_show"]},
+              "config": config, "refused": refuse, "passed": not refuse}
+    if strict and refuse:
+        raise SystemExit("content identity refused assembly:\n  " + "\n  ".join(refuse))
+    return report
 
 
 def served_board():
@@ -253,10 +367,59 @@ def run_seed(seed, outdir, log=print):
 
 
 def _agg(vals):
+    """mean, sd (ddof=1), min and max over the seeds: stochastic
+    reproducibility of the served build on ONE slate, not five validations."""
     v = [float(x) for x in vals if x is not None]
     if not v:
         return None
-    return {"mean": round(float(np.mean(v)), 4), "min": round(min(v), 4), "max": round(max(v), 4)}
+    return {"mean": round(float(np.mean(v)), 4), "sd": (round(float(np.std(v, ddof=1)), 4) if len(v) > 1 else None),
+            "min": round(min(v), 4), "max": round(max(v), 4)}
+
+
+def _agg_diag(diags):
+    """Aggregate ownership_diagnostics dicts (numbers at the leaves) with _agg."""
+    if not diags:
+        return None
+    def rec(items):
+        first = items[0]
+        if isinstance(first, dict):
+            return {k: rec([it[k] for it in items]) for k in first}
+        if isinstance(first, (int, float)) and not isinstance(first, bool):
+            return _agg(items)
+        return first
+    return rec(diags)
+
+
+OWN_BINS = ((0.0, 1.0), (1.0, 2.0), (2.0, 5.0), (5.0, 10.0), (10.0, 20.0), (20.0, 101.0))
+
+
+def ownership_diagnostics(samp_pct, real_pct, ents):
+    """Beyond one scalar: calibration by modelled ownership, the real mass the
+    sampler's own top players capture, and the top-20-by-real errors. All in
+    pct of lineups, any slot, over the sampler's pool."""
+    names = [e["name"] for e in ents]
+    s = np.asarray([float(samp_pct.get(nm, 0.0)) for nm in names])
+    r = np.asarray([float(real_pct.get(nm, 0.0)) for nm in names])
+    d = s - r
+    bins = {}
+    for lo, hi in OWN_BINS:
+        m = (s >= lo) & (s < hi)
+        bins[f"{lo:g}-{hi:g}" if hi < 101 else f"{lo:g}+"] = {"players": int(m.sum()), "modeled_mean_pct": (round(float(s[m].mean()), 3) if m.any() else None),
+                                                              "real_mean_pct": (round(float(r[m].mean()), 3) if m.any() else None),
+                                                              "bias_pp": (round(float(d[m].mean()), 3) if m.any() else None)}
+    top = {}
+    order_s, order_r = np.argsort(-s), np.argsort(-r)
+    for k in (10, 20, 50):
+        ts, tr = order_s[:k], order_r[:k]
+        real_topk = float(r[tr].sum()) / 9.0
+        got = float(r[ts].sum()) / 9.0
+        top[f"top{k}"] = {"real_slot_share_of_samplers_top_pct": round(got, 3), "real_slot_share_of_real_top_pct": round(real_topk, 3),
+                          "capture_ratio": (round(got / real_topk, 4) if real_topk else None), "overlap_players": int(len(set(ts.tolist()) & set(tr.tolist())))}
+    t20 = order_r[:20]
+    return {"calibration_by_modeled_ownership": bins, "real_mass_captured_by_samplers_top": top,
+            "top20_by_real": {"bias_pp": round(float(d[t20].mean()), 3), "mae_pp": round(float(np.abs(d[t20]).mean()), 3),
+                              "rmse_pp": round(float(np.sqrt((d[t20] ** 2).mean())), 3)},
+            "max_abs_over_pp": round(float(d.max()), 3), "max_abs_under_pp": round(float(-d.min()), 3)}
 
 
 def _rows(target, served, per_seed, real, log=print):
@@ -356,19 +519,22 @@ def assemble(outdir, log=print):
         if not os.path.exists(path):
             raise SystemExit(f"missing {path}: run `python3 -m research.cl_sampler seed {seed} {outdir}` first")
         per_seed.append(json.load(open(path)))
-    commits = {s["provenance"]["commit"] for s in per_seed}
-    dirty = any(s["provenance"].get("dirty") for s in per_seed)
+    ident = content_identity(per_seed)
     here = provenance.stamp(worlds=FIELD_N, model="dfs_tourney.calibrate_field + classic_sample, the constants as served, on the served pre-lock pool",
-                            seed=list(SEEDS))
-    if len(commits) != 1 or dirty or here["commit"] not in commits:
-        raise SystemExit(f"the seed runs were not all made on this clean commit: {commits}, dirty {dirty}, here {here['commit']}")
+                            seed=list(SEEDS), seed_runs_commit=ident["seed_runs_commit"])
+    if here["dirty"]:
+        raise SystemExit("assembly runs on a clean tree only, so its own stamp can reconstruct this code")
     served_pct = {p["name"]: float(p["field_pct"]) for p in d["players"]}
-    served_cmp = compare_ownership(served_pct, real["ownership_any_slot_pct"], ents)
+    real_own = real["ownership_any_slot_pct"]
+    served_cmp = compare_ownership(served_pct, real_own, ents)
+    served_diag = ownership_diagnostics(served_pct, real_own, ents)
+    diag = [ownership_diagnostics(s["ownership_any_slot_pct"], real_own, ents) for s in per_seed]
     import dfs_tourney as T
     out = {"meta": {"stage": "Task 8, second artifact: the field the classic sampler actually produces (production's served pre-lock build, and the untouched sampler re-run at the real field's size under fixed seeds) beside the real week-1 Millionaire field, fit-free",
                     "contest": real_art["meta"]["contest"], "standings_file": real_art["meta"]["standings_file"],
                     "inputs": {"draftkings": s6_capture.dk_hashes(DG, capdir=CAPDIR), "served_board": man, "first_artifact": "research/data/cl_field.json"},
                     "fit_free": True,
+                    "reruns_are": "stochastic reproducibility: the untouched sampler re-run on the same slate, the same pre-lock inputs and the same public field under five fixed seeds says whether the served miss is stable under sampler randomness; it is not five independent validations and this is one slate",
                     "what_is_fitted": "nothing to the real field; calibrate_field aims at CL_FIELD_MAX_OWN and CL_SALARY_USED on the sampler's own draws, "
                                       "which is production's mechanism with production's targets, and its compromise on this pool is part of the measurement",
                     "constants_as_served": {"CL_FIELD_MAX_OWN": T.CL_FIELD_MAX_OWN, "CL_SALARY_USED": T.CL_SALARY_USED, "CL_STACK_DIST": list(T.CL_STACK_DIST),
@@ -378,16 +544,19 @@ def assemble(outdir, log=print):
                                             and d["field_model"]["stack_dist"] == list(T.CL_STACK_DIST)},
                     "seeds": list(SEEDS), "field_n": FIELD_N, "cal_n": CAL_N, "chunk": CHUNK,
                     "columns": {"target_input": "the constant as an input", "served_realised": "what production's pre-lock build actually produced (300,000 draws; only the receipts it stamped)",
-                                "rerun_realised": "what the untouched sampler produced at 831,028 draws, mean and range over the seeds", "real": "the export"},
-                    "provenance": here},
+                                "rerun_realised": "what the untouched sampler produced at 831,028 draws: mean, sd (ddof=1), min and max over the five seeds", "real": "the export"},
+                    "collision_definitions": "kept apart everywhere: the distinct-entry collision (pairs holding the same lineup over all pairs; the constant's definition and dfs_tourney._collision) is compared; the plug-in HHI and 1/HHI are descriptive concentration figures with a floor of 1/N",
+                    "provenance": here, "content_identity": ident},
            "served": {"built_utc": man["built_utc"], "minutes_before_lock": man["minutes_before_lock"], "n": d["field_model"]["n"],
                       "beta": d["field_model"]["beta"], "kappa": d["field_model"]["kappa"], "seed": d.get("seed"),
                       "achieved": d["field_model"]["achieved"], "collision_distinct_pairs": d["field_model"]["collision"],
                       "top_share_pct": d["field_model"]["top_share_pct"], "completion": d["field_model"]["completion"],
                       "pool": rec, "slate_at_build": d["slate"], "excluded_no_projection": len(d["excluded"]),
-                      "ownership_any_slot_pct": served_pct, "vs_real": served_cmp},
-           "rerun": {"per_seed": per_seed,
+                      "ownership_any_slot_pct": served_pct, "vs_real": served_cmp, "diagnostics": served_diag,
+                      "note": "the served board's field_pct is rounded to 0.1 pp per player"},
+           "rerun": {"per_seed": per_seed, "diagnostics_per_seed": diag,
                      "summary": {"beta": _agg([s["beta"] for s in per_seed]), "kappa": _agg([s["kappa"] for s in per_seed]),
+                                 "diagnostics": _agg_diag(diag),
                                  "vs_real": {k: _agg([s["vs_real"][k] for s in per_seed]) for k in ("mae_pp", "rmse_pp", "bias_pp", "pearson", "spearman")},
                                  "vs_real_top50": {k: _agg([s["vs_real"]["top50_by_real"][k] for s in per_seed]) for k in ("mae_pp", "rmse_pp", "bias_pp", "spearman")},
                                  "vs_served": {k: _agg([s["vs_served"][k] for s in per_seed]) for k in ("mae_pp", "rmse_pp", "bias_pp", "pearson", "spearman")},
