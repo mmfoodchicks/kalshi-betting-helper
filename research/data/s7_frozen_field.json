@@ -36,7 +36,7 @@
   "test_if_fitted": "held-out NLL and the rest of the salary distribution",
   "warning": "the three retrospective boards disagree on its sign (model share at $0: NE @ SEA 7.69% against 13.92%, DEN @ KC 4.68% against 6.67%, DET @ BUF 15.00% against 13.24%), so it is not fitted now"
  },
- "frozen_utc": "2026-09-19 16:38:42 UTC",
+ "frozen_utc": "2026-09-19 18:38:34 UTC",
  "graded_without_fitting": [
   "support coverage",
   "exact-lineup likelihood",
@@ -76,13 +76,13 @@
   ]
  },
  "provenance": {
-  "commit": "2009e79",
+  "commit": "88a60e5",
   "data_split": null,
   "dirty": false,
   "model": "frozen parameters copied from s7_salary.json; nothing fitted",
   "seed": "UNSEEDED",
   "source_files": 43,
-  "source_sha": "e7b9eb2e3c48c03692264070c07d0c6c7f000a97a0b1bbc123d4585af0097c94",
+  "source_sha": "4facae9a8b6eb9cdae88adfe9c940be71f08706b54ee4f185e4b74b9eaaae56a",
   "worlds": null
  },
  "recorded_hypothesis_not_built": "the field is a mixture of user-level lineup-generation strategies rather than IID entries from one universal softmax (a model-family change, for after prospective validation)",
@@ -90,7 +90,9 @@
   "no refit of beta or gamma per slate",
   "no new parameter after seeing a contest",
   "score a contest before any of its counts changes anything",
-  "at least 3 genuinely pre-lock captured contests before another feature-selection round",
+  "at least 3 distinct genuinely pre-lock captured slates (games) before another feature-selection round; contests sharing a pool and a game environment are one test, and are counted separately as metadata",
+  "the frozen parameter file is immutable: a re-freeze with identical parameters leaves it byte-for-byte unchanged, a differing one is refused",
+  "the latest valid pre-lock capture is the primary; every earlier valid capture is a timing-sensitivity arm scored with the same frozen parameters, retained beside it, and never part of the pass/fail criterion",
   "the scorer refuses a capture stamped after the earliest contest start"
  ],
  "salary_only_diagnostic": {
