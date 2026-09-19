@@ -415,6 +415,36 @@ def ordering(B, players, idx, std, pool):
             "winner": win}
 
 
+# ---- the universe-tail sensitivity -------------------------------------------
+SENS_K = (20, 22, 24)
+
+
+def universe_sensitivity(bd, log=print):
+    """Is beta a property of the public or of the universe it is normalised
+    over? The MLE solves E_beta[x] = observed mean x, and every low-projected
+    lineup added to the universe lowers E_beta[x] at a given beta, so a board
+    with a longer tail of near-zero players needs a higher beta to reach the
+    same observed mean. This refits each board on the K highest-projected
+    players only (K = 20, 22, 24; the full universe is the reference row).
+    Entries holding a player outside the top K leave the support, and that
+    share is reported beside each row. A diagnostic of the parameterisation,
+    not a second fit: nothing downstream uses these betas."""
+    players = sorted(bd["players"], key=lambda q: -float(q.get("proj") or 0.0))
+    rows_out = []
+    for K in list(SENS_K) + [len(players)]:
+        sub = players[:K]
+        idx, x = enumerate_lifted(sub)
+        rows, n, miss = observed_counts(bd["std"], sub, idx)
+        B = Board(bd["B"].cid, x, rows, n)
+        beta, note = solve_moment([B], [1.0])
+        rows_out.append({"players": K, "legal_lineups": int(len(idx)), "representable_pct": round(100 * B.N / bd["support"]["active_entries"], 2),
+                         "beta": round(beta, 5), "note": note,
+                         "uniform_mean_x": round(B.moments(0.0)[0] + B.x_max, 3), "observed_mean_x": round(B.xbar + B.x_max, 3),
+                         "lowest_projection_kept": float(sub[-1].get("proj") or 0.0)})
+        log(f"[S7b] {bd['B'].cid} top-{K}: {len(idx):,} lineups, {rows_out[-1]['representable_pct']}% representable, beta_hat {beta:.4f}")
+    return rows_out
+
+
 # ---- the run -----------------------------------------------------------------
 def build(cid, spec, log=print):
     from research import s6_capture
@@ -497,6 +527,7 @@ def run(log=print):
                                       **{k: {**loo[cid][k], "beta": round(loo[cid][k]["beta"], 5)} for k in ("entry_weighted", "contest_balanced")}}},
             "nll_scan": scan,
             "graded": graded,
+            "universe_sensitivity": universe_sensitivity(bd, log),
             "ordering_beta_invariant": ordering(B, bd["players"], bd["idx"], bd["std"], bd["pool"])}
     summary = []
     for cid in ids:
@@ -521,6 +552,7 @@ def run(log=print):
                         "out_of_objective_l1_pp_at_own_mle": {k: g["own_mle"]["out_of_objective"][k]["l1_pp"] for k in ("cpt_position_mix_pct", "structure_pct", "k_dst_slots_pct")},
                         "salary_left_mean": {"observed": g["own_mle"]["out_of_objective"]["salary_left"]["observed_mean"],
                                              "own_mle": g["own_mle"]["out_of_objective"]["salary_left"]["model_mean"]},
+                        "beta_by_universe_top_k": {str(r["players"]): r["beta"] for r in c["universe_sensitivity"]},
                         "ordering": {"spearman": c["ordering_beta_invariant"]["spearman_observed_count_vs_x_over_observed_lineups"],
                                      "real_chalk_model_rank": c["ordering_beta_invariant"]["real_chalk"]["model_rank"],
                                      "observed_mass_in_model_top_1000_pct": c["ordering_beta_invariant"]["observed_mass_in_model_top_k_pct"]["1000"]}})
@@ -535,7 +567,8 @@ def run(log=print):
                                "ordering statistics are invariant to beta in this family and are reported once per board, labelled so",
                                "transfer: six single-board directions and leave-one-contest-out pooling, entry-weighted and contest-balanced",
                                "leave-one-out is a reconstruction sensitivity: only DEN @ KC has pre-lock inputs",
-                               "no new feature, no second parameter"],
+                               "no new feature, no second parameter; the top-K universe refit is a sensitivity of the parameterisation, "
+                               "not a fit anything downstream uses"],
                     "pooled_all_three": {k: {**v, "beta": round(v["beta"], 5)} for k, v in pooled.items()},
                     "fit_free": False,
                     "provenance": provenance.stamp(worlds=None, model="softmax(beta x projection) over the lifted universe; beta by maximum likelihood", seed=SEED)},
