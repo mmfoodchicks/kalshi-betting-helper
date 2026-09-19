@@ -67,7 +67,8 @@ SEED = F.SEED
 CAP, CPT_MULT = F.CAP, F.CPT_MULT
 #: the pre-lock label every table carries; the reader never has to look it up
 INTEGRITY = {193391013: "post-game reconstruction (pool, roster and feeds captured after the game)",
-             195526287: "highest integrity: pool, contest and feeds captured pre-lock (about 50 h before kickoff); roster post-game",
+             195526287: ("highest integrity: pool, contest and feeds captured about 50 hours before kickoff, genuinely before the "
+                         "game but not a near-lock snapshot (no late news in it); roster post-game"),
              195677825: "post-game reconstruction (pool, feeds and roster captured after the game)"}
 BETA_HI = 12.0     # production's bisection bracket (dfs_tourney.field_weights); the MLEs land well inside it
 
@@ -415,6 +416,73 @@ def ordering(B, players, idx, std, pool):
             "winner": win}
 
 
+# ---- fixed projection-rank bins ---------------------------------------------
+RANK_EDGES = ((1, 10), (11, 100), (101, 1000), (1001, 10000), (10001, 100000), (100001, None))
+
+
+def rank_bins(B, betas):
+    """Observed field mass and model mass at several betas over FIXED bins of
+    the projection order (rank 1-10, 11-100, ...). The ordering is the same
+    under every beta, so these bins show the only thing the knob can do:
+    redistribute mass more or less aggressively along one fixed ordering. A
+    bin keyed on fitted-probability thresholds would move its own membership
+    with beta and hide that. Ties in x (projections are rounded to 0.1) are
+    broken by enumeration order; the model mass inside a tie class is uniform,
+    so the model columns do not depend on the tie-break."""
+    order = np.argsort(-B.x, kind="stable")
+    rank = np.empty(len(B.x), dtype=np.int64)
+    rank[order] = np.arange(1, len(B.x) + 1)
+    obs = np.zeros(len(B.x))
+    obs[B.rows] = B.n / B.N
+    probs = {k: B.probs(b) for k, b in betas.items()}
+    out = []
+    for lo, hi in RANK_EDGES:
+        m = (rank >= lo) & ((rank <= hi) if hi else np.ones(len(B.x), dtype=bool))
+        if not m.any():
+            continue
+        out.append({"rank": f"{lo}-{hi or 'end'}", "lineups": int(m.sum()), "observed_pct": round(100 * float(obs[m].sum()), 3),
+                    **{f"model_pct_{k}": round(100 * float(probs[k][m].sum()), 3) for k in betas}})
+    return out
+
+
+def pooled_score(boards_sel, weights, beta):
+    """The score equation a pooled fit actually solves: the weighted sum of
+    the per-contest mean residuals is zero, not each residual. The residuals
+    themselves are the transfer diagnostic: under a common beta a negative
+    residual (model mean below the observed mean) is a board that wants a
+    hotter field, a positive one a board that wants a colder one."""
+    res = {str(c): float(B.moments(beta)[0] - B.xbar) for c, B in boards_sel.items()}
+    ws = sum(w * res[str(c)] for c, w in weights.items())
+    return {"residuals_by_contest": {c: round(r, 5) for c, r in res.items()},
+            "weights": {str(c): float(w) for c, w in weights.items()},
+            "weighted_sum": round(ws, 6), "weighted_mean_residual": round(ws / sum(weights.values()), 8),
+            "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field"}
+
+
+def production_on_own_universe(bd):
+    """The served placeholder exactly as the first artifact reconstructed it
+    (depth gate applied, injury statuses cleared, field-only extras, beta from
+    the 0.2% rule on THAT universe): the historical-fidelity baseline. Its
+    support is the entries inside the gated universe, a different and smaller
+    set than the lifted universe's, so its likelihood is on its own support
+    and is not comparable to the lifted-universe rows; the shape columns are."""
+    M = F.model_field(bd["slate"], bd["pool"], bd["detail"], bd["spec"]["week"], bd["spec"]["roster"],
+                      n_entries=len(bd["std"]["entries"]), log=lambda *a, **k: None)
+    rows, n, miss = observed_counts(bd["std"], M["ents"], M["idx"])
+    f = np.asarray(M["f"], dtype=np.float64)
+    N = float(n.sum())
+    q = n / N
+    return {"beta": round(float(M["beta"]), 5), "players": len(M["ents"]), "legal_lineups": int(len(M["idx"])),
+            "support_pct_of_active": round(100 * N / bd["support"]["active_entries"], 2), "entries_on_support": int(N),
+            "legal_but_not_enumerated": miss["legal_but_missing"],
+            "nll_per_entry_nats_on_its_support": round(float(-(n * np.log(f[rows])).sum() / N), 5),
+            "saturated_on_its_support": round(float(-(q * np.log(q)).sum()), 5),
+            "uniform_on_its_support": round(math.log(len(M["idx"])), 5),
+            "max_share_pct": {"model": round(100 * float(f.max()), 4), "observed_on_its_support": round(100 * float(n.max()) / N, 4)},
+            "effective_lineups_inverse_sum_p2": {"model": round(float(1.0 / (f ** 2).sum()), 1), "observed_on_its_support": round(float(1.0 / (q ** 2).sum()), 1)},
+            "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows"}
+
+
 # ---- the universe-tail sensitivity -------------------------------------------
 SENS_K = (20, 22, 24)
 
@@ -467,7 +535,7 @@ def build(cid, spec, log=print):
     log(f"[S7b] {cid} {spec['label']}: {len(players)} players, {len(idx):,} legal lineups, "
         f"{support['representable_pct']}% of {active:,} active entries representable, {len(rows):,} distinct")
     return {"spec": spec, "std": std, "pool": pool, "players": players, "dropped": dropped, "roster_stamp": roster_stamp,
-            "idx": idx, "B": B, "support": support, "detail": details[str(cid)]}
+            "idx": idx, "B": B, "support": support, "detail": details[str(cid)], "slate": slate}
 
 
 def run(log=print):
@@ -485,12 +553,19 @@ def run(log=print):
     loo = {}
     for cid in ids:
         others = [c for c in ids if c != cid]
+        sel = {c: boards[c]["B"] for c in others}
         bw, nw = solve_moment([boards[c]["B"] for c in others], [boards[c]["B"].N for c in others])
         bb, nb = solve_moment([boards[c]["B"] for c in others], [1.0] * len(others))
-        loo[cid] = {"fitted_on": others, "entry_weighted": {"beta": bw, "note": nw}, "contest_balanced": {"beta": bb, "note": nb}}
+        loo[cid] = {"fitted_on": others,
+                    "entry_weighted": {"beta": bw, "note": nw, "score": pooled_score(sel, {c: boards[c]["B"].N for c in others}, bw),
+                                       "held_out_residual": round(float(boards[cid]["B"].moments(bw)[0] - boards[cid]["B"].xbar), 5)},
+                    "contest_balanced": {"beta": bb, "note": nb, "score": pooled_score(sel, {c: 1.0 for c in others}, bb),
+                                         "held_out_residual": round(float(boards[cid]["B"].moments(bb)[0] - boards[cid]["B"].xbar), 5)}}
+    sel = {c: boards[c]["B"] for c in ids}
     bw, nw = solve_moment([boards[c]["B"] for c in ids], [boards[c]["B"].N for c in ids])
     bb, nb = solve_moment([boards[c]["B"] for c in ids], [1.0] * len(ids))
-    pooled = {"entry_weighted": {"beta": bw, "note": nw}, "contest_balanced": {"beta": bb, "note": nb}}
+    pooled = {"entry_weighted": {"beta": bw, "note": nw, "score": pooled_score(sel, {c: boards[c]["B"].N for c in ids}, bw)},
+              "contest_balanced": {"beta": bb, "note": nb, "score": pooled_score(sel, {c: 1.0 for c in ids}, bb)}}
     # --- grading
     contests = {}
     for cid in ids:
@@ -508,6 +583,12 @@ def run(log=print):
                   for k, v in {**baselines, **candidates}.items()}
         # a scan so the reader can see the concavity and the optimum, not take it on trust
         scan = [{"beta": round(b_, 2), "nll_per_entry_nats": round(B.nll_per_entry(b_), 5)} for b_ in np.arange(0.0, 1.21, 0.05)]
+        bins = rank_bins(B, {"uniform": 0.0, "production_value": baselines["production_beta_on_this_universe"],
+                             "top_share_rule_here": baselines["top_share_rule_resolved_here"], "own_mle": candidates["own_mle"],
+                             "loo_entry_weighted": candidates["loo_entry_weighted"], "loo_contest_balanced": candidates["loo_contest_balanced"]})
+        prod_own = production_on_own_universe(bd)
+        log(f"[S7b] {cid}: production model on its own universe holds {prod_own['support_pct_of_active']}% of active entries; "
+            f"NLL on that support {prod_own['nll_per_entry_nats_on_its_support']}")
         spec = bd["spec"]
         contests[str(cid)] = {
             "label": spec["label"], "integrity": INTEGRITY[cid], "captured": spec["captured"], "week": spec["week"],
@@ -524,9 +605,13 @@ def run(log=print):
             "uniform_nll_per_entry_nats": round(math.log(len(bd["idx"])), 5),
             "fit": {"own_mle": {**own[cid], "beta": round(own[cid]["beta"], 5)},
                     "leave_one_out": {"fitted_on": loo[cid]["fitted_on"],
-                                      **{k: {**loo[cid][k], "beta": round(loo[cid][k]["beta"], 5)} for k in ("entry_weighted", "contest_balanced")}}},
+                                      **{k: {**loo[cid][k], "beta": round(loo[cid][k]["beta"], 5)} for k in ("entry_weighted", "contest_balanced")},
+                                      "note": "the score equation of a pooled fit is the weighted sum of the fitted boards' mean residuals, "
+                                              "zero at the solution; the held-out board's residual under that beta is the transfer diagnostic"}},
             "nll_scan": scan,
             "graded": graded,
+            "rank_bins": bins,
+            "production_model_on_its_own_universe": prod_own,
             "universe_sensitivity": universe_sensitivity(bd, log),
             "ordering_beta_invariant": ordering(B, bd["players"], bd["idx"], bd["std"], bd["pool"])}
     summary = []
@@ -553,6 +638,9 @@ def run(log=print):
                         "salary_left_mean": {"observed": g["own_mle"]["out_of_objective"]["salary_left"]["observed_mean"],
                                              "own_mle": g["own_mle"]["out_of_objective"]["salary_left"]["model_mean"]},
                         "beta_by_universe_top_k": {str(r["players"]): r["beta"] for r in c["universe_sensitivity"]},
+                        "held_out_residual_under_loo_beta": {k: c["fit"]["leave_one_out"][k]["held_out_residual"] for k in ("entry_weighted", "contest_balanced")},
+                        "production_on_own_universe": {k: c["production_model_on_its_own_universe"][k] for k in ("support_pct_of_active", "nll_per_entry_nats_on_its_support")},
+                        "rank_bins": {b["rank"]: {"observed": b["observed_pct"], "top_share_rule_here": b["model_pct_top_share_rule_here"], "own_mle": b["model_pct_own_mle"]} for b in c["rank_bins"]},
                         "ordering": {"spearman": c["ordering_beta_invariant"]["spearman_observed_count_vs_x_over_observed_lineups"],
                                      "real_chalk_model_rank": c["ordering_beta_invariant"]["real_chalk"]["model_rank"],
                                      "observed_mass_in_model_top_1000_pct": c["ordering_beta_invariant"]["observed_mass_in_model_top_k_pct"]["1000"]}})
@@ -568,7 +656,13 @@ def run(log=print):
                                "transfer: six single-board directions and leave-one-contest-out pooling, entry-weighted and contest-balanced",
                                "leave-one-out is a reconstruction sensitivity: only DEN @ KC has pre-lock inputs",
                                "no new feature, no second parameter; the top-K universe refit is a sensitivity of the parameterisation, "
-                               "not a fit anything downstream uses"],
+                               "not a fit anything downstream uses",
+                               "a pooled fit's checksum is its weighted score equation (the weighted sum of the fitted boards' mean residuals), "
+                               "never three separate zero residuals from one common beta; the per-board residuals under a common beta are reported",
+                               "calibration is shown over fixed projection-rank bins, whose membership no beta can move",
+                               "three baselines: the served placeholder on its own gated universe (historical fidelity, its own support), "
+                               "production's beta value applied to the lifted universe (the universe change alone), and the 0.2% rule "
+                               "re-solved on the lifted universe (the apples-to-apples baseline for the fitted beta)"],
                     "pooled_all_three": {k: {**v, "beta": round(v["beta"], 5)} for k, v in pooled.items()},
                     "fit_free": False,
                     "provenance": provenance.stamp(worlds=None, model="softmax(beta x projection) over the lifted universe; beta by maximum likelihood", seed=SEED)},
