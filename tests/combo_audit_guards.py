@@ -10260,7 +10260,7 @@ _recs59 = {
 _oc59 = _na59.roster            # the gate's seam since 2026-09-19: roster(), never consensus()
 _olr59 = dict(_nd59._LAST_ROSTER)
 try:
-    _na59.roster = lambda now=None: (_recs59, {"source": "stub", "records": len(_recs59), "fetched_utc": None,
+    _na59.roster = lambda now=None, seconds_to_lock=None: (_recs59, {"source": "stub", "records": len(_recs59), "fetched_utc": None,
                                                "age_s": 0, "error": None})
     _pool59 = [
         {"name": "Justin Herbert", "pos": "QB", "team": "LAC", "proj": 19.0},
@@ -10304,10 +10304,10 @@ _bsrc59 = _insp.getsource(_nd59.build)
 ck("in season an unprojected player is left out, never handed DK's average; "
    "the responses name the excluded and the rows carry depth",
    '"why": "no Sleeper projection this week"' in _bsrc59
-   and "players, _dx = _apply_depth(players, preseason)" in _bsrc59
+   and "players, _dx = _apply_depth(players, preseason," in _bsrc59     # the gate takes the lock time since 2026-09-19
    and '"excluded": excluded[:40]' in _bsrc59
    and '"depth": p.get("depth")' in _bsrc59
-   and "ents, _dx = _apply_depth(ents, preseason)" in _insp.getsource(_nd59))
+   and "ents, _dx = _apply_depth(ents, preseason," in _insp.getsource(_nd59))
 ck("the roster record carries the depth chart, and NFL's DK average is read",
    '"depth": p.get("depth_chart_order")' in _insp.getsource(_na59._build)
    and "_AVG_PPG_ATTR_NFL = 90" in open(_os.path.join(_root, "dk.py")).read())
@@ -12881,7 +12881,7 @@ ck("a finished tournament board ships the moment it exists -- boards are synced 
    "build and the deep task, and reached the tab after kickoff")
 ck("the tournament keeps the app's showdown rules and the depth gate for OUR lineups while the field may hold anything legal",
    "nfl_dfs._sd_allowed(p, cap_p, got)" in _insp.getsource(_dt14.build_nfl_showdown)
-   and "nfl_dfs._apply_depth(ents, preseason)" in _insp.getsource(_dt14.build_nfl_showdown)
+   and "nfl_dfs._apply_depth(ents, preseason," in _insp.getsource(_dt14.build_nfl_showdown)
    and '_field_only' in _insp.getsource(_dt14.build_nfl_showdown)
    and "_set_ownership" not in _insp.getsource(_dt14),
    "the v0 field used the app's ownership guesses (nine players pinned at 45%) and "
@@ -16936,6 +16936,113 @@ ck("every builder that runs the depth-chart gate handles RosterUnavailable (no b
 ck("consensus() no longer routes through racing's cache (the store that kept a failure for twelve hours) and nfl_adp names the three contract constants",
    "import racing" not in _insp18.getsource(_adp19) and "racing._cached(" not in _insp18.getsource(_adp19)
    and _adp19.ROSTER_RETRY_S < _adp19.ROSTER_TTL_S < _adp19.ROSTER_MAX_AGE_S)
+
+# ---- 2026-09-19, the reviewer's third point: the allowance is lock-relative ---
+# A valid roster captured Monday morning, Sleeper down, the mandatory T-25m
+# rebuild at twenty hours of age: a 36-hour allowance would build a fresh,
+# correctly stamped board from a roster old enough to miss the single late
+# inactive that changes thousands of Showdown combinations. Inside a pre-lock
+# window the copy must be younger than the window is long.
+import pc_worker as _pw20
+ck("the roster allowance's minute thresholds ARE pc_worker's pre-lock refresh windows (T-4h, T-2h, T-1h, T-25m), and inside each the allowance is the window's own length; far from lock or with no lock time it is 36 hours",
+   tuple(hi for hi, _ in _adp19.ROSTER_LOCK_WINDOWS) == tuple(w[0] for w in _pw20._PRELOCK_WINDOWS)
+   and all(age == hi * 60 for hi, age in _adp19.ROSTER_LOCK_WINDOWS)
+   and _adp19.roster_max_age_for(None) == _adp19.ROSTER_MAX_AGE_S == 36 * 3600
+   and _adp19.roster_max_age_for(10 * 3600) == 36 * 3600
+   and _adp19.roster_max_age_for(200 * 60) == 4 * 3600 and _adp19.roster_max_age_for(100 * 60) == 2 * 3600
+   and _adp19.roster_max_age_for(40 * 60) == 3600 and _adp19.roster_max_age_for(20 * 60) == 25 * 60
+   and _adp19.roster_max_age_for(3 * 60) == 25 * 60)
+_tmpd21 = _tmp20.mkdtemp(prefix="guard-lock-")
+_env21 = _os.environ.get("VIGIL_SIM_CACHE_DIR")
+_os.environ["VIGIL_SIM_CACHE_DIR"] = _tmpd21
+_clk21 = _Clock20()
+_clk21.now = 100000.0
+_time21, _fetch21, _pin21, _mem21 = _adp19.time, _adp19._fetch_players, _adp19._PINNED, dict(_adp19._roster)
+_last21 = dict(_nd20._LAST_ROSTER)
+_adp19.time = _clk21
+_adp19._PINNED = None
+def _down21():
+    raise RuntimeError("Sleeper down")
+try:
+    _adp19._fetch_players = _down21
+    _adp19._roster.update(data=_adp19._build(_good20), fetched=_clk21.now - 20 * 3600, failed=0.0, error=None, source="live")
+    _r1, _s1 = _adp19.roster(seconds_to_lock=10 * 3600)
+    ck("a 20-hour-old last-known-good copy runs the gate ten hours from lock with Sleeper down, and the stamp carries its age, the allowance applied and the seconds to lock",
+       bool(_r1) and _s1["source"] == "last-known-good" and _s1["age_s"] == 72000
+       and _s1["max_age_s"] == 36 * 3600 and _s1["seconds_to_lock"] == 36000, str(_s1))
+    _adp19._roster["failed"] = 0.0
+    _r2, _s2 = _adp19.roster(seconds_to_lock=100 * 60)
+    ck("the SAME copy is refused inside T-2h: (None, unavailable) with the 2-hour allowance stamped -- 'stale but available' does not become 'current' near lock",
+       _r2 is None and _s2["source"] == "unavailable" and _s2["max_age_s"] == 7200, str(_s2))
+    _adp19._roster["failed"] = 0.0
+    try:
+        _nd20._apply_depth(list(_wease20), preseason=False, seconds_to_lock=20 * 60)
+        _ref21 = False
+    except _nd20.RosterUnavailable as _e:
+        _ref21 = _e.state["max_age_s"] == 25 * 60 and _e.state["seconds_to_lock"] == 1200
+    ck("with the live fetch down and a stale copy at T-20 the depth-chart gate REFUSES the build rather than running on it, and the board stamp names the 25-minute allowance",
+       _ref21 and _nd20.roster_state()["source"] == "unavailable" and _nd20.roster_state()["max_age_s"] == 1500)
+    _adp19._roster["fetched"], _adp19._roster["failed"] = _clk21.now - 15 * 60, 0.0
+    _k21, _x21 = _nd20._apply_depth(list(_wease20), preseason=False, seconds_to_lock=20 * 60)
+    _st21 = _nd20.roster_state()
+    ck("a 15-minute-old copy IS accepted at T-20: the gate runs (the practice-squad name excluded) and the board stamps age 900 against allowance 1500",
+       not _k21 and _x21 and _st21["age_s"] == 900 and _st21["max_age_s"] == 1500 and _st21["seconds_to_lock"] == 1200,
+       str(_st21))
+finally:
+    _adp19.time, _adp19._fetch_players, _adp19._PINNED = _time21, _fetch21, _pin21
+    _adp19._roster.clear()
+    _adp19._roster.update(_mem21)
+    _nd20._LAST_ROSTER.clear()
+    _nd20._LAST_ROSTER.update(_last21)
+    if _env21 is None:
+        _os.environ.pop("VIGIL_SIM_CACHE_DIR", None)
+    else:
+        _os.environ["VIGIL_SIM_CACHE_DIR"] = _env21
+    _sh19.rmtree(_tmpd21, ignore_errors=True)
+ck("every builder hands the gate its lock time (the contest's or slate's DraftKings start), so a mandatory pre-lock rebuild cannot be satisfied by data older than the window's purpose; pc_worker's _iso_ts still reads DraftKings' start strings",
+   all("seconds_to_lock" in t or "float(_starts_ts) - time.time()" in t for t in _src20.values())
+   and "float(_starts_ts) - time.time()" in _src20["build_nfl_showdown"]
+   and "nfl_dfs.seconds_to_lock(" in _src20["build_nfl_classic"]
+   and 'seconds_to_lock(contest.get("starts"))' in _src20["_build_showdown"]
+   and 'seconds_to_lock(contest.get("starts"))' in _src20["build"]
+   and _dt14._iso_ts("2026-09-19T01:00:00.0000000Z") == 1789779600 and _dt14._iso_ts(None) is None
+   and _nd20.seconds_to_lock("garbage") is None)
+
+
+# ---- 2026-09-19 rank resolution: measured, and the withdrawn sentence pinned ---
+# "Unresolvable by construction" confused football-world noise with 10 / C;
+# the engine integrates contest rank analytically inside a world. The artifact
+# pins what the measurement found, and that the extension of the rank curves
+# reproduces production's own columns.
+_resd = _json18.load(open(_os.path.join(_root, "research", "data", "sd_rank_resolution.json")))
+_resB = _resd["boards"]
+def _res_obj(dg, k):
+    return _resB[dg]["objectives"][f"top{k}"]
+ck("the rank-curve extension reproduces production's own top1 / top01 columns on both boards (checked before use), and the served Top-1% column reproduces the football A/B's served arm exactly, tying the two artifacts",
+   all(b["curve_check"]["replica_matches_grid"] is True for b in _resB.values())
+   and abs(_res_obj("153086", 882)["best_pct"] - _mabB["153086"]["arms"]["discrete"]["best"]["top1_pct"]) < 0.001
+   and abs(_res_obj("153085", 871)["best_pct"] - _mabB["153085"]["arms"]["discrete"]["best"]["top1_pct"]) < 0.001
+   and _resd["meta"]["provenance"]["dirty"] is False and all(b["worlds"] == 12000 for b in _resB.values()))
+ck("Top-10 is resolved coarsely, not unresolvable: at 12,000 worlds the strongest lineups carry a 15-17% relative standard error and the best lineup stands two to three noise units above its shortlist; Top-1% carries under 4%",
+   all(0.12 < _res_obj(dg, 10)["top50_rel_se_median_12000"] < 0.20 for dg in _resB)
+   and all(_res_obj(dg, 10)["top50_spread_over_noise"] >= 2.0 for dg in _resB)
+   and all(_res_obj(dg, k)["top50_rel_se_median_12000"] < 0.04 for dg, k in (("153086", 882), ("153085", 871))))
+ck("and not resolved enough to order a top 20 at 4,000 worlds: fold-to-fold rank correlation under 0.5 for Top-10 against above 0.85 for Top-1%, with more lineups inside two standard errors of twentieth place under Top-10 than under Top-1% on both boards",
+   all(_res_obj(dg, 10)["fold_rank_corr_mean"] < 0.5 for dg in _resB)
+   and all(_res_obj(dg, k)["fold_rank_corr_mean"] > 0.85 for dg, k in (("153086", 882), ("153085", 871)))
+   and all(_res_obj(dg, 10)["within_2se_of_twentieth"] > _res_obj(dg, k)["within_2se_of_twentieth"]
+           for dg, k in (("153086", 882), ("153085", 871))))
+ck("resolution degrades smoothly with k on both boards (rank correlation rises monotonically from Top-10 through Top-20, Top-50 and Top-0.1% to Top-1%), so there is no cliff to quote",
+   all(_res_obj(dg, 10)["fold_rank_corr_mean"] < _res_obj(dg, 20)["fold_rank_corr_mean"]
+       < _res_obj(dg, 50)["fold_rank_corr_mean"] < _res_obj(dg, k01)["fold_rank_corr_mean"] < _res_obj(dg, k1)["fold_rank_corr_mean"]
+       for dg, k01, k1 in (("153086", 88, 882), ("153085", 87, 871))))
+_res_rep = " ".join(open(_os.path.join(_root, "research", "reports", "sd_rank_resolution.md")).read().split())
+ck("the resolution report withdraws the sentence by name, states both halves (not unresolvable; not enough to order a top 20 at 4,000 worlds), and licenses no objective change before S7",
+   "\"unresolvable by construction\" was wrong and is withdrawn" in _res_rep
+   and "Top-10 is not unresolvable" in _res_rep
+   and "not resolved enough to order a top 20 at 4,000 worlds" in _res_rep
+   and "No objective change: S7 comes first" in _res_rep
+   and "exact match, both boards" in _res_rep)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
