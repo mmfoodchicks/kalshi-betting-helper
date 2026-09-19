@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 2202,
-   "built_ts": 1789762583,
+   "age_s": 2540,
+   "built_ts": 1789789967,
    "contest": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153428,
    "entries": 6006,
@@ -15,24 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 12510,
-   "built_ts": 1789752276,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
-   "dg": 153448,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "IND vs KC",
-   "starts": "2026-09-21T00:20:00.0000000Z",
-   "teams": [
-    "IND",
-    "KC"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 71026,
-   "built_ts": 1789693759,
+   "age_s": 10685,
+   "built_ts": 1789781822,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
    "dg": 153449,
    "entries": 88235,
@@ -47,18 +31,18 @@
    "worlds": 60000
   },
   {
-   "age_s": 77712,
-   "built_ts": 1789687073,
-   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (DET @ BUF)",
-   "dg": 153434,
-   "entries": 88235,
-   "entry_fee": 20.0,
+   "age_s": 40232,
+   "built_ts": 1789752276,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
+   "dg": 153448,
+   "entries": 78431,
+   "entry_fee": 15.0,
    "kind": "showdown",
-   "label": "BUF vs DET",
-   "starts": "2026-09-18T00:15:00.0000000Z",
+   "label": "IND vs KC",
+   "starts": "2026-09-21T00:20:00.0000000Z",
    "teams": [
-    "BUF",
-    "DET"
+    "IND",
+    "KC"
    ],
    "worlds": 60000
   }
