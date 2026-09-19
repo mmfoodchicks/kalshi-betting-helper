@@ -1,0 +1,1443 @@
+{
+ "apply_ufc": {
+  "available": true,
+  "blend_note": "projections blend the power rating with live Kalshi prices on 12 of 12 bouts",
+  "bouts": 12,
+  "bouts_blended": 12,
+  "bouts_priced": 12,
+  "event": "UFC 331: Van vs. Pantoja 2",
+  "fighters": 24,
+  "matched": 23,
+  "sim_used": true
+ },
+ "bout_pairs_in_joint_worlds": [
+  {
+   "fighters": [
+    "Alexandre Pantoja",
+    "Joshua Van"
+   ],
+   "five_round": true,
+   "game": "Van vs Pantoja",
+   "joint_ceiling": 209.5,
+   "joint_floor": 106.8,
+   "joint_median": 151.5,
+   "proj_per_1k": 9.61,
+   "proj_sum": 155.7,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 236.6
+  },
+  {
+   "fighters": [
+    "Alonzo Menifield",
+    "Iwo Baraniewski"
+   ],
+   "five_round": false,
+   "game": "Menifield vs Baraniewski",
+   "joint_ceiling": 170.7,
+   "joint_floor": 102.2,
+   "joint_median": 120.4,
+   "proj_per_1k": 7.89,
+   "proj_sum": 127.8,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 238.0
+  },
+  {
+   "fighters": [
+    "Arman Tsarukyan",
+    "Mauricio Ruffy"
+   ],
+   "five_round": true,
+   "game": "Tsarukyan vs Ruffy",
+   "joint_ceiling": 159.4,
+   "joint_floor": 96.0,
+   "joint_median": 118.6,
+   "proj_per_1k": 7.65,
+   "proj_sum": 124.0,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 213.7
+  },
+  {
+   "fighters": [
+    "Ozzy Diaz",
+    "Ryan Gandra"
+   ],
+   "five_round": false,
+   "game": "Gandra vs Diaz",
+   "joint_ceiling": 137.5,
+   "joint_floor": 98.2,
+   "joint_median": 112.0,
+   "proj_per_1k": 7.12,
+   "proj_sum": 115.3,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 202.8
+  },
+  {
+   "fighters": [
+    "Gable Steveson",
+    "Sean Sharaf"
+   ],
+   "five_round": false,
+   "game": "Steveson vs Sharaf",
+   "joint_ceiling": 135.8,
+   "joint_floor": 93.8,
+   "joint_median": 112.7,
+   "proj_per_1k": 7.03,
+   "proj_sum": 113.9,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 192.4
+  },
+  {
+   "fighters": [
+    "Patricio Pitbull",
+    "Dooho Choi"
+   ],
+   "five_round": false,
+   "game": "Pitbull vs Choi",
+   "joint_ceiling": 131.6,
+   "joint_floor": 75.7,
+   "joint_median": 105.4,
+   "proj_per_1k": 6.48,
+   "proj_sum": 104.9,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 200.9
+  },
+  {
+   "fighters": [
+    "Casey O'Neill",
+    "Eduarda Moura"
+   ],
+   "five_round": false,
+   "game": "O'Neill vs Moura",
+   "joint_ceiling": 131.5,
+   "joint_floor": 79.7,
+   "joint_median": 105.1,
+   "proj_per_1k": 6.52,
+   "proj_sum": 105.7,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 191.1
+  },
+  {
+   "fighters": [
+    "Giga Chikadze",
+    "Joanderson Brito"
+   ],
+   "five_round": false,
+   "game": "Chikadze vs Brito",
+   "joint_ceiling": 125.8,
+   "joint_floor": 73.4,
+   "joint_median": 101.4,
+   "proj_per_1k": 6.25,
+   "proj_sum": 101.3,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 191.8
+  },
+  {
+   "fighters": [
+    "Edmen Shahbazyan",
+    "Brunno Ferreira"
+   ],
+   "five_round": false,
+   "game": "Shahbazyan vs Ferreira",
+   "joint_ceiling": 125.5,
+   "joint_floor": 77.6,
+   "joint_median": 103.4,
+   "proj_per_1k": 6.31,
+   "proj_sum": 102.2,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 206.5
+  },
+  {
+   "fighters": [
+    "Tai Tuivasa",
+    "Robelis Despaigne"
+   ],
+   "five_round": false,
+   "game": "Tuivasa vs Despaigne",
+   "joint_ceiling": 116.4,
+   "joint_floor": 61.6,
+   "joint_median": 91.2,
+   "proj_per_1k": 5.55,
+   "proj_sum": 89.9,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 190.8
+  },
+  {
+   "fighters": [
+    "Marlon Vera",
+    "Charles Jourdain"
+   ],
+   "five_round": false,
+   "game": "Vera vs Jourdain",
+   "joint_ceiling": 116.4,
+   "joint_floor": 68.8,
+   "joint_median": 92.2,
+   "proj_per_1k": 5.69,
+   "proj_sum": 92.2,
+   "salary": 16200,
+   "sum_of_solo_ceilings": 182.6
+  }
+ ],
+ "capture_dir": "20260919T210108Z",
+ "five_round_games": [
+  "Tsarukyan vs Ruffy",
+  "Van vs Pantoja"
+ ],
+ "players": 24,
+ "results": {
+  "leverage": {
+   "dk_legal": {
+    "joint": {
+     "ceiling": 469.2,
+     "correlated": true,
+     "floor": 246.7,
+     "max": 612.2,
+     "median": 349.1,
+     "n": 4000
+    },
+    "lineup": [
+     "Joanderson Brito",
+     "JooSang Yoo",
+     "Joshua Van",
+     "Alexandre Pantoja",
+     "Brunno Ferreira",
+     "Alonzo Menifield"
+    ],
+    "proj_sum": 351.5,
+    "salary": 49700,
+    "same_bout_pairs": [
+     {
+      "fighters": [
+       "Joshua Van",
+       "Alexandre Pantoja"
+      ],
+      "five_round": true,
+      "game": "Van vs Pantoja"
+     }
+    ],
+    "tag": "dk_legal"
+   },
+   "rule": {
+    "joint": {
+     "ceiling": 459.1,
+     "correlated": true,
+     "floor": 242.4,
+     "max": 603.4,
+     "median": 352.6,
+     "n": 4000
+    },
+    "lineup": [
+     "Tai Tuivasa",
+     "Ryan Gandra",
+     "Joanderson Brito",
+     "Alonzo Menifield",
+     "Casey O'Neill",
+     "Alexandre Pantoja"
+    ],
+    "proj_sum": 353.9,
+    "salary": 49100,
+    "same_bout_pairs": [],
+    "tag": "rule"
+   }
+  },
+  "portfolio_20": {
+   "dk_legal": {
+    "lineups": [
+     {
+      "joint": {
+       "ceiling": 556.6,
+       "correlated": true,
+       "floor": 360.2,
+       "max": 723.2,
+       "median": 464.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Iwo Baraniewski",
+       "Edmen Shahbazyan",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 459.1,
+      "salary": 49800,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 552.7,
+       "correlated": true,
+       "floor": 360.9,
+       "max": 694.6,
+       "median": 458.1,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Iwo Baraniewski",
+       "Casey O'Neill",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 457.0,
+      "salary": 49900,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 509.6,
+       "correlated": true,
+       "floor": 344.8,
+       "max": 629.5,
+       "median": 425.6,
+       "n": 4000
+      },
+      "lineup": [
+       "Dooho Choi",
+       "Iwo Baraniewski",
+       "Casey O'Neill",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Eduarda Moura"
+      ],
+      "proj_sum": 424.1,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Casey O'Neill",
+         "Eduarda Moura"
+        ],
+        "five_round": false,
+        "game": "O'Neill vs Moura"
+       },
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 533.2,
+       "correlated": true,
+       "floor": 359.4,
+       "max": 681.0,
+       "median": 441.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Arman Tsarukyan",
+       "Dooho Choi",
+       "Iwo Baraniewski",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 442.4,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Arman Tsarukyan",
+         "Mauricio Ruffy"
+        ],
+        "five_round": true,
+        "game": "Tsarukyan vs Ruffy"
+       },
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 528.9,
+       "correlated": true,
+       "floor": 342.1,
+       "max": 695.4,
+       "median": 438.8,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Iwo Baraniewski",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Eduarda Moura",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 438.1,
+      "salary": 49600,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 533.4,
+       "correlated": true,
+       "floor": 324.1,
+       "max": 698.2,
+       "median": 436.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Ryan Gandra",
+       "Iwo Baraniewski",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy",
+       "Tai Tuivasa"
+      ],
+      "proj_sum": 433.4,
+      "salary": 49600,
+      "same_bout_pairs": [],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 542.4,
+       "correlated": true,
+       "floor": 351.7,
+       "max": 721.0,
+       "median": 446.1,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Iwo Baraniewski",
+       "Edmen Shahbazyan",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Patricio Pitbull"
+      ],
+      "proj_sum": 447.3,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 537.6,
+       "correlated": true,
+       "floor": 327.3,
+       "max": 663.7,
+       "median": 429.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Arman Tsarukyan",
+       "Iwo Baraniewski",
+       "Edmen Shahbazyan",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Marlon Vera"
+      ],
+      "proj_sum": 428.7,
+      "salary": 49800,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 511.1,
+       "correlated": true,
+       "floor": 318.2,
+       "max": 660.3,
+       "median": 417.9,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Iwo Baraniewski",
+       "Casey O'Neill",
+       "Joshua Van",
+       "Marlon Vera",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 417.2,
+      "salary": 49900,
+      "same_bout_pairs": [],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 550.9,
+       "correlated": true,
+       "floor": 347.4,
+       "max": 707.6,
+       "median": 449.8,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Arman Tsarukyan",
+       "Iwo Baraniewski",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Tai Tuivasa"
+      ],
+      "proj_sum": 447.5,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 524.5,
+       "correlated": true,
+       "floor": 352.1,
+       "max": 657.6,
+       "median": 436.2,
+       "n": 4000
+      },
+      "lineup": [
+       "Arman Tsarukyan",
+       "Iwo Baraniewski",
+       "Casey O'Neill",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 436.2,
+      "salary": 49600,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Arman Tsarukyan",
+         "Mauricio Ruffy"
+        ],
+        "five_round": true,
+        "game": "Tsarukyan vs Ruffy"
+       },
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 542.9,
+       "correlated": true,
+       "floor": 347.7,
+       "max": 682.9,
+       "median": 438.0,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Iwo Baraniewski",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Tai Tuivasa"
+      ],
+      "proj_sum": 440.2,
+      "salary": 49800,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 521.3,
+       "correlated": true,
+       "floor": 323.5,
+       "max": 675.0,
+       "median": 429.0,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Edmen Shahbazyan",
+       "Joshua Van",
+       "Alexandre Pantoja",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 427.6,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Joshua Van",
+         "Alexandre Pantoja"
+        ],
+        "five_round": true,
+        "game": "Van vs Pantoja"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 463.1,
+       "correlated": true,
+       "floor": 296.8,
+       "max": 561.9,
+       "median": 380.0,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Ryan Gandra",
+       "Casey O'Neill",
+       "Eduarda Moura",
+       "Marlon Vera",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 379.9,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Casey O'Neill",
+         "Eduarda Moura"
+        ],
+        "five_round": false,
+        "game": "O'Neill vs Moura"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 478.0,
+       "correlated": true,
+       "floor": 293.4,
+       "max": 576.0,
+       "median": 386.8,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Edmen Shahbazyan",
+       "Mauricio Ruffy",
+       "Sean Sharaf"
+      ],
+      "proj_sum": 385.8,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Gable Steveson",
+         "Sean Sharaf"
+        ],
+        "five_round": false,
+        "game": "Steveson vs Sharaf"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 463.4,
+       "correlated": true,
+       "floor": 283.8,
+       "max": 553.9,
+       "median": 378.2,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Casey O'Neill",
+       "Edmen Shahbazyan",
+       "Eduarda Moura",
+       "Mauricio Ruffy"
+      ],
+      "proj_sum": 377.6,
+      "salary": 50000,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Casey O'Neill",
+         "Eduarda Moura"
+        ],
+        "five_round": false,
+        "game": "O'Neill vs Moura"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 467.7,
+       "correlated": true,
+       "floor": 296.3,
+       "max": 577.1,
+       "median": 380.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Ryan Gandra",
+       "Arman Tsarukyan",
+       "Patricio Pitbull",
+       "Mauricio Ruffy",
+       "Giga Chikadze"
+      ],
+      "proj_sum": 379.7,
+      "salary": 49800,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Arman Tsarukyan",
+         "Mauricio Ruffy"
+        ],
+        "five_round": true,
+        "game": "Tsarukyan vs Ruffy"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 450.2,
+       "correlated": true,
+       "floor": 270.6,
+       "max": 550.7,
+       "median": 362.6,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Casey O'Neill",
+       "Edmen Shahbazyan",
+       "Eduarda Moura",
+       "Giga Chikadze"
+      ],
+      "proj_sum": 361.3,
+      "salary": 49900,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Casey O'Neill",
+         "Eduarda Moura"
+        ],
+        "five_round": false,
+        "game": "O'Neill vs Moura"
+       }
+      ],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 459.3,
+       "correlated": true,
+       "floor": 243.2,
+       "max": 627.6,
+       "median": 346.1,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Arman Tsarukyan",
+       "Edmen Shahbazyan",
+       "Eduarda Moura",
+       "Marlon Vera",
+       "Patricio Pitbull"
+      ],
+      "proj_sum": 349.4,
+      "salary": 49800,
+      "same_bout_pairs": [],
+      "tag": "dk_legal"
+     },
+     {
+      "joint": {
+       "ceiling": 442.5,
+       "correlated": true,
+       "floor": 255.9,
+       "max": 557.5,
+       "median": 349.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Arman Tsarukyan",
+       "Casey O'Neill",
+       "Eduarda Moura",
+       "Marlon Vera",
+       "Patricio Pitbull"
+      ],
+      "proj_sum": 347.3,
+      "salary": 49900,
+      "same_bout_pairs": [
+       {
+        "fighters": [
+         "Casey O'Neill",
+         "Eduarda Moura"
+        ],
+        "five_round": false,
+        "game": "O'Neill vs Moura"
+       }
+      ],
+      "tag": "dk_legal"
+     }
+    ],
+    "median_of_joint_ceiling": 524.5,
+    "n": 20,
+    "pairs_seen": [
+     "O'Neill vs Moura",
+     "Steveson vs Sharaf",
+     "Tsarukyan vs Ruffy",
+     "Van vs Pantoja"
+    ],
+    "with_five_round_pair": 12,
+    "with_same_bout_pair": 17
+   },
+   "rule": {
+    "lineups": [
+     {
+      "joint": {
+       "ceiling": 536.2,
+       "correlated": true,
+       "floor": 336.6,
+       "max": 666.3,
+       "median": 444.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Ryan Gandra",
+       "Giga Chikadze",
+       "Mauricio Ruffy",
+       "Iwo Baraniewski",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 440.1,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 529.6,
+       "correlated": true,
+       "floor": 322.6,
+       "max": 676.8,
+       "median": 429.5,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Mauricio Ruffy",
+       "Dooho Choi",
+       "Marlon Vera",
+       "Iwo Baraniewski",
+       "Joshua Van"
+      ],
+      "proj_sum": 429.2,
+      "salary": 49800,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 534.6,
+       "correlated": true,
+       "floor": 337.8,
+       "max": 689.7,
+       "median": 440.5,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Tai Tuivasa",
+       "Ryan Gandra",
+       "Mauricio Ruffy",
+       "Iwo Baraniewski",
+       "Joshua Van"
+      ],
+      "proj_sum": 438.1,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 548.2,
+       "correlated": true,
+       "floor": 326.7,
+       "max": 687.9,
+       "median": 442.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Mauricio Ruffy",
+       "Iwo Baraniewski",
+       "Casey O'Neill",
+       "Edmen Shahbazyan",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 438.3,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 526.5,
+       "correlated": true,
+       "floor": 316.8,
+       "max": 730.2,
+       "median": 425.0,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Joanderson Brito",
+       "Mauricio Ruffy",
+       "Patricio Pitbull",
+       "Iwo Baraniewski",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 423.2,
+      "salary": 49600,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 516.1,
+       "correlated": true,
+       "floor": 314.4,
+       "max": 695.8,
+       "median": 418.0,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Marlon Vera",
+       "Iwo Baraniewski",
+       "Eduarda Moura",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 419.7,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 534.9,
+       "correlated": true,
+       "floor": 325.1,
+       "max": 684.4,
+       "median": 437.9,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Joanderson Brito",
+       "Mauricio Ruffy",
+       "Iwo Baraniewski",
+       "Eduarda Moura",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 430.2,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 533.3,
+       "correlated": true,
+       "floor": 317.8,
+       "max": 718.0,
+       "median": 436.2,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Mauricio Ruffy",
+       "Iwo Baraniewski",
+       "Eduarda Moura",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 429.9,
+      "salary": 49600,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 525.4,
+       "correlated": true,
+       "floor": 320.5,
+       "max": 709.8,
+       "median": 417.6,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Mauricio Ruffy",
+       "Dooho Choi",
+       "Marlon Vera",
+       "Iwo Baraniewski",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 418.7,
+      "salary": 49900,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 519.7,
+       "correlated": true,
+       "floor": 318.1,
+       "max": 669.0,
+       "median": 426.6,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Mauricio Ruffy",
+       "Marlon Vera",
+       "Iwo Baraniewski",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 419.3,
+      "salary": 49800,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 527.9,
+       "correlated": true,
+       "floor": 314.6,
+       "max": 662.4,
+       "median": 426.2,
+       "n": 4000
+      },
+      "lineup": [
+       "Sean Sharaf",
+       "Ryan Gandra",
+       "Dooho Choi",
+       "Iwo Baraniewski",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 424.1,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 517.1,
+       "correlated": true,
+       "floor": 309.5,
+       "max": 656.1,
+       "median": 422.1,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Giga Chikadze",
+       "Dooho Choi",
+       "Iwo Baraniewski",
+       "Eduarda Moura",
+       "Joshua Van"
+      ],
+      "proj_sum": 417.7,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 503.4,
+       "correlated": true,
+       "floor": 298.6,
+       "max": 668.1,
+       "median": 407.8,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Tai Tuivasa",
+       "Ryan Gandra",
+       "Mauricio Ruffy",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 402.5,
+      "salary": 49700,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 492.4,
+       "correlated": true,
+       "floor": 284.0,
+       "max": 656.8,
+       "median": 399.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Ryan Gandra",
+       "Joanderson Brito",
+       "Mauricio Ruffy",
+       "Patricio Pitbull",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 392.3,
+      "salary": 49700,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 493.0,
+       "correlated": true,
+       "floor": 272.3,
+       "max": 637.3,
+       "median": 375.5,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Giga Chikadze",
+       "Arman Tsarukyan",
+       "Eduarda Moura",
+       "Edmen Shahbazyan",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 378.9,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 493.0,
+       "correlated": true,
+       "floor": 274.5,
+       "max": 630.6,
+       "median": 381.3,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Joanderson Brito",
+       "Mauricio Ruffy",
+       "Patricio Pitbull",
+       "Edmen Shahbazyan",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 381.8,
+      "salary": 49800,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 475.6,
+       "correlated": true,
+       "floor": 268.7,
+       "max": 652.4,
+       "median": 380.7,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Giga Chikadze",
+       "Arman Tsarukyan",
+       "Patricio Pitbull",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 376.6,
+      "salary": 50000,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 475.5,
+       "correlated": true,
+       "floor": 266.4,
+       "max": 622.5,
+       "median": 376.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Giga Chikadze",
+       "Dooho Choi",
+       "Marlon Vera",
+       "Edmen Shahbazyan",
+       "Joshua Van"
+      ],
+      "proj_sum": 371.5,
+      "salary": 49900,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 492.9,
+       "correlated": true,
+       "floor": 261.8,
+       "max": 669.5,
+       "median": 373.4,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Giga Chikadze",
+       "Arman Tsarukyan",
+       "Marlon Vera",
+       "Edmen Shahbazyan",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 374.1,
+      "salary": 49700,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     },
+     {
+      "joint": {
+       "ceiling": 483.7,
+       "correlated": true,
+       "floor": 271.3,
+       "max": 616.1,
+       "median": 369.1,
+       "n": 4000
+      },
+      "lineup": [
+       "Gable Steveson",
+       "Tai Tuivasa",
+       "Arman Tsarukyan",
+       "Dooho Choi",
+       "Marlon Vera",
+       "Alexandre Pantoja"
+      ],
+      "proj_sum": 371.5,
+      "salary": 49800,
+      "same_bout_pairs": [],
+      "tag": "rule"
+     }
+    ],
+    "median_of_joint_ceiling": 519.7,
+    "n": 20,
+    "pairs_seen": [],
+    "with_five_round_pair": 0,
+    "with_same_bout_pair": 0
+   }
+  },
+  "single_ceiling": {
+   "dk_legal": {
+    "joint": {
+     "ceiling": 557.3,
+     "correlated": true,
+     "floor": 360.2,
+     "max": 723.2,
+     "median": 461.6,
+     "n": 4000
+    },
+    "lineup": [
+     "Ryan Gandra",
+     "Iwo Baraniewski",
+     "Edmen Shahbazyan",
+     "Joshua Van",
+     "Alexandre Pantoja",
+     "Mauricio Ruffy"
+    ],
+    "proj_sum": 459.1,
+    "salary": 49800,
+    "same_bout_pairs": [
+     {
+      "fighters": [
+       "Joshua Van",
+       "Alexandre Pantoja"
+      ],
+      "five_round": true,
+      "game": "Van vs Pantoja"
+     }
+    ],
+    "tag": "dk_legal"
+   },
+   "rule": {
+    "joint": {
+     "ceiling": 540.9,
+     "correlated": true,
+     "floor": 310.0,
+     "max": 690.5,
+     "median": 417.4,
+     "n": 4000
+    },
+    "lineup": [
+     "Ryan Gandra",
+     "Mauricio Ruffy",
+     "Dooho Choi",
+     "Iwo Baraniewski",
+     "Brunno Ferreira",
+     "Alexandre Pantoja"
+    ],
+    "proj_sum": 423.7,
+    "salary": 49800,
+    "same_bout_pairs": [],
+    "tag": "rule"
+   }
+  },
+  "single_projection": {
+   "dk_legal": {
+    "joint": {
+     "ceiling": 557.9,
+     "correlated": true,
+     "floor": 358.5,
+     "max": 723.2,
+     "median": 462.3,
+     "n": 4000
+    },
+    "lineup": [
+     "Ryan Gandra",
+     "Iwo Baraniewski",
+     "Edmen Shahbazyan",
+     "Joshua Van",
+     "Alexandre Pantoja",
+     "Mauricio Ruffy"
+    ],
+    "proj_sum": 459.1,
+    "salary": 49800,
+    "same_bout_pairs": [
+     {
+      "fighters": [
+       "Joshua Van",
+       "Alexandre Pantoja"
+      ],
+      "five_round": true,
+      "game": "Van vs Pantoja"
+     }
+    ],
+    "tag": "dk_legal"
+   },
+   "rule": {
+    "joint": {
+     "ceiling": 540.7,
+     "correlated": true,
+     "floor": 340.7,
+     "max": 666.3,
+     "median": 442.3,
+     "n": 4000
+    },
+    "lineup": [
+     "Gable Steveson",
+     "Ryan Gandra",
+     "Giga Chikadze",
+     "Mauricio Ruffy",
+     "Iwo Baraniewski",
+     "Alexandre Pantoja"
+    ],
+    "proj_sum": 440.1,
+    "salary": 50000,
+    "same_bout_pairs": [],
+    "tag": "rule"
+   }
+  }
+ },
+ "universes": {
+  "dk_legal": "no exclusive group (DraftKings allows both sides)",
+  "rule": "exclusive_group = bout (production)"
+ },
+ "unmatched_fall_back_to_csv": [
+  "Michael Aswell Jr."
+ ],
+ "worlds": "the captured board's samples re-blended with the per-bout shuffle (research only)"
+}

@@ -1,0 +1,242 @@
+{
+ "alexandre pantoja": {
+  "cents": 42.0,
+  "close_time": 1791080400,
+  "ticker": "KXUFCFIGHT-26SEP19VANPAN-PAN"
+ },
+ "alonzo menifield": {
+  "cents": 32.0,
+  "close_time": 1791075600,
+  "ticker": "KXUFCFIGHT-26SEP19MENBAR-MEN"
+ },
+ "arman tsarukyan": {
+  "cents": 73.0,
+  "close_time": 1791079200,
+  "ticker": "KXUFCFIGHT-26SEP19TSARUF-TSA"
+ },
+ "aswell": {
+  "cents": 39.0,
+  "close_time": 1791061200,
+  "ticker": "KXUFCFIGHT-26SEP19ASWYOO-ASW"
+ },
+ "baraniewski": {
+  "cents": 69.0,
+  "close_time": 1791075600,
+  "ticker": "KXUFCFIGHT-26SEP19MENBAR-BAR"
+ },
+ "brito": {
+  "cents": 80.0,
+  "close_time": 1791064800,
+  "ticker": "KXUFCFIGHT-26SEP19CHIBRI-BRI"
+ },
+ "brunno ferreira": {
+  "cents": 37.0,
+  "close_time": 1791068400,
+  "ticker": "KXUFCFIGHT-26SEP19SHAFER-FER"
+ },
+ "casey oneill": {
+  "cents": 68.0,
+  "close_time": 1791063600,
+  "ticker": "KXUFCFIGHT-26SEP19ONEMOU-ONE"
+ },
+ "charles jourdain": {
+  "cents": 65.0,
+  "close_time": 1791070800,
+  "ticker": "KXUFCFIGHT-26SEP19VERJOU-JOU"
+ },
+ "chikadze": {
+  "cents": 22.0,
+  "close_time": 1791064800,
+  "ticker": "KXUFCFIGHT-26SEP19CHIBRI-CHI"
+ },
+ "choi": {
+  "cents": 71.0,
+  "close_time": 1791078000,
+  "ticker": "KXUFCFIGHT-26SEP19FRECHO-CHO"
+ },
+ "despaigne": {
+  "cents": 81.0,
+  "close_time": 1791069600,
+  "ticker": "KXUFCFIGHT-26SEP19TUIDES-DES"
+ },
+ "diaz": {
+  "cents": 19.0,
+  "close_time": 1791062400,
+  "ticker": "KXUFCFIGHT-26SEP19GANDIA-DIA"
+ },
+ "doo ho choi": {
+  "cents": 71.0,
+  "close_time": 1791078000,
+  "ticker": "KXUFCFIGHT-26SEP19FRECHO-CHO"
+ },
+ "edmen shahbazyan": {
+  "cents": 63.0,
+  "close_time": 1791068400,
+  "ticker": "KXUFCFIGHT-26SEP19SHAFER-SHA"
+ },
+ "eduarda moura": {
+  "cents": 33.0,
+  "close_time": 1791063600,
+  "ticker": "KXUFCFIGHT-26SEP19ONEMOU-MOU"
+ },
+ "ferreira": {
+  "cents": 37.0,
+  "close_time": 1791068400,
+  "ticker": "KXUFCFIGHT-26SEP19SHAFER-FER"
+ },
+ "gable steveson": {
+  "cents": 93.0,
+  "close_time": 1791072000,
+  "ticker": "KXUFCFIGHT-26SEP19STESHA-STE"
+ },
+ "gandra": {
+  "cents": 82.0,
+  "close_time": 1791062400,
+  "ticker": "KXUFCFIGHT-26SEP19GANDIA-GAN"
+ },
+ "giga chikadze": {
+  "cents": 22.0,
+  "close_time": 1791064800,
+  "ticker": "KXUFCFIGHT-26SEP19CHIBRI-CHI"
+ },
+ "iwo baraniewski": {
+  "cents": 69.0,
+  "close_time": 1791075600,
+  "ticker": "KXUFCFIGHT-26SEP19MENBAR-BAR"
+ },
+ "joanderson brito": {
+  "cents": 80.0,
+  "close_time": 1791064800,
+  "ticker": "KXUFCFIGHT-26SEP19CHIBRI-BRI"
+ },
+ "joo sang yoo": {
+  "cents": 62.0,
+  "close_time": 1791061200,
+  "ticker": "KXUFCFIGHT-26SEP19ASWYOO-YOO"
+ },
+ "joshua van": {
+  "cents": 59.0,
+  "close_time": 1791080400,
+  "ticker": "KXUFCFIGHT-26SEP19VANPAN-VAN"
+ },
+ "jourdain": {
+  "cents": 65.0,
+  "close_time": 1791070800,
+  "ticker": "KXUFCFIGHT-26SEP19VERJOU-JOU"
+ },
+ "marlon vera": {
+  "cents": 36.0,
+  "close_time": 1791070800,
+  "ticker": "KXUFCFIGHT-26SEP19VERJOU-VER"
+ },
+ "mauricio ruffy": {
+  "cents": 28.0,
+  "close_time": 1791079200,
+  "ticker": "KXUFCFIGHT-26SEP19TSARUF-RUF"
+ },
+ "menifield": {
+  "cents": 32.0,
+  "close_time": 1791075600,
+  "ticker": "KXUFCFIGHT-26SEP19MENBAR-MEN"
+ },
+ "michael aswell": {
+  "cents": 39.0,
+  "close_time": 1791061200,
+  "ticker": "KXUFCFIGHT-26SEP19ASWYOO-ASW"
+ },
+ "moura": {
+  "cents": 33.0,
+  "close_time": 1791063600,
+  "ticker": "KXUFCFIGHT-26SEP19ONEMOU-MOU"
+ },
+ "oneill": {
+  "cents": 68.0,
+  "close_time": 1791063600,
+  "ticker": "KXUFCFIGHT-26SEP19ONEMOU-ONE"
+ },
+ "osman diaz": {
+  "cents": 19.0,
+  "close_time": 1791062400,
+  "ticker": "KXUFCFIGHT-26SEP19GANDIA-DIA"
+ },
+ "pantoja": {
+  "cents": 42.0,
+  "close_time": 1791080400,
+  "ticker": "KXUFCFIGHT-26SEP19VANPAN-PAN"
+ },
+ "patricio pitbull": {
+  "cents": 30.0,
+  "close_time": 1791078000,
+  "ticker": "KXUFCFIGHT-26SEP19FRECHO-FRE"
+ },
+ "pitbull": {
+  "cents": 30.0,
+  "close_time": 1791078000,
+  "ticker": "KXUFCFIGHT-26SEP19FRECHO-FRE"
+ },
+ "robelis despaigne": {
+  "cents": 81.0,
+  "close_time": 1791069600,
+  "ticker": "KXUFCFIGHT-26SEP19TUIDES-DES"
+ },
+ "ruffy": {
+  "cents": 28.0,
+  "close_time": 1791079200,
+  "ticker": "KXUFCFIGHT-26SEP19TSARUF-RUF"
+ },
+ "ryan gandra": {
+  "cents": 82.0,
+  "close_time": 1791062400,
+  "ticker": "KXUFCFIGHT-26SEP19GANDIA-GAN"
+ },
+ "sean sharaf": {
+  "cents": 8.0,
+  "close_time": 1791072000,
+  "ticker": "KXUFCFIGHT-26SEP19STESHA-SHA"
+ },
+ "shahbazyan": {
+  "cents": 63.0,
+  "close_time": 1791068400,
+  "ticker": "KXUFCFIGHT-26SEP19SHAFER-SHA"
+ },
+ "sharaf": {
+  "cents": 8.0,
+  "close_time": 1791072000,
+  "ticker": "KXUFCFIGHT-26SEP19STESHA-SHA"
+ },
+ "steveson": {
+  "cents": 93.0,
+  "close_time": 1791072000,
+  "ticker": "KXUFCFIGHT-26SEP19STESHA-STE"
+ },
+ "tai tuivasa": {
+  "cents": 20.0,
+  "close_time": 1791069600,
+  "ticker": "KXUFCFIGHT-26SEP19TUIDES-TUI"
+ },
+ "tsarukyan": {
+  "cents": 73.0,
+  "close_time": 1791079200,
+  "ticker": "KXUFCFIGHT-26SEP19TSARUF-TSA"
+ },
+ "tuivasa": {
+  "cents": 20.0,
+  "close_time": 1791069600,
+  "ticker": "KXUFCFIGHT-26SEP19TUIDES-TUI"
+ },
+ "van": {
+  "cents": 59.0,
+  "close_time": 1791080400,
+  "ticker": "KXUFCFIGHT-26SEP19VANPAN-VAN"
+ },
+ "vera": {
+  "cents": 36.0,
+  "close_time": 1791070800,
+  "ticker": "KXUFCFIGHT-26SEP19VERJOU-VER"
+ },
+ "yoo": {
+  "cents": 62.0,
+  "close_time": 1791061200,
+  "ticker": "KXUFCFIGHT-26SEP19ASWYOO-YOO"
+ }
+}

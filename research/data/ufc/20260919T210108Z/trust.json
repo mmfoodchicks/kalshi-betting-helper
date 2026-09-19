@@ -1,0 +1,14 @@
+{
+ "calibrate_params_ufc": [
+  1.0,
+  0.5,
+  0.0,
+  0
+ ],
+ "model_trust": {
+  "updated": 0.0,
+  "weights": {}
+ },
+ "model_trust_weight_ufc": 0.2,
+ "model_weight_cap": 0.2
+}

@@ -1,0 +1,102 @@
+{
+ "bouts": [
+  {
+   "a_id": "3957071",
+   "a_name": "Giga Chikadze",
+   "b_id": "4422355",
+   "b_name": "Joanderson Brito",
+   "rounds": 3,
+   "weight": "Featherweight"
+  },
+  {
+   "a_id": "4699589",
+   "a_name": "Casey O'Neill",
+   "b_id": "5143888",
+   "b_name": "Eduarda Moura",
+   "rounds": 3,
+   "weight": "Women's Flyweight"
+  },
+  {
+   "a_id": "4354318",
+   "a_name": "Edmen Shahbazyan",
+   "b_id": "5077131",
+   "b_name": "Brunno Ferreira",
+   "rounds": 3,
+   "weight": "Middleweight"
+  },
+  {
+   "a_id": "4944080",
+   "a_name": "Ozzy Diaz",
+   "b_id": "5291085",
+   "b_name": "Ryan Gandra",
+   "rounds": 3,
+   "weight": "Middleweight"
+  },
+  {
+   "a_id": "5212738",
+   "a_name": "Michael Aswell",
+   "b_id": "5282139",
+   "b_name": "JooSang Yoo",
+   "rounds": 3,
+   "weight": "Featherweight"
+  },
+  {
+   "a_id": "3722422",
+   "a_name": "Tai Tuivasa",
+   "b_id": "5189560",
+   "b_name": "Robelis Despaigne",
+   "rounds": 3,
+   "weight": "Heavyweight"
+  },
+  {
+   "a_id": "3155424",
+   "a_name": "Marlon Vera",
+   "b_id": "4421978",
+   "b_name": "Charles Jourdain",
+   "rounds": 3,
+   "weight": "Bantamweight"
+  },
+  {
+   "a_id": "3948876",
+   "a_name": "Alonzo Menifield",
+   "b_id": "5307810",
+   "b_name": "Iwo Baraniewski",
+   "rounds": 3,
+   "weight": "Light Heavyweight"
+  },
+  {
+   "a_id": "5214652",
+   "a_name": "Gable Steveson",
+   "b_id": "5240957",
+   "b_name": "Sean Sharaf",
+   "rounds": 3,
+   "weight": "Heavyweight"
+  },
+  {
+   "a_id": "2532870",
+   "a_name": "Patricio Pitbull",
+   "b_id": "3093026",
+   "b_name": "Dooho Choi",
+   "rounds": 3,
+   "weight": "Featherweight"
+  },
+  {
+   "a_id": "4419372",
+   "a_name": "Arman Tsarukyan",
+   "b_id": "5122238",
+   "b_name": "Mauricio Ruffy",
+   "rounds": 5,
+   "weight": "Lightweight"
+  },
+  {
+   "a_id": "2560746",
+   "a_name": "Alexandre Pantoja",
+   "b_id": "5120301",
+   "b_name": "Joshua Van",
+   "rounds": 5,
+   "weight": "Flyweight"
+  }
+ ],
+ "date": "2026-09-19",
+ "event": "UFC 331: Van vs. Pantoja 2"
+}

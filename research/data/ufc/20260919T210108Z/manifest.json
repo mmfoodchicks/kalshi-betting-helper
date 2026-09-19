@@ -1,0 +1,84 @@
+{
+ "capture_stamp": "20260919T210108Z",
+ "captured_utc": "2026-09-19 21:01:08 UTC",
+ "contests_detailed": [
+  "195572727",
+  "195572728",
+  "195654320",
+  "195654325",
+  "195654326",
+  "195660624",
+  "195660630",
+  "195660631"
+ ],
+ "date": "2026-09-19",
+ "draft_group_id": 153470,
+ "errors": {},
+ "event": "UFC 331: Van vs. Pantoja 2",
+ "files": {
+  "board": {
+   "bytes": 719644,
+   "file": "board.json",
+   "sha256": "e757edc0bf550ff07151aee2e07c1608b8692fc267c0717334d55cdaf9358a58"
+  },
+  "card": {
+   "bytes": 1983,
+   "file": "card.json",
+   "sha256": "80ae2d385cd1843187395ca97685692355bd92a2e05584bde7308a61f737fd49"
+  },
+  "dk_slate": {
+   "bytes": 70550,
+   "file": "dk_slate.json",
+   "sha256": "30c4c7e4261708fd80d81c2a7f08d03c838cd1039cbecf4e62e42bf160a5975d"
+  },
+  "lineups": {
+   "bytes": 65250,
+   "file": "lineups.json",
+   "sha256": "e5f1763adce1b5b80b96f0457685dbe2e11e8c92617534894147dac1ebae3d73"
+  },
+  "market": {
+   "bytes": 5236,
+   "file": "market.json",
+   "sha256": "32eb200b7c532dddae61da62732ac3faaec60bd4953fb7c33287d4bbec8fc08c"
+  },
+  "ratings": {
+   "bytes": 50125,
+   "file": "ratings.json",
+   "sha256": "8a326d48d1f11850a4b76407b07d15327a721948bd7d7b9a5d21fa1b8afde657"
+  },
+  "shadow": {
+   "bytes": 29073,
+   "file": "shadow.json",
+   "sha256": "4b595856cb603bff8e7eaa55e966eb5be972db142ed5bc174318984f722d79b4"
+  },
+  "trust": {
+   "bytes": 172,
+   "file": "trust.json",
+   "sha256": "7aa4d0d185174246030656c232e79d7fdf861116264f26125acb088a3d255986"
+  }
+ },
+ "finished_utc": "2026-09-19 21:02:01 UTC",
+ "hours_to_lock": 0.48,
+ "lock_utc": "2026-09-19 21:30:00 UTC",
+ "n_sims": 15000,
+ "note": "UFC 331 pre-lock capture (second run: the first run's DraftKings slate call returned empty; ratings cached from the first run); the classic paused per the reviewer",
+ "pre_lock": true,
+ "provenance": {
+  "commit": "fade2a8",
+  "data_split": null,
+  "dirty": true,
+  "dirty_detail": {
+   "hashed_sources": 47,
+   "modified_sources": [],
+   "untracked_sources": [
+    "research/ufc_capture.py",
+    "research/ufc_shadow.py"
+   ]
+  },
+  "model": "ufc_sim.simulate_bout per bout + ufc_prices.attach + simulate.dfs_build, as served",
+  "seed": "UNSEEDED (production's own draw is unseeded too)",
+  "source_files": 47,
+  "source_sha": "8a0b16f545305d6b1f3528595b364512701fc4c5c30352d48cfa98799f54927b",
+  "worlds": 15000
+ }
+}

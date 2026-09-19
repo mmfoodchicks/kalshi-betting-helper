@@ -1,0 +1,3393 @@
+{
+ "contests": [
+  {
+   "draft_group_id": 153470,
+   "entered": 21232,
+   "entries": 23529,
+   "entry_fee": 25.0,
+   "id": 195572727,
+   "max_entries_per_user": 150,
+   "name": "UFC $500K UFC 331 Special [$100K to 1st]",
+   "prize_pool": 500000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 378,
+   "entries": 400,
+   "entry_fee": 555.0,
+   "id": 195660631,
+   "max_entries_per_user": 12,
+   "name": "UFC $200K Knockout Special [$50K to 1st]",
+   "prize_pool": 200000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 46637,
+   "entries": 47562,
+   "entry_fee": 3.0,
+   "id": 195572728,
+   "max_entries_per_user": 150,
+   "name": "UFC $120K MEGA mini-MAX [150 Entry Max]",
+   "prize_pool": 120000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 26200.0,
+   "id": 195654320,
+   "max_entries_per_user": 1,
+   "name": "UFC $100K Heavy Hitter [Must Fill]",
+   "prize_pool": 100000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 26200.0,
+   "id": 195654325,
+   "max_entries_per_user": 1,
+   "name": "UFC $75K Heavy Hitter [Must Fill]",
+   "prize_pool": 75000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 8,
+   "entry_fee": 5300.0,
+   "id": 195660630,
+   "max_entries_per_user": 1,
+   "name": "UFC $40K Thunderdome [Must Fill]",
+   "prize_pool": 40000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 8,
+   "entry_fee": 5300.0,
+   "id": 195654326,
+   "max_entries_per_user": 1,
+   "name": "UFC $40K Thunderdome [Must Fill]",
+   "prize_pool": 40000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 162,
+   "entries": 166,
+   "entry_fee": 200.0,
+   "id": 195660624,
+   "max_entries_per_user": 3,
+   "name": "UFC $30K Triangle [3 Entry Max]",
+   "prize_pool": 30000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 10600.0,
+   "id": 195654321,
+   "max_entries_per_user": 1,
+   "name": "UFC $10,600 3-Player",
+   "prize_pool": 30000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 10600.0,
+   "id": 195826828,
+   "max_entries_per_user": 1,
+   "name": "UFC $10,600 3-Player",
+   "prize_pool": 30000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 189,
+   "entries": 222,
+   "entry_fee": 100.0,
+   "id": 195660616,
+   "max_entries_per_user": 1,
+   "name": "UFC $20K Contender [Single Entry]",
+   "prize_pool": 20000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 5300.0,
+   "id": 195654296,
+   "max_entries_per_user": 1,
+   "name": "UFC $5,300 50-50 ",
+   "prize_pool": 20000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 17367,
+   "entries": 17835,
+   "entry_fee": 1.0,
+   "id": 195572729,
+   "max_entries_per_user": 20,
+   "name": "UFC $15K Jab [20 Entry Max]",
+   "prize_pool": 15000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 5300.0,
+   "id": 195660612,
+   "max_entries_per_user": 1,
+   "name": "UFC $15K Thunderdome [Must Fill]",
+   "prize_pool": 15000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 5300.0,
+   "id": 195654288,
+   "max_entries_per_user": 1,
+   "name": "UFC $5,300 3-Player (Winner Takes All)",
+   "prize_pool": 15000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 5300.0,
+   "id": 195654289,
+   "max_entries_per_user": 1,
+   "name": "UFC $5,300 3-Player (Winner Takes All)",
+   "prize_pool": 15000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 5300.0,
+   "id": 195826827,
+   "max_entries_per_user": 1,
+   "name": "UFC $5,300 3-Player (Winner Takes All)",
+   "prize_pool": 15000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 197,
+   "entries": 206,
+   "entry_fee": 55.0,
+   "id": 195660621,
+   "max_entries_per_user": 6,
+   "name": "UFC $10K Fifth Round [$2K to 1st]",
+   "prize_pool": 10000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 2120.0,
+   "id": 195654323,
+   "max_entries_per_user": 1,
+   "name": "UFC $2,120 4-Player (Winner Takes All)",
+   "prize_pool": 8000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 2120.0,
+   "id": 195654324,
+   "max_entries_per_user": 1,
+   "name": "UFC $2,120 4-Player (Winner Takes All)",
+   "prize_pool": 8000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1768,
+   "entries": 1783,
+   "entry_fee": 5.0,
+   "id": 195660625,
+   "max_entries_per_user": 1,
+   "name": "UFC $7.5K Clinch [Single Entry]",
+   "prize_pool": 7500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 2120.0,
+   "id": 195654322,
+   "max_entries_per_user": 1,
+   "name": "UFC $2,120 3-Player",
+   "prize_pool": 6000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 2120.0,
+   "id": 195826829,
+   "max_entries_per_user": 1,
+   "name": "UFC $2,120 3-Player",
+   "prize_pool": 6000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 2120.0,
+   "id": 195838797,
+   "max_entries_per_user": 1,
+   "name": "UFC $2,120 3-Player",
+   "prize_pool": 6000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 1570.0,
+   "id": 195660459,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL $4,444 Fantasy Football MEGA Millionaire [Must Fill]",
+   "prize_pool": 4444.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 1060.0,
+   "id": 195654295,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 50-50 ",
+   "prize_pool": 4000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 1060.0,
+   "id": 195654292,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 4-Player (Winner Takes All)",
+   "prize_pool": 4000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 1060.0,
+   "id": 195654293,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 4-Player (Winner Takes All)",
+   "prize_pool": 4000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 1060.0,
+   "id": 195654272,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 3-Player",
+   "prize_pool": 3000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 1060.0,
+   "id": 195821651,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 3-Player",
+   "prize_pool": 3000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 1060.0,
+   "id": 195826825,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 3-Player",
+   "prize_pool": 3000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 1060.0,
+   "id": 195838796,
+   "max_entries_per_user": 1,
+   "name": "UFC $1,060 3-Player",
+   "prize_pool": 3000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10648,
+   "entries": 11890,
+   "entry_fee": 0.25,
+   "id": 195660614,
+   "max_entries_per_user": 20,
+   "name": "UFC $2.5K Quarter Jukebox [Just $0.25!]",
+   "prize_pool": 2500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 530.0,
+   "id": 195654294,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 50-50 ",
+   "prize_pool": 2000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 530.0,
+   "id": 195654290,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 4-Player (Winner Takes All)",
+   "prize_pool": 2000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 530.0,
+   "id": 195654291,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 4-Player (Winner Takes All)",
+   "prize_pool": 2000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 58,
+   "entries": 67,
+   "entry_fee": 26.0,
+   "id": 195767908,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NFL Midseason Main Event (11-1)",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 97,
+   "entries": 103,
+   "entry_fee": 17.0,
+   "id": 195767913,
+   "max_entries_per_user": 3,
+   "name": "UFC Satellite to NFL Midseason Main Event (11-1)",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195767911,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL Midseason Main Event (11-1) [Must Fill]",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195767912,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL Midseason Main Event (11-1) [Must Fill]",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195767910,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL Midseason Main Event (11-1) [Must Fill]",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195654268,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 3-Player",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195826813,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 3-Player",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 530.0,
+   "id": 195838793,
+   "max_entries_per_user": 1,
+   "name": "UFC $530 3-Player",
+   "prize_pool": 1500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 54,
+   "entries": 69,
+   "entry_fee": 17.0,
+   "id": 195654601,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to $1K FMWC Qualifier",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 76,
+   "entries": 147,
+   "entry_fee": 8.0,
+   "id": 195838167,
+   "max_entries_per_user": 4,
+   "name": "UFC $1K Hook",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 363.0,
+   "id": 195654600,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $1K FMWC Qualifier [Must Fill]",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 363.0,
+   "id": 195654599,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $1K FMWC Qualifier [Must Fill]",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 11,
+   "entry_fee": 100.0,
+   "id": 195836505,
+   "max_entries_per_user": 1,
+   "name": "UFC $100 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 11,
+   "entry_fee": 100.0,
+   "id": 195654538,
+   "max_entries_per_user": 1,
+   "name": "UFC $100 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 100.0,
+   "id": 195654537,
+   "max_entries_per_user": 1,
+   "name": "UFC $100 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 21,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195654579,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195654316,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195721630,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195789200,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195819092,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195827777,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 270.0,
+   "id": 195654308,
+   "max_entries_per_user": 1,
+   "name": "UFC $270 50-50",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 22,
+   "entry_fee": 50.0,
+   "id": 195841247,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 1000.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 42,
+   "entries": 69,
+   "entry_fee": 15.0,
+   "id": 195654633,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NBA $888 MEGA 8's Special (10-21)",
+   "prize_pool": 888.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 7,
+   "entry_fee": 140.0,
+   "id": 195654634,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA $888 MEGA 8's Special (10-21)",
+   "prize_pool": 888.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 322.0,
+   "id": 195654632,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA $888 MEGA 8's Special (10-21) [Must Fill]",
+   "prize_pool": 888.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 24,
+   "entries": 31,
+   "entry_fee": 25.0,
+   "id": 195654515,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Triple Up [Top 9 Win $75]",
+   "prize_pool": 675.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 64,
+   "entries": 69,
+   "entry_fee": 10.0,
+   "id": 195830059,
+   "max_entries_per_user": 2,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 8,
+   "entry_fee": 85.0,
+   "id": 195822976,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $600 FMWC Qualifier",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 67,
+   "entries": 100,
+   "entry_fee": 7.0,
+   "id": 195654606,
+   "max_entries_per_user": 3,
+   "name": "UFC Satellite to $600 FMWC Qualifier",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 17,
+   "entry_fee": 41.0,
+   "id": 195654605,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $600 FMWC Qualifier",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 4,
+   "entry_fee": 163.0,
+   "id": 195654603,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $600 FMWC Qualifier [Must Fill]",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 4,
+   "entry_fee": 163.0,
+   "id": 195654602,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $600 FMWC Qualifier [Must Fill]",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 215.0,
+   "id": 195838757,
+   "max_entries_per_user": 1,
+   "name": "UFC $215 3-Player",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 215.0,
+   "id": 195838792,
+   "max_entries_per_user": 1,
+   "name": "UFC $215 3-Player",
+   "prize_pool": 600.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 201.0,
+   "id": 195654327,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NHL 11-3 $555 Barn Burner [Must Fill]",
+   "prize_pool": 555.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 201.0,
+   "id": 195660461,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL $555 Fantasy Football Millionaire [Must Fill]",
+   "prize_pool": 555.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 201.0,
+   "id": 195660460,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NFL $555 Fantasy Football Millionaire [Must Fill]",
+   "prize_pool": 555.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 44,
+   "entries": 49,
+   "entry_fee": 12.0,
+   "id": 195836008,
+   "max_entries_per_user": 1,
+   "name": "UFC $500 Flying Knee [Single Entry]",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195837641,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195654567,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195654536,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195654535,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195654534,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195654314,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195721629,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195789199,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195819093,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195827776,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 11,
+   "entry_fee": 50.0,
+   "id": 195654315,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 22,
+   "entry_fee": 25.0,
+   "id": 195841246,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 500.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 10,
+   "entry_fee": 50.0,
+   "id": 195654566,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Triple Up [Top 3 Win $150]",
+   "prize_pool": 450.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 10,
+   "entry_fee": 50.0,
+   "id": 195654565,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 Triple Up [Top 3 Win $150]",
+   "prize_pool": 450.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4046,
+   "entries": 4756,
+   "entry_fee": 0.1,
+   "id": 195821995,
+   "max_entries_per_user": 20,
+   "name": "UFC $400 Dime Time [Just $0.10!]",
+   "prize_pool": 400.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 109.0,
+   "id": 195822221,
+   "max_entries_per_user": 1,
+   "name": "UFC $109 50-50",
+   "prize_pool": 400.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 130.0,
+   "id": 195654620,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NHL 10-13 $360 Spin-O-Rama [Must Fill]",
+   "prize_pool": 360.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2989,
+   "entries": 3567,
+   "entry_fee": 0.1,
+   "id": 195818813,
+   "max_entries_per_user": 20,
+   "name": "UFC $300 Dime Time [Just $0.10!]",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 23,
+   "entries": 35,
+   "entry_fee": 10.0,
+   "id": 195830636,
+   "max_entries_per_user": 1,
+   "name": "UFC 10x Booster [Top 3 Win $100]",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 24,
+   "entries": 34,
+   "entry_fee": 10.0,
+   "id": 195829903,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 109.0,
+   "id": 195654269,
+   "max_entries_per_user": 1,
+   "name": "UFC $109 3-Player",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 109.0,
+   "id": 195826814,
+   "max_entries_per_user": 1,
+   "name": "UFC $109 3-Player",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 109.0,
+   "id": 195838794,
+   "max_entries_per_user": 1,
+   "name": "UFC $109 3-Player",
+   "prize_pool": 300.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 16,
+   "entries": 31,
+   "entry_fee": 10.0,
+   "id": 195654514,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Triple Up [Top 9 Win $30]",
+   "prize_pool": 270.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 15,
+   "entries": 31,
+   "entry_fee": 10.0,
+   "id": 195654513,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Triple Up [Top 9 Win $30]",
+   "prize_pool": 270.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 6,
+   "entry_fee": 50.0,
+   "id": 195830114,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 6-Player (Winner Takes All)",
+   "prize_pool": 270.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 39,
+   "entries": 74,
+   "entry_fee": 4.0,
+   "id": 195833760,
+   "max_entries_per_user": 2,
+   "name": "UFC $250 Sprawl",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 36,
+   "entries": 74,
+   "entry_fee": 4.0,
+   "id": 195654610,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to $250 FMWC Qualifier",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 167,
+   "entries": 297,
+   "entry_fee": 1.0,
+   "id": 195654611,
+   "max_entries_per_user": 8,
+   "name": "UFC Satellite to $250 FMWC Qualifier",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 6,
+   "entry_fee": 48.0,
+   "id": 195654609,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $250 FMWC Qualifier",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 92.0,
+   "id": 195796319,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $250 FMWC Qualifier [Must Fill]",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 92.0,
+   "id": 195654607,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $250 FMWC Qualifier [Must Fill]",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195842075,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195833731,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195833728,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195833707,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195654531,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 33,
+   "entries": 57,
+   "entry_fee": 5.0,
+   "id": 195833704,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195654313,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 11,
+   "entry_fee": 25.0,
+   "id": 195841264,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Double Up",
+   "prize_pool": 250.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 10,
+   "entry_fee": 25.0,
+   "id": 195838620,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Triple Up [Top 3 Win $75]",
+   "prize_pool": 225.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 10,
+   "entry_fee": 25.0,
+   "id": 195825271,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Triple Up [Top 3 Win $75]",
+   "prize_pool": 225.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 10,
+   "entry_fee": 25.0,
+   "id": 195654521,
+   "max_entries_per_user": 1,
+   "name": "UFC $25 Triple Up [Top 3 Win $75]",
+   "prize_pool": 225.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 20,
+   "entries": 23,
+   "entry_fee": 10.0,
+   "id": 195654553,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 200.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 22,
+   "entries": 23,
+   "entry_fee": 10.0,
+   "id": 195654552,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 200.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 160,
+   "entries": 229,
+   "entry_fee": 1.0,
+   "id": 195654583,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 200.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 20.0,
+   "id": 195654306,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $20 50-50",
+   "prize_pool": 180.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 50.0,
+   "id": 195654307,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 50-50",
+   "prize_pool": 180.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 20.0,
+   "id": 195654284,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 50-50",
+   "prize_pool": 180.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 20.0,
+   "id": 195717206,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 50-50",
+   "prize_pool": 180.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 15,
+   "entry_fee": 12.0,
+   "id": 195842246,
+   "max_entries_per_user": 1,
+   "name": "UFC $155 Flying Knee [Single Entry]",
+   "prize_pool": 155.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 20,
+   "entries": 89,
+   "entry_fee": 2.0,
+   "id": 195839516,
+   "max_entries_per_user": 2,
+   "name": "UFC $150 Guillotine",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 11,
+   "entry_fee": 16.0,
+   "id": 195820398,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $150 FMWC Qualifier",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 11,
+   "entries": 16,
+   "entry_fee": 11.0,
+   "id": 195654615,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $150 FMWC Qualifier",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 55.0,
+   "id": 195743096,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $150 FMWC Qualifier [Must Fill]",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 55.0,
+   "id": 195654612,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $150 FMWC Qualifier [Must Fill]",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 22,
+   "entries": 35,
+   "entry_fee": 5.0,
+   "id": 195834110,
+   "max_entries_per_user": 1,
+   "name": "UFC 10x Booster [Top 3 Win $50]",
+   "prize_pool": 150.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 27,
+   "entries": 31,
+   "entry_fee": 5.0,
+   "id": 195654511,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Triple Up [Top 9 Win $15]",
+   "prize_pool": 135.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 50.0,
+   "id": 195803799,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 3-Player",
+   "prize_pool": 135.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 50.0,
+   "id": 195826815,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 3-Player",
+   "prize_pool": 135.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 50.0,
+   "id": 195838795,
+   "max_entries_per_user": 1,
+   "name": "UFC $50 3-Player",
+   "prize_pool": 135.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 11,
+   "entries": 12,
+   "entry_fee": 10.0,
+   "id": 195816588,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 12-Player (Top 2 Win)",
+   "prize_pool": 108.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 10,
+   "entries": 13,
+   "entry_fee": 9.0,
+   "id": 195654619,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $100 FMWC Qualifier",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 4,
+   "entry_fee": 29.0,
+   "id": 195654618,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $100 FMWC Qualifier",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 37.0,
+   "id": 195654617,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $100 FMWC Qualifier [Must Fill]",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 37.0,
+   "id": 195654616,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to $100 FMWC Qualifier [Must Fill]",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 14,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654505,
+   "max_entries_per_user": 1,
+   "name": "Casual UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 11,
+   "entry_fee": 10.0,
+   "id": 195839873,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 9,
+   "entries": 11,
+   "entry_fee": 10.0,
+   "id": 195821950,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 12,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195839293,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 18,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654563,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 19,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654562,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 18,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654551,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 18,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654550,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 18,
+   "entries": 23,
+   "entry_fee": 5.0,
+   "id": 195654549,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 109,
+   "entries": 114,
+   "entry_fee": 1.0,
+   "id": 195654580,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 100.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 10,
+   "entry_fee": 10.0,
+   "id": 195835140,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 Triple Up [Top 3 Win $30]",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 15,
+   "entries": 20,
+   "entry_fee": 5.0,
+   "id": 195654524,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Triple Up [Top 6 Win $15]",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 14,
+   "entries": 20,
+   "entry_fee": 5.0,
+   "id": 195654523,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Triple Up [Top 6 Win $15]",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 15,
+   "entries": 20,
+   "entry_fee": 5.0,
+   "id": 195654522,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Triple Up [Top 6 Win $15]",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 19,
+   "entries": 34,
+   "entry_fee": 3.0,
+   "id": 195834552,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 17,
+   "entries": 34,
+   "entry_fee": 3.0,
+   "id": 195833920,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 10,
+   "entry_fee": 10.0,
+   "id": 195831625,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 10-Player (Winner Takes All)",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 10,
+   "entry_fee": 10.0,
+   "id": 195838396,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 10-Player (Winner Takes All)",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 20,
+   "entry_fee": 5.0,
+   "id": 195838583,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 20-Player (Top 5 Win)",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 10.0,
+   "id": 195654304,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $10 50-50",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 20.0,
+   "id": 195654278,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 5-Player",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 10.0,
+   "id": 195654283,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 50-50",
+   "prize_pool": 90.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 20.0,
+   "id": 195654305,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 50-50",
+   "prize_pool": 72.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 14,
+   "entries": 23,
+   "entry_fee": 3.0,
+   "id": 195654506,
+   "max_entries_per_user": 1,
+   "name": "Casual UFC $3 Double Up",
+   "prize_pool": 60.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 23,
+   "entry_fee": 3.0,
+   "id": 195838422,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 60.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 8,
+   "entries": 23,
+   "entry_fee": 3.0,
+   "id": 195836134,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 60.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 21,
+   "entries": 23,
+   "entry_fee": 3.0,
+   "id": 195654548,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 60.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 20.0,
+   "id": 195826811,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 3-Player",
+   "prize_pool": 54.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 20.0,
+   "id": 195654271,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $20 3-Player",
+   "prize_pool": 54.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 20.0,
+   "id": 195838791,
+   "max_entries_per_user": 1,
+   "name": "UFC $20 3-Player",
+   "prize_pool": 54.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 26,
+   "entries": 57,
+   "entry_fee": 1.0,
+   "id": 195836154,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 50.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 27,
+   "entries": 57,
+   "entry_fee": 1.0,
+   "id": 195835118,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 50.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 11,
+   "entry_fee": 5.0,
+   "id": 195654317,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 Double Up",
+   "prize_pool": 50.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195654507,
+   "max_entries_per_user": 1,
+   "name": "Casual UFC $5 Triple Up [Top 3 Win $15]",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195714984,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 50-50",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195788462,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 50-50",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195654302,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $5 50-50",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 10.0,
+   "id": 195654277,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 5-Player",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195813645,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 50-50",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 5.0,
+   "id": 195654281,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 10-Player",
+   "prize_pool": 45.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 136,
+   "entries": 475,
+   "entry_fee": 0.1,
+   "id": 195837328,
+   "max_entries_per_user": 14,
+   "name": "UFC SUPERSatellite to NBA 10-20 $20 Opening Tip Off [2x]",
+   "prize_pool": 40.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195654286,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195721628,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195789198,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195797507,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195797750,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195819091,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195827775,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 10.0,
+   "id": 195654303,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 20,
+   "entry_fee": 2.0,
+   "id": 195841245,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 36.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 21,
+   "entries": 35,
+   "entry_fee": 1.0,
+   "id": 195839927,
+   "max_entries_per_user": 1,
+   "name": "UFC $30 Daily Dollar",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 32,
+   "entries": 34,
+   "entry_fee": 1.0,
+   "id": 195827610,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 11,
+   "entry_fee": 3.0,
+   "id": 195654318,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 11,
+   "entry_fee": 3.0,
+   "id": 195797512,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 11,
+   "entry_fee": 3.0,
+   "id": 195797755,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 11,
+   "entry_fee": 3.0,
+   "id": 195818664,
+   "max_entries_per_user": 1,
+   "name": "UFC $3 Double Up",
+   "prize_pool": 30.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 16,
+   "entries": 31,
+   "entry_fee": 1.0,
+   "id": 195836991,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Triple Up [Top 9 Win $3]",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 11,
+   "entries": 31,
+   "entry_fee": 1.0,
+   "id": 195835165,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Triple Up [Top 9 Win $3]",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 10.0,
+   "id": 195654265,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 3-Player",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 10.0,
+   "id": 195826810,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 3-Player",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 10.0,
+   "id": 195654312,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $10 3-Player",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 10.0,
+   "id": 195838790,
+   "max_entries_per_user": 1,
+   "name": "UFC $10 3-Player",
+   "prize_pool": 27.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 5.0,
+   "id": 195654311,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $5 5-Player",
+   "prize_pool": 22.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 5.0,
+   "id": 195836441,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 5-Player",
+   "prize_pool": 22.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 15,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195833758,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA Best Ball $20 Shootaround",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 92,
+   "entries": 95,
+   "entry_fee": 0.25,
+   "id": 195654592,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NBA Best Ball $20 Shootaround",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 7.4,
+   "id": 195654590,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA Best Ball $20 Shootaround [Must Fill]",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 7.4,
+   "id": 195654589,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA Best Ball $20 Shootaround [Must Fill]",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 124,
+   "entries": 237,
+   "entry_fee": 0.1,
+   "id": 195835733,
+   "max_entries_per_user": 7,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 142,
+   "entries": 237,
+   "entry_fee": 0.1,
+   "id": 195832060,
+   "max_entries_per_user": 7,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 86,
+   "entries": 95,
+   "entry_fee": 0.25,
+   "id": 195654624,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 84,
+   "entries": 95,
+   "entry_fee": 0.25,
+   "id": 195654623,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 11,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195835731,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 22,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195654625,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 11,
+   "entry_fee": 2.0,
+   "id": 195835722,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 11,
+   "entry_fee": 2.0,
+   "id": 195829598,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 16,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195654504,
+   "max_entries_per_user": 1,
+   "name": "Casual UFC $1 Double Up",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 20,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195831690,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 19,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195831689,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 17,
+   "entries": 23,
+   "entry_fee": 1.0,
+   "id": 195831684,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 7.4,
+   "id": 195835707,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off [Must Fill]",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 7.4,
+   "id": 195835723,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NBA 10-20 $20 Opening Tip Off [Must Fill]",
+   "prize_pool": 20.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 5,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195838782,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Triple Up [Top 6 Win $3]",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 14,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195834193,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Triple Up [Top 6 Win $3]",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 10,
+   "entry_fee": 2.0,
+   "id": 195654287,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 10,
+   "entry_fee": 2.0,
+   "id": 195797508,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 10,
+   "entry_fee": 2.0,
+   "id": 195654280,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 10-Player",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195654285,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 3,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195721627,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195789197,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 4,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195797506,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195797749,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195819090,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195827774,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195834721,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 20-Player (Top 3 Win) x2",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 6,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195834733,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 20-Player (Winner Takes All)",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 5.0,
+   "id": 195654301,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 2.0,
+   "id": 195797751,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 2.0,
+   "id": 195818585,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 10-Player",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 20,
+   "entry_fee": 1.0,
+   "id": 195841244,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 18.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 62,
+   "entries": 71,
+   "entry_fee": 0.25,
+   "id": 195654595,
+   "max_entries_per_user": 2,
+   "name": "UFC Satellite to NHL 9-29 $15 Opening Night Puck Drop",
+   "prize_pool": 15.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 5.55,
+   "id": 195823032,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NHL 9-29 $15 Opening Night Puck Drop [Must Fill]",
+   "prize_pool": 15.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 5.55,
+   "id": 195822911,
+   "max_entries_per_user": 1,
+   "name": "UFC Satellite to NHL 9-29 $15 Opening Night Puck Drop [Must Fill]",
+   "prize_pool": 15.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 5.0,
+   "id": 195826809,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 3-Player",
+   "prize_pool": 13.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 5.0,
+   "id": 195838366,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 3-Player",
+   "prize_pool": 13.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 5.0,
+   "id": 195838789,
+   "max_entries_per_user": 1,
+   "name": "UFC $5 3-Player",
+   "prize_pool": 13.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 7,
+   "entries": 11,
+   "entry_fee": 1.0,
+   "id": 195654319,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 10.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 11,
+   "entry_fee": 1.0,
+   "id": 195761335,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 10.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 11,
+   "entry_fee": 1.0,
+   "id": 195797513,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 10.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 11,
+   "entry_fee": 1.0,
+   "id": 195797756,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 Double Up",
+   "prize_pool": 10.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 10,
+   "entry_fee": 1.0,
+   "id": 195654298,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 10,
+   "entry_fee": 1.0,
+   "id": 195797510,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 2.0,
+   "id": 195654310,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $2 5-Player",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 1.0,
+   "id": 195654299,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $1 50-50",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 2.0,
+   "id": 195654275,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 5-Player",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 1.0,
+   "id": 195797753,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 10,
+   "entry_fee": 1.0,
+   "id": 195654279,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 10-Player",
+   "prize_pool": 9.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 2.0,
+   "id": 195812601,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 50-50",
+   "prize_pool": 7.2
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 2.0,
+   "id": 195837350,
+   "max_entries_per_user": 1,
+   "name": "UFC $2 3-Player",
+   "prize_pool": 5.4
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 5,
+   "entry_fee": 1.0,
+   "id": 195812605,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 5-Player",
+   "prize_pool": 4.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 1.0,
+   "id": 195654309,
+   "max_entries_per_user": 1,
+   "name": "Beginner UFC $1 5-Player",
+   "prize_pool": 4.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 5,
+   "entry_fee": 1.0,
+   "id": 195842322,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 5-Player",
+   "prize_pool": 4.5
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 4,
+   "entry_fee": 1.0,
+   "id": 195837351,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 3.6
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 4,
+   "entry_fee": 1.0,
+   "id": 195839545,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 50-50",
+   "prize_pool": 3.6
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entries": 3,
+   "entry_fee": 1.0,
+   "id": 195839538,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 3-Player",
+   "prize_pool": 2.7
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 1,
+   "entries": 3,
+   "entry_fee": 1.0,
+   "id": 195842104,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 3-Player",
+   "prize_pool": 2.7
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entries": 3,
+   "entry_fee": 1.0,
+   "id": 195842122,
+   "max_entries_per_user": 1,
+   "name": "UFC $1 3-Player",
+   "prize_pool": 2.7
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 193,
+   "entries": 200,
+   "entry_fee": 0.0,
+   "id": 195657974,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 200-Player",
+   "prize_pool": 0.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 71,
+   "entries": 100,
+   "entry_fee": 0.0,
+   "id": 195790889,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 100-Player",
+   "prize_pool": 0.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 82,
+   "entries": 100,
+   "entry_fee": 0.0,
+   "id": 195696899,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 100-Player",
+   "prize_pool": 0.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 59,
+   "entries": 75,
+   "entry_fee": 0.0,
+   "id": 195673511,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 75-Player x2",
+   "prize_pool": 0.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 13,
+   "entries": 50,
+   "entry_fee": 0.0,
+   "id": 195688629,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 50-Player x4",
+   "prize_pool": 0.0
+  },
+  {
+   "draft_group_id": 153470,
+   "entered": 23,
+   "entries": 40,
+   "entry_fee": 0.0,
+   "id": 195791117,
+   "max_entries_per_user": 1,
+   "name": "UFC FREE 40-Player",
+   "prize_pool": 0.0
+  }
+ ],
+ "detail": {
+  "195572727": {
+   "draft_group_id": 153470,
+   "entered": 21235,
+   "entry_fee": 25.0,
+   "first_prize": 100000.0,
+   "game_type_id": 168,
+   "id": 195572727,
+   "kind": "gpp",
+   "max_entries": 23529,
+   "max_entries_per_user": 150,
+   "name": "UFC $500K UFC 331 Special [$100K to 1st]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 100000.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 40000.0,
+     "to": 2
+    },
+    {
+     "from": 3,
+     "prize": 25000.0,
+     "to": 3
+    },
+    {
+     "from": 4,
+     "prize": 15000.0,
+     "to": 4
+    },
+    {
+     "from": 5,
+     "prize": 10000.0,
+     "to": 5
+    },
+    {
+     "from": 6,
+     "prize": 5000.0,
+     "to": 6
+    },
+    {
+     "from": 7,
+     "prize": 3000.0,
+     "to": 8
+    },
+    {
+     "from": 9,
+     "prize": 2000.0,
+     "to": 10
+    },
+    {
+     "from": 11,
+     "prize": 1500.0,
+     "to": 15
+    },
+    {
+     "from": 16,
+     "prize": 1000.0,
+     "to": 20
+    },
+    {
+     "from": 21,
+     "prize": 750.0,
+     "to": 30
+    },
+    {
+     "from": 31,
+     "prize": 500.0,
+     "to": 40
+    },
+    {
+     "from": 41,
+     "prize": 350.0,
+     "to": 55
+    },
+    {
+     "from": 56,
+     "prize": 250.0,
+     "to": 75
+    },
+    {
+     "from": 76,
+     "prize": 200.0,
+     "to": 100
+    },
+    {
+     "from": 101,
+     "prize": 150.0,
+     "to": 150
+    },
+    {
+     "from": 151,
+     "prize": 100.0,
+     "to": 250
+    },
+    {
+     "from": 251,
+     "prize": 80.0,
+     "to": 550
+    },
+    {
+     "from": 551,
+     "prize": 60.0,
+     "to": 1150
+    },
+    {
+     "from": 1151,
+     "prize": 50.0,
+     "to": 2255
+    },
+    {
+     "from": 2256,
+     "prize": 40.0,
+     "to": 5305
+    }
+   ],
+   "places_paid": 5305,
+   "prize_pool": 500000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195572728": {
+   "draft_group_id": 153470,
+   "entered": 46642,
+   "entry_fee": 3.0,
+   "first_prize": 15000.0,
+   "game_type_id": 168,
+   "id": 195572728,
+   "kind": "gpp",
+   "max_entries": 47562,
+   "max_entries_per_user": 150,
+   "name": "UFC $120K MEGA mini-MAX [150 Entry Max]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 15000.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 7500.0,
+     "to": 2
+    },
+    {
+     "from": 3,
+     "prize": 3000.0,
+     "to": 3
+    },
+    {
+     "from": 4,
+     "prize": 2000.0,
+     "to": 4
+    },
+    {
+     "from": 5,
+     "prize": 1500.0,
+     "to": 5
+    },
+    {
+     "from": 6,
+     "prize": 1000.0,
+     "to": 6
+    },
+    {
+     "from": 7,
+     "prize": 750.0,
+     "to": 8
+    },
+    {
+     "from": 9,
+     "prize": 500.0,
+     "to": 10
+    },
+    {
+     "from": 11,
+     "prize": 400.0,
+     "to": 14
+    },
+    {
+     "from": 15,
+     "prize": 300.0,
+     "to": 19
+    },
+    {
+     "from": 20,
+     "prize": 250.0,
+     "to": 25
+    },
+    {
+     "from": 26,
+     "prize": 200.0,
+     "to": 35
+    },
+    {
+     "from": 36,
+     "prize": 150.0,
+     "to": 45
+    },
+    {
+     "from": 46,
+     "prize": 100.0,
+     "to": 60
+    },
+    {
+     "from": 61,
+     "prize": 75.0,
+     "to": 80
+    },
+    {
+     "from": 81,
+     "prize": 60.0,
+     "to": 105
+    },
+    {
+     "from": 106,
+     "prize": 50.0,
+     "to": 135
+    },
+    {
+     "from": 136,
+     "prize": 40.0,
+     "to": 175
+    },
+    {
+     "from": 176,
+     "prize": 30.0,
+     "to": 225
+    },
+    {
+     "from": 226,
+     "prize": 25.0,
+     "to": 285
+    },
+    {
+     "from": 286,
+     "prize": 20.0,
+     "to": 405
+    },
+    {
+     "from": 406,
+     "prize": 15.0,
+     "to": 725
+    },
+    {
+     "from": 726,
+     "prize": 10.0,
+     "to": 1625
+    },
+    {
+     "from": 1626,
+     "prize": 8.0,
+     "to": 3427
+    },
+    {
+     "from": 3428,
+     "prize": 6.0,
+     "to": 9791
+    }
+   ],
+   "places_paid": 9791,
+   "prize_pool": 120000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195654320": {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entry_fee": 26200.0,
+   "first_prize": 100000.0,
+   "game_type_id": 168,
+   "id": 195654320,
+   "kind": "gpp",
+   "max_entries": 4,
+   "max_entries_per_user": 1,
+   "name": "UFC $100K Heavy Hitter [Must Fill]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 100000.0,
+     "to": 1
+    }
+   ],
+   "places_paid": 1,
+   "prize_pool": 100000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195654325": {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entry_fee": 26200.0,
+   "first_prize": 75000.0,
+   "game_type_id": 168,
+   "id": 195654325,
+   "kind": "gpp",
+   "max_entries": 3,
+   "max_entries_per_user": 1,
+   "name": "UFC $75K Heavy Hitter [Must Fill]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 75000.0,
+     "to": 1
+    }
+   ],
+   "places_paid": 1,
+   "prize_pool": 75000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195654326": {
+   "draft_group_id": 153470,
+   "entered": 2,
+   "entry_fee": 5300.0,
+   "first_prize": 25000.0,
+   "game_type_id": 168,
+   "id": 195654326,
+   "kind": "gpp",
+   "max_entries": 8,
+   "max_entries_per_user": 1,
+   "name": "UFC $40K Thunderdome [Must Fill]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 25000.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 15000.0,
+     "to": 2
+    }
+   ],
+   "places_paid": 2,
+   "prize_pool": 40000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195660624": {
+   "draft_group_id": 153470,
+   "entered": 162,
+   "entry_fee": 200.0,
+   "first_prize": 7500.0,
+   "game_type_id": 168,
+   "id": 195660624,
+   "kind": "gpp",
+   "max_entries": 166,
+   "max_entries_per_user": 3,
+   "name": "UFC $30K Triangle [3 Entry Max]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 7500.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 4000.0,
+     "to": 2
+    },
+    {
+     "from": 3,
+     "prize": 2500.0,
+     "to": 3
+    },
+    {
+     "from": 4,
+     "prize": 1500.0,
+     "to": 4
+    },
+    {
+     "from": 5,
+     "prize": 1000.0,
+     "to": 5
+    },
+    {
+     "from": 6,
+     "prize": 800.0,
+     "to": 7
+    },
+    {
+     "from": 8,
+     "prize": 600.0,
+     "to": 10
+    },
+    {
+     "from": 11,
+     "prize": 500.0,
+     "to": 15
+    },
+    {
+     "from": 16,
+     "prize": 400.0,
+     "to": 22
+    },
+    {
+     "from": 23,
+     "prize": 300.0,
+     "to": 38
+    }
+   ],
+   "places_paid": 38,
+   "prize_pool": 30000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195660630": {
+   "draft_group_id": 153470,
+   "entered": 0,
+   "entry_fee": 5300.0,
+   "first_prize": 25000.0,
+   "game_type_id": 168,
+   "id": 195660630,
+   "kind": "gpp",
+   "max_entries": 8,
+   "max_entries_per_user": 1,
+   "name": "UFC $40K Thunderdome [Must Fill]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 25000.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 15000.0,
+     "to": 2
+    }
+   ],
+   "places_paid": 2,
+   "prize_pool": 40000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  },
+  "195660631": {
+   "draft_group_id": 153470,
+   "entered": 378,
+   "entry_fee": 555.0,
+   "first_prize": 50000.0,
+   "game_type_id": 168,
+   "id": 195660631,
+   "kind": "gpp",
+   "max_entries": 400,
+   "max_entries_per_user": 12,
+   "name": "UFC $200K Knockout Special [$50K to 1st]",
+   "payouts": [
+    {
+     "from": 1,
+     "prize": 50000.0,
+     "to": 1
+    },
+    {
+     "from": 2,
+     "prize": 30000.0,
+     "to": 2
+    },
+    {
+     "from": 3,
+     "prize": 15000.0,
+     "to": 3
+    },
+    {
+     "from": 4,
+     "prize": 10000.0,
+     "to": 4
+    },
+    {
+     "from": 5,
+     "prize": 5000.0,
+     "to": 5
+    },
+    {
+     "from": 6,
+     "prize": 3000.0,
+     "to": 7
+    },
+    {
+     "from": 8,
+     "prize": 2000.0,
+     "to": 14
+    },
+    {
+     "from": 15,
+     "prize": 1500.0,
+     "to": 30
+    },
+    {
+     "from": 31,
+     "prize": 1000.0,
+     "to": 76
+    }
+   ],
+   "places_paid": 76,
+   "prize_pool": 200000.0,
+   "sport": "MMA",
+   "starts": "2026-09-19T21:30:00.0000000Z",
+   "state": "Upcoming"
+  }
+ },
+ "slate": {
+  "contests": [
+   {
+    "draft_group_id": 153470,
+    "entered": 21232,
+    "entries": 23529,
+    "entry_fee": 25.0,
+    "id": 195572727,
+    "max_entries_per_user": 150,
+    "name": "UFC $500K UFC 331 Special [$100K to 1st]",
+    "prize_pool": 500000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 378,
+    "entries": 400,
+    "entry_fee": 555.0,
+    "id": 195660631,
+    "max_entries_per_user": 12,
+    "name": "UFC $200K Knockout Special [$50K to 1st]",
+    "prize_pool": 200000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 46637,
+    "entries": 47562,
+    "entry_fee": 3.0,
+    "id": 195572728,
+    "max_entries_per_user": 150,
+    "name": "UFC $120K MEGA mini-MAX [150 Entry Max]",
+    "prize_pool": 120000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 0,
+    "entries": 4,
+    "entry_fee": 26200.0,
+    "id": 195654320,
+    "max_entries_per_user": 1,
+    "name": "UFC $100K Heavy Hitter [Must Fill]",
+    "prize_pool": 100000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 0,
+    "entries": 3,
+    "entry_fee": 26200.0,
+    "id": 195654325,
+    "max_entries_per_user": 1,
+    "name": "UFC $75K Heavy Hitter [Must Fill]",
+    "prize_pool": 75000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 0,
+    "entries": 8,
+    "entry_fee": 5300.0,
+    "id": 195660630,
+    "max_entries_per_user": 1,
+    "name": "UFC $40K Thunderdome [Must Fill]",
+    "prize_pool": 40000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 2,
+    "entries": 8,
+    "entry_fee": 5300.0,
+    "id": 195654326,
+    "max_entries_per_user": 1,
+    "name": "UFC $40K Thunderdome [Must Fill]",
+    "prize_pool": 40000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 162,
+    "entries": 166,
+    "entry_fee": 200.0,
+    "id": 195660624,
+    "max_entries_per_user": 3,
+    "name": "UFC $30K Triangle [3 Entry Max]",
+    "prize_pool": 30000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 1,
+    "entries": 3,
+    "entry_fee": 10600.0,
+    "id": 195654321,
+    "max_entries_per_user": 1,
+    "name": "UFC $10,600 3-Player",
+    "prize_pool": 30000.0
+   },
+   {
+    "draft_group_id": 153470,
+    "entered": 0,
+    "entries": 3,
+    "entry_fee": 10600.0,
+    "id": 195826828,
+    "max_entries_per_user": 1,
+    "name": "UFC $10,600 3-Player",
+    "prize_pool": 30000.0
+   }
+  ],
+  "csv": "Position,Name + ID,Name,ID,Roster Position,Salary,Game Info,TeamAbbrev,AvgPointsPerGame\r\nF,Gable Steveson (974630),Gable Steveson,974630,F,9900,Steveson vs Sharaf,Steveson,\r\nF,Robelis Despaigne (776105),Robelis Despaigne,776105,F,9600,Tuivasa vs Despaigne,Despaigne,\r\nF,Ryan Gandra (953244),Ryan Gandra,953244,F,9400,Gandra vs Diaz,Gandra,\r\nF,Joanderson Brito (623032),Joanderson Brito,623032,F,9200,Chikadze vs Brito,Brito,\r\nF,Arman Tsarukyan (203014),Arman Tsarukyan,203014,F,9100,Tsarukyan vs Ruffy,Tsarukyan,\r\nF,JooSang Yoo (895804),JooSang Yoo,895804,F,9000,Aswell Jr. vs Yoo,Yoo,\r\nF,Dooho Choi (99598),Dooho Choi,99598,F,8900,Pitbull vs Choi,Choi,\r\nF,Charles Jourdain (99599),Charles Jourdain,99599,F,8800,Vera vs Jourdain,Jourdain,\r\nF,Iwo Baraniewski (940594),Iwo Baraniewski,940594,F,8700,Menifield vs Baraniewski,Baraniewski,\r\nF,Casey O'Neill (548285),Casey O'Neill,548285,F,8500,O'Neill vs Moura,O'Neill,\r\nF,Edmen Shahbazyan (96270),Edmen Shahbazyan,96270,F,8400,Shahbazyan vs Ferreira,Shahbazyan,\r\nF,Joshua Van (711671),Joshua Van,711671,F,8300,Van vs Pantoja,Van,\r\nF,Alexandre Pantoja (74973),Alexandre Pantoja,74973,F,7900,Van vs Pantoja,Pantoja,\r\nF,Brunno Ferreira (694392),Brunno Ferreira,694392,F,7800,Shahbazyan vs Ferreira,Ferreira,\r\nF,Eduarda Moura (736164),Eduarda Moura,736164,F,7700,O'Neill vs Moura,Moura,\r\nF,Alonzo Menifield (74890),Alonzo Menifield,74890,F,7500,Menifield vs Baraniewski,Menifield,\r\nF,Marlon Vera (74818),Marlon Vera,74818,F,7400,Vera vs Jourdain,Vera,\r\nF,Patricio Pitbull (877074),Patricio Pitbull,877074,F,7300,Pitbull vs Choi,Pitbull,\r\nF,Michael Aswell Jr. (899492),Michael Aswell Jr.,899492,F,7200,Aswell Jr. vs Yoo,Aswell Jr.,\r\nF,Mauricio Ruffy (783563),Mauricio Ruffy,783563,F,7100,Tsarukyan vs Ruffy,Ruffy,\r\nF,Giga Chikadze (202935),Giga Chikadze,202935,F,7000,Chikadze vs Brito,Chikadze,\r\nF,Ozzy Diaz (839722),Ozzy Diaz,839722,F,6800,Gandra vs Diaz,Diaz,\r\nF,Tai Tuivasa (202886),Tai Tuivasa,202886,F,6600,Tuivasa vs Despaigne,Tuivasa,\r\nF,Sean Sharaf (842443),Sean Sharaf,842443,F,6300,Steveson vs Sharaf,Sharaf,\r\n",
+  "draft_group_id": 153470,
+  "dropped": [
+   "Renato Moicano",
+   "Brian Ortega"
+  ],
+  "n_dropped": 2,
+  "n_players": 24,
+  "roles": {},
+  "slates": [
+   {
+    "contest_type": 168,
+    "draft_group_id": 153470,
+    "games": 13,
+    "sport": "ufc",
+    "starts": "2026-09-19T17:30:00.0000000",
+    "tag": null
+   },
+   {
+    "contest_type": 373,
+    "draft_group_id": 153691,
+    "games": 12,
+    "sport": "ufc",
+    "starts": "2026-09-19T17:30:00.0000000",
+    "tag": null
+   },
+   {
+    "contest_type": 169,
+    "draft_group_id": 153824,
+    "games": 9,
+    "sport": "ufc",
+    "starts": "2026-09-19T19:00:00.0000000",
+    "tag": "(Televised)"
+   }
+  ],
+  "sport": "ufc"
+ }
+}
