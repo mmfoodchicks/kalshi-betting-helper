@@ -17404,7 +17404,7 @@ ck("the prospective parameters are frozen by copy and hash from the salary artif
    and _s7fz["source_artifact"]["file"] == "research/data/s7_salary.json"
    and _s7fz["source_artifact"]["sha256"] == __import__("hashlib").sha256(open(_os.path.join(_root, "research", "data", "s7_salary.json"), "rb").read()).hexdigest()
    and "cross-slate generalisation" in _s7fz["primary"]["why"]
-   and any("no refit of beta or gamma per slate" in r for r in _s7fz["rules"]) and any("at least 3 genuinely pre-lock" in r for r in _s7fz["rules"])
+   and any("no refit of beta or gamma per slate" in r for r in _s7fz["rules"]) and any("at least 3 distinct genuinely pre-lock" in r for r in _s7fz["rules"])
    and any("refuses a capture stamped after" in r for r in _s7fz["rules"])
    and _s7fz["candidate_next_feature_if_the_residual_repeats"]["feature"] == "delta * I[salary_left == 0]"
    and "disagree on its sign" in _s7fz["candidate_next_feature_if_the_residual_repeats"]["warning"]
@@ -17415,7 +17415,7 @@ ck("the prospective scorer can fit nothing and refuses a post-lock capture: the 
    "fit(" not in _s7p_src.replace("def fit", "").replace("fit_free", "").replace("fits_called", "").replace("fitted", "").replace("refit", "").replace("benefit", "")
    and "solve_moment" not in _s7p_src and "SS.fit" not in _s7p_src and "SB.solve" not in _s7p_src
    and "with_mle=False" in _s7p_src and "clear_injuries=False" in _s7p_src
-   and "refuses a post-lock capture" in _s7p_src and "MIN_CONTESTS_BEFORE_NEXT_FEATURE = 3" in _s7p_src
+   and "refuses a post-lock capture" in _s7p_src and "MIN_SLATES_BEFORE_NEXT_FEATURE = 3" in _s7p_src
    and [a["name"] for a in _s7fz["arms"]] == ["production_field", "projection_only_frozen", "projection_plus_salary_frozen_primary",
                                              "projection_plus_salary_frozen_secondary", "salary_only_diagnostic"]
    and "negative = salary helps" in _s7fz["principal_criterion"]
@@ -17430,6 +17430,117 @@ ck("the salary report closes on the reviewer's decision: the retrospective basel
    and "conditional on the trained parameters" in _s7s_rep and "cannot establish that it introduces no bias" in _s7s_rep
    and "UNWEIGHTED" in _s7s_rep and "broken deterministically by universe row order" in _s7s_rep
    and "does not bias the feature" not in _s7s_rep)
+
+# ---- S7 prospective protocol: behavioural guards (research/s7_prospective.py) ----
+import shutil as _sh7p
+import tempfile as _tf7p
+try:
+    from research import s7_prospective as _P7
+    _p7_import_error = None
+except ImportError as _e7p:          # the no-numpy suite: the module needs numpy for the scorer
+    _P7, _p7_import_error = None, str(_e7p)
+_t7p = _tf7p.mkdtemp(prefix="s7p_")
+try:
+  if _P7 is None:
+    ck("the prospective module's behavioural guards run where numpy is present; in the no-numpy suite the module cannot import (the scorer needs numpy) and the three behavioural checks are recorded as skipped for that stated reason, not silently passed",
+       "numpy" in (_p7_import_error or ""))
+  else:
+      # 1. the frozen file is immutable: first freeze writes, a second leaves the bytes,
+      #    an altered source cannot replace it
+      _src7 = _os.path.join(_t7p, "s7_salary.json"); _sh7p.copy(_os.path.join(_root, "research", "data", "s7_salary.json"), _src7)
+      _tgt7 = _os.path.join(_t7p, "frozen.json")
+      _f1 = _P7.freeze(src=_src7, target=_tgt7, log=lambda *a, **k: None)
+      _b1 = open(_tgt7, "rb").read()
+      _f2 = _P7.freeze(src=_src7, target=_tgt7, log=lambda *a, **k: None)
+      _b2 = open(_tgt7, "rb").read()
+      _tam = _json18.load(open(_src7)); _tam["fits"]["projection_plus_salary"]["pooled_all"]["contest_balanced"]["theta"] = [0.5, 0.5]
+      _src7b = _os.path.join(_t7p, "s7_salary_tampered.json"); _json18.dump(_tam, open(_src7b, "w"))
+      try:
+          _P7.freeze(src=_src7b, target=_tgt7, log=lambda *a, **k: None); _refused7 = False
+      except SystemExit as e:
+          _refused7 = "immutable" in str(e)
+      _b3 = open(_tgt7, "rb").read()
+      ck("the frozen parameter file is immutable by contract: the first freeze writes it, an identical re-freeze returns it byte-for-byte unchanged with the original frozen_utc, and a source whose parameters differ is refused and leaves the bytes untouched",
+         _b1 == _b2 == _b3 and _f1["frozen_utc"] == _f2["frozen_utc"] and _f2["primary"]["theta"] == [0.11213, 1.04523] and _refused7)
+      # 2. capture selection and the timing-sensitivity arm: early / late pre-lock / post-lock
+      _pro7 = _os.path.join(_t7p, "prospective")
+      for _st, _pre in (("20260919T100000Z", True), ("20260920T220000Z", True), ("20260921T010000Z", False)):
+          _os.makedirs(_os.path.join(_pro7, "999", _st))
+          _json18.dump({"capture_stamp": _st, "pre_lock": _pre, "hours_to_lock": 30 if _st.startswith("20260919") else (2.3 if _pre else -1.0),
+                        "slate_identity": "AAA/BBB 2026-09-20"}, open(_os.path.join(_pro7, "999", _st, "capture.json"), "w"))
+      _sel_default = _P7.latest_pre_lock_capture(999, pro=_pro7)[1]["capture_stamp"]
+      _sel_early = _P7.latest_pre_lock_capture(999, stamp="20260919T100000Z", pro=_pro7)[1]["capture_stamp"]
+      try:
+          _P7.latest_pre_lock_capture(999, stamp="20260921T010000Z", pro=_pro7); _post_refused = False
+      except SystemExit as e:
+          _post_refused = "after lock" in str(e)
+      _valid7 = [v[0] for v in _P7.pre_lock_captures(999, pro=_pro7)]
+      _sh7p.rmtree(_os.path.join(_pro7, "999", "20260920T220000Z"))
+      _sel_without_late = _P7.latest_pre_lock_capture(999, pro=_pro7)[1]["capture_stamp"]
+      ck("capture selection: the latest valid pre-lock capture is the primary, an earlier one can be scored explicitly, a post-lock capture is refused by name and never listed as valid, and when the late capture is absent the early one becomes the primary",
+         _sel_default == "20260920T220000Z" and _sel_early == "20260919T100000Z" and _post_refused
+         and _valid7 == ["20260919T100000Z", "20260920T220000Z"] and _sel_without_late == "20260919T100000Z")
+      # 3. the ledger keeps every scored run, the primary is the latest, and the gate counts slates
+      def _row7(cid, st, ident, dg):
+          return {"contest": cid, "label": "x", "draft_group": dg, "slate_identity": ident, "capture_stamp": st, "principal_delta": -0.5}
+      _L = {"meta": {}, "contests": {}}
+      _L = _P7.ledger_update(_L, 1, _row7(1, "20260919T100000Z", "AAA/BBB 2026-09-20", 10), ["20260919T100000Z", "20260920T220000Z"])
+      _L = _P7.ledger_update(_L, 1, _row7(1, "20260920T220000Z", "AAA/BBB 2026-09-20", 10), ["20260919T100000Z", "20260920T220000Z"])
+      _e1 = _L["contests"]["1"]
+      _M = {"meta": {}, "contests": {}}
+      _M = _P7.ledger_update(_M, 1, _row7(1, "20260920T220000Z", "AAA/BBB 2026-09-20", 10), ["20260919T100000Z", "20260920T220000Z"])
+      _M = _P7.ledger_update(_M, 1, _row7(1, "20260919T100000Z", "AAA/BBB 2026-09-20", 10), ["20260919T100000Z", "20260920T220000Z"])
+      _e2 = _M["contests"]["1"]
+      _G1 = {"meta": {}, "contests": {}}
+      for _c in (1, 2, 3):
+          _G1 = _P7.ledger_update(_G1, _c, _row7(_c, "20260920T220000Z", "AAA/BBB 2026-09-20", 10), ["20260920T220000Z"])
+      _G2 = {"meta": {}, "contests": {}}
+      for _c, _id in ((1, "AAA/BBB 2026-09-20"), (2, "CCC/DDD 2026-09-21"), (3, "EEE/FFF 2026-09-25")):
+          _G2 = _P7.ledger_update(_G2, _c, _row7(_c, "20260920T220000Z", _id, _c), ["20260920T220000Z"])
+      ck("the ledger never overwrites a scored run: scoring the early then the late capture, or the late then the early, leaves both retained with the late one primary and the early one a timing-sensitivity arm; and the feature-round gate counts distinct slates, so three contests on one game leave it shut while three games open it",
+         _e1["primary_stamp"] == "20260920T220000Z" and [r["capture_stamp"] for r in _e1["capture_sensitivity"]] == ["20260919T100000Z"] and len(_e1["runs"]) == 2
+         and _e2["primary_stamp"] == "20260920T220000Z" and [r["capture_stamp"] for r in _e2["capture_sensitivity"]] == ["20260919T100000Z"]
+         and _G1["meta"]["prospective_contests_scored"] == 3 and _G1["meta"]["distinct_slates_scored"] == 1 and _G1["meta"]["feature_selection_round_allowed"] is False
+         and _G2["meta"]["prospective_contests_scored"] == 3 and _G2["meta"]["distinct_slates_scored"] == 3 and _G2["meta"]["feature_selection_round_allowed"] is True
+         and _P7.MIN_SLATES_BEFORE_NEXT_FEATURE == 3)
+finally:
+    _sh7p.rmtree(_t7p, ignore_errors=True)
+ck("the scorer's artifact path carries the capture stamp and refuses to overwrite, and the frozen file on disk carries the three protocol rules (immutable freeze, primary versus timing-sensitivity, distinct slates)",
+   's7_prospective_{cid}_{info[\'capture_stamp\']}.json' in _s7p_src and "a scored run is never overwritten" in _s7p_src
+   and any("immutable" in r for r in _s7fz["rules"]) and any("timing-sensitivity" in r for r in _s7fz["rules"])
+   and any("distinct genuinely pre-lock captured slates" in r for r in _s7fz["rules"]))
+
+# ---- Task 8: the classic Millionaire field, fit-free (research/cl_field.py) ------
+_cl8 = _json18.load(open(_os.path.join(_root, "research", "data", "cl_field.json")))
+_cl8e, _cl8r = _cl8["empirical"], _cl8["reconciliation"]
+_cl8c = {c["constant"]: c for c in _cl8["constants"]}
+_cl8_rep = " ".join(open(_os.path.join(_root, "research", "reports", "cl_field.md")).read().split())
+_cl8_src = open(_os.path.join(_root, "research", "cl_field.py")).read()
+ck("the classic export is read only against its pinned hash and reconciles on all four checks: 832,342 rows equal the capacity, 1,314 blank and 0 malformed lineups, 0 unresolved names against draft group 151307, DraftKings' per-roster-position %Drafted reproduced to 0.005 pp over 1,088 rows, and every active entry's points recomputed to 0.00003; the artifact fits nothing, uses no Sleeper input, and is provenance-clean",
+   "refusing to read an unpinned export" in _cl8_src and _cl8["meta"]["standings_file"]["sha256"] == "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244"
+   and _cl8["meta"]["standings_file"]["committed"] is False
+   and _cl8r["rows"]["parsed"] == _cl8r["rows"]["capacity"] == 832342 and _cl8r["rows"]["blank_lineup_rows"] == 1314 and _cl8r["rows"]["malformed_lineup_rows"] == 0
+   and _cl8r["lineups"]["unresolved_entries"] == 0 and _cl8r["ownership"]["dk_rows"] == 1088 and _cl8r["ownership"]["max_abs_diff_pp"] == 0.005
+   and _cl8r["points"]["entries_checked"] == 831028 and _cl8r["points"]["max_abs_diff_points"] < 1e-4 and _cl8r["all_checks_pass"] is True
+   and "ROSTER POSITION" in _cl8r["ownership"]["note"]
+   and _cl8["meta"]["fit_free"] is True and _cl8["meta"]["provenance"]["dirty"] is False and "no Sleeper input" in _cl8["meta"]["inputs"]["captured"])
+ck("the classic field model's six hand-set constants beside the week-1 Millionaire: the most-owned player held 42.82% of lineups any slot against the 38% target (38.58% at RB plus 4.17% at FLEX in DraftKings' per-position column), the field spent $49,850 against $49,400 with 49.91% at exactly the cap, the defense faced its own quarterback in 0.495% of entries against the model's 8%, the collision rate was 2.50e-6 against the reported 1.2e-7 (400,044 effective lineups; 346 copies of the most-copied lineup), while the stack distribution (19.16 / 53.04 / 26.14 / 1.66%) and the bring-back rate (32.15%) were close to the published trend and the stated assumption",
+   _cl8e["max_ownership"]["player"] == "Jahmyr Gibbs" and _cl8e["max_ownership"]["any_slot_pct"] == 42.82
+   and _cl8e["max_ownership"]["by_slot_pct"] == {"RB": 38.58, "FLEX": 4.17} and _cl8c["CL_FIELD_MAX_OWN"]["model"] == _dt7b.CL_FIELD_MAX_OWN == 0.38
+   and _cl8e["salary_used"]["mean"] == 49849.9 and _cl8e["salary_used"]["share_at_cap_pct"] == 49.91 and _cl8c["CL_SALARY_USED"]["model"] == _dt7b.CL_SALARY_USED
+   and _cl8e["dst_vs_own_qb_pct"]["real"] == 0.495 and _cl8c["CL_DST_VS_OWN_QB"]["model"] == _dt7b.CL_DST_VS_OWN_QB == 0.08
+   and _cl8e["collision"]["ratio_real_over_model"] == 20.83 and _cl8e["collision"]["effective_lineups"] == 400043.8 and _cl8e["max_lineup_copies"] == 346
+   and _cl8c["CL_FIELD_COLLISION"]["model"] == _dt7b.CL_FIELD_COLLISION
+   and _cl8e["stack_pct"]["0_1_2_3plus"] == [19.16, 53.04, 26.14, 1.66] and _cl8c["CL_STACK_DIST"]["model"] == list(_dt7b.CL_STACK_DIST)
+   and _cl8e["bring_back_pct"]["all_entries"] == 32.15 and _cl8e["bring_back_pct"]["among_stacked"] == 34.52 and _cl8c["CL_BRING_BACK"]["model"] == _dt7b.CL_BRING_BACK
+   and _cl8e["distinct_lineups"] == 773891 and _cl8e["duplicates"]["1-1"]["entry_share_pct"] == 89.76 and _cl8e["duplicates"]["51-plus"]["entry_share_pct"] == 0.51
+   and _cl8e["players_used"] == 665 and _cl8e["pool_players"] == 746 and _cl8e["share_from_150_max_users_pct"] == 22.67)
+ck("the classic report states the reconciliation, the per-roster-position ownership definition, the two constants that were close and the four that were off, our two rules' bite on this field, and that nothing is edited or fitted",
+   "Four of the classic field model's six hand-set constants are measurably off" in _cl8_rep
+   and "per roster position" in _cl8_rep and "42.82%" in _cl8_rep and "The curve was right and the target was wrong" in _cl8_rep
+   and "21 times more collisions" in _cl8_rep and "excludes the 5.8% of the field" in _cl8_rep and "excludes the 15% that plays two" in _cl8_rep
+   and "This artifact fits nothing and changes nothing" in _cl8_rep and "The constants are not edited here" in _cl8_rep
+   and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_FIELD_COLLISION == 1.2e-7)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

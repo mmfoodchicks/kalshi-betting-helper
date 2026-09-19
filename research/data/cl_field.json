@@ -1,0 +1,489 @@
+{
+ "constants": [
+  {
+   "constant": "CL_FIELD_MAX_OWN",
+   "model": 0.38,
+   "reads": "Jahmyr Gibbs, any slot; DraftKings' per-position column shows {'RB': 38.58, 'FLEX': 4.17}",
+   "real": 0.4282
+  },
+  {
+   "constant": "CL_SALARY_USED",
+   "model": 49400.0,
+   "reads": "median $49,900; 49.91% spend the full $50,000",
+   "real": 49849.9
+  },
+  {
+   "constant": "CL_STACK_DIST",
+   "model": [
+    0.174,
+    0.49,
+    0.289,
+    0.047
+   ],
+   "reads": "naked QB / one / two / three-plus WR-TE teammates",
+   "real": [
+    0.1916,
+    0.5304,
+    0.2614,
+    0.0166
+   ]
+  },
+  {
+   "constant": "CL_BRING_BACK",
+   "model": 0.35,
+   "reads": "any entry; among stacked entries 34.52%",
+   "real": 0.3215
+  },
+  {
+   "constant": "CL_DST_VS_OWN_QB",
+   "model": 0.08,
+   "reads": "share of the field whose defense faces its own quarterback",
+   "real": 0.00495
+  },
+  {
+   "constant": "CL_FIELD_COLLISION",
+   "model": 1.2e-07,
+   "reads": "effective lineups 400,044; the most-copied lineup has 346 copies",
+   "real": 2.499726556763514e-06
+  }
+ ],
+ "empirical": {
+  "active_entries": 831028,
+  "bring_back_pct": {
+   "all_entries": 32.15,
+   "among_stacked": 34.52,
+   "definition": "a WR or TE from the quarterback's opponent",
+   "model": 35.0
+  },
+  "collision": {
+   "effective_lineups": 400043.8,
+   "model_reported": 1.2e-07,
+   "ratio_real_over_model": 20.83,
+   "sum_p2": 2.499726556763514e-06
+  },
+  "distinct_lineups": 773891,
+  "dst_vs_own_qb_pct": {
+   "definition": "the defense's opponent is the quarterback's team",
+   "model": 8.0,
+   "real": 0.495
+  },
+  "dst_vs_own_rb_pct": 2.446,
+  "duplicates": {
+   "1-1": {
+    "entries": 745894,
+    "entry_share_pct": 89.76,
+    "lineups": 745894
+   },
+   "11-50": {
+    "entries": 9355,
+    "entry_share_pct": 1.13,
+    "lineups": 528
+   },
+   "2-2": {
+    "entries": 39230,
+    "entry_share_pct": 4.72,
+    "lineups": 19615
+   },
+   "3-5": {
+    "entries": 22806,
+    "entry_share_pct": 2.74,
+    "lineups": 6538
+   },
+   "51-plus": {
+    "entries": 4225,
+    "entry_share_pct": 0.51,
+    "lineups": 43
+   },
+   "6-10": {
+    "entries": 9518,
+    "entry_share_pct": 1.15,
+    "lineups": 1273
+   }
+  },
+  "flex_position_pct": {
+   "RB": 42.51,
+   "TE": 21.36,
+   "WR": 36.13
+  },
+  "max_lineup_copies": 346,
+  "max_lineup_share_pct": 0.0416,
+  "max_ownership": {
+   "any_slot_pct": 42.82,
+   "any_slot_pct_of_all_rows": 42.75,
+   "by_slot_pct": {
+    "FLEX": 4.17,
+    "RB": 38.58
+   },
+   "model_target": 0.38,
+   "player": "Jahmyr Gibbs"
+  },
+  "ownership_top": [
+   {
+    "any_slot_pct": 42.82,
+    "name": "Jahmyr Gibbs",
+    "pos": "RB",
+    "team": "DET"
+   },
+   {
+    "any_slot_pct": 30.17,
+    "name": "Ja'Marr Chase",
+    "pos": "WR",
+    "team": "CIN"
+   },
+   {
+    "any_slot_pct": 27.51,
+    "name": "Michael Mayer",
+    "pos": "TE",
+    "team": "LV"
+   },
+   {
+    "any_slot_pct": 24.81,
+    "name": "Chris Olave",
+    "pos": "WR",
+    "team": "NO"
+   },
+   {
+    "any_slot_pct": 21.07,
+    "name": "Saquon Barkley",
+    "pos": "RB",
+    "team": "PHI"
+   },
+   {
+    "any_slot_pct": 19.88,
+    "name": "Omarion Hampton",
+    "pos": "RB",
+    "team": "LAC"
+   },
+   {
+    "any_slot_pct": 18.41,
+    "name": "De'Von Achane",
+    "pos": "RB",
+    "team": "MIA"
+   },
+   {
+    "any_slot_pct": 17.84,
+    "name": "Amon-Ra St. Brown",
+    "pos": "WR",
+    "team": "DET"
+   },
+   {
+    "any_slot_pct": 17.83,
+    "name": "Jaguars",
+    "pos": "DST",
+    "team": "JAX"
+   },
+   {
+    "any_slot_pct": 15.84,
+    "name": "Garrett Wilson",
+    "pos": "WR",
+    "team": "NYJ"
+   },
+   {
+    "any_slot_pct": 15.05,
+    "name": "Ladd McConkey",
+    "pos": "WR",
+    "team": "LAC"
+   },
+   {
+    "any_slot_pct": 14.49,
+    "name": "Bijan Robinson",
+    "pos": "RB",
+    "team": "ATL"
+   },
+   {
+    "any_slot_pct": 13.53,
+    "name": "Jonathan Taylor",
+    "pos": "RB",
+    "team": "IND"
+   },
+   {
+    "any_slot_pct": 13.13,
+    "name": "Juwan Johnson",
+    "pos": "TE",
+    "team": "NO"
+   },
+   {
+    "any_slot_pct": 12.93,
+    "name": "Bucky Irving",
+    "pos": "RB",
+    "team": "TB"
+   },
+   {
+    "any_slot_pct": 12.9,
+    "name": "Colston Loveland",
+    "pos": "TE",
+    "team": "CHI"
+   },
+   {
+    "any_slot_pct": 12.71,
+    "name": "Quentin Johnston",
+    "pos": "WR",
+    "team": "LAC"
+   },
+   {
+    "any_slot_pct": 12.64,
+    "name": "Tetairoa McMillan",
+    "pos": "WR",
+    "team": "CAR"
+   },
+   {
+    "any_slot_pct": 12.59,
+    "name": "Justin Jefferson",
+    "pos": "WR",
+    "team": "MIN"
+   },
+   {
+    "any_slot_pct": 12.49,
+    "name": "Jets",
+    "pos": "DST",
+    "team": "NYJ"
+   }
+  ],
+  "players_from_one_game_max_pct": {
+   "1": 0.4,
+   "2": 30.63,
+   "3": 39.38,
+   "4": 21.26,
+   "5": 6.57,
+   "6": 1.35,
+   "7": 0.33,
+   "8": 0.07
+  },
+  "players_from_one_team_max_pct": {
+   "1": 6.57,
+   "2": 52.76,
+   "3": 34.9,
+   "4": 5.26,
+   "5": 0.47,
+   "6": 0.03,
+   "7": 0.0,
+   "8": 0.0
+  },
+  "players_from_qb_game_pct": {
+   "1": 9.87,
+   "2": 29.61,
+   "3": 32.34,
+   "4": 20.04,
+   "5": 6.42,
+   "6": 1.33,
+   "7": 0.33,
+   "8": 0.07
+  },
+  "players_used": 665,
+  "pool_players": 746,
+  "punts_under_3000_pct": {
+   "0": 36.63,
+   "1": 48.39,
+   "2": 14.92,
+   "3": 0.07
+  },
+  "salary_used": {
+   "mean": 49849.9,
+   "median": 49900.0,
+   "model": 49400.0,
+   "p10_p25_p75_p90": [
+    49600.0,
+    49800.0,
+    50000.0,
+    50000.0
+   ],
+   "share_at_cap_pct": 49.91,
+   "share_ge_49500_pct": 94.7,
+   "share_le_48000_pct": 0.6
+  },
+  "share_from_150_max_users_pct": 22.67,
+  "stack_pct": {
+   "0_1_2_3plus": [
+    19.16,
+    53.04,
+    26.14,
+    1.66
+   ],
+   "definition": "WR/TE teammates of the quarterback, a back not counted (the sampler's definition)",
+   "model": [
+    17.4,
+    49.0,
+    28.9,
+    4.7
+   ],
+   "with_backs_counted": [
+    14.93,
+    45.99,
+    33.38,
+    5.7
+   ]
+  },
+  "top_lineups": [
+   {
+    "copies": 346,
+    "lineup": [
+     "Bucky Irving",
+     "Emeka Egbuka",
+     "Ja'Marr Chase",
+     "Jets",
+     "Joe Burrow",
+     "MarShawn Lloyd",
+     "Mark Andrews",
+     "Tee Higgins",
+     "Travis Etienne Jr."
+    ]
+   },
+   {
+    "copies": 236,
+    "lineup": [
+     "Bijan Robinson",
+     "Chris Olave",
+     "Ja'Marr Chase",
+     "Jahmyr Gibbs",
+     "Justin Herbert",
+     "Juwan Johnson",
+     "Michael Mayer",
+     "Titans",
+     "Tre Tucker"
+    ]
+   },
+   {
+    "copies": 168,
+    "lineup": [
+     "Amon-Ra St. Brown",
+     "Bijan Robinson",
+     "Devaughn Vele",
+     "Ja'Marr Chase",
+     "Jahmyr Gibbs",
+     "Jared Goff",
+     "Juwan Johnson",
+     "Michael Mayer",
+     "Raiders"
+    ]
+   }
+  ],
+  "user_max_entry_brackets": {
+   "1": {
+    "entries": 88875,
+    "share_pct": 10.68
+   },
+   "10": {
+    "entries": 34680,
+    "share_pct": 4.17
+   },
+   "150": {
+    "entries": 188700,
+    "share_pct": 22.67
+   },
+   "2": {
+    "entries": 63030,
+    "share_pct": 7.57
+   },
+   "3": {
+    "entries": 42972,
+    "share_pct": 5.16
+   },
+   "4": {
+    "entries": 33652,
+    "share_pct": 4.04
+   },
+   "5": {
+    "entries": 28245,
+    "share_pct": 3.39
+   },
+   "6": {
+    "entries": 20502,
+    "share_pct": 2.46
+   }
+  }
+ },
+ "meta": {
+  "contest": {
+   "draft_group_id": 151307,
+   "entry_fee": 5.0,
+   "first_prize": 1000000.0,
+   "id": 193028206,
+   "max_entries": 832342,
+   "name": "NFL $3.5M Fantasy Football Millionaire [$1M to 1st]",
+   "places_paid": 173275,
+   "prize_pool": 3500000.0,
+   "starts": "2026-09-13T17:00:00.0000000Z"
+  },
+  "fit_free": true,
+  "inputs": {
+   "captured": "draft group 151307 captured after the game (2026-09-19); salaries, teams and games do not change after lock; no Sleeper input is used",
+   "draftkings": {
+    "files": {
+     "contests": {
+      "bytes": 1867,
+      "endpoint": "dk.contests + dk.contest_detail (nfl, 151307)",
+      "file": "contests_151307.json",
+      "records": 1,
+      "retrieved_ts": 1789843244,
+      "sha256": "76f0c9e125143debfe7dda162fd2cf7786261b96a4917298357c12c66b1f561f"
+     },
+     "slate": {
+      "bytes": 56835,
+      "endpoint": "dk.slate_for(nfl, 151307)",
+      "file": "slate_151307.json",
+      "records": 746,
+      "retrieved_ts": 1789843243,
+      "sha256": "3bfe1f19a9aa87dc4789a15abc1f911c2d979800dd3e4f20ccdf1b961fa74acf"
+     }
+    },
+    "normalization_version": 1,
+    "source": "draftkings"
+   }
+  },
+  "provenance": {
+   "commit": "f87aeea",
+   "data_split": null,
+   "dirty": false,
+   "model": "none: raw standings against the classic field model's hand-set constants",
+   "seed": "UNSEEDED",
+   "source_files": 44,
+   "source_sha": "5404a28b96bc1d47207e1d7ff603ed99437bd2e17cd4980a2674f12fb2d0b724",
+   "worlds": null
+  },
+  "stage": "Task 8: the classic week-1 $3.5M Millionaire field as it entered, fit-free, each placeholder constant beside its measured value",
+  "standings_file": {
+   "bytes": 167357407,
+   "committed": false,
+   "file": "contest-standings-193028206.csv",
+   "pinned_in": "research/data/dk_standings/manifest.json",
+   "sha256": "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244",
+   "why": "167 MB CSV / 28 MB gzipped against a 5.6 MB repository that Render clones on every deploy; the bytes stay with the owner's zip and are pinned here by hash so any later copy can be verified"
+  }
+ },
+ "reconciliation": {
+  "all_checks_pass": true,
+  "lineups": {
+   "pool_size": 746,
+   "resolved_to_pool": 831028,
+   "unresolved_entries": 0,
+   "unresolved_names": {}
+  },
+  "ownership": {
+   "dk_rows": 1088,
+   "max_abs_diff_pp": 0.005,
+   "note": "DraftKings' %Drafted is per ROSTER POSITION (a back at RB and the same back at FLEX are two rows); recomputed per slot over all entries",
+   "reconciles_within_rounding": true,
+   "worst": {
+    "diff_pp": 0.005,
+    "dk_pct": 14.57,
+    "name": "Garrett Wilson",
+    "ours_pct": 14.57,
+    "slot": "WR"
+   }
+  },
+  "points": {
+   "entries_checked": 831028,
+   "max_abs_diff_points": 3e-05,
+   "reconciles": true
+  },
+  "rows": {
+   "blank_lineup_rows": 1314,
+   "capacity": 832342,
+   "distinct_entry_ids": 832342,
+   "malformed_lineup_rows": 0,
+   "parsed": 832342,
+   "reconciles": true,
+   "with_lineup": 831028
+  }
+ }
+}
