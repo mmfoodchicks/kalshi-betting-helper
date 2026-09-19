@@ -472,10 +472,21 @@ def production_on_own_universe(bd):
     f = np.asarray(M["f"], dtype=np.float64)
     N = float(n.sum())
     q = n / N
+    # the rule tested on its OWN universe: the counts MLE on the gated support,
+    # so "the 0.2% rule is not validated" does not rest on the lifted universe alone
+    Bg = Board(bd["B"].cid, np.asarray(M["proj_lineup"], dtype=np.float64), rows, n)
+    beta_g, note_g = solve_moment([Bg], [1.0])
+    nll_rule = float(-(n * np.log(f[rows])).sum() / N)
+    mle_here = {"beta": round(float(beta_g), 5), "note": note_g, "nll_per_entry_nats": round(Bg.nll_per_entry(beta_g), 5),
+                "rule_minus_mle_nats": round(nll_rule - Bg.nll_per_entry(beta_g), 5),
+                "rule_beta_minus_mle_beta": round(float(M["beta"]) - float(beta_g), 5),
+                "max_share_pct_at_mle": round(100 * float(Bg.probs(beta_g).max()), 4),
+                "reads": "the counts MLE on production's own gated universe and support; the rule's beta and likelihood are the row beside it"}
     return {"beta": round(float(M["beta"]), 5), "players": len(M["ents"]), "legal_lineups": int(len(M["idx"])),
+            "mle_on_this_support": mle_here,
             "support_pct_of_active": round(100 * N / bd["support"]["active_entries"], 2), "entries_on_support": int(N),
             "legal_but_not_enumerated": miss["legal_but_missing"],
-            "nll_per_entry_nats_on_its_support": round(float(-(n * np.log(f[rows])).sum() / N), 5),
+            "nll_per_entry_nats_on_its_support": round(nll_rule, 5),
             "saturated_on_its_support": round(float(-(q * np.log(q)).sum()), 5),
             "uniform_on_its_support": round(math.log(len(M["idx"])), 5),
             "max_share_pct": {"model": round(100 * float(f.max()), 4), "observed_on_its_support": round(100 * float(n.max()) / N, 4)},
@@ -639,7 +650,9 @@ def run(log=print):
                                              "own_mle": g["own_mle"]["out_of_objective"]["salary_left"]["model_mean"]},
                         "beta_by_universe_top_k": {str(r["players"]): r["beta"] for r in c["universe_sensitivity"]},
                         "held_out_residual_under_loo_beta": {k: c["fit"]["leave_one_out"][k]["held_out_residual"] for k in ("entry_weighted", "contest_balanced")},
-                        "production_on_own_universe": {k: c["production_model_on_its_own_universe"][k] for k in ("support_pct_of_active", "nll_per_entry_nats_on_its_support")},
+                        "production_on_own_universe": {**{k: c["production_model_on_its_own_universe"][k] for k in ("support_pct_of_active", "nll_per_entry_nats_on_its_support")},
+                                                       "mle_beta_here": c["production_model_on_its_own_universe"]["mle_on_this_support"]["beta"],
+                                                       "rule_minus_mle_nats": c["production_model_on_its_own_universe"]["mle_on_this_support"]["rule_minus_mle_nats"]},
                         "rank_bins": {b["rank"]: {"observed": b["observed_pct"], "top_share_rule_here": b["model_pct_top_share_rule_here"], "own_mle": b["model_pct_own_mle"]} for b in c["rank_bins"]},
                         "ordering": {"spearman": c["ordering_beta_invariant"]["spearman_observed_count_vs_x_over_observed_lineups"],
                                      "real_chalk_model_rank": c["ordering_beta_invariant"]["real_chalk"]["model_rank"],
