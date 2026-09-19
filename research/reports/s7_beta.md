@@ -34,7 +34,7 @@ the standings agree.
 | Board | Integrity | Projected players (of DK pool) | Legal lineups (gated universe was) | Active entries | Representable | Outside, not repaired |
 |---|---|---|---|---|---|---|
 | NE @ SEA | post-game reconstruction | 25 of 68 | 1,040,958 (319,933) | 125,800 | **96.65%** | 3.35% (Montorie Foster Jr. 1,664 entries, Lan Larison 975) |
-| DEN @ KC | **highest integrity** (pool, contest, feeds pre-lock, about 50 h before kickoff; roster post-game) | 30 of 55 | 3,483,231 (777,056) | 87,909 | **98.68%** | 1.32% (Justin Fields 431, Jake Briningstool 284, Adam Prentice 268) |
+| DEN @ KC | **highest integrity**: pool, contest and feeds captured about 50 hours before kickoff, genuinely before the game but not a near-lock snapshot (no late news in it); roster post-game | 30 of 55 | 3,483,231 (777,056) | 87,909 | **98.68%** | 1.32% (Justin Fields 431, Jake Briningstool 284, Adam Prentice 268) |
 | DET @ BUF | post-game reconstruction | 26 of 47 | 1,333,214 (421,702) | 88,023 | **82.59%** | 17.41% (Frank Gore Jr. 11,731, Greg Dortch 1,608, Keleki Latu 956) |
 
 Every number below for DET @ BUF is conditional on the 82.6% of its field the
@@ -43,6 +43,14 @@ projected, and nothing here stands in for the missing line: no final points,
 no post-game projection, no zero, no invented floor.
 
 ## 2. The fit
+
+The question is not whether beta can learn which lineups the public chooses;
+it cannot. The softmax is a strictly monotone transformation of the lineup
+projection for every positive beta, so beta changes concentration and
+probability gaps and never the ordering. The question is: given the
+projection ordering already in hand, how aggressively does the public
+concentrate along it, and is one concentration parameter portable across
+contests?
 
 Beta maximises the likelihood of the exact-lineup counts, captain identity
 included, over the representable universe. The log-likelihood of this
@@ -76,9 +84,16 @@ observed variance is lower on every board:
 | DEN @ KC | 19.44 | 13.02 | **0.67** |
 | DET @ BUF | 30.56 | 18.03 | **0.59** |
 
-The real field sits in a narrower band of projected totals than
-a softmax at the matched mean, and inside that band it concentrates on
-lineups the projection does not single out. Both halves show in the bin
+The MLE matches the sufficient statistic, the mean, by construction; the
+variance is not a second free moment, so this is the family's first
+over-identifying test, and it fails. Precisely: a second-moment mismatch
+diagnoses the one-parameter exponential tilt conditional on the supplied
+projections and support, with finite-sample and reconstruction caveats; it
+does not by itself say whether the projections or the functional form
+deserve the blame. What it does say is that, given these projections, the
+real field sits in a narrower band of projected totals than a softmax at the
+matched mean, and inside that band it concentrates on lineups the projection
+does not single out. Both halves show in the bin
 calibration at the MLE: observed over model is 1.16 to 1.18 in the 10^-5 to
 10^-4 band on all three boards and 0.18 to 0.67 in the 10^-7 to 10^-6 band.
 Pushing beta up to match the concentration overshoots the mean: the 0.2% rule
@@ -167,6 +182,99 @@ KC's excess, not all of it: over the other two boards' mean its beta is
 rest is the board. The twenty-player rows are on a shrinking support (DET @
 BUF keeps 55% of its field there) and are a diagnostic of the
 parameterisation, not a fit anything downstream uses.
+
+### 6.2 The score equation, and which boards want hotter or colder
+
+A pooled fit does not zero three residuals with one beta. Its checksum is
+its score equation: the weighted sum of the fitted boards' mean residuals is
+zero (entry weights for the entry-weighted fit, equal weights for the
+contest-balanced one). The residual each board keeps under the common beta
+(model mean x minus observed mean x) is the transfer diagnostic: negative
+means the board wants a hotter field than the pool gives it, positive a
+colder one.
+
+| Fit | beta | NE @ SEA | DEN @ KC | DET @ BUF | Weighted sum of the fitted boards' residuals |
+|---|---|---|---|---|---|
+| all three, entry-weighted | 0.3514 | +0.558 | -1.926 | +1.366 | 0.000 |
+| all three, contest-balanced | 0.3514 | +0.558 | -1.925 | +1.367 | 0.000 |
+| leave out NE @ SEA, entry-weighted | 0.3683 | **held out: +0.998** | -1.473 | +1.758 | 0.000 |
+| leave out NE @ SEA, contest-balanced | 0.3625 | **held out: +0.850** | -1.626 | +1.626 | 0.000 |
+| leave out DEN @ KC, entry-weighted | 0.3206 | -0.342 | **held out: -2.855** | +0.572 | 0.000 |
+| leave out DEN @ KC, contest-balanced | 0.3167 | -0.465 | **held out: -2.981** | +0.465 | 0.000 |
+| leave out DET @ BUF, entry-weighted | 0.3695 | +1.029 | -1.442 | **held out: +1.786** | 0.000 |
+| leave out DET @ BUF, contest-balanced | 0.3779 | +1.233 | -1.233 | **held out: +1.968** | 0.000 |
+
+DEN @ KC wants a hotter field under every common beta (a residual of -1.9 to -3.0 projected points); NE @ SEA and DET @ BUF want a colder one. The same three signs appear whichever two boards are pooled, so the disagreement is between DEN @ KC and the other two, not an artefact of one pooling.
+
+## 6.3 The decomposition: three baselines
+
+Comparing the fitted beta only against the served knob would mix two changes,
+the universe and the value. Three baselines separate them: the served
+placeholder on its own gated universe (historical fidelity, on its own and
+smaller support, so its likelihood is not comparable to the other rows and
+its shape columns are), the same numerical beta applied to the lifted
+universe (the universe change and its renormalisation alone), and the 0.2%
+rule re-solved on the lifted universe (the apples-to-apples baseline for the
+fitted beta).
+
+| Board | (i) served placeholder on its gated universe: support, beta, NLL on that support (saturated, uniform), top share model / observed there, effective lineups model / observed there | (ii) the same beta value on the lifted universe: NLL, top share, effective lineups | (iii) 0.2% rule re-solved on the lifted universe: beta, NLL, top share, effective lineups | (iv) MLE: beta, NLL, top share, effective lineups |
+|---|---|---|---|---|
+| NE @ SEA | 47.46%, 0.2913, 9.241 (7.827, 12.676), 0.20% / 0.90%, 4,900 / 906 | 10.047, 0.086%, 12,008 | 0.3737, 10.045, 0.200%, 4,747 | 0.3318, 10.021, 0.133%, 7,483 |
+| DEN @ KC | 91.59%, 0.4548, 10.369 (8.763, 13.563), 0.20% / 0.39%, 7,451 / 2,900 | 10.641, 0.168%, 10,086 | 0.4749, 10.653, 0.200%, 8,384 | 0.4343, 10.637, 0.139%, 12,237 |
+| DET @ BUF | 74.29%, 0.3514, 10.220 (8.224, 12.952), 0.20% / 1.47%, 5,889 / 1,186 | 10.604, 0.139%, 8,864 | 0.3895, 10.673, 0.200%, 6,065 | 0.3009, 10.569, 0.081%, 15,052 |
+
+Read across a row. Lifting the gate (i to ii) keeps the beta and changes the universe: the top share falls from the rule's 0.2% to 0.09 / 0.17 / 0.14% and the effective number of lineups rises from 4,900 / 7,451 / 5,889 to 12,008 / 10,086 / 8,864, because the tail the gate had removed now holds mass. Re-solving the rule on the bigger universe (ii to iii) raises the beta on every board and moves it away from the MLE on every board; its likelihood is within 0.002 nats of the raw value's on NE @ SEA and worse on DEN @ KC (10.653 against 10.641) and DET @ BUF (10.673 against 10.604). The MLE (iv) beats both by 0.004 to 0.036 nats. The served placeholder's own-universe row is on its own support (47.5 / 91.6 / 74.3% of active entries) and its likelihood is not comparable to the other three columns; on that support the real field is 5.4 / 2.6 / 5.0 times more concentrated than the placeholder.
+
+## 6.4 Calibration over fixed projection-rank bins
+
+Bins keyed on fitted-probability thresholds move their own membership with
+beta. These bins are fixed by the projection order (rank 1-10, 11-100, ...),
+so beta is visibly doing the only thing it can: redistributing mass more or
+less aggressively along one ordering. Observed field mass, the 0.2% rule
+re-solved on this universe, and the fitted beta, per bin:
+
+| Projection rank | NE @ SEA: observed / 0.2% rule here / MLE | DEN @ KC: observed / rule / MLE | DET @ BUF: observed / rule / MLE |
+|---|---|---|---|
+| 1-10 | 0.99 / 1.66 / 1.13 | 0.57 / 1.21 / 0.87 | 0.36 / 1.53 / 0.65 |
+| 11-100 | 3.91 / 7.76 / 5.67 | 1.59 / 5.24 / 4.04 | 2.01 / 6.26 / 3.19 |
+| 101-1000 | 18.35 / 24.80 / 20.52 | 12.68 / 19.07 / 15.97 | 9.23 / 22.38 / 14.35 |
+| 1001-10000 | 50.27 / 44.53 / 44.14 | 42.43 / 40.29 / 38.31 | 43.79 / 44.97 / 40.72 |
+| 10001-100000 | 25.34 / 20.60 / 27.10 | 40.66 / 30.93 / 35.63 | 44.31 / 24.26 / 38.30 |
+| 100001+ | 1.14 / 0.65 / 1.44 | 2.06 / 3.27 / 5.18 | 0.31 / 0.61 / 2.80 |
+
+The same picture on every board, at either beta. The public puts less of its field than the model in the projection's top 1,000 (23.2 / 14.8 / 11.6% against 27.3 / 20.9 / 18.2% at the MLE and 34.2 / 25.5 / 30.2% under the rule) and more in ranks 1,001 to 100,000 (75.6 / 83.1 / 88.1% against 71.2 / 73.9 / 79.0% at the MLE). A lower beta would move mass down the order, but it moves it past the public into the deep tail, where the MLE already holds more than the field on DEN @ KC (5.2% against 2.1%) and DET @ BUF (2.8% against 0.3%). No beta matches both ends: along one fixed ordering the real field is thinner than the model at the very top and in the deep tail and thicker in the middle. That is the variance finding of section 3, made visible.
+
+## 6.5 Reading the failure
+
+The independent study's taxonomy, applied board by board:
+
+- **Case A (ordering good, concentration wrong; beta may be enough)**: no
+  board. The ordering is poor everywhere (Spearman 0.19 to 0.32; 12% to 23%
+  of the field in the projection's top 1,000 where the fitted model puts 18%
+  to 27%), and on the one board whose chalk the projection ranks second, the
+  winner sits at rank 19,623.
+- **Case B (ordering bad; the fit improves the likelihood but cannot fix the
+  ranking)**: every board, in the weak sense that the MLE buys 0.004 to
+  0.036 nats. But the fit does not even improve concentration consistently:
+  against the served placeholder's value the MLE raises the top share on NE
+  @ SEA (0.086% to 0.133%) and lowers it on DEN @ KC (0.168% to 0.139%) and
+  DET @ BUF (0.139% to 0.081%), because the sufficient statistic pulls beta
+  toward the observed mean while the concentration wants it higher. The
+  likelihood-optimal beta and the concentration-matching beta pull in
+  opposite directions on two boards of three.
+- **Case C (ordering reasonable and mean matched, but captain, salary,
+  structure and variance still wrong; the one-dimensional family is
+  structurally inadequate)**: every board, and this is the finding. The mean
+  is matched by construction; the variance ratio is 0.84 / 0.67 / 0.59, the
+  salary left is $1,280 to $1,640 too high, the captain mix 28 to 50 pp off,
+  the effective number of lineups 3.7 to 11 times too many, all at the
+  fitted beta.
+- **Case D (fitted beta varies heavily by contest; no evidence for a
+  universal temperature)**: partly. The MLEs span 0.30 to 0.43, DEN @ KC is
+  the outlier and the board with pre-lock inputs, about a quarter of its
+  excess is the universe's tail (section 6.1) and the rest is the board. Two
+  of three boards agree; that is not evidence for a universal temperature
+  and not strong evidence against one.
 
 ## 7. Out of objective
 

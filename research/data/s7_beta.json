@@ -6,16 +6,45 @@
     "leave_one_out": {
      "contest_balanced": {
       "beta": 0.36248,
-      "note": null
+      "held_out_residual": 0.84967,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "195526287": -1.62573,
+        "195677825": 1.62573
+       },
+       "weighted_mean_residual": 0.0,
+       "weighted_sum": 0.0,
+       "weights": {
+        "195526287": 1.0,
+        "195677825": 1.0
+       }
+      }
      },
      "entry_weighted": {
       "beta": 0.36832,
-      "note": null
+      "held_out_residual": 0.99813,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "195526287": -1.4734,
+        "195677825": 1.75815
+       },
+       "weighted_mean_residual": -0.0,
+       "weighted_sum": -0.0,
+       "weights": {
+        "195526287": 86751.0,
+        "195677825": 72701.0
+       }
+      }
      },
      "fitted_on": [
       195526287,
       195677825
-     ]
+     ],
+     "note": "the score equation of a pooled fit is the weighted sum of the fitted boards' mean residuals, zero at the solution; the held-out board's residual under that beta is the transfer diagnostic"
     },
     "own_mle": {
      "beta": 0.33177,
@@ -2219,6 +2248,94 @@
      "tied": 23
     }
    },
+   "production_model_on_its_own_universe": {
+    "beta": 0.29125,
+    "effective_lineups_inverse_sum_p2": {
+     "model": 4900.3,
+     "observed_on_its_support": 905.5
+    },
+    "entries_on_support": 59699,
+    "legal_but_not_enumerated": 0,
+    "legal_lineups": 319933,
+    "max_share_pct": {
+     "model": 0.2,
+     "observed_on_its_support": 0.8995
+    },
+    "nll_per_entry_nats_on_its_support": 9.24148,
+    "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
+    "players": 21,
+    "saturated_on_its_support": 7.82672,
+    "support_pct_of_active": 47.46,
+    "uniform_on_its_support": 12.67587
+   },
+   "rank_bins": [
+    {
+     "lineups": 10,
+     "model_pct_loo_contest_balanced": 1.504,
+     "model_pct_loo_entry_weighted": 1.583,
+     "model_pct_own_mle": 1.129,
+     "model_pct_production_value": 0.741,
+     "model_pct_top_share_rule_here": 1.659,
+     "model_pct_uniform": 0.001,
+     "observed_pct": 0.986,
+     "rank": "1-10"
+    },
+    {
+     "lineups": 90,
+     "model_pct_loo_contest_balanced": 7.17,
+     "model_pct_loo_entry_weighted": 7.476,
+     "model_pct_own_mle": 5.67,
+     "model_pct_production_value": 3.987,
+     "model_pct_top_share_rule_here": 7.763,
+     "model_pct_uniform": 0.009,
+     "observed_pct": 3.911,
+     "rank": "11-100"
+    },
+    {
+     "lineups": 900,
+     "model_pct_loo_contest_balanced": 23.683,
+     "model_pct_loo_entry_weighted": 24.27,
+     "model_pct_own_mle": 20.524,
+     "model_pct_production_value": 16.29,
+     "model_pct_top_share_rule_here": 24.804,
+     "model_pct_uniform": 0.086,
+     "observed_pct": 18.353,
+     "rank": "101-1000"
+    },
+    {
+     "lineups": 9000,
+     "model_pct_loo_contest_balanced": 44.608,
+     "model_pct_loo_entry_weighted": 44.582,
+     "model_pct_own_mle": 44.141,
+     "model_pct_production_value": 41.83,
+     "model_pct_top_share_rule_here": 44.529,
+     "model_pct_uniform": 0.865,
+     "observed_pct": 50.269,
+     "rank": "1001-10000"
+    },
+    {
+     "lineups": 90000,
+     "model_pct_loo_contest_balanced": 22.234,
+     "model_pct_loo_entry_weighted": 21.372,
+     "model_pct_own_mle": 27.099,
+     "model_pct_production_value": 34.139,
+     "model_pct_top_share_rule_here": 20.6,
+     "model_pct_uniform": 8.646,
+     "observed_pct": 25.341,
+     "rank": "10001-100000"
+    },
+    {
+     "lineups": 940958,
+     "model_pct_loo_contest_balanced": 0.802,
+     "model_pct_loo_entry_weighted": 0.716,
+     "model_pct_own_mle": 1.436,
+     "model_pct_production_value": 3.014,
+     "model_pct_top_share_rule_here": 0.646,
+     "model_pct_uniform": 90.393,
+     "observed_pct": 1.14,
+     "rank": "100001-end"
+    }
+   ],
    "saturated_nll_per_entry_nats": 8.55665,
    "support": {
     "active_entries": 125800,
@@ -2386,16 +2503,45 @@
     "leave_one_out": {
      "contest_balanced": {
       "beta": 0.31675,
-      "note": null
+      "held_out_residual": -2.98132,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "193391013": -0.46478,
+        "195677825": 0.46478
+       },
+       "weighted_mean_residual": -0.0,
+       "weighted_sum": -0.0,
+       "weights": {
+        "193391013": 1.0,
+        "195677825": 1.0
+       }
+      }
      },
      "entry_weighted": {
       "beta": 0.3206,
-      "note": null
+      "held_out_residual": -2.85458,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "193391013": -0.34217,
+        "195677825": 0.57226
+       },
+       "weighted_mean_residual": 0.0,
+       "weighted_sum": 0.0,
+       "weights": {
+        "193391013": 121587.0,
+        "195677825": 72701.0
+       }
+      }
      },
      "fitted_on": [
       193391013,
       195677825
-     ]
+     ],
+     "note": "the score equation of a pooled fit is the weighted sum of the fitted boards' mean residuals, zero at the solution; the held-out board's residual under that beta is the transfer diagnostic"
     },
     "own_mle": {
      "beta": 0.43428,
@@ -4427,7 +4573,7 @@
      "source": "draftkings"
     }
    },
-   "integrity": "highest integrity: pool, contest and feeds captured pre-lock (about 50 h before kickoff); roster post-game",
+   "integrity": "highest integrity: pool, contest and feeds captured about 50 hours before kickoff, genuinely before the game but not a near-lock snapshot (no late news in it); roster post-game",
    "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
    "nll_scan": [
     {
@@ -4571,6 +4717,94 @@
      "tied": 44
     }
    },
+   "production_model_on_its_own_universe": {
+    "beta": 0.45484,
+    "effective_lineups_inverse_sum_p2": {
+     "model": 7451.4,
+     "observed_on_its_support": 2899.8
+    },
+    "entries_on_support": 80519,
+    "legal_but_not_enumerated": 0,
+    "legal_lineups": 777056,
+    "max_share_pct": {
+     "model": 0.2,
+     "observed_on_its_support": 0.3887
+    },
+    "nll_per_entry_nats_on_its_support": 10.36916,
+    "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
+    "players": 24,
+    "saturated_on_its_support": 8.76312,
+    "support_pct_of_active": 91.59,
+    "uniform_on_its_support": 13.56327
+   },
+   "rank_bins": [
+    {
+     "lineups": 10,
+     "model_pct_loo_contest_balanced": 0.28,
+     "model_pct_loo_entry_weighted": 0.293,
+     "model_pct_own_mle": 0.874,
+     "model_pct_production_value": 1.033,
+     "model_pct_top_share_rule_here": 1.208,
+     "model_pct_uniform": 0.0,
+     "observed_pct": 0.567,
+     "rank": "1-10"
+    },
+    {
+     "lineups": 90,
+     "model_pct_loo_contest_balanced": 1.553,
+     "model_pct_loo_entry_weighted": 1.612,
+     "model_pct_own_mle": 4.035,
+     "model_pct_production_value": 4.619,
+     "model_pct_top_share_rule_here": 5.235,
+     "model_pct_uniform": 0.003,
+     "observed_pct": 1.595,
+     "rank": "11-100"
+    },
+    {
+     "lineups": 900,
+     "model_pct_loo_contest_balanced": 7.847,
+     "model_pct_loo_entry_weighted": 8.079,
+     "model_pct_own_mle": 15.973,
+     "model_pct_production_value": 17.531,
+     "model_pct_top_share_rule_here": 19.071,
+     "model_pct_uniform": 0.026,
+     "observed_pct": 12.679,
+     "rank": "101-1000"
+    },
+    {
+     "lineups": 9000,
+     "model_pct_loo_contest_balanced": 27.341,
+     "model_pct_loo_entry_weighted": 27.804,
+     "model_pct_own_mle": 38.311,
+     "model_pct_production_value": 39.432,
+     "model_pct_top_share_rule_here": 40.287,
+     "model_pct_uniform": 0.258,
+     "observed_pct": 42.434,
+     "rank": "1001-10000"
+    },
+    {
+     "lineups": 90000,
+     "model_pct_loo_contest_balanced": 45.463,
+     "model_pct_loo_entry_weighted": 45.33,
+     "model_pct_own_mle": 35.629,
+     "model_pct_production_value": 33.272,
+     "model_pct_top_share_rule_here": 30.93,
+     "model_pct_uniform": 2.584,
+     "observed_pct": 40.66,
+     "rank": "10001-100000"
+    },
+    {
+     "lineups": 3383231,
+     "model_pct_loo_contest_balanced": 17.515,
+     "model_pct_loo_entry_weighted": 16.882,
+     "model_pct_own_mle": 5.177,
+     "model_pct_production_value": 4.113,
+     "model_pct_top_share_rule_here": 3.268,
+     "model_pct_uniform": 97.129,
+     "observed_pct": 2.065,
+     "rank": "100001-end"
+    }
+   ],
    "saturated_nll_per_entry_nats": 8.91605,
    "support": {
     "active_entries": 87909,
@@ -4722,16 +4956,45 @@
     "leave_one_out": {
      "contest_balanced": {
       "beta": 0.37788,
-      "note": null
+      "held_out_residual": 1.9682,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "193391013": 1.23295,
+        "195526287": -1.23295
+       },
+       "weighted_mean_residual": 0.0,
+       "weighted_sum": 0.0,
+       "weights": {
+        "193391013": 1.0,
+        "195526287": 1.0
+       }
+      }
      },
      "entry_weighted": {
       "beta": 0.36955,
-      "note": null
+      "held_out_residual": 1.78556,
+      "note": null,
+      "score": {
+       "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+       "residuals_by_contest": {
+        "193391013": 1.02881,
+        "195526287": -1.44195
+       },
+       "weighted_mean_residual": 0.0,
+       "weighted_sum": 0.0,
+       "weights": {
+        "193391013": 121587.0,
+        "195526287": 86751.0
+       }
+      }
      },
      "fitted_on": [
       193391013,
       195526287
-     ]
+     ],
+     "note": "the score equation of a pooled fit is the weighted sum of the fitted boards' mean residuals, zero at the solution; the held-out board's residual under that beta is the transfer diagnostic"
     },
     "own_mle": {
      "beta": 0.30091,
@@ -6942,6 +7205,94 @@
      "tied": 17
     }
    },
+   "production_model_on_its_own_universe": {
+    "beta": 0.35138,
+    "effective_lineups_inverse_sum_p2": {
+     "model": 5889.2,
+     "observed_on_its_support": 1186.1
+    },
+    "entries_on_support": 65394,
+    "legal_but_not_enumerated": 0,
+    "legal_lineups": 421702,
+    "max_share_pct": {
+     "model": 0.2,
+     "observed_on_its_support": 1.4711
+    },
+    "nll_per_entry_nats_on_its_support": 10.21953,
+    "note": "the served placeholder on its own gated universe (historical fidelity); its likelihood is on a different, smaller support and is not comparable to the lifted-universe rows",
+    "players": 22,
+    "saturated_on_its_support": 8.22446,
+    "support_pct_of_active": 74.29,
+    "uniform_on_its_support": 12.95205
+   },
+   "rank_bins": [
+    {
+     "lineups": 10,
+     "model_pct_loo_contest_balanced": 1.382,
+     "model_pct_loo_entry_weighted": 1.283,
+     "model_pct_own_mle": 0.653,
+     "model_pct_production_value": 1.086,
+     "model_pct_top_share_rule_here": 1.529,
+     "model_pct_uniform": 0.001,
+     "observed_pct": 0.362,
+     "rank": "1-10"
+    },
+    {
+     "lineups": 90,
+     "model_pct_loo_contest_balanced": 5.786,
+     "model_pct_loo_entry_weighted": 5.462,
+     "model_pct_own_mle": 3.189,
+     "model_pct_production_value": 4.792,
+     "model_pct_top_share_rule_here": 6.257,
+     "model_pct_uniform": 0.007,
+     "observed_pct": 2.007,
+     "rank": "11-100"
+    },
+    {
+     "lineups": 900,
+     "model_pct_loo_contest_balanced": 21.329,
+     "model_pct_loo_entry_weighted": 20.572,
+     "model_pct_own_mle": 14.347,
+     "model_pct_production_value": 18.914,
+     "model_pct_top_share_rule_here": 22.382,
+     "model_pct_uniform": 0.068,
+     "observed_pct": 9.227,
+     "rank": "101-1000"
+    },
+    {
+     "lineups": 9000,
+     "model_pct_loo_contest_balanced": 44.815,
+     "model_pct_loo_entry_weighted": 44.635,
+     "model_pct_own_mle": 40.72,
+     "model_pct_production_value": 44.028,
+     "model_pct_top_share_rule_here": 44.967,
+     "model_pct_uniform": 0.675,
+     "observed_pct": 43.79,
+     "rank": "1001-10000"
+    },
+    {
+     "lineups": 90000,
+     "model_pct_loo_contest_balanced": 25.943,
+     "model_pct_loo_entry_weighted": 27.186,
+     "model_pct_own_mle": 38.295,
+     "model_pct_production_value": 29.995,
+     "model_pct_top_share_rule_here": 24.26,
+     "model_pct_uniform": 6.751,
+     "observed_pct": 44.306,
+     "rank": "10001-100000"
+    },
+    {
+     "lineups": 1233214,
+     "model_pct_loo_contest_balanced": 0.745,
+     "model_pct_loo_entry_weighted": 0.863,
+     "model_pct_own_mle": 2.796,
+     "model_pct_production_value": 1.185,
+     "model_pct_top_share_rule_here": 0.606,
+     "model_pct_uniform": 92.499,
+     "observed_pct": 0.308,
+     "rank": "100001-end"
+    }
+   ],
    "saturated_nll_per_entry_nats": 8.37478,
    "support": {
     "active_entries": 88023,
@@ -7095,7 +7446,10 @@
    "ordering statistics are invariant to beta in this family and are reported once per board, labelled so",
    "transfer: six single-board directions and leave-one-contest-out pooling, entry-weighted and contest-balanced",
    "leave-one-out is a reconstruction sensitivity: only DEN @ KC has pre-lock inputs",
-   "no new feature, no second parameter; the top-K universe refit is a sensitivity of the parameterisation, not a fit anything downstream uses"
+   "no new feature, no second parameter; the top-K universe refit is a sensitivity of the parameterisation, not a fit anything downstream uses",
+   "a pooled fit's checksum is its weighted score equation (the weighted sum of the fitted boards' mean residuals), never three separate zero residuals from one common beta; the per-board residuals under a common beta are reported",
+   "calibration is shown over fixed projection-rank bins, whose membership no beta can move",
+   "three baselines: the served placeholder on its own gated universe (historical fidelity, its own support), production's beta value applied to the lifted universe (the universe change alone), and the 0.2% rule re-solved on the lifted universe (the apples-to-apples baseline for the fitted beta)"
   ],
   "fit_free": false,
   "inputs": {
@@ -7145,21 +7499,51 @@
   "pooled_all_three": {
    "contest_balanced": {
     "beta": 0.35144,
-    "note": null
+    "note": null,
+    "score": {
+     "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+     "residuals_by_contest": {
+      "193391013": 0.55843,
+      "195526287": -1.92517,
+      "195677825": 1.36674
+     },
+     "weighted_mean_residual": -0.0,
+     "weighted_sum": -0.0,
+     "weights": {
+      "193391013": 1.0,
+      "195526287": 1.0,
+      "195677825": 1.0
+     }
+    }
    },
    "entry_weighted": {
     "beta": 0.35141,
-    "note": null
+    "note": null,
+    "score": {
+     "reads": "residual = model mean x minus observed mean x under the common beta; negative = that board wants a hotter (higher-beta) field",
+     "residuals_by_contest": {
+      "193391013": 0.55752,
+      "195526287": -1.92611,
+      "195677825": 1.36594
+     },
+     "weighted_mean_residual": 0.0,
+     "weighted_sum": 0.0,
+     "weights": {
+      "193391013": 121587.0,
+      "195526287": 86751.0,
+      "195677825": 72701.0
+     }
+    }
    }
   },
   "provenance": {
-   "commit": "0dc108c",
+   "commit": "fa21af4",
    "data_split": null,
    "dirty": false,
    "model": "softmax(beta x projection) over the lifted universe; beta by maximum likelihood",
    "seed": 20260912,
    "source_files": 41,
-   "source_sha": "897c530429f7106742eb3f8f5a0ef78b4b8b14e95f6071e91254590628fea456",
+   "source_sha": "60511aeaa828953c1c223a64347385961769a294e35cc3868e1520054dd0698c",
    "worlds": null
   },
   "stage": "S7 second artifact: the softmax field's one knob fitted by maximum likelihood to the exact-lineup counts of three real Showdown fields"
@@ -7190,6 +7574,10 @@
     "own_mle": 7482.5,
     "production": 12008.1
    },
+   "held_out_residual_under_loo_beta": {
+    "contest_balanced": 0.84967,
+    "entry_weighted": 0.99813
+   },
    "integrity": "post-game reconstruction (pool, roster and feeds captured after the game)",
    "label": "NE @ SEA, Wednesday Kickoff Millionaire",
    "max_share_pct": {
@@ -7219,6 +7607,42 @@
     "cpt_position_mix_pct": 30.99,
     "k_dst_slots_pct": 11.96,
     "structure_pct": 4.75
+   },
+   "production_on_own_universe": {
+    "nll_per_entry_nats_on_its_support": 9.24148,
+    "support_pct_of_active": 47.46
+   },
+   "rank_bins": {
+    "1-10": {
+     "observed": 0.986,
+     "own_mle": 1.129,
+     "top_share_rule_here": 1.659
+    },
+    "100001-end": {
+     "observed": 1.14,
+     "own_mle": 1.436,
+     "top_share_rule_here": 0.646
+    },
+    "10001-100000": {
+     "observed": 25.341,
+     "own_mle": 27.099,
+     "top_share_rule_here": 20.6
+    },
+    "1001-10000": {
+     "observed": 50.269,
+     "own_mle": 44.141,
+     "top_share_rule_here": 44.529
+    },
+    "101-1000": {
+     "observed": 18.353,
+     "own_mle": 20.524,
+     "top_share_rule_here": 24.804
+    },
+    "11-100": {
+     "observed": 3.911,
+     "own_mle": 5.67,
+     "top_share_rule_here": 7.763
+    }
    },
    "representable_pct": 96.65,
    "salary_left_mean": {
@@ -7254,7 +7678,11 @@
     "own_mle": 12236.8,
     "production": 10085.9
    },
-   "integrity": "highest integrity: pool, contest and feeds captured pre-lock (about 50 h before kickoff); roster post-game",
+   "held_out_residual_under_loo_beta": {
+    "contest_balanced": -2.98132,
+    "entry_weighted": -2.85458
+   },
+   "integrity": "highest integrity: pool, contest and feeds captured about 50 hours before kickoff, genuinely before the game but not a near-lock snapshot (no late news in it); roster post-game",
    "label": "DEN @ KC, Monday Night Showdown (the S5 / A/B primary)",
    "max_share_pct": {
     "loo_entry_weighted": 0.0414,
@@ -7283,6 +7711,42 @@
     "cpt_position_mix_pct": 27.59,
     "k_dst_slots_pct": 14.91,
     "structure_pct": 6.12
+   },
+   "production_on_own_universe": {
+    "nll_per_entry_nats_on_its_support": 10.36916,
+    "support_pct_of_active": 91.59
+   },
+   "rank_bins": {
+    "1-10": {
+     "observed": 0.567,
+     "own_mle": 0.874,
+     "top_share_rule_here": 1.208
+    },
+    "100001-end": {
+     "observed": 2.065,
+     "own_mle": 5.177,
+     "top_share_rule_here": 3.268
+    },
+    "10001-100000": {
+     "observed": 40.66,
+     "own_mle": 35.629,
+     "top_share_rule_here": 30.93
+    },
+    "1001-10000": {
+     "observed": 42.434,
+     "own_mle": 38.311,
+     "top_share_rule_here": 40.287
+    },
+    "101-1000": {
+     "observed": 12.679,
+     "own_mle": 15.973,
+     "top_share_rule_here": 19.071
+    },
+    "11-100": {
+     "observed": 1.595,
+     "own_mle": 4.035,
+     "top_share_rule_here": 5.235
+    }
    },
    "representable_pct": 98.68,
    "salary_left_mean": {
@@ -7318,6 +7782,10 @@
     "own_mle": 15052.3,
     "production": 8863.6
    },
+   "held_out_residual_under_loo_beta": {
+    "contest_balanced": 1.9682,
+    "entry_weighted": 1.78556
+   },
    "integrity": "post-game reconstruction (pool, feeds and roster captured after the game)",
    "label": "DET @ BUF, Thursday Night Showdown",
    "max_share_pct": {
@@ -7347,6 +7815,42 @@
     "cpt_position_mix_pct": 49.6,
     "k_dst_slots_pct": 8.98,
     "structure_pct": 9.4
+   },
+   "production_on_own_universe": {
+    "nll_per_entry_nats_on_its_support": 10.21953,
+    "support_pct_of_active": 74.29
+   },
+   "rank_bins": {
+    "1-10": {
+     "observed": 0.362,
+     "own_mle": 0.653,
+     "top_share_rule_here": 1.529
+    },
+    "100001-end": {
+     "observed": 0.308,
+     "own_mle": 2.796,
+     "top_share_rule_here": 0.606
+    },
+    "10001-100000": {
+     "observed": 44.306,
+     "own_mle": 38.295,
+     "top_share_rule_here": 24.26
+    },
+    "1001-10000": {
+     "observed": 43.79,
+     "own_mle": 40.72,
+     "top_share_rule_here": 44.967
+    },
+    "101-1000": {
+     "observed": 9.227,
+     "own_mle": 14.347,
+     "top_share_rule_here": 22.382
+    },
+    "11-100": {
+     "observed": 2.007,
+     "own_mle": 3.189,
+     "top_share_rule_here": 6.257
+    }
    },
    "representable_pct": 82.59,
    "salary_left_mean": {

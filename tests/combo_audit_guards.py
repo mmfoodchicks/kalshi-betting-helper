@@ -17269,6 +17269,43 @@ ck("the S7 fit report leads with the verdict, states support first, labels order
    and "never compared against the historical +0.047078" in _s7b_rep
    and "not a fit anything downstream uses" in _s7b_rep and "about a quarter of DEN @ KC's excess" in _s7b_rep)
 
+ck("a pooled fit's checksum is its score equation, not three zero residuals: on every pooled and leave-one-out fit the weighted sum of the fitted boards' mean residuals is zero, under the common beta DEN @ KC's residual is negative (it wants a hotter field) and the other two boards' are positive, and the held-out residuals under the leave-one-out betas are +0.998 / -2.855 / +1.786 projected points",
+   all(abs(_s7b["meta"]["pooled_all_three"][k]["score"]["weighted_mean_residual"]) < 1e-4 for k in ("entry_weighted", "contest_balanced"))
+   and all(abs(_s7bc[c]["fit"]["leave_one_out"][k]["score"]["weighted_mean_residual"]) < 1e-4 for c in _s7ids for k in ("entry_weighted", "contest_balanced"))
+   and _s7b["meta"]["pooled_all_three"]["entry_weighted"]["score"]["residuals_by_contest"]["195526287"] < -1.9
+   and all(_s7b["meta"]["pooled_all_three"]["entry_weighted"]["score"]["residuals_by_contest"][c] > 0.5 for c in ("193391013", "195677825"))
+   and [_s7bs[c]["held_out_residual_under_loo_beta"]["entry_weighted"] for c in _s7ids] == [0.99813, -2.85458, 1.78556]
+   and "hotter" in _s7b["meta"]["pooled_all_three"]["entry_weighted"]["score"]["reads"]
+   and any("never three separate zero residuals" in f for f in _s7b["meta"]["fences"]))
+ck("the decomposition has its three baselines: the served placeholder on its own gated universe holds 47.46 / 91.59 / 74.29% of active entries (its beta equal to the first artifact's, its likelihood stamped not comparable), the same value on the lifted universe drops the top share from 0.2% to 0.086 / 0.168 / 0.139%, and the 0.2% rule re-solved on the lifted universe (0.3737 / 0.4749 / 0.3895) sits further from the MLE than the raw value on every board",
+   [_s7bc[c]["production_model_on_its_own_universe"]["support_pct_of_active"] for c in _s7ids] == [47.46, 91.59, 74.29]
+   and all(abs(_s7bc[c]["production_model_on_its_own_universe"]["beta"] - _s7c[c]["model"]["beta"]) < 6e-5 for c in _s7ids)
+   and all(_s7bc[c]["production_model_on_its_own_universe"]["max_share_pct"]["model"] == 0.2 for c in _s7ids)
+   and [_s7bc[c]["production_model_on_its_own_universe"]["nll_per_entry_nats_on_its_support"] for c in _s7ids] == [9.24148, 10.36916, 10.21953]
+   and all("not comparable" in _s7bc[c]["production_model_on_its_own_universe"]["note"] for c in _s7ids)
+   and [_s7bs[c]["max_share_pct"]["production"] for c in _s7ids] == [0.0858, 0.1676, 0.1385]
+   and [_s7bs[c]["beta"]["top_share_rule_here"] for c in _s7ids] == [0.37368, 0.47495, 0.38953]
+   and all(abs(_s7bs[c]["beta"]["top_share_rule_here"] - _s7bs[c]["beta"]["own_mle"]) > abs(_s7bs[c]["beta"]["production"] - _s7bs[c]["beta"]["own_mle"]) for c in _s7ids)
+   and any("three baselines" in f for f in _s7b["meta"]["fences"]))
+ck("calibration over fixed projection-rank bins, whose membership no beta can move: the observed top-10 mass equals the beta-invariant ordering block's on every board, the public holds less of its field than the model in the projection's top 1,000 (23.2 / 14.8 / 11.6% against 27.3 / 20.9 / 18.2% at the MLE) and more in ranks 1,001-100,000 (75.6 / 83.1 / 88.1% against 71.2 / 73.9 / 79.0%), and the MLE already overfills the deep tail on DEN @ KC and DET @ BUF",
+   all([b["rank"] for b in _s7bc[c]["rank_bins"]] == ["1-10", "11-100", "101-1000", "1001-10000", "10001-100000", "100001-end"] for c in _s7ids)
+   and all(_s7bc[c]["rank_bins"][0]["observed_pct"] == _s7bc[c]["ordering_beta_invariant"]["observed_mass_in_model_top_k_pct"]["10"] for c in _s7ids)
+   and [round(sum(b["observed_pct"] for b in _s7bc[c]["rank_bins"][:3]), 1) for c in _s7ids] == [23.2, 14.8, 11.6]
+   and [round(sum(b["model_pct_own_mle"] for b in _s7bc[c]["rank_bins"][:3]), 1) for c in _s7ids] == [27.3, 20.9, 18.2]
+   and [round(sum(b["observed_pct"] for b in _s7bc[c]["rank_bins"][3:5]), 1) for c in _s7ids] == [75.6, 83.1, 88.1]
+   and [round(sum(b["model_pct_own_mle"] for b in _s7bc[c]["rank_bins"][3:5]), 1) for c in _s7ids] == [71.2, 73.9, 79.0]
+   and all(_s7bc[c]["rank_bins"][-1]["model_pct_own_mle"] > _s7bc[c]["rank_bins"][-1]["observed_pct"] for c in ("195526287", "195677825"))
+   and any("fixed projection-rank bins" in f for f in _s7b["meta"]["fences"]))
+ck("the likelihood-optimal beta and the concentration-matching beta pull in opposite directions on two boards of three: against the served value the MLE raises the top share on NE @ SEA and lowers it on DEN @ KC and DET @ BUF; DEN @ KC is labelled a capture about 50 hours before kickoff and not a near-lock snapshot; the report reads the failure through the taxonomy (Case C on every board, no Case A) with the second-moment caveat stated",
+   _s7bs["193391013"]["max_share_pct"]["own_mle"] > _s7bs["193391013"]["max_share_pct"]["production"]
+   and all(_s7bs[c]["max_share_pct"]["own_mle"] < _s7bs[c]["max_share_pct"]["production"] for c in ("195526287", "195677825"))
+   and "not a near-lock snapshot" in _s7bc["195526287"]["integrity"] and "50 hours" in _s7bc["195526287"]["integrity"]
+   and "6.5 Reading the failure" in _s7b_rep and "Case A (ordering good, concentration wrong; beta may be enough)**: no board" in _s7b_rep
+   and "Case C" in _s7b_rep and "every board, and this is the finding" in _s7b_rep
+   and "does not by itself say whether the projections or the functional form deserve the blame" in _s7b_rep
+   and "wants a hotter field under every common beta" in _s7b_rep and "not a near-lock snapshot" in _s7b_rep
+   and "No beta matches both ends" in _s7b_rep and "it cannot" in _s7b_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
