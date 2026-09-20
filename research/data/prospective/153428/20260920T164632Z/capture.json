@@ -1,0 +1,42 @@
+{
+ "biggest_gpp_detailed": {
+  "id": 195648007,
+  "max_entries": 176470,
+  "name": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
+  "prize_pool": 3000000.0
+ },
+ "capture_stamp": "20260920T164632Z",
+ "captured_utc": "2026-09-20 16:46:43 UTC",
+ "contests_detailed": [
+  "195648006",
+  "195648007",
+  "195648008",
+  "195648009",
+  "195656907",
+  "195656973",
+  "195657085",
+  "195657087",
+  "195658397",
+  "195661329",
+  "195661331",
+  "195661332",
+  "195661393",
+  "195661407"
+ ],
+ "draft_group": 153428,
+ "files": {
+  "contests_153428.json": "5b7915cd9378360e25716a2af384d57e7fb0abed52d460e9cd83fb9b8e9c0846",
+  "manifest.json": "206b0001dd96a9b342f45b9faa8134a40312c41de8c910ba15032d1e0843b7c0",
+  "players_2026_2.json": "edb7776821fce0fceb153f269ea1e50487548bcab7c4171e79f07dab2ef0aa25",
+  "proj_2026_2.json": "c09fccee7a197eabc6527ed25703576291b0feae018238613472b8c6a9aeedf5",
+  "proj_2026_2_def.json": "82efba0c2d03c3b21ab35efdb6f076799299f32999f285e39dea80a4611a32b0",
+  "proj_2026_2_k.json": "def04fabe5ef541ebf522c86379341179b4ff58e851462677ff0cb19f03279da",
+  "slate_153428.json": "db92dc9b503925d88eb60af2a0ee3cbde67c89ce1e55680042e1ec1f62e55a59"
+ },
+ "hours_to_lock": 0.221,
+ "lock_utc": "2026-09-20 17:00:00 UTC",
+ "note": "manual near-lock capture; the scheduled Routine did not land",
+ "pre_lock": true,
+ "slate_identity": "ARI/ATL/BAL/CAR/CHI/CIN/CLE/DAL/DEN/GB/HOU/JAX/LAC/LV/MIA/MIN/NE/NO/NYJ/PHI/PIT/SEA/SF/TB/TEN/WAS 2026-09-20",
+ "week": 2
+}

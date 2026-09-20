@@ -1,0 +1,301 @@
+{
+ "candidate_source_sha256": "a8e3eba302fed269dc65bc55cc68d6fc29a32c6dc1379d39505f79ba44844cd3",
+ "candidate_source_sha256_at_freeze": "82d6c9a2e99a2d0f2f834fafce589a68da3bd3fb5f4bd93cace9c6aecb02940b",
+ "candidates": [
+  {
+   "built_ts": 1789364301.0,
+   "built_utc": "2026-09-14 05:38:21 UTC",
+   "bytes": 972668,
+   "commit": "817c533",
+   "commit_full": "817c53322581d38a677fe82b13889fa27a719dc6",
+   "committed_ts": 1789389771.0,
+   "committed_utc": "2026-09-14 12:42:51 UTC",
+   "draft_group_id": 153428,
+   "field_only": 26,
+   "kind": "classic",
+   "minutes_before_lock": 9321.6,
+   "players": 258,
+   "pool_sig": "2db1e755da3e0e58",
+   "sha256": "2d38a85055f287d3a0411e67d01353f5aab0b61e65fe2fb08e0dd6491881f2be",
+   "status_sig": "e3718fde05e84426",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789409607.0,
+   "built_utc": "2026-09-14 18:13:27 UTC",
+   "bytes": 972516,
+   "commit": "37e4a1c",
+   "commit_full": "37e4a1ce7b738a95335046aa4a3f7c855a3f2e4a",
+   "committed_ts": 1789422481.0,
+   "committed_utc": "2026-09-14 21:48:01 UTC",
+   "draft_group_id": 153428,
+   "field_only": 27,
+   "kind": "classic",
+   "minutes_before_lock": 8566.5,
+   "players": 259,
+   "pool_sig": "dc90de556aa7837e",
+   "sha256": "843c15881213c7b4ee3a269e71a3418121607eaa814f00d71d326e2864811ca6",
+   "status_sig": "4258dabdcbc32e24",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789672760.0,
+   "built_utc": "2026-09-17 19:19:20 UTC",
+   "bytes": 975513,
+   "commit": "8f41d44",
+   "commit_full": "8f41d44d438b8858e3111dcc46e04ddb16fe1ca7",
+   "committed_ts": 1789680025.0,
+   "committed_utc": "2026-09-17 21:20:25 UTC",
+   "draft_group_id": 153428,
+   "field_only": 24,
+   "kind": "classic",
+   "minutes_before_lock": 4180.7,
+   "players": 258,
+   "pool_sig": "c71a73fd52ac811c",
+   "sha256": "00234374d2a53d8f4d3b2cc5297a3790ce1126d9894d750b68a1f89c3e7b31e1",
+   "status_sig": "e08b90792f93c7ff",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789717709.0,
+   "built_utc": "2026-09-18 07:48:29 UTC",
+   "bytes": 975585,
+   "commit": "470d639",
+   "commit_full": "470d639218e4cc18a5cd5b8b54a43ede57a63523",
+   "committed_ts": 1789729876.0,
+   "committed_utc": "2026-09-18 11:11:16 UTC",
+   "draft_group_id": 153428,
+   "field_only": 24,
+   "kind": "classic",
+   "minutes_before_lock": 3431.5,
+   "players": 258,
+   "pool_sig": "c71a73fd52ac811c",
+   "sha256": "f7beca4d409141e3f7fc162cb07da420e5f363e835e2d82ecfed103e5f3e4ee6",
+   "status_sig": "d704e94297d1ae90",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789745762.0,
+   "built_utc": "2026-09-18 15:36:02 UTC",
+   "bytes": 974978,
+   "commit": "e7d4f71",
+   "commit_full": "e7d4f71060c95daa36529d3a1184bda95980d834",
+   "committed_ts": 1789748558.0,
+   "committed_utc": "2026-09-18 16:22:38 UTC",
+   "draft_group_id": 153428,
+   "field_only": 24,
+   "kind": "classic",
+   "minutes_before_lock": 2964.0,
+   "players": 258,
+   "pool_sig": "1ddd5c0a8e5e2b85",
+   "sha256": "29a11fab4fff4caca477df8cf06d45188641d3410a38a23f6d317448ab2a2a0b",
+   "status_sig": "92d657497aaf1ad0",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789762583.0,
+   "built_utc": "2026-09-18 20:16:23 UTC",
+   "bytes": 974494,
+   "commit": "0a065cf",
+   "commit_full": "0a065cf818dc8804b215fdb0782636ade93e2d1c",
+   "committed_ts": 1789764787.0,
+   "committed_utc": "2026-09-18 20:53:07 UTC",
+   "draft_group_id": 153428,
+   "field_only": 24,
+   "kind": "classic",
+   "minutes_before_lock": 2683.6,
+   "players": 258,
+   "pool_sig": "1ddcd5731461a62b",
+   "sha256": "6e6a83b962181d6474d66a3e4682a432b614d1bdd9a14c2a982e95f847abae51",
+   "status_sig": "6a25545d6bdeecaf",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789789967.0,
+   "built_utc": "2026-09-19 03:52:47 UTC",
+   "bytes": 974836,
+   "commit": "16bceb1",
+   "commit_full": "16bceb142a3dcef3a7a65ae7e970fac4722818a9",
+   "committed_ts": 1789792509.0,
+   "committed_utc": "2026-09-19 04:35:09 UTC",
+   "draft_group_id": 153428,
+   "field_only": 26,
+   "kind": "classic",
+   "minutes_before_lock": 2227.2,
+   "players": 260,
+   "pool_sig": "c9253572fa28abf9",
+   "sha256": "a42672148e8a41de72e55591b35de3346da06ba6d671769dff03863f4cb10ea2",
+   "status_sig": "5d6087b7daa83c73",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789848556.0,
+   "built_utc": "2026-09-19 20:09:16 UTC",
+   "bytes": 974974,
+   "commit": "dc4c1eb",
+   "commit_full": "dc4c1ebf1ee311d2e521c5590dddf844ecb98fac",
+   "committed_ts": 1789850267.0,
+   "committed_utc": "2026-09-19 20:37:47 UTC",
+   "draft_group_id": 153428,
+   "field_only": 26,
+   "kind": "classic",
+   "minutes_before_lock": 1250.7,
+   "players": 260,
+   "pool_sig": "6682c6bd1d31ed4d",
+   "sha256": "1cf55855256c7ed9a289af6b9513d1095772d740716f654c1489874d2f620210",
+   "status_sig": "e95e63038a1a6fe8",
+   "valid": true,
+   "why_not": []
+  },
+  {
+   "built_ts": 1789856108.0,
+   "built_utc": "2026-09-19 22:15:08 UTC",
+   "bytes": 974110,
+   "commit": "f480566",
+   "commit_full": "f480566584d33d49a273a305b4d7d4cc313fe304",
+   "committed_ts": 1789879909.0,
+   "committed_utc": "2026-09-20 04:51:49 UTC",
+   "draft_group_id": 153428,
+   "field_only": 26,
+   "kind": "classic",
+   "minutes_before_lock": 1124.9,
+   "players": 260,
+   "pool_sig": "adb10de083ab283b",
+   "sha256": "c858bf10a08c4c67b1e709e283906cb2a2fc24c23a5b945889002880d5f62a49",
+   "status_sig": "5f58dc2d472bdc97",
+   "valid": true,
+   "why_not": []
+  }
+ ],
+ "frozen_file_sha256": "62b83debdd0c9458831327b3fbc5e1479aea7d9ddedaf0ea902a87ece79f2080",
+ "meta": {
+  "final": true,
+  "provenance": {
+   "commit": "122a7ab",
+   "data_split": null,
+   "dirty": false,
+   "model": "input selection; nothing fitted",
+   "seed": "UNSEEDED",
+   "source_files": 51,
+   "source_sha": "3a4f3b6d394be5de204a540349a61745881777a34184ed8eff2d0ab8897246a6",
+   "worlds": null
+  },
+  "selected_before_lock": true,
+  "selected_utc": "2026-09-20 16:57:00 UTC",
+  "selection_rule": "the served-board snapshot of dg 153428 on sim-history whose build stamp and data-branch commit both precede lock, latest build first, earliest commit on a tie; a post-lock commit is archival only; with no valid snapshot, the pool reconstructed from the latest pre-lock prospective capture",
+  "stage": "week-2 input receipt: the primary pool for the frozen protocol, selected by actual timestamps before the field exists"
+ },
+ "production_classic_sample_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+ "prospective_captures": [
+  {
+   "captured_utc": "2026-09-20 00:47:24 UTC",
+   "hours_to_lock": 16.21,
+   "pre_lock": true,
+   "stamp": "20260920T004709Z"
+  },
+  {
+   "captured_utc": "2026-09-20 16:46:43 UTC",
+   "hours_to_lock": 0.221,
+   "pre_lock": true,
+   "stamp": "20260920T164632Z"
+  }
+ ],
+ "sampler_variant_sha256": "60cc8d2d207a5bb2cbf61b7820146f0cd81b8c00b40ede6d0aec7acfe053fe37",
+ "selected": {
+  "built_ts": 1789856108.0,
+  "built_utc": "2026-09-19 22:15:08 UTC",
+  "bytes": 974110,
+  "draft_group": 153428,
+  "fetched_utc": "2026-09-20 04:51:49 UTC",
+  "field_only": 26,
+  "kind": "served_snapshot",
+  "lock_utc": "2026-09-20 17:00:00 UTC",
+  "minutes_before_lock": 1124.9,
+  "path": "research/data/cl_week2/served_board_153428.json",
+  "pinned_source": "the app's served classic board pulled by .github/workflows/error-log.yml into sim-history as errors/tourney-153428.json (commit f480566, committed 2026-09-20 04:51:49 UTC), copied byte for byte",
+  "players": 260,
+  "pool_after_served_pool": 260,
+  "pool_sig": "adb10de083ab283b",
+  "sha256": "c858bf10a08c4c67b1e709e283906cb2a2fc24c23a5b945889002880d5f62a49",
+  "slate_identity": "ARI/ATL/BAL/CAR/CHI/CIN/CLE/DAL/DEN/GB/HOU/JAX/LAC/LV/MIA/MIN/NE/NO/NYJ/PHI/PIT/SEA/SF/TB/TEN/WAS 2026-09-20",
+  "source": {
+   "branch": "sim-history",
+   "commit": "f480566584d33d49a273a305b4d7d4cc313fe304",
+   "path": "errors/tourney-153428.json",
+   "workflow": ".github/workflows/error-log.yml"
+  }
+ },
+ "timing_sensitivity_arm": {
+  "capture_stamp": "20260920T004709Z",
+  "captured_utc": "2026-09-20 00:47:24 UTC",
+  "files_sha256": {
+   "contests_153428.json": "fbde724b673586b3b0475614e684f04bb856e73755e81c67e7f2117c086d6d00",
+   "manifest.json": "8e8ef0724afd0294a46b125aab6e96e6cadf45054dbe42301772aad1d3f4bc3a",
+   "players_2026_2.json": "bf34e85ce3b2177139bfa3cf303ff91eea1d23a7452f47d56e047696758e4497",
+   "proj_2026_2.json": "0eccc94a0c3a2770905a137fae3f22a590051f85fbfa0ed323dc24889c4d1f26",
+   "proj_2026_2_def.json": "bea2f6fceb74d1d60797b576a5b764a426782e33dad2242c9fa575bbadddba7b",
+   "proj_2026_2_k.json": "bf0926d05d7667bfcc3461cfccac80347898728fc9e75b655c5a72b36073cbb1",
+   "slate_153428.json": "d72e413cc538487210b40a5db3e5051a0c78fdc350ece4b43cf00ce0788d7d08"
+  },
+  "hours_to_lock": 16.21,
+  "path": "research/data/prospective/153428/20260920T004709Z",
+  "role": "input-timing sensitivity only; never decides"
+ },
+ "why_the_selected_input_beat_each_other_candidate": [
+  {
+   "built_utc": "2026-09-14 05:38:21 UTC",
+   "commit": "817c533",
+   "committed_utc": "2026-09-14 12:42:51 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-14 05:38:21 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-14 18:13:27 UTC",
+   "commit": "37e4a1c",
+   "committed_utc": "2026-09-14 21:48:01 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-14 18:13:27 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-17 19:19:20 UTC",
+   "commit": "8f41d44",
+   "committed_utc": "2026-09-17 21:20:25 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-17 19:19:20 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-18 07:48:29 UTC",
+   "commit": "470d639",
+   "committed_utc": "2026-09-18 11:11:16 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-18 07:48:29 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-18 15:36:02 UTC",
+   "commit": "e7d4f71",
+   "committed_utc": "2026-09-18 16:22:38 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-18 15:36:02 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-18 20:16:23 UTC",
+   "commit": "0a065cf",
+   "committed_utc": "2026-09-18 20:53:07 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-18 20:16:23 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-19 03:52:47 UTC",
+   "commit": "16bceb1",
+   "committed_utc": "2026-09-19 04:35:09 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-19 03:52:47 UTC against 2026-09-19 22:15:08 UTC)"
+  },
+  {
+   "built_utc": "2026-09-19 20:09:16 UTC",
+   "commit": "dc4c1eb",
+   "committed_utc": "2026-09-19 20:37:47 UTC",
+   "lost_because": "built earlier than the selected board (2026-09-19 20:09:16 UTC against 2026-09-19 22:15:08 UTC)"
+  }
+ ]
+}
