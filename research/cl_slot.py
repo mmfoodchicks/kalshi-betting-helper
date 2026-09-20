@@ -429,11 +429,50 @@ def score(board_path, fetched_utc, standings_csv, dg, lock_utc, log=print):
     return out
 
 
+def week1_reference(standings_csv, log=print):
+    """The untouched current family on the week-1 pool at the field's size,
+    graded exactly as the candidate was (in-sample reference for the
+    co-primary and out-of-objective readings; the family itself unchanged)."""
+    from research import provenance, s6_capture
+    import dfs_tourney as T
+    d, man = S.served_board()
+    ents = S.served_pool(d)
+    pool_g = S.grading_pool(ents)
+    slate, _ = s6_capture.replay(S.DG, capdir=S.CAPDIR)
+    real = real_from_export(standings_csv, ents, C.pool_rows(slate))
+    n = real["active_lineups"]
+    rng = np.random.default_rng(REAL_SEED)
+    t0 = time.time()
+    beta0, kappa0, _o, _m, _c, _t = T.calibrate_field(ents, rng, n=S.CAL_N)
+    parts, done = [], 0
+    while done < n:
+        k = min(CHUNK, n - done)
+        rep = {}
+        idx = T.classic_sample(ents, k, rng, beta0, kappa0, report=rep)
+        T.check_completion(rep, "week-1 reference")
+        parts.append(idx)
+        done += len(idx)
+    idx = np.concatenate(parts, axis=0)[:n]
+    out = {"meta": {"stage": "the untouched current family on the week-1 pool at the field's size, graded by the frozen protocol's functions: the in-sample reference beside slot-allocation v1's fit",
+                    "family": "dfs_tourney.calibrate_field + classic_sample, the constants as served", "seed": REAL_SEED, "n": int(n),
+                    "frozen_sha256": hashlib.sha256(open(FROZEN, "rb").read()).hexdigest(), "provenance": provenance.stamp(worlds=n, model="the current classic family, week-1 reference", seed=REAL_SEED)},
+           "calibration": {"beta": round(float(beta0), 6), "kappa": round(float(kappa0), 6), "seconds": round(time.time() - t0, 1)},
+           "graded": grade_field(idx, ents, real, pool_g), "real": {k: real[k] for k in ("sha256", "active_lineups", "salary_mean")}}
+    path = os.path.join(DATA, "cl_slot_week1_reference.json")
+    with open(path, "w") as fh:
+        json.dump(out, fh, indent=1, sort_keys=True)
+    cp = out["graded"]["co_primary"]
+    log(f"[SLOT] current family, week 1: slot CE {cp['slot_cross_entropy']['total']['cross_entropy']}, salary W1 ${cp['salary_wasserstein1']}, mean ${cp['salary_mean']:,.0f}; written {path}")
+    return out
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a and a[0] == "fit" and len(a) == 2:
         fit(a[1])
+    elif a and a[0] == "reference" and len(a) == 2:
+        week1_reference(a[1])
     elif a and a[0] == "score" and len(a) == 7:
         score(a[1], a[2], a[3], int(a[5]), a[6])
     else:
-        raise SystemExit("usage: python3 -m research.cl_slot fit <standings csv> | score <board json> <fetched-utc> <standings csv> <sha256> <dg> <lock-utc>")
+        raise SystemExit("usage: python3 -m research.cl_slot fit <standings csv> | reference <standings csv> | score <board json> <fetched-utc> <standings csv> <sha256> <dg> <lock-utc>")

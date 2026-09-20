@@ -1,0 +1,1049 @@
+{
+ "family": "slot-allocation v1",
+ "fit": {
+  "data": {
+   "dropped_real_mass_by_group": {
+    "DST": 0.0,
+    "FLEX": 0.00663,
+    "QB": 0.00113,
+    "RB": 0.00152,
+    "TE": 0.00337,
+    "WR": 0.00329
+   },
+   "first_artifact": "research/data/cl_field.json",
+   "served_board_sha256": "7c6e3a9f03d36495ef577d86583de9d208db48bb51837f64755744f3eccf372a",
+   "week1_active_lineups": 831028,
+   "week1_export_sha256": "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244"
+  },
+  "excluded": [
+   "duplication",
+   "collision",
+   "stack rates",
+   "bring-back",
+   "winner lineups",
+   "week-2 information"
+  ],
+  "objective": "sum over QB, RB, WR, TE, FLEX, DST of the cross-entropy between the real per-pick share and the smoothed model per-pick share; equal weight",
+  "search": {
+   "beta_grid": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5
+   ],
+   "delta_bracket": [
+    0.0,
+    8.0
+   ],
+   "delta_steps": 12,
+   "eta_grid": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    3.0
+   ],
+   "fit_n": 40000,
+   "order": "grid at delta 0 -> delta bisection to the week-1 mean salary -> grid at that delta -> delta bisection -> stop",
+   "seeds": {
+    "fit": 20260920,
+    "per_evaluation": "numpy SeedSequence([FIT_SEED, pass, i, j]); delta steps [FIT_SEED, pass, 100 + step]",
+    "realisation": 20260913
+   },
+   "tie_break": "smaller beta, then smaller eta"
+  },
+  "smoothing": "add-half: model share = (count + 0.5) / (picks + 0.5 * eligible players in the group)",
+  "trace": {
+   "best1": {
+    "acceptance_rate": 0.5,
+    "beta": 0.25,
+    "cross_entropy": 21.20494,
+    "delta": 0.0,
+    "eta": 0.0,
+    "salary_mean": 48437.6,
+    "short": false
+   },
+   "best2": {
+    "acceptance_rate": 0.1359,
+    "beta": 0.15,
+    "cross_entropy": 21.87767,
+    "delta": 2.1123046875,
+    "eta": 0.0,
+    "salary_mean": 49768.3,
+    "short": false
+   },
+   "delta1": {
+    "trace": [
+     {
+      "acceptance_rate": 0.3295,
+      "delta": 4.0,
+      "salary_mean": 49917.9
+     },
+     {
+      "acceptance_rate": 0.4024,
+      "delta": 2.0,
+      "salary_mean": 49841.3
+     },
+     {
+      "acceptance_rate": 0.3533,
+      "delta": 3.0,
+      "salary_mean": 49892.1
+     },
+     {
+      "acceptance_rate": 0.3671,
+      "delta": 2.5,
+      "salary_mean": 49870.6
+     },
+     {
+      "acceptance_rate": 0.3936,
+      "delta": 2.25,
+      "salary_mean": 49856.2
+     },
+     {
+      "acceptance_rate": 0.3989,
+      "delta": 2.125,
+      "salary_mean": 49851.5
+     },
+     {
+      "acceptance_rate": 0.4007,
+      "delta": 2.0625,
+      "salary_mean": 49845.8
+     },
+     {
+      "acceptance_rate": 0.3994,
+      "delta": 2.09375,
+      "salary_mean": 49849.9
+     },
+     {
+      "acceptance_rate": 0.3983,
+      "delta": 2.10938,
+      "salary_mean": 49849.8
+     },
+     {
+      "acceptance_rate": 0.3979,
+      "delta": 2.11719,
+      "salary_mean": 49850.3
+     },
+     {
+      "acceptance_rate": 0.3987,
+      "delta": 2.11328,
+      "salary_mean": 49850.5
+     },
+     {
+      "acceptance_rate": 0.3977,
+      "delta": 2.11133,
+      "salary_mean": 49849.7
+     }
+    ],
+    "value": 2.1123
+   },
+   "delta2": {
+    "trace": [
+     {
+      "acceptance_rate": 0.1027,
+      "delta": 4.0,
+      "salary_mean": 49890.3
+     },
+     {
+      "acceptance_rate": 0.1415,
+      "delta": 2.0,
+      "salary_mean": 49750.8
+     },
+     {
+      "acceptance_rate": 0.1166,
+      "delta": 3.0,
+      "salary_mean": 49847.2
+     },
+     {
+      "acceptance_rate": 0.1087,
+      "delta": 3.5,
+      "salary_mean": 49871.3
+     },
+     {
+      "acceptance_rate": 0.1112,
+      "delta": 3.25,
+      "salary_mean": 49860.4
+     },
+     {
+      "acceptance_rate": 0.1124,
+      "delta": 3.125,
+      "salary_mean": 49855.1
+     },
+     {
+      "acceptance_rate": 0.1157,
+      "delta": 3.0625,
+      "salary_mean": 49850.3
+     },
+     {
+      "acceptance_rate": 0.1161,
+      "delta": 3.03125,
+      "salary_mean": 49848.0
+     },
+     {
+      "acceptance_rate": 0.1157,
+      "delta": 3.04688,
+      "salary_mean": 49849.3
+     },
+     {
+      "acceptance_rate": 0.1157,
+      "delta": 3.05469,
+      "salary_mean": 49850.6
+     },
+     {
+      "acceptance_rate": 0.1151,
+      "delta": 3.05078,
+      "salary_mean": 49849.2
+     },
+     {
+      "acceptance_rate": 0.1153,
+      "delta": 3.05273,
+      "salary_mean": 49848.4
+     }
+    ],
+    "value": 3.05371
+   },
+   "pass1": [
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 22.08166,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 44544.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 22.53794,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 43966.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 23.17796,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 43619.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 23.98484,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 43367.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 24.87967,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 43171.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.1,
+     "cross_entropy": 26.56362,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 42952.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 21.52325,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 46150.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 21.88349,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 45547.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 22.42241,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 45142.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 23.15851,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 44890.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 24.05084,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 44680.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.15,
+     "cross_entropy": 25.69534,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 44422.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 21.23434,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 47436.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 21.43983,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 46889.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 21.93146,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 46500.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 22.60911,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 46227.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 23.33483,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 46011.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.2,
+     "cross_entropy": 25.11423,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 45742.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 21.20494,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 48437.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 21.25955,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 47923.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 21.63547,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 47583.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 22.25037,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 47310.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 22.99422,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 47092.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.25,
+     "cross_entropy": 24.76571,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 46843.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 21.40913,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 49059.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 21.31471,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 48672.4,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 21.56576,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 48334.7,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 22.05669,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 48114.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 22.80873,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 47916.4,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 24.38302,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 47687.7,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 22.36802,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 49653.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 21.9531,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 49449.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 21.92004,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 49256.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 22.16429,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 49074.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 22.72813,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 48943.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 24.20991,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 48736.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.75955,
+     "delta": 0.0,
+     "eta": 0.0,
+     "salary_mean": 49839.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.04547,
+     "delta": 0.0,
+     "eta": 0.5,
+     "salary_mean": 49746.7,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 22.75593,
+     "delta": 0.0,
+     "eta": 1.0,
+     "salary_mean": 49642.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 22.78746,
+     "delta": 0.0,
+     "eta": 1.5,
+     "salary_mean": 49533.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.15993,
+     "delta": 0.0,
+     "eta": 2.0,
+     "salary_mean": 49435.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 24.32109,
+     "delta": 0.0,
+     "eta": 3.0,
+     "salary_mean": 49271.2,
+     "short": false
+    }
+   ],
+   "pass2": [
+    {
+     "acceptance_rate": 0.0568,
+     "beta": 0.1,
+     "cross_entropy": 21.99706,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49721.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.039,
+     "beta": 0.1,
+     "cross_entropy": 22.10126,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49685.0,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.0298,
+     "beta": 0.1,
+     "cross_entropy": 22.66239,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49655.8,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.0244,
+     "beta": 0.1,
+     "cross_entropy": 23.29708,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49642.7,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.0211,
+     "beta": 0.1,
+     "cross_entropy": 24.15691,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49634.4,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.0171,
+     "beta": 0.1,
+     "cross_entropy": 25.70645,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49607.0,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.1359,
+     "beta": 0.15,
+     "cross_entropy": 21.87767,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49768.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.0972,
+     "beta": 0.15,
+     "cross_entropy": 21.97514,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49742.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.0767,
+     "beta": 0.15,
+     "cross_entropy": 22.40433,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49719.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.0644,
+     "beta": 0.15,
+     "cross_entropy": 23.03142,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49706.6,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.0569,
+     "beta": 0.15,
+     "cross_entropy": 23.83143,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49692.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.0467,
+     "beta": 0.15,
+     "cross_entropy": 25.6603,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49669.7,
+     "short": true
+    },
+    {
+     "acceptance_rate": 0.258,
+     "beta": 0.2,
+     "cross_entropy": 21.88297,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49812.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.1923,
+     "beta": 0.2,
+     "cross_entropy": 21.9321,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49793.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.1553,
+     "beta": 0.2,
+     "cross_entropy": 22.30172,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49767.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.134,
+     "beta": 0.2,
+     "cross_entropy": 22.88964,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49754.4,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.1185,
+     "beta": 0.2,
+     "cross_entropy": 23.62513,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49740.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.1005,
+     "beta": 0.2,
+     "cross_entropy": 25.39722,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49723.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.3992,
+     "beta": 0.25,
+     "cross_entropy": 22.03887,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49851.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.3081,
+     "beta": 0.25,
+     "cross_entropy": 21.97884,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49826.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.2617,
+     "beta": 0.25,
+     "cross_entropy": 22.26791,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49809.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.2285,
+     "beta": 0.25,
+     "cross_entropy": 22.83055,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49792.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.2068,
+     "beta": 0.25,
+     "cross_entropy": 23.53876,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49784.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.1759,
+     "beta": 0.25,
+     "cross_entropy": 25.29847,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49761.8,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.3,
+     "cross_entropy": 22.31921,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49878.7,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.4295,
+     "beta": 0.3,
+     "cross_entropy": 22.13014,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49858.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.37,
+     "beta": 0.3,
+     "cross_entropy": 22.37799,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49840.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.3402,
+     "beta": 0.3,
+     "cross_entropy": 22.8855,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49827.4,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.3055,
+     "beta": 0.3,
+     "cross_entropy": 23.47728,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49816.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.2637,
+     "beta": 0.3,
+     "cross_entropy": 25.17162,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49800.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 23.23092,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49918.5,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 22.8463,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49903.7,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 22.8624,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49891.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 23.16049,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49881.0,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.4,
+     "cross_entropy": 23.67839,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49871.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.4368,
+     "beta": 0.4,
+     "cross_entropy": 25.11031,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49853.9,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 24.54102,
+     "delta": 2.1123046875,
+     "eta": 0.0,
+     "salary_mean": 49942.4,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.91843,
+     "delta": 2.1123046875,
+     "eta": 0.5,
+     "salary_mean": 49932.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.66893,
+     "delta": 2.1123046875,
+     "eta": 1.0,
+     "salary_mean": 49921.2,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 23.73914,
+     "delta": 2.1123046875,
+     "eta": 1.5,
+     "salary_mean": 49911.1,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 24.13403,
+     "delta": 2.1123046875,
+     "eta": 2.0,
+     "salary_mean": 49904.3,
+     "short": false
+    },
+    {
+     "acceptance_rate": 0.5,
+     "beta": 0.5,
+     "cross_entropy": 25.29148,
+     "delta": 2.1123046875,
+     "eta": 3.0,
+     "salary_mean": 49890.0,
+     "short": false
+    }
+   ]
+  }
+ },
+ "frozen_utc": "2026-09-20 03:43:19 UTC",
+ "parameters": {
+  "beta": 0.15,
+  "delta": 3.05371,
+  "eta": 0.0,
+  "flex_probs_rb_wr_te": [
+   0.4251,
+   0.3613,
+   0.2136
+  ]
+ },
+ "production_unchanged": true,
+ "provenance": {
+  "commit": "00e2943",
+  "data_split": null,
+  "dirty": false,
+  "model": "slot-allocation v1 (research), fitted on week 1 only",
+  "seed": {
+   "fit": 20260920,
+   "realisation": 20260913
+  },
+  "source_files": 50,
+  "source_sha": "cbc11491de19220f77fcbfb919131b8ee69ba83e6c9173c5821453ad7eff56e0",
+  "worlds": 831028
+ },
+ "sampler": {
+  "base": "dfs_tourney.classic_sample",
+  "base_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+  "substitutions": [
+   {
+    "from": "                   report=None):",
+    "to": "                   report=None, flex_kind=None):"
+   },
+   {
+    "from": "                cols = (pc == 1) | (pc == 2)\n                room = need[\"FLEX\"] > 0",
+    "to": "                cols = (pc[None, :] == flex_kind[:, None])\n                room = need[\"FLEX\"] > 0"
+   },
+   {
+    "from": "            e |= (cols[None, :] & fit & room[:, None] & rows[:, None])",
+    "to": "            e |= ((cols if cols.ndim == 2 else cols[None, :]) & fit & room[:, None] & rows[:, None])"
+   },
+   {
+    "from": "            if kind in (\"RB\", \"WR\"):\n                room = room | (need[\"FLEX\"] > 0)",
+    "to": "            if kind in (\"RB\", \"WR\", \"TE\"):\n                room = room | ((need[\"FLEX\"] > 0) & (flex_kind == _CL_CODE[kind]))"
+   },
+   {
+    "from": "        rel[\"FLEX\"] = np.minimum(nxt[\"RB\"], nxt[\"WR\"])",
+    "to": "        rel[\"FLEX\"] = np.where(flex_kind == 1, nxt[\"RB\"], np.where(flex_kind == 2, nxt[\"WR\"], nxt[\"TE\"]))"
+   }
+  ],
+  "variant_sha256": "60cc8d2d207a5bb2cbf61b7820146f0cd81b8c00b40ede6d0aec7acfe053fe37"
+ },
+ "source_sha256": "82d6c9a2e99a2d0f2f834fafce589a68da3bd3fb5f4bd93cace9c6aecb02940b",
+ "week2_protocol": {
+  "arms": [
+   "untouched current family, re-run on that pool at the field's size",
+   "slot-allocation v1 with these parameters, same pool, same size"
+  ],
+  "co_primary": [
+   "lower slot-level cross-entropy",
+   "closer salary-used distribution by 1-D Wasserstein distance"
+  ],
+  "draft_group": 153428,
+  "lock_utc": "2026-09-20 17:00:00 UTC",
+  "no_refit": true,
+  "out_of_objective": [
+   "top-20 MAE and bias",
+   "top-50 Spearman",
+   "top-10/20/50 mass capture",
+   "FLEX mix",
+   "punt rates",
+   "stack and bring-back",
+   "unique-lineup share",
+   "distinct-entry collision",
+   "duplicate tail"
+  ],
+  "pool": "the latest valid pre-lock production pool: a served-board snapshot whose build stamp and fetch both precede lock; else the pool reconstructed from research/data/prospective/153428"
+ }
+}
