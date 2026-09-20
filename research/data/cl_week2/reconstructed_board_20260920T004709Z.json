@@ -1,0 +1,6014 @@
+{
+ "built_ts": 1789865244,
+ "built_utc": "2026-09-20 00:47:24 UTC",
+ "capture_stamp": "20260920T004709Z",
+ "draft_group_id": 153428,
+ "excluded": [
+  {
+   "name": "Brock Bowers",
+   "pos": "TE",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jordan Mason",
+   "pos": "RB",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "De'Zhaun Stribling",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tua Tagovailoa",
+   "pos": "QB",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Shedeur Sanders",
+   "pos": "QB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Fernando Mendoza",
+   "pos": "QB",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jalen Milroe",
+   "pos": "QB",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dylan Sampson",
+   "pos": "RB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "J.J. McCarthy",
+   "pos": "QB",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nick Singleton",
+   "pos": "RB",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jarrett Stidham",
+   "pos": "QB",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Joe Flacco",
+   "pos": "QB",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Davis Mills",
+   "pos": "QB",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Marcus Mariota",
+   "pos": "QB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Gardner Minshew II",
+   "pos": "QB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Carson Beck",
+   "pos": "QB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Max Brosmer",
+   "pos": "QB",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyson Bagent",
+   "pos": "QB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Case Keenum",
+   "pos": "QB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Miller Moss",
+   "pos": "QB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mac Jones",
+   "pos": "QB",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kurtis Rourke",
+   "pos": "QB",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kyle McCord",
+   "pos": "QB",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brady Cook",
+   "pos": "QB",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trey Lance",
+   "pos": "QB",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "DJ Uiagalelei",
+   "pos": "QB",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nick Mullens",
+   "pos": "QB",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Quinn Ewers",
+   "pos": "QB",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Joey Aguilar",
+   "pos": "QB",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sam Ehlinger",
+   "pos": "QB",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyler Huntley",
+   "pos": "QB",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Joe Fagnano",
+   "pos": "QB",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Skylar Thompson",
+   "pos": "QB",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Spencer Rattler",
+   "pos": "QB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Zach Wilson",
+   "pos": "QB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Andy Dalton",
+   "pos": "QB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tanner McKee",
+   "pos": "QB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cole Payton",
+   "pos": "QB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mitchell Trubisky",
+   "pos": "QB",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hendon Hooker",
+   "pos": "QB",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kenny Pickett",
+   "pos": "QB",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Haynes King",
+   "pos": "QB",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jack Strand",
+   "pos": "QB",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cade Klubnik",
+   "pos": "QB",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Bailey Zappe",
+   "pos": "QB",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyrod Taylor",
+   "pos": "QB",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kedon Slovis",
+   "pos": "QB",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mason Rudolph",
+   "pos": "QB",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Will Howard",
+   "pos": "QB",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Drew Allar",
+   "pos": "QB",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tommy DeVito",
+   "pos": "QB",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Behren Morton",
+   "pos": "QB",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jalon Daniels",
+   "pos": "QB",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Easton Stick",
+   "pos": "QB",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Taylen Green",
+   "pos": "QB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dillon Gabriel",
+   "pos": "QB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Athan Kaliakmanis",
+   "pos": "QB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sam Hartman",
+   "pos": "QB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sam Howell",
+   "pos": "QB",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Joe Milton III",
+   "pos": "QB",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Josh Johnson",
+   "pos": "QB",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sean Clifford",
+   "pos": "QB",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Graham Mertz",
+   "pos": "QB",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mark Gronowski",
+   "pos": "QB",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jawhar Jordan",
+   "pos": "RB",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trevor Etienne",
+   "pos": "RB",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Malik Davis",
+   "pos": "RB",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jeremy McNichols",
+   "pos": "RB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trey Benson",
+   "pos": "RB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "James Conner",
+   "pos": "RB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brittain Brown",
+   "pos": "RB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Zavier Scott",
+   "pos": "RB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Salvon Ahmed",
+   "pos": "RB",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sincere McCormick",
+   "pos": "RB",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "DJ Herman",
+   "pos": "RB",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jarquez Hunter",
+   "pos": "RB",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Carlos Washington Jr.",
+   "pos": "RB",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jacardia Wright",
+   "pos": "RB",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Robbie Ouzts",
+   "pos": "RB",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brady Russell",
+   "pos": "RB",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Velus Jones Jr.",
+   "pos": "RB",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Bam Knight",
+   "pos": "RB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Evan Hull",
+   "pos": "RB",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Gregory Desrosiers",
+   "pos": "RB",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Scott Matlock",
+   "pos": "RB",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Amar Johnson",
+   "pos": "RB",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chris Collier",
+   "pos": "RB",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dare Ogunbowale",
+   "pos": "RB",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "J'Mari Taylor",
+   "pos": "RB",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cody Schrader",
+   "pos": "RB",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Adam Prentice",
+   "pos": "RB",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Adam Randall",
+   "pos": "RB",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jonathan Ward",
+   "pos": "RB",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "CJ Donaldson",
+   "pos": "RB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Audric Estime",
+   "pos": "RB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ty Chandler",
+   "pos": "RB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Zamir White",
+   "pos": "RB",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jaydon Blue",
+   "pos": "RB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dameon Pierce",
+   "pos": "RB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Carson Steele",
+   "pos": "RB",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Carter",
+   "pos": "RB",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kalel Mullings",
+   "pos": "RB",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Anthony Tyus III",
+   "pos": "RB",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ahmani Marshall",
+   "pos": "RB",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trey Sermon",
+   "pos": "RB",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cash Jones",
+   "pos": "RB",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chip Trayanum",
+   "pos": "RB",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Andrew Beck",
+   "pos": "RB",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Al-Jay Henderson",
+   "pos": "RB",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Pierre Strong Jr.",
+   "pos": "RB",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Damon Bankston",
+   "pos": "RB",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Lew Nichols",
+   "pos": "RB",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Travis Homer",
+   "pos": "RB",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Myles Montgomery",
+   "pos": "RB",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Lan Larison",
+   "pos": "RB",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hassan Haskins",
+   "pos": "RB",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Josh Williams",
+   "pos": "RB",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Burton",
+   "pos": "RB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Robert Henry Jr.",
+   "pos": "RB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Craig Reynolds",
+   "pos": "RB",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Israel Abanikanda",
+   "pos": "RB",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kendall Milton",
+   "pos": "RB",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kentrel Bullock",
+   "pos": "RB",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Noah Whittington",
+   "pos": "RB",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Roman Hemby",
+   "pos": "RB",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Eric Gray",
+   "pos": "RB",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jerome Ford",
+   "pos": "RB",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Khalil Herbert",
+   "pos": "RB",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ja'Kobi Lane",
+   "pos": "WR",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Omar Cooper Jr.",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hollywood Brown",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "KeAndre Lambert-Smith",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jayden Higgins",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tank Dell",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jordyn Tyson",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cedric Tillman",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "A.J. Brown",
+   "pos": "WR",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dont'e Thornton Jr.",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Savion Williams",
+   "pos": "WR",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dillon Bell",
+   "pos": "WR",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Briscoe",
+   "pos": "WR",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trayvon Rudolph",
+   "pos": "WR",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kaden Davis",
+   "pos": "WR",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "JP Richardson",
+   "pos": "WR",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Scotty Miller",
+   "pos": "WR",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Christian Kirk",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ricky Pearsall",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "KhaDarel Hodge",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Will Pauling",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Wesley Grimes",
+   "pos": "WR",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ryan Miller",
+   "pos": "WR",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Will Sheppard",
+   "pos": "WR",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jalen Reagor",
+   "pos": "WR",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Montorie Foster Jr.",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Irvin Charles",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jake Bobo",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Julian Hicks",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ricky White III",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Emmanuel Henderson Jr.",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Simi Fehoko",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Harrison Wallace III",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ihmir Smith-Marsette",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Gary Jennings",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Theo Wease Jr.",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cody White",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Justin Shorter",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Corey Rucker",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Deven Thompkins",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ronnie Bell",
+   "pos": "WR",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "CJ Williams",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tim Jones",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Austin Trammell",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Wortham",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trebor Pena",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dane Key",
+   "pos": "WR",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kolbe Katsis",
+   "pos": "WR",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Bandy",
+   "pos": "WR",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Xavier Guillory",
+   "pos": "WR",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kevin Austin Jr.",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Trey Palmer",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kyrese Rowan",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jalen Moreno-Cropper",
+   "pos": "WR",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Johnny Wilson",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Xavier Gipson",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyren Montgomery",
+   "pos": "WR",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "K.J. Osborn",
+   "pos": "WR",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Xavier Restrepo",
+   "pos": "WR",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jimmy Horn Jr.",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chris Brazzell II",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ja'seem Reed",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Casey Washington",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "David Moore",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chris Blair",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Beaux Collins",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Vinny Anthony II",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dylan Drummond",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Antwane Wells Jr.",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tim Patrick",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Malik McClain",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jamaal Pritchett",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "J. Michael Sturdivant",
+   "pos": "WR",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chris Hilton Jr.",
+   "pos": "WR",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Isaiah Neyor",
+   "pos": "WR",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cole Burgess",
+   "pos": "WR",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brandon Smith",
+   "pos": "WR",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brandon Johnson",
+   "pos": "WR",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jeremiah Webb",
+   "pos": "WR",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kyle Dixon",
+   "pos": "WR",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cameron Dorner",
+   "pos": "WR",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "David Sills V",
+   "pos": "WR",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Garrett Greene",
+   "pos": "WR",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Eric Rivers Jr.",
+   "pos": "WR",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Dean Patterson IV",
+   "pos": "WR",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Bub Means",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kole Wilson",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Van Jefferson",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "River Cracraft",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jaden Bradley",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Camden Brown",
+   "pos": "WR",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jordan Hudson",
+   "pos": "WR",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Anthony Smith",
+   "pos": "WR",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ke'Shawn Williams",
+   "pos": "WR",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jordan Moore",
+   "pos": "WR",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Noah Thomas",
+   "pos": "WR",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Daniel Sobkowicz",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Lewis Bond",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Josh Kelly",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mitch Tinsley",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Gage Larvadain",
+   "pos": "WR",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyler Johnson",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chandler Brayboy",
+   "pos": "WR",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Sterling Shepard",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Marquez Valdes-Scantling",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Quincy Skinner Jr.",
+   "pos": "WR",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jake Tonges",
+   "pos": "TE",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Eli Stowers",
+   "pos": "TE",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Gavin Bartholomew",
+   "pos": "TE",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ben Yurosek",
+   "pos": "TE",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Andrew DePaola",
+   "pos": "TE",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cam Grandy",
+   "pos": "TE",
+   "team": "MIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nikola Kalinic",
+   "pos": "TE",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hayden Large",
+   "pos": "TE",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Stephen Carlson",
+   "pos": "TE",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Qadir Ismail",
+   "pos": "TE",
+   "team": "CHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Brayden Willis",
+   "pos": "TE",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Khalil Dinkins",
+   "pos": "TE",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cole Turner",
+   "pos": "TE",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tre Watson",
+   "pos": "TE",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nick Kallerup",
+   "pos": "TE",
+   "team": "SEA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hunter Long",
+   "pos": "TE",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jameson Geers",
+   "pos": "TE",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Shawn Bowman",
+   "pos": "TE",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Teagan Quitoriano",
+   "pos": "TE",
+   "team": "ARI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Evan Svoboda",
+   "pos": "TE",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Patrick Herbert",
+   "pos": "TE",
+   "team": "LAC",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Chris Myarick",
+   "pos": "TE",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Carter Runyon",
+   "pos": "TE",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Patrick Gurd",
+   "pos": "TE",
+   "team": "LV",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Hayden Rucci",
+   "pos": "TE",
+   "team": "JAX",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Caleb Lohner",
+   "pos": "TE",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mitchell Fraboni",
+   "pos": "TE",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Lucas Krull",
+   "pos": "TE",
+   "team": "DEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nick Vannett",
+   "pos": "TE",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Ty Pezza",
+   "pos": "TE",
+   "team": "BAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Treyton Welch",
+   "pos": "TE",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Moliki Matavao",
+   "pos": "TE",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Stone Smartt",
+   "pos": "TE",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Zach Wood",
+   "pos": "TE",
+   "team": "NO",
+   "why": "no projection this week"
+  },
+  {
+   "name": "E.J. Jenkins",
+   "pos": "TE",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Grant Calcaterra",
+   "pos": "TE",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Rocco Underwood",
+   "pos": "TE",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "David Martin-Robinson",
+   "pos": "TE",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jaren Kanak",
+   "pos": "TE",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Joel Wilson",
+   "pos": "TE",
+   "team": "TEN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Nick Muse",
+   "pos": "TE",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jack Velling",
+   "pos": "TE",
+   "team": "ATL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Mark Redman",
+   "pos": "TE",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Thomas Yassmin",
+   "pos": "TE",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Drake Dabney",
+   "pos": "TE",
+   "team": "GB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Lake McRee",
+   "pos": "TE",
+   "team": "PIT",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tanner Arkin",
+   "pos": "TE",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Julian Hill",
+   "pos": "TE",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Shane Zylstra",
+   "pos": "TE",
+   "team": "NE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Evan Deckers",
+   "pos": "TE",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "CJ Dippre",
+   "pos": "TE",
+   "team": "TB",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Messiah Swinson",
+   "pos": "TE",
+   "team": "CLE",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Colson Yankoff",
+   "pos": "TE",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jack Westover",
+   "pos": "TE",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tyler Ott",
+   "pos": "TE",
+   "team": "WAS",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Princeton Fant",
+   "pos": "TE",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "DJ Rogers",
+   "pos": "TE",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "James Mitchell",
+   "pos": "TE",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Michael Trigg",
+   "pos": "TE",
+   "team": "DAL",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Tanner Hudson",
+   "pos": "TE",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "William Wagner",
+   "pos": "TE",
+   "team": "CIN",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Zaire Mitchell-Paden",
+   "pos": "TE",
+   "team": "HOU",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Josiah Deguara",
+   "pos": "TE",
+   "team": "PHI",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Cal Adomitis",
+   "pos": "TE",
+   "team": "MIA",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Jack Stoll",
+   "pos": "TE",
+   "team": "SF",
+   "why": "no projection this week"
+  },
+  {
+   "name": "Kyle Juszczyk",
+   "pos": "RB",
+   "team": "SF",
+   "why": "not on any roster Sleeper knows"
+  },
+  {
+   "name": "Alec Ingold",
+   "pos": "RB",
+   "team": "LAC",
+   "why": "not on any roster Sleeper knows"
+  },
+  {
+   "name": "Hunter Luepke",
+   "pos": "RB",
+   "team": "DAL",
+   "why": "not on any roster Sleeper knows"
+  },
+  {
+   "name": "Travis Hunter",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "not on any roster Sleeper knows"
+  },
+  {
+   "name": "Jared Wayne",
+   "pos": "WR",
+   "team": "HOU",
+   "why": "not on the depth chart (practice squad / inactive)"
+  },
+  {
+   "name": "Tory Horton",
+   "pos": "WR",
+   "team": "SEA",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Jordan James",
+   "pos": "RB",
+   "team": "SF",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Myles Price",
+   "pos": "WR",
+   "team": "MIN",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Dohnte Meyers",
+   "pos": "WR",
+   "team": "CIN",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Colbie Young",
+   "pos": "WR",
+   "team": "CIN",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "KaVontae Turpin",
+   "pos": "WR",
+   "team": "DAL",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Jonathan Mingo",
+   "pos": "WR",
+   "team": "DAL",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Rasheen Ali",
+   "pos": "RB",
+   "team": "BAL",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Barion Brown",
+   "pos": "WR",
+   "team": "NO",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Will Shipley",
+   "pos": "RB",
+   "team": "PHI",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Tahj Brooks",
+   "pos": "RB",
+   "team": "CIN",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Connor Heyward",
+   "pos": "RB",
+   "team": "LV",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Dylan Laube",
+   "pos": "RB",
+   "team": "LV",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Darius Cooper",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Elijah Moore",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Britain Covey",
+   "pos": "WR",
+   "team": "PHI",
+   "why": "WR6 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Ollie Gordon II",
+   "pos": "RB",
+   "team": "MIA",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Kimani Vidal",
+   "pos": "RB",
+   "team": "LAC",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Jordan Watkins",
+   "pos": "WR",
+   "team": "SF",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Jacob Cowing",
+   "pos": "WR",
+   "team": "SF",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "British Brooks",
+   "pos": "RB",
+   "team": "HOU",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Troy Franklin",
+   "pos": "WR",
+   "team": "DEN",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Lil'Jordan Humphrey",
+   "pos": "WR",
+   "team": "DEN",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Tyler Goodson",
+   "pos": "RB",
+   "team": "DAL",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Ted Hurst III",
+   "pos": "WR",
+   "team": "TB",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Tez Johnson",
+   "pos": "WR",
+   "team": "TB",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kameron Johnson",
+   "pos": "WR",
+   "team": "TB",
+   "why": "WR6 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Roschon Johnson",
+   "pos": "RB",
+   "team": "CHI",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Isaiah Davis",
+   "pos": "RB",
+   "team": "NYJ",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Skyy Moore",
+   "pos": "WR",
+   "team": "GB",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Bo Melton",
+   "pos": "WR",
+   "team": "GB",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Brenen Thompson",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Derius Davis",
+   "pos": "WR",
+   "team": "LAC",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Sean Tucker",
+   "pos": "RB",
+   "team": "TB",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "John Metchie III",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Brycen Tremayne",
+   "pos": "WR",
+   "team": "CAR",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kendre Miller",
+   "pos": "RB",
+   "team": "NO",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Zachariah Branch",
+   "pos": "WR",
+   "team": "ATL",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Arian Smith",
+   "pos": "WR",
+   "team": "NYJ",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Josh Cameron",
+   "pos": "WR",
+   "team": "JAX",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "AJ Dillon",
+   "pos": "RB",
+   "team": "CAR",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Corey Kiner",
+   "pos": "RB",
+   "team": "NE",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Reggie Gilliam",
+   "pos": "RB",
+   "team": "NE",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Jahdae Walker",
+   "pos": "WR",
+   "team": "CHI",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Zavion Thomas",
+   "pos": "WR",
+   "team": "CHI",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "LeQuint Allen Jr.",
+   "pos": "RB",
+   "team": "JAX",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Ameer Abdullah",
+   "pos": "RB",
+   "team": "JAX",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Emanuel Wilson",
+   "pos": "RB",
+   "team": "SEA",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Kaytron Allen",
+   "pos": "RB",
+   "team": "WAS",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Jaleel McLaughlin",
+   "pos": "RB",
+   "team": "CLE",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Riley Nowakowski",
+   "pos": "RB",
+   "team": "PIT",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Eli Heidenreich",
+   "pos": "RB",
+   "team": "PIT",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Jalen Brooks",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Reggie Virgil",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Devin Duvernay",
+   "pos": "WR",
+   "team": "ARI",
+   "why": "WR6 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kaleb Johnson",
+   "pos": "RB",
+   "team": "GB",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Julius Chestnut",
+   "pos": "RB",
+   "team": "TEN",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Dyami Brown",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Jaylin Lane",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Luke McCaffrey",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "WR6 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Treylon Burks",
+   "pos": "WR",
+   "team": "WAS",
+   "why": "WR7 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Jonah Coleman",
+   "pos": "RB",
+   "team": "DEN",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Tyler Badie",
+   "pos": "RB",
+   "team": "DEN",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Ben Skowronek",
+   "pos": "WR",
+   "team": "PIT",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kaden Wetjen",
+   "pos": "WR",
+   "team": "PIT",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Demond Claiborne",
+   "pos": "RB",
+   "team": "MIN",
+   "why": "RB3 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Max Bredeson",
+   "pos": "RB",
+   "team": "MIN",
+   "why": "RB4 by depth chart (keep RB1-2)"
+  },
+  {
+   "name": "Elic Ayomanor",
+   "pos": "WR",
+   "team": "TEN",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Chimere Dike",
+   "pos": "WR",
+   "team": "TEN",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kyle Williams",
+   "pos": "WR",
+   "team": "NE",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Efton Chism III",
+   "pos": "WR",
+   "team": "NE",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Sam Roush",
+   "pos": "TE",
+   "team": "CHI",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Josh Whyle",
+   "pos": "TE",
+   "team": "GB",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Malik Benson",
+   "pos": "WR",
+   "team": "LV",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Dareke Young",
+   "pos": "WR",
+   "team": "LV",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Charlie Woerner",
+   "pos": "TE",
+   "team": "ATL",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "LaJohntay Wester",
+   "pos": "WR",
+   "team": "BAL",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Elijah Sarratt",
+   "pos": "WR",
+   "team": "BAL",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Matt Hibner",
+   "pos": "TE",
+   "team": "BAL",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Josh Cuevas",
+   "pos": "TE",
+   "team": "BAL",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Isaiah Bond",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Tylan Wallace",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Malachi Corley",
+   "pos": "WR",
+   "team": "CLE",
+   "why": "WR6 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Carsen Ryan",
+   "pos": "TE",
+   "team": "CLE",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Jalen Tolbert",
+   "pos": "WR",
+   "team": "MIA",
+   "why": "WR4 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Kevin Coleman Jr.",
+   "pos": "WR",
+   "team": "MIA",
+   "why": "WR5 by depth chart (keep WR1-3)"
+  },
+  {
+   "name": "Cameron Latu",
+   "pos": "TE",
+   "team": "NE",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Oscar Delp",
+   "pos": "TE",
+   "team": "NO",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Quintin Morris",
+   "pos": "TE",
+   "team": "JAX",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Tanner Koziol",
+   "pos": "TE",
+   "team": "JAX",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Luke Schoonmaker",
+   "pos": "TE",
+   "team": "DAL",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Jeremy Ruckert",
+   "pos": "TE",
+   "team": "NYJ",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Jelani Woods",
+   "pos": "TE",
+   "team": "NYJ",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Robert Tonyan",
+   "pos": "TE",
+   "team": "PIT",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Drew Sample",
+   "pos": "TE",
+   "team": "CIN",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Jack Endries",
+   "pos": "TE",
+   "team": "CIN",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Charlie Kolar",
+   "pos": "TE",
+   "team": "LAC",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Ko Kieft",
+   "pos": "TE",
+   "team": "TB",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Bauer Sharp",
+   "pos": "TE",
+   "team": "TB",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Eric Saubert",
+   "pos": "TE",
+   "team": "SEA",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Nate Adkins",
+   "pos": "TE",
+   "team": "DEN",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Dallen Bentley",
+   "pos": "TE",
+   "team": "DEN",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Cade Stover",
+   "pos": "TE",
+   "team": "HOU",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Marlin Klein",
+   "pos": "TE",
+   "team": "HOU",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Brevin Jordan",
+   "pos": "TE",
+   "team": "HOU",
+   "why": "TE5 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Seydou Traore",
+   "pos": "TE",
+   "team": "MIA",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Justin Joly",
+   "pos": "TE",
+   "team": "MIA",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Mitchell Evans",
+   "pos": "TE",
+   "team": "CAR",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Ja'Tavion Sanders",
+   "pos": "TE",
+   "team": "CAR",
+   "why": "TE4 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Feleipe Franks",
+   "pos": "TE",
+   "team": "CAR",
+   "why": "TE5 by depth chart (keep TE1-2)"
+  },
+  {
+   "name": "Kylen Granson",
+   "pos": "TE",
+   "team": "TEN",
+   "why": "TE3 by depth chart (keep TE1-2)"
+  }
+ ],
+ "hours_to_lock_at_capture": 16.21,
+ "inputs": {
+  "draftkings": {
+   "files": {
+    "contests": {
+     "bytes": 379274,
+     "endpoint": "dk.contests + dk.contest_detail (nfl, 153428)",
+     "file": "contests_153428.json",
+     "records": 14,
+     "retrieved_ts": 1789865242,
+     "sha256": "fbde724b673586b3b0475614e684f04bb856e73755e81c67e7f2117c086d6d00"
+    },
+    "slate": {
+     "bytes": 51789,
+     "endpoint": "dk.slate_for(nfl, 153428)",
+     "file": "slate_153428.json",
+     "records": 649,
+     "retrieved_ts": 1789865237,
+     "sha256": "d72e413cc538487210b40a5db3e5051a0c78fdc350ece4b43cf00ce0788d7d08"
+    }
+   },
+   "normalization_version": 1,
+   "source": "draftkings"
+  },
+  "sleeper_feeds": {
+   "files": {
+    "capture.json": {
+     "bytes": 1568,
+     "sha256": "d5532aac595b7aee523c65e44e537b62e8b3648cbdb25f491ece6aa75fefa07e"
+    },
+    "contests_153428.json": {
+     "bytes": 379274,
+     "sha256": "fbde724b673586b3b0475614e684f04bb856e73755e81c67e7f2117c086d6d00"
+    },
+    "manifest.json": {
+     "bytes": 659,
+     "sha256": "8e8ef0724afd0294a46b125aab6e96e6cadf45054dbe42301772aad1d3f4bc3a"
+    },
+    "players_2026_2.json": {
+     "bytes": 178265,
+     "sha256": "bf34e85ce3b2177139bfa3cf303ff91eea1d23a7452f47d56e047696758e4497"
+    },
+    "proj_2026_2.json": {
+     "bytes": 2162311,
+     "sha256": "0eccc94a0c3a2770905a137fae3f22a590051f85fbfa0ed323dc24889c4d1f26"
+    },
+    "proj_2026_2_def.json": {
+     "bytes": 34196,
+     "sha256": "bea2f6fceb74d1d60797b576a5b764a426782e33dad2242c9fa575bbadddba7b"
+    },
+    "proj_2026_2_k.json": {
+     "bytes": 109046,
+     "sha256": "bf0926d05d7667bfcc3461cfccac80347898728fc9e75b655c5a72b36073cbb1"
+    },
+    "slate_153428.json": {
+     "bytes": 51789,
+     "sha256": "d72e413cc538487210b40a5db3e5051a0c78fdc350ece4b43cf00ce0788d7d08"
+    }
+   },
+   "source": "sleeper"
+  }
+ },
+ "kind": "classic",
+ "method": "build_nfl_classic's pool section on the capture's DK slate, Sleeper projection feeds and roster (research.sd_board.feeds pins them; nfl_adp answers 'pinned'); the Kalshi ladder patched to the archived index or nothing; the game arrays simulated at n_sims for the pool match only and dropped",
+ "n_sims": 200,
+ "players": [
+  {
+   "ceiling": 15.2,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "MIA@SF",
+   "name": "49ers",
+   "opp": "MIA",
+   "pos": "DST",
+   "proj": 9.2,
+   "salary": 3800,
+   "team": "SF"
+  },
+  {
+   "ceiling": 15.7,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "PHI@TEN",
+   "name": "Eagles",
+   "opp": "TEN",
+   "pos": "DST",
+   "proj": 9.6,
+   "salary": 3700,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 16.6,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 3.6,
+   "game": "CLE@TB",
+   "name": "Buccaneers",
+   "opp": "CLE",
+   "pos": "DST",
+   "proj": 9.8,
+   "salary": 3600,
+   "team": "TB"
+  },
+  {
+   "ceiling": 15.6,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 3.6,
+   "game": "SEA@ARI",
+   "name": "Seahawks",
+   "opp": "ARI",
+   "pos": "DST",
+   "proj": 8.8,
+   "salary": 3500,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 14.9,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 2.9,
+   "game": "GB@NYJ",
+   "name": "Packers",
+   "opp": "NYJ",
+   "pos": "DST",
+   "proj": 8.5,
+   "salary": 3400,
+   "team": "GB"
+  },
+  {
+   "ceiling": 15.4,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 3.4,
+   "game": "NO@BAL",
+   "name": "Ravens",
+   "opp": "NO",
+   "pos": "DST",
+   "proj": 9.1,
+   "salary": 3300,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 15.1,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 2.1,
+   "game": "LV@LAC",
+   "name": "Chargers",
+   "opp": "LV",
+   "pos": "DST",
+   "proj": 8.2,
+   "salary": 3200,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 15.2,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "PIT@NE",
+   "name": "Patriots",
+   "opp": "PIT",
+   "pos": "DST",
+   "proj": 8.7,
+   "salary": 3100,
+   "team": "NE"
+  },
+  {
+   "ceiling": 12.4,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.4,
+   "game": "CIN@HOU",
+   "name": "Texans",
+   "opp": "CIN",
+   "pos": "DST",
+   "proj": 6.8,
+   "salary": 3000,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 12.8,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.8,
+   "game": "MIN@CHI",
+   "name": "Bears",
+   "opp": "MIN",
+   "pos": "DST",
+   "proj": 7.2,
+   "salary": 3000,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 12.6,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.6,
+   "game": "WAS@DAL",
+   "name": "Cowboys",
+   "opp": "WAS",
+   "pos": "DST",
+   "proj": 6.5,
+   "salary": 2900,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 13.3,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 0.3,
+   "game": "CAR@ATL",
+   "name": "Falcons",
+   "opp": "CAR",
+   "pos": "DST",
+   "proj": 6.7,
+   "salary": 2900,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 14.2,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "JAX@DEN",
+   "name": "Broncos",
+   "opp": "JAX",
+   "pos": "DST",
+   "proj": 6.8,
+   "salary": 2800,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 12.6,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 0.6,
+   "game": "PIT@NE",
+   "name": "Steelers",
+   "opp": "NE",
+   "pos": "DST",
+   "proj": 6.3,
+   "salary": 2800,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 12.4,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.4,
+   "game": "CIN@HOU",
+   "name": "Bengals",
+   "opp": "HOU",
+   "pos": "DST",
+   "proj": 6.3,
+   "salary": 2700,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 13.2,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "CAR@ATL",
+   "name": "Panthers",
+   "opp": "ATL",
+   "pos": "DST",
+   "proj": 7.9,
+   "salary": 2700,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 13.6,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.6,
+   "game": "MIN@CHI",
+   "name": "Vikings",
+   "opp": "CHI",
+   "pos": "DST",
+   "proj": 6.4,
+   "salary": 2600,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 9.7,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.3,
+   "game": "LV@LAC",
+   "name": "Raiders",
+   "opp": "LAC",
+   "pos": "DST",
+   "proj": 4.3,
+   "salary": 2600,
+   "team": "LV"
+  },
+  {
+   "ceiling": 10.8,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -1.2,
+   "game": "SEA@ARI",
+   "name": "Cardinals",
+   "opp": "SEA",
+   "pos": "DST",
+   "proj": 4.4,
+   "salary": 2500,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 10.3,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.7,
+   "game": "WAS@DAL",
+   "name": "Commanders",
+   "opp": "DAL",
+   "pos": "DST",
+   "proj": 5.1,
+   "salary": 2500,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 12.0,
+   "depth": "DST",
+   "field_only": false,
+   "floor": 1.0,
+   "game": "JAX@DEN",
+   "name": "Jaguars",
+   "opp": "DEN",
+   "pos": "DST",
+   "proj": 6.3,
+   "salary": 2400,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 10.0,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.0,
+   "game": "GB@NYJ",
+   "name": "Jets",
+   "opp": "GB",
+   "pos": "DST",
+   "proj": 4.9,
+   "salary": 2400,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 10.3,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.7,
+   "game": "NO@BAL",
+   "name": "Saints",
+   "opp": "BAL",
+   "pos": "DST",
+   "proj": 4.9,
+   "salary": 2300,
+   "team": "NO"
+  },
+  {
+   "ceiling": 12.3,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.7,
+   "game": "CLE@TB",
+   "name": "Browns",
+   "opp": "TB",
+   "pos": "DST",
+   "proj": 5.1,
+   "salary": 2200,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 10.9,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -0.1,
+   "game": "PHI@TEN",
+   "name": "Titans",
+   "opp": "PHI",
+   "pos": "DST",
+   "proj": 4.8,
+   "salary": 2100,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 9.8,
+   "depth": "DST",
+   "field_only": false,
+   "floor": -2.2,
+   "game": "MIA@SF",
+   "name": "Dolphins",
+   "opp": "SF",
+   "pos": "DST",
+   "proj": 3.0,
+   "salary": 2000,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 34.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 12.7,
+   "game": "CAR@ATL",
+   "name": "Bijan Robinson",
+   "opp": "CAR",
+   "pos": "RB",
+   "proj": 22.8,
+   "salary": 8200,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 11.0,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.8,
+   "game": "CAR@ATL",
+   "name": "Brian Robinson Jr.",
+   "opp": "CAR",
+   "pos": "RB",
+   "proj": 6.0,
+   "salary": 4700,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 30.4,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 10.0,
+   "game": "SEA@ARI",
+   "name": "Jaxon Smith-Njigba",
+   "opp": "ARI",
+   "pos": "WR",
+   "proj": 18.8,
+   "salary": 8100,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 13.0,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 3.9,
+   "game": "SEA@ARI",
+   "name": "Rashid Shaheed",
+   "opp": "ARI",
+   "pos": "WR",
+   "proj": 7.5,
+   "salary": 4300,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 12.3,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "SEA@ARI",
+   "name": "Cooper Kupp",
+   "opp": "ARI",
+   "pos": "WR",
+   "proj": 7.2,
+   "salary": 4100,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 30.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 10.8,
+   "game": "MIA@SF",
+   "name": "Christian McCaffrey",
+   "opp": "MIA",
+   "pos": "RB",
+   "proj": 19.8,
+   "salary": 8000,
+   "team": "SF"
+  },
+  {
+   "ceiling": 12.1,
+   "depth": "RB2\u00b7Q",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "MIA@SF",
+   "name": "Kaelon Black",
+   "opp": "MIA",
+   "pos": "RB",
+   "proj": 7.1,
+   "salary": 4500,
+   "team": "SF"
+  },
+  {
+   "ceiling": 27.2,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 9.6,
+   "game": "MIN@CHI",
+   "name": "Justin Jefferson",
+   "opp": "CHI",
+   "pos": "WR",
+   "proj": 17.8,
+   "salary": 7800,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 17.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 5.8,
+   "game": "MIN@CHI",
+   "name": "Jordan Addison",
+   "opp": "CHI",
+   "pos": "WR",
+   "proj": 10.9,
+   "salary": 5100,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 9.4,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "MIN@CHI",
+   "name": "Tai Felton",
+   "opp": "CHI",
+   "pos": "WR",
+   "proj": 5.0,
+   "salary": 3000,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 28.5,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 9.2,
+   "game": "CIN@HOU",
+   "name": "Ja'Marr Chase",
+   "opp": "HOU",
+   "pos": "WR",
+   "proj": 17.2,
+   "salary": 7600,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 23.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 7.0,
+   "game": "CIN@HOU",
+   "name": "Tee Higgins",
+   "opp": "HOU",
+   "pos": "WR",
+   "proj": 13.8,
+   "salary": 6100,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 9.8,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "CIN@HOU",
+   "name": "Andrei Iosivas",
+   "opp": "HOU",
+   "pos": "WR",
+   "proj": 5.2,
+   "salary": 3100,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 31.7,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 11.2,
+   "game": "NO@BAL",
+   "name": "Lamar Jackson",
+   "opp": "NO",
+   "pos": "QB",
+   "proj": 20.4,
+   "salary": 7300,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 28.2,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 9.4,
+   "game": "WAS@DAL",
+   "name": "CeeDee Lamb",
+   "opp": "WAS",
+   "pos": "WR",
+   "proj": 17.8,
+   "salary": 7300,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 25.6,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 8.4,
+   "game": "WAS@DAL",
+   "name": "George Pickens",
+   "opp": "WAS",
+   "pos": "WR",
+   "proj": 15.7,
+   "salary": 6300,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 13.2,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.0,
+   "game": "WAS@DAL",
+   "name": "Ryan Flournoy",
+   "opp": "WAS",
+   "pos": "WR",
+   "proj": 7.7,
+   "salary": 3800,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 24.6,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.5,
+   "game": "NO@BAL",
+   "name": "Derrick Henry",
+   "opp": "NO",
+   "pos": "RB",
+   "proj": 15.1,
+   "salary": 7200,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 11.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.1,
+   "game": "NO@BAL",
+   "name": "Justice Hill",
+   "opp": "NO",
+   "pos": "RB",
+   "proj": 6.1,
+   "salary": 4200,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 25.0,
+   "depth": "WR1\u00b7Q",
+   "field_only": false,
+   "floor": 8.0,
+   "game": "NO@BAL",
+   "name": "Chris Olave",
+   "opp": "BAL",
+   "pos": "WR",
+   "proj": 15.6,
+   "salary": 7200,
+   "team": "NO"
+  },
+  {
+   "ceiling": 15.0,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "NO@BAL",
+   "name": "Devaughn Vele",
+   "opp": "BAL",
+   "pos": "WR",
+   "proj": 9.6,
+   "salary": 4200,
+   "team": "NO"
+  },
+  {
+   "ceiling": 2.9,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 1.1,
+   "game": "NO@BAL",
+   "name": "Bryce Lance",
+   "opp": "BAL",
+   "pos": "WR",
+   "proj": 2.0,
+   "salary": 3200,
+   "team": "NO"
+  },
+  {
+   "ceiling": 25.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.4,
+   "game": "PHI@TEN",
+   "name": "Saquon Barkley",
+   "opp": "TEN",
+   "pos": "RB",
+   "proj": 16.6,
+   "salary": 7000,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 8.2,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 1.5,
+   "game": "PHI@TEN",
+   "name": "Tank Bigsby",
+   "opp": "TEN",
+   "pos": "RB",
+   "proj": 3.5,
+   "salary": 4700,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 25.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.7,
+   "game": "CIN@HOU",
+   "name": "Chase Brown",
+   "opp": "HOU",
+   "pos": "RB",
+   "proj": 15.7,
+   "salary": 6900,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 10.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.7,
+   "game": "CIN@HOU",
+   "name": "Samaje Perine",
+   "opp": "HOU",
+   "pos": "RB",
+   "proj": 5.2,
+   "salary": 4400,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 22.1,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 7.9,
+   "game": "SEA@ARI",
+   "name": "Trey McBride",
+   "opp": "SEA",
+   "pos": "TE",
+   "proj": 14.6,
+   "salary": 6900,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 3.7,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.6,
+   "game": "SEA@ARI",
+   "name": "Elijah Higgins",
+   "opp": "SEA",
+   "pos": "TE",
+   "proj": 2.7,
+   "salary": 2500,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 30.6,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.6,
+   "game": "MIN@CHI",
+   "name": "Caleb Williams",
+   "opp": "MIN",
+   "pos": "QB",
+   "proj": 18.5,
+   "salary": 6800,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 24.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.6,
+   "game": "LV@LAC",
+   "name": "Ashton Jeanty",
+   "opp": "LAC",
+   "pos": "RB",
+   "proj": 15.9,
+   "salary": 6800,
+   "team": "LV"
+  },
+  {
+   "ceiling": 7.9,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 1.8,
+   "game": "LV@LAC",
+   "name": "Mike Washington Jr.",
+   "opp": "LAC",
+   "pos": "RB",
+   "proj": 3.6,
+   "salary": 4300,
+   "team": "LV"
+  },
+  {
+   "ceiling": 25.6,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 7.3,
+   "game": "PHI@TEN",
+   "name": "DeVonta Smith",
+   "opp": "TEN",
+   "pos": "WR",
+   "proj": 14.8,
+   "salary": 6800,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 13.7,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "PHI@TEN",
+   "name": "Dontayvion Wicks",
+   "opp": "TEN",
+   "pos": "WR",
+   "proj": 8.0,
+   "salary": 4300,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 11.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.0,
+   "game": "PHI@TEN",
+   "name": "Makai Lemon",
+   "opp": "TEN",
+   "pos": "WR",
+   "proj": 6.3,
+   "salary": 4600,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 34.1,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 10.6,
+   "game": "PHI@TEN",
+   "name": "Jalen Hurts",
+   "opp": "TEN",
+   "pos": "QB",
+   "proj": 20.8,
+   "salary": 6700,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 27.1,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 9.2,
+   "game": "MIA@SF",
+   "name": "De'Von Achane",
+   "opp": "SF",
+   "pos": "RB",
+   "proj": 16.9,
+   "salary": 6700,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 3.4,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 1.4,
+   "game": "MIA@SF",
+   "name": "Jaylen Wright",
+   "opp": "SF",
+   "pos": "RB",
+   "proj": 2.8,
+   "salary": 4200,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 30.3,
+   "depth": "QB1\u00b7Q",
+   "field_only": false,
+   "floor": 8.0,
+   "game": "CIN@HOU",
+   "name": "Joe Burrow",
+   "opp": "HOU",
+   "pos": "QB",
+   "proj": 17.8,
+   "salary": 6600,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 21.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.2,
+   "game": "LV@LAC",
+   "name": "Omarion Hampton",
+   "opp": "LV",
+   "pos": "RB",
+   "proj": 14.0,
+   "salary": 6600,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 11.0,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "LV@LAC",
+   "name": "Keaton Mitchell",
+   "opp": "LV",
+   "pos": "RB",
+   "proj": 6.3,
+   "salary": 4600,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 21.1,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 5.7,
+   "game": "MIA@SF",
+   "name": "Mike Evans",
+   "opp": "MIA",
+   "pos": "WR",
+   "proj": 12.9,
+   "salary": 6600,
+   "team": "SF"
+  },
+  {
+   "ceiling": 16.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 5.2,
+   "game": "MIA@SF",
+   "name": "Deebo Samuel Sr.",
+   "opp": "MIA",
+   "pos": "WR",
+   "proj": 10.4,
+   "salary": 5300,
+   "team": "SF"
+  },
+  {
+   "ceiling": 12.0,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.8,
+   "game": "MIA@SF",
+   "name": "Demarcus Robinson",
+   "opp": "MIA",
+   "pos": "WR",
+   "proj": 6.4,
+   "salary": 3900,
+   "team": "SF"
+  },
+  {
+   "ceiling": 28.1,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.5,
+   "game": "CIN@HOU",
+   "name": "David Montgomery",
+   "opp": "CIN",
+   "pos": "RB",
+   "proj": 17.1,
+   "salary": 6500,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 15.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "CIN@HOU",
+   "name": "Woody Marks",
+   "opp": "CIN",
+   "pos": "RB",
+   "proj": 8.9,
+   "salary": 4500,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 17.7,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 5.8,
+   "game": "JAX@DEN",
+   "name": "Courtland Sutton",
+   "opp": "JAX",
+   "pos": "WR",
+   "proj": 10.7,
+   "salary": 5800,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 21.5,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 6.7,
+   "game": "JAX@DEN",
+   "name": "Jaylen Waddle",
+   "opp": "JAX",
+   "pos": "WR",
+   "proj": 12.7,
+   "salary": 6500,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 13.1,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "JAX@DEN",
+   "name": "Pat Bryant",
+   "opp": "JAX",
+   "pos": "WR",
+   "proj": 7.8,
+   "salary": 4200,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 31.0,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 9.9,
+   "game": "WAS@DAL",
+   "name": "Dak Prescott",
+   "opp": "WAS",
+   "pos": "QB",
+   "proj": 19.4,
+   "salary": 6400,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 27.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.8,
+   "game": "WAS@DAL",
+   "name": "Javonte Williams",
+   "opp": "WAS",
+   "pos": "RB",
+   "proj": 17.4,
+   "salary": 6400,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 8.5,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.7,
+   "game": "WAS@DAL",
+   "name": "Emari Demercado",
+   "opp": "WAS",
+   "pos": "RB",
+   "proj": 4.8,
+   "salary": 4500,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 18.2,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 5.3,
+   "game": "CLE@TB",
+   "name": "Emeka Egbuka",
+   "opp": "CLE",
+   "pos": "WR",
+   "proj": 10.8,
+   "salary": 6400,
+   "team": "TB"
+  },
+  {
+   "ceiling": 17.4,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 5.2,
+   "game": "CLE@TB",
+   "name": "Chris Godwin Jr.",
+   "opp": "CLE",
+   "pos": "WR",
+   "proj": 10.4,
+   "salary": 5600,
+   "team": "TB"
+  },
+  {
+   "ceiling": 11.1,
+   "depth": "WR3\u00b7Q",
+   "field_only": false,
+   "floor": 2.7,
+   "game": "CLE@TB",
+   "name": "Jalen McMillan",
+   "opp": "CLE",
+   "pos": "WR",
+   "proj": 5.7,
+   "salary": 4400,
+   "team": "TB"
+  },
+  {
+   "ceiling": 32.7,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 10.4,
+   "game": "WAS@DAL",
+   "name": "Jayden Daniels",
+   "opp": "DAL",
+   "pos": "QB",
+   "proj": 20.2,
+   "salary": 6300,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 20.5,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 6.2,
+   "game": "MIN@CHI",
+   "name": "D'Andre Swift",
+   "opp": "MIN",
+   "pos": "RB",
+   "proj": 12.6,
+   "salary": 6300,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 12.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.6,
+   "game": "MIN@CHI",
+   "name": "Kyle Monangai",
+   "opp": "MIN",
+   "pos": "RB",
+   "proj": 7.1,
+   "salary": 5300,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 32.2,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.7,
+   "game": "MIA@SF",
+   "name": "Brock Purdy",
+   "opp": "MIA",
+   "pos": "QB",
+   "proj": 20.0,
+   "salary": 6200,
+   "team": "SF"
+  },
+  {
+   "ceiling": 23.0,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.7,
+   "game": "GB@NYJ",
+   "name": "Breece Hall",
+   "opp": "GB",
+   "pos": "RB",
+   "proj": 14.4,
+   "salary": 6200,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 10.6,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.9,
+   "game": "GB@NYJ",
+   "name": "Braelon Allen",
+   "opp": "GB",
+   "pos": "RB",
+   "proj": 5.5,
+   "salary": 4200,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 25.1,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 7.0,
+   "game": "GB@NYJ",
+   "name": "Christian Watson",
+   "opp": "NYJ",
+   "pos": "WR",
+   "proj": 14.8,
+   "salary": 6200,
+   "team": "GB"
+  },
+  {
+   "ceiling": 20.3,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 6.2,
+   "game": "GB@NYJ",
+   "name": "Matthew Golden",
+   "opp": "NYJ",
+   "pos": "WR",
+   "proj": 11.8,
+   "salary": 4700,
+   "team": "GB"
+  },
+  {
+   "ceiling": 20.4,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 6.0,
+   "game": "GB@NYJ",
+   "name": "Jayden Reed",
+   "opp": "NYJ",
+   "pos": "WR",
+   "proj": 11.6,
+   "salary": 4500,
+   "team": "GB"
+  },
+  {
+   "ceiling": 21.3,
+   "depth": "WR1\u00b7Q",
+   "field_only": false,
+   "floor": 6.5,
+   "game": "LV@LAC",
+   "name": "Ladd McConkey",
+   "opp": "LV",
+   "pos": "WR",
+   "proj": 13.1,
+   "salary": 6200,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 16.0,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "LV@LAC",
+   "name": "Quentin Johnston",
+   "opp": "LV",
+   "pos": "WR",
+   "proj": 9.8,
+   "salary": 5000,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 10.8,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "LV@LAC",
+   "name": "Tre' Harris",
+   "opp": "LV",
+   "pos": "WR",
+   "proj": 7.1,
+   "salary": 4000,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 30.9,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 9.9,
+   "game": "PIT@NE",
+   "name": "Drake Maye",
+   "opp": "PIT",
+   "pos": "QB",
+   "proj": 18.9,
+   "salary": 6100,
+   "team": "NE"
+  },
+  {
+   "ceiling": 21.2,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.9,
+   "game": "CLE@TB",
+   "name": "Bucky Irving",
+   "opp": "CLE",
+   "pos": "RB",
+   "proj": 13.8,
+   "salary": 6100,
+   "team": "TB"
+  },
+  {
+   "ceiling": 13.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "CLE@TB",
+   "name": "Kenny Gainwell",
+   "opp": "CLE",
+   "pos": "RB",
+   "proj": 8.0,
+   "salary": 5100,
+   "team": "TB"
+  },
+  {
+   "ceiling": 22.1,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 6.9,
+   "game": "CAR@ATL",
+   "name": "Tetairoa McMillan",
+   "opp": "ATL",
+   "pos": "WR",
+   "proj": 14.6,
+   "salary": 6100,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 22.1,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 6.0,
+   "game": "CAR@ATL",
+   "name": "Jalen Coker",
+   "opp": "ATL",
+   "pos": "WR",
+   "proj": 12.9,
+   "salary": 5100,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 9.4,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.0,
+   "game": "CAR@ATL",
+   "name": "Xavier Legette",
+   "opp": "ATL",
+   "pos": "WR",
+   "proj": 4.8,
+   "salary": 3400,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 27.2,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.1,
+   "game": "LV@LAC",
+   "name": "Justin Herbert",
+   "opp": "LV",
+   "pos": "QB",
+   "proj": 16.9,
+   "salary": 6000,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 17.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 6.5,
+   "game": "NO@BAL",
+   "name": "Travis Etienne Jr.",
+   "opp": "BAL",
+   "pos": "RB",
+   "proj": 11.0,
+   "salary": 6000,
+   "team": "NO"
+  },
+  {
+   "ceiling": 8.5,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "NO@BAL",
+   "name": "Alvin Kamara",
+   "opp": "BAL",
+   "pos": "RB",
+   "proj": 4.3,
+   "salary": 4600,
+   "team": "NO"
+  },
+  {
+   "ceiling": 19.9,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 6.4,
+   "game": "CAR@ATL",
+   "name": "Drake London",
+   "opp": "CAR",
+   "pos": "WR",
+   "proj": 12.3,
+   "salary": 6000,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 9.3,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "CAR@ATL",
+   "name": "Jahan Dotson",
+   "opp": "CAR",
+   "pos": "WR",
+   "proj": 4.3,
+   "salary": 3400,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 8.7,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "CAR@ATL",
+   "name": "Olamide Zaccheaus",
+   "opp": "CAR",
+   "pos": "WR",
+   "proj": 4.4,
+   "salary": 3200,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 23.7,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 8.0,
+   "game": "GB@NYJ",
+   "name": "Garrett Wilson",
+   "opp": "GB",
+   "pos": "WR",
+   "proj": 15.1,
+   "salary": 6000,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 13.2,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "GB@NYJ",
+   "name": "Adonai Mitchell",
+   "opp": "GB",
+   "pos": "WR",
+   "proj": 7.8,
+   "salary": 4000,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 4.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 1.9,
+   "game": "GB@NYJ",
+   "name": "Isaiah Williams",
+   "opp": "GB",
+   "pos": "WR",
+   "proj": 3.2,
+   "salary": 3300,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 30.7,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.7,
+   "game": "GB@NYJ",
+   "name": "Jordan Love",
+   "opp": "NYJ",
+   "pos": "QB",
+   "proj": 19.6,
+   "salary": 5900,
+   "team": "GB"
+  },
+  {
+   "ceiling": 19.1,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.4,
+   "game": "SEA@ARI",
+   "name": "Jeremiyah Love",
+   "opp": "SEA",
+   "pos": "RB",
+   "proj": 12.5,
+   "salary": 5900,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 11.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.9,
+   "game": "SEA@ARI",
+   "name": "Tyler Allgeier",
+   "opp": "SEA",
+   "pos": "RB",
+   "proj": 6.4,
+   "salary": 4900,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 21.2,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 6.8,
+   "game": "JAX@DEN",
+   "name": "Parker Washington",
+   "opp": "DEN",
+   "pos": "WR",
+   "proj": 13.0,
+   "salary": 5900,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 13.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "JAX@DEN",
+   "name": "Brian Thomas Jr.",
+   "opp": "DEN",
+   "pos": "WR",
+   "proj": 8.3,
+   "salary": 4800,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 12.4,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.1,
+   "game": "JAX@DEN",
+   "name": "Jakobi Meyers",
+   "opp": "DEN",
+   "pos": "WR",
+   "proj": 7.4,
+   "salary": 4900,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 29.3,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.0,
+   "game": "JAX@DEN",
+   "name": "Trevor Lawrence",
+   "opp": "DEN",
+   "pos": "QB",
+   "proj": 17.2,
+   "salary": 5800,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 18.7,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.1,
+   "game": "CAR@ATL",
+   "name": "Chuba Hubbard",
+   "opp": "ATL",
+   "pos": "RB",
+   "proj": 12.4,
+   "salary": 5800,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 12.3,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.9,
+   "game": "CAR@ATL",
+   "name": "Jonathon Brooks",
+   "opp": "ATL",
+   "pos": "RB",
+   "proj": 6.7,
+   "salary": 4800,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 24.6,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.2,
+   "game": "JAX@DEN",
+   "name": "Bo Nix",
+   "opp": "JAX",
+   "pos": "QB",
+   "proj": 15.7,
+   "salary": 5700,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 19.2,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.0,
+   "game": "PIT@NE",
+   "name": "Rhamondre Stevenson",
+   "opp": "PIT",
+   "pos": "RB",
+   "proj": 12.3,
+   "salary": 5700,
+   "team": "NE"
+  },
+  {
+   "ceiling": 15.1,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 5.1,
+   "game": "PIT@NE",
+   "name": "TreVeyon Henderson",
+   "opp": "PIT",
+   "pos": "RB",
+   "proj": 9.5,
+   "salary": 5200,
+   "team": "NE"
+  },
+  {
+   "ceiling": 16.0,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "MIN@CHI",
+   "name": "Rome Odunze",
+   "opp": "MIN",
+   "pos": "WR",
+   "proj": 9.7,
+   "salary": 5500,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 18.5,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 6.1,
+   "game": "MIN@CHI",
+   "name": "Luther Burden III",
+   "opp": "MIN",
+   "pos": "WR",
+   "proj": 11.5,
+   "salary": 5700,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 8.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.2,
+   "game": "MIN@CHI",
+   "name": "Kalif Raymond",
+   "opp": "MIN",
+   "pos": "WR",
+   "proj": 5.7,
+   "salary": 3600,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 29.0,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.6,
+   "game": "CLE@TB",
+   "name": "Baker Mayfield",
+   "opp": "CLE",
+   "pos": "QB",
+   "proj": 17.3,
+   "salary": 5600,
+   "team": "TB"
+  },
+  {
+   "ceiling": 14.3,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "JAX@DEN",
+   "name": "Bhayshul Tuten",
+   "opp": "DEN",
+   "pos": "RB",
+   "proj": 9.1,
+   "salary": 5600,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 13.5,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.7,
+   "game": "JAX@DEN",
+   "name": "Chris Rodriguez Jr.",
+   "opp": "DEN",
+   "pos": "RB",
+   "proj": 6.6,
+   "salary": 5100,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 29.6,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.5,
+   "game": "CIN@HOU",
+   "name": "C.J. Stroud",
+   "opp": "CIN",
+   "pos": "QB",
+   "proj": 17.9,
+   "salary": 5500,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 18.2,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 6.5,
+   "game": "SEA@ARI",
+   "name": "Jadarian Price",
+   "opp": "ARI",
+   "pos": "RB",
+   "proj": 11.7,
+   "salary": 5500,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 13.4,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.3,
+   "game": "SEA@ARI",
+   "name": "George Holani",
+   "opp": "ARI",
+   "pos": "RB",
+   "proj": 7.8,
+   "salary": 4500,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 20.3,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 5.9,
+   "game": "WAS@DAL",
+   "name": "Jacory Croskey-Merritt",
+   "opp": "DAL",
+   "pos": "RB",
+   "proj": 12.5,
+   "salary": 5500,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 14.2,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "WAS@DAL",
+   "name": "Rachaad White",
+   "opp": "DAL",
+   "pos": "RB",
+   "proj": 8.8,
+   "salary": 5000,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 27.0,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.3,
+   "game": "CAR@ATL",
+   "name": "Bryce Young",
+   "opp": "ATL",
+   "pos": "QB",
+   "proj": 16.5,
+   "salary": 5400,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 20.3,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 6.8,
+   "game": "CLE@TB",
+   "name": "Quinshon Judkins",
+   "opp": "TB",
+   "pos": "RB",
+   "proj": 12.4,
+   "salary": 5400,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 10.1,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 2.6,
+   "game": "CLE@TB",
+   "name": "Raheim Sanders",
+   "opp": "TB",
+   "pos": "RB",
+   "proj": 5.2,
+   "salary": 4000,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 18.5,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 7.1,
+   "game": "PIT@NE",
+   "name": "Jaylen Warren",
+   "opp": "NE",
+   "pos": "RB",
+   "proj": 11.6,
+   "salary": 5400,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 17.6,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 6.0,
+   "game": "PIT@NE",
+   "name": "Rico Dowdle",
+   "opp": "NE",
+   "pos": "RB",
+   "proj": 11.1,
+   "salary": 4900,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 14.9,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "SEA@ARI",
+   "name": "Marvin Harrison Jr.",
+   "opp": "SEA",
+   "pos": "WR",
+   "proj": 9.3,
+   "salary": 4900,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 15.5,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 5.2,
+   "game": "SEA@ARI",
+   "name": "Michael Wilson",
+   "opp": "SEA",
+   "pos": "WR",
+   "proj": 9.9,
+   "salary": 5400,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 6.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "SEA@ARI",
+   "name": "Kendrick Bourne",
+   "opp": "SEA",
+   "pos": "WR",
+   "proj": 4.2,
+   "salary": 3900,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 24.5,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 6.8,
+   "game": "NO@BAL",
+   "name": "Tyler Shough",
+   "opp": "BAL",
+   "pos": "QB",
+   "proj": 15.3,
+   "salary": 5300,
+   "team": "NO"
+  },
+  {
+   "ceiling": 17.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 6.5,
+   "game": "GB@NYJ",
+   "name": "MarShawn Lloyd",
+   "opp": "NYJ",
+   "pos": "RB",
+   "proj": 11.7,
+   "salary": 5300,
+   "team": "GB"
+  },
+  {
+   "ceiling": 13.6,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.5,
+   "game": "GB@NYJ",
+   "name": "Chris Brooks",
+   "opp": "NYJ",
+   "pos": "RB",
+   "proj": 8.0,
+   "salary": 4800,
+   "team": "GB"
+  },
+  {
+   "ceiling": 14.6,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "PHI@TEN",
+   "name": "Tony Pollard",
+   "opp": "PHI",
+   "pos": "RB",
+   "proj": 8.9,
+   "salary": 5300,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 12.9,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "PHI@TEN",
+   "name": "Tyjae Spears",
+   "opp": "PHI",
+   "pos": "RB",
+   "proj": 7.7,
+   "salary": 4800,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 23.1,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 7.1,
+   "game": "WAS@DAL",
+   "name": "Terry McLaurin",
+   "opp": "DAL",
+   "pos": "WR",
+   "proj": 13.9,
+   "salary": 5200,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 20.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 6.5,
+   "game": "WAS@DAL",
+   "name": "Stefon Diggs",
+   "opp": "DAL",
+   "pos": "WR",
+   "proj": 12.7,
+   "salary": 5300,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 12.5,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.6,
+   "game": "WAS@DAL",
+   "name": "Antonio Williams",
+   "opp": "DAL",
+   "pos": "WR",
+   "proj": 7.3,
+   "salary": 4400,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 28.4,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 8.2,
+   "game": "MIA@SF",
+   "name": "Malik Willis",
+   "opp": "SF",
+   "pos": "QB",
+   "proj": 18.2,
+   "salary": 5200,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 15.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "JAX@DEN",
+   "name": "J.K. Dobbins",
+   "opp": "JAX",
+   "pos": "RB",
+   "proj": 9.5,
+   "salary": 5000,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 14.4,
+   "depth": "RB2\u00b7Q",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "JAX@DEN",
+   "name": "RJ Harvey",
+   "opp": "JAX",
+   "pos": "RB",
+   "proj": 9.3,
+   "salary": 5200,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 21.5,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 6.4,
+   "game": "PIT@NE",
+   "name": "DK Metcalf",
+   "opp": "NE",
+   "pos": "WR",
+   "proj": 13.9,
+   "salary": 5200,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 13.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 3.7,
+   "game": "PIT@NE",
+   "name": "Roman Wilson",
+   "opp": "NE",
+   "pos": "WR",
+   "proj": 7.9,
+   "salary": 3200,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 11.0,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "PIT@NE",
+   "name": "Germie Bernard",
+   "opp": "NE",
+   "pos": "WR",
+   "proj": 5.7,
+   "salary": 3400,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 26.9,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 6.8,
+   "game": "PIT@NE",
+   "name": "Aaron Rodgers",
+   "opp": "NE",
+   "pos": "QB",
+   "proj": 16.2,
+   "salary": 5100,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 23.9,
+   "depth": "RB1",
+   "field_only": false,
+   "floor": 8.0,
+   "game": "MIN@CHI",
+   "name": "Aaron Jones Sr.",
+   "opp": "CHI",
+   "pos": "RB",
+   "proj": 14.0,
+   "salary": 5100,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 11.1,
+   "depth": "RB2",
+   "field_only": false,
+   "floor": 3.4,
+   "game": "MIN@CHI",
+   "name": "DeeJay Dallas",
+   "opp": "CHI",
+   "pos": "RB",
+   "proj": 6.0,
+   "salary": 4000,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 13.9,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.4,
+   "game": "PHI@TEN",
+   "name": "Carnell Tate",
+   "opp": "PHI",
+   "pos": "WR",
+   "proj": 8.5,
+   "salary": 5100,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 12.4,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 3.8,
+   "game": "PHI@TEN",
+   "name": "Wan'Dale Robinson",
+   "opp": "PHI",
+   "pos": "WR",
+   "proj": 7.7,
+   "salary": 4600,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 9.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.3,
+   "game": "PHI@TEN",
+   "name": "Calvin Ridley",
+   "opp": "PHI",
+   "pos": "WR",
+   "proj": 5.1,
+   "salary": 4100,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 19.8,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 5.7,
+   "game": "SEA@ARI",
+   "name": "Jacoby Brissett",
+   "opp": "SEA",
+   "pos": "QB",
+   "proj": 12.4,
+   "salary": 5000,
+   "team": "ARI"
+  },
+  {
+   "ceiling": 23.4,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 6.2,
+   "game": "LV@LAC",
+   "name": "Kirk Cousins",
+   "opp": "LAC",
+   "pos": "QB",
+   "proj": 13.6,
+   "salary": 5000,
+   "team": "LV"
+  },
+  {
+   "ceiling": 14.9,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.8,
+   "game": "PIT@NE",
+   "name": "Romeo Doubs",
+   "opp": "PIT",
+   "pos": "WR",
+   "proj": 9.0,
+   "salary": 5000,
+   "team": "NE"
+  },
+  {
+   "ceiling": 15.5,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.5,
+   "game": "PIT@NE",
+   "name": "Mack Hollins",
+   "opp": "PIT",
+   "pos": "WR",
+   "proj": 8.8,
+   "salary": 4300,
+   "team": "NE"
+  },
+  {
+   "ceiling": 12.8,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "PIT@NE",
+   "name": "DeMario Douglas",
+   "opp": "PIT",
+   "pos": "WR",
+   "proj": 8.2,
+   "salary": 3800,
+   "team": "NE"
+  },
+  {
+   "ceiling": 18.7,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.8,
+   "game": "MIN@CHI",
+   "name": "Colston Loveland",
+   "opp": "MIN",
+   "pos": "TE",
+   "proj": 11.9,
+   "salary": 5000,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 6.3,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.0,
+   "game": "MIN@CHI",
+   "name": "Cole Kmet",
+   "opp": "MIN",
+   "pos": "TE",
+   "proj": 3.9,
+   "salary": 3000,
+   "team": "CHI"
+  },
+  {
+   "ceiling": 19.4,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 5.3,
+   "game": "PHI@TEN",
+   "name": "Cam Ward",
+   "opp": "PHI",
+   "pos": "QB",
+   "proj": 12.1,
+   "salary": 4900,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 21.2,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.2,
+   "game": "SEA@ARI",
+   "name": "Drew Lock",
+   "opp": "ARI",
+   "pos": "QB",
+   "proj": 13.3,
+   "salary": 4900,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 19.7,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.6,
+   "game": "GB@NYJ",
+   "name": "Tucker Kraft",
+   "opp": "NYJ",
+   "pos": "TE",
+   "proj": 11.8,
+   "salary": 4900,
+   "team": "GB"
+  },
+  {
+   "ceiling": 7.0,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.3,
+   "game": "GB@NYJ",
+   "name": "Jonnu Smith",
+   "opp": "NYJ",
+   "pos": "TE",
+   "proj": 4.3,
+   "salary": 2900,
+   "team": "GB"
+  },
+  {
+   "ceiling": 24.2,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 6.7,
+   "game": "GB@NYJ",
+   "name": "Geno Smith",
+   "opp": "GB",
+   "pos": "QB",
+   "proj": 14.9,
+   "salary": 4800,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 17.2,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.8,
+   "game": "PHI@TEN",
+   "name": "Dallas Goedert",
+   "opp": "TEN",
+   "pos": "TE",
+   "proj": 10.2,
+   "salary": 4800,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 2.0,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.7,
+   "game": "PHI@TEN",
+   "name": "Johnny Mundt",
+   "opp": "TEN",
+   "pos": "TE",
+   "proj": 1.5,
+   "salary": 2500,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 24.9,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 7.3,
+   "game": "MIN@CHI",
+   "name": "Carson Wentz",
+   "opp": "CHI",
+   "pos": "QB",
+   "proj": 16.1,
+   "salary": 4600,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 18.4,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.1,
+   "game": "MIA@SF",
+   "name": "George Kittle",
+   "opp": "MIA",
+   "pos": "TE",
+   "proj": 10.7,
+   "salary": 4600,
+   "team": "SF"
+  },
+  {
+   "ceiling": 3.4,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.2,
+   "game": "MIA@SF",
+   "name": "Luke Farrell",
+   "opp": "MIA",
+   "pos": "TE",
+   "proj": 2.4,
+   "salary": 2500,
+   "team": "SF"
+  },
+  {
+   "ceiling": 22.5,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 6.3,
+   "game": "CLE@TB",
+   "name": "Deshaun Watson",
+   "opp": "TB",
+   "pos": "QB",
+   "proj": 13.9,
+   "salary": 4500,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 14.9,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.5,
+   "game": "LV@LAC",
+   "name": "Tre Tucker",
+   "opp": "LAC",
+   "pos": "WR",
+   "proj": 8.8,
+   "salary": 4500,
+   "team": "LV"
+  },
+  {
+   "ceiling": 13.5,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 3.9,
+   "game": "LV@LAC",
+   "name": "Jalen Nailor",
+   "opp": "LAC",
+   "pos": "WR",
+   "proj": 7.8,
+   "salary": 3900,
+   "team": "LV"
+  },
+  {
+   "ceiling": 9.6,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.8,
+   "game": "LV@LAC",
+   "name": "Jack Bech",
+   "opp": "LAC",
+   "pos": "WR",
+   "proj": 5.4,
+   "salary": 3600,
+   "team": "LV"
+  },
+  {
+   "ceiling": 15.5,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.2,
+   "game": "CAR@ATL",
+   "name": "Kyle Pitts Sr.",
+   "opp": "CAR",
+   "pos": "TE",
+   "proj": 10.0,
+   "salary": 4500,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 6.8,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.1,
+   "game": "CAR@ATL",
+   "name": "Austin Hooper",
+   "opp": "CAR",
+   "pos": "TE",
+   "proj": 2.4,
+   "salary": 2500,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 14.8,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.8,
+   "game": "NO@BAL",
+   "name": "Rashod Bateman",
+   "opp": "NO",
+   "pos": "WR",
+   "proj": 9.1,
+   "salary": 4400,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 7.1,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "NO@BAL",
+   "name": "Chris Moore",
+   "opp": "NO",
+   "pos": "WR",
+   "proj": 4.5,
+   "salary": 3300,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 9.8,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "NO@BAL",
+   "name": "Devontez Walker",
+   "opp": "NO",
+   "pos": "WR",
+   "proj": 4.8,
+   "salary": 3400,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 19.4,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.0,
+   "game": "NO@BAL",
+   "name": "Mark Andrews",
+   "opp": "NO",
+   "pos": "TE",
+   "proj": 10.5,
+   "salary": 4400,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 3.3,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.2,
+   "game": "NO@BAL",
+   "name": "Durham Smythe",
+   "opp": "NO",
+   "pos": "TE",
+   "proj": 2.5,
+   "salary": 2500,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 17.9,
+   "depth": "QB1",
+   "field_only": false,
+   "floor": 4.3,
+   "game": "CAR@ATL",
+   "name": "Cooper Rush",
+   "opp": "CAR",
+   "pos": "QB",
+   "proj": 10.8,
+   "salary": 4200,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 16.2,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 5.0,
+   "game": "CLE@TB",
+   "name": "KC Concepcion Jr.",
+   "opp": "TB",
+   "pos": "WR",
+   "proj": 9.9,
+   "salary": 4100,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 15.1,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.2,
+   "game": "CLE@TB",
+   "name": "Denzel Boston",
+   "opp": "TB",
+   "pos": "WR",
+   "proj": 8.9,
+   "salary": 4200,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 12.1,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.0,
+   "game": "CLE@TB",
+   "name": "Jerry Jeudy",
+   "opp": "TB",
+   "pos": "WR",
+   "proj": 7.6,
+   "salary": 3900,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 16.2,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "CLE@TB",
+   "name": "Harold Fannin Jr.",
+   "opp": "TB",
+   "pos": "TE",
+   "proj": 9.8,
+   "salary": 4100,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 2.1,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.7,
+   "game": "CLE@TB",
+   "name": "Blake Whiteheart",
+   "opp": "TB",
+   "pos": "TE",
+   "proj": 1.6,
+   "salary": 2500,
+   "team": "CLE"
+  },
+  {
+   "ceiling": 13.5,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 3.8,
+   "game": "CIN@HOU",
+   "name": "Xavier Hutchinson",
+   "opp": "CIN",
+   "pos": "WR",
+   "proj": 7.8,
+   "salary": 3500,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 15.4,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.4,
+   "game": "CIN@HOU",
+   "name": "Kayshon Boutte",
+   "opp": "CIN",
+   "pos": "WR",
+   "proj": 9.5,
+   "salary": 4000,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 15.0,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 4.0,
+   "game": "CIN@HOU",
+   "name": "Jaylin Noel",
+   "opp": "CIN",
+   "pos": "WR",
+   "proj": 8.4,
+   "salary": 3700,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 15.8,
+   "depth": "WR1",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "MIA@SF",
+   "name": "Malik Washington",
+   "opp": "SF",
+   "pos": "WR",
+   "proj": 9.2,
+   "salary": 4000,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 14.8,
+   "depth": "WR2",
+   "field_only": false,
+   "floor": 4.4,
+   "game": "MIA@SF",
+   "name": "Caleb Douglas",
+   "opp": "SF",
+   "pos": "WR",
+   "proj": 8.9,
+   "salary": 3700,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 12.1,
+   "depth": "WR3",
+   "field_only": false,
+   "floor": 3.4,
+   "game": "MIA@SF",
+   "name": "Chris Bell",
+   "opp": "SF",
+   "pos": "WR",
+   "proj": 6.7,
+   "salary": 3500,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 16.0,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.1,
+   "game": "PIT@NE",
+   "name": "Hunter Henry",
+   "opp": "PIT",
+   "pos": "TE",
+   "proj": 10.2,
+   "salary": 4000,
+   "team": "NE"
+  },
+  {
+   "ceiling": 7.8,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.9,
+   "game": "PIT@NE",
+   "name": "Eli Raridon",
+   "opp": "PIT",
+   "pos": "TE",
+   "proj": 3.9,
+   "salary": 3000,
+   "team": "NE"
+  },
+  {
+   "ceiling": 15.4,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.1,
+   "game": "NO@BAL",
+   "name": "Juwan Johnson",
+   "opp": "BAL",
+   "pos": "TE",
+   "proj": 9.9,
+   "salary": 3900,
+   "team": "NO"
+  },
+  {
+   "ceiling": 4.5,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.6,
+   "game": "NO@BAL",
+   "name": "Noah Fant",
+   "opp": "BAL",
+   "pos": "TE",
+   "proj": 3.3,
+   "salary": 3400,
+   "team": "NO"
+  },
+  {
+   "ceiling": 12.8,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.1,
+   "game": "JAX@DEN",
+   "name": "Brenton Strange",
+   "opp": "DEN",
+   "pos": "TE",
+   "proj": 7.9,
+   "salary": 3900,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 1.7,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.7,
+   "game": "JAX@DEN",
+   "name": "Nate Boerkircher",
+   "opp": "DEN",
+   "pos": "TE",
+   "proj": 1.3,
+   "salary": 2500,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 16.6,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.9,
+   "game": "WAS@DAL",
+   "name": "Jake Ferguson",
+   "opp": "WAS",
+   "pos": "TE",
+   "proj": 9.6,
+   "salary": 3800,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 1.6,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.5,
+   "game": "WAS@DAL",
+   "name": "Brevyn Spann-Ford",
+   "opp": "WAS",
+   "pos": "TE",
+   "proj": 1.3,
+   "salary": 2800,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 10.1,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 3.2,
+   "game": "GB@NYJ",
+   "name": "Kenyon Sadiq",
+   "opp": "GB",
+   "pos": "TE",
+   "proj": 5.6,
+   "salary": 3800,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 8.6,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "GB@NYJ",
+   "name": "Mason Taylor",
+   "opp": "GB",
+   "pos": "TE",
+   "proj": 4.8,
+   "salary": 2800,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 14.8,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 3.9,
+   "game": "PIT@NE",
+   "name": "Pat Freiermuth",
+   "opp": "NE",
+   "pos": "TE",
+   "proj": 8.8,
+   "salary": 3700,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 6.7,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.8,
+   "game": "PIT@NE",
+   "name": "Darnell Washington",
+   "opp": "NE",
+   "pos": "TE",
+   "proj": 3.7,
+   "salary": 2900,
+   "team": "PIT"
+  },
+  {
+   "ceiling": 14.1,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.6,
+   "game": "LV@LAC",
+   "name": "Michael Mayer",
+   "opp": "LAC",
+   "pos": "TE",
+   "proj": 8.3,
+   "salary": 3600,
+   "team": "LV"
+  },
+  {
+   "ceiling": 3.2,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.0,
+   "game": "LV@LAC",
+   "name": "Ian Thomas",
+   "opp": "LAC",
+   "pos": "TE",
+   "proj": 2.1,
+   "salary": 2500,
+   "team": "LV"
+  },
+  {
+   "ceiling": 10.5,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.9,
+   "game": "CIN@HOU",
+   "name": "Mike Gesicki",
+   "opp": "HOU",
+   "pos": "TE",
+   "proj": 5.7,
+   "salary": 3600,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 3.7,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.5,
+   "game": "CIN@HOU",
+   "name": "Erick All Jr.",
+   "opp": "HOU",
+   "pos": "TE",
+   "proj": 2.6,
+   "salary": 2500,
+   "team": "CIN"
+  },
+  {
+   "ceiling": 9.8,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "LV@LAC",
+   "name": "Oronde Gadsden II",
+   "opp": "LV",
+   "pos": "TE",
+   "proj": 4.6,
+   "salary": 3500,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 7.4,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.9,
+   "game": "LV@LAC",
+   "name": "David Njoku",
+   "opp": "LV",
+   "pos": "TE",
+   "proj": 3.9,
+   "salary": 3000,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 14.1,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.7,
+   "game": "MIN@CHI",
+   "name": "T.J. Hockenson",
+   "opp": "CHI",
+   "pos": "TE",
+   "proj": 9.1,
+   "salary": 3500,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 9.1,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "MIN@CHI",
+   "name": "Josh Oliver",
+   "opp": "CHI",
+   "pos": "TE",
+   "proj": 4.2,
+   "salary": 2500,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 11.9,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 3.6,
+   "game": "CLE@TB",
+   "name": "Cade Otton",
+   "opp": "CLE",
+   "pos": "TE",
+   "proj": 6.9,
+   "salary": 3400,
+   "team": "TB"
+  },
+  {
+   "ceiling": 0.7,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.3,
+   "game": "CLE@TB",
+   "name": "Payne Durham",
+   "opp": "CLE",
+   "pos": "TE",
+   "proj": 0.5,
+   "salary": 2500,
+   "team": "TB"
+  },
+  {
+   "ceiling": 14.5,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 4.4,
+   "game": "SEA@ARI",
+   "name": "AJ Barner",
+   "opp": "ARI",
+   "pos": "TE",
+   "proj": 8.2,
+   "salary": 3300,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 5.1,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.7,
+   "game": "SEA@ARI",
+   "name": "Elijah Arroyo",
+   "opp": "ARI",
+   "pos": "TE",
+   "proj": 3.4,
+   "salary": 2500,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 5.9,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.5,
+   "game": "JAX@DEN",
+   "name": "Evan Engram",
+   "opp": "JAX",
+   "pos": "TE",
+   "proj": 4.3,
+   "salary": 3300,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 2.4,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 0.9,
+   "game": "JAX@DEN",
+   "name": "Adam Trautman",
+   "opp": "JAX",
+   "pos": "TE",
+   "proj": 1.8,
+   "salary": 2800,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 17.7,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 5.5,
+   "game": "CIN@HOU",
+   "name": "Dalton Schultz",
+   "opp": "CIN",
+   "pos": "TE",
+   "proj": 10.7,
+   "salary": 3200,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 8.9,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.9,
+   "game": "CIN@HOU",
+   "name": "Foster Moreau",
+   "opp": "CIN",
+   "pos": "TE",
+   "proj": 4.2,
+   "salary": 2700,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 10.7,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.9,
+   "game": "MIA@SF",
+   "name": "Greg Dulcich",
+   "opp": "SF",
+   "pos": "TE",
+   "proj": 5.8,
+   "salary": 3200,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 9.0,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.2,
+   "game": "MIA@SF",
+   "name": "Will Kacmarek",
+   "opp": "SF",
+   "pos": "TE",
+   "proj": 4.3,
+   "salary": 2500,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 13.1,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.9,
+   "game": "CAR@ATL",
+   "name": "Darren Waller",
+   "opp": "ATL",
+   "pos": "TE",
+   "proj": 6.6,
+   "salary": 3100,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 7.5,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.3,
+   "game": "CAR@ATL",
+   "name": "Tommy Tremble",
+   "opp": "ATL",
+   "pos": "TE",
+   "proj": 3.0,
+   "salary": 2600,
+   "team": "CAR"
+  },
+  {
+   "ceiling": 11.6,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 3.0,
+   "game": "PHI@TEN",
+   "name": "Gunnar Helm",
+   "opp": "PHI",
+   "pos": "TE",
+   "proj": 6.3,
+   "salary": 3100,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 5.8,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 1.9,
+   "game": "PHI@TEN",
+   "name": "Daniel Bellinger",
+   "opp": "PHI",
+   "pos": "TE",
+   "proj": 3.9,
+   "salary": 2600,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 9.9,
+   "depth": "TE1",
+   "field_only": false,
+   "floor": 2.4,
+   "game": "WAS@DAL",
+   "name": "John Bates",
+   "opp": "DAL",
+   "pos": "TE",
+   "proj": 4.8,
+   "salary": 2700,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 9.1,
+   "depth": "TE2",
+   "field_only": false,
+   "floor": 2.1,
+   "game": "WAS@DAL",
+   "name": "Ben Sinnott",
+   "opp": "DAL",
+   "pos": "TE",
+   "proj": 4.3,
+   "salary": 2900,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 9.5,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 2.5,
+   "game": "NO@BAL",
+   "name": "Kendre Miller",
+   "opp": "BAL",
+   "pos": "RB",
+   "proj": 4.4,
+   "salary": 4500,
+   "team": "NO"
+  },
+  {
+   "ceiling": 9.0,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 2.3,
+   "game": "MIN@CHI",
+   "name": "Demond Claiborne",
+   "opp": "CHI",
+   "pos": "RB",
+   "proj": 4.3,
+   "salary": 4000,
+   "team": "MIN"
+  },
+  {
+   "ceiling": 8.4,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.9,
+   "game": "CLE@TB",
+   "name": "Ted Hurst III",
+   "opp": "CLE",
+   "pos": "WR",
+   "proj": 4.0,
+   "salary": 3200,
+   "team": "TB"
+  },
+  {
+   "ceiling": 7.9,
+   "depth": "TE3",
+   "field_only": true,
+   "floor": 1.9,
+   "game": "LV@LAC",
+   "name": "Charlie Kolar",
+   "opp": "LV",
+   "pos": "TE",
+   "proj": 3.9,
+   "salary": 2700,
+   "team": "LAC"
+  },
+  {
+   "ceiling": 6.4,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 2.0,
+   "game": "WAS@DAL",
+   "name": "KaVontae Turpin",
+   "opp": "WAS",
+   "pos": "WR",
+   "proj": 3.8,
+   "salary": 3100,
+   "team": "DAL"
+  },
+  {
+   "ceiling": 4.9,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.7,
+   "game": "CAR@ATL",
+   "name": "Zachariah Branch",
+   "opp": "CAR",
+   "pos": "WR",
+   "proj": 3.4,
+   "salary": 3500,
+   "team": "ATL"
+  },
+  {
+   "ceiling": 4.5,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.7,
+   "game": "NO@BAL",
+   "name": "Barion Brown",
+   "opp": "BAL",
+   "pos": "WR",
+   "proj": 3.2,
+   "salary": 3000,
+   "team": "NO"
+  },
+  {
+   "ceiling": 8.2,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.4,
+   "game": "WAS@DAL",
+   "name": "Kaytron Allen",
+   "opp": "DAL",
+   "pos": "RB",
+   "proj": 3.2,
+   "salary": 4500,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 7.7,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.5,
+   "game": "PIT@NE",
+   "name": "Kyle Williams",
+   "opp": "PIT",
+   "pos": "WR",
+   "proj": 3.1,
+   "salary": 3600,
+   "team": "NE"
+  },
+  {
+   "ceiling": 7.6,
+   "depth": "not",
+   "field_only": true,
+   "floor": 1.3,
+   "game": "CIN@HOU",
+   "name": "Jared Wayne",
+   "opp": "CIN",
+   "pos": "WR",
+   "proj": 3.0,
+   "salary": 3000,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 7.5,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.3,
+   "game": "PHI@TEN",
+   "name": "Elic Ayomanor",
+   "opp": "PHI",
+   "pos": "WR",
+   "proj": 3.0,
+   "salary": 3500,
+   "team": "TEN"
+  },
+  {
+   "ceiling": 4.1,
+   "depth": "TE4",
+   "field_only": true,
+   "floor": 1.5,
+   "game": "CIN@HOU",
+   "name": "Marlin Klein",
+   "opp": "CIN",
+   "pos": "TE",
+   "proj": 2.9,
+   "salary": 2500,
+   "team": "HOU"
+  },
+  {
+   "ceiling": 8.1,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.2,
+   "game": "MIA@SF",
+   "name": "Ollie Gordon II",
+   "opp": "SF",
+   "pos": "RB",
+   "proj": 2.6,
+   "salary": 4000,
+   "team": "MIA"
+  },
+  {
+   "ceiling": 3.3,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.2,
+   "game": "WAS@DAL",
+   "name": "Dyami Brown",
+   "opp": "DAL",
+   "pos": "WR",
+   "proj": 2.5,
+   "salary": 3000,
+   "team": "WAS"
+  },
+  {
+   "ceiling": 4.0,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "JAX@DEN",
+   "name": "Troy Franklin",
+   "opp": "JAX",
+   "pos": "WR",
+   "proj": 2.4,
+   "salary": 3800,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 7.1,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "PHI@TEN",
+   "name": "Will Shipley",
+   "opp": "TEN",
+   "pos": "RB",
+   "proj": 2.3,
+   "salary": 4200,
+   "team": "PHI"
+  },
+  {
+   "ceiling": 3.5,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "LV@LAC",
+   "name": "Malik Benson",
+   "opp": "LAC",
+   "pos": "WR",
+   "proj": 2.3,
+   "salary": 3000,
+   "team": "LV"
+  },
+  {
+   "ceiling": 3.1,
+   "depth": "TE3",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "NO@BAL",
+   "name": "Matt Hibner",
+   "opp": "NO",
+   "pos": "TE",
+   "proj": 2.3,
+   "salary": 2500,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 3.2,
+   "depth": "TE3",
+   "field_only": true,
+   "floor": 1.2,
+   "game": "NO@BAL",
+   "name": "Oscar Delp",
+   "opp": "BAL",
+   "pos": "TE",
+   "proj": 2.3,
+   "salary": 2500,
+   "team": "NO"
+  },
+  {
+   "ceiling": 2.9,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.3,
+   "game": "JAX@DEN",
+   "name": "LeQuint Allen Jr.",
+   "opp": "DEN",
+   "pos": "RB",
+   "proj": 2.2,
+   "salary": 4000,
+   "team": "JAX"
+  },
+  {
+   "ceiling": 2.6,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.3,
+   "game": "JAX@DEN",
+   "name": "Jonah Coleman",
+   "opp": "JAX",
+   "pos": "RB",
+   "proj": 2.2,
+   "salary": 4200,
+   "team": "DEN"
+  },
+  {
+   "ceiling": 2.9,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "NO@BAL",
+   "name": "LaJohntay Wester",
+   "opp": "NO",
+   "pos": "WR",
+   "proj": 2.2,
+   "salary": 3100,
+   "team": "BAL"
+  },
+  {
+   "ceiling": 2.7,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 1.1,
+   "game": "SEA@ARI",
+   "name": "Tory Horton",
+   "opp": "ARI",
+   "pos": "WR",
+   "proj": 2.0,
+   "salary": 3200,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 2.4,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.0,
+   "game": "GB@NYJ",
+   "name": "Isaiah Davis",
+   "opp": "GB",
+   "pos": "RB",
+   "proj": 2.0,
+   "salary": 4000,
+   "team": "NYJ"
+  },
+  {
+   "ceiling": 2.5,
+   "depth": "RB3",
+   "field_only": true,
+   "floor": 1.0,
+   "game": "SEA@ARI",
+   "name": "Emanuel Wilson",
+   "opp": "ARI",
+   "pos": "RB",
+   "proj": 2.0,
+   "salary": 4000,
+   "team": "SEA"
+  },
+  {
+   "ceiling": 6.6,
+   "depth": "WR4",
+   "field_only": true,
+   "floor": 0.9,
+   "game": "CLE@TB",
+   "name": "Isaiah Bond",
+   "opp": "TB",
+   "pos": "WR",
+   "proj": 2.0,
+   "salary": 3000,
+   "team": "CLE"
+  }
+ ],
+ "reconstructed": true,
+ "roster_source": {
+  "age_s": 0,
+  "captured_utc": "2026-09-20 00:47:24 UTC",
+  "error": null,
+  "file": "research/data/prospective/153428/20260920T004709Z/players_2026_2.json",
+  "max_age_s": null,
+  "records": 677,
+  "seconds_to_lock": null,
+  "source": "pinned"
+ },
+ "seconds": 0.4,
+ "slate": {
+  "dropped": [
+   "Nico Collins",
+   "Zay Flowers",
+   "Josh Jacobs",
+   "Sam Darnold",
+   "Kyler Murray",
+   "Michael Penix Jr.",
+   "Michael Pittman Jr.",
+   "Aidan O'Connell",
+   "Zach Charbonnet",
+   "Isaac Guerendo",
+   "Kene Nwangwu",
+   "Jauan Jennings",
+   "Marvin Mims Jr.",
+   "Chig Okonkwo",
+   "Jeshaun Jones",
+   "Brandon Aiyuk",
+   "Mason Tipton",
+   "Max Hurleman",
+   "Luke Musgrave",
+   "Tip Reiman",
+   "Joe Royer"
+  ],
+  "field_only": [
+   "Barion Brown",
+   "Charlie Kolar",
+   "Demond Claiborne",
+   "Dyami Brown",
+   "Elic Ayomanor",
+   "Emanuel Wilson",
+   "Isaiah Bond",
+   "Isaiah Davis",
+   "Jared Wayne",
+   "Jonah Coleman",
+   "KaVontae Turpin",
+   "Kaytron Allen",
+   "Kendre Miller",
+   "Kyle Williams",
+   "LaJohntay Wester",
+   "LeQuint Allen Jr.",
+   "Malik Benson",
+   "Marlin Klein",
+   "Matt Hibner",
+   "Ollie Gordon II",
+   "Oscar Delp",
+   "Ted Hurst III",
+   "Tory Horton",
+   "Troy Franklin",
+   "Will Shipley",
+   "Zachariah Branch"
+  ],
+  "games": 13,
+  "n_players": 649,
+  "week": 2
+ },
+ "sport": "nfl"
+}

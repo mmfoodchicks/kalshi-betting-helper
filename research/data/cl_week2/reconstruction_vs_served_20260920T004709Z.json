@@ -1,0 +1,39 @@
+{
+ "compared_utc": "2026-09-20 13:02:48 UTC",
+ "comparison": {
+  "depth_tag_differs": [
+   "David Njoku",
+   "Oronde Gadsden II"
+  ],
+  "field_only_differs": [],
+  "identical_pools": false,
+  "mismatches": {
+   "game": [],
+   "opp": [],
+   "pos": [],
+   "salary": [],
+   "team": []
+  },
+  "only_in_reconstructed": [],
+  "only_in_served": [],
+  "players": {
+   "common": 260,
+   "reconstructed": 260,
+   "served": 260
+  },
+  "projection": {
+   "abs_diff_ge_1": [],
+   "identical": 255,
+   "max_abs_diff": 0.5,
+   "mean_abs_diff": 0.008,
+   "players_compared": 260
+  }
+ },
+ "reconstructed": {
+  "capture_stamp": "20260920T004709Z"
+ },
+ "served": {
+  "path": "research/data/cl_week2/rehearsal/board_c858bf10a08c.json",
+  "sha256": "c858bf10a08c4c67b1e709e283906cb2a2fc24c23a5b945889002880d5f62a49"
+ }
+}

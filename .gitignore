@@ -39,3 +39,9 @@ seeds/part_*.json
 # current is exactly the mistake that makes an A/B lie.
 research/data/_ab_*.json
 research/data/_res_*.json
+
+# The week-2 harness's scratch: the plain standings CSV the frozen loader reads
+# (the gzipped copy and its hash are the pinned artifacts) and the rehearsal
+# selections made before the final receipt is written.
+research/data/cl_week2/standings/
+research/data/cl_week2/rehearsal/

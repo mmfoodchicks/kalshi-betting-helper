@@ -17792,6 +17792,110 @@ ck("the candidate's report states the in-sample verdict before week 2 (wins both
    and "No reading is rescued by refitting week 2" in _sl_rep and "frozen before the week-2 lock" in _sl_rep and "Nothing in production changed" in _sl_rep
    and "21 times" not in _sl_rep)
 
+# ---- The week-2 execution harness around the frozen scorer (research/cl_week2.py) ----
+# The candidate was defined by the exact candidate code and production sampler
+# hash at the freeze, so the POST-GAME SCORER must refuse rather than silently
+# use changed source. That guard has to live in the executable harness, not only
+# here (the reviewer, 2026-09-20); these checks pin that it does, and pin the
+# pre-registered choices the harness makes before the field exists.
+import ast as _ast_w2                      # noqa: E402
+import re as _re_w2                        # noqa: E402  (_re is rebound to a list earlier in this file)
+from hashlib import sha256 as _sha256_w2   # noqa: E402
+_w2_src = open(_os.path.join(_root, "research", "cl_week2.py")).read()
+_w2_tmpl = open(_os.path.join(_root, "research", "reports", "cl_week2_template.md")).read()
+_w2_tmpl_keys = set(_re_w2.findall(r"\{\{([a-z0-9_]+)\}\}", _w2_tmpl))
+_w2_flat = " ".join(_w2_tmpl.split())
+_w2_tree = _ast_w2.parse(_w2_src)
+_w2_ctx_keys = set()
+for _nw2 in _ast_w2.walk(next(_fw2 for _fw2 in _w2_tree.body if isinstance(_fw2, _ast_w2.FunctionDef) and _fw2.name == "context")):
+    if isinstance(_nw2, _ast_w2.Assign) and any(getattr(_tw2, "id", None) == "ctx" for _tw2 in _nw2.targets) and isinstance(_nw2.value, _ast_w2.Dict):
+        _w2_ctx_keys = {_kw2.value for _kw2 in _nw2.value.keys}
+ck("the week-2 harness is pre-registered against the frozen candidate and cannot drift from it: draft group 153428 locking 2026-09-20 17:00:00 UTC, the owner's contest 195648007 beside 195648008, the frozen file and candidate module pinned by sha256 (62b83deb / a8e3eba3), the frozen parameters beta 0.15 / eta 0 / delta 3.05371 / FLEX 0.4251-0.3613-0.2136 repeated in the harness and equal to the frozen file's, the producing functions checked against the freeze commit 00e2943, the four secondary seeds 20260914-17 with the frozen 20260913 as the primary, a 100,000-lineup preflight, and the served-board snapshot read from the sim-history data branch",
+   'DG = 153428' in _w2_src and 'LOCK_UTC = "2026-09-20 17:00:00 UTC"' in _w2_src and 'CONTEST = 195648007' in _w2_src
+   and 'CONTESTS = (195648007, 195648008)' in _w2_src and 'FREEZE_COMMIT = "00e2943"' in _w2_src
+   and 'FROZEN_SHA256 = "62b83debdd0c9458831327b3fbc5e1479aea7d9ddedaf0ea902a87ece79f2080"' in _w2_src
+   and 'CL_SLOT_FILE_SHA256 = "a8e3eba302fed269dc65bc55cc68d6fc29a32c6dc1379d39505f79ba44844cd3"' in _w2_src
+   and 'PARAMS = {"beta": 0.15, "eta": 0.0, "delta": 3.05371, "flex_probs_rb_wr_te": [0.4251, 0.3613, 0.2136]}' in _w2_src
+   and 'SECONDARY_SEEDS = (20260914, 20260915, 20260916, 20260917)' in _w2_src and 'PREFLIGHT_N = 100000' in _w2_src
+   and 'DATA_BRANCH = "sim-history"' in _w2_src and 'SNAPSHOT_PATH = "errors/tourney-153428.json"' in _w2_src
+   and _sl["parameters"] == {"beta": 0.15, "eta": 0.0, "delta": 3.05371, "flex_probs_rb_wr_te": [0.4251, 0.3613, 0.2136]}
+   and _sha256_w2(open(_os.path.join(_root, "research", "data", "cl_slot_frozen.json"), "rb").read()).hexdigest() == "62b83debdd0c9458831327b3fbc5e1479aea7d9ddedaf0ea902a87ece79f2080"
+   and _sha256_w2(open(_os.path.join(_root, "research", "cl_slot.py"), "rb").read()).hexdigest() == "a8e3eba302fed269dc65bc55cc68d6fc29a32c6dc1379d39505f79ba44844cd3")
+ck("the week-2 input rule is code, not prose: the primary is the served snapshot whose BUILD STAMP and whose data-branch COMMIT (the fetch's upper bound) both precede lock, latest build first and earliest commit on a tie, a post-lock fetch is archival only, the fallback reconstructs the pool from a pre-lock prospective capture by production's own assembly, the early capture is kept as the input-timing arm that never decides, and the receipt is written once with the board's bytes pinned",
+   'if committed >= LOCK_TS:' in _w2_src and 'archival only' in _w2_src and 'elif built >= LOCK_TS:' in _w2_src
+   and 'prim = max(valid, key=lambda s: (s["built_ts"], -s["committed_ts"]))' in _w2_src
+   and 'kind = "reconstructed_from_prospective_capture"' in _w2_src
+   and 'the receipt is written once and never rewritten' in _w2_src
+   and 'refusing to overwrite a pinned board' in _w2_src
+   and '"role": "input-timing sensitivity only; never decides"' in _w2_src
+   and 'why_the_selected_input_beat_each_other_candidate' in _w2_src
+   and 'BOARD_COPY = os.path.join(OUT, f"served_board_{DG}.json")' in _w2_src
+   and "second artifact's IDENTITY FILES" in _w2_src and "C.CAPDIR" not in _w2_src
+   and 'the board is not that draft group\'s, or it was built or fetched at or after lock' in open(_os.path.join(_root, "research", "cl_slot.py")).read())
+ck("the week-2 post-game command enforces at execution time what the suite enforces here, and the report cannot gain or lose a cell quietly: it verifies the frozen file, the candidate module and production's classic_sample before drawing a lineup, requires and checks the standings sha256 the frozen scorer's own dispatch dropped, refuses a receipt whose pinned board moved, refuses to overwrite a scored run, makes no live fetch, cross-checks its own arms against the frozen scorer on the primary seed, and renders only the template's cells (" + str(len(_w2_tmpl_keys)) + " of them, exactly the harness's)",
+   _w2_ctx_keys == _w2_tmpl_keys and len(_w2_tmpl_keys) == 66
+   and 'def postgame(' in _w2_src and 'ver = verify(log)' in _w2_src
+   and 'do not include the expected' in _w2_src and 'expected_sha.lower() not in (zsha, csha)' in _w2_src
+   and 'does not hash to the receipt' in _w2_src and "exists; a scored run is never overwritten" in _w2_src
+   and '"no_live_fetch": True' in _w2_src
+   and 'do not reproduce research.cl_slot.score' in _w2_src
+   and 'render refused: the context\'s keys are not the template\'s' in _w2_src
+   and 'a frozen export is never replaced' in _w2_src)
+ck("the week-2 readings are frozen in the template BEFORE the field exists: the four interpretation rules verbatim, an exact tie counting as not lower, no combined score, no winner chosen on an out-of-objective metric, no rescue by reseeding, no week-2 refit, the co-primaries conditional on fully representable entries with no invented projection, the secondary seeds and the timing arm explicitly never deciding, and the limitation that a pass validates slot allocation and spending only, not chalk, concentration, duplication or money",
+   "the slot and spend mechanisms transferred on this slate" in _w2_flat
+   and "the allocation transferred, the spend penalty did not" in _w2_flat
+   and "the spend behaviour transferred, the week-1 slot allocation did not" in _w2_flat
+   and "the candidate failed to transfer" in _w2_flat
+   and "An exact tie counts as not lower" in _w2_flat and "no combined score" in _w2_flat
+   and "no winner chosen on an out-of-objective metric" in _w2_flat and "no rescue by reseeding" in _w2_flat
+   and "no week-2 refit of any kind" in _w2_flat
+   and "condition on FULLY REPRESENTABLE entries" in _w2_flat and "no projection is invented for a missing player" in _w2_flat
+   and "The secondary seeds and the timing arm below never decide the verdict." in _w2_flat
+   and "It does not validate chalk modelling, concentration, duplication or money EV" in _w2_flat
+   and "Nothing in production changed" in _w2_flat
+   and all(("{{" + k + "}}") in _w2_tmpl for k in ("verdict", "cur_ce", "cand_ce", "cur_w1", "cand_w1", "rows_representable", "dce_stats", "t_cand_ce")))
+try:
+    from research import cl_week2 as _W2
+except ImportError:
+    _W2 = None
+if _W2 is None:
+    ck("(skipped under the no-numpy suite for a stated reason: the behavioural checks import research.cl_week2, which needs numpy; the structural and template pins above still run) the harness refuses a changed frozen identity, renders only the template's cells, reads the four verdicts mechanically and conditions support on fully representable entries", True)
+else:
+    _w2_ok = _W2.verify(log=lambda *_a, **_k: None)["passed"]
+    _w2_was = _W2.FROZEN_SHA256
+    _W2.FROZEN_SHA256 = "0" * 64
+    try:
+        _W2.verify(log=lambda *_a, **_k: None); _w2_refused = False
+    except SystemExit as _e_w2:
+        _w2_refused = "REFUSED" in str(_e_w2) and "frozen file sha256" in str(_e_w2)
+    _W2.FROZEN_SHA256 = _w2_was
+    try:
+        _W2.render({"verdict": "x"}, "{{verdict}} {{cur_ce}}"); _w2_render_refused = False
+    except SystemExit as _e_r:
+        _w2_render_refused = "render refused" in str(_e_r)
+    _w2_rendered = _W2.render({"verdict": "the candidate failed to transfer"}, "x {{verdict}} y")
+    _w2_ents = [{"name": n} for n in ("A", "B", "C", "D", "E", "F", "G", "H", "I")]
+    _w2_lu = [(s, n) for s, n in zip(("QB", "RB", "RB", "WR", "WR", "WR", "TE", "FLEX", "DST"), "ABCDEFGHI")]
+    _w2_out = [(s, n) for s, n in zip(("QB", "RB", "RB", "WR", "WR", "WR", "TE", "FLEX", "DST"), "ABCDEFGHZ")]
+    _w2_std = {"malformed": 1, "entries": [{"lineup": _w2_lu, "blank": False, "user": "u", "user_entries": 1},
+                                           {"lineup": _w2_lu, "blank": False, "user": "u", "user_entries": 1},
+                                           {"lineup": _w2_out, "blank": False, "user": "v", "user_entries": 1},
+                                           {"lineup": None, "blank": True, "user": "w", "user_entries": 1}]}
+    _w2_sup = _W2.support_report(_w2_std, _w2_ents)
+    ck("the harness refuses a changed frozen identity at execution time rather than scoring with it (a wrong frozen-file hash exits with REFUSED), renders only the template's cells and refuses a context that is not exactly them, reads the four pre-registered verdicts mechanically from the two co-primaries with a tie counting as not lower, and conditions the co-primaries on fully representable entries (a lineup holding one unsupported player is excluded, counted and attributed to that player)",
+       _w2_ok and _w2_refused and _w2_render_refused and _w2_rendered == "x the candidate failed to transfer y"
+       and _W2.VERDICTS[(True, True)] == "the slot-allocation and spend mechanisms transferred on this slate"
+       and _W2.VERDICTS[(True, False)] == "the allocation transferred, the spend penalty did not"
+       and _W2.VERDICTS[(False, True)] == "the spend behaviour transferred, the week-1 slot allocation did not"
+       and _W2.VERDICTS[(False, False)] == "the candidate failed to transfer"
+       and _w2_sup["nonblank_active_entries"] == 3 and _w2_sup["fully_representable_entries"] == 2
+       and _w2_sup["excluded_entries"] == 1 and _w2_sup["blank_entries"] == 1 and _w2_sup["malformed_lineups"] == 1
+       and _w2_sup["unsupported_players_by_exclusions"][0]["name"] == "Z" and _w2_sup["unsupported_players_by_exclusions"][0]["excluded_entries"] == 1
+       and _w2_sup["roster_slot_mass_outside_support_pct"]["DST"] == 33.333
+       and _w2_sup["week1_representable_share_for_comparison_pct"] == 99.733
+       and _W2.SECONDARY_SEEDS == (20260914, 20260915, 20260916, 20260917) and _W2.PARAMS == _sl["parameters"])
+
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

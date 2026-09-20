@@ -1,0 +1,129 @@
+{
+ "checks": {
+  "acceptance_above_contract_boundary": true,
+  "acceptance_headroom_ratio_ge_1_5": true,
+  "deterministic_under_frozen_seed": true,
+  "different_seed_differs": true,
+  "flex_obeys_drawn_position": true,
+  "nine_distinct_players": true,
+  "no_incomplete_rows": true,
+  "not_short": true,
+  "players_from_at_least_two_games": true,
+  "salary_never_over_cap": true,
+  "slots_hold_legal_positions": true
+ },
+ "contract": {
+  "acceptance_boundary": 0.05,
+  "acceptance_rate": 0.0871,
+  "headroom_ratio": 1.742,
+  "max_raw_factor": 20,
+  "raw_draws_used_of_allowed": 0.574,
+  "week1_acceptance_for_comparison": 0.1159
+ },
+ "flex_draw_check": {
+  "RB": {
+   "completed": 5000,
+   "drawn": 5000,
+   "flex_is_drawn_position": true,
+   "rejected": 0
+  },
+  "TE": {
+   "completed": 5000,
+   "drawn": 5000,
+   "flex_is_drawn_position": true,
+   "rejected": 0
+  },
+  "WR": {
+   "completed": 5000,
+   "drawn": 5000,
+   "flex_is_drawn_position": true,
+   "rejected": 0
+  }
+ },
+ "meta": {
+  "board": {
+   "built_ts": 1789856108,
+   "path": "research/data/cl_week2/rehearsal/board_c858bf10a08c.json",
+   "players": 260,
+   "reconstructed": false,
+   "sha256": "c858bf10a08c4c67b1e709e283906cb2a2fc24c23a5b945889002880d5f62a49"
+  },
+  "checked_utc": "2026-09-20 13:10:59 UTC",
+  "n": 100000,
+  "seconds_first_sample": 225.3,
+  "seed": 20260913,
+  "stage": "week-2 preflight of the frozen candidate on a pre-lock pool: structural checks only, no ownership read",
+  "verify": {
+   "checked_utc": "2026-09-20 13:02:49 UTC",
+   "cl_slot_file_sha256": "a8e3eba302fed269dc65bc55cc68d6fc29a32c6dc1379d39505f79ba44844cd3",
+   "cl_slot_file_sha256_at_freeze": "82d6c9a2e99a2d0f2f834fafce589a68da3bd3fb5f4bd93cace9c6aecb02940b",
+   "classic_sample_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+   "failures": [],
+   "frozen_file_sha256": "62b83debdd0c9458831327b3fbc5e1479aea7d9ddedaf0ea902a87ece79f2080",
+   "parameters": {
+    "beta": 0.15,
+    "delta": 3.05371,
+    "eta": 0.0,
+    "flex_probs_rb_wr_te": [
+     0.4251,
+     0.3613,
+     0.2136
+    ]
+   },
+   "passed": true,
+   "producing_functions": [
+    "slot_sampler",
+    "sample",
+    "real_slot_shares",
+    "model_slot_shares",
+    "slot_cross_entropy",
+    "quantiles",
+    "wasserstein1",
+    "real_from_export",
+    "grade_field",
+    "_objective",
+    "_grid_pass",
+    "_delta_bisect",
+    "fit",
+    "score"
+   ],
+   "producing_functions_identical_to": "00e2943",
+   "sampler_base_sha256": "987d30db002cf1692e6bbbec664e9499d97ca37448761b0337ddd86b0c7afd5e",
+   "sampler_variant_sha256": "60cc8d2d207a5bb2cbf61b7820146f0cd81b8c00b40ede6d0aec7acfe053fe37"
+  }
+ },
+ "passed": true,
+ "realised": {
+  "drawn_flex_shares_pct": [
+   42.51,
+   36.13,
+   21.36
+  ],
+  "flex_position_pct": {
+   "RB": 55.85,
+   "TE": 8.86,
+   "WR": 35.3
+  },
+  "punts_under_3000_pct": [
+   82.3,
+   17.52,
+   0.18
+  ],
+  "salary": {
+   "mean": 49839.6,
+   "share_at_cap_pct": 44.22,
+   "share_ge_49500_pct": 93.12,
+   "share_le_48000_pct": 0.09
+  }
+ },
+ "receipt": {
+  "acceptance_rate": 0.0871,
+  "accepted": 100000,
+  "incomplete_rows": 0,
+  "raw_draws": 1147988,
+  "rejected_by_delta": 1047925,
+  "requested": 100000,
+  "short": false
+ },
+ "sample_sha256": "bc33b4cfb3053bc40d3987af156c803539ddc1e55fb5557c84c72b87862ff870"
+}
