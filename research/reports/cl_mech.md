@@ -1,4 +1,4 @@
-# Task 8, third artifact: the current classic family's trade-off surface, and what any per-player ranking can reach
+# Task 8, third artifact: the current classic family's trade-off surface, and what the enumerated per-player rankings reach
 
 Artifacts `research/data/cl_mech.json` (module `research/cl_mech.py`; ten
 preregistered arms, one seed each at 831,028 draws on the served pre-lock
@@ -20,14 +20,15 @@ public's 0.6%). The freed ownership does not reach the public's cheap chalk;
 it lands on new wrong names. The negative-kappa reading offered by the
 second artifact is therefore falsified as the cause of the chalk miss: the
 sign of the price term is not what starves Mayer, the Jaguars and the Jets.
-The ranking diagnostic says why no region of this family exists: no
-per-player monotone function of projection and salary in the enumerated set
+The ranking diagnostic says why no region of this family exists: none of
+the eleven enumerated simple per-player functions of projection and salary
 orders the real top 50 (Spearman −0.14 to +0.30 over the real top 50; the
 best is salary alone), although each one orders players WITHIN a position
-well (Sleeper's line: RB 0.94, WR 0.93, TE 0.94). The public's chalk is a
+well (Sleeper's line: RB 0.94, WR 0.93, TE 0.94). That is a statement about
+those eleven statistics, not about every monotone function. The public's chalk looks like a
 lineup-construction pattern, the top projections at the expensive slots
-plus cheap enablers at tight end and defense, which no per-player ranking
-on these projections can reproduce. The current family has no region that
+plus cheap enablers at tight end and defense, which none of the enumerated
+per-player rankings on these projections reproduces. The current family has no region that
 gets both; the extra dimension is earned, and its shape is more specific
 than "a separate spend knob" (section 4).**
 
@@ -86,7 +87,7 @@ zero (TE at FLEX 32 to 39% against the public's 21%, an over-correction at
 equal eligibility) and buys about 0.01 of top-50 Spearman and 0.2 pp of
 top-20 bias; it also doubles the two-punt share (17 to 24% against 15%).
 
-## 3. Why no region exists: the ranking diagnostic
+## 3. Why no region exists: the ranking diagnostic (eleven enumerated statistics)
 
 For each enumerated per-player statistic on the served pool, the Spearman
 with the real any-slot ownership over all 240, over the real top 50, the
@@ -113,9 +114,9 @@ the Jets 129, Juwan Johnson 85, Quentin Johnston 73. By value per $1,000
 Mayer is 16th, the Jets 12th and the Jaguars 34th, while Gibbs falls to 28th
 and Chase to 40th. No single ordering holds both halves: the public's chalk
 is the projection leaders at the expensive slots AND the cheapest
-serviceable tight end and defenses, which is a statement about how lineups
+serviceable tight end and defenses, which reads as a statement about how lineups
 are built (spend on the studs, punt the slots that pay least per dollar),
-not about which players a per-player statistic ranks highest. A second
+not about which players any of these per-player statistics ranks highest. A second
 public projection source (DraftKings' own averages) does not change that.
 
 ## 4. What this earns, and what it does not
@@ -126,10 +127,10 @@ at the LINEUP level where the salary goes: which slots carry the studs and
 which slots are punted, with the punt slot's ownership concentrating on the
 cheapest serviceable option (Mayer at $2,900, the Jets at $2,500, the
 Jaguars at $3,400) rather than on the best projection at that position. A
-per-player price term of either sign cannot express that, which is what the
+per-player price term of either sign did not express that, which is what the
 grid and the ranking diagnostic say together: within a position Sleeper's
 line orders the public well (0.93 to 0.94), across positions the public's
-allocation does not follow any per-player score. The candidate for the
+allocation follows none of the enumerated per-player scores. The candidate for the
 held-out slate should therefore be simple in exactly this direction, a
 slot-allocation mechanism over which the existing per-player softmax runs
 within each slot, pre-registered before the week-2 main slate locks, and it

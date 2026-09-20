@@ -1,5 +1,7 @@
-"""Task 8, ranking diagnostic: how far can ANY per-player monotone function of
-projection and salary go toward the real chalk order? FIT-FREE.
+"""Task 8, ranking diagnostic: how far do eleven enumerated simple per-player
+statistics of projection and salary go toward the real chalk order? FIT-FREE.
+(A finite set, not the space of all monotone functions: the result bounds
+these statistics, nothing broader.)
 
 The third artifact (research/cl_mech.py) shows the current family's whole
 kappa grid leaves the real top-50 ordering where the served build had it.
