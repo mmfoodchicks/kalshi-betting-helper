@@ -20,6 +20,12 @@ name: Error log snapshot
 on:
   schedule:
     - cron: "17 */6 * * *"     # every 6 hours, offset to dodge the top-of-hour
+    # Sundays before the NFL main slate locks at 17:00 UTC: two snapshots of
+    # the served classic board (its built_ts proves it pre-lock), so every
+    # week's production field is on the data branch before the field exists.
+    # Week 1's board was built 33 minutes before lock; the second snapshot
+    # exists for a board that lands late. Actions may run a cron late.
+    - cron: "40,56 16 * * 0"
   workflow_dispatch:            # the "pull it now" button
 
 concurrency:

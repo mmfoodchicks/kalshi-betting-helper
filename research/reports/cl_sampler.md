@@ -186,9 +186,12 @@ land within 0.06 pp per player of the served board and within 0.02 of its
 Spearman, and every miss above is the same on every seed. It says the miss
 is not the pool's: 99.7% of the real roster slots sit on players the sampler
 could draw (425 real players outside the pool hold 0.27%, the largest of
-them Travis Hunter at 0.36%). It says the aggregate constants are not the
-problem at the level they are set, and that the sampler's construction and
-its calibrated price sensitivity are.
+them Travis Hunter at 0.36%). It does not say the aggregate constants are validated: the max-ownership
+and salary targets are not equal to the real field and the collision
+benchmark is far from it. The sharper conclusion, the reviewer's: retuning
+the existing aggregate targets cannot plausibly repair the observed player
+ordering, roster construction and concentration failures; the sampler
+family and its mechanics are the larger problem.
 
 It does not say what to change. One slate; the public field, the projections
 and the slate's price structure all vary week to week, and the Showdown
