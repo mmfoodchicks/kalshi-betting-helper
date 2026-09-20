@@ -17722,6 +17722,76 @@ ck("the third artifact's report answers the reviewer's question no on both count
    and "not proposed in detail or fitted here" in _clm_rep and "the best is salary alone" in _clm_rep and "21 times" not in _clm_rep
    and _dt7b.CL_FIELD_COLLISION == 1.2e-7 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_BRING_BACK == 0.35 and _dt7b.CL_STACK_DIST == (0.174, 0.490, 0.289, 0.047))
 
+# ---- Slot-allocation v1: pre-registered, fitted on week 1 only, frozen before the week-2 lock (research/cl_slot.py) ----
+_sl = _json18.load(open(_os.path.join(_root, "research", "data", "cl_slot_frozen.json")))
+_slf = _json18.load(open(_os.path.join(_root, "research", "data", "cl_slot_fit.json")))
+_slr = _json18.load(open(_os.path.join(_root, "research", "data", "cl_slot_week1_reference.json")))
+_sl_rep = " ".join(open(_os.path.join(_root, "research", "reports", "cl_slot.md")).read().split())
+_sl_src = open(_os.path.join(_root, "research", "cl_slot.py")).read()
+_sl_tr = _sl["fit"]["trace"]
+ck("slot-allocation v1 is frozen as pre-registered: beta 0.15, eta 0, delta 3.05371, FLEX shares 0.4251 / 0.3613 / 0.2136; frozen 2026-09-20 03:43:19 UTC, before the 17:00 UTC week-2 lock, stamped clean at the pre-registration commit 00e2943; the grid (7 betas x 6 etas), the delta bracket and steps, 40,000 per evaluation, the search order and tie-break, the seeds, the add-half smoothing and the exclusions are on the file; the trace ran as pre-registered (pass 1 best beta 0.25 / eta 0 at 21.20494 with delta 0; delta 1 2.1123; pass 2 best beta 0.15 / eta 0 at 21.87767; delta 2 3.05371); the week-1 export and the served board are the fit's only data; the week-2 protocol is on the file with no refit; production unchanged",
+   _sl["parameters"] == {"beta": 0.15, "eta": 0.0, "delta": 3.05371, "flex_probs_rb_wr_te": [0.4251, 0.3613, 0.2136]}
+   and _sl["frozen_utc"] == "2026-09-20 03:43:19 UTC" and _sl["frozen_utc"] < "2026-09-20 17:00:00 UTC"
+   and _sl["provenance"]["commit"] == "00e2943" and _sl["provenance"]["dirty"] is False and _sl["family"] == "slot-allocation v1"
+   and _sl["fit"]["search"]["beta_grid"] == [0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5] and _sl["fit"]["search"]["eta_grid"] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
+   and _sl["fit"]["search"]["delta_bracket"] == [0.0, 8.0] and _sl["fit"]["search"]["delta_steps"] == 12 and _sl["fit"]["search"]["fit_n"] == 40000
+   and _sl["fit"]["search"]["seeds"]["fit"] == 20260920 and _sl["fit"]["search"]["seeds"]["realisation"] == 20260913 and _sl["fit"]["search"]["tie_break"] == "smaller beta, then smaller eta"
+   and _sl["fit"]["smoothing"].startswith("add-half") and set(_sl["fit"]["excluded"]) == {"duplication", "collision", "stack rates", "bring-back", "winner lineups", "week-2 information"}
+   and (_sl_tr["best1"]["beta"], _sl_tr["best1"]["eta"], _sl_tr["best1"]["cross_entropy"], _sl_tr["best1"]["delta"]) == (0.25, 0.0, 21.20494, 0.0)
+   and _sl_tr["delta1"]["value"] == 2.1123 and (_sl_tr["best2"]["beta"], _sl_tr["best2"]["eta"], _sl_tr["best2"]["cross_entropy"]) == (0.15, 0.0, 21.87767) and _sl_tr["delta2"]["value"] == 3.05371
+   and len(_sl_tr["pass1"]) == 42 and len(_sl_tr["pass2"]) == 42 and len(_sl_tr["delta1"]["trace"]) == 12 and len(_sl_tr["delta2"]["trace"]) == 12
+   and _sl["fit"]["data"]["week1_export_sha256"] == "16a2aae629ecbd9745a6055bfe42bbcd4e8f9e0dfd6dbbde0a47db99658a6244" and _sl["fit"]["data"]["week1_active_lineups"] == 831028
+   and _sl["fit"]["data"]["served_board_sha256"] == "7c6e3a9f03d36495ef577d86583de9d208db48bb51837f64755744f3eccf372a"
+   and _sl["week2_protocol"]["draft_group"] == 153428 and _sl["week2_protocol"]["lock_utc"] == "2026-09-20 17:00:00 UTC" and _sl["week2_protocol"]["no_refit"] is True
+   and _sl["week2_protocol"]["co_primary"] == ["lower slot-level cross-entropy", "closer salary-used distribution by 1-D Wasserstein distance"]
+   and _sl["production_unchanged"] is True and len(_sl["sampler"]["substitutions"]) == 5
+   and _slf["meta"]["frozen_sha256"] == _slr["meta"]["frozen_sha256"] and _slf["meta"]["in_sample"] is True and _slf["meta"]["fit_free"] is False
+   and "the frozen file is written once and never rewritten" in _sl_src
+   and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_FIELD_COLLISION == 1.2e-7 and _dt7b.CL_STACK_DIST == (0.174, 0.490, 0.289, 0.047))
+try:
+    from research import cl_slot as _CLS2
+    from research import cl_sampler as _CLS2S
+except ImportError:
+    _CLS2 = None
+if _CLS2 is None:
+    ck("(skipped under the no-numpy suite for a stated reason: the frozen-file refusal and the source-identity checks import research.cl_slot, which needs numpy; the structural pins above still run) the frozen file is refused for rewriting and the family's producing code is identical to the freeze commit", True)
+else:
+    try:
+        _CLS2.fit("/nonexistent/standings.csv"); _sl_refused = False
+    except SystemExit as _e_sl:
+        _sl_refused = "written once" in str(_e_sl)
+    _sl_then = _CLS2S._git_show("00e2943", "research/cl_slot.py")
+    _sl_d_then, _sl_d_now = _CLS2S._defs(_sl_then.decode()), _CLS2S._defs(_sl_src)
+    _sl_fns = ("slot_sampler", "sample", "real_slot_shares", "model_slot_shares", "slot_cross_entropy", "quantiles", "wasserstein1", "real_from_export", "grade_field", "_objective", "_grid_pass", "_delta_bisect", "fit", "score")
+    _sl_same = all(n in _sl_d_then and n in _sl_d_now and _sl_d_then[n] == _sl_d_now[n] for n in _sl_fns)
+    _sl_fn, _sl_rc = _CLS2.slot_sampler()
+    ck("the frozen file is refused for rewriting (fit() exits before touching anything when it exists), the family's producing functions are identical by the AST to the freeze commit 00e2943, the five substitutions on the file are the module's, and production's classic_sample still hashes to what the candidate was built on (a later change to the production sampler changes the candidate's meaning and fails here)",
+       _sl_refused and _sl_same and _sl["sampler"]["substitutions"] == [{"from": o, "to": n} for o, n in _CLS2.SUBSTITUTIONS]
+       and _sl_rc["base_sha256"] == _sl["sampler"]["base_sha256"] and _sl_rc["variant_sha256"] == _sl["sampler"]["variant_sha256"]
+       and _CLS2.BETA_GRID == (0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50) and _CLS2.ETA_GRID == (0.0, 0.5, 1.0, 1.5, 2.0, 3.0) and _CLS2.FIT_SEED == 20260920 and _CLS2.REAL_SEED == 20260913)
+_slc, _slq = _slf["graded"]["co_primary"], _slr["graded"]["co_primary"]
+_slo, _slp = _slf["graded"]["out_of_objective"], _slr["graded"]["out_of_objective"]
+ck("in-sample on week 1, both arms at 831,028 on the same pool graded by the same functions: the candidate wins both co-primaries (slot cross-entropy 21.98918 against 23.62979 with the real entropy 19.27491; salary Wasserstein-1 $31.8 against $565.6; mean $49,849.5 against $49,284.8) with the whole cross-entropy gain in the FLEX group (4.96754 against 6.80524) and the TE and DST groups slightly worse (3.48116 against 3.41141; 3.52946 against 3.48033), leaves the chalk where it was (top-50 Spearman 0.3245 against 0.3193; top-20 bias -6.29 against -6.279; Mayer 1.33% against 27.51%; the Cardinals 22.32% against 1.99%), realises the FLEX mix at RB 57.6 / WR 33.73 / TE 8.67 after the tilt against the drawn 42.51 / 36.13 / 21.36, and is more diffuse (distinct-entry collision 3.2e-9 against 1.8e-8 and the real 1.30e-6); the realisation accepted 831,028 of 7,171,786 raw draws with no incomplete row",
+   _slc["slot_cross_entropy"]["total"]["cross_entropy"] == 21.98918 and _slq["slot_cross_entropy"]["total"]["cross_entropy"] == 23.62979 and _slc["slot_cross_entropy"]["total"]["real_entropy"] == 19.27491 == _slq["slot_cross_entropy"]["total"]["real_entropy"]
+   and _slc["salary_wasserstein1"] == 31.8 and _slq["salary_wasserstein1"] == 565.6 and _slc["salary_mean"] == 49849.5 and _slq["salary_mean"] == 49284.8
+   and _slc["slot_cross_entropy"]["FLEX"]["cross_entropy"] == 4.96754 and _slq["slot_cross_entropy"]["FLEX"]["cross_entropy"] == 6.80524
+   and _slc["slot_cross_entropy"]["TE"]["cross_entropy"] == 3.48116 and _slq["slot_cross_entropy"]["TE"]["cross_entropy"] == 3.41141
+   and _slc["slot_cross_entropy"]["DST"]["cross_entropy"] == 3.52946 and _slq["slot_cross_entropy"]["DST"]["cross_entropy"] == 3.48033
+   and _slo["vs_real"]["top50_by_real"]["spearman"] == 0.3245 and _slp["vs_real"]["top50_by_real"]["spearman"] == 0.3193
+   and _slo["vs_real"]["top20_by_real"]["bias_pp"] == -6.29 and _slp["vs_real"]["top20_by_real"]["bias_pp"] == -6.279
+   and _slo["vs_real"]["largest_under"][0]["name"] == "Michael Mayer" and _slo["vs_real"]["largest_under"][0]["sampled_pct"] == 1.33 and _slo["vs_real"]["largest_over"][0]["name"] == "Cardinals" and _slo["vs_real"]["largest_over"][0]["sampled_pct"] == 22.32
+   and _slo["empirical"]["flex_position_pct"] == {"RB": 57.6, "WR": 33.73, "TE": 8.67} and _slp["empirical"]["flex_position_pct"] == {"RB": 29.85, "WR": 70.15}
+   and abs(_slo["empirical"]["collision"]["distinct_pairs"] - 3.229e-09) < 1e-11 and abs(_slp["empirical"]["collision"]["distinct_pairs"] - 1.766e-08) < 1e-10
+   and _slf["realisation"]["receipt"] == {"acceptance_rate": 0.1159, "accepted": 831028, "incomplete_rows": 0, "raw_draws": 7171786, "rejected_by_delta": 6340724, "requested": 831028, "short": False}
+   and _slr["calibration"]["beta"] == 0.198302 and _slr["calibration"]["kappa"] == -1.875 and _slr["meta"]["n"] == 831028 and _slr["meta"]["provenance"]["dirty"] is False)
+ck("the candidate's report states the in-sample verdict before week 2 (wins both co-primaries, leaves the chalk where it was, the gain is the FLEX slot and the salary distribution), that week 2 cannot decide the chalk which this family does not model, the eta-0 outcome and why, the tilt's effect on the FLEX mix, the three pre-registered readings of week 2, that nothing is refitted, and that production is unchanged",
+   "Slot-allocation v1 wins both pre-registered co-primaries against the untouched family on week 1" in _sl_rep
+   and "leaves the chalk ordering exactly where it was" in _sl_rep and "The gain is the FLEX slot and the salary distribution, not who the public owns" in _sl_rep
+   and "it cannot decide the chalk, which this family does not model" in _sl_rep and "the objective chose eta 0 on both passes" in _sl_rep
+   and "moves the realised FLEX mix away from the drawn shares, as the pre-registration said it would" in _sl_rep
+   and "No reading is rescued by refitting week 2" in _sl_rep and "frozen before the week-2 lock" in _sl_rep and "Nothing in production changed" in _sl_rep
+   and "21 times" not in _sl_rep)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
