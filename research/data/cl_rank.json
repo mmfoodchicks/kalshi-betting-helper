@@ -1,0 +1,655 @@
+{
+ "meta": {
+  "dk_avg_matched": 240,
+  "fit_free": true,
+  "inputs": {
+   "draftkings": {
+    "files": {
+     "contests": {
+      "bytes": 1867,
+      "endpoint": "dk.contests + dk.contest_detail (nfl, 151307)",
+      "file": "contests_151307.json",
+      "records": 1,
+      "retrieved_ts": 1789843244,
+      "sha256": "76f0c9e125143debfe7dda162fd2cf7786261b96a4917298357c12c66b1f561f"
+     },
+     "served_board": {
+      "bytes": 975057,
+      "endpoint": "the app's own served classic board (/api/dfs/tourney?sport=nfl&dg=151307), pulled by .github/workflows/error-log.yml into the sim-history branch as errors/tourney-151307.json (commit 35756fc, snapshot 2026-09-13T20:47 UTC), copied byte for byte; the board's own built_ts is 2026-09-13T16:27:24 UTC, 33 minutes before the 17:00 UTC lock",
+      "file": "served_board_151307.json",
+      "records": 240,
+      "retrieved_ts": 1789850047,
+      "sha256": "7c6e3a9f03d36495ef577d86583de9d208db48bb51837f64755744f3eccf372a"
+     },
+     "slate": {
+      "bytes": 56835,
+      "endpoint": "dk.slate_for(nfl, 151307)",
+      "file": "slate_151307.json",
+      "records": 746,
+      "retrieved_ts": 1789843243,
+      "sha256": "3bfe1f19a9aa87dc4789a15abc1f911c2d979800dd3e4f20ccdf1b961fa74acf"
+     }
+    },
+    "normalization_version": 1,
+    "source": "draftkings"
+   },
+   "first_artifact": "research/data/cl_field.json",
+   "served_board": "7c6e3a9f03d36495ef577d86583de9d208db48bb51837f64755744f3eccf372a"
+  },
+  "kappas": [
+   -2.0,
+   -1.0,
+   0.0,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "note": "every member of the enumerated set is reported; none is chosen",
+  "pool": 240,
+  "provenance": {
+   "commit": "87d2784",
+   "data_split": null,
+   "dirty": false,
+   "model": "none: rank correlations of fixed per-player statistics with the real field",
+   "seed": "UNSEEDED",
+   "source_files": 49,
+   "source_sha": "50b1ed45c98ee7ab27d7ee24998ef0ed6e2813e3fad55925c139f8c80e02c72f",
+   "worlds": null
+  },
+  "stage": "Task 8, ranking diagnostic: Spearman of enumerated per-player statistics with the real any-slot ownership on the served pre-lock pool, fit-free",
+  "statistics": [
+   "dk_avg_per_1k",
+   "dk_avg_points",
+   "salary",
+   "sleeper_proj",
+   "sleeper_proj_minus_-1_per_1k",
+   "sleeper_proj_minus_-2_per_1k",
+   "sleeper_proj_minus_0.5_per_1k",
+   "sleeper_proj_minus_0_per_1k",
+   "sleeper_proj_minus_1_per_1k",
+   "sleeper_proj_minus_2_per_1k",
+   "sleeper_proj_per_1k"
+  ]
+ },
+ "real_top20": [
+  {
+   "dk_avg_points": 22.3,
+   "name": "Jahmyr Gibbs",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 31,
+    "dk_avg_points": 3,
+    "sleeper_proj": 1,
+    "sleeper_proj_per_1k": 28
+   },
+   "real_pct": 42.82,
+   "salary": 8000,
+   "sleeper_proj": 22.1
+  },
+  {
+   "dk_avg_points": 21.0,
+   "name": "Ja'Marr Chase",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 35,
+    "dk_avg_points": 5,
+    "sleeper_proj": 4,
+    "sleeper_proj_per_1k": 40
+   },
+   "real_pct": 30.17,
+   "salary": 7800,
+   "sleeper_proj": 20.4
+  },
+  {
+   "dk_avg_points": 5.7,
+   "name": "Michael Mayer",
+   "pos": "TE",
+   "rank_by": {
+    "dk_avg_per_1k": 108,
+    "dk_avg_points": 145,
+    "sleeper_proj": 117,
+    "sleeper_proj_per_1k": 16
+   },
+   "real_pct": 27.51,
+   "salary": 2900,
+   "sleeper_proj": 8.5
+  },
+  {
+   "dk_avg_points": 17.4,
+   "name": "Chris Olave",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 44,
+    "dk_avg_points": 21,
+    "sleeper_proj": 27,
+    "sleeper_proj_per_1k": 68
+   },
+   "real_pct": 24.81,
+   "salary": 6700,
+   "sleeper_proj": 16.1
+  },
+  {
+   "dk_avg_points": 15.4,
+   "name": "Saquon Barkley",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 86,
+    "dk_avg_points": 30,
+    "sleeper_proj": 26,
+    "sleeper_proj_per_1k": 76
+   },
+   "real_pct": 21.07,
+   "salary": 6900,
+   "sleeper_proj": 16.3
+  },
+  {
+   "dk_avg_points": 13.9,
+   "name": "Omarion Hampton",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 101,
+    "dk_avg_points": 42,
+    "sleeper_proj": 30,
+    "sleeper_proj_per_1k": 77
+   },
+   "real_pct": 19.88,
+   "salary": 6800,
+   "sleeper_proj": 16.0
+  },
+  {
+   "dk_avg_points": 20.9,
+   "name": "De'Von Achane",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 17,
+    "dk_avg_points": 7,
+    "sleeper_proj": 21,
+    "sleeper_proj_per_1k": 74
+   },
+   "real_pct": 18.41,
+   "salary": 7000,
+   "sleeper_proj": 16.6
+  },
+  {
+   "dk_avg_points": 19.9,
+   "name": "Amon-Ra St. Brown",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 40,
+    "dk_avg_points": 8,
+    "sleeper_proj": 5,
+    "sleeper_proj_per_1k": 33
+   },
+   "real_pct": 17.84,
+   "salary": 7500,
+   "sleeper_proj": 20.2
+  },
+  {
+   "dk_avg_points": 8.2,
+   "name": "Jaguars",
+   "pos": "DST",
+   "rank_by": {
+    "dk_avg_per_1k": 64,
+    "dk_avg_points": 105,
+    "sleeper_proj": 103,
+    "sleeper_proj_per_1k": 34
+   },
+   "real_pct": 17.83,
+   "salary": 3400,
+   "sleeper_proj": 9.1
+  },
+  {
+   "dk_avg_points": 14.2,
+   "name": "Garrett Wilson",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 57,
+    "dk_avg_points": 39,
+    "sleeper_proj": 43,
+    "sleeper_proj_per_1k": 50
+   },
+   "real_pct": 15.84,
+   "salary": 5800,
+   "sleeper_proj": 14.8
+  },
+  {
+   "dk_avg_points": 11.4,
+   "name": "Ladd McConkey",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 114,
+    "dk_avg_points": 72,
+    "sleeper_proj": 54,
+    "sleeper_proj_per_1k": 95
+   },
+   "real_pct": 15.05,
+   "salary": 5900,
+   "sleeper_proj": 13.2
+  },
+  {
+   "dk_avg_points": 23.2,
+   "name": "Bijan Robinson",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 16,
+    "dk_avg_points": 2,
+    "sleeper_proj": 8,
+    "sleeper_proj_per_1k": 56
+   },
+   "real_pct": 14.49,
+   "salary": 7700,
+   "sleeper_proj": 19.2
+  },
+  {
+   "dk_avg_points": 22.3,
+   "name": "Jonathan Taylor",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 15,
+    "dk_avg_points": 3,
+    "sleeper_proj": 9,
+    "sleeper_proj_per_1k": 43
+   },
+   "real_pct": 13.53,
+   "salary": 7300,
+   "sleeper_proj": 19.0
+  },
+  {
+   "dk_avg_points": 10.7,
+   "name": "Juwan Johnson",
+   "pos": "TE",
+   "rank_by": {
+    "dk_avg_per_1k": 24,
+    "dk_avg_points": 79,
+    "sleeper_proj": 85,
+    "sleeper_proj_per_1k": 23
+   },
+   "real_pct": 13.13,
+   "salary": 3700,
+   "sleeper_proj": 10.4
+  },
+  {
+   "dk_avg_points": 14.3,
+   "name": "Bucky Irving",
+   "pos": "RB",
+   "rank_by": {
+    "dk_avg_per_1k": 52,
+    "dk_avg_points": 37,
+    "sleeper_proj": 44,
+    "sleeper_proj_per_1k": 48
+   },
+   "real_pct": 12.93,
+   "salary": 5700,
+   "sleeper_proj": 14.7
+  },
+  {
+   "dk_avg_points": 11.4,
+   "name": "Colston Loveland",
+   "pos": "TE",
+   "rank_by": {
+    "dk_avg_per_1k": 93,
+    "dk_avg_points": 72,
+    "sleeper_proj": 50,
+    "sleeper_proj_per_1k": 42
+   },
+   "real_pct": 12.9,
+   "salary": 5300,
+   "sleeper_proj": 13.8
+  },
+  {
+   "dk_avg_points": 12.0,
+   "name": "Quentin Johnston",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 47,
+    "dk_avg_points": 63,
+    "sleeper_proj": 73,
+    "sleeper_proj_per_1k": 81
+   },
+   "real_pct": 12.71,
+   "salary": 4700,
+   "sleeper_proj": 11.0
+  },
+  {
+   "dk_avg_points": 12.9,
+   "name": "Tetairoa McMillan",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 96,
+    "dk_avg_points": 51,
+    "sleeper_proj": 42,
+    "sleeper_proj_per_1k": 60
+   },
+   "real_pct": 12.64,
+   "salary": 6100,
+   "sleeper_proj": 14.9
+  },
+  {
+   "dk_avg_points": 12.4,
+   "name": "Justin Jefferson",
+   "pos": "WR",
+   "rank_by": {
+    "dk_avg_per_1k": 133,
+    "dk_avg_points": 58,
+    "sleeper_proj": 16,
+    "sleeper_proj_per_1k": 70
+   },
+   "real_pct": 12.59,
+   "salary": 7300,
+   "sleeper_proj": 17.5
+  },
+  {
+   "dk_avg_points": 2.8,
+   "name": "Jets",
+   "pos": "DST",
+   "rank_by": {
+    "dk_avg_per_1k": 178,
+    "dk_avg_points": 193,
+    "sleeper_proj": 129,
+    "sleeper_proj_per_1k": 12
+   },
+   "real_pct": 12.49,
+   "salary": 2500,
+   "sleeper_proj": 7.8
+  }
+ ],
+ "table": {
+  "dk_avg_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.0
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.3609
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.7646
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.8397
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.6622
+    }
+   },
+   "spearman_all": 0.6895,
+   "spearman_real_top50": -0.0471,
+   "top20_overlap_with_real_top20": 3
+  },
+  "dk_avg_points": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.2504
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.5659
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.8119
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.8674
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.7684
+    }
+   },
+   "spearman_all": 0.7484,
+   "spearman_real_top50": 0.1465,
+   "top20_overlap_with_real_top20": 6
+  },
+  "salary": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.4368
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.6195
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9005
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.8577
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.8114
+    }
+   },
+   "spearman_all": 0.5931,
+   "spearman_real_top50": 0.2956,
+   "top20_overlap_with_real_top20": 10
+  },
+  "sleeper_proj": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7148
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.7836
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9411
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9425
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9294
+    }
+   },
+   "spearman_all": 0.8466,
+   "spearman_real_top50": 0.075,
+   "top20_overlap_with_real_top20": 6
+  },
+  "sleeper_proj_minus_-1_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.6873
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.7587
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9405
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.94
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9133
+    }
+   },
+   "spearman_all": 0.8139,
+   "spearman_real_top50": 0.1187,
+   "top20_overlap_with_real_top20": 7
+  },
+  "sleeper_proj_minus_-2_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.6574
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.7167
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9374
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9391
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9045
+    }
+   },
+   "spearman_all": 0.7841,
+   "spearman_real_top50": 0.1609,
+   "top20_overlap_with_real_top20": 8
+  },
+  "sleeper_proj_minus_0.5_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7289
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.8017
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9377
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9423
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9318
+    }
+   },
+   "spearman_all": 0.8606,
+   "spearman_real_top50": 0.0462,
+   "top20_overlap_with_real_top20": 6
+  },
+  "sleeper_proj_minus_0_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7148
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.7836
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9411
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9425
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9294
+    }
+   },
+   "spearman_all": 0.8466,
+   "spearman_real_top50": 0.075,
+   "top20_overlap_with_real_top20": 6
+  },
+  "sleeper_proj_minus_1_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7429
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.8164
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9395
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9307
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9319
+    }
+   },
+   "spearman_all": 0.8717,
+   "spearman_real_top50": -0.005,
+   "top20_overlap_with_real_top20": 5
+  },
+  "sleeper_proj_minus_2_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7967
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.7308
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9312
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.8785
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9131
+    }
+   },
+   "spearman_all": 0.8479,
+   "spearman_real_top50": -0.0489,
+   "top20_overlap_with_real_top20": 2
+  },
+  "sleeper_proj_per_1k": {
+   "by_position": {
+    "DST": {
+     "players": 24,
+     "spearman": 0.7939
+    },
+    "QB": {
+     "players": 24,
+     "spearman": 0.4817
+    },
+    "RB": {
+     "players": 52,
+     "spearman": 0.9193
+    },
+    "TE": {
+     "players": 53,
+     "spearman": 0.9093
+    },
+    "WR": {
+     "players": 87,
+     "spearman": 0.9201
+    }
+   },
+   "spearman_all": 0.8411,
+   "spearman_real_top50": -0.1395,
+   "top20_overlap_with_real_top20": 2
+  }
+ }
+}

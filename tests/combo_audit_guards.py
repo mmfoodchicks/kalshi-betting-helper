@@ -17673,6 +17673,55 @@ ck("the second artifact's report carries the verdict (the untouched sampler on t
    and "21 times" not in _cls_rep and "measurably off" not in _cls_rep and "curve was right" not in _cls_rep
    and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_FIELD_COLLISION == 1.2e-7 and _dt7b.CL_BRING_BACK == 0.35)
 
+# ---- Task 8, third artifact: the classic family's trade-off surface and the ranking diagnostic (research/cl_mech.py, research/cl_rank.py) ----
+_clm = _json18.load(open(_os.path.join(_root, "research", "data", "cl_mech.json")))
+_clr = _json18.load(open(_os.path.join(_root, "research", "data", "cl_rank.json")))
+_clm_rep = " ".join(open(_os.path.join(_root, "research", "reports", "cl_mech.md")).read().split())
+_clm_src = open(_os.path.join(_root, "research", "cl_mech.py")).read()
+_clm_arms = _clm["arms"]
+_clm_by = {(str(r["kappa"]), r["flex_te"]): r for r in _clm_arms}
+_clm_served = _clm_by[("served", False)]
+_clm_best = max(_clm_arms, key=lambda r: r["top50_spearman"])
+ck("the third artifact is preregistered and clean: ten arms = {served, 0, 0.5, 1, 2} x {no TE at FLEX, TE at FLEX}, one seed 20260913 at 831,028 draws, every arm and the assembly stamped clean at one commit (880e7e3); the FLEX variant is production's classic_sample with exactly three substitutions and both source hashes recorded; the grid arms keep their fixed kappa with beta calibrated to the ownership target alone, the served arm keeps beta 0.194 and kappa -1.9844; no kappa is picked after looking and nothing in production changes",
+   len(_clm_arms) == 10 and _clm["meta"]["preregistered"]["kappa_grid"] == [0.0, 0.5, 1.0, 2.0] and _clm["meta"]["preregistered"]["seed"] == 20260913 and _clm["meta"]["preregistered"]["field_n"] == 831028
+   and set(_clm_by) == {(k, f) for k in ("served", "0.0", "0.5", "1.0", "2.0") for f in (False, True)}
+   and _clm["meta"]["provenance"]["dirty"] is False and _clm["meta"]["provenance"]["commit"] == "880e7e3" == _clm["meta"]["provenance"]["arm_runs_commit"]
+   and all(p["provenance"]["commit"] == "880e7e3" and p["provenance"]["dirty"] is False and p["seed"] == 20260913 and p["sample"]["n"] == 831028 for p in _clm["per_arm"])
+   and len(_clm["meta"]["flex_te_variant"]["substitutions"]) == 3 and _clm["meta"]["flex_te_variant"]["base_sha256"] != _clm["meta"]["flex_te_variant"]["variant_sha256"]
+   and _clm_served["beta"] == 0.194 and _clm_served["kappa_used"] == -1.9844
+   and all(_clm_by[(k, f)]["kappa_used"] == float(k) for k in ("0.0", "0.5", "1.0", "2.0") for f in (False, True))
+   and "no kappa is picked after looking at the field" in _clm["meta"]["preregistered"]["not_done"]
+   and "refusing to build the variant" in _clm_src and _dt7b.CL_FIELD_MAX_OWN == 0.38 and _dt7b.CL_SALARY_USED == 49400.0)
+ck("the surface: the served arm reproduces artifact 2 (top-50 Spearman 0.320, top-20 bias -6.32 pp, salary $49,280, no tight end at FLEX); across every arm the real top-50 Spearman stays within 0.26-0.35 and the top-20 bias within -6.7 to -6.0 pp, the best 0.3432 at kappa 0 with TE at FLEX; every grid kappa lowers the mean salary below the served arm's (kappa 2: $47,718 without and $47,326 with TE at FLEX; at cap 11.11% and 8.74%; sub-$48,000 45.1% and 51.67%) against the public's $49,850 / 49.91% / 0.6%; the TE-at-FLEX arms hold a tight end at FLEX in 32-39% against the public's 21.36% and the others in 0%; Michael Mayer never exceeds 7.02% against 27.51%; every arm's distinct-entry collision is at or below the served 1.9e-8 against the real 1.30e-6; the top-10 overlap never exceeds 4",
+   _near(_clm_served["top50_spearman"], 0.32, 0.001) and _near(_clm_served["top20_bias_pp"], -6.316, 0.01) and _near(_clm_served["salary_mean"], 49280, 1.0) and _clm_served["flex_rb_wr_te_pct"][2] == 0.0
+   and all(0.26 <= r["top50_spearman"] <= 0.35 and -6.7 <= r["top20_bias_pp"] <= -6.0 for r in _clm_arms)
+   and _clm_best["top50_spearman"] == 0.3432 and _clm_best["kappa"] == 0.0 and _clm_best["flex_te"] is True
+   and all(r["salary_mean"] < _clm_served["salary_mean"] for r in _clm_arms if r["kappa"] != "served")
+   and _near(_clm_by[("2.0", False)]["salary_mean"], 47718, 1.0) and _near(_clm_by[("2.0", True)]["salary_mean"], 47326, 1.0)
+   and _clm_by[("2.0", False)]["share_at_cap_pct"] == 11.11 and _clm_by[("2.0", True)]["share_at_cap_pct"] == 8.74
+   and _clm_by[("2.0", False)]["share_le_48000_pct"] == 45.1 and _clm_by[("2.0", True)]["share_le_48000_pct"] == 51.67
+   and all(32.0 <= r["flex_rb_wr_te_pct"][2] <= 39.0 for r in _clm_arms if r["flex_te"]) and all(r["flex_rb_wr_te_pct"][2] == 0.0 for r in _clm_arms if not r["flex_te"])
+   and _near(max(p["ownership_any_slot_pct"]["Michael Mayer"] for p in _clm["per_arm"]), 7.02, 0.01)
+   and all(r["collision_distinct_pairs"] <= 1.9e-8 for r in _clm_arms) and _clm["real"]["collision_distinct_pairs"] > 1.29e-6
+   and all(r["overlap_10_20_50"][0] <= 4 for r in _clm_arms)
+   and _clm["real"]["salary_mean"] == 49849.9 and _clm["real"]["share_at_cap_pct"] == 49.91 and _clm["real"]["share_le_48000_pct"] == 0.6 and _clm["real"]["flex_rb_wr_te_pct"][2] == 21.36)
+_clr_t = _clr["table"]
+_clr_best = max(_clr_t.items(), key=lambda kv: kv[1]["spearman_real_top50"])
+_clr_top = {x["name"]: x["rank_by"] for x in _clr["real_top20"]}
+ck("the ranking diagnostic: no enumerated per-player statistic orders the real top 50 (Spearman over the real top 50 between -0.14 and 0.30, the best salary alone at 0.2956; Sleeper's line 0.075; value per $1,000 -0.1395; DraftKings' average 0.1465), the top-20 overlap never exceeds 10, while Sleeper's line orders players within RB, WR and TE at 0.9411 / 0.9294 / 0.9425; Michael Mayer ranks 117th by projection and 16th by value, the Jets 129th and 12th; all 240 pool players matched to DraftKings' averages; every member of the set is reported and none chosen; provenance clean",
+   all(-0.15 <= v["spearman_real_top50"] <= 0.30 for v in _clr_t.values()) and _clr_best[0] == "salary" and _clr_best[1]["spearman_real_top50"] == 0.2956
+   and _clr_t["sleeper_proj"]["spearman_real_top50"] == 0.075 and _clr_t["sleeper_proj_per_1k"]["spearman_real_top50"] == -0.1395 and _clr_t["dk_avg_points"]["spearman_real_top50"] == 0.1465
+   and max(v["top20_overlap_with_real_top20"] for v in _clr_t.values()) == 10
+   and _clr_t["sleeper_proj"]["by_position"]["RB"]["spearman"] == 0.9411 and _clr_t["sleeper_proj"]["by_position"]["WR"]["spearman"] == 0.9294 and _clr_t["sleeper_proj"]["by_position"]["TE"]["spearman"] == 0.9425
+   and _clr_top["Michael Mayer"]["sleeper_proj"] == 117 and _clr_top["Michael Mayer"]["sleeper_proj_per_1k"] == 16 and _clr_top["Jets"]["sleeper_proj"] == 129 and _clr_top["Jets"]["sleeper_proj_per_1k"] == 12
+   and _clr["meta"]["dk_avg_matched"] == 240 and _clr["meta"]["note"] == "every member of the enumerated set is reported; none is chosen" and _clr["meta"]["provenance"]["dirty"] is False
+   and len(_clr_t) == 11)
+ck("the third artifact's report answers the reviewer's question no on both counts, states that the negative-kappa reading is falsified as the cause of the chalk miss, names the lineup-construction pattern that no per-player ranking reproduces, keeps one seed per arm and one slate visible, proposes no fitted family, and changes nothing in production",
+   "No on both counts" in _clm_rep and "falsified as the cause of the chalk miss" in _clm_rep and "lineup-construction pattern" in _clm_rep
+   and "One seed (20260913) per arm" in _clm_rep and "One slate" in _clm_rep and "no production change follows" in _clm_rep
+   and "not proposed in detail or fitted here" in _clm_rep and "the best is salary alone" in _clm_rep and "21 times" not in _clm_rep
+   and _dt7b.CL_FIELD_COLLISION == 1.2e-7 and _dt7b.CL_DST_VS_OWN_QB == 0.08 and _dt7b.CL_BRING_BACK == 0.35 and _dt7b.CL_STACK_DIST == (0.174, 0.490, 0.289, 0.047))
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")
