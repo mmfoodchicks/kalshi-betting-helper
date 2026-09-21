@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 26931,
-   "built_ts": 1789967756,
+   "age_s": 1123,
+   "built_ts": 1790026727,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153769,
    "entries": 161764,
@@ -15,8 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 35711,
-   "built_ts": 1789958976,
+   "age_s": 7720,
+   "built_ts": 1790020129,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
    "dg": 153449,
    "entries": 88235,
@@ -31,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 47114,
+   "age_s": 80277,
    "built_ts": 1789947573,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
    "dg": 153448,
@@ -44,20 +44,6 @@
     "IND",
     "KC"
    ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 72490,
-   "built_ts": 1789922195,
-   "contest": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 153428,
-   "entries": 6006,
-   "entry_fee": 555.0,
-   "kind": "classic",
-   "label": "Sunday main (13 games)",
-   "n_contests": 2,
-   "starts": "2026-09-20T17:00:00.0000000Z",
-   "teams": null,
    "worlds": 60000
   }
  ],
