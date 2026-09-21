@@ -1,8 +1,24 @@
 {
  "boards": [
   {
-   "age_s": 410,
-   "built_ts": 1789936834,
+   "age_s": 7389,
+   "built_ts": 1789958976,
+   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
+   "dg": 153449,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "LAR vs NYG",
+   "starts": "2026-09-22T00:15:00.0000000Z",
+   "teams": [
+    "LAR",
+    "NYG"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 18793,
+   "built_ts": 1789947573,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
    "dg": 153448,
    "entries": 78431,
@@ -17,7 +33,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 15047,
+   "age_s": 44168,
    "built_ts": 1789922195,
    "contest": "NFL $3M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153428,
@@ -28,22 +44,6 @@
    "n_contests": 2,
    "starts": "2026-09-20T17:00:00.0000000Z",
    "teams": null,
-   "worlds": 60000
-  },
-  {
-   "age_s": 67004,
-   "built_ts": 1789870240,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
-   "dg": 153449,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "LAR vs NYG",
-   "starts": "2026-09-22T00:15:00.0000000Z",
-   "teams": [
-    "LAR",
-    "NYG"
-   ],
    "worlds": 60000
   }
  ],
