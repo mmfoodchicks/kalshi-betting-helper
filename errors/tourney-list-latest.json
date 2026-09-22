@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 1123,
-   "built_ts": 1790026727,
+   "age_s": 5873,
+   "built_ts": 1790046874,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153769,
    "entries": 161764,
@@ -15,8 +15,24 @@
    "worlds": 60000
   },
   {
-   "age_s": 7720,
-   "built_ts": 1790020129,
+   "age_s": 9467,
+   "built_ts": 1790043279,
+   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (ATL @ GB)",
+   "dg": 153775,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "ATL vs GB",
+   "starts": "2026-09-25T00:15:00.0000000Z",
+   "teams": [
+    "ATL",
+    "GB"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 20057,
+   "built_ts": 1790032690,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (NYG @ LAR)",
    "dg": 153449,
    "entries": 88235,
@@ -27,22 +43,6 @@
    "teams": [
     "LAR",
     "NYG"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 80277,
-   "built_ts": 1789947573,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (IND @ KC)",
-   "dg": 153448,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "IND vs KC",
-   "starts": "2026-09-21T00:20:00.0000000Z",
-   "teams": [
-    "IND",
-    "KC"
    ],
    "worlds": 60000
   }
