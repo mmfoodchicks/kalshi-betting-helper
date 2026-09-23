@@ -1,11 +1,11 @@
-# Error ledger — updated 2026-09-22
+# Error ledger — updated 2026-09-23
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 71 | 09-22 19:20 | HTTPError: HTTP Error 403: Forbidden |
-| `CFBT-espn-blocked` | 68 | 09-22 19:20 | _EspnBlocked: ESPN 403: parked 6h |
-| `NFLT-espn-blocked` | 60 | 09-22 19:20 | _EspnBlocked: ESPN 403: parked 6h |
-| `SIM-child` | 52 | 09-21 05:31 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
+| `NFL-espn-fetch` | 72 | 09-23 04:20 | HTTPError: HTTP Error 403: Forbidden |
+| `CFBT-espn-blocked` | 69 | 09-23 04:20 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFLT-espn-blocked` | 63 | 09-23 04:20 | _EspnBlocked: ESPN 403: parked 6h |
+| `SIM-child` | 52 | 09-23 01:07 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `KIDX-markets-fetch` | 15 | 09-22 20:00 | HTTPError: HTTP Error 429: Too Many Requests |
 | `FAN-pit` | 13 | 09-21 23:26 | HTTPError: HTTP Error 403: Forbidden |
 | `KAL-candles` | 13 | 09-21 00:10 | HTTPError: HTTP Error 429: Too Many Requests |
