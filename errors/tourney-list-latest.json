@@ -1,22 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 13664,
-   "built_ts": 1790236492,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 153769,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (13 games)",
-   "n_contests": 2,
-   "starts": "2026-09-27T17:00:00.0000000Z",
-   "teams": null,
-   "worlds": 60000
-  },
-  {
-   "age_s": 53792,
-   "built_ts": 1790196365,
+   "age_s": 608,
+   "built_ts": 1790269092,
    "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (ATL @ GB)",
    "dg": 153775,
    "entries": 88235,
@@ -28,6 +14,20 @@
     "ATL",
     "GB"
    ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 33209,
+   "built_ts": 1790236492,
+   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 153769,
+   "entries": 161764,
+   "entry_fee": 20.0,
+   "kind": "classic",
+   "label": "Sunday main (13 games)",
+   "n_contests": 2,
+   "starts": "2026-09-27T17:00:00.0000000Z",
+   "teams": null,
    "worlds": 60000
   }
  ],
