@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 26137,
-   "built_ts": 1790199084,
+   "age_s": 13664,
+   "built_ts": 1790236492,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153769,
    "entries": 161764,
@@ -15,7 +15,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 28855,
+   "age_s": 53792,
    "built_ts": 1790196365,
    "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (ATL @ GB)",
    "dg": 153775,
