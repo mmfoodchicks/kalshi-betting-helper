@@ -1,7 +1,21 @@
 {
  "boards": [
   {
-   "age_s": 31524,
+   "age_s": 885,
+   "built_ts": 1790355224,
+   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 153769,
+   "entries": 5505,
+   "entry_fee": 555.0,
+   "kind": "classic",
+   "label": "Sunday main (13 games)",
+   "n_contests": 2,
+   "starts": "2026-09-27T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  },
+  {
+   "age_s": 50736,
    "built_ts": 1790305374,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (PHI @ CHI)",
    "dg": 153790,
@@ -17,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 33658,
+   "age_s": 52870,
    "built_ts": 1790303240,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LAR @ DEN)",
    "dg": 153789,
@@ -33,7 +47,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 43999,
+   "age_s": 63211,
    "built_ts": 1790292899,
    "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (ATL @ GB)",
    "dg": 153775,
@@ -46,20 +60,6 @@
     "ATL",
     "GB"
    ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 51283,
-   "built_ts": 1790285615,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 153769,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (13 games)",
-   "n_contests": 2,
-   "starts": "2026-09-27T17:00:00.0000000Z",
-   "teams": null,
    "worlds": 60000
   }
  ],
