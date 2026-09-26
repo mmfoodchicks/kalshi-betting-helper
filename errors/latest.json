@@ -2,6 +2,105 @@
  "errors": [
   {
    "code": "CFBT-espn-blocked",
+   "id": 987,
+   "last_ts": 1790432133.459393,
+   "msg": "_EspnBlocked: ESPN 403: parked 6h",
+   "n": 1,
+   "path": null,
+   "pid": 13515,
+   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
+   "ts": 1790432133.459393
+  },
+  {
+   "code": "NFLT-espn-blocked",
+   "id": 986,
+   "last_ts": 1790432132.373198,
+   "msg": "_EspnBlocked: ESPN 403: parked 6h",
+   "n": 1,
+   "path": null,
+   "pid": 13515,
+   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
+   "ts": 1790432132.373198
+  },
+  {
+   "code": "NFL-espn-fetch",
+   "id": 985,
+   "last_ts": 1790432131.253234,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 1,
+   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+   "pid": 13515,
+   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1790432131.253234
+  },
+  {
+   "code": "KAL-candles",
+   "id": 984,
+   "last_ts": 1790428328.602504,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": null,
+   "pid": 11981,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi.py\", line 254, in build\n    d = _get_json(f\"{BASE}/series/{series}/markets/{ticker}/candlesticks\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1790428328.602504
+  },
+  {
+   "code": "FAN-pit",
+   "id": 982,
+   "last_ts": 1790428259.6530213,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 2,
+   "path": null,
+   "pid": 12582,
+   "tb": "Traceback (most recent call last):\n  File \"/app/app.py\", line 490, in build\n    sb = racing._get_json(\n         ^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1790427940.480947
+  },
+  {
+   "code": "KIDX-markets-fetch",
+   "id": 983,
+   "last_ts": 1790428075.1439102,
+   "msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "n": 1,
+   "path": "KXMLBSB",
+   "pid": 11981,
+   "tb": "Traceback (most recent call last):\n  File \"/app/kalshi_mlb.py\", line 98, in _fetch\n    d = kalshi._get_json(url)\n        ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 429: Too Many Requests\n",
+   "ts": 1790428075.1439102
+  },
+  {
+   "code": "CFBT-espn-blocked",
+   "id": 981,
+   "last_ts": 1790422571.8246427,
+   "msg": "_EspnBlocked: ESPN 403: parked 6h",
+   "n": 1,
+   "path": null,
+   "pid": 11656,
+   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
+   "ts": 1790422571.8246427
+  },
+  {
+   "code": "NFLT-espn-blocked",
+   "id": 980,
+   "last_ts": 1790422551.761556,
+   "msg": "_EspnBlocked: ESPN 403: parked 6h",
+   "n": 1,
+   "path": null,
+   "pid": 11656,
+   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
+   "ts": 1790422551.761556
+  },
+  {
+   "code": "NFL-espn-fetch",
+   "id": 979,
+   "last_ts": 1790422550.7856243,
+   "msg": "HTTPError: HTTP Error 403: Forbidden",
+   "n": 1,
+   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+   "pid": 11656,
+   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
+   "ts": 1790422550.7856243
+  },
+  {
+   "code": "CFBT-espn-blocked",
    "id": 978,
    "last_ts": 1790413045.698581,
    "msg": "_EspnBlocked: ESPN 403: parked 6h",
@@ -2815,255 +2914,57 @@
    "pid": 7,
    "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
    "ts": 1789836651.6822786
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 722,
-   "last_ts": 1789832651.892033,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789832651.892033
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 721,
-   "last_ts": 1789832650.9893558,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789832650.9893558
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 720,
-   "last_ts": 1789832650.435185,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789832650.435185
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 719,
-   "last_ts": 1789828250.0096722,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789828250.0096722
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 718,
-   "last_ts": 1789828249.264344,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789828249.264344
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 717,
-   "last_ts": 1789828248.563686,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789828248.563686
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 716,
-   "last_ts": 1789827310.9733546,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789827310.9733546
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 715,
-   "last_ts": 1789827308.7568684,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789827308.7568684
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 714,
-   "last_ts": 1789827308.1644728,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 9,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789827308.1644728
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 713,
-   "last_ts": 1789824126.2590113,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789824126.2590113
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 712,
-   "last_ts": 1789824125.5119727,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789824125.5119727
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 711,
-   "last_ts": 1789824124.9378095,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789824124.9378095
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 710,
-   "last_ts": 1789821573.461173,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789821573.461173
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 709,
-   "last_ts": 1789821572.6702354,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789821572.6702354
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 708,
-   "last_ts": 1789821571.7511182,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 7,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789821571.7511182
-  },
-  {
-   "code": "CFBT-espn-blocked",
-   "id": 707,
-   "last_ts": 1789817601.5499644,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 4046,
-   "tb": "Traceback (most recent call last):\n  File \"/app/cfb_track.py\", line 135, in _finals_for\n    d = kalshi._get_json(f\"{cfb._SITE}/scoreboard?dates={date.replace('-', '')}\"\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/cfb_track.py\", line 348, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/cfb_track.py\", line 140, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\ncfb_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789817601.5499644
-  },
-  {
-   "code": "NFLT-espn-blocked",
-   "id": 706,
-   "last_ts": 1789817600.7933664,
-   "msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "n": 1,
-   "path": null,
-   "pid": 4046,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_track.py\", line 157, in _finals_for\n    d = kalshi._get_json(f\"{_SCOREBOARD}?dates={date.replace('-', '')}\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/kalshi.py\", line 67, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/app/nfl_track.py\", line 247, in grade_due\n    finals.update(_finals_for(day, memo))\n                  ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/nfl_track.py\", line 161, in _finals_for\n    raise _EspnBlocked(f\"ESPN {e.code}: parked {_ESPN_COOLOFF_S // 3600}h\")\nnfl_track._EspnBlocked: ESPN 403: parked 6h\n",
-   "ts": 1789817600.7933664
-  },
-  {
-   "code": "NFL-espn-fetch",
-   "id": 705,
-   "last_ts": 1789817599.8887208,
-   "msg": "HTTPError: HTTP Error 403: Forbidden",
-   "n": 1,
-   "path": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-   "pid": 4046,
-   "tb": "Traceback (most recent call last):\n  File \"/app/nfl_live.py\", line 48, in _get\n    return racing._get_json(url, timeout=15)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/racing.py\", line 49, in _get_json\n    with urllib.request.urlopen(req, timeout=timeout) as resp:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 403: Forbidden\n",
-   "ts": 1789817599.8887208
   }
  ],
- "generated_at": 1790421727.7483191,
+ "generated_at": 1790439695.1997306,
  "summary": [
   {
    "code": "NFL-espn-fetch",
-   "first_ts": 1789817599.8887208,
+   "first_ts": 1789836651.6822786,
    "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1790413044.046722,
-   "n": 89,
-   "variants": 80
+   "last_ts": 1790432131.253234,
+   "n": 85,
+   "variants": 76
   },
   {
    "code": "CFBT-espn-blocked",
-   "first_ts": 1789817601.5499644,
+   "first_ts": 1789836653.3410752,
    "last_msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "last_ts": 1790413045.698581,
-   "n": 82,
-   "variants": 80
+   "last_ts": 1790432133.459393,
+   "n": 78,
+   "variants": 76
   },
   {
    "code": "NFLT-espn-blocked",
-   "first_ts": 1789817600.7933664,
+   "first_ts": 1789836652.6182785,
    "last_msg": "_EspnBlocked: ESPN 403: parked 6h",
-   "last_ts": 1790413045.136669,
-   "n": 82,
-   "variants": 80
-  },
-  {
-   "code": "KIDX-markets-fetch",
-   "first_ts": 1789842198.7995756,
-   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1790308843.7885027,
-   "n": 16,
-   "variants": 10
+   "last_ts": 1790432132.373198,
+   "n": 78,
+   "variants": 76
   },
   {
    "code": "FAN-pit",
    "first_ts": 1789842913.7722235,
    "last_msg": "HTTPError: HTTP Error 403: Forbidden",
-   "last_ts": 1790369751.3569462,
-   "n": 15,
-   "variants": 8
+   "last_ts": 1790428259.6530213,
+   "n": 17,
+   "variants": 9
+  },
+  {
+   "code": "KIDX-markets-fetch",
+   "first_ts": 1789842198.7995756,
+   "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
+   "last_ts": 1790428075.1439102,
+   "n": 17,
+   "variants": 11
   },
   {
    "code": "KAL-candles",
    "first_ts": 1789843190.984533,
    "last_msg": "HTTPError: HTTP Error 429: Too Many Requests",
-   "last_ts": 1789949428.34563,
-   "n": 12,
-   "variants": 3
+   "last_ts": 1790428328.602504,
+   "n": 13,
+   "variants": 4
   },
   {
    "code": "KNFL-markets-fetch",
