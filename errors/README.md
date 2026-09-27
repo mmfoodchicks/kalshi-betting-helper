@@ -2,9 +2,9 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 84 | 09-27 03:44 | HTTPError: HTTP Error 403: Forbidden |
-| `NFLT-espn-blocked` | 76 | 09-27 03:44 | _EspnBlocked: ESPN 403: parked 6h |
-| `CFBT-espn-blocked` | 75 | 09-27 03:44 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 83 | 09-27 08:35 | HTTPError: HTTP Error 403: Forbidden |
+| `NFLT-espn-blocked` | 75 | 09-27 08:35 | _EspnBlocked: ESPN 403: parked 6h |
+| `CFBT-espn-blocked` | 74 | 09-27 08:35 | _EspnBlocked: ESPN 403: parked 6h |
 | `FAN-pit` | 20 | 09-27 01:32 | HTTPError: HTTP Error 403: Forbidden |
 | `SIM-child` | 9 | 09-26 21:02 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `KAL-candles` | 8 | 09-27 01:01 | HTTPError: HTTP Error 429: Too Many Requests |
