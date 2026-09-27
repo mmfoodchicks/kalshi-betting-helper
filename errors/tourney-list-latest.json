@@ -1,12 +1,12 @@
 {
  "boards": [
   {
-   "age_s": 1104,
-   "built_ts": 1790455782,
+   "age_s": 21363,
+   "built_ts": 1790464813,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 153769,
-   "entries": 5505,
-   "entry_fee": 555.0,
+   "entries": 161764,
+   "entry_fee": 20.0,
    "kind": "classic",
    "label": "Sunday main (13 games)",
    "n_contests": 2,
@@ -15,8 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 4056,
-   "built_ts": 1790452830,
+   "age_s": 24142,
+   "built_ts": 1790462034,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (PHI @ CHI)",
    "dg": 153790,
    "entries": 88235,
@@ -31,8 +31,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 47967,
-   "built_ts": 1790408919,
+   "age_s": 27021,
+   "built_ts": 1790459154,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LAR @ DEN)",
    "dg": 153789,
    "entries": 78431,
