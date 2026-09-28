@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 28367,
-   "built_ts": 1790575062,
+   "age_s": 3041,
+   "built_ts": 1790634240,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 154078,
    "entries": 161764,
@@ -15,24 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 48281,
-   "built_ts": 1790555149,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LAR @ DEN)",
-   "dg": 153789,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "DEN vs LAR",
-   "starts": "2026-09-28T00:20:00.0000000Z",
-   "teams": [
-    "DEN",
-    "LAR"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 51083,
-   "built_ts": 1790552347,
+   "age_s": 14341,
+   "built_ts": 1790622940,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (PHI @ CHI)",
    "dg": 153790,
    "entries": 88235,
@@ -47,17 +31,19 @@
    "worlds": 60000
   },
   {
-   "age_s": 76101,
-   "built_ts": 1790527329,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 153769,
-   "entries": 5505,
-   "entry_fee": 555.0,
-   "kind": "classic",
-   "label": "Sunday main (13 games)",
-   "n_contests": 2,
-   "starts": "2026-09-27T17:00:00.0000000Z",
-   "teams": null,
+   "age_s": 82133,
+   "built_ts": 1790555149,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LAR @ DEN)",
+   "dg": 153789,
+   "entries": 78431,
+   "entry_fee": 15.0,
+   "kind": "showdown",
+   "label": "DEN vs LAR",
+   "starts": "2026-09-28T00:20:00.0000000Z",
+   "teams": [
+    "DEN",
+    "LAR"
+   ],
    "worlds": 60000
   }
  ],
