@@ -1,8 +1,24 @@
 {
  "boards": [
   {
-   "age_s": 3041,
-   "built_ts": 1790634240,
+   "age_s": 10157,
+   "built_ts": 1790650335,
+   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (PIT @ CLE)",
+   "dg": 154084,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "CLE vs PIT",
+   "starts": "2026-10-02T00:15:00.0000000Z",
+   "teams": [
+    "CLE",
+    "PIT"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 13591,
+   "built_ts": 1790646902,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 154078,
    "entries": 161764,
@@ -15,34 +31,18 @@
    "worlds": 60000
   },
   {
-   "age_s": 14341,
-   "built_ts": 1790622940,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (PHI @ CHI)",
+   "age_s": 16760,
+   "built_ts": 1790643732,
+   "contest": "NFL Showdown $600K Wildcat [$150K to 1st] (PHI @ CHI)",
    "dg": 153790,
-   "entries": 88235,
-   "entry_fee": 20.0,
+   "entries": 2002,
+   "entry_fee": 333.0,
    "kind": "showdown",
    "label": "CHI vs PHI",
    "starts": "2026-09-29T00:15:00.0000000Z",
    "teams": [
     "CHI",
     "PHI"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 82133,
-   "built_ts": 1790555149,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (LAR @ DEN)",
-   "dg": 153789,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "DEN vs LAR",
-   "starts": "2026-09-28T00:20:00.0000000Z",
-   "teams": [
-    "DEN",
-    "LAR"
    ],
    "worlds": 60000
   }
