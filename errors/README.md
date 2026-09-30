@@ -2,9 +2,9 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 101 | 09-30 05:09 | HTTPError: HTTP Error 403: Forbidden |
-| `NFLT-espn-blocked` | 78 | 09-30 05:09 | _EspnBlocked: ESPN 403: parked 6h |
-| `CFBT-espn-blocked` | 76 | 09-30 05:10 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 100 | 09-30 11:34 | HTTPError: HTTP Error 403: Forbidden |
+| `NFLT-espn-blocked` | 77 | 09-30 11:34 | _EspnBlocked: ESPN 403: parked 6h |
+| `CFBT-espn-blocked` | 75 | 09-30 11:34 | _EspnBlocked: ESPN 403: parked 6h |
 | `KIDX-empty` | 30 | 09-28 01:54 | index build failed with no usable fallback |
 | `FAN-pit` | 26 | 09-30 01:01 | HTTPError: HTTP Error 403: Forbidden |
 | `SIM-child` | 10 | 09-30 05:24 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
