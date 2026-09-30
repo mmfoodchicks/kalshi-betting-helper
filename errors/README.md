@@ -2,12 +2,12 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 100 | 09-30 11:34 | HTTPError: HTTP Error 403: Forbidden |
-| `NFLT-espn-blocked` | 77 | 09-30 11:34 | _EspnBlocked: ESPN 403: parked 6h |
-| `CFBT-espn-blocked` | 75 | 09-30 11:34 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 98 | 09-30 19:27 | HTTPError: HTTP Error 403: Forbidden |
+| `NFLT-espn-blocked` | 75 | 09-30 19:27 | _EspnBlocked: ESPN 403: parked 6h |
+| `CFBT-espn-blocked` | 73 | 09-30 19:27 | _EspnBlocked: ESPN 403: parked 6h |
 | `KIDX-empty` | 30 | 09-28 01:54 | index build failed with no usable fallback |
 | `FAN-pit` | 26 | 09-30 01:01 | HTTPError: HTTP Error 403: Forbidden |
-| `SIM-child` | 10 | 09-30 05:24 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
+| `SIM-child` | 18 | 09-30 20:51 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
 | `KAL-candles` | 5 | 09-30 01:01 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 5 | 09-27 01:00 | HTTPError: HTTP Error 429: Too Many Requests |
 | `MEM-high` | 5 | 09-30 00:03 | 1682/2048MB: 1148.1MB pid54736 /usr/local/bin/python3.11 /usr/local/bin/gunicor; 237.2MB pid54318 /usr/local/bin/python3 |
