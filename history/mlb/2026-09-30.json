@@ -1,43 +1,42 @@
 {
- "date": "2026-09-29",
+ "date": "2026-09-30",
  "events": {},
- "generated_at": 1790693541.6709926,
+ "generated_at": 1790745936.088477,
  "moves": {
   "108": 0.0,
   "109": 0.0,
   "110": 0.0,
-  "111": -0.53,
-  "112": 0.97,
+  "111": 0.25,
+  "112": 0.68,
   "113": 0.0,
-  "114": -0.82,
+  "114": -4.58,
   "115": 0.0,
   "116": 0.0,
-  "117": -0.5,
+  "117": 0.23,
   "118": 0.0,
-  "119": 2.83,
+  "119": -18.48,
   "120": 0.0,
   "121": 0.0,
   "133": 0.0,
   "134": 0.0,
-  "135": -0.35,
+  "135": 4.82,
   "136": 0.0,
   "137": 0.0,
   "138": 0.0,
-  "139": -0.46,
+  "139": -0.15,
   "140": 0.0,
   "141": 0.0,
   "142": 0.0,
-  "143": -1.28,
-  "144": 0.35,
-  "145": -0.83,
+  "143": 3.85,
+  "144": 4.8,
+  "145": 2.78,
   "146": 0.0,
-  "147": 0.75,
-  "158": -0.15
+  "147": 7.58,
+  "158": -1.77
  },
  "n": 4000,
- "n_games_left": 12,
- "prev_date": "2026-09-28",
- "roster_shed": true,
+ "n_games_left": 8,
+ "prev_date": "2026-09-29",
  "season": "2026",
  "teams": {
   "108": {
@@ -81,24 +80,24 @@
    "division": 201,
    "league": 103,
    "losses": 75,
-   "mean_wins": 88.6,
+   "mean_wins": 88.0,
    "name": "Red Sox",
-   "pennant": 25.27,
+   "pennant": 22.52,
    "playoffs": 100.0,
    "wins": 87,
-   "ws": 11.5
+   "ws": 11.75
   },
   "112": {
    "div": 0.0,
    "division": 205,
    "league": 104,
    "losses": 73,
-   "mean_wins": 90.4,
+   "mean_wins": 89.9,
    "name": "Cubs",
-   "pennant": 7.4,
+   "pennant": 9.53,
    "playoffs": 100.0,
    "wins": 89,
-   "ws": 3.85
+   "ws": 4.53
   },
   "113": {
    "div": 0.0,
@@ -113,16 +112,16 @@
    "ws": 0.0
   },
   "114": {
-   "div": 26.32,
+   "div": 48.05,
    "division": 202,
    "league": 103,
    "losses": 77,
    "mean_wins": 85.0,
    "name": "Guardians",
-   "pennant": 25.9,
+   "pennant": 16.95,
    "playoffs": 100.0,
    "wins": 85,
-   "ws": 10.38
+   "ws": 5.8
   },
   "115": {
    "div": 0.0,
@@ -153,12 +152,12 @@
    "division": 200,
    "league": 103,
    "losses": 81,
-   "mean_wins": 82.4,
+   "mean_wins": 82.0,
    "name": "Astros",
-   "pennant": 4.4,
+   "pennant": 5.03,
    "playoffs": 100.0,
    "wins": 81,
-   "ws": 1.07
+   "ws": 1.3
   },
   "118": {
    "div": 0.0,
@@ -179,10 +178,10 @@
    "losses": 62,
    "mean_wins": 100.0,
    "name": "Dodgers",
-   "pennant": 56.27,
+   "pennant": 36.17,
    "playoffs": 100.0,
    "wins": 100,
-   "ws": 41.25
+   "ws": 22.77
   },
   "120": {
    "div": 0.0,
@@ -237,12 +236,12 @@
    "division": 203,
    "league": 104,
    "losses": 71,
-   "mean_wins": 92.6,
+   "mean_wins": 92.1,
    "name": "Padres",
-   "pennant": 7.62,
+   "pennant": 14.32,
    "playoffs": 100.0,
    "wins": 91,
-   "ws": 3.9
+   "ws": 8.72
   },
   "136": {
    "div": 0.0,
@@ -287,10 +286,10 @@
    "losses": 64,
    "mean_wins": 98.0,
    "name": "Rays",
-   "pennant": 11.22,
+   "pennant": 10.68,
    "playoffs": 100.0,
    "wins": 98,
-   "ws": 2.77
+   "ws": 2.62
   },
   "140": {
    "div": 0.0,
@@ -333,36 +332,36 @@
    "division": 204,
    "league": 104,
    "losses": 74,
-   "mean_wins": 89.6,
+   "mean_wins": 89.0,
    "name": "Phillies",
-   "pennant": 9.15,
+   "pennant": 14.2,
    "playoffs": 100.0,
    "wins": 88,
-   "ws": 4.1
+   "ws": 7.95
   },
   "144": {
    "div": 100.0,
    "division": 204,
    "league": 104,
    "losses": 68,
-   "mean_wins": 95.4,
+   "mean_wins": 95.0,
    "name": "Braves",
-   "pennant": 2.27,
+   "pennant": 11.07,
    "playoffs": 100.0,
    "wins": 94,
-   "ws": 0.8
+   "ws": 5.6
   },
   "145": {
-   "div": 73.67,
+   "div": 51.95,
    "division": 202,
    "league": 103,
    "losses": 78,
-   "mean_wins": 85.6,
+   "mean_wins": 85.0,
    "name": "White Sox",
-   "pennant": 13.28,
+   "pennant": 17.02,
    "playoffs": 100.0,
    "wins": 84,
-   "ws": 3.25
+   "ws": 6.03
   },
   "146": {
    "div": 0.0,
@@ -381,12 +380,12 @@
    "division": 201,
    "league": 103,
    "losses": 68,
-   "mean_wins": 94.4,
+   "mean_wins": 94.0,
    "name": "Yankees",
-   "pennant": 19.93,
+   "pennant": 27.8,
    "playoffs": 100.0,
    "wins": 93,
-   "ws": 8.8
+   "ws": 16.38
   },
   "158": {
    "div": 100.0,
@@ -395,10 +394,10 @@
    "losses": 59,
    "mean_wins": 103.0,
    "name": "Brewers",
-   "pennant": 17.27,
+   "pennant": 14.7,
    "playoffs": 100.0,
    "wins": 103,
-   "ws": 8.32
+   "ws": 6.55
   }
  }
 }
