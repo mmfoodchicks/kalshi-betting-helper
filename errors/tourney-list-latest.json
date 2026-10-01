@@ -1,9 +1,23 @@
 {
  "boards": [
   {
-   "age_s": 66199,
-   "built_ts": 1790740213,
-   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (PIT @ CLE)",
+   "age_s": 17617,
+   "built_ts": 1790816114,
+   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 154078,
+   "entries": 161764,
+   "entry_fee": 20.0,
+   "kind": "classic",
+   "label": "Sunday main (12 games)",
+   "n_contests": 3,
+   "starts": "2026-10-04T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  },
+  {
+   "age_s": 20733,
+   "built_ts": 1790812998,
+   "contest": "NFL $1.5M Thursday Night Showdown [$500K to 1st] (PIT @ CLE)",
    "dg": 154084,
    "entries": 88235,
    "entry_fee": 20.0,
@@ -14,20 +28,6 @@
     "CLE",
     "PIT"
    ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 79417,
-   "built_ts": 1790726995,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 154078,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (12 games)",
-   "n_contests": 3,
-   "starts": "2026-10-04T17:00:00.0000000Z",
-   "teams": null,
    "worlds": 60000
   }
  ],
