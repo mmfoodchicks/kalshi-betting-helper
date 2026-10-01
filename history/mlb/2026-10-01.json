@@ -1,0 +1,3157 @@
+{
+ "attribution": {
+  "batches": 5,
+  "per_batch": 200,
+  "priced": 6,
+  "seasons": 1000,
+  "skipped": 327
+ },
+ "date": "2026-10-01",
+ "events": {
+  "108": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rivero",
+    "pid": 665861,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kerry",
+    "pid": 695049,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Campero",
+    "pid": 672569,
+    "pos": "OF",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Schanuel",
+    "pid": 694384,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Joyce",
+    "pid": 690829,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Natera Jr.",
+    "pid": 696519,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Dana",
+    "pid": 702674,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Paris",
+    "pid": 677347,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Klassen",
+    "pid": 691946,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Aldegheri",
+    "pid": 691951,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Alvarez Jr.",
+    "pid": 805373,
+    "pos": "SS",
+    "to": "A"
+   }
+  ],
+  "109": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Strowd",
+    "pid": 669704,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Burnes",
+    "pid": 669203,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ray",
+    "pid": 691009,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bratt",
+    "pid": 683352,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Troy",
+    "pid": 694371,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Carrillo",
+    "pid": 672629,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Groover",
+    "pid": 694410,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Burgos",
+    "pid": 686228,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Drake",
+    "pid": 684442,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Jameson",
+    "pid": 686753,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Walston",
+    "pid": 686796,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "110": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hiraldo",
+    "pid": 682274,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Alexander",
+    "pid": 677942,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Gibson",
+    "pid": 694346,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Robert Jr.",
+    "pid": 673357,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Povich",
+    "pid": 700249,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Foster",
+    "pid": 671382,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Holliday",
+    "pid": 702616,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "De Le\u00f3n",
+    "pid": 801725,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D7",
+    "kind": "il_out",
+    "name": "Basallo",
+    "pid": 694212,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Heuer",
+    "pid": 676051,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Trimble",
+    "pid": 701655,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Zulueta",
+    "pid": 691172,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "111": [
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Campbell, K",
+    "pid": 692225,
+    "pos": "OF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Mor\u00e1n",
+    "pid": 663558,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Samaniego, T",
+    "pid": 701719,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Gonzalez, R",
+    "pid": 663853,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Crochet",
+    "pid": 676979,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Yoshida",
+    "pid": 807799,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Seigler",
+    "pid": 678011,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Mead",
+    "pid": 678554,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Anthony",
+    "pid": 701350,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Houck",
+    "pid": 656557,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Cheng, T",
+    "pid": 691907,
+    "pos": "SS",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Sandoval",
+    "pid": 663776,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "status",
+    "name": "Slaten",
+    "pid": 686580,
+    "pos": "P",
+    "to": "D60"
+   }
+  ],
+  "112": [
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Murray Jr.",
+    "pid": 681230,
+    "pos": "3B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Garrett, B",
+    "pid": 666129,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Thielbar",
+    "pid": 573204,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Aguiar",
+    "pid": 687924,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Roberts",
+    "pid": 681799,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Wicks",
+    "pid": 696136,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Thornton, T",
+    "pid": 663423,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Alc\u00e1ntara",
+    "pid": 682634,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Dean",
+    "pid": 681909,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Murray",
+    "pid": 681151,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "FME",
+    "kind": "status",
+    "name": "Cabrera, E",
+    "pid": 665795,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Triantos",
+    "pid": 701649,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Ferguson, T",
+    "pid": 621053,
+    "pos": "P",
+    "to": "40M"
+   }
+  ],
+  "113": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Santillan",
+    "pid": 663574,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Solesky",
+    "pid": 686678,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Maxwell",
+    "pid": 687209,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Garcia, J",
+    "pid": 670062,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Marte, N",
+    "pid": 682622,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Johnson",
+    "pid": 671155,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Arroyo",
+    "pid": 695490,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Burns, Ch",
+    "pid": 695505,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Franco, J",
+    "pid": 683742,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Balcazar",
+    "pid": 699114,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Petty",
+    "pid": 695534,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "114": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Manzardo",
+    "pid": 700932,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Walters",
+    "pid": 689958,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Watson",
+    "pid": 696135,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Perkins, B",
+    "pid": 663368,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ingle",
+    "pid": 694876,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Holderman",
+    "pid": 670059,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Allen, L.T.",
+    "pid": 671106,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Hoskins",
+    "pid": 656555,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Aleman",
+    "pid": 680916,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "G\u00f3mez, Y",
+    "pid": 691414,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kayfus",
+    "pid": 692216,
+    "pos": "1B",
+    "to": "A"
+   }
+  ],
+  "115": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Criswell, J",
+    "pid": 676105,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Castellano",
+    "pid": 682769,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Sullivan, S",
+    "pid": 807743,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ritter",
+    "pid": 690022,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Shook",
+    "pid": 669298,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Harris, H",
+    "pid": 802686,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Casta\u00f1o",
+    "pid": 680604,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Stevens",
+    "pid": 677060,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hughes",
+    "pid": 687312,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Adams, B",
+    "pid": 687060,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Thompson, S",
+    "pid": 694514,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Castro, W",
+    "pid": 650489,
+    "pos": "2B",
+    "to": "A"
+   }
+  ],
+  "116": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hanifee",
+    "pid": 669724,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Keith",
+    "pid": 690993,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Julks",
+    "pid": 667452,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hurter",
+    "pid": 676428,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Miller, Ja",
+    "pid": 805725,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "De Jesus",
+    "pid": 646241,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "D\u00edaz, Y",
+    "pid": 700270,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Sears, A",
+    "pid": 808825,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Melton",
+    "pid": 675512,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Finnegan",
+    "pid": 640448,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Liranzo",
+    "pid": 699073,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Gipson-Long",
+    "pid": 687830,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "117": [
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Cole",
+    "pid": 805904,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Price",
+    "pid": 805672,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Barrosa",
+    "pid": 678489,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Loperfido, J",
+    "pid": 694388,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Dezenzo",
+    "pid": 701305,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Okert",
+    "pid": 595345,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Pecko",
+    "pid": 814490,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Wade Jr.",
+    "pid": 664774,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Santa",
+    "pid": 695001,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Teng",
+    "pid": 678906,
+    "pos": "P",
+    "to": "40M"
+   }
+  ],
+  "118": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Zobac",
+    "pid": 686632,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Black",
+    "pid": 696131,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Way",
+    "pid": 694360,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bergert",
+    "pid": 686701,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kudrna",
+    "pid": 695667,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Spence",
+    "pid": 687765,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "McGee",
+    "pid": 668834,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "PL",
+    "kind": "status",
+    "name": "Loftin",
+    "pid": 679845,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "BRV",
+    "kind": "status",
+    "name": "Kimbrel",
+    "pid": 518886,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Duran, C",
+    "pid": 679922,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Gonsolin",
+    "pid": 664062,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "119": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kim, Hy",
+    "pid": 808975,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.2,
+    "delta_se": 0.94,
+    "frm": "D15",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Henriquez, E",
+    "pid": 683618,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "batches": 5,
+    "delta_pp": -10.1,
+    "delta_se": 2.46,
+    "frm": "RM",
+    "kind": "called_up",
+    "measured_on": 1000,
+    "name": "Kopp",
+    "pid": 691947,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "120": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Ribalta",
+    "pid": 687377,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Simpson",
+    "pid": 688692,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Nicolas",
+    "pid": 693312,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kent, J",
+    "pid": 800600,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bird",
+    "pid": 656234,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Palmquist",
+    "pid": 687223,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Perales",
+    "pid": 691384,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Yean",
+    "pid": 678868,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kent, Z",
+    "pid": 687849,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Beeter",
+    "pid": 690925,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Pinckney",
+    "pid": 687605,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Schultz",
+    "pid": 687606,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "121": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Weisenburger",
+    "pid": 674073,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Senger",
+    "pid": 663584,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Pintaro",
+    "pid": 702752,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "NYR",
+    "kind": "status",
+    "name": "Abner",
+    "pid": 691769,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Scott",
+    "pid": 681035,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Weston",
+    "pid": 687721,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D7",
+    "kind": "il_out",
+    "name": "Young, J",
+    "pid": 676724,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Stock",
+    "pid": 476594,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Duarte",
+    "pid": 650960,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ross",
+    "pid": 697811,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Cairo",
+    "pid": 686551,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Wagaman",
+    "pid": 676572,
+    "pos": "1B",
+    "to": "A"
+   }
+  ],
+  "133": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Baez",
+    "pid": 692013,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Morales",
+    "pid": 806960,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rodr\u00edguez, Jo",
+    "pid": 671286,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Jump",
+    "pid": 695611,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Muncy",
+    "pid": 691777,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "status",
+    "name": "Soderstrom",
+    "pid": 691016,
+    "pos": "LF",
+    "to": "D60"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hernaiz",
+    "pid": 687231,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Estes",
+    "pid": 683155,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Juenger",
+    "pid": 696522,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Nett",
+    "pid": 804556,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rock",
+    "pid": 697812,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bigge",
+    "pid": 685801,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Morris",
+    "pid": 695034,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "134": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Brannigan",
+    "pid": 687394,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Ashcraft, B",
+    "pid": 677952,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Yorke",
+    "pid": 694377,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Harrington",
+    "pid": 802419,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Valdez, Es",
+    "pid": 699013,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Mattson",
+    "pid": 676755,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Sisk",
+    "pid": 681895,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Garcia, Jh",
+    "pid": 691373,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Curtis",
+    "pid": 694753,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Callihan, T",
+    "pid": 682997,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Dotel",
+    "pid": 696062,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "135": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Andujar",
+    "pid": 609280,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "McCoy",
+    "pid": 669200,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Hawkins",
+    "pid": 678184,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Peralta, W",
+    "pid": 593974,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Sears, J",
+    "pid": 676664,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Stratton, H",
+    "pid": 676702,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Brito",
+    "pid": 666745,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Canning",
+    "pid": 656288,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Estrada, J",
+    "pid": 669093,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Wagner",
+    "pid": 695238,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "D60",
+    "kind": "il_out",
+    "name": "Musgrove",
+    "pid": 605397,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Workman",
+    "pid": 669398,
+    "pos": "3B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "V\u00e1squez, R",
+    "pid": 681190,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "il_in",
+    "name": "Dur\u00e1n",
+    "pid": 660710,
+    "pos": "C",
+    "to": "D60"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Song",
+    "pid": 823550,
+    "pos": "2B",
+    "to": "40M"
+   }
+  ],
+  "136": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Hancock",
+    "pid": 676106,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D7",
+    "kind": "il_out",
+    "name": "Donovan",
+    "pid": 680977,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bliss",
+    "pid": 669208,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Simpson",
+    "pid": 681006,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Wilcox",
+    "pid": 677961,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Rodden",
+    "pid": 801126,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ortiz",
+    "pid": 673662,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "MacIver",
+    "pid": 680862,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Watson",
+    "pid": 681890,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Mu\u00f1oz, A",
+    "pid": 662253,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Wisdom",
+    "pid": 621550,
+    "pos": "3B",
+    "to": "A"
+   }
+  ],
+  "137": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Lee, J",
+    "pid": 808982,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Sanmartin",
+    "pid": 665665,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Brubaker",
+    "pid": 664141,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Mendez",
+    "pid": 700280,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Webb, L",
+    "pid": 657277,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Adames",
+    "pid": 642715,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Walker, R",
+    "pid": 676254,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Perdomo",
+    "pid": 702885,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D7",
+    "kind": "il_out",
+    "name": "Eldridge",
+    "pid": 805811,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Marte, Y",
+    "pid": 805074,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Furman",
+    "pid": 801501,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Morgan",
+    "pid": 681439,
+    "pos": "C",
+    "to": "A"
+   }
+  ],
+  "138": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Jordan",
+    "pid": 691458,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Svanson",
+    "pid": 694335,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Roby",
+    "pid": 694358,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Hampton",
+    "pid": 694633,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "B\u00e1ez",
+    "pid": 695491,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Fernandez",
+    "pid": 681676,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Hjerpe",
+    "pid": 687309,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Pereira",
+    "pid": 677592,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Fitts",
+    "pid": 690916,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Crooks",
+    "pid": 699625,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Dobbins",
+    "pid": 690928,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "139": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "McClanahan",
+    "pid": 663556,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Cleavinger",
+    "pid": 664076,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Areinamo",
+    "pid": 699130,
+    "pos": "2B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Madrigal",
+    "pid": 663611,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Williams, C",
+    "pid": 700246,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Wells, T",
+    "pid": 669330,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Boyle",
+    "pid": 671212,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Piper",
+    "pid": 700652,
+    "pos": "C",
+    "to": "A"
+   }
+  ],
+  "140": [
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Ota\u00f1ez",
+    "pid": 671305,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Higashioka",
+    "pid": 543309,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Lopez",
+    "pid": 699214,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Peoples",
+    "pid": 687239,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "O'Hoppe",
+    "pid": 681351,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Jung, Jo",
+    "pid": 673962,
+    "pos": "3B",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Davalillo",
+    "pid": 699314,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Macko",
+    "pid": 671936,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Teodo",
+    "pid": 693713,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Santos",
+    "pid": 692437,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Collyer",
+    "pid": 686560,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Pederson",
+    "pid": 592626,
+    "pos": "DH",
+    "to": "A"
+   }
+  ],
+  "141": [
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Martin Jr.",
+    "pid": 657675,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Bieber",
+    "pid": 669456,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Pi\u00f1ango",
+    "pid": 682818,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Tiedemann",
+    "pid": 694357,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rodr\u00edguez, Jo",
+    "pid": 692064,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Van Eyk",
+    "pid": 669310,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Taillon",
+    "pid": 592791,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Cease",
+    "pid": 656302,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Harrison",
+    "pid": 687288,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Ross",
+    "pid": 676566,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Ur\u00edas, L",
+    "pid": 649966,
+    "pos": "2B",
+    "to": "A"
+   }
+  ],
+  "142": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Rojas, K",
+    "pid": 696070,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Wallner",
+    "pid": 670242,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Anderson",
+    "pid": 681252,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Larnach",
+    "pid": 663616,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Gray, T",
+    "pid": 656484,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Raya",
+    "pid": 694397,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Buxton",
+    "pid": 621439,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Hoffman, J",
+    "pid": 656546,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Orze",
+    "pid": 679358,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Gonzalez, G",
+    "pid": 694224,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Mendez",
+    "pid": 694230,
+    "pos": "OF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Acton",
+    "pid": 670183,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "143": [
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Misner",
+    "pid": 670224,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Raley, B",
+    "pid": 548384,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Lazar",
+    "pid": 676661,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Hoffmann, A",
+    "pid": 694851,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Arraez",
+    "pid": 650333,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Rangel",
+    "pid": 660604,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Kemp",
+    "pid": 805249,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Chace",
+    "pid": 691330,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Thomas, C",
+    "pid": 687515,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Holman",
+    "pid": 680880,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Rincones Jr.",
+    "pid": 687282,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Cortes",
+    "pid": 641482,
+    "pos": "P",
+    "to": "40M"
+   }
+  ],
+  "144": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Farmer, K",
+    "pid": 571657,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Elder",
+    "pid": 693821,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Ritchie",
+    "pid": 702275,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "kind": "added",
+    "name": "Tellez",
+    "pid": 642133,
+    "pos": "1B",
+    "to": "A"
+   },
+   {
+    "kind": "added",
+    "name": "Williams, L",
+    "pid": 663897,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Thomas, L",
+    "pid": 657041,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Smith-Shawver",
+    "pid": 700363,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "L\u00f3pez, R",
+    "pid": 625643,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "removed",
+    "name": "Hern\u00e1ndez, E",
+    "pid": 622694,
+    "pos": "P"
+   }
+  ],
+  "145": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Romo",
+    "pid": 691011,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Nishida",
+    "pid": 807747,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "McDougal",
+    "pid": 701780,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Smith, S",
+    "pid": 681343,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Bart",
+    "pid": 663698,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Davis",
+    "pid": 699823,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Quero",
+    "pid": 700337,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Perez, J",
+    "pid": 678577,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Schweitzer",
+    "pid": 805326,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Cannon",
+    "pid": 686563,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Richards, T",
+    "pid": 670950,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "PL",
+    "kind": "status",
+    "name": "Rogers",
+    "pid": 668670,
+    "pos": "C",
+    "to": "A"
+   }
+  ],
+  "146": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Bidois",
+    "pid": 684049,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Fairbanks",
+    "pid": 664126,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Brzykcy",
+    "pid": 694350,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Caissie",
+    "pid": 683357,
+    "pos": "RF",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Meyer",
+    "pid": 676974,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "White, J",
+    "pid": 687985,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Driscoll",
+    "pid": 686482,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Bender",
+    "pid": 669622,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Monteverde",
+    "pid": 687287,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Acosta",
+    "pid": 691185,
+    "pos": "SS",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Zuber",
+    "pid": 676604,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "147": [
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Escarra",
+    "pid": 641555,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "De los Santos",
+    "pid": 660787,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Fulmer",
+    "pid": 605242,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.5,
+    "delta_se": 1.46,
+    "frm": "D10",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Judge",
+    "pid": 592450,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 0.0,
+    "delta_se": 0.0,
+    "frm": "D15",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Weathers",
+    "pid": 677960,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Rodr\u00edguez, E",
+    "pid": 695684,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Chivilli",
+    "pid": 683409,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 1.7,
+    "delta_se": 1.08,
+    "frm": "D60",
+    "kind": "il_out",
+    "measured_on": 1000,
+    "name": "Stanton",
+    "pid": 519317,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Hill, T",
+    "pid": 657612,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "D10",
+    "kind": "il_out",
+    "name": "Grisham",
+    "pid": 663757,
+    "pos": "CF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Dom\u00ednguez",
+    "pid": 691176,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 3.0,
+    "delta_se": 2.19,
+    "frm": "A",
+    "kind": "removed",
+    "measured_on": 1000,
+    "name": "Cornielle",
+    "pid": 529017,
+    "pos": "P"
+   }
+  ],
+  "158": [
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Black",
+    "pid": 672012,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Crow",
+    "pid": 689441,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Baddoo",
+    "pid": 668731,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Quero",
+    "pid": 691620,
+    "pos": "C",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Sproat",
+    "pid": 687075,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "called_up",
+    "name": "Koenig",
+    "pid": 657649,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "D15",
+    "kind": "il_out",
+    "name": "Anderson, G",
+    "pid": 681982,
+    "pos": "P",
+    "to": "A"
+   }
+  ]
+ },
+ "generated_at": 1790828671.7819812,
+ "moves": {
+  "108": 0.0,
+  "109": 0.0,
+  "110": 0.0,
+  "111": 0.3,
+  "112": 1.38,
+  "113": 0.0,
+  "114": -4.55,
+  "115": 0.0,
+  "116": 0.0,
+  "117": 0.09,
+  "118": 0.0,
+  "119": -15.93,
+  "120": 0.0,
+  "121": 0.0,
+  "133": 0.0,
+  "134": 0.0,
+  "135": 4.91,
+  "136": 0.0,
+  "137": 0.0,
+  "138": 0.0,
+  "139": -0.1,
+  "140": 0.0,
+  "141": 0.0,
+  "142": 0.0,
+  "143": 2.9,
+  "144": 5.28,
+  "145": 1.9,
+  "146": 0.0,
+  "147": 7.48,
+  "158": -3.65
+ },
+ "n": 4000,
+ "n_games_left": 6,
+ "prev_date": "2026-09-28",
+ "season": "2026",
+ "teams": {
+  "108": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 100,
+   "mean_wins": 62.0,
+   "name": "Angels",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 62,
+   "ws": 0.0
+  },
+  "109": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 76,
+   "mean_wins": 86.0,
+   "name": "D-backs",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 86,
+   "ws": 0.0
+  },
+  "110": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 82,
+   "mean_wins": 79.0,
+   "name": "Orioles",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 79,
+   "ws": 0.0
+  },
+  "111": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 75,
+   "mean_wins": 87.0,
+   "name": "Red Sox",
+   "pennant": 22.12,
+   "playoffs": 100.0,
+   "wins": 87,
+   "ws": 11.65
+  },
+  "112": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 73,
+   "mean_wins": 89.5,
+   "name": "Cubs",
+   "pennant": 9.75,
+   "playoffs": 100.0,
+   "wins": 89,
+   "ws": 4.83
+  },
+  "113": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 87,
+   "mean_wins": 75.0,
+   "name": "Reds",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 75,
+   "ws": 0.0
+  },
+  "114": {
+   "div": 74.62,
+   "division": 202,
+   "league": 103,
+   "losses": 77,
+   "mean_wins": 86.0,
+   "name": "Guardians",
+   "pennant": 18.15,
+   "playoffs": 100.0,
+   "wins": 85,
+   "ws": 6.65
+  },
+  "115": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 104,
+   "mean_wins": 58.0,
+   "name": "Rockies",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 58,
+   "ws": 0.0
+  },
+  "116": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 86,
+   "mean_wins": 76.0,
+   "name": "Tigers",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 76,
+   "ws": 0.0
+  },
+  "117": {
+   "div": 100.0,
+   "division": 200,
+   "league": 103,
+   "losses": 81,
+   "mean_wins": 81.0,
+   "name": "Astros",
+   "pennant": 5.55,
+   "playoffs": 100.0,
+   "wins": 81,
+   "ws": 1.27
+  },
+  "118": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 93,
+   "mean_wins": 69.0,
+   "name": "Royals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 69,
+   "ws": 0.0
+  },
+  "119": {
+   "div": 100.0,
+   "division": 203,
+   "league": 104,
+   "losses": 62,
+   "mean_wins": 100.0,
+   "name": "Dodgers",
+   "pennant": 36.23,
+   "playoffs": 100.0,
+   "wins": 100,
+   "ws": 22.77
+  },
+  "120": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Nationals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "121": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 88,
+   "mean_wins": 74.0,
+   "name": "Mets",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 74,
+   "ws": 0.0
+  },
+  "133": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 98,
+   "mean_wins": 64.0,
+   "name": "Athletics",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 64,
+   "ws": 0.0
+  },
+  "134": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 80,
+   "mean_wins": 82.0,
+   "name": "Pirates",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 82,
+   "ws": 0.0
+  },
+  "135": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 71,
+   "mean_wins": 91.5,
+   "name": "Padres",
+   "pennant": 14.82,
+   "playoffs": 100.0,
+   "wins": 91,
+   "ws": 8.53
+  },
+  "136": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 86,
+   "mean_wins": 76.0,
+   "name": "Mariners",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 76,
+   "ws": 0.0
+  },
+  "137": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 97,
+   "mean_wins": 65.0,
+   "name": "Giants",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 65,
+   "ws": 0.0
+  },
+  "138": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Cardinals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "139": {
+   "div": 100.0,
+   "division": 201,
+   "league": 103,
+   "losses": 64,
+   "mean_wins": 98.9,
+   "name": "Rays",
+   "pennant": 9.78,
+   "playoffs": 100.0,
+   "wins": 98,
+   "ws": 2.52
+  },
+  "140": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 82,
+   "mean_wins": 80.0,
+   "name": "Rangers",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 80,
+   "ws": 0.0
+  },
+  "141": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 83,
+   "mean_wins": 79.0,
+   "name": "Blue Jays",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 79,
+   "ws": 0.0
+  },
+  "142": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Twins",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "143": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 74,
+   "mean_wins": 88.3,
+   "name": "Phillies",
+   "pennant": 14.97,
+   "playoffs": 100.0,
+   "wins": 88,
+   "ws": 8.55
+  },
+  "144": {
+   "div": 100.0,
+   "division": 204,
+   "league": 104,
+   "losses": 68,
+   "mean_wins": 94.7,
+   "name": "Braves",
+   "pennant": 10.9,
+   "playoffs": 100.0,
+   "wins": 94,
+   "ws": 5.85
+  },
+  "145": {
+   "div": 25.38,
+   "division": 202,
+   "league": 103,
+   "losses": 78,
+   "mean_wins": 85.0,
+   "name": "White Sox",
+   "pennant": 15.47,
+   "playoffs": 100.0,
+   "wins": 84,
+   "ws": 5.28
+  },
+  "146": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 82,
+   "mean_wins": 80.0,
+   "name": "Marlins",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 80,
+   "ws": 0.0
+  },
+  "147": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 68,
+   "mean_wins": 94.1,
+   "name": "Yankees",
+   "pennant": 28.93,
+   "playoffs": 100.0,
+   "wins": 93,
+   "ws": 16.8
+  },
+  "158": {
+   "div": 100.0,
+   "division": 205,
+   "league": 104,
+   "losses": 59,
+   "mean_wins": 103.0,
+   "name": "Brewers",
+   "pennant": 13.32,
+   "playoffs": 100.0,
+   "wins": 103,
+   "ws": 5.3
+  }
+ }
+}
