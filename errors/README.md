@@ -2,9 +2,9 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `NFL-espn-fetch` | 70 | 10-01 13:29 | HTTPError: HTTP Error 403: Forbidden |
-| `NFLT-espn-blocked` | 47 | 10-01 13:29 | _EspnBlocked: ESPN 403: parked 6h |
-| `CFBT-espn-blocked` | 46 | 10-01 13:29 | _EspnBlocked: ESPN 403: parked 6h |
+| `NFL-espn-fetch` | 68 | 10-01 13:29 | HTTPError: HTTP Error 403: Forbidden |
+| `NFLT-espn-blocked` | 45 | 10-01 13:29 | _EspnBlocked: ESPN 403: parked 6h |
+| `CFBT-espn-blocked` | 44 | 10-01 13:29 | _EspnBlocked: ESPN 403: parked 6h |
 | `KIDX-empty` | 30 | 09-28 01:54 | index build failed with no usable fallback |
 | `FAN-pit` | 17 | 09-30 22:59 | HTTPError: HTTP Error 403: Forbidden |
 | `KNFL-markets-fetch` | 15 | 10-03 16:33 | HTTPError: HTTP Error 429: Too Many Requests |
