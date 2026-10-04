@@ -1,38 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 737,
-   "built_ts": 1791061201,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
-   "dg": 154078,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (12 games)",
-   "n_contests": 3,
-   "starts": "2026-10-04T17:00:00.0000000Z",
-   "teams": null,
-   "worlds": 60000
-  },
-  {
-   "age_s": 9711,
-   "built_ts": 1791052227,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DET @ CAR)",
-   "dg": 154098,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "CAR vs DET",
-   "starts": "2026-10-05T00:20:00.0000000Z",
-   "teams": [
-    "CAR",
-    "DET"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 66135,
-   "built_ts": 1790995803,
+   "age_s": 8125,
+   "built_ts": 1791084845,
    "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (ATL @ NO)",
    "dg": 154099,
    "entries": 88235,
@@ -47,18 +17,32 @@
    "worlds": 60000
   },
   {
-   "age_s": 68401,
-   "built_ts": 1790993537,
-   "contest": "NFL Showdown $400K Showdown Special [$100K to 1st] (IND vs WAS)",
-   "dg": 154085,
-   "entries": 26143,
-   "entry_fee": 18.0,
+   "age_s": 11467,
+   "built_ts": 1791081503,
+   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
+   "dg": 154078,
+   "entries": 161764,
+   "entry_fee": 20.0,
+   "kind": "classic",
+   "label": "Sunday main (12 games)",
+   "n_contests": 3,
+   "starts": "2026-10-04T17:00:00.0000000Z",
+   "teams": null,
+   "worlds": 60000
+  },
+  {
+   "age_s": 29093,
+   "built_ts": 1791063877,
+   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DET @ CAR)",
+   "dg": 154098,
+   "entries": 78431,
+   "entry_fee": 15.0,
    "kind": "showdown",
-   "label": "IND vs WAS",
-   "starts": "2026-10-04T13:30:00.0000000Z",
+   "label": "CAR vs DET",
+   "starts": "2026-10-05T00:20:00.0000000Z",
    "teams": [
-    "IND",
-    "WAS"
+    "CAR",
+    "DET"
    ],
    "worlds": 60000
   }
