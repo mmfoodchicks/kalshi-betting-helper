@@ -1,0 +1,894 @@
+{
+ "attribution": {
+  "batches": 5,
+  "per_batch": 200,
+  "priced": 6,
+  "seasons": 1000,
+  "skipped": 49
+ },
+ "date": "2026-10-04",
+ "events": {
+  "114": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Manzardo",
+    "pid": 700932,
+    "pos": "1B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Walters",
+    "pid": 689958,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Cecconi",
+    "pid": 677944,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Peterson",
+    "pid": 804926,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Watson",
+    "pid": 696135,
+    "pos": "RF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Perkins, B",
+    "pid": 663368,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Ingle",
+    "pid": 694876,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Holderman",
+    "pid": 670059,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Allen, L.T.",
+    "pid": 671106,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Hoskins",
+    "pid": 656555,
+    "pos": "1B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Aleman",
+    "pid": 680916,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "G\u00f3mez, Y",
+    "pid": 691414,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Kayfus",
+    "pid": 692216,
+    "pos": "1B",
+    "to": "40M"
+   }
+  ],
+  "119": [
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 0.7,
+    "delta_se": 0.94,
+    "frm": "RM",
+    "kind": "called_up",
+    "measured_on": 1000,
+    "name": "De Paula, J",
+    "pid": 800543,
+    "pos": "DH",
+    "to": "A"
+   },
+   {
+    "frm": "RM",
+    "kind": "status",
+    "name": "Freeland, A",
+    "pid": 690976,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": 0.0,
+    "delta_se": 0.0,
+    "frm": "A",
+    "kind": "status",
+    "measured_on": 1000,
+    "name": "Wrobleski",
+    "pid": 680736,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Call",
+    "pid": 669743,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Alfonzo",
+    "pid": 672613,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Rushing",
+    "pid": 687221,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 9.7,
+    "delta_se": 1.36,
+    "frm": "A",
+    "kind": "status",
+    "measured_on": 1000,
+    "name": "Gervase",
+    "pid": 801434,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_note": "no measurable effect",
+    "delta_pp": -0.9,
+    "delta_se": 0.37,
+    "frm": "A",
+    "kind": "status",
+    "measured_on": 1000,
+    "name": "Dreyer",
+    "pid": 676263,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 15.4,
+    "delta_se": 1.43,
+    "frm": "A",
+    "kind": "status",
+    "measured_on": 1000,
+    "name": "Miller, B",
+    "pid": 676272,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "batches": 5,
+    "delta_pp": 10.6,
+    "delta_se": 2.36,
+    "frm": "A",
+    "kind": "status",
+    "measured_on": 1000,
+    "name": "Kopp",
+    "pid": 691947,
+    "pos": "P",
+    "to": "40M"
+   }
+  ],
+  "135": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Buehler",
+    "pid": 621111,
+    "pos": "P",
+    "to": "PL"
+   },
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "V\u00e1squez, R",
+    "pid": 681190,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "139": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "McClanahan",
+    "pid": 663556,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Rodr\u00edguez, M",
+    "pid": 655889,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Hopkins",
+    "pid": 811315,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Legumina",
+    "pid": 668984,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Areinamo",
+    "pid": 699130,
+    "pos": "2B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Madrigal",
+    "pid": 663611,
+    "pos": "3B",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Williams, C",
+    "pid": 700246,
+    "pos": "SS",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Boyle",
+    "pid": 671212,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Piper",
+    "pid": 700652,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Scholtens",
+    "pid": 669947,
+    "pos": "P",
+    "to": "40M"
+   }
+  ],
+  "144": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Smith, D",
+    "pid": 642086,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "Ritchie",
+    "pid": 702275,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Williams, L",
+    "pid": 663897,
+    "pos": "SS",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Keirsey Jr.",
+    "pid": 680577,
+    "pos": "CF",
+    "to": "40M"
+   },
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "Thomas, L",
+    "pid": 657041,
+    "pos": "LF",
+    "to": "A"
+   },
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "Smith-Shawver",
+    "pid": 700363,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "145": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Brazob\u00e1n",
+    "pid": 623211,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "Davis",
+    "pid": 699823,
+    "pos": "P",
+    "to": "A"
+   }
+  ],
+  "147": [
+   {
+    "frm": "40M",
+    "kind": "status",
+    "name": "Weathers",
+    "pid": 677960,
+    "pos": "P",
+    "to": "A"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Rosario, A",
+    "pid": 642708,
+    "pos": "3B",
+    "to": "40M"
+   }
+  ],
+  "158": [
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Black",
+    "pid": 672012,
+    "pos": "DH",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Crow",
+    "pid": 689441,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Lockridge",
+    "pid": 663604,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Baddoo",
+    "pid": 668731,
+    "pos": "LF",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Wilson, B",
+    "pid": 669060,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Quero",
+    "pid": 691620,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Naylor, B",
+    "pid": 666310,
+    "pos": "C",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Sproat",
+    "pid": 687075,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Koenig",
+    "pid": 657649,
+    "pos": "P",
+    "to": "40M"
+   },
+   {
+    "frm": "A",
+    "kind": "status",
+    "name": "Anderson, G",
+    "pid": 681982,
+    "pos": "P",
+    "to": "40M"
+   }
+  ]
+ },
+ "generated_at": 1791088035.1236095,
+ "moves": {
+  "108": 0.0,
+  "109": 0.0,
+  "110": 0.0,
+  "111": -5.08,
+  "112": -0.35,
+  "113": 0.0,
+  "114": 1.85,
+  "115": 0.0,
+  "116": 0.0,
+  "117": -0.74,
+  "118": 0.0,
+  "119": 24.91,
+  "120": 0.0,
+  "121": 0.0,
+  "133": 0.0,
+  "134": 0.0,
+  "135": -6.22,
+  "136": 0.0,
+  "137": 0.0,
+  "138": 0.0,
+  "139": 5.75,
+  "140": 0.0,
+  "141": 0.0,
+  "142": 0.0,
+  "143": -6.14,
+  "144": -4.6,
+  "145": -4.56,
+  "146": 0.0,
+  "147": -8.1,
+  "158": 3.3
+ },
+ "n": 4000,
+ "n_games_left": 4,
+ "prev_date": "2026-10-03",
+ "season": "2026",
+ "teams": {
+  "108": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 100,
+   "mean_wins": 62.0,
+   "name": "Angels",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 62,
+   "ws": 0.0
+  },
+  "109": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 76,
+   "mean_wins": 86.0,
+   "name": "D-backs",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 86,
+   "ws": 0.0
+  },
+  "110": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 82,
+   "mean_wins": 79.0,
+   "name": "Orioles",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 79,
+   "ws": 0.0
+  },
+  "111": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 75,
+   "mean_wins": 87.0,
+   "name": "Red Sox",
+   "pennant": 11.05,
+   "playoffs": 100.0,
+   "wins": 87,
+   "ws": 3.1
+  },
+  "112": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 73,
+   "mean_wins": 89.0,
+   "name": "Cubs",
+   "pennant": 0.25,
+   "playoffs": 100.0,
+   "wins": 89,
+   "ws": 0.03
+  },
+  "113": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 87,
+   "mean_wins": 75.0,
+   "name": "Reds",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 75,
+   "ws": 0.0
+  },
+  "114": {
+   "div": 80.95,
+   "division": 202,
+   "league": 103,
+   "losses": 77,
+   "mean_wins": 85.6,
+   "name": "Guardians",
+   "pennant": 27.1,
+   "playoffs": 100.0,
+   "wins": 85,
+   "ws": 9.25
+  },
+  "115": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 104,
+   "mean_wins": 58.0,
+   "name": "Rockies",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 58,
+   "ws": 0.0
+  },
+  "116": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 86,
+   "mean_wins": 76.0,
+   "name": "Tigers",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 76,
+   "ws": 0.0
+  },
+  "117": {
+   "div": 100.0,
+   "division": 200,
+   "league": 103,
+   "losses": 81,
+   "mean_wins": 81.0,
+   "name": "Astros",
+   "pennant": 2.58,
+   "playoffs": 100.0,
+   "wins": 81,
+   "ws": 0.28
+  },
+  "118": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 93,
+   "mean_wins": 69.0,
+   "name": "Royals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 69,
+   "ws": 0.0
+  },
+  "119": {
+   "div": 100.0,
+   "division": 203,
+   "league": 104,
+   "losses": 62,
+   "mean_wins": 100.8,
+   "name": "Dodgers",
+   "pennant": 60.52,
+   "playoffs": 100.0,
+   "wins": 100,
+   "ws": 47.23
+  },
+  "120": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Nationals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "121": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 88,
+   "mean_wins": 74.0,
+   "name": "Mets",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 74,
+   "ws": 0.0
+  },
+  "133": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 98,
+   "mean_wins": 64.0,
+   "name": "Athletics",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 64,
+   "ws": 0.0
+  },
+  "134": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 80,
+   "mean_wins": 82.0,
+   "name": "Pirates",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 82,
+   "ws": 0.0
+  },
+  "135": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 71,
+   "mean_wins": 91.5,
+   "name": "Padres",
+   "pennant": 9.3,
+   "playoffs": 100.0,
+   "wins": 91,
+   "ws": 4.75
+  },
+  "136": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 86,
+   "mean_wins": 76.0,
+   "name": "Mariners",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 76,
+   "ws": 0.0
+  },
+  "137": {
+   "div": 0.0,
+   "division": 203,
+   "league": 104,
+   "losses": 97,
+   "mean_wins": 65.0,
+   "name": "Giants",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 65,
+   "ws": 0.0
+  },
+  "138": {
+   "div": 0.0,
+   "division": 205,
+   "league": 104,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Cardinals",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "139": {
+   "div": 100.0,
+   "division": 201,
+   "league": 103,
+   "losses": 64,
+   "mean_wins": 98.3,
+   "name": "Rays",
+   "pennant": 28.6,
+   "playoffs": 100.0,
+   "wins": 98,
+   "ws": 8.55
+  },
+  "140": {
+   "div": 0.0,
+   "division": 200,
+   "league": 103,
+   "losses": 82,
+   "mean_wins": 80.0,
+   "name": "Rangers",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 80,
+   "ws": 0.0
+  },
+  "141": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 83,
+   "mean_wins": 79.0,
+   "name": "Blue Jays",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 79,
+   "ws": 0.0
+  },
+  "142": {
+   "div": 0.0,
+   "division": 202,
+   "league": 103,
+   "losses": 85,
+   "mean_wins": 77.0,
+   "name": "Twins",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 77,
+   "ws": 0.0
+  },
+  "143": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 74,
+   "mean_wins": 88.0,
+   "name": "Phillies",
+   "pennant": 7.47,
+   "playoffs": 100.0,
+   "wins": 88,
+   "ws": 4.08
+  },
+  "144": {
+   "div": 100.0,
+   "division": 204,
+   "league": 104,
+   "losses": 68,
+   "mean_wins": 94.2,
+   "name": "Braves",
+   "pennant": 3.83,
+   "playoffs": 100.0,
+   "wins": 94,
+   "ws": 1.85
+  },
+  "145": {
+   "div": 19.05,
+   "division": 202,
+   "league": 103,
+   "losses": 78,
+   "mean_wins": 84.4,
+   "name": "White Sox",
+   "pennant": 8.62,
+   "playoffs": 100.0,
+   "wins": 84,
+   "ws": 1.27
+  },
+  "146": {
+   "div": 0.0,
+   "division": 204,
+   "league": 104,
+   "losses": 82,
+   "mean_wins": 80.0,
+   "name": "Marlins",
+   "pennant": 0.0,
+   "playoffs": 0.0,
+   "wins": 80,
+   "ws": 0.0
+  },
+  "147": {
+   "div": 0.0,
+   "division": 201,
+   "league": 103,
+   "losses": 68,
+   "mean_wins": 93.7,
+   "name": "Yankees",
+   "pennant": 22.05,
+   "playoffs": 100.0,
+   "wins": 93,
+   "ws": 8.9
+  },
+  "158": {
+   "div": 100.0,
+   "division": 205,
+   "league": 104,
+   "losses": 59,
+   "mean_wins": 103.5,
+   "name": "Brewers",
+   "pennant": 18.62,
+   "playoffs": 100.0,
+   "wins": 103,
+   "ws": 10.72
+  }
+ }
+}
