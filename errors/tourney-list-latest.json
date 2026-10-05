@@ -1,8 +1,24 @@
 {
  "boards": [
   {
-   "age_s": 2494,
-   "built_ts": 1791146427,
+   "age_s": 4681,
+   "built_ts": 1791173861,
+   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (ATL @ NO)",
+   "dg": 154099,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "ATL vs NO",
+   "starts": "2026-10-06T00:15:00.0000000Z",
+   "teams": [
+    "ATL",
+    "NO"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 18516,
+   "built_ts": 1791160027,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (DET @ CAR)",
    "dg": 154098,
    "entries": 78431,
@@ -17,7 +33,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 18176,
+   "age_s": 47797,
    "built_ts": 1791130746,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 154078,
@@ -28,22 +44,6 @@
    "n_contests": 3,
    "starts": "2026-10-04T17:00:00.0000000Z",
    "teams": null,
-   "worlds": 60000
-  },
-  {
-   "age_s": 64077,
-   "built_ts": 1791084845,
-   "contest": "NFL Showdown $1.5M Monday Night Showdown [$500K to 1st] (ATL @ NO)",
-   "dg": 154099,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "ATL vs NO",
-   "starts": "2026-10-06T00:15:00.0000000Z",
-   "teams": [
-    "ATL",
-    "NO"
-   ],
    "worlds": 60000
   }
  ],
