@@ -1,8 +1,24 @@
 {
  "boards": [
   {
-   "age_s": 19164,
-   "built_ts": 1791446774,
+   "age_s": 12404,
+   "built_ts": 1791489144,
+   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (TB @ DAL)",
+   "dg": 154474,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "DAL vs TB",
+   "starts": "2026-10-09T00:15:00.0000000Z",
+   "teams": [
+    "DAL",
+    "TB"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 23712,
+   "built_ts": 1791477835,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st]",
    "dg": 154468,
    "entries": 161764,
@@ -15,18 +31,18 @@
    "worlds": 60000
   },
   {
-   "age_s": 36084,
-   "built_ts": 1791429854,
-   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (TB @ DAL)",
-   "dg": 154474,
-   "entries": 88235,
-   "entry_fee": 20.0,
+   "age_s": 29943,
+   "built_ts": 1791471604,
+   "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
+   "dg": 154488,
+   "entries": 500,
+   "entry_fee": 4444.0,
    "kind": "showdown",
-   "label": "DAL vs TB",
-   "starts": "2026-10-09T00:15:00.0000000Z",
+   "label": "BUF vs LAR",
+   "starts": "2026-10-13T00:15:00.0000000Z",
    "teams": [
-    "DAL",
-    "TB"
+    "BUF",
+    "LAR"
    ],
    "worlds": 60000
   }
