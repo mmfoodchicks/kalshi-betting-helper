@@ -1,8 +1,8 @@
-# Error ledger — updated 2026-10-08
+# Error ledger — updated 2026-10-09
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `DEEP-mlb_deep` | 140 | 10-08 22:49 | HTTPError: HTTP Error 400: Bad Request |
+| `DEEP-mlb_deep` | 155 | 10-09 05:55 | HTTPError: HTTP Error 400: Bad Request |
 | `KIDX-markets-fetch` | 10 | 10-06 22:08 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KAL-candles` | 7 | 10-04 16:36 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 7 | 10-03 16:33 | HTTPError: HTTP Error 429: Too Many Requests |
