@@ -1,7 +1,7 @@
 {
  "boards": [
   {
-   "age_s": 1850,
+   "age_s": 27830,
    "built_ts": 1791583531,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154468,
@@ -15,7 +15,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 14517,
+   "age_s": 40497,
    "built_ts": 1791570864,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (BAL @ ATL)",
    "dg": 154487,
@@ -31,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 54331,
+   "age_s": 80310,
    "built_ts": 1791531050,
    "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
    "dg": 154488,
@@ -43,22 +43,6 @@
    "teams": [
     "BUF",
     "LAR"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 82466,
-   "built_ts": 1791502915,
-   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (TB @ DAL)",
-   "dg": 154474,
-   "entries": 88235,
-   "entry_fee": 20.0,
-   "kind": "showdown",
-   "label": "DAL vs TB",
-   "starts": "2026-10-09T00:15:00.0000000Z",
-   "teams": [
-    "DAL",
-    "TB"
    ],
    "worlds": 60000
   }
