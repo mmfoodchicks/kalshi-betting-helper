@@ -1,7 +1,23 @@
 {
  "boards": [
   {
-   "age_s": 27830,
+   "age_s": 17040,
+   "built_ts": 1791618271,
+   "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
+   "dg": 154488,
+   "entries": 500,
+   "entry_fee": 4444.0,
+   "kind": "showdown",
+   "label": "BUF vs LAR",
+   "starts": "2026-10-13T00:15:00.0000000Z",
+   "teams": [
+    "BUF",
+    "LAR"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 51781,
    "built_ts": 1791583531,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154468,
@@ -15,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 40497,
+   "age_s": 64448,
    "built_ts": 1791570864,
    "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (BAL @ ATL)",
    "dg": 154487,
@@ -27,22 +43,6 @@
    "teams": [
     "ATL",
     "BAL"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 80310,
-   "built_ts": 1791531050,
-   "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
-   "dg": 154488,
-   "entries": 500,
-   "entry_fee": 4444.0,
-   "kind": "showdown",
-   "label": "BUF vs LAR",
-   "starts": "2026-10-13T00:15:00.0000000Z",
-   "teams": [
-    "BUF",
-    "LAR"
    ],
    "worlds": 60000
   }
