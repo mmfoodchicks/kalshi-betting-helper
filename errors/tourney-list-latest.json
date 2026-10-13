@@ -1,8 +1,8 @@
 {
  "boards": [
   {
-   "age_s": 37274,
-   "built_ts": 1791781080,
+   "age_s": 1860,
+   "built_ts": 1791849974,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154941,
    "entries": 161764,
@@ -15,24 +15,8 @@
    "worlds": 60000
   },
   {
-   "age_s": 56464,
-   "built_ts": 1791761890,
-   "contest": "NFL Showdown $1M Sunday Night Showdown [$250K to 1st] (BAL @ ATL)",
-   "dg": 154487,
-   "entries": 78431,
-   "entry_fee": 15.0,
-   "kind": "showdown",
-   "label": "ATL vs BAL",
-   "starts": "2026-10-12T00:20:00.0000000Z",
-   "teams": [
-    "ATL",
-    "BAL"
-   ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 72381,
-   "built_ts": 1791745973,
+   "age_s": 4526,
+   "built_ts": 1791847308,
    "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
    "dg": 154488,
    "entries": 500,
@@ -44,20 +28,6 @@
     "BUF",
     "LAR"
    ],
-   "worlds": 60000
-  },
-  {
-   "age_s": 81792,
-   "built_ts": 1791736562,
-   "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
-   "dg": 154468,
-   "entries": 161764,
-   "entry_fee": 20.0,
-   "kind": "classic",
-   "label": "Sunday main (11 games)",
-   "n_contests": 3,
-   "starts": "2026-10-11T17:00:00.0000000Z",
-   "teams": null,
    "worlds": 60000
   }
  ],
