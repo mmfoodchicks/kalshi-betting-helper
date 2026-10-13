@@ -1,7 +1,23 @@
 {
  "boards": [
   {
-   "age_s": 1860,
+   "age_s": 44399,
+   "built_ts": 1791856093,
+   "contest": "NFL Showdown $1.5M Thursday Night Showdown [$500K to 1st] (SEA @ DEN)",
+   "dg": 154947,
+   "entries": 88235,
+   "entry_fee": 20.0,
+   "kind": "showdown",
+   "label": "DEN vs SEA",
+   "starts": "2026-10-16T00:15:00.0000000Z",
+   "teams": [
+    "DEN",
+    "SEA"
+   ],
+   "worlds": 60000
+  },
+  {
+   "age_s": 50518,
    "built_ts": 1791849974,
    "contest": "NFL $2.75M Fantasy Football Millionaire [$1M to 1st, $100K Leaderboard Eligible]",
    "dg": 154941,
@@ -15,7 +31,7 @@
    "worlds": 60000
   },
   {
-   "age_s": 4526,
+   "age_s": 53184,
    "built_ts": 1791847308,
    "contest": "NFL Showdown $2M MEGA Millionaire [$1M to 1st] (BUF @ LAR)",
    "dg": 154488,
