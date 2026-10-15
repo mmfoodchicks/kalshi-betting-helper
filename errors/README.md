@@ -2,7 +2,7 @@
 
 | id | count (7d) | last seen (UTC) | last message |
 |---|---|---|---|
-| `DEEP-mlb_deep` | 368 | 10-15 16:57 | HTTPError: HTTP Error 400: Bad Request |
+| `DEEP-mlb_deep` | 367 | 10-15 20:52 | HTTPError: HTTP Error 400: Bad Request |
 | `KIDX-markets-fetch` | 19 | 10-14 21:45 | HTTPError: HTTP Error 429: Too Many Requests |
 | `KNFL-markets-fetch` | 12 | 10-14 21:07 | HTTPError: HTTP Error 429: Too Many Requests |
 | `SIM-child` | 4 | 10-15 07:59 | TimeoutExpired: Command '['/usr/local/bin/python3.11', '-c', 'import os; os.nice(10)\nimport sys, baseball; sys.stdout.b |
