@@ -7833,8 +7833,9 @@ ck("the loop checks git every minute but sims on its own cadence",
    "CHECK_S = 60" in _loop20 and "CYCLE_S = 600" in _loop20
    and 'rev-parse", "@{u}"' in _loop20 and "sys.exit(0)" in _loop20,
    "an update pulls, reinstalls and EXITS for a clean restart on fresh "
-   "code -- the PC is current within a minute of a push, without burning "
-   "CPU on a slate rebuild every minute")
+   "code -- the PC is current within one BUILD of a push (the worker yields "
+   "between builds, pc_worker._yield_point), without burning CPU on a slate "
+   "rebuild every minute")
 ck("the token config can never be committed",
    "vigil-pc.cfg" in open(_os.path.join(_root, ".gitignore")).read()
    and not _os.path.exists(_os.path.join(_root, "vigil-pc.cfg")),
@@ -9278,9 +9279,9 @@ print("The PC status light: presence is 'how recently did it call'")
 print("=" * 72)
 # The server can never reach OUT to the PC -- the PC only calls in -- so the
 # header light derives from check-in freshness: green = heartbeat inside 5
-# minutes, yellow = alive but running older code than this server (its git
-# pull self-heals within a minute, so persistent yellow is a real fault),
-# red = silence. pc_loop pings every 60s precisely because a deep-sim cycle
+# minutes, yellow = alive but running older code than this server (finishing
+# the build it is on -- it updates between builds -- or unable to pull, and the
+# status says which), red = silence. pc_loop pings every 60s precisely because a deep-sim cycle
 # can keep pc_worker away from the API for an hour.
 import json as _j42
 import tempfile as _tf42
@@ -19350,16 +19351,16 @@ import itertools as _it6
 import random as _rn6
 _g6 = _rn6.Random(20261016)
 _pool6 = []
-for _tm, _op in (("AAA", "BBB"), ("BBB", "AAA"), ("CCC", "DDD"), ("DDD", "CCC")):
-    if _tm in ("AAA", "BBB"):
-        _pool6.append({"name": f"QB {_tm}", "pos": "QB", "team": _tm, "opp": _op, "salary": _g6.choice([6000, 6400, 7000])})
+for _tmn, _op in (("AAA", "BBB"), ("BBB", "AAA"), ("CCC", "DDD"), ("DDD", "CCC")):
+    if _tmn in ("AAA", "BBB"):
+        _pool6.append({"name": f"QB {_tmn}", "pos": "QB", "team": _tmn, "opp": _op, "salary": _g6.choice([6000, 6400, 7000])})
     else:
-        _pool6.append({"name": f"DST {_tm}", "pos": "DST", "team": _tm, "opp": _op, "salary": _g6.choice([2600, 3000, 3400])})
-    if _tm != "DDD":
-        _pool6.append({"name": f"TE {_tm}", "pos": "TE", "team": _tm, "opp": _op, "salary": _g6.choice([3000, 4200, 5000])})
-        _pool6.append({"name": f"RB {_tm}", "pos": "RB", "team": _tm, "opp": _op, "salary": _g6.choice([5000, 6200, 7800])})
+        _pool6.append({"name": f"DST {_tmn}", "pos": "DST", "team": _tmn, "opp": _op, "salary": _g6.choice([2600, 3000, 3400])})
+    if _tmn != "DDD":
+        _pool6.append({"name": f"TE {_tmn}", "pos": "TE", "team": _tmn, "opp": _op, "salary": _g6.choice([3000, 4200, 5000])})
+        _pool6.append({"name": f"RB {_tmn}", "pos": "RB", "team": _tmn, "opp": _op, "salary": _g6.choice([5000, 6200, 7800])})
     for _k in range(4):
-        _pool6.append({"name": f"WR{_k} {_tm}", "pos": "WR", "team": _tm, "opp": _op, "salary": _g6.choice([3500, 4500, 5500, 6500, 7500, 8500])})
+        _pool6.append({"name": f"WR{_k} {_tmn}", "pos": "WR", "team": _tmn, "opp": _op, "salary": _g6.choice([3500, 4500, 5500, 6500, 7500, 8500])})
 for _p in _pool6:
     _p["proj"] = round(_p["salary"] / 400.0 + _g6.uniform(-2, 2), 1)
     _p["ceiling"] = round(_p["proj"] * _g6.uniform(1.3, 1.8), 1)
@@ -19409,16 +19410,16 @@ for _obj6, _sm6, _bm6 in (("ceiling", 2, 1), ("projection", 1, 0), ("leverage", 
 _g6b = _rn6.Random(14)
 _poolb6 = []
 for _gi, (_a, _b) in enumerate((("T0A", "T0B"), ("T1A", "T1B"))):
-    for _tm, _op in ((_a, _b), (_b, _a)):
+    for _tmn, _op in ((_a, _b), (_b, _a)):
         if _gi == 0:
-            _poolb6.append({"name": f"QB {_tm}", "pos": "QB", "team": _tm, "opp": _op, "salary": _g6b.choice([5600, 6000, 6400, 7000, 7600])})
+            _poolb6.append({"name": f"QB {_tmn}", "pos": "QB", "team": _tmn, "opp": _op, "salary": _g6b.choice([5600, 6000, 6400, 7000, 7600])})
         else:
-            _poolb6.append({"name": f"DST {_tm}", "pos": "DST", "team": _tm, "opp": _op, "salary": _g6b.choice([2400, 2800, 3200, 3600])})
-        if not (_gi == 1 and _tm == _b):
-            _poolb6.append({"name": f"TE {_tm}", "pos": "TE", "team": _tm, "opp": _op, "salary": _g6b.choice([2500, 3200, 4200, 5500])})
-            _poolb6.append({"name": f"RB {_tm}", "pos": "RB", "team": _tm, "opp": _op, "salary": _g6b.choice([4500, 5500, 6500, 7800, 8800])})
+            _poolb6.append({"name": f"DST {_tmn}", "pos": "DST", "team": _tmn, "opp": _op, "salary": _g6b.choice([2400, 2800, 3200, 3600])})
+        if not (_gi == 1 and _tmn == _b):
+            _poolb6.append({"name": f"TE {_tmn}", "pos": "TE", "team": _tmn, "opp": _op, "salary": _g6b.choice([2500, 3200, 4200, 5500])})
+            _poolb6.append({"name": f"RB {_tmn}", "pos": "RB", "team": _tmn, "opp": _op, "salary": _g6b.choice([4500, 5500, 6500, 7800, 8800])})
         for _k in range(4):
-            _poolb6.append({"name": f"WR{_k} {_tm}", "pos": "WR", "team": _tm, "opp": _op, "salary": _g6b.choice([3000, 3500, 4500, 5500, 6500, 7500, 8500])})
+            _poolb6.append({"name": f"WR{_k} {_tmn}", "pos": "WR", "team": _tmn, "opp": _op, "salary": _g6b.choice([3000, 3500, 4500, 5500, 6500, 7500, 8500])})
 for _p in _poolb6:
     _p["proj"] = round(max(1.0, _p["salary"] / 400.0 + _g6b.uniform(-4, 4)), 1)
     _p["ceiling"] = round(_p["proj"] * _g6b.uniform(1.2, 2.0), 1)
@@ -19472,6 +19473,226 @@ ck("DK's Questionable tags the sheet's row even when Sleeper lists nothing (Tyle
 ck("a lobby failure on the auto-load and a failed classic contest sim reach the ledger instead of vanishing",
    'errlog.note("DFS-autoslate", _e, path=str(d.get("sport")))' in open(_os.path.join(_root, "app.py")).read()
    and 'errlog.note("NFLDFS-contest", _e)' in _srcb6)
+
+# ---- 2026-10-16 the PC updates between builds, not between cycles (owner: "Why
+# is it on a older build it was like that this morning too what is stopping it") ----
+print("=" * 72)
+print("The PC takes new code between builds; the light says what it is waiting on")
+print("=" * 72)
+import subprocess as _sp7
+import tempfile as _tf7
+import time as _tm                 # the suite's alias, re-bound: a loop above once reused the name
+import types as _ty7
+import pc_worker as _pw7
+import pc_loop as _pl7
+_t7 = _tf7.mkdtemp(prefix="guard-pcup-")
+_g7 = lambda *a, cwd: _sp7.run(["git", "-c", "user.name=g", "-c", "user.email=g@x", *a], cwd=cwd,
+                                capture_output=True, text=True)
+_g7("init", "-q", "--bare", "up.git", cwd=_t7)
+_g7("clone", "-q", "up.git", "pc", cwd=_t7)
+_pc7 = _os.path.join(_t7, "pc")
+_g7("checkout", "-q", "-b", "work", cwd=_pc7)
+open(_os.path.join(_pc7, "a.txt"), "w").write("1")
+_g7("add", "a.txt", cwd=_pc7)
+_g7("commit", "-qm", "one", cwd=_pc7)
+_g7("push", "-q", "-u", "origin", "work", cwd=_pc7)
+_g7("clone", "-q", "-b", "work", "up.git", "dev", cwd=_t7)
+open(_os.path.join(_t7, "dev", "a.txt"), "w").write("2")
+_g7("commit", "-qam", "two", cwd=_os.path.join(_t7, "dev"))
+_g7("push", "-q", cwd=_os.path.join(_t7, "dev"))
+_old7 = (_pw7._HERE, _os.environ.get("VIGIL_PC_YIELD"), _os.environ.get("VIGIL_SIM_CACHE_DIR"))
+try:
+    _pw7._HERE = _pc7
+    _os.environ["VIGIL_PC_YIELD"] = "1"
+    _pw7._yield_last[0] = 0.0
+    _w_behind = _pw7._update_waiting()
+    _w_throttled = _pw7._update_waiting()          # a second look inside the minute costs nothing
+    _os.environ["VIGIL_PC_YIELD"] = "0"
+    _pw7._yield_last[0] = 0.0
+    _w_noyield = _pw7._update_waiting()
+    _g7("pull", "-q", "--ff-only", cwd=_pc7)
+    _os.environ["VIGIL_PC_YIELD"] = "1"
+    _pw7._yield_last[0] = 0.0
+    _w_current = _pw7._update_waiting()
+    # a yield point notes the next build, and stops when newer code waits
+    _os.environ["VIGIL_SIM_CACHE_DIR"] = _t7
+    _uw7 = _pw7._update_waiting
+    _pw7._update_waiting = lambda: True
+    try:
+        _pw7._yield_point("classic board 154941 (10 games)")
+        _raised7 = False
+    except _pw7.UpdateWaiting:
+        _raised7 = True
+    _note7 = _j42.load(open(_pw7._task_path()))
+    # main: the early stop ships what the cycle finished and exits UPDATE_WAITING
+    _pw7._update_waiting = _uw7
+    _keep7 = (_pw7._config, _pw7._cycle, _pw7._sync_kind)
+    _synced7 = []
+
+    def _cyc7(url, tok):
+        _pw7._task_note("classic board 154941")
+        raise _pw7.UpdateWaiting("classic board 154941")
+    _pw7._config = lambda: ("u", "t")
+    _pw7._cycle = _cyc7
+    _pw7._sync_kind = lambda url, tok, kind, min_fresher_s=60: _synced7.append(kind) or 0
+    try:
+        _rc7 = _pw7.main()
+    finally:
+        _pw7._config, _pw7._cycle, _pw7._sync_kind = _keep7
+    _cleared7 = not _os.path.exists(_pw7._task_path())
+finally:
+    _pw7._HERE = _old7[0]
+    for _k7, _v7 in (("VIGIL_PC_YIELD", _old7[1]), ("VIGIL_SIM_CACHE_DIR", _old7[2])):
+        if _v7 is None:
+            _os.environ.pop(_k7, None)
+        else:
+            _os.environ[_k7] = _v7
+ck("the worker sees newer code waiting upstream (a real checkout one commit behind its remote), at most one fetch a minute, only when the loop asked it to yield, and not once it is current",
+   _w_behind is True and _w_throttled is False and _w_noyield is False and _w_current is False,
+   str((_w_behind, _w_throttled, _w_noyield, _w_current)))
+ck("between two builds the worker notes what comes next and stops when newer code waits; the early stop ships what the cycle finished, clears the note and exits UPDATE_WAITING (3) -- the loop used to learn of a push only after the whole cycle, every board rebuilt back to back",
+   _raised7 and _note7.get("task") == "classic board 154941 (10 games)"
+   and _rc7 == _pw7.UPDATE_WAITING == _pl7.UPDATE_WAITING == 3
+   and _synced7 == ["gamesim", "boards", "deep"] and _cleared7, str((_rc7, _synced7)))
+_pws7 = open(_os.path.join(_root, "pc_worker.py")).read()
+_cyc_src7 = _insp.getsource(_pw7._cycle)
+_cl_src7 = _insp.getsource(_pw7._task_classic_tourney)
+_sd_src7 = _insp.getsource(_pw7._task_showdown_tourney)
+ck("the checks sit BETWEEN builds, never inside one: before every task, every classic and showdown board build and every deep job; a task's own error handler re-raises the stop",
+   _cyc_src7.count("_yield_point(") == 2 and "except UpdateWaiting:\n            raise" in _cyc_src7
+   and _cl_src7.index("_yield_point(") < _cl_src7.index("dfs_tourney.build_nfl_classic(")
+   and _sd_src7.index("_yield_point(") < _sd_src7.index("dfs_tourney.build_nfl_showdown(")
+   and '_yield_point(f"deep {key}")' in _insp.getsource(_pw7._task_deep)
+   and 'sys.exit(main() or 0)' in _pws7)
+# the loop: an early stop pulls at once; a pull that fails is reported and turns yielding off
+_keepl7 = (_pl7._run_cycle, _pl7._update_available, _pl7._apply_update, _pl7._ping_server,
+           _pl7.threading.Thread, _pl7.time.sleep)
+_ev7 = []
+
+
+class _StopLoop7(Exception):
+    pass
+
+
+class _NoThread7:
+    def __init__(self, *a, **k):
+        pass
+
+    def start(self):
+        pass
+try:
+    _pl7._ping_server = lambda: None
+    _pl7.threading.Thread = _NoThread7
+    _pl7.time.sleep = lambda s: _ev7.append(("sleep", s))
+    _rcs7 = iter([3])
+    _pl7._run_cycle = lambda: (_ev7.append("cycle"), next(_rcs7))[1]
+    _pl7._update_available = lambda: (_ev7.append("check"), True)[1]
+    _pl7._apply_update = lambda: (_ev7.append("pull"), True)[1]
+    try:
+        _pl7.main()
+    except SystemExit as _e7:
+        _ev7.append(("exit", _e7.code))
+    _evA7 = list(_ev7)
+    del _ev7[:]
+    _rcs7 = iter([3])                    # the rerun is the end of this scenario
+
+    def _cyc_b7():
+        _ev7.append("cycle")
+        try:
+            return next(_rcs7)
+        except StopIteration:
+            raise _StopLoop7()
+    _pl7._run_cycle = _cyc_b7
+    _pl7._apply_update = lambda: (_ev7.append("pull"), False)[1]
+    try:
+        _pl7.main()
+    except _StopLoop7:
+        pass
+    _evB7 = list(_ev7)
+finally:
+    (_pl7._run_cycle, _pl7._update_available, _pl7._apply_update, _pl7._ping_server,
+     _pl7.threading.Thread, _pl7.time.sleep) = _keepl7
+ck("the loop pulls the moment the worker stops for an update -- no minute's sleep, no ten-minute cycle wait -- and exits for the .bat's clean restart; when that pull fails it reruns the cycle at once instead of leaving the builds for ten minutes",
+   _evA7 == ["cycle", "check", "pull", ("exit", 0)]
+   and _evB7[:4] == ["cycle", "check", "pull", "cycle"] and ("sleep", 60) not in _evB7[:4],
+   str((_evA7, _evB7)))
+_keepr7 = (_pl7.subprocess.run, _pl7._PULL_ERR[0], _pl7._git)
+_envs7 = []
+try:
+    _pl7.subprocess.run = lambda *a, **k: (_envs7.append((k.get("env") or {}).get("VIGIL_PC_YIELD")),
+                                           _ty7.SimpleNamespace(returncode=0))[1]
+    _pl7._PULL_ERR[0] = ""
+    _pl7._run_cycle()
+    _pl7._git = lambda *a: (1, "error: Your local changes to the following files would be overwritten by merge:")
+    _pulled7 = _pl7._apply_update()
+    _err7 = _pl7._PULL_ERR[0]
+    _pl7._run_cycle()
+finally:
+    _pl7.subprocess.run, _pl7._PULL_ERR[0], _pl7._git = _keepr7
+ck("a failed pull keeps git's reason for the light and turns yielding OFF, so a PC that cannot pull keeps building on the code it has instead of stopping at its first check every cycle",
+   _envs7 == ["1", "0"] and _pulled7 is False
+   and _err7.startswith("error: Your local changes"), str((_envs7, _err7)))
+# the heartbeat carries both, and the server keeps them
+import urllib.request as _ur7
+_keepu7 = (_ur7.urlopen, _os.environ.get("VIGIL_APP_URL"), _os.environ.get("SIM_TOKEN"),
+           _os.environ.get("VIGIL_SIM_CACHE_DIR"), _pl7._PULL_ERR[0])
+_req7 = []
+try:
+    _ur7.urlopen = lambda req, timeout=10: (_req7.append(req), _ty7.SimpleNamespace(read=lambda: b"{}"))[1]
+    _os.environ["VIGIL_APP_URL"], _os.environ["SIM_TOKEN"] = "https://x.invalid", "tok7"
+    _os.environ["VIGIL_SIM_CACHE_DIR"] = _t7
+    with open(_os.path.join(_t7, "pc_task.json"), "w") as _fh7:
+        _j42.dump({"task": "showdown board 154959 (DAL @ GB)", "since": _tm.time() - 600}, _fh7)
+    _pl7._PULL_ERR[0] = ""
+    _pl7._ping_server()
+finally:
+    _ur7.urlopen = _keepu7[0]
+    for _k7, _v7 in (("VIGIL_APP_URL", _keepu7[1]), ("SIM_TOKEN", _keepu7[2]), ("VIGIL_SIM_CACHE_DIR", _keepu7[3])):
+        if _v7 is None:
+            _os.environ.pop(_k7, None)
+        else:
+            _os.environ[_k7] = _v7
+    _pl7._PULL_ERR[0] = _keepu7[4]
+ck("the heartbeat reports what the worker is building and for how long, and the last pull error (empty while pulls succeed)",
+   len(_req7) == 1 and _req7[0].get_header("X-pc-task") == "showdown board 154959 (DAL @ GB), 10 min in"
+   and _req7[0].get_header("X-pc-pull") == "",
+   str([_r.header_items() for _r in _req7]))
+_oldS7 = (_app42._PC_STATUS_PATH, _app42._SIM_TOKEN, _os.environ.get("RENDER_GIT_COMMIT"), _app42._pc_seen_last[0])
+_app42._PC_STATUS_PATH = _os.path.join(_tf7.mkdtemp(prefix="guard-pcst-"), "pc-status.json")
+try:
+    _os.environ["RENDER_GIT_COMMIT"] = "2b53e67aaaaaaaaa"
+    _app42._SIM_TOKEN = "tok7"
+    _app42._pc_seen_last[0] = 0.0
+    _c7 = _app42.app.test_client()
+    _c7.get("/api/pc/ping", headers={"X-Sim-Token": "tok7", "X-PC-Commit": "4ed7b91bbbbbbbbb",
+                                     "X-PC-Task": "classic board 154941 (10 games), 12 min in", "X-PC-Pull": ""})
+    _s1 = _app42._pc_status()
+    _app42._pc_seen_last[0] = 0.0
+    _app42._pc_note_seen("4ed7b91bbbbbbbbb")            # a worker upload between pings
+    _s2 = _app42._pc_status()
+    _c7.get("/api/pc/ping", headers={"X-Sim-Token": "tok7", "X-PC-Commit": "4ed7b91bbbbbbbbb",
+                                     "X-PC-Task": "", "X-PC-Pull": "error: Your local changes would be overwritten"})
+    _s3 = _app42._pc_status()
+finally:
+    (_app42._PC_STATUS_PATH, _app42._SIM_TOKEN) = _oldS7[0], _oldS7[1]
+    _app42._pc_seen_last[0] = _oldS7[3]
+    if _oldS7[2] is None:
+        _os.environ.pop("RENDER_GIT_COMMIT", None)
+    else:
+        _os.environ["RENDER_GIT_COMMIT"] = _oldS7[2]
+ck("the server keeps the PC's task and pull error from the ping (a worker upload in between cannot wipe them) and the light's status names both commits, the build being finished and git's error",
+   _s1["state"] == "behind" and _s1["task"] == "classic board 154941 (10 games), 12 min in"
+   and _s1["commit"] == "4ed7b91" and _s1["server_commit"] == "2b53e67" and _s1["pull_error"] is None
+   and _s2["task"] == _s1["task"]
+   and _s3["task"] is None and _s3["pull_error"] == "error: Your local changes would be overwritten",
+   str((_s1, _s2, _s3)))
+_js7 = open(_os.path.join(_root, "static", "app.js")).read()
+ck("the light stops promising 'self-updates within a minute': yellow says which build the PC finishes first, or that its pull is failing and why",
+   "it self-updates within a minute" not in _js7
+   and "it updates as soon as the build it is on finishes" in _js7
+   and "its git pull is FAILING: ${d.pc.pull_error}" in _js7
+   and "PC on, updating after its current build" in _js7
+   and "self-updates within a minute" not in open(_os.path.join(_root, "boardshare.py")).read())
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

@@ -202,7 +202,13 @@ data-only `sim-history` branch (which never deploys):
 ## The PC offload
 
 The owner's always-on Windows PC runs `pc_loop.py` (git-checks every 60s,
-restarts itself on update) which runs `pc_worker.py`: it builds the SAME
+restarts itself on update) which runs `pc_worker.py`. The loop WAITS on the
+worker, and one cycle can be hours of board builds, so the worker checks for
+newer code BETWEEN builds (`pc_worker._yield_point`, never mid-build) and exits
+`UPDATE_WAITING` for the loop to pull at once; the heartbeat reports the build
+in progress and any pull error, and the light shows both (on 2026-10-16 the PC
+sat on the morning's code all day while the light said "within a minute").
+The worker builds the SAME
 artifacts with the SAME functions and uploads anything fresher than the
 server's copy through `/api/art/upload`. The server adopts by file freshness
 and self-computes whenever the PC is off — **the PC can only add speed or be

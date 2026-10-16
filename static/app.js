@@ -7825,8 +7825,9 @@ async function pollWarm() {
     if (d && (d.error != null || d.total == null)) return;
     // PC status light (top right), BEFORE the early returns so it updates on
     // every poll: green = the PC's 60s heartbeat is fresh; yellow = alive but
-    // its checkout is behind this server (it self-updates within a minute, so
-    // persistent yellow = its git pull is failing); red = no heartbeat 5+ min.
+    // its checkout is behind this server -- finishing the build it is on (it
+    // updates between builds, never mid-build) or unable to pull, and the
+    // tooltip says which; red = no heartbeat 5+ min.
     const dot = $("pcDot");
     if (dot && d.pc) {
       const st = d.pc.state;
@@ -7836,7 +7837,13 @@ async function pollWarm() {
       dot.title = st === "on"
         ? `🖥️ PC online - heartbeat ${d.pc.seen_s}s ago, code up to date`
         : st === "behind"
-        ? "🖥️ PC online but running older code - it self-updates within a minute; if this stays yellow, its git pull is failing"
+        ? (d.pc.pull_error
+          ? `🖥️ PC online on older code (${d.pc.commit || "?"}, server ${d.pc.server_commit || "?"}) - its git pull is FAILING: ${d.pc.pull_error}`
+          : d.pc.task
+          ? `🖥️ PC online on older code (${d.pc.commit || "?"}, server ${d.pc.server_commit || "?"}) - it updates as soon as the build it is on finishes: ${d.pc.task}`
+          // a loop too old to report its build (it is the code being waited on)
+          // or one between builds: either should pull within a cycle
+          : `🖥️ PC online on older code (${d.pc.commit || "?"}, server ${d.pc.server_commit || "?"}) - it reports no build in progress; if this stays yellow past a cycle, the PC's console has the git pull error`)
         : d.pc.seen_s == null
         ? "🖥️ PC has never checked in - is pc_loop running?"
         : `🖥️ PC unreachable - last heartbeat ${Math.round(d.pc.seen_s / 60)}m ago (powered off? network? token?)`;
@@ -8442,7 +8449,10 @@ function renderDfsTourney(d) {
   if (!bx) return;
   const box = bx.main;
   const pc = d.pc || {};
-  const pcTxt = pc.state === "on" ? "PC on" : pc.state === "behind" ? "PC on, updating" : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
+  const pcTxt = pc.state === "on" ? "PC on"
+    : pc.state === "behind" ? (pc.pull_error ? "PC on, but its update (git pull) is failing"
+      : `PC on, updating after its current build${pc.task ? ` (${escapeHtml(pc.task)})` : ""}`)
+    : `PC off${pc.seen_s != null ? ` (seen ${agoStr(pc.seen_s)})` : ""}`;
   if (d.status !== "ok") {
     box.innerHTML = `<div class="small" style="color:var(--muted);margin-top:6px">🏟️ <b>Tournament</b> - ${escapeHtml(d.why || "not built yet")} · ${pcTxt} ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>`;
     return;

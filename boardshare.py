@@ -157,9 +157,11 @@ PC_STATUS_PATH = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
 def pc_status(path=None):
     """green / yellow / red for the header light. 'on' needs a heartbeat in
     the last 5 minutes (five misses is a verdict, one slow deep-sim cycle is
-    not); 'behind' means alive but running older code than this server (it
-    self-updates within a minute, so persistent yellow means the PC's git
-    pull is failing); 'off' is everything else."""
+    not); 'behind' means alive but running older code than this server. That
+    is either a build in progress -- the PC updates between builds, never in
+    the middle of one (`task` says which, and for how long) -- or a pull that
+    fails (`pull_error` carries git's reason); 'off' is everything else.
+    `commit` is the PC's checkout, `server_commit` this server's."""
     try:
         with open(path or PC_STATUS_PATH) as fh:
             st = json.load(fh)
@@ -174,4 +176,6 @@ def pc_status(path=None):
     behind = bool(srv and pc
                   and not (pc.startswith(srv) or srv.startswith(pc)))
     state = "off" if seen > 300 else ("behind" if behind else "on")
-    return {"state": state, "seen_s": round(seen), "behind": behind}
+    return {"state": state, "seen_s": round(seen), "behind": behind,
+            "commit": pc[:7] or None, "server_commit": srv[:7] or None,
+            "task": st.get("task") or None, "pull_error": st.get("pull") or None}

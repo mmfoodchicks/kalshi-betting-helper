@@ -76,6 +76,80 @@ def _git_commit():
     return _COMMIT_CACHE[0]
 
 
+# ---- yielding to an update ------------------------------------------------------
+# pc_loop checks git only BETWEEN worker cycles, and one cycle is every board
+# and nightly job this machine owns, back to back: the showdowns at 60,000
+# worlds (20-25 min each), the Sunday main's classic board (the better part of
+# an hour), the deep season sims. On 2026-10-16 every push that moved the
+# engine or the pools made the next cycle rebuild all of them, the next push
+# landed before it ended, and the PC sat on older code from the morning on
+# while the light said "self-updates within a minute". The worker now checks
+# BETWEEN builds -- never mid-build -- and when a newer commit is waiting it
+# ships what it has finished and exits with UPDATE_WAITING, so the loop pulls
+# at once: current within one build, not one cycle. pc_loop sets
+# VIGIL_PC_YIELD=1 only while its pulls succeed; a PC whose pull is broken
+# keeps building on the code it has instead of stopping at every check.
+UPDATE_WAITING = 3
+_YIELD_EVERY_S = 60
+_yield_last = [0.0]
+
+
+class UpdateWaiting(Exception):
+    """A newer commit is waiting upstream; raised between builds, caught in main."""
+
+
+def _update_waiting():
+    """Is a newer commit waiting upstream? At most one `git fetch` a minute,
+    and only when the loop asked the worker to yield."""
+    if os.environ.get("VIGIL_PC_YIELD") != "1":
+        return False
+    if time.time() - _yield_last[0] < _YIELD_EVERY_S:
+        return False
+    _yield_last[0] = time.time()
+    import subprocess
+    try:
+        if subprocess.run(["git", "fetch", "-q"], cwd=_HERE, capture_output=True,
+                          timeout=120).returncode != 0:
+            return False                      # offline: keep building
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HERE,
+                              capture_output=True, text=True).stdout.strip()
+        up = subprocess.run(["git", "rev-parse", "@{u}"], cwd=_HERE,
+                            capture_output=True, text=True)
+        return up.returncode == 0 and bool(head) and bool(up.stdout.strip()) and head != up.stdout.strip()
+    except Exception as e:
+        print(f"[vigil-pc] update check failed ({type(e).__name__}: {e}) - carrying on")
+        return False
+
+
+def _task_path():
+    return os.path.join(os.environ["VIGIL_SIM_CACHE_DIR"], "pc_task.json")
+
+
+def _task_note(label):
+    """What this cycle is doing now, for the loop's heartbeat to report (the
+    light says "updating after: classic board 154941, 12 min in" instead of
+    guessing). None clears it."""
+    try:
+        if label is None:
+            if os.path.exists(_task_path()):
+                os.remove(_task_path())
+            return
+        os.makedirs(os.path.dirname(_task_path()), exist_ok=True)
+        tmp = _task_path() + ".tmp"
+        with open(tmp, "w") as fh:
+            json.dump({"task": str(label)[:120], "since": time.time()}, fh)
+        os.replace(tmp, _task_path())
+    except OSError as e:
+        print(f"[vigil-pc] task note not written ({e})")
+
+
+def _yield_point(label):
+    """Between two builds: say what comes next, and stop if newer code waits."""
+    _task_note(label)
+    if _update_waiting():
+        raise UpdateWaiting(label)
+
+
 def _api(url, tok, path, data=None, headers=None, timeout=90):
     req = urllib.request.Request(url + path, data=data, headers={
         "X-Sim-Token": tok, "User-Agent": "vigil-pc-worker",
@@ -403,6 +477,7 @@ def _task_deep(url, tok):
     for key, fn in jobs:
         if not _due(key):
             continue
+        _yield_point(f"deep {key}")
         try:
             fn()
         except Exception as e:
@@ -697,6 +772,7 @@ def _task_classic_tourney(url, tok):
             if not _tourney_resave(name, board, url, tok):
                 print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): current ({age/60:.0f} min old)")
             continue
+        _yield_point(f"classic board {dg} ({sl.get('games')} games)")
         print(f"[vigil-pc] classic tourney {dg} ({sl.get('games')} games): building - {why}...")
         t0 = time.time()
         try:
@@ -803,6 +879,7 @@ def _task_showdown_tourney(url, tok):
                 left = "" if mins_left is None else f", {mins_left:.0f} min to lock"
                 print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: current ({age/60:.0f} min old{left})")
             continue
+        _yield_point(f"showdown board {dg} {sl.get('tag') or ''}".strip())
         print(f"[vigil-pc] tourney {dg} {sl.get('tag') or ''}: building (60,000 worlds) - {why}...")
         t0 = time.time()
         try:
@@ -837,8 +914,28 @@ def _ship_boards(url, tok):
 
 
 def main():
+    """One cycle; UPDATE_WAITING when it stopped early for newer code (after
+    shipping what it finished), else 0."""
     url, tok = _config()
+    try:
+        _cycle(url, tok)
+        return 0
+    except UpdateWaiting as w:
+        print(f"[vigil-pc] newer code is waiting - stopping before {w} to update "
+              "(shipping what this cycle finished)")
+        for kind in ("gamesim", "boards", "deep"):
+            try:
+                _sync_kind(url, tok, kind)
+            except Exception as e:
+                print(f"[vigil-pc] sync {kind} failed ({type(e).__name__}: {e})")
+        return UPDATE_WAITING
+    finally:
+        _task_note(None)
+
+
+def _cycle(url, tok):
     total = 0
+    _yield_point("MLB game sims")
     try:
         _task_mlb_sims(url, tok)
     except Exception as e:
@@ -857,8 +954,11 @@ def main():
                       ("showdown tourney", lambda: _task_showdown_tourney(url, tok)),
                       ("classic tourney", lambda: _task_classic_tourney(url, tok)),
                       ("deep nightly", lambda: _task_deep(url, tok))):
+        _yield_point(label)
         try:
             fn()
+        except UpdateWaiting:
+            raise                         # a between-builds check inside the task
         except Exception as e:
             print(f"[vigil-pc] task {label} failed ({type(e).__name__}: {e}) - "
                   "moving on")
@@ -871,4 +971,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

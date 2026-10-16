@@ -545,16 +545,29 @@ _PC_STATUS_PATH = os.path.join(os.environ.get("VIGIL_SIM_CACHE_DIR")
 _pc_seen_last = [0.0]           # per-worker write throttle; mtime is the truth
 
 
-def _pc_note_seen(commit):
-    if time.time() - _pc_seen_last[0] < 30:
+def _pc_note_seen(commit, task=None, pull=None):
+    """Stamp the PC's check-in. `task` (what the worker is building) and
+    `pull` (the loop's last pull error) come only on the loop's ping; None
+    keeps what the file has, so a worker upload between pings cannot wipe
+    them, and an empty string from the ping clears them."""
+    if time.time() - _pc_seen_last[0] < 30 and task is None and pull is None:
         return
     try:
         import tempfile
         d = os.path.dirname(_PC_STATUS_PATH)
         os.makedirs(d, exist_ok=True)
+        prev = {}
+        try:
+            with open(_PC_STATUS_PATH) as fh:
+                prev = json.load(fh) or {}
+        except (OSError, ValueError):
+            prev = {}
+        rec = {"ts": time.time(), "commit": (commit or "")[:40],
+               "task": prev.get("task") if task is None else (task or None),
+               "pull": prev.get("pull") if pull is None else (pull or None)}
         fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
         with os.fdopen(fd, "w") as fh:
-            json.dump({"ts": time.time(), "commit": (commit or "")[:40]}, fh)
+            json.dump(rec, fh)
         os.replace(tmp, _PC_STATUS_PATH)
         _pc_seen_last[0] = time.time()
     except Exception as e:
@@ -565,8 +578,8 @@ def _pc_status():
     """green / yellow / red for the header light. 'on' needs a heartbeat in
     the last 5 minutes (pc_loop pings every 60s -- five misses is a verdict,
     one slow deep-sim cycle is not); 'behind' means alive but running older
-    code than this server (it self-updates within a minute, so persistent
-    yellow means the PC's git pull is failing); 'off' is everything else."""
+    code than this server -- finishing the build it is on before it updates
+    (`task`), or unable to pull (`pull_error`); 'off' is everything else."""
     import boardshare
     # One reader (the preset builder asks too); the path stays this module's
     # so the note-seen writer and the reader can never disagree.
@@ -581,7 +594,8 @@ def _pc_auth_ok():
     if ok:
         # Every authenticated PC call refreshes the light; only the PC's
         # endpoints use this door, so a workflow can never impersonate it.
-        _pc_note_seen(request.headers.get("X-PC-Commit"))
+        _pc_note_seen(request.headers.get("X-PC-Commit"),
+                      request.headers.get("X-PC-Task"), request.headers.get("X-PC-Pull"))
     return ok
 
 
