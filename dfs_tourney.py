@@ -69,7 +69,10 @@ VERSION = 3                              # 3: every leaf a plain Python value (n
 # every world one game played snap by snap, defenses and kickers off the same
 # game, the slate's own games only. Every number moves, so every board built
 # under 6 is rebuilt rather than served beside the new ones.
-ENGINE = 7
+# 8: the engine's passing volume anchored to Sleeper's projected attempts
+# (nfl_dfs_engine.ATT_WEIGHT 1, 2026-10-16): every team's passing game moves,
+# so every board built under 7 is rebuilt.
+ENGINE = 8
 # Showdown carries its OWN semantic version. The two engines change for
 # different reasons -- a classic field-model fix has nothing to say about a
 # single-game board -- and each build is expensive enough (an hour for
@@ -96,24 +99,32 @@ ENGINE = 7
 #    construction. Promoted 2026-10-16 on the pre-registered 2025 test
 #    (research/reports/nfl_dfs_engine.md). Legacy-discrete stays the
 #    preseason's model.
-SD_ENGINE = 4
+# 5: the engine's passing volume anchored to Sleeper's projected attempts
+#    (nfl_dfs_engine.ATT_WEIGHT 1), shipped on the pre-registered 2026 test
+#    (research/reports/nfl_dfs_engine.md).
+SD_ENGINE = 5
 
 # The game simulator every tournament board is built on (nfl_dfs_sim.MODELS);
-# the preseason is always legacy. "engine" since 2026-10-16: on the blind
-# 2025 season, rules written before it was run, every link passed --
+# the preseason is always legacy. "engine" since 2026-10-16: on the held-out
+# 2025 season, rules written before it was run, every link passed -- the
+# corrected run (2577f9e; the first run scored worlds drawn from the wrong
+# tables, research/reports/nfl_dfs_engine.md has both):
 #
 #                      offence CRPS  PIT KS   pair RMSE  cross-team  DST CRPS  K CRPS
-#   legacy (was)       3.9541        0.1782   0.2560     0.1493      3.1125    2.5934
-#   constrained        3.8181        0.0251   0.0857     0.1347      3.1107    2.5917
-#   engine, env 0.14   3.8335        0.0478   0.0475     0.0562      3.0889    2.5630
+#   legacy (was)       3.9535        0.1772   0.2567     0.1516      3.1106    2.5937
+#   constrained        3.8181        0.0251   0.0857     0.1347      3.1110    2.5922
+#   engine, env 0.14   3.8388        0.0496   0.0480     0.0559      3.0996    2.5488
 #
-# 256 games, weeks 2-18, 400 worlds each. The engine is 0.4% behind the
+# 256 games, weeks 2-18, 400 worlds each. The engine is 0.5% behind the
 # constrained model on the players' own marginals (inside the 1% the rule
 # allowed) and the only model that carries the two teams together (QB1 / opp
-# QB1 0.254 against a real 0.224; constrained 0.027) -- the coupling a
-# showdown roster and a game stack are made of. Its weakest link is the PIT
-# (0.048 against a 0.050 limit): its receivers ran hot on 2025 (WR1 14.95
-# simulated against 13.65 real), which the report carries.
+# QB1 0.250 against a real 0.224; constrained 0.027) -- the coupling a
+# showdown roster and a game stack are made of. Its weakest link is the PIT,
+# which passed by 0.0004 (0.0496 against a 0.050 limit): its receivers ran hot
+# on 2025 (WR1 15.06 simulated against 13.65 real). Since the same day its
+# passing volume is anchored to Sleeper's projected attempts
+# (nfl_dfs_engine.ATT_WEIGHT; on 2025, seen, that engine scores 3.8217 with a
+# PIT of 0.0401).
 BOARD_MODEL = "engine"
 
 

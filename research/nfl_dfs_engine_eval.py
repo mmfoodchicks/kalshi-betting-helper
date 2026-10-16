@@ -914,7 +914,8 @@ def correction_section(sup, dev, test, anchor):
          "The fix carries the tables into every slice; a guard plays a table where no field goal is good and requires "
          "none in the slices and none in simulate_game's final worlds (the old code made 1.8 a team). Everything was "
          "re-run in the order and under the rules written before the first runs, with that order written into the "
-         "harness before the re-run started (commit b292fad), the choices frozen in a commit before 2025 and 2026 were "
+         "harness before the re-run started (commit b292fad), the choices frozen in commit "
+         f"{test['meta']['provenance'].get('commit')} before 2025 and 2026 were "
          "read again. Those two had each been read once by a flawed run; the rules leave nothing to choose on them. "
          "The flawed artifacts are kept in research/data/superseded/ with their final worlds summarised after the fact.", "",
          "| | first runs (flawed) | corrected |", "|---|---|---|",
@@ -1118,4 +1119,13 @@ def anchor_section(dev, seen, test, sup=None):
               f"On {test['n_games']} games each observed role-pair correlation carries bootstrap noise of "
               f"{min(scl):.2f} to {max(scl):.2f}, so every model's 2026 pair RMSE mostly measures that noise; 2024's and "
               "2025's 256 games each are the better read of structure."]
+        va = (_ws(test, k0).get("per_team_game") or {}).get("pass_att")
+        vb = (_ws(test, k1).get("per_team_game") or {}).get("pass_att")
+        if va and vb:
+            toward = abs(vb["engine"] - va["real"]) < abs(va["engine"] - va["real"])
+            L[-1] += (f" Volume on the test season: teams threw {va['real']:.2f} attempts a game against Sleeper's "
+                      f"{va['sleeper']:.2f}; the anchor moved the engine from {va['engine']:.2f} to {vb['engine']:.2f}, "
+                      + ("toward what happened." if toward else
+                         "AWAY from what happened -- the gain above came despite that, and a season where Sleeper "
+                         "under-projects passing is where the anchor costs."))
     return L

@@ -76,10 +76,25 @@ _STEP_CLAMP = (0.75, 1.33)
 # attempts, engine / Sleeper / real, 2024 33.64 / 31.89 / 32.81 (+2.5% on
 # reality; the flawed first runs read 34.15, ~4%, on worlds drawn from the
 # wrong tables -- see play_worlds_parallel).
-# PROVISIONAL at 0 (the shipped engine) until the 2026 test, written in
-# research/nfl_dfs_engine_eval.py before any anchored run, decides whether the
-# 2024 choice ships.
-ATT_WEIGHT = 0.0
+# 1 since 2026-10-16: the weight the 2024 rule chose (ATT_WEIGHT_CHOSEN,
+# below), shipped because the rule written before the 2026 test passed every
+# link on its 63 games (weeks 2-5; tables fit on 2023-2025; run at 2577f9e):
+#
+#                       offence CRPS   pair RMSE   DST CRPS   K CRPS
+#   unanchored (w 0)    3.8595         0.1395      2.8644     2.5678
+#   anchored (w 1)      3.8535         0.1359      2.8344     2.5687
+#
+# Paired, anchored minus unanchored (SE clustered by game): offence -0.0060
+# +/- 0.0150, defenses -0.030 +/- 0.026, kickers +0.001 +/- 0.022 -- inside
+# the noise of 63 games; the rule decided on the point estimates, as written.
+# The sign is the same on all three seasons (2024 -0.0009 +/- 0.0104, where it
+# was chosen; 2025 -0.0172 +/- 0.0096, SEEN). Stated against it: 2026's teams
+# have thrown MORE than Sleeper projected (33.56 attempts against 31.11), so
+# on this season the anchor moves volume away from what happened (31.21 against
+# the unanchored 32.86) and its WR1 further below the real 15.31 (13.56
+# against 14.07). These 63 games had been read once before, by the flawed
+# first pass, whose verdict was the same (research/reports/nfl_dfs_engine.md).
+ATT_WEIGHT = 1.0
 # The 2024 rule's choice, frozen BEFORE the 2026 test reads a game: the
 # harness refuses any other weight for seasons >= 2025. On 2024 (256 games,
 # the same seeds; the w = 0 arm reproduces the ENV grid's 0.14 arm exactly),

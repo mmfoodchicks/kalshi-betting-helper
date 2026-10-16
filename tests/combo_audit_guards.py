@@ -13366,7 +13366,8 @@ if _dt14.available():
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
    # 7 since the engine model (2026-10-16); the version comment says why
-   _dt14.ENGINE == 7 and "# 7: the worlds are the engine model's" in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   _dt14.ENGINE == 8 and "# 7: the worlds are the engine model's" in _dts1
+   and "# 8: the engine's passing volume anchored" in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    # repinned 2026-09-18: the field size is DraftKings' maximumEntries via
@@ -14304,8 +14305,9 @@ ck("the report's header carries the withdrawn claim and points at the retraction
    and "**unresolved**" in _sdrw)
 ck("and the engine number in the findings section no longer contradicts the production table",
    "is **3** as of the discrete-v2 promotion" in _sdrw and "**4** since the engine model" in _sdrw
-   and "| Showdown engine | `SD_ENGINE = 4` |" in _sdrw
-   and _dt14.SD_ENGINE == 4)
+   and "**5** since its passing-volume anchor" in _sdrw
+   and "| Showdown engine | `SD_ENGINE = 5` |" in _sdrw
+   and _dt14.SD_ENGINE == 5)
 ck("and the report records the seed-stamp gap, that it was fixed prospectively, and that the historical artifacts were deliberately NOT regenerated",
    "### R1c. Six artifacts stamped `seed: null` while running on fixed seeds" in _sdrw
    and "deliberately NOT\nregenerated" in _sdr.replace("\r", "")
@@ -14411,11 +14413,13 @@ ck("and the showdown engine moved, so every board built under the old scorer is 
    # later bump is a different reason, recorded in SD_ENGINE's own comment;
    # the discrete promotion itself still did not move classic's (6 then; 7
    # only for the engine model)
-   _dt14.SD_ENGINE == 4 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   # and 5 at its passing-volume anchor, the same day, for the same kind of reason
+   _dt14.SD_ENGINE == 5 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
    and _pw_s1._rebuild_reason(_sdb(engine=2), "AAA", None, {}, 1, None)[0] == "engine updated"
-   and _pw_s1._rebuild_reason(_sdb(engine=3), "AAA", None, {}, 1, None)[0] == "engine updated"
-   and _dt14.ENGINE == 7,
+   and _pw_s1._rebuild_reason(_sdb(engine=4), "AAA", None, {}, 1, None)[0] == "engine updated"
+   and _dt14.ENGINE == 8,
    "showdown's numbers mean something new; classic's do not")
 ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
    _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
@@ -14837,7 +14841,8 @@ ck("and on a LIVE board the whole span of defensible conventions is worth about 
    and _s4t["by_q"]["top1"]["best_lineup_same_under_both"] is True
    and _s4t["by_q"]["top01"]["rank_corr"] > 0.95
    # NOT bumped for a 1% effect: 3 stood until the engine model moved it to 4
-   and _dt14.SD_ENGINE == 4 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
+   and _dt14.SD_ENGINE == 5 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    f"top1 bracket {100 * _s4t['by_q']['top1']['relative_bracket_at_best']:.1f}%, "
    f"top0.1% {100 * _s4t['by_q']['top01']['relative_bracket_at_best']:.1f}%")
 ck("the tied blocks are real and measured, so the narrow bracket is a fact about the cutoff width rather than an absence of ties",
@@ -14980,8 +14985,10 @@ ck("and the tab says it too, under the number, rather than leaving it to read as
    "any top 1% (in-sample)" in _js_s1
    and "these worlds also chose the lineups" in _js_s1
    and "basis.measured_optimism_pct.worst" in _js_s1)
-ck("no board was invalidated for the label, because no number changed (the versions moved later, 3 -> 4 and 6 -> 7, for the engine model and say so)",
-   _dt14.SD_ENGINE == 4 and _dt14.ENGINE == 7
+ck("no board was invalidated for the label, because no number changed (the versions moved later -- 3 -> 4 -> 5 and 6 -> 7 -> 8, for the engine model and its passing anchor -- and say so)",
+   _dt14.SD_ENGINE == 5 and _dt14.ENGINE == 8
+   and "# 5: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 8: the engine's passing volume anchored" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and "# 7: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    "labelling a figure is not a change in what the figure says")
@@ -18753,20 +18760,20 @@ _evrep = open(os.path.join(_d_ev, "reports", "nfl_dfs_engine.md")).read()
 _c25 = _ev25["calibration"]
 _ek = "engine_0.14"
 ck("the 2025 test ran on a COMMITTED tree at the frozen ENV_SD only: provenance clean at the pre-holdout commit, the engine's own modules clean, 256 games of weeks 2-18 with tables fit on 2023-2024, and the harness refuses a dirty tree or any other ENV_SD for a season >= 2025",
-   _ev25["meta"]["provenance"]["dirty"] is False and _ev25["meta"]["provenance"]["commit"] == "ecc4475"
-   and _ev25["meta"]["engine_sources"]["dirty"] is False and _ev25["meta"]["engine_sources"]["commit"] == "ecc4475"
+   _ev25["meta"]["provenance"]["dirty"] is False and _ev25["meta"]["provenance"]["commit"] == "2577f9e"
+   and _ev25["meta"]["engine_sources"]["dirty"] is False and _ev25["meta"]["engine_sources"]["commit"] == "2577f9e"
    and _ev25["meta"]["season"] == 2025 and _ev25["meta"]["fit_seasons"] == [2023, 2024] and _ev25["meta"]["envs"] == [0.14]
    and _ev25["n_games"] == 256 and _ev25["meta"]["k"] == 400 and _ev25["meta"]["from_week"] == 2
    and 'provenance.require_clean("a holdout validation")' in _evsrc and "2025 runs at the frozen ENV_SD" in _evsrc
    and _ev24["meta"]["season"] == 2024 and _ev24["meta"]["fit_seasons"] == [2023] and _ev24["meta"]["envs"] == [0.0, 0.05, 0.08, 0.11, 0.14])
 ck("the numbers the board's comment quotes are the artifact's, model by model (offence CRPS, PIT KS, pair RMSE, cross-team pair RMSE, DST and kicker CRPS on 2025)",
-   [round(_c25[m]["_pooled"]["crps_mean_over_roles"], 4) for m in ("legacy", "constrained", _ek)] == [3.9541, 3.8181, 3.8335]
-   and [round(_c25[m]["_pooled"]["pit_ks"], 4) for m in ("legacy", "constrained", _ek)] == [0.1782, 0.0251, 0.0478]
-   and [round(_ev25["pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.2560, 0.0857, 0.0475]
-   and [round(_ev25["opp_pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.1493, 0.1347, 0.0562]
-   and [round(_ev25["sides"][m]["dst"]["crps"], 4) for m in ("legacy", _ek)] == [3.1125, 3.0889]
-   and [round(_ev25["sides"][m]["k"]["crps"], 4) for m in ("legacy", _ek)] == [2.5934, 2.5630]
-   and "engine, env 0.14   3.8335        0.0478   0.0475     0.0562      3.0889    2.5630" in open(os.path.join(os.path.dirname(_d_ev), "dfs_tourney.py")).read())
+   [round(_c25[m]["_pooled"]["crps_mean_over_roles"], 4) for m in ("legacy", "constrained", _ek)] == [3.9535, 3.8181, 3.8388]
+   and [round(_c25[m]["_pooled"]["pit_ks"], 4) for m in ("legacy", "constrained", _ek)] == [0.1772, 0.0251, 0.0496]
+   and [round(_ev25["pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.2567, 0.0857, 0.0480]
+   and [round(_ev25["opp_pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.1516, 0.1347, 0.0559]
+   and [round(_ev25["sides"][m]["dst"]["crps"], 4) for m in ("legacy", _ek)] == [3.1106, 3.0996]
+   and [round(_ev25["sides"][m]["k"]["crps"], 4) for m in ("legacy", _ek)] == [2.5937, 2.5488]
+   and "engine, env 0.14   3.8388        0.0496   0.0480     0.0559      3.0996    2.5488" in open(os.path.join(os.path.dirname(_d_ev), "dfs_tourney.py")).read())
 # and what they MEAN: the offence CRPS is the plain mean of the seven roles'
 # CRPS from Stage 2E's own scorer, the cross-team RMSE runs over exactly the
 # opponent pairs and the offence-vs-offence moment, nothing else
@@ -18810,7 +18817,7 @@ else:
        str({k: v[0] for k, v in _g25.items()}))
 ck("the research record ships: the report with the rules as written before the run, the 2025 verdict, the 2024 grid, the stated limits (the hot passing level on 2025, the quarterback-back over-coupling, the sheet staying legacy) and the audit that preceded it; the Sleeper kicker and defense feeds it scored against are committed",
    "## The rules, written before 2025 was run" in _evrep and "**verdict: PROMOTED -- the boards are built on the engine model**" in _evrep
-   and "## 2024, development (where ENV_SD was chosen)" in _evrep and "The lean shows in its PIT" in _evrep
+   and "## 2024, development (where ENV_SD was chosen)" in _evrep and "receivers on 2025 sat above what happened" in _evrep
    and "over-couples a quarterback with his own backs" in _evrep and "The lineup SHEET in the app stays on legacy-discrete" in _evrep
    and "## The DFS audit that preceded this" in _evrep
    and all(os.path.exists(os.path.join(_d_ev, "data", "feeds", f"sleeper_kdef_{y}.json.gz")) for y in (2024, 2025)))
@@ -18843,12 +18850,21 @@ if _Gde.available():
               "players": [dict(p, team=t, name=f"{p['name']}-{t}") for t in ("KC", "BUF") for p in _pl_de]}
     _ctx_va = {"T": _Tde, "profiles": {"KC": _Lde, "BUF": dict(_Lde, abbr="BUF")}, "drive": {}, "env_sd": 0.14,
                "workers": 1, "anchor_n": 300}
-    _sa = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va))
+    _o_aw = _Gde.ATT_WEIGHT
+    try:
+        _Gde.ATT_WEIGHT = 0.0
+        _sa = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va))
+    finally:
+        _Gde.ATT_WEIGHT = _o_aw
     _sb = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va, att_weight=0.0))
+    _sd_ = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va))
     _sc_ = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va, att_weight=1.0, anchor_n=800))
-    ck("weight 0 is the shipped engine draw for draw (the comparison arm is the real thing), and weight 1 lands each team on Sleeper's projected attempts -- the sum of its quarterbacks' lines (34 here)",
+    # (that w = 0 IS the promoted engine draw for draw is pinned by the
+    # artifacts below: its 2024 and 2025 numbers reproduce exactly)
+    ck("weight 0 takes the unanchored path (the module default and the explicit 0 agree draw for draw and carry no attempts target), production runs at ATT_WEIGHT unless told otherwise, and weight 1 lands each team on Sleeper's projected attempts -- the sum of its quarterbacks' lines (34 here)",
        all(_npde.array_equal(a["arr"], b["arr"]) for a, b in zip(_sa["players"], _sb["players"]))
-       and "att_target" not in _sa["anchor"] and _Gde.sleeper_attempts(_gm_va["players"], "KC") == 34.0
+       and "att_target" not in _sa["anchor"] and _sd_["anchor"].get("att_weight") == _Gde.ATT_WEIGHT
+       and _Gde.sleeper_attempts(_gm_va["players"], "KC") == 34.0
        and _sc_["anchor"]["att_target"] == [34.0, 34.0]
        and all(abs(x - 34.0) < 1.5 for x in _sc_["anchor"]["att_landed"])
        and abs(_sc_["anchor"]["box"]["KC"]["pass_att"] - 34.0) < 1.5,
@@ -18860,6 +18876,105 @@ ck("the weight is frozen before a season >= 2025 is read: the harness refuses an
    and "atts != [0.0] and atts != [0.0, nfl_dfs_engine.ATT_WEIGHT_CHOSEN]" in _evsrc
    and '"att_weight": ATT_WEIGHT' in _insp.getsource(_Gde.sim_stamp)
    and "THE PASSING-VOLUME ANCHOR, rules written 2026-10-16 before any anchored run" in _evsrc)
+
+_va24 = _jsev.load(open(os.path.join(_d_ev, "data", "nfl_dfs_engine_att_2024.json")))
+_va25 = _ev25            # the 2025 run carries both arms on the same seeds: SEEN for the anchor
+_va26 = _jsev.load(open(os.path.join(_d_ev, "data", "nfl_dfs_engine_att_2026.json")))
+_cr = lambda sc, m: round(sc["calibration"][m]["_pooled"]["crps_mean_over_roles"], 4)    # noqa: E731
+_engsrc = open(os.path.join(os.path.dirname(_d_ev), "nfl_dfs_engine.py")).read()
+ck("the anchor's comparison arm IS the unanchored engine: on 2024 the w = 0 arm reproduces the ENV grid's 0.14 arm exactly (same seeds), so every difference is the anchor's",
+   _cr(_va24, "engine_0.14") == _cr(_ev24, "engine_0.14") == 3.9252
+   and round(_va24["pair_rmse"]["engine_0.14"], 4) == round(_ev24["pair_rmse"]["engine_0.14"], 4) == 0.0515
+   and round(_va24["sides"]["engine_0.14"]["dst"]["crps"], 4) == round(_ev24["sides"]["engine_0.14"]["dst"]["crps"], 4))
+ck("the 2026 test: 63 games of weeks 2-5, tables fit on 2023-2025, run on the committed freeze (2577f9e, engine sources clean) at the frozen ENV_SD and exactly the two arms the rule allows; the 2026 table carries the receipt that its fetch reproduced the committed 2025 week-5 rows",
+   _va26["meta"]["season"] == 2026 and _va26["meta"]["weeks"] == [2, 5] and _va26["n_games"] == 63
+   and _va26["meta"]["fit_seasons"] == [2023, 2024, 2025] and _va26["meta"]["arms"] == [[0.14, 0.0], [0.14, 1.0]]
+   and _va26["meta"]["provenance"]["commit"] == "2577f9e" and _va26["meta"]["provenance"]["dirty"] is False
+   and _va26["meta"]["engine_sources"]["dirty"] is False and _va25["meta"]["arms"] == [[0.14, 0.0], [0.14, 1.0]]
+   and "368/368" in open(os.path.join(_d_ev, "data", "coverage_2026.json")).read()
+   and os.path.exists(os.path.join(_d_ev, "data", "player_weeks_2026.csv.gz")))
+ck("the numbers the weight's comments quote are the artifacts': 2024 offence CRPS 3.9252 / 3.9288 / 3.9242 at w 0 / 0.5 / 1; 2026 3.8595 unanchored against 3.8535 anchored with pair RMSE 0.1395 / 0.1359, DST 2.8644 / 2.8344, K 2.5678 / 2.5687; the paired offence differences -0.0009 +/- 0.0104 (2024), -0.0172 +/- 0.0096 (2025, seen), -0.0060 +/- 0.0150 (2026)",
+   [_cr(_va24, m) for m in ("engine_0.14", "engine_0.14_att0.5", "engine_0.14_att1")] == [3.9252, 3.9288, 3.9242]
+   and [_cr(_va26, m) for m in ("engine_0.14", "engine_0.14_att1")] == [3.8595, 3.8535]
+   and [round(_va26["pair_rmse"][m], 4) for m in ("engine_0.14", "engine_0.14_att1")] == [0.1395, 0.1359]
+   and [round(_va26["sides"][m]["dst"]["crps"], 4) for m in ("engine_0.14", "engine_0.14_att1")] == [2.8644, 2.8344]
+   and [round(_va26["sides"][m]["k"]["crps"], 4) for m in ("engine_0.14", "engine_0.14_att1")] == [2.5678, 2.5687]
+   and [(sc["paired"]["engine_0.14_att1"]["offence"]["mean_diff"], sc["paired"]["engine_0.14_att1"]["offence"]["se_game_clustered"])
+        for sc in (_va24, _va25, _va26)] == [(-0.00093, 0.01044), (-0.01716, 0.00959), (-0.00599, 0.01501)]
+   and "#   unanchored (w 0)    3.8595         0.1395      2.8644     2.5678" in _engsrc
+   and "#   anchored (w 1)      3.8535         0.1359      2.8344     2.5687" in _engsrc
+   and "#   1     3.9242         0.0337   0.0482      0.0250            2.9026     2.5285   31.83" in _engsrc)
+# and what the attempts figures MEAN: world_summary's per-team-game passing
+# volume is the final worlds' box mean against the projected players' summed
+# Sleeper lines and the real QB lines (the definition beside the number)
+ck("and the volume the comments quote (2026: real 33.56, Sleeper 31.11, the engine 32.86 unanchored and 31.21 anchored) is world_summary's, whose engine figure is the FINAL worlds' box mean and whose real and Sleeper figures are the quarterbacks' lines",
+   [_va26["worlds"][m]["per_team_game"]["pass_att"]["engine"] for m in ("engine_0.14", "engine_0.14_att1")] == [32.86, 31.21]
+   and (_va26["worlds"]["engine_0.14"]["per_team_game"]["pass_att"]["real"], _va26["worlds"]["engine_0.14"]["per_team_game"]["pass_att"]["sleeper"]) == (33.56, 31.11)
+   and '("pass_att", "pass_att", "QB")' in _evsrc and 'acc[k][0] += b[k]' in _evsrc and 'b = an["box"][team]' in _evsrc
+   and "(31.21 against\n# the unanchored 32.86)" in _engsrc)
+if _EVE is not None:
+    _syn_a = {"calibration": {k: {"_pooled": {"crps_mean_over_roles": v}} for k, v in
+                              (("engine_0.14", 3.93), ("engine_0.14_att0.5", 3.92), ("engine_0.14_att1", 3.90))},
+              "pair_rmse": {"engine_0.14": 0.05, "engine_0.14_att0.5": 0.059, "engine_0.14_att1": 0.0601},
+              "opp_pair_rmse": {"engine_0.14": 0.03, "engine_0.14_att0.5": 0.03, "engine_0.14_att1": 0.03}}
+    _syn_g = lambda ea, eb, pa, pb, da, db, ka, kb: {                                              # noqa: E731
+        "calibration": {"engine_0.14_att0.5": {"_pooled": {"crps_mean_over_roles": ea}}, "engine_0.14": {"_pooled": {"crps_mean_over_roles": eb}}},
+        "pair_rmse": {"engine_0.14_att0.5": pa, "engine_0.14": pb},
+        "sides": {"engine_0.14_att0.5": {"dst": {"crps": da}, "k": {"crps": ka}}, "engine_0.14": {"dst": {"crps": db}, "k": {"crps": kb}}}}
+    ck("the weight rule and the 2026 rule are the ones written down, edge by edge: the lowest CRPS wins only among weights whose pair RMSE stays within 0.01 of w = 0's (w 1 at +0.0101 is barred, so 0.5 wins); the anchored engine ships only with LOWER offence CRPS, pair RMSE within +0.01 and defense and kicker CRPS within x1.01 of the unanchored engine's",
+       _EVE.choose_att(_syn_a, 0.14) == 0.5
+       and _EVE.att_gate(_syn_g(3.85, 3.86, 0.14, 0.135, 2.85, 2.84, 2.55, 2.56), 0.14, 0.5)["promote"][0]
+       and not _EVE.att_gate(_syn_g(3.86, 3.86, 0.14, 0.135, 2.85, 2.84, 2.55, 2.56), 0.14, 0.5)["a_crps"][0]
+       and not _EVE.att_gate(_syn_g(3.85, 3.86, 0.146, 0.135, 2.85, 2.84, 2.55, 2.56), 0.14, 0.5)["b_pairs"][0]
+       and not _EVE.att_gate(_syn_g(3.85, 3.86, 0.14, 0.135, 2.88, 2.84, 2.55, 2.56), 0.14, 0.5)["c_dst"][0])
+    ck("and the boards run the anchor because both rules said so: the 2024 rule's choice is 1, it was frozen before 2026 was read, and the 2026 rule passed every link",
+       _EVE.choose_att(_va24, 0.14) == _Gde.ATT_WEIGHT_CHOSEN == _Gde.ATT_WEIGHT == 1.0
+       and _EVE.att_gate(_va26, 0.14, 1.0)["promote"][0] is True
+       and _dtde.SD_ENGINE == 5 and _dtde.ENGINE == 8,
+       str(_EVE.att_gate(_va26, 0.14, 1.0)))
+_evrep2 = open(os.path.join(_d_ev, "reports", "nfl_dfs_engine.md")).read()
+ck("the report carries the anchor: the rules as written before the runs, the 2024 grid and its choice, 2025 labelled SEEN, the 2026 verdict with the game-clustered paired errors, the warning that 63 games of pair correlations are mostly noise, and that on 2026 the anchor moved volume AWAY from what happened",
+   "## The passing-volume anchor (2026-10-16)" in _evrep2 and "w = **1** chosen" in _evrep2
+   and "### 2025, SEEN" in _evrep2 and "**verdict: SHIPPED -- the boards anchor passing volume at w 1**" in _evrep2
+   and "SE clustered by game" in _evrep2 and "the better read of structure" in _evrep2
+   and "AWAY from what happened" in _evrep2)
+
+# ---- 2026-10-16 the table leak, and the check that would have caught it ----
+# The replay's scored worlds came from the shipped tables while the anchor
+# levelled the teams on the refit ones; on 2024 they sat 1.29 points a team
+# above their anchored target. world_summary measures exactly that gap from
+# the per-game record (the FINAL worlds' box means against the target), so
+# every corrected artifact must show it inside the anchor's own noise, and
+# the superseded 2024 run must still show the leak.
+_sup_dir = os.path.join(_d_ev, "data", "superseded")
+_sup24 = _jsev.load(open(os.path.join(_sup_dir, "nfl_dfs_engine_2024.json")))
+_land = {name: {k: v["pts_minus_target"]["mean"] for k, v in sc["worlds"].items()}
+         for name, sc in (("2024 env", _ev24), ("2024 w", _va24), ("2025", _ev25), ("2026", _va26))}
+ck("every corrected replay's scored worlds land where the anchor levelled them (final-world points minus the anchored target, mean over the team-games, inside +/-0.3 for every engine arm of every artifact), while the superseded 2024 run -- worlds from the shipped tables -- sat over a point above; the check reads the FINAL worlds' box means against the target, which is what leaked",
+   all(abs(x) < 0.3 for d in _land.values() for x in d.values()) and len(_land["2024 env"]) == 5
+   and _sup24["worlds"]["engine_0.14"]["pts_minus_target"]["mean"] > 1.0
+   and "SUPERSEDED" in _sup24["worlds_note"]
+   and 'land.append(b["pts"] - an["target"][i])' in _evsrc and 'b = an["box"][team]' in _evsrc
+   and "box=summary" in _insp.getsource(_Gde.simulate_game)
+   and "summary = {t: {k: round(float(boxes[t][k].mean()), 2)" in _insp.getsource(_Gde.simulate_game),
+   str(_land))
+ck("the re-run was written into the harness before it started, the flawed artifacts are kept beside the corrected ones, and the report opens with the correction and its before/after table",
+   "THE RE-RUN, written 2026-10-16 before it." in _evsrc
+   and sorted(f for f in os.listdir(_sup_dir) if f.endswith(".json")) == [
+       "nfl_dfs_engine_2024.json", "nfl_dfs_engine_2025.json", "nfl_dfs_engine_att_2024.json",
+       "nfl_dfs_engine_att_2025.json", "nfl_dfs_engine_att_2026.json"]
+   and _evrep2.startswith("# The game-engine DFS worlds") and "**Corrected 2026-10-16.**" in _evrep2[:400]
+   and "## Correction: the first runs drew their worlds from the wrong tables" in _evrep2
+   and "| passing-volume weight, the 2024 rule's choice | 0.5 | **1** |" in _evrep2
+   and "| 2025 promotion gate | PROMOTED | **PROMOTED** |" in _evrep2
+   and "the choices frozen in commit 2577f9e" in _evrep2)
+_envsrc = _engsrc[_engsrc.index("# The game's shared passing environment"):_engsrc.index("ENV_SD = 0.14")]
+_qq = {k: next(r[k] for r in _ev24["pairs"] if r["moment"].endswith("QB1/opp QB1")) for k in ("engine_0", "engine_0.14")}
+ck("ENV_SD's comment quotes the corrected 2024 grid: offence CRPS, pair and cross-team RMSE at every grid value, QB1 / opp QB1 and the within-game points correlation at the ends (world_summary's median over games)",
+   all(f"#   {e:.2f}   {_cr(_ev24, f'engine_{e:g}'):.4f}         {_ev24['pair_rmse'][f'engine_{e:g}']:.4f}      {_ev24['opp_pair_rmse'][f'engine_{e:g}']:.4f}" in _envsrc
+       for e in (0.0, 0.05, 0.08, 0.11, 0.14))
+   and f"{_qq['engine_0']:.3f}                    {_ev24['worlds']['engine_0']['corr_pts_median']:+.3f}" in _envsrc
+   and f"{_qq['engine_0.14']:.3f}                    {_ev24['worlds']['engine_0.14']['corr_pts_median']:+.3f}" in _envsrc)
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:

@@ -122,7 +122,15 @@ data-only `sim-history` branch (which never deploys):
   dealt to the players by Sleeper usage with the constrained model's fitted
   allocation noise, defenses and kickers scored off the same game. One added
   engine term, the shared passing environment (`ENV_SD` 0.14, chosen on 2024
-  by a rule written first; off for every other caller of `play_game`).
+  by a rule written first; off for every other caller of `play_game`). Each
+  team's pass attempts are anchored to Sleeper's projected attempts
+  (`ATT_WEIGHT` 1, a pass-rate `call_shift` iterated with the points anchor;
+  chosen on 2024, shipped on a pre-registered 2026 weeks 2-5 test whose gain
+  sits inside the noise). 2025 is SEEN for anything the engine does now; new
+  engine changes are judged on 2026 (`player_weeks_2026`). A replay's scored
+  worlds must come from the tables its anchor measured on
+  (`play_worlds_parallel(..., T=)`): the first runs drew them from the shipped
+  tables, which contain the season scored (`research/data/superseded/`).
   `dfs_tourney.BOARD_MODEL = "engine"` because the pre-registered 2025 test
   passed (`research/reports/nfl_dfs_engine.md`; the harness
   `research/nfl_dfs_engine_eval.py` refuses a dirty tree for 2025+). PC only
