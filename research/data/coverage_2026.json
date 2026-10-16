@@ -1,0 +1,26 @@
+{
+ "2026": {
+  "actual_player_weeks": 2081,
+  "actual_without_projection": 215,
+  "empty_rows": 13499,
+  "excluded": 34,
+  "exclusion_reasons": {
+   "pos_out_of_scope": 34
+  },
+  "feed_flags": {},
+  "flag_counts": {
+   "act_did_not_play": 5,
+   "pos_out_of_scope": 34,
+   "proj_zero": 215
+  },
+  "games": 79,
+  "holdout": false,
+  "kept": 2052,
+  "matched": 1866,
+  "projected_player_weeks": 1871,
+  "projection_without_actual": 5,
+  "weeks_with_actuals": 5,
+  "weeks_with_projections": 5
+ },
+ "source": "Sleeper projections and stats, positions QB/RB/WR/TE, season_type regular, weeks 1-5, fetched 2026-10-16; the same fetch reproduced the committed 2025 week-5 table row for row (368/368)"
+}

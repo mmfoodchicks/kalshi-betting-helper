@@ -68,6 +68,36 @@ ANCHOR_ITERS = 2
 # A one-step level correction is capped: no profile is moved more than this
 # per step, so one odd measuring pass cannot fling a team.
 _STEP_CLAMP = (0.75, 1.33)
+# The passing-VOLUME anchor (owner, 2026-10-16: "anchor passing volume"): each
+# team's mean pass attempts are moved to (1 - ATT_WEIGHT) x the engine's own +
+# ATT_WEIGHT x Sleeper's projected team attempts, through a pass-rate shift on
+# the logit of every play call (nfl_deep_sim profile key `call_shift`),
+# iterated with the points anchor. The promoted engine threw ~4% too many
+# passes in both seasons it was measured on (team-game attempts, engine /
+# Sleeper / real: 2024 34.15 / 31.89 / 32.81, 2025 33.24 / 31.59 / 31.99).
+# PROVISIONAL at 0 (the shipped engine) until the rule written in
+# research/nfl_dfs_engine_eval.py picks the weight on 2024 and the 2026 test
+# decides whether it ships.
+ATT_WEIGHT = 0.0
+# The 2024 rule's choice, frozen BEFORE the 2026 test reads a game: the
+# harness refuses any other weight for seasons >= 2025. On 2024 (256 games,
+# the same seeds; the w = 0 arm reproduced the shipped engine's 2024 numbers
+# exactly):
+#
+#   w     offence CRPS   PIT KS   pair RMSE   cross-team RMSE   DST CRPS   K CRPS
+#   0     3.9328         0.0238   0.0536      0.0332            2.8958     2.5329
+#   0.5   3.9222         0.0303   0.0504      0.0298            2.9024     2.5345
+#   1     3.9249         0.0352   0.0474      0.0266            2.9146     2.5307
+#
+# The rule (lowest offence CRPS among weights whose pair and cross-team RMSE
+# stay within 0.01 of w = 0's) chose 0.5; paired against w = 0 its offence
+# CRPS is -0.0106 +/- 0.0071 (SE clustered by game). Its PIT is worse on 2024
+# because 2024's real passing ran ABOVE Sleeper's projection (the anchor pulls
+# toward Sleeper), the opposite of 2025 -- which is why the decision belongs to
+# a season neither was chosen on.
+ATT_WEIGHT_CHOSEN = 0.5
+# A pass-rate step is capped on the logit, for the same reason.
+_CALL_STEP = 0.6
 # The game's shared passing environment (nfl_deep_sim.play_game env_sd): one
 # draw per game moving both offences' yards per completion and completion
 # rate together -- wind, rain, a dome, a crew. The engine already matched the
@@ -154,13 +184,33 @@ def play_worlds_parallel(hp, ap, n, seed, neutral=False, workers=1, chunk=5000, 
     return tuple({k: np.concatenate([p[side][k] for p in parts]) for k in parts[0][side]} for side in (0, 1))
 
 
+def _passing(box):
+    """(mean attempts, mean plays, mean sacks) of one side's measuring pass."""
+    return float(box["pass_att"].mean()), float(box["plays"].mean()), float(box["sacks"].mean())
+
+
+def _call_step(att, plays, sacks, target):
+    """The logit shift that moves mean attempts from `att` to `target`: the
+    derivative of dropbacks in the shift is plays x p(1 - p) (p the dropback
+    rate), times the share of dropbacks that are attempts, not sacks."""
+    drop = att + sacks
+    if plays <= 0 or drop <= 0:
+        return 0.0
+    p = min(0.95, max(0.05, drop / plays))
+    slope = max(5.0, plays * p * (1.0 - p) * (att / drop))
+    return min(_CALL_STEP, max(-_CALL_STEP, (float(target) - att) / slope))
+
+
 def anchor(hp, ap, targets, rng, T=None, neutral=False, n=ANCHOR_N, iters=ANCHOR_ITERS, start=None,
-           env_sd=None):
+           env_sd=None, att_targets=None, start_box=None):
     """Copies of the two profiles with each OFFENCE re-levelled so the engine's
-    mean points land on `targets` (home, away). Returns (hp, ap, report); the
-    report carries the engine's own expectation before anchoring (`deep`),
-    the targets, and where the last measuring pass landed. `start` is that
-    first measurement when the caller already made it."""
+    mean points land on `targets` (home, away) -- and, when `att_targets`
+    (home, away) is given, its pass rate moved so its mean attempts land on
+    those too. Returns (hp, ap, report); the report carries the engine's own
+    expectation before anchoring (`deep`), the targets, and where the last
+    measuring pass landed. `start` (and `start_box`, the two boxes it came
+    from) is that first measurement when the caller already made it. With
+    `att_targets` None nothing about the old path changes, draw for draw."""
     import nfl_deep_sim as E
     T = T or E.tables()
     hp, ap = dict(hp), dict(ap)
@@ -168,8 +218,11 @@ def anchor(hp, ap, targets, rng, T=None, neutral=False, n=ANCHOR_N, iters=ANCHOR
     if start is None:
         bh, ba = play_worlds(hp, ap, n, rng, T, neutral, env_sd)
         start = (float(bh["pts"].mean()), float(ba["pts"].mean()))
+        start_box = (bh, ba)
     deep = got = tuple(start)
-    steps = []
+    gbox = start_box
+    deep_att = [round(_passing(b)[0], 2) for b in gbox] if (att_targets and gbox) else None
+    steps, att_steps = [], []
     for _ in range(int(iters)):
         for prof, m, tgt in ((hp, got[0], targets[0]), (ap, got[1], targets[1])):
             if m > 0 and tgt and tgt > 0:
@@ -178,13 +231,25 @@ def anchor(hp, ap, targets, rng, T=None, neutral=False, n=ANCHOR_N, iters=ANCHOR
                 # the defence keeps the level the opponent has always seen
                 prof["level_def"] = prof.get("level_def") or prof.get("level") or 1.0
                 prof["level_off"] = round(base * f, 5)
+        if att_targets and gbox:
+            for prof, b, tgt in ((hp, gbox[0], att_targets[0]), (ap, gbox[1], att_targets[1])):
+                if tgt and tgt > 0:
+                    prof["call_shift"] = round(float(prof.get("call_shift") or 0.0) + _call_step(*_passing(b), tgt), 5)
         bh, ba = play_worlds(hp, ap, n, rng, T, neutral, env_sd)
         got = (float(bh["pts"].mean()), float(ba["pts"].mean()))
+        gbox = (bh, ba)
         steps.append([round(got[0], 2), round(got[1], 2)])
-    return hp, ap, {"deep": [round(deep[0], 2), round(deep[1], 2)],
-                    "target": [round(float(targets[0]), 2), round(float(targets[1]), 2)],
-                    "landed": steps[-1] if steps else [round(deep[0], 2), round(deep[1], 2)],
-                    "level_off": [hp.get("level_off"), ap.get("level_off")], "n": int(n), "iters": int(iters)}
+        if att_targets:
+            att_steps.append([round(_passing(bh)[0], 2), round(_passing(ba)[0], 2)])
+    rep = {"deep": [round(deep[0], 2), round(deep[1], 2)],
+           "target": [round(float(targets[0]), 2), round(float(targets[1]), 2)],
+           "landed": steps[-1] if steps else [round(deep[0], 2), round(deep[1], 2)],
+           "level_off": [hp.get("level_off"), ap.get("level_off")], "n": int(n), "iters": int(iters)}
+    if att_targets:
+        rep.update(att_deep=deep_att, att_target=[(round(float(t), 2) if t else None) for t in att_targets],
+                   att_landed=(att_steps[-1] if att_steps else deep_att),
+                   call_shift=[hp.get("call_shift"), ap.get("call_shift")])
+    return hp, ap, rep
 
 
 def blend_targets(drive, deep, weight=None):
@@ -398,7 +463,15 @@ def simulate_game(game, n, rng, ctx):
     py = random.Random(seed)
     # the deep engine's own expectation is the first measuring pass of the anchor
     targets_fn = (lambda deep: blend_targets((drive.get(home), drive.get(away)), deep, ctx.get("weight")))
-    hp2, ap2, rep = _anchor_blended(hp, ap, targets_fn, py, T, neutral, ctx)
+    w_att = ATT_WEIGHT if ctx.get("att_weight") is None else float(ctx.get("att_weight"))
+    att_fn = None
+    if w_att > 0:
+        sl = (sleeper_attempts(players, home), sleeper_attempts(players, away))
+        att_fn = (lambda deep_att: tuple(((1.0 - w_att) * e + w_att * s_) if s_ > 0 else e
+                                         for e, s_ in zip(deep_att, sl)))
+    hp2, ap2, rep = _anchor_blended(hp, ap, targets_fn, py, T, neutral, ctx, att_fn=att_fn)
+    if w_att > 0:
+        rep["att_weight"] = w_att
     bh, ba = play_worlds_parallel(hp2, ap2, n, seed, neutral, workers=int(ctx.get("workers") or 1),
                                   env_sd=ctx.get("env_sd"))
     boxes = {home: bh, away: ba}
@@ -444,15 +517,26 @@ def simulate_game(game, n, rng, ctx):
             "boxes": boxes if ctx.get("keep_boxes") else None}
 
 
-def _anchor_blended(hp, ap, targets_fn, py, T, neutral, ctx):
+def _anchor_blended(hp, ap, targets_fn, py, T, neutral, ctx, att_fn=None):
     """anchor() with the targets known only after the first measuring pass
-    (they blend the deep engine's own expectation)."""
+    (they blend the deep engine's own expectation, points and -- with
+    `att_fn` -- attempts)."""
     n = int(ctx.get("anchor_n") or ANCHOR_N)
     bh, ba = play_worlds(hp, ap, n, py, T, neutral, ctx.get("env_sd"))
     deep = (float(bh["pts"].mean()), float(ba["pts"].mean()))
     targets = targets_fn(deep)
+    att_targets = att_fn((_passing(bh)[0], _passing(ba)[0])) if att_fn else None
     return anchor(hp, ap, targets, py, T, neutral, n=n, iters=int(ctx.get("anchor_iters") or ANCHOR_ITERS),
-                  start=deep, env_sd=ctx.get("env_sd"))
+                  start=deep, env_sd=ctx.get("env_sd"), att_targets=att_targets, start_box=(bh, ba))
+
+
+def sleeper_attempts(players, team):
+    """Sleeper's projected pass attempts for one team: the sum of its
+    quarterbacks' lines (the reconciled `recon` where present, nfl_recon)."""
+    from nfl_dfs_csim import _line
+    return float(sum(_line(p)["pass_att"] for p in players
+                     if p.get("team") == team and not p.get("actual_only")
+                     and (p.get("pos") or "").upper() == "QB"))
 
 
 # ---- the week's context -----------------------------------------------------------
@@ -498,6 +582,8 @@ def sim_stamp(n=None, seed=None, ctx=None):
             "anchor": {"n": ANCHOR_N, "iters": ANCHOR_ITERS},
             "engine": {"form_sd": E._FORM_SD, "hfa_yds": E._HFA_YDS, "env_sd": ENV_SD,
                        "kickoff_era": getattr(T, "kickoff_era", None)},
+            "passing_volume": {"att_weight": ATT_WEIGHT,
+                               "target": "(1 - w) x the engine's own attempts + w x Sleeper's projected team attempts"},
             "validation": "research/reports/nfl_dfs_engine.md (2025 blind, rules pre-registered)",
             "deal_params": {k: PARAMS["params"][k] for k in ("share_sd", "ypr_sd", "rshare_sd", "ypc_sd")},
             "deal_params_hash": PARAMS["hash"][:16], "deal_params_fitted": bool(PARAMS["fitted"]),

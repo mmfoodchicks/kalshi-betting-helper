@@ -18790,6 +18790,52 @@ ck("the research record ships: the report with the rules as written before the r
    and "## The DFS audit that preceded this" in _evrep
    and all(os.path.exists(os.path.join(_d_ev, "data", "feeds", f"sleeper_kdef_{y}.json.gz")) for y in (2024, 2025)))
 
+# ---- 2026-10-16 the passing-volume anchor (owner: "anchor passing volume") ----
+print("=" * 72)
+print("NFL DFS engine: each team's pass attempts anchored toward Sleeper's projection")
+print("=" * 72)
+_gv1 = _Ede.play_game(_Lde, dict(_Lde, abbr="B"), _rde.Random(4), _Tde, env_sd=0.14)
+_gv2 = _Ede.play_game(dict(_Lde, call_shift=0.0), dict(_Lde, abbr="B"), _rde.Random(4), _Tde, env_sd=0.14)
+ck("the engine's pass-rate lever (profile key call_shift) is inert when absent or zero -- the same game draw for draw -- so the slate's deep layer and the deep season play exactly as validated",
+   _gv1 == _gv2 and "float(me.get(\"call_shift\") or 0.0)" in _insp.getsource(_Ede._Side.__init__))
+if _Gde.available():
+    _bvp = _Gde.play_worlds(dict(_Lde, call_shift=0.4), dict(_Lde, abbr="B"), 1500, _rde.Random(1), _Tde)
+    _bvm = _Gde.play_worlds(dict(_Lde, call_shift=-0.4), dict(_Lde, abbr="B"), 1500, _rde.Random(1), _Tde)
+    ck("a positive shift throws more and runs less, a negative one the reverse, and only for the offence that carries it",
+       float(_bvp[0]["pass_att"].mean()) > float(_bvm[0]["pass_att"].mean()) + 4
+       and float(_bvp[0]["rush_att"].mean()) < float(_bvm[0]["rush_att"].mean()) - 4
+       and abs(float(_bvp[1]["pass_att"].mean()) - float(_bvm[1]["pass_att"].mean())) < 2.5,
+       str((round(float(_bvp[0]["pass_att"].mean()), 2), round(float(_bvm[0]["pass_att"].mean()), 2))))
+    _hva, _ava, _rva = _Gde.anchor(_Lde, dict(_Lde, abbr="B"), (24.0, 20.0), _rde.Random(3), _Tde, n=800, iters=2,
+                                   att_targets=(30.0, 37.0), env_sd=0.14)
+    _lva = _Gde.play_worlds(_hva, _ava, 3000, _rde.Random(9), _Tde, env_sd=0.14)
+    ck("the anchor moves points and attempts together: asked for 24 / 20 points on 30 / 37 attempts, fresh games land within a point and an attempt of each, the report carries both",
+       abs(float(_lva[0]["pts"].mean()) - 24.0) < 1.0 and abs(float(_lva[1]["pts"].mean()) - 20.0) < 1.0
+       and abs(float(_lva[0]["pass_att"].mean()) - 30.0) < 1.0 and abs(float(_lva[1]["pass_att"].mean()) - 37.0) < 1.0
+       and _rva["att_target"] == [30.0, 37.0] and _rva["call_shift"][0] < 0 < _rva["call_shift"][1],
+       str(([round(float(b["pts"].mean()), 2) for b in _lva], [round(float(b["pass_att"].mean()), 2) for b in _lva], _rva["call_shift"])))
+    _gm_va = {"label": "BUF @ KC", "teams": ["KC", "BUF"], "home": "KC", "away": "BUF", "neutral": False,
+              "players": [dict(p, team=t, name=f"{p['name']}-{t}") for t in ("KC", "BUF") for p in _pl_de]}
+    _ctx_va = {"T": _Tde, "profiles": {"KC": _Lde, "BUF": dict(_Lde, abbr="BUF")}, "drive": {}, "env_sd": 0.14,
+               "workers": 1, "anchor_n": 300}
+    _sa = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va))
+    _sb = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va, att_weight=0.0))
+    _sc_ = _Gde.simulate_game(_gm_va, 800, _npde.random.default_rng(5), dict(_ctx_va, att_weight=1.0, anchor_n=800))
+    ck("weight 0 is the shipped engine draw for draw (the comparison arm is the real thing), and weight 1 lands each team on Sleeper's projected attempts -- the sum of its quarterbacks' lines (34 here)",
+       all(_npde.array_equal(a["arr"], b["arr"]) for a, b in zip(_sa["players"], _sb["players"]))
+       and "att_target" not in _sa["anchor"] and _Gde.sleeper_attempts(_gm_va["players"], "KC") == 34.0
+       and _sc_["anchor"]["att_target"] == [34.0, 34.0]
+       and all(abs(x - 34.0) < 1.5 for x in _sc_["anchor"]["att_landed"])
+       and abs(_sc_["anchor"]["box"]["KC"]["pass_att"] - 34.0) < 1.5,
+       str((_sc_["anchor"].get("att_landed"), _sc_["anchor"]["box"]["KC"]["pass_att"])))
+else:
+    ck("(numpy absent: the anchor's numeric checks run in the numpy suite)", True)
+ck("the weight is frozen before a season >= 2025 is read: the harness refuses any arm but w = 0 and the 2024 rule's choice there, and the board's stamp records the weight it ran",
+   "seasons >= 2025 run w = 0 and the frozen 2024 choice" in _evsrc
+   and "atts != [0.0] and atts != [0.0, nfl_dfs_engine.ATT_WEIGHT_CHOSEN]" in _evsrc
+   and '"att_weight": ATT_WEIGHT' in _insp.getsource(_Gde.sim_stamp)
+   and "THE PASSING-VOLUME ANCHOR, rules written 2026-10-16 before any anchored run" in _evsrc)
+
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
     print("FAILURES:")

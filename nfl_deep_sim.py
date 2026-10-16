@@ -336,7 +336,11 @@ class _Side:
         self.d_sack = shift("sack", L["sack"])
         self.d_int = shift("int", L["int"])
         self.d_pen = shift("pen", L["pen"])
-        self.d_call = shift("pass_rate", L["pass_rate"])
+        # `call_shift` (profile key, default absent = 0) moves this offence's
+        # play calls on the logit: the DFS worlds anchor each team's passing
+        # VOLUME to Sleeper's projected attempts through it (nfl_dfs_engine).
+        # No draw depends on it, so every other caller plays as before.
+        self.d_call = shift("pass_rate", L["pass_rate"]) + float(me.get("call_shift") or 0.0)
         a, b = T.exp["fum"]
         self.fum_mult = (o["fum"] / L["fum"]) ** a * (d["fum"] / L["fum"]) ** b if L["fum"] else 1.0
         self.tempo = (o.get("sec_per_snap") or L["sec_per_snap"]) / L["sec_per_snap"]

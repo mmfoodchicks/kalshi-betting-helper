@@ -57,6 +57,34 @@ constrained test; this is the engine's first contact with them):
   Any link failing keeps BOARD_MODEL at "legacy" and the engine an alternate,
   with the failing link in the report. Nothing is tuned on 2025.
 
+THE PASSING-VOLUME ANCHOR, rules written 2026-10-16 before any anchored run
+(the owner: "anchor passing volume"). The promoted engine threw ~4% too many
+passes in both seasons (attempts a team-game, engine / Sleeper / real: 2024
+34.15 / 31.89 / 32.81, 2025 33.24 / 31.59 / 31.99) and its receivers ran hot
+on 2025. The lever: a per-team pass-rate shift (nfl_deep_sim profile key
+`call_shift`, on the logit of every play call) iterated with the points
+anchor, so each team's mean attempts land on
+    target = (1 - w) x the engine's own attempts + w x Sleeper's projected
+             team attempts (the sum of its quarterbacks' reconciled lines).
+
+  Choosing w (2024 only). The grid value of 0 / 0.5 / 1 with the lowest
+  offence CRPS (mean over the seven roles), among values whose pair RMSE and
+  cross-team pair RMSE are each within 0.01 of w = 0's; a tie goes to the
+  smaller w. ENV_SD stays frozen at 0.14.
+
+  2025 is reported and labelled SEEN: the defect was found on it, so it cannot
+  judge the fix; nothing is chosen on it.
+
+  The test: 2026 weeks 2-5 (played, never read by any engine run). The
+  anchored engine replaces the shipped one (nfl_dfs_engine.ATT_WEIGHT = w)
+  only if, on the same games and seeds, (a) its offence CRPS is lower than
+  the shipped engine's, (b) its pair RMSE is no more than 0.01 above the
+  shipped engine's, (c) its DST and kicker CRPS are each no more than 1.01 x
+  the shipped engine's. About sixty games is a small sample: the paired
+  standard error of the CRPS difference is reported beside the rule, which
+  decides on the point estimates as written. If w = 0 is chosen, nothing
+  ships but the measurement.
+
   python3 -m research.nfl_dfs_engine_eval <pbp store dir> --season 2024 [--env 0,0.05,0.08] [--k 400]
       [--workers 4] [--out research/data/nfl_dfs_engine_2024.json]
 """
@@ -110,12 +138,16 @@ def kdef_feeds(season, weeks=range(1, 19)):
     research/data/feeds/sleeper_kdef_<season>.json.gz (small, committed, so
     the record does not depend on Sleeper keeping its archive)."""
     path = os.path.join(FEEDS, f"sleeper_kdef_{season}.json.gz")
+    out = {}
     if os.path.exists(path):
         with gzip.open(path, "rt") as fh:
-            return {int(k): v for k, v in json.load(fh).items()}
+            out = {int(k): v for k, v in json.load(fh).items()}
+        if all(int(w) in out for w in weeks):
+            return out
     import nfl_dfs_sim
-    out = {}
     for w in weeks:
+        if int(w) in out:
+            continue
         got = {}
         for kind, base in (("proj", "projections"), ("stats", "stats")):
             for pos, tag, keep in (("K", "k", _KEEP_K), ("DEF", "def", _KEEP_D)):
@@ -255,6 +287,24 @@ def home_away(store, week, teams):
 
 
 # ---- one week, every model ------------------------------------------------------
+def _table_rows():
+    """The player-week table: 2022-2025 (research.hist_data) plus 2026 weeks
+    1-5 (the same builder on the same Sleeper fetch, which reproduced the
+    committed 2025 week-5 rows 368 of 368 before 2026 was trusted)."""
+    rows = H.read_csv_gz(os.path.join(DATA, "player_weeks_2022_2025.csv.gz"))
+    p26 = os.path.join(DATA, "player_weeks_2026.csv.gz")
+    if os.path.exists(p26):
+        rows = rows + H.read_csv_gz(p26)
+    return rows
+
+
+def arm_key(env, w=0.0):
+    """The model key of one engine arm: env alone for the shipped engine (the
+    keys the 2024 and 2025 artifacts already carry), _att<w> for the
+    passing-volume anchor."""
+    return f"engine_{env:g}" + (f"_att{w:g}" if w else "")
+
+
 _W = {}
 
 
@@ -264,10 +314,12 @@ def _init(store_dir, season, fit_seasons, k, envs):
     stores = NF.load_stores(store_dir, fit_seasons)
     _W["T"] = E.Tables(NF.build_tables(stores, prior_season=max(fit_seasons)))
     _W["store"] = _load_store(store_dir, season)
-    _W["season"], _W["k"], _W["envs"] = season, k, envs
-    rows = H.read_csv_gz(os.path.join(DATA, "player_weeks_2022_2025.csv.gz"))
-    _W["games"] = F.games_from_table(rows, (season,))
-    _W["feeds"] = kdef_feeds(season)
+    # `envs` is a list of (env, att weight) arms; a bare float is (env, 0)
+    _W["season"], _W["k"] = season, k
+    _W["arms"] = [(a, 0.0) if not isinstance(a, (tuple, list)) else (float(a[0]), float(a[1])) for a in envs]
+    _W["games"] = F.games_from_table(_table_rows(), (season,))
+    weeks = sorted({g["week"] for g in _W["games"].values()})
+    _W["feeds"] = kdef_feeds(season, weeks=range(1, (max(weeks) if weeks else 18) + 1))
 
 
 def _legacy_side(sim_team_def, teams, dst_proj, k_lines, K, rng, team_off_lists):
@@ -354,40 +406,43 @@ def _week(w):
         cdst, ck = _legacy_side(ctd, g["teams"], dst_proj, k_by_team, K, crng,
                                 {t: {"td": ctd[t]["td"], "yd": ctd[t]["yd"]} for t in g["teams"]})
         rec["models"]["constrained"] = {"pts": cpts, "dst": cdst, "k": ck}
-        # ---- the engine, at each environment value on the same seed
-        for env in _W["envs"]:
+        # ---- the engine, at each arm (environment, attempts weight) on the same seed
+        for env, w_att in _W["arms"]:
             ctx = {"T": T, "profiles": profiles, "drive": {ha[0]: drive[0], ha[1]: drive[1]}, "env_sd": env,
-                   "workers": 1}
+                   "workers": 1, "att_weight": w_att}
             es = G.simulate_game(g, K, np.random.default_rng(SEEDS.child_seed(BASE_SEED, season, w, key[2], "engine")), ctx)
             if es is None:
                 continue
             epts = np.asarray([p["arr"] for p in es["players"]], dtype=np.float32)
-            rec["models"][f"engine_{env:g}"] = {"pts": epts, "dst": {t: es["dst"][t].astype(np.float32) for t in teams},
-                                                "k": {t: es["k"][t].astype(np.float32) for t in teams},
-                                                "anchor": {k: es["anchor"].get(k) for k in ("deep", "target", "landed", "box", "corr_pts")}}
+            rec["models"][arm_key(env, w_att)] = {
+                "pts": epts, "dst": {t: es["dst"][t].astype(np.float32) for t in teams},
+                "k": {t: es["k"][t].astype(np.float32) for t in teams},
+                "anchor": {k: es["anchor"].get(k) for k in ("deep", "target", "landed", "box", "corr_pts",
+                                                            "att_deep", "att_target", "att_landed", "call_shift")}}
         out.append(rec)
     return w, out
 
 
-def run(store_dir, season, envs=(0.0,), k=K_DEFAULT, workers=4, log=print):
+def run(store_dir, season, envs=(0.0,), k=K_DEFAULT, workers=4, log=print, weeks=None):
     fit = [s for s in (2023, 2024, 2025) if s < season]
     t0 = time.time()
-    weeks = list(range(FROM_WEEK, 19))
+    weeks = list(weeks or range(FROM_WEEK, 19))
     with mp.Pool(workers, initializer=_init, initargs=(store_dir, season, fit, k, list(envs))) as pool:
         res = []
         for w, rows in pool.imap_unordered(_week, weeks):
             res.extend(rows)
             log(f"[eval] {season} week {w}: {len(rows)} games ({time.time() - t0:.0f}s)")
     res.sort(key=lambda r: (r["week"], r["key"][2]))
-    return res, {"season": season, "fit_seasons": fit, "k": k, "envs": list(envs), "base_seed": BASE_SEED,
-                 "from_week": FROM_WEEK, "seconds": round(time.time() - t0, 1)}
+    arms = [(a, 0.0) if not isinstance(a, (tuple, list)) else (float(a[0]), float(a[1])) for a in envs]
+    return res, {"season": season, "fit_seasons": fit, "k": k, "envs": sorted({e for e, _w in arms}),
+                 "arms": [list(a) for a in arms], "weeks": [min(weeks), max(weeks)],
+                 "base_seed": BASE_SEED, "from_week": FROM_WEEK, "seconds": round(time.time() - t0, 1)}
 
 
 # ---- scoring ----------------------------------------------------------------------
 def samples(res, model):
     """Stage 2E's sample and observed-sample shapes for one model."""
-    rows = H.read_csv_gz(os.path.join(DATA, "player_weeks_2022_2025.csv.gz"))
-    games = F.games_from_table(rows, ({r["season"] for r in res} or {0}))
+    games = F.games_from_table(_table_rows(), ({r["season"] for r in res} or {0}))
     sample, obs = [], []
     ob_all = {gm["key"]: gm for gm in F.observed_sample({r["key"]: games[r["key"]] for r in res if r["key"] in games})}
     for r in res:
@@ -453,8 +508,7 @@ def score(res, models):
         out["calibration"][mname] = V.pit_and_crps(s, ob)
         out["moments"][mname] = F.moments(s)
         out["sides"][mname] = score_sides(res, mname)
-    rows = H.read_csv_gz(os.path.join(DATA, "player_weeks_2022_2025.csv.gz"))
-    games = F.games_from_table(rows, ({r["season"] for r in res}))
+    games = F.games_from_table(_table_rows(), ({r["season"] for r in res}))
     scales = E2.bootstrap_scales({r["key"]: games[r["key"]] for r in res if r["key"] in games},
                                  np.random.default_rng(BASE_SEED), boots=200)
     pairs, rmse = V.pair_table(obs_m, out["moments"], scales)
@@ -537,18 +591,108 @@ def gate(sc, env):
     return out
 
 
+ATT_GRID = (0.0, 0.5, 1.0)
+
+
+def choose_att(sc, env):
+    """The 2024 rule for the attempts weight (module docstring): the lowest
+    offence CRPS among grid values whose pair and cross-team pair RMSE are
+    each within 0.01 of w = 0's; ties to the smaller w."""
+    cal, pr, opr = sc["calibration"], sc["pair_rmse"], sc["opp_pair_rmse"]
+    k0 = arm_key(env, 0.0)
+    best = None
+    for w in ATT_GRID:
+        k = arm_key(env, w)
+        if k not in cal:
+            continue
+        if pr[k] > pr[k0] + 0.01 or opr[k] > opr[k0] + 0.01:
+            continue
+        c = cal[k]["_pooled"]["crps_mean_over_roles"]
+        if best is None or c < best[1] - 1e-12:
+            best = (w, c)
+    return best[0] if best else 0.0
+
+
+def paired_crps(res, model_a, model_b):
+    """Mean CRPS difference (a minus b) over the roled player-weeks both
+    models scored, with a standard error CLUSTERED BY GAME (players of one
+    game share its worlds, so they are not independent), plus the same for
+    the defenses and the kickers."""
+    _s_a, ob = samples(res, model_a)
+    _s_b, _ob = samples(res, model_b)
+    def crps(x, y):
+        x = np.sort(np.asarray(x, dtype=np.float64)); K = len(x); i1 = np.arange(1, K + 1)
+        return float(np.abs(x - y).mean() - 0.5 * (2.0 / (K * K)) * np.sum((2 * i1 - K - 1) * x))
+    out = {}
+    per_game = collections.defaultdict(list)
+    for ga, gb, o in zip(_s_a, _s_b, ob):
+        for i, p in enumerate(ga["players"]):
+            if (p.get("role") or "") in F.ROLES and not np.isnan(o["pts"][i, 0]):
+                y = float(o["pts"][i, 0])
+                per_game[ga["key"]].append(crps(ga["pts"][i], y) - crps(gb["pts"][i], y))
+    def summ(groups):
+        allv = [v for g in groups.values() for v in g]
+        if not allv:
+            return None
+        gm = np.asarray([np.sum(g) for g in groups.values()])        # cluster totals
+        n_g, n = len(gm), len(allv)
+        mean = float(np.sum(gm) / n)
+        se = float(np.sqrt(n_g / max(1, n_g - 1) * np.sum((gm - mean * np.asarray([len(g) for g in groups.values()])) ** 2)) / n)
+        return {"mean_diff": round(mean, 5), "se_game_clustered": round(se, 5), "n": n, "games": n_g}
+    out["offence"] = summ(per_game)
+    for kind in ("dst", "k"):
+        g2 = collections.defaultdict(list)
+        for r in res:
+            ma, mb = r["models"].get(model_a), r["models"].get(model_b)
+            if not ma or not mb:
+                continue
+            for t in (r["home"], r["away"]):
+                y = (r["dst_act"] if kind == "dst" else r["k_act"]).get(t)
+                if y is None or t not in ma[kind] or t not in mb[kind]:
+                    continue
+                g2[str(r["key"])].append(crps(ma[kind][t], float(y)) - crps(mb[kind][t], float(y)))
+        out[kind] = summ(g2)
+    return out
+
+
+def att_gate(sc, env, w):
+    """The 2026 rule for the anchored engine against the shipped one (module
+    docstring): {link: (ok, detail)} on the point estimates."""
+    a, b = arm_key(env, w), arm_key(env, 0.0)
+    ca, cb = sc["calibration"][a]["_pooled"], sc["calibration"][b]["_pooled"]
+    sa, sb = sc["sides"][a], sc["sides"][b]
+    out = {"a_crps": (ca["crps_mean_over_roles"] < cb["crps_mean_over_roles"],
+                      f"anchored {ca['crps_mean_over_roles']:.4f} vs shipped {cb['crps_mean_over_roles']:.4f}"),
+           "b_pairs": (sc["pair_rmse"][a] <= sc["pair_rmse"][b] + 0.01,
+                       f"anchored {sc['pair_rmse'][a]:.4f} vs shipped {sc['pair_rmse'][b]:.4f} (+0.01 allowed)"),
+           "c_dst": (sa["dst"]["crps"] <= 1.01 * sb["dst"]["crps"],
+                     f"anchored {sa['dst']['crps']:.4f} vs shipped {sb['dst']['crps']:.4f} (x1.01)"),
+           "c_k": (sa["k"]["crps"] <= 1.01 * sb["k"]["crps"],
+                   f"anchored {sa['k']['crps']:.4f} vs shipped {sb['k']['crps']:.4f} (x1.01)")}
+    out["promote"] = (all(v[0] for v in out.values()), "all links" if all(v[0] for v in out.values()) else
+                      "failed: " + ", ".join(n for n, v in out.items() if not v[0]))
+    return out
+
+
 def main(argv):
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("store")
     ap.add_argument("--season", type=int, default=2024)
     ap.add_argument("--env", default="0")
+    ap.add_argument("--att", default="0", help="attempts-anchor weights, run at every --env value")
+    ap.add_argument("--weeks", default=None, help="e.g. 2-5 (default 2-18)")
     ap.add_argument("--k", type=int, default=K_DEFAULT)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default=None)
     ap.add_argument("--raw", default=None, help="pickle the raw per-game results here")
     a = ap.parse_args(argv)
     envs = [float(x) for x in a.env.split(",") if x != ""]
+    atts = [float(x) for x in a.att.split(",") if x != ""]
+    weeks = None
+    if a.weeks:
+        lo, hi = (int(x) for x in a.weeks.split("-"))
+        weeks = range(lo, hi + 1)
     if a.season >= 2025:
         # the holdout may only be opened against a committed tree, and the
         # engine's own modules (outside provenance's hashed set) must be
@@ -561,21 +705,38 @@ def main(argv):
         import nfl_dfs_engine
         if envs != [nfl_dfs_engine.ENV_SD]:
             raise RuntimeError(f"2025 runs at the frozen ENV_SD ({nfl_dfs_engine.ENV_SD}) only, not {envs}")
-    res, meta = run(a.store, a.season, envs, a.k, a.workers)
+        # the attempts weight is frozen too: 2025 and 2026 run the shipped
+        # engine (w = 0) beside the 2024 rule's choice and nothing else
+        if atts != [0.0] and atts != [0.0, nfl_dfs_engine.ATT_WEIGHT_CHOSEN]:
+            raise RuntimeError(f"seasons >= 2025 run w = 0 and the frozen 2024 choice "
+                               f"({nfl_dfs_engine.ATT_WEIGHT_CHOSEN}) only, not {atts}")
+    arms = [(e, w) for e in envs for w in atts]
+    res, meta = run(a.store, a.season, arms, a.k, a.workers, weeks=weeks)
     if a.raw:
         with open(a.raw, "wb") as fh:
             pickle.dump((res, meta), fh)
-    models = ["legacy", "constrained"] + [f"engine_{e:g}" for e in envs]
+    models = ["legacy", "constrained"] + [arm_key(e, w) for e, w in arms]
     sc = score(res, models)
     sc["meta"] = meta
     from research import provenance
     sc["meta"]["provenance"] = provenance.stamp()
     sc["meta"]["engine_sources"] = engine_sources_sha()
-    anchors = [r["models"][f"engine_{envs[0]:g}"]["anchor"] for r in res if f"engine_{envs[0]:g}" in r["models"]]
+    anchors = [r["models"][arm_key(*arms[0])]["anchor"] for r in res if arm_key(*arms[0]) in r["models"]]
     sc["anchor"] = {"mean_abs_landing_err": round(float(np.mean([abs(a["landed"][0] - a["target"][0]) + abs(a["landed"][1] - a["target"][1])
                                                                  for a in anchors]) / 2), 3) if anchors else None,
                     "mean_target_minus_deep": round(float(np.mean([(a["target"][0] - a["deep"][0] + a["target"][1] - a["deep"][1]) / 2
                                                                    for a in anchors])), 3) if anchors else None}
+    sc["att_anchor"] = {}
+    for e, w in arms:
+        if not w:
+            continue
+        an = [r["models"][arm_key(e, w)]["anchor"] for r in res if arm_key(e, w) in r["models"]]
+        errs = [abs(x - t) for a_ in an for x, t in zip(a_.get("att_landed") or [], a_.get("att_target") or []) if t]
+        pe = [abs(x - t) for a_ in an for x, t in zip(a_["landed"], a_["target"]) if t]
+        sc["att_anchor"][arm_key(e, w)] = {"mean_abs_att_landing_err": round(float(np.mean(errs)), 3) if errs else None,
+                                           "mean_abs_pts_landing_err": round(float(np.mean(pe)), 3) if pe else None,
+                                           "mean_call_shift": round(float(np.mean([c for a_ in an for c in (a_.get("call_shift") or []) if c is not None])), 4)}
+        sc.setdefault("paired", {})[arm_key(e, w)] = paired_crps(res, arm_key(e, w), arm_key(e, 0.0))
     if a.out:
         with open(a.out, "w") as fh:
             json.dump(sc, fh, indent=1, sort_keys=True, default=float)
@@ -730,3 +891,57 @@ def write_report(dev, test, out, audit_md=None):
     with open(out, "w") as fh:
         fh.write("\n".join(L) + "\n")
     return g
+
+
+def _mname_att(m):
+    if "_att" in m:
+        env, w = m.replace("engine_", "").split("_att")
+        return f"engine, attempts anchored at w {w}"
+    return _mname(m) + (" (shipped)" if m.startswith("engine_") else "")
+
+
+def anchor_section(dev, seen, test):
+    """The report's section on the passing-volume anchor, from the three
+    artifacts (2024 grid, 2025 seen, 2026 test)."""
+    env = 0.14
+    w = choose_att(dev, env)
+    L = ["## The passing-volume anchor (2026-10-16)", "",
+         "The owner: \"anchor passing volume\". The promoted engine threw about 4% too many passes in both seasons it was "
+         "measured on. Team-game attempts, engine / Sleeper / real: 2024 34.15 / 31.89 / 32.81, 2025 33.24 / 31.59 / 31.99. "
+         "Its 2025 completions ran 21.96 against 20.56 real, which is what made its receivers hot. Sleeper's own team "
+         "passing was within 1% of reality on 2025.", "",
+         "The lever is a per-team pass-rate shift on the logit of every play call (`call_shift`), iterated with the points "
+         "anchor, so each team's mean attempts land on (1 - w) x the engine's own + w x Sleeper's projected team attempts. "
+         "The rules were written before any anchored run: w is chosen on 2024 alone (lowest offence CRPS among grid values "
+         "whose pair and cross-team RMSE stay within 0.01 of w = 0's); 2025 is reported but cannot judge the fix, because "
+         "the defect was found on it; the test is 2026 weeks 2-5, which no engine run had read.", ""]
+    dm = [arm_key(env, x) for x in ATT_GRID if arm_key(env, x) in dev["calibration"]]
+    L += [f"### 2024, development ({dev['n_games']} games): w = **{w:g}** chosen", ""]
+    L += _season_tables(dev, ["constrained"] + dm)
+    for k, v in (dev.get("att_anchor") or {}).items():
+        L.append(f"- {_mname_att(k)}: attempts land {v['mean_abs_att_landing_err']} from target on average, points "
+                 f"{v['mean_abs_pts_landing_err']}; mean pass-rate shift {v['mean_call_shift']} on the logit")
+    if w:
+        k1 = arm_key(env, w)
+        for name, sc in (("2025, SEEN (the season the defect was found on; it cannot judge the fix)", seen),
+                         ("2026 weeks 2-5, the test", test)):
+            if not sc:
+                continue
+            L += ["", f"### {name}: {sc['n_games']} games", ""]
+            L += _season_tables(sc, ["legacy", "constrained", arm_key(env, 0.0), k1])
+            pr = (sc.get("paired") or {}).get(k1) or {}
+            for kind, lab in (("offence", "offence (roled player-weeks)"), ("dst", "defenses"), ("k", "kickers")):
+                d = pr.get(kind)
+                if d:
+                    L.append(f"- CRPS anchored minus shipped, {lab}: {d['mean_diff']:+.4f} +/- {d['se_game_clustered']:.4f} "
+                             f"(SE clustered by game; n {d['n']}, {d['games']} games)")
+        if test:
+            g = att_gate(test, env, w)
+            L += ["", "### The 2026 rule", ""]
+            for k in ("a_crps", "b_pairs", "c_dst", "c_k"):
+                L.append(f"- {k}: {'PASS' if g[k][0] else 'FAIL'} -- {g[k][1]}")
+            L.append(f"- **verdict: {'SHIPPED -- the boards anchor passing volume at w ' + format(w, 'g') if g['promote'][0] else 'NOT shipped -- ' + g['promote'][1] + '; the boards stay on the unanchored engine'}**")
+    else:
+        L += ["", "The 2024 rule chose w = 0: the anchor did not earn its place on the development season, so nothing "
+              "ships and 2026 was not run with it."]
+    return L
