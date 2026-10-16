@@ -8508,10 +8508,15 @@ function renderDfsTourney(d) {
   const head = classic
     ? `${nf(d.candidates)} candidate lineups (${nf(d.candidates_allowed)} pass the rules; ${nf(d.optimal_distinct)} are the exact best lineup of some simulated Sunday) × ${nf(d.eval_worlds || d.worlds)} simulated Sundays${d.eval_worlds ? ` (the ${nf(d.opt_worlds)} Sundays that found the candidates are held out)` : ""}, each scored against ${nf((fm.n || 0))} lineups drawn the way the public builds.`
     : `${nf(d.lineups_legal)} legal lineups (${nf(d.lineups_allowed)} pass the rules) × ${nf(d.worlds)} simulated games, every one scored against the field.`;
+  // Which model made the worlds: the engine plays each game snap by snap and
+  // every score on the board comes off that one box (the stamp says so too).
+  const worldsTxt = d.model === "engine"
+    ? ` Each simulated game is played snap by snap by the deep engine at the drive model's and its own blended level; every player's, defense's and kicker's points come off that one box score.`
+    : (d.model ? ` Worlds: the ${escapeHtml(d.model)} model.` : "");
   box.innerHTML = `<div style="margin-top:10px;padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px">
     <div><b>🏟️ Tournament</b> <span class="small" style="color:var(--muted)">${escapeHtml(c.name || "")} · ${nf(c.max_entries)} entries · ${money(c.entry_fee)} · ${money(c.first_prize)} to 1st · built ${agoStr(d.age_s || 0)} · ${pcTxt}</span> ${_dfsTourneyButton(d)}${_dfsTourneyQueued(d)}</div>
     ${contestBtns}
-    <div class="small" style="color:var(--muted);margin-top:2px">${head} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
+    <div class="small" style="color:var(--muted);margin-top:2px">${head}${worldsTxt} ${escapeHtml(fm.note || "")}${fieldOnly.length ? ` The depth gate keeps us off ${fieldOnly.slice(0, 8).map(escapeHtml).join(", ")}${fieldOnly.length > 8 ? ` and ${fieldOnly.length - 8} more` : ""}; the field still plays them.` : ""}</div>
     ${exp ? `<div class="small" style="color:var(--muted);margin-top:2px">⚠️ <b>Experimental win, EV and ROI</b>: ${expWhy}. Top 1% and top 0.1% are the ranking columns; the raw numbers stay on the sheet for comparison while the tail estimator is validated.</div>` : ""}
     ${chalkHtml}
     <div style="margin-top:8px"><b>Portfolio</b> <span class="small" style="color:var(--muted)">- each entry adds the games the ones before it do not cover; the first k rows are the best k</span><div class="small" style="margin-top:2px">${sizeBtns}</div></div>

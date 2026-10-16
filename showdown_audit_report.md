@@ -115,7 +115,8 @@ comparing engines, and the Showdown artifact stamped no engine at all. A board
 whose numbers meant something older stayed authoritative forever.
 
 Classic and Showdown now version **separately**. `dfs_tourney.SD_ENGINE` was set
-to 2 here and is **3** as of the discrete-v2 promotion (section Y6);
+to 2 here and is **3** as of the discrete-v2 promotion (section Y6), and **4**
+since the engine model (2026-10-16, `research/reports/nfl_dfs_engine.md`);
 the two change for different reasons and each rebuild is expensive enough (an
 hour against twenty minutes) that one shared number would spend the PC's
 evening on boards whose meaning never moved. An artifact with no engine stamp
@@ -1314,12 +1315,12 @@ summaries of everything rather than statements about one thing.
 
 | | Value | Why |
 |---|---|---|
-| Showdown simulator | **`legacy-latent-discrete` v2** | promoted (section Y6), both showdown surfaces, one switch |
-| Classic simulator | legacy | unchanged, byte-identical on a seeded digest |
-| Showdown engine | `SD_ENGINE = 3` | separate from Classic's 6, which did not move |
+| Showdown simulator | **`engine-deep` v1** on the tournament board; `legacy-latent-discrete` v2 on the lineup sheet and in the preseason | the engine model, promoted 2026-10-16 on a pre-registered 2025 test (`research/reports/nfl_dfs_engine.md`); the discrete scorer (section Y6) stays where the engine cannot run (the server has no numpy) |
+| Classic simulator | **`engine-deep` v1** on the tournament board | same promotion; the sheet stays legacy |
+| Showdown engine | `SD_ENGINE = 4` | 3 from the discrete promotion, 4 from the engine model; Classic's is 7 |
 | Showdown pool signature | rich | price, status and id sensitive |
 | Classic pool signature | names only | deliberate; an hour of rebuild for a price tweak is a bad trade |
-| Pre-lock refreshes | T-4h, T-2h, T-1h, T-25m | once each |
+| Pre-lock refreshes | T-4h, T-2h, T-1h, T-25m | once each; on the right clock since 2026-10-16 (the lobby's Eastern start was read as UTC, so all four ran four hours early) |
 | Showdown money gate | **shut**, two links open | the field model (the elephant) and the joint football model |
 | Classic behaviour | unchanged | proved by guard |
 

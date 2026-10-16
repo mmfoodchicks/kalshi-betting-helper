@@ -589,3 +589,144 @@ if __name__ == "__main__":
               "| DST", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in s["sides"][m]["dst"].items() if k in ("crps", "pit_ks", "mean_sim", "mean_obs")},
               "| K", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in s["sides"][m]["k"].items() if k in ("crps", "pit_ks", "mean_sim", "mean_obs")})
     print("pair RMSE", s["pair_rmse"], "\nopp-pair RMSE", s["opp_pair_rmse"])
+
+
+# ---- the report --------------------------------------------------------------------
+_ROLE_ORDER = ("QB1", "RB1", "RB2", "WR1", "WR2", "WR3", "TE1")
+_NAMES = {"legacy": "legacy (production)", "constrained": "constrained (alternate)"}
+
+
+def _mname(m):
+    return _NAMES.get(m, m.replace("engine_", "engine, env "))
+
+
+def _season_tables(sc, models):
+    L = []
+    L.append("| model | offence CRPS (7 roles) | PIT KS | pair RMSE | cross-team pair RMSE | DST CRPS | DST mean sim / real | K CRPS | K mean sim / real |")
+    L.append("|---|---|---|---|---|---|---|---|---|")
+    for m in models:
+        c, sd = sc["calibration"][m]["_pooled"], sc["sides"][m]
+        L.append(f"| {_mname(m)} | {c['crps_mean_over_roles']:.4f} | {c['pit_ks']:.4f} | {sc['pair_rmse'][m]:.4f} | "
+                 f"{sc['opp_pair_rmse'][m]:.4f} | {sd['dst']['crps']:.4f} | {sd['dst']['mean_sim']:.2f} / {sd['dst']['mean_obs']:.2f} | "
+                 f"{sd['k']['crps']:.4f} | {sd['k']['mean_sim']:.2f} / {sd['k']['mean_obs']:.2f} |")
+    L.append("")
+    L.append("CRPS by role (lower is better) and 80% interval coverage:")
+    L.append("")
+    L.append("| model | " + " | ".join(_ROLE_ORDER) + " |")
+    L.append("|---|" + "---|" * len(_ROLE_ORDER))
+    for m in models:
+        c = sc["calibration"][m]
+        L.append(f"| {_mname(m)} | " + " | ".join(f"{c[r]['crps']:.3f} ({100 * c[r]['cover_80']:.0f}%)" for r in _ROLE_ORDER if r in c) + " |")
+    L.append("")
+    L.append("Role-pair correlations of projection residuals, observed against each model:")
+    L.append("")
+    L.append("| pair | observed | " + " | ".join(_mname(m) for m in models) + " |")
+    L.append("|---|---|" + "---|" * len(models))
+    for row in sc["pairs"]:
+        L.append(f"| {row['moment'][5:]} | {row['obs']:.3f} | " + " | ".join(
+            (f"{row[m]:.3f}" if row.get(m) is not None else "-") for m in models) + " |")
+    L.append("")
+    L.append("Mean DraftKings points by role -- each model's simulated mean, Sleeper's projection, what happened:")
+    L.append("")
+    L.append("| model | " + " | ".join(_ROLE_ORDER) + " |")
+    L.append("|---|" + "---|" * len(_ROLE_ORDER))
+    for m in models:
+        mm = sc["means"][m]
+        L.append(f"| {_mname(m)} | " + " | ".join(f"{mm[r]['sim']:.2f} / {mm[r]['sleeper']:.2f} / {mm[r]['actual']:.2f}" for r in _ROLE_ORDER if r in mm) + " |")
+    return L
+
+
+def write_report(dev, test, out, audit_md=None):
+    """research/reports/nfl_dfs_engine.md from the two artifacts."""
+    env = test["meta"]["envs"][0]
+    ek = f"engine_{env:g}"
+    g = gate(test, env)
+    dev_models = ["legacy", "constrained"] + [f"engine_{e:g}" for e in dev["meta"]["envs"]]
+    L = ["# The game-engine DFS worlds: the deep engine plays every world",
+         "",
+         f"Built {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())} by research/nfl_dfs_engine_eval.py. "
+         f"Development season 2024 ({dev['n_games']} games, weeks {dev['meta']['from_week']}-18, tables fit on {dev['meta']['fit_seasons']}); "
+         f"blind test 2025 ({test['n_games']} games, tables fit on {test['meta']['fit_seasons']}), {test['meta']['k']} worlds per game per model, "
+         f"base seed {test['meta']['base_seed']}. 2025 provenance: commit {test['meta']['provenance'].get('commit')}, "
+         f"dirty {test['meta']['provenance'].get('dirty')}; engine sources {test['meta']['engine_sources']['sha256']} "
+         f"(dirty {test['meta']['engine_sources']['dirty']}).",
+         "",
+         "## What the engine model is",
+         "",
+         "Every DFS world is one football game played snap by snap by the deep engine (nfl_deep_sim): possessions, "
+         "the clock, fourth downs, the script, both offences against both defences. Each team's scoring level is the "
+         "Sleeper drive model's expected points (nfl_game_sim, on this week's projections) and the deep engine's own, "
+         "blended at the slate's deep weight, 0.30; the deep engine's offences are re-levelled until it plays at that "
+         "target. The world's box score is dealt to the players by Sleeper's projected usage with the constrained "
+         "model's fitted competition noise: every completion a catch by someone, receiving yards the quarterback's to "
+         "the yard, every touchdown a catch or a carry. The defense is scored off what the OTHER offence did in the same "
+         "game (points it scored with the ball, sacks, takeaways) plus its own return touchdowns, safeties and blocks; "
+         "the kicker off his own field goals by distance and his tries. Player means are what the game deals, not pinned "
+         "to Sleeper's number; Sleeper's projection stays the `proj` the field reads.",
+         "",
+         "One term was added to the engine for the DFS worlds: the game's shared passing environment (one draw per game "
+         "moving both offences' yards per completion and completion rate). Across the two teams the engine already "
+         "matched real games (2023-2025, 816 games) on points (-0.055 real, -0.045 engine), plays (-0.53, -0.53), rushes "
+         "(-0.56, -0.59), drives (+0.85, +0.85) and attempts against the opponent's points (+0.29, +0.32), and missed "
+         "exactly one thing: the two teams' passing yards (+0.18 real, +0.03 engine). The term is off for every other "
+         "caller (the slate's deep layer, the deep season).",
+         "",
+         "## The rules, written before 2025 was run",
+         "",
+         "ENV_SD: the 2024 grid value (0, 0.05, 0.08, 0.11, 0.14) with the smallest cross-team pair RMSE among those whose "
+         f"offensive CRPS is within 0.5% of env 0's. Chosen: **{choose_env(dev):g}** (frozen in nfl_dfs_engine.ENV_SD and "
+         "committed before the 2025 run; the run refuses any other value or a dirty tree).",
+         "",
+         "Promotion to the boards' model on 2025: (a) offence CRPS <= 1.01 x the constrained model's; (b) pair-correlation "
+         "RMSE below both legacy's and constrained's; (c) pooled PIT KS <= max(0.05, constrained's + 0.01); (d) defense "
+         "and kicker CRPS each <= 1.02 x legacy's. Any link failing keeps the boards on legacy.",
+         "",
+         "## 2025, blind",
+         ""]
+    L += _season_tables(test, ["legacy", "constrained", ek])
+    L += ["", "### The gate", ""]
+    for k in ("a_crps", "b_pairs", "c_pit", "d_dst", "d_k"):
+        ok, det = g[k]
+        L.append(f"- {k}: {'PASS' if ok else 'FAIL'} -- {det}")
+    L.append(f"- **verdict: {'PROMOTED -- the boards are built on the engine model' if g['promote'][0] else 'NOT promoted -- ' + g['promote'][1]}**")
+    L += ["", "## 2024, development (where ENV_SD was chosen)", ""]
+    L += _season_tables(dev, dev_models)
+    L += ["", "## Limits, stated",
+          "",
+          "- One held-out season is a measurement, not a proof. The 2025 outcomes had been opened once before (Stage 2E, "
+          "for the legacy-vs-constrained test); this is the engine's first contact with them, and nothing was tuned on them.",
+          "- The deep engine's two global constants (_FORM_SD, _HFA_YDS) were calibrated on 2023-2025 margins and home "
+          "win rates: game-level, and 2025 is inside that fit.",
+          "- The replay anchors the deep layer to the points-differential ratings (Kalshi's win totals have no history) and "
+          "leaves out the weekly roster factor; production uses both.",
+          "- The allocation noise (share_sd, ypr_sd, rshare_sd, ypc_sd) is the constrained model's 2022-2024 fit, taken as "
+          "is; the engine replaces that model's team-level draws with a played game.",
+          "- Two-point conversions and offensive return touchdowns are not dealt to players (no model here deals them).",
+          "- The showdown money columns stay experimental: the field model is uncalibrated whatever simulator made the worlds.",
+          f"- The engine's passing level ran above both Sleeper's and reality on 2025: WR1 {test['means'][ek]['WR1']['sim']:.2f} "
+          f"simulated against {test['means'][ek]['WR1']['actual']:.2f} real ({test['means'][ek]['WR1']['sleeper']:.2f} Sleeper), WR2 "
+          f"{test['means'][ek]['WR2']['sim']:.2f} against {test['means'][ek]['WR2']['actual']:.2f}, QB1 {test['means'][ek]['QB1']['sim']:.2f} "
+          f"against {test['means'][ek]['QB1']['actual']:.2f}. The lean shows in its PIT: "
+          f"{100 * test['calibration'][ek]['_pooled']['pit_hist'][0]:.0f}% of real outcomes fell in the bottom tenth of its "
+          "distribution, against 10% for a calibrated model, and the PIT link passed by "
+          f"{0.05 - test['calibration'][ek]['_pooled']['pit_ks']:.3f}. On 2024 the same level sat close to what happened "
+          f"(WR1 {dev['means'][ek]['WR1']['sim']:.2f} against {dev['means'][ek]['WR1']['actual']:.2f}). Anchoring each team's passing "
+          "volume to Sleeper's projected attempts is the obvious next lever. It was not tried here: it would have to be chosen on 2024 "
+          "and could only be judged on 2026.",
+          "- The environment term buys the yardage coupling at a measured cost in points independence: inside the engine's "
+          "worlds the two teams' points in one game correlate +0.124 (2024) and +0.128 (2025) at the frozen value, against "
+          "-0.033 with it off (median over the 256 games; measured from the runs' raw per-game records, which are not "
+          "committed at 86 MB). Real games pooled across matchups show -0.055, a figure that mixes in the spread's negative "
+          "pull, so the real within-game value is near zero and the term overshoots it. The defenses' CRPS improved anyway.",
+          "- The engine over-couples a quarterback with his own backs (QB1/RB1 "
+          f"{next(r[ek] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} against "
+          f"{next(r['obs'] for r in test['pairs'] if r['moment'].endswith('QB1/RB1')):.3f} real): the played game ties a team's "
+          "rushing and passing to the same scoring.",
+          "- The lineup SHEET in the app stays on legacy-discrete: the server has no numpy and must not play thousands of "
+          "snap-by-snap games inside a one-core web worker. The tournament boards, built on the PC, are where the engine runs.",
+          ""]
+    if audit_md:
+        L += ["## The DFS audit that preceded this (live week 6, 2026-10-16)", "", audit_md.strip(), ""]
+    with open(out, "w") as fh:
+        fh.write("\n".join(L) + "\n")
+    return g

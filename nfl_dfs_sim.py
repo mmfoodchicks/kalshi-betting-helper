@@ -922,18 +922,27 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
             if _np is None:
                 raise RuntimeError("numpy is required for the constrained model")
         eng_ctx, eng_dst, eng_k, eng_rep = None, {}, {}, {}
+        eng_fallback = []
         if model == "engine":
             import nfl_dfs_engine
             _np = nfl_dfs_engine.np
             if _np is None:
                 raise RuntimeError("numpy is required for the engine model")
-            eng_ctx = nfl_dfs_engine.week_context(season, week, workers=workers)
+            try:
+                eng_ctx = nfl_dfs_engine.week_context(season, week, workers=workers)
+            except Exception as _e:
+                # no deep profiles this week (the store unreachable, a cold
+                # PC): the board is still built, on legacy worlds, and says so
+                errlog.note("NFLENG-context", _e)
+                eng_ctx = None
         for gid, g in games.items():
             sim = None
             if model == "engine":
                 child = _seeds.child_seed(seed, season, week, gid, "engine") if seed is not None else None
-                sim = nfl_dfs_engine.simulate_game(g, n, _np.random.default_rng(child), eng_ctx)
+                sim = (nfl_dfs_engine.simulate_game(g, n, _np.random.default_rng(child), eng_ctx)
+                       if eng_ctx and eng_ctx.get("profiles") else None)
                 if sim is None:
+                    eng_fallback.append(str(g.get("label") or gid))
                     errlog.note("NFLENG-fallback", msg=f"{g.get('label')}: no deep profile for a side; "
                                                        "legacy worlds for this game")
                 else:
@@ -1091,7 +1100,8 @@ def player_pool(week, n=3000, preseason=False, season=None, teams=None, model="l
                           "floor": round(sorted(arr)[int(0.1 * len(arr))], 1), "arr": arr}
         if model == "engine":
             engine_reports[(season, week, tuple(sorted(want)) or None, seed)] = {
-                "games": eng_rep, "drive_games": len((eng_ctx or {}).get("drive") or {}) // 2,
+                "games": eng_rep, "fallback_legacy": eng_fallback,
+                "drive_games": len((eng_ctx or {}).get("drive") or {}) // 2,
                 "profiles": len((eng_ctx or {}).get("profiles") or {}), "weight": (eng_ctx or {}).get("weight")}
         return pool or None
     return _cached(("nfl_pool", season, week, n, bool(preseason), tuple(sorted(want)) or None, model, seed, float(xside or 0.0), bool(discrete)),

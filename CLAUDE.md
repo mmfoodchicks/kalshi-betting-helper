@@ -116,6 +116,21 @@ data-only `sim-history` branch (which never deploys):
   2024-25, tables refit on past seasons only) — read before quoting any skill
   figure; the review that found and fixed the first version's bugs is in
   `research/reports/nfl_deep_plan.md` §9.
+- **The DFS boards' worlds** (2026-10-16): `nfl_dfs_engine.py` plays every
+  tournament world as one game in the deep engine, its scoring level the
+  drive model's and the deep engine's blended at `_DEEP_WEIGHT`, the box
+  dealt to the players by Sleeper usage with the constrained model's fitted
+  allocation noise, defenses and kickers scored off the same game. One added
+  engine term, the shared passing environment (`ENV_SD` 0.14, chosen on 2024
+  by a rule written first; off for every other caller of `play_game`).
+  `dfs_tourney.BOARD_MODEL = "engine"` because the pre-registered 2025 test
+  passed (`research/reports/nfl_dfs_engine.md`; the harness
+  `research/nfl_dfs_engine_eval.py` refuses a dirty tree for 2025+). PC only
+  (numpy, `workers` processes); the app's lineup sheet stays legacy-discrete.
+  DraftKings writes TWO clocks: the lobby's `StartDateEst` is Eastern with no
+  zone, contest and draftables strings are UTC with a Z. Parse both through
+  `nfl_dfs.iso_ts` (reading the lobby as UTC ran every pre-lock refresh four
+  hours early).
 - `artifacts.py` — the schema-gated contract for the three compute stores
   (gamesim / boards / deep). Bump `SCHEMA` with any pickle-shape change.
 

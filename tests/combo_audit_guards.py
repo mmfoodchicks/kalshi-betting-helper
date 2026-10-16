@@ -13365,7 +13365,8 @@ if _dt14.available():
        and "keep = _solver_pool(X, pos, gen)" in _dts1 and "np.percentile(X[i], 90)" not in _dts1,
        "candidate construction must see only generation-world simulation outputs")
 ck("the board stamps its engine semantics, the field's targets and achieved receipts, and names its experimental columns; the PC rebuilds a classic board built by an older engine",
-   _dt14.ENGINE == 6 and '"engine": ENGINE, "kind": "classic"' in _dts1
+   # 7 since the engine model (2026-10-16); the version comment says why
+   _dt14.ENGINE == 7 and "# 7: the worlds are the engine model's" in _dts1 and '"engine": ENGINE, "kind": "classic"' in _dts1
    and '"achieved": achieved,' in _dts1 and '"targets": {"max_own": CL_FIELD_MAX_OWN' in _dts1
    and '"dst_vs_own_qb_not_avoiding": CL_DST_VS_OWN_QB' in _dts1
    # repinned 2026-09-18: the field size is DraftKings' maximumEntries via
@@ -14302,9 +14303,9 @@ ck("the report's header carries the withdrawn claim and points at the retraction
    and "candidate-level, not a contest-wide shared-first incidence" in _sdrw
    and "**unresolved**" in _sdrw)
 ck("and the engine number in the findings section no longer contradicts the production table",
-   "is **3** as of the discrete-v2 promotion" in _sdrw
-   and "| Showdown engine | `SD_ENGINE = 3` |" in _sdrw
-   and _dt14.SD_ENGINE == 3)
+   "is **3** as of the discrete-v2 promotion" in _sdrw and "**4** since the engine model" in _sdrw
+   and "| Showdown engine | `SD_ENGINE = 4` |" in _sdrw
+   and _dt14.SD_ENGINE == 4)
 ck("and the report records the seed-stamp gap, that it was fixed prospectively, and that the historical artifacts were deliberately NOT regenerated",
    "### R1c. Six artifacts stamped `seed: null` while running on fixed seeds" in _sdrw
    and "deliberately NOT\nregenerated" in _sdr.replace("\r", "")
@@ -14406,10 +14407,15 @@ ck("every served showdown artifact stamps which model made its worlds, so a boar
    and _sim2.sim_stamp(n=1, discrete=True)["model"] == "legacy-latent-discrete"
    and _sim2.sim_stamp(n=1, discrete=True)["discrete_version"] == 2)
 ck("and the showdown engine moved, so every board built under the old scorer is invalidated and rebuilt rather than served beside the new ones",
-   _dt14.SD_ENGINE == 3
+   # 3 at the discrete promotion, 4 at the engine model (2026-10-16) -- the
+   # later bump is a different reason, recorded in SD_ENGINE's own comment;
+   # the discrete promotion itself still did not move classic's (6 then; 7
+   # only for the engine model)
+   _dt14.SD_ENGINE == 4 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
    and _pw_s1._expected_engine("showdown") == _dt14.SD_ENGINE
    and _pw_s1._rebuild_reason(_sdb(engine=2), "AAA", None, {}, 1, None)[0] == "engine updated"
-   and _dt14.ENGINE == 6,                      # classic's engine did NOT move
+   and _pw_s1._rebuild_reason(_sdb(engine=3), "AAA", None, {}, 1, None)[0] == "engine updated"
+   and _dt14.ENGINE == 7,
    "showdown's numbers mean something new; classic's do not")
 ck("and it stamps itself differently, so a board built with it could never be mistaken for a production one",
    _sim2.sim_stamp(n=1, discrete=True)["model"].endswith("-discrete")
@@ -14830,7 +14836,8 @@ ck("and on a LIVE board the whole span of defensible conventions is worth about 
    and _s4t["by_q"]["top01"]["best_lineup_same_under_both"] is True
    and _s4t["by_q"]["top1"]["best_lineup_same_under_both"] is True
    and _s4t["by_q"]["top01"]["rank_corr"] > 0.95
-   and _dt14.SD_ENGINE == 3,                       # NOT bumped for a 1% effect
+   # NOT bumped for a 1% effect: 3 stood until the engine model moved it to 4
+   and _dt14.SD_ENGINE == 4 and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    f"top1 bracket {100 * _s4t['by_q']['top1']['relative_bracket_at_best']:.1f}%, "
    f"top0.1% {100 * _s4t['by_q']['top01']['relative_bracket_at_best']:.1f}%")
 ck("the tied blocks are real and measured, so the narrow bracket is a fact about the cutoff width rather than an absence of ties",
@@ -14973,8 +14980,10 @@ ck("and the tab says it too, under the number, rather than leaving it to read as
    "any top 1% (in-sample)" in _js_s1
    and "these worlds also chose the lineups" in _js_s1
    and "basis.measured_optimism_pct.worst" in _js_s1)
-ck("no board was invalidated for the label, because no number changed",
-   _dt14.SD_ENGINE == 3 and _dt14.ENGINE == 6,
+ck("no board was invalidated for the label, because no number changed (the versions moved later, 3 -> 4 and 6 -> 7, for the engine model and say so)",
+   _dt14.SD_ENGINE == 4 and _dt14.ENGINE == 7
+   and "# 4: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read()
+   and "# 7: the worlds are the engine model's" in open(_os.path.join(_root, "dfs_tourney.py")).read(),
    "labelling a figure is not a change in what the figure says")
 ck("the report carries the CORRECTED optimism figures and withdraws the single-cell version",
    "CORRECTION to the first version of this section" in _s4rw
@@ -18708,6 +18717,78 @@ _pe_de = _spe.run([sys.executable, "-c",
                   env=dict(os.environ, PYTHONPATH=os.path.dirname(_ne_de), VIGIL_NO_BG="1", VIGIL_ALLOW_OPEN="1"))
 ck("the engine module imports on a machine with no numpy (the server), says it is unavailable, and the web app runs beside it",
    "ok" in (_pe_de.stdout or ""), (_pe_de.stderr or "").strip()[-300:])
+
+# ---- 2026-10-16 the engine model's two seasons, and the promotion they earned ----
+import json as _jsev
+_d_ev = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "research")
+_ev24 = _jsev.load(open(os.path.join(_d_ev, "data", "nfl_dfs_engine_2024.json")))
+_ev25 = _jsev.load(open(os.path.join(_d_ev, "data", "nfl_dfs_engine_2025.json")))
+_evsrc = open(os.path.join(_d_ev, "nfl_dfs_engine_eval.py")).read()
+_evrep = open(os.path.join(_d_ev, "reports", "nfl_dfs_engine.md")).read()
+_c25 = _ev25["calibration"]
+_ek = "engine_0.14"
+ck("the 2025 test ran on a COMMITTED tree at the frozen ENV_SD only: provenance clean at the pre-holdout commit, the engine's own modules clean, 256 games of weeks 2-18 with tables fit on 2023-2024, and the harness refuses a dirty tree or any other ENV_SD for a season >= 2025",
+   _ev25["meta"]["provenance"]["dirty"] is False and _ev25["meta"]["provenance"]["commit"] == "ecc4475"
+   and _ev25["meta"]["engine_sources"]["dirty"] is False and _ev25["meta"]["engine_sources"]["commit"] == "ecc4475"
+   and _ev25["meta"]["season"] == 2025 and _ev25["meta"]["fit_seasons"] == [2023, 2024] and _ev25["meta"]["envs"] == [0.14]
+   and _ev25["n_games"] == 256 and _ev25["meta"]["k"] == 400 and _ev25["meta"]["from_week"] == 2
+   and 'provenance.require_clean("a holdout validation")' in _evsrc and "2025 runs at the frozen ENV_SD" in _evsrc
+   and _ev24["meta"]["season"] == 2024 and _ev24["meta"]["fit_seasons"] == [2023] and _ev24["meta"]["envs"] == [0.0, 0.05, 0.08, 0.11, 0.14])
+ck("the numbers the board's comment quotes are the artifact's, model by model (offence CRPS, PIT KS, pair RMSE, cross-team pair RMSE, DST and kicker CRPS on 2025)",
+   [round(_c25[m]["_pooled"]["crps_mean_over_roles"], 4) for m in ("legacy", "constrained", _ek)] == [3.9541, 3.8181, 3.8335]
+   and [round(_c25[m]["_pooled"]["pit_ks"], 4) for m in ("legacy", "constrained", _ek)] == [0.1782, 0.0251, 0.0478]
+   and [round(_ev25["pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.2560, 0.0857, 0.0475]
+   and [round(_ev25["opp_pair_rmse"][m], 4) for m in ("legacy", "constrained", _ek)] == [0.1493, 0.1347, 0.0562]
+   and [round(_ev25["sides"][m]["dst"]["crps"], 4) for m in ("legacy", _ek)] == [3.1125, 3.0889]
+   and [round(_ev25["sides"][m]["k"]["crps"], 4) for m in ("legacy", _ek)] == [2.5934, 2.5630]
+   and "engine, env 0.14   3.8335        0.0478   0.0475     0.0562      3.0889    2.5630" in open(os.path.join(os.path.dirname(_d_ev), "dfs_tourney.py")).read())
+# and what they MEAN: the offence CRPS is the plain mean of the seven roles'
+# CRPS from Stage 2E's own scorer, the cross-team RMSE runs over exactly the
+# opponent pairs and the offence-vs-offence moment, nothing else
+_roles7 = ("QB1", "RB1", "RB2", "WR1", "WR2", "WR3", "TE1")
+_opp_keys = [r["moment"] for r in _ev25["pairs"] if "opp" in r["moment"] or "offense" in r["moment"]]
+_opp_rm = (sum((r[_ek] - r["obs"]) ** 2 for r in _ev25["pairs"] if r["moment"] in _opp_keys) / len(_opp_keys)) ** 0.5
+ck("and the definitions behind them: offence CRPS = the mean of the seven roles' CRPS (Stage 2E's pit_and_crps), the cross-team RMSE = the root mean square over the six opponent moments (five role pairs and team offence vs opp offence) and no teammate pair",
+   abs(_c25[_ek]["_pooled"]["crps_mean_over_roles"] - sum(_c25[_ek][r]["crps"] for r in _roles7) / 7) < 1e-9
+   and len(_opp_keys) == 6 and all("opp" in k or "offense/opp offense" in k for k in _opp_keys)
+   and abs(_opp_rm - _ev25["opp_pair_rmse"][_ek]) < 1e-9
+   and "V.pit_and_crps(s, ob)" in _evsrc)
+try:
+    from research import nfl_dfs_engine_eval as _EVE
+except ImportError:
+    _EVE = None
+if _EVE is None:
+    ck("(numpy absent: the gate's own arithmetic is checked in the numpy suite; the pins above still run)", True)
+else:
+    _g25 = _EVE.gate(_ev25, _Gde.ENV_SD)
+    _syn = lambda e_c, c_c, e_p, c_p, l_p, e_ks, c_ks, e_d, l_d, e_k, l_k: {          # noqa: E731
+        "calibration": {"engine_0.14": {"_pooled": {"crps_mean_over_roles": e_c, "pit_ks": e_ks}},
+                        "constrained": {"_pooled": {"crps_mean_over_roles": c_c, "pit_ks": c_ks}},
+                        "legacy": {"_pooled": {"crps_mean_over_roles": 9.0, "pit_ks": 0.2}}},
+        "pair_rmse": {"engine_0.14": e_p, "constrained": c_p, "legacy": l_p},
+        "sides": {"engine_0.14": {"dst": {"crps": e_d}, "k": {"crps": e_k}}, "legacy": {"dst": {"crps": l_d}, "k": {"crps": l_k}}}}
+    _gA = _EVE.gate(_syn(1.0099, 1.0, 0.05, 0.06, 0.2, 0.049, 0.02, 3.06, 3.0, 2.55, 2.5), 0.14)
+    _gB = _EVE.gate(_syn(1.0101, 1.0, 0.05, 0.06, 0.2, 0.049, 0.02, 3.06, 3.0, 2.55, 2.5), 0.14)
+    _gC = _EVE.gate(_syn(1.0, 1.0, 0.07, 0.06, 0.2, 0.049, 0.02, 3.06, 3.0, 2.55, 2.5), 0.14)
+    _gD = _EVE.gate(_syn(1.0, 1.0, 0.05, 0.06, 0.2, 0.051, 0.02, 3.06, 3.0, 2.55, 2.5), 0.14)
+    _gE = _EVE.gate(_syn(1.0, 1.0, 0.05, 0.06, 0.2, 0.049, 0.045, 3.07, 3.0, 2.55, 2.5), 0.14)
+    ck("the gate is the rule written before the run, link by link: offence CRPS within x1.01 of constrained, pair RMSE below BOTH others, PIT KS at most max(0.05, constrained's + 0.01), defense and kicker CRPS within x1.02 of legacy's -- each limit flips the verdict exactly at its edge",
+       _gA["promote"][0] and not _gB["promote"][0] and not _gB["a_crps"][0]
+       and not _gC["b_pairs"][0] and not _gD["c_pit"][0]
+       and _gE["c_pit"][0] and not _gE["d_dst"][0]
+       and "(a) offensive calibration: CRPS mean over the seven roles <= 1.01 x the" in _evsrc
+       and "(c) PIT: pooled Kolmogorov distance <= max(0.05, constrained's + 0.01);" in _evsrc)
+    ck("ENV_SD is the 2024 rule's answer (the smallest cross-team pair RMSE on the grid among values within 0.5% of env 0's offence CRPS), and the boards are on the engine model because the 2025 gate passed every link",
+       _EVE.choose_env(_ev24) == _Gde.ENV_SD == 0.14
+       and _g25["promote"][0] is True and all(_g25[k][0] for k in ("a_crps", "b_pairs", "c_pit", "d_dst", "d_k"))
+       and _dtde.BOARD_MODEL == "engine",
+       str({k: v[0] for k, v in _g25.items()}))
+ck("the research record ships: the report with the rules as written before the run, the 2025 verdict, the 2024 grid, the stated limits (the hot passing level on 2025, the quarterback-back over-coupling, the sheet staying legacy) and the audit that preceded it; the Sleeper kicker and defense feeds it scored against are committed",
+   "## The rules, written before 2025 was run" in _evrep and "**verdict: PROMOTED -- the boards are built on the engine model**" in _evrep
+   and "## 2024, development (where ENV_SD was chosen)" in _evrep and "The lean shows in its PIT" in _evrep
+   and "over-couples a quarterback with his own backs" in _evrep and "The lineup SHEET in the app stays on legacy-discrete" in _evrep
+   and "## The DFS audit that preceded this" in _evrep
+   and all(os.path.exists(os.path.join(_d_ev, "data", "feeds", f"sleeper_kdef_{y}.json.gz")) for y in (2024, 2025)))
 
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")
 if FAIL:
